@@ -185,8 +185,8 @@ function LeaguesBody() {
                       two-column grid as a real UiButton — two spellings of one
                       control, side by side. */}
                   <UiLinkButton to="/fantasy/leagues/join" size="sm" variant="outline">
-                    <Plus className="h-4 w-4" aria-hidden />
-                    <span className="truncate">{t("fpl.join_leagues")}</span>
+                    <Plus className="h-4 w-4 shrink-0" aria-hidden />
+                    <span className="line-clamp-2 text-balance">{t("fpl.join_leagues")}</span>
                   </UiLinkButton>
                   <UiButton
                     size="sm"
@@ -195,7 +195,7 @@ function LeaguesBody() {
                     onClick={() => setCreateOpen((v) => !v)}
                   >
                     <Settings className="h-4 w-4 shrink-0" aria-hidden />
-                    <span className="truncate">{t("fpl.configure_leagues")}</span>
+                    <span className="line-clamp-2 text-balance">{t("fpl.configure_leagues")}</span>
                   </UiButton>
                 </div>
 

@@ -57,6 +57,8 @@ interface NormalizedFixture {
   readonly period: string;
   readonly homeScore: number | null;
   readonly awayScore: number | null;
+  /** Set only for a match played to its end; see `FINAL_STATES`. */
+  readonly finalizedAt: string | null;
   readonly freshness: {
     readonly updatedAt: string;
     readonly sourceSequence: number;
@@ -391,7 +393,30 @@ function currentScore(raw: JsonRecord): {
   return { home, away };
 }
 
-function fixtureState(raw: JsonRecord): { status: string; period: string } {
+/**
+ * Provider states that mean the match was played to its end and the result
+ * will not move: full time, after extra time, after penalties.
+ *
+ * These are exactly the states the current-season statistics ingester
+ * accepts (`normalizeCurrentFinishedFixture` in
+ * scripts/backend/current-season-performances.ts). Finalizing any other state
+ * would release a gameweek for scoring against a fixture whose player
+ * statistics can never be ingested. The legacy `FTP` spelling still maps to
+ * `finished` but is not finalized for the same reason.
+ *
+ * The Fantasy lifecycle waits (`football_not_final`) until every fixture in a
+ * gameweek carries `finalized_at`, and nothing else sets it, so these are the
+ * states that let a gameweek be scored.
+ *
+ * `WO` (walkover) and `AWARDED` also map to `finished`, but deliberately do
+ * not finalize: no match was played to completion, so there are no player
+ * statistics to score, and whether such a fixture counts for Fantasy is an
+ * operator decision (defer it, as the postponed GW1 fixture was), not a
+ * mapping rule.
+ */
+const FINAL_STATES: ReadonlySet<string> = new Set(["FT", "AET", "FT_PEN"]);
+
+function fixtureState(raw: JsonRecord): { status: string; period: string; final: boolean } {
   const state = record(raw.state);
   const source = [state.developer_name, state.state, state.name].find(
     (value): value is string => typeof value === "string" && value.trim().length > 0,
@@ -441,7 +466,7 @@ function fixtureState(raw: JsonRecord): { status: string; period: string } {
   };
   const mapped = mappings[key];
   if (!mapped) throw new FixtureRuntimeError("invalid_provider_payload");
-  return mapped;
+  return { ...mapped, final: FINAL_STATES.has(key) };
 }
 
 function normalizeFixture(
@@ -462,6 +487,13 @@ function normalizeFixture(
   }
   const updatedAt =
     optionalTimestamp(raw.last_processed_at) ?? optionalTimestamp(raw.updated_at) ?? observedAt;
+  const kickoffAt = timestamp(raw.starting_at);
+  // The time BotolaGO observed the terminal state. It is never earlier than
+  // kickoff for a real result; a feed that reports a final state before its
+  // own kickoff is not trusted to finalize anything. The database keeps the
+  // first value it stores, so re-observing a finished match changes nothing.
+  const finalizedAt =
+    state.final && Date.parse(observedAt) >= Date.parse(kickoffAt) ? observedAt : null;
   return {
     externalId: String(id),
     competitionExternalId: String(leagueId),
@@ -469,11 +501,12 @@ function normalizeFixture(
     roundExternalId: nullablePositiveInteger(raw.round_id)?.toString() ?? null,
     homeTeamExternalId: String(participant(raw, "home")),
     awayTeamExternalId: String(participant(raw, "away")),
-    kickoffAt: timestamp(raw.starting_at),
+    kickoffAt,
     status: state.status,
     period: state.period,
     homeScore: scores.home,
     awayScore: scores.away,
+    finalizedAt,
     freshness: {
       updatedAt,
       sourceSequence: Math.max(0, Date.parse(updatedAt)),
@@ -558,6 +591,7 @@ async function persistFixture(
       providerUpdatedAt: fixture.freshness.updatedAt,
       sourceSequence: fixture.freshness.sourceSequence,
       sourceVersion: fixture.freshness.sourceVersion,
+      finalizedAt: fixture.finalizedAt,
     },
   });
   if (typeof value !== "string" || !/^[0-9a-f-]{36}$/i.test(value)) {

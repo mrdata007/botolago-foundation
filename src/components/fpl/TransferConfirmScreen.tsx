@@ -54,7 +54,6 @@ export function TransferConfirmScreen({
   const deadline = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     day: "numeric",
     month: "short",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     // BG-0100: the competition's calendar, never the viewer's browser.
@@ -112,8 +111,12 @@ export function TransferConfirmScreen({
     <div className="flex min-h-[100dvh] flex-col">
       <UiHeader title={t("fpl.transfers")} tone="gradient" onBack={onEdit}>
         <p className={cn("mt-1 text-center", ui.text.secondary)}>
-          {t("fpl.gameweek")} {gameweek} {t("fpl.deadline")}:{" "}
-          <strong className="[font-weight:var(--ui-weight-heavy)]">{deadline}</strong>
+          {t("fpl.gameweek")} {gameweek} · {t("fpl.deadline")}
+          {/* French sets a narrow no-break space before a colon. */}
+          {lang === "fr" ? "\u202F:" : ":"}{" "}
+          <strong className="whitespace-nowrap [font-weight:var(--ui-weight-heavy)]">
+            {deadline}
+          </strong>
         </p>
       </UiHeader>
       <UiBanner>

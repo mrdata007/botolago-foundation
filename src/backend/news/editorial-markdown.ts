@@ -7,8 +7,12 @@
 // on the next save, so both live here and are unit tested together.
 //
 // This is NOT a full Markdown implementation: blank-line separated blocks
-// become paragraphs (unchanged from the original behaviour) and
-// `![alt](https://...)` becomes a `<figure><img><figcaption>`. Everything
+// become paragraphs (unchanged from the original behaviour),
+// `![alt](https://...)` becomes a `<figure><img><figcaption>`, and a small
+// set of line markers (`##` intertitles, `-`/`1.` lists, `>` quotes) plus
+// `**bold**` / `*italic*` and `[text](https://... or /path)` links become
+// their tags. Links in original BotolaGO stories are kept on the public page;
+// imported third-party stories still lose theirs (BG-0091). Everything
 // produced here is still run through `sanitizeEditorialHtml` before it ever
 // leaves the browser, and re-sanitized server-side by the Edge Function that
 // owns the actual trust boundary -- the https-only check below is a second
@@ -77,15 +81,150 @@ function figureHtml(url: string, altText: string): string {
 
 /**
  * Blank-line separated blocks become `<p>`; a `![alt](https://...)` anywhere
- * inside a block is lifted out into its own `<figure>`. A block that contains
- * no usable image keeps the exact original behaviour (`<p>{trimmed block}</p>`)
- * so previously stored content renders identically.
+ * inside a block is lifted out into its own `<figure>`.
+ *
+ * Inside a block, a line starting `## ` (or `#`, `###`, `####`) is an
+ * intertitle, consecutive `- ` / `* ` lines are a bulleted list, consecutive
+ * `1. ` lines a numbered list and consecutive `> ` lines a quote. `**text**`
+ * is bold and `*text*` italic. The editor's own hint has promised `##` and
+ * `**` since the first release, but until this was added both came out as the
+ * literal characters, so a multi-section article rendered as one run of
+ * paragraphs with `##` printed in them.
+ *
+ * Every tag produced here is already on the sanitizer allowlist and already
+ * styled by `.editorial-body`. Plain prose with none of these markers still
+ * becomes `<p>{trimmed block}</p>` exactly as before.
  */
 export function markdownToEditorialHtml(source: string): string {
   return source
+    .replace(/\r\n?/gu, "\n")
     .split(/\n{2,}/u)
-    .map((block) => blockToHtml(block))
+    .map((block) => structuredBlockToHtml(block))
     .join("");
+}
+
+const HEADING_LINE = /^(#{1,4})[ \t]+(\S.*)$/u;
+const BULLET_LINE = /^[ \t]*[-*][ \t]+(\S.*)$/u;
+const NUMBERED_LINE = /^[ \t]*\d{1,3}[.)][ \t]+(\S.*)$/u;
+const QUOTE_LINE = /^[ \t]*>[ \t]?(.*)$/u;
+
+type LineKind = "heading" | "bullet" | "numbered" | "quote" | "text";
+
+function lineKind(line: string): LineKind {
+  if (HEADING_LINE.test(line)) return "heading";
+  if (BULLET_LINE.test(line)) return "bullet";
+  if (NUMBERED_LINE.test(line)) return "numbered";
+  if (QUOTE_LINE.test(line)) return "quote";
+  return "text";
+}
+
+/** Hosts that are BotolaGO itself: a link there is internal. */
+const OWN_HOSTS = new Set(["botolago.com", "www.botolago.com"]);
+
+/**
+ * Whether `url` may become a link: an absolute https URL without credentials,
+ * or a path on this site (`/news/...`, not the protocol-relative `//host`).
+ * Everything else -- `javascript:`, `data:`, `http:`, `mailto:`, bare words --
+ * is left as the literal text the editor typed. The sanitizer (client and the
+ * trusted server pass) enforces the same schemes and remains the authority.
+ */
+export function isAllowedEditorialLinkUrl(url: string): boolean {
+  const value = url.trim();
+  if (/^\/(?!\/)/u.test(value)) return !/[\s\\]/u.test(value);
+  return isAllowedEditorialImageUrl(value);
+}
+
+/** An https link to another site (not a path, not botolago.com). */
+export function isExternalEditorialLink(url: string): boolean {
+  try {
+    const parsed = new URL(url.trim());
+    return parsed.protocol === "https:" && !OWN_HOSTS.has(parsed.hostname.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+/** Matches `[text](url)` that is not an image (`![...]`). */
+const LINK_PATTERN = /(?<!!)\[([^\]\n]+)\]\(([^()\s]+)\)/gu;
+
+function emphasisToHtml(text: string): string {
+  return text
+    .replace(/\*\*(?=\S)([^*\n]+?)(?<=\S)\*\*/gu, "<strong>$1</strong>")
+    .replace(/(^|[^\p{L}\p{N}*])\*(?=\S)([^*\n]+?)(?<=\S)\*(?![\p{L}\p{N}*])/gu, "$1<em>$2</em>");
+}
+
+/**
+ * `[text](url)` links, then `**bold**` and `*italic*`. A `*` between two word
+ * characters (`5*3`) is left alone, as is a marker with whitespace just
+ * inside it. Emphasis runs on the text around and inside links, never on the
+ * URL itself.
+ */
+function inlineToHtml(text: string): string {
+  let result = "";
+  let cursor = 0;
+  LINK_PATTERN.lastIndex = 0;
+  for (const match of text.matchAll(LINK_PATTERN)) {
+    const [literal, label, url] = match;
+    const index = match.index ?? 0;
+    result += emphasisToHtml(text.slice(cursor, index));
+    cursor = index + literal.length;
+    if (!isAllowedEditorialLinkUrl(url)) {
+      result += emphasisToHtml(literal);
+      continue;
+    }
+    const external = isExternalEditorialLink(url);
+    const attributes = external ? ' target="_blank" rel="nofollow noopener noreferrer"' : "";
+    result += `<a href="${escapeHtml(url.trim())}"${attributes}>${emphasisToHtml(label)}</a>`;
+  }
+  return result + emphasisToHtml(text.slice(cursor));
+}
+
+function structuredBlockToHtml(block: string): string {
+  const lines = block.split("\n");
+  if (lines.every((line) => lineKind(line) === "text")) return blockToHtml(block);
+
+  const pieces: string[] = [];
+  let run: { kind: LineKind; lines: string[] } | null = null;
+  const flush = () => {
+    if (!run) return;
+    const { kind, lines: runLines } = run;
+    if (kind === "text") {
+      const text = runLines.join("\n");
+      if (text.trim()) pieces.push(blockToHtml(text));
+    } else if (kind === "bullet" || kind === "numbered") {
+      const pattern = kind === "bullet" ? BULLET_LINE : NUMBERED_LINE;
+      const items = runLines
+        .map((line) => `<li>${inlineToHtml(pattern.exec(line)![1].trim())}</li>`)
+        .join("");
+      pieces.push(kind === "bullet" ? `<ul>${items}</ul>` : `<ol>${items}</ol>`);
+    } else if (kind === "quote") {
+      const text = runLines
+        .map((line) => QUOTE_LINE.exec(line)![1])
+        .join("\n")
+        .trim();
+      if (text) pieces.push(`<blockquote><p>${inlineToHtml(text)}</p></blockquote>`);
+    }
+    run = null;
+  };
+
+  for (const line of lines) {
+    const kind = lineKind(line);
+    if (kind === "heading") {
+      flush();
+      const [, hashes, text] = HEADING_LINE.exec(line)!;
+      // The article title is the page's only h1, so `#` and `##` are both h2.
+      const level = Math.max(2, hashes.length);
+      pieces.push(`<h${level}>${inlineToHtml(text.trim())}</h${level}>`);
+      continue;
+    }
+    if (!run || run.kind !== kind) {
+      flush();
+      run = { kind, lines: [] };
+    }
+    run.lines.push(line);
+  }
+  flush();
+  return pieces.join("");
 }
 
 function blockToHtml(block: string): string {
@@ -100,7 +239,7 @@ function blockToHtml(block: string): string {
     pending += block.slice(cursor, match.index);
     cursor = match.index + literal.length;
     if (isAllowedEditorialImageUrl(url)) {
-      if (pending.trim()) pieces.push(`<p>${pending.trim()}</p>`);
+      if (pending.trim()) pieces.push(`<p>${inlineToHtml(pending.trim())}</p>`);
       pending = "";
       pieces.push(figureHtml(url, altText));
     } else {
@@ -110,10 +249,10 @@ function blockToHtml(block: string): string {
     match = IMAGE_PATTERN.exec(block);
   }
 
-  if (pieces.length === 0) return `<p>${block.trim()}</p>`;
+  if (pieces.length === 0) return `<p>${inlineToHtml(block.trim())}</p>`;
 
   pending += block.slice(cursor);
-  if (pending.trim()) pieces.push(`<p>${pending.trim()}</p>`);
+  if (pending.trim()) pieces.push(`<p>${inlineToHtml(pending.trim())}</p>`);
   return pieces.join("");
 }
 
@@ -166,10 +305,54 @@ export function editorialHtmlToMarkdown(html: string): string {
   return html
     .replace(FIGURE_PATTERN, (figure) => imageBlockToMarkdown(figure))
     .replace(IMG_PATTERN, (tag) => imageBlockToMarkdown(tag))
-    .replace(/<\/p>\s*<p>/giu, "\n\n")
+    .replace(
+      /<h([2-4])\b[^>]*>([\s\S]*?)<\/h\1\s*>/giu,
+      (_, level: string, text: string) =>
+        `\n\n${"#".repeat(Number(level))} ${inlineToMarkdown(text).trim()}\n\n`,
+    )
+    .replace(
+      /<(ul|ol)\b[^>]*>([\s\S]*?)<\/\1\s*>/giu,
+      (_, tag: string, items: string) => `\n\n${listToMarkdown(tag, items)}\n\n`,
+    )
+    .replace(
+      /<blockquote\b[^>]*>([\s\S]*?)<\/blockquote\s*>/giu,
+      (_, inner: string) =>
+        `\n\n${inlineToMarkdown(inner.replace(/<\/p>\s*<p>/giu, "\n").replace(/<\/?p>/giu, ""))
+          .trim()
+          .split("\n")
+          .map((line) => `> ${line}`)
+          .join("\n")}\n\n`,
+    )
+    .replace(
+      /<p\b[^>]*>([\s\S]*?)<\/p\s*>/giu,
+      (_, inner: string) => `\n\n${inlineToMarkdown(inner)}\n\n`,
+    )
     .replace(/<\/?p>/giu, "")
     .replace(/\n{3,}/gu, "\n\n")
     .trim();
+}
+
+/** `<strong>`/`<b>` and `<em>`/`<i>` back to the markers {@link inlineToHtml} reads. */
+function inlineToMarkdown(html: string): string {
+  return html
+    .replace(/<a\b([^>]*)>([\s\S]*?)<\/a\s*>/giu, (anchor, attributes: string, label: string) => {
+      const href = readAttribute(`<a${attributes}>`, "href");
+      if (!href || !isAllowedEditorialLinkUrl(href)) return label;
+      return `[${label.replace(/[[\]]/gu, "")}](${href.replace(/\(/gu, "%28").replace(/\)/gu, "%29")})`;
+    })
+    .replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1\s*>/giu, "**$2**")
+    .replace(/<(em|i)\b[^>]*>([\s\S]*?)<\/\1\s*>/giu, "*$2*");
+}
+
+function listToMarkdown(tag: string, items: string): string {
+  const entries = [...items.matchAll(/<li\b[^>]*>([\s\S]*?)<\/li\s*>/giu)].map((match) =>
+    inlineToMarkdown(match[1].replace(/<\/?p>/giu, ""))
+      .replace(/\s+/gu, " ")
+      .trim(),
+  );
+  return entries
+    .map((entry, index) => (tag.toLowerCase() === "ol" ? `${index + 1}. ${entry}` : `- ${entry}`))
+    .join("\n");
 }
 
 export interface MarkdownInsertion {

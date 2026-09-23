@@ -12,6 +12,15 @@ import {
   calculateReadingTime,
 } from "@/backend/news/sanitizer";
 import { mapNewsError } from "@/backend/news/errors";
+import {
+  describeEditorialError,
+  describeScheduledAt,
+  EDITOR_REVISION_LIMIT,
+  revisionDifferences,
+  revisionToEditorFields,
+  transitionAndReload,
+  type ProseField,
+} from "@/backend/news/editorial-session";
 import type {
   ArticleEditorialDetailDto,
   EditorialRevisionDto,
@@ -37,6 +46,7 @@ import { cn } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/media";
 import { supabaseV2 } from "@/integrations/supabase/v2-client";
 import { useI18n } from "@/i18n/provider";
+import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
 
 export const Route = createFileRoute("/admin/news/$articleEditionId")({
   ssr: false,
@@ -61,7 +71,8 @@ export const Route = createFileRoute("/admin/news/$articleEditionId")({
 const NEXT_STATUSES: Record<EditorialStatus, readonly EditorialStatus[]> = {
   draft: ["in_review", "rejected"],
   in_review: ["draft", "scheduled", "published", "rejected"],
-  scheduled: ["draft", "published", "unpublished"],
+  // `scheduled` again = reschedule to a new time.
+  scheduled: ["draft", "scheduled", "published", "unpublished"],
   published: ["unpublished", "archived"],
   unpublished: ["draft", "published", "archived"],
   rejected: ["draft"],
@@ -144,6 +155,13 @@ const PLACEMENT_LABELS: Record<PlacementType, { fr: string; ar: string }> = {
   trending: { fr: "Tendance", ar: "الأكثر تداولاً" },
 };
 
+const PROSE_FIELD_LABELS: Record<ProseField, { fr: string; ar: string }> = {
+  title: { fr: "titre", ar: "العنوان" },
+  subtitle: { fr: "sous-titre", ar: "العنوان الفرعي" },
+  summary: { fr: "résumé", ar: "الملخص" },
+  bodyMarkdown: { fr: "contenu", ar: "المحتوى" },
+};
+
 // Response shape of the `news-media-upload` Edge Function.
 interface NewsMediaUploadResult {
   readonly mediaAssetId: string;
@@ -212,6 +230,18 @@ function AdminNewsEditRoute() {
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [heroAssetId, setHeroAssetId] = useState<string | null>(null);
+  // The cover's own metadata, typed before the file is picked: the upload
+  // registers it with the asset, and the public page renders caption/credit
+  // under the photo. Alt text used to be the article title, silently.
+  const [heroAlt, setHeroAlt] = useState("");
+  const [heroCaption, setHeroCaption] = useState("");
+  const [heroCredit, setHeroCredit] = useState("");
+  const [heroPreview, setHeroPreview] = useState<{
+    url: string;
+    alt: string;
+    caption: string | null;
+    credit: string | null;
+  } | null>(null);
   const [dirty, setDirty] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -228,7 +258,11 @@ function AdminNewsEditRoute() {
     try {
       const [detail, revisionList] = await Promise.all([
         repository.getEditorialArticle(articleEditionId, adminRepositoryContext(access)),
-        repository.listRevisions(articleEditionId, 20, adminRepositoryContext(access)),
+        repository.listRevisions(
+          articleEditionId,
+          EDITOR_REVISION_LIMIT,
+          adminRepositoryContext(access),
+        ),
       ]);
       setArticle(detail);
       setRevisions(revisionList);
@@ -239,6 +273,17 @@ function AdminNewsEditRoute() {
       setSeoTitle(detail.seoTitle ?? "");
       setSeoDescription(detail.seoDescription ?? "");
       setHeroAssetId(detail.heroAssetId);
+      const heroUrl = resolveMediaUrl(detail.hero);
+      setHeroPreview(
+        heroUrl && detail.hero
+          ? {
+              url: heroUrl,
+              alt: detail.hero.alt ?? "",
+              caption: detail.hero.caption ?? null,
+              credit: detail.hero.credit ?? null,
+            }
+          : null,
+      );
       setDirty(false);
     } catch (error) {
       setMessage(
@@ -254,15 +299,14 @@ function AdminNewsEditRoute() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access.state, articleEditionId]);
 
-  useEffect(() => {
-    const handler = (event: BeforeUnloadEvent) => {
-      if (!dirty) return;
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [dirty]);
+  // In-app navigation as well as reload/close: `beforeunload` alone never
+  // fired for "Tous les articles" or the Admin menu.
+  useUnsavedChangesGuard(
+    dirty,
+    rtl
+      ? "توجد تغييرات غير محفوظة ستضيع. مغادرة الصفحة؟"
+      : "Des modifications non enregistrées seront perdues. Quitter la page ?",
+  );
 
   const markDirty =
     <T,>(setter: (value: T) => void) =>
@@ -306,7 +350,7 @@ function AdminNewsEditRoute() {
           ? rtl
             ? "تم تعديل المقال في مكان آخر. أعد التحميل قبل الحفظ."
             : "L’article a été modifié ailleurs. Rechargez avant d’enregistrer."
-          : `${rtl ? "تعذّر الحفظ" : "Enregistrement impossible"}: ${mapped.code}`,
+          : `${rtl ? "تعذّر الحفظ" : "Enregistrement impossible"} : ${describeEditorialError(mapped.code, lang)} (${mapped.code})`,
       );
     } finally {
       setBusy(false);
@@ -348,16 +392,35 @@ function AdminNewsEditRoute() {
     setBusy(true);
     setMessage(null);
     try {
-      const result = await repository.transitionArticle(
+      // Re-reads the edition afterwards: the transition bumped `updatedAt`,
+      // which is the token the next save is checked against.
+      const outcome = await transitionAndReload(
+        repository,
         { articleEditionId: article.id, targetStatus, scheduledAt: scheduledAtIso },
         adminRepositoryContext(access),
       );
-      setArticle({ ...article, status: result.status, visibility: result.visibility });
+      const { result } = outcome;
+      setArticle(
+        outcome.article ?? { ...article, status: result.status, visibility: result.visibility },
+      );
+      if (outcome.revisions) setRevisions(outcome.revisions);
       setScheduledAtLocal("");
-      setMessage(rtl ? `الحالة الجديدة: ${result.status}` : `Nouveau statut : ${result.status}`);
+      const statusLabel = STATUS_LABELS[result.status]?.[lang] ?? result.status;
+      setMessage(
+        outcome.article
+          ? rtl
+            ? `الحالة الجديدة: ${statusLabel}`
+            : `Nouveau statut : ${statusLabel}`
+          : rtl
+            ? `الحالة الجديدة: ${statusLabel}. أعد تحميل الصفحة قبل الحفظ.`
+            : `Nouveau statut : ${statusLabel}. Rechargez la page avant d’enregistrer.`,
+      );
     } catch (error) {
       setMessage(
-        `${rtl ? "تعذّر تغيير الحالة" : "Changement de statut impossible"}: ${mapNewsError(error as Error).code}`,
+        `${rtl ? "تعذّر تغيير الحالة" : "Changement de statut impossible"} : ${describeEditorialError(
+          mapNewsError(error as Error).code,
+          lang,
+        )} (${mapNewsError(error as Error).code})`,
       );
     } finally {
       setBusy(false);
@@ -387,7 +450,11 @@ function AdminNewsEditRoute() {
   // Function, same multipart contract (`news-media-upload` requires alt text
   // and real pixel dimensions and rejects anything that is not an allowed
   // image type).
-  const uploadNewsMedia = async (file: File, altText: string): Promise<NewsMediaUploadResult> => {
+  const uploadNewsMedia = async (
+    file: File,
+    altText: string,
+    extra: { caption?: string; credit?: string } = {},
+  ): Promise<NewsMediaUploadResult> => {
     const { data: session } = await supabaseV2.auth.getSession();
     const token = session.session?.access_token;
     if (!token) throw new Error("no_session");
@@ -400,6 +467,8 @@ function AdminNewsEditRoute() {
     const form = new FormData();
     form.set("file", file, file.name);
     form.set("altText", altText);
+    if (extra.caption?.trim()) form.set("caption", extra.caption.trim());
+    if (extra.credit?.trim()) form.set("credit", extra.credit.trim());
     form.set("width", String(dimensions.width));
     form.set("height", String(dimensions.height));
     const { data, error } = await supabaseV2.functions.invoke("news-media-upload", {
@@ -414,11 +483,36 @@ function AdminNewsEditRoute() {
 
   const uploadHero = async (file: File) => {
     if (access.state !== "authorized") return;
+    if (!heroAlt.trim()) {
+      setMessage(
+        rtl
+          ? "اكتب النص البديل للصورة قبل رفعها."
+          : "Saisissez le texte alternatif de l’image avant de la téléverser.",
+      );
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {
-      const uploadResult = await uploadNewsMedia(file, title || "Article hero image");
+      const altText = heroAlt.trim();
+      const uploadResult = await uploadNewsMedia(file, altText, {
+        caption: heroCaption,
+        credit: heroCredit,
+      });
       setHeroAssetId(uploadResult.mediaAssetId);
+      const url =
+        resolveMediaUrl({ storagePath: uploadResult.storagePath ?? null }) ??
+        resolveMediaUrl({ sourceUrl: uploadResult.publicUrl ?? null });
+      setHeroPreview(
+        url
+          ? {
+              url,
+              alt: altText,
+              caption: heroCaption.trim() || null,
+              credit: heroCredit.trim() || null,
+            }
+          : null,
+      );
       setDirty(true);
       setMessage(
         rtl ? "تم رفع الصورة. احفظ لتطبيقها." : "Image téléversée. Enregistrez pour l’appliquer.",
@@ -486,7 +580,42 @@ function AdminNewsEditRoute() {
     }
   };
 
-  const isEditable = article ? EDITABLE_STATUSES.includes(article.status) : false;
+  // An unconverted third-party import can only be archived (the server
+  // enforces it; this only avoids offering buttons that would be refused).
+  const imported = article?.imported === true;
+  const isEditable = article ? !imported && EDITABLE_STATUSES.includes(article.status) : false;
+  const nextStatuses: readonly EditorialStatus[] = article
+    ? imported
+      ? NEXT_STATUSES[article.status].filter((next) => next === "archived")
+      : NEXT_STATUSES[article.status]
+    : [];
+  const currentProse = { title, subtitle, summary, bodyMarkdown };
+
+  // Fills the form from a revision; nothing is written until Enregistrer, and
+  // that save snapshots the replaced text as a new revision, so it is undoable.
+  const restoreRevision = (revision: EditorialRevisionDto) => {
+    if (!isEditable) return;
+    if (
+      dirty &&
+      !window.confirm(
+        rtl
+          ? "ستُستبدل التغييرات غير المحفوظة بهذه النسخة. المتابعة؟"
+          : "Les modifications non enregistrées seront remplacées par cette version. Continuer ?",
+      )
+    )
+      return;
+    const fields = revisionToEditorFields(revision);
+    setTitle(fields.title);
+    setSubtitle(fields.subtitle);
+    setSummary(fields.summary);
+    setBodyMarkdown(fields.bodyMarkdown);
+    setDirty(true);
+    setMessage(
+      rtl
+        ? `تم تحميل النسخة #${revision.revisionNumber} (العنوان والملخص والمحتوى). راجعها ثم احفظ.`
+        : `Version n°${revision.revisionNumber} chargée (titre, résumé, contenu). Vérifiez-la puis enregistrez.`,
+    );
+  };
   // The prose fields follow the ARTICLE's language, not the console's, so an
   // Arabic article is typed RTL even while the UI is in French.
   const articleDir = article?.language === "ar" ? "rtl" : "ltr";
@@ -515,7 +644,7 @@ function AdminNewsEditRoute() {
             data-testid="admin-news-back-to-list"
           >
             {/* The arrow is flipped by the ambient direction, never by hand. */}
-            <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+            <ArrowLeft className="h-4 w-4" aria-hidden />
             {rtl ? "كل المقالات" : "Tous les articles"}
           </UiLinkButton>
 
@@ -558,6 +687,51 @@ function AdminNewsEditRoute() {
                 </span>
               )}
             </div>
+            {(() => {
+              const otherLanguage = article.language === "fr" ? "ar" : "fr";
+              const existing = article.translations?.find((t) => t.language === otherLanguage);
+              if (existing) {
+                return (
+                  <UiLinkButton
+                    to="/admin/news/$articleEditionId"
+                    params={{ articleEditionId: existing.id }}
+                    variant="ghost"
+                    size="sm"
+                    className="-ms-3 mt-1"
+                    data-testid="admin-news-open-translation"
+                  >
+                    {otherLanguage === "ar"
+                      ? rtl
+                        ? "فتح النسخة العربية"
+                        : "Ouvrir l’édition arabe"
+                      : rtl
+                        ? "فتح النسخة الفرنسية"
+                        : "Ouvrir l’édition française"}
+                    {" · "}
+                    {STATUS_LABELS[existing.status][lang]}
+                  </UiLinkButton>
+                );
+              }
+              if (imported) return null;
+              return (
+                <UiLinkButton
+                  to="/admin/news/new"
+                  search={{ storyId: article.storyId, language: otherLanguage }}
+                  variant="ghost"
+                  size="sm"
+                  className="-ms-3 mt-1"
+                  data-testid="admin-news-create-translation"
+                >
+                  {otherLanguage === "ar"
+                    ? rtl
+                      ? "إنشاء النسخة العربية"
+                      : "Créer l’édition arabe"
+                    : rtl
+                      ? "إنشاء النسخة الفرنسية"
+                      : "Créer l’édition française"}
+                </UiLinkButton>
+              );
+            })()}
             {/* A slug is LTR data whatever the console's direction. */}
             <span className="mt-2 block">
               <AdminDatum className={cn(ui.text.meta, ui.tone.faint)}>{article.slug}</AdminDatum>
@@ -605,6 +779,16 @@ function AdminNewsEditRoute() {
           </div>
 
           {message && <AdminNotice tone="alert">{message}</AdminNotice>}
+
+          {imported && (
+            <AdminNotice tone="alert">
+              <span data-testid="admin-news-imported-banner">
+                {rtl
+                  ? "محتوى مستورد من مصدر خارجي (أرشيف). لا يمكن نشره أو تعديله. لإعادة استخدامه يلزم تحويل صريح يقوم به مسؤول التحرير، ثم مراجعة عادية."
+                  : "Contenu importé d’une source externe (archive). Il ne peut être ni publié ni modifié. Pour le réutiliser, un administrateur éditorial doit d’abord le convertir explicitement, puis il suit la relecture normale."}
+              </span>
+            </AdminNotice>
+          )}
 
           {!isEditable && (
             <p
@@ -663,8 +847,8 @@ function AdminNewsEditRoute() {
             heading={rtl ? "المحتوى" : "Contenu"}
             hint={
               rtl
-                ? "‎## للعناوين الفرعية، ‎**نص** للتشديد، وسطر فارغ بين الفقرات."
-                : "## pour un intertitre, **texte** pour l’emphase, une ligne vide entre les paragraphes."
+                ? "‎## للعناوين الفرعية، ‎**نص** للتشديد، ‎- لقائمة، ‎> لاقتباس، ‎[نص](https://…) لرابط، وسطر فارغ بين الفقرات."
+                : "## pour un intertitre, **texte** pour l’emphase, - pour une liste, > pour une citation, [texte](https://…) pour un lien, une ligne vide entre les paragraphes."
             }
             testId="admin-news-section-body"
           >
@@ -729,8 +913,57 @@ function AdminNewsEditRoute() {
 
           <EditorSection
             heading={rtl ? "الصورة الرئيسية" : "Image à la une"}
+            hint={
+              rtl
+                ? "اكتب النص البديل (إلزامي) والتعليق والمصدر، ثم اختر الملف. لتغييرها، ارفع صورة جديدة."
+                : "Renseignez le texte alternatif (obligatoire), la légende et le crédit, puis choisissez le fichier. Pour les modifier, téléversez une nouvelle image."
+            }
             testId="admin-news-section-hero"
           >
+            {heroPreview && (
+              <figure className="grid gap-1" data-testid="admin-news-hero-preview">
+                {/* Fixed ratio so the form does not jump while the file loads. */}
+                <img
+                  src={heroPreview.url}
+                  alt={heroPreview.alt}
+                  className={cn("aspect-[16/10] w-full max-w-sm object-cover", ui.radius.control)}
+                />
+                {(heroPreview.caption || heroPreview.credit) && (
+                  <figcaption dir={articleDir} className={cn(ui.text.meta, ui.tone.muted)}>
+                    {heroPreview.caption}
+                    {heroPreview.caption && heroPreview.credit ? " — " : ""}
+                    {heroPreview.credit}
+                  </figcaption>
+                )}
+              </figure>
+            )}
+            <div className="grid gap-4 sm:grid-cols-3">
+              <UiInput
+                label={rtl ? "النص البديل (إلزامي)" : "Texte alternatif (obligatoire)"}
+                value={heroAlt}
+                onChange={(event) => setHeroAlt(event.target.value)}
+                disabled={!isEditable}
+                maxLength={300}
+                dir={articleDir}
+                data-testid="admin-news-hero-alt"
+              />
+              <UiInput
+                label={rtl ? "التعليق" : "Légende"}
+                value={heroCaption}
+                onChange={(event) => setHeroCaption(event.target.value)}
+                disabled={!isEditable}
+                dir={articleDir}
+                data-testid="admin-news-hero-caption"
+              />
+              <UiInput
+                label={rtl ? "المصدر / الحقوق" : "Crédit"}
+                value={heroCredit}
+                onChange={(event) => setHeroCredit(event.target.value)}
+                disabled={!isEditable}
+                dir={articleDir}
+                data-testid="admin-news-hero-credit"
+              />
+            </div>
             {/* The `file:` pseudo-element is the button the browser draws
                 inside the control, so it is styled here rather than through a
                 primitive — the kit has no file field. Its colours are tokens
@@ -746,9 +979,15 @@ function AdminNewsEditRoute() {
               ref={fileInputRef}
               type="file"
               accept={ACCEPTED_IMAGE_TYPES}
-              disabled={!isEditable}
+              disabled={!isEditable || busy || !heroAlt.trim()}
+              aria-label={
+                rtl ? "اختيار ملف الصورة الرئيسية" : "Choisir le fichier de l’image à la une"
+              }
+              data-testid="admin-news-hero-input"
               onChange={(event) => {
                 const file = event.target.files?.[0];
+                // Reset so re-picking the same file after a failure fires again.
+                event.target.value = "";
                 if (file) void uploadHero(file);
               }}
               className={cn(
@@ -825,7 +1064,29 @@ function AdminNewsEditRoute() {
             }
             testId="admin-news-section-status"
           >
-            {NEXT_STATUSES[article.status].includes("scheduled") && (
+            {article.status === "scheduled" && article.scheduledAt && (
+              <p
+                className={cn(ADMIN_PANEL_CLASS, "px-3 py-2", ui.text.body, ui.tone.default)}
+                data-testid="admin-news-scheduled-for"
+              >
+                {rtl ? "سيُنشر تلقائياً في: " : "Publication automatique prévue le "}
+                <AdminDatum mono={false}>
+                  {
+                    describeScheduledAt(
+                      article.scheduledAt,
+                      article.language === "ar" ? "ar" : lang,
+                    ).local
+                  }
+                </AdminDatum>
+                <span className={cn("block", ui.text.meta, ui.tone.muted)}>
+                  <AdminDatum>{describeScheduledAt(article.scheduledAt, lang).utc}</AdminDatum>
+                  {rtl
+                    ? " · يبقى المقال خاصاً حتى هذا الموعد، ويُنشر في غضون دقيقة بعده."
+                    : " · L’article reste privé jusque-là et part dans la minute qui suit."}
+                </span>
+              </p>
+            )}
+            {nextStatuses.includes("scheduled") && (
               <UiInput
                 label={rtl ? "تاريخ ووقت النشر المجدول" : "Date et heure de publication programmée"}
                 className="max-w-xs"
@@ -836,7 +1097,7 @@ function AdminNewsEditRoute() {
               />
             )}
             <div className="flex flex-wrap gap-2">
-              {NEXT_STATUSES[article.status].map((next) => (
+              {nextStatuses.map((next) => (
                 // `destructive` is the kit's filled negative, and it replaces
                 // `adminDangerButtonClass` — a rose fill under a literal
                 // `text-white`. That pairing measured 2.31:1 in the dark
@@ -851,7 +1112,11 @@ function AdminNewsEditRoute() {
                   onClick={() => void transition(next)}
                   data-testid={`admin-news-transition-${next}`}
                 >
-                  {STATUS_LABELS[next][lang]}
+                  {next === "scheduled" && article.status === "scheduled"
+                    ? rtl
+                      ? "إعادة الجدولة"
+                      : "Reprogrammer"
+                    : STATUS_LABELS[next][lang]}
                 </UiButton>
               ))}
             </div>
@@ -914,6 +1179,31 @@ function AdminNewsEditRoute() {
                   <AdminDatum mono={false}>
                     {new Date(revision.createdAt).toLocaleString(lang)}
                   </AdminDatum>
+                  {(() => {
+                    const differs = revisionDifferences(revision, currentProse);
+                    return (
+                      <>
+                        <span className="min-w-0 flex-1" data-testid="admin-news-revision-diff">
+                          {differs.length === 0
+                            ? rtl
+                              ? "مطابقة للنص الحالي"
+                              : "Identique au texte actuel"
+                            : `${rtl ? "يختلف" : "Diffère"} : ${differs
+                                .map((field) => PROSE_FIELD_LABELS[field][lang])
+                                .join(", ")}`}
+                        </span>
+                        <UiButton
+                          variant="outline"
+                          size="sm"
+                          disabled={busy || !isEditable || differs.length === 0}
+                          onClick={() => restoreRevision(revision)}
+                          data-testid={`admin-news-revision-restore-${revision.revisionNumber}`}
+                        >
+                          {rtl ? "تحميل في المحرر" : "Charger dans l’éditeur"}
+                        </UiButton>
+                      </>
+                    );
+                  })()}
                 </li>
               ))}
               {revisions.length === 0 && (

@@ -131,6 +131,38 @@ function mayUploadEditorialMedia(value: unknown): boolean {
   );
 }
 
+function startsWith(bytes: Uint8Array, signature: readonly number[], offset = 0): boolean {
+  if (bytes.length < offset + signature.length) return false;
+  return signature.every((byte, index) => bytes[offset + index] === byte);
+}
+
+const ASCII = (text: string) => [...text].map((char) => char.charCodeAt(0));
+
+/**
+ * The image format the bytes actually are, from their file signature.
+ *
+ * The declared type is whatever the browser (or a hand-built request) put on
+ * the multipart part, and the bucket's `allowed_mime_types` checks that same
+ * declared value -- so without this, any bytes at all (an HTML page, an SVG
+ * with script in it) could be stored in the public bucket as `image/png`.
+ * Only the four formats the bucket accepts are recognised; anything else is
+ * `null`.
+ */
+export function sniffImageMimeType(bytes: Uint8Array): AllowedMediaMimeType | null {
+  if (startsWith(bytes, [0xff, 0xd8, 0xff])) return "image/jpeg";
+  if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return "image/png";
+  if (startsWith(bytes, ASCII("RIFF")) && startsWith(bytes, ASCII("WEBP"), 8)) return "image/webp";
+  // ISO-BMFF: a box size, then `ftyp`, then the major brand. `avif` is a still
+  // image, `avis` an image sequence.
+  if (
+    startsWith(bytes, ASCII("ftyp"), 4) &&
+    (startsWith(bytes, ASCII("avif"), 8) || startsWith(bytes, ASCII("avis"), 8))
+  ) {
+    return "image/avif";
+  }
+  return null;
+}
+
 function optionalField(form: FormData, name: string): string | undefined {
   const value = form.get(name);
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
@@ -204,6 +236,9 @@ export async function handleNewsMediaUploadRequest(
   const id = (deps.randomId ?? (() => crypto.randomUUID()))();
   const storagePath = `news/${id}.${EXTENSION_BY_MIME[declaredMimeType]}`;
   const bytes = await file.arrayBuffer();
+  if (sniffImageMimeType(new Uint8Array(bytes)) !== declaredMimeType) {
+    return jsonResponse({ error: "content_type_mismatch" }, 415);
+  }
 
   const uploaded = await deps.serviceClient
     .from("news-media")

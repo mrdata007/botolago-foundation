@@ -548,6 +548,10 @@ export type Database = {
         Args: { p_archive?: boolean; p_notification_id: string }
         Returns: boolean
       }
+      editorial_convert_imported_story: {
+        Args: { p_reason: string; p_story_id: string }
+        Returns: Json
+      }
       editorial_create_draft: {
         Args: {
           p_author_id?: string
@@ -581,6 +585,7 @@ export type Database = {
           p_language?: string
           p_limit?: number
           p_query?: string
+          p_scope?: string
           p_status?: Database["app"]["Enums"]["publication_status"]
         }
         Returns: Json
@@ -601,6 +606,7 @@ export type Database = {
         }
         Returns: Json
       }
+      editorial_schedule_health: { Args: never; Returns: Json }
       editorial_set_placement: {
         Args: {
           p_article_edition_id: string
@@ -1478,6 +1484,7 @@ export type Database = {
         }
         Returns: Json
       }
+      news_sitemap_entries: { Args: { p_limit?: number }; Returns: Json }
       news_taxonomies: {
         Args: { p_language: string; p_type?: string }
         Returns: Json
@@ -5994,6 +6001,9 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           id: string
+          import_conversion_reason: string | null
+          import_converted_at: string | null
+          import_converted_by: string | null
           origin: Database["app"]["Enums"]["content_origin"]
           original_language: Database["app"]["Enums"]["language_code"]
           publisher_id: string | null
@@ -6007,6 +6017,9 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           id?: string
+          import_conversion_reason?: string | null
+          import_converted_at?: string | null
+          import_converted_by?: string | null
           origin?: Database["app"]["Enums"]["content_origin"]
           original_language: Database["app"]["Enums"]["language_code"]
           publisher_id?: string | null
@@ -6020,6 +6033,9 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           id?: string
+          import_conversion_reason?: string | null
+          import_converted_at?: string | null
+          import_converted_by?: string | null
           origin?: Database["app"]["Enums"]["content_origin"]
           original_language?: Database["app"]["Enums"]["language_code"]
           publisher_id?: string | null

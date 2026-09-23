@@ -13,6 +13,10 @@ import { cn } from "@/lib/utils";
  *   - `subtitle` optional muted context line
  *   - `action`   trailing action (e.g. "Tout voir")
  *
+ * The eyebrow is icon + label only. It also carried a 2px accent bar, which
+ * on top of the icon, the uppercase kicker and the two-tone title was one
+ * signal too many, repeated on every section of Home.
+ *
  * Layout is a two-column grid so long titles truncate cleanly at 320px
  * while trailing actions stay pinned to the inline-end. Fully RTL-safe.
  */
@@ -36,11 +40,6 @@ export function SectionHeader({
       <div className="min-w-0">
         {(eyebrow || Icon) && (
           <div className="mb-1.5 inline-flex items-center gap-1.5">
-            <span
-              aria-hidden
-              className="h-3 w-0.5 shrink-0 rounded-full"
-              style={{ background: "var(--brand-accent)" }}
-            />
             {Icon && (
               <Icon className="h-3.5 w-3.5 shrink-0 text-[color:var(--brand-accent)]" aria-hidden />
             )}
@@ -66,7 +65,8 @@ export function SectionHeader({
           <p className={cn("mt-0.5 truncate", ui.text.meta, ui.tone.muted)}>{subtitle}</p>
         )}
       </div>
-      {action && <div className="shrink-0 self-center">{action}</div>}
+      {/* On the title's line, not floating between eyebrow and title. */}
+      {action && <div className="shrink-0 self-end">{action}</div>}
     </header>
   );
 }

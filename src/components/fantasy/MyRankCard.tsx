@@ -26,8 +26,12 @@ import { selectMyRankState, type TeamPresence } from "./my-rank-state";
  * being dropped.
  */
 
-/** A stat tile inside the card: the sunken plate plus a tabular figure. */
-const TILE = "px-2 py-2";
+/**
+ * The three figures sit open on the card, split by hairlines, rather than
+ * in three grey plates inside it: the numbers are the content, the plates
+ * were only chrome, and the card already draws the surface.
+ */
+const FIGURE = "px-1 py-1";
 
 export function MyRankCard({
   standing,
@@ -122,25 +126,28 @@ export function MyRankCard({
           </div>
           <RankChangeIndicator rank={ranked.rank} previousRank={ranked.previousRank} />
         </div>
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-3 grid grid-cols-3 divide-x divide-[color:var(--ui-rule)]">
           <UiStatBlock
             align="center"
             tone="ink"
             label={t("fantasy.overall_rank")}
             value={nf.format(ranked.rank)}
-            className={cn(TILE, ui.radius.control, ui.surface.sunken)}
+            size="lg"
+            className={FIGURE}
           />
           <UiStatBlock
             align="center"
             label={t("fantasy.total_points")}
             value={nf.format(ranked.totalScore)}
-            className={cn(TILE, ui.radius.control, ui.surface.sunken)}
+            size="lg"
+            className={FIGURE}
           />
           <UiStatBlock
             align="center"
             label={t("fantasy.gw_points")}
             value={nf.format(ranked.gameweekScore)}
-            className={cn(TILE, ui.radius.control, ui.surface.sunken)}
+            size="lg"
+            className={FIGURE}
           />
         </div>
         {onJump ? (
