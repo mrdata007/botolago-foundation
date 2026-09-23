@@ -226,7 +226,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800;900&family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap",
       },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      // `?v=2` makes browsers fetch the new transparent "GO" favicon instead of
+      // reusing the old one they have cached. Bump it whenever the file changes.
+      { rel: "icon", type: "image/png", href: "/favicon.png?v=2" },
       { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
     ],
     // BG-0081. The dark palette is keyed on a `.dark` class on <html>, and the
