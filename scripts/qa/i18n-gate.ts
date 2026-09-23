@@ -328,7 +328,12 @@ export const BASELINES: Baselines = {
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
   // with the components rather than fixed.
-  W4: 71,
+  //
+  // Accueil art-direction pass: Home's two identical "create a team" links
+  // each carried `t(canCreate ? "fantasy.create.title" : "fantasy.title")`.
+  // They are one `CreateTeamLink` now, so the same dynamic call appears once.
+  // 71 -> 70.
+  W4: 70,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
