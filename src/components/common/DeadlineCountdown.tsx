@@ -12,13 +12,38 @@ function diff(target: Date) {
   return { d, h, m };
 }
 
-export function DeadlineCountdown({ iso }: { iso: string }) {
+/**
+ * `tone="onGradient"` is the Home gameweek band's figure: the same countdown
+ * set as a stat in the band's own foreground, without the sunken pill, which
+ * would read as a grey patch on the gradient.
+ */
+export function DeadlineCountdown({
+  iso,
+  tone = "pill",
+}: {
+  iso: string;
+  tone?: "pill" | "onGradient";
+}) {
   const { t } = useI18n();
   const [now, setNow] = useState(() => diff(new Date(iso)));
   useEffect(() => {
     const id = setInterval(() => setNow(diff(new Date(iso))), 30_000);
     return () => clearInterval(id);
   }, [iso]);
+
+  if (tone === "onGradient") {
+    return (
+      <span className={cn("inline-flex items-center gap-1.5", ui.stat.md, ui.tone.onGradHeader)}>
+        <Timer className="h-4 w-4 shrink-0" aria-hidden />
+        <span className="tabular-nums">
+          {now.d}
+          {t("home.days")} {now.h}
+          {t("home.hours")} {now.m}
+          {t("home.minutes")}
+        </span>
+      </span>
+    );
+  }
 
   return (
     <div

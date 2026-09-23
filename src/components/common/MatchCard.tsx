@@ -28,6 +28,15 @@ import { isKickoffTimeUnconfirmed, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
  * pixel type and the hardcoded status colours. The public API is unchanged:
  * `match / home / away / glass? / showVenue? / variant? / extras?`.
  *
+ * `variant="list"` is Home's fixture list (Accueil art-direction pass): a
+ * flat row that sits inside a caller-provided card, one hairline apart from
+ * its neighbours. The caller groups rows under a day heading and the page
+ * names the gameweek, so the row drops the day chip, the "J. n" tag and the
+ * "Coup d'envoi" caption and gives that room to the clubs: larger crests and
+ * names that wrap onto a second line instead of truncating. A state that
+ * changes the reading (live, full time, postponed) still gets its chip,
+ * under the score. /matches keeps the card.
+ *
  * Behaviour:
  *   - The whole card is a router `<Link>` to `/matches/$matchId`.
  *   - RTL-safe: logical properties only; the physical layout stays consistent
@@ -76,7 +85,7 @@ export function MatchCard({
   away: Club;
   glass?: boolean;
   showVenue?: boolean;
-  variant?: "row" | "compact";
+  variant?: "row" | "compact" | "list";
   extras?: MatchCardExtras;
 }) {
   const { t, tr, lang } = useI18n();
@@ -89,6 +98,7 @@ export function MatchCard({
   const isScheduled = status === "scheduled" || status === "delayed";
   const isPostponed = status === "postponed" || status === "cancelled";
   const unconfirmedTime = isKickoffTimeUnconfirmed(match);
+  const isList = variant === "list";
 
   const timeFmt = new Intl.DateTimeFormat(locale, {
     timeZone: MATCH_TIME_ZONE,
@@ -245,9 +255,11 @@ export function MatchCard({
         >
           {timeFmt}
         </div>
-        <div className={cn(ui.text.label, ui.tone.muted)} aria-hidden>
-          {t("matches.kickoff")}
-        </div>
+        {isList ? null : (
+          <div className={cn(ui.text.label, ui.tone.muted)} aria-hidden>
+            {t("matches.kickoff")}
+          </div>
+        )}
       </div>
     );
   })();
@@ -282,7 +294,12 @@ export function MatchCard({
         // nothing except the grid/flex track this card is allowed to demand.
         "group block min-w-0",
         ui.focus,
-        surfaceClass,
+        isList
+          ? cn(
+              "transition-colors duration-[var(--duration-quick)]",
+              "hover:bg-[color:var(--ui-surface-sunken)]",
+            )
+          : surfaceClass,
         // Live cards get a very soft ambient tint. It is a flat wash rather
         // than a directional gradient: CSS gradients take physical angles
         // only, and a physical angle would sit on the wrong edge in Arabic.
@@ -303,21 +320,32 @@ export function MatchCard({
           variant === "compact" ? "px-3 py-2.5" : "px-3.5 py-3",
         )}
       >
-        {/* Top row: status chip + gameweek */}
-        <div className="flex items-center justify-between gap-2">
-          {statusChip}
-          <span className={cn(ui.text.label, ui.text.tabular, ui.tone.muted)}>
-            {t("matches.gameweek")} {match.gameweek}
-          </span>
-        </div>
+        {/* Top row: status chip + gameweek. The list row carries neither:
+            its day and gameweek are named once, above it. */}
+        {isList ? null : (
+          <div className="flex items-center justify-between gap-2">
+            {statusChip}
+            <span className={cn(ui.text.label, ui.text.tabular, ui.tone.muted)}>
+              {t("matches.gameweek")} {match.gameweek}
+            </span>
+          </div>
+        )}
 
         {/* Main row: home | score/time | away */}
         <div className="flex items-center gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <ClubCrest club={home} size="sm" />
+          {/* In the list, from `sm` the row turns into a scoreboard — name,
+              crest, time, crest, name — so the clubs meet at the score
+              instead of sitting at opposite edges of a wide card. */}
+          <div
+            className={cn(
+              "flex min-w-0 flex-1 items-center gap-2",
+              isList && "sm:flex-row-reverse sm:justify-start",
+            )}
+          >
+            <ClubCrest club={home} size={isList ? "md" : "sm"} />
             <span
               className={cn(
-                "truncate",
+                isList ? "line-clamp-2 break-words sm:text-end" : "truncate",
                 ui.tone.default,
                 variant === "compact" ? ui.text.meta : ui.text.body,
                 "[font-weight:var(--ui-weight-heavy)]",
@@ -327,12 +355,22 @@ export function MatchCard({
             </span>
           </div>
 
-          <div className="shrink-0 px-1.5">{centerContent}</div>
+          <div className="flex shrink-0 flex-col items-center gap-1 px-1.5">
+            {centerContent}
+            {/* A scheduled row needs nothing under its time; any other state
+                changes how the row is read, so it keeps its chip here. */}
+            {isList && status !== "scheduled" ? statusChip : null}
+          </div>
 
-          <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+          <div
+            className={cn(
+              "flex min-w-0 flex-1 items-center justify-end gap-2",
+              isList && "sm:flex-row-reverse",
+            )}
+          >
             <span
               className={cn(
-                "truncate text-end",
+                isList ? "line-clamp-2 break-words text-end sm:text-start" : "truncate text-end",
                 ui.tone.default,
                 variant === "compact" ? ui.text.meta : ui.text.body,
                 "[font-weight:var(--ui-weight-heavy)]",
@@ -340,7 +378,7 @@ export function MatchCard({
             >
               {away_s}
             </span>
-            <ClubCrest club={away} size="sm" />
+            <ClubCrest club={away} size={isList ? "md" : "sm"} />
           </div>
         </div>
 
