@@ -1,4 +1,5 @@
 import { ui, UiButton } from "@/components/ui-kit";
+import { BrandedText } from "@/components/brand/BrandedText";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { Logo } from "@/components/brand/Logo";
@@ -82,7 +83,9 @@ export function WelcomeScreen({ onSignIn, onGuest }: Props) {
             )}
           />
 
-          <h1 className={cn("mt-8", ui.text.hero, "ltr:tracking-tight")}>{t("welcome.title")}</h1>
+          <h1 className={cn("mt-8", ui.text.hero, "ltr:tracking-tight")}>
+            <BrandedText text={t("welcome.title")} tone="light" />
+          </h1>
           <p className={cn("mx-auto mt-4 max-w-[36ch]", ui.text.prose, ui.tone.onMeshMuted)}>
             {t("welcome.description")}
           </p>

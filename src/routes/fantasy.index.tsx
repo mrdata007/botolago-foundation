@@ -1,4 +1,5 @@
 import rankingCardPhoto from "@/assets/photos/ranking-card.webp";
+import { BrandedText } from "@/components/brand/BrandedText";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -339,7 +340,9 @@ function FantasyHub() {
 
       {/* Follow BotolaGO */}
       <section className={cn("pt-6", ui.space.gutter)}>
-        <h2 className={cn(ui.text.section, ui.tone.default)}>{t("fpl.follow")}</h2>
+        <h2 className={cn(ui.text.section, ui.tone.default)}>
+          <BrandedText text={t("fpl.follow")} />
+        </h2>
         {/* Three tiles with News, two without it — the row stays balanced
             instead of leaving a gap where the News tile was. */}
         <div className={cn("mt-3 grid gap-2", NEWS_ENABLED ? "grid-cols-3" : "grid-cols-2")}>
@@ -370,7 +373,9 @@ function FantasyHub() {
         // edge under `dir="rtl"`.
         style={{ backgroundImage: "var(--ui-grad-header)" }}
       >
-        <h2 className={ui.text.section}>{t("fpl.more_about")}</h2>
+        <h2 className={ui.text.section}>
+          <BrandedText text={t("fpl.more_about")} tone="light" />
+        </h2>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <MoreAboutLink to="/fantasy/rules">{t("fpl.rules")}</MoreAboutLink>
           <MoreAboutLink to="/fantasy/help">{t("fpl.help_rules")}</MoreAboutLink>

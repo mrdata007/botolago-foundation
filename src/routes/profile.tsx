@@ -1,4 +1,5 @@
 import profileCover from "@/assets/photos/profile-cover.webp";
+import { BrandedText } from "@/components/brand/BrandedText";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -845,7 +846,7 @@ function AnonymousProfile() {
       <UiCard padding="lg" className="mt-4 text-center">
         <Logo variant="icon" className="!h-14 !w-14" />
         <h2 className={cn("mt-3", ui.text.section, ui.tone.default)}>
-          <Trans text={t("profile.anon_title")} />
+          <BrandedText text={t("profile.anon_title")} />
         </h2>
         <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("profile.anon_body")}</p>
         <div className="mt-4 grid gap-2">

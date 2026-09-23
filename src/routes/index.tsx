@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { BrandedText } from "@/components/brand/BrandedText";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -482,7 +483,7 @@ function HomeContent() {
       {/* 6. Discovery links                                        */}
       {/* -------------------------------------------------------- */}
       <Section index={5} className="pb-2">
-        <SectionHeader title={plain(t("home.explore"))} />
+        <SectionHeader title={<BrandedText text={t("home.explore")} />} />
         <div className={cn("grid gap-2", NEWS_ENABLED ? "grid-cols-4" : "grid-cols-3")}>
           <DiscoveryLink to="/matches" icon={CircleDot} label={t("nav.matches")} />
           <DiscoveryLink to="/fantasy" icon={Trophy} label={t("nav.fantasy")} />
