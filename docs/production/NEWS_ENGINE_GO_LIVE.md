@@ -125,39 +125,45 @@ in `.env.production`. `NEWS_ENGINE_MODEL` is optional — unset means
   ship an empty `/news` to real users. Admin is **not** gated on `NEWS_ENABLED`
   — no `admin.*` route references it — so editors can approve before the flag
   moves. Verified by `git grep NEWS_ENABLED -- src`.
-- **But do not approve between 6 and 7 without checking this first.** The bullet
+- **Between 6 and 7, check before letting anything out of review.** The bullet
   above holds while an article sits in `in_review`. It stops holding the moment
-  an editor approves it, and that distinction is the one thing in this ordering
+  an editor releases it, and that distinction is the one thing in this ordering
   that can put broken UI in front of a reader. `NEWS_ENABLED` gates News _entry
   points_, not the public feed itself, so a **published** article is readable by
-  any surface that queries the feed — gated or not. At the time of writing one
-  such surface is not gated: `src/routes/matches.$matchId.tsx` queries
-  `["news", "feed", lang]` unconditionally and renders up to three related
-  `ArticleCard`s, each linking to `/news/$articleId`, whose `beforeLoad`
-  redirects to Home while the flag is false. Approving one article would
-  therefore place a card that goes nowhere on the match page of every fixture
-  involving either club. It is invisible today only because the stand-down left
-  the feed empty — approval is exactly what makes it non-empty.
-  (Reported by the automated review on PR #154, 2026-09-22. It is that PR's file
-  and that PR's call; it is recorded here because it changes this order, not
-  because this branch touches it.)
+  anything that queries the feed, gated or not. The feed is empty today only
+  because the stand-down emptied it; the first release is what ends that.
 
-  Before flipping anything, confirm the current state:
+  **Two actions release an article, not one.** Publishing does it at once.
+  Scheduling does it later, on a timer: `app_private.news_publish_due_editions()`
+  runs every minute under the pg_cron job `news-publish-due-editions` and turns
+  any `scheduled` edition whose `scheduled_at` has passed into `published`,
+  with no further human act. So an editor who schedules an article on Friday and
+  stops thinking about it can make the feed non-empty on Sunday. The engine
+  itself cannot reach either state — it only ever produces `in_review`, and the
+  sweep reads `scheduled` — but a person clicking **Programmé** is enough.
+
+  This was first found as one ungated reader, `src/routes/matches.$matchId.tsx`,
+  which queried the feed on every fixture and rendered related `ArticleCard`s
+  linking to `/news/$articleId` — a route that redirects Home while the flag is
+  false. That file is fixed, and `src/lib/feature-flags.test.ts` now asserts the
+  property rather than a hand-kept list: every file calling `newsService` must
+  reference the flag, with comments stripped so prose cannot satisfy it. Run the
+  suite to confirm that still holds, rather than re-reading the file:
 
   ```sh
-  git grep -n "newsService\|getArticles" -- src/routes src/components
+  bun test src/lib/feature-flags.test.ts
   ```
 
-  Every hit must either sit behind `NEWS_ENABLED` or be an `admin.*` surface. If
-  the match route still appears unguarded, take one of these two paths — either
-  is correct, they differ only in who does the work:
-  - **Approve nothing until 7 is live.** Run step 6, leave every article in
-    `in_review`, flip `NEWS_ENABLED`, deploy, _then_ approve. The cost is that
-    `/news` is empty for the minutes between the deploy and the first approval.
-  - **Gate the match block first.** Wrap that query and its section in
+  With that test green, the surfaces are gated and the ordering is safe. If it
+  ever fails, or a new reader appears outside `src/` where the test does not
+  look, take either path — they differ only in who does the work:
+  - **Release nothing until 7 is live.** Run step 6, leave every article in
+    `in_review` — neither publish nor schedule — flip `NEWS_ENABLED`, deploy,
+    _then_ release. The cost is that `/news` is empty for the few minutes
+    between the deploy and the first approval.
+  - **Gate the new reader first.** Put the query and its section behind
     `NEWS_ENABLED`, add the file to the "Gated surfaces" list in
-    `src/lib/feature-flags.ts` and to the table in `src/lib/feature-flags.test.ts`
-    so a future edit cannot silently ungate it, then run 6 and 7 as written.
+    `src/lib/feature-flags.ts`, then run 6 and 7 as written.
 
 - **7 is a deploy, not a toggle.** `NEWS_ENABLED` is a hardcoded boolean literal
   so the bundler can tree-shake the disabled branches. Changing it means a
