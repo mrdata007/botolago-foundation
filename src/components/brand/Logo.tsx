@@ -1,4 +1,5 @@
 import colorMark from "@/assets/brand/botolago-mark-color.svg";
+import lightMark from "@/assets/brand/botolago-mark-light.svg";
 import colorWordmark from "@/assets/brand/botolago-wordmark-color.svg";
 import lightWordmark from "@/assets/brand/botolago-wordmark-light.svg";
 
@@ -7,10 +8,8 @@ import { cn } from "@/lib/utils";
 interface LogoProps {
   variant?: "full" | "icon";
   /**
-   * `color` is the blue wordmark for light surfaces; `light` is the all-white
-   * one for the dark mesh and ink bands. The icon ignores it: it is a white
-   * app-icon tile in every context. (`public/favicon.png` is the same "GO"
-   * with no tile: a transparent background, so it sits on the browser tab.)
+   * `color` is the blue mark for light surfaces; `light` is the all-white
+   * one for the dark mesh and ink bands. Applies to the wordmark and the icon.
    */
   tone?: "color" | "light";
   /** Wordmark height. `md` is the top bar; `sm` endorses a sub-brand; `lg` a hero. */
@@ -28,9 +27,10 @@ const WORDMARK_HEIGHT = { sm: "h-5", md: "h-8", lg: "h-10" } as const;
  * The icon used to be `public/favicon.png` — a 64px raster with a grey
  * backdrop baked in — scaled up to 36–64px, where it read as a blurry pasted
  * thumbnail. It is now the "GO" of the official wordmark (same vector paths,
- * cropped viewBox: `botolago-mark-color.svg`) on a white tile, so it is sharp
- * at any size and identical to the wordmark it came from. The tile is white
- * on purpose, in every theme: the ball carries black ink.
+ * cropped viewBox: `botolago-mark-color.svg`), so it is sharp at any size and
+ * identical to the wordmark it came from. It has no tile behind it, like
+ * `public/favicon.png`: the colour mark gives the ball its own white fill, and
+ * dark surfaces take the all-white mark (`tone="light"`) instead.
  *
  * Icon sizes stay literal (`h-9 w-9`) and call sites override them with `!`.
  * `cn()` is tailwind-merge, which treats an important class as its own group,
@@ -43,20 +43,16 @@ export function Logo({ variant = "full", tone = "color", size = "md", className 
       <span
         role="img"
         aria-label="BotolaGO"
-        className={cn(
-          "inline-flex h-9 w-9 shrink-0 items-center justify-center bg-white",
-          "ring-1 ring-[color:var(--ui-rule)] rounded-[var(--ui-radius-control)]",
-          className,
-        )}
+        className={cn("inline-flex h-9 w-9 shrink-0 items-center justify-center", className)}
       >
         <img
-          src={colorMark}
+          src={tone === "light" ? lightMark : colorMark}
           alt=""
           width={422}
           height={270}
           decoding="async"
           draggable={false}
-          className="h-[72%] w-[72%] select-none object-contain"
+          className="h-full w-full select-none object-contain"
         />
       </span>
     );

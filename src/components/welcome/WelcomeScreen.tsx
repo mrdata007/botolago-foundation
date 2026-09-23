@@ -77,8 +77,9 @@ export function WelcomeScreen({ onSignIn, onGuest }: Props) {
         <div className="mt-10 flex flex-col items-center text-center motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-700">
           <Logo
             variant="icon"
+            tone="light"
             className={cn(
-              "!h-20 !w-20 !rounded-[var(--ui-radius-sheet)] shadow-[var(--ui-shadow-raised)]",
+              "!h-20 !w-20",
               "motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-500",
             )}
           />
