@@ -107,9 +107,34 @@ export function PageBackground({ variant, photo }: Props) {
             alt=""
             decoding="async"
             fetchPriority="high"
-            className="absolute inset-0 h-full w-full object-cover md:rtl:-scale-x-100"
+            className={cn(
+              "absolute w-full object-cover md:inset-0 md:h-full md:rtl:-scale-x-100",
+              // The tunnel's only lit part, its mouth onto the pitch, sits low
+              // in the portrait cut, exactly where the phone form card covers
+              // the screen. On a phone the photo is therefore a band behind
+              // the heading, cropped to the mouth and faded into the navy.
+              photo === "auth"
+                ? "inset-x-0 top-0 h-[46svh] object-[50%_92%] [mask-image:linear-gradient(to_bottom,black_60%,transparent)] md:object-center md:[mask-image:none]"
+                : // Welcome: shifted down on a phone so the far stand's roof
+                  // edge lands below the subtitle instead of running through
+                  // it like a rule, and faded in at the top so the photo has
+                  // no hard edge of its own.
+                  "inset-x-0 top-[9svh] h-full [mask-image:linear-gradient(to_bottom,transparent,black_14%)] md:[mask-image:none]",
+            )}
           />
         </picture>
+        {photo === "auth" && (
+          // Phone only: a soft navy band behind the heading, so the tunnel's
+          // lit railing and pole lines sit under the copy as texture rather
+          // than as rules through it.
+          <div
+            className="absolute inset-x-0 top-0 h-[46svh] md:hidden"
+            style={{
+              backgroundImage:
+                "linear-gradient(to bottom, transparent 0%, color-mix(in oklab, var(--ui-ink-deep) 45%, transparent) 30%, color-mix(in oklab, var(--ui-ink-deep) 45%, transparent) 62%, transparent 100%)",
+            }}
+          />
+        )}
         {/* The mesh's own navy, laid back over the photograph so the white
             foreground keeps its contrast wherever the floodlights land.
             `to bottom`: a degree angle would sit on the wrong edge in RTL. */}
@@ -117,7 +142,11 @@ export function PageBackground({ variant, photo }: Props) {
           className="absolute inset-0"
           style={{
             backgroundImage:
-              "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 62%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 52%, transparent) 45%, color-mix(in oklab, var(--ui-ink-deep) 72%, transparent) 100%)",
+              photo === "welcome"
+                ? // A deeper stop at 38% mutes the far stand's roof edge,
+                  // which otherwise ran like a rule through the subtitle.
+                  "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 62%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 70%, transparent) 38%, color-mix(in oklab, var(--ui-ink-deep) 52%, transparent) 52%, color-mix(in oklab, var(--ui-ink-deep) 72%, transparent) 100%)"
+                : "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 62%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 52%, transparent) 45%, color-mix(in oklab, var(--ui-ink-deep) 72%, transparent) 100%)",
           }}
         />
       </div>

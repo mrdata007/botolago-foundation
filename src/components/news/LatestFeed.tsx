@@ -1,3 +1,4 @@
+import emptyNewsArt from "@/assets/illustrations/empty-news.webp";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { getNewsRepository } from "@/services/news";
@@ -64,7 +65,7 @@ export function LatestFeed({
   }
 
   if (items.length === 0) {
-    return <EmptyState>{t("news.empty_category")}</EmptyState>;
+    return <EmptyState illustration={emptyNewsArt}>{t("news.empty_category")}</EmptyState>;
   }
 
   return (

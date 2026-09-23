@@ -1,4 +1,5 @@
 import matchesHeaderPhoto from "@/assets/photos/matches-header.webp";
+import { PhotoPageHeader } from "@/components/common/PhotoPageHeader";
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute } from "@tanstack/react-router";
@@ -219,110 +220,89 @@ function MatchesPage() {
 
   return (
     <AppShell backgroundVariant="matches">
-      <header
-        className={cn(
-          "relative isolate mt-2 flex items-end gap-3 overflow-hidden px-4 pb-4 pt-8",
-          ui.radius.control,
-          ui.tone.onInkPlain,
-          "bg-[color:var(--ui-ink-deep)]",
-        )}
-      >
-        {/* Floodlit stands behind the title, the same night palette as Home's
-            gameweek band, under a navy scrim so the white title reads
-            wherever the lights land. Mirrored in Arabic. Decorative. */}
-        <img
-          src={matchesHeaderPhoto}
-          alt=""
-          aria-hidden
-          decoding="async"
-          className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_40%] rtl:-scale-x-100"
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10"
-          style={{
-            backgroundImage:
-              "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 35%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 70%, transparent) 100%)",
-          }}
-        />
-        <h1 className={cn("min-w-0", ui.text.hero)}>{t("matches.title")}</h1>
-
-        <div className="ms-auto w-[10.5rem] shrink-0">
-          {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
-          <div className={cn("mb-1 flex items-center gap-1.5 px-1", ui.text.label)}>
-            <CalendarRange className="h-3.5 w-3.5" aria-hidden />
-            <span>{t("matches.season.label")}</span>
-          </div>
-          <Select
-            dir={dir}
-            value={selectedSeason?.id ?? ""}
-            onValueChange={handleSeasonChange}
-            disabled={seasons.length === 0}
-          >
-            <SelectTrigger
-              aria-label={t("matches.season.label")}
-              className={cn(
-                "h-[var(--ui-tap-min)] px-3 shadow-none",
-                ui.radius.control,
-                ui.surface.card,
-                ui.rule.all,
-                ui.text.body,
-                "[font-weight:var(--ui-weight-heavy)]",
-                ui.focus,
-              )}
+      <PhotoPageHeader
+        photo={matchesHeaderPhoto}
+        title={t("matches.title")}
+        aside={
+          <div className="w-[10.5rem]">
+            {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
+            <div className={cn("mb-1 flex items-center gap-1.5 px-1", ui.text.label)}>
+              <CalendarRange className="h-3.5 w-3.5" aria-hidden />
+              <span>{t("matches.season.label")}</span>
+            </div>
+            <Select
+              dir={dir}
+              value={selectedSeason?.id ?? ""}
+              onValueChange={handleSeasonChange}
+              disabled={seasons.length === 0}
             >
-              {/* The trigger renders the season label itself. Left to Radix it
+              <SelectTrigger
+                aria-label={t("matches.season.label")}
+                className={cn(
+                  "h-[var(--ui-tap-min)] px-3 shadow-none",
+                  ui.radius.control,
+                  ui.surface.card,
+                  ui.rule.all,
+                  ui.text.body,
+                  "[font-weight:var(--ui-weight-heavy)]",
+                  ui.focus,
+                )}
+              >
+                {/* The trigger renders the season label itself. Left to Radix it
                   clones the whole selected item — label *and* "current" badge —
                   into a 10.5rem control, where the badge was clipped at 390px. */}
-              <SelectValue
-                placeholder={
-                  seasonsQ.isLoading ? t("matches.season.loading") : t("matches.season.unavailable")
-                }
-              >
-                {selectedSeason ? (
-                  <span className={cn("truncate", ui.text.tabular)}>{selectedSeason.label}</span>
-                ) : undefined}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent
-              className={cn(ui.radius.control, ui.rule.all, "bg-[color:var(--ui-surface)]")}
-            >
-              {seasons.map((season) => (
-                <SelectItem
-                  key={season.id}
-                  value={season.id}
-                  className={cn("min-h-[var(--ui-tap-min)]", ui.radius.control)}
+                <SelectValue
+                  placeholder={
+                    seasonsQ.isLoading
+                      ? t("matches.season.loading")
+                      : t("matches.season.unavailable")
+                  }
                 >
-                  <span className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        ui.text.body,
-                        "[font-weight:var(--ui-weight-heavy)]",
-                        ui.text.tabular,
-                      )}
-                    >
-                      {season.label}
-                    </span>
-                    {season.isCurrent && (
+                  {selectedSeason ? (
+                    <span className={cn("truncate", ui.text.tabular)}>{selectedSeason.label}</span>
+                  ) : undefined}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent
+                className={cn(ui.radius.control, ui.rule.all, "bg-[color:var(--ui-surface)]")}
+              >
+                {seasons.map((season) => (
+                  <SelectItem
+                    key={season.id}
+                    value={season.id}
+                    className={cn("min-h-[var(--ui-tap-min)]", ui.radius.control)}
+                  >
+                    <span className="flex items-center gap-2">
                       <span
                         className={cn(
-                          "inline-flex items-center px-1.5 py-0.5",
-                          ui.radius.control,
-                          ui.text.label,
-                          ui.surface.sunken,
-                          ui.tone.default,
+                          ui.text.body,
+                          "[font-weight:var(--ui-weight-heavy)]",
+                          ui.text.tabular,
                         )}
                       >
-                        {t("matches.season.current")}
+                        {season.label}
                       </span>
-                    )}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </header>
+                      {season.isCurrent && (
+                        <span
+                          className={cn(
+                            "inline-flex items-center px-1.5 py-0.5",
+                            ui.radius.control,
+                            ui.text.label,
+                            ui.surface.sunken,
+                            ui.tone.default,
+                          )}
+                        >
+                          {t("matches.season.current")}
+                        </span>
+                      )}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        }
+      />
 
       {/* Date navigation */}
       <div className="mt-3">

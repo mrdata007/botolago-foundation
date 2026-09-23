@@ -58,7 +58,16 @@ function context(): RepositoryContext {
 }
 
 function category(value: string | undefined): ArticleCategory {
-  if (value === "transfers" || value === "analysis" || value === "interviews") return value;
+  // Every shipped category passes through. `for_you` used to fall to
+  // `latest`, so a "Pour vous" story took the general-news picture and
+  // repeated the lead story's photo on the same screen.
+  if (
+    value === "for_you" ||
+    value === "transfers" ||
+    value === "analysis" ||
+    value === "interviews"
+  )
+    return value;
   return "latest";
 }
 

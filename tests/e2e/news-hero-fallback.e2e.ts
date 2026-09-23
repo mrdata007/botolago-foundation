@@ -9,7 +9,7 @@ import { initializeLanguage } from "./support";
  * not either. The assertions are measurements, not screenshots:
  *
  *   1. zero empty media boxes — every hero-sized box either shows a decoded
- *      photo or shows the plate with the wordmark actually painted in it;
+ *      photo or shows the plate with its category photo actually painted in it;
  *   2. zero layout shift — the same page is loaded twice, once normally and
  *      once with every remote image aborted so that *every* hero falls back,
  *      and each card's and each media box's computed box must be identical;
@@ -62,9 +62,9 @@ async function probeMedia(page: Page): Promise<MediaProbe[]> {
     return [...document.querySelectorAll("main [data-media-state]")].map((node) => {
       const box = node.getBoundingClientRect();
       const state = node.getAttribute("data-media-state") ?? "";
-      const photo = node.querySelector("img:not([data-article-hero-wordmark])");
+      const photo = node.querySelector("img:not([data-article-hero-photo])");
       const plate = node.querySelector("[data-article-hero-fallback]");
-      const wordmark = node.querySelector("img[data-article-hero-wordmark]");
+      const platePhoto = node.querySelector("img[data-article-hero-photo]");
 
       let painted = false;
       let reason = "";
@@ -74,10 +74,10 @@ async function probeMedia(page: Page): Promise<MediaProbe[]> {
         reason = decoded ? "" : "state=image but no decoded photo";
       } else {
         const plateBox = plate?.getBoundingClientRect();
-        const markBox = wordmark?.getBoundingClientRect();
+        const markBox = platePhoto?.getBoundingClientRect();
         const marked =
-          wordmark instanceof HTMLImageElement &&
-          wordmark.naturalWidth > 0 &&
+          platePhoto instanceof HTMLImageElement &&
+          platePhoto.naturalWidth > 0 &&
           !!markBox &&
           markBox.width > 0 &&
           markBox.height > 0;
@@ -89,7 +89,7 @@ async function probeMedia(page: Page): Promise<MediaProbe[]> {
         painted = marked && grounded;
         if (!plate) reason = "placeholder with no plate: an empty block";
         else if (!grounded) reason = "plate present but not filled/painted";
-        else if (!marked) reason = "plate painted but the wordmark did not render";
+        else if (!marked) reason = "plate painted but its category photo did not render";
       }
 
       return {

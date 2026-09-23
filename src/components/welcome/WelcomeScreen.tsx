@@ -3,7 +3,7 @@ import { BrandedText } from "@/components/brand/BrandedText";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { Logo } from "@/components/brand/Logo";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { PageBackground } from "@/components/shell/PageBackground";
 
@@ -36,10 +36,11 @@ interface Props {
  */
 
 export function WelcomeScreen({ onSignIn, onGuest }: Props) {
-  const { t, dir } = useI18n();
+  const { t } = useI18n();
   // A transform has no logical form, so the arrow is chosen rather than
   // mirrored — and the `rtl:` pair on its hover travel goes with it.
-  const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
+  // styles.css mirrors lucide arrows under dir="rtl"; picking the other icon here as well flipped it twice.
+  const Arrow = ArrowRight;
 
   return (
     <div

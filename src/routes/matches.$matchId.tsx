@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Share2 } from "lucide-react";
+import { ArrowLeft, Share2 } from "lucide-react";
 import { footballService } from "@/services/football";
 import { newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
@@ -79,7 +79,7 @@ function MatchDetailPage() {
   const { matchId } = Route.useParams();
   const { tab } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const { t, tr, lang, dir } = useI18n();
+  const { t, tr, lang } = useI18n();
   // Articles and matches are the pages most often opened from a shared link,
   // where there is no in-app entry to go back to; fall back to the listing.
   const goBack = useBackTo("/matches");
@@ -156,7 +156,8 @@ function MatchDetailPage() {
   }
 
   const isLive = match.status === "live";
-  const BackArrow = dir === "rtl" ? ArrowRight : ArrowLeft;
+  // styles.css mirrors lucide arrows under dir="rtl"; picking the other icon here as well flipped it twice.
+  const BackArrow = ArrowLeft;
 
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   // Pinned to the competition zone so this heading names the same day the

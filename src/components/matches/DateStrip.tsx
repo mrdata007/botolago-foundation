@@ -33,8 +33,10 @@ import {
  *  - keyboard/focus support via native <button> and the kit focus ring
  *  - no horizontal clipping (overflow-x-auto + hidden scrollbar)
  *  - no layout shift (fixed row height, tabular figures)
- *  - RTL-safe: no physical direction utilities; the chevrons are swapped on
- *    `dir` so they always mean "earlier / later".
+ *  - RTL-safe: no physical direction utilities; the chevrons are the LTR
+ *    icons and styles.css mirrors them under dir="rtl", so they always mean
+ *    "earlier / later". (Swapping them on `dir` here as well flipped them
+ *    twice: in Arabic "previous day" pointed forward.)
  */
 export function DateStrip({
   selected,
@@ -51,7 +53,7 @@ export function DateStrip({
   minDate?: Date;
   maxDate?: Date;
 }) {
-  const { t, lang, dir } = useI18n();
+  const { t, lang } = useI18n();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLDivElement>(null);
 
@@ -121,10 +123,10 @@ export function DateStrip({
   const canGoPrevious = !minimumDay || selectedDay > minimumDay;
   const canGoNext = !maximumDay || selectedDay < maximumDay;
 
-  // Chevrons should always look like "go earlier / later" regardless of RTL,
-  // which is what users expect. `dir` tells us the runtime direction.
-  const PrevIcon = dir === "rtl" ? ChevronRight : ChevronLeft;
-  const NextIcon = dir === "rtl" ? ChevronLeft : ChevronRight;
+  // "Earlier / later" in both directions: styles.css mirrors these under
+  // dir="rtl", so they are not swapped here.
+  const PrevIcon = ChevronLeft;
+  const NextIcon = ChevronRight;
 
   const heading = new Intl.DateTimeFormat(locale, {
     timeZone: MATCH_TIME_ZONE,

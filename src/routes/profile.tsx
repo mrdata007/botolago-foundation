@@ -228,7 +228,7 @@ function AuthenticatedProfile({
           aria-hidden
           loading="lazy"
           decoding="async"
-          className="-mx-5 -mt-5 mb-4 block h-24 w-[calc(100%+2.5rem)] max-w-none object-cover rtl:-scale-x-100"
+          className="-mx-5 -mt-5 mb-4 block h-24 w-[calc(100%+2.5rem)] max-w-none object-cover object-[50%_68%] rtl:-scale-x-100"
         />
         <div className="flex items-center gap-4">
           <div

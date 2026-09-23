@@ -1,3 +1,6 @@
+import emptyNewsArt from "@/assets/illustrations/empty-news.webp";
+import newsHeaderPhoto from "@/assets/photos/news-header.webp";
+import { PhotoPageHeader } from "@/components/common/PhotoPageHeader";
 import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -119,7 +122,7 @@ function NewsPage() {
 
   return (
     <AppShell backgroundVariant="news">
-      <h1 className={cn("pt-2", ui.text.hero, ui.tone.default)}>{t("news.title")}</h1>
+      <PhotoPageHeader photo={newsHeaderPhoto} title={t("news.title")} />
 
       {/* Content discovery — real taxonomy-driven category chips */}
       <Section index={0} className="mt-4">
@@ -175,7 +178,7 @@ function NewsPage() {
 
           {!lead && featured.length === 0 && (
             <div className="mt-4">
-              <EmptyState>{t("state.empty")}</EmptyState>
+              <EmptyState illustration={emptyNewsArt}>{t("state.empty")}</EmptyState>
             </div>
           )}
         </>
