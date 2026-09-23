@@ -115,7 +115,7 @@ export function ArticleHeroFallback({
       <div
         className="absolute inset-0"
         style={{
-          backgroundImage: `linear-gradient(to bottom, color-mix(in oklab, var(${token}) 30%, transparent) 0%, transparent 70%)`,
+          backgroundImage: `linear-gradient(to bottom, color-mix(in oklab, var(${token}) 14%, transparent) 0%, transparent 45%)`,
         }}
       />
     </div>

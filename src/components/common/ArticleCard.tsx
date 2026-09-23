@@ -162,7 +162,12 @@ export function ArticleCard({
             </h3>
             <p
               {...contentAttributes}
-              className={cn("mt-1.5 line-clamp-2", ui.text.secondary, onPhoto, "opacity-85")}
+              className={cn(
+                "mt-1.5 line-clamp-2 max-sm:hidden",
+                ui.text.secondary,
+                onPhoto,
+                "opacity-85",
+              )}
             >
               {tr(article.excerpt)}
             </p>

@@ -115,10 +115,26 @@ export function PageBackground({ variant, photo }: Props) {
               // the heading, cropped to the mouth and faded into the navy.
               photo === "auth"
                 ? "inset-x-0 top-0 h-[46svh] object-[50%_92%] [mask-image:linear-gradient(to_bottom,black_60%,transparent)] md:object-center md:[mask-image:none]"
-                : "inset-0 h-full",
+                : // Welcome: shifted down on a phone so the far stand's roof
+                  // edge lands below the subtitle instead of running through
+                  // it like a rule, and faded in at the top so the photo has
+                  // no hard edge of its own.
+                  "inset-x-0 top-[9svh] h-full [mask-image:linear-gradient(to_bottom,transparent,black_14%)] md:[mask-image:none]",
             )}
           />
         </picture>
+        {photo === "auth" && (
+          // Phone only: a soft navy band behind the heading, so the tunnel's
+          // lit railing and pole lines sit under the copy as texture rather
+          // than as rules through it.
+          <div
+            className="absolute inset-x-0 top-0 h-[46svh] md:hidden"
+            style={{
+              backgroundImage:
+                "linear-gradient(to bottom, transparent 0%, color-mix(in oklab, var(--ui-ink-deep) 45%, transparent) 30%, color-mix(in oklab, var(--ui-ink-deep) 45%, transparent) 62%, transparent 100%)",
+            }}
+          />
+        )}
         {/* The mesh's own navy, laid back over the photograph so the white
             foreground keeps its contrast wherever the floodlights land.
             `to bottom`: a degree angle would sit on the wrong edge in RTL. */}

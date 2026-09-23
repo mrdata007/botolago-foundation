@@ -165,7 +165,7 @@ function FantasyHub() {
           alt=""
           aria-hidden
           decoding="async"
-          className="pointer-events-none absolute end-0 top-0 h-72 w-full object-cover object-[50%_45%] rtl:-scale-x-100 sm:h-64 sm:w-1/2 sm:object-[50%_75%]"
+          className="pointer-events-none absolute end-0 top-0 h-72 w-full object-cover object-[50%_75%] rtl:-scale-x-100 sm:h-64 sm:w-1/2"
           style={{
             // Faded towards the title and at its lower edge, so it has no
             // hard border inside the gradient.
@@ -246,7 +246,7 @@ function FantasyHub() {
             aria-hidden
             loading="lazy"
             decoding="async"
-            className="pointer-events-none absolute inset-y-0 end-0 h-full w-3/5 object-cover object-[100%_50%] rtl:-scale-x-100 sm:w-2/5"
+            className="pointer-events-none absolute inset-y-0 end-0 h-full w-1/2 object-cover object-[100%_50%] rtl:-scale-x-100 sm:w-2/5"
             style={{
               maskImage: "linear-gradient(to left, black 55%, transparent)",
               WebkitMaskImage: "linear-gradient(to left, black 55%, transparent)",
@@ -258,7 +258,7 @@ function FantasyHub() {
             style={{ background: "color-mix(in oklab, var(--ui-ink-deep) 30%, transparent)" }}
           />
           {/* Prose, not a figure — the stat ramp is numerals only. */}
-          <span className={cn("relative block max-w-[60%]", ui.text.hero, ui.tone.onInkPlain)}>
+          <span className={cn("relative block max-w-[55%]", ui.text.hero, ui.tone.onInkPlain)}>
             {t("fpl.rankings")}
           </span>
           <span

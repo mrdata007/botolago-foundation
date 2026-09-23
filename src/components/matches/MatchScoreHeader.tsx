@@ -81,7 +81,7 @@ export function MatchScoreHeader({
           Decorative. */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-12 h-32">
         <img
-          src={stadiumPhotoFor(match.id)}
+          src={stadiumPhotoFor(match.id, "bright")}
           alt=""
           loading="lazy"
           decoding="async"
