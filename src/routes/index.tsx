@@ -40,6 +40,8 @@ import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import type { Match } from "@/types/domain";
+import stadiumBand from "@/assets/brand/home-band-stadium.webp";
+import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
 const HOME_DESCRIPTION =
@@ -107,8 +109,8 @@ function HomePage() {
  * no responsive type steps, which the language never takes:
  *
  *   1. Gameweek band           — greeting, the gameweek, its date and the
- *                                Fantasy deadline on the header gradient: the
- *                                page's one anchor (Accueil art-direction pass)
+ *                                Fantasy deadline over a night-match photograph:
+ *                                the page's one anchor (Accueil art-direction pass)
  *   2. Matches                 — one fixture list grouped by day, rising out
  *                                of the band
  *   3. Fantasy                 — the manager's team and numbers, or the
@@ -580,10 +582,11 @@ function CreateTeamLink({ canCreate }: { canCreate: boolean }) {
 }
 
 /**
- * The gameweek band: Home's anchor. The header gradient is the one the
- * Fantasy screens open on, so the page is recognisably BotolaGO without
- * another wordmark; on it, the gameweek at hero size and — while it is still
- * ahead — the Fantasy deadline, counting down. Full-bleed on a phone, a
+ * The gameweek band: Home's anchor. A night-match photograph under a navy
+ * scrim, in the same deep blue the welcome and sign-in screens use, so the
+ * page is recognisably BotolaGO without another wordmark; on it, the
+ * gameweek at hero size and — while it is still ahead — the Fantasy
+ * deadline, counting down. Full-bleed on a phone, a
  * rounded panel in the content column from `sm`. Its lower edge is covered by
  * the fixture list, which is why it carries extra bottom padding.
  */
@@ -612,15 +615,39 @@ function GameweekBand({
   return (
     <section
       className={cn(
+        "relative isolate overflow-hidden",
         "-mx-[var(--ui-gutter)] px-[var(--ui-gutter)] pb-14 pt-5",
         "sm:mx-0 sm:mt-4 sm:rounded-[var(--ui-radius-control)] sm:px-6 sm:pt-6",
-        ui.tone.onGradHeader,
+        ui.tone.onInkPlain,
+        "bg-[color:var(--ui-ink-deep)]",
         "animate-in fade-in-0 duration-500 ease-out",
       )}
-      // `to bottom` inside the token: a degree angle would land on the
-      // opposite edge under `dir="rtl"`.
-      style={{ backgroundImage: "var(--ui-grad-header)" }}
     >
+      {/* The night-match photograph: floodlights and crowd on the far side,
+          dark sky behind the text. Mirrored in Arabic so the text still
+          starts on the calm side. Decorative, so hidden from assistive tech;
+          above the fold, so it is fetched eagerly. */}
+      <img
+        src={stadiumBand}
+        srcSet={`${stadiumBandSmall} 800w, ${stadiumBand} 1600w`}
+        sizes="(min-width: 640px) 672px, 100vw"
+        alt=""
+        aria-hidden
+        decoding="async"
+        fetchPriority="high"
+        className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_60%] rtl:-scale-x-100"
+      />
+      {/* A navy scrim over the photograph keeps the white text readable
+          wherever the floodlights land. `to bottom`: a degree angle would
+          sit on the wrong edge under `dir="rtl"`. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{
+          backgroundImage:
+            "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 68%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 45%, transparent) 100%)",
+        }}
+      />
       <p className={cn("truncate", ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}>
         {greeting} · {capitalizeFirst(dateLine)}
       </p>
