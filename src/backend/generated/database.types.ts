@@ -6305,16 +6305,19 @@ export type Database = {
         Row: {
           created_at: string
           story_id: string
+          tagged_by: string
           team_id: string
         }
         Insert: {
           created_at?: string
           story_id: string
+          tagged_by?: string
           team_id: string
         }
         Update: {
           created_at?: string
           story_id?: string
+          tagged_by?: string
           team_id?: string
         }
         Relationships: [
