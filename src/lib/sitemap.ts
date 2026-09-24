@@ -24,6 +24,15 @@ export const SITEMAP_STATIC_PATHS = [
   ...(PRIZES_ENABLED ? (["/prizes", "/prizes/terms"] as const) : ([] as const)),
 ] as const;
 
+/** The sitemap protocol's maximum number of URLs in one sitemap file. */
+export const SITEMAP_MAX_URLS = 50_000;
+
+/**
+ * How many News editions fit alongside the static pages and the /news hub
+ * without exceeding `SITEMAP_MAX_URLS`.
+ */
+export const SITEMAP_NEWS_LIMIT = SITEMAP_MAX_URLS - SITEMAP_STATIC_PATHS.length - 1;
+
 function escapeXml(value: string): string {
   return value
     .replace(/&/g, "&amp;")

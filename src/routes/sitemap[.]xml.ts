@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SupabaseNewsRepository } from "@/backend/news/supabase-repository";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
-import { buildSitemapXml, type SitemapNewsEntry } from "@/lib/sitemap";
+import { buildSitemapXml, SITEMAP_NEWS_LIMIT, type SitemapNewsEntry } from "@/lib/sitemap";
 import { getNewsDataMode } from "@/services/news";
 
 /**
@@ -11,11 +11,10 @@ import { getNewsDataMode } from "@/services/news";
  * the sitemap within that window. A News read failure still serves the static
  * pages rather than failing the whole sitemap.
  *
- * Every public article is requested (up to the protocol's 50,000 URLs per
- * sitemap); the licensed ElBotola archive alone is ~15,700 editions.
+ * Every public article that fits in one sitemap is requested
+ * (`SITEMAP_NEWS_LIMIT`); the licensed ElBotola archive alone is ~15,700
+ * editions.
  */
-const SITEMAP_NEWS_LIMIT = 50_000;
-
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
