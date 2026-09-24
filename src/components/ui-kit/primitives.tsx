@@ -395,6 +395,19 @@ export function UiBackButton({
 }
 
 /**
+ * The column a `UiPageTitle` lines its content up with on a wide screen: the
+ * band stays full-bleed, its content sits in the same centred column as the
+ * page underneath. An inner box rather than computed padding, so a caller
+ * that already narrows the band still gets its gutter and nothing collapses.
+ */
+const PAGE_TITLE_COLUMN = {
+  /** `UiScreen width="content"` — every `AppShell` page. */
+  content: ui.space.content,
+  /** The 480px phone column (`UiScreen width="column"`, the Fantasy frame). */
+  column: ui.space.column,
+} as const;
+
+/**
  * The hub title band (Option A) — Matches, Actualités, Fantasy, Profil: a
  * white band under the top bar carrying the screen's `<h1>` in the display
  * face (`ui.display.title`, Changa 34/800), an optional control at the
@@ -402,20 +415,9 @@ export function UiBackButton({
  * optional `children` under it (a scrolling `UiChip` row, a tablist).
  *
  * Full-bleed like `UiHeader`: render it outside `UiScreen`'s gutter, above
- * the content column.
+ * the content column. On a wide screen its content lines up with that column
+ * (`width`, default `content`).
  */
-/**
- * The band stays full-bleed, but its inline padding grows on a wide screen so
- * the title starts where the column underneath starts: half of whatever the
- * band has beyond that column, plus the gutter. On a phone it is the gutter.
- */
-const PAGE_TITLE_ALIGN = {
-  /** `UiScreen width="content"` — every `AppShell` page. */
-  content: "px-[max(var(--ui-gutter),calc((100%_-_var(--ui-content-max))/2_+_var(--ui-gutter)))]",
-  /** The 480px phone column (`UiScreen width="column"`, the Fantasy frame). */
-  column: "px-[max(var(--ui-gutter),calc((100%_-_var(--ui-column-max))/2_+_var(--ui-gutter)))]",
-} as const;
-
 export function UiPageTitle({
   title,
   trailing,
@@ -429,19 +431,19 @@ export function UiPageTitle({
   children?: ReactNode;
   /** The heading element; `h1` unless the page already has one. */
   as?: "h1" | "h2";
-  /** The column the band lines up with on a wide screen. */
-  width?: keyof typeof PAGE_TITLE_ALIGN;
+  /** The column the content lines up with on a wide screen. */
+  width?: keyof typeof PAGE_TITLE_COLUMN;
   className?: string;
 }) {
   return (
-    <div
-      className={cn(ui.surface.bar, ui.rule.block, PAGE_TITLE_ALIGN[width], "pb-3 pt-2", className)}
-    >
-      <div className="flex min-h-[var(--ui-tap-min)] items-center justify-between gap-3">
-        <Tag className={cn("min-w-0 truncate", ui.display.title)}>{title}</Tag>
-        {trailing ? <div className="shrink-0">{trailing}</div> : null}
+    <div className={cn(ui.surface.bar, ui.rule.block, "pb-3 pt-2", className)}>
+      <div className={cn(PAGE_TITLE_COLUMN[width], ui.space.gutter)}>
+        <div className="flex min-h-[var(--ui-tap-min)] items-center justify-between gap-3">
+          <Tag className={cn("min-w-0 truncate", ui.display.title)}>{title}</Tag>
+          {trailing ? <div className="shrink-0">{trailing}</div> : null}
+        </div>
+        {children ? <div className="mt-3 min-w-0">{children}</div> : null}
       </div>
-      {children ? <div className="mt-3 min-w-0">{children}</div> : null}
     </div>
   );
 }

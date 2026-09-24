@@ -12,8 +12,7 @@ import { SectionHeader } from "@/components/common/SectionHeader";
 import { SkeletonList } from "@/components/common/Skeletons";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
-import { ui, UiPageTitle } from "@/components/ui-kit";
-import { cn } from "@/lib/utils";
+import { UiPageTitle } from "@/components/ui-kit";
 import { CategoryChips } from "@/components/news/CategoryChips";
 import { ClubFilterRow } from "@/components/news/ClubFilterRow";
 import { FeaturedGrid } from "@/components/news/FeaturedGrid";
@@ -128,23 +127,18 @@ function NewsPage() {
       backgroundVariant="news"
       pageHeader={
         // The hub title band (A-News): the Changa h1 and one sideways line of
-        // category chips on the white bar. The band runs edge to edge; its
-        // content lines up with the reading column below it on a wide screen.
-        <div className={cn(ui.surface.bar, ui.rule.block)}>
-          <UiPageTitle
-            title={t("news.title")}
-            className="mx-auto max-w-[var(--ui-content-max)] border-b-0"
-          >
-            {/* Content discovery — real taxonomy-driven category chips. They
-                filter the Latest feed below; the editorial placements above
-                it are not filtered. */}
-            <CategoryChips
-              categories={categories}
-              selected={categorySlug}
-              onSelect={setCategorySlug}
-            />
-          </UiPageTitle>
-        </div>
+        // category chips on the white bar. The band runs edge to edge; the kit
+        // lines its content up with the reading column on a wide screen.
+        <UiPageTitle title={t("news.title")}>
+          {/* Content discovery — real taxonomy-driven category chips. They
+              filter the Latest feed below; the editorial placements above
+              it are not filtered. */}
+          <CategoryChips
+            categories={categories}
+            selected={categorySlug}
+            onSelect={setCategorySlug}
+          />
+        </UiPageTitle>
       }
     >
       {/* Lead + Top stories — editorial placements, degrade independently */}
