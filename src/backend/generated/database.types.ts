@@ -1318,6 +1318,7 @@ export type Database = {
         }
         Returns: Json
       }
+      report_client_errors: { Args: { p_events: Json }; Returns: Json }
       request_account_deletion: { Args: never; Returns: string }
       resolve_football_mapping: {
         Args: {

@@ -602,7 +602,7 @@ declare previous app.fantasy_gameweeks%rowtype; next_week app.fantasy_gameweeks%
   season app.fantasy_seasons%rowtype; progress app_private.fantasy_gameweek_progressions%rowtype;
   team app.fantasy_teams%rowtype; source_id uuid; next_lineup_id uuid;
   free_hit_id uuid; selection jsonb; prepared integer:=0; remaining boolean;
-  expected_clubs integer; fixture_count integer; participant_count integer; first_kickoff timestamptz;
+  expected_clubs integer; fixture_count integer; first_kickoff timestamptz;
   round_fixture_count integer; round_participant_count integer; playable_unassigned integer;
 begin
   if not app_private.is_service_request() then raise exception using errcode='PT403',message='forbidden'; end if;
@@ -643,10 +643,9 @@ begin
       or not exists(select 1 from app.fantasy_players fp where fp.fantasy_season_id=season.id and fp.football_team_id=f.away_team_id))) then
     raise exception using errcode='PT409',message='fantasy_next_fixture_unverified'; end if;
   select count(distinct fp.football_team_id) into expected_clubs from app.fantasy_players fp where fp.fantasy_season_id=season.id;
-  select count(distinct f.id),count(distinct t.team_id),min(f.kickoff_at)
-  into fixture_count,participant_count,first_kickoff
+  select count(distinct f.id),min(f.kickoff_at)
+  into fixture_count,first_kickoff
   from app.fantasy_fixture_assignments a join app.fixtures f on f.id=a.fixture_id
-  cross join lateral(values(f.home_team_id),(f.away_team_id)) t(team_id)
   where a.gameweek_id=next_week.id and a.superseded_at is null and a.counts_points;
   -- The round must be fully published (postponed fixtures included), and every
   -- fixture of it that is still playable must count for the next week. A
