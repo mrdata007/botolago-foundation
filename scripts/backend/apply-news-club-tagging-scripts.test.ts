@@ -53,6 +53,30 @@ const scripts = [
   },
 ];
 
+describe("the migrations production recorded", () => {
+  // statements[1] of production's history rows, read back after the scripts
+  // ran on 2026-09-24 (docs/production/APPLIED_2026_09_24_NEWS_CLUB_TAGGING.md).
+  // These files are applied: a change to them is a new migration.
+  for (const [file, recorded] of [
+    [
+      "20260924180000_news_story_team_tagging.sql",
+      "9951d07eae04d9a5151e6fb99f6cfd96d2277432413fa882c345f97a220f3abd",
+    ],
+    [
+      "20260924180100_news_feed_filters_first.sql",
+      "97d34f464834ee0e34a05e7ec207b731d7703a477d23ec06cb3d06c7a48f35f8",
+    ],
+    [
+      "20260924180200_news_story_team_backfill.sql",
+      "33da33e73de411f87b060cf53494447766f09f81920fe6ce1d03ea21b7443b22",
+    ],
+  ]) {
+    test(file, () => {
+      expect(sha256(read(`supabase/migrations/${file}`))).toBe(recorded);
+    });
+  }
+});
+
 for (const { path, migrations, guards } of scripts) {
   const script = read(path);
 
