@@ -192,6 +192,27 @@ export function AdminDatum({
 }
 
 /**
+ * A date written out in the reader's language -- "24/09/2026 09:30:08",
+ * "jeudi 24 septembre 2026 à 13:10 (UTC+1)", or its Arabic equivalent.
+ *
+ * Deliberately not an <AdminDatum>. A formatted date is text in the reader's
+ * language, not LTR data: the Arabic formatter puts right-to-left marks after
+ * the day and the month, and forcing `dir="ltr"` on that string reordered it
+ * on screen -- measured in the News CMS, "24/9/2026 9:40:00 ص" was drawn as
+ * "/9/2026 9:40:00 ص24". So the value is still isolated from the sentence
+ * around it, but takes its direction from its own text (`dir="auto"`), and it
+ * wraps between words: AdminDatum's `break-all`, right for a UUID, split
+ * "(UTC)" into "(UT" and "C)".
+ */
+export function AdminDate({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <bdi dir="auto" className={cn("break-words", className)}>
+      {children}
+    </bdi>
+  );
+}
+
+/**
  * Status pill. `tone` carries meaning through colour and through its text.
  *
  * The four Admin tones map onto the kit's badge tones. Only one of them is not

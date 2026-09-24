@@ -16,6 +16,7 @@ import {
   describeEditorialError,
   describeScheduledAt,
   EDITOR_REVISION_LIMIT,
+  formatEditorialTimestamp,
   revisionDifferences,
   revisionToEditorFields,
   transitionAndReload,
@@ -38,6 +39,7 @@ import {
   ADMIN_CARD_CLASS,
   ADMIN_LABEL_CLASS,
   ADMIN_PANEL_CLASS,
+  AdminDate,
   AdminDatum,
   AdminNotice,
 } from "@/components/admin/AdminSurfaces";
@@ -194,7 +196,9 @@ function EditorSection({
           Arabic — 1.95 against the Latin 1.4 at the same pixel size — which a
           literal never was. */}
       {hint && <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>{hint}</p>}
-      <div className="mt-4 grid gap-4">{children}</div>
+      {/* `grid-cols-1` for the reason given on the editor's own grid below:
+          the column is the card's width, never its widest child's. */}
+      <div className="mt-4 grid grid-cols-1 gap-4">{children}</div>
     </section>
   );
 }
@@ -250,6 +254,8 @@ function AdminNewsEditRoute() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const bodyImageInputRef = useRef<HTMLInputElement | null>(null);
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const previewRef = useRef<HTMLElement | null>(null);
 
   const load = async () => {
     if (access.state !== "authorized") return;
@@ -307,6 +313,25 @@ function AdminNewsEditRoute() {
       ? "توجد تغييرات غير محفوظة ستضيع. مغادرة الصفحة؟"
       : "Des modifications non enregistrées seront perdues. Quitter la page ?",
   );
+
+  // Opening the preview brings it into view. It renders at the foot of the
+  // form, under the revision history -- measured 2,700px down on a desktop and
+  // 3,400px on a phone -- so the only visible effect of "Aperçu" used to be
+  // its own label changing. The offset clears the sticky toolbar, which would
+  // otherwise sit on the preview's first lines.
+  useEffect(() => {
+    const preview = previewRef.current;
+    if (!showPreview || !preview) return;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({
+      top:
+        preview.getBoundingClientRect().top +
+        window.scrollY -
+        (toolbarRef.current?.offsetHeight ?? 0) -
+        16,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
+  }, [showPreview]);
 
   const markDirty =
     <T,>(setter: (value: T) => void) =>
@@ -632,15 +657,25 @@ function AdminNewsEditRoute() {
       testId="admin-news-edit"
     >
       {access.state === "authorized" && article && (
-        <div className="grid gap-4">
+        // `grid-cols-1` is a `minmax(0, 1fr)` column, and it is the fix for the
+        // editor running off a phone. A bare `grid` sizes its implicit column
+        // to its widest child's minimum width, so one label that cannot wrap
+        // widened every card on the page: measured at 375px, every card ran
+        // 7px past the console's edge, and at 320px 46px past the screen,
+        // cut off by `overflow-x: clip` rather than scrollable. The column is
+        // now the panel's width, whatever the content inside it.
+        <div className="grid grid-cols-1 gap-4">
           {/* `-ms-3` pulls the ghost button's own inline padding back so the
               link still starts on the panel's edge, logically, in both
-              directions. */}
+              directions. `justify-self-start` keeps it at its own width: a
+              grid item stretches across the column by default, which drew
+              this link as a full-width bar with its label centred.
+              (`self-start` was here and is the other axis.) */}
           <UiLinkButton
             to="/admin/news"
             variant="ghost"
             size="sm"
-            className="-ms-3 self-start"
+            className="-ms-3 justify-self-start"
             data-testid="admin-news-back-to-list"
           >
             {/* The arrow is flipped by the ambient direction, never by hand. */}
@@ -657,6 +692,7 @@ function AdminNewsEditRoute() {
               produce no pixels. The kit's card is opaque by design: "one
               shadow, no glass". */}
           <div
+            ref={toolbarRef}
             className={cn("sticky top-0 z-20 p-4", ADMIN_CARD_CLASS)}
             data-testid="admin-news-toolbar"
           >
@@ -700,15 +736,20 @@ function AdminNewsEditRoute() {
                     className="-ms-3 mt-1"
                     data-testid="admin-news-open-translation"
                   >
-                    {otherLanguage === "ar"
-                      ? rtl
-                        ? "فتح النسخة العربية"
-                        : "Ouvrir l’édition arabe"
-                      : rtl
-                        ? "فتح النسخة الفرنسية"
-                        : "Ouvrir l’édition française"}
-                    {" · "}
-                    {STATUS_LABELS[existing.status][lang]}
+                    {/* May wrap: with the status after it, this label is
+                        wider than the toolbar on a 320px screen, and a `sm`
+                        link keeps its label on one line unless told. */}
+                    <span className="whitespace-normal text-start">
+                      {otherLanguage === "ar"
+                        ? rtl
+                          ? "فتح النسخة العربية"
+                          : "Ouvrir l’édition arabe"
+                        : rtl
+                          ? "فتح النسخة الفرنسية"
+                          : "Ouvrir l’édition française"}
+                      {" · "}
+                      {STATUS_LABELS[existing.status][lang]}
+                    </span>
                   </UiLinkButton>
                 );
               }
@@ -722,13 +763,15 @@ function AdminNewsEditRoute() {
                   className="-ms-3 mt-1"
                   data-testid="admin-news-create-translation"
                 >
-                  {otherLanguage === "ar"
-                    ? rtl
-                      ? "إنشاء النسخة العربية"
-                      : "Créer l’édition arabe"
-                    : rtl
-                      ? "إنشاء النسخة الفرنسية"
-                      : "Créer l’édition française"}
+                  <span className="whitespace-normal text-start">
+                    {otherLanguage === "ar"
+                      ? rtl
+                        ? "إنشاء النسخة العربية"
+                        : "Créer l’édition arabe"
+                      : rtl
+                        ? "إنشاء النسخة الفرنسية"
+                        : "Créer l’édition française"}
+                  </span>
                 </UiLinkButton>
               );
             })()}
@@ -736,9 +779,13 @@ function AdminNewsEditRoute() {
             <span className="mt-2 block">
               <AdminDatum className={cn(ui.text.meta, ui.tone.faint)}>{article.slug}</AdminDatum>
             </span>
+            {/* Side by side at every width: sharing the row on a phone
+                (`flex-1`), at their own width from `sm` up. A `md` button is
+                `w-full`, so `sm:flex-none` alone handed each one the whole
+                row and stacked them as two full-width bars on a desktop. */}
             <div className={cn("mt-3 flex flex-wrap gap-2 pt-3", ui.rule.blockStart)}>
               <UiButton
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:w-auto sm:flex-none"
                 disabled={busy || !dirty || !isEditable}
                 onClick={() => void save()}
                 data-testid="admin-news-save"
@@ -758,7 +805,7 @@ function AdminNewsEditRoute() {
               </UiButton>
               <UiButton
                 variant="outline"
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:w-auto sm:flex-none"
                 onClick={() => setShowPreview((value) => !value)}
                 data-testid="admin-news-preview-toggle"
               >
@@ -852,7 +899,7 @@ function AdminNewsEditRoute() {
             }
             testId="admin-news-section-body"
           >
-            <div className="grid gap-2">
+            <div className="grid grid-cols-1 gap-2">
               {/* A comfortable writing surface: room to grow, resizable
                   vertically (the frame supplies `resize-y`), and typed in the
                   article's own direction. `min-h-80` stays a literal — it is
@@ -900,9 +947,21 @@ function AdminNewsEditRoute() {
                   data-testid="admin-news-insert-body-image"
                 >
                   <ImagePlus className="h-4 w-4" aria-hidden />
-                  {rtl ? "إدراج صورة في المحتوى" : "Insérer une image dans le contenu"}
+                  {/* "… dans le contenu" is gone from the label: the button
+                      sits under the body field, in the Contenu card, beside a
+                      hint that says where the image goes. At its old length a
+                      `sm` pill cannot wrap, and at 320px its label ran out
+                      of the pill on both sides. `whitespace-normal` is the
+                      fallback for a larger text setting: two lines inside
+                      the pill rather than text outside it. */}
+                  <span className="whitespace-normal">
+                    {rtl ? "إدراج صورة" : "Insérer une image"}
+                  </span>
                 </UiButton>
-                <span className={cn("min-w-0 flex-1", ui.text.meta, ui.tone.muted)}>
+                {/* `basis-48` rather than a zero basis: the hint drops under
+                    the button when the two do not fit side by side, instead
+                    of being squeezed into a one-word column beside it. */}
+                <span className={cn("min-w-0 grow basis-48", ui.text.meta, ui.tone.muted)}>
                   {rtl
                     ? "تُدرَج الصورة عند موضع المؤشر بصيغة ‎![نص بديل](رابط)‎، ولا تُقبل إلا الروابط الآمنة (https)."
                     : "L’image est insérée à la position du curseur au format ![texte alternatif](lien) ; seuls les liens https sont acceptés."}
@@ -937,7 +996,7 @@ function AdminNewsEditRoute() {
                 )}
               </figure>
             )}
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <UiInput
                 label={rtl ? "النص البديل (إلزامي)" : "Texte alternatif (obligatoire)"}
                 value={heroAlt}
@@ -1032,7 +1091,7 @@ function AdminNewsEditRoute() {
             }
             testId="admin-news-section-seo"
           >
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <UiInput
                 label={rtl ? "عنوان SEO" : "Titre SEO"}
                 hint={`${seoTitle.length} / 70`}
@@ -1070,14 +1129,10 @@ function AdminNewsEditRoute() {
                 data-testid="admin-news-scheduled-for"
               >
                 {rtl ? "سيُنشر تلقائياً في: " : "Publication automatique prévue le "}
-                <AdminDatum mono={false}>
-                  {
-                    describeScheduledAt(
-                      article.scheduledAt,
-                      article.language === "ar" ? "ar" : lang,
-                    ).local
-                  }
-                </AdminDatum>
+                {/* In the console's language, like the sentence it ends: it
+                    used to follow the ARTICLE's, which put an Arabic date
+                    inside this French sentence for every Arabic edition. */}
+                <AdminDate>{describeScheduledAt(article.scheduledAt, lang).local}</AdminDate>
                 <span className={cn("block", ui.text.meta, ui.tone.muted)}>
                   <AdminDatum>{describeScheduledAt(article.scheduledAt, lang).utc}</AdminDatum>
                   {rtl
@@ -1175,22 +1230,28 @@ function AdminNewsEditRoute() {
                   <UiBadge {...STATUS_TONES[revision.status]}>
                     {STATUS_LABELS[revision.status][lang]}
                   </UiBadge>
-                  {/* A formatted timestamp is LTR data. */}
-                  <AdminDatum mono={false}>
-                    {new Date(revision.createdAt).toLocaleString(lang)}
-                  </AdminDatum>
+                  {/* A formatted date is text in the reader's language, not
+                      LTR data, so <AdminDate>: forced LTR, the Arabic one was
+                      drawn out of order. */}
+                  <AdminDate>{formatEditorialTimestamp(revision.createdAt, lang)}</AdminDate>
                   {(() => {
                     const differs = revisionDifferences(revision, currentProse);
                     return (
                       <>
-                        <span className="min-w-0 flex-1" data-testid="admin-news-revision-diff">
+                        {/* A real basis, for the reason on the image hint
+                            above: on a phone this line wraps rather than
+                            standing one word wide beside the button. */}
+                        <span
+                          className="min-w-0 grow basis-32"
+                          data-testid="admin-news-revision-diff"
+                        >
                           {differs.length === 0
                             ? rtl
                               ? "مطابقة للنص الحالي"
                               : "Identique au texte actuel"
                             : `${rtl ? "يختلف" : "Diffère"} : ${differs
                                 .map((field) => PROSE_FIELD_LABELS[field][lang])
-                                .join(", ")}`}
+                                .join(rtl ? "، " : ", ")}`}
                         </span>
                         <UiButton
                           variant="outline"
@@ -1216,6 +1277,7 @@ function AdminNewsEditRoute() {
 
           {showPreview && (
             <section
+              ref={previewRef}
               aria-label={rtl ? "معاينة" : "Aperçu"}
               className={cn(ADMIN_CARD_CLASS, "p-4 sm:p-6")}
               data-testid="admin-news-preview"

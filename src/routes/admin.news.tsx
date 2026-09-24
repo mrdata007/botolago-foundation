@@ -15,12 +15,14 @@ import type {
 import { mapNewsError } from "@/backend/news/errors";
 import {
   describeScheduledAt,
+  formatEditorialTimestamp,
   scheduleHealthProblem,
   type ScheduleHealthProblem,
 } from "@/backend/news/editorial-session";
 import {
   ADMIN_CARD_CLASS,
   ADMIN_LABEL_CLASS,
+  AdminDate,
   AdminDatum,
   AdminEmptyState,
   AdminNotice,
@@ -556,20 +558,17 @@ function AdminNewsListRoute() {
                       <div data-testid="admin-news-item-scheduled-at">
                         <dt className="inline">{rtl ? "موعد النشر: " : "Publication : "}</dt>
                         <dd className="inline">
-                          <AdminDatum mono={false}>
-                            {describeScheduledAt(item.scheduledAt, lang).local}
-                          </AdminDatum>
+                          <AdminDate>{describeScheduledAt(item.scheduledAt, lang).local}</AdminDate>
                         </dd>
                       </div>
                     )}
                     <div>
                       <dt className="sr-only">{rtl ? "آخر تحديث" : "Mise à jour"}</dt>
                       <dd>
-                        {/* A formatted timestamp is LTR data; only the value is
-                            wrapped so the label keeps its logical position. */}
-                        <AdminDatum mono={false}>
-                          {new Date(item.updatedAt).toLocaleString(lang)}
-                        </AdminDatum>
+                        {/* A formatted date is text in the reader's language,
+                            not LTR data: <AdminDate>, not <AdminDatum>, or an
+                            Arabic date is drawn out of order. */}
+                        <AdminDate>{formatEditorialTimestamp(item.updatedAt, lang)}</AdminDate>
                       </dd>
                     </div>
                   </dl>
