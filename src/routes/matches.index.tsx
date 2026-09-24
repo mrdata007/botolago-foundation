@@ -1,4 +1,3 @@
-import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -10,16 +9,11 @@ import { SectionHeader } from "@/components/common/SectionHeader";
 import { Section } from "@/components/common/Section";
 import { DateStrip } from "@/components/matches/DateStrip";
 import { LiveStrip } from "@/components/matches/LiveStrip";
-import { StandingsTable } from "@/components/matches/StandingsTable";
-import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
+import { MatchesTabs } from "@/components/matches/MatchesTabs";
+import { validateMatchesSearch } from "@/components/matches/matches-search";
+import { SeasonPicker } from "@/components/matches/SeasonPicker";
+import { EmptyState, ErrorState } from "@/components/common/States";
 import { MatchCardSkeleton } from "@/components/common/Skeletons";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ui, UiCard, UiChip, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -34,6 +28,8 @@ const MATCHES_DESCRIPTION =
   "Suivez tous les matchs de la Botola Pro : scores en direct, calendrier, résultats et classement.";
 
 export const Route = createFileRoute("/matches/")({
+  // `?season=<id>`: the season the Classement tab was showing (matches-search.ts).
+  validateSearch: validateMatchesSearch,
   head: () => ({
     meta: [
       { title: MATCHES_TITLE },
@@ -109,7 +105,8 @@ function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
  * through `--livestrip-h`) as the page scrolls. The page itself opens on the
  * date band — the day, its round, the previous / next day — and lists that
  * day's matches as club-colour rows: live and upcoming together, then the
- * results. The standings close the page.
+ * results. The league table is the other tab, `/matches/standings`: the
+ * Calendrier | Classement tabs sit between the title band and the live strip.
  *
  * The title band, the strip and the chips are the shell's `pageHeader`, so
  * all three run edge to edge and the chips can stick for the whole page: a
@@ -122,7 +119,8 @@ function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
  * there is one competition, and no club filter behind the second.
  */
 function MatchesPage() {
-  const { t, lang, dir } = useI18n();
+  const { t, lang } = useI18n();
+  const { season: requestedSeasonId } = Route.useSearch();
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>("all");
@@ -137,10 +135,14 @@ function MatchesPage() {
 
   useEffect(() => {
     if (seasons.length === 0 || selectedSeason) return;
-    const initialSeason = seasons.find((season) => season.isCurrent) ?? seasons[0]!;
+    // The season the other tab was on, else the current one.
+    const initialSeason =
+      seasons.find((season) => season.id === requestedSeasonId) ??
+      seasons.find((season) => season.isCurrent) ??
+      seasons[0]!;
     setSelectedSeasonId(initialSeason.id);
     setSelectedDate(dateForSeason(initialSeason));
-  }, [seasons, selectedSeason]);
+  }, [seasons, selectedSeason, requestedSeasonId]);
 
   const canLoadMatches = seasonsQ.isSuccess && (seasons.length === 0 || selectedSeason != null);
 
@@ -267,12 +269,12 @@ function MatchesPage() {
                 selected={selectedSeason}
                 loading={seasonsQ.isLoading}
                 onChange={handleSeasonChange}
-                dir={dir}
               />
             }
-            // One white band with the chips under it: no rule between them.
+            // The tabs draw the rule under the band.
             className="border-b-0"
           />
+          <MatchesTabs active="calendar" season={selectedSeason} />
           <LiveStrip />
           <StatusFilters value={filter} onChange={setFilter} liveCount={dayCounts.live} />
         </>
@@ -361,24 +363,6 @@ function MatchesPage() {
             <EmptyState compact>{t("matches.section.no_finished")}</EmptyState>
           </div>
         )}
-
-      {/* Standings — persistent context regardless of the selected date */}
-      <Section>
-        <SectionHeader
-          title={t("matches.table_preview")}
-          eyebrow={t("matches.competition.botola")}
-        />
-        {loading ? (
-          <LoadingState />
-        ) : seasonsQ.isError || matchesQ.isError ? null : (matchesQ.data?.standings.length ?? 0) ===
-          0 ? (
-          <EmptyState compact illustration={standingsSoonArt}>
-            {t("matches.table.empty")}
-          </EmptyState>
-        ) : (
-          <StandingsTable rows={matchesQ.data?.standings ?? []} clubById={clubById} />
-        )}
-      </Section>
 
       {/* An intentional spacer so the last card clears the bottom nav shadow. */}
       <div className="h-6" aria-hidden />
@@ -472,88 +456,5 @@ function StatusFilters({
         })}
       </div>
     </div>
-  );
-}
-
-/**
- * The season control beside the title: a soft round pill ("2026/2027 ⌄")
- * over the Radix select. The trigger renders the season label itself; left to
- * Radix it clones the whole selected item — label *and* "current" badge —
- * into the pill, where the badge was clipped at 390px (BG-0111).
- */
-function SeasonPicker({
-  seasons,
-  selected,
-  loading,
-  onChange,
-  dir,
-}: {
-  seasons: readonly FootballSeason[];
-  selected: FootballSeason | undefined;
-  loading: boolean;
-  onChange: (seasonId: string) => void;
-  dir: "ltr" | "rtl";
-}) {
-  const { t } = useI18n();
-  return (
-    <Select
-      dir={dir}
-      value={selected?.id ?? ""}
-      onValueChange={onChange}
-      disabled={seasons.length === 0}
-    >
-      <SelectTrigger
-        aria-label={t("matches.season.label")}
-        className={cn(
-          "h-auto min-h-[var(--ui-tap-min)] w-auto gap-1.5 border-0 py-0 pe-3 ps-3.5 shadow-none",
-          ui.radius.full,
-          ui.surface.sunken,
-          ui.text.meta,
-          "[font-weight:var(--ui-weight-heavy)]",
-          "[&>svg]:opacity-100",
-          ui.focus,
-        )}
-      >
-        <SelectValue
-          placeholder={loading ? t("matches.season.loading") : t("matches.season.unavailable")}
-        >
-          {selected ? <span className={ui.text.tabular}>{selected.label}</span> : undefined}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent className={cn(ui.radius.card, ui.rule.all, "bg-[color:var(--ui-surface)]")}>
-        {seasons.map((season) => (
-          <SelectItem
-            key={season.id}
-            value={season.id}
-            className={cn("min-h-[var(--ui-tap-min)]", ui.radius.control)}
-          >
-            <span className="flex items-center gap-2">
-              <span
-                className={cn(
-                  ui.text.body,
-                  "[font-weight:var(--ui-weight-heavy)]",
-                  ui.text.tabular,
-                )}
-              >
-                {season.label}
-              </span>
-              {season.isCurrent && (
-                <span
-                  className={cn(
-                    "inline-flex items-center px-2 py-0.5",
-                    ui.radius.full,
-                    ui.text.label,
-                    ui.surface.sunken,
-                    ui.tone.default,
-                  )}
-                >
-                  {t("matches.season.current")}
-                </span>
-              )}
-            </span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
   );
 }
