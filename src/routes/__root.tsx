@@ -31,7 +31,8 @@ import { RotateCcw, Home } from "lucide-react";
 
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
-import { currentRelease } from "@/lib/operational-errors";
+import { currentRelease, reportUnhandledError } from "@/lib/operational-errors";
+import { installClientErrorSink } from "@/lib/client-error-sink";
 
 function NotFoundComponent() {
   return (
@@ -133,6 +134,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    // React does not pass boundary-caught errors to window.onerror in
+    // production, so the client error sink hears of them here.
+    reportUnhandledError("react.error_boundary", error);
   }, [error]);
   return (
     <I18nProvider>
@@ -286,6 +290,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  // Visitors' errors reach api.report_client_errors (production builds only).
+  useEffect(() => installClientErrorSink(), []);
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>

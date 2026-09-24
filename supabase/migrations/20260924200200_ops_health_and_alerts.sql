@@ -17,6 +17,14 @@
 --     until the owner stores the webhook URL in Vault and enables it:
 --       select vault.create_secret('<webhook url>', 'botolago_ops_alert_webhook');
 --       select app_private.ops_alert_configure(true);
+--   * api.report_client_errors(events) -- where the browser reports what
+--     broke (src/lib/client-error-sink.ts). Stored as counts per hour, error
+--     code, page and release; no user, no IP, no query string, identifiers
+--     in paths replaced by :id, messages redacted again here. Bounded: 10
+--     reports per call, 300 new kinds of error per hour, 30 days kept.
+--     Read by the `browser_errors` health check, which warns but never
+--     pages (anyone can call a public endpoint, so it must not be able to
+--     wake the owner).
 --
 -- Messages carry the environment, the failing checks and their reasons, the
 -- time and where to look -- never a credential, a user or a payload.
@@ -38,6 +46,99 @@ insert into app_private.ops_alert_state (id) values (true);
 alter table app_private.ops_alert_state enable row level security;
 alter table app_private.ops_alert_state force row level security;
 revoke all on app_private.ops_alert_state from public, anon, authenticated, service_role;
+
+-- Browser error reports, counted per hour and kind of error.
+create table app_private.client_error_counts (
+  bucket_hour timestamptz not null,
+  kind text not null,
+  area text not null,
+  code text not null,
+  route text not null,
+  release text not null,
+  sample jsonb not null default '{}'::jsonb,
+  reports integer not null default 1,
+  first_at timestamptz not null,
+  last_at timestamptz not null,
+  primary key (bucket_hour, kind, area, code, route, release),
+  constraint client_error_counts_kind_check check (kind in ('handled', 'unhandled')),
+  constraint client_error_counts_area_check check (area ~ '^[A-Za-z][A-Za-z0-9_.:-]{0,79}$'),
+  constraint client_error_counts_code_check check (code ~ '^[A-Za-z][A-Za-z0-9_.:-]{0,79}$'),
+  constraint client_error_counts_route_check check (char_length(route) <= 200),
+  constraint client_error_counts_release_check check (release ~ '^([0-9a-f]{7,40}|unknown)$'),
+  constraint client_error_counts_reports_check check (reports between 1 and 1000000)
+);
+alter table app_private.client_error_counts enable row level security;
+alter table app_private.client_error_counts force row level security;
+revoke all on app_private.client_error_counts from public, anon, authenticated, service_role;
+
+-- The same redaction the browser applies (src/lib/operational-errors.ts),
+-- again, because the endpoint is public: e-mail addresses, tokens, UUIDs,
+-- long opaque strings and URL query strings go; 200 characters at most.
+create or replace function app_private.redact_client_text(p_text text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select left(
+    regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(regexp_replace(
+      coalesce(p_text, ''),
+      '[[:alnum:]._+-]+@[[:alnum:]-]+(\.[[:alnum:]-]+)+', '[email]', 'g'),
+      '\yeyJ[[:alnum:]_-]+\.[[:alnum:]_-]+\.[[:alnum:]_-]+', '[jwt]', 'g'),
+      '\y(bearer|token|apikey|key|secret|password)\y[[:space:]]*[:=]?[[:space:]]*[^[:space:]]+', '\1 [redacted]', 'gi'),
+      '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}', '[uuid]', 'g'),
+      '[A-Za-z0-9+/_-]{32,}={0,2}', '[redacted]', 'g'),
+      '(https?://[^[:space:]?#]+)[?#][^[:space:]]*', '\1', 'g'),
+    200);
+$$;
+revoke all on function app_private.redact_client_text(text) from public, anon, authenticated, service_role;
+
+-- A page path without its identifiers, so /news/<id> is one kind of page and
+-- no identifier is kept.
+create or replace function app_private.client_error_route(p_route text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select case
+    when p_route is null or p_route !~ '^/[^[:space:]?#]{0,199}$' then '(unknown)'
+    else regexp_replace(regexp_replace(p_route,
+      '/[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}(?=/|$)', '/:id', 'g'),
+      '/[0-9]+(?=/|$)', '/:id', 'g')
+  end;
+$$;
+revoke all on function app_private.client_error_route(text) from public, anon, authenticated, service_role;
+
+-- What is kept of a report's detail: the redacted message, other codes, and
+-- numbers or yes/no values. Six entries at most.
+create or replace function app_private.client_error_sample(p_detail jsonb)
+returns jsonb
+language sql
+immutable
+set search_path = ''
+as $$
+  select coalesce(jsonb_object_agg(kept.key, kept.value), '{}'::jsonb)
+  from (
+    select candidate.key, candidate.value
+    from (
+      select entry.key,
+        case
+          when entry.key = 'message' and jsonb_typeof(entry.value) = 'string'
+            then to_jsonb(app_private.redact_client_text(entry.value #>> '{}'))
+          when jsonb_typeof(entry.value) in ('number', 'boolean') then entry.value
+          when entry.key ~* 'code$' and jsonb_typeof(entry.value) = 'string'
+            and (entry.value #>> '{}') ~ '^[A-Za-z][A-Za-z0-9_.:-]{0,79}$' then entry.value
+        end as value
+      from jsonb_each(case when jsonb_typeof(p_detail) = 'object' then p_detail else '{}'::jsonb end) entry
+      where entry.key ~ '^[A-Za-z][A-Za-z0-9_]{0,39}$'
+    ) candidate
+    where candidate.value is not null
+    order by candidate.key
+    limit 6
+  ) kept;
+$$;
+revoke all on function app_private.client_error_sample(jsonb) from public, anon, authenticated, service_role;
 
 -- The checks, as a plain function so both the API and the alert tick use one
 -- definition. Every threshold is written next to its check.
@@ -66,6 +167,8 @@ declare
   last_fixture_ok timestamptz;
   failed_fixture_runs integer;
   failed_news_runs integer;
+  browser_errors integer;
+  top_browser_error text;
   caller_claims text := current_setting('request.jwt.claims', true);
 begin
   -- Fantasy: the database tick that locks gameweeks on time.
@@ -197,6 +300,25 @@ begin
       when dead_letters > 0 then dead_letters || ' undelivered email(s) waiting'
       else 'mode ' || email.mode end);
 
+  -- Browser errors nothing caught, this hour and the last. A warning at most:
+  -- the reports come from a public endpoint and must not be able to page.
+  select coalesce(sum(t.reports), 0)::integer,
+    (array_agg(t.code || ' on ' || t.route order by t.reports desc, t.code, t.route))[1]
+  into browser_errors, top_browser_error
+  from (
+    select c.code, c.route, sum(c.reports) as reports
+    from app_private.client_error_counts c
+    where c.kind = 'unhandled' and c.bucket_hour >= date_trunc('hour', now_at) - interval '1 hour'
+    group by c.code, c.route
+  ) t;
+  checks := checks || jsonb_build_object('name', 'browser_errors', 'status',
+    case when browser_errors >= 25 then 'warn' else 'ok' end, 'detail',
+    case when browser_errors = 0 then 'no unhandled browser error reported since '
+        || to_char((date_trunc('hour', now_at) - interval '1 hour') at time zone 'UTC', 'HH24:MI') || ' UTC'
+      else browser_errors || ' unhandled browser error(s) since '
+        || to_char((date_trunc('hour', now_at) - interval '1 hour') at time zone 'UTC', 'HH24:MI')
+        || ' UTC; most: ' || top_browser_error end);
+
   return jsonb_build_object(
     'environment', 'production',
     'generatedAt', now_at,
@@ -225,7 +347,82 @@ $$;
 revoke all on function api.service_ops_health() from public, anon, authenticated;
 grant execute on function api.service_ops_health() to service_role;
 comment on function api.service_ops_health() is
-  'Read-only production health: ok/warn/fail per check (Fantasy tick and locks, deadline watch, cron jobs, news publication and import, live scores, provider refresh, email delivery) with a one-line reason. No user data.';
+  'Read-only production health: ok/warn/fail per check (Fantasy tick and locks, deadline watch, cron jobs, news publication and import, live scores, provider refresh, email delivery, browser errors) with a one-line reason. No user data.';
+
+-- The browser's error reports. Public (anon and signed-in callers alike, and
+-- the browser sends no user token with them), so everything is re-checked:
+-- malformed reports are skipped, known kinds of error are counted, and at
+-- most 300 new kinds are stored per hour.
+create or replace function api.report_client_errors(p_events jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  event jsonb;
+  now_at timestamptz := statement_timestamp();
+  this_hour timestamptz := date_trunc('hour', statement_timestamp());
+  kinds_this_hour integer;
+  accepted integer := 0;
+  report_kind text;
+  report_area text;
+  report_code text;
+  report_route text;
+  report_release text;
+  code_pattern constant text := '^[A-Za-z][A-Za-z0-9_.:-]{0,79}$';
+begin
+  if p_events is null or jsonb_typeof(p_events) <> 'array'
+    or jsonb_array_length(p_events) not between 1 and 10 then
+    raise exception using errcode = '22023', message = 'client_errors_invalid';
+  end if;
+  select count(*) into kinds_this_hour
+  from app_private.client_error_counts where bucket_hour = this_hour;
+
+  for event in select value from jsonb_array_elements(p_events) loop
+    continue when jsonb_typeof(event) <> 'object';
+    report_kind := event ->> 'kind';
+    report_area := event ->> 'area';
+    report_code := event ->> 'code';
+    report_release := coalesce(event ->> 'release', 'unknown');
+    continue when report_kind is null or report_kind not in ('handled', 'unhandled')
+      or report_area is null or report_area !~ code_pattern
+      or report_code is null or report_code !~ code_pattern
+      or report_release !~ '^([0-9a-f]{7,40}|unknown)$';
+    report_route := app_private.client_error_route(event ->> 'route');
+
+    update app_private.client_error_counts c
+    set reports = least(c.reports + 1, 1000000), last_at = now_at
+    where c.bucket_hour = this_hour and c.kind = report_kind and c.area = report_area
+      and c.code = report_code and c.route = report_route and c.release = report_release;
+    if found then
+      accepted := accepted + 1;
+      continue;
+    end if;
+    continue when kinds_this_hour >= 300;
+
+    insert into app_private.client_error_counts
+      (bucket_hour, kind, area, code, route, release, sample, first_at, last_at)
+    values (this_hour, report_kind, report_area, report_code, report_route, report_release,
+      app_private.client_error_sample(event -> 'detail'), now_at, now_at)
+    on conflict (bucket_hour, kind, area, code, route, release)
+    do update set reports = least(app_private.client_error_counts.reports + 1, 1000000),
+      last_at = excluded.last_at;
+    kinds_this_hour := kinds_this_hour + 1;
+    accepted := accepted + 1;
+    -- The hour's first report also clears what is older than 30 days.
+    if kinds_this_hour = 1 then
+      delete from app_private.client_error_counts where bucket_hour < this_hour - interval '30 days';
+    end if;
+  end loop;
+
+  return jsonb_build_object('accepted', accepted);
+end;
+$$;
+revoke all on function api.report_client_errors(jsonb) from public;
+grant execute on function api.report_client_errors(jsonb) to anon, authenticated;
+comment on function api.report_client_errors(jsonb) is
+  'Browser error reports (src/lib/client-error-sink.ts): 1-10 per call, counted per hour, kind, area, code, page (identifiers replaced by :id) and release. No user, IP or query string is stored; messages are redacted. Returns {accepted}.';
 
 create or replace function app_private.ops_alert_configure(p_enabled boolean)
 returns jsonb

@@ -37,7 +37,10 @@
 --     and the related-articles rail under a news article (608-644 ms);
 --   * leaves live scores switched off, but ready to call every 2 minutes
 --     during a match once switched on (docs/backend/EMAIL_NOTIFICATIONS.md);
---   * makes article "last modified" dates truthful (sitemap, search data).
+--   * makes article "last modified" dates truthful (sitemap, search data);
+--   * adds the health checks, the (switched-off) failure alerts and the
+--     endpoint where visitors' browsers report errors, without who they are
+--     (docs/operations/ALERTS.md).
 --   Lock and statement timeouts are bounded, so it gives up rather than queue
 --   behind a long-running transaction on the live site.
 -- ============================================================================
@@ -85,6 +88,10 @@ begin
   if to_regclass('app_private.ops_alert_state') is not null
     or exists (select 1 from cron.job where jobname = 'ops-alert-tick') then
     raise exception 'stop: the ops alert tick already exists, but the migration is not recorded';
+  end if;
+  if to_regclass('app_private.client_error_counts') is not null
+    or to_regprocedure('api.report_client_errors(jsonb)') is not null then
+    raise exception 'stop: the browser error reports already exist, but the migration is not recorded';
   end if;
   if to_regclass('app_private.timezone_names') is not null
     or to_regprocedure('app_private.is_valid_timezone(text)') is not null then

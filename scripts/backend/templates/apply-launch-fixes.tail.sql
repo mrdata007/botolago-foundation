@@ -117,6 +117,13 @@ begin
     or (select enabled from app_private.ops_alert_state) is distinct from false then
     problems := problems || 'the ops alert tick must be scheduled and arrive switched off'::text;
   end if;
+  if not has_function_privilege('anon', 'api.report_client_errors(jsonb)', 'execute')
+    or has_table_privilege('anon', 'app_private.client_error_counts', 'select')
+    or has_table_privilege('authenticated', 'app_private.client_error_counts', 'select')
+    or not (select relrowsecurity and relforcerowsecurity from pg_class
+            where oid = 'app_private.client_error_counts'::regclass) then
+    problems := problems || 'browser error reports: callable by visitors, readable by nobody'::text;
+  end if;
 
   if not app_private.is_valid_timezone('Africa/Casablanca')
     or app_private.is_valid_timezone('UTC+3')
