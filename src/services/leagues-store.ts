@@ -162,6 +162,19 @@ export const leaguesStore = {
     if (league.role !== "creator") throw new LeagueError(LEAGUE_ERROR.NOT_CREATOR);
     writeState({ leagues: state.leagues.filter((l) => l.id !== id) });
   },
+  /** Replaces a created league's invite code, as the cloud reset does. */
+  resetCode(id: string): string {
+    const state = readState();
+    const league = state.leagues.find((l) => l.id === id);
+    if (!league) throw new LeagueError(LEAGUE_ERROR.NOT_FOUND);
+    if (league.role !== "creator") throw new LeagueError(LEAGUE_ERROR.NOT_CREATOR);
+    let code = genCode();
+    while (code === league.code) code = genCode();
+    writeState({
+      leagues: state.leagues.map((l) => (l.id === id ? { ...l, code } : l)),
+    });
+    return code;
+  },
   reset(): void {
     writeState({ leagues: [] });
   },

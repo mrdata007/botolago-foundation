@@ -1208,6 +1208,10 @@ export type Database = {
         Returns: Json
       }
       request_account_deletion: { Args: never; Returns: string }
+      reset_fantasy_league_invite_code: {
+        Args: { p_league_id: string; p_team_id: string }
+        Returns: Json
+      }
       resolve_football_mapping: {
         Args: {
           p_entity_type: string

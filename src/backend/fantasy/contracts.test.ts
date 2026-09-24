@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   fantasyFixtureDifficultySchema,
+  fantasyLeagueInviteCodeSchema,
   fantasyOverallStandingPageSchema,
   fantasyPlayerSchema,
   fantasyTeamSchema,
@@ -177,6 +178,26 @@ describe("BG-0073 overall standings contract", () => {
         total: 1,
         myRank: null,
       }).success,
+    ).toBe(false);
+  });
+});
+
+describe("league invite code reset contract", () => {
+  const leagueUuid = "ec0de000-0000-4000-8000-000000000031";
+
+  it("accepts the reset answer: the league id and the new code", () => {
+    expect(
+      fantasyLeagueInviteCodeSchema.parse({
+        leagueId: leagueUuid,
+        inviteCode: "0035D6D8995B37EA0F05E2331C21FC0F",
+      }),
+    ).toEqual({ leagueId: leagueUuid, inviteCode: "0035D6D8995B37EA0F05E2331C21FC0F" });
+  });
+
+  it("rejects an answer without a code, so the page never shows a blank one", () => {
+    expect(fantasyLeagueInviteCodeSchema.safeParse({ leagueId: leagueUuid }).success).toBe(false);
+    expect(
+      fantasyLeagueInviteCodeSchema.safeParse({ leagueId: leagueUuid, inviteCode: "" }).success,
     ).toBe(false);
   });
 });

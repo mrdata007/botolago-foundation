@@ -383,6 +383,7 @@ export const fantasyService = {
       previousRank: league.previousRank,
       score: league.totalPoints ?? 0,
       leaderName: league.leaderName ?? undefined,
+      inviteCodeHint: league.inviteCodeHint ?? undefined,
       role: league.role ?? undefined,
     }));
   },
@@ -625,6 +626,20 @@ export const fantasyService = {
     }
     const current = await cloudTeam();
     await cloud.archiveLeague(leagueId, current.team.id, context());
+  },
+  /**
+   * The owner's way back to a lost invite code. The database keeps only the
+   * code's digest, so the old code cannot be shown again: it is replaced, and
+   * the new one is returned this once. The old code stops working at once.
+   */
+  async resetLeagueInviteCode(leagueId: string): Promise<{ code: string }> {
+    if (mode() === "mock") {
+      const { leaguesStore } = await import("./leagues-store");
+      return { code: leaguesStore.resetCode(leagueId) };
+    }
+    const current = await cloudTeam();
+    const result = await cloud.resetLeagueInviteCode(leagueId, current.team.id, context());
+    return { code: result.inviteCode };
   },
 };
 

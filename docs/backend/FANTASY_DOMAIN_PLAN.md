@@ -246,7 +246,10 @@ authoritative result commit and uses a stable deduplication key.
 ## 11. Leagues and ranking
 
 Private invite codes contain at least 128 bits of randomness; only a digest is
-stored after creation. Public/private visibility is explicit. Creator becomes
+stored after creation. Because the code cannot be shown twice, the owner can
+replace it (`api.reset_fantasy_league_invite_code`): the old code stops working
+at once, the new one is returned once under the same rules, and existing
+members are unaffected. Public/private visibility is explicit. Creator becomes
 owner membership atomically. Join/leave/admin operations are owner/member safe,
 and the owner cannot leave without an ownership transfer or archive action.
 

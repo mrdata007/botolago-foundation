@@ -446,6 +446,16 @@ export const dictionaries = {
     "fantasy.leagues.invite_help":
       "Partagez ce code avec les managers que vous voulez inviter dans la ligue.",
     "fantasy.leagues.copy_code": "Copier le code d'invitation",
+    "fantasy.leagues.code_shown_once":
+      "Copiez-le maintenant : il ne s’affichera plus. En cas de perte, créez-en un nouveau depuis la page de la ligue.",
+    "fantasy.leagues.code_ends_with": "Le code actuel se termine par",
+    "fantasy.leagues.code_once_help":
+      "Pour votre sécurité, le code complet ne s’affiche qu’une fois, à la création de la ligue. Vous l’avez perdu ? Créez-en un nouveau.",
+    "fantasy.leagues.new_code": "Nouveau code d’invitation",
+    "fantasy.leagues.new_code_confirm":
+      "L’ancien code ne fonctionnera plus. Les managers déjà dans la ligue y restent.",
+    "fantasy.leagues.new_code_confirm_action": "Remplacer le code",
+    "fantasy.leagues.new_code_done": "Nouveau code créé",
     "fantasy.leagues.no_standings":
       "Le classement de cette ligue apparaîtra après la première journée comptabilisée.",
     "fantasy.leagues.no_members": "Aucun manager dans cette ligue pour le moment.",
@@ -1778,6 +1788,16 @@ export const dictionaries = {
     "fantasy.leagues.me": "أنا",
     "fantasy.leagues.invite_help": "شارك هذا الرمز مع المدربين الذين تريد دعوتهم إلى الدوري.",
     "fantasy.leagues.copy_code": "نسخ رمز الدعوة",
+    "fantasy.leagues.code_shown_once":
+      "انسخه الآن، فلن يظهر مرة أخرى. إذا فقدته، أنشئ رمزاً جديداً من صفحة الدوري.",
+    "fantasy.leagues.code_ends_with": "ينتهي الرمز الحالي بـ",
+    "fantasy.leagues.code_once_help":
+      "لحمايتك، لا يظهر الرمز كاملاً إلا مرة واحدة عند إنشاء الدوري. هل فقدته؟ أنشئ رمزاً جديداً.",
+    "fantasy.leagues.new_code": "رمز دعوة جديد",
+    "fantasy.leagues.new_code_confirm":
+      "سيتوقف الرمز القديم عن العمل. يبقى المدربون المنضمون إلى الدوري فيه.",
+    "fantasy.leagues.new_code_confirm_action": "استبدال الرمز",
+    "fantasy.leagues.new_code_done": "تم إنشاء رمز جديد",
     "fantasy.leagues.no_standings": "سيظهر ترتيب هذا الدوري بعد احتساب الجولة الأولى.",
     "fantasy.leagues.no_members": "لا يوجد مدرب في هذا الدوري حاليًا.",
     "fantasy.leagues.empty_title": "لا توجد دوريات",
