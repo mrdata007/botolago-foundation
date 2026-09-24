@@ -1,29 +1,28 @@
 import emptyNewsArt from "@/assets/illustrations/empty-news.webp";
-import newsHeaderPhoto from "@/assets/photos/news-header.webp";
-import { PhotoPageHeader } from "@/components/common/PhotoPageHeader";
 import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Sparkles, Flame, Clock } from "lucide-react";
-import { getNewsRepository, newsService } from "@/services/news";
+import { getNewsRepository } from "@/services/news";
 import { followService } from "@/services/follows";
 import { useAuth } from "@/auth/AuthProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
-import { ArticleCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
+import { SkeletonList } from "@/components/common/Skeletons";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
-import { ui } from "@/components/ui-kit";
+import { ui, UiPageTitle } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { CategoryChips } from "@/components/news/CategoryChips";
 import { ClubFilterRow } from "@/components/news/ClubFilterRow";
 import { FeaturedGrid } from "@/components/news/FeaturedGrid";
 import { LatestFeed } from "@/components/news/LatestFeed";
+import { NewsLeadSkeleton, NewsRowSkeleton } from "@/components/news/NewsSkeletons";
 import {
   deriveCategoryOptions,
   presentArticleForDisplay,
+  presentNewsTeam,
   publicNewsContext,
 } from "@/components/news/news-data";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
@@ -92,9 +91,13 @@ function NewsPage() {
     queryKey: ["news", "home-modules-v2", lang],
     queryFn: () => getNewsRepository().getHomeModules(lang, 6, publicNewsContext()),
   });
+  // Presented here rather than by `newsService.getTeamFilters`, whose
+  // presenter turns a missing club colour into a literal navy that the club
+  // palette would paint on every club (see `presentNewsTeam`).
   const clubsQ = useQuery({
-    queryKey: ["news", "team-filters", lang],
-    queryFn: () => newsService.getTeamFilters(lang),
+    queryKey: ["news", "team-filters-v2", lang],
+    queryFn: async () =>
+      (await getNewsRepository().getTeamFilters(lang, publicNewsContext())).map(presentNewsTeam),
   });
   const followedQ = useQuery({
     queryKey: ["identity", "followed-team-ids", status],
@@ -121,76 +124,76 @@ function NewsPage() {
   const clubs = clubsQ.data ?? [];
 
   return (
-    <AppShell backgroundVariant="news">
-      <PhotoPageHeader photo={newsHeaderPhoto} title={t("news.title")} />
-
-      {/* Content discovery — real taxonomy-driven category chips */}
-      <Section className="mt-4">
-        <CategoryChips categories={categories} selected={categorySlug} onSelect={setCategorySlug} />
-      </Section>
-
-      {/* Club discovery */}
-      <Section className="mt-3">
-        {/* `ui.text.label` carries the `ltr:`-prefixed tracking: Arabic
-            letterforms join and must never be letter-spaced (BG-0069). */}
-        <h2 className={cn("mb-2", ui.text.label, ui.tone.muted)}>{t("news.filter_clubs")}</h2>
-        <ClubFilterRow
-          clubs={clubs}
-          selected={clubId}
-          onSelect={setClubId}
-          followedIds={followedIds}
-        />
-      </Section>
-
+    <AppShell
+      backgroundVariant="news"
+      pageHeader={
+        // The hub title band (A-News): the Changa h1 and one sideways line of
+        // category chips on the white bar. The band runs edge to edge; its
+        // content lines up with the reading column below it on a wide screen.
+        <div className={cn(ui.surface.bar, ui.rule.block)}>
+          <UiPageTitle
+            title={t("news.title")}
+            className="mx-auto max-w-[var(--ui-content-max)] border-b-0"
+          >
+            {/* Content discovery — real taxonomy-driven category chips. They
+                filter the Latest feed below; the editorial placements above
+                it are not filtered. */}
+            <CategoryChips
+              categories={categories}
+              selected={categorySlug}
+              onSelect={setCategorySlug}
+            />
+          </UiPageTitle>
+        </div>
+      }
+    >
       {/* Lead + Top stories — editorial placements, degrade independently */}
       {homeQ.isLoading ? (
-        <div className="mt-4 space-y-4">
-          <ArticleCardSkeleton variant="lead" />
-          <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
+        <div className="grid gap-2.5">
+          <NewsLeadSkeleton />
+          <SkeletonList count={3}>{() => <NewsRowSkeleton />}</SkeletonList>
         </div>
       ) : homeQ.isError ? (
-        <div className="mt-4">
-          <ErrorState onRetry={() => void homeQ.refetch()} />
-        </div>
+        <ErrorState onRetry={() => void homeQ.refetch()} />
       ) : (
         <>
           {lead && (
-            <Section>
-              <SectionHeader
-                eyebrow={t("news.section.lead")}
-                icon={Sparkles}
-                title={t("news.section.lead")}
-              />
+            // The first thing under the band, as the board sets it: no
+            // visible heading (the card's own pill says "À la une"), but the
+            // section keeps one for the page outline.
+            <Section className="mt-0 sm:mt-0">
+              <h2 className="sr-only">{t("news.section.lead")}</h2>
               <ArticleCard article={presentArticleForDisplay(lead)} variant="lead" clubs={clubs} />
             </Section>
           )}
 
           {featured.length > 0 && (
             <Section>
-              <SectionHeader
-                title={t("news.section.top_stories")}
-                icon={Flame}
-                eyebrow={t("news.section.top_stories")}
-              />
+              <SectionHeader title={t("news.section.top_stories")} />
               <FeaturedGrid featured={featured} clubs={clubs} />
             </Section>
           )}
 
           {!lead && featured.length === 0 && (
-            <div className="mt-4">
-              <EmptyState illustration={emptyNewsArt}>{t("state.empty")}</EmptyState>
-            </div>
+            <EmptyState illustration={emptyNewsArt}>{t("state.empty")}</EmptyState>
           )}
         </>
       )}
 
       {/* Latest — chronological feed with real keyset pagination */}
       <Section>
-        <SectionHeader
-          title={t("news.section.latest")}
-          icon={Clock}
-          eyebrow={t("news.section.latest")}
-        />
+        <SectionHeader title={t("news.section.latest")} />
+        {/* Club discovery: it filters this feed, so it sits on it. */}
+        {clubs.length > 0 && (
+          <div className="mb-2.5">
+            <ClubFilterRow
+              clubs={clubs}
+              selected={clubId}
+              onSelect={setClubId}
+              followedIds={followedIds}
+            />
+          </div>
+        )}
         <LatestFeed
           language={lang}
           categorySlug={categorySlug}

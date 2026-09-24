@@ -33,8 +33,9 @@ import type { ArticleCategory } from "@/types/domain";
  * Layout notes that matter more than the art direction:
  *
  *   - It is `absolute inset-0` inside the box `MediaImage` already sizes, so
- *     it inherits that box's aspect ratio exactly and cannot shift layout in
- *     any of `ArticleCard`'s five variants.
+ *     it inherits that box's size exactly and cannot shift layout in any of
+ *     `ArticleCard`'s variants — the photo cards, the row thumbnails — or on
+ *     the article hero.
  *   - The gradient runs `to bottom`. An angle in `deg` is a physical
  *     direction and would land on the opposite edge under `dir="rtl"`.
  *   - `aria-hidden`: the card's `<Link>` already carries the accessible name,
