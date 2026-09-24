@@ -2,6 +2,14 @@
 
 ## Safety status
 
+> **Update 2026-09-24 — product email is built.** Six notification emails
+> (match-day preview and results, round preview, favourite-club kick-off alert,
+> Fantasy deadline reminder, Fantasy round recap) now run on pg_cron, a
+> Supabase Edge Function and Resend. They ship switched off and are activated
+> per [EMAIL_NOTIFICATIONS.md](EMAIL_NOTIFICATIONS.md), which supersedes the
+> email rows of the table below. The Phase 5 notification schema is applied in
+> production (the "not deployed" cell below predates that). Push is unchanged.
+
 Phase 5 is infrastructure-only until a separate production approval.
 
 | Capability               | Local/test                 | V2 staging                     | Production V2 |

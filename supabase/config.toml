@@ -386,6 +386,19 @@ enabled = true
 verify_jwt = true
 entrypoint = "./functions/news-ingest-elbotola/index.ts"
 
+# Woken by pg_cron through pg_net. The caller proves itself with the
+# database-generated scheduler token (api.service_verify_scheduler_token),
+# not with a JWT, so the platform JWT check is off for these two.
+[functions.notification-email-dispatch]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/notification-email-dispatch/index.ts"
+
+[functions.football-live-refresh]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/football-live-refresh/index.ts"
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

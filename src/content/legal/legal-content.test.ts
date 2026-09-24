@@ -79,6 +79,12 @@ import { LEGAL_DOCUMENTS, type LegalBlock, type LegalDocument } from "./document
 //        noreply@mail.app.supabase.io. If a dedicated sender is configured,
 //        name it and state its region. There is no marketing mail system at
 //        all, which is why the row no longer mentions marketing.
+//
+//   9. "Resend" for notification e-mail, "Union européenne — Irlande (eu-west-1)"
+//        Added 2026-09-24 with the match and Fantasy notification e-mails.
+//        The region is only true if the sending domain is created in Resend's
+//        EU region (docs/backend/EMAIL_NOTIFICATIONS.md, step 1). If Auth mail
+//        later moves to Resend SMTP too, update row 8 to match.
 // ---------------------------------------------------------------------------
 
 const LANGS = ["fr", "ar"] as const;
