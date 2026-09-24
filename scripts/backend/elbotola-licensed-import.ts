@@ -349,7 +349,7 @@ interface Runtime {
   readonly batchSize: number;
 }
 
-function readRuntime(env: Record<string, string | undefined>): Runtime {
+export function readRuntime(env: Record<string, string | undefined>): Runtime {
   if (env.CONFIRMATION !== "RUN_ELBOTOLA_LICENSED_IMPORT")
     throw new Error("confirmation text mismatch");
   if (!env.EXPECTED_COMMIT || env.EXPECTED_COMMIT !== env.GITHUB_SHA) {
@@ -369,6 +369,11 @@ function readRuntime(env: Record<string, string | undefined>): Runtime {
   const limit = env.IMPORT_LIMIT?.trim() ? Number(env.IMPORT_LIMIT) : null;
   if (limit !== null && (!Number.isInteger(limit) || limit < 1))
     throw new Error("IMPORT_LIMIT must be a positive integer");
+  // A limit makes a quick practice run. It is not a way to import the archive
+  // in slices: an import always reads the whole feed, so every translation
+  // meets its original and nothing depends on what earlier runs left behind.
+  if (limit !== null && mode === "import")
+    throw new Error("IMPORT_LIMIT is for dry runs only; an import reads the whole feed");
   return {
     accessToken,
     projectRef,
@@ -402,10 +407,46 @@ async function getJson(url: string, attempts = 6): Promise<unknown> {
   }
 }
 
-interface FeedItem {
+export interface FeedItem {
   readonly object_id: string;
   readonly absolute_url: string;
   readonly pub_date: number;
+}
+
+/**
+ * With a limit (dry runs only), only the newest `limit` Arabic articles are
+ * read, plus the French ones published in the same window (the translations
+ * of those originals, and French-only stories of the same days). Without
+ * this, a "limit 200" practice run still read all ~15,700 articles first.
+ */
+export function selectFeed(
+  arabic: readonly FeedItem[],
+  french: readonly FeedItem[],
+  limit: number | null,
+): { arabic: FeedItem[]; french: FeedItem[] } {
+  if (limit === null) return { arabic: [...arabic], french: [...french] };
+  const newestArabic = [...arabic].sort((a, b) => b.pub_date - a.pub_date).slice(0, limit);
+  if (!newestArabic.length) {
+    return {
+      arabic: [],
+      french: [...french].sort((a, b) => b.pub_date - a.pub_date).slice(0, limit),
+    };
+  }
+  const oldest = newestArabic[newestArabic.length - 1]!.pub_date;
+  return { arabic: newestArabic, french: french.filter((item) => item.pub_date >= oldest) };
+}
+
+/**
+ * On a limited (practice) run, a French translation whose Arabic original
+ * was not read is left out, so the run is not counted as a French-only story
+ * that the full import would in fact attach to its original.
+ */
+export function withoutUnreadOriginals(
+  arabic: readonly ElbotolaArticle[],
+  french: readonly ElbotolaArticle[],
+): ElbotolaArticle[] {
+  const read = new Set(arabic.map((article) => article.id));
+  return french.filter((article) => !article.translatedFrom || read.has(article.translatedFrom));
 }
 
 async function listFeed(language: "ar" | "fr", cutoff: string): Promise<FeedItem[]> {
@@ -512,11 +553,16 @@ async function main(): Promise<void> {
     ),
   );
 
-  const arabicFeed = await listFeed("ar", runtime.cutoff);
-  const frenchFeed = await listFeed("fr", runtime.cutoff);
+  const { arabic: arabicFeed, french: frenchFeed } = selectFeed(
+    await listFeed("ar", runtime.cutoff),
+    await listFeed("fr", runtime.cutoff),
+    runtime.limit,
+  );
   console.log(`listed ar=${arabicFeed.length} fr=${frenchFeed.length}`);
   const arabic = await fetchArticles(arabicFeed, "ar");
-  const french = await fetchArticles(frenchFeed, "fr");
+  const fetchedFrench = await fetchArticles(frenchFeed, "fr");
+  const french =
+    runtime.limit === null ? fetchedFrench : withoutUnreadOriginals(arabic, fetchedFrench);
   const built = buildStories(arabic, french, existing);
   const stories = runtime.limit ? built.stories.slice(0, runtime.limit) : built.stories;
   console.log(
