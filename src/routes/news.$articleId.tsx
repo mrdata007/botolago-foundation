@@ -391,6 +391,31 @@ function ArticlePage() {
           dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
         />
 
+        {/* Licensed content says where it comes from, in the article's own
+            language, linking the original. Only licensed stories have one. */}
+        {article.source && (
+          <p
+            lang={contentLanguage}
+            dir={contentLanguage === "ar" ? "rtl" : "ltr"}
+            className={cn("mt-4", ui.text.meta, ui.tone.muted)}
+            data-testid="article-source"
+          >
+            {contentLanguage === "ar" ? "المصدر: " : "Source : "}
+            {article.source.url ? (
+              <a
+                href={article.source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn("underline underline-offset-4", ui.tone.default)}
+              >
+                {article.source.name}
+              </a>
+            ) : (
+              <span className={ui.tone.default}>{article.source.name}</span>
+            )}
+          </p>
+        )}
+
         {/* Topic/team tags — 6px chips, the language's control radius */}
         {(topicTags.length > 0 || teamNames.length > 0) && (
           <div className="mt-5 flex flex-wrap gap-1.5 border-t border-[color:var(--ui-rule)] pt-4">

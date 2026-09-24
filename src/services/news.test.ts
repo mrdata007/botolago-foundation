@@ -84,6 +84,19 @@ describe("third-party attribution is stripped at the data layer", () => {
     expect(safe.bodyHtml).toContain("نص");
   });
 
+  test("a licensed story keeps its source credit; the raw publisher label still goes", () => {
+    const source = { name: "البطولة", url: "https://www.elbotola.com/article/x.html" };
+    const safe = sanitizeArticleAttribution(detailFixture({ source }));
+
+    expect(safe.source).toEqual(source);
+    expect(safe.publisher).toBeNull();
+  });
+
+  test("an unlicensed story has no source to show", () => {
+    const safe = sanitizeArticleAttribution(detailFixture({ source: null }));
+    expect(safe.source ?? null).toBeNull();
+  });
+
   test("an internal relative link keeps its words", () => {
     const safe = sanitizeArticleAttribution(
       detailFixture({ bodyHtml: '<p>voir <a href="/matches">les matchs</a></p>' }),
