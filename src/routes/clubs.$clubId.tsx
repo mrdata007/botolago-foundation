@@ -1,6 +1,6 @@
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useId, useMemo } from "react";
 import { FootballError } from "@/backend/football/errors";
 import { ClubFollowButton } from "@/components/clubs/ClubFollowButton";
@@ -147,7 +147,9 @@ function ClubPage() {
     initialData: serverClub,
     initialDataUpdatedAt: serverClub ? loaderData?.fetchedAt : undefined,
     // Switching language keeps the club on screen while its other name loads.
-    placeholderData: keepPreviousData,
+    // Only the same club: opening another club's page from this one (the
+    // route stays mounted) must not show, or let anyone follow, the last one.
+    placeholderData: (previous) => (previous?.id === clubId ? previous : undefined),
     enabled: validId,
     retry: (count, error) => !isNotFound(error) && count < 2,
   });

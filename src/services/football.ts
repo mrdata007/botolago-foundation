@@ -91,6 +91,12 @@ export function inPlayFixtures<T extends Pick<MatchCardDto, "status">>(
  */
 const DATE_UNCONFIRMED_STATUSES: readonly MatchCardDto["status"][] = ["postponed", "cancelled"];
 
+/**
+ * The provider statuses in which the fixture will not be played as scheduled
+ * at all. A postponed or suspended match is still to come; these are not.
+ */
+const CALLED_OFF_STATUSES: readonly MatchCardDto["status"][] = ["cancelled", "abandoned"];
+
 export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string | null): Club {
   // BG-0111 — `team.code` is blank (not null) for 13 of the 21 active clubs on
   // production, and `??` does not fall back on `""`. That shipped an empty
@@ -121,7 +127,7 @@ export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string |
   };
 }
 
-function toMatch(match: MatchCardDto): Match {
+export function toMatch(match: MatchCardDto): Match {
   const venueName = match.venue?.name ?? "";
   return {
     id: match.id,
@@ -137,6 +143,7 @@ function toMatch(match: MatchCardDto): Match {
     halfTimeAwayScore: match.halfTimeAwayScore ?? undefined,
     venue: { fr: venueName, ar: venueName },
     dateUnconfirmed: DATE_UNCONFIRMED_STATUSES.includes(match.status),
+    calledOff: CALLED_OFF_STATUSES.includes(match.status),
   };
 }
 

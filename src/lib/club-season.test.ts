@@ -201,6 +201,11 @@ describe("next match, results and fixtures", () => {
     expect(clubResults([played, soon, second], CLUB)).toEqual([second, played]);
     expect(clubFixtures([later, played, postponed, soon])).toEqual([postponed, soon, later]);
   });
+
+  test("a cancelled or abandoned fixture is not listed as still to come", () => {
+    const calledOff = match({ day: 4, status: "postponed", calledOff: true });
+    expect(clubFixtures([later, calledOff, postponed, soon])).toEqual([postponed, soon, later]);
+  });
 });
 
 describe("standingsAround", () => {

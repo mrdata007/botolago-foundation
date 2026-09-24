@@ -301,6 +301,18 @@ describe("club page — the squad", () => {
   });
 });
 
+describe("club page — moving to another club", () => {
+  it("keeps a club on screen only while its own other language loads", () => {
+    // The route stays mounted from one club to the next, so a placeholder
+    // that kept any previous data would show (and follow) the last club.
+    const source = code("src/routes/clubs.$clubId.tsx");
+    expect(source).toContain(
+      "placeholderData: (previous) => (previous?.id === clubId ? previous : undefined)",
+    );
+    expect(source).not.toContain("keepPreviousData");
+  });
+});
+
 describe("the standings table", () => {
   it("links each club to its page and marks the page's own club as the current row", async () => {
     const html = await withRouter(

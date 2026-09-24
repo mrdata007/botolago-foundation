@@ -191,9 +191,13 @@ export function clubResults(matches: readonly Match[], clubId: string): Match[] 
     .reverse();
 }
 
-/** Everything still to be played (live, scheduled, postponed), soonest first. */
+/**
+ * Everything still to be played (live, scheduled, postponed), soonest first.
+ * A cancelled or abandoned fixture shows as postponed but will not be played
+ * as scheduled, so it is left out rather than listed as coming forever.
+ */
 export function clubFixtures(matches: readonly Match[]): Match[] {
-  return matches.filter((match) => match.status !== "finished").sort(byKickoff);
+  return matches.filter((match) => match.status !== "finished" && !match.calledOff).sort(byKickoff);
 }
 
 /**

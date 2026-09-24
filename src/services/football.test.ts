@@ -8,6 +8,7 @@ import {
   inPlayFixtures,
   presentFootballClub,
   selectFootballDataMode,
+  toMatch,
 } from "./football";
 
 const context = { actorId: null, requestId: "test" } as const;
@@ -196,6 +197,27 @@ describe("club pages", () => {
     expect(mapFootballError({ code: "P0002", message: "TEAM_NOT_FOUND" }).code).toBe(
       "team_not_found",
     );
+  });
+});
+
+describe("a fixture called off", () => {
+  test("cancelled and abandoned are called off; postponed and suspended are still to come", async () => {
+    const repository = new MockFootballRepository();
+    const [club] = await repository.getTeams("fr", 1, context);
+    const [fixture] = await repository.getTeamFixtures(
+      { teamId: club!.id, language: "fr", limit: 1 },
+      context,
+    );
+    const as = (status: MatchCardDto["status"]) => toMatch({ ...fixture!, status });
+    const statuses = ["cancelled", "abandoned", "postponed", "suspended"] as const;
+    expect(statuses.map((status) => as(status).calledOff)).toEqual([true, true, false, false]);
+    // Called off or not, all four still read as postponed.
+    expect(statuses.map((status) => as(status).status)).toEqual([
+      "postponed",
+      "postponed",
+      "postponed",
+      "postponed",
+    ]);
   });
 });
 
