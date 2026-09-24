@@ -143,3 +143,14 @@ describe("Profile (A-Profile)", () => {
     expect(profile).not.toMatch(/left-1\/2|translate-x/);
   });
 });
+
+describe("the setup wizard, reached again from Profile → Notifications", () => {
+  const wizard = code("src/routes/auth.profile-setup.tsx");
+
+  it("starts its language step from the app's language, so finishing never flips it", () => {
+    // Profile's language row changes the app only; seeding from the account
+    // made "Terminer"/"Passer" (both save and apply) revert an Arabic reader.
+    expect(wizard).not.toContain("setChosenLang(user.language)");
+    expect(wizard).toMatch(/useEffect\(\(\) => \{\s*setChosenLang\(lang\);\s*\}, \[lang\]\);/);
+  });
+});

@@ -2,8 +2,11 @@ import { describe, expect, test } from "bun:test";
 import type { MatchEvent } from "@/services/match-live";
 import {
   dismissGoalMoment,
+  eventsWhenFresh,
   goalToCelebrate,
   initialGoalMomentState,
+  matchRefetchInterval,
+  scoreCountsEveryGoal,
   stepGoalMoment,
   trackArrivals,
   type GoalMomentState,
@@ -196,5 +199,90 @@ describe("trackArrivals", () => {
 describe("goalToCelebrate", () => {
   test("needs a match", () => {
     expect(goalToCelebrate([event("g", "goal")], undefined)).toBeNull();
+  });
+});
+
+describe("coming back to a match page", () => {
+  // The reader left at 62′ with 1–0 and comes back at 65′: the query first
+  // hands over the copy it cached then (stale, refetching), then the fresh
+  // list with the 64′ goal they missed.
+  const cached = [event("goal-12", "goal", { minute: 12 })];
+  const fresh = [...cached, event("goal-64", "goal", { minute: 64 })];
+  const stale = { isStale: true, isFetching: true };
+  const settled = { isStale: false, isFetching: false };
+
+  test("the stale copy in flight is withheld, so the goal scored meanwhile is history", () => {
+    const { shown } = run([eventsWhenFresh(stale, cached), eventsWhenFresh(settled, fresh)], {
+      match: { status: "live", minute: 65 },
+    });
+    expect(shown).toEqual([null, null]);
+  });
+
+  test("seeding from the stale copy is exactly what used to replay it", () => {
+    const { shown } = run([cached, fresh], { match: { status: "live", minute: 65 } });
+    expect(shown).toEqual([null, "goal-64"]);
+  });
+
+  test("a live refresh only pauses the rule: the next goal still plays", () => {
+    const next = [...fresh, event("goal-70", "goal", { minute: 70 })];
+    const { shown } = run(
+      [
+        eventsWhenFresh(settled, fresh),
+        eventsWhenFresh({ isStale: true, isFetching: true }, fresh),
+        eventsWhenFresh(settled, next),
+      ],
+      { match: { status: "live", minute: 70 } },
+    );
+    expect(shown).toEqual([null, null, "goal-70"]);
+  });
+});
+
+describe("scoreCountsEveryGoal", () => {
+  const goals = [
+    event("g1", "goal"),
+    event("c1", "yellow_card"),
+    event("g2", "own_goal"),
+    event("g3", "penalty_goal"),
+  ];
+
+  test("true once the score has caught up with the goals on the sheet", () => {
+    expect(scoreCountsEveryGoal({ homeScore: 2, awayScore: 1 }, goals)).toBe(true);
+  });
+
+  test("false while a goal event is ahead of the score, so no pre-goal score is shown", () => {
+    expect(scoreCountsEveryGoal({ homeScore: 1, awayScore: 1 }, goals)).toBe(false);
+    expect(scoreCountsEveryGoal({}, [event("g1", "goal")])).toBe(false);
+  });
+});
+
+describe("matchRefetchInterval", () => {
+  const kickoff = "2026-09-24T19:00:00Z";
+  const at = (iso: string) => Date.parse(iso);
+
+  test("every 30 seconds while live", () => {
+    expect(matchRefetchInterval({ status: "live", kickoff }, at(kickoff))).toBe(30_000);
+  });
+
+  test("every minute from 15 minutes before a scheduled kick-off", () => {
+    expect(matchRefetchInterval({ status: "scheduled", kickoff }, at("2026-09-24T18:44:00Z"))).toBe(
+      false,
+    );
+    expect(matchRefetchInterval({ status: "scheduled", kickoff }, at("2026-09-24T18:46:00Z"))).toBe(
+      60_000,
+    );
+    // Past kick-off and still "scheduled": the provider has not flipped it yet.
+    expect(matchRefetchInterval({ status: "scheduled", kickoff }, at("2026-09-24T19:05:00Z"))).toBe(
+      60_000,
+    );
+  });
+
+  test("stops three hours past kick-off, and never for finished or postponed matches", () => {
+    expect(matchRefetchInterval({ status: "scheduled", kickoff }, at("2026-09-24T22:01:00Z"))).toBe(
+      false,
+    );
+    expect(matchRefetchInterval({ status: "finished", kickoff }, at(kickoff))).toBe(false);
+    expect(matchRefetchInterval({ status: "postponed", kickoff }, at(kickoff))).toBe(false);
+    expect(matchRefetchInterval(undefined, at(kickoff))).toBe(false);
+    expect(matchRefetchInterval({ status: "scheduled", kickoff: "tbd" }, at(kickoff))).toBe(false);
   });
 });

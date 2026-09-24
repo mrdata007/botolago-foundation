@@ -21,7 +21,12 @@ import {
 } from "@/components/matches/MatchTabs";
 import { MatchTopBar } from "@/components/matches/MatchTopBar";
 import { StatComparison } from "@/components/matches/StatComparison";
-import { useGoalMoment } from "@/components/matches/goal-moment";
+import {
+  eventsWhenFresh,
+  matchRefetchInterval,
+  scoreCountsEveryGoal,
+  useGoalMoment,
+} from "@/components/matches/goal-moment";
 import { useScrolledPast } from "@/components/matches/use-scrolled-past";
 import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -59,11 +64,15 @@ export const Route = createFileRoute("/matches/$matchId")({
    */
   loader: async ({ params, context }) => {
     try {
+      const queryKey = ["football", "match-detail", params.matchId, "fr"];
       const detail = await context.queryClient.ensureQueryData({
-        queryKey: ["football", "match-detail", params.matchId, "fr"],
+        queryKey,
         queryFn: () => footballService.getMatchDetailPage(params.matchId, "fr"),
       });
-      return { detail };
+      // When this copy was fetched, so the page's query knows how old its
+      // seed is: the router can hand back loader data it cached minutes ago.
+      const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
+      return { detail, fetchedAt };
     } catch {
       return null;
     }
@@ -119,10 +128,14 @@ function MatchDetailPage() {
     queryKey: ["football", "match-detail", matchId, lang],
     queryFn: () => footballService.getMatchDetailPage(matchId, lang),
     // Identical on the server and in the browser's first render — see the
-    // loader. Without it the two trees disagree.
+    // loader. Without it the two trees disagree. With its real age, so a seed
+    // the router kept from an earlier visit is refetched, not trusted as new.
     initialData: serverDetail,
-    // Live matches refresh on a calm cadence; paused while the tab is hidden.
-    refetchInterval: (query) => (query.state.data?.match.status === "live" ? 30_000 : false),
+    initialDataUpdatedAt: serverDetail ? loaderData?.fetchedAt : undefined,
+    // Live matches refresh on a calm cadence, and so does a match about to
+    // start, so a reader waiting on the page sees it kick off. Paused while
+    // the tab is hidden.
+    refetchInterval: (query) => matchRefetchInterval(query.state.data?.match, Date.now()),
     refetchIntervalInBackground: false,
   });
   // Related news is a News surface, so it is gated on the same flag as every
@@ -144,9 +157,10 @@ function MatchDetailPage() {
   const lineups = detailQ.data?.lineups ?? [];
 
   // Above the early returns (Rules of Hooks), and fed the events whether or
-  // not they are loaded yet: it seeds from the first list it sees, so a goal
-  // already on the sheet never plays.
-  const { goal, dismiss } = useGoalMoment(matchId, live?.events, match);
+  // not they are loaded yet: it seeds from the first FRESH list it sees, so a
+  // goal already on the sheet — or scored while the reader was elsewhere,
+  // still missing from the cached copy they come back to — never plays.
+  const { goal, dismiss } = useGoalMoment(matchId, eventsWhenFresh(detailQ, live?.events), match);
 
   // Both sides together, with the clash rule: a split header, a stat bar or
   // an H2H bar must never paint two independent (and possibly equal) reds.
@@ -384,7 +398,11 @@ function MatchDetailPage() {
           palette={goal.side === "home" ? palettes.home : palettes.away}
           scorer={goal.playerId ? names.get(goal.playerId) : undefined}
           assist={goal.relatedPlayerId ? names.get(goal.relatedPlayerId) : undefined}
-          score={{ home: match.homeScore ?? 0, away: match.awayScore ?? 0 }}
+          score={
+            scoreCountsEveryGoal(match, live.events)
+              ? { home: match.homeScore ?? 0, away: match.awayScore ?? 0 }
+              : undefined
+          }
           onDone={dismiss}
         />
       ) : null}

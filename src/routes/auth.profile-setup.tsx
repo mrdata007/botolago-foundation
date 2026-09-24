@@ -78,9 +78,16 @@ function ProfileSetupPage() {
       setAvatar(user.avatarDataUrl);
       setFavoriteClubId(user.favoriteClubId);
       setPrefs(user.notifications);
-      setChosenLang(user.language);
     }
   }, [user]);
+
+  // The language step starts from — and follows — the language the app is
+  // showing, not the one last saved on the account. Profile's language row
+  // changes the app only, so seeding from the account made "Terminer" or
+  // "Passer" (both save) flip an Arabic reader back to French.
+  useEffect(() => {
+    setChosenLang(lang);
+  }, [lang]);
 
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],

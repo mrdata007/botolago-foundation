@@ -63,8 +63,12 @@ export function GoalMoment({
   palette: ClubPalette;
   scorer?: string;
   assist?: string;
-  /** The score after the goal, home first. */
-  score: { home: number; away: number };
+  /**
+   * The score after the goal, home first. Absent while the score has not
+   * caught up with the goal yet (`scoreCountsEveryGoal`): no score is better
+   * than the one before the goal.
+   */
+  score?: { home: number; away: number };
   onDone: () => void;
 }) {
   const { t, tr } = useI18n();
@@ -95,13 +99,13 @@ export function GoalMoment({
       {event.addedTime > 0 ? `+${event.addedTime}` : ""}′
     </bdi>
   );
-  const newScore = (
+  const newScore = score ? (
     <span className="inline-flex items-center gap-1">
       <bdi>{score.home}</bdi>
       <span>–</span>
       <bdi>{score.away}</bdi>
     </span>
-  );
+  ) : null;
   const clubName = tr(club.name);
 
   if (reduced) {
@@ -135,16 +139,18 @@ export function GoalMoment({
           >
             {scorer ?? clubName} · {minute}
           </p>
-          <span
-            className={cn(
-              "shrink-0 px-2.5 py-0.5",
-              ui.surface.scorebox,
-              ui.radius.segment,
-              ui.score.sm,
-            )}
-          >
-            {newScore}
-          </span>
+          {newScore ? (
+            <span
+              className={cn(
+                "shrink-0 px-2.5 py-0.5",
+                ui.surface.scorebox,
+                ui.radius.segment,
+                ui.score.sm,
+              )}
+            >
+              {newScore}
+            </span>
+          ) : null}
         </div>
       </div>
     );
@@ -215,13 +221,11 @@ export function GoalMoment({
               )}
             >
               {assist ? (
-                <>
-                  <span>
-                    {t("matches.event.assist")} {assist}
-                  </span>
-                  <span aria-hidden>·</span>
-                </>
+                <span>
+                  {t("matches.event.assist")} {assist}
+                </span>
               ) : null}
+              {assist && newScore ? <span aria-hidden>·</span> : null}
               {newScore}
             </p>
           </div>
