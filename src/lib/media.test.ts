@@ -123,6 +123,35 @@ describe("responsiveMedia", () => {
     ).toBeUndefined();
   });
 
+  test("a box that changes shape at md too lists that cut first, since the first match wins", () => {
+    const heroUrl = resolveMediaUrl({ storagePath: "news/hero.jpg" }, SUPABASE_URL);
+    const heightAt640 = (srcSet: string | undefined) =>
+      srcSet
+        ?.split(", ")
+        .find((candidate) => candidate.endsWith(" 640w"))
+        ?.match(/height=(\d+)/)?.[1];
+
+    const hero = responsiveMedia(
+      heroUrl,
+      { kind: "photo", sizes: "100vw", ratio: 2, mdRatio: 16 / 7 },
+      SUPABASE_URL,
+    );
+    expect(heightAt640(hero.srcSet)).toBe("320");
+    expect(hero.sources?.map((source) => source.media)).toEqual(["(min-width: 768px)"]);
+    expect(heightAt640(hero.sources?.[0]?.srcSet)).toBe("280");
+
+    const both = responsiveMedia(
+      heroUrl,
+      { kind: "photo", sizes: "100vw", ratio: 1, smRatio: 4 / 3, mdRatio: 2 },
+      SUPABASE_URL,
+    );
+    expect(both.sources?.map((source) => source.media)).toEqual([
+      "(min-width: 768px)",
+      "(min-width: 640px)",
+    ]);
+    expect(both.sources?.map((source) => heightAt640(source.srcSet))).toEqual(["320", "480"]);
+  });
+
   test("keeps the path encoding resolveMediaUrl applied, so every candidate is one token", () => {
     const encoded = resolveMediaUrl(
       { storagePath: "news/Équipe du jour/hero #1.webp" },

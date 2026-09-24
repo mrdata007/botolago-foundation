@@ -1,22 +1,23 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useId, useState } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { AtSign, Loader2, Lock, Mail, User } from "lucide-react";
 import {
   AuthShell,
   AuthPrimaryButton,
   AuthSecondaryButton,
   AuthDivider,
   AuthFormError,
-  authLinkClass,
+  AuthPasswordToggle,
   GoogleGlyph,
   AppleGlyph,
 } from "@/components/auth/AuthShell";
+import { authFieldClass, authFieldIconClass, authLinkClass } from "@/components/auth/auth-classes";
 import { ConsentLine } from "@/components/legal/ConsentLine";
 import {
   noticeConsentSegments,
   registerConsentSegments,
 } from "@/components/legal/consent-segments";
-import { ui, UiCheckbox, UiInput } from "@/components/ui-kit";
+import { ui, UiButton, UiCheckbox, UiInput } from "@/components/ui-kit";
 import { OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
@@ -162,12 +163,39 @@ function RegisterPage() {
       title={t("auth.register.title")}
       subtitle={t("auth.register.subtitle")}
       footer={
-        <span>
-          {t("auth.register.have_account")}{" "}
-          <Link to="/auth/login" search={{ next }} className={authLinkClass.onMesh}>
-            {t("auth.register.login_link")}
-          </Link>
-        </span>
+        <>
+          <p
+            className={cn(
+              "flex flex-wrap items-center justify-center gap-x-1 text-center",
+              ui.text.secondary,
+              "[font-weight:var(--ui-weight-body)]",
+              ui.tone.muted,
+            )}
+          >
+            <span>{t("auth.register.have_account")}</span>
+            <Link to="/auth/login" search={{ next }} className={authLinkClass.onSurface}>
+              {t("auth.register.login_link")}
+            </Link>
+          </p>
+          {/* The notice covers the provider buttons, which create an account
+              without the checkbox above. `linkClassName`: the brand
+              foreground, not `ConsentLine`'s default. The leading is the
+              token, redeclared for Arabic (BG-0124). It used to end on a
+              second "Se connecter" link, a copy of the one just above. */}
+          <p
+            className={cn(
+              "text-center",
+              ui.text.micro,
+              "leading-[var(--ui-leading-copy)]",
+              ui.tone.muted,
+            )}
+          >
+            <ConsentLine
+              segments={noticeConsentSegments(t)}
+              linkClassName={authLinkClass.consent}
+            />
+          </p>
+        </>
       }
     >
       <form onSubmit={onSubmit} noValidate className="grid gap-3">
@@ -181,6 +209,8 @@ function RegisterPage() {
           onChange={(e) => setFullName(e.target.value)}
           error={errors.fullName ? t(errors.fullName) : undefined}
           reserveError
+          fieldClassName={authFieldClass(!!errors.fullName)}
+          leading={<User className={authFieldIconClass} aria-hidden />}
         />
 
         <UiInput
@@ -193,6 +223,8 @@ function RegisterPage() {
           onChange={(e) => setUsername(e.target.value)}
           error={errors.username ? t(errors.username) : undefined}
           reserveError
+          fieldClassName={authFieldClass(!!errors.username)}
+          leading={<AtSign className={authFieldIconClass} aria-hidden />}
         />
 
         <UiInput
@@ -206,6 +238,8 @@ function RegisterPage() {
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email ? t(errors.email) : undefined}
           reserveError
+          fieldClassName={authFieldClass(!!errors.email)}
+          leading={<Mail className={authFieldIconClass} aria-hidden />}
         />
 
         <div>
@@ -225,27 +259,9 @@ function RegisterPage() {
             aria-describedby={`${ids.pw}-strength`}
             error={errors.password ? t(errors.password) : undefined}
             reserveError
-            trailing={
-              <button
-                type="button"
-                onClick={() => setShowPw((s) => !s)}
-                aria-label={showPw ? t("auth.hide_password") : t("auth.show_password")}
-                className={cn(
-                  "grid place-items-center px-2",
-                  ui.space.tap,
-                  ui.radius.control,
-                  ui.tone.muted,
-                  ui.focus,
-                  "hover:bg-[color:var(--ui-surface-sunken)]",
-                )}
-              >
-                {showPw ? (
-                  <EyeOff className="h-4 w-4" aria-hidden />
-                ) : (
-                  <Eye className="h-4 w-4" aria-hidden />
-                )}
-              </button>
-            }
+            fieldClassName={authFieldClass(!!errors.password)}
+            leading={<Lock className={authFieldIconClass} aria-hidden />}
+            trailing={<AuthPasswordToggle shown={showPw} onToggle={() => setShowPw((s) => !s)} />}
           />
           {password && (
             <div id={`${ids.pw}-strength`} className="mt-1.5 flex items-center gap-2">
@@ -276,6 +292,8 @@ function RegisterPage() {
           onChange={(e) => setConfirm(e.target.value)}
           error={errors.confirmPassword ? t(errors.confirmPassword) : undefined}
           reserveError
+          fieldClassName={authFieldClass(!!errors.confirmPassword)}
+          leading={<Lock className={authFieldIconClass} aria-hidden />}
         />
 
         {/* The consent box was 16px painted and 16px targeted — a quarter of
@@ -315,12 +333,13 @@ function RegisterPage() {
         {/* BG-0111 — no OAuth provider is enabled on this project, so the
             divider goes with the buttons: an "ou continuer avec" rule with
             nothing under it reads as a broken screen. See
-            `OAUTH_PROVIDERS_ENABLED`. */}
+            `OAUTH_PROVIDERS_ENABLED`. Google is the white outline pill, Apple
+            its own navy one (`ink`), as on login. */}
         {OAUTH_PROVIDERS_ENABLED && (
           <>
             <AuthDivider label={t("auth.or_continue_with")} />
 
-            <div className="grid gap-2">
+            <div className="grid gap-2.5">
               <AuthSecondaryButton
                 type="button"
                 onClick={() => onSocial("google")}
@@ -328,42 +347,17 @@ function RegisterPage() {
               >
                 <GoogleGlyph /> {t("auth.google")}
               </AuthSecondaryButton>
-              <AuthSecondaryButton
+              <UiButton
+                variant="ink"
                 type="button"
                 onClick={() => onSocial("apple")}
                 disabled={submitting}
               >
                 <AppleGlyph /> {t("auth.apple")}
-              </AuthSecondaryButton>
+              </UiButton>
             </div>
           </>
         )}
-
-        {/* `linkClassName`: `ConsentLine` defaults to `--brand-primary`
-            (= `--ui-ink`), a fill colour used as a foreground — BG-0083, and
-            1.25:1 on dark. `leading-relaxed` was a Tailwind literal on a line
-            that wraps in both languages, where the leading token is
-            redeclared for Arabic (BG-0124) and a bare 1.625 is not. */}
-        <p
-          className={cn(
-            "text-center",
-            ui.text.micro,
-            "leading-[var(--ui-leading-copy)]",
-            ui.tone.muted,
-          )}
-        >
-          <ConsentLine segments={noticeConsentSegments(t)} linkClassName={authLinkClass.consent} />{" "}
-          <Link
-            to="/auth/login"
-            search={{ next }}
-            className={cn(
-              "[font-weight:var(--ui-weight-heavy)] underline underline-offset-4",
-              ui.tone.default,
-            )}
-          >
-            {t("auth.register.login_link")}
-          </Link>
-        </p>
       </form>
     </AuthShell>
   );

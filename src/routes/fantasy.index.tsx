@@ -1,52 +1,49 @@
 import fantasyHeroPhoto from "@/assets/photos/fantasy-hero.webp";
 import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
-import rankingCardPhoto from "@/assets/photos/ranking-card.webp";
 import { BrandedText } from "@/components/brand/BrandedText";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowRight,
-  ArrowRightLeft,
+  ArrowDownUp,
   Bell,
+  BookOpen,
   CalendarDays,
+  ChevronRight,
+  CircleHelp,
   Mail,
-  Newspaper,
   Plus,
-  Settings,
+  Settings2,
   Shirt,
-  Trophy,
+  SlidersHorizontal,
+  Star,
+  TrendingUp,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
-import { FantasyBrand } from "@/components/brand/FantasyBrand";
 import { MediaImage } from "@/components/common/FailureAwareImage";
+import {
+  SectionGroupHeader,
+  SectionHeader,
+  SectionHeaderLink,
+} from "@/components/common/SectionHeader";
+import { useDeadlineCountdown, formatDeadline } from "@/components/fpl/deadline";
+import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
+import { LeagueList } from "@/components/fantasy-lists/LeagueList";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
+import { GameweekStatusText } from "@/components/fpl/GameweekStatusText";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
-import {
-  ui,
-  UiCard,
-  UiPill,
-  UiSegmented,
-  UiSkeleton,
-  UiTable,
-  UiTBody,
-  UiTD,
-  UiTH,
-  UiTHead,
-  UiTR,
-} from "@/components/ui-kit";
+import { ui, UiCard, UiLinkButton, UiLivePill, UiPageTitle, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
-import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { newsService } from "@/services/news";
+import type { Gameweek } from "@/types/domain";
 
 export const Route = createFileRoute("/fantasy/")({
   component: FantasyHub,
@@ -56,28 +53,36 @@ export const Route = createFileRoute("/fantasy/")({
  * FPL-001 Fantasy hub + FPL-015 "Leagues & Cups" section, reconstructed
  * screen-for-screen with BotolaGO identity and Botola Pro data.
  *
- * Converted to the UI kit (BG-0092). The hub carried the largest single
- * cluster of the section's debt: 33 `--fpl-*` references, a `<style>` block
- * with a hand-written `rgba()` team card, three translucent `bg-white/NN`
- * panels that left themed copy on a permanently white pane, a literal
- * `linear-gradient(180deg, …)` that mirrors the wrong way under `dir="rtl"`,
- * and `--fpl-ink-deep` used as a text colour on nine headings. The layout,
- * the data flow and every query are unchanged — only the presentation is.
+ * Option A (A-Fantasy), top to bottom: the global white top bar (the hub has
+ * no `UiHeader`, so the bar returns on phones here), the "Fantasy" title band,
+ * the gameweek on a floodlit photo with its deadline and a countdown pill,
+ * the manager's gradient team card, "Composer l'équipe" as the one gradient
+ * call to action, the Transfers row, four shortcut tiles, then "Mes ligues"
+ * as rows with an edge bar. Below the board's fold, the pieces of the old hub
+ * that are real features stay, restyled: the cup note, the News rail (hidden
+ * while News is), the deadline notification switch and the rules / help links.
  *
- * The pills and the Leagues/Cups tabs now come straight from the kit rather
- * than through `components/fpl/primitives`. `FplPill` on its default tone was
- * `UiPill`, and `FplSegmented tone="onLight"` was `UiSegmented
- * tone="onSurface"` — the adapter's whole contribution was renaming the tone.
- * It is a migration seam for screens not yet converted, and this one is.
+ * NOT copied from the board, on purpose:
+ *   - "▲ 1 210" rank movement — the summary has no previous overall rank;
+ *   - the club-coloured league bars — leagues carry no club, so private
+ *     leagues take the ink edge and the general ones the brand gradient;
+ *   - the "J.14 · EN DIRECT" pill — shown only when the backend reports the
+ *     gameweek live, which the demo data never does;
+ *   - the `to right` photo scrim — it is `to bottom` (a horizontal gradient
+ *     lands on the wrong side in Arabic).
+ *
+ * The caption "Journée 14 · Date limite" stays ONE element: the e2e journey
+ * finds the hub by that exact text.
  */
 function FantasyHub() {
   const { t, lang } = useI18n();
   const { user, status: authStatus } = useAuth();
   const screen = useFantasyScreen({ needsTeam: false, needsAuth: false });
-  const owned = useFantasyOwned();
   const { source, key } = useFantasyDataSource();
   const team = screen.team;
   const gameweek = screen.gameweek;
+  const isGuestView = authStatus !== "authenticated" || source === "guest";
+  const hasTeam = screen.phase === "ready" && !!team && !isGuestView;
 
   // News is hidden at launch (owner decision — see `@/lib/feature-flags`), so
   // the hub's "News & Video" rail is not rendered and its feed is not fetched.
@@ -92,212 +97,119 @@ function FantasyHub() {
   // when the feed has no illustrated article at all.
   const illustrated = (articles.data ?? []).filter((article) => !!article.heroUrl);
   const hubArticles = (illustrated.length > 0 ? illustrated : (articles.data ?? [])).slice(0, 6);
+  // The same query, key and service Home and the rankings use, so the card
+  // and those screens read one cached answer.
+  const summary = useQuery({
+    queryKey: key("summary"),
+    queryFn: () => fantasyService.getSummary(),
+    enabled: hasTeam,
+  });
+  // Every source, like the leagues screen itself — it used to be cloud-only,
+  // which left the demo hub saying "no leagues" beside a leagues screen that
+  // listed two.
   const leagues = useQuery({
     queryKey: key("leagues", "private"),
     queryFn: () => fantasyService.getLeagues("private"),
-    enabled: source === "cloud" && screen.phase === "ready" && !!team,
+    enabled: hasTeam,
   });
 
-  const deadlineText = gameweek
-    ? new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-        weekday: "long",
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-        // Pinned to the competition calendar, not the viewer's browser: the
-        // deadline is 2026-09-24T18:30Z and must read 19:30 Casablanca for
-        // everyone (BG-0100).
-        timeZone: MATCH_TIME_ZONE,
-      }).format(new Date(gameweek.deadline))
-    : null;
-
-  const teamCardClass = cn(
-    "flex min-h-[var(--ui-row-min)] items-center justify-center gap-2 px-4 text-center",
-    ui.radius.control,
-    ui.surface.card,
-    ui.text.subtitle,
-    ui.tone.ink,
-    ui.focus,
-  );
-
-  const teamCard = (() => {
-    if (screen.phase === "loading") {
-      return <UiSkeleton className="h-14" />;
-    }
-    if (authStatus !== "authenticated" || source === "guest") {
+  const teamArea = (() => {
+    if (screen.phase === "loading" || authStatus === "loading") {
       return (
-        <Link to="/auth/login" search={{ next: "/fantasy" }} className={teamCardClass}>
-          {t("auth.prompt.login")} <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
-        </Link>
+        <div role="status" aria-label={t("state.loading")} className="space-y-3">
+          <UiSkeleton className={cn("h-44", ui.radius.sheet)} />
+          <UiSkeleton className={cn("h-12", ui.radius.full)} />
+        </div>
       );
     }
-    if (team) {
+    if (screen.phase !== "ready") {
       return (
-        <Link to="/fantasy/profile" className={teamCardClass}>
-          <span className="truncate">{team.teamName}</span>
-          <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
-        </Link>
+        <FantasyPhaseBody phase={screen.phase} next="/fantasy" retry={screen.retry} className="" />
       );
     }
+    if (isGuestView) {
+      return <FantasyPhaseBody phase="guest" next="/fantasy" retry={screen.retry} className="" />;
+    }
+    if (!team) {
+      return (
+        <>
+          <div
+            className={cn(
+              "px-4 py-4",
+              ui.radius.sheet,
+              ui.shadow.lifted,
+              "text-[color:var(--ui-ink-deep)]",
+            )}
+            style={{ backgroundImage: "var(--ui-grad-action)" }}
+          >
+            <p className={ui.display.section}>{t("fpl.your_team")}</p>
+            <p className={cn("mt-1", ui.text.secondary, "[font-weight:var(--ui-weight-strong)]")}>
+              {t("fpl.no_team_yet")}
+            </p>
+          </div>
+          <UiLinkButton to="/fantasy/create" variant="ink" className="mt-3">
+            <Plus className="h-5 w-5" aria-hidden />
+            {t("fpl.create_team")}
+          </UiLinkButton>
+        </>
+      );
+    }
+    const manager = user?.displayName?.trim() || summary.data?.managerName || team.managerName;
     return (
-      <Link to="/fantasy/create" className={teamCardClass}>
-        {t("fpl.create_team")} <ArrowRight className="h-5 w-5 shrink-0" aria-hidden />
-      </Link>
+      <>
+        <TeamCard
+          teamName={team.teamName}
+          manager={manager && manager !== team.teamName ? manager : null}
+          gameweek={gameweek}
+          points={summary.data?.gameweekPoints ?? null}
+          total={summary.data?.totalPoints ?? null}
+          overallRank={summary.data?.overallRank ?? null}
+          pending={summary.isPending}
+        />
+        <UiLinkButton to="/fantasy/team" variant="gradient" className="mt-3.5">
+          <Shirt className="h-5 w-5" aria-hidden />
+          {t("fpl.pick_team")}
+        </UiLinkButton>
+        <TransfersRow freeTransfers={team.freeTransfers} bank={team.bank} />
+      </>
     );
   })();
 
   return (
-    <FantasyFrame bottomNav>
-      {/* Hero */}
-      <section
-        className={cn(
-          "relative overflow-hidden pb-4 pt-[max(env(safe-area-inset-top),1rem)]",
-          ui.space.gutter,
-          ui.tone.onGradHeader,
-        )}
-        style={{ backgroundImage: "var(--ui-grad-hero)" }}
-      >
-        {/* A floodlit pitch on the end side of the hero, fading into the
-            gradient before it reaches the title. Decorative. */}
-        <img
-          src={fantasyHeroPhoto}
-          alt=""
-          aria-hidden
-          decoding="async"
-          className="pointer-events-none absolute end-0 top-0 h-72 w-full object-cover object-[50%_75%] rtl:-scale-x-100 sm:h-64 sm:w-1/2"
-          style={{
-            // Faded towards the title and at its lower edge, so it has no
-            // hard border inside the gradient.
-            maskImage:
-              "linear-gradient(to left, black 25%, transparent 75%), linear-gradient(to bottom, black 55%, transparent 100%)",
-            maskComposite: "intersect",
-            WebkitMaskImage:
-              "linear-gradient(to left, black 25%, transparent 75%), linear-gradient(to bottom, black 55%, transparent 100%)",
-            WebkitMaskComposite: "source-in",
-          }}
-        />
-        <h1 className="relative pt-6">
-          <FantasyBrand endorser="mobile" />
-        </h1>
-        <div className="relative mt-4">{teamCard}</div>
+    <FantasyFrame bottomNav topBar="always">
+      <UiPageTitle title={t("fantasy.title")} />
 
-        <UiCard className="relative mt-3 text-center" padding="md">
-          {screen.phase === "ready" || screen.phase === "guest" || screen.phase === "no_team" ? (
-            <>
-              {gameweek ? (
-                // The deadline is the one thing on this card with a clock on
-                // it, so it is the figure; gameweek and "deadline" are its
-                // caption. It used to be a pill over a line of body text.
-                <p className="flex flex-col items-center gap-1">
-                  <span className={cn(ui.text.label, ui.tone.muted)}>
-                    {`${t("fpl.gameweek")} ${gameweek.number} · ${t("fpl.deadline")}`}
-                  </span>
-                  <span className={cn(ui.text.title, ui.tone.ink)}>{deadlineText}</span>
-                </p>
-              ) : null}
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <HubButton
-                  to="/fantasy/team"
-                  gradient
-                  icon={<Shirt className="h-4 w-4 shrink-0" aria-hidden />}
-                >
-                  {t("fpl.pick_team")}
-                </HubButton>
-                <HubButton
-                  to="/fantasy/transfers"
-                  gradient
-                  icon={<ArrowRightLeft className="h-4 w-4 shrink-0" aria-hidden />}
-                >
-                  {t("fpl.transfers")}
-                </HubButton>
-                <HubButton to="/matches">{t("fpl.fixtures")}</HubButton>
-                <HubButton to="/fantasy/fixtures">{t("fpl.fdr")}</HubButton>
-                <HubButton to="/fantasy/players">{t("fpl.player_stats")}</HubButton>
-                <HubButton to="/fantasy/top-players">{t("fpl.top_players")}</HubButton>
-              </div>
-            </>
-          ) : (
-            <div className="-mx-4 -mb-4">
-              <FantasyPhaseBody phase={screen.phase} next="/fantasy" retry={screen.retry} />
-            </div>
-          )}
-        </UiCard>
-      </section>
+      {gameweek && screen.phase === "ready" ? (
+        <GameweekBand gameweek={gameweek} />
+      ) : screen.phase === "loading" ? (
+        <UiSkeleton className="h-24 rounded-none" />
+      ) : null}
 
-      {/* Promotional banner slot (Draft banner in the reference → BotolaGO overall rankings) */}
-      <div className={cn("pt-4", ui.space.gutter)}>
-        <Link
-          to="/fantasy/rankings"
-          className={cn(
-            "relative block overflow-hidden px-4 py-4 text-start",
-            ui.radius.control,
-            ui.surface.ink,
-            ui.focus,
-          )}
-        >
-          {/* The trophy photo fills the end side of the card and fades out
-              towards the title, which sits on the plain ink at the start.
-              The mask flips with the image in Arabic, so the fade always
-              faces the text. */}
-          <img
-            src={rankingCardPhoto}
-            alt=""
-            aria-hidden
-            loading="lazy"
-            decoding="async"
-            className="pointer-events-none absolute inset-y-0 end-0 h-full w-1/2 object-cover object-[100%_50%] rtl:-scale-x-100 sm:w-2/5"
-            style={{
-              maskImage: "linear-gradient(to left, black 55%, transparent)",
-              WebkitMaskImage: "linear-gradient(to left, black 55%, transparent)",
-            }}
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{ background: "color-mix(in oklab, var(--ui-ink-deep) 30%, transparent)" }}
-          />
-          {/* Prose, not a figure — the stat ramp is numerals only. */}
-          <span className={cn("relative block max-w-[55%]", ui.text.hero, ui.tone.onInkPlain)}>
-            {t("fpl.rankings")}
-          </span>
-          <span
-            className={cn(
-              "relative mt-1 inline-flex items-center gap-1",
-              ui.text.secondary,
-              "[font-weight:var(--ui-weight-heavy)]",
-              ui.tone.onInkPlain,
-            )}
-          >
-            {t("fpl.view_all")} <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
-          </span>
-        </Link>
-      </div>
+      <div className={cn("pt-3.5", ui.space.gutter)}>{teamArea}</div>
+
+      <ShortcutTiles />
+
+      <LeaguesSection
+        phase={screen.phase}
+        hasTeam={hasTeam}
+        gameweek={gameweek?.number ?? null}
+        overallRank={summary.data?.overallRank ?? null}
+        leagues={leagues.data ?? []}
+        leaguesLoading={leagues.isPending && leagues.isEnabled}
+      />
 
       {/* News & Video — hidden at launch (NEWS_ENABLED). */}
       {NEWS_ENABLED && (
-        <section className="pt-5">
-          <div className={cn("flex items-center justify-between gap-2", ui.space.gutter)}>
-            <h2 className={cn("min-w-0 truncate", ui.text.section, ui.tone.default)}>
-              {t("fpl.news_video")}
-            </h2>
-            <Link
-              to="/news"
-              className={cn(
-                "inline-flex shrink-0 items-center gap-1",
-                ui.text.secondary,
-                "[font-weight:var(--ui-weight-heavy)]",
-                ui.tone.ink,
-                ui.focus,
-                ui.radius.control,
-              )}
-            >
-              {t("fpl.view_all")} <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
-            </Link>
+        <section className="mt-6">
+          <div className={ui.space.gutter}>
+            <SectionHeader
+              title={t("fpl.news_video")}
+              action={<SectionHeaderLink to="/news">{t("fpl.view_all")}</SectionHeaderLink>}
+            />
           </div>
           <div
             className={cn(
-              "mt-2 flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none]",
+              "flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none]",
               ui.space.gutter,
             )}
           >
@@ -308,8 +220,7 @@ function FantasyHub() {
                 params={{ articleId: article.id }}
                 className={cn(
                   "w-[190px] shrink-0 snap-start overflow-hidden",
-                  ui.radius.tight,
-                  ui.surface.sunken,
+                  ui.surface.card,
                   ui.focus,
                 )}
               >
@@ -324,12 +235,7 @@ function FantasyHub() {
                 ) : null}
                 <p
                   className={cn(
-                    // No `leading-*` literal beside the ramp step: the step
-                    // carries its own leading, per script (BG-0124). This one
-                    // was `leading-snug` and never applied — `ui.text.meta`
-                    // sets the same property after it — so it was a second
-                    // source of truth that happened to be losing.
-                    "line-clamp-3 px-2 py-2",
+                    "line-clamp-3 px-3 py-2",
                     ui.text.meta,
                     "[font-weight:var(--ui-weight-heavy)]",
                     ui.tone.default,
@@ -341,346 +247,402 @@ function FantasyHub() {
             ))}
             {articles.isPending
               ? [0, 1, 2].map((index) => (
-                  <UiSkeleton key={index} className="h-[170px] w-[190px] shrink-0" />
+                  <UiSkeleton
+                    key={index}
+                    className={cn("h-[170px] w-[190px] shrink-0", ui.radius.card)}
+                  />
                 ))
               : null}
           </div>
         </section>
       )}
 
-      {/* Leagues & Cups */}
-      <LeaguesAndCups
-        phase={screen.phase}
-        hasTeam={!!team}
-        gameweek={gameweek?.number ?? null}
-        leagues={leagues.data ?? []}
-        leaguesLoading={leagues.isPending && leagues.isEnabled}
-      />
-
-      {/* Notifications */}
       <NotificationsSection />
 
-      {/* Follow BotolaGO */}
-      <section className={cn("pt-6", ui.space.gutter)}>
-        <h2 className={cn(ui.text.section, ui.tone.default)}>
-          <BrandedText text={t("fpl.follow")} />
-        </h2>
-        {/* Three tiles with News, two without it — the row stays balanced
-            instead of leaving a gap where the News tile was. */}
-        <div className={cn("mt-3 grid gap-2", NEWS_ENABLED ? "grid-cols-3" : "grid-cols-2")}>
-          {NEWS_ENABLED && (
-            <FollowCard
-              to="/news"
-              label={t("nav.news")}
-              icon={<Newspaper className="h-7 w-7" aria-hidden />}
-            />
-          )}
-          <FollowCard
-            to="/matches"
-            label={t("nav.matches")}
-            icon={<CalendarDays className="h-7 w-7" aria-hidden />}
-          />
-          <FollowCard
-            to="/fantasy/rankings"
-            label={t("fantasy.tab.rankings")}
-            icon={<Trophy className="h-7 w-7" aria-hidden />}
-          />
-        </div>
-      </section>
-
-      {/* More about */}
-      <section
-        className={cn("mt-6 py-6", ui.space.gutter, ui.tone.onGradHeader)}
-        // `to bottom`, not `180deg`: a degree angle lands on the opposite
-        // edge under `dir="rtl"`.
-        style={{ backgroundImage: "var(--ui-grad-header)" }}
-      >
-        <h2 className={ui.text.section}>
-          <BrandedText text={t("fpl.more_about")} tone="light" />
-        </h2>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <MoreAboutLink to="/fantasy/rules">{t("fpl.rules")}</MoreAboutLink>
-          <MoreAboutLink to="/fantasy/help">{t("fpl.help_rules")}</MoreAboutLink>
-        </div>
-      </section>
-
-      {owned.mutationStatus === "error" ? null : null}
+      <MoreAboutSection />
     </FantasyFrame>
   );
 }
 
-function MoreAboutLink({ to, children }: { to: string; children: ReactNode }) {
+/* ------------------------------------------------------------------ */
+/* The gameweek band                                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * "JOURNÉE 14 · DATE LIMITE / ven. 25 sept., 19:30 — [⏱ 1j 13h 59min]" on the
+ * floodlit photo.
+ *
+ * The scrim runs `to bottom` over the whole band: the board's `to right`
+ * darkened only the text side, and in Arabic the text is on the other side.
+ * Text on it is the plain on-ink white; the countdown pill is the action
+ * gradient with ink-deep, the pairing the gradient is specified for. After
+ * the deadline the pill gives way to the gameweek's state, when there is one.
+ */
+function GameweekBand({ gameweek }: { gameweek: Gameweek }) {
+  const { t, lang } = useI18n();
+  const left = useDeadlineCountdown(gameweek.deadline);
   return (
-    <Link
-      to={to}
-      className={cn(
-        // `min-h-16` (64px) stays a literal deliberately. It is not a control
-        // height — it clears `--ui-row-min` with 16px to spare — it is the
-        // height of a two-up tile, and the ramp has no step for that. Rule 5
-        // exists to stop a control being sized under the tap floor by a
-        // literal; shrinking this to `--ui-row-min` to satisfy the letter of
-        // it would make the tile smaller for no reason.
-        "grid min-h-16 place-items-center px-3 text-center",
-        ui.radius.control,
-        ui.surface.card,
-        ui.text.bodyStrong,
-        ui.tone.ink,
-        ui.focus,
-      )}
+    <section
+      aria-label={`${t("fpl.gameweek")} ${gameweek.number}`}
+      className="relative isolate overflow-hidden"
     >
-      {children}
-    </Link>
+      <img
+        src={fantasyHeroPhoto}
+        alt=""
+        aria-hidden
+        decoding="async"
+        className="absolute inset-0 -z-10 h-full w-full object-cover object-[50%_55%]"
+      />
+      <span
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{
+          backgroundImage:
+            "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 76%, transparent), color-mix(in oklab, var(--ui-ink-deep) 90%, transparent))",
+        }}
+      />
+      <div className={cn("py-3.5", ui.space.gutter, ui.tone.onInkPlain)}>
+        {/* One element, "Journée 14 · Date limite" — pinned by the e2e
+            journey. The space between the two spans is part of the text. */}
+        <p className="flex flex-wrap items-baseline gap-x-2">
+          <span className={cn(ui.display.title, "uppercase")}>
+            {`${t("fpl.gameweek")} ${gameweek.number}`}
+          </span>{" "}
+          <span className={cn(ui.text.label, ui.tone.onInkMuted)}>{`· ${t("fpl.deadline")}`}</span>
+        </p>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <p className={cn(ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}>
+            <bdi>{formatDeadline(gameweek.deadline, lang, { weekday: "short" })}</bdi>
+          </p>
+          {left && !left.passed ? (
+            // Home's deadline pill, so the same deadline reads the same way
+            // on both screens ("13h 59min" on the last day, never "0j").
+            <DeadlineCountdown iso={gameweek.deadline} />
+          ) : left?.passed && gameweek.status ? (
+            <GameweekStatusText status={gameweek.status} className={cn(ui.text.label, "min-h-8")} />
+          ) : null}
+        </div>
+      </div>
+    </section>
   );
 }
 
-function HubButton({
-  to,
-  children,
-  gradient,
-  icon,
+/* ------------------------------------------------------------------ */
+/* The team card                                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The manager's card, on the action gradient (a feature surface: sheet
+ * radius, the lifted shadow). Everything on it is ink-deep, the gradient's own
+ * foreground in both themes; the strip at its foot is a 55% veil of the
+ * on-ink white, which stays light in dark too, so the ink-deep figures keep
+ * their contrast there.
+ *
+ * The points figure stands alone, so it is Changa (`ui.score.hero`); the
+ * three under it are a row read as a set, so they stay on the stat ramp.
+ * Every figure is real or an en dash — no invented movement, no zero for
+ * "not known yet". The whole card opens the team profile, as the old team
+ * link did.
+ */
+function TeamCard({
+  teamName,
+  manager,
+  gameweek,
+  points,
+  total,
+  overallRank,
+  pending,
 }: {
-  to: string;
-  children: ReactNode;
-  gradient?: boolean;
-  icon?: ReactNode;
+  teamName: string;
+  manager: string | null;
+  gameweek: Gameweek | null;
+  points: number | null;
+  total: number | null;
+  overallRank: number | null;
+  pending: boolean;
 }) {
+  const { t, lang } = useI18n();
+  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
+  const none = t("fantasy.stat.none");
+  const live = gameweek?.status === "live";
+  const figure = (value: number | null) =>
+    pending ? (
+      <UiSkeleton className="mx-auto h-6 w-10" />
+    ) : value === null ? (
+      none
+    ) : (
+      nf.format(value)
+    );
+  const veil = "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_55%,transparent)]";
+  const seam = "border-s border-[color:color-mix(in_oklab,var(--ui-ink-deep)_14%,transparent)]";
   return (
     <Link
-      to={to}
+      to="/fantasy/profile"
       className={cn(
-        // `leading-tight` dropped: the ramp step below sets the line box, per
-        // script (BG-0124), and this button's label truncates — the one place
-        // a too-flat leading cuts glyph ink instead of just looking tight.
-        "inline-flex min-h-[var(--ui-row-min)] items-center justify-center gap-1.5 px-2 py-1 text-center",
-        "[&_svg]:shrink-0",
-        ui.radius.control,
-        ui.text.meta,
-        "[font-weight:var(--ui-weight-heavy)]",
+        "block overflow-hidden",
+        ui.radius.sheet,
+        ui.shadow.lifted,
+        "text-[color:var(--ui-ink-deep)]",
         ui.focus,
-        gradient
-          ? "text-[color:var(--ui-ink-deep)]"
-          : // Flat on the card rather than raised cards on a card.
-            cn(ui.surface.sunken, ui.tone.ink),
       )}
-      style={gradient ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
+      style={{ backgroundImage: "var(--ui-grad-action)" }}
     >
-      {icon}
-      {/* Two lines, not an ellipsis: at 390px French labels such as
-          "Statistiques joueurs" lost their second word to `truncate`. */}
-      <span className="min-w-0 line-clamp-2 text-balance">{children}</span>
+      <div className="flex items-start justify-between gap-3 px-4 pb-3.5 pt-4">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <p className={cn("line-clamp-2 break-words", ui.display.section)}>{teamName}</p>
+          {manager ? (
+            <p className={cn("truncate", ui.text.meta, "[font-weight:var(--ui-weight-strong)]")}>
+              {manager}
+            </p>
+          ) : null}
+          {overallRank !== null ? (
+            <p className={cn("mt-2", ui.text.meta, "[font-weight:var(--ui-weight-strong)]")}>
+              {t("fpl.rank")} <span className={ui.text.tabular}>{nf.format(overallRank)}</span>
+            </p>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <div className="flex items-baseline gap-1">
+            {pending ? (
+              <UiSkeleton className="h-12 w-16" />
+            ) : (
+              <bdi className={ui.score.hero}>{points === null ? none : nf.format(points)}</bdi>
+            )}
+            <span className={cn(ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}>
+              {t("fantasy.points.abbr")}
+            </span>
+          </div>
+          {live && gameweek ? (
+            <UiLivePill
+              label={`${t("fantasy.leagues.gw")}${gameweek.number} · ${t("matches.status.live")}`}
+            />
+          ) : (
+            <span className={cn("max-w-[9.5rem] text-balance text-end", ui.text.label)}>
+              {t("fantasy.gw_points")}
+            </span>
+          )}
+        </div>
+      </div>
+      <dl className={cn("grid grid-cols-3 text-center", veil)}>
+        <div className="flex flex-col items-center gap-0.5 px-1 py-2.5">
+          <dt className={ui.text.label}>{t("fpl.average")}</dt>
+          <dd className={ui.stat.lg}>{figure(gameweek?.averagePoints ?? null)}</dd>
+        </div>
+        <div className={cn("flex flex-col items-center gap-0.5 px-1 py-2.5", seam)}>
+          <dt className={ui.text.label}>{t("fpl.highest")}</dt>
+          <dd className={ui.stat.lg}>{figure(gameweek?.highestPoints ?? null)}</dd>
+        </div>
+        <div className={cn("flex flex-col items-center gap-0.5 px-1 py-2.5", seam)}>
+          <dt className={ui.text.label}>{t("fpl.total")}</dt>
+          <dd className={ui.stat.lg}>{figure(total)}</dd>
+        </div>
+      </dl>
     </Link>
   );
 }
 
-function FollowCard({ to, label, icon }: { to: string; label: string; icon: ReactNode }) {
+/** "Transferts — Transferts gratuits 1 · Banque 1,4 ›" */
+function TransfersRow({ freeTransfers, bank }: { freeTransfers: number; bank: number }) {
+  const { t, lang } = useI18n();
+  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
   return (
     <Link
-      to={to}
+      to="/fantasy/transfers"
       className={cn(
-        "flex flex-col items-center gap-2 px-2 py-3 text-center",
-        ui.radius.control,
+        "mt-2 flex items-center gap-3 px-3 py-2.5",
         ui.surface.card,
+        ui.space.row,
+        "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
         ui.focus,
       )}
     >
       <span
         className={cn(
-          "grid h-16 w-16 shrink-0 place-items-center",
+          "grid h-10 w-10 shrink-0 place-items-center",
           ui.radius.full,
-          "text-[color:var(--ui-ink-deep)]",
-        )}
-        style={{ backgroundImage: "var(--ui-grad-action)" }}
-      >
-        {icon}
-      </span>
-      <span
-        className={cn(
-          "min-w-0 truncate",
-          ui.text.meta,
-          ui.tone.default,
-          "[font-weight:var(--ui-weight-heavy)]",
+          ui.surface.sunken,
+          ui.tone.ink,
         )}
       >
-        {label}
+        <ArrowDownUp className="h-5 w-5" aria-hidden />
       </span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className={cn(ui.text.bodyStrong, ui.tone.default)}>{t("fpl.transfers")}</span>
+        {/* Each figure stays with its label; under 390px the line breaks
+            between the two pairs instead of cutting the bank off. */}
+        <span className={cn(ui.text.meta, ui.tone.muted)}>
+          <span className="whitespace-nowrap">
+            {t("fpl.free_transfers")} <span className={ui.text.tabular}>{freeTransfers}</span> ·
+          </span>{" "}
+          <span className="whitespace-nowrap">
+            {t("fpl.bank")} <span className={ui.text.tabular}>{nf.format(bank)}</span>
+          </span>
+        </span>
+      </span>
+      <ChevronRight className={cn("h-5 w-5 shrink-0", ui.tone.muted)} aria-hidden />
     </Link>
   );
 }
 
-function LeaguesAndCups({
+/* ------------------------------------------------------------------ */
+/* Shortcuts                                                            */
+/* ------------------------------------------------------------------ */
+
+function ShortcutTiles() {
+  const { t } = useI18n();
+  const tiles: Array<{ to: string; label: string; icon: ReactNode }> = [
+    { to: "/matches", label: t("fpl.fixtures"), icon: <CalendarDays aria-hidden /> },
+    { to: "/fantasy/fixtures", label: t("fpl.fdr"), icon: <SlidersHorizontal aria-hidden /> },
+    { to: "/fantasy/players", label: t("fpl.player_stats"), icon: <TrendingUp aria-hidden /> },
+    { to: "/fantasy/top-players", label: t("fpl.top_players"), icon: <Star aria-hidden /> },
+  ];
+  return (
+    <div className={cn("mt-2.5", ui.space.gutter)}>
+      <ul className="grid grid-cols-2 gap-2">
+        {tiles.map((tile) => (
+          <li key={tile.to} className="min-w-0">
+            <Link
+              to={tile.to}
+              className={cn(
+                "flex h-full items-center gap-2.5 px-2.5 py-2",
+                ui.surface.card,
+                ui.space.row,
+                ui.text.meta,
+                "[font-weight:var(--ui-weight-heavy)]",
+                ui.tone.default,
+                "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                ui.focus,
+              )}
+            >
+              <span
+                className={cn(
+                  "grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-[18px] [&_svg]:w-[18px]",
+                  ui.radius.full,
+                  ui.surface.sunken,
+                  ui.tone.ink,
+                )}
+              >
+                {tile.icon}
+              </span>
+              {/* Two lines, not an ellipsis: "Difficulté des matchs" and
+                  "Statistiques joueurs" need them at 390px. */}
+              <span className="min-w-0 text-balance">{tile.label}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Leagues                                                              */
+/* ------------------------------------------------------------------ */
+
+function LeaguesSection({
   phase,
   hasTeam,
   gameweek,
+  overallRank,
   leagues,
   leaguesLoading,
 }: {
   phase: string;
   hasTeam: boolean;
   gameweek: number | null;
-  leagues: Array<{ id: string; name: string; rank: number | null }>;
+  overallRank: number | null;
+  leagues: Array<{ id: string; name: string; rank: number | null; members: number }>;
   leaguesLoading: boolean;
 }) {
   const { t } = useI18n();
-  const [tab, setTab] = useState<"leagues" | "cups">("leagues");
-  const generalRows: Array<{ name: string; to: string; rank: number | null }> = [
-    { name: t("fpl.overall"), to: "/fantasy/rankings", rank: null },
-    ...(gameweek
-      ? [
-          {
-            name: t("fpl.gameweek_league").replace("{n}", String(gameweek)),
-            to: "/fantasy/rankings",
-            rank: null,
-          },
-        ]
-      : []),
-  ];
   return (
-    <UiCard as="section" className="mx-4 mt-6" padding="md">
-      <h2 className={cn(ui.text.section, ui.tone.default)}>{t("fpl.leagues_cups")}</h2>
-      <UiSegmented
-        className="mt-3"
-        tone="onSurface"
-        value={tab}
-        onChange={setTab}
-        options={[
-          { value: "leagues", label: t("fpl.leagues") },
-          { value: "cups", label: t("fpl.cups") },
+    <section className={cn("mt-6", ui.space.gutter)}>
+      <SectionHeader title={t("fantasy.hub.my_leagues")} />
+
+      {/* The same rows as Leagues & Cups (`LeagueList`): one look for a
+          league wherever it is listed, and its focus ring drawn inside the
+          clipped card. */}
+      <SectionGroupHeader title={t("fpl.general_leagues")} />
+      <LeagueList
+        label={t("fpl.general_leagues")}
+        rows={[
+          { key: "overall", name: t("fpl.overall"), to: "/fantasy/rankings", rank: overallRank },
+          ...(gameweek
+            ? [
+                {
+                  key: "gameweek",
+                  name: t("fpl.gameweek_league").replace("{n}", String(gameweek)),
+                  to: "/fantasy/rankings",
+                  rank: null,
+                },
+              ]
+            : []),
         ]}
       />
-      {tab === "leagues" ? (
-        <>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <LeagueAction
-              to="/fantasy/leagues/join"
-              icon={<Plus className="h-4 w-4" aria-hidden />}
-            >
-              {t("fpl.join_leagues")}
-            </LeagueAction>
-            <LeagueAction to="/fantasy/leagues" icon={<Settings className="h-4 w-4" aria-hidden />}>
-              {t("fpl.configure_leagues")}
-            </LeagueAction>
-          </div>
 
-          <div className="mt-4">
-            <UiPill>{t("fpl.general_leagues")}</UiPill>
-            <LeagueTable rows={generalRows} caption={t("fpl.general_leagues")} />
-          </div>
-          <div className="mt-4">
-            <UiPill>{t("fpl.private_leagues")}</UiPill>
-            {phase !== "ready" || !hasTeam ? (
-              <NoLeaguesNote text={t("fpl.no_leagues")} />
-            ) : leaguesLoading ? (
-              <UiSkeleton className="my-3 h-10" />
-            ) : leagues.length === 0 ? (
-              <NoLeaguesNote text={t("fpl.no_leagues")} />
-            ) : (
-              <LeagueTable
-                caption={t("fpl.private_leagues")}
-                rows={leagues.map((l) => ({
-                  name: l.name,
-                  to: `/fantasy/leagues/${l.id}`,
-                  rank: l.rank,
-                }))}
-              />
-            )}
-          </div>
-        </>
+      <SectionGroupHeader title={t("fpl.private_leagues")} className="mt-4" />
+      {phase !== "ready" || !hasTeam ? (
+        <NoLeaguesNote text={t("fpl.no_leagues")} />
+      ) : leaguesLoading ? (
+        <UiSkeleton className={cn("h-14", ui.radius.card)} />
+      ) : leagues.length === 0 ? (
+        <NoLeaguesNote text={t("fpl.no_leagues")} />
       ) : (
-        <div className="mt-4">
-          <UiPill>{t("fpl.cups")}</UiPill>
-          <p className={cn("mt-3", ui.text.body, ui.tone.default)}>{t("fpl.cup_not_qualified")}</p>
-          <h3 className={cn("mt-3", ui.text.section, ui.tone.default)}>{t("fpl.cup_how_title")}</h3>
-          {/* `leading-relaxed` dropped for the same reason as the other two on
-              this screen: `ui.text.secondary` already sets the line box and
-              sets it per script, and a Tailwind literal beside it is a second
-              source of truth that wins or loses on class order (BG-0124). */}
-          <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("fpl.cup_how_body")}</p>
-        </div>
+        <LeagueList
+          label={t("fpl.private_leagues")}
+          rows={leagues.map((league) => ({
+            key: league.id,
+            name: league.name,
+            to: `/fantasy/leagues/${league.id}`,
+            rank: league.rank,
+            members: league.members,
+          }))}
+        />
       )}
-    </UiCard>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <UiLinkButton to="/fantasy/leagues/join" variant="soft" size="sm" className="flex-auto">
+          <Plus className="h-4 w-4" aria-hidden />
+          {t("fpl.join_leagues")}
+        </UiLinkButton>
+        <UiLinkButton to="/fantasy/leagues" variant="soft" size="sm" className="flex-auto">
+          <Settings2 className="h-4 w-4" aria-hidden />
+          {t("fpl.configure_leagues")}
+        </UiLinkButton>
+      </div>
+
+      <SectionGroupHeader title={t("fpl.cups")} className="mt-5" />
+      <UiCard padding="md">
+        <p className={cn(ui.text.bodyStrong, ui.tone.default)}>{t("fpl.cup_not_qualified")}</p>
+        <h3 className={cn("mt-3", ui.text.label, ui.tone.muted)}>{t("fpl.cup_how_title")}</h3>
+        <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fpl.cup_how_body")}</p>
+      </UiCard>
+    </section>
   );
 }
 
-function LeagueAction({
-  to,
-  icon,
-  children,
-}: {
-  to: string;
-  icon: ReactNode;
-  children: ReactNode;
-}) {
+/** "No private leagues yet", with the same spot art as the leagues page. */
+function NoLeaguesNote({ text }: { text: string }) {
   return (
-    <Link
-      to={to}
-      className={cn(
-        "inline-flex min-h-[var(--ui-tap-min)] items-center justify-center gap-1 px-2 py-1",
-        // An SVG is a flex item and shrinks like any other, so a long label
-        // beside it takes the width out of the icon instead of wrapping.
-        // Measured here: a `lucide-plus` sized `h-4 w-4` rendering 14.0 × 16.0,
-        // the only distorted glyph in the product across six routes. Lucide
-        // draws square, so a squeezed one reads as a drawing mistake.
-        "[&_svg]:shrink-0",
-        ui.radius.control,
-        ui.surface.sunken,
-        ui.text.secondary,
-        "[font-weight:var(--ui-weight-heavy)]",
-        ui.tone.ink,
-        ui.focus,
-      )}
-    >
-      {icon}
-      <span className="min-w-0 line-clamp-2 text-balance text-center">{children}</span>
-    </Link>
+    <div className={cn("flex items-center gap-3 px-3 py-2.5", ui.surface.card)}>
+      <img
+        src={emptyLeaguesArt}
+        alt=""
+        aria-hidden
+        loading="lazy"
+        decoding="async"
+        className="h-12 w-auto shrink-0 object-contain"
+      />
+      <p className={cn(ui.text.meta, ui.tone.muted)}>{text}</p>
+    </div>
   );
 }
 
-function LeagueTable({
-  rows,
-  caption,
-}: {
-  rows: Array<{ name: string; to: string; rank: number | null }>;
-  caption: string;
-}) {
-  const { t } = useI18n();
-  return (
-    <UiTable caption={caption} className="mt-2">
-      <UiTHead>
-        <UiTR>
-          <UiTH numeric className="w-24">
-            {t("fpl.rank")}
-          </UiTH>
-          <UiTH>{t("fpl.league")}</UiTH>
-        </UiTR>
-      </UiTHead>
-      <UiTBody>
-        {rows.map((row) => (
-          <UiTR key={row.to + row.name}>
-            <UiTD numeric>{row.rank ?? "-"}</UiTD>
-            <UiTD>
-              {/* The row link is the tap target for the whole row, so it
-                  carries the 44px floor itself: as a bare inline `<a>` it
-                  measured 21px tall in French and 32px in Arabic. */}
-              <Link
-                to={row.to}
-                className={cn(
-                  "inline-flex min-h-[var(--ui-tap-min)] w-full items-center",
-                  ui.text.body,
-                  "[font-weight:var(--ui-weight-heavy)]",
-                  ui.tone.default,
-                  ui.focus,
-                  ui.radius.control,
-                )}
-              >
-                {row.name}
-              </Link>
-            </UiTD>
-          </UiTR>
-        ))}
-      </UiTBody>
-    </UiTable>
-  );
-}
+/* ------------------------------------------------------------------ */
+/* Notifications                                                        */
+/* ------------------------------------------------------------------ */
 
 function NotificationsSection() {
   const { t } = useI18n();
@@ -704,26 +666,29 @@ function NotificationsSection() {
   };
 
   return (
-    <section className={cn("pt-6", ui.space.gutter)}>
-      <h2 className={cn(ui.text.section, ui.tone.default)}>{t("fpl.notifications")}</h2>
-      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fpl.notifications_body")}</p>
-      <div className="mt-3">
+    <section className={cn("mt-6", ui.space.gutter)}>
+      <SectionHeader title={t("fpl.notifications")} />
+      <p className={cn("-mt-1 mb-2.5", ui.text.secondary, ui.tone.muted)}>
+        {t("fpl.notifications_body")}
+      </p>
+      <UiCard padding="none">
         <ToggleRow
-          icon={<Bell className="h-5 w-5 shrink-0" aria-hidden />}
+          icon={<Bell className="h-[18px] w-[18px]" aria-hidden />}
           label={t("fpl.push")}
           checked={push}
           disabled={!enabled || busy}
           onChange={togglePush}
         />
         <ToggleRow
-          icon={<Mail className="h-5 w-5 shrink-0" aria-hidden />}
+          icon={<Mail className="h-[18px] w-[18px]" aria-hidden />}
           label={t("fpl.emails")}
           checked={false}
           disabled
           onChange={() => {}}
           hint={t("fpl.coming_soon")}
+          last
         />
-      </div>
+      </UiCard>
     </section>
   );
 }
@@ -735,6 +700,7 @@ function ToggleRow({
   disabled,
   onChange,
   hint,
+  last = false,
 }: {
   icon: ReactNode;
   label: string;
@@ -742,26 +708,30 @@ function ToggleRow({
   disabled?: boolean;
   onChange: () => void;
   hint?: string;
+  last?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "flex min-h-[var(--ui-row-min)] items-center justify-between gap-3 py-2",
-        ui.rule.block,
+        "flex items-center justify-between gap-3 py-1.5 pe-2 ps-3",
+        ui.space.row,
+        !last && ui.rule.block,
       )}
     >
-      <span
-        className={cn(
-          "flex min-w-0 items-center gap-3",
-          ui.text.body,
-          "[font-weight:var(--ui-weight-heavy)]",
-          ui.tone.default,
-        )}
-      >
-        {icon}
-        <span className="min-w-0">
+      <span className="flex min-w-0 items-center gap-3">
+        <span
+          className={cn(
+            "grid h-9 w-9 shrink-0 place-items-center",
+            ui.radius.full,
+            ui.surface.sunken,
+            ui.tone.ink,
+          )}
+        >
+          {icon}
+        </span>
+        <span className={cn("min-w-0", ui.text.bodyStrong, ui.tone.default)}>
           {label}
-          {hint ? <span className={cn("ms-2", ui.text.micro, ui.tone.muted)}>{hint}</span> : null}
+          {hint ? <span className={cn("block", ui.text.micro, ui.tone.muted)}>{hint}</span> : null}
         </span>
       </span>
       <button
@@ -791,6 +761,7 @@ function ToggleRow({
             className={cn(
               "absolute top-1 h-6 w-6 transition-[inset-inline-start]",
               ui.radius.full,
+              ui.shadow.card,
               checked ? "start-7" : "start-1",
             )}
             style={{ backgroundColor: "var(--ui-surface)" }}
@@ -801,19 +772,55 @@ function ToggleRow({
   );
 }
 
-/** "No private leagues yet", with the same spot art as the leagues page. */
-function NoLeaguesNote({ text }: { text: string }) {
+/* ------------------------------------------------------------------ */
+/* More about                                                           */
+/* ------------------------------------------------------------------ */
+
+function MoreAboutSection() {
+  const { t } = useI18n();
+  const rows: Array<{ to: string; label: string; icon: ReactNode }> = [
+    { to: "/fantasy/rules", label: t("fpl.rules"), icon: <BookOpen aria-hidden /> },
+    { to: "/fantasy/help", label: t("fpl.help_rules"), icon: <CircleHelp aria-hidden /> },
+  ];
   return (
-    <div className="flex items-center gap-3 px-1 py-3">
-      <img
-        src={emptyLeaguesArt}
-        alt=""
-        aria-hidden
-        loading="lazy"
-        decoding="async"
-        className="h-14 w-auto shrink-0 object-contain"
-      />
-      <p className={cn(ui.text.meta, ui.tone.muted)}>{text}</p>
-    </div>
+    <section className={cn("mt-6", ui.space.gutter)}>
+      {/* Not `SectionHeader`: that truncates, and this heading names the
+          product — the wordmark stands in for "BotolaGO" — so it wraps. */}
+      <h2 className={cn("pb-2.5 text-balance", ui.display.section, ui.tone.default)}>
+        <BrandedText text={t("fpl.more_about")} />
+      </h2>
+      <UiCard padding="none">
+        <ul>
+          {rows.map((row, index) => (
+            <li key={row.to} className={cn(index < rows.length - 1 && ui.rule.block)}>
+              <Link
+                to={row.to}
+                className={cn(
+                  "flex items-center gap-3 py-1.5 pe-3 ps-3",
+                  ui.space.row,
+                  ui.text.bodyStrong,
+                  ui.tone.default,
+                  "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                  ui.focus,
+                )}
+              >
+                <span
+                  className={cn(
+                    "grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-[18px] [&_svg]:w-[18px]",
+                    ui.radius.full,
+                    ui.surface.sunken,
+                    ui.tone.ink,
+                  )}
+                >
+                  {row.icon}
+                </span>
+                <span className="min-w-0 flex-1">{row.label}</span>
+                <ChevronRight className={cn("h-5 w-5 shrink-0", ui.tone.muted)} aria-hidden />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </UiCard>
+    </section>
   );
 }

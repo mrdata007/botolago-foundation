@@ -6,10 +6,14 @@ import { featuredTreatmentForIndex, isBreaking, presentArticleForDisplay } from 
 
 /**
  * "Top stories" — an editorially varied rail rather than a uniform grid:
- * the first item runs large with a tall image, the next couple as dense
- * text-led rows, and the rest as smaller side-by-side image cards. Position
- * (not a hardcoded id) drives the treatment, so it degrades gracefully with
- * however many featured placements `home_modules` actually returns.
+ * the first item runs as a photo card, the next couple as dense rows, and the
+ * rest as full rows with their thumbnail. Position (not a hardcoded id) drives
+ * the treatment, so it degrades gracefully with however many featured
+ * placements `home_modules` actually returns.
+ *
+ * Option A: the photo card and the rows are `ArticleCard`'s `imageLed`,
+ * `compact` and `horizontal`, in the club colours; a `breaking` placement
+ * hands the card its "Dernière minute" pill through `flag`.
  */
 export function FeaturedGrid({
   featured,
@@ -23,33 +27,17 @@ export function FeaturedGrid({
   const restItems = featured.slice(3);
 
   return (
-    <div className="grid gap-3">
-      {hero && <FeaturedCard dto={hero} clubs={clubs} variant="imageLed" badgeCorner="end" />}
-      {compactItems.length > 0 && (
-        <div className="grid gap-2">
-          {compactItems.map((dto) => (
-            <FeaturedCard
-              key={dto.id}
-              dto={dto}
-              clubs={clubs}
-              variant="compact"
-              badgeCorner="start"
-            />
-          ))}
-        </div>
-      )}
+    <div className="grid gap-2.5">
+      {hero && <FeaturedCard dto={hero} clubs={clubs} variant="imageLed" />}
+      {compactItems.map((dto) => (
+        <FeaturedCard key={dto.id} dto={dto} clubs={clubs} variant="compact" />
+      ))}
       {restItems.length > 0 && (
         // Two-up only when there are two: a lone card in a two-column grid
         // left half the row empty on desktop.
         <div className={restItems.length > 1 ? "grid gap-2.5 sm:grid-cols-2" : "grid gap-2.5"}>
           {restItems.map((dto) => (
-            <FeaturedCard
-              key={dto.id}
-              dto={dto}
-              clubs={clubs}
-              variant="horizontal"
-              badgeCorner="start"
-            />
+            <FeaturedCard key={dto.id} dto={dto} clubs={clubs} variant="horizontal" />
           ))}
         </div>
       )}
@@ -61,19 +49,18 @@ function FeaturedCard({
   dto,
   clubs,
   variant,
-  badgeCorner,
 }: {
   dto: ArticleCardDto;
   clubs: readonly Club[];
   variant: "imageLed" | "compact" | "horizontal";
-  badgeCorner: "start" | "end";
 }) {
-  const article = presentArticleForDisplay(dto);
   return (
-    <div className="relative">
-      <ArticleCard article={article} variant={variant} clubs={clubs} />
-      {isBreaking(dto.placement) && <PlacementBadge corner={badgeCorner} />}
-    </div>
+    <ArticleCard
+      article={presentArticleForDisplay(dto)}
+      variant={variant}
+      clubs={clubs}
+      flag={isBreaking(dto.placement) ? <PlacementBadge /> : undefined}
+    />
   );
 }
 

@@ -18,41 +18,46 @@ function Shimmer({ className }: { className?: string }) {
   return <UiSkeleton className={cn("block", className)} />;
 }
 
+/** Home's Fantasy card while it loads: the card's shape (Option A, radius
+ *  sheet) with the kicker, the rank line and the big figure. */
 export function HeroSkeleton() {
   return (
-    <div className={cn(ui.surface.card, "relative min-w-0 overflow-hidden p-4")} aria-hidden>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-        <div className="min-w-0 space-y-2">
-          <Shimmer className="h-3 w-24" />
-          <Shimmer className="h-5 w-40" />
-          <Shimmer className="h-3 w-28" />
-        </div>
-        <Shimmer className="h-7 w-24 rounded-full" />
+    <div
+      className={cn(
+        ui.surface.card,
+        ui.radius.sheet,
+        "flex min-w-0 items-center gap-4 overflow-hidden px-5 py-6",
+      )}
+      aria-hidden
+    >
+      <div className="min-w-0 flex-1 space-y-2">
+        <Shimmer className="h-3 w-40" />
+        <Shimmer className="h-3 w-24" />
       </div>
-      <div className="mt-4 grid grid-cols-4 gap-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Shimmer key={i} className="h-14" />
-        ))}
-      </div>
-      <Shimmer className="mt-4 h-[var(--ui-row-min)] w-full" />
+      <Shimmer className="h-12 w-20" />
     </div>
   );
 }
 
-export function MatchCardSkeleton() {
+/**
+ * A match row while it loads: the crest discs, the names and the time, at
+ * the row's own height. `flat` for a row inside a card of rows (Home, the
+ * Matches day list); otherwise the row is a card of its own.
+ */
+export function MatchCardSkeleton({ flat = false }: { flat?: boolean }) {
   return (
-    <div className={cn(ui.surface.card, "flex min-w-0 items-center gap-3 p-3")} aria-hidden>
+    <div
+      className={cn("flex min-w-0 items-center gap-2.5 px-3.5 py-3.5", !flat && ui.surface.card)}
+      aria-hidden
+    >
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <Shimmer className="h-7 w-7" />
+        <Shimmer className={cn("h-8 w-8 shrink-0", ui.radius.full)} />
         <Shimmer className="h-3 w-16" />
       </div>
-      <div className="flex flex-col items-center gap-1 px-2">
-        <Shimmer className="h-4 w-12" />
-        <Shimmer className="h-2 w-8" />
-      </div>
+      <Shimmer className="h-5 w-12" />
       <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
         <Shimmer className="h-3 w-16" />
-        <Shimmer className="h-7 w-7" />
+        <Shimmer className={cn("h-8 w-8 shrink-0", ui.radius.full)} />
       </div>
     </div>
   );
@@ -116,7 +121,7 @@ export function StandingsRowSkeleton() {
   return (
     <div className={cn(ui.surface.card, "flex min-w-0 items-center gap-2.5 px-3 py-2")} aria-hidden>
       <Shimmer className="h-4 w-4" />
-      <Shimmer className="h-7 w-7" />
+      <Shimmer className={cn("h-8 w-8 shrink-0", ui.radius.full)} />
       <Shimmer className="h-3 min-w-0 flex-1" />
       <Shimmer className="h-3 w-7" />
       <Shimmer className="h-3 w-8" />

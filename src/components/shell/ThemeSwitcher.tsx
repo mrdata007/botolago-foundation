@@ -11,8 +11,9 @@
  * on the dark surface the active label computes to roughly 1.4:1 and is
  * unreadable. That is a pre-existing kit defect (reported, not patched here).
  * This control instead paints the active segment as an ink SURFACE and takes
- * its text from `--ui-on-ink`, the token that exists for exactly that pairing,
- * which clears AA in both themes.
+ * its text from `--ui-on-ink-plain`, the token that exists for exactly that
+ * pairing (12.8:1 light, 12.6:1 dark). Option A rounds the track and the
+ * segments like every other control.
  *
  * Direction: logical utilities throughout, no `tracking-*` at all.
  */
@@ -50,12 +51,7 @@ export function ThemeSwitcher({ className }: { className?: string }) {
       role="radiogroup"
       aria-label={t("theme.switch")}
       data-testid="theme-switcher"
-      className={cn(
-        "grid grid-cols-3 gap-1 p-[3px]",
-        ui.radius.track,
-        ui.surface.sunken,
-        className,
-      )}
+      className={cn("grid grid-cols-3 gap-1 p-[3px]", ui.radius.full, ui.surface.sunken, className)}
     >
       {options.map((option) => {
         const active = option.value === choice;
@@ -69,7 +65,7 @@ export function ThemeSwitcher({ className }: { className?: string }) {
             onClick={() => setChoice(option.value)}
             className={cn(
               "flex min-h-10 items-center justify-center gap-1.5 px-2 transition-colors",
-              ui.radius.segment,
+              ui.radius.full,
               ui.text.meta,
               "[font-weight:var(--ui-weight-heavy)]",
               ui.focus,
@@ -77,7 +73,9 @@ export function ThemeSwitcher({ className }: { className?: string }) {
               // `ui.tone.muted`: measured on the sunken track, muted is 3.95:1
               // in light at 13px, under AA. Selection is already carried by
               // the ink fill, so the labels do not also need to be dimmed.
-              active ? cn(ui.surface.ink, "shadow-[var(--ui-shadow-card)]") : ui.tone.default,
+              // Option A: the selected segment is white on navy (the selected
+              // chip and `UiSegmented variant="pill"`), not the cyan on-ink.
+              active ? cn(ui.surface.inkPlain, ui.shadow.card) : ui.tone.default,
             )}
           >
             {option.icon}

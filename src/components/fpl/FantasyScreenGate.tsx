@@ -55,17 +55,20 @@ export function FantasyPhaseBody({
   phase,
   next,
   retry,
+  className = "mx-4 my-6",
 }: {
   phase: FantasyScreenPhase;
   next: string;
   retry: () => void;
+  /** Where the panel sits; the default is a screen body under a header. */
+  className?: string;
 }) {
   const { t } = useI18n();
 
   if (phase === "loading" || phase === "no_team") {
-    // The Fantasy layout is known in advance — a header row, the pitch block
-    // and a summary row — so it is skeletoned at those proportions rather
-    // than replaced by a spinner.
+    // The Fantasy layout is known in advance — a strip, the pitch card and a
+    // row under it — so it is skeletoned at those proportions rather than
+    // replaced by a spinner. The pitch block takes the pitch card's radius.
     return (
       <div role="status" aria-label={t("state.loading")} className={cn("py-6", ui.space.gutter)}>
         <div
@@ -79,9 +82,9 @@ export function FantasyPhaseBody({
           {t("state.loading")}
         </div>
         <div className="space-y-3">
-          <UiSkeleton className="h-12" />
-          <UiSkeleton className="h-[420px]" />
-          <UiSkeleton className="h-24" />
+          <UiSkeleton className={cn("h-12", ui.radius.full)} />
+          <UiSkeleton className={cn("h-[420px]", ui.radius.sheet)} />
+          <UiSkeleton className={cn("h-24", ui.radius.card)} />
         </div>
       </div>
     );
@@ -90,7 +93,7 @@ export function FantasyPhaseBody({
   if (phase === "error") {
     return (
       <UiErrorState
-        className="mx-4 my-6"
+        className={className}
         title={t("fpl.error.title")}
         body={t("fpl.error.body")}
         onRetry={retry}
@@ -104,7 +107,7 @@ export function FantasyPhaseBody({
       // named states because they say what they are, and this renders the
       // identical panel.
       <UiEmptyState
-        className="mx-4 my-6"
+        className={className}
         title={
           <span className="flex flex-col items-center gap-3">
             <CalendarClock className={cn("h-7 w-7", ui.tone.ink)} aria-hidden />
@@ -131,8 +134,12 @@ export function FantasyPhaseBody({
   // add a live-region announcement that is not there today, and the brief for
   // a design migration is that the announcements do not change.
   return (
-    <UiCard padding="lg" className="mx-4 my-6 text-center">
-      <h2 className={cn(ui.text.section, ui.tone.default)}>{t("auth.prompt.title")}</h2>
+    <UiCard padding="lg" className={cn("text-center", className)}>
+      {/* Option A: the invitation is a section of the screen, so it takes
+          the display face like every other section heading. */}
+      <h2 className={cn("text-balance", ui.display.section, ui.tone.default)}>
+        {t("auth.prompt.title")}
+      </h2>
       <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("auth.prompt.body")}</p>
       <div className="mt-4 grid gap-2">
         <UiLinkButton to="/auth/login" search={{ next }} variant="gradient">

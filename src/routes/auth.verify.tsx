@@ -2,12 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  AuthShell,
-  AuthPrimaryButton,
-  AuthFieldError,
-  authOtpSlotClass,
-} from "@/components/auth/AuthShell";
+import { AuthShell, AuthPrimaryButton, AuthFieldError } from "@/components/auth/AuthShell";
+import { authOtpSlotClass } from "@/components/auth/auth-classes";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { ui, UiButton } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
@@ -77,33 +73,46 @@ function VerifyPage() {
   };
 
   return (
-    <AuthShell title={t("auth.verify.title")} subtitle={`${t("auth.verify.subtitle")} ${email}`}>
+    <AuthShell
+      compact
+      title={t("auth.verify.title")}
+      subtitle={`${t("auth.verify.subtitle")} ${email}`}
+    >
       <form onSubmit={onSubmit} noValidate className="grid gap-4">
         <div className="flex flex-col items-center gap-3">
-          <label className="sr-only">{t("auth.verify.code_label")}</label>
-          <InputOTP
-            maxLength={6}
-            value={code}
-            onChange={(v) => {
-              setCode(v);
-              setError(null);
-            }}
-            inputMode="numeric"
-            pattern="[0-9]*"
-          >
-            {/* The V1 component keeps the keyboard model; the slots take kit
-                classes so no V1 token survives and each one clears 44px —
-                they were `h-9 w-9` (36px) against the floor in rule 5.
-                Six of them measure 264px inside a 326px card at 390px. */}
-            <InputOTPGroup>
-              <InputOTPSlot index={0} className={authOtpSlotClass} />
-              <InputOTPSlot index={1} className={authOtpSlotClass} />
-              <InputOTPSlot index={2} className={authOtpSlotClass} />
-              <InputOTPSlot index={3} className={authOtpSlotClass} />
-              <InputOTPSlot index={4} className={authOtpSlotClass} />
-              <InputOTPSlot index={5} className={authOtpSlotClass} />
-            </InputOTPGroup>
-          </InputOTP>
+          {/* The label was not attached to anything; it names the code field
+              now, and the field is described by its error line. */}
+          <label htmlFor="verify-code" className="sr-only">
+            {t("auth.verify.code_label")}
+          </label>
+          {/* `dir="ltr"`: a code is read first digit to last in Arabic too,
+              so its slots run left to right on both pages, as a phone number
+              does. The V1 component keeps the keyboard model; the slots take
+              the sheet's filled look and clear 44px (they were 36px). Six of
+              them measure 264px inside the 358px sheet at 390px. */}
+          <div dir="ltr">
+            <InputOTP
+              id="verify-code"
+              maxLength={6}
+              value={code}
+              onChange={(v) => {
+                setCode(v);
+                setError(null);
+              }}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              aria-describedby="otp-err"
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} className={authOtpSlotClass} />
+                <InputOTPSlot index={1} className={authOtpSlotClass} />
+                <InputOTPSlot index={2} className={authOtpSlotClass} />
+                <InputOTPSlot index={3} className={authOtpSlotClass} />
+                <InputOTPSlot index={4} className={authOtpSlotClass} />
+                <InputOTPSlot index={5} className={authOtpSlotClass} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
           <AuthFieldError id="otp-err">{error && t(error)}</AuthFieldError>
         </div>
 

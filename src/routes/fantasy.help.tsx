@@ -1,10 +1,11 @@
 import helpArt from "@/assets/illustrations/help-hero.webp";
 import { createFileRoute } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { useId, useState } from "react";
 
+import { SectionHeader } from "@/components/common/SectionHeader";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
-import { ui, UiHeader, UiPill } from "@/components/ui-kit";
+import { ui, UiHeader } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -45,124 +46,119 @@ const SECTIONS: Array<{
 ];
 
 /**
- * FPL-024/025 "Help and Rules": "How can we help?" intro, ink section pills
- * and an accordion whose expanded row carries the action gradient.
+ * FPL-024/025 "Help and Rules": the "How can we help?" intro, a display
+ * heading per section, and an accordion of questions.
  *
- * Converted to the kit (BG-0092). The accordion rows used to sit on literal
- * `bg-white` with a hand-rolled `rgba()` shadow, and the collapsed chevron
- * cell took `text-white` on an ink fill — both un-themed, so the expanded
- * and collapsed states read at ~1.1:1 against a dark card.
- *
- * The header and the section pills now come straight from the kit rather than
- * through `components/fpl/primitives`. `FplHeader title backTo` was
- * `UiHeader` with `tone="gradient"` and its history fallback suppressed by
- * the explicit `backTo`, and `FplPill` on its default tone was `UiPill` —
- * same elements, same classes, one indirection fewer. That adapter is a
- * migration seam, not a layer this screen needs.
+ * Option A: each question is a white card at the card radius with a round
+ * soft chevron disc on its inline end; opening it turns the chevron and lays
+ * the answer out under the question in the same card. The section folder tabs
+ * (ink pills with square bases) are display section headings now, and the
+ * expanded row no longer floods with the action gradient — the open state is
+ * the answer itself, the rotated chevron and `aria-expanded`.
  */
 function HelpPage() {
   const { t } = useI18n();
   const [open, setOpen] = useState<string | null>(null);
   return (
-    <FantasyFrame background="white">
-      <UiHeader title={t("fpl.help_title")} tone="gradient" backTo="/fantasy" />
-      <img
-        src={helpArt}
-        alt=""
-        aria-hidden
-        decoding="async"
-        className="mx-auto mt-4 h-auto max-h-36 w-auto max-w-full object-contain"
-      />
-      <p className={cn("pt-4", ui.space.gutter, ui.text.section, ui.tone.default)}>
-        {t("fpl.how_can_we_help")}
-      </p>
-      {SECTIONS.map((section) => (
-        <section key={section.title} className="mt-4">
-          <div className={ui.space.gutter}>
-            <UiPill className="rounded-b-none px-4 py-2">{t(section.title)}</UiPill>
-            <div className={ui.rule.block} />
-          </div>
-          <ul className={cn("mt-2 space-y-2", ui.space.gutter)}>
-            {section.items.map((item) => {
-              const expanded = open === item.q;
-              return (
-                <li
+    <FantasyFrame bottomNav>
+      <UiHeader kicker={t("nav.fantasy")} title={t("fpl.help_title")} backTo="/fantasy" />
+      <div className={cn("pb-8", ui.space.gutter, ui.surface.page)}>
+        <img
+          src={helpArt}
+          alt=""
+          aria-hidden
+          decoding="async"
+          className="mx-auto mt-4 h-auto max-h-36 w-auto max-w-full object-contain"
+        />
+        <p className={cn("pt-4", ui.display.section, ui.tone.default)}>
+          {t("fpl.how_can_we_help")}
+        </p>
+        {SECTIONS.map((section) => (
+          <section key={section.title} className="mt-6">
+            <SectionHeader title={t(section.title)} as="h2" />
+            <ul className="space-y-2">
+              {section.items.map((item) => (
+                <HelpItem
                   key={item.q}
-                  className={cn(
-                    "overflow-hidden",
-                    ui.radius.control,
-                    "shadow-[var(--ui-shadow-card)]",
-                  )}
-                >
-                  <button
-                    type="button"
-                    aria-expanded={expanded}
-                    onClick={() => setOpen(expanded ? null : item.q)}
-                    className={cn(
-                      "grid w-full grid-cols-[52px_1fr] items-stretch text-start",
-                      ui.focus,
-                      expanded
-                        ? "text-[color:var(--ui-ink-deep)]"
-                        : cn(ui.surface.sunken, ui.tone.default),
-                    )}
-                    style={expanded ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
-                  >
-                    <span
-                      className={cn(
-                        "grid place-items-center",
-                        expanded ? ui.surface.inkPlain : cn(ui.surface.sunken, ui.tone.default),
-                      )}
-                    >
-                      {expanded ? (
-                        <ChevronUp className="h-5 w-5" aria-hidden />
-                      ) : (
-                        <ChevronDown className="h-5 w-5" aria-hidden />
-                      )}
-                    </span>
-                    {/* A collapsed question is a list-row label, not a
-                        heading. This was `ui.text.subtitle` — 16px at weight
-                        800 — and because the page renders as nothing but
-                        collapsed questions, every one of its 671 visible
-                        characters was extra-bold. Measured rather than
-                        guessed: a weight tally across seven routes put
-                        /fantasy/help at 100% weight 800, the only route in
-                        the product with no normal-weight text at all. Body
-                        size at `strong` keeps it plainly the tappable label
-                        without the whole page shouting.
-
-                        `leading-snug` went with it. The ramp now carries
-                        leading per step and per script (BG-0124), and a
-                        Tailwind literal beside it is a second source of truth
-                        that wins or loses on class order. */}
-                    <span
-                      className={cn(
-                        "px-3 py-3",
-                        ui.text.body,
-                        "[font-weight:var(--ui-weight-strong)]",
-                        "min-h-[var(--ui-tap-min)]",
-                      )}
-                    >
-                      {t(item.q)}
-                    </span>
-                  </button>
-                  {expanded ? (
-                    /* `prose` rather than `body` + `leading-relaxed`: an answer
-                       is the longest continuous copy on any Fantasy screen, and
-                       it is the step built for that — with an Arabic line box
-                       that does not have to be remembered at the call site. */
-                    <div
-                      className={cn("whitespace-pre-line px-4 py-3", ui.surface.bar, ui.text.prose)}
-                    >
-                      {t(item.a)}
-                    </div>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
-      <div className="h-8" />
+                  question={t(item.q)}
+                  answer={t(item.a)}
+                  expanded={open === item.q}
+                  onToggle={() => setOpen(open === item.q ? null : item.q)}
+                />
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
     </FantasyFrame>
+  );
+}
+
+function HelpItem({
+  question,
+  answer,
+  expanded,
+  onToggle,
+}: {
+  question: string;
+  answer: string;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const answerId = useId();
+  return (
+    <li className={cn("overflow-hidden", ui.surface.card)}>
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={expanded ? answerId : undefined}
+        onClick={onToggle}
+        className={cn(
+          "flex w-full items-center gap-3 py-2 pe-2 ps-4 text-start",
+          ui.space.row,
+          ui.focus,
+          "focus-visible:ring-inset focus-visible:ring-offset-0",
+        )}
+      >
+        {/* A collapsed question is a list-row label, not a heading: body size
+            at the strong weight, so a page made of questions does not shout. */}
+        <span
+          className={cn(
+            "min-w-0 flex-1",
+            ui.text.body,
+            "[font-weight:var(--ui-weight-strong)]",
+            ui.tone.default,
+          )}
+        >
+          {question}
+        </span>
+        <span
+          aria-hidden
+          className={cn(
+            "grid h-9 w-9 shrink-0 place-items-center",
+            ui.radius.full,
+            expanded ? ui.surface.inkPlain : cn(ui.surface.sunken, ui.tone.ink),
+          )}
+        >
+          <ChevronDown
+            className={cn(
+              "h-5 w-5 transition-transform duration-[var(--duration-quick)]",
+              expanded && "rotate-180",
+            )}
+          />
+        </span>
+      </button>
+      {expanded ? (
+        /* `prose`: an answer is the longest continuous copy on any Fantasy
+           screen, and it is the step built for that — with an Arabic line box
+           that does not have to be remembered at the call site. */
+        <div
+          id={answerId}
+          className={cn("whitespace-pre-line px-4 pb-4 pt-1", ui.text.prose, ui.tone.default)}
+        >
+          {answer}
+        </div>
+      ) : null}
+    </li>
   );
 }

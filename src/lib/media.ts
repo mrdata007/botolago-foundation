@@ -85,42 +85,54 @@ export function resolveMediaUrl(
  * The browser picks among them from the `sizes` the picture is drawn at.
  */
 export const MEDIA_WIDTHS = {
-  // Crests are drawn at 14-48 CSS px. 64 covers a 28px list crest on a 2x
-  // screen, 96 the same crest on a 3x phone and the 48px match header on a 2x
-  // one, 128 anything larger. All are under the smallest stored original
-  // (150px), so a crest is never enlarged.
+  // Crest badges are drawn at 14-38 CSS px (`ClubCrest`'s disc less its
+  // padding). 64 covers every badge but the match hero's on a 2x screen, 96
+  // the hero's 38px on a 2x screen and the smaller ones on a 3x phone, 128 the
+  // hero on a 3x phone. All are under the smallest stored original (150px), so
+  // a crest is never enlarged.
   crest: [64, 96, 128],
   // Editorial photos, from the 56px compact thumbnail to the 640px reading
   // column on a 2x screen.
   photo: [160, 320, 480, 640, 960, 1280],
 } as const;
 
+/** How the box a photo fills is drawn: its width as `sizes`, and its shape. */
+export interface PhotoFrame {
+  readonly sizes: string;
+  /** Width / height. */
+  readonly ratio: number;
+  /**
+   * The box's width / height from Tailwind's `sm` breakpoint up, and from
+   * `md` up, when its shape changes there (`aspect-[2/1] md:aspect-[16/7]`).
+   * Each shape gets its own cut: a copy cut for one shape and cropped again
+   * to another is either enlarged or shows less of the photo than the box
+   * would.
+   */
+  readonly smRatio?: number;
+  readonly mdRatio?: number;
+}
+
 /**
  * What a picture is and how it is drawn.
  *
  * A crest keeps its whole shape inside a square. A photo is cut to the shape
- * of the box it fills (`ratio`, width / height), the same centred crop
- * `object-cover` makes, so no pixels are sent that the box then hides. The
- * image service needs both sides for that: asked for a width alone it keeps
- * the original height and returns a narrow slice of the photo.
+ * of the box it fills, the same centred crop `object-cover` makes, so no
+ * pixels are sent that the box then hides. The image service needs both sides
+ * for that: asked for a width alone it keeps the original height and returns
+ * a narrow slice of the photo.
  */
 export type MediaFrame =
   | { readonly kind: "crest"; readonly sizes: string }
-  | {
-      readonly kind: "photo";
-      readonly sizes: string;
-      readonly ratio: number;
-      /**
-       * The box's width / height from Tailwind's `sm` breakpoint up, when its
-       * aspect class changes there (`aspect-[4/3] sm:aspect-[16/10]`). That
-       * shape gets its own cut: a copy cut for one shape and cropped again to
-       * another shows a zoomed-in part of the photo, not what the box framed.
-       */
-      readonly smRatio?: number;
-    };
+  | ({ readonly kind: "photo" } & PhotoFrame);
 
-/** Tailwind's default `sm` breakpoint, where cards change shape. */
-const SM_MEDIA = "(min-width: 640px)";
+/**
+ * Tailwind's default breakpoints, widest first: a `<picture>` uses the first
+ * `<source>` whose media query matches.
+ */
+const WIDER_SHAPES = [
+  { key: "mdRatio", media: "(min-width: 768px)" },
+  { key: "smRatio", media: "(min-width: 640px)" },
+] as const;
 
 /**
  * `sizes` for a picture as wide as the reading column. `UiScreen` caps the
@@ -128,6 +140,9 @@ const SM_MEDIA = "(min-width: 640px)";
  * on a wide screen and the viewport less both gutters on a phone.
  */
 export const READING_COLUMN_SIZES = "(min-width: 672px) 640px, calc(100vw - 32px)";
+
+/** `sizes` for a picture that spans the gutters too: the whole column, edge to edge on a phone. */
+export const FULL_COLUMN_SIZES = "(min-width: 672px) 672px, 100vw";
 
 function resizeQuery(frame: MediaFrame, width: number): string {
   if (frame.kind === "crest") return `width=${width}&height=${width}&resize=contain`;
@@ -196,8 +211,18 @@ export function responsiveMedia(
       )
       .join(", ");
   const sources =
-    frame.kind === "photo" && frame.smRatio !== undefined
-      ? [{ media: SM_MEDIA, srcSet: cuts({ ...frame, ratio: frame.smRatio }), sizes: frame.sizes }]
-      : undefined;
-  return { src: url, srcSet: cuts(frame), sizes: frame.sizes, ...(sources && { sources }) };
+    frame.kind === "photo"
+      ? WIDER_SHAPES.flatMap(({ key, media }) => {
+          const ratio = frame[key];
+          return ratio === undefined
+            ? []
+            : [{ media, srcSet: cuts({ ...frame, ratio }), sizes: frame.sizes }];
+        })
+      : [];
+  return {
+    src: url,
+    srcSet: cuts(frame),
+    sizes: frame.sizes,
+    ...(sources.length > 0 && { sources }),
+  };
 }

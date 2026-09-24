@@ -5,12 +5,12 @@ import { getNewsRepository } from "@/services/news";
 import { encodeNewsCursor } from "@/backend/news/supabase-repository";
 import type { NewsLanguage } from "@/backend/news/contracts";
 import { ArticleCard } from "@/components/common/ArticleCard";
-import { ui } from "@/components/ui-kit";
+import { UiButton } from "@/components/ui-kit";
 import { EmptyState, ErrorState } from "@/components/common/States";
-import { ArticleCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
+import { SkeletonList } from "@/components/common/Skeletons";
 import { useI18n } from "@/i18n/provider";
-import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
+import { NewsRowSkeleton } from "./NewsSkeletons";
 import { presentArticleForDisplay, publicNewsContext } from "./news-data";
 
 const PAGE_SIZE = 10;
@@ -57,7 +57,7 @@ export function LatestFeed({
     .filter((item) => !excludeIds?.has(item.id));
 
   if (query.isLoading) {
-    return <SkeletonList count={4}>{() => <ArticleCardSkeleton />}</SkeletonList>;
+    return <SkeletonList count={4}>{() => <NewsRowSkeleton />}</SkeletonList>;
   }
 
   if (query.isError) {
@@ -79,25 +79,16 @@ export function LatestFeed({
         />
       ))}
       {query.hasNextPage && (
-        <button
-          type="button"
+        // The kit's soft pill, full width at the row height.
+        <UiButton
+          variant="soft"
           onClick={() => void query.fetchNextPage()}
           disabled={query.isFetchingNextPage}
-          className={cn(
-            // Kit vocabulary: the sunken surface, the kit radius, the kit
-            // focus ring and the kit type scale replace the V2 glass pill.
-            "mt-1 inline-flex items-center justify-center gap-2 px-4",
-            ui.space.tap,
-            ui.radius.full,
-            ui.surface.sunken,
-            ui.text.bodyStrong,
-            ui.focus,
-            "transition-colors hover:opacity-90 disabled:opacity-60",
-          )}
+          className="mt-1"
         >
           {query.isFetchingNextPage && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {t("news.view_all")}
-        </button>
+        </UiButton>
       )}
     </div>
   );

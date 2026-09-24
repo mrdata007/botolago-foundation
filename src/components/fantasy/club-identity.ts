@@ -21,6 +21,33 @@ type Translate = (value: LocalizedString) => string;
  */
 
 /**
+ * Whether a Fantasy row's club key names this club.
+ *
+ * BG-0111: Fantasy rows and the football club list come from two
+ * repositories. In cloud mode both key clubs by the same UUID; in mock mode the
+ * Fantasy rows key them by the source slug ("war", "rca") while the football
+ * clubs carry a synthetic id and that slug. Joining on `id` alone matched
+ * nothing in mock mode — every player row lost its club name and colours, and
+ * the difficulty grid rendered no rows at all — so a key matches either.
+ */
+export function isClubKey(
+  club: Pick<Club, "id" | "slug">,
+  key: string | null | undefined,
+): boolean {
+  if (!key) return false;
+  return club.id === key || (!!club.slug && club.slug === key);
+}
+
+/** The club a Fantasy row's club key names: by id first, then by slug. */
+export function findClub<T extends Pick<Club, "id" | "slug">>(
+  clubs: readonly T[] | null | undefined,
+  key: string | null | undefined,
+): T | undefined {
+  if (!clubs || !key) return undefined;
+  return clubs.find((club) => club.id === key) ?? clubs.find((club) => isClubKey(club, key));
+}
+
+/**
  * The name to print beside a crest.
  *
  * The short name, unless it is the very token the crest is already showing —

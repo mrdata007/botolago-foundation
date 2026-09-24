@@ -3,6 +3,19 @@ import platePhotoForYou from "@/assets/news/plate-for-you.webp";
 import platePhotoInterviews from "@/assets/news/plate-interviews.webp";
 import platePhotoLatest from "@/assets/news/plate-latest.webp";
 import platePhotoTransfers from "@/assets/news/plate-transfers.webp";
+import topicClubBoard from "@/assets/news/topics/topic-club-board.webp";
+import topicCoach from "@/assets/news/topics/topic-coach.webp";
+import topicFans from "@/assets/news/topics/topic-fans.webp";
+import topicGoal from "@/assets/news/topics/topic-goal.webp";
+import topicInjury from "@/assets/news/topics/topic-injury.webp";
+import topicMatchday from "@/assets/news/topics/topic-matchday.webp";
+import topicPress from "@/assets/news/topics/topic-press.webp";
+import topicReferee from "@/assets/news/topics/topic-referee.webp";
+import topicStadium from "@/assets/news/topics/topic-stadium.webp";
+import topicTraining from "@/assets/news/topics/topic-training.webp";
+import topicTransfer from "@/assets/news/topics/topic-transfer.webp";
+import topicTrophy from "@/assets/news/topics/topic-trophy.webp";
+import { topicForHeadline, type NewsTopic } from "@/lib/news-topic";
 import type { ArticleCategory } from "@/types/domain";
 
 /**
@@ -33,8 +46,9 @@ import type { ArticleCategory } from "@/types/domain";
  * Layout notes that matter more than the art direction:
  *
  *   - It is `absolute inset-0` inside the box `MediaImage` already sizes, so
- *     it inherits that box's aspect ratio exactly and cannot shift layout in
- *     any of `ArticleCard`'s five variants.
+ *     it inherits that box's size exactly and cannot shift layout in any of
+ *     `ArticleCard`'s variants — the photo cards, the row thumbnails — or on
+ *     the article hero.
  *   - The gradient runs `to bottom`. An angle in `deg` is a physical
  *     direction and would land on the opposite edge under `dir="rtl"`.
  *   - `aria-hidden`: the card's `<Link>` already carries the accessible name,
@@ -42,6 +56,12 @@ import type { ArticleCategory } from "@/types/domain";
  *     translated copy, so there is no string for the i18n gate to miss.
  *   - The photos carry no text, logos or faces, so they never pass for the
  *     article's own picture of a real event.
+ *
+ * When the headline names a subject (a transfer, an injury, a referee
+ * decision… see `topicForHeadline`), the plate uses that subject's
+ * illustration instead of the section's, so a page of photo-less stories
+ * does not repeat one image. The topic illustrations follow the same rule:
+ * generated for BotolaGO, no identifiable people, no crests, no text.
  */
 
 /** One plate colour per category. Spelled out so the set is exhaustive. */
@@ -71,6 +91,22 @@ const PLATE_POSITION: Partial<Record<ArticleCategory, string>> = {
   interviews: "35% 50%",
 };
 
+/** One illustration per headline subject. */
+const TOPIC_PHOTO: Record<NewsTopic, string> = {
+  injury: topicInjury,
+  referee: topicReferee,
+  transfer: topicTransfer,
+  trophy: topicTrophy,
+  press: topicPress,
+  "club-board": topicClubBoard,
+  coach: topicCoach,
+  training: topicTraining,
+  goal: topicGoal,
+  fans: topicFans,
+  matchday: topicMatchday,
+  stadium: topicStadium,
+};
+
 function knownCategory(category: string | undefined): ArticleCategory {
   return CATEGORIES.find((candidate) => candidate === category) ?? "latest";
 }
@@ -82,12 +118,16 @@ export function plateTokenForCategory(category: string | undefined): string {
 
 export function ArticleHeroFallback({
   category,
+  headline,
 }: {
   /** The edition's primary category; an unknown slug falls back to `latest`. */
   category?: string;
+  /** The headline, whose subject picks the illustration when it has one. */
+  headline?: string;
 }) {
   const known = knownCategory(category);
   const token = PLATE_TOKEN[known];
+  const topic = topicForHeadline(headline);
 
   return (
     <div
@@ -99,8 +139,9 @@ export function ArticleHeroFallback({
       }}
     >
       <img
-        src={PLATE_PHOTO[known]}
+        src={topic ? TOPIC_PHOTO[topic] : PLATE_PHOTO[known]}
         alt=""
+        data-article-hero-topic={topic ?? undefined}
         width={1440}
         height={810}
         loading="lazy"
@@ -108,7 +149,7 @@ export function ArticleHeroFallback({
         draggable={false}
         data-article-hero-photo
         className="absolute inset-0 h-full w-full select-none object-cover"
-        style={{ objectPosition: PLATE_POSITION[known] ?? "50% 50%" }}
+        style={{ objectPosition: topic ? "50% 50%" : (PLATE_POSITION[known] ?? "50% 50%") }}
       />
       {/* The category colour over the photo, so a transfers card and an
           analysis card still read as different sections at a glance. */}

@@ -3,6 +3,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { CupInfo } from "@/components/fantasy-lists/CupInfo";
+import {
+  compactMoveFormat,
+  formatMove,
+  rankFigure,
+  STANDINGS_FIGURE_CELL,
+  STANDINGS_NAME_CELL,
+} from "@/components/fantasy-lists/standings";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
@@ -15,9 +23,9 @@ import {
   UiHeader,
   UiPill,
   UiRankMovement,
-  UiSegmented,
   UiSkeleton,
   UiTable,
+  UiTabs,
   UiTBody,
   UiTD,
   UiTH,
@@ -35,17 +43,19 @@ export const Route = createFileRoute("/fantasy/leagues/$leagueId")({
 });
 
 /**
- * League detail: the league name in the header, a League / Cup control, the
- * "last updated" line and the Pos / Team / GW / Total standings.
+ * League detail: the league's name in the header, underline tabs (Ligue |
+ * Coupe), the "last updated" line and the standings.
  *
- * The standings are a `UiTable`: rank, team, gameweek score, total and
- * movement are scanned one column at a time, the numeric columns carry
- * tabular figures aligned to the inline-end edge, and the column order
- * mirrors with the document direction rather than being mirrored by hand.
+ * The standings are the A-Rankings table: one card, a transparent head of
+ * kicker labels, rank / team over manager / gameweek / total, and the quiet
+ * ▲/▼ movement. Rank, gameweek and total are scanned one column at a time, so
+ * they are tabular figures aligned to the inline-end edge, and the column
+ * order mirrors with the document rather than by hand. The gameweek column
+ * says "J.14" in both languages; it used to be an English "GW14".
  */
 function LeagueDetailPage() {
   return (
-    <FantasyFrame>
+    <FantasyFrame bottomNav>
       <LeagueDetailBody />
     </FantasyFrame>
   );
@@ -105,155 +115,168 @@ function LeagueDetailBody() {
     same: t("fantasy.rank.same"),
   };
   const rows = standingsQ.data ?? [];
+  // A public league can be thousands strong: a five-digit rank takes the
+  // small stat step, and a move of a thousand places or more is compact.
+  const rankStep = rankFigure(Math.max(1, ...rows.map((row) => row.rank)));
+  const compactNf = compactMoveFormat(lang === "ar" ? "ar-MA" : "fr-FR");
 
   return (
     <>
       <UiHeader
+        kicker={t("nav.fantasy")}
         title={leagueQ.data?.name ?? t("fpl.league")}
-        tone="gradient"
         backTo="/fantasy/leagues"
-      >
-        <UiSegmented
-          className="mt-3"
-          tone="onGradient"
+      />
+      <FantasyScreenGate state={screen} next={`/fantasy/leagues/${leagueId}`}>
+        <UiTabs
           value={tab}
           onChange={setTab}
           label={t("fpl.league")}
+          idBase="league"
+          className="px-2"
           options={[
-            { value: "league", label: t("fpl.league") },
-            { value: "cup", label: t("fpl.cups") },
+            { value: "league", label: t("fpl.league"), panelId: "league-panel-league" },
+            { value: "cup", label: t("fpl.cups"), panelId: "league-panel-cup" },
           ]}
         />
-      </UiHeader>
-      <FantasyScreenGate state={screen} next={`/fantasy/leagues/${leagueId}`}>
-        {tab === "league" ? (
-          <div className={ui.surface.page}>
-            <p className={cn("px-4 py-3 text-center", ui.rule.block, ui.text.meta, ui.tone.muted)}>
-              {t("fpl.last_updated")}:{" "}
-              <strong className={cn(ui.tone.default, "[font-weight:var(--ui-weight-heavy)]")}>
-                {updated}
-              </strong>
-            </p>
+        <section
+          role="tabpanel"
+          id={`league-panel-${tab}`}
+          aria-labelledby={`league-tab-${tab}`}
+          className={cn("px-4 pb-8 pt-4", ui.surface.page)}
+        >
+          {tab === "league" ? (
+            <>
+              <p className={cn("text-center", ui.text.meta, ui.tone.muted)}>
+                {t("fpl.last_updated")}:{" "}
+                <strong className={cn(ui.tone.default, "[font-weight:var(--ui-weight-heavy)]")}>
+                  {updated}
+                </strong>
+              </p>
 
-            {standingsQ.isPending ? (
-              <div role="status" aria-label={t("state.loading")} className="m-4 space-y-2">
-                <UiSkeleton className="h-10" />
-                <UiSkeleton className="h-10" />
-                <UiSkeleton className="h-10" />
-                <UiSkeleton className="h-10" />
-              </div>
-            ) : standingsQ.isError ? (
-              <div className="p-4">
-                <UiErrorState onRetry={() => void standingsQ.refetch()} />
-              </div>
-            ) : rows.length === 0 ? (
-              <div className="p-4">
-                <UiEmptyState
-                  title={t("fpl.no_data_yet")}
-                  body={t("fantasy.leagues.no_standings")}
-                />
-              </div>
-            ) : (
-              // `table-fixed`: header-sized columns, so a long team name
-              // truncates in its own cell instead of pushing Total off a
-              // 390px screen.
-              <UiTable caption={t("fantasy.leagues.standings")} tableClassName="table-fixed">
-                <UiTHead>
-                  <UiTR>
-                    <UiTH numeric className="w-10">
-                      {t("fpl.pos")}
-                    </UiTH>
-                    <UiTH>{t("fpl.team")}</UiTH>
-                    <UiTH numeric className="w-12" title={t("fpl.gameweek")}>
-                      {gw ? `GW${gw}` : t("fantasy.leagues.gw")}
-                    </UiTH>
-                    <UiTH numeric className="w-14">
-                      {t("fpl.total")}
-                    </UiTH>
-                    <UiTH numeric className="w-9">
-                      <span className="sr-only">{t("fantasy.leagues.movement")}</span>
-                    </UiTH>
-                  </UiTR>
-                </UiTHead>
-                <UiTBody>
-                  {rows.map((row) => (
-                    <UiTR key={row.managerId}>
-                      <UiTD numeric strong>
-                        {nf.format(row.rank)}
-                      </UiTD>
-                      <UiTD>
-                        <span
-                          dir="auto"
-                          className={cn(
-                            "block truncate",
-                            ui.text.body,
-                            "[font-weight:var(--ui-weight-heavy)]",
-                          )}
-                        >
-                          {row.teamName}
-                        </span>
-                        {row.managerName && row.managerName !== row.teamName ? (
-                          <span
-                            dir="auto"
-                            className={cn("block truncate", ui.text.micro, ui.tone.muted)}
+              <div className="mt-4">
+                {standingsQ.isPending ? (
+                  <div role="status" aria-label={t("state.loading")} className="space-y-2">
+                    <UiSkeleton className="h-12" />
+                    <UiSkeleton className="h-12" />
+                    <UiSkeleton className="h-12" />
+                    <UiSkeleton className="h-12" />
+                  </div>
+                ) : standingsQ.isError ? (
+                  <UiErrorState onRetry={() => void standingsQ.refetch()} />
+                ) : rows.length === 0 ? (
+                  <UiEmptyState
+                    title={t("fpl.no_data_yet")}
+                    body={t("fantasy.leagues.no_standings")}
+                  />
+                ) : (
+                  <UiCard padding="none" className="overflow-hidden">
+                    {/* The figure columns size to their content and the name
+                        column takes the rest without being able to widen the
+                        table (see `standings.ts`), so a long team name wraps
+                        in its own cell instead of pushing Total off-screen. */}
+                    <UiTable caption={t("fantasy.leagues.standings")}>
+                      <UiTHead className="bg-transparent">
+                        <UiTR>
+                          <UiTH className={cn("ps-4", STANDINGS_FIGURE_CELL)}>{t("fpl.pos")}</UiTH>
+                          <UiTH className={STANDINGS_NAME_CELL}>{t("fpl.team")}</UiTH>
+                          <UiTH numeric className={STANDINGS_FIGURE_CELL} title={t("fpl.gameweek")}>
+                            {gw
+                              ? `${t("fantasy.leagues.gw")}${nf.format(gw)}`
+                              : t("fantasy.leagues.gw")}
+                          </UiTH>
+                          <UiTH numeric className={STANDINGS_FIGURE_CELL}>
+                            {t("fpl.total")}
+                          </UiTH>
+                          <UiTH numeric className={cn("pe-4", STANDINGS_FIGURE_CELL)}>
+                            <span aria-hidden>+/−</span>
+                            <span className="sr-only">{t("fantasy.leagues.movement")}</span>
+                          </UiTH>
+                        </UiTR>
+                      </UiTHead>
+                      <UiTBody>
+                        {rows.map((row, index) => (
+                          <UiTR
+                            key={row.managerId}
+                            className={cn(index === rows.length - 1 && "border-b-0")}
                           >
-                            {row.managerName}
-                          </span>
-                        ) : null}
-                      </UiTD>
-                      <UiTD numeric className={ui.tone.muted}>
-                        {nf.format(row.gameweekScore)}
-                      </UiTD>
-                      <UiTD numeric strong>
-                        {nf.format(row.totalScore)}
-                      </UiTD>
-                      <UiTD numeric>
-                        <UiRankMovement
-                          rank={row.rank}
-                          previousRank={row.previousRank}
-                          labels={movementLabels}
-                        />
-                      </UiTD>
-                    </UiTR>
-                  ))}
-                </UiTBody>
-              </UiTable>
-            )}
+                            <UiTD
+                              className={cn(
+                                "ps-4",
+                                STANDINGS_FIGURE_CELL,
+                                rankStep,
+                                row.rank <= 3 ? ui.tone.default : ui.tone.muted,
+                              )}
+                            >
+                              <bdi>{nf.format(row.rank)}</bdi>
+                            </UiTD>
+                            <UiTD className={cn("py-2.5", STANDINGS_NAME_CELL)}>
+                              <span
+                                dir="auto"
+                                className={cn(
+                                  "line-clamp-2 break-words",
+                                  ui.text.secondary,
+                                  "[font-weight:var(--ui-weight-strong)]",
+                                  ui.tone.default,
+                                )}
+                              >
+                                {row.teamName}
+                              </span>
+                              {row.managerName && row.managerName !== row.teamName ? (
+                                <span
+                                  dir="auto"
+                                  className={cn("block truncate", ui.text.meta, ui.tone.muted)}
+                                >
+                                  {row.managerName}
+                                </span>
+                              ) : null}
+                            </UiTD>
+                            <UiTD numeric className={cn(STANDINGS_FIGURE_CELL, ui.tone.muted)}>
+                              {nf.format(row.gameweekScore)}
+                            </UiTD>
+                            <UiTD
+                              numeric
+                              strong
+                              className={cn(STANDINGS_FIGURE_CELL, ui.stat.md, ui.tone.default)}
+                            >
+                              {nf.format(row.totalScore)}
+                            </UiTD>
+                            <UiTD numeric className={cn("pe-4", STANDINGS_FIGURE_CELL)}>
+                              <UiRankMovement
+                                variant="quiet"
+                                rank={row.rank}
+                                previousRank={row.previousRank}
+                                labels={movementLabels}
+                                formatDelta={(places) => formatMove(places, nf, compactNf)}
+                              />
+                            </UiTD>
+                          </UiTR>
+                        ))}
+                      </UiTBody>
+                    </UiTable>
+                  </UiCard>
+                )}
+              </div>
 
-            {leagueQ.data?.type === "private" ? (
-              <div className="p-4">
-                <UiButton variant="outline" onClick={() => void leave()} disabled={busy}>
+              {leagueQ.data?.type === "private" ? (
+                <UiButton
+                  variant="outline"
+                  className={cn("mt-6 border-[color:var(--ui-rule-strong)]", ui.tone.default)}
+                  onClick={() => void leave()}
+                  disabled={busy}
+                >
                   {t("fpl.leave_league")}
                 </UiButton>
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <section className="mx-3 mt-3">
-            <UiCard>
-              <div className="text-center">
+              ) : null}
+            </>
+          ) : (
+            <CupInfo
+              lead={
                 <UiPill>{t("fpl.cup_not_started").replace("{n}", String((gw ?? 1) + 1))}</UiPill>
-              </div>
-              <p className={cn("mt-3", ui.text.body, ui.tone.default)}>
-                {t("fpl.cup_not_qualified")}
-              </p>
-              <h2 className={cn("mt-3", ui.text.section, ui.tone.default)}>
-                {t("fpl.cup_how_title")}
-              </h2>
-              <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
-                {t("fpl.cup_how_body")}
-              </p>
-              <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
-                {t("fpl.cup_tiebreak")}
-              </p>
-              <ul className={cn("mt-1 space-y-0.5", ui.text.secondary, ui.tone.muted)}>
-                <li>{t("fpl.cup_tb1")}</li>
-                <li>{t("fpl.cup_tb2")}</li>
-                <li>{t("fpl.cup_tb3")}</li>
-              </ul>
-            </UiCard>
-          </section>
-        )}
+              }
+            />
+          )}
+        </section>
       </FantasyScreenGate>
     </>
   );

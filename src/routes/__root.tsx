@@ -224,7 +224,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800;900&family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap",
+        // Changa is the Option A display face (`--ui-font-display`): titles,
+        // headings, tab labels and standalone scores, in both scripts — it
+        // ships an Arabic subset. 800 is its heaviest weight.
+        href: "https://fonts.googleapis.com/css2?family=Changa:wght@600;700;800&family=Manrope:wght@400;600;700;800;900&family=Noto+Sans+Arabic:wght@400;600;700;800&display=swap",
       },
       // `?v=2` makes browsers fetch the new transparent "GO" favicon instead of
       // reusing the old one they have cached. Bump it whenever the file changes.

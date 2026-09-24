@@ -4,17 +4,22 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
+  AtSign,
   Bell,
   Camera,
   CheckCircle2,
   Loader2,
   Trophy,
+  User,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AuthShell, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthShell";
-import { ui, UiButton, UiCheckbox, UiInput } from "@/components/ui-kit";
+import { authFieldClass, authFieldIconClass } from "@/components/auth/auth-classes";
+import { setupStepFromSearch } from "@/components/auth/account-model";
+import { ui, UiButton, UiCheckbox, UiChip, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+import { clubStyle } from "@/lib/club-palette";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
@@ -29,7 +34,13 @@ export const Route = createFileRoute("/auth/profile-setup")({
   validateSearch: (search: Record<string, unknown>) => {
     const next =
       typeof search.next === "string" ? sanitizeAuthCallbackNext(search.next) : undefined;
-    return next && next !== "/" ? { next } : {};
+    // `?step=3` is how Profile's Notifications row opens the wizard on the
+    // step that edits them; there is no other notification settings screen.
+    const step = setupStepFromSearch(search.step);
+    return {
+      ...(next && next !== "/" ? { next } : {}),
+      ...(step ? { step } : {}),
+    };
   },
   component: ProfileSetupPage,
 });
@@ -40,8 +51,8 @@ function ProfileSetupPage() {
   const { t, tr, lang, setLanguage } = useI18n();
   const { user, status, refresh } = useAuth();
   const navigate = useNavigate();
-  const { next = "/" } = Route.useSearch();
-  const [step, setStep] = useState(1);
+  const { next = "/", step: initialStep } = Route.useSearch();
+  const [step, setStep] = useState<number>(initialStep ?? 1);
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState<string | undefined>();
@@ -67,9 +78,16 @@ function ProfileSetupPage() {
       setAvatar(user.avatarDataUrl);
       setFavoriteClubId(user.favoriteClubId);
       setPrefs(user.notifications);
-      setChosenLang(user.language);
     }
   }, [user]);
+
+  // The language step starts from — and follows — the language the app is
+  // showing, not the one last saved on the account. Profile's language row
+  // changes the app only, so seeding from the account made "Terminer" or
+  // "Passer" (both save) flip an Arabic reader back to French.
+  useEffect(() => {
+    setChosenLang(lang);
+  }, [lang]);
 
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
@@ -121,8 +139,13 @@ function ProfileSetupPage() {
   }, [step, displayName, username]);
 
   return (
-    <AuthShell title={t("auth.setup.title")} subtitle={t("auth.setup.subtitle")} showBack={false}>
-      <div className="mb-4">
+    <AuthShell
+      compact
+      title={t("auth.setup.title")}
+      subtitle={t("auth.setup.subtitle")}
+      showBack={false}
+    >
+      <div className="mb-5">
         <div className="flex items-center justify-between">
           {/* The label type stays on the counter, which is what it is for —
               it used to sit on the whole row, so `uppercase` inherited into
@@ -136,6 +159,8 @@ function ProfileSetupPage() {
             {t("auth.setup.skip")}
           </UiButton>
         </div>
+        {/* Done steps fill with the action gradient, the one "you are
+            moving forward" colour in Option A; the rest are hairline grey. */}
         <div className="mt-2 flex gap-1">
           {Array.from({ length: STEPS }).map((_, i) => (
             <span
@@ -143,8 +168,9 @@ function ProfileSetupPage() {
               className={cn(
                 "h-1.5 flex-1",
                 ui.radius.full,
-                i < step ? "bg-[color:var(--ui-ink)]" : "bg-[color:var(--ui-rule)]",
+                i < step ? undefined : "bg-[color:var(--ui-rule)]",
               )}
+              style={i < step ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
             />
           ))}
         </div>
@@ -154,10 +180,11 @@ function ProfileSetupPage() {
         <div className="grid gap-4">
           <div className="flex items-center gap-4">
             <div className="relative">
+              {/* A round disc, like the avatar on Profile's identity card. */}
               <div
                 className={cn(
                   "grid h-20 w-20 place-items-center overflow-hidden",
-                  ui.radius.control,
+                  ui.radius.full,
                   ui.surface.sunken,
                   ui.rule.all,
                 )}
@@ -188,7 +215,9 @@ function ProfileSetupPage() {
                   aria-label={t("auth.setup.remove")}
                   className={cn(
                     ui.hitArea,
-                    "absolute -end-1 -top-1 z-10 grid h-6 w-6 place-items-center",
+                    // On the disc's own corner of its box, which is where a
+                    // circle's edge runs — not floating off it.
+                    "absolute end-0 top-0 z-10 grid h-6 w-6 place-items-center",
                     ui.radius.full,
                     "bg-[color:var(--ui-negative)]",
                     ui.tone.onNegative,
@@ -234,6 +263,8 @@ function ProfileSetupPage() {
             label={t("auth.setup.display_name")}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
+            fieldClassName={authFieldClass()}
+            leading={<User className={authFieldIconClass} aria-hidden />}
           />
 
           <UiInput
@@ -242,6 +273,8 @@ function ProfileSetupPage() {
             autoComplete="username"
             value={username}
             onChange={(event) => setUsername(event.target.value)}
+            fieldClassName={authFieldClass()}
+            leading={<AtSign className={authFieldIconClass} aria-hidden />}
           />
         </div>
       )}
@@ -261,28 +294,37 @@ function ProfileSetupPage() {
               over a city is a row, not a pill; a segmented
               control announces `role="tab"` — this is a radio-like choice, not
               a tab set, and this lane does not change what a control
-              announces. Every colour, radius, height and focus ring here is
-              already a token, and `aria-pressed` stays as it was. */}
+              announces. `aria-pressed` stays as it was.
+
+              Option A: each row carries its club — the crest disc, and a 4px
+              edge in the club's colour on the inline start (`ui.edge.start`,
+              a logical border, never the boards' `inset 4px 0 0` shadow). The
+              chosen row takes the club's tint and its edge colour all round. */}
           <div className="grid max-h-72 gap-2 overflow-y-auto pe-1">
             {clubsQ.data?.map((c) => {
               const active = favoriteClubId === c.id;
+              const club = clubStyle(c);
               return (
                 <button
                   key={c.id}
                   type="button"
                   onClick={() => setFavoriteClubId(c.id)}
                   aria-pressed={active}
+                  data-club={club["data-club"]}
+                  style={club.style}
                   className={cn(
                     "flex items-center gap-3 border px-3 py-2 text-start transition-colors",
                     "min-h-[var(--ui-row-min)]",
-                    ui.radius.control,
+                    ui.radius.card,
                     ui.focus,
                     active
-                      ? "border-[color:var(--ui-ink)] bg-[color:color-mix(in_oklab,var(--ui-ink)_8%,transparent)]"
+                      ? cn("border-[color:var(--ui-club-edge)]", ui.club.tint)
                       : "border-[color:var(--ui-rule)] hover:bg-[color:var(--ui-surface-sunken)]",
+                    // Last, so the 4px start edge is laid over the 1px border.
+                    ui.edge.start,
                   )}
                 >
-                  <ClubCrest club={c} />
+                  <ClubCrest club={c} size="sm" />
                   <div className="min-w-0 flex-1">
                     <div className={cn("truncate", ui.text.bodyStrong)}>{tr(c.name)}</div>
                     <div className={cn("truncate", ui.text.micro, ui.tone.muted)}>{tr(c.city)}</div>
@@ -323,37 +365,28 @@ function ProfileSetupPage() {
               onChange={(e) => setPrefs((p) => ({ ...p, [key]: e.target.checked }))}
               label={t(label)}
               hint={t(desc)}
-              className={cn("px-3 py-3", ui.space.row, ui.radius.control, ui.rule.all)}
+              className={cn("px-3 py-3", ui.space.row, ui.radius.card, ui.rule.all)}
             />
           ))}
 
           <div>
-            <div className={cn("mb-1", ui.text.label, ui.tone.muted)}>
+            <div className={cn("mb-1.5", ui.text.label, ui.tone.muted)}>
               {t("auth.setup.language_confirm")}
             </div>
-            {/* KEPT for the same reason as the club list: `UiSegmented` would
-                turn a two-way language choice into a `role="tablist"`, and the
-                pair already sits on the tokens at the 44px floor. */}
+            {/* Two `UiChip`s: a pair of pressed/unpressed toggles, which is
+                what this was already (`aria-pressed`), now drawn as the kit's
+                pill — sunken, or navy when chosen. Not `UiSegmented`, which
+                would announce a two-way choice as a `role="tablist"`. */}
             <div className="grid grid-cols-2 gap-2">
               {(["fr", "ar"] as const).map((l) => (
-                <button
+                <UiChip
                   key={l}
-                  type="button"
+                  selected={chosenLang === l}
                   onClick={() => setChosenLang(l)}
-                  aria-pressed={chosenLang === l}
-                  className={cn(
-                    "inline-flex items-center justify-center border px-3",
-                    ui.space.tap,
-                    ui.radius.control,
-                    ui.text.bodyStrong,
-                    ui.focus,
-                    chosenLang === l
-                      ? "border-[color:var(--ui-ink)] bg-[color:color-mix(in_oklab,var(--ui-ink)_8%,transparent)]"
-                      : "border-[color:var(--ui-rule)]",
-                  )}
+                  className={cn("w-full justify-center", ui.text.bodyStrong)}
                 >
                   {l === "fr" ? "Français" : "العربية"}
-                </button>
+                </UiChip>
               ))}
             </div>
           </div>

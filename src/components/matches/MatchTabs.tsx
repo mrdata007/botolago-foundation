@@ -1,62 +1,68 @@
 import { useI18n } from "@/i18n/provider";
-import { UiSegmented } from "@/components/ui-kit";
-import { cn } from "@/lib/utils";
+import { UiTabs } from "@/components/ui-kit";
+import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 export type MatchTabKey = "summary" | "stats" | "lineups" | "h2h";
 
+/**
+ * Short labels on purpose. At 390px each of the four columns leaves ~89px of
+ * label, and in the display face (Changa 16, heavy when chosen) the French
+ * "Statistiques" measures 90px and "Compositions" 102px — both truncated.
+ * "Stats" (38px) and "Compos" (59px) fit with room; "Face à face" is 79px.
+ * Every Arabic label fits (the longest, "المواجهات", is 78px).
+ */
 export const MATCH_TABS: { key: MatchTabKey; label: TranslationKey }[] = [
   { key: "summary", label: "matches.detail.tab.summary" },
-  { key: "stats", label: "matches.detail.tab.stats" },
-  { key: "lineups", label: "matches.detail.tab.lineups" },
+  { key: "stats", label: "matches.detail.tab.stats_short" },
+  { key: "lineups", label: "matches.detail.tab.lineups_short" },
   { key: "h2h", label: "matches.detail.tab.h2h" },
 ];
 
+/** The id of the one tab panel the page renders; every tab controls it. */
+export const MATCH_PANEL_ID = "match-panel";
+/** Tab ids are `${MATCH_TAB_ID_BASE}-tab-${key}` (UiTabs), for `aria-labelledby`. */
+export const MATCH_TAB_ID_BASE = "match";
+
 /**
- * Sticky segmented control driving the match detail sections.
+ * The match page's section tabs (A-Match): the kit's underline tabs, full
+ * bleed on a phone, with the HOME club's edge colour as the indicator — the
+ * `clubStyle(home)` on the wrapper puts `--ui-club-edge` (≥ 3:1 on the bar)
+ * in scope for `accent`.
  *
- * This is now a thin wrapper over the kit's `UiSegmented` rather than a
- * second implementation of a segmented control: the track, the selected
- * segment, the type scale, the radii and the focus ring all come from the
- * kit, so these tabs and the ones on every other screen are the same
- * control. Only the sticky placement is local.
+ * Sticky under the top bar. The match page's own bar (`MatchTopBar`) is
+ * built to the global bar's height, so `--topbar-h` is the right offset here
+ * too, and the tabs no longer park underneath it as the old `top-2` did.
  *
- * Public props (`active`, `onChange`) are unchanged.
+ * Public props (`active`, `onChange`) are unchanged; `homePalette` is new.
  */
 export function MatchTabs({
   active,
   onChange,
+  homePalette,
 }: {
   active: MatchTabKey;
   onChange: (key: MatchTabKey) => void;
+  /** `clubMatchPalettes(home, away).home` — the indicator's colour. */
+  homePalette: ClubPalette;
 }) {
   const { t } = useI18n();
   return (
-    <div className="sticky top-2 z-20 mt-5 min-w-0">
-      <UiSegmented<MatchTabKey>
+    <div
+      {...clubStyle(homePalette)}
+      className="sticky top-[var(--topbar-h)] z-20 -mx-[var(--ui-gutter)] min-w-0 sm:mx-0 sm:mt-3"
+    >
+      <UiTabs<MatchTabKey>
         value={active}
         onChange={onChange}
         label={t("matches.detail.tabs_label")}
-        // Call-site adjustments, made here rather than by editing the kit:
-        // the kit's segments are 40px tall and these are the primary
-        // navigation of the match page, so they are raised to the 44px tap
-        // minimum; and four labels share a 390px row.
-        //
-        // BG-0111 — the meta step was not enough. Measured at 390px in French,
-        // each segment is an 88px column with a 72px content box, against
-        // "Statistiques" at 80px and "Compositions" at 90px: both rendered as
-        // "Statistique…" and "Composition…". The micro step plus a 4px inline
-        // padding puts the longest label at 76px inside an 80px box, and
-        // `whitespace-normal` means a label that still does not fit wraps at a
-        // word boundary rather than losing its ending. Arabic was never over
-        // (longest 63px) and is unaffected by either change.
-        className={cn(
-          "[&>button]:min-h-[var(--ui-tap-min)]",
-          "[&>button]:text-[length:var(--ui-text-micro)]",
-          "[&>button]:px-1",
-          "[&>button]:whitespace-normal [&>button]:[line-height:1.25]",
-        )}
-        options={MATCH_TABS.map((tab) => ({ value: tab.key, label: t(tab.label) }))}
+        accent="var(--ui-club-edge)"
+        idBase={MATCH_TAB_ID_BASE}
+        options={MATCH_TABS.map((tab) => ({
+          value: tab.key,
+          label: t(tab.label),
+          panelId: MATCH_PANEL_ID,
+        }))}
       />
     </div>
   );

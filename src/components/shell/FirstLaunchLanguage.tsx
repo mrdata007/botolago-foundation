@@ -18,7 +18,10 @@ import { ui, UiButton } from "@/components/ui-kit";
  *
  * It now uses the kit: an opaque overlay on `--ui-surface`, the kit radii, the
  * kit type scale and the kit's ink/gradient pairings, so the first thing a
- * visitor sees is the same product as the second thing.
+ * visitor sees is the same product as the second thing. In Option A that
+ * means the display face for the title, 14px option tiles, white-on-navy for
+ * the chosen one (the selected-chip pairing) and the action gradient behind
+ * its tick — the bottom nav's "you are here" pill in miniature.
  *
  * It is NOT `UiModal`, and must not become one. This is a mandatory language
  * gate: `UiModal` always renders a close control, closes on Escape and closes
@@ -67,7 +70,7 @@ export function FirstLaunchLanguage() {
           <div className="flex items-center justify-center pb-4">
             <Logo />
           </div>
-          <DialogPrimitive.Title className={cn("text-center", ui.text.hero, ui.tone.default)}>
+          <DialogPrimitive.Title className={cn("text-center", ui.display.title, ui.tone.default)}>
             {dictionaries.fr["language.choose_title"]}
           </DialogPrimitive.Title>
           <DialogPrimitive.Description
@@ -89,25 +92,24 @@ export function FirstLaunchLanguage() {
                   className={cn(
                     "flex items-center justify-between px-4 py-3 text-start transition-colors",
                     ui.space.tap,
-                    ui.radius.control,
+                    ui.radius.card,
                     ui.focus,
                     active
-                      ? cn(ui.surface.ink, "shadow-[var(--ui-shadow-card)]")
+                      ? cn(ui.surface.inkPlain, ui.shadow.card)
                       : cn(ui.surface.sunken, ui.rule.all),
                   )}
                 >
                   <div className="min-w-0">
                     <div className={ui.text.bodyStrong}>{o.native}</div>
-                    {/* The quieter step of a foreground ON an ink fill: the kit
-                        has `--ui-on-ink` and `--ui-on-ink-plain` but no muted
-                        step for either, so the selected tile dims its own
-                        inherited colour instead of naming a second one. The
-                        unselected tile is on a surface and uses the token. */}
+                    {/* The quieter step of a foreground ON an ink fill is a
+                        token now (`--ui-on-ink-muted`, 8.4:1), so the selected
+                        tile names it instead of dimming its own colour. The
+                        unselected tile is on a surface and uses the muted one. */}
                     <div
                       className={cn(
                         "truncate",
                         ui.text.meta,
-                        active ? "opacity-80" : ui.tone.muted,
+                        active ? ui.tone.onInkMuted : ui.tone.muted,
                       )}
                     >
                       {o.sub}
@@ -117,14 +119,12 @@ export function FirstLaunchLanguage() {
                     className={cn(
                       "grid h-6 w-6 shrink-0 place-items-center transition-colors",
                       active
-                        ? // BG-0083: this was `text-[color:var(--ui-ink)]`, and
-                          // `--ui-ink` is a fill, never a foreground. The plate
-                          // is the cyan `--ui-on-ink`, so the tick takes the
-                          // foreground the kit pairs with that cyan wherever it
-                          // appears as a fill — `--ui-ink-deep`, which is dark
-                          // in both themes, where `--ui-ink-fg` is a light tint
-                          // in dark and would vanish into the plate.
-                          "bg-[color:var(--ui-on-ink)] text-[color:var(--ui-ink-deep)]"
+                        ? // The action gradient (set inline below — a
+                          // background image) with the foreground the kit
+                          // pairs with it everywhere: `--ui-ink-deep`, dark in
+                          // both themes like the gradient under it. BG-0083:
+                          // never `--ui-ink`, which is a fill.
+                          "text-[color:var(--ui-ink-deep)]"
                         : // `ui.surface.card` was painting this 24px plate, and
                           // it carries the card radius and the card shadow.
                           // `cn()` merges last-wins, so its 6px radius beat the
@@ -135,6 +135,7 @@ export function FirstLaunchLanguage() {
                           cn(ui.surface.bar, ui.rule.all),
                       ui.radius.full,
                     )}
+                    style={active ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
                     aria-hidden
                   >
                     {active && <Check className="h-3.5 w-3.5" />}

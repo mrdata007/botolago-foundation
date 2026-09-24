@@ -4,14 +4,16 @@
 
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useId, useState } from "react";
-import { Eye, EyeOff, Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import {
   AuthShell,
   AuthPrimaryButton,
   AuthFormError,
+  AuthPasswordToggle,
   AuthSecondaryButton,
 } from "@/components/auth/AuthShell";
+import { authFieldClass, authFieldIconClass } from "@/components/auth/auth-classes";
 import { ui, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
@@ -89,7 +91,7 @@ function UpdatePasswordPage() {
 
   if (hasSession === false) {
     return (
-      <AuthShell title={t("auth.update.title")} subtitle={t("auth.update.no_session")}>
+      <AuthShell compact title={t("auth.update.title")} subtitle={t("auth.update.no_session")}>
         <AuthSecondaryButton onClick={() => navigate({ to: "/auth/forgot-password" })}>
           {t("auth.update.request_new_link")}
         </AuthSecondaryButton>
@@ -99,17 +101,22 @@ function UpdatePasswordPage() {
 
   if (done) {
     return (
-      <AuthShell title={t("auth.update.success_title")} subtitle={t("auth.update.success_body")}>
-        <div className="flex flex-col items-center gap-4 py-2 text-center">
+      <AuthShell
+        compact
+        title={t("auth.update.success_title")}
+        subtitle={t("auth.update.success_body")}
+      >
+        <div className="flex flex-col items-center gap-5 py-2 text-center">
+          {/* A round positive disc, like every glyph plate in Option A. */}
           <div
             className={cn(
               "grid h-14 w-14 place-items-center",
-              ui.radius.control,
+              ui.radius.full,
               "bg-[color:color-mix(in_oklab,var(--ui-positive)_18%,transparent)]",
               ui.tone.positive,
             )}
           >
-            <CheckCircle2 className="h-8 w-8" aria-hidden />
+            <CheckCircle2 className="h-7 w-7" aria-hidden />
           </div>
           <AuthSecondaryButton onClick={() => navigate({ to: "/" })}>
             {t("auth.update.continue")}
@@ -120,7 +127,7 @@ function UpdatePasswordPage() {
   }
 
   return (
-    <AuthShell title={t("auth.update.title")} subtitle={t("auth.update.subtitle")}>
+    <AuthShell compact title={t("auth.update.title")} subtitle={t("auth.update.subtitle")}>
       <form onSubmit={onSubmit} noValidate className="grid gap-3">
         <div>
           <UiInput
@@ -132,27 +139,9 @@ function UpdatePasswordPage() {
             onChange={(e) => setPassword(e.target.value)}
             error={errors.pw ? t(errors.pw) : undefined}
             reserveError
-            trailing={
-              <button
-                type="button"
-                onClick={() => setShowPw((s) => !s)}
-                aria-label={showPw ? t("auth.hide_password") : t("auth.show_password")}
-                className={cn(
-                  "grid place-items-center px-2",
-                  ui.space.tap,
-                  ui.radius.control,
-                  ui.tone.muted,
-                  ui.focus,
-                  "hover:bg-[color:var(--ui-surface-sunken)]",
-                )}
-              >
-                {showPw ? (
-                  <EyeOff className="h-4 w-4" aria-hidden />
-                ) : (
-                  <Eye className="h-4 w-4" aria-hidden />
-                )}
-              </button>
-            }
+            fieldClassName={authFieldClass(!!errors.pw)}
+            leading={<Lock className={authFieldIconClass} aria-hidden />}
+            trailing={<AuthPasswordToggle shown={showPw} onToggle={() => setShowPw((s) => !s)} />}
           />
           {/* The meter follows the field frame rather than sitting inside it:
               the frame owns label / box / error, and the error line is the
@@ -186,6 +175,8 @@ function UpdatePasswordPage() {
           onChange={(e) => setConfirm(e.target.value)}
           error={errors.cpw ? t(errors.cpw) : undefined}
           reserveError
+          fieldClassName={authFieldClass(!!errors.cpw)}
+          leading={<Lock className={authFieldIconClass} aria-hidden />}
         />
 
         {errors.form && <AuthFormError>{t(errors.form)}</AuthFormError>}

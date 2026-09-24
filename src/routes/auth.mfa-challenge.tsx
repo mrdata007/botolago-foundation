@@ -2,12 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  AuthShell,
-  AuthPrimaryButton,
-  AuthFieldError,
-  authOtpSlotClass,
-} from "@/components/auth/AuthShell";
+import { AuthShell, AuthPrimaryButton, AuthFieldError } from "@/components/auth/AuthShell";
+import { authOtpSlotClass } from "@/components/auth/auth-classes";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { UiButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -122,6 +118,7 @@ function MfaChallengePage() {
 
   return (
     <AuthShell
+      compact
       title={t("auth.mfa_challenge.title")}
       subtitle={t("auth.mfa_challenge.subtitle")}
       showBack={false}
@@ -131,31 +128,34 @@ function MfaChallengePage() {
           <label htmlFor="mfa-challenge-code" className="sr-only">
             {t("auth.mfa_challenge.code_label")}
           </label>
-          <InputOTP
-            id="mfa-challenge-code"
-            maxLength={6}
-            value={code}
-            onChange={(v) => {
-              setCode(v);
-              setError(null);
-            }}
-            disabled={loadingFactor || !factorId}
-            inputMode="numeric"
-            pattern="[0-9]*"
-            aria-describedby="mfa-challenge-err"
-          >
-            {/* Same slot treatment as `auth.verify`: the V1 component keeps
-                the keyboard model, the slots take kit classes so no V1 token
-                survives and each clears the 44px floor (they were 36px). */}
-            <InputOTPGroup>
-              <InputOTPSlot index={0} className={authOtpSlotClass} />
-              <InputOTPSlot index={1} className={authOtpSlotClass} />
-              <InputOTPSlot index={2} className={authOtpSlotClass} />
-              <InputOTPSlot index={3} className={authOtpSlotClass} />
-              <InputOTPSlot index={4} className={authOtpSlotClass} />
-              <InputOTPSlot index={5} className={authOtpSlotClass} />
-            </InputOTPGroup>
-          </InputOTP>
+          {/* Same slot treatment as `auth.verify`: left to right on both
+              pages (a code is read first digit to last), the sheet's filled
+              look, and the 44px floor (the V1 slots were 36px). The V1
+              component keeps the keyboard model. */}
+          <div dir="ltr">
+            <InputOTP
+              id="mfa-challenge-code"
+              maxLength={6}
+              value={code}
+              onChange={(v) => {
+                setCode(v);
+                setError(null);
+              }}
+              disabled={loadingFactor || !factorId}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              aria-describedby="mfa-challenge-err"
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} className={authOtpSlotClass} />
+                <InputOTPSlot index={1} className={authOtpSlotClass} />
+                <InputOTPSlot index={2} className={authOtpSlotClass} />
+                <InputOTPSlot index={3} className={authOtpSlotClass} />
+                <InputOTPSlot index={4} className={authOtpSlotClass} />
+                <InputOTPSlot index={5} className={authOtpSlotClass} />
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
           <AuthFieldError id="mfa-challenge-err">{error && t(error)}</AuthFieldError>
         </div>
 

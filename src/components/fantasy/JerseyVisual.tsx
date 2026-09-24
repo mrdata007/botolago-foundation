@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import type { KitConfig } from "@/lib/kits";
@@ -14,6 +16,22 @@ import { FailureAwareImage } from "@/components/common/FailureAwareImage";
  */
 const GARMENT_DROP_SHADOW = "drop-shadow-[0_4px_6px_rgba(0,0,0,0.35)]";
 
+/**
+ * The flat shirt's shadow: the A boards' soft 0 3px 3px lift, block-axis only
+ * so it is the same in both directions, in the ink-deep the boards tint it
+ * with rather than a literal.
+ */
+const FLAT_DROP_SHADOW =
+  "drop-shadow-[0_2px_2px_color-mix(in_oklab,var(--ui-ink-deep)_30%,transparent)]";
+
+/**
+ * Option A's shirt (A-Team pitch, A-Players rows): one silhouette on a 24px
+ * grid, filled with the club colour and outlined so it stays a shape on the
+ * pastel turf, on a white row and on a club-colour sheet header.
+ */
+const FLAT_SHIRT =
+  "M8 3 4 5.5 2.5 10l3 1.2V21h13v-9.8l3-1.2L20 5.5 16 3c-.8 1.4-2.3 2.3-4 2.3S8.8 4.4 8 3z";
+
 interface JerseyVisualProps {
   kit: KitConfig;
   size?: number;
@@ -22,6 +40,12 @@ interface JerseyVisualProps {
   ariaLabel?: string;
   /** When true, renders a soft brand ring behind the jersey (selected state). */
   selected?: boolean;
+  /**
+   * `dimensional` (default) is the lit garment; `flat` is the Option A
+   * silhouette the A boards draw on the pitch and in player rows. `flat` is
+   * square (`size` × `size`); `dimensional` is `size` wide and 7/6 as tall.
+   */
+  variant?: "dimensional" | "flat";
 }
 
 /**
@@ -47,7 +71,19 @@ export function JerseyVisual({
   className,
   ariaLabel,
   selected,
+  variant = "dimensional",
 }: JerseyVisualProps) {
+  if (variant === "flat") {
+    return (
+      <FlatJersey
+        kit={kit}
+        size={size}
+        imageUrl={imageUrl}
+        className={className}
+        ariaLabel={ariaLabel}
+      />
+    );
+  }
   const { primary, secondary, pattern } = kit;
   const w = 48;
   const h = 56;
@@ -168,6 +204,92 @@ export function JerseyVisual({
         draggable={false}
       />
     </div>
+  );
+}
+
+/**
+ * The flat shirt. The club's pattern survives in the flat form — stripes,
+ * bands, a central stripe or contrasting sleeves in the kit's second colour —
+ * clipped to the silhouette, because two red clubs are told apart by exactly
+ * that.
+ *
+ * The outline is what keeps the shirt a shape wherever it lands: plain white
+ * (the on-ink foreground, near-white in dark) around a dark kit, and a
+ * translucent ink-deep around a light one — a white or yellow kit with a
+ * white outline disappears on the white bench strip. "Light" is read off
+ * `kit.ink`, which `getKitForClub` already picks by measured contrast.
+ */
+function FlatJersey({
+  kit,
+  size,
+  imageUrl,
+  className,
+  ariaLabel,
+}: {
+  kit: KitConfig;
+  size: number;
+  imageUrl?: string;
+  className?: string;
+  ariaLabel?: string;
+}) {
+  const clipId = `${useId().replace(/:/g, "")}-flat`;
+  const { primary, secondary, pattern } = kit;
+  const lightKit = kit.ink !== "#ffffff";
+  return (
+    <span className={cn("relative inline-block shrink-0", className)}>
+      <svg
+        role="img"
+        aria-label={ariaLabel}
+        viewBox="0 0 24 24"
+        width={size}
+        height={size}
+        className={cn("block select-none", FLAT_DROP_SHADOW)}
+      >
+        <defs>
+          <clipPath id={clipId}>
+            <path d={FLAT_SHIRT} />
+          </clipPath>
+        </defs>
+        <path d={FLAT_SHIRT} fill={primary} />
+        {pattern === "solid" ? null : (
+          <g clipPath={`url(#${clipId})`} fill={secondary}>
+            {pattern === "stripes-vertical" &&
+              [7.8, 11.2, 14.6].map((x) => <rect key={x} x={x} y="0" width="1.6" height="24" />)}
+            {pattern === "bands-horizontal" &&
+              [8.6, 12.6, 16.6].map((y) => <rect key={y} x="0" y={y} width="24" height="1.6" />)}
+            {pattern === "central-stripe" && <rect x="10.6" y="0" width="2.8" height="24" />}
+            {pattern === "two-tone-sleeves" && (
+              <>
+                <rect x="0" y="0" width="5.5" height="12" />
+                <rect x="18.5" y="0" width="5.5" height="12" />
+              </>
+            )}
+          </g>
+        )}
+        <path
+          d={FLAT_SHIRT}
+          fill="none"
+          stroke={
+            lightKit
+              ? "color-mix(in oklab, var(--ui-ink-deep) 55%, transparent)"
+              : "var(--ui-on-ink-plain)"
+          }
+          strokeWidth="1.1"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <FailureAwareImage
+        src={imageUrl}
+        alt={ariaLabel ?? ""}
+        width={size}
+        height={size}
+        className={cn(
+          "absolute inset-0 z-10 h-full w-full select-none object-contain",
+          FLAT_DROP_SHADOW,
+        )}
+        draggable={false}
+      />
+    </span>
   );
 }
 

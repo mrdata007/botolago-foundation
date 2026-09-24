@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type ImgHTMLAttributes, type ReactNode } from "react";
-import { responsiveMedia, type ResponsiveMediaSource } from "@/lib/media";
+import { responsiveMedia, type PhotoFrame, type ResponsiveMediaSource } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
 type ImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
@@ -92,13 +92,13 @@ export function MediaImage({
   alt: string;
   fallback: string;
   /**
-   * How the box is drawn: its width as a `sizes` value (`"56px"`,
+   * How the box is drawn: its width as a `sizes` value (`"88px"`,
    * `READING_COLUMN_SIZES`) and its shape, width / height, which must match
-   * the aspect class in `className` -- `smRatio` too when that class changes
-   * at `sm:`. With it the photo is fetched as the resized WebP copy that fits;
-   * without it, as the original file.
+   * the box as drawn -- `smRatio` and `mdRatio` too when that shape changes
+   * at `sm:` or `md:`. With it the photo is fetched as the resized WebP copy
+   * that fits; without it, as the original file.
    */
-  frame?: { readonly sizes: string; readonly ratio: number; readonly smRatio?: number };
+  frame?: PhotoFrame;
   /**
    * Rendered inside this box, behind the photo, whenever there is no `src` or
    * the `src` that was given failed to load. It must position itself

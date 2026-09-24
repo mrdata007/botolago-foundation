@@ -8,26 +8,33 @@ import { getKitForClub } from "@/lib/kits";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
+import { plateName } from "./plate-name";
 
-/** The captain / vice marker. Sits on the shirt's top inline-end corner. */
+/**
+ * The captain / vice marker, seated on the shirt's inline-end shoulder as the
+ * A-Team board draws it (not on the plate's far corner, 20px away from the
+ * shirt it belongs to).
+ *
+ * The two read apart by more than their letter — which matters, because the
+ * armband is auto-assigned to the first two squad entries and a manager has
+ * to notice that before the deadline: the captain is a navy disc with a light
+ * letter in a light ring, the vice its inverse — a surface disc with the brand
+ * letter in a navy ring. Every colour is a token that flips with the theme.
+ */
 function RoleMarker({ letter, title, tone }: { letter: string; title: string; tone: "c" | "v" }) {
   return (
     <span
       aria-hidden
       title={title}
       className={cn(
-        "grid h-5 w-5 place-items-center",
+        "absolute -end-3 -top-1.5 z-10 grid h-5 w-5 place-items-center",
         ui.radius.full,
         ui.text.micro,
-        "[font-weight:var(--ui-weight-hero)]",
-        // A ring in the plain on-ink foreground keeps the marker legible on
-        // turf in both themes without a literal white.
-        "ring-2 ring-[color:var(--ui-on-ink-plain)]",
-        // Captain is cyan-on-ink, vice is plain-on-ink: the two read apart at
-        // a glance and not only by their letter — which matters because the
-        // armband is auto-assigned to the first two squad entries and a
-        // manager has to notice that before the deadline.
-        tone === "c" ? ui.surface.ink : ui.surface.inkPlain,
+        "[font-weight:var(--ui-weight-heavy)]",
+        "ring-2",
+        tone === "c"
+          ? cn(ui.surface.inkPlain, "ring-[color:var(--ui-on-ink-plain)]")
+          : cn("bg-[color:var(--ui-surface)]", ui.tone.ink, "ring-[color:var(--ui-ink)]"),
       )}
     >
       {letter}
@@ -36,8 +43,9 @@ function RoleMarker({ letter, title, tone }: { letter: string; title: string; to
 }
 
 /**
- * The pitch's player unit: kit on top, an ink name plate, and a sub plate
- * carrying the fixture, the price or the gameweek points.
+ * The pitch's player unit: the club's flat shirt on top, then the kit's
+ * plate — the name on the surface over a navy figure band carrying the
+ * fixture, the price or the gameweek points.
  *
  * It is a thin wrapper over `UiPlayerPlate` — the kit owns the plate's
  * geometry, surfaces and tap behaviour; this file owns what Fantasy puts in
@@ -84,11 +92,13 @@ export function FplPlayerCard({
 }) {
   const { tr, t } = useI18n();
   const fullName = tr(player.name);
-  const shortName = fullName.split(" ").slice(-1)[0] ?? fullName;
+  // The surname — and in Arabic "عطية الله", not a bare "الله" (plate-name.ts).
+  const shortName = plateName(fullName);
   const kit = getKitForClub(club, player.kitPattern);
   const doubtful = player.status === "doubtful";
   const flagged = player.status !== "available";
-  const jersey = size === "md" ? 46 : 40;
+  // The board's shirts: 34px on the pitch, 30px on the bench strip.
+  const jersey = size === "md" ? 34 : 30;
 
   const role = captain
     ? `, ${t("fantasy.captain_full")}`
@@ -115,19 +125,23 @@ export function FplPlayerCard({
       ariaLabel={`${fullName}${club ? `, ${tr(club.shortName)}` : ""}${role}`}
       className={cn(dimmed && "opacity-45", className)}
       visual={
-        <JerseyVisual
-          kit={kit}
-          size={jersey}
-          imageUrl={player.jerseyImageUrl}
-          ariaLabel={club ? tr(club.shortName) : undefined}
-        />
-      }
-      badge={
-        captain ? (
-          <RoleMarker letter={t("fantasy.captain")} title={t("fantasy.captain_full")} tone="c" />
-        ) : vice ? (
-          <RoleMarker letter={t("fantasy.vice")} title={t("fantasy.vice_full")} tone="v" />
-        ) : undefined
+        // The marker rides inside the visual so it is placed against the
+        // shirt, not against the 76px plate. The shirt keeps the club's name
+        // as its image label, as before.
+        <span className="relative mb-1 block">
+          <JerseyVisual
+            kit={kit}
+            size={jersey}
+            variant="flat"
+            imageUrl={player.jerseyImageUrl}
+            ariaLabel={club ? tr(club.shortName) : undefined}
+          />
+          {captain ? (
+            <RoleMarker letter={t("fantasy.captain")} title={t("fantasy.captain_full")} tone="c" />
+          ) : vice ? (
+            <RoleMarker letter={t("fantasy.vice")} title={t("fantasy.vice_full")} tone="v" />
+          ) : null}
+        </span>
       }
       flag={
         onRemove ? (
@@ -190,7 +204,12 @@ export function FplPlayerCard({
   );
 }
 
-/** Empty squad slot: a translucent shirt silhouette with a "+" and the position label. */
+/**
+ * Empty squad slot: the flat shirt's silhouette as a ghost — the turf's own
+ * line colour, translucent — with a navy "+" disc on it, then the position
+ * and "Choisir" on the plate. Same footprint as a filled slot, so the rows do
+ * not jump as the squad fills.
+ */
 export function FplEmptySlot({
   position,
   onClick,
@@ -209,23 +228,24 @@ export function FplEmptySlot({
       ariaLabel={`${t("fpl.add_player")} — ${t(`player.pos.${position}` as never)}`}
       className={className}
       visual={
-        <span className="relative grid h-[54px] w-[46px] place-items-center">
-          <svg viewBox="0 0 48 56" className="absolute inset-0 h-full w-full" aria-hidden>
+        <span className="relative mb-1 grid h-[34px] w-[34px] place-items-center">
+          <svg viewBox="0 0 24 24" className="absolute inset-0 h-full w-full" aria-hidden>
             <path
-              d="M14 4 L20 1 Q24 5 28 1 L34 4 L46 12 L40 22 L36 19 L36 54 L12 54 L12 19 L8 22 L2 12 Z"
-              fill="color-mix(in oklab, var(--ui-pitch-line) 38%, transparent)"
+              d="M8 3 4 5.5 2.5 10l3 1.2V21h13v-9.8l3-1.2L20 5.5 16 3c-.8 1.4-2.3 2.3-4 2.3S8.8 4.4 8 3z"
+              fill="color-mix(in oklab, var(--ui-pitch-line) 45%, transparent)"
               stroke="var(--ui-pitch-line)"
-              strokeWidth="1.5"
+              strokeWidth="1.1"
+              strokeLinejoin="round"
             />
           </svg>
           <span
             className={cn(
-              "relative grid h-6 w-6 place-items-center",
+              "relative mt-1 grid h-5 w-5 place-items-center",
               ui.radius.full,
               ui.surface.inkPlain,
             )}
           >
-            <Plus className="h-4 w-4" aria-hidden />
+            <Plus className="h-3.5 w-3.5" aria-hidden />
           </span>
         </span>
       }

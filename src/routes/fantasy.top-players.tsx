@@ -1,14 +1,17 @@
 import podiumSoonArt from "@/assets/illustrations/podium-soon.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Award, Bookmark, Crown, Medal, Share2, Star, UserPlus } from "lucide-react";
+import { Award, Bookmark, ChevronRight, Crown, Medal, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 
 import { ClubCrest } from "@/components/common/ClubCrest";
-import { clubLabel } from "@/components/fantasy/club-identity";
+import { crestStyle } from "@/components/common/club-crest-style";
+import { SectionHeader } from "@/components/common/SectionHeader";
+import { PlayerKitDisc } from "@/components/fantasy-lists/PlayerKitDisc";
+import { ShareButton } from "@/components/fantasy-lists/ShareButton";
+import { splitPlayerName } from "@/components/fantasy-lists/player-name";
+import { clubLabel, findClub } from "@/components/fantasy/club-identity";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
-import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import {
   ui,
@@ -17,15 +20,14 @@ import {
   UiEmptyState,
   UiErrorState,
   UiHeader,
-  UiPill,
-  UiStatBlock,
   UiStatePanel,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { clubStyle } from "@/lib/club-palette";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
-import { getKitForClub } from "@/lib/kits";
 import { cn } from "@/lib/utils";
+import { plateName } from "@/components/fpl/plate-name";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
 import type { Club } from "@/types/domain";
@@ -56,76 +58,31 @@ type Enriched = {
 };
 
 /**
- * Top players of the week.
+ * Top players of the week, in the Option A language: the player of the week
+ * on a club-colour hero card (the A-Player hero at card size), the next four
+ * as one card of rows with their club's edge bar, and the comparison bars in
+ * each player's club colour rather than the old amber/sky pair, which said
+ * "top three" and "the rest" with colour alone.
  *
- * The live defect this fixes: for Journée 1 the screen said "Aucun contenu
- * disponible." — the product's generic nothing-here string — in every state.
- * It is not wrong so much as useless: a top five cannot exist for a gameweek
- * whose matches have not been played, which is exactly where the season is,
- * and the reader is left unable to tell "no data yet" from "this page is
- * broken". The empty branch now names the gameweek and says when the top five
+ * The live defect this screen fixed stays fixed: for a gameweek that has not
+ * been played the empty branch names the gameweek and says when the top five
  * will appear, and the gameweek selector stays on screen so a reader can move
- * to one that does have results.
- *
- * Also gone: the hardcoded `?? 14` fallback gameweek, which made the screen
- * ask the backend for a gameweek that does not exist in this season whenever
- * the current-gameweek read had not landed yet.
+ * to one that does have results. No hardcoded fallback gameweek either.
  */
 function TopPlayersFramed() {
   const { t } = useI18n();
   return (
-    <FantasyFrame>
+    <FantasyFrame bottomNav>
       <UiHeader
+        kicker={t("nav.fantasy")}
         title={t("fpl.top_players")}
-        tone="gradient"
         backTo="/fantasy"
-        trailing={<ShareButton />}
+        // The share sheet gets the plain title: the copy's `{accent}` markers
+        // are page markup and used to reach the share sheet verbatim.
+        trailing={<ShareButton title={t("fantasy.top.title").replace(/\{\/?accent\}/g, "")} />}
       />
       <TopPlayersPage />
     </FantasyFrame>
-  );
-}
-
-function ShareButton() {
-  const { t } = useI18n();
-
-  // navigator.share exists on phones and almost nowhere on the desktop web, so
-  // guarding on it and doing nothing else left this button visibly inert for
-  // every desktop reader: a press, and no response of any kind. Copying the
-  // link is the same intent by another route, and it is what the article and
-  // match pages already do.
-  const share = async () => {
-    const url = typeof window === "undefined" ? "" : window.location.href;
-    if (!url) return;
-    const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
-    if (typeof nav.share === "function") {
-      try {
-        await nav.share({ title: t("fantasy.top.title"), url });
-        return;
-      } catch {
-        // A dismissed share sheet rejects. That is the reader declining, not a
-        // failure, so it must not fall through to copying a link they did not
-        // ask for.
-        return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success(t("article.share_copied"));
-    } catch {
-      toast.error(t("fantasy.error.network"));
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      aria-label={t("article.share")}
-      onClick={() => void share()}
-      className={cn("grid place-items-center", ui.space.tap, ui.radius.full, ui.focus)}
-    >
-      <Share2 className="h-4 w-4" aria-hidden />
-    </button>
   );
 }
 
@@ -169,7 +126,8 @@ function TopPlayersPage() {
       .map((top) => {
         const player = playersQ.data!.find((p) => p.id === top.playerId);
         if (!player) return null;
-        const club = clubsQ.data!.find((c) => c.id === player.clubId);
+        // By id or slug: the Fantasy rows key clubs by slug in mock mode.
+        const club = findClub(clubsQ.data, player.clubId);
         return { top, player, club } as Enriched;
       })
       .filter((x): x is Enriched => x !== null)
@@ -187,10 +145,10 @@ function TopPlayersPage() {
   const isError = topQ.isError || playersQ.isError || clubsQ.isError;
 
   return (
-    <div className={cn("px-4 pb-10 pt-3", ui.surface.page)}>
+    <div className={cn("px-4 pb-10 pt-4", ui.surface.page)}>
       <p className={cn(ui.text.secondary, ui.tone.muted)}>{t("fantasy.top.subtitle")}</p>
 
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-3 flex items-center justify-between gap-3">
         <span className={cn(ui.text.label, ui.tone.muted)}>{t("fantasy.top.gw_label")}</span>
         <GameweekSelector value={currentGw} min={gwMin} max={gwMax} onChange={setGw} />
       </div>
@@ -223,19 +181,28 @@ function TopPlayersPage() {
             <TopPlayerHeroCard entry={enriched[0]} tr={tr} t={t} nf={nf} />
           </div>
 
-          <div className="mb-2 mt-5">
-            <UiPill>#2 — #5</UiPill>
-          </div>
-          <div className="grid gap-3">
-            {enriched.slice(1).map((e) => (
-              <RankedPlayerCard key={e.player.id} entry={e} tr={tr} t={t} nf={nf} />
-            ))}
-          </div>
+          {enriched.length > 1 ? (
+            <section className="mt-6">
+              <SectionHeader title={`#2 – #${nf.format(enriched.length)}`} />
+              <ul className={cn(ui.surface.card, "overflow-hidden")}>
+                {enriched.slice(1).map((e, index) => (
+                  <RankedPlayerRow
+                    key={e.player.id}
+                    entry={e}
+                    first={index === 0}
+                    tr={tr}
+                    t={t}
+                    nf={nf}
+                  />
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
-          <div className="mb-2 mt-5">
-            <UiPill>{t("fantasy.top.comparison")}</UiPill>
-          </div>
-          <WeeklyTopPlayersComparison entries={enriched} maxPoints={maxPoints} tr={tr} nf={nf} />
+          <section className="mt-6">
+            <SectionHeader title={t("fantasy.top.comparison")} />
+            <WeeklyTopPlayersComparison entries={enriched} maxPoints={maxPoints} tr={tr} nf={nf} />
+          </section>
         </>
       ) : null}
     </div>
@@ -251,160 +218,190 @@ type CardProps = {
   nf: Intl.NumberFormat;
 };
 
+/** A club's colours as `data-club` + inline vars, memoised per club. */
+function coloursOf(club?: Club) {
+  return club ? crestStyle(club) : clubStyle(null);
+}
+
+/**
+ * A share of managers, in the locale's own percent form ("31,5 %", and in
+ * Arabic with the marks that keep the sign on the figure's side) — as the
+ * players list writes it — rather than a figure with "%" glued on.
+ */
+function percent(nf: Intl.NumberFormat, value: number) {
+  return new Intl.NumberFormat(nf.resolvedOptions().locale, {
+    style: "percent",
+    maximumFractionDigits: 1,
+  }).format(value / 100);
+}
+
 function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
   const navigate = useNavigate();
   const watchlist = useWatchlist();
   const { player, club, top } = entry;
-  const kit = getKitForClub(club, player.kitPattern);
   const watched = watchlist.isWatched(player.id);
+  const name = splitPlayerName(tr(player.name));
+  const colours = coloursOf(club);
+  const facts = [
+    t(`player.pos.${player.position}` as TranslationKey),
+    club ? clubLabel(club, tr) : null,
+  ].filter(Boolean);
 
   return (
-    <UiCard as="article" className="overflow-hidden">
-      <div className="flex items-start gap-4">
-        <div className="flex flex-col items-center gap-2">
-          <span
-            className={cn("grid h-10 w-10 place-items-center", ui.radius.full, ui.surface.inkPlain)}
-            aria-hidden
-          >
-            <Crown className="h-4 w-4" aria-hidden />
-          </span>
-          <JerseyVisual
-            kit={kit}
-            size={70}
-            imageUrl={player.jerseyImageUrl}
-            ariaLabel={tr(player.name)}
-          />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p className={cn("flex items-center gap-1.5", ui.text.label, ui.tone.ink)}>
-            <Star className="h-3 w-3 shrink-0" aria-hidden />
-            {t("fantasy.top.best_player")}
-          </p>
-          {/* Same as the player page: the heading follows the page direction
-              and the name is its own auto-direction block, cut at its end. */}
-          <h2 className={cn("mt-1", ui.text.section, ui.tone.default)}>
-            <span dir="auto" className="block w-fit max-w-full truncate">
-              {tr(player.name)}
-            </span>
-          </h2>
-          <div className="mt-1 flex items-center gap-2">
-            {club ? <ClubCrest club={club} size="sm" /> : null}
-            <div className="min-w-0">
-              <div dir="auto" className={cn("truncate", ui.text.meta, ui.tone.default)}>
-                {club ? tr(club.name) : ""}
-              </div>
-              <div className={cn(ui.text.label, ui.tone.muted)}>
-                {t(`player.pos.${player.position}` as TranslationKey)}
-              </div>
-            </div>
+    <article className={cn("overflow-hidden", ui.surface.card, ui.radius.sheet, ui.shadow.lifted)}>
+      {/* The club block: its fill, its measured foreground, its stripes. */}
+      <div
+        data-club={colours["data-club"]}
+        style={colours.style}
+        className={cn(ui.club.fill, ui.club.stripes, "p-4")}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className={cn("flex items-center gap-1.5", ui.text.label)}>
+              <Crown className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="truncate">{t("fantasy.top.best_player")}</span>
+            </p>
+            {/* Same as the player page: first name light, family name heavy,
+                each its own auto-direction block so a long Latin name is cut
+                at its end in Arabic too. */}
+            <h2 className="mt-1.5">
+              {name.first ? (
+                <span
+                  dir="auto"
+                  className={cn(
+                    "block truncate",
+                    ui.display.team,
+                    "[font-weight:var(--ui-weight-body)]",
+                  )}
+                >
+                  {name.first}
+                </span>
+              ) : null}
+              <span dir="auto" className={cn("block text-balance break-words", ui.display.title)}>
+                {name.last}
+              </span>
+            </h2>
+            <p className={cn("mt-1 truncate", ui.text.label)}>{facts.join(" · ")}</p>
           </div>
+          {club ? <ClubCrest club={club} size="lg" tone="inverse" /> : null}
         </div>
-
-        <UiStatBlock
-          align="end"
-          size="hero"
-          tone="ink"
-          value={nf.format(top.weeklyPoints)}
-          sub={t("fantasy.top.points")}
-        />
+        <p className="mt-3 flex items-baseline gap-1.5">
+          <bdi className={ui.score.lg}>{nf.format(top.weeklyPoints)}</bdi>
+          <span className={ui.text.label}>{t("fantasy.top.points")}</span>
+        </p>
       </div>
 
-      <div className="mt-4 grid grid-cols-4 gap-2">
-        <HeroStat label={t("fantasy.top.goals")} value={nf.format(top.goals)} />
-        <HeroStat label={t("fantasy.top.assists")} value={nf.format(top.assists)} />
-        <HeroStat label={t("fantasy.top.clean_sheets")} value={nf.format(top.cleanSheets)} />
-        <HeroStat label={t("fantasy.top.minutes")} value={`${nf.format(top.minutes)}'`} />
-      </div>
+      <div className="p-4">
+        <dl className="grid grid-cols-4">
+          <HeroStat label={t("fantasy.top.goals")} value={nf.format(top.goals)} />
+          <HeroStat label={t("fantasy.top.assists")} value={nf.format(top.assists)} divided />
+          <HeroStat
+            label={t("fantasy.top.clean_sheets")}
+            value={nf.format(top.cleanSheets)}
+            divided
+          />
+          <HeroStat label={t("fantasy.top.minutes")} value={nf.format(top.minutes)} divided />
+        </dl>
 
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        <MetaChip label={t("fantasy.price")} value={nf.format(top.price)} />
-        <MetaChip
-          label={t("fantasy.top.ownership")}
-          value={`${nf.format(top.ownershipPercent)}%`}
-        />
-        <MetaChip
-          label={t("fantasy.top.form")}
-          // Unknown form is an en dash; a real 0 stays 0.
-          value={top.form === null ? t("fantasy.stat.none") : nf.format(top.form)}
-        />
-      </div>
+        <dl className="mt-4 grid grid-cols-3 gap-2">
+          <MetaChip label={t("fantasy.price")} value={nf.format(top.price)} />
+          <MetaChip label={t("fantasy.top.ownership")} value={percent(nf, top.ownershipPercent)} />
+          <MetaChip
+            label={t("fantasy.top.form")}
+            // Unknown form is an en dash; a real 0 stays 0.
+            value={top.form === null ? t("fantasy.stat.none") : nf.format(top.form)}
+          />
+        </dl>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <UiButton
-          size="sm"
-          className="flex-1"
-          onClick={() =>
-            void navigate({ to: "/fantasy/players/$playerId", params: { playerId: player.id } })
-          }
-        >
-          {t("fantasy.top.view_player")}
-        </UiButton>
-        <UiButton
-          size="sm"
-          variant="outline"
-          aria-pressed={watched}
-          onClick={() => watchlist.toggle(player.id)}
-        >
-          <Bookmark className={cn("h-4 w-4", watched && "fill-current")} aria-hidden />
-          {watched ? t("fantasy.players.remove_watch") : t("fantasy.top.add_watchlist")}
-        </UiButton>
-        <UiButton
-          size="sm"
-          variant="outline"
-          onClick={() => void navigate({ to: "/fantasy/transfers" })}
-        >
-          <UserPlus className="h-4 w-4" aria-hidden />
-          {t("fantasy.top.transfer_in")}
-        </UiButton>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {/* `flex-auto`, not `flex-1`: a zero basis let the row squeeze this
+              pill to 51px beside the other two. It grows into the room left on
+              its line but never below its one-line label; when the three do
+              not fit, the row wraps. */}
+          <UiButton
+            size="sm"
+            className="flex-auto"
+            onClick={() =>
+              void navigate({ to: "/fantasy/players/$playerId", params: { playerId: player.id } })
+            }
+          >
+            {t("fantasy.top.view_player")}
+          </UiButton>
+          <UiButton
+            size="sm"
+            variant="outline"
+            aria-pressed={watched}
+            onClick={() => watchlist.toggle(player.id)}
+          >
+            <Bookmark className={cn("h-4 w-4", watched && "fill-current")} aria-hidden />
+            {watched ? t("fantasy.players.remove_watch") : t("fantasy.top.add_watchlist")}
+          </UiButton>
+          <UiButton
+            size="sm"
+            variant="outline"
+            onClick={() => void navigate({ to: "/fantasy/transfers" })}
+          >
+            <UserPlus className="h-4 w-4" aria-hidden />
+            {t("fantasy.top.transfer_in")}
+          </UiButton>
+        </div>
       </div>
-    </UiCard>
+    </article>
   );
 }
 
-function HeroStat({ label, value }: { label: string; value: string }) {
+/** One of the hero's four match figures: the number over its label, split by a logical rule. */
+function HeroStat({
+  label,
+  value,
+  divided = false,
+}: {
+  label: string;
+  value: string;
+  divided?: boolean;
+}) {
   return (
-    <UiStatBlock
-      align="center"
-      label={label}
-      value={value}
-      className={cn("px-2 py-2", ui.radius.control, ui.surface.sunken)}
-    />
+    <div
+      className={cn(
+        "flex min-w-0 flex-col-reverse items-center justify-end gap-0.5 px-1 text-center",
+        divided && ui.rule.inline,
+      )}
+    >
+      <dt className={cn("max-w-full text-balance", ui.text.label, ui.tone.muted)}>{label}</dt>
+      <dd className={cn(ui.stat.lg, ui.tone.default)}>
+        <bdi>{value}</bdi>
+      </dd>
+    </div>
   );
 }
 
 /**
- * Three of these share a 326px row at 390px, so each is ~103px wide. Minus the
- * padding, the gap and a `shrink-0` value, the label was left with 40px — and
- * `truncate` spent it on four characters: "Sélectionné par" rendered "SÉLE…".
- * A four-of-fifteen-character label is not a designed truncation, and the
- * layout probe could not see it, because it skips anything with a real
- * ellipsis.
- *
- * `flex-wrap` gives the label somewhere to go. Without `truncate` its
- * min-content width is its longest word, so a label that cannot sit beside its
- * value pushes the value onto a second line and reads in full; the short chips
- * ("Prix 9,5", "Forme 8,6") never wrap and are unchanged.
+ * Three of these share a 326px row at 390px, so each is ~103px wide. A label
+ * that cannot sit beside its value wraps above it and reads in full ("SÉLE…"
+ * was a four-of-fifteen-character truncation), and the short ones ("Prix
+ * 9,5", "Forme 8,6") never wrap.
  */
 function MetaChip({ label, value }: { label: string; value: string }) {
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 px-2 py-1.5",
-        ui.radius.control,
+        "flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 px-3 py-2",
+        ui.radius.card,
         ui.surface.sunken,
       )}
     >
-      <span className={cn("min-w-0", ui.text.label, ui.tone.muted)}>{label}</span>
-      <span className={cn("shrink-0", ui.stat.sm, ui.tone.default)}>{value}</span>
+      <dt className={cn("min-w-0", ui.text.label, ui.tone.muted)}>{label}</dt>
+      <dd className={cn("shrink-0", ui.stat.sm, ui.tone.default)}>
+        <bdi>{value}</bdi>
+      </dd>
     </div>
   );
 }
 
-function RankedPlayerCard({ entry, tr, t, nf }: CardProps) {
+function RankedPlayerRow({ entry, first, tr, t, nf }: CardProps & { first: boolean }) {
   const navigate = useNavigate();
   const { player, club, top } = entry;
-  const kit = getKitForClub(club, player.kitPattern);
+  const colours = coloursOf(club);
 
   const medal =
     top.rank === 2 ? (
@@ -414,22 +411,24 @@ function RankedPlayerCard({ entry, tr, t, nf }: CardProps) {
     ) : null;
 
   return (
-    // A plain button rather than `UiCard`: the whole row is the control, and
-    // `UiCard` deliberately takes no click handler.
-    <button
-      type="button"
-      onClick={() =>
-        void navigate({ to: "/fantasy/players/$playerId", params: { playerId: player.id } })
-      }
-      className={cn(
-        "flex w-full items-center gap-3 p-3 text-start",
-        ui.surface.card,
-        ui.rule.all,
-        ui.focus,
-        "transition-transform duration-[var(--duration-tap)] active:translate-y-px",
-      )}
+    <li
+      data-club={colours["data-club"]}
+      style={colours.style}
+      className={cn(!first && ui.rule.blockStart)}
     >
-      <>
+      {/* The whole row is the control; the edge bar is the club's. */}
+      <button
+        type="button"
+        onClick={() =>
+          void navigate({ to: "/fantasy/players/$playerId", params: { playerId: player.id } })
+        }
+        className={cn(
+          "flex w-full items-center gap-3 py-3 pe-3 ps-3 text-start",
+          ui.edge.start,
+          ui.focus,
+          "focus-visible:ring-inset focus-visible:ring-offset-0",
+        )}
+      >
         <span
           className={cn(
             "grid h-9 w-9 shrink-0 place-items-center",
@@ -442,36 +441,26 @@ function RankedPlayerCard({ entry, tr, t, nf }: CardProps) {
           {medal ?? `#${nf.format(top.rank)}`}
         </span>
 
-        <JerseyVisual
-          kit={kit}
-          size={40}
+        <PlayerKitDisc
+          club={club}
+          kitPattern={player.kitPattern}
           imageUrl={player.jerseyImageUrl}
-          ariaLabel={tr(player.name)}
         />
 
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-1.5">
-            {club ? <ClubCrest club={club} size="sm" /> : null}
-            <span className="min-w-0">
-              <span
-                dir="auto"
-                className={cn(
-                  "block truncate",
-                  ui.text.body,
-                  "[font-weight:var(--ui-weight-heavy)]",
-                )}
-              >
-                {tr(player.name)}
-              </span>
-              <span dir="auto" className={cn("block truncate", ui.text.label, ui.tone.muted)}>
-                {club ? clubLabel(club, tr) : ""} ·{" "}
-                {t(`player.pos.${player.position}` as TranslationKey)}
-              </span>
-            </span>
+          <span
+            dir="auto"
+            className={cn("block truncate", ui.text.body, "[font-weight:var(--ui-weight-heavy)]")}
+          >
+            {tr(player.name)}
+          </span>
+          <span dir="auto" className={cn("block truncate", ui.text.meta, ui.tone.muted)}>
+            {t(`player.pos.${player.position}` as TranslationKey)}
+            {club ? ` · ${clubLabel(club, tr)}` : ""}
           </span>
           <span
             className={cn(
-              "mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5",
+              "mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5",
               ui.text.micro,
               ui.tone.muted,
             )}
@@ -487,7 +476,7 @@ function RankedPlayerCard({ entry, tr, t, nf }: CardProps) {
               {t("fantasy.top.clean_sheets")}
             </span>
             <span>
-              <b className={ui.stat.sm}>{nf.format(top.minutes)}'</b>
+              <b className={ui.stat.sm}>{nf.format(top.minutes)}</b> {t("home.minutes")}
             </span>
             <span>
               {t("fantasy.top.form")}{" "}
@@ -497,19 +486,18 @@ function RankedPlayerCard({ entry, tr, t, nf }: CardProps) {
             </span>
             <span>
               {t("fantasy.top.ownership")}{" "}
-              <b className={ui.stat.sm}>{nf.format(top.ownershipPercent)}%</b>
+              <b className={ui.stat.sm}>{percent(nf, top.ownershipPercent)}</b>
             </span>
           </span>
         </span>
 
-        <UiStatBlock
-          align="end"
-          size="lg"
-          value={nf.format(top.weeklyPoints)}
-          sub={t("fantasy.top.points")}
-        />
-      </>
-    </button>
+        <span className="flex shrink-0 flex-col items-end">
+          <bdi className={cn(ui.stat.lg, ui.tone.default)}>{nf.format(top.weeklyPoints)}</bdi>
+          <span className={cn(ui.text.micro, ui.tone.muted)}>{t("fantasy.top.points")}</span>
+        </span>
+        <ChevronRight className={cn("h-5 w-5 shrink-0", ui.tone.muted)} aria-hidden />
+      </button>
+    </li>
   );
 }
 
@@ -525,19 +513,22 @@ function WeeklyTopPlayersComparison({
   nf: Intl.NumberFormat;
 }) {
   return (
-    <UiCard className={ui.rule.all}>
-      <div className="grid gap-2.5">
+    <UiCard>
+      <div className="grid gap-3">
         {entries.map((e) => {
           const pct = Math.max(6, Math.round((e.top.weeklyPoints / Math.max(1, maxPoints)) * 100));
-          const shortName = tr(e.player.name).split(" ").slice(-1)[0];
+          // The plate's surname rule: "عطية الله", not a bare "الله".
+          const shortName = plateName(tr(e.player.name));
+          const colours = coloursOf(e.club);
           return (
             // The name column is fixed, not `auto`, because every bar has to
-            // start at the same x for the comparison to mean anything. 3.5rem
-            // was too mean for the league's surnames — "#4 Lamlaoui" is 67px —
-            // so it clipped four of the five rows. 5.25rem clears them and
-            // still leaves the bar 186px at 390px.
+            // start at the same x for the comparison to mean anything. 5.25rem
+            // clears the league's surnames ("#4 Lamlaoui" is 67px) and still
+            // leaves the bar ~186px at 390px.
             <div
               key={e.player.id}
+              data-club={colours["data-club"]}
+              style={colours.style}
               className="grid grid-cols-[5.25rem_1fr_2.5rem] items-center gap-2"
             >
               <div dir="auto" className={cn("truncate", ui.text.micro, ui.tone.default)}>
@@ -546,13 +537,13 @@ function WeeklyTopPlayersComparison({
               <div
                 className={cn("relative h-2.5 overflow-hidden", ui.radius.full, ui.surface.sunken)}
               >
+                {/* The club's edge colour: ≥ 3:1 on the card, so a white or
+                    yellow kit is still a visible bar. */}
                 <div
-                  className={cn("h-full", ui.radius.full)}
-                  style={{
-                    width: `${pct}%`,
-                    backgroundColor: e.top.rank <= 3 ? "var(--ui-caution)" : "var(--ui-accent-sky)",
-                  }}
+                  className={cn("h-full", ui.radius.full, ui.club.edgeFill)}
+                  style={{ width: `${pct}%` }}
                   role="progressbar"
+                  aria-label={tr(e.player.name)}
                   aria-valuemin={0}
                   aria-valuemax={maxPoints}
                   aria-valuenow={e.top.weeklyPoints}

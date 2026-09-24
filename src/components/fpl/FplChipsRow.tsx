@@ -9,14 +9,22 @@ export interface FplChipView {
 }
 
 /**
- * The chip cards above the pitch: an ink band carrying the chip name over a
- * band carrying its state (PLAY / ACTIVE / USED / UNAVAILABLE). Tapping an
- * available chip starts the activation flow; every other state is inert.
+ * The chips above the pitch (A-Team): a row of white pills — the chip's name,
+ * then its state in a smaller pill at the inline end ("Bench Boost [JOUER]").
+ * Tapping an available chip starts the activation flow; every other state is
+ * inert.
  *
- * Converted onto the kit: the name band was `bg-white` / `text-white` (an
- * unthemed surface under themed text), the state band's `tracking-wide` was
- * un-prefixed — which pulls Arabic letterforms apart — and the card sat below
- * the 44px tap floor.
+ * The row scrolls sideways rather than squeezing: the chip names are fixed
+ * product vocabulary (BG-0111 — "Triple Capitaine" must never be cut), so each
+ * pill takes the width its name needs and the row, not the name, gives way.
+ * The scroller spans the gutter (`-mx` / `px` of the same step) so a chip
+ * slides under the screen edge instead of stopping 16px short of it, and the
+ * page itself never scrolls sideways.
+ *
+ * State, by more than colour: the inner pill's WORD changes ("JOUER",
+ * "ACTIF", "UTILISÉ", "INDISPONIBLE"), the active one is the action gradient,
+ * and a spent chip's name drops to the muted tone. The accessible name stays
+ * `${label}: ${state}`.
  */
 export function FplChipsRow({
   chips,
@@ -28,13 +36,27 @@ export function FplChipsRow({
   className?: string;
 }) {
   const { t } = useI18n();
+  // Literal branches, never `fantasy.chip.${key}`: a key assembled at runtime
+  // is invisible to the i18n gate and to the TranslationKey type alike.
+  const chipLabel = (key: ChipKey) =>
+    key === "bench_boost"
+      ? t("fantasy.chip.bench_boost")
+      : key === "free_hit"
+        ? t("fantasy.chip.free_hit")
+        : key === "triple_captain"
+          ? t("fantasy.chip.triple_captain")
+          : t("fantasy.chip.wildcard");
   return (
     <div
-      className={cn("grid gap-2", className)}
-      style={{ gridTemplateColumns: `repeat(${chips.length}, minmax(0, 1fr))` }}
+      data-scroll-x
+      className={cn(
+        "-mx-[var(--ui-gutter)] flex gap-2 overflow-x-auto px-[var(--ui-gutter)] py-1",
+        "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        className,
+      )}
     >
       {chips.map((chip) => {
-        const label = t(`fantasy.chip.${chip.key}` as never);
+        const label = chipLabel(chip.key);
         const state =
           chip.state === "active"
             ? t("fpl.state.active")
@@ -51,60 +73,36 @@ export function FplChipsRow({
             type="button"
             disabled={!clickable}
             onClick={() => onSelect?.(chip.key)}
-            // BG-0111 — the chip names are fixed product vocabulary, so the
-            // layout accommodates the longest one instead of shortening it.
-            // "Triple Capitaine" measures 103px of text against a 108.7px
-            // content box at 390px: it survived only by 5.7px, and `truncate`
-            // meant any narrower phone (360px is common), a heavier fallback
-            // face while Manrope loads, or a fourth chip in the row clipped it
-            // to "Triple Capitain…". The name now wraps at a word boundary
-            // rather than truncating, and the button is a two-row grid whose
-            // first row takes the slack, so the ink bands and the state bands
-            // stay aligned across chips of different name lengths.
-            //
-            // Merged with the kit conversion, which landed on this file in the
-            // same integration. The STRUCTURE here is BG-0111's — two-row grid,
-            // a wrapping label, no `truncate`. The colour, radius, focus ring
-            // and type are the kit's, because those are the themed,
-            // contract-tested ones: the other side still painted `bg-white`
-            // under `text-white` and carried an un-prefixed `tracking-wide`,
-            // which pulls Arabic letterforms apart (BG-0069).
-            //
-            // BG-0111's `[line-height:1.15]` is dropped for `ui.text.meta`'s
-            // 1.5. This button hides its overflow, and 1.15 cuts glyph ink in
-            // both scripts — measured, with the arithmetic, in BG-0124. 1.5
-            // clears Latin; Arabic needs 1.73 and gets it at the token layer
-            // for the whole product rather than as a literal here.
-            className={cn(
-              "grid grid-rows-[1fr_auto] overflow-hidden text-center disabled:cursor-default",
-              "min-h-[var(--ui-tap-min)]",
-              ui.radius.tight,
-              ui.focus,
-              "shadow-[var(--ui-shadow-card)]",
-            )}
             aria-label={`${label}: ${state}`}
+            className={cn(
+              "inline-flex min-h-[var(--ui-tap-min)] shrink-0 items-center gap-2.5 pe-1.5 ps-3.5",
+              ui.radius.full,
+              "bg-[color:var(--ui-surface)]",
+              ui.shadow.card,
+              ui.focus,
+              "disabled:cursor-default",
+            )}
           >
             <span
               className={cn(
-                "flex items-center justify-center px-1 py-1.5",
-                "[overflow-wrap:break-word] [hyphens:none]",
+                "whitespace-nowrap",
                 ui.text.meta,
                 "[font-weight:var(--ui-weight-heavy)]",
-                spent ? cn(ui.surface.sunken, ui.tone.muted) : ui.surface.inkPlain,
+                spent ? ui.tone.muted : ui.tone.default,
               )}
             >
               {label}
             </span>
             <span
               className={cn(
-                "block px-1 py-1",
+                "inline-flex min-h-8 items-center whitespace-nowrap px-3",
+                ui.radius.full,
                 ui.text.label,
                 chip.state === "active"
                   ? "text-[color:var(--ui-ink-deep)]"
-                  : cn(
-                      "bg-[color:var(--ui-surface)]",
-                      chip.state === "available" ? ui.tone.ink : ui.tone.muted,
-                    ),
+                  : chip.state === "available"
+                    ? cn(ui.surface.sunken, ui.tone.ink)
+                    : cn(ui.surface.sunken, ui.tone.muted),
               )}
               style={
                 chip.state === "active" ? { backgroundImage: "var(--ui-grad-action)" } : undefined

@@ -1,10 +1,15 @@
-// BotolaGO shell — Top bar, on the UI kit.
+// BotolaGO shell — Top bar, on the UI kit (Option A "Club colours").
 //
-// Converted from the Design System V2 glass pill (`surface-4`, 22px blur,
-// floating with a 12px inset) to the Fantasy language: a full-bleed opaque
-// bar on the surface token, a hairline rule at the block end, the Fantasy
-// radii, and the Fantasy type scale for the desktop nav. Nothing here is
-// Fantasy *layout* — only the language.
+// A full-bleed opaque bar on the surface token with a hairline at the block
+// end, the wordmark at the inline start and round 44px soft buttons at the
+// inline end (`UiIconButton` — the language switcher today; a notifications
+// bell only once there is an inbox to open, BG-0111 removed dead controls).
+// The boards draw the bar with a hairline only, so the card shadow it used to
+// carry on top of the rule is gone.
+//
+// The height is unchanged — safe-top + the 44px row + `pb-2` + the 1px rule —
+// because `--topbar-h` in styles.css is computed from exactly those terms and
+// the live strip and the /matches filters stick under it.
 
 import { Link, useRouterState } from "@tanstack/react-router";
 
@@ -20,16 +25,7 @@ export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-30",
-        ui.surface.bar,
-        ui.rule.block,
-        ui.safe.top,
-        "pb-2",
-        "shadow-[var(--ui-shadow-card)]",
-      )}
-    >
+    <header className={cn("sticky top-0 z-30", ui.surface.bar, ui.rule.block, ui.safe.top, "pb-2")}>
       <div
         className={cn(
           "mx-auto flex items-center gap-3 md:max-w-[var(--ui-content-max)]",
@@ -37,7 +33,9 @@ export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
           "min-h-[var(--ui-tap-min)]",
         )}
       >
-        <Logo />
+        {/* The boards set the wordmark at about 21px against 44px controls:
+            the bar is quiet and the page title under it is the loud line. */}
+        <Logo size="sm" />
 
         <nav
           aria-label={t("nav.primary")}
@@ -51,20 +49,24 @@ export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
                 to={item.to}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  // `inline-flex` + the kit's tap minimum: these links were
-                  // 36px tall (meta type + `py-2`), under the 44px floor the
-                  // rest of the product holds to.
-                  "inline-flex items-center justify-center px-3 transition-colors",
+                  "inline-flex items-center justify-center px-4 transition-colors",
                   ui.space.tap,
-                  ui.radius.control,
+                  // Round like every other control a thumb or a pointer
+                  // presses in Option A (chips, buttons, the nav pill).
+                  ui.radius.full,
                   ui.text.meta,
                   "[font-weight:var(--ui-weight-heavy)]",
                   ui.focus,
                   active
-                    ? cn(ui.surface.ink, "shadow-[var(--ui-shadow-card)]")
+                    ? // Selected is white on navy — the Option A selected
+                      // chip — not the cyan `ui.surface.ink`.
+                      ui.surface.inkPlain
                     : cn(
                         ui.tone.muted,
-                        "hover:bg-[color:var(--ui-surface-sunken)] hover:text-[color:var(--ui-ink)]",
+                        // BG-0083: the hover used to write `--ui-ink`, a FILL,
+                        // as the text colour — 1.25:1 on a dark surface. The
+                        // foreground a hover moves to is the full-strength one.
+                        "hover:bg-[color:var(--ui-surface-sunken)] hover:text-[color:var(--ui-on-surface)]",
                       ),
                 )}
               >
