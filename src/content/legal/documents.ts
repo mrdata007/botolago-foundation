@@ -36,7 +36,7 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "Version 1.0 — en vigueur au 21 septembre 2026. Ces conditions régissent l'accès à l'application BotolaGO et son utilisation, y compris le jeu Fantasy et les classements.",
+        text: "Version 1.1 — en vigueur au 24 septembre 2026. Ces conditions régissent l'accès à l'application BotolaGO et son utilisation, y compris le jeu Fantasy et les classements.",
       },
       { type: "heading", text: "1. Éditeur et objet" },
       {
@@ -177,7 +177,7 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "الإصدار 1.0 — ساري المفعول ابتداءً من 21 سبتمبر 2026. تحكم هذه الشروط الولوج إلى تطبيق BotolaGO واستعماله، بما في ذلك لعبة فانتازي والترتيبات.",
+        text: "الإصدار 1.1 — ساري المفعول ابتداءً من 24 سبتمبر 2026. تحكم هذه الشروط الولوج إلى تطبيق BotolaGO واستعماله، بما في ذلك لعبة فانتازي والترتيبات.",
       },
       { type: "heading", text: "1. الناشر والموضوع" },
       {
@@ -321,7 +321,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "Version 1.0 — en vigueur au 21 septembre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.",
+        text: "Version 1.1 — en vigueur au 24 septembre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.",
       },
       { type: "heading", text: "1. Responsable du traitement" },
       {
@@ -505,7 +505,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "الإصدار 1.0 — ساري المفعول ابتداءً من 21 سبتمبر 2026. تشرح هذه السياسة البيانات التي تجمعها BotolaGO، ولماذا، ومع من تُشارك، وما هي حقوقك، طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي.",
+        text: "الإصدار 1.1 — ساري المفعول ابتداءً من 24 سبتمبر 2026. تشرح هذه السياسة البيانات التي تجمعها BotolaGO، ولماذا، ومع من تُشارك، وما هي حقوقك، طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي.",
       },
       { type: "heading", text: "1. المسؤول عن المعالجة" },
       {

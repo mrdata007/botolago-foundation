@@ -1,4 +1,4 @@
-// Prize rules for /prizes/terms, version 1.0.
+// Prize rules for /prizes/terms, version 1.1.
 //
 // The owner supplied the five values only they hold on 2026-09-24: the
 // organiser, who provides and hands over the prizes, the age rule, how winners
@@ -30,7 +30,7 @@ export const PRIZE_TERMS: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "Version 1.0 — en vigueur au 24 septembre 2026. Ce règlement complète la section 7 des Conditions Générales d'Utilisation ; en cas de contradiction, le présent règlement prévaut.",
+        text: "Version 1.1 — en vigueur au 24 septembre 2026. Ce règlement complète la section 7 des Conditions Générales d'Utilisation ; en cas de contradiction, le présent règlement prévaut.",
       },
       { type: "heading", text: "1. Organisateur" },
       {
@@ -88,7 +88,7 @@ export const PRIZE_TERMS: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "الإصدار 1.0 — ساري المفعول ابتداءً من 24 سبتمبر 2026. يُكمِّل هذا النظام البند 7 من الشروط العامة للاستخدام، وفي حال التعارض يسري هذا النظام.",
+        text: "الإصدار 1.1 — ساري المفعول ابتداءً من 24 سبتمبر 2026. يُكمِّل هذا النظام البند 7 من الشروط العامة للاستخدام، وفي حال التعارض يسري هذا النظام.",
       },
       { type: "heading", text: "1. الجهة المنظِّمة" },
       {
