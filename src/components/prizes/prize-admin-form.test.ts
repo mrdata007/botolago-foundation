@@ -11,7 +11,7 @@ describe("the prize editor form", () => {
         nameAr: "   ",
         descriptionFr: " Un smartphone. ",
         value: " 2500 ",
-        sponsorName: " inwi ",
+        sponsorName: " Sponsor Test ",
         imageUrl: "",
       }),
     ).toEqual({
@@ -22,7 +22,7 @@ describe("the prize editor form", () => {
       descriptionFr: "Un smartphone.",
       descriptionAr: null,
       estimatedValueMad: 2500,
-      sponsorName: "inwi",
+      sponsorName: "Sponsor Test",
       sponsorLogoUrl: null,
       imageUrl: null,
       active: false,

@@ -1910,6 +1910,8 @@ to authenticated;
 -- ---------------------------------------------------------------------------
 -- Default prizes (inactive until an admin reviews and switches them on)
 -- ---------------------------------------------------------------------------
+-- No sponsor is named here: a sponsor's name goes on a prize from
+-- /admin/prizes once that sponsor has signed, never before.
 
 insert into app.fantasy_prizes (
   id, tier, name_fr, name_ar, description_fr, description_ar,
@@ -1917,11 +1919,11 @@ insert into app.fantasy_prizes (
 ) values
   (
     'f7a10000-0000-4000-8000-000000000001', 'gameweek',
-    'Recharge inwi + maillot d''un club de la Botola',
-    'رصيد inwi + قميص نادٍ من البطولة',
-    'Le meilleur score de la journée remporte une recharge inwi et un maillot officiel d''un club de la Botola Pro.',
-    'صاحب أعلى نقاط في الجولة يفوز برصيد inwi وقميص رسمي لأحد أندية البطولة الاحترافية.',
-    500, 'inwi', false
+    'Recharge mobile + maillot d''un club de la Botola',
+    'رصيد هاتفي + قميص نادٍ من البطولة',
+    'Le meilleur score de la journée remporte une recharge mobile et un maillot officiel d''un club de la Botola Pro.',
+    'صاحب أعلى نقاط في الجولة يفوز برصيد هاتفي وقميص رسمي لأحد أندية البطولة الاحترافية.',
+    500, null, false
   ),
   (
     'f7a10000-0000-4000-8000-000000000002', 'monthly',

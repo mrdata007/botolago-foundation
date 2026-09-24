@@ -216,6 +216,11 @@ select extensions.is(
   '{"gameweek": 500, "monthly": 2500, "season": 25000}'::jsonb,
   'the default prize values are 500, 2 500 and 25 000 MAD'
 );
+select extensions.is(
+  (select count(*)::integer from app.fantasy_prizes
+   where id::text like 'f7a10000-%' and (sponsor_name is not null or sponsor_logo_url is not null)),
+  0, 'no default prize names a sponsor: that waits for a signed sponsor, set from the admin'
+);
 select extensions.ok(
   exists (
     select 1 from app_private.admin_role_permissions mapping
@@ -340,7 +345,7 @@ select extensions.is(
 update app.fantasy_prizes set active = true where id::text like 'f7a10000-%';
 insert into app.fantasy_prizes (id, tier, name_fr, name_ar, description_fr, sponsor_name, active)
 values ('e7d00000-0000-4000-8000-000000000001', 'mini_league', 'Pack merchandising',
-  'حزمة منتجات', 'Maillot et écharpe pour le leader de la ligue.', 'inwi', true);
+  'حزمة منتجات', 'Maillot et écharpe pour le leader de la ligue.', 'Sponsor Test', true);
 update app.fantasy_gameweeks set status = 'finalized', points_state = 'final',
   finalized_at = starts_at + interval '3 days'
 where fantasy_season_id = 'e7630000-0000-4000-8000-000000000001' and sequence_number <= 3;
@@ -635,15 +640,15 @@ select extensions.throws_ok(
 select set_config('test.save_key', gen_random_uuid()::text, true);
 select extensions.is(
   api.admin_save_fantasy_prize('f7a10000-0000-4000-8000-000000000002', 'monthly',
-    'Smartphone 5G', 'هاتف ذكي 5G', 'Un smartphone 5G.', null, 3000, 'inwi',
-    'https://cdn.example.test/inwi.png', 'https://cdn.example.test/phone.webp', true,
+    'Smartphone 5G', 'هاتف ذكي 5G', 'Un smartphone 5G.', null, 3000, 'Sponsor Test',
+    'https://cdn.example.test/sponsor.png', 'https://cdn.example.test/phone.webp', true,
     'Upgrade the monthly prize.', current_setting('test.save_key')::uuid) ->> 'nameFr',
   'Smartphone 5G', 'an admin edits a prize'
 );
 select extensions.is(
   api.admin_save_fantasy_prize('f7a10000-0000-4000-8000-000000000002', 'monthly',
-    'Smartphone 5G', 'هاتف ذكي 5G', 'Un smartphone 5G.', null, 3000, 'inwi',
-    'https://cdn.example.test/inwi.png', 'https://cdn.example.test/phone.webp', true,
+    'Smartphone 5G', 'هاتف ذكي 5G', 'Un smartphone 5G.', null, 3000, 'Sponsor Test',
+    'https://cdn.example.test/sponsor.png', 'https://cdn.example.test/phone.webp', true,
     'Upgrade the monthly prize.', current_setting('test.save_key')::uuid) ->> 'estimatedValueMad',
   '3000', 'repeating the same idempotency key replays the saved result'
 );
