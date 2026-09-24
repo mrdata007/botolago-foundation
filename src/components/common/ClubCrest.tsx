@@ -46,7 +46,8 @@ const SIZE: Record<ClubCrestSize, string> = {
  *
  * `inverse` flips that for a crest on a club block: a surface disc, the club
  * colour as the monogram (`--ui-club-fg`, ≥ 4.5:1, the plain foreground in
- * dark), lifted off the block by `--ui-shadow-lifted`.
+ * dark), lifted off the block by `--ui-shadow-lifted` and ringed in the
+ * club's edge colour, so it stays a disc on a light kit's block too.
  *
  * Decorative: the club's name is always printed beside a crest, so the disc
  * is hidden from assistive tech and carries the name only as a tooltip.
@@ -86,7 +87,10 @@ export function ClubCrest({
         ui.radius.full,
         "[font-weight:var(--ui-weight-heavy)]",
         tone === "inverse"
-          ? cn(ui.club.inverse, ui.shadow.lifted)
+          ? // The ring again: a surface disc on a white or yellow kit's block
+            // is surface on surface, and the club's edge (≥ 3:1) is what
+            // keeps it a disc (Wydad's white second kit against Berkane).
+            cn(ui.club.inverse, ui.club.ring, ui.shadow.lifted)
           : // The inner ring is invisible on most clubs (the edge colour is
             // the fill) and is what keeps a white or yellow kit a shape on a
             // white card.

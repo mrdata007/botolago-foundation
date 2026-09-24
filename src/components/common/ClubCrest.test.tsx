@@ -93,6 +93,11 @@ describe("ClubCrest — the Option A disc", () => {
     expect(html).not.toContain("bg-[color:var(--ui-club)]");
   });
 
+  it("inverse: keeps the edge ring, so a surface disc stays a disc on a light kit", () => {
+    const html = render(<ClubCrest club={WYDAD} tone="inverse" />);
+    expect(html).toContain("ring-[color:var(--ui-club-edge)]");
+  });
+
   it("shows the badge on a light plate when there is an image, the monogram otherwise", () => {
     const withImage = render(
       <ClubCrest club={{ ...WYDAD, crestUrl: "https://example.test/wac.png" }} />,

@@ -279,16 +279,7 @@ function TeamHalf({
         side === "home" ? "pe-16 ps-3" : "pe-3 ps-16",
       )}
     >
-      <ClubCrest
-        club={club}
-        palette={palette}
-        size="lg"
-        tone="inverse"
-        // A light half (a white or yellow kit: dark text on it) would put a
-        // surface disc on a surface-coloured block; the club's edge ring
-        // (≥ 3:1) keeps it a disc. Wydad's white second kit against Berkane.
-        className={palette.light.on === "var(--ui-ink-deep)" ? ui.club.ring : undefined}
-      />
+      <ClubCrest club={club} palette={palette} size="lg" tone="inverse" />
       <p
         className={cn(
           "line-clamp-2 max-w-full break-words text-center text-balance",
