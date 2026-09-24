@@ -1,6 +1,6 @@
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { SkeletonList, StandingsRowSkeleton } from "@/components/common/Skeletons";
@@ -17,6 +17,7 @@ import {
 } from "@/components/matches/StandingsTable";
 import { roundsLabel } from "@/components/matches/standings-copy";
 import { YourClubCard } from "@/components/matches/YourClubCard";
+import { useOnLiveMatchEnd } from "@/components/matches/use-live-matches";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiButton, UiChip, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -98,6 +99,12 @@ function StandingsPage() {
     enabled: season != null,
   });
   const data = standingsQ.data;
+  // A match that finishes while the page is open changes the table: the live
+  // strip sees it leave, and every table worked out from the results refetches.
+  const queryClient = useQueryClient();
+  useOnLiveMatchEnd(() => {
+    void queryClient.invalidateQueries({ queryKey: ["football", "standings"] });
+  });
 
   const loading = seasonsQ.isPending || (season != null && standingsQ.isPending);
   const failed = seasonsQ.isError || standingsQ.isError;

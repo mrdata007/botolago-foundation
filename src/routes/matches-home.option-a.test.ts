@@ -136,6 +136,18 @@ describe("Classement (A-Standings)", () => {
     expect(tabs).toContain("search: seasonSearch(season)");
   });
 
+  it("refreshes the table when a match finishes while the page is open, on both pages", () => {
+    const strip = code("../components/matches/LiveStrip.tsx");
+    const hook = code("../components/matches/use-live-matches.ts");
+    expect(strip).toContain("const liveQ = useLiveMatches();");
+    expect(hook).toContain('queryKey: ["football", "live-matches", lang]');
+    for (const page of [standings, home]) {
+      expect(page).toMatch(
+        /useOnLiveMatchEnd\(\(\) => \{\s*void queryClient\.invalidateQueries\(\{ queryKey: \["football", "standings"\] \}\);/,
+      );
+    }
+  });
+
   it("reads the table worked out from the season's results, shared with Home's snapshot", () => {
     expect(standings).toContain('queryKey: ["football", "standings", season?.id, lang]');
     expect(standings).toContain("footballService.getStandings(season!, lang)");
@@ -179,6 +191,7 @@ describe("Classement — design-system rules in source", () => {
     "matches.standings.tsx",
     "../components/matches/MatchesTabs.tsx",
     "../components/matches/matches-search.ts",
+    "../components/matches/use-live-matches.ts",
     "../components/matches/SeasonPicker.tsx",
     "../components/matches/StandingsTable.tsx",
     "../components/matches/YourClubCard.tsx",

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CircleDot, Bell, Newspaper, Trophy, UserRound } from "lucide-react";
 
@@ -24,6 +24,7 @@ import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
+import { useOnLiveMatchEnd } from "@/components/matches/use-live-matches";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { EmptyState, ErrorState } from "@/components/common/States";
@@ -202,6 +203,11 @@ function HomeContent() {
     queryKey: ["football", "standings", currentSeason?.id, lang],
     queryFn: () => footballService.getStandings(currentSeason!, lang),
     enabled: currentSeason != null,
+  });
+  // A match ending changes the table (see /matches/standings).
+  const queryClient = useQueryClient();
+  useOnLiveMatchEnd(() => {
+    void queryClient.invalidateQueries({ queryKey: ["football", "standings"] });
   });
 
   const clubById = (id: string) =>
