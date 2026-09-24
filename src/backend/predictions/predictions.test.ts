@@ -198,6 +198,12 @@ describe("mapPredictionsError", () => {
     expect(mapPredictionsError({ message: "predictions_unavailable" }).retryable).toBe(false);
   });
 
+  it("reads a database the migrations have not reached as switched off", () => {
+    expect(
+      mapPredictionsError({ code: "PGRST202", message: "Could not find the function" }).code,
+    ).toBe("predictions_unavailable");
+  });
+
   it("keeps an error it already mapped", () => {
     const error = new PredictionsError("league_full", "league_full");
     expect(mapPredictionsError(error)).toBe(error);

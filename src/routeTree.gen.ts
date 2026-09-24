@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as PronosticsRouteImport } from './routes/pronostics'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as NewsRouteImport } from './routes/news'
@@ -20,6 +21,7 @@ import { Route as FantasyRouteImport } from './routes/fantasy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PronosticsIndexRouteImport } from './routes/pronostics.index'
 import { Route as PrizesIndexRouteImport } from './routes/prizes.index'
 import { Route as MatchesIndexRouteImport } from './routes/matches.index'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
@@ -84,6 +86,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PronosticsRoute = PronosticsRouteImport.update({
+  id: '/pronostics',
+  path: '/pronostics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -123,6 +130,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PronosticsIndexRoute = PronosticsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PronosticsRoute,
 } as any)
 const PrizesIndexRoute = PrizesIndexRouteImport.update({
   id: '/prizes/',
@@ -378,6 +390,7 @@ export interface FileRoutesByFullPath {
   '/news': typeof NewsRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
+  '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -420,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
   '/prizes/': typeof PrizesIndexRoute
+  '/pronostics/': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
@@ -480,6 +494,7 @@ export interface FileRoutesByTo {
   '/fantasy': typeof FantasyIndexRoute
   '/matches': typeof MatchesIndexRoute
   '/prizes': typeof PrizesIndexRoute
+  '/pronostics': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
@@ -500,6 +515,7 @@ export interface FileRoutesById {
   '/news': typeof NewsRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
+  '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -542,6 +558,7 @@ export interface FileRoutesById {
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
   '/prizes/': typeof PrizesIndexRoute
+  '/pronostics/': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
@@ -563,6 +580,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/privacy'
     | '/profile'
+    | '/pronostics'
     | '/sitemap.xml'
     | '/terms'
     | '/unsubscribe'
@@ -605,6 +623,7 @@ export interface FileRouteTypes {
     | '/fantasy/'
     | '/matches/'
     | '/prizes/'
+    | '/pronostics/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/news/$articleEditionId'
@@ -665,6 +684,7 @@ export interface FileRouteTypes {
     | '/fantasy'
     | '/matches'
     | '/prizes'
+    | '/pronostics'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/news/$articleEditionId'
@@ -684,6 +704,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/privacy'
     | '/profile'
+    | '/pronostics'
     | '/sitemap.xml'
     | '/terms'
     | '/unsubscribe'
@@ -726,6 +747,7 @@ export interface FileRouteTypes {
     | '/fantasy/'
     | '/matches/'
     | '/prizes/'
+    | '/pronostics/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/news/$articleEditionId'
@@ -746,6 +768,7 @@ export interface RootRouteChildren {
   NewsRoute: typeof NewsRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRouteWithChildren
+  PronosticsRoute: typeof PronosticsRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
@@ -783,6 +806,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pronostics': {
+      id: '/pronostics'
+      path: '/pronostics'
+      fullPath: '/pronostics'
+      preLoaderRoute: typeof PronosticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -840,6 +870,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/pronostics/': {
+      id: '/pronostics/'
+      path: '/'
+      fullPath: '/pronostics/'
+      preLoaderRoute: typeof PronosticsIndexRouteImport
+      parentRoute: typeof PronosticsRoute
     }
     '/prizes/': {
       id: '/prizes/'
@@ -1346,6 +1383,18 @@ const ProfileRouteChildren: ProfileRouteChildren = {
 const ProfileRouteWithChildren =
   ProfileRoute._addFileChildren(ProfileRouteChildren)
 
+interface PronosticsRouteChildren {
+  PronosticsIndexRoute: typeof PronosticsIndexRoute
+}
+
+const PronosticsRouteChildren: PronosticsRouteChildren = {
+  PronosticsIndexRoute: PronosticsIndexRoute,
+}
+
+const PronosticsRouteWithChildren = PronosticsRoute._addFileChildren(
+  PronosticsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -1355,6 +1404,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewsRoute: NewsRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRouteWithChildren,
+  PronosticsRoute: PronosticsRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,

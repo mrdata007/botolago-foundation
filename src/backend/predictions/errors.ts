@@ -68,8 +68,12 @@ function isNetworkFailure(error: unknown): boolean {
 
 export function mapPredictionsError(error: unknown): PredictionsError {
   if (error instanceof PredictionsError) return error;
-  const raw = error as { message?: unknown } | null;
+  const raw = error as { message?: unknown; code?: unknown } | null;
   const message = typeof raw?.message === "string" ? raw.message.trim() : "";
+  // PostgREST's "function not found": a database the Pronostics migrations
+  // have not reached yet. The same answer as the switch being off.
+  if (raw?.code === "PGRST202")
+    return new PredictionsError("predictions_unavailable", "Pronostics are not deployed.", error);
   if (RAISED_CODES.has(message))
     return new PredictionsError(message as PredictionsErrorCode, message, error);
   if (isNetworkFailure(error))

@@ -162,3 +162,36 @@ export const OAUTH_PROVIDERS_ENABLED = true;
  *   - `scripts/qa/legal-placeholder-gate.ts` -- the prize T&Cs join the check
  */
 export const PRIZES_ENABLED = false;
+
+/**
+ * Pronostics (score predictions, BG-0146) — the page exists; the database decides.
+ *
+ * Owner decision, 2026-09-24 (plan: docs/backend/PREDICTIONS_DOMAIN_PLAN.md
+ * §15). Two build flags, and a third switch that is the real gate: the
+ * database `mode` in `app_private.prediction_settings` (off / testers /
+ * public), checked inside every Pronostics function. While it is `off`, or
+ * while the viewer is not a tester, every read answers `allowed: false` and
+ * the page shows "Bientôt disponible" under `noindex`. Before the Pronostics
+ * migrations reach a database the functions do not exist, and the page shows
+ * the same thing. So this flag can be on before launch: it reveals nothing
+ * the database has not switched on, and it leaves Stage 3 a database switch
+ * rather than a deploy.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/pronostics.tsx` — the /pronostics routes (redirect Home when off)
+ */
+export const PRONOSTICS_ENABLED = true;
+
+/**
+ * Pronostics entry points — OFF until Stage 5 (plan §15).
+ *
+ * The ways in: the Home card and discovery tile, the Matches tab, the match
+ * page card, the Fantasy league tab, the sitemap entry and search indexing.
+ * The owner checks them on a preview deployment of a PR that turns this on,
+ * which is not merged before Stage 5. They also hide themselves while the
+ * database `mode` is `off`.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/pronostics.index.tsx` — `index,follow` instead of `noindex`
+ */
+export const PRONOSTICS_PROMOTED = false;
