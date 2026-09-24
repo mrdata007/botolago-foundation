@@ -24,7 +24,7 @@ describe("sitemap.xml", () => {
 
   test("never lists the CMS, sign-in or personal pages", () => {
     const xml = buildSitemapXml({ newsEnabled: true, news: [] });
-    for (const path of ["/admin", "/auth", "/profile", "/fantasy/team", "/mcp"]) {
+    for (const path of ["/admin", "/auth", "/profile", "/fantasy/team", "/mcp", "/unsubscribe"]) {
       expect(`${path}: ${xml.includes(`botolago.com${path}`)}`).toBe(`${path}: false`);
     }
   });

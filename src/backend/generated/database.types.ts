@@ -1366,6 +1366,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      service_claim_email_deliveries: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
       service_claim_notification_deliveries: {
         Args: { p_lease_seconds?: number; p_limit?: number }
         Returns: Json
@@ -1496,6 +1500,7 @@ export type Database = {
         Args: { p_after_user_id?: string; p_event_id: string; p_limit?: number }
         Returns: Json
       }
+      service_notification_email_health: { Args: never; Returns: Json }
       service_notification_metrics: {
         Args: { p_since?: string }
         Returns: Json
@@ -1506,6 +1511,10 @@ export type Database = {
           p_expected_source_digest: string
           p_idempotency_key: string
         }
+        Returns: Json
+      }
+      service_pause_email_provider: {
+        Args: { p_reason: string; p_until: string }
         Returns: Json
       }
       service_persist_fantasy_scoring_results: {
@@ -1550,6 +1559,10 @@ export type Database = {
           p_stable_error_code?: string
         }
         Returns: Database["app"]["Enums"]["notification_delivery_status"]
+      }
+      service_release_email_deliveries: {
+        Args: { p_delivery_ids: string[]; p_retry_at: string }
+        Returns: number
       }
       service_request_notification_dead_letter_replay: {
         Args: { p_dead_letter_id: string; p_idempotency_key: string }
@@ -1628,6 +1641,10 @@ export type Database = {
         }
         Returns: string
       }
+      service_verify_scheduler_token: {
+        Args: { p_token: string }
+        Returns: boolean
+      }
       set_my_notification_subscription: {
         Args: {
           p_enabled?: boolean
@@ -1646,6 +1663,10 @@ export type Database = {
         Returns: boolean
       }
       unsave_article: { Args: { p_article_edition_id: string }; Returns: Json }
+      unsubscribe_notification_email: {
+        Args: { p_token: string }
+        Returns: Json
+      }
       update_my_notification_preferences: {
         Args: {
           p_breaking_news: boolean
@@ -6944,6 +6965,9 @@ export type Database = {
         | "followed_competition_article"
         | "editorial_digest"
         | "system_announcement"
+        | "matchday_preview"
+        | "matchday_results"
+        | "round_preview"
       placement_scope: "global" | "competition" | "team" | "country"
       placement_type:
         | "home_lead"
@@ -7351,6 +7375,9 @@ export const Constants = {
         "followed_competition_article",
         "editorial_digest",
         "system_announcement",
+        "matchday_preview",
+        "matchday_results",
+        "round_preview",
       ],
       placement_scope: ["global", "competition", "team", "country"],
       placement_type: [

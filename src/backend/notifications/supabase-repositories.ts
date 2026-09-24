@@ -4,12 +4,16 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import { getNotificationsApi } from "@/integrations/supabase/v2-client";
 import {
   notificationDeviceSummarySchema,
+  notificationEmailUnsubscribeResultSchema,
+  notificationEmailUnsubscribeTokenSchema,
   notificationPageSchema,
   notificationPreferencesSchema,
   type NotificationCategory,
   type NotificationDeviceRegistrationInput,
   type NotificationDeviceRepository,
   type NotificationDeviceSummaryDto,
+  type NotificationEmailUnsubscribeRepository,
+  type NotificationEmailUnsubscribeStatus,
   type NotificationListInput,
   type NotificationPageDto,
   type NotificationPreferenceRepository,
@@ -151,6 +155,25 @@ export class SupabaseNotificationPreferenceRepository implements NotificationPre
     });
     throwIfError(error);
     return parse(notificationPreferencesSchema, data);
+  }
+}
+
+/** The unsubscribe RPC's reply, or `data_unavailable` for anything else. */
+export function parseNotificationEmailUnsubscribeResponse(
+  value: unknown,
+): NotificationEmailUnsubscribeStatus {
+  return parse(notificationEmailUnsubscribeResultSchema, value).status;
+}
+
+export class SupabaseNotificationEmailUnsubscribeRepository implements NotificationEmailUnsubscribeRepository {
+  async unsubscribe(token: string): Promise<NotificationEmailUnsubscribeStatus> {
+    const candidate = notificationEmailUnsubscribeTokenSchema.safeParse(token);
+    if (!candidate.success) return "invalid";
+    const { data, error } = await getNotificationsApi().rpc("unsubscribe_notification_email", {
+      p_token: candidate.data,
+    });
+    throwIfError(error);
+    return parseNotificationEmailUnsubscribeResponse(data);
   }
 }
 

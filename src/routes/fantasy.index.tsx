@@ -43,6 +43,7 @@ import { NEWS_ENABLED, PRIZES_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { newsService } from "@/services/news";
 import type { Gameweek } from "@/types/domain";
@@ -62,7 +63,8 @@ export const Route = createFileRoute("/fantasy/")({
  * call to action, the Transfers row, four shortcut tiles, then "Mes ligues"
  * as rows with an edge bar. Below the board's fold, the pieces of the old hub
  * that are real features stay, restyled: the cup note, the News rail (hidden
- * while News is), the deadline notification switch and the rules / help links.
+ * while News is), the Fantasy reminder and e-mail switches and the rules / help
+ * links.
  *
  * NOT copied from the board, on purpose:
  *   - "▲ 1 210" rank movement — the summary has no previous overall rank;
@@ -653,19 +655,34 @@ function NoLeaguesNote({ text }: { text: string }) {
 function NotificationsSection() {
   const { t } = useI18n();
   const { user, status, refresh } = useAuth();
+  const { preferences, setEmailEnabled } = useMyNotificationPreferences();
   const [busy, setBusy] = useState(false);
   const enabled = status === "authenticated" && !!user;
-  const push = !!user?.notifications.fantasyDeadlines;
+  const reminders = !!user?.notifications.fantasyDeadlines;
+  const email = !!preferences?.channels.email;
 
-  const togglePush = async () => {
+  // Both switches write the same preferences row, so one waits for the other.
+  const toggleReminders = async () => {
     if (!enabled || busy) return;
     setBusy(true);
     try {
       const result = await authService.completeProfile({
-        notifications: { fantasyDeadlines: !push },
+        notifications: { fantasyDeadlines: !reminders },
       });
       if (!result.ok) toast.error(t("state.error"));
       refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const toggleEmail = async () => {
+    if (!enabled || busy || !preferences) return;
+    setBusy(true);
+    try {
+      await setEmailEnabled(!email);
+    } catch {
+      toast.error(t("state.error"));
     } finally {
       setBusy(false);
     }
@@ -678,20 +695,22 @@ function NotificationsSection() {
         {t("fpl.notifications_body")}
       </p>
       <UiCard padding="none">
+        {/* The Fantasy reminder preference. It used to be labelled "push",
+            and there are no push notifications. */}
         <ToggleRow
           icon={<Bell className="h-[18px] w-[18px]" aria-hidden />}
-          label={t("fpl.push")}
-          checked={push}
+          label={t("auth.setup.notif_deadline")}
+          checked={reminders}
           disabled={!enabled || busy}
-          onChange={togglePush}
+          onChange={toggleReminders}
         />
         <ToggleRow
           icon={<Mail className="h-[18px] w-[18px]" aria-hidden />}
           label={t("fpl.emails")}
-          checked={false}
-          disabled
-          onChange={() => {}}
-          hint={t("fpl.coming_soon")}
+          checked={email}
+          disabled={!enabled || busy || !preferences}
+          onChange={toggleEmail}
+          hint={enabled && user.email ? <bdi dir="ltr">{user.email}</bdi> : undefined}
           last
         />
       </UiCard>
@@ -713,7 +732,7 @@ function ToggleRow({
   checked: boolean;
   disabled?: boolean;
   onChange: () => void;
-  hint?: string;
+  hint?: ReactNode;
   last?: boolean;
 }) {
   return (
@@ -737,7 +756,11 @@ function ToggleRow({
         </span>
         <span className={cn("min-w-0", ui.text.bodyStrong, ui.tone.default)}>
           {label}
-          {hint ? <span className={cn("block", ui.text.micro, ui.tone.muted)}>{hint}</span> : null}
+          {hint ? (
+            <span className={cn("block [overflow-wrap:anywhere]", ui.text.micro, ui.tone.muted)}>
+              {hint}
+            </span>
+          ) : null}
         </span>
       </span>
       <button
