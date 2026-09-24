@@ -5360,8 +5360,11 @@ export type Database = {
           ingestion_mode: Database["app"]["Enums"]["publisher_ingestion_mode"]
           logo_asset_id: string | null
           name: string
+          name_ar: string | null
           slug: string
           source_type: Database["app"]["Enums"]["publisher_source_type"]
+          syndication_license_note: string | null
+          syndication_licensed_at: string | null
           trust_status: Database["app"]["Enums"]["publisher_trust_status"]
           updated_at: string
           website_url: string | null
@@ -5373,8 +5376,11 @@ export type Database = {
           ingestion_mode?: Database["app"]["Enums"]["publisher_ingestion_mode"]
           logo_asset_id?: string | null
           name: string
+          name_ar?: string | null
           slug: string
           source_type: Database["app"]["Enums"]["publisher_source_type"]
+          syndication_license_note?: string | null
+          syndication_licensed_at?: string | null
           trust_status?: Database["app"]["Enums"]["publisher_trust_status"]
           updated_at?: string
           website_url?: string | null
@@ -5386,8 +5392,11 @@ export type Database = {
           ingestion_mode?: Database["app"]["Enums"]["publisher_ingestion_mode"]
           logo_asset_id?: string | null
           name?: string
+          name_ar?: string | null
           slug?: string
           source_type?: Database["app"]["Enums"]["publisher_source_type"]
+          syndication_license_note?: string | null
+          syndication_licensed_at?: string | null
           trust_status?: Database["app"]["Enums"]["publisher_trust_status"]
           updated_at?: string
           website_url?: string | null
