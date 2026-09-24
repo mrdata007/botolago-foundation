@@ -21,7 +21,8 @@ insert into app.stories (id, origin, original_language, publisher_id, canonical_
   ('98200000-0000-4000-8000-000000000002', 'provider', 'fr', '98100000-0000-4000-8000-000000000002',
    'https://unlicensed.example/article/2.html'),
   ('98200000-0000-4000-8000-000000000003', 'manual', 'fr', '98100000-0000-4000-8000-000000000003', null),
-  ('98200000-0000-4000-8000-000000000004', 'manual', 'fr', null, null);
+  ('98200000-0000-4000-8000-000000000004', 'manual', 'fr', null, null),
+  ('98200000-0000-4000-8000-000000000005', 'partner', 'fr', '98100000-0000-4000-8000-000000000001', null);
 
 insert into app.article_editions (
   id, story_id, language, slug, title, summary, body_format, body_source, body_html,
@@ -36,7 +37,8 @@ from (values
   ('98300000-0000-4000-8000-000000000002', '98200000-0000-4000-8000-000000000001', 'fr', 'qa-syndicated-fr', 'Article sous licence'),
   ('98300000-0000-4000-8000-000000000003', '98200000-0000-4000-8000-000000000002', 'fr', 'qa-unlicensed-fr', 'Article non licencié'),
   ('98300000-0000-4000-8000-000000000004', '98200000-0000-4000-8000-000000000003', 'fr', 'qa-own-publisher', 'Article BotolaGO maison'),
-  ('98300000-0000-4000-8000-000000000005', '98200000-0000-4000-8000-000000000004', 'fr', 'qa-own-cms', 'Article écrit dans le CMS')
+  ('98300000-0000-4000-8000-000000000005', '98200000-0000-4000-8000-000000000004', 'fr', 'qa-own-cms', 'Article écrit dans le CMS'),
+  ('98300000-0000-4000-8000-000000000006', '98200000-0000-4000-8000-000000000005', 'fr', 'qa-syndicated-no-original', 'Article sous licence sans lien')
 ) fixture(id, story, language, slug, title);
 
 set local role anon;
@@ -51,6 +53,11 @@ select is(
   api.news_article_detail('fr', 'qa-syndicated-fr') -> 'source',
   '{"name": "QA Licensed", "url": "https://licensed.example/article/1.html"}'::jsonb,
   'a French licensed edition names its source and links the story''s original'
+);
+select is(
+  api.news_article_detail('fr', 'qa-syndicated-no-original') -> 'source',
+  '{"name": "QA Licensed", "url": null}'::jsonb,
+  'without a known original, the source is named but no homepage is passed off as the original'
 );
 select is(
   api.news_article_detail('fr', 'qa-unlicensed-fr') -> 'source',

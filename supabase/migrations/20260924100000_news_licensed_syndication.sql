@@ -74,7 +74,8 @@ as $$
     'source', case when publisher.syndication_licensed_at is null then null else jsonb_build_object(
       'name', case when edition.language = 'ar' then coalesce(publisher.name_ar, publisher.name)
         else publisher.name end,
-      'url', coalesce(story.canonical_url, publisher.website_url)
+      -- The original article, or nothing: a homepage is not "the original".
+      'url', story.canonical_url
     ) end,
     'primaryCategory', category.value,
     'tags', coalesce(tags.value, '[]'::jsonb),
