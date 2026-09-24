@@ -76,7 +76,11 @@ export function serializeJsonLd(jsonLd: Record<string, unknown>): string {
  * title tag, description and OpenGraph/Twitter tags instead of silently
  * falling back to French copy.
  */
-export function buildArticleHead(article: ArticleDetailDto | null | undefined, articleId: string) {
+export function buildArticleHead(
+  article: ArticleDetailDto | null | undefined,
+  articleId: string,
+  { unavailable = false }: { unavailable?: boolean } = {},
+) {
   const title = article?.seo.title ?? article?.title ?? "Actualités";
   const description =
     article?.seo.description ??
@@ -112,9 +116,11 @@ export function buildArticleHead(article: ArticleDetailDto | null | undefined, a
   return {
     meta: [
       { title: `${title} — BotolaGO` },
-      // Nothing loaded (unknown, unpublished or withdrawn): the page renders a
-      // "not found" card with HTTP 200, so at least keep it out of the index.
-      ...(article ? [] : [{ name: "robots", content: "noindex" }]),
+      // Nothing to show: an unknown, unpublished or withdrawn article answers
+      // 404 and stays out of the index. A read that failed (`unavailable`)
+      // answers 503 and must NOT say noindex: the article exists, and a
+      // search engine would drop it (audit 2026-09-24, P1-3).
+      ...(article || unavailable ? [] : [{ name: "robots", content: "noindex" }]),
       // Licensed content from another publisher is indexed like BotolaGO's
       // own (owner decision, 2026-09-24); it still credits its source on the
       // page and in JSON-LD `isBasedOn`.

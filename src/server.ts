@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { withPageStatus } from "./lib/page-availability";
 import { withSiteHeaders } from "./lib/response-headers";
 
 type ServerEntry = {
@@ -50,7 +51,10 @@ export default {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return withSiteHeaders(await normalizeCatastrophicSsrResponse(response), request.url);
+      return withSiteHeaders(
+        withPageStatus(await normalizeCatastrophicSsrResponse(response)),
+        request.url,
+      );
     } catch (error) {
       console.error(error);
       return withSiteHeaders(
