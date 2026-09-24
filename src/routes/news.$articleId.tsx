@@ -473,6 +473,31 @@ function ArticlePage() {
             className={cn("editorial-body mt-4 max-w-[68ch]", articleBodyClass(contentLanguage))}
             dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
           />
+
+          {/* Licensed content says where it comes from, in the article's own
+              language, linking the original. Only licensed stories have one. */}
+          {article.source && (
+            <p
+              lang={contentLanguage}
+              dir={contentDir}
+              className={cn("mt-4", ui.text.meta, ui.tone.muted)}
+              data-testid="article-source"
+            >
+              {contentLanguage === "ar" ? "المصدر: " : "Source : "}
+              {article.source.url ? (
+                <a
+                  href={article.source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn("underline underline-offset-4", ui.tone.default)}
+                >
+                  {article.source.name}
+                </a>
+              ) : (
+                <span className={ui.tone.default}>{article.source.name}</span>
+              )}
+            </p>
+          )}
         </article>
 
         <div className="px-5">

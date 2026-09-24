@@ -3,6 +3,9 @@
 Branch `claude/botolago-news-cms-audit-vuuro8`, started from `main` at
 `de0ed68`. `NEWS_ENABLED` is still `false` and was not touched.
 
+> **Superseded by [NEWS_LAUNCH_REPORT.md](NEWS_LAUNCH_REPORT.md)** (2026-09-23):
+> the blockers below were fixed in PR #158 and deployed to production.
+
 ## 1. Verdict
 
 **NOT READY.**

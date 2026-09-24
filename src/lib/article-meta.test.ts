@@ -55,6 +55,32 @@ describe("buildCanonicalArticleUrl", () => {
   });
 });
 
+describe("licensed (syndicated) content", () => {
+  const source = {
+    name: "ElBotola",
+    url: "https://www.elbotola.com/article/2026-09-22-23-19-974.html",
+  };
+
+  it("is kept out of search results and points at the original", () => {
+    const article = detail({ source });
+    const head = buildArticleHead(article, article.id);
+
+    expect(head.meta).toContainEqual({ name: "robots", content: "noindex, follow" });
+    expect(buildArticleJsonLd(article, buildCanonicalArticleUrl(article.id))?.isBasedOn).toBe(
+      source.url,
+    );
+  });
+
+  it("BotolaGO's own articles stay indexable", () => {
+    const head = buildArticleHead(detail({ source: null }), "article-1");
+
+    expect(head.meta.some((tag) => "name" in tag && tag.name === "robots")).toBe(false);
+    expect(buildArticleJsonLd(detail(), "https://botolago.com/news/article-1")).not.toHaveProperty(
+      "isBasedOn",
+    );
+  });
+});
+
 describe("article metadata", () => {
   it("emits article-specific social, canonical, image, and publication metadata", () => {
     const article = detail();

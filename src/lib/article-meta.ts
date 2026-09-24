@@ -43,6 +43,8 @@ export function buildArticleJsonLd(
   if (authorName) jsonLd.author = { "@type": "Person", name: authorName };
   // "BotolaGO" is the product's own real publisher identity, not fabricated data.
   jsonLd.publisher = { "@type": "Organization", name: article.publisher?.name ?? "BotolaGO" };
+  // Licensed content: say what it is a copy of.
+  if (article.source?.url) jsonLd.isBasedOn = article.source.url;
 
   return jsonLd;
 }
@@ -113,6 +115,10 @@ export function buildArticleHead(article: ArticleDetailDto | null | undefined, a
       // Nothing loaded (unknown, unpublished or withdrawn): the page renders a
       // "not found" card with HTTP 200, so at least keep it out of the index.
       ...(article ? [] : [{ name: "robots", content: "noindex" }]),
+      // Licensed content from another publisher: readable here, but the
+      // original keeps the search credit, and republished copies do not
+      // count against BotolaGO's own pages (Google's syndication guidance).
+      ...(article?.source ? [{ name: "robots", content: "noindex, follow" }] : []),
       { name: "description", content: description },
       { property: "og:type", content: "article" },
       { property: "og:title", content: title },
