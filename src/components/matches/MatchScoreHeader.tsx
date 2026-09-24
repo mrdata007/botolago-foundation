@@ -284,7 +284,7 @@ function TeamHalf({
         side === "home" ? "pe-16 ps-3" : "pe-3 ps-16",
       )}
     >
-      <ClubCrest club={club} palette={palette} size="lg" tone="inverse" />
+      <ClubCrest club={club} palette={palette} size="lg" tone="inverse" loading="eager" />
       <p
         className={cn(
           "line-clamp-2 max-w-full break-words text-center text-balance",
