@@ -404,11 +404,24 @@ export function UiBackButton({
  * Full-bleed like `UiHeader`: render it outside `UiScreen`'s gutter, above
  * the content column.
  */
+/**
+ * The band stays full-bleed, but its inline padding grows on a wide screen so
+ * the title starts where the column underneath starts: half of whatever the
+ * band has beyond that column, plus the gutter. On a phone it is the gutter.
+ */
+const PAGE_TITLE_ALIGN = {
+  /** `UiScreen width="content"` — every `AppShell` page. */
+  content: "px-[max(var(--ui-gutter),calc((100%_-_var(--ui-content-max))/2_+_var(--ui-gutter)))]",
+  /** The 480px phone column (`UiScreen width="column"`, the Fantasy frame). */
+  column: "px-[max(var(--ui-gutter),calc((100%_-_var(--ui-column-max))/2_+_var(--ui-gutter)))]",
+} as const;
+
 export function UiPageTitle({
   title,
   trailing,
   children,
   as: Tag = "h1",
+  width = "content",
   className,
 }: {
   title: ReactNode;
@@ -416,10 +429,14 @@ export function UiPageTitle({
   children?: ReactNode;
   /** The heading element; `h1` unless the page already has one. */
   as?: "h1" | "h2";
+  /** The column the band lines up with on a wide screen. */
+  width?: keyof typeof PAGE_TITLE_ALIGN;
   className?: string;
 }) {
   return (
-    <div className={cn(ui.surface.bar, ui.rule.block, ui.space.gutter, "pb-3 pt-2", className)}>
+    <div
+      className={cn(ui.surface.bar, ui.rule.block, PAGE_TITLE_ALIGN[width], "pb-3 pt-2", className)}
+    >
       <div className="flex min-h-[var(--ui-tap-min)] items-center justify-between gap-3">
         <Tag className={cn("min-w-0 truncate", ui.display.title)}>{title}</Tag>
         {trailing ? <div className="shrink-0">{trailing}</div> : null}
