@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useId } from "react";
+import { useEffect, useState, useId } from "react";
 import { Loader2, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -16,10 +16,11 @@ import { authFieldClass, authFieldIconClass, authLinkClass } from "@/components/
 import { ConsentLine } from "@/components/legal/ConsentLine";
 import { OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
 import { noticeConsentSegments } from "@/components/legal/consent-segments";
-import { ui, UiButton, UiInput } from "@/components/ui-kit";
+import { ui, UiAlert, UiButton, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
+import { takeSuspensionNotice, type SuspensionNotice } from "@/services/account-standing";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -40,6 +41,48 @@ export const Route = createFileRoute("/auth/login")({
   },
   component: LoginPage,
 });
+
+/**
+ * Shown once, right after the app has signed out a banned account: what
+ * happened, until when, and where to write. Read in an effect, never during
+ * render -- the server has no sessionStorage, and the notice is taken (read
+ * and forgotten) so a refresh does not show it again.
+ */
+function SuspendedAccountNotice() {
+  const { t, lang } = useI18n();
+  const [notice, setNotice] = useState<SuspensionNotice | null>(null);
+  useEffect(() => {
+    const taken = takeSuspensionNotice();
+    if (taken) setNotice(taken);
+  }, []);
+  if (!notice) return null;
+  const message = notice.until
+    ? t("auth.login.suspended_until").replace(
+        "{date}",
+        new Date(notice.until).toLocaleString(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR", {
+          dateStyle: "long",
+          timeStyle: "short",
+        }),
+      )
+    : t("auth.login.suspended_indefinite");
+  const [before, after = ""] = t("auth.login.suspended_contact").split("{email}");
+  return (
+    <div className="mb-4">
+      <UiAlert
+        tone="negative"
+        title={t("auth.login.suspended_title")}
+        testId="auth-login-suspended"
+      >
+        <p>{message}</p>
+        <p className="mt-1">
+          {before}
+          <bdi dir="ltr">support@botolago.com</bdi>
+          {after}
+        </p>
+      </UiAlert>
+    </div>
+  );
+}
 
 function LoginPage() {
   const { t } = useI18n();
@@ -176,6 +219,7 @@ function LoginPage() {
         </>
       }
     >
+      <SuspendedAccountNotice />
       <form onSubmit={onSubmit} noValidate className="grid gap-3">
         <UiInput
           id={emailId}

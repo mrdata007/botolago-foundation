@@ -50,6 +50,7 @@ export const adminPermissionSchema = z.enum([
   "releases.read",
   "releases.promote",
   "prizes.manage",
+  "analytics.read",
 ]);
 
 export const staffPrincipalStatusSchema = z.enum(["active", "suspended", "revoked"]);
