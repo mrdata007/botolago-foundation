@@ -18,6 +18,7 @@ const read = (...parts: string[]) => stripComments(readFileSync(join(ROOT, ...pa
 
 const PAGE = read("src", "routes", "news.tsx");
 const CAROUSEL = read("src", "components", "news", "LatestCarousel.tsx");
+const FEED = read("src", "components", "news", "LatestFeed.tsx");
 
 describe("the /news top slot", () => {
   it("shows the carousel only when no lead and no top stories are picked", () => {
@@ -32,6 +33,11 @@ describe("the /news top slot", () => {
   it("never falls back to an empty box above a full feed", () => {
     expect(PAGE).not.toContain('t("state.empty")');
   });
+
+  it("says 'no articles' only when there are none, not when the carousel holds them all", () => {
+    expect(FEED).toContain("if (fetched.length === 0) {");
+    expect(FEED).toContain("if (items.length === 0 && !query.hasNextPage) return null;");
+  });
 });
 
 describe("the carousel follows the house rules", () => {
@@ -39,6 +45,10 @@ describe("the carousel follows the house rules", () => {
     expect(CAROUSEL).not.toMatch(/(^|[\s"'`{])-?(ml|mr|pl|pr|left|right)-[\w.[\]/-]+/m);
     expect(CAROUSEL).not.toMatch(/\btext-(left|right)\b/);
     expect(CAROUSEL).toContain("snap-x");
+  });
+
+  it("gives every dot a touch target, not just an 8 px dot", () => {
+    expect(CAROUSEL).toContain("grid h-8 min-w-6 place-items-center");
   });
 
   it("does not move on its own", () => {

@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import type { ArticleCardDto } from "@/backend/news/contracts";
 import { ArticleCard } from "@/components/common/ArticleCard";
-import { UiIconButton } from "@/components/ui-kit";
+import { ui, UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
@@ -99,8 +99,10 @@ export function LatestCarousel({
           >
             <ChevronLeft aria-hidden />
           </UiIconButton>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center">
             {articles.map((dto, index) => (
+              // The dot stays small; the button around it is a 24 x 32 px
+              // target, so a thumb lands on the slide it aims at.
               <button
                 key={dto.id}
                 type="button"
@@ -109,13 +111,18 @@ export function LatestCarousel({
                   .replace("{total}", String(count))}
                 aria-current={index === active ? "true" : undefined}
                 onClick={() => goTo(index)}
-                className={cn(
-                  "h-2 rounded-full transition-[width,background-color] duration-200",
-                  index === active
-                    ? "w-5 bg-[color:var(--ui-ink-fg)]"
-                    : "w-2 bg-[color:var(--ui-rule-strong)]",
-                )}
-              />
+                className={cn("grid h-8 min-w-6 place-items-center px-1", ui.focus)}
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    "block h-2 rounded-full transition-[width,background-color] duration-200",
+                    index === active
+                      ? "w-5 bg-[color:var(--ui-ink-fg)]"
+                      : "w-2 bg-[color:var(--ui-rule-strong)]",
+                  )}
+                />
+              </button>
             ))}
           </div>
           <UiIconButton
