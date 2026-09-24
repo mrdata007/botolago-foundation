@@ -179,9 +179,13 @@ describe("OAUTH_PROVIDERS_ENABLED", () => {
     const shell = read("src/components/auth/AuthShell.tsx");
     expect(shell).toContain("export function GoogleGlyph");
     expect(shell).toContain("export function AppleGlyph");
-    const dictionary = read("src/i18n/dictionaries.ts");
-    for (const key of ['"auth.google"', '"auth.apple"', '"auth.or_continue_with"']) {
-      expect(dictionary).toContain(key);
+    // One file per language since the Arabic dictionary is loaded on demand:
+    // the copy has to stay in both.
+    for (const file of ["src/i18n/dictionary-fr.ts", "src/i18n/dictionary-ar.ts"]) {
+      const dictionary = read(file);
+      for (const key of ['"auth.google"', '"auth.apple"', '"auth.or_continue_with"']) {
+        expect(`${file} ${key}: ${dictionary.includes(key)}`).toBe(`${file} ${key}: true`);
+      }
     }
   });
 });

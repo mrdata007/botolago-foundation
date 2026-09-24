@@ -1,4 +1,4 @@
-import { dictionaries } from "@/i18n/dictionaries";
+import { fr } from "@/i18n/dictionary-fr";
 import type { AdminPermission } from "./contracts";
 
 export type AdminConsoleRoute =
@@ -366,8 +366,12 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
     permission: "prizes.manage",
     testId: "admin-nav-prizes",
     labels: {
-      fr: dictionaries.fr["prizes.admin.nav"],
-      ar: dictionaries.ar["prizes.admin.nav"],
+      fr: fr["prizes.admin.nav"],
+      // Written out like the other items' labels: importing the Arabic
+      // dictionary here put all of it in every page's first download, because
+      // the admin shell's loading screen stays in the main bundle.
+      // admin-console-contracts.test.ts checks it against the dictionary.
+      ar: "الجوائز",
     },
   },
 ] as const satisfies readonly {

@@ -28,7 +28,8 @@ import { MediaImage } from "@/components/common/FailureAwareImage";
 import { ArticleHeroFallback } from "@/components/common/ArticleHeroFallback";
 import { crestStyle } from "@/components/common/club-crest-style";
 import { readTimeLabel } from "@/lib/read-time";
-import { dictionaries } from "@/i18n/dictionaries";
+import { fr } from "@/i18n/dictionary-fr";
+import { ARABIC_CATEGORY_LABELS } from "@/components/news/category-labels";
 import { FULL_COLUMN_SIZES, resolveMediaUrl } from "@/lib/media";
 import { articleModifiedAt, buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
 import {
@@ -375,7 +376,8 @@ function ArticlePage() {
               <span className="min-w-0 truncate">
                 {categoryLabel(
                   article.primaryCategory,
-                  (key) => (dictionaries[contentLanguage] as Record<string, string>)[key] ?? key,
+                  (key) =>
+                    (contentLanguage === "ar" ? ARABIC_CATEGORY_LABELS[key] : fr[key]) ?? key,
                 )}
               </span>
             </UiPill>
