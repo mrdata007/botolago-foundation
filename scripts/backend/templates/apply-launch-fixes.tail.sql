@@ -53,6 +53,16 @@ end
 $catch_up$;
 
 -- ---------------------------------------------------------------------------
+-- Planner statistics. pg_stat_user_tables on 2026-09-24: app.players (read
+-- by every player pool and match sheet) and app.rounds had never been
+-- analysed, so the planner was guessing their sizes (it counted 42 players;
+-- each full read returned ~930). ANALYZE takes no lock that blocks readers or
+-- writers, and a rehearsal rolls it back with everything else.
+-- ---------------------------------------------------------------------------
+analyze app.players;
+analyze app.rounds;
+
+-- ---------------------------------------------------------------------------
 -- Postflight: the objects the batch promises are there, with their grants.
 -- ---------------------------------------------------------------------------
 do $postflight$
