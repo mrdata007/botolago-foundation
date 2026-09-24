@@ -409,18 +409,24 @@ export interface FeedItem {
 }
 
 /**
- * With a limit, only the newest `limit` Arabic articles are read, plus the
- * French ones published in the same window (the translations of those
- * originals, and French-only stories of the same days). Without this, a
- * "limit 200" practice run still read all ~15,700 articles first.
+ * With a limit, only the newest `limit` Arabic articles BotolaGO does not
+ * already hold are read, plus the French ones published in the same window
+ * (the translations of those originals, and French-only stories of the same
+ * days). Without this, a "limit 200" practice run still read all ~15,700
+ * articles first; skipping held originals lets repeated limited runs move on
+ * through the backlog instead of re-reading the same newest articles.
  */
 export function selectFeed(
   arabic: readonly FeedItem[],
   french: readonly FeedItem[],
   limit: number | null,
+  existingUrls: ReadonlySet<string> = new Set(),
 ): { arabic: FeedItem[]; french: FeedItem[] } {
   if (limit === null) return { arabic: [...arabic], french: [...french] };
-  const newestArabic = [...arabic].sort((a, b) => b.pub_date - a.pub_date).slice(0, limit);
+  const newestArabic = arabic
+    .filter((item) => !existingUrls.has(item.absolute_url))
+    .sort((a, b) => b.pub_date - a.pub_date)
+    .slice(0, limit);
   if (!newestArabic.length) {
     return {
       arabic: [],
@@ -429,6 +435,20 @@ export function selectFeed(
   }
   const oldest = newestArabic[newestArabic.length - 1]!.pub_date;
   return { arabic: newestArabic, french: french.filter((item) => item.pub_date >= oldest) };
+}
+
+/**
+ * On a limited run, a French translation whose Arabic original was not read
+ * this time is held back rather than imported alone: imported alone it would
+ * become a French-only story, and the run that later imports its original
+ * would make a second, separate story. It is picked up with its original.
+ */
+export function withoutUnreadOriginals(
+  arabic: readonly ElbotolaArticle[],
+  french: readonly ElbotolaArticle[],
+): ElbotolaArticle[] {
+  const read = new Set(arabic.map((article) => article.id));
+  return french.filter((article) => !article.translatedFrom || read.has(article.translatedFrom));
 }
 
 async function listFeed(language: "ar" | "fr", cutoff: string): Promise<FeedItem[]> {
@@ -539,10 +559,13 @@ async function main(): Promise<void> {
     await listFeed("ar", runtime.cutoff),
     await listFeed("fr", runtime.cutoff),
     runtime.limit,
+    existing,
   );
   console.log(`listed ar=${arabicFeed.length} fr=${frenchFeed.length}`);
   const arabic = await fetchArticles(arabicFeed, "ar");
-  const french = await fetchArticles(frenchFeed, "fr");
+  const fetchedFrench = await fetchArticles(frenchFeed, "fr");
+  const french =
+    runtime.limit === null ? fetchedFrench : withoutUnreadOriginals(arabic, fetchedFrench);
   const built = buildStories(arabic, french, existing);
   const stories = runtime.limit ? built.stories.slice(0, runtime.limit) : built.stories;
   console.log(

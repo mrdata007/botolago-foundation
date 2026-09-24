@@ -5,6 +5,7 @@ import {
   buildStories,
   selectFeed,
   toEdition,
+  withoutUnreadOriginals,
   type ElbotolaArticle,
 } from "./elbotola-licensed-import";
 
@@ -136,6 +137,23 @@ describe("feed selection", () => {
     const picked = selectFeed(arabic, french, null);
     expect(picked.arabic).toHaveLength(5);
     expect(picked.french).toHaveLength(3);
+  });
+
+  test("originals BotolaGO already holds do not use up the limit", () => {
+    const held = new Set([item("a5", 5).absolute_url, item("a4", 4).absolute_url]);
+    const picked = selectFeed(arabic, french, 2, held);
+    expect(picked.arabic.map((entry) => entry.object_id)).toEqual(["a3", "a2"]);
+    expect(picked.french.map((entry) => entry.object_id)).toEqual(["f5", "f3"]);
+  });
+
+  test("a translation whose original was not read is held back, not imported alone", () => {
+    const original = article();
+    const translation = article({ id: "fr-1", language: "fr", translatedFrom: "ar-1" });
+    const orphan = article({ id: "fr-2", language: "fr", translatedFrom: "ar-older" });
+    const frenchOnly = article({ id: "fr-3", language: "fr", translatedFrom: null });
+    expect(
+      withoutUnreadOriginals([original], [translation, orphan, frenchOnly]).map((a) => a.id),
+    ).toEqual(["fr-1", "fr-3"]);
   });
 });
 
