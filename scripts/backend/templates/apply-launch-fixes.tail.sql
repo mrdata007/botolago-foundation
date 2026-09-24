@@ -244,7 +244,7 @@ $finish$;
 commit;
 
 select case
-  when exists (select 1 from supabase_migrations.schema_migrations where version = '20260924190000')
+  when exists (select 1 from supabase_migrations.schema_migrations where version = '20260924200000')
     then 'Applied. New managers can join the next gameweek; postponed fixtures no longer block the season.'
   else 'Not applied. Nothing was saved.'
 end as result;

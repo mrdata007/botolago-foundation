@@ -46,7 +46,7 @@ function occurrences(haystack: string, needle: string): number {
 
 describe("the production apply script for the 2026-09-24 launch fixes", () => {
   test("names at least the Fantasy postponement migration", () => {
-    expect(batch).toContain("20260924190000_fantasy_postponement_and_enrolment");
+    expect(batch).toContain("20260924200000_fantasy_postponement_and_enrolment");
   });
 
   test("is exactly what the assembler produces from its sources", () => {
@@ -77,7 +77,7 @@ describe("the production apply script for the 2026-09-24 launch fixes", () => {
       "set local lock_timeout = '5s';",
       "set local statement_timeout = '120s';",
       "part of this batch is already recorded as applied",
-      "this batch was built on 20260924180200",
+      "this batch was built on 20260924190100",
       "changed since review",
     ]) {
       const at = script.indexOf(guard);

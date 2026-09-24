@@ -5,7 +5,7 @@ export interface SitemapNewsEntry {
   readonly id: string;
   readonly language: "fr" | "ar";
   readonly publishedAt: string;
-  /** When the text last really changed; absent before migration 20260924190600. */
+  /** When the text last really changed; absent before migration 20260924200600. */
   readonly contentUpdatedAt?: string | null;
   readonly translations: readonly { readonly id: string; readonly language: "fr" | "ar" }[];
 }

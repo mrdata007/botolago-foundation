@@ -19,7 +19,7 @@ export function buildCanonicalArticleUrl(articleId: string): string {
  * update on 2026-09-24 moved `updatedAt` on 15,690 articles without changing
  * a word, and every one of them then claimed an edit that morning (audit
  * P1-4). Without `contentUpdatedAt` (an API build before migration
- * 20260924190600) nothing is claimed.
+ * 20260924200600) nothing is claimed.
  */
 export function articleModifiedAt(
   article: Pick<ArticleDetailDto, "publishedAt"> & { contentUpdatedAt?: string | null },

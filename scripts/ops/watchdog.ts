@@ -69,7 +69,7 @@ export async function databaseHealth(
       {
         name: "database_health",
         status: "warn",
-        detail: "api.service_ops_health is not installed yet (migration 20260924190200)",
+        detail: "api.service_ops_health is not installed yet (migration 20260924200200)",
       },
     ];
   }

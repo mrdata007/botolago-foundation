@@ -140,7 +140,7 @@ begin
 
   -- Live scores: switched off near a match, or stale during one. The live
   -- refresh calls every 2 minutes during a match and every 5 before it
-  -- (20260924190500), so 10 minutes without a fixture run is a stall.
+  -- (20260924200500), so 10 minutes without a fixture run is a stall.
   select * into email from app_private.notification_email_settings where id;
   select count(*) filter (where f.kickoff_at between now_at - interval '3 hours' and now_at
       and f.status not in ('finished', 'postponed', 'cancelled', 'abandoned')),

@@ -1,4 +1,4 @@
--- Regression suite for 20260924190600_news_truthful_modified_dates.
+-- Regression suite for 20260924200600_news_truthful_modified_dates.
 begin;
 select extensions.no_plan();
 

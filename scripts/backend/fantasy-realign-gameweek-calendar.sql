@@ -2,7 +2,7 @@
 --
 -- This hand-run repair was written for one calendar state that no longer
 -- exists (see git history for its text and its reasoning). Since migration
--- 20260924190000_fantasy_postponement_and_enrolment the calendar sync and
+-- 20260924200000_fantasy_postponement_and_enrolment the calendar sync and
 -- the lifecycle handle postponed fixtures themselves: a postponed fixture is
 -- deferred (resolution provider_postponed), never anchors or freezes a
 -- deadline, and never blocks the lock; a new manager joins the next

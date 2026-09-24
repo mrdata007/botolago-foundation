@@ -1,4 +1,4 @@
--- Regression suite for 20260924190500_football_live_refresh_cadence.
+-- Regression suite for 20260924200500_football_live_refresh_cadence.
 --
 -- Every fixture is placed relative to statement_timestamp(), with odd
 -- seconds so none lands on the provider's 00:00:00 UTC placeholder.

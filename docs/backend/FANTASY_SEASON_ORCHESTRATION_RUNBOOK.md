@@ -114,7 +114,7 @@ Reading the `deadlineWatch` block of `fantasy-season-orchestrator.json`:
   `assignmentStatus`, `frozen`, `providerUpdatedAt`, `sourceSequence`);
 - `noPlayableFixtures` — true when no fixture of the gameweek counts any more
   (every one postponed or voided): no lock can proceed from it;
-- `remediation` — this runbook (since migration 20260924190000; it named the
+- `remediation` — this runbook (since migration 20260924200000; it named the
   now-retired `fantasy-realign-gameweek-calendar.sql` before);
 - `error` instead of the above — the RPC failed; the verdict degrades to
   `waiting` and the pass is otherwise unaffected.
@@ -133,7 +133,7 @@ Operator procedure on an `escalate` run:
    `deadline_locked` / `new_deadline_in_past` and the guard trigger raises
    `fantasy_gameweek_locked`. Lineups frozen at a deadline are never re-opened.
 
-### Postponed fixtures (since migration 20260924190000)
+### Postponed fixtures (since migration 20260924200000)
 
 What went wrong on 2026-09-24 (GW1): a postponed fixture's kickoff anchored the
 deadline, its placeholder kickoff then froze every deadline update, and the

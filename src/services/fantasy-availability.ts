@@ -37,7 +37,7 @@ export type EnrolmentGameweek = { id: string; sequence: number; deadlineAt: stri
 
 /**
  * The gameweek a new team joins at `now`. A database with migration
- * 20260924190000 names it (`enrolmentGameweek`, possibly the staged next
+ * 20260924200000 names it (`enrolmentGameweek`, possibly the staged next
  * gameweek once the current deadline has passed); an older one does not, and
  * then only the current gameweek qualifies, while it is open and before its
  * deadline. Either way a deadline already behind the clock never qualifies.

@@ -51,7 +51,7 @@ set local statement_timeout = '120s';
 select set_config('botolago.launch_fixes_mode', 'REHEARSAL', true);
 
 -- The migrations this batch applies, in order.
-select set_config('botolago.batch_versions', '20260924190000,20260924190100,20260924190200,20260924190300,20260924190400,20260924190500,20260924190600', true);
+select set_config('botolago.batch_versions', '20260924200000,20260924200100,20260924200200,20260924200300,20260924200400,20260924200500,20260924200600', true);
 
 -- ---------------------------------------------------------------------------
 -- Preflight: the database must be exactly where this batch was reviewed.
@@ -71,8 +71,8 @@ begin
   ) then
     raise exception 'stop: part of this batch is already recorded as applied -- find out why before going on';
   end if;
-  if (select max(version) from supabase_migrations.schema_migrations) <> '20260924180200' then
-    raise exception 'stop: the latest applied migration is %, not 20260924180200 -- this batch was built on 20260924180200',
+  if (select max(version) from supabase_migrations.schema_migrations) <> '20260924190100' then
+    raise exception 'stop: the latest applied migration is %, not 20260924190100 -- this batch was built on 20260924190100',
       (select max(version) from supabase_migrations.schema_migrations);
   end if;
   if to_regprocedure('app_private.fantasy_enrolment_gameweek(uuid)') is not null then
@@ -132,7 +132,7 @@ end
 $preflight$;
 
 -- ---------------------------------------------------------------------------
--- Migration 20260924190000_fantasy_postponement_and_enrolment, exactly as in the repository
+-- Migration 20260924200000_fantasy_postponement_and_enrolment, exactly as in the repository
 -- ---------------------------------------------------------------------------
 -- Fantasy: postponed fixtures never anchor a deadline or block a lock, and a
 -- new manager can always join the next gameweek.
@@ -1145,9 +1145,9 @@ comment on function api.service_fantasy_deadline_watch(uuid, integer, integer) i
 
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260924190000',
+  '20260924200000',
   'fantasy_postponement_and_enrolment',
-  array[$bg_20260924190000_file$-- Fantasy: postponed fixtures never anchor a deadline or block a lock, and a
+  array[$bg_20260924200000_file$-- Fantasy: postponed fixtures never anchor a deadline or block a lock, and a
 -- new manager can always join the next gameweek.
 --
 -- WHAT WENT WRONG ON 2026-09-24 (GW1 of 2026/27)
@@ -2155,11 +2155,11 @@ revoke all on function api.service_fantasy_deadline_watch(uuid, integer, integer
 grant execute on function api.service_fantasy_deadline_watch(uuid, integer, integer) to service_role;
 comment on function api.service_fantasy_deadline_watch(uuid, integer, integer) is
   'Read-only service guard: scheduled/open gameweeks whose deadline is inside the warning window while an active counting fixture still carries an unconfirmed (00:00 UTC placeholder) kickoff, or while no fixture counts at all, with the affected fixture detail. Never writes, never derives a replacement deadline.';
-$bg_20260924190000_file$]
+$bg_20260924200000_file$]
 );
 
 -- ---------------------------------------------------------------------------
--- Migration 20260924190100_fantasy_lifecycle_tick, exactly as in the repository
+-- Migration 20260924200100_fantasy_lifecycle_tick, exactly as in the repository
 -- ---------------------------------------------------------------------------
 -- Fantasy lifecycle tick: the time-critical, database-only steps of the season
 -- on a database clock instead of GitHub's.
@@ -2342,9 +2342,9 @@ select cron.schedule(
 
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260924190100',
+  '20260924200100',
   'fantasy_lifecycle_tick',
-  array[$bg_20260924190100_file$-- Fantasy lifecycle tick: the time-critical, database-only steps of the season
+  array[$bg_20260924200100_file$-- Fantasy lifecycle tick: the time-critical, database-only steps of the season
 -- on a database clock instead of GitHub's.
 --
 -- The season orchestrator (fantasy-season-orchestrator.yml) is scheduled
@@ -2522,11 +2522,11 @@ select cron.schedule(
   '*/5 * * * *',
   $job$select app_private.fantasy_lifecycle_tick();$job$
 );
-$bg_20260924190100_file$]
+$bg_20260924200100_file$]
 );
 
 -- ---------------------------------------------------------------------------
--- Migration 20260924190200_ops_health_and_alerts, exactly as in the repository
+-- Migration 20260924200200_ops_health_and_alerts, exactly as in the repository
 -- ---------------------------------------------------------------------------
 -- Operations health and failure alerts.
 --
@@ -2670,7 +2670,7 @@ begin
 
   -- Live scores: switched off near a match, or stale during one. The live
   -- refresh calls every 2 minutes during a match and every 5 before it
-  -- (20260924190500), so 10 minutes without a fixture run is a stall.
+  -- (20260924200500), so 10 minutes without a fixture run is a stall.
   select * into email from app_private.notification_email_settings where id;
   select count(*) filter (where f.kickoff_at between now_at - interval '3 hours' and now_at
       and f.status not in ('finished', 'postponed', 'cancelled', 'abandoned')),
@@ -2873,9 +2873,9 @@ select cron.schedule(
 
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260924190200',
+  '20260924200200',
   'ops_health_and_alerts',
-  array[$bg_20260924190200_file$-- Operations health and failure alerts.
+  array[$bg_20260924200200_file$-- Operations health and failure alerts.
 --
 -- Until now the only escalation channel was a red GitHub run that nobody
 -- watched: on 2026-09-24 two failed season-orchestrator runs, a gameweek left
@@ -3017,7 +3017,7 @@ begin
 
   -- Live scores: switched off near a match, or stale during one. The live
   -- refresh calls every 2 minutes during a match and every 5 before it
-  -- (20260924190500), so 10 minutes without a fixture run is a stall.
+  -- (20260924200500), so 10 minutes without a fixture run is a stall.
   select * into email from app_private.notification_email_settings where id;
   select count(*) filter (where f.kickoff_at between now_at - interval '3 hours' and now_at
       and f.status not in ('finished', 'postponed', 'cancelled', 'abandoned')),
@@ -3217,11 +3217,11 @@ select cron.schedule(
   '*/5 * * * *',
   $job$select app_private.ops_alert_tick();$job$
 );
-$bg_20260924190200_file$]
+$bg_20260924200200_file$]
 );
 
 -- ---------------------------------------------------------------------------
--- Migration 20260924190300_timezone_validation_without_catalogue_scan, exactly as in the repository
+-- Migration 20260924200300_timezone_validation_without_catalogue_scan, exactly as in the repository
 -- ---------------------------------------------------------------------------
 -- Timezone validation without scanning the timezone catalogue.
 --
@@ -3255,7 +3255,7 @@ create table app_private.timezone_names (
   name text primary key
 );
 comment on table app_private.timezone_names is
-  'Snapshot of pg_timezone_names taken by migration 20260924190300; read by app_private.is_valid_timezone instead of scanning the catalogue per request.';
+  'Snapshot of pg_timezone_names taken by migration 20260924200300; read by app_private.is_valid_timezone instead of scanning the catalogue per request.';
 alter table app_private.timezone_names enable row level security;
 alter table app_private.timezone_names force row level security;
 revoke all on app_private.timezone_names from public, anon, authenticated, service_role;
@@ -3398,9 +3398,9 @@ $$;
 
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260924190300',
+  '20260924200300',
   'timezone_validation_without_catalogue_scan',
-  array[$bg_20260924190300_file$-- Timezone validation without scanning the timezone catalogue.
+  array[$bg_20260924200300_file$-- Timezone validation without scanning the timezone catalogue.
 --
 -- `api.football_matches_by_date` (the /matches page, the most expensive
 -- statement in the database per the 2026-09-24 audit) checked its timezone
@@ -3432,7 +3432,7 @@ create table app_private.timezone_names (
   name text primary key
 );
 comment on table app_private.timezone_names is
-  'Snapshot of pg_timezone_names taken by migration 20260924190300; read by app_private.is_valid_timezone instead of scanning the catalogue per request.';
+  'Snapshot of pg_timezone_names taken by migration 20260924200300; read by app_private.is_valid_timezone instead of scanning the catalogue per request.';
 alter table app_private.timezone_names enable row level security;
 alter table app_private.timezone_names force row level security;
 revoke all on app_private.timezone_names from public, anon, authenticated, service_role;
@@ -3572,11 +3572,11 @@ begin
   end if;
 end;
 $$;
-$bg_20260924190300_file$]
+$bg_20260924200300_file$]
 );
 
 -- ---------------------------------------------------------------------------
--- Migration 20260924190400_news_related_articles_set_based, exactly as in the repository
+-- Migration 20260924200400_news_related_articles_set_based, exactly as in the repository
 -- ---------------------------------------------------------------------------
 -- Related articles, ranked without a per-candidate scan.
 --
@@ -3680,9 +3680,9 @@ $$;
 
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260924190400',
+  '20260924200400',
   'news_related_articles_set_based',
-  array[$bg_20260924190400_file$-- Related articles, ranked without a per-candidate scan.
+  array[$bg_20260924200400_file$-- Related articles, ranked without a per-candidate scan.
 --
 -- `api.news_related_articles` (the "related" rail under every article) was
 -- the most expensive public statement per call in pg_stat_statements on
@@ -3781,11 +3781,11 @@ begin
   ), '[]'::jsonb);
 end;
 $$;
-$bg_20260924190400_file$]
+$bg_20260924200400_file$]
 );
 
 -- ---------------------------------------------------------------------------
--- Migration 20260924190500_football_live_refresh_cadence, exactly as in the repository
+-- Migration 20260924200500_football_live_refresh_cadence, exactly as in the repository
 -- ---------------------------------------------------------------------------
 -- Live scores at a football pace.
 --
@@ -3902,9 +3902,9 @@ select cron.schedule(
 
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260924190500',
+  '20260924200500',
   'football_live_refresh_cadence',
-  array[$bg_20260924190500_file$-- Live scores at a football pace.
+  array[$bg_20260924200500_file$-- Live scores at a football pace.
 --
 -- The live refresh (20260924140100) was woken every 15 minutes, so a goal or a
 -- final whistle reached the app up to a quarter of an hour late. It keeps its
@@ -4016,11 +4016,11 @@ select cron.schedule(
   '* * * * *',
   'select app_private.football_live_refresh_tick();'
 );
-$bg_20260924190500_file$]
+$bg_20260924200500_file$]
 );
 
 -- ---------------------------------------------------------------------------
--- Migration 20260924190600_news_truthful_modified_dates, exactly as in the repository
+-- Migration 20260924200600_news_truthful_modified_dates, exactly as in the repository
 -- ---------------------------------------------------------------------------
 -- Truthful modification dates for articles.
 --
@@ -4188,9 +4188,9 @@ $$;
 
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260924190600',
+  '20260924200600',
   'news_truthful_modified_dates',
-  array[$bg_20260924190600_file$-- Truthful modification dates for articles.
+  array[$bg_20260924200600_file$-- Truthful modification dates for articles.
 --
 -- The sitemap's <lastmod>, the NewsArticle `dateModified`, the
 -- `article:modified_time` tag and the visible "Mis à jour" chip all read
@@ -4353,7 +4353,7 @@ as $$
     limit least(greatest(coalesce(p_limit, 5000), 1), 50000)
   ) entry
 $$;
-$bg_20260924190600_file$]
+$bg_20260924200600_file$]
 );
 
 -- ---------------------------------------------------------------------------
@@ -4602,7 +4602,7 @@ $finish$;
 commit;
 
 select case
-  when exists (select 1 from supabase_migrations.schema_migrations where version = '20260924190000')
+  when exists (select 1 from supabase_migrations.schema_migrations where version = '20260924200000')
     then 'Applied. New managers can join the next gameweek; postponed fixtures no longer block the season.'
   else 'Not applied. Nothing was saved.'
 end as result;

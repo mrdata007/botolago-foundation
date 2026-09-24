@@ -1,4 +1,4 @@
--- Regression suite for 20260924190200_ops_health_and_alerts.
+-- Regression suite for 20260924200200_ops_health_and_alerts.
 begin;
 select extensions.no_plan();
 

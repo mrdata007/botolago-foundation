@@ -14,13 +14,13 @@ import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 BATCH = [
-    "20260924190000_fantasy_postponement_and_enrolment",
-    "20260924190100_fantasy_lifecycle_tick",
-    "20260924190200_ops_health_and_alerts",
-    "20260924190300_timezone_validation_without_catalogue_scan",
-    "20260924190400_news_related_articles_set_based",
-    "20260924190500_football_live_refresh_cadence",
-    "20260924190600_news_truthful_modified_dates",
+    "20260924200000_fantasy_postponement_and_enrolment",
+    "20260924200100_fantasy_lifecycle_tick",
+    "20260924200200_ops_health_and_alerts",
+    "20260924200300_timezone_validation_without_catalogue_scan",
+    "20260924200400_news_related_articles_set_based",
+    "20260924200500_football_live_refresh_cadence",
+    "20260924200600_news_truthful_modified_dates",
 ]
 
 

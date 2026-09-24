@@ -1,4 +1,4 @@
--- Regression suite for 20260924190400_news_related_articles_set_based.
+-- Regression suite for 20260924200400_news_related_articles_set_based.
 --
 -- The rewrite must rank exactly as the per-candidate version it replaced.
 -- That version is kept below as pg_temp.related_reference, verbatim, and

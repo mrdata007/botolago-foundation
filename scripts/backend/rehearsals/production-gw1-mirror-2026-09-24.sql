@@ -15,7 +15,7 @@
 --     calendar's club checks) and six active teams with one unlocked GW1
 --     lineup each. Managers are synthetic: no production personal data.
 --
--- Use: `supabase db reset` WITHOUT migration 20260924190000 present, run this
+-- Use: `supabase db reset` WITHOUT migration 20260924200000 present, run this
 -- file, then run the production apply script. See
 -- docs/production/APPLY_2026_09_24_LAUNCH_FIXES.md.
 

@@ -1,4 +1,4 @@
--- Regression suite for 20260924190300_timezone_validation_without_catalogue_scan.
+-- Regression suite for 20260924200300_timezone_validation_without_catalogue_scan.
 begin;
 select extensions.no_plan();
 

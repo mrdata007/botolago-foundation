@@ -106,7 +106,7 @@ The live refresh exists because the GitHub orchestrator, scheduled hourly, ran
 only every 2–5 hours in the week of 2026-09-21; without it the results email
 could arrive hours after the final whistle. The cadence (2 min in play, 5 min before
 kick-off, nothing otherwise) is migration
-`20260924190500_football_live_refresh_cadence.sql`; a two-hour match costs
+`20260924200500_football_live_refresh_cadence.sql`; a two-hour match costs
 about 60 SportsMonks requests. `app_private.football_live_refresh_heartbeat`
 holds the last call, and the ops health check `live_scores` fails when a
 match is in play and no fixture refresh ran for 10 minutes.

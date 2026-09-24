@@ -1,4 +1,4 @@
--- Regression suite for 20260924190100_fantasy_lifecycle_tick.
+-- Regression suite for 20260924200100_fantasy_lifecycle_tick.
 begin;
 select extensions.no_plan();
 

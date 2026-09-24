@@ -1,4 +1,4 @@
--- Regression suite for 20260924190000_fantasy_postponement_and_enrolment.
+-- Regression suite for 20260924200000_fantasy_postponement_and_enrolment.
 --
 -- Reproduces the 2026-09-24 GW1 failure path (a postponed first fixture with a
 -- placeholder kickoff anchoring and then freezing the deadline, the lock

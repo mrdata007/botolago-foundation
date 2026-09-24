@@ -71,8 +71,8 @@ begin
   ) then
     raise exception 'stop: part of this batch is already recorded as applied -- find out why before going on';
   end if;
-  if (select max(version) from supabase_migrations.schema_migrations) <> '20260924180200' then
-    raise exception 'stop: the latest applied migration is %, not 20260924180200 -- this batch was built on 20260924180200',
+  if (select max(version) from supabase_migrations.schema_migrations) <> '20260924190100' then
+    raise exception 'stop: the latest applied migration is %, not 20260924190100 -- this batch was built on 20260924190100',
       (select max(version) from supabase_migrations.schema_migrations);
   end if;
   if to_regprocedure('app_private.fantasy_enrolment_gameweek(uuid)') is not null then

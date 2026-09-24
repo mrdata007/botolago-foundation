@@ -30,7 +30,7 @@ create table app_private.timezone_names (
   name text primary key
 );
 comment on table app_private.timezone_names is
-  'Snapshot of pg_timezone_names taken by migration 20260924190300; read by app_private.is_valid_timezone instead of scanning the catalogue per request.';
+  'Snapshot of pg_timezone_names taken by migration 20260924200300; read by app_private.is_valid_timezone instead of scanning the catalogue per request.';
 alter table app_private.timezone_names enable row level security;
 alter table app_private.timezone_names force row level security;
 revoke all on app_private.timezone_names from public, anon, authenticated, service_role;
