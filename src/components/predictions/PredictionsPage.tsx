@@ -19,6 +19,7 @@ import {
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { FixturePredictionCard, type FixtureScore } from "./FixturePredictionCard";
+import { LeaguesPanel } from "./leagues/LeaguesPanel";
 import { PredictionsLeaderboard } from "./PredictionsLeaderboard";
 import { PredictionsStickyBar } from "./PredictionsStickyBar";
 import { formatDayHeading, formatLockMoment, matchDay, remainingLabel } from "./predictions-copy";
@@ -34,7 +35,7 @@ import {
   type RoundSeed,
 } from "./use-predictions-round";
 
-export type PredictionsTab = "predict" | "board";
+export type PredictionsTab = "predict" | "board" | "leagues";
 
 /** A visitor sees the sign-up card after this many picks in a journée. */
 const GUEST_NUDGE_AFTER = 3;
@@ -83,6 +84,7 @@ export function PredictionsPage({
         options={[
           { value: "predict", label: t("predictions.tab.predict") },
           { value: "board", label: t("predictions.tab.board") },
+          { value: "leagues", label: t("predictions.tab.leagues") },
         ]}
       />
     </UiPageTitle>
@@ -171,7 +173,9 @@ export function PredictionsPage({
         ) : null}
       </p>
 
-      {tab === "board" ? (
+      {tab === "leagues" ? (
+        <LeaguesPanel />
+      ) : tab === "board" ? (
         <PredictionsLeaderboard
           roundNumber={journee.number}
           uid={model.uid}

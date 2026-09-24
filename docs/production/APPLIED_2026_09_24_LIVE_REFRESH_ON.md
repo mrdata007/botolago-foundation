@@ -56,7 +56,19 @@ The first live calls come with that match. Its result is checked read-only at
 
 ## Verification
 
-_Pending: filled in from the read-only check-ins of 24 Sept, 20:20 and 22:25 UTC._
+Read-only checks of production, 24 Sept 2026:
+
+- **20:43 UTC, during the match:**
+  - `cron.job_run_details`: every `football-live-refresh` run since the switch
+    succeeded (19:15, 19:30, 19:45, 20:00, 20:15, 20:30).
+  - `net._http_response`: the runs at 20:00, 20:15 and 20:30 called the Edge
+    Function and got HTTP 200; each fetched 2 fixtures in its window and
+    updated both.
+  - Amal Tiznit – Ittihad Tanger read `live_first_half`, 0–1, with
+    `provider_updated_at` 20:30:02 UTC: the score is now refreshed during
+    play, where it used to wait hours for the hourly job.
+- **After the final whistle:** _pending, the 22:25 UTC check-in: the match
+  reaches `finished` with `finalized_at` set._
 
 ## Undo
 

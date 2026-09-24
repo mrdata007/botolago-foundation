@@ -18,14 +18,14 @@ const CANONICAL = `${PUBLIC_SITE_ORIGIN}/pronostics`;
 
 interface PronosticsSearch {
   journee?: number;
-  tab?: "classement";
+  tab?: "classement" | "ligues";
 }
 
 function validatePronosticsSearch(search: Record<string, unknown>): PronosticsSearch {
   const journee = Number(search.journee);
   return {
     ...(Number.isInteger(journee) && journee >= 1 && journee <= 1000 ? { journee } : {}),
-    ...(search.tab === "classement" ? { tab: "classement" as const } : {}),
+    ...(search.tab === "classement" || search.tab === "ligues" ? { tab: search.tab } : {}),
   };
 }
 
@@ -86,7 +86,8 @@ function PronosticsRoute() {
   useEffect(() => {
     if (typeof window !== "undefined") window.document.title = title;
   }, [title]);
-  const tab: PredictionsTab = search.tab === "classement" ? "board" : "predict";
+  const tab: PredictionsTab =
+    search.tab === "classement" ? "board" : search.tab === "ligues" ? "leagues" : "predict";
   return (
     <PredictionsPage
       roundNumber={search.journee ?? null}
@@ -99,7 +100,10 @@ function PronosticsRoute() {
       onRoundChange={(journee) => void navigate({ search: (prev) => ({ ...prev, journee }) })}
       onTabChange={(next) =>
         void navigate({
-          search: (prev) => ({ ...prev, tab: next === "board" ? "classement" : undefined }),
+          search: (prev) => ({
+            ...prev,
+            tab: next === "board" ? "classement" : next === "leagues" ? "ligues" : undefined,
+          }),
         })
       }
     />

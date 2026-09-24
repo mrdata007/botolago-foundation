@@ -61,6 +61,9 @@ import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as PronosticsLiguesIndexRouteImport } from './routes/pronostics.ligues.index'
+import { Route as PronosticsLiguesRejoindreRouteImport } from './routes/pronostics.ligues.rejoindre'
+import { Route as PronosticsLiguesLeagueIdRouteImport } from './routes/pronostics.ligues.$leagueId'
 import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.players.$playerId'
 import { Route as FantasyLeaguesJoinRouteImport } from './routes/fantasy.leagues.join'
 import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
@@ -333,6 +336,23 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const PronosticsLiguesIndexRoute = PronosticsLiguesIndexRouteImport.update({
+  id: '/ligues/',
+  path: '/ligues/',
+  getParentRoute: () => PronosticsRoute,
+} as any)
+const PronosticsLiguesRejoindreRoute =
+  PronosticsLiguesRejoindreRouteImport.update({
+    id: '/ligues/rejoindre',
+    path: '/ligues/rejoindre',
+    getParentRoute: () => PronosticsRoute,
+  } as any)
+const PronosticsLiguesLeagueIdRoute =
+  PronosticsLiguesLeagueIdRouteImport.update({
+    id: '/ligues/$leagueId',
+    path: '/ligues/$leagueId',
+    getParentRoute: () => PronosticsRoute,
+  } as any)
 const FantasyPlayersPlayerIdRoute = FantasyPlayersPlayerIdRouteImport.update({
   id: '/$playerId',
   path: '/$playerId',
@@ -443,6 +463,9 @@ export interface FileRoutesByFullPath {
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
+  '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
+  '/pronostics/ligues/': typeof PronosticsLiguesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -504,6 +527,9 @@ export interface FileRoutesByTo {
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
+  '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
+  '/pronostics/ligues': typeof PronosticsLiguesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -568,6 +594,9 @@ export interface FileRoutesById {
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
+  '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
+  '/pronostics/ligues/': typeof PronosticsLiguesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -633,6 +662,9 @@ export interface FileRouteTypes {
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
+    | '/pronostics/ligues/$leagueId'
+    | '/pronostics/ligues/rejoindre'
+    | '/pronostics/ligues/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -694,6 +726,9 @@ export interface FileRouteTypes {
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
+    | '/pronostics/ligues/$leagueId'
+    | '/pronostics/ligues/rejoindre'
+    | '/pronostics/ligues'
   id:
     | '__root__'
     | '/'
@@ -757,6 +792,9 @@ export interface FileRouteTypes {
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
+    | '/pronostics/ligues/$leagueId'
+    | '/pronostics/ligues/rejoindre'
+    | '/pronostics/ligues/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1151,6 +1189,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pronostics/ligues/': {
+      id: '/pronostics/ligues/'
+      path: '/ligues'
+      fullPath: '/pronostics/ligues/'
+      preLoaderRoute: typeof PronosticsLiguesIndexRouteImport
+      parentRoute: typeof PronosticsRoute
+    }
+    '/pronostics/ligues/rejoindre': {
+      id: '/pronostics/ligues/rejoindre'
+      path: '/ligues/rejoindre'
+      fullPath: '/pronostics/ligues/rejoindre'
+      preLoaderRoute: typeof PronosticsLiguesRejoindreRouteImport
+      parentRoute: typeof PronosticsRoute
+    }
+    '/pronostics/ligues/$leagueId': {
+      id: '/pronostics/ligues/$leagueId'
+      path: '/ligues/$leagueId'
+      fullPath: '/pronostics/ligues/$leagueId'
+      preLoaderRoute: typeof PronosticsLiguesLeagueIdRouteImport
+      parentRoute: typeof PronosticsRoute
+    }
     '/fantasy/players/$playerId': {
       id: '/fantasy/players/$playerId'
       path: '/$playerId'
@@ -1385,10 +1444,16 @@ const ProfileRouteWithChildren =
 
 interface PronosticsRouteChildren {
   PronosticsIndexRoute: typeof PronosticsIndexRoute
+  PronosticsLiguesLeagueIdRoute: typeof PronosticsLiguesLeagueIdRoute
+  PronosticsLiguesRejoindreRoute: typeof PronosticsLiguesRejoindreRoute
+  PronosticsLiguesIndexRoute: typeof PronosticsLiguesIndexRoute
 }
 
 const PronosticsRouteChildren: PronosticsRouteChildren = {
   PronosticsIndexRoute: PronosticsIndexRoute,
+  PronosticsLiguesLeagueIdRoute: PronosticsLiguesLeagueIdRoute,
+  PronosticsLiguesRejoindreRoute: PronosticsLiguesRejoindreRoute,
+  PronosticsLiguesIndexRoute: PronosticsLiguesIndexRoute,
 }
 
 const PronosticsRouteWithChildren = PronosticsRoute._addFileChildren(
