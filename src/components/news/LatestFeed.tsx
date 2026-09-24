@@ -52,9 +52,8 @@ export function LatestFeed({
     getNextPageParam: (lastPage) => encodeNewsCursor(lastPage.nextCursor),
   });
 
-  const items = (query.data?.pages ?? [])
-    .flatMap((page) => page.items)
-    .filter((item) => !excludeIds?.has(item.id));
+  const fetched = (query.data?.pages ?? []).flatMap((page) => page.items);
+  const items = fetched.filter((item) => !excludeIds?.has(item.id));
 
   if (query.isLoading) {
     return <SkeletonList count={4}>{() => <NewsRowSkeleton />}</SkeletonList>;
@@ -64,9 +63,13 @@ export function LatestFeed({
     return <ErrorState onRetry={() => void query.refetch()} />;
   }
 
-  if (items.length === 0) {
+  // "No articles" only when there are none: when every article fetched so
+  // far is already shown above (a lead, top stories, or the carousel of the
+  // newest), the rail simply has nothing more to add.
+  if (fetched.length === 0) {
     return <EmptyState illustration={emptyNewsArt}>{t("news.empty_category")}</EmptyState>;
   }
+  if (items.length === 0 && !query.hasNextPage) return null;
 
   return (
     <div className="grid gap-2.5">

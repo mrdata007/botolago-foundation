@@ -16,6 +16,7 @@ import { CategoryChips } from "@/components/news/CategoryChips";
 import { ClubFilterRow } from "@/components/news/ClubFilterRow";
 import { FeaturedGrid } from "@/components/news/FeaturedGrid";
 import { LatestFeed } from "@/components/news/LatestFeed";
+import { LATEST_CAROUSEL_SIZE, LatestCarousel } from "@/components/news/LatestCarousel";
 import { NewsLeadSkeleton, NewsRowSkeleton } from "@/components/news/NewsSkeletons";
 import {
   deriveCategoryOptions,
@@ -106,6 +107,15 @@ function NewsPage() {
 
   const lead = homeQ.data?.lead ?? null;
   const featured = useMemo(() => homeQ.data?.featured ?? [], [homeQ.data?.featured]);
+  // No editor has picked a lead or top stories: the top slot carries the
+  // newest articles as a carousel instead of standing empty.
+  const carousel = useMemo(
+    () =>
+      !lead && featured.length === 0
+        ? (homeQ.data?.latest ?? []).slice(0, LATEST_CAROUSEL_SIZE)
+        : [],
+    [lead, featured, homeQ.data?.latest],
+  );
 
   const categories = useMemo(
     () => deriveCategoryOptions([lead ? [lead] : [], featured, homeQ.data?.latest ?? []]),
@@ -116,8 +126,12 @@ function NewsPage() {
   // (unfiltered) chronological rail below it.
   const excludeFromLatest = useMemo(() => {
     if (categorySlug || clubId) return undefined;
-    return new Set([...(lead ? [lead.id] : []), ...featured.map((item) => item.id)]);
-  }, [categorySlug, clubId, lead, featured]);
+    return new Set([
+      ...(lead ? [lead.id] : []),
+      ...featured.map((item) => item.id),
+      ...carousel.map((item) => item.id),
+    ]);
+  }, [categorySlug, clubId, lead, featured, carousel]);
 
   const clubs = clubsQ.data ?? [];
 
@@ -164,6 +178,13 @@ function NewsPage() {
             <Section>
               <SectionHeader title={t("news.section.top_stories")} />
               <FeaturedGrid featured={featured} clubs={clubs} />
+            </Section>
+          )}
+
+          {carousel.length > 0 && (
+            <Section className="mt-0 sm:mt-0">
+              <h2 className="sr-only">{t("news.section.lead")}</h2>
+              <LatestCarousel articles={carousel} clubs={clubs} />
             </Section>
           )}
         </>
