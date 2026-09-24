@@ -36,7 +36,8 @@
 --     page's database call now takes (1,025 ms when the audit measured it)
 --     and the related-articles rail under a news article (608-644 ms);
 --   * leaves live scores switched off, but ready to call every 2 minutes
---     during a match once switched on (docs/backend/EMAIL_NOTIFICATIONS.md).
+--     during a match once switched on (docs/backend/EMAIL_NOTIFICATIONS.md);
+--   * makes article "last modified" dates truthful (sitemap, search data).
 --   Lock and statement timeouts are bounded, so it gives up rather than queue
 --   behind a long-running transaction on the live site.
 -- ============================================================================
@@ -109,7 +110,9 @@ begin
       ('api.football_matches_by_date(date,text,text,text[],uuid,uuid,timestamp with time zone,uuid,integer)', '3530bc9042d16dac749af5541c826ad0'),
       ('app_private.assert_valid_timezone(text)', 'ff87c87f861e83fff25f6d28d8d49468'),
       ('api.news_related_articles(uuid,integer)', '29756c378f2dbd2a287aa50bea99614c'),
-      ('app_private.football_live_refresh_tick()', '0301db9dbaee6ba9324acd579d59bfc0')
+      ('app_private.football_live_refresh_tick()', '0301db9dbaee6ba9324acd579d59bfc0'),
+      ('api.news_article_detail(text,text)', 'f794fedd2b5bd8c793181c14617648e7'),
+      ('api.news_sitemap_entries(integer)', 'f901508e07445cb7050069869cee6bfa')
     ) as t(signature, md5)
   loop
     if to_regprocedure(expected.signature) is null then

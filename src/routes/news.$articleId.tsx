@@ -30,7 +30,7 @@ import { crestStyle } from "@/components/common/club-crest-style";
 import { readTimeLabel } from "@/lib/read-time";
 import { dictionaries } from "@/i18n/dictionaries";
 import { FULL_COLUMN_SIZES, resolveMediaUrl } from "@/lib/media";
-import { buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
+import { articleModifiedAt, buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
 import {
   bylineInitials,
   categoryLabel,
@@ -230,10 +230,7 @@ function ArticlePage() {
   const heroUrl = resolveMediaUrl(article.hero);
   const caption = [article.hero?.caption, article.hero?.credit].filter(Boolean).join(" — ");
   const deck = article.subtitle ?? article.summary;
-  const hasDistinctUpdate =
-    !!article.updatedAt &&
-    article.updatedAt !== article.publishedAt &&
-    Math.abs(Date.parse(article.updatedAt) - Date.parse(article.publishedAt)) > 60_000;
+  const modifiedAt = articleModifiedAt(article);
 
   const canonicalUrl = buildCanonicalArticleUrl(article.id);
   const share = async () => {
@@ -443,16 +440,13 @@ function ArticlePage() {
                 </span>
                 <Dot />
                 <span>{readTimeLabel(article.readingTimeMinutes, lang, t)}</span>
-                {hasDistinctUpdate && (
+                {modifiedAt && (
                   <>
                     <Dot />
                     <span>
                       {`${t("article.updated")} `}
-                      <time
-                        dateTime={article.updatedAt}
-                        title={formatFullDate(article.updatedAt, lang)}
-                      >
-                        {formatRelativeTime(article.updatedAt, lang)}
+                      <time dateTime={modifiedAt} title={formatFullDate(modifiedAt, lang)}>
+                        {formatRelativeTime(modifiedAt, lang)}
                       </time>
                     </span>
                   </>

@@ -8,6 +8,24 @@ export function buildCanonicalArticleUrl(articleId: string): string {
 }
 
 /**
+ * When an article was last really modified, or `null` when it has not been
+ * since it was published (a change within a minute of publishing is the
+ * publishing itself). Read from `contentUpdatedAt`, never `updatedAt`: a bulk
+ * update on 2026-09-24 moved `updatedAt` on 15,690 articles without changing
+ * a word, and every one of them then claimed an edit that morning (audit
+ * P1-4). Without `contentUpdatedAt` (an API build before migration
+ * 20260924190600) nothing is claimed.
+ */
+export function articleModifiedAt(
+  article: Pick<ArticleDetailDto, "publishedAt"> & { contentUpdatedAt?: string | null },
+): string | null {
+  const modified = article.contentUpdatedAt;
+  if (!modified) return null;
+  const gap = Date.parse(modified) - Date.parse(article.publishedAt);
+  return Number.isFinite(gap) && gap > 60_000 ? modified : null;
+}
+
+/**
  * NewsArticle structured data (schema.org), built only from fields the DTO
  * actually carries — no fabricated author/publisher/image. Returns `null`
  * when there isn't enough real data for a meaningful schema block.
@@ -21,10 +39,7 @@ export function buildArticleJsonLd(
 
   const heroUrl = resolveMediaUrl(article.hero);
   const authorName = article.author?.name ?? article.publisher?.name;
-  const dateModified =
-    article.updatedAt && article.updatedAt !== article.publishedAt
-      ? article.updatedAt
-      : article.publishedAt;
+  const dateModified = articleModifiedAt(article) ?? article.publishedAt;
 
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -139,8 +154,8 @@ export function buildArticleHead(
       ...(article?.publishedAt
         ? [{ property: "article:published_time", content: article.publishedAt }]
         : []),
-      ...(article?.updatedAt && article.updatedAt !== article.publishedAt
-        ? [{ property: "article:modified_time", content: article.updatedAt }]
+      ...(article && articleModifiedAt(article)
+        ? [{ property: "article:modified_time", content: articleModifiedAt(article)! }]
         : []),
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: title },

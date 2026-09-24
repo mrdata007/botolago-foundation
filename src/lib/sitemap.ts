@@ -4,7 +4,9 @@ import { PRIZES_ENABLED } from "@/lib/feature-flags";
 export interface SitemapNewsEntry {
   readonly id: string;
   readonly language: "fr" | "ar";
-  readonly updatedAt: string;
+  readonly publishedAt: string;
+  /** When the text last really changed; absent before migration 20260924190600. */
+  readonly contentUpdatedAt?: string | null;
   readonly translations: readonly { readonly id: string; readonly language: "fr" | "ar" }[];
 }
 
@@ -76,9 +78,12 @@ export function buildSitemapXml(options: {
                   )}"/>`,
               )
               .join("");
-      const lastmod = Number.isNaN(Date.parse(entry.updatedAt))
+      // The last real change, else publication: never `updatedAt`, which a
+      // bulk update moved on every article on 2026-09-24 (audit P1-4).
+      const modified = entry.contentUpdatedAt ?? entry.publishedAt;
+      const lastmod = Number.isNaN(Date.parse(modified))
         ? ""
-        : `<lastmod>${new Date(entry.updatedAt).toISOString()}</lastmod>`;
+        : `<lastmod>${new Date(modified).toISOString()}</lastmod>`;
       urls.push(`  <url><loc>${escapeXml(own)}</loc>${lastmod}${alternates}</url>`);
     }
   }

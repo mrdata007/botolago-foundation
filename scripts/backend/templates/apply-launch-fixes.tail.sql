@@ -144,6 +144,12 @@ begin
     or has_function_privilege('service_role', 'app_private.football_live_refresh_tick()', 'execute') then
     problems := problems || 'the live refresh cadence is not in place'::text;
   end if;
+  if pg_get_functiondef('api.news_article_detail(text,text)'::regprocedure) not like '%contentUpdatedAt%'
+    or pg_get_functiondef('api.news_sitemap_entries(integer)'::regprocedure) not like '%contentUpdatedAt%'
+    or not has_function_privilege('anon', 'api.news_sitemap_entries(integer)', 'execute')
+    or has_function_privilege('anon', 'app_private.news_content_updated_at(app.article_editions)', 'execute') then
+    problems := problems || 'article modified dates are not in place'::text;
+  end if;
 
   if cardinality(problems) > 0 then
     raise exception 'stop: the update did not check out: %', problems;
@@ -183,6 +189,11 @@ begin
   summary := jsonb_build_object(
     'matchesByDateMs', matches_ms,
     'relatedArticlesMs', related_ms,
+    -- Was 15,690 (every article) on 2026-09-24: now only real edits today.
+    'articlesClaimingAnEditToday', (select count(*) from app.article_editions e
+      where e.status = 'published' and e.visibility = 'public'
+        and app_private.news_content_updated_at(e) >= date_trunc('day', statement_timestamp())
+        and app_private.news_content_updated_at(e) > e.published_at + interval '1 minute'),
     'liveScores', (select case when football_live_refresh_enabled and functions_base_url is not null
         then 'on' else 'off (switch on: docs/backend/EMAIL_NOTIFICATIONS.md)' end
       from app_private.notification_email_settings where id),
