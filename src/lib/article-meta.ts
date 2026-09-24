@@ -115,10 +115,9 @@ export function buildArticleHead(article: ArticleDetailDto | null | undefined, a
       // Nothing loaded (unknown, unpublished or withdrawn): the page renders a
       // "not found" card with HTTP 200, so at least keep it out of the index.
       ...(article ? [] : [{ name: "robots", content: "noindex" }]),
-      // Licensed content from another publisher: readable here, but the
-      // original keeps the search credit, and republished copies do not
-      // count against BotolaGO's own pages (Google's syndication guidance).
-      ...(article?.source ? [{ name: "robots", content: "noindex, follow" }] : []),
+      // Licensed content from another publisher is indexed like BotolaGO's
+      // own (owner decision, 2026-09-24); it still credits its source on the
+      // page and in JSON-LD `isBasedOn`.
       { name: "description", content: description },
       { property: "og:type", content: "article" },
       { property: "og:title", content: title },

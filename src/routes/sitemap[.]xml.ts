@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SupabaseNewsRepository } from "@/backend/news/supabase-repository";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
-import { buildSitemapXml, type SitemapNewsEntry } from "@/lib/sitemap";
+import { buildSitemapXml, SITEMAP_NEWS_LIMIT, type SitemapNewsEntry } from "@/lib/sitemap";
 import { getNewsDataMode } from "@/services/news";
 
 /**
@@ -10,6 +10,10 @@ import { getNewsDataMode } from "@/services/news";
  * public right now. Cached for five minutes, so an unpublished article leaves
  * the sitemap within that window. A News read failure still serves the static
  * pages rather than failing the whole sitemap.
+ *
+ * Every public article that fits in one sitemap is requested
+ * (`SITEMAP_NEWS_LIMIT`); the licensed ElBotola archive alone is ~15,700
+ * editions.
  */
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
@@ -18,7 +22,7 @@ export const Route = createFileRoute("/sitemap.xml")({
         let news: readonly SitemapNewsEntry[] = [];
         if (NEWS_ENABLED && getNewsDataMode() === "supabase") {
           try {
-            news = await new SupabaseNewsRepository().getSitemapEntries();
+            news = await new SupabaseNewsRepository().getSitemapEntries(SITEMAP_NEWS_LIMIT);
           } catch {
             news = [];
           }

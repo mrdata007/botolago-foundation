@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildSitemapXml } from "./sitemap";
+import { buildSitemapXml, SITEMAP_NEWS_LIMIT, type SitemapNewsEntry } from "./sitemap";
 
 const FR = "9b2f0c1e-0000-4000-8000-0000000000f1";
 const AR = "9b2f0c1e-0000-4000-8000-0000000000a1";
@@ -65,8 +65,22 @@ describe("sitemap.xml", () => {
   test("the route serves XML, reads only the sitemap RPC and only while News is enabled", () => {
     const route = readFileSync(join(import.meta.dir, "../routes/sitemap[.]xml.ts"), "utf8");
     expect(route).toContain('if (NEWS_ENABLED && getNewsDataMode() === "supabase")');
-    expect(route).toContain("getSitemapEntries()");
+    // Every public article that fits, not the RPC's default page of 5,000:
+    // the licensed archive alone is ~15,700 editions.
+    expect(route).toContain("getSitemapEntries(SITEMAP_NEWS_LIMIT)");
     expect(route).toContain('"content-type": "application/xml; charset=utf-8"');
+  });
+
+  test("a full sitemap never exceeds the protocol's 50,000 URLs", () => {
+    const entry = (i: number): SitemapNewsEntry => ({
+      id: `9b2f0c1e-0000-4000-8000-${i.toString().padStart(12, "0")}`,
+      language: "fr",
+      updatedAt: "2026-09-21T10:00:00.000Z",
+      translations: [],
+    });
+    const news = Array.from({ length: SITEMAP_NEWS_LIMIT }, (_, i) => entry(i));
+    const xml = buildSitemapXml({ newsEnabled: true, news });
+    expect(xml.match(/<url>/g)).toHaveLength(50_000);
   });
 });
 
