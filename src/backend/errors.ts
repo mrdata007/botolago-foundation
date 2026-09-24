@@ -15,6 +15,7 @@ export const BACKEND_ERROR_CODES = [
   "mapping_collision",
   "stale_update",
   "fixture_not_found",
+  "team_not_found",
   "competition_not_supported",
   "invalid_fixture_state",
   "partial_sync_failure",

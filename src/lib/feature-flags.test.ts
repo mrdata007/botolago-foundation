@@ -79,6 +79,8 @@ describe("NEWS_ENABLED", () => {
     ["src/routes/index.tsx", "{NEWS_ENABLED && ("],
     ["src/lib/saved-articles.ts", "enabled: NEWS_ENABLED &&"],
     ["src/routes/matches.$matchId.tsx", "{NEWS_ENABLED && related.length > 0 && ("],
+    ["src/routes/clubs.$clubId.tsx", "enabled: NEWS_ENABLED && validId"],
+    ["src/components/clubs/ClubOverview.tsx", "{NEWS_ENABLED && ("],
   ])("%s gates its News surface on the flag", (file, needle) => {
     const source = read(file);
     expect(source).toContain('from "@/lib/feature-flags"');

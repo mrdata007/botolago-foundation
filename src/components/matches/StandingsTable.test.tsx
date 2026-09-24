@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRouter,
+  RouterContextProvider,
+} from "@tanstack/react-router";
 
 import { I18nProvider } from "@/i18n/provider";
 import {
@@ -16,8 +22,17 @@ import { YourClubCard } from "./YourClubCard";
  * The Classement table and the "Votre club" card, rendered on the real
  * 2025/26 season: its 240 results worked out into the final table.
  */
+// Each club name in the table is a router link to its club page.
+const router = createRouter({
+  routeTree: createRootRoute(),
+  history: createMemoryHistory({ initialEntries: ["/"] }),
+});
 const inFrench = (node: ReactElement) =>
-  renderToStaticMarkup(<I18nProvider>{node}</I18nProvider>).replace(/<!-- -->/g, "");
+  renderToStaticMarkup(
+    <RouterContextProvider router={router}>
+      <I18nProvider>{node}</I18nProvider>
+    </RouterContextProvider>,
+  ).replace(/<!-- -->/g, "");
 
 const results: TableResult[] = BOTOLA_2025_26_RESULTS.map(([home, away, hs, as, kickoff]) => ({
   homeClubId: home,
@@ -120,6 +135,27 @@ describe("StandingsTable", () => {
     expect(tinted[0]).toContain("raja-casablanca");
     expect(tinted[0]).toContain("bg-[color:var(--ui-club-tint)]");
     expect(tinted[0]).toContain("(Votre club)");
+  });
+
+  test("opens each club's page from its name", () => {
+    for (const slug of slugs) expect(html).toContain(`href="/clubs/${slug}"`);
+  });
+
+  test("on a club page, marks that club's row as the current one, not as the reader's", () => {
+    const page = inFrench(
+      <StandingsTable
+        rows={overall}
+        clubById={clubById}
+        view="overall"
+        caption="Classement"
+        currentClubId="raja-casablanca"
+      />,
+    );
+    const tinted = bodyRows(page).filter((row) => row.split(">")[0]!.includes("data-club"));
+    expect(tinted).toHaveLength(1);
+    expect(tinted[0]!.split(">")[0]).toContain('aria-current="true"');
+    expect(tinted[0]).toContain("raja-casablanca");
+    expect(page).not.toContain("(Votre club)");
   });
 
   test("the legend keys the three zones", () => {

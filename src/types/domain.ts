@@ -99,6 +99,12 @@ export interface Match {
    * `isKickoffDateUnconfirmed` falls back to the domain status.
    */
   dateUnconfirmed?: boolean;
+  /**
+   * Cancelled or abandoned: the fixture will not be played as scheduled. It
+   * shows as postponed like the other two, but a list of the matches still
+   * to come leaves it out.
+   */
+  calledOff?: boolean;
 }
 
 export interface TableRow {

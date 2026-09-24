@@ -42,6 +42,8 @@
  *   - `src/routes/fantasy.index.tsx` — Fantasy hub news rail + follow tile
  *   - `src/routes/profile.tsx` — saved-articles stat tile
  *   - `src/routes/matches.$matchId.tsx` — related-news section AND its fetch
+ *   - `src/routes/clubs.$clubId.tsx` — the club's news fetch, and
+ *     `src/components/clubs/ClubOverview.tsx` — the section it feeds
  *
  * That last one was missed when this list was first written, and the miss is
  * worth recording. The section renders on `related.length > 0`, and the feed

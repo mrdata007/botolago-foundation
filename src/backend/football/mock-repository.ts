@@ -2,15 +2,19 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import * as mock from "@/mocks/data";
 import type {
   AvailabilityStatusDto,
+  CompetitionFixturesInput,
   CompetitionSummaryDto,
   FootballLanguage,
   FootballRepository,
   MatchCardDto,
+  MatchPageCursor,
   MatchPageDto,
   MatchesByDateInput,
   PlayerSummaryDto,
   SeasonSummaryDto,
+  SquadMemberDto,
   StandingRowDto,
+  TeamFixturesInput,
   TeamSummaryDto,
 } from "./contracts";
 import { FootballError } from "./errors";
@@ -181,6 +185,27 @@ function sameLocalDate(iso: string, date: string): boolean {
   return localDateKey(iso) === date;
 }
 
+/** (kickoff, id) order — the order every fixture page is cut in. */
+function compareToCursor(match: MatchPageCursor, cursor: MatchPageCursor): number {
+  const byKickoff = Date.parse(match.kickoffAt) - Date.parse(cursor.kickoffAt);
+  if (byKickoff !== 0) return byKickoff;
+  return match.id === cursor.id ? 0 : match.id > cursor.id ? 1 : -1;
+}
+
+/** Every fixture of every mock season, oldest first. */
+function allFixtures(language: FootballLanguage): MatchCardDto[] {
+  return mockSeasons
+    .flatMap((season) => mock.matches.map((match) => fixture(match, language, season)))
+    .sort(compareToCursor);
+}
+
+const MOCK_POSITION = {
+  GK: "goalkeeper",
+  DEF: "defender",
+  MID: "midfielder",
+  FWD: "forward",
+} as const;
+
 export class MockFootballRepository implements FootballRepository {
   async getSeasons(
     _language: FootballLanguage,
@@ -293,8 +318,53 @@ export class MockFootballRepository implements FootballRepository {
   }
   async getTeam(id: string, language: FootballLanguage): Promise<TeamSummaryDto> {
     const source = mock.clubs.find((club) => clubId.get(club.id) === id);
-    if (!source) throw new FootballError("data_unavailable", "The team was not found.");
+    if (!source) throw new FootballError("team_not_found", "The team was not found.");
     return team(source.id, language);
+  }
+  async getTeamFixtures(input: TeamFixturesInput): Promise<readonly MatchCardDto[]> {
+    const before = input.before;
+    return allFixtures(input.language)
+      .filter((match) => match.homeTeam.id === input.teamId || match.awayTeam.id === input.teamId)
+      .filter((match) => !before || compareToCursor(match, before) < 0)
+      .reverse()
+      .slice(0, input.limit ?? 20);
+  }
+  async getCompetitionFixtures(input: CompetitionFixturesInput): Promise<MatchPageDto> {
+    const limit = input.limit ?? 50;
+    const after = input.after;
+    const candidates = allFixtures(input.language)
+      .filter((match) => !input.seasonId || match.seasonId === input.seasonId)
+      .filter((match) => !after || compareToCursor(match, after) > 0);
+    const items = candidates.slice(0, limit);
+    const last = items.at(-1);
+    return {
+      items,
+      nextCursor:
+        candidates.length > limit && last ? { kickoffAt: last.kickoffAt, id: last.id } : null,
+    };
+  }
+  async getTeamSquad(
+    teamId: string,
+    _seasonId: string | null,
+    language: FootballLanguage,
+  ): Promise<readonly SquadMemberDto[]> {
+    const source = mock.clubs.find((club) => clubId.get(club.id) === teamId);
+    if (!source) throw new FootballError("team_not_found", "The team was not found.");
+    return mock.players
+      .filter((player) => player.clubId === source.id)
+      .map((player) => ({
+        membershipId: uuid(80, mock.players.indexOf(player) + 1),
+        playerId: playerId.get(player.id)!,
+        slug: player.id,
+        displayName: localized(player.name, language),
+        fullName: localized(player.name, language),
+        position: MOCK_POSITION[player.position],
+        shirtNumber: null,
+        squadRole: "player" as const,
+        validFrom: mockSeasons[0]!.startsOn,
+        validTo: null,
+        active: true,
+      }));
   }
   async getPlayer(id: string, language: FootballLanguage): Promise<PlayerSummaryDto> {
     const source = mock.players.find((player) => playerId.get(player.id) === id);

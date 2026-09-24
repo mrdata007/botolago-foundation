@@ -5,7 +5,9 @@ import type {
   FootballRepository,
   MatchCardDto,
   MatchLineupDto,
+  MatchPageCursor,
   SeasonSummaryDto,
+  SquadMemberDto,
   StandingRowDto,
   TeamSummaryDto,
 } from "@/backend/football/contracts";
@@ -13,6 +15,7 @@ import { FootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
 import { clubShortCode } from "@/lib/club-identity";
+import type { SquadPlayer } from "@/lib/club-season";
 import {
   computeLeagueTable,
   roundsPlayed,
@@ -88,6 +91,12 @@ export function inPlayFixtures<T extends Pick<MatchCardDto, "status">>(
  */
 const DATE_UNCONFIRMED_STATUSES: readonly MatchCardDto["status"][] = ["postponed", "cancelled"];
 
+/**
+ * The provider statuses in which the fixture will not be played as scheduled
+ * at all. A postponed or suspended match is still to come; these are not.
+ */
+const CALLED_OFF_STATUSES: readonly MatchCardDto["status"][] = ["cancelled", "abandoned"];
+
 export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string | null): Club {
   // BG-0111 — `team.code` is blank (not null) for 13 of the 21 active clubs on
   // production, and `??` does not fall back on `""`. That shipped an empty
@@ -118,7 +127,7 @@ export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string |
   };
 }
 
-function toMatch(match: MatchCardDto): Match {
+export function toMatch(match: MatchCardDto): Match {
   const venueName = match.venue?.name ?? "";
   return {
     id: match.id,
@@ -134,6 +143,7 @@ function toMatch(match: MatchCardDto): Match {
     halfTimeAwayScore: match.halfTimeAwayScore ?? undefined,
     venue: { fr: venueName, ar: venueName },
     dateUnconfirmed: DATE_UNCONFIRMED_STATUSES.includes(match.status),
+    calledOff: CALLED_OFF_STATUSES.includes(match.status),
   };
 }
 
@@ -181,6 +191,44 @@ function toSeason(season: SeasonSummaryDto): FootballSeason {
     lastMatchDate: season.lastMatchDate,
     competitionName: season.competition.name,
   };
+}
+
+/** The season a club page opens on: the current one, else the latest listed. */
+export function defaultSeason(seasons: readonly FootballSeason[]): FootballSeason | undefined {
+  return seasons.find((season) => season.isCurrent) ?? seasons[0];
+}
+
+export function presentSquadMember(member: SquadMemberDto): SquadPlayer {
+  return {
+    id: member.playerId,
+    name: member.displayName,
+    position: member.position,
+    shirtNumber: member.shirtNumber,
+    role: member.squadRole,
+  };
+}
+
+/** Clubs by name, in the reader's language's collation. */
+function byClubName(language: FootballLanguage) {
+  const collator = new Intl.Collator(language === "ar" ? "ar-MA" : "fr-FR");
+  return (a: Club, b: Club) => collator.compare(a.name[language], b.name[language]);
+}
+
+/**
+ * How many pages of a club's fixtures (100 a page) a season may take to
+ * reach. A season is 30 league matches; the cap only stops a runaway loop.
+ */
+const CLUB_FIXTURE_PAGES = 5;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export interface ClubDirectory {
+  /**
+   * The season the clubs were read from, or null when no season named any
+   * club and the list is the whole team catalogue instead (which also holds
+   * clubs that have since left the league).
+   */
+  readonly season: FootballSeason | null;
+  readonly clubs: readonly Club[];
 }
 
 function uniqueClubs(
@@ -391,5 +439,88 @@ export const footballService = {
       clubs: uniqueClubs(allMatches, standings),
       standings: standings.map(toTableRow),
     };
+  },
+
+  async getClub(id: string, language: FootballLanguage): Promise<Club> {
+    return presentFootballClub(
+      await getFootballRepository().getTeam(id, language, requestContext()),
+    );
+  },
+
+  /**
+   * The clubs of the current season (else the latest one), by name: the
+   * teams in its table, and — before a table exists, as at the start of a
+   * season — the teams in its first 100 fixtures, which cover every club by
+   * the end of the first rounds. The full team catalogue is only the last
+   * resort: it also lists clubs that have been relegated.
+   */
+  async getClubDirectory(language: FootballLanguage): Promise<ClubDirectory> {
+    const repository = getFootballRepository();
+    const season = defaultSeason(await footballService.getSeasons(language)) ?? null;
+    if (season) {
+      const [standings, page] = await Promise.all([
+        repository.getStandings(season.id, language, requestContext()),
+        repository.getCompetitionFixtures(
+          {
+            competitionId: season.competitionId,
+            seasonId: season.id,
+            language,
+            limit: 100,
+          },
+          requestContext(),
+        ),
+      ]);
+      const clubs = uniqueClubs(page.items, standings);
+      if (clubs.length > 0) return { season, clubs: clubs.sort(byClubName(language)) };
+    }
+    const catalogue = await footballService.getClubs(language);
+    return { season: null, clubs: catalogue.sort(byClubName(language)) };
+  },
+
+  /**
+   * One club's matches in one season, oldest first, and every club they
+   * name. The API pages a club's fixtures newest first across all seasons,
+   * so this reads back until it has passed the season's first day.
+   */
+  async getClubSeasonMatches(
+    clubId: string,
+    season: Pick<FootballSeason, "id" | "startsOn"> | null,
+    language: FootballLanguage,
+  ): Promise<FootballMatchCollection> {
+    const repository = getFootballRepository();
+    const collected: MatchCardDto[] = [];
+    let before: MatchPageCursor | null = null;
+    for (let page = 0; page < CLUB_FIXTURE_PAGES; page += 1) {
+      const items = await repository.getTeamFixtures(
+        { teamId: clubId, language, before, limit: 100 },
+        requestContext(),
+      );
+      collected.push(...items);
+      const oldest = items.at(-1);
+      if (!season || !oldest || items.length < 100) break;
+      // A day of slack either side of midnight: the season's date is a
+      // calendar day, the kickoff an instant.
+      if (Date.parse(oldest.kickoffAt) < Date.parse(`${season.startsOn}T00:00:00Z`) - DAY_MS) break;
+      before = { kickoffAt: oldest.kickoffAt, id: oldest.id };
+    }
+    const matches = (
+      season ? collected.filter((match) => match.seasonId === season.id) : collected
+    ).sort((a, b) => Date.parse(a.kickoffAt) - Date.parse(b.kickoffAt));
+    return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
+  },
+
+  /** `seasonId` null: the club's current squad; a season id: its squad that season. */
+  async getClubSquad(
+    clubId: string,
+    seasonId: string | null,
+    language: FootballLanguage,
+  ): Promise<SquadPlayer[]> {
+    const squad = await getFootballRepository().getTeamSquad(
+      clubId,
+      seasonId,
+      language,
+      requestContext(),
+    );
+    return squad.map(presentSquadMember);
   },
 };

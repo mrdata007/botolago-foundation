@@ -31,6 +31,7 @@ import { Logo } from "@/components/brand/Logo";
 import { authOutlineClass } from "@/components/auth/auth-classes";
 import { profileClubs, profileInitials } from "@/components/auth/account-model";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { STRETCHED_LINK } from "@/components/clubs/stretched-link";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { Trans } from "@/components/common/Trans";
@@ -340,8 +341,8 @@ function AuthenticatedProfile({
               return (
                 // A tile per club: its crest disc, its name, and a 4px base
                 // in its edge colour (`ui.edge.blockEnd`, a logical border —
-                // the board drew an inset shadow). Not a link: there is no
-                // club page to open.
+                // the board drew an inset shadow). The name opens the club's
+                // page, and its ::after makes the whole tile the target.
                 <li
                   key={club.id}
                   data-club={colours["data-club"]}
@@ -350,6 +351,7 @@ function AuthenticatedProfile({
                     "relative flex min-h-28 min-w-0 flex-col items-center justify-end gap-2 px-2 pb-3 pt-8 text-center",
                     ui.surface.card,
                     ui.edge.blockEnd,
+                    "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
                   )}
                 >
                   {favorite ? (
@@ -363,16 +365,20 @@ function AuthenticatedProfile({
                     </UiBadge>
                   ) : null}
                   <ClubCrest club={club} />
-                  <span
+                  <Link
+                    to="/clubs/$clubId"
+                    params={{ clubId: club.id }}
                     className={cn(
                       "w-full truncate",
                       ui.text.meta,
                       "[font-weight:var(--ui-weight-heavy)]",
                       ui.tone.default,
+                      STRETCHED_LINK,
+                      "after:rounded-[var(--ui-radius-card)]",
                     )}
                   >
                     {tr(club.name)}
-                  </span>
+                  </Link>
                 </li>
               );
             })}

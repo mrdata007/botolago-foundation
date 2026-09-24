@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { clubLabel } from "@/components/fantasy/club-identity";
 import { ui } from "@/components/ui-kit";
@@ -37,7 +38,9 @@ const ZONES: readonly LeagueZone[] = ["champions_league", "confederation_cup", "
  * in practice. Under 360px the won/drawn/lost columns step out — played,
  * goal difference and points stay.
  *
- * `highlightClubId` tints the reader's own club in its colours.
+ * Each club's name opens its club page. `highlightClubId` tints the reader's
+ * own club in its colours; `currentClubId` tints the club whose page the
+ * table sits on and marks its row as the current one.
  */
 export function StandingsTable({
   rows,
@@ -45,12 +48,14 @@ export function StandingsTable({
   view,
   caption,
   highlightClubId,
+  currentClubId,
 }: {
   rows: readonly LeagueTableRow[];
   clubById: (id: string) => Club | undefined;
   view: StandingsView;
   caption: string;
   highlightClubId?: string;
+  currentClubId?: string;
 }) {
   const { t, tr } = useI18n();
   const zoned = view === "overall" || view === "form";
@@ -132,13 +137,15 @@ export function StandingsTable({
             if (!club) return null;
             const zone = zoned ? leagueZone(row.position, rows.length) : null;
             const mine = row.clubId === highlightClubId;
-            const tint = mine ? clubStyle(club) : undefined;
+            const current = row.clubId === currentClubId;
+            const tint = mine || current ? clubStyle(club) : undefined;
             return (
               <tr
                 key={row.clubId}
                 data-club={tint?.["data-club"]}
                 style={tint?.style}
-                className={cn(ui.rule.blockStart, mine && ui.club.tint)}
+                aria-current={current ? "true" : undefined}
+                className={cn(ui.rule.blockStart, tint && ui.club.tint)}
               >
                 <td
                   className={cn("relative py-2.5 pe-1 ps-3 text-center", ui.stat.sm, ui.tone.muted)}
@@ -152,8 +159,20 @@ export function StandingsTable({
                   {row.position}
                   {zone ? <span className="sr-only">, {zoneLabel(zone, t)}</span> : null}
                 </td>
-                <td className="py-2.5 pe-2 ps-1">
-                  <div className="flex min-w-0 items-center gap-2">
+                <td className="py-0 pe-2 ps-1">
+                  {/* The name is the link to the club page, at the 44px tap
+                      floor. The link carries the cell's padding, so the row
+                      is exactly as tall as without it. */}
+                  <Link
+                    to="/clubs/$clubId"
+                    params={{ clubId: club.id }}
+                    className={cn(
+                      "-ms-1 flex min-h-[var(--ui-tap-min)] min-w-0 items-center gap-2 py-2.5 ps-1",
+                      ui.radius.control,
+                      "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                      ui.focus,
+                    )}
+                  >
                     <ClubCrest club={club} size="sm" />
                     <span
                       className={cn(
@@ -164,7 +183,7 @@ export function StandingsTable({
                       {clubLabel(club, tr)}
                       {mine ? <span className="sr-only"> ({t("standings.your_club")})</span> : null}
                     </span>
-                  </div>
+                  </Link>
                 </td>
                 {figures ? (
                   <>

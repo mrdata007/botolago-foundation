@@ -18,6 +18,11 @@ describe("sitemap.xml", () => {
     expect(xml).toContain("<loc>https://botolago.com/matches/standings</loc>");
   });
 
+  test("lists the clubs directory, the way into every club page", () => {
+    const xml = buildSitemapXml({ newsEnabled: false, news: [] });
+    expect(xml).toContain("<loc>https://botolago.com/clubs</loc>");
+  });
+
   test("never lists the CMS, sign-in or personal pages", () => {
     const xml = buildSitemapXml({ newsEnabled: true, news: [] });
     for (const path of ["/admin", "/auth", "/profile", "/fantasy/team", "/mcp", "/unsubscribe"]) {

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { MatchCardDto, StandingRowDto } from "@/backend/football/contracts";
+import { mapFootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import {
   buildStandings,
@@ -7,6 +8,7 @@ import {
   inPlayFixtures,
   presentFootballClub,
   selectFootballDataMode,
+  toMatch,
 } from "./football";
 
 const context = { actorId: null, requestId: "test" } as const;
@@ -101,6 +103,121 @@ describe("Football frontend repository cutover", () => {
       expect(row.played).toBe(row.won + row.drawn + row.lost);
       expect(typeof row.form === "string" || row.form === null).toBe(true);
     }
+  });
+});
+
+describe("club pages", () => {
+  test("a club's fixtures come newest first and page backwards from a cursor", async () => {
+    const repository = new MockFootballRepository();
+    const [club] = await repository.getTeams("fr", 1, context);
+    const all = await repository.getTeamFixtures(
+      { teamId: club!.id, language: "fr", limit: 100 },
+      context,
+    );
+    expect(all.length).toBeGreaterThan(2);
+    expect(all.every((m) => m.homeTeam.id === club!.id || m.awayTeam.id === club!.id)).toBe(true);
+    const kickoffs = all.map((m) => Date.parse(m.kickoffAt));
+    expect(kickoffs).toEqual([...kickoffs].sort((a, b) => b - a));
+
+    const first = await repository.getTeamFixtures(
+      { teamId: club!.id, language: "fr", limit: 2 },
+      context,
+    );
+    const next = await repository.getTeamFixtures(
+      {
+        teamId: club!.id,
+        language: "fr",
+        limit: 2,
+        before: { kickoffAt: first[1]!.kickoffAt, id: first[1]!.id },
+      },
+      context,
+    );
+    expect([...first, ...next].map((m) => m.id)).toEqual(all.slice(0, 4).map((m) => m.id));
+  });
+
+  test("a competition's fixtures come oldest first, one season, with a cursor to the next page", async () => {
+    const repository = new MockFootballRepository();
+    const [season] = await repository.getSeasons("fr", 1, context);
+    const page = await repository.getCompetitionFixtures(
+      { competitionId: season!.competition.id, seasonId: season!.id, language: "fr", limit: 2 },
+      context,
+    );
+    expect(page.items).toHaveLength(2);
+    expect(page.items.every((m) => m.seasonId === season!.id)).toBe(true);
+    expect(page.nextCursor).toEqual({ kickoffAt: page.items[1]!.kickoffAt, id: page.items[1]!.id });
+  });
+
+  test("a squad lists the club's players, and an unknown club is not found", async () => {
+    const repository = new MockFootballRepository();
+    const [club] = await repository.getTeams("fr", 1, context);
+    const squad = await footballService.getClubSquad(club!.id, null, "fr");
+    expect(squad.length).toBeGreaterThan(0);
+    expect(squad.every((player) => player.role === "player")).toBe(true);
+    await expect(
+      repository.getTeamSquad("00000099-0000-4000-8000-000000000099", null, "fr", context),
+    ).rejects.toMatchObject({ code: "team_not_found" });
+    await expect(
+      footballService.getClub("00000099-0000-4000-8000-000000000099", "fr"),
+    ).rejects.toMatchObject({ code: "team_not_found" });
+  });
+
+  test("a club's season holds only that season's matches, oldest first, each naming the club", async () => {
+    const repository = new MockFootballRepository();
+    const [club] = await repository.getTeams("fr", 1, context);
+    const seasons = await footballService.getSeasons("fr");
+    const past = seasons.find((season) => !season.isCurrent)!;
+    const page = await footballService.getClubSeasonMatches(club!.id, past, "fr");
+    expect(page.matches.length).toBeGreaterThan(0);
+    const all = await repository.getTeamFixtures(
+      { teamId: club!.id, language: "fr", limit: 100 },
+      context,
+    );
+    expect(page.matches.map((m) => m.id).sort()).toEqual(
+      all
+        .filter((m) => m.seasonId === past.id)
+        .map((m) => m.id)
+        .sort(),
+    );
+    expect(page.matches.every((m) => m.status === "finished")).toBe(true);
+    const kickoffs = page.matches.map((m) => Date.parse(m.kickoff));
+    expect(kickoffs).toEqual([...kickoffs].sort((a, b) => a - b));
+    expect(page.clubs.some((c) => c.id === club!.id)).toBe(true);
+  });
+
+  test("the directory lists the current season's clubs by name", async () => {
+    const directory = await footballService.getClubDirectory("fr");
+    expect(directory.season?.isCurrent).toBe(true);
+    const names = directory.clubs.map((club) => club.name.fr);
+    expect(names.length).toBeGreaterThan(0);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, "fr")));
+    expect(new Set(directory.clubs.map((club) => club.id)).size).toBe(directory.clubs.length);
+  });
+
+  test("the database's TEAM_NOT_FOUND is a not-found, not an outage", () => {
+    expect(mapFootballError({ code: "P0002", message: "TEAM_NOT_FOUND" }).code).toBe(
+      "team_not_found",
+    );
+  });
+});
+
+describe("a fixture called off", () => {
+  test("cancelled and abandoned are called off; postponed and suspended are still to come", async () => {
+    const repository = new MockFootballRepository();
+    const [club] = await repository.getTeams("fr", 1, context);
+    const [fixture] = await repository.getTeamFixtures(
+      { teamId: club!.id, language: "fr", limit: 1 },
+      context,
+    );
+    const as = (status: MatchCardDto["status"]) => toMatch({ ...fixture!, status });
+    const statuses = ["cancelled", "abandoned", "postponed", "suspended"] as const;
+    expect(statuses.map((status) => as(status).calledOff)).toEqual([true, true, false, false]);
+    // Called off or not, all four still read as postponed.
+    expect(statuses.map((status) => as(status).status)).toEqual([
+      "postponed",
+      "postponed",
+      "postponed",
+      "postponed",
+    ]);
   });
 });
 

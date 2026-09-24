@@ -23,6 +23,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PrizesIndexRouteImport } from './routes/prizes.index'
 import { Route as MatchesIndexRouteImport } from './routes/matches.index'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
+import { Route as ClubsIndexRouteImport } from './routes/clubs.index'
 import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
 import { Route as PrizesTermsRouteImport } from './routes/prizes.terms'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
@@ -40,6 +41,7 @@ import { Route as FantasyLeaguesRouteImport } from './routes/fantasy.leagues'
 import { Route as FantasyHelpRouteImport } from './routes/fantasy.help'
 import { Route as FantasyFixturesRouteImport } from './routes/fantasy.fixtures'
 import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
+import { Route as ClubsClubIdRouteImport } from './routes/clubs.$clubId'
 import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
 import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-password'
 import { Route as AuthRegisterRouteImport } from './routes/auth.register'
@@ -137,6 +139,11 @@ const FantasyIndexRoute = FantasyIndexRouteImport.update({
   path: '/',
   getParentRoute: () => FantasyRoute,
 } as any)
+const ClubsIndexRoute = ClubsIndexRouteImport.update({
+  id: '/clubs/',
+  path: '/clubs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileSecurityRoute = ProfileSecurityRouteImport.update({
   id: '/security',
   path: '/security',
@@ -221,6 +228,11 @@ const FantasyCreateRoute = FantasyCreateRouteImport.update({
   id: '/create',
   path: '/create',
   getParentRoute: () => FantasyRoute,
+} as any)
+const ClubsClubIdRoute = ClubsClubIdRouteImport.update({
+  id: '/clubs/$clubId',
+  path: '/clubs/$clubId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthVerifyRoute = AuthVerifyRouteImport.update({
   id: '/verify',
@@ -386,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
+  '/clubs/$clubId': typeof ClubsClubIdRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -403,6 +416,7 @@ export interface FileRoutesByFullPath {
   '/news/$articleId': typeof NewsArticleIdRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
+  '/clubs/': typeof ClubsIndexRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
   '/prizes/': typeof PrizesIndexRoute
@@ -444,6 +458,7 @@ export interface FileRoutesByTo {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
+  '/clubs/$clubId': typeof ClubsClubIdRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -461,6 +476,7 @@ export interface FileRoutesByTo {
   '/news/$articleId': typeof NewsArticleIdRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
+  '/clubs': typeof ClubsIndexRoute
   '/fantasy': typeof FantasyIndexRoute
   '/matches': typeof MatchesIndexRoute
   '/prizes': typeof PrizesIndexRoute
@@ -504,6 +520,7 @@ export interface FileRoutesById {
   '/auth/register': typeof AuthRegisterRoute
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
+  '/clubs/$clubId': typeof ClubsClubIdRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -521,6 +538,7 @@ export interface FileRoutesById {
   '/news/$articleId': typeof NewsArticleIdRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
+  '/clubs/': typeof ClubsIndexRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
   '/prizes/': typeof PrizesIndexRoute
@@ -565,6 +583,7 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/update-password'
     | '/auth/verify'
+    | '/clubs/$clubId'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -582,6 +601,7 @@ export interface FileRouteTypes {
     | '/news/$articleId'
     | '/prizes/terms'
     | '/profile/security'
+    | '/clubs/'
     | '/fantasy/'
     | '/matches/'
     | '/prizes/'
@@ -623,6 +643,7 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/update-password'
     | '/auth/verify'
+    | '/clubs/$clubId'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -640,6 +661,7 @@ export interface FileRouteTypes {
     | '/news/$articleId'
     | '/prizes/terms'
     | '/profile/security'
+    | '/clubs'
     | '/fantasy'
     | '/matches'
     | '/prizes'
@@ -682,6 +704,7 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/auth/update-password'
     | '/auth/verify'
+    | '/clubs/$clubId'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -699,6 +722,7 @@ export interface FileRouteTypes {
     | '/news/$articleId'
     | '/prizes/terms'
     | '/profile/security'
+    | '/clubs/'
     | '/fantasy/'
     | '/matches/'
     | '/prizes/'
@@ -727,9 +751,11 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  ClubsClubIdRoute: typeof ClubsClubIdRoute
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
   MatchesStandingsRoute: typeof MatchesStandingsRoute
   PrizesTermsRoute: typeof PrizesTermsRoute
+  ClubsIndexRoute: typeof ClubsIndexRoute
   MatchesIndexRoute: typeof MatchesIndexRoute
   PrizesIndexRoute: typeof PrizesIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
@@ -835,6 +861,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/fantasy/'
       preLoaderRoute: typeof FantasyIndexRouteImport
       parentRoute: typeof FantasyRoute
+    }
+    '/clubs/': {
+      id: '/clubs/'
+      path: '/clubs'
+      fullPath: '/clubs/'
+      preLoaderRoute: typeof ClubsIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/profile/security': {
       id: '/profile/security'
@@ -954,6 +987,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/fantasy/create'
       preLoaderRoute: typeof FantasyCreateRouteImport
       parentRoute: typeof FantasyRoute
+    }
+    '/clubs/$clubId': {
+      id: '/clubs/$clubId'
+      path: '/clubs/$clubId'
+      fullPath: '/clubs/$clubId'
+      preLoaderRoute: typeof ClubsClubIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/auth/verify': {
       id: '/auth/verify'
@@ -1321,9 +1361,11 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  ClubsClubIdRoute: ClubsClubIdRoute,
   MatchesMatchIdRoute: MatchesMatchIdRoute,
   MatchesStandingsRoute: MatchesStandingsRoute,
   PrizesTermsRoute: PrizesTermsRoute,
+  ClubsIndexRoute: ClubsIndexRoute,
   MatchesIndexRoute: MatchesIndexRoute,
   PrizesIndexRoute: PrizesIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,

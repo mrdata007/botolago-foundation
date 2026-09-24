@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
+import { SectionHeaderLink } from "@/components/common/SectionHeader";
 import { SkeletonList, StandingsRowSkeleton } from "@/components/common/Skeletons";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { findClub } from "@/components/fantasy/club-identity";
@@ -179,7 +180,13 @@ function StandingsPage() {
         </div>
       ) : (
         <div className="grid min-w-0 gap-4">
-          <p className={cn(ui.text.meta, ui.tone.muted)}>{status}</p>
+          {/* Every club in the table opens its page; "all clubs" lists them. */}
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <p className={cn("min-w-0", ui.text.meta, ui.tone.muted)}>{status}</p>
+            <SectionHeaderLink to="/clubs" className="-me-2 shrink-0">
+              {t("club.all_clubs")}
+            </SectionHeaderLink>
+          </div>
 
           {favourite && favouriteStanding ? (
             <YourClubCard club={favourite} standing={favouriteStanding} />

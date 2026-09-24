@@ -17,6 +17,7 @@ export const SITEMAP_STATIC_PATHS = [
   "/",
   "/matches",
   "/matches/standings",
+  "/clubs",
   "/fantasy",
   "/fantasy/rules",
   "/privacy",

@@ -15,18 +15,25 @@ import type { FootballSeason } from "@/services/football";
  * ("2026/2027 ⌄") over the Radix select. The trigger renders the season label
  * itself; left to Radix it clones the whole selected item — label *and*
  * "current" badge — into the pill, where the badge was clipped at 390px
- * (BG-0111). Shared by both Matches tabs, the calendar and the table.
+ * (BG-0111). Shared by both Matches tabs, the calendar and the table, and by
+ * a club page's hero.
+ *
+ * `className` lands on the trigger: a club hero passes the surface fill, so
+ * the pill reads as a control on any club colour rather than a sunken hole in
+ * it.
  */
 export function SeasonPicker({
   seasons,
   selected,
   loading,
   onChange,
+  className,
 }: {
   seasons: readonly FootballSeason[];
   selected: FootballSeason | undefined;
   loading: boolean;
   onChange: (seasonId: string) => void;
+  className?: string;
 }) {
   const { t, dir } = useI18n();
   return (
@@ -46,6 +53,7 @@ export function SeasonPicker({
           "[font-weight:var(--ui-weight-heavy)]",
           "[&>svg]:opacity-100",
           ui.focus,
+          className,
         )}
       >
         <SelectValue

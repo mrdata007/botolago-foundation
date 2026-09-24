@@ -25,6 +25,10 @@ export type FixtureStatus = (typeof FIXTURE_STATUSES)[number];
 export const FOOTBALL_POSITIONS = ["goalkeeper", "defender", "midfielder", "forward"] as const;
 export type FootballPosition = (typeof FOOTBALL_POSITIONS)[number];
 
+/** `app.squad_role`. */
+export const SQUAD_ROLES = ["player", "captain", "vice_captain", "reserve"] as const;
+export type SquadRole = (typeof SQUAD_ROLES)[number];
+
 const nullableText = z.string().nullable();
 const nullableUuid = postgresUuidSchema.nullable();
 
@@ -232,9 +236,54 @@ export const availabilitySchema = z.object({
 });
 export type AvailabilityStatusDto = z.infer<typeof availabilitySchema>;
 
+/**
+ * One row of `api.football_team_squad`: a player's membership of a team. The
+ * dates are kept as the API sends them — nothing on screen reads them, and a
+ * stricter parse would throw the whole squad away over one odd row.
+ */
+export const squadMemberSchema = z.object({
+  membershipId: postgresUuidSchema,
+  playerId: postgresUuidSchema,
+  slug: z.string().min(1),
+  displayName: z.string().min(1),
+  fullName: z.string().min(1),
+  position: z.enum(FOOTBALL_POSITIONS),
+  shirtNumber: z.number().int().positive().nullable(),
+  squadRole: z.enum(SQUAD_ROLES),
+  validFrom: z.string(),
+  validTo: nullableText,
+  active: z.boolean(),
+});
+export type SquadMemberDto = z.infer<typeof squadMemberSchema>;
+
 export interface MatchPageCursor {
   readonly kickoffAt: string;
   readonly id: string;
+}
+
+/**
+ * `api.football_team_fixtures`: every fixture the team plays, in every
+ * season and competition, NEWEST first, paged backwards from `before`.
+ */
+export interface TeamFixturesInput {
+  readonly teamId: string;
+  readonly language: FootballLanguage;
+  readonly before?: MatchPageCursor | null;
+  /** 1–100; the API's own default is 20. */
+  readonly limit?: number;
+}
+
+/**
+ * `api.football_competition_fixtures`: one competition's fixtures, OLDEST
+ * first, paged forwards from `after`.
+ */
+export interface CompetitionFixturesInput {
+  readonly competitionId: string;
+  readonly seasonId?: string | null;
+  readonly language: FootballLanguage;
+  readonly after?: MatchPageCursor | null;
+  /** 1–100; the API's own default is 50. */
+  readonly limit?: number;
 }
 
 export interface MatchPageDto {
@@ -321,6 +370,24 @@ export interface FootballRepository {
     language: FootballLanguage,
     context: RepositoryContext,
   ): Promise<TeamSummaryDto>;
+  getTeamFixtures(
+    input: TeamFixturesInput,
+    context: RepositoryContext,
+  ): Promise<readonly MatchCardDto[]>;
+  getCompetitionFixtures(
+    input: CompetitionFixturesInput,
+    context: RepositoryContext,
+  ): Promise<MatchPageDto>;
+  /**
+   * `seasonId` null: the team's current squad (its active memberships). A
+   * season id: the squad as stored for that season.
+   */
+  getTeamSquad(
+    teamId: string,
+    seasonId: string | null,
+    language: FootballLanguage,
+    context: RepositoryContext,
+  ): Promise<readonly SquadMemberDto[]>;
   getPlayer(
     id: string,
     language: FootballLanguage,

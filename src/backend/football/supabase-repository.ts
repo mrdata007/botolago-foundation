@@ -11,10 +11,12 @@ import {
   matchStatisticSchema,
   playerSummarySchema,
   seasonSummarySchema,
+  squadMemberSchema,
   standingRowSchema,
   teamSummarySchema,
   timelineItemSchema,
   type AvailabilityStatusDto,
+  type CompetitionFixturesInput,
   type CompetitionSummaryDto,
   type FootballLanguage,
   type FootballRepository,
@@ -28,7 +30,9 @@ import {
   type MatchTimelineItemDto,
   type PlayerSummaryDto,
   type SeasonSummaryDto,
+  type SquadMemberDto,
   type StandingRowDto,
+  type TeamFixturesInput,
   type TeamSummaryDto,
 } from "./contracts";
 import { FootballError, mapFootballError } from "./errors";
@@ -290,6 +294,52 @@ export class SupabaseFootballRepository implements FootballRepository {
     });
     throwIfError(error);
     return parse(teamSummarySchema, data);
+  }
+
+  async getTeamFixtures(
+    input: TeamFixturesInput,
+    _context: RepositoryContext,
+  ): Promise<readonly MatchCardDto[]> {
+    const { data, error } = await getFootballApi().rpc("football_team_fixtures", {
+      p_team_id: requireUuid(input.teamId),
+      p_before_kickoff: input.before?.kickoffAt,
+      p_before_id: input.before ? requireUuid(input.before.id) : undefined,
+      p_limit: input.limit ?? 20,
+      p_language: input.language,
+    });
+    throwIfError(error);
+    return parse(z.array(matchCardSchema), data);
+  }
+
+  async getCompetitionFixtures(
+    input: CompetitionFixturesInput,
+    _context: RepositoryContext,
+  ): Promise<MatchPageDto> {
+    const { data, error } = await getFootballApi().rpc("football_competition_fixtures", {
+      p_competition_id: requireUuid(input.competitionId),
+      p_season_id: input.seasonId ? requireUuid(input.seasonId) : undefined,
+      p_after_kickoff: input.after?.kickoffAt,
+      p_after_id: input.after ? requireUuid(input.after.id) : undefined,
+      p_limit: input.limit ?? 50,
+      p_language: input.language,
+    });
+    throwIfError(error);
+    return parse(matchPageSchema, data);
+  }
+
+  async getTeamSquad(
+    teamId: string,
+    seasonId: string | null,
+    language: FootballLanguage,
+    _context: RepositoryContext,
+  ): Promise<readonly SquadMemberDto[]> {
+    const { data, error } = await getFootballApi().rpc("football_team_squad", {
+      p_team_id: requireUuid(teamId),
+      p_season_id: seasonId ? requireUuid(seasonId) : undefined,
+      p_language: language,
+    });
+    throwIfError(error);
+    return parse(z.array(squadMemberSchema), data);
   }
 
   async getPlayer(

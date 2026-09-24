@@ -9,6 +9,7 @@ export const FOOTBALL_ERROR_CODES = [
   "mapping_collision",
   "stale_update",
   "fixture_not_found",
+  "team_not_found",
   "competition_not_supported",
   "invalid_fixture_state",
   "partial_sync_failure",
@@ -25,6 +26,7 @@ const STATUS: Record<FootballErrorCode, number> = {
   mapping_collision: 409,
   stale_update: 409,
   fixture_not_found: 404,
+  team_not_found: 404,
   competition_not_supported: 422,
   invalid_fixture_state: 409,
   partial_sync_failure: 503,
@@ -55,6 +57,7 @@ export class FootballError extends BackendError {
 
 const DATABASE_CODES: Record<string, FootballErrorCode> = {
   FIXTURE_NOT_FOUND: "fixture_not_found",
+  TEAM_NOT_FOUND: "team_not_found",
   COMPETITION_NOT_FOUND: "competition_not_supported",
   MAPPING_NOT_FOUND: "mapping_not_found",
   MAPPING_COLLISION: "mapping_collision",
@@ -85,6 +88,7 @@ function publicMessage(code: FootballErrorCode): string {
     mapping_collision: "A provider identity conflicts with canonical football data.",
     stale_update: "An older football update was rejected.",
     fixture_not_found: "The match was not found.",
+    team_not_found: "The team was not found.",
     competition_not_supported: "The competition is not supported.",
     invalid_fixture_state: "The requested match state transition is invalid.",
     partial_sync_failure: "The football sync completed only partially.",
