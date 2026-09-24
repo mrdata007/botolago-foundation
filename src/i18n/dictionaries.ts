@@ -1460,8 +1460,6 @@ export const dictionaries = {
     "prizes.terms.meta_title": "Règlement des lots — BotolaGO Fantasy",
     "prizes.terms.meta_description":
       "Le règlement des lots de BotolaGO Fantasy : désignation des gagnants, vérification et remise.",
-    "prizes.terms.draft_notice":
-      "Version provisoire : le texte définitif sera publié avant l'ouverture des lots.",
     "prizes.welcome.title": "Jouez gratuitement, gagnez des lots !",
     "prizes.welcome.body":
       "Composez votre équipe, marquez des points à chaque journée et grimpez au classement pour tenter de remporter des lots.",
@@ -2993,7 +2991,6 @@ export const dictionaries = {
     "prizes.terms.meta_title": "نظام الجوائز — BotolaGO Fantasy",
     "prizes.terms.meta_description":
       "نظام جوائز BotolaGO Fantasy: تحديد الفائزين والتحقق والتسليم.",
-    "prizes.terms.draft_notice": "نسخة مؤقتة: سيُنشر النص النهائي قبل فتح الجوائز.",
     "prizes.welcome.title": "العب مجاناً واربح جوائز!",
     "prizes.welcome.body":
       "شكّل فريقك واجمع النقاط في كل جولة، وتقدّم في الترتيب لتنافس على الجوائز.",
