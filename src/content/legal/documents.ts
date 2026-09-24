@@ -381,8 +381,8 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
           ],
           ["Prévenir la fraude, les comptes multiples et les abus", "intérêt légitime"],
           [
-            "Envoyer les notifications de jeu (deadline, résultats)",
-            "exécution du contrat ; désactivables dans les paramètres",
+            "Envoyer les notifications de jeu et de match, dans l'Application et par e-mail (programme et résultats des matchs, rappels de deadline, bilan Fantasy)",
+            "exécution du contrat ; désactivables dans les paramètres ou par le lien de désabonnement présent dans chaque e-mail",
           ],
           [
             "Envoyer des communications marketing ou offres de sponsors",
@@ -429,6 +429,11 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
             "Supabase Auth",
             "e-mails transactionnels (confirmation de compte, réinitialisation)",
             "selon la politique de Supabase",
+          ],
+          [
+            "Resend",
+            "envoi des e-mails de notification (matchs, rappels et bilans Fantasy) : reçoit votre adresse e-mail et le contenu de chaque e-mail",
+            "Union européenne — Irlande (eu-west-1)",
           ],
         ],
       },
@@ -557,8 +562,8 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
           ["التحقق من أهليتك وتسليم الجوائز", "تنفيذ العقد والالتزام القانوني"],
           ["الوقاية من الغش والحسابات المتعددة والتجاوزات", "المصلحة المشروعة"],
           [
-            "إرسال إشعارات اللعبة (الموعد النهائي، النتائج)",
-            "تنفيذ العقد؛ يمكن تعطيلها من الإعدادات",
+            "إرسال إشعارات اللعبة والمباريات داخل التطبيق وعبر البريد الإلكتروني (برنامج المباريات ونتائجها، تذكيرات الموعد النهائي، حصيلة الفانتازي)",
+            "تنفيذ العقد؛ يمكن تعطيلها من الإعدادات أو عبر رابط إلغاء الاشتراك الموجود في كل رسالة",
           ],
           ["إرسال الاتصالات التسويقية أو عروض الرعاة", "الموافقة، قابلة للسحب في أي وقت"],
           ["قياس الجمهور وتحسين التطبيق", "المصلحة المشروعة (بيانات مجمّعة)"],
@@ -594,6 +599,11 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
             "Supabase Auth",
             "الرسائل المعاملاتية (تأكيد الحساب، إعادة تعيين كلمة المرور)",
             "وفق سياسة Supabase",
+          ],
+          [
+            "Resend",
+            "إرسال رسائل الإشعارات عبر البريد الإلكتروني (المباريات، تذكيرات وحصيلة الفانتازي): يتوصل بعنوان بريدك الإلكتروني ومحتوى كل رسالة",
+            "الاتحاد الأوروبي — إيرلندا (eu-west-1)",
           ],
         ],
       },

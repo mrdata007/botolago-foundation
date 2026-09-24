@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from "bun:test";
 import {
   MOCK_NOTIFICATION_USER_ID,
   MockNotificationDeviceRepository,
+  MockNotificationEmailUnsubscribeRepository,
   MockNotificationPreferenceRepository,
   MockNotificationRepository,
   resetNotificationMocks,
@@ -32,6 +33,16 @@ describe("notification mock repository contracts", () => {
     );
     expect(updated.channels.push).toBe(true);
     expect(updated.language).toBe("ar");
+  });
+
+  test("e-mail is on by default and a non-empty unsubscribe token turns it off", async () => {
+    const preferences = new MockNotificationPreferenceRepository();
+    const unsubscribe = new MockNotificationEmailUnsubscribeRepository();
+    expect((await preferences.get(context)).channels.email).toBe(true);
+    expect(await unsubscribe.unsubscribe("   ")).toBe("invalid");
+    expect((await preferences.get(context)).channels.email).toBe(true);
+    expect(await unsubscribe.unsubscribe("mock-token")).toBe("unsubscribed");
+    expect((await preferences.get(context)).channels.email).toBe(false);
   });
 
   test("rotates one device without exposing its destination", async () => {
