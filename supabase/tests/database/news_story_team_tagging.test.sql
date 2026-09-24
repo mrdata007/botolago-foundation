@@ -282,10 +282,22 @@ values (
   'rich_text', null, '<p>Un court texte écrit pour ce test.</p>', 1, 'tagging-test-v1'
 );
 
+-- 20260924190000: a translation's headline adds a club only if the original
+-- article names it. The Arabic original names only Raja.
+select extensions.is(
+  pg_temp.story_clubs('7a9a0000-0000-4000-8000-000000005001'),
+  array['tagging-raja:headline'],
+  'a translation cannot add a club the original article never names'
+);
+
+update app.article_editions
+set body_html = '<p>الرجاء يواجه الوداد في نهاية الأسبوع.</p>'
+where story_id = '7a9a0000-0000-4000-8000-000000005001' and language = 'ar';
+
 select extensions.is(
   pg_temp.story_clubs('7a9a0000-0000-4000-8000-000000005001'),
   array['tagging-raja:headline', 'tagging-wydad:headline'],
-  'every language''s headline counts for the story'
+  'once the original article names it, the translation''s club counts, and a body edit re-tags'
 );
 
 delete from app.article_editions
@@ -294,7 +306,7 @@ where story_id = '7a9a0000-0000-4000-8000-000000005001' and language = 'fr';
 select extensions.is(
   pg_temp.story_clubs('7a9a0000-0000-4000-8000-000000005001'),
   array['tagging-raja:headline'],
-  'removing an edition removes the clubs only it named'
+  'removing the translation removes the club only it named; the original''s body alone tags nothing'
 );
 
 -- With the row removed by hand, only a real title change may bring it back.

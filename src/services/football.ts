@@ -15,7 +15,7 @@ import { FootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
 import { clubShortCode } from "@/lib/club-identity";
-import type { SquadPlayer } from "@/lib/club-season";
+import { seasonsWithResults, type SquadPlayer } from "@/lib/club-season";
 import {
   computeLeagueTable,
   roundsPlayed,
@@ -507,6 +507,30 @@ export const footballService = {
       season ? collected.filter((match) => match.seasonId === season.id) : collected
     ).sort((a, b) => Date.parse(a.kickoffAt) - Date.parse(b.kickoffAt));
     return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
+  },
+
+  /**
+   * The seasons in which the club has at least one result, read back as far
+   * as the club's fixture pages go: what "see last season" may offer.
+   */
+  async getClubSeasonsPlayed(clubId: string, language: FootballLanguage): Promise<string[]> {
+    const repository = getFootballRepository();
+    const collected: MatchCardDto[] = [];
+    let before: MatchPageCursor | null = null;
+    for (let page = 0; page < CLUB_FIXTURE_PAGES; page += 1) {
+      const items = await repository.getTeamFixtures(
+        { teamId: clubId, language, before, limit: 100 },
+        requestContext(),
+      );
+      collected.push(...items);
+      const oldest = items.at(-1);
+      if (!oldest || items.length < 100) break;
+      before = { kickoffAt: oldest.kickoffAt, id: oldest.id };
+    }
+    return seasonsWithResults(
+      collected.map((item) => ({ seasonId: item.seasonId, match: toMatch(item) })),
+      clubId,
+    );
   },
 
   /** `seasonId` null: the club's current squad; a season id: its squad that season. */

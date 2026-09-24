@@ -82,7 +82,10 @@ function ClubsPage() {
       ) : (
         <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {clubs.map((club) => (
-            <li key={club.id} className="min-w-0">
+            // A flex cell, so every tile fills its row's height and the
+            // club-colour edges line up when one name wraps and its
+            // neighbour's does not.
+            <li key={club.id} className="flex min-w-0">
               <ClubTile club={club} />
             </li>
           ))}
@@ -105,7 +108,7 @@ function ClubTile({ club }: { club: Club }) {
       data-club={colours["data-club"]}
       style={colours.style}
       className={cn(
-        "flex min-h-36 min-w-0 flex-col items-center justify-center gap-2.5 px-3 pb-4 pt-5 text-center",
+        "flex min-h-36 w-full min-w-0 flex-col items-center justify-center gap-2.5 px-3 pb-4 pt-5 text-center",
         ui.surface.card,
         ui.edge.blockEnd,
         "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",

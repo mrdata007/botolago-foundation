@@ -62,6 +62,7 @@ export function ClubOverview({
   stats,
   record,
   seasonLabel,
+  seasonAbsent,
   previousSeason,
   standingsLink,
 }: {
@@ -77,7 +78,9 @@ export function ClubOverview({
   /** The season's record: the table's when there is a row, the fixtures' otherwise. */
   record: RecordLine;
   seasonLabel: string | undefined;
-  /** The season before this one, to offer while this one has nothing played. */
+  /** The season is over and the club had no fixture in it: it was not in the league. */
+  seasonAbsent: boolean;
+  /** The latest earlier season the club has a result in, to offer while this one has none. */
   previousSeason: { label: string; onSelect: () => void } | undefined;
   /** Where "Classement complet" goes: this page's standings tab. */
   standingsLink: { to: string; params: Record<string, string>; search: Record<string, unknown> };
@@ -156,7 +159,7 @@ export function ClubOverview({
         ) : record.played === 0 ? (
           <EmptyState compact>
             <span className="flex flex-col items-center gap-3">
-              <span>{t("club.season_empty")}</span>
+              <span>{seasonAbsent ? t("club.season_absent") : t("club.season_empty")}</span>
               {previousSeason ? (
                 <UiButton variant="ink" size="sm" onClick={previousSeason.onSelect}>
                   {t("club.view_season").replace("{season}", previousSeason.label)}
