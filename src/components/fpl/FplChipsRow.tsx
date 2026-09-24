@@ -2,6 +2,7 @@ import type { ChipKey, ChipState } from "@/lib/fantasy-engine";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { FplChipInfo } from "./FplChipInfo";
 
 export interface FplChipView {
   key: ChipKey;
@@ -9,10 +10,17 @@ export interface FplChipView {
 }
 
 /**
- * The chips above the pitch (A-Team): a row of white pills — the chip's name,
- * then its state in a smaller pill at the inline end ("Bench Boost [JOUER]").
- * Tapping an available chip starts the activation flow; every other state is
- * inert.
+ * The chips above the pitch (A-Team): a row of white pills — the chip's name
+ * and an "i" that explains it, then its state in a smaller pill at the inline
+ * end ("Bench Boost ⓘ [JOUER]"). Tapping an available chip starts the
+ * activation flow; every other state is inert. The "i" answers in every
+ * state, so a spent chip can still say what it did.
+ *
+ * The "i" cannot sit inside a button, so the pill is a plain box holding two
+ * siblings: the "i" (`FplChipInfo`) and the state pill, which is the chip's
+ * button. That button's `::after` is stretched over the whole pill, so the
+ * pill is still one tap target everywhere except on the "i", which is raised
+ * above it.
  *
  * The row scrolls sideways rather than squeezing: the chip names are fixed
  * product vocabulary (BG-0111 — "Triple Capitaine" must never be cut), so each
@@ -68,19 +76,13 @@ export function FplChipsRow({
         const spent = chip.state === "unavailable" || chip.state === "used";
         const clickable = chip.state === "available" && !!onSelect;
         return (
-          <button
+          <div
             key={chip.key}
-            type="button"
-            disabled={!clickable}
-            onClick={() => onSelect?.(chip.key)}
-            aria-label={`${label}: ${state}`}
             className={cn(
-              "inline-flex min-h-[var(--ui-tap-min)] shrink-0 items-center gap-2.5 pe-1.5 ps-3.5",
+              "relative inline-flex min-h-[var(--ui-tap-min)] shrink-0 items-center gap-1 pe-1.5 ps-3.5",
               ui.radius.full,
               "bg-[color:var(--ui-surface)]",
               ui.shadow.card,
-              ui.focus,
-              "disabled:cursor-default",
             )}
           >
             <span
@@ -93,11 +95,19 @@ export function FplChipsRow({
             >
               {label}
             </span>
-            <span
+            <FplChipInfo chip={chip.key} label={label} className="relative z-10" />
+            <button
+              type="button"
+              disabled={!clickable}
+              onClick={() => onSelect?.(chip.key)}
+              aria-label={`${label}: ${state}`}
               className={cn(
                 "inline-flex min-h-8 items-center whitespace-nowrap px-3",
+                "after:absolute after:inset-0 after:rounded-full",
                 ui.radius.full,
                 ui.text.label,
+                ui.focus,
+                "disabled:cursor-default",
                 chip.state === "active"
                   ? "text-[color:var(--ui-ink-deep)]"
                   : chip.state === "available"
@@ -109,8 +119,8 @@ export function FplChipsRow({
               }
             >
               {state}
-            </span>
-          </button>
+            </button>
+          </div>
         );
       })}
     </div>
