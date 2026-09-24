@@ -18,6 +18,7 @@ BATCH = [
     "20260924190100_fantasy_lifecycle_tick",
     "20260924190200_ops_health_and_alerts",
     "20260924190300_timezone_validation_without_catalogue_scan",
+    "20260924190400_news_related_articles_set_based",
 ]
 
 

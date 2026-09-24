@@ -125,6 +125,10 @@ begin
         and pg_get_functiondef(p.oid) ilike '%pg_timezone_names%') then
     problems := problems || 'a function still scans pg_timezone_names'::text;
   end if;
+  if pg_get_functiondef('api.news_related_articles(uuid,integer)'::regprocedure) not like '%scored as (%'
+    or not has_function_privilege('anon', 'api.news_related_articles(uuid,integer)', 'execute') then
+    problems := problems || 'api.news_related_articles was not replaced, or lost its grant'::text;
+  end if;
 
   if cardinality(problems) > 0 then
     raise exception 'stop: the update did not check out: %', problems;
@@ -143,14 +147,27 @@ declare
   summary jsonb;
   started timestamptz;
   matches_ms numeric;
+  related_ms numeric;
+  newest_article uuid;
 begin
-  -- The matches-page call the audit measured at 1,025 ms, timed again.
+  -- The two calls measured before this batch, timed again: the matches page
+  -- (1,025 ms) and the related rail under the newest article (608-644 ms).
   started := clock_timestamp();
   perform api.football_matches_by_date(current_date, 'fr', 'Africa/Casablanca', null, null, null, null, null, 20);
   matches_ms := round(extract(epoch from clock_timestamp() - started)::numeric * 1000, 1);
+  select e.id into newest_article from app.article_editions e
+  where e.language = 'fr' and e.status = 'published' and e.published_at is not null
+    and app_private.news_is_public(e)
+  order by e.published_at desc, e.id desc limit 1;
+  if newest_article is not null then
+    started := clock_timestamp();
+    perform api.news_related_articles(newest_article, 6);
+    related_ms := round(extract(epoch from clock_timestamp() - started)::numeric * 1000, 1);
+  end if;
 
   summary := jsonb_build_object(
     'matchesByDateMs', matches_ms,
+    'relatedArticlesMs', related_ms,
     'catchUp', (select coalesce(jsonb_object_agg(step, outcome), '{}'::jsonb) from launch_fix_catch_up),
     'gameweeks', (
       select coalesce(jsonb_agg(jsonb_build_object(

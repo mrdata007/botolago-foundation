@@ -33,7 +33,8 @@
 --     calls the season orchestrator makes (calendar sync, then the lifecycle
 --     for any open gameweek past its deadline);
 --   * checks the result and summarises it, including how long the /matches
---     page's database call now takes (1,025 ms when the audit measured it).
+--     page's database call now takes (1,025 ms when the audit measured it)
+--     and the related-articles rail under a news article (608-644 ms).
 --   Lock and statement timeouts are bounded, so it gives up rather than queue
 --   behind a long-running transaction on the live site.
 -- ============================================================================
@@ -47,7 +48,7 @@ set local statement_timeout = '120s';
 select set_config('botolago.launch_fixes_mode', 'REHEARSAL', true);
 
 -- The migrations this batch applies, in order.
-select set_config('botolago.batch_versions', '20260924190000,20260924190100,20260924190200,20260924190300', true);
+select set_config('botolago.batch_versions', '20260924190000,20260924190100,20260924190200,20260924190300,20260924190400', true);
 
 -- ---------------------------------------------------------------------------
 -- Preflight: the database must be exactly where this batch was reviewed.
@@ -98,7 +99,8 @@ begin
       ('api.fantasy_hub(text)', '7278bb93007935facc742ce19a4d6277'),
       ('api.service_fantasy_deadline_watch(uuid,integer,integer)', '7d9b32bb45f2fe565ad38a47c1f6db98'),
       ('api.football_matches_by_date(date,text,text,text[],uuid,uuid,timestamp with time zone,uuid,integer)', '3530bc9042d16dac749af5541c826ad0'),
-      ('app_private.assert_valid_timezone(text)', 'ff87c87f861e83fff25f6d28d8d49468')
+      ('app_private.assert_valid_timezone(text)', 'ff87c87f861e83fff25f6d28d8d49468'),
+      ('api.news_related_articles(uuid,integer)', '29756c378f2dbd2a287aa50bea99614c')
     ) as t(signature, md5)
   loop
     if to_regprocedure(expected.signature) is null then
@@ -3558,6 +3560,215 @@ $bg_20260924190300_file$]
 );
 
 -- ---------------------------------------------------------------------------
+-- Migration 20260924190400_news_related_articles_set_based, exactly as in the repository
+-- ---------------------------------------------------------------------------
+-- Related articles, ranked without a per-candidate scan.
+--
+-- `api.news_related_articles` (the "related" rail under every article) was
+-- the most expensive public statement per call in pg_stat_statements on
+-- 2026-09-24: 696 calls, 776 ms mean, 540 s in total. Measured again on
+-- production at quiet time: 608-644 ms and ~30,000 buffer hits per call.
+--
+-- It visited every public edition of the same language from the last 180
+-- days (about 1,000 per language), formed each one as a whole row -- which
+-- detoasts its body, about 1 ms per row -- and ran four correlated count
+-- subqueries per candidate before keeping the six best.
+--
+-- This version starts from the source story's own tags, so it only touches
+-- stories that share at least one, scores them in one aggregate, sorts ids
+-- rather than whole rows, and runs the publication check lazily in rank
+-- order until the page is full -- the same fence news_feed uses since
+-- 20260924180100. The ranking is unchanged: relevance is still
+-- 4 x shared categories/tags + 5 x shared clubs + 3 x shared competitions +
+-- 5 x shared players, ties broken by publication time then id, only public
+-- editions of the source's language from the 180 days before it, never the
+-- source story itself. Measured as a plain query on production, same
+-- article: 38 ms and ~10,900 buffer hits. The body replaced here was
+-- verified identical to production (md5 of pg_get_functiondef).
+
+create or replace function api.news_related_articles(
+  p_article_edition_id uuid,
+  p_limit integer default 6
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  source app.article_editions%rowtype;
+begin
+  select * into source from app.article_editions
+  where id = p_article_edition_id and app_private.news_is_public(article_editions);
+  if not found then
+    raise exception using errcode = 'P0002', message = 'news_article_not_found';
+  end if;
+
+  return coalesce((
+    with shared as (
+      select other.story_id, 4 as weight
+      from app.story_taxonomies own
+      join app.story_taxonomies other on other.taxonomy_id = own.taxonomy_id
+      where own.story_id = source.story_id
+      union all
+      select other.story_id, 5
+      from app.story_teams own
+      join app.story_teams other on other.team_id = own.team_id
+      where own.story_id = source.story_id
+      union all
+      select other.story_id, 3
+      from app.story_competitions own
+      join app.story_competitions other on other.competition_id = own.competition_id
+      where own.story_id = source.story_id
+      union all
+      select other.story_id, 5
+      from app.story_players own
+      join app.story_players other on other.player_id = own.player_id
+      where own.story_id = source.story_id
+    ), scored as (
+      select shared.story_id, sum(shared.weight) as relevance
+      from shared
+      where shared.story_id <> source.story_id
+      group by shared.story_id
+    ), candidate as (
+      select edition.id, scored.relevance, edition.published_at
+      from scored
+      join app.article_editions edition on edition.story_id = scored.story_id
+      where edition.language = source.language
+        and edition.id <> source.id
+        -- Implied by news_is_public; stated here so the rows it has to
+        -- check are only those that could pass.
+        and edition.status = 'published'
+        and edition.visibility in ('public', 'unlisted')
+        and edition.published_at is not null
+        and edition.published_at >= source.published_at - interval '180 days'
+      order by scored.relevance desc, edition.published_at desc, edition.id desc
+      -- A fence: the publication check below must not be pushed into this
+      -- level, so it runs in rank order and stops once the page is full.
+      offset 0
+    ), selected as (
+      select edition as article, candidate.relevance, candidate.published_at, candidate.id
+      from candidate
+      join app.article_editions edition on edition.id = candidate.id
+      where app_private.news_is_public(edition)
+      order by candidate.relevance desc, candidate.published_at desc, candidate.id desc
+      limit least(greatest(p_limit, 1), 12)
+    )
+    select jsonb_agg(app_private.news_article_card(selected.article, null)
+      order by selected.relevance desc, selected.published_at desc, selected.id desc)
+    from selected
+  ), '[]'::jsonb);
+end;
+$$;
+
+insert into supabase_migrations.schema_migrations (version, name, statements)
+values (
+  '20260924190400',
+  'news_related_articles_set_based',
+  array[$bg_20260924190400_file$-- Related articles, ranked without a per-candidate scan.
+--
+-- `api.news_related_articles` (the "related" rail under every article) was
+-- the most expensive public statement per call in pg_stat_statements on
+-- 2026-09-24: 696 calls, 776 ms mean, 540 s in total. Measured again on
+-- production at quiet time: 608-644 ms and ~30,000 buffer hits per call.
+--
+-- It visited every public edition of the same language from the last 180
+-- days (about 1,000 per language), formed each one as a whole row -- which
+-- detoasts its body, about 1 ms per row -- and ran four correlated count
+-- subqueries per candidate before keeping the six best.
+--
+-- This version starts from the source story's own tags, so it only touches
+-- stories that share at least one, scores them in one aggregate, sorts ids
+-- rather than whole rows, and runs the publication check lazily in rank
+-- order until the page is full -- the same fence news_feed uses since
+-- 20260924180100. The ranking is unchanged: relevance is still
+-- 4 x shared categories/tags + 5 x shared clubs + 3 x shared competitions +
+-- 5 x shared players, ties broken by publication time then id, only public
+-- editions of the source's language from the 180 days before it, never the
+-- source story itself. Measured as a plain query on production, same
+-- article: 38 ms and ~10,900 buffer hits. The body replaced here was
+-- verified identical to production (md5 of pg_get_functiondef).
+
+create or replace function api.news_related_articles(
+  p_article_edition_id uuid,
+  p_limit integer default 6
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  source app.article_editions%rowtype;
+begin
+  select * into source from app.article_editions
+  where id = p_article_edition_id and app_private.news_is_public(article_editions);
+  if not found then
+    raise exception using errcode = 'P0002', message = 'news_article_not_found';
+  end if;
+
+  return coalesce((
+    with shared as (
+      select other.story_id, 4 as weight
+      from app.story_taxonomies own
+      join app.story_taxonomies other on other.taxonomy_id = own.taxonomy_id
+      where own.story_id = source.story_id
+      union all
+      select other.story_id, 5
+      from app.story_teams own
+      join app.story_teams other on other.team_id = own.team_id
+      where own.story_id = source.story_id
+      union all
+      select other.story_id, 3
+      from app.story_competitions own
+      join app.story_competitions other on other.competition_id = own.competition_id
+      where own.story_id = source.story_id
+      union all
+      select other.story_id, 5
+      from app.story_players own
+      join app.story_players other on other.player_id = own.player_id
+      where own.story_id = source.story_id
+    ), scored as (
+      select shared.story_id, sum(shared.weight) as relevance
+      from shared
+      where shared.story_id <> source.story_id
+      group by shared.story_id
+    ), candidate as (
+      select edition.id, scored.relevance, edition.published_at
+      from scored
+      join app.article_editions edition on edition.story_id = scored.story_id
+      where edition.language = source.language
+        and edition.id <> source.id
+        -- Implied by news_is_public; stated here so the rows it has to
+        -- check are only those that could pass.
+        and edition.status = 'published'
+        and edition.visibility in ('public', 'unlisted')
+        and edition.published_at is not null
+        and edition.published_at >= source.published_at - interval '180 days'
+      order by scored.relevance desc, edition.published_at desc, edition.id desc
+      -- A fence: the publication check below must not be pushed into this
+      -- level, so it runs in rank order and stops once the page is full.
+      offset 0
+    ), selected as (
+      select edition as article, candidate.relevance, candidate.published_at, candidate.id
+      from candidate
+      join app.article_editions edition on edition.id = candidate.id
+      where app_private.news_is_public(edition)
+      order by candidate.relevance desc, candidate.published_at desc, candidate.id desc
+      limit least(greatest(p_limit, 1), 12)
+    )
+    select jsonb_agg(app_private.news_article_card(selected.article, null)
+      order by selected.relevance desc, selected.published_at desc, selected.id desc)
+    from selected
+  ), '[]'::jsonb);
+end;
+$$;
+$bg_20260924190400_file$]
+);
+
+-- ---------------------------------------------------------------------------
 -- Catch-up: bring the Fantasy season up to the new rule, with the same
 -- service calls the season orchestrator makes. A refusal here is reported,
 -- not fatal: the migrations above still apply and the orchestrator retries.
@@ -3684,6 +3895,10 @@ begin
         and pg_get_functiondef(p.oid) ilike '%pg_timezone_names%') then
     problems := problems || 'a function still scans pg_timezone_names'::text;
   end if;
+  if pg_get_functiondef('api.news_related_articles(uuid,integer)'::regprocedure) not like '%scored as (%'
+    or not has_function_privilege('anon', 'api.news_related_articles(uuid,integer)', 'execute') then
+    problems := problems || 'api.news_related_articles was not replaced, or lost its grant'::text;
+  end if;
 
   if cardinality(problems) > 0 then
     raise exception 'stop: the update did not check out: %', problems;
@@ -3702,14 +3917,27 @@ declare
   summary jsonb;
   started timestamptz;
   matches_ms numeric;
+  related_ms numeric;
+  newest_article uuid;
 begin
-  -- The matches-page call the audit measured at 1,025 ms, timed again.
+  -- The two calls measured before this batch, timed again: the matches page
+  -- (1,025 ms) and the related rail under the newest article (608-644 ms).
   started := clock_timestamp();
   perform api.football_matches_by_date(current_date, 'fr', 'Africa/Casablanca', null, null, null, null, null, 20);
   matches_ms := round(extract(epoch from clock_timestamp() - started)::numeric * 1000, 1);
+  select e.id into newest_article from app.article_editions e
+  where e.language = 'fr' and e.status = 'published' and e.published_at is not null
+    and app_private.news_is_public(e)
+  order by e.published_at desc, e.id desc limit 1;
+  if newest_article is not null then
+    started := clock_timestamp();
+    perform api.news_related_articles(newest_article, 6);
+    related_ms := round(extract(epoch from clock_timestamp() - started)::numeric * 1000, 1);
+  end if;
 
   summary := jsonb_build_object(
     'matchesByDateMs', matches_ms,
+    'relatedArticlesMs', related_ms,
     'catchUp', (select coalesce(jsonb_object_agg(step, outcome), '{}'::jsonb) from launch_fix_catch_up),
     'gameweeks', (
       select coalesce(jsonb_agg(jsonb_build_object(

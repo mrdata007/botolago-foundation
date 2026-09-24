@@ -33,7 +33,8 @@
 --     calls the season orchestrator makes (calendar sync, then the lifecycle
 --     for any open gameweek past its deadline);
 --   * checks the result and summarises it, including how long the /matches
---     page's database call now takes (1,025 ms when the audit measured it).
+--     page's database call now takes (1,025 ms when the audit measured it)
+--     and the related-articles rail under a news article (608-644 ms).
 --   Lock and statement timeouts are bounded, so it gives up rather than queue
 --   behind a long-running transaction on the live site.
 -- ============================================================================
@@ -98,7 +99,8 @@ begin
       ('api.fantasy_hub(text)', '7278bb93007935facc742ce19a4d6277'),
       ('api.service_fantasy_deadline_watch(uuid,integer,integer)', '7d9b32bb45f2fe565ad38a47c1f6db98'),
       ('api.football_matches_by_date(date,text,text,text[],uuid,uuid,timestamp with time zone,uuid,integer)', '3530bc9042d16dac749af5541c826ad0'),
-      ('app_private.assert_valid_timezone(text)', 'ff87c87f861e83fff25f6d28d8d49468')
+      ('app_private.assert_valid_timezone(text)', 'ff87c87f861e83fff25f6d28d8d49468'),
+      ('api.news_related_articles(uuid,integer)', '29756c378f2dbd2a287aa50bea99614c')
     ) as t(signature, md5)
   loop
     if to_regprocedure(expected.signature) is null then
