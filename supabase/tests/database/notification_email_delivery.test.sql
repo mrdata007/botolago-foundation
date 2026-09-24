@@ -70,6 +70,10 @@ select pg_temp.add_fixture('e0500000-0000-4000-8000-000000000003',
   ((select day from email_clock)::timestamp) at time zone 'UTC');
 select pg_temp.add_fixture('e0500000-0000-4000-8000-000000000004',
   'e0300000-0000-4000-8000-000000000001', 2, 3, pg_temp.local_at(0, '16:00'), 'postponed');
+-- A match interrupted at 21:00 (it may resume, so it holds the results back
+-- for a while).
+select pg_temp.add_fixture('e0500000-0000-4000-8000-000000000005',
+  'e0300000-0000-4000-8000-000000000001', 4, 6, pg_temp.local_at(0, '21:00'), 'suspended');
 -- Round 2, five days later.
 select pg_temp.add_fixture('e0500000-0000-4000-8000-000000000011',
   'e0300000-0000-4000-8000-000000000002', 2, 1, pg_temp.local_at(5, '18:00'));
@@ -102,7 +106,7 @@ select extensions.is(
 );
 
 update app.user_preferences set favorite_team_id = 'e0400000-0000-4000-8000-000000000001'
-where user_id = 'e0600000-0000-4000-8000-000000000001';
+where user_id in ('e0600000-0000-4000-8000-000000000001', 'e0600000-0000-4000-8000-000000000005');
 update app.user_preferences set match_alerts = false
 where user_id = 'e0600000-0000-4000-8000-000000000004';
 update app.user_preferences set fantasy_deadline_reminders = false
@@ -240,6 +244,9 @@ select extensions.is(pg_temp.events('matchday_results'), 0,
   'no results email while a match of the day is still to be played');
 
 select pg_temp.finish('e0500000-0000-4000-8000-000000000001', 0, 0);
+select app_private.notification_email_plan(pg_temp.local_at(0, '23:00'));
+select extensions.is(pg_temp.events('matchday_results'), 0,
+  'a match suspended two hours ago may still resume, so the results wait');
 select app_private.notification_email_plan(pg_temp.local_at(1, '02:00'));
 select extensions.is(pg_temp.events('matchday_results'), 0,
   'a results email that becomes ready after midnight waits for the morning');
@@ -252,8 +259,8 @@ select extensions.is(
    from app_private.notification_events event,
      jsonb_array_elements(event.safe_payload -> 'fixtures') fixture
    where event.event_type = 'matchday_results'),
-  '["finished", "finished", "postponed"]'::jsonb,
-  'it lists both results and the postponed match, not the match that never got a time'
+  '["finished", "finished", "postponed", "suspended"]'::jsonb,
+  'it lists both results, the postponed and the interrupted match, not the match that never got a time'
 );
 
 -- Test mode: only the listed account is emailed.
@@ -361,8 +368,8 @@ select extensions.is(
 select pg_temp.fanout(statement_timestamp());
 select extensions.is(
   pg_temp.email_recipients('match_starting'),
-  array['e0600000-0000-4000-8000-000000000001'],
-  'only the fan of the club gets the kick-off alert'
+  array['e0600000-0000-4000-8000-000000000001', 'e0600000-0000-4000-8000-000000000005'],
+  'only fans of the club get the kick-off alert'
 );
 select extensions.is(
   pg_temp.email_recipients('deadline_24h'),
@@ -381,6 +388,10 @@ select extensions.throws_ok(
   'a browser cannot claim email deliveries'
 );
 reset role;
+
+-- One fan drops the club after the alert was queued: it must not go out.
+update app.user_preferences set favorite_team_id = null
+where user_id = 'e0600000-0000-4000-8000-000000000005';
 
 -- Free plan: 100 a day with 10 kept back for account emails. Squeeze the
 -- day's allowance to three to see what goes first.
@@ -408,6 +419,15 @@ select extensions.is(
   (app_private.notification_email_quota(statement_timestamp()) ->> 'inFlight')::integer,
   3,
   'mail being sent counts against the allowance'
+);
+select extensions.is(
+  (select delivery.status::text || ':' || delivery.stable_error_code
+   from app.notification_deliveries delivery
+   join app.notifications notification on notification.id = delivery.notification_id
+   where notification.user_id = 'e0600000-0000-4000-8000-000000000005'
+     and notification.notification_type = 'match_starting' and delivery.channel = 'email'),
+  'cancelled:email_no_longer_eligible',
+  'a kick-off alert for a club the reader no longer follows is cancelled, not sent'
 );
 
 select app_private.notification_email_configure('live', null, null, null, null, 100, null, 10);
@@ -604,6 +624,22 @@ select extensions.is(
   'idle',
   'with no match on, the results refresh does not call the provider'
 );
+select pg_temp.add_fixture('e0500000-0000-4000-8000-000000000042',
+  'e0300000-0000-4000-8000-000000000003', 1, 5, statement_timestamp() - interval '5 hours 7 seconds',
+  'live_second_half');
+select extensions.is(
+  app_private.football_live_refresh_tick(),
+  'invoked',
+  'a match still being played five hours after its kick-off keeps being refreshed'
+);
+update app.fixtures set status = 'finished', period = 'post_match', home_score = 1, away_score = 0,
+  provider_updated_at = provider_updated_at + interval '1 hour', source_sequence = source_sequence + 10
+where id = 'e0500000-0000-4000-8000-000000000042';
+select extensions.is(
+  app_private.football_live_refresh_tick(),
+  'idle',
+  'and stops once it is finished'
+);
 select pg_temp.add_fixture('e0500000-0000-4000-8000-000000000041',
   'e0300000-0000-4000-8000-000000000003', 3, 6, statement_timestamp() - interval '29 minutes 53 seconds');
 select extensions.is(
@@ -707,6 +743,69 @@ select extensions.is(
   'after the pause the waiting email goes out'
 );
 reset role;
+
+-- ---------------------------------------------------------------------------
+-- Handing back, uncertain sends and abandoned claims
+-- ---------------------------------------------------------------------------
+select set_config('email_test.u1_deadline', (
+  select delivery.id::text from app.notification_deliveries delivery
+  join app.notifications notification on notification.id = delivery.notification_id
+  where notification.user_id = 'e0600000-0000-4000-8000-000000000001'
+    and notification.notification_type = 'deadline_24h' and delivery.channel = 'email'), true);
+
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select extensions.is(
+  api.service_release_email_deliveries(
+    array[current_setting('email_test.u1_deadline')::uuid], statement_timestamp() + interval '1 hour'),
+  1,
+  'mail claimed while the provider refuses everything can be handed back'
+);
+reset role;
+select extensions.is(
+  (select status::text || ':' || attempt_count from app.notification_deliveries
+   where id = current_setting('email_test.u1_deadline')::uuid),
+  'retry_scheduled:1',
+  'handing back does not spend an attempt'
+);
+
+-- A send that timed out may have reached the provider: it counts.
+update app.notification_deliveries set next_retry_at = statement_timestamp() - interval '1 minute'
+where id = current_setting('email_test.u1_deadline')::uuid;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select api.service_claim_email_deliveries(50, 120);
+select api.service_record_notification_delivery_attempt(
+  current_setting('email_test.u1_deadline')::uuid, 'retryable_failure', true, null, 'delivery_timeout');
+reset role;
+select extensions.is(
+  (app_private.notification_email_quota(statement_timestamp()) ->> 'uncertainToday')::integer,
+  1,
+  'a send whose outcome is unknown counts against the allowance until it is confirmed'
+);
+
+-- A pass that claimed mail and died leaves it claimed; once the lease is over
+-- it is re-checked like waiting mail, so an unsubscribe still stops it.
+update app.notification_deliveries set status = 'claimed',
+  claimed_at = statement_timestamp() - interval '10 minutes',
+  claim_expires_at = statement_timestamp() - interval '5 minutes', next_retry_at = null
+where id = current_setting('email_test.u1_deadline')::uuid;
+update app.user_preferences set email_notifications_enabled = false
+where user_id = 'e0600000-0000-4000-8000-000000000001';
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select extensions.is(
+  api.service_claim_email_deliveries(50, 120),
+  '[]'::jsonb,
+  'an abandoned claim for someone who has since switched email off is not handed out again'
+);
+reset role;
+select extensions.is(
+  (select status::text || ':' || stable_error_code from app.notification_deliveries
+   where id = current_setting('email_test.u1_deadline')::uuid),
+  'cancelled:email_no_longer_eligible',
+  'it is cancelled instead'
+);
 
 set local role authenticated;
 select extensions.throws_ok(

@@ -321,7 +321,9 @@ $$;
 -- ---------------------------------------------------------------------------
 -- Quota: what the provider's plan still allows (UTC day and UTC month, as
 -- Resend counts them). Everything the provider accepted counts (sent_at is
--- set), and so does mail currently being sent (claimed, lease not expired).
+-- set), so does mail currently being sent (claimed, lease not expired), and
+-- so does a send whose outcome is unknown (timeout, network or provider
+-- error) until it is confirmed.
 -- ---------------------------------------------------------------------------
 create or replace function app_private.notification_email_quota(p_now timestamptz)
 returns jsonb
@@ -336,6 +338,8 @@ declare
   month_start timestamptz := date_trunc('month', p_now at time zone 'UTC') at time zone 'UTC';
   sent_today integer;
   sent_month integer;
+  unsure_today integer;
+  unsure_month integer;
   in_flight integer;
 begin
   select * into settings from app_private.notification_email_settings where id;
@@ -346,6 +350,21 @@ begin
   from app.notification_deliveries delivery
   where delivery.channel = 'email' and delivery.provider_key = 'resend'
     and delivery.sent_at >= least(day_start, month_start);
+  -- A send that timed out, lost its connection, met a provider error or found
+  -- the same key still in progress may have been accepted (and counted) by
+  -- the provider. Until the delivery is confirmed, count it once per day.
+  select
+    count(distinct attempt.delivery_id) filter (where attempt.attempted_at >= day_start)::integer,
+    count(distinct attempt.delivery_id)::integer
+  into unsure_today, unsure_month
+  from app_private.notification_delivery_attempts attempt
+  join app.notification_deliveries delivery on delivery.id = attempt.delivery_id
+  where attempt.outcome = 'retryable_failure'
+    and attempt.attempted_at >= least(day_start, month_start)
+    and attempt.provider_key = 'resend'
+    and attempt.stable_error_code in (
+      'delivery_timeout', 'delivery_network_error', 'delivery_provider_error', 'delivery_in_progress')
+    and delivery.sent_at is null;
   select count(*)::integer into in_flight
   from app.notification_deliveries delivery
   where delivery.channel = 'email' and delivery.provider_key = 'resend'
@@ -354,12 +373,15 @@ begin
     'dailyLimit', settings.daily_email_limit,
     'dailyReserve', settings.daily_email_reserve,
     'sentToday', sent_today,
+    'uncertainToday', unsure_today,
     'monthlyLimit', settings.monthly_email_limit,
     'sentThisMonth', sent_month,
+    'uncertainThisMonth', unsure_month,
     'inFlight', in_flight,
-    'dailyRemaining', greatest(0,
-      settings.daily_email_limit - settings.daily_email_reserve - sent_today - in_flight),
-    'monthlyRemaining', greatest(0, settings.monthly_email_limit - sent_month - in_flight),
+    'dailyRemaining', greatest(0, settings.daily_email_limit - settings.daily_email_reserve
+      - sent_today - unsure_today - in_flight),
+    'monthlyRemaining', greatest(0,
+      settings.monthly_email_limit - sent_month - unsure_month - in_flight),
     'dayResetsAt', day_start + interval '1 day',
     'monthResetsAt', month_start + interval '1 month',
     'pausedUntil', case when settings.provider_paused_until > p_now
@@ -408,6 +430,44 @@ begin
       'reason', p_reason, 'until', p_until)
   );
   return app_private.notification_email_quota(statement_timestamp());
+end;
+$$;
+
+-- When the provider refuses to send at all (quota spent, key refused), the
+-- dispatcher hands back what it claimed without it counting as an attempt:
+-- nothing was tried on those emails, so they must not drift towards the
+-- dead-letter queue while the pause lasts.
+create or replace function api.service_release_email_deliveries(
+  p_delivery_ids uuid[],
+  p_retry_at timestamptz
+)
+returns integer
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare released integer;
+begin
+  if not app_private.is_service_request() then
+    raise exception using errcode = 'PT403', message = 'notification_access_denied';
+  end if;
+  if p_delivery_ids is null or cardinality(p_delivery_ids) > 100
+    or p_retry_at is null or p_retry_at > statement_timestamp() + interval '32 days'
+  then
+    raise exception using errcode = 'PT400', message = 'invalid_notification_delivery';
+  end if;
+  update app.notification_deliveries delivery set
+    status = 'retry_scheduled',
+    attempt_count = greatest(delivery.attempt_count - 1, 0),
+    next_retry_at = greatest(p_retry_at, statement_timestamp()),
+    claimed_at = null,
+    claim_expires_at = null
+  where delivery.id = any(p_delivery_ids)
+    and delivery.channel = 'email' and delivery.provider_key = 'resend'
+    and delivery.status = 'claimed';
+  get diagnostics released = row_count;
+  return released;
 end;
 $$;
 
@@ -600,14 +660,17 @@ begin
   end if;
 
   -- 2. matchday_results: yesterday's and today's, once every match of the day
-  --    that was due to be played has a result. Not between 00:00 and 08:00,
+  --    that was due to be played has a result. A suspended match may still
+  --    resume, so it holds the email back for four hours after its kick-off;
+  --    after that it is listed as interrupted. Not between 00:00 and 08:00,
   --    and not after noon the next day.
   foreach match_day in array array[today - 1, today] loop
     select
       count(*) filter (where fixture.status = 'finished'),
-      count(*) filter (where fixture.status in (
+      count(*) filter (where (fixture.status in (
           'scheduled', 'not_started', 'delayed', 'live_first_half', 'half_time',
           'live_second_half', 'extra_time', 'penalties')
+          or (fixture.status = 'suspended' and fixture.kickoff_at > p_now - interval '4 hours'))
         and app_private.fantasy_kickoff_confirmed(fixture.kickoff_at))
     into finished_count, pending_count
     from app.fixtures fixture
@@ -1162,10 +1225,20 @@ begin
   if not exists (
     select 1 from app.fixtures fixture
     join app.seasons season on season.id = fixture.season_id and season.is_current
-    where fixture.kickoff_at between statement_timestamp() - interval '3 hours'
-        and statement_timestamp() + interval '10 minutes'
-      and app_private.fantasy_kickoff_confirmed(fixture.kickoff_at)
-      and fixture.status not in ('finished', 'postponed', 'cancelled', 'abandoned')
+    where app_private.fantasy_kickoff_confirmed(fixture.kickoff_at)
+      and (
+        -- about to start, or started without the provider saying so yet
+        (fixture.status in ('scheduled', 'not_started')
+          and fixture.kickoff_at between statement_timestamp() - interval '3 hours'
+            and statement_timestamp() + interval '10 minutes')
+        -- still being played, delayed or interrupted, however long it takes
+        -- (bounded, so a fixture the provider never closes cannot keep the
+        -- refresh running for ever)
+        or (fixture.status in ('delayed', 'live_first_half', 'half_time', 'live_second_half',
+            'extra_time', 'penalties', 'suspended')
+          and fixture.kickoff_at between statement_timestamp() - interval '24 hours'
+            and statement_timestamp() + interval '10 minutes')
+      )
   ) then
     return 'idle';
   end if;
@@ -1213,11 +1286,14 @@ begin
 
   -- Waiting mail that is no longer wanted or no longer timely is cancelled,
   -- never sent: the user unsubscribed or switched the topic off, the account
-  -- lost its confirmed email, or the moment has passed.
+  -- lost its confirmed email, or the moment has passed. That includes mail a
+  -- pass claimed and then abandoned (its lease expired unrecorded).
   update app.notification_deliveries delivery set
     status = 'cancelled',
     stable_error_code = 'email_no_longer_eligible',
-    next_retry_at = null
+    next_retry_at = null,
+    claimed_at = null,
+    claim_expires_at = null
   from app.notifications notification
   join app_private.notification_events event on event.id = notification.event_id
   join app.user_preferences preference on preference.user_id = notification.user_id
@@ -1225,7 +1301,8 @@ begin
   left join auth.users auth_user on auth_user.id = notification.user_id
   where delivery.notification_id = notification.id
     and delivery.channel = 'email' and delivery.provider_key = 'resend'
-    and delivery.status in ('pending', 'retry_scheduled')
+    and (delivery.status in ('pending', 'retry_scheduled')
+      or (delivery.status = 'claimed' and delivery.claim_expires_at < statement_timestamp()))
     and (
       profile.deleted_at is not null
       or not preference.notifications_enabled
@@ -1236,6 +1313,19 @@ begin
         and not preference.match_alerts)
       or (notification.notification_type in ('deadline_24h', 'gameweek_finalized')
         and not preference.fantasy_deadline_reminders)
+      -- The kick-off alert is for fans only: still a favourite, followed or
+      -- subscribed club (or match) now, not just when the alert was queued.
+      or (notification.notification_type = 'match_starting' and not exists (
+        select 1 from app.fixtures fixture
+        where fixture.id = notification.source_entity_id
+          and (preference.favorite_team_id in (fixture.home_team_id, fixture.away_team_id)
+            or exists (select 1 from app.followed_teams followed
+              where followed.user_id = notification.user_id
+                and followed.team_id in (fixture.home_team_id, fixture.away_team_id))
+            or exists (select 1 from app.notification_subscriptions subscription
+              where subscription.user_id = notification.user_id and subscription.enabled
+                and (subscription.fixture_id = fixture.id
+                  or subscription.team_id in (fixture.home_team_id, fixture.away_team_id))))))
       or app_private.notification_email_event_is_stale(event, statement_timestamp())
     );
 
@@ -1249,9 +1339,9 @@ begin
     return '[]'::jsonb;
   end if;
 
-  -- When the allowance is short, the most time-critical mail goes first;
-  -- within a kind, the order is a stable shuffle so the same readers are not
-  -- always the ones left waiting.
+  -- When the allowance is short, retries go first, then the most
+  -- time-critical mail; within a kind, the order is a stable shuffle so the
+  -- same readers are not always the ones left waiting.
   with claimable as (
     select delivery.id
     from app.notification_deliveries delivery
@@ -1262,6 +1352,9 @@ begin
         or (delivery.status = 'claimed' and delivery.claim_expires_at < statement_timestamp()))
       and (settings.mode = 'live' or notification.user_id = any(settings.test_user_ids))
     order by
+      -- Mail already attempted goes first, so an attempt whose outcome was
+      -- unknown is resolved inside the provider's 24-hour idempotency window.
+      delivery.attempt_count > 0 desc,
       case notification.notification_type::text
         when 'match_starting' then 1
         when 'deadline_24h' then 2
@@ -1428,12 +1521,14 @@ begin
   update app.user_preferences set email_notifications_enabled = false
   where user_id = target.user_id;
   update app.notification_deliveries delivery set
-    status = 'cancelled', stable_error_code = 'email_unsubscribed', next_retry_at = null
+    status = 'cancelled', stable_error_code = 'email_unsubscribed', next_retry_at = null,
+    claimed_at = null, claim_expires_at = null
   from app.notifications notification
   where delivery.notification_id = notification.id
     and notification.user_id = target.user_id
     and delivery.channel = 'email'
-    and delivery.status in ('pending', 'retry_scheduled');
+    and (delivery.status in ('pending', 'retry_scheduled')
+      or (delivery.status = 'claimed' and delivery.claim_expires_at < statement_timestamp()));
   perform app_private.write_notification_audit(
     'notification_email_unsubscribed', target.user_id,
     p_metadata := jsonb_build_object('source', 'email_link')
@@ -1480,6 +1575,7 @@ revoke all on function
   api.service_verify_scheduler_token(text),
   api.service_claim_email_deliveries(integer, integer),
   api.service_pause_email_provider(text, timestamptz),
+  api.service_release_email_deliveries(uuid[], timestamptz),
   api.service_notification_email_health(),
   api.unsubscribe_notification_email(text)
 from public, anon, authenticated, service_role;
@@ -1487,6 +1583,7 @@ grant execute on function
   api.service_verify_scheduler_token(text),
   api.service_claim_email_deliveries(integer, integer),
   api.service_pause_email_provider(text, timestamptz),
+  api.service_release_email_deliveries(uuid[], timestamptz),
   api.service_notification_email_health()
 to service_role;
 -- The page opened from an email calls it signed out (anon); the one-click

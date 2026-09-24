@@ -540,21 +540,12 @@ export async function runEmailDispatch(
     }
 
     let first = true;
+    // Claimed but never tried because the provider refused everything: handed
+    // back without spending an attempt (api.service_release_email_deliveries).
+    const handBack: string[] = [];
     for (const delivery of claimed.valid) {
       if (paused) {
-        // Hand the rest back at once rather than waiting for the lease, due
-        // again when the pause ends. (If that is past its moment, the claim
-        // step cancels it then.)
-        await record(dependencies.client, delivery.id, {
-          ...permanent(
-            paused.reason === "provider_auth_failed"
-              ? "delivery_provider_unavailable"
-              : "delivery_quota_exceeded",
-          ),
-          outcome: "retryable_failure",
-          retryAfterSeconds: secondsUntil(paused.until, now()),
-        });
-        counts.retrying += 1;
+        handBack.push(delivery.id);
         continue;
       }
       if (!first && config.sendIntervalMs > 0) await sleep(config.sendIntervalMs);
@@ -571,17 +562,28 @@ export async function runEmailDispatch(
         continue;
       }
       const outcome = await sendThroughResend(delivery, email, pageUrl, config, fetchImpl, now);
-      await record(dependencies.client, delivery.id, outcome);
-      if (outcome.outcome === "sent") counts.sent += 1;
-      else if (outcome.outcome === "retryable_failure") counts.retrying += 1;
-      else counts.failed += 1;
       if (outcome.pause) {
+        // The refusal was about the account, not this email: it goes back
+        // with the rest, and sending pauses until the provider will accept.
         paused = outcome.pause;
+        handBack.push(delivery.id);
         await rpc(dependencies.client, "service_pause_email_provider", {
           p_reason: paused.reason,
           p_until: paused.until.toISOString(),
         });
+        continue;
       }
+      await record(dependencies.client, delivery.id, outcome);
+      if (outcome.outcome === "sent") counts.sent += 1;
+      else if (outcome.outcome === "retryable_failure") counts.retrying += 1;
+      else counts.failed += 1;
+    }
+    if (handBack.length > 0 && paused) {
+      await rpc(dependencies.client, "service_release_email_deliveries", {
+        p_delivery_ids: handBack,
+        p_retry_at: paused.until.toISOString(),
+      });
+      counts.retrying += handBack.length;
     }
     if (batchSize < config.batchSize) break;
   }

@@ -299,10 +299,15 @@ describe("email dispatch request", () => {
       failed: 0,
       pausedReason: "provider_auth_failed",
     });
-    expect(recorded(calls).every((record) => record.p_retry_after_seconds === 1800)).toBe(true);
+    // Nothing was tried on these emails: none of them spends an attempt.
+    expect(recorded(calls)).toEqual([]);
     expect(calls.find((call) => call.name === "service_pause_email_provider")?.args).toEqual({
       p_reason: "provider_auth_failed",
       p_until: "2026-09-26T10:30:00.000Z",
+    });
+    expect(calls.find((call) => call.name === "service_release_email_deliveries")?.args).toEqual({
+      p_delivery_ids: [ID1, ID2, ID3],
+      p_retry_at: "2026-09-26T10:30:00.000Z",
     });
   });
 
@@ -329,10 +334,10 @@ describe("email dispatch request", () => {
       p_reason: "daily_quota_exceeded",
       p_until: "2026-09-27T00:01:00.000Z",
     });
-    expect(recorded(calls)[0]).toMatchObject({
-      p_outcome: "retryable_failure",
-      p_stable_error_code: "delivery_quota_exceeded",
-      p_retry_after_seconds: 2.5 * 3600 + 60,
+    expect(recorded(calls)).toEqual([]);
+    expect(calls.find((call) => call.name === "service_release_email_deliveries")?.args).toEqual({
+      p_delivery_ids: [ID1, ID2],
+      p_retry_at: "2026-09-27T00:01:00.000Z",
     });
   });
 

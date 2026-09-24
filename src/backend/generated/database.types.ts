@@ -1560,6 +1560,10 @@ export type Database = {
         }
         Returns: Database["app"]["Enums"]["notification_delivery_status"]
       }
+      service_release_email_deliveries: {
+        Args: { p_delivery_ids: string[]; p_retry_at: string }
+        Returns: number
+      }
       service_request_notification_dead_letter_replay: {
         Args: { p_dead_letter_id: string; p_idempotency_key: string }
         Returns: boolean
