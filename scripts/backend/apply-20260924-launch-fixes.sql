@@ -4764,6 +4764,21 @@ $bg_20260924200600_file$]
 -- ---------------------------------------------------------------------------
 create temporary table launch_fix_catch_up (step text primary key, outcome jsonb) on commit drop;
 
+-- Before anything locks: squads saved after their gameweek's deadline while it
+-- stayed open. Locking freezes them as they are, so the owner sees the count
+-- in the rehearsal and decides before applying (0 on 2026-09-24 at 21:24 UTC).
+insert into launch_fix_catch_up
+select 'lineupsChangedAfterDeadline', coalesce(jsonb_object_agg('GW' || t.sequence_number, t.changed), '{}'::jsonb)
+from (
+  select g.sequence_number, count(*) filter (where l.updated_at > g.deadline_at) as changed
+  from app.fantasy_gameweeks g
+  join app.fantasy_seasons s on s.id = g.fantasy_season_id
+  join app.fantasy_lineups l on l.gameweek_id = g.id
+  where s.status in ('registration_open', 'active') and g.status = 'open'
+    and g.deadline_at < statement_timestamp() and l.locked_at is null
+  group by g.sequence_number
+) t;
+
 do $catch_up$
 declare
   sync jsonb;
