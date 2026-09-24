@@ -94,7 +94,8 @@ describe("scripts sent through the Supabase SQL API", () => {
 
 describe("the migrations production recorded", () => {
   // statements[1] of production's history rows, read back after the scripts
-  // ran on 2026-09-24 (docs/production/APPLIED_2026_09_24_NEWS_CLUB_TAGGING.md).
+  // ran on 2026-09-24 (docs/production/APPLIED_2026_09_24_NEWS_CLUB_TAGGING.md
+  // and APPLIED_2026_09_24_NEWS_CLUB_TRANSLATION_CHECK.md).
   // These files are applied: a change to them is a new migration.
   for (const [file, recorded] of [
     [
@@ -108,6 +109,14 @@ describe("the migrations production recorded", () => {
     [
       "20260924180200_news_story_team_backfill.sql",
       "33da33e73de411f87b060cf53494447766f09f81920fe6ce1d03ea21b7443b22",
+    ],
+    [
+      "20260924190000_news_story_team_translation_check.sql",
+      "7d7270bfbcad007af84ea4204e0b92fee5af87e884990b85000de77a2aefb760",
+    ],
+    [
+      "20260924190100_news_story_team_retag.sql",
+      "52306c742524d60ac145e93a4102cc39534fb776f2fa8395b3aa6bbf14bc4440",
     ],
   ]) {
     test(file, () => {
