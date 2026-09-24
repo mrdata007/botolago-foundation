@@ -149,4 +149,5 @@ The owner switched News on after the licensed ElBotola import (14,194 stories, 1
   - lists licensed publishers' stories;
   - rewrites `api.news_sitemap_entries` so it runs as one set-based query. The old per-row version took ~13 s on the archive; anon's statement timeout is 3 s.
   - adds two partial indexes. With them the new query takes ~0.2 s, measured in a rolled-back transaction on production data. It returns the same 15,690 editions.
-  - `/sitemap.xml` now asks for up to 50,000 entries.
+  - `/sitemap.xml` asks for as many entries as fit in one sitemap (50,000 URLs, minus the static pages).
+  - **The licence is now a publication rule.** `app_private.news_story_is_publishable` allows a story only if it is BotolaGO's own (no publisher, an internal one, or a `botolago` one), licensed, or converted by an admin. The same function gates every public read and every publish transition, so an unlicensed third-party story can be neither read nor published. No live article was affected.

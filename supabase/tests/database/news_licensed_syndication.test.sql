@@ -1,6 +1,7 @@
 -- News: licensed syndication (20260924100000, 20260924163000). A licensed
--- publisher's stories carry their source; nobody else's do; and the sitemap
--- advertises BotolaGO's own stories and licensed ones, never unlicensed ones.
+-- publisher's stories carry their source; nobody else's do; an unlicensed
+-- third-party story is never public nor publishable; and the sitemap lists
+-- every public edition.
 begin;
 
 select extensions.no_plan();
@@ -59,10 +60,17 @@ select is(
   '{"name": "QA Licensed", "url": null}'::jsonb,
   'without a known original, the source is named but no homepage is passed off as the original'
 );
-select is(
-  api.news_article_detail('fr', 'qa-unlicensed-fr') -> 'source',
-  'null'::jsonb,
-  'an unlicensed third-party story carries no source attribution'
+select throws_ok(
+  $$select api.news_article_detail('fr', 'qa-unlicensed-fr')$$,
+  'PGRST', null,
+  'an unlicensed third-party story is not readable publicly, even when marked published'
+);
+select ok(
+  not exists (
+    select 1 from jsonb_array_elements((api.news_feed('fr') -> 'items')) item
+    where item ->> 'id' = '98300000-0000-4000-8000-000000000003'
+  ),
+  'an unlicensed third-party story is not in the feed'
 );
 select is(
   api.news_article_detail('fr', 'qa-own-publisher') -> 'source',
@@ -112,12 +120,22 @@ reset role;
 select set_eq(
   $$select (entry ->> 'id')::uuid from jsonb_array_elements(api.news_sitemap_entries(50000)) entry$$,
   $$select edition.id from app.article_editions edition
-    join app.stories story on story.id = edition.story_id
-    left join app.publishers publisher on publisher.id = story.publisher_id
-    where edition.visibility = 'public' and app_private.news_is_public(edition)
-      and (publisher.id is null or publisher.slug = 'botolago' or publisher.slug like 'botolago-%'
-           or publisher.syndication_licensed_at is not null)$$,
+    where edition.visibility = 'public' and app_private.news_is_public(edition)$$,
   'the sitemap lists exactly the public editions app_private.news_is_public() allows'
+);
+
+-- The licence rule is a publication rule too, and an explicit, audited
+-- conversion by an editorial admin still lets a third-party story through.
+select ok(
+  not app_private.news_story_is_publishable('98200000-0000-4000-8000-000000000002'),
+  'an unlicensed third-party story is not publishable'
+);
+update app.stories set import_converted_at = statement_timestamp(),
+  import_conversion_reason = 'QA: rewritten in-house by the editors.'
+where id = '98200000-0000-4000-8000-000000000002';
+select ok(
+  app_private.news_story_is_publishable('98200000-0000-4000-8000-000000000002'),
+  'an explicitly converted story is publishable again'
 );
 
 select throws_ok(
