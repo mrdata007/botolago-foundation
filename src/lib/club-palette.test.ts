@@ -14,6 +14,7 @@ import {
   clubPalette,
   clubStyle,
   resolvePaletteColour,
+  stripeBand,
   type ClubPalette,
   type PaletteTheme,
 } from "./club-palette";
@@ -21,6 +22,7 @@ import {
   contrastRatio,
   deltaEOk,
   mixOklab,
+  mixSrgb,
   normaliseHex,
   parseColour,
   parseHex,
@@ -164,6 +166,27 @@ describe("club palette: every kit colour is legible in both themes", () => {
         expect(m.fgOnSurface).toBeGreaterThanOrEqual(CLUB_PALETTE_RULES.text);
         expect(m.fgOnTint).toBeGreaterThanOrEqual(CLUB_PALETTE_RULES.text);
         expect(m.textOnTint).toBeGreaterThanOrEqual(CLUB_PALETTE_RULES.text);
+      });
+    }
+  }
+
+  // `club-stripes` lays 7% bands of `--ui-club-band` over the fill
+  // (`color-mix(in srgb, band 7%, transparent)` composited on the fill is a
+  // 7% sRGB mix). Under white text the band is dark and under dark text it
+  // is white, so the text keeps its 4.5:1 on the bands as well as between,
+  // and a fill anywhere near that floor is never weakened. (Only a fill
+  // already darker than the band itself moves the other way: FAR's #111111
+  // goes from 17.47 to 17.40.)
+  for (const hex of colours) {
+    const palette = clubPalette({ primaryColor: hex });
+    for (const theme of THEMES) {
+      it(`${hex} (${theme}): the stripe bands keep the text at 4.5:1 or more`, () => {
+        const { fill, on } = palette[theme];
+        const plain = contrastRatio(rgb(on, theme), rgb(fill, theme));
+        const band = mixSrgb(rgb(stripeBand(on), theme), rgb(fill, theme), 0.07);
+        const striped = contrastRatio(rgb(on, theme), band);
+        expect(striped).toBeGreaterThanOrEqual(CLUB_PALETTE_RULES.text);
+        if (plain < 7) expect(striped).toBeGreaterThanOrEqual(plain);
       });
     }
   }
@@ -449,13 +472,20 @@ describe("club palette: home and away never share a colour", () => {
 });
 
 describe("clubStyle", () => {
-  it("returns data-club and the ten --club-* properties", () => {
+  it("returns data-club and the twelve --club-* properties", () => {
     const style = clubStyle({ id: "war", primaryColor: "#c8102e" });
     expect(style["data-club"]).toBe("");
     expect(Object.keys(style.style).sort()).toEqual([...CLUB_STYLE_VARS].sort());
     expect(style.style["--club-fill-l"]).toBe("#c8102e");
     expect(style.style["--club-on-l"]).toBe("var(--ui-on-ink-plain)");
     expect(style.style["--club-fg-d"]).toBe("var(--ui-on-surface)");
+    // White text: dark stripe bands.
+    expect(style.style["--club-band-l"]).toBe("var(--ui-ink-deep)");
+  });
+
+  it("stripes a dark-text club with light bands", () => {
+    expect(stripeBand("var(--ui-ink-deep)")).toBe("var(--ui-on-ink-plain)");
+    expect(stripeBand("var(--ui-on-ink-plain)")).toBe("var(--ui-ink-deep)");
   });
 
   it("takes a palette as well as a club, so a clash-resolved side can be spread", () => {

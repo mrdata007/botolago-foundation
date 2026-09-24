@@ -139,6 +139,7 @@ export const UI_TOKENS = [
   "--ui-club-edge",
   "--ui-club-fg",
   "--ui-club-tint",
+  "--ui-club-band",
   // the per-route decorative wash
   "--ui-wash-home",
   "--ui-wash-news",
@@ -223,6 +224,7 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-club-edge",
   "--ui-club-fg",
   "--ui-club-tint",
+  "--ui-club-band",
   "--ui-wash-home",
   "--ui-wash-news",
   "--ui-wash-matches",

@@ -36,10 +36,13 @@ export function PlayerKitDisc({
         className,
       )}
     >
+      {/* The flat Option A shirt, as on the pitch, the picker and the
+          squad list; the lit "dimensional" one is the pre-Option A look. */}
       <JerseyVisual
         kit={getKitForClub(club, kitPattern)}
         size={size === "md" ? 28 : 36}
         imageUrl={imageUrl}
+        variant="flat"
       />
     </span>
   );

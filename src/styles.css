@@ -553,15 +553,17 @@
 }
 
 /* Option A's diagonal texture on a club-coloured block (the goal panel,
-   the team strip, the player hero, the profile card): 14px bands of the
-   on-ink foreground at `--stripe-alpha` (7% by default; 4% on navy bands)
-   over whatever fill the element already paints. It sets only
+   the team strip, the player hero, the profile card): 14px bands of
+   `--ui-club-band` at `--stripe-alpha` (7% by default; 4% on navy bands)
+   over whatever fill the element already paints. The band is the colour
+   the block's text is NOT (dark under white text, white under dark text),
+   so the texture never takes that text under 4.5:1. It sets only
    `background-image`, so pair it with a background COLOUR, never with
    another image. The angle is `--stripe-angle`, which mirrors in Arabic. */
 @utility club-stripes {
   background-image: repeating-linear-gradient(
     var(--stripe-angle),
-    color-mix(in srgb, var(--ui-on-ink-plain) var(--stripe-alpha, 7%), transparent) 0 14px,
+    color-mix(in srgb, var(--ui-club-band) var(--stripe-alpha, 7%), transparent) 0 14px,
     transparent 14px 28px
   );
 }
@@ -1285,6 +1287,7 @@ html[dir="rtl"] .lucide-arrow-left {
        --ui-club-fg    the club colour as TEXT on a surface (≥ 4.5:1);
                        `--ui-on-surface` in dark and wherever it cannot pass
        --ui-club-tint  a quiet wash of the club behind an icon or a quote
+       --ui-club-band  the `club-stripes` band: the text colour it is NOT
 
      Plain aliases, redeclared identically under `.dark` (the
      `--ui-wash-neutral` precedent), so the manifest lists them as themed. */
@@ -1293,6 +1296,7 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-club-edge: var(--ui-ink-fg);
   --ui-club-fg: var(--ui-ink-fg);
   --ui-club-tint: var(--ui-surface-sunken);
+  --ui-club-band: var(--ui-on-ink-plain);
 
   /* ---- Gradients -------------------------------------------------
      `to bottom` on purpose: a `deg` angle is physical and mirrors
@@ -1471,6 +1475,7 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-club-edge: var(--ui-ink-fg);
   --ui-club-fg: var(--ui-ink-fg);
   --ui-club-tint: var(--ui-surface-sunken);
+  --ui-club-band: var(--ui-on-ink-plain);
 
   --ui-grad-header: linear-gradient(
     to bottom,
@@ -1566,8 +1571,8 @@ html[dir="rtl"] .lucide-arrow-left {
 /* ==================================================================
    The club layer (`[data-club]`)
    ------------------------------------------------------------------
-   `clubStyle(club)` (src/lib/club-palette.ts) puts `data-club` and ten
-   inline custom properties on an element: `--club-{fill,on,edge,fg,tint}`
+   `clubStyle(club)` (src/lib/club-palette.ts) puts `data-club` and twelve
+   inline custom properties on an element: `--club-{fill,on,edge,fg,tint,band}`
    with an `-l` (light) and a `-d` (dark) answer each. The club palette
    computes both, because the foreground on a club colour is decided by
    measured contrast and the answer differs by theme — FUS orange carries
@@ -1592,6 +1597,7 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-club-edge: var(--club-edge-l, var(--ui-ink-fg));
   --ui-club-fg: var(--club-fg-l, var(--ui-ink-fg));
   --ui-club-tint: var(--club-tint-l, var(--ui-surface-sunken));
+  --ui-club-band: var(--club-band-l, var(--ui-on-ink-plain));
 }
 
 .dark [data-club] {
@@ -1600,6 +1606,7 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-club-edge: var(--club-edge-d, var(--ui-ink-fg));
   --ui-club-fg: var(--club-fg-d, var(--ui-ink-fg));
   --ui-club-tint: var(--club-tint-d, var(--ui-surface-sunken));
+  --ui-club-band: var(--club-band-d, var(--ui-on-ink-plain));
 }
 
 /* ==================================================================

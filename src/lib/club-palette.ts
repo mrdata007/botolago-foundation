@@ -124,11 +124,13 @@ export const CLUB_STYLE_VARS = [
   "--club-edge-l",
   "--club-fg-l",
   "--club-tint-l",
+  "--club-band-l",
   "--club-fill-d",
   "--club-on-d",
   "--club-edge-d",
   "--club-fg-d",
   "--club-tint-d",
+  "--club-band-d",
 ] as const;
 
 export type ClubStyleVar = (typeof CLUB_STYLE_VARS)[number];
@@ -396,6 +398,16 @@ const isPalette = (value: unknown): value is ClubPalette =>
  * To merge your own style: `const c = clubStyle(club)` then
  * `data-club={c["data-club"]} style={{ ...c.style, ...mine }}`.
  */
+/**
+ * The colour of the `club-stripes` bands on a club fill: the OTHER text
+ * colour. White text gets dark bands and dark text gets light ones, so the
+ * texture moves the fill away from its text and never costs small type its
+ * 4.5:1. White bands under white text did, on Raja and Hassania (4.57 → 4.08).
+ */
+export function stripeBand(on: string): string {
+  return on === ON_DEEP ? ON_PLAIN : ON_DEEP;
+}
+
 export function clubStyle(club: ClubColourSource | ClubPalette | null | undefined): {
   "data-club": "";
   style: ClubStyle;
@@ -410,11 +422,13 @@ export function clubStyle(club: ClubColourSource | ClubPalette | null | undefine
       "--club-edge-l": light.edge,
       "--club-fg-l": light.fg,
       "--club-tint-l": light.tint,
+      "--club-band-l": stripeBand(light.on),
       "--club-fill-d": dark.fill,
       "--club-on-d": dark.on,
       "--club-edge-d": dark.edge,
       "--club-fg-d": dark.fg,
       "--club-tint-d": dark.tint,
+      "--club-band-d": stripeBand(dark.on),
     } as ClubStyle,
   };
 }

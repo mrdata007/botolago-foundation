@@ -359,18 +359,19 @@ const { home, away } = clubMatchPalettes(match.homeClub, match.awayClub);
 <div {...clubStyle(away)} className={cn(ui.club.fill, "flex-1")}>…</div>
 ```
 
-`clubStyle(club | palette)` returns `{ "data-club": "", style }`: ten inline
-custom properties, `--club-{fill,on,edge,fg,tint}-{l,d}`, a light and a dark
+`clubStyle(club | palette)` returns `{ "data-club": "", style }`: twelve inline
+custom properties, `--club-{fill,on,edge,fg,tint,band}-{l,d}`, a light and a dark
 answer each. The `[data-club]` layer in `styles.css` maps the current theme's
-answer onto five kit tokens on that element, and children inherit them:
+answer onto six kit tokens on that element, and children inherit them:
 
-| Token            | Default (no club)     | Meaning                                                                                                  |
-| ---------------- | --------------------- | -------------------------------------------------------------------------------------------------------- |
-| `--ui-club`      | `--ui-ink`            | the fill: a header half, a crest disc, a bar (`ui.club.fill`/`fillOnly`)                                 |
-| `--ui-on-club`   | `--ui-on-ink-plain`   | text on the fill, ≥ 4.5:1, chosen per theme (`ui.tone.onClub`)                                           |
-| `--ui-club-edge` | `--ui-ink-fg`         | a 4px edge bar or ring, ≥ 3:1 on the surface (`ui.edge.*`, `ui.club.ring`, `ui.club.edgeFill`)           |
-| `--ui-club-fg`   | `--ui-ink-fg`         | the club colour as TEXT, ≥ 4.5:1 on the surface and the tint; `--ui-on-surface` in dark (`ui.tone.club`) |
-| `--ui-club-tint` | `--ui-surface-sunken` | a quiet wash behind an icon disc or a quote (`ui.club.tint`)                                             |
+| Token            | Default (no club)     | Meaning                                                                                                                              |
+| ---------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `--ui-club`      | `--ui-ink`            | the fill: a header half, a crest disc, a bar (`ui.club.fill`/`fillOnly`)                                                             |
+| `--ui-on-club`   | `--ui-on-ink-plain`   | text on the fill, ≥ 4.5:1, chosen per theme (`ui.tone.onClub`)                                                                       |
+| `--ui-club-edge` | `--ui-ink-fg`         | a 4px edge bar or ring, ≥ 3:1 on the surface (`ui.edge.*`, `ui.club.ring`, `ui.club.edgeFill`)                                       |
+| `--ui-club-fg`   | `--ui-ink-fg`         | the club colour as TEXT, ≥ 4.5:1 on the surface and the tint; `--ui-on-surface` in dark (`ui.tone.club`)                             |
+| `--ui-club-tint` | `--ui-surface-sunken` | a quiet wash behind an icon disc or a quote (`ui.club.tint`)                                                                         |
+| `--ui-club-band` | `--ui-on-ink-plain`   | the `club-stripes` band (`ui.club.stripes`): the text colour the block does NOT use, so the texture never takes its text under 4.5:1 |
 
 **The rule the palette applies** (every value measured, WCAG 2):
 

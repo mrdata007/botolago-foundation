@@ -90,9 +90,14 @@ export function MatchScoreHeader({
   const unconfirmedTime = isKickoffTimeUnconfirmed(match);
   // A postponed match has no day either, so the meta line drops the date
   // rather than pairing a real weekday with "Date à confirmer".
-  const displayedKickoff = unconfirmedDate
-    ? t("matches.kickoff_date_unconfirmed")
-    : `${dateFmt} · ${unconfirmedTime ? t("matches.kickoff_unconfirmed") : timeFmt}`;
+  // The time isolated in a `<bdi>`, as every time in the product is.
+  const displayedKickoff = unconfirmedDate ? (
+    t("matches.kickoff_date_unconfirmed")
+  ) : (
+    <>
+      {dateFmt} · {unconfirmedTime ? t("matches.kickoff_unconfirmed") : <bdi>{timeFmt}</bdi>}
+    </>
+  );
   const venue = tr(match.venue).trim();
 
   const hs = match.homeScore ?? 0;

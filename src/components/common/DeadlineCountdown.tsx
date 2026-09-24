@@ -1,20 +1,20 @@
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useI18n } from "@/i18n/provider";
 import { Clock } from "lucide-react";
 import { ui, UiPill } from "@/components/ui-kit";
+import { countdownText, useDeadlineCountdown } from "@/components/fpl/deadline";
 import { cn } from "@/lib/utils";
-
-function diff(target: Date) {
-  const ms = Math.max(0, target.getTime() - Date.now());
-  const d = Math.floor(ms / 86_400_000);
-  const h = Math.floor((ms % 86_400_000) / 3_600_000);
-  const m = Math.floor((ms % 3_600_000) / 60_000);
-  return { d, h, m };
-}
 
 /**
  * The time left before a Fantasy deadline, to the minute ("1j 13h 59min").
- * The day part drops out on the last day rather than reading "0j".
+ * The day part drops out on the last day rather than reading "0j"
+ * (`countdownText`, shared with the Fantasy screens).
+ *
+ * The time is read from the first client effect (`useDeadlineCountdown`),
+ * never during render: the server and the hydrating browser read two clocks,
+ * and a minute rolling over between them was a hydration mismatch on Home.
+ * Until then the pill carries its label alone; once the deadline has passed
+ * there is nothing to count down to and it renders nothing.
  *
  * `tone="pill"` (default) is Option A's deadline pill on Home's gameweek band:
  * the action gradient, fully round, a clock, an optional `label` and the
@@ -35,18 +35,12 @@ export function DeadlineCountdown({
   label?: ReactNode;
 }) {
   const { t } = useI18n();
-  const [now, setNow] = useState(() => diff(new Date(iso)));
-  useEffect(() => {
-    const id = setInterval(() => setNow(diff(new Date(iso))), 30_000);
-    return () => clearInterval(id);
-  }, [iso]);
+  const left = useDeadlineCountdown(iso);
+  if (left?.passed) return null;
 
   const countdown = (
     <span className={cn("whitespace-nowrap", ui.text.tabular)}>
-      {now.d > 0 ? `${now.d}${t("home.days")} ` : null}
-      {now.h}
-      {t("home.hours")} {now.m}
-      {t("home.minutes")}
+      {left ? countdownText(left, t) : null}
     </span>
   );
 
@@ -58,7 +52,7 @@ export function DeadlineCountdown({
       {label ? (
         <>
           <span className="min-w-0 truncate">{label}</span>
-          <span aria-hidden>·</span>
+          {left ? <span aria-hidden>·</span> : null}
         </>
       ) : null}
       {countdown}

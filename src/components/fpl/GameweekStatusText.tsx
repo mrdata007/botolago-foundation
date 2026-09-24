@@ -1,15 +1,17 @@
-import { getGameweekPresentation } from "@/components/fantasy/gameweek-presentation";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import type { FantasyGameweekStatus, FantasyPointsState } from "@/types/domain";
+import type { FantasyGameweekStatus } from "@/types/domain";
 
 /**
  * A gameweek's state in words — "En direct", "Provisoire", "Définitive" —
- * with the breathing `--ui-live` dot while it is being scored.
+ * with the breathing `--ui-live` dot while its matches are being played.
  *
- * Whether it is "live" is `getGameweekPresentation`'s answer, not a second
- * opinion; the words are spelled out branch by branch rather than looked up
+ * The dot is for `live` alone. A `provisional` gameweek is still re-scored
+ * (the presentation layer polls it and tones it "live"), but nothing is in
+ * play, and the red dot says "in play" everywhere else in the product: the
+ * live pill, the live strip, Points and its chart. The word carries
+ * "Provisoire". The words are spelled out branch by branch rather than looked up
  * from `presentation.badgeKey`, because a key held in a variable is invisible
  * to the i18n gate's literal-key check (W4). The dot is decorative and still
  * under reduced motion (`live-breathe` is switched off globally); the word
@@ -18,15 +20,13 @@ import type { FantasyGameweekStatus, FantasyPointsState } from "@/types/domain";
  */
 export function GameweekStatusText({
   status,
-  pointsState = "provisional",
   className,
 }: {
   status: FantasyGameweekStatus;
-  pointsState?: FantasyPointsState;
   className?: string;
 }) {
   const { t } = useI18n();
-  const live = getGameweekPresentation(status, pointsState).tone === "live";
+  const live = status === "live";
   const label =
     status === "scheduled"
       ? t("fantasy.gameweek.status.scheduled")

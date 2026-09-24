@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { countdownText } from "@/components/fpl/deadline";
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 import { DeadlineCountdown } from "./DeadlineCountdown";
@@ -9,9 +10,15 @@ import { DeadlineCountdown } from "./DeadlineCountdown";
 /**
  * Home's deadline pill (Option A, A-Home): the action gradient with ink-deep
  * text, a clock, what the deadline is for, and the time left to the minute.
+ *
+ * The time itself is read from the first client effect, so the server render
+ * — what these tests see — carries no clock-dependent text: that is what keeps
+ * the server HTML and the hydrating browser identical when a minute rolls
+ * over between them. The spelling is `countdownText`, tested here directly.
  */
 
 const fr = dictionaries.fr;
+const t = (key: keyof typeof fr) => fr[key];
 const render = (node: ReactElement) =>
   renderToStaticMarkup(<I18nProvider>{node}</I18nProvider>).replace(/<!-- -->/g, "");
 /** An ISO instant `d` days, `h` hours and `m` minutes (and half a minute) away. */
@@ -19,21 +26,22 @@ const inFuture = (d: number, h: number, m: number) =>
   new Date(Date.now() + ((d * 24 + h) * 60 + m) * 60_000 + 30_000).toISOString();
 const text = (html: string) => html.replace(/<[^>]+>/g, "");
 
-describe("DeadlineCountdown", () => {
+describe("countdownText", () => {
   it("counts down in days, hours and minutes", () => {
-    const html = render(<DeadlineCountdown iso={inFuture(1, 13, 59)} />);
-    expect(text(html)).toContain(
+    expect(countdownText({ days: 1, hours: 13, minutes: 59 }, t)).toBe(
       `1${fr["home.days"]} 13${fr["home.hours"]} 59${fr["home.minutes"]}`,
     );
   });
 
   it("drops the day part on the last day instead of reading 0j", () => {
-    const html = render(<DeadlineCountdown iso={inFuture(0, 5, 10)} />);
-    expect(text(html)).toContain(`5${fr["home.hours"]} 10${fr["home.minutes"]}`);
-    expect(text(html)).not.toContain(`0${fr["home.days"]}`);
+    const last = countdownText({ days: 0, hours: 5, minutes: 10 }, t);
+    expect(last).toBe(`5${fr["home.hours"]} 10${fr["home.minutes"]}`);
+    expect(last).not.toContain(`0${fr["home.days"]}`);
   });
+});
 
-  it("is the gradient pill: round, ink-deep text, the label before the time", () => {
+describe("DeadlineCountdown", () => {
+  it("is the gradient pill: round, ink-deep text, a clock and the label", () => {
     const html = render(
       <DeadlineCountdown iso={inFuture(1, 2, 3)} label={fr["home.deadline_fantasy"]} />,
     );
@@ -41,24 +49,18 @@ describe("DeadlineCountdown", () => {
     expect(html).toContain("rounded-full");
     expect(html).toContain("text-[color:var(--ui-ink-deep)]");
     expect(html).toContain("lucide-clock");
-    const plain = text(html);
-    expect(plain.indexOf(fr["home.deadline_fantasy"])).toBeLessThan(
-      plain.indexOf(`1${fr["home.days"]}`),
-    );
+    expect(text(html)).toContain(fr["home.deadline_fantasy"]);
     // Tabular figures, so the minutes do not shift the pill as they tick.
     expect(html).toContain("fpl-tabular");
   });
 
-  it("renders the countdown alone in the plain tone", () => {
-    const html = render(<DeadlineCountdown iso={inFuture(0, 1, 5)} tone="plain" />);
-    expect(html).not.toContain("--ui-grad-action");
-    expect(text(html)).toBe(`1${fr["home.hours"]} 5${fr["home.minutes"]}`);
-  });
-
-  it("never counts below zero once the deadline has passed", () => {
-    const html = render(
-      <DeadlineCountdown iso={new Date(Date.now() - 60_000).toISOString()} tone="plain" />,
-    );
-    expect(text(html)).toBe(`0${fr["home.hours"]} 0${fr["home.minutes"]}`);
+  it("renders no clock-dependent text on the server, so hydration cannot mismatch", () => {
+    for (const node of [
+      <DeadlineCountdown key="pill" iso={inFuture(1, 13, 59)} label="Date limite" />,
+      <DeadlineCountdown key="plain" iso={inFuture(0, 1, 5)} tone="plain" />,
+    ]) {
+      const plain = text(render(node));
+      expect(plain).not.toMatch(/\d/);
+    }
   });
 });

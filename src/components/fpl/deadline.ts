@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import type { TranslationKey } from "@/i18n/dictionaries";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import type { Language } from "@/types/domain";
 
@@ -51,6 +52,19 @@ export function deadlineCountdown(deadlineIso: string, now: number): DeadlineCou
     minutes: Math.floor((left % 3_600_000) / 60_000),
     passed: false,
   };
+}
+
+/**
+ * The countdown as the product writes it, to the minute: "1j 13h 59min". The
+ * day part drops out on the last day rather than reading "0j". One spelling
+ * for Home's pill, the Fantasy hub and Pick Team, which had three.
+ */
+export function countdownText(
+  left: Pick<DeadlineCountdown, "days" | "hours" | "minutes">,
+  t: (key: TranslationKey) => string,
+): string {
+  const days = left.days > 0 ? `${left.days}${t("home.days")} ` : "";
+  return `${days}${left.hours}${t("home.hours")} ${left.minutes}${t("home.minutes")}`;
 }
 
 /**

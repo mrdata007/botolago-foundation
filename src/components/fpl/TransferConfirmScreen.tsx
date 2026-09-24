@@ -142,7 +142,7 @@ export function TransferConfirmScreen({
           {/* French sets a narrow no-break space before a colon. */}
           {lang === "fr" ? " :" : ":"}{" "}
           <strong className={cn("whitespace-nowrap", ui.tone.onInkPlain)}>
-            {formatDeadline(deadlineIso, lang)}
+            <bdi>{formatDeadline(deadlineIso, lang)}</bdi>
           </strong>
         </p>
       </div>

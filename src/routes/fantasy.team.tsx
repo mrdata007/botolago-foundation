@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { findClub } from "@/components/fpl/club-lookup";
-import { formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline";
+import { countdownText, formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { FplChipsRow } from "@/components/fpl/FplChipsRow";
@@ -89,12 +89,12 @@ function PickTeamPage() {
   );
 }
 
-/** "1j 13h 59min", the same units as Home's gameweek countdown. */
+/** "1j 13h 59min", spelled exactly as Home's gameweek countdown (`countdownText`). */
 function useCountdownText(deadlineIso: string | undefined): string | null {
   const { t } = useI18n();
   const left = useDeadlineCountdown(deadlineIso);
   if (!left || left.passed) return null;
-  return `${left.days}${t("home.days")} ${left.hours}${t("home.hours")} ${left.minutes}${t("home.minutes")}`;
+  return countdownText(left, t);
 }
 
 function PickTeamBody() {
@@ -444,11 +444,7 @@ function PickTeamBody() {
         <span className={ui.text.tabular}>{countdown}</span>
       </span>
     ) : gameweek.status ? (
-      <GameweekStatusText
-        status={gameweek.status}
-        pointsState={gameweek.pointsState}
-        className={ui.text.label}
-      />
+      <GameweekStatusText status={gameweek.status} className={ui.text.label} />
     ) : deadlineLocked ? (
       t("fpl.deadline_passed")
     ) : null;
@@ -457,7 +453,7 @@ function PickTeamBody() {
       label: t("fpl.deadline"),
       // No weekday: the countdown under it says how far off it is, and with
       // it the date needed two lines in a third of the strip (FR and AR).
-      value: formatDeadline(gameweek.deadline, lang),
+      value: <bdi>{formatDeadline(gameweek.deadline, lang)}</bdi>,
       text: true,
       sub: deadlineSub,
     },

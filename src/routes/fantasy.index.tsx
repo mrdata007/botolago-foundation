@@ -10,7 +10,6 @@ import {
   CalendarDays,
   ChevronRight,
   CircleHelp,
-  Clock3,
   Mail,
   Plus,
   Settings2,
@@ -30,6 +29,8 @@ import {
   SectionHeaderLink,
 } from "@/components/common/SectionHeader";
 import { useDeadlineCountdown, formatDeadline } from "@/components/fpl/deadline";
+import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
+import { LeagueList } from "@/components/fantasy-lists/LeagueList";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
 import { GameweekStatusText } from "@/components/fpl/GameweekStatusText";
@@ -310,33 +311,14 @@ function GameweekBand({ gameweek }: { gameweek: Gameweek }) {
         </p>
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <p className={cn(ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}>
-            {formatDeadline(gameweek.deadline, lang, { weekday: "short" })}
+            <bdi>{formatDeadline(gameweek.deadline, lang, { weekday: "short" })}</bdi>
           </p>
           {left && !left.passed ? (
-            <span
-              className={cn(
-                "inline-flex min-h-8 shrink-0 items-center gap-1.5 px-3",
-                ui.radius.full,
-                ui.text.meta,
-                "[font-weight:var(--ui-weight-heavy)]",
-                "text-[color:var(--ui-ink-deep)]",
-              )}
-              style={{ backgroundImage: "var(--ui-grad-action)" }}
-            >
-              <Clock3 className="h-4 w-4 shrink-0" aria-hidden />
-              <span className={ui.text.tabular}>
-                {left.days}
-                {t("home.days")} {left.hours}
-                {t("home.hours")} {left.minutes}
-                {t("home.minutes")}
-              </span>
-            </span>
+            // Home's deadline pill, so the same deadline reads the same way
+            // on both screens ("13h 59min" on the last day, never "0j").
+            <DeadlineCountdown iso={gameweek.deadline} />
           ) : left?.passed && gameweek.status ? (
-            <GameweekStatusText
-              status={gameweek.status}
-              pointsState={gameweek.pointsState}
-              className={cn(ui.text.label, "min-h-8")}
-            />
+            <GameweekStatusText status={gameweek.status} className={cn(ui.text.label, "min-h-8")} />
           ) : null}
         </div>
       </div>
@@ -579,20 +561,26 @@ function LeaguesSection({
     <section className={cn("mt-6", ui.space.gutter)}>
       <SectionHeader title={t("fantasy.hub.my_leagues")} />
 
+      {/* The same rows as Leagues & Cups (`LeagueList`): one look for a
+          league wherever it is listed, and its focus ring drawn inside the
+          clipped card. */}
       <SectionGroupHeader title={t("fpl.general_leagues")} />
-      <UiCard padding="none" className="overflow-hidden">
-        <ul>
-          <LeagueRow to="/fantasy/rankings" name={t("fpl.overall")} rank={overallRank} brand />
-          {gameweek ? (
-            <LeagueRow
-              to="/fantasy/rankings"
-              name={t("fpl.gameweek_league").replace("{n}", String(gameweek))}
-              rank={null}
-              brand
-            />
-          ) : null}
-        </ul>
-      </UiCard>
+      <LeagueList
+        label={t("fpl.general_leagues")}
+        rows={[
+          { key: "overall", name: t("fpl.overall"), to: "/fantasy/rankings", rank: overallRank },
+          ...(gameweek
+            ? [
+                {
+                  key: "gameweek",
+                  name: t("fpl.gameweek_league").replace("{n}", String(gameweek)),
+                  to: "/fantasy/rankings",
+                  rank: null,
+                },
+              ]
+            : []),
+        ]}
+      />
 
       <SectionGroupHeader title={t("fpl.private_leagues")} className="mt-4" />
       {phase !== "ready" || !hasTeam ? (
@@ -602,20 +590,16 @@ function LeaguesSection({
       ) : leagues.length === 0 ? (
         <NoLeaguesNote text={t("fpl.no_leagues")} />
       ) : (
-        <UiCard padding="none" className="overflow-hidden">
-          <ul>
-            {leagues.map((league) => (
-              <LeagueRow
-                key={league.id}
-                to="/fantasy/leagues/$leagueId"
-                params={{ leagueId: league.id }}
-                name={league.name}
-                rank={league.rank}
-                members={league.members}
-              />
-            ))}
-          </ul>
-        </UiCard>
+        <LeagueList
+          label={t("fpl.private_leagues")}
+          rows={leagues.map((league) => ({
+            key: league.id,
+            name: league.name,
+            to: `/fantasy/leagues/${league.id}`,
+            rank: league.rank,
+            members: league.members,
+          }))}
+        />
       )}
       <div className="mt-3 flex flex-wrap gap-2">
         <UiLinkButton to="/fantasy/leagues/join" variant="soft" size="sm" className="flex-auto">
@@ -635,96 +619,6 @@ function LeaguesSection({
         <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fpl.cup_how_body")}</p>
       </UiCard>
     </section>
-  );
-}
-
-/**
- * One league: a 4px edge at the inline start (a grid track, so it mirrors),
- * the name, the rank, a chevron. The general leagues take the brand gradient
- * edge — they are BotolaGO's own boards — and a private league the ink edge:
- * a league has no club, so it has no club colour to show.
- */
-function LeagueRow({
-  to,
-  params,
-  name,
-  rank,
-  members,
-  brand = false,
-}: {
-  to: string;
-  params?: Record<string, string>;
-  name: string;
-  rank: number | null;
-  members?: number;
-  brand?: boolean;
-}) {
-  return (
-    <li className={cn(ui.rule.block, "last:border-b-0")}>
-      <Link
-        to={to}
-        params={params}
-        className={cn(
-          "grid grid-cols-[4px_minmax(0,1fr)_auto_auto] items-center gap-3 pe-3",
-          ui.space.row,
-          "py-1",
-          "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
-          ui.focus,
-        )}
-      >
-        <span
-          aria-hidden
-          className={cn("self-stretch", !brand && ui.club.edgeFill)}
-          style={brand ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
-        />
-        <span
-          className={cn(
-            "min-w-0 truncate",
-            ui.text.secondary,
-            "[font-weight:var(--ui-weight-heavy)]",
-            ui.tone.default,
-          )}
-        >
-          {name}
-        </span>
-        <LeagueRank rank={rank} members={members} />
-        <ChevronRight className={cn("h-[18px] w-[18px]", ui.tone.muted)} aria-hidden />
-      </Link>
-    </li>
-  );
-}
-
-/**
- * "3e sur 24" / "3 من أصل 24". The figure stands alone in its row, so it is
- * Changa (`ui.score.row`); the words around it come from ONE translated
- * phrase with a `{rank}` slot, so each language orders and spaces it itself.
- * A French ordinal suffix ("e", "er") is the run of letters right after the
- * slot: it is set in the display face beside the figure — never inside
- * `ui.score.*`, which is sized for digits — and the rest in the muted meta.
- */
-function LeagueRank({ rank, members }: { rank: number | null; members?: number }) {
-  const { t, lang } = useI18n();
-  if (rank === null) {
-    return <span className={cn(ui.text.meta, ui.tone.muted)}>{t("fantasy.stat.none")}</span>;
-  }
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
-  if (!members) return <bdi className={cn(ui.score.row, ui.tone.default)}>{nf.format(rank)}</bdi>;
-  const first =
-    new Intl.PluralRules(lang === "ar" ? "ar" : "fr", { type: "ordinal" }).select(rank) === "one";
-  const phrase = (
-    first ? t("fantasy.hub.league_rank_one") : t("fantasy.hub.league_rank_other")
-  ).replace("{n}", nf.format(members));
-  const [before = "", after = ""] = phrase.split("{rank}");
-  const suffix = /^\p{L}+/u.exec(after)?.[0] ?? "";
-  return (
-    <span className={cn("whitespace-nowrap", ui.tone.default)}>
-      {before ? <span className={cn(ui.text.meta, ui.tone.muted)}>{before}</span> : null}
-      <bdi className={ui.score.row}>{nf.format(rank)}</bdi>
-      {suffix ? <span className={ui.display.header}>{suffix}</span> : null}
-      <span className={cn(ui.text.meta, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}>
-        {after.slice(suffix.length)}
-      </span>
-    </span>
   );
 }
 

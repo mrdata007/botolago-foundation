@@ -47,10 +47,16 @@ import { readTimeLabel } from "@/lib/read-time";
  * `--ui-on-ink-plain` over an `--ui-ink-deep` scrim.
  */
 
-/** The photo scrim, after the A-News board: clear for the top fifth, ink-deep at the base. */
-const PHOTO_SCRIM = {
+/**
+ * The scrim behind the copy on a photo card. It belongs to the copy block, not
+ * to the card: a card-wide ramp (clear for the top fifth) left a three-line
+ * Arabic headline, which starts near the top of the card, on almost bare
+ * photo. On the copy block it fades in over the extra top padding and is
+ * already 72% ink-deep where the pill starts, however long the headline.
+ */
+const COPY_SCRIM = {
   backgroundImage:
-    "linear-gradient(to bottom, transparent 20%, color-mix(in oklab, var(--ui-ink-deep) 94%, transparent) 86%)",
+    "linear-gradient(to bottom, transparent, color-mix(in oklab, var(--ui-ink-deep) 72%, transparent) 3rem, color-mix(in oklab, var(--ui-ink-deep) 94%, transparent))",
 };
 
 /** Hover, after premierleague.com: the photo zooms in a touch and the title
@@ -176,8 +182,10 @@ export function ArticleCard({
             className="absolute inset-0"
             imageClassName={cn("group-hover:scale-[1.03]", IMAGE_ZOOM)}
           />
-          <span aria-hidden className="absolute inset-0" style={PHOTO_SCRIM} />
-          <div className="relative flex min-w-0 flex-col items-start gap-2 p-4 sm:p-5">
+          <div
+            className="relative flex min-w-0 flex-col items-start gap-2 px-4 pb-4 pt-12 sm:px-5 sm:pb-5 sm:pt-14"
+            style={COPY_SCRIM}
+          >
             {/* `max-w-full`: in this `items-start` column a row sizes to its
                 content, and a one-line pill has no smaller minimum — without a
                 cap a long tag widened the row past the card, where the card's
