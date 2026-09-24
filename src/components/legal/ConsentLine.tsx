@@ -1,7 +1,21 @@
 import { Fragment } from "react";
 import { Link } from "@tanstack/react-router";
 
+import { ui } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 import type { ConsentSegment } from "./consent-segments";
+
+/**
+ * The default link treatment: the brand FOREGROUND (`--ui-ink-fg`), heavy and
+ * underlined, as the Option A sheets set the two document names. It used to
+ * be `--brand-primary`, which is `--ui-ink`: a fill colour used as text, a
+ * deep navy in both themes (BG-0083, 1.25:1 on dark). The auth screens were
+ * already passing this treatment in; now every caller gets it.
+ */
+const DEFAULT_LINK_CLASS = cn(
+  "[font-weight:var(--ui-weight-heavy)] underline underline-offset-2 hover:opacity-80",
+  ui.tone.ink,
+);
 
 /**
  * Renders a consent sentence built by `consent-segments.ts`.
@@ -19,7 +33,7 @@ import type { ConsentSegment } from "./consent-segments";
 export function ConsentLine({
   segments,
   className,
-  linkClassName = "font-semibold text-[color:var(--brand-primary)] underline underline-offset-2 hover:opacity-80",
+  linkClassName = DEFAULT_LINK_CLASS,
 }: {
   segments: readonly ConsentSegment[];
   className?: string;

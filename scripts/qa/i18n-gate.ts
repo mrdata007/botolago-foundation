@@ -366,7 +366,16 @@ export const BASELINES: Baselines = {
   // and drops the "Suivre BotolaGO" tiles, orphaning `fpl.follow` (+1).
   // Merged with Lane 5, `fpl.rankings` goes too: each lane removed one of its
   // two callers (the hub tile, the rankings page) and kept the other's. 250.
-  W3: 250,
+  //
+  // Option A, Lane 6 (account): Profile follows A-Profile — single-line rows (the
+  // four `profile.*_desc` go), no personal-details group (`.section.personal`,
+  // `.email`, `.username`), one Notifications row for three (`.notif.*`): +10;
+  // the language row's value names the language, so `language.french/.arabic`
+  // gain their first call sites: -2. Keys left in place, as above. The board's
+  // "Mes clubs" heading is a new key (`profile.clubs.title`), not a rewording
+  // of the still-unused `profile.followed_clubs`. W3 251 -> 259.
+  // With Lanes 1, 2, 4 and 5: 250 + 8 = 258.
+  W3: 258,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
