@@ -288,7 +288,8 @@ function PlayersPage() {
             >
               {/* The kit's small crest, not squeezed to 20px: at 20px a
                   three-letter fallback ("WAC", "RCA") was cropped mid-letter. */}
-              <ClubCrest club={c} size="sm" className="me-1.5" />
+              {/* No margin: `UiChip` spaces its children (gap-1.5). */}
+              <ClubCrest club={c} size="sm" />
               <span className="whitespace-nowrap">{clubLabel(c, tr)}</span>
             </UiChip>
           ))}
@@ -321,7 +322,7 @@ function PlayersPage() {
               aria-describedby={sort === s.k ? "players-sort-dir" : undefined}
             >
               {t(s.labelKey)}
-              {sort === s.k ? <DirGlyph className="ms-1 h-3 w-3 shrink-0" aria-hidden /> : null}
+              {sort === s.k ? <DirGlyph className="h-3 w-3 shrink-0" aria-hidden /> : null}
             </UiChip>
           ))}
           <span id="players-sort-dir" className="sr-only">

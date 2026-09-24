@@ -331,9 +331,13 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
+        {/* `flex-auto`, not `flex-1`: a zero basis let the row squeeze this
+            pill to 51px beside the other two. It grows into the room left on
+            its line but never below its one-line label; when the three do
+            not fit, the row wraps. */}
         <UiButton
           size="sm"
-          className="flex-1"
+          className="flex-auto"
           onClick={() =>
             void navigate({ to: "/fantasy/players/$playerId", params: { playerId: player.id } })
           }

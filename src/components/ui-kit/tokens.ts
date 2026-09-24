@@ -38,11 +38,25 @@ export const UI_TOKENS = [
   "--ui-text-meta",
   "--ui-text-label",
   "--ui-text-micro",
+  // the display face (Option A: Changa) and its two ramps, plus the body
+  // face as a token, for a glyph inside display text Changa does not have
+  "--ui-font-display",
+  "--ui-font-body",
+  "--ui-display-mega",
+  "--ui-display-hero",
+  "--ui-display-section",
+  "--ui-score-hero",
+  "--ui-score-lg",
+  "--ui-score-md",
+  "--ui-score-sm",
+  "--ui-score-row",
   // leading (BG-0124) — redeclared under :lang(ar)/[dir="rtl"], because the
   // Arabic face needs a taller line box than the Latin one at the same px.
   "--ui-leading-flat",
   "--ui-leading-copy",
   "--ui-leading-prose",
+  "--ui-leading-display",
+  "--ui-leading-figure",
   // stat ramp (numerals)
   "--ui-stat-hero",
   "--ui-stat-lg",
@@ -60,6 +74,7 @@ export const UI_TOKENS = [
   "--ui-radius-control",
   "--ui-radius-segment",
   "--ui-radius-track",
+  "--ui-radius-card",
   "--ui-radius-sheet",
   "--ui-radius-column",
   // spacing scale
@@ -85,13 +100,17 @@ export const UI_TOKENS = [
   "--ui-on-surface-muted",
   "--ui-on-surface-faint",
   "--ui-rule",
+  "--ui-rule-strong",
   "--ui-scrim",
+  "--ui-scorebox",
+  "--ui-on-scorebox",
   // ink
   "--ui-ink",
   "--ui-ink-deep",
   "--ui-ink-fg",
   "--ui-on-ink",
   "--ui-on-ink-plain",
+  "--ui-on-ink-muted",
   "--ui-on-grad-header",
   // the dark-mesh register (welcome, auth, first-launch chooser)
   "--ui-on-mesh",
@@ -102,6 +121,7 @@ export const UI_TOKENS = [
   // accents
   "--ui-accent-spring",
   "--ui-accent-sky",
+  "--ui-on-action-positive",
   // status
   "--ui-positive",
   "--ui-negative",
@@ -112,6 +132,13 @@ export const UI_TOKENS = [
   "--ui-on-positive",
   "--ui-on-negative",
   "--ui-on-caution",
+  // club colour (Option A) — ink defaults here; per element via `clubStyle()`
+  // and the `[data-club]` layer
+  "--ui-club",
+  "--ui-on-club",
+  "--ui-club-edge",
+  "--ui-club-fg",
+  "--ui-club-tint",
   // the per-route decorative wash
   "--ui-wash-home",
   "--ui-wash-news",
@@ -126,6 +153,7 @@ export const UI_TOKENS = [
   // elevation
   "--ui-shadow-card",
   "--ui-shadow-raised",
+  "--ui-shadow-lifted",
   "--ui-shadow-overlay",
   "--ui-shadow-column",
   // Fantasy domain — the pitch
@@ -134,6 +162,11 @@ export const UI_TOKENS = [
   "--ui-pitch-bench",
   "--ui-pitch-line",
   "--ui-on-pitch",
+  // the player plate's figure band (points / price / fixture)
+  "--ui-plate-figure",
+  // the match lineup pitch
+  "--ui-lineup-turf-a",
+  "--ui-lineup-turf-b",
   // Fantasy domain — fixture difficulty
   "--ui-fdr-1",
   "--ui-fdr-2",
@@ -161,7 +194,10 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-on-surface-muted",
   "--ui-on-surface-faint",
   "--ui-rule",
+  "--ui-rule-strong",
   "--ui-scrim",
+  "--ui-scorebox",
+  "--ui-on-scorebox",
   "--ui-ink",
   "--ui-ink-deep",
   "--ui-ink-fg",
@@ -170,6 +206,7 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-on-grad-header",
   "--ui-accent-spring",
   "--ui-accent-sky",
+  "--ui-on-action-positive",
   "--ui-positive",
   "--ui-negative",
   "--ui-caution",
@@ -178,6 +215,14 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-on-positive",
   "--ui-on-negative",
   "--ui-on-caution",
+  // Plain aliases of the ink family, redeclared identically under `.dark`
+  // (the `--ui-wash-neutral` precedent). Per element they are re-pointed by
+  // the `[data-club]` layer, which has its own light and dark rule.
+  "--ui-club",
+  "--ui-on-club",
+  "--ui-club-edge",
+  "--ui-club-fg",
+  "--ui-club-tint",
   "--ui-wash-home",
   "--ui-wash-news",
   "--ui-wash-matches",
@@ -188,12 +233,14 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-grad-hero",
   "--ui-shadow-card",
   "--ui-shadow-raised",
+  "--ui-shadow-lifted",
   "--ui-shadow-overlay",
-  "--ui-pitch-turf-a",
-  "--ui-pitch-turf-b",
   "--ui-pitch-bench",
   "--ui-pitch-line",
   "--ui-on-pitch",
+  "--ui-plate-figure",
+  "--ui-lineup-turf-a",
+  "--ui-lineup-turf-b",
   "--ui-fdr-1",
   "--ui-fdr-2",
   "--ui-fdr-3",
@@ -223,6 +270,13 @@ export const UI_DERIVED_TOKENS: readonly UiToken[] = [
   "--ui-on-mesh-faint",
   "--ui-mesh-glass",
   "--ui-mesh-rule",
+  // The quieter foreground on an ink fill: plain on-ink mixed into the ink
+  // itself, so it follows both.
+  "--ui-on-ink-muted",
+  // Option A's pastel Fantasy turf: the two action-gradient stops over the
+  // surface. All three flip, so the dark turf needs no second copy.
+  "--ui-pitch-turf-a",
+  "--ui-pitch-turf-b",
 ];
 
 /**
@@ -247,6 +301,14 @@ const SIZE_CLASS = {
   "--ui-stat-lg": "text-[length:var(--ui-stat-lg)]",
   "--ui-stat-md": "text-[length:var(--ui-stat-md)]",
   "--ui-stat-sm": "text-[length:var(--ui-stat-sm)]",
+  "--ui-display-mega": "text-[length:var(--ui-display-mega)]",
+  "--ui-display-hero": "text-[length:var(--ui-display-hero)]",
+  "--ui-display-section": "text-[length:var(--ui-display-section)]",
+  "--ui-score-hero": "text-[length:var(--ui-score-hero)]",
+  "--ui-score-lg": "text-[length:var(--ui-score-lg)]",
+  "--ui-score-md": "text-[length:var(--ui-score-md)]",
+  "--ui-score-sm": "text-[length:var(--ui-score-sm)]",
+  "--ui-score-row": "text-[length:var(--ui-score-row)]",
 } as const satisfies Partial<Record<UiToken, string>>;
 
 const WEIGHT_CLASS = {
@@ -257,15 +319,30 @@ const WEIGHT_CLASS = {
   "--ui-weight-hero": "[font-weight:var(--ui-weight-hero)]",
 } as const satisfies Partial<Record<UiToken, string>>;
 
+const FONT_CLASS = {
+  "--ui-font-display": "[font-family:var(--ui-font-display)]",
+  "--ui-font-body": "[font-family:var(--ui-font-body)]",
+} as const satisfies Partial<Record<UiToken, string>>;
+
 const size = (token: keyof typeof SIZE_CLASS) => SIZE_CLASS[token];
 const weight = (token: keyof typeof WEIGHT_CLASS) => WEIGHT_CLASS[token];
 
 /**
  * Numerals are always tabular and always a step tighter than prose — and the
  * tightening is `ltr:`-only, because Arabic-Indic digits sit in joined text.
+ *
+ * Manrope, always: this is the ramp for a figure read down a COLUMN, and
+ * Changa has no tabular figures. It must never pick up the display face —
+ * the contract test holds it to that.
  */
 const STAT_BASE =
   "fpl-tabular ltr:tracking-[var(--ui-stat-tracking)] leading-[var(--ui-leading-flat)]";
+
+/**
+ * Every display step: the Changa family and its own leading. Weight tops out
+ * at heavy (800) — Changa has no 900, so `--ui-weight-hero` never appears.
+ */
+const DISPLAY = FONT_CLASS["--ui-font-display"];
 
 /**
  * The design language as class tokens. Compose with `cn()`.
@@ -312,6 +389,82 @@ export const ui = {
     sm: `${size("--ui-stat-sm")} ${weight("--ui-weight-strong")} ${STAT_BASE}`,
   },
 
+  /**
+   * Font families, for the one-off case a ramp step does not cover. `display`
+   * is Changa; `body` is the body stack (Manrope, or Noto Sans Arabic in
+   * Arabic) — use it on the prime of a minute inside display text, since
+   * Changa has no U+2032: `<bdi>63<span className={ui.font.body}>′</span></bdi>`.
+   */
+  font: {
+    display: FONT_CLASS["--ui-font-display"],
+    body: FONT_CLASS["--ui-font-body"],
+  },
+
+  /**
+   * Display ramp (Option A) — Changa, for words that announce: titles,
+   * headings, tab labels, team names in headers. Every step carries
+   * `--ui-leading-display` (1.25 Latin, 1.95 Arabic). No step is 900: Changa
+   * stops at 800.
+   *
+   * Changing the size with `cn()` drops the leading (`text-*` and `leading-*`
+   * are one group to tailwind-merge), so restate the leading after a size.
+   */
+  display: {
+    /** 112/800 — the goal takeover's one word. */
+    mega: `${DISPLAY} ${size("--ui-display-mega")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-display)]`,
+    /** 46/800 — a hero headline ("Journée 14"), a player's surname. */
+    hero: `${DISPLAY} ${size("--ui-display-hero")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-display)]`,
+    /** 34/800 — the hub title (`UiPageTitle`), the login heading. */
+    title: `${DISPLAY} ${size("--ui-text-hero")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-display)]`,
+    /** 22/800 — a section heading ("À venir", "Mes ligues"). */
+    section: `${DISPLAY} ${size("--ui-display-section")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-display)]`,
+    /** 19/800 — the screen header title (`UiHeader`). */
+    header: `${DISPLAY} ${size("--ui-text-title")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-display)]`,
+    /** 16/800 — the header title when both flanks hold a control. */
+    headerSm: `${DISPLAY} ${size("--ui-text-subtitle")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-display)]`,
+    /** 16/600 — a tab label (`UiTabs` sets the active one heavy). */
+    tab: `${DISPLAY} ${size("--ui-text-subtitle")} ${weight("--ui-weight-body")} leading-[var(--ui-leading-display)]`,
+    /** 22/700 — a team name in the split score header. */
+    teamLg: `${DISPLAY} ${size("--ui-display-section")} ${weight("--ui-weight-strong")} leading-[var(--ui-leading-display)]`,
+    /** 19/700 — a team name in a card or a hero. */
+    team: `${DISPLAY} ${size("--ui-text-title")} ${weight("--ui-weight-strong")} leading-[var(--ui-leading-display)]`,
+    /** 17/700 — a team name on a lineup band. */
+    teamSm: `${DISPLAY} ${size("--ui-text-section")} ${weight("--ui-weight-strong")} leading-[var(--ui-leading-display)]`,
+  },
+
+  /**
+   * Score ramp (Option A) — Changa numerals for a figure that STANDS ALONE:
+   * a score box, the Fantasy points number, a rank hero, a kickoff time in a
+   * list row. NOT tabular (Changa has no tabular figures), so never for a
+   * figure read down a column — that is `ui.stat.*`.
+   *
+   * Digits and figure punctuation ONLY. Leading is `--ui-leading-figure`,
+   * the same 1.1 in both languages because the digits are the same Latin
+   * glyphs — and Arabic LETTERS in Changa rise above that box (measured:
+   * "الثالث" 2px over it at 20px, cut by `truncate`). A unit or an ordinal
+   * ("pts", the "e" of "3e", their Arabic words) is a sibling span in
+   * `ui.text.*` / `ui.display.*`, which carry each language's leading.
+   *
+   * A score is three flex children — never the string "1 – 1" — in a
+   * container that INHERITS the page direction, each figure its own `<bdi>`:
+   * `<div className="flex gap-2"><bdi>1</bdi><span aria-hidden>–</span><bdi>1</bdi></div>`.
+   * Never a `<bdi>` as the flex container: it is `dir="auto"`, digits have
+   * no strong direction, so it resolves to LTR and puts home on the LEFT in
+   * Arabic.
+   */
+  score: {
+    /** 52/800 — the match hero score box, the Fantasy card points. */
+    hero: `${DISPLAY} ${size("--ui-score-hero")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-figure)]`,
+    /** 40/800 — the live card score, H2H tallies, a team's points figure. */
+    lg: `${DISPLAY} ${size("--ui-score-lg")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-figure)]`,
+    /** 30/800 — a match-list card score, the rank hero figure. */
+    md: `${DISPLAY} ${size("--ui-score-md")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-figure)]`,
+    /** 24/800 — the compact bar score, a summary strip figure. */
+    sm: `${DISPLAY} ${size("--ui-score-sm")} ${weight("--ui-weight-heavy")} leading-[var(--ui-leading-figure)]`,
+    /** 20/700 — a kickoff time or score in a list row, an event minute, a rank figure. */
+    row: `${DISPLAY} ${size("--ui-score-row")} ${weight("--ui-weight-strong")} leading-[var(--ui-leading-figure)]`,
+  },
+
   /** Foreground colours. */
   tone: {
     default: "text-[color:var(--ui-on-surface)]",
@@ -323,6 +476,17 @@ export const ui = {
     /** The foreground for the header/hero gradient band. */
     onGradHeader: "text-[color:var(--ui-on-grad-header)]",
     onInkPlain: "text-[color:var(--ui-on-ink-plain)]",
+    /** The quieter line on an ink fill: a kicker or a label over a figure. */
+    onInkMuted: "text-[color:var(--ui-on-ink-muted)]",
+    /** A gain written ON the action gradient; `positive` fails there. */
+    onActionPositive: "text-[color:var(--ui-on-action-positive)]",
+    /** Text on a club fill (`--ui-club`), measured per theme by the club palette. */
+    onClub: "text-[color:var(--ui-on-club)]",
+    /**
+     * The club colour as text on a surface or on the club tint. Falls back to
+     * `--ui-on-surface` where no club colour clears 4.5:1, and always in dark.
+     */
+    club: "text-[color:var(--ui-club-fg)]",
     /**
      * The dark-mesh register: welcome, auth, the first-launch chooser.
      * Use these instead of `text-white/80` — a literal white is un-themed and
@@ -349,7 +513,13 @@ export const ui = {
   /** Surfaces. */
   surface: {
     page: "bg-[color:var(--ui-page)] text-[color:var(--ui-on-surface)]",
-    card: "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)] rounded-[var(--ui-radius-control)] shadow-[var(--ui-shadow-card)]",
+    card: "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)] rounded-[var(--ui-radius-card)] shadow-[var(--ui-shadow-card)]",
+    /**
+     * The plate a score sits on across a split club header. Light in BOTH
+     * themes, with ink-deep digits (16.59 / 14.18), so it separates from any
+     * club fill; pair with `ui.radius.card` and `ui.shadow.lifted`.
+     */
+    scorebox: "bg-[color:var(--ui-scorebox)] text-[color:var(--ui-on-scorebox)]",
     sunken: "bg-[color:var(--ui-surface-sunken)] text-[color:var(--ui-on-surface)]",
     ink: "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink)]",
     /** An ink fill carrying plain (non-cyan) foreground. */
@@ -372,6 +542,73 @@ export const ui = {
     blockStart: "border-t border-[color:var(--ui-rule)]",
     inline: "border-s border-[color:var(--ui-rule)]",
     all: "border border-[color:var(--ui-rule)]",
+    /**
+     * A control boundary that must be seen (WCAG 1.4.11): a field outline,
+     * an outline button. `--ui-rule` is a 1.2:1 hairline; this is ≥ 3:1.
+     */
+    strong: "border border-[color:var(--ui-rule-strong)]",
+  },
+
+  /** Elevation — the one shadow set. `lifted` is Option A's single raised step. */
+  shadow: {
+    card: "shadow-[var(--ui-shadow-card)]",
+    raised: "shadow-[var(--ui-shadow-raised)]",
+    /** The score box, a hero card, the primary call to action. */
+    lifted: "shadow-[var(--ui-shadow-lifted)]",
+    overlay: "shadow-[var(--ui-shadow-overlay)]",
+  },
+
+  /**
+   * Club-colour edge bars, logical so they mirror. They replace the boards'
+   * `box-shadow: inset 4px 0 0 <club>` — a physical x offset that stays on
+   * the left in Arabic. Drawn as a 4px border, which on a rounded card
+   * tapers into the corners exactly like the inset shadow did, and paints
+   * `--ui-club-edge` (≥ 3:1 against the surface) — so put the element, or an
+   * ancestor, under `clubStyle(club)`. Without one it is the ink.
+   *
+   * A two-sided row (home edge at the start, away edge at the end) puts each
+   * side's `clubStyle` on its own cell, or uses 4px grid tracks with
+   * `ui.edge.bar` — grid tracks mirror too.
+   */
+  edge: {
+    /** A 4px bar on the inline-start edge (the right edge in Arabic). */
+    start: "border-s-4 border-s-[color:var(--ui-club-edge)]",
+    /** A 4px bar on the inline-end edge. */
+    end: "border-e-4 border-e-[color:var(--ui-club-edge)]",
+    /** A 4px bar along the bottom (block-end) edge — a club tile's base. */
+    blockEnd: "border-b-4 border-b-[color:var(--ui-club-edge)]",
+    /**
+     * A free-standing 4px vertical bar, as a flex or grid child. Override its
+     * background (`style={{ backgroundImage: "var(--ui-grad-action)" }}`) for
+     * the gradient "your position" bar.
+     */
+    bar: "w-1 shrink-0 self-stretch rounded-full bg-[color:var(--ui-club-edge)]",
+  },
+
+  /**
+   * Club colour, read from the `--ui-club*` tokens that `clubStyle(club)`
+   * sets per element (see `src/lib/club-palette.ts`). Spread `clubStyle` on
+   * the element or an ancestor; these classes only paint.
+   */
+  club: {
+    /** A club block: the fill and the text measured for it. */
+    fill: "bg-[color:var(--ui-club)] text-[color:var(--ui-on-club)]",
+    /** The fill alone, for a bar or a segment that carries no text. */
+    fillOnly: "bg-[color:var(--ui-club)]",
+    /** The edge colour as a fill: a dot, a thin progress bar. ≥ 3:1. */
+    edgeFill: "bg-[color:var(--ui-club-edge)]",
+    /** A quiet club wash behind an icon disc or a quote. */
+    tint: "bg-[color:var(--ui-club-tint)]",
+    /**
+     * A 1px inner ring in the edge colour. Invisible on most clubs (the edge
+     * IS the fill) and exactly what a white or yellow kit needs to stay a
+     * shape on a white card.
+     */
+    ring: "ring-1 ring-inset ring-[color:var(--ui-club-edge)]",
+    /** A surface disc on a club block: a crest plate, an avatar. */
+    inverse: "bg-[color:var(--ui-surface)] text-[color:var(--ui-club-fg)]",
+    /** The diagonal texture (`--stripe-angle`, mirrored in Arabic). */
+    stripes: "club-stripes",
   },
 
   /** Density. */
@@ -394,7 +631,10 @@ export const ui = {
     control: "rounded-[var(--ui-radius-control)]",
     segment: "rounded-[var(--ui-radius-segment)]",
     track: "rounded-[var(--ui-radius-track)]",
+    /** 14px — cards and list groups (`ui.surface.card` carries it). */
+    card: "rounded-[var(--ui-radius-card)]",
     sheet: "rounded-[var(--ui-radius-sheet)]",
+    /** Every control a thumb presses: buttons, chips, pills, icon buttons. */
     full: "rounded-full",
   },
 

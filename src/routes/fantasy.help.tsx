@@ -79,7 +79,13 @@ function HelpPage() {
       {SECTIONS.map((section) => (
         <section key={section.title} className="mt-4">
           <div className={ui.space.gutter}>
-            <UiPill className="rounded-b-none px-4 py-2">{t(section.title)}</UiPill>
+            {/* A folder tab sitting on the rule: small top corners, a square
+                base. The shape is stated here because `UiPill` is fully
+                round now, and `rounded-b-none` on a `rounded-full` pill
+                leaves a dome (the top radii scale up to the full height). */}
+            <UiPill className={cn(ui.radius.control, "rounded-b-none px-4 py-2")}>
+              {t(section.title)}
+            </UiPill>
             <div className={ui.rule.block} />
           </div>
           <ul className={cn("mt-2 space-y-2", ui.space.gutter)}>

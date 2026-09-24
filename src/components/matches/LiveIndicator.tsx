@@ -1,42 +1,29 @@
-import { cn } from "@/lib/utils";
-import { useI18n } from "@/i18n/provider";
+import { UiLivePill } from "@/components/ui-kit";
 
 /**
- * Design System V2 — Live indicator.
+ * The live badge — Option A's navy live pill.
  *
- * Restrained, premium urgency: a dot next to the LIVE label that slowly
- * fades in and out (`live-breathe`, 1.5s a cycle, in styles.css). It is
- * CSS-only and holds still under prefers-reduced-motion.
- * Never used with aggressive red flashing — the token `--color-live` is
- * a calm brand-red tuned for legibility on light and glass surfaces.
+ * A thin, prop-compatible wrapper over the kit's `UiLivePill` so every
+ * existing caller (match cards, the score header) moves to the one pill the
+ * product now draws: white on navy (`ui.surface.inkPlain`, 12.8:1 light,
+ * 12.6:1 dark), rounded, with the breathing `--ui-live` dot (CSS-only, still
+ * under reduced motion) and the minute in `<bdi>` so "45+2′" keeps its order
+ * in Arabic.
+ *
+ * The word is `t("matches.status.live")` — "EN DIRECT" / its Arabic — never
+ * the boards' English "LIVE". What went: the 14% red tint, the literal
+ * 10/11px sizes, the 900 weight and the `--color-live*` V1 aliases.
+ *
+ * `minute` also takes a string now ("45+2"); the prime is added by the pill.
  */
 export function LiveIndicator({
   minute,
   size = "sm",
   className,
 }: {
-  minute?: number;
+  minute?: number | string;
   size?: "sm" | "md";
   className?: string;
 }) {
-  const { t } = useI18n();
-  const label = t("matches.status.live");
-  const sizes = size === "md" ? "px-2 py-0.5 text-[11px]" : "px-1.5 py-0.5 text-[10px]";
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full font-black uppercase ltr:tracking-[0.14em]",
-        "bg-[color:color-mix(in_oklab,var(--color-live)_14%,transparent)] text-[color:var(--color-live-fg)]",
-        sizes,
-        className,
-      )}
-    >
-      <span
-        className="live-breathe inline-flex h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-live)]"
-        aria-hidden
-      />
-      <span>{label}</span>
-      {typeof minute === "number" && <span className="tabular-nums">{minute}′</span>}
-    </span>
-  );
+  return <UiLivePill minute={minute} size={size} className={className} />;
 }

@@ -24,13 +24,15 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Link, useRouter } from "@tanstack/react-router";
-import { AlertTriangle, Check, ChevronDown, ChevronLeft, Info, Loader2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, Info, Loader2, X } from "lucide-react";
 import type {
   AnchorHTMLAttributes,
   AriaAttributes,
   ButtonHTMLAttributes,
+  CSSProperties,
   ElementType,
   InputHTMLAttributes,
+  KeyboardEvent,
   ReactNode,
   Ref,
   SelectHTMLAttributes,
@@ -38,10 +40,11 @@ import type {
   TextareaHTMLAttributes,
   ThHTMLAttributes,
 } from "react";
-import { useId } from "react";
+import { useId, useRef } from "react";
 
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { rovingTabStop, rovingTarget } from "./tabs-keyboard";
 import { ui } from "./tokens";
 
 /**
@@ -112,16 +115,23 @@ export function UiScreen({
 /* ------------------------------------------------------------------ */
 
 /**
- * The Fantasy header pattern, generalised: a full-bleed band carrying
- * `[back] — centered title — [trailing]` on a 1fr/auto/1fr grid, with an
- * optional band underneath for a subtitle, tabs or filters.
+ * The screen header: a full-bleed band carrying
+ * `[back] — centred kicker + title — [trailing]` on a 1fr/auto/1fr grid, with
+ * an optional band underneath for a subtitle, tabs or filters.
  *
- * Three tones: `gradient` (the cyan→indigo hero band), `ink` (solid brand)
- * and `surface` (opaque, hairline-ruled — for content pages that should not
- * shout).
+ * Option A: the back control is `UiBackButton` (a soft pill, arrow + "Retour")
+ * whenever `backTo`, `onBack` or `showBack` asks for one; the title is set in
+ * the display face (`ui.display.header`, Changa 19/800 — 16 when both flanks
+ * are occupied), and an optional `kicker` ("FANTASY", "JOURNÉE 14") sits
+ * above it in the label type. `trailing` takes one or two `UiIconButton`s.
+ *
+ * Three tones: `surface` (opaque, hairline-ruled — the Option A default),
+ * `ink` (solid brand; the back pill turns glass) and `gradient` (the
+ * cyan→indigo hero band, which no Option A screen uses).
  */
 export function UiHeader({
   title,
+  kicker,
   backTo,
   onBack,
   showBack = false,
@@ -132,7 +142,14 @@ export function UiHeader({
   sticky = false,
   className,
 }: {
-  title: ReactNode;
+  /**
+   * The screen's name, rendered as its `<h1>`. Leave it out only when the
+   * `kicker` alone labels the bar and the page carries its own `<h1>` (the
+   * match page, whose teams are the heading).
+   */
+  title?: ReactNode;
+  /** A small uppercase line above the title: the section or the context. */
+  kicker?: ReactNode;
   backTo?: string;
   onBack?: () => void;
   /** Render a Back control that falls back to router history. */
@@ -145,36 +162,13 @@ export function UiHeader({
   sticky?: boolean;
   className?: string;
 }) {
-  const { t } = useI18n();
-  const router = useRouter();
-
-  const backLabel = (
-    <span className={cn("inline-flex items-center gap-0.5", ui.text.body)}>
-      <ChevronLeft className="h-5 w-5" aria-hidden />
-      {t("fpl.back")}
-    </span>
-  );
-  const backControlClass = cn(
-    "inline-flex items-center -ms-1 pe-2",
-    ui.space.tap,
-    ui.radius.control,
-    ui.focus,
-  );
-
+  const backTone = tone === "ink" ? "glass" : "soft";
   const leadingNode = leading ? (
     leading
   ) : backTo ? (
-    <Link to={backTo} className={backControlClass}>
-      {backLabel}
-    </Link>
+    <UiBackButton to={backTo} tone={backTone} />
   ) : onBack || showBack ? (
-    <button
-      type="button"
-      onClick={onBack ?? (() => router.history.back())}
-      className={backControlClass}
-    >
-      {backLabel}
-    </button>
+    <UiBackButton onClick={onBack} tone={backTone} />
   ) : null;
 
   return (
@@ -191,20 +185,247 @@ export function UiHeader({
       )}
       style={tone === "gradient" ? { backgroundImage: "var(--ui-grad-header)" } : undefined}
     >
-      <div className="grid min-h-[var(--ui-tap-min)] grid-cols-[1fr_auto_1fr] items-center">
+      {/* Centring: the two `1fr` tracks are equal whenever the title fits
+          between two flanks as wide as the wider one, so every such title is
+          centred on the bar. A title too wide for that slot (at 390px beside
+          the 101px "Retour" pill: anything over ~140px in French) does not
+          truncate to stay centred: the track that holds the pill cannot
+          shrink below it, the empty one can, and the title slides toward the
+          end by just enough to show in full. Equal tracks forced by a mirror
+          of the pill were tried and measured: "Statistiques joueurs" came
+          out centred as "Statistiques jou…". Keep header titles short — the
+          boards pair a short title with a `kicker`. */}
+      <div className="grid min-h-[var(--ui-tap-min)] grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div className="justify-self-start">{leadingNode}</div>
-        <h1
-          className={cn(
-            "truncate px-2 text-center",
-            leadingNode && trailing ? ui.text.subtitle : ui.text.title,
-          )}
-        >
-          {title}
-        </h1>
-        <div className="justify-self-end">{trailing}</div>
+        {/* `min-w-0`: a grid item's minimum is its content, so without it a
+            long title widens the middle track instead of truncating. */}
+        <div className="min-w-0 text-center">
+          {kicker ? (
+            <p
+              className={cn(
+                "truncate",
+                ui.text.label,
+                tone === "surface" && ui.tone.muted,
+                tone === "ink" && ui.tone.onInkMuted,
+              )}
+            >
+              {kicker}
+            </p>
+          ) : null}
+          {title ? (
+            <h1
+              className={cn(
+                "truncate",
+                leadingNode && trailing ? ui.display.headerSm : ui.display.header,
+              )}
+            >
+              {title}
+            </h1>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2 justify-self-end">{trailing}</div>
       </div>
       {children}
     </header>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Icon buttons and the back control                                   */
+/* ------------------------------------------------------------------ */
+
+export type UiIconButtonVariant = "soft" | "glass" | "ink" | "ghost";
+
+/**
+ * The paint for each round control variant. `glass` reads `--ui-on-club`,
+ * which is the plain on-ink white by default and the measured foreground
+ * inside a `clubStyle()` block — so the same glass button is legible on a
+ * navy band, on a photo scrim, on Wydad red and on FUS orange (where the
+ * on-club colour is ink-deep, and white glass would be 2:1).
+ */
+function iconButtonPaint(variant: UiIconButtonVariant) {
+  return cn(
+    variant === "soft" && cn(ui.surface.sunken, ui.tone.ink, ui.focus),
+    variant === "glass" &&
+      cn(
+        "bg-[color:color-mix(in_srgb,var(--ui-on-club)_16%,transparent)]",
+        ui.tone.onClub,
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-on-club)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+      ),
+    variant === "ink" && cn(ui.surface.inkPlain, ui.focus),
+    variant === "ghost" &&
+      cn("bg-transparent hover:bg-[color:var(--ui-surface-sunken)]", ui.tone.ink, ui.focus),
+    "disabled:cursor-not-allowed disabled:opacity-50",
+  );
+}
+
+const ICON_BUTTON_FRAME = cn(
+  "inline-grid shrink-0 place-items-center transition-[filter,opacity,background-color]",
+  "[&_svg]:h-5 [&_svg]:w-5 [&_svg]:shrink-0",
+  ui.space.tap,
+  ui.radius.full,
+);
+
+/**
+ * A round 44px control holding one icon (or two letters, like the language
+ * switcher's "FR"): share, follow, bookmark, notifications, the check that
+ * says a player is already in the team.
+ *
+ * `aria-label` is REQUIRED by the type. An icon is not a name, and an
+ * unnamed button is announced as "button".
+ *
+ * Variants: `soft` (sunken disc, brand icon — the top bar and headers),
+ * `glass` (a 16% wash of the on-club colour — on a club block or a photo),
+ * `ink` (navy disc, white icon), `ghost` (no fill until hovered). It forwards
+ * `ref` and spreads every other prop, so it works as a Radix `asChild`
+ * trigger.
+ */
+export function UiIconButton({
+  variant = "soft",
+  className,
+  children,
+  ref,
+  ...props
+}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "children"> & {
+  "aria-label": string;
+  children: ReactNode;
+  variant?: UiIconButtonVariant;
+  ref?: Ref<HTMLButtonElement>;
+}) {
+  return (
+    <button
+      type="button"
+      {...props}
+      ref={ref}
+      className={cn(ICON_BUTTON_FRAME, iconButtonPaint(variant), className)}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** `UiIconButton` as a router link — same shape, same required name. */
+export function UiIconLinkButton({
+  to,
+  params,
+  search,
+  variant = "soft",
+  className,
+  children,
+  ...props
+}: Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "aria-label" | "children"> & {
+  to: string;
+  params?: Record<string, string>;
+  search?: Record<string, unknown>;
+  "aria-label": string;
+  children: ReactNode;
+  variant?: UiIconButtonVariant;
+}) {
+  return (
+    <Link
+      to={to}
+      params={params}
+      search={search}
+      {...props}
+      className={cn(ICON_BUTTON_FRAME, iconButtonPaint(variant), className)}
+    >
+      {children}
+    </Link>
+  );
+}
+
+/**
+ * The back control: a round soft pill with an arrow and "Retour" / "رجوع"
+ * (`t("fpl.back")`). A link when `to` is given; otherwise a button that runs
+ * `onClick`, or router history when there is none.
+ *
+ * The arrow is `lucide-arrow-left`, which `styles.css` mirrors under
+ * `dir="rtl"` for every screen at once — do not add `rtl:rotate-180` on top,
+ * it composes with that transform and points the arrow backwards again.
+ *
+ * `iconOnly` keeps the name for screen readers and drops the visible word —
+ * for a compact bar with no room (the sticky score bar). `tone="glass"` is
+ * for a club block or a photo, like `UiIconButton variant="glass"`.
+ */
+export function UiBackButton({
+  to,
+  onClick,
+  label,
+  tone = "soft",
+  iconOnly = false,
+  className,
+}: {
+  to?: string;
+  onClick?: () => void;
+  /** Overrides the default "Retour" wording. */
+  label?: string;
+  tone?: "soft" | "glass";
+  iconOnly?: boolean;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  const router = useRouter();
+  const name = label ?? t("fpl.back");
+  const classes = cn(
+    iconOnly
+      ? ICON_BUTTON_FRAME
+      : cn(ICON_BUTTON_FRAME, "inline-flex items-center gap-1.5 ps-2.5 pe-3.5"),
+    ui.text.bodyStrong,
+    iconButtonPaint(tone),
+    className,
+  );
+  const content = (
+    <>
+      <ArrowLeft aria-hidden />
+      {iconOnly ? <span className="sr-only">{name}</span> : <span>{name}</span>}
+    </>
+  );
+  if (to) {
+    return (
+      <Link to={to} className={classes}>
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick ?? (() => router.history.back())} className={classes}>
+      {content}
+    </button>
+  );
+}
+
+/**
+ * The hub title band (Option A) — Matches, Actualités, Fantasy, Profil: a
+ * white band under the top bar carrying the screen's `<h1>` in the display
+ * face (`ui.display.title`, Changa 34/800), an optional control at the
+ * inline end (the season picker: `<UiButton variant="soft" size="sm">`), and
+ * optional `children` under it (a scrolling `UiChip` row, a tablist).
+ *
+ * Full-bleed like `UiHeader`: render it outside `UiScreen`'s gutter, above
+ * the content column.
+ */
+export function UiPageTitle({
+  title,
+  trailing,
+  children,
+  as: Tag = "h1",
+  className,
+}: {
+  title: ReactNode;
+  trailing?: ReactNode;
+  children?: ReactNode;
+  /** The heading element; `h1` unless the page already has one. */
+  as?: "h1" | "h2";
+  className?: string;
+}) {
+  return (
+    <div className={cn(ui.surface.bar, ui.rule.block, ui.space.gutter, "pb-3 pt-2", className)}>
+      <div className="flex min-h-[var(--ui-tap-min)] items-center justify-between gap-3">
+        <Tag className={cn("min-w-0 truncate", ui.display.title)}>{title}</Tag>
+        {trailing ? <div className="shrink-0">{trailing}</div> : null}
+      </div>
+      {children ? <div className="mt-3 min-w-0">{children}</div> : null}
+    </div>
   );
 }
 
@@ -213,9 +434,11 @@ export function UiHeader({
 /* ------------------------------------------------------------------ */
 
 /**
- * The Fantasy card: an opaque surface, 6px radius, one small shadow, no
- * border and no glass. `interactive` adds the press feedback used on tappable
- * tiles.
+ * The card: an opaque surface, the 14px card radius (`--ui-radius-card`,
+ * carried by `ui.surface.card`), one small shadow, no border and no glass.
+ * `interactive` adds the press feedback used on tappable tiles. A feature
+ * surface (score header, Fantasy card, hero) takes `ui.radius.sheet` through
+ * `className` instead.
  *
  * ARIA and `role`/`id` pass through (BG-0129). They used not to, so a caller
  * could not label a card, mark it as a region, or point an
@@ -277,6 +500,12 @@ export type UiButtonVariant =
   | "gradient"
   | "ink"
   | "light"
+  /**
+   * The sunken pill: a quiet control that is not the page's call to action —
+   * the season picker beside a hub title ("2026/27 ⌄"), a "Jouer" inside a
+   * chip card. Same fill as `UiIconButton variant="soft"`.
+   */
+  | "soft"
   | "outline"
   | "ghost"
   /**
@@ -318,7 +547,8 @@ function buttonClass(
     // carry it, the ones that forget are the ones that break, and a button is
     // where icon and label compete for width.
     "[&_svg]:shrink-0",
-    ui.radius.control,
+    // Option A: every button is a pill, like the chips and the icon buttons.
+    ui.radius.full,
     onMesh ? ui.focusOnMesh : ui.focus,
     size === "md"
       ? cn("min-h-[var(--ui-row-min)] w-full px-4", ui.text.bodyStrong)
@@ -329,17 +559,34 @@ function buttonClass(
           // when a hand-rolled back control that carried `ui.space.tap` (which
           // sets both) became a `sm` button and silently lost its width.
           "min-h-[var(--ui-tap-min)] min-w-[var(--ui-tap-min)] px-3",
+          // A pill never wraps. `sm` is inline and sizes to its label, so
+          // squeezed into a narrow flex cell it used to break "Voir le
+          // joueur" onto two lines inside a 51px pill — and `rounded-full`
+          // turned that box into a near-circle with the words outside the
+          // curve. On one line it takes its width; the row around it wraps
+          // instead. Because the explicit `min-w` above replaces a flex
+          // item's automatic minimum, a caller can still squeeze it below its
+          // label with a zero basis (`flex-1`): give a growing `sm` button
+          // `flex-auto`. A label meant to wrap (a two-line grid cell) opts
+          // back in on its own span with `text-balance` / `whitespace-normal`.
+          "whitespace-nowrap text-center",
           ui.text.meta,
           "[font-weight:var(--ui-weight-heavy)]",
         ),
     "transition-[filter,opacity] disabled:cursor-not-allowed",
-    variant === "gradient" && "text-[color:var(--ui-ink-deep)] disabled:opacity-45",
+    // The primary call to action is the one button lifted off the page. A
+    // disabled one lies flat again, so it does not read as armed.
+    variant === "gradient" &&
+      "text-[color:var(--ui-ink-deep)] shadow-[var(--ui-shadow-lifted)] disabled:opacity-45 disabled:shadow-none",
     variant === "ink" &&
       "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink-plain)] disabled:bg-[color:var(--ui-surface-sunken)] disabled:text-[color:var(--ui-on-surface-muted)]",
     // BG-0083: these three read as text on a surface, so they take the
     // theme-correct foreground, not the ink fill.
     variant === "light" &&
       "bg-[color:var(--ui-surface)] text-[color:var(--ui-ink-fg)] shadow-[var(--ui-shadow-card)] disabled:opacity-50",
+    variant === "soft" &&
+      !onMesh &&
+      "bg-[color:var(--ui-surface-sunken)] text-[color:var(--ui-on-surface)] disabled:opacity-50",
     variant === "outline" &&
       !onMesh &&
       "border border-current bg-transparent text-[color:var(--ui-ink-fg)] disabled:opacity-50",
@@ -357,6 +604,9 @@ function buttonClass(
         "disabled:opacity-50",
       ),
     onMesh && variant === "ghost" && cn("bg-transparent", ui.tone.onMesh, "disabled:opacity-50"),
+    onMesh &&
+      variant === "soft" &&
+      cn("bg-[color:var(--ui-mesh-glass)]", ui.tone.onMesh, "disabled:opacity-50"),
     // The fill carries `--ui-on-negative`, not a hand-picked white: the
     // negative inverts across the themes, so white measured 5.49:1 in light
     // and 2.31:1 in dark.
@@ -440,6 +690,10 @@ export type UiSegmentedSize = "md" | "lg";
  * ("Général | Journée | Classement | Aide") do not fit at 390px. `md` is now
  * the floor itself (`--ui-tap-min`) at the meta size, which fits four labels;
  * `lg` is the roomier row height for two or three long labels.
+ *
+ * `variant="pill"` (Option A) is the two-way toggle — "Terrain | Liste": a
+ * white rounded-full track on the card shadow, the chosen side a navy pill
+ * with white text. Navigation between sections is `UiTabs`, not this.
  */
 export function UiSegmented<T extends string>({
   value,
@@ -447,6 +701,7 @@ export function UiSegmented<T extends string>({
   options,
   tone = "onSurface",
   size = "md",
+  variant = "track",
   className,
   label,
 }: {
@@ -456,19 +711,25 @@ export function UiSegmented<T extends string>({
   /** `onGradient` for a control sitting inside a gradient header band. */
   tone?: "onSurface" | "onGradient";
   size?: UiSegmentedSize;
+  /** `track` (sunken track, raised white segment) or `pill` (Option A toggle). */
+  variant?: "track" | "pill";
   className?: string;
   label?: string;
 }) {
+  const pill = variant === "pill";
   return (
     <div
       role="tablist"
       aria-label={label}
       className={cn(
         "grid p-[3px]",
-        ui.radius.track,
-        tone === "onGradient"
-          ? "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_35%,transparent)]"
-          : ui.surface.sunken,
+        pill
+          ? cn(ui.radius.full, "bg-[color:var(--ui-surface)] shadow-[var(--ui-shadow-card)]")
+          : ui.radius.track,
+        !pill &&
+          (tone === "onGradient"
+            ? "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_35%,transparent)]"
+            : ui.surface.sunken),
         className,
       )}
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
@@ -485,15 +746,17 @@ export function UiSegmented<T extends string>({
             onClick={() => onChange(option.value)}
             className={cn(
               "truncate px-2 transition-colors disabled:opacity-50",
-              ui.radius.segment,
+              pill ? ui.radius.full : ui.radius.segment,
               size === "md"
                 ? cn("min-h-[var(--ui-tap-min)]", ui.text.meta)
                 : cn("min-h-[var(--ui-row-min)]", ui.text.body),
               "[font-weight:var(--ui-weight-strong)]",
               ui.focus,
               active
-                ? "bg-[color:var(--ui-surface)] text-[color:var(--ui-ink-fg)] shadow-[var(--ui-shadow-card)]"
-                : tone === "onGradient"
+                ? pill
+                  ? ui.surface.inkPlain
+                  : "bg-[color:var(--ui-surface)] text-[color:var(--ui-ink-fg)] shadow-[var(--ui-shadow-card)]"
+                : tone === "onGradient" && !pill
                   ? "text-[color:var(--ui-on-grad-header)]"
                   : "text-[color:var(--ui-on-surface-muted)]",
             )}
@@ -506,10 +769,126 @@ export function UiSegmented<T extends string>({
   );
 }
 
+/**
+ * Underline tabs (Option A) — the match tabs, the rankings tabs: equal
+ * columns on the bar surface over a hairline, each label in the display face
+ * (Changa 16; 600 muted, 800 on-surface when chosen), the chosen one marked
+ * by a 4px bar on its block-end edge.
+ *
+ * The bar is `inset 0 -4px 0` — a BLOCK-axis offset, the same in both
+ * directions — painted in `accent`, which defaults to `--ui-ink-fg` (≥ 3:1
+ * on the bar in both themes). The match tabs pass the home club's edge
+ * colour: put `clubStyle(home)` on an ancestor and `accent="var(--ui-club-edge)"`.
+ *
+ * Keyboard: one tab stop (roving tabindex). ArrowLeft/ArrowRight move and
+ * select — swapped under `dir="rtl"`, read from the tablist's own computed
+ * direction, so "next" is always the reading direction — Home and End jump
+ * to the ends, disabled tabs are skipped. A key with Alt, Ctrl or Meta held
+ * is left to the browser (Alt+ArrowLeft is Back). The arithmetic lives in
+ * `tabs-keyboard.ts`, tested on its own. Each tab gets the id
+ * `${idBase}-tab-${value}` so a panel can say
+ * `aria-labelledby={`${idBase}-tab-${value}`}`; pass `panelId` per option to
+ * set `aria-controls` the other way.
+ */
+export function UiTabs<T extends string>({
+  value,
+  onChange,
+  options,
+  label,
+  accent,
+  idBase,
+  className,
+}: {
+  value: T;
+  onChange: (next: T) => void;
+  options: ReadonlyArray<{ value: T; label: ReactNode; disabled?: boolean; panelId?: string }>;
+  /** The tablist's accessible name. Required: a set of tabs needs one. */
+  label: string;
+  /** The indicator colour, any CSS colour; defaults to `var(--ui-ink-fg)`. */
+  accent?: string;
+  /** Prefix for the tab ids; a generated one when omitted. */
+  idBase?: string;
+  className?: string;
+}) {
+  const generated = useId();
+  const base = idBase ?? generated;
+  const tabs = useRef(new Map<T, HTMLButtonElement>());
+  // The one tab in the tab order: the selected one, or the first enabled tab
+  // when the selection is disabled or absent — never none.
+  const tabStop = rovingTabStop(options, value);
+
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const rtl = getComputedStyle(event.currentTarget).direction === "rtl";
+    const focused = options.find((option) => tabs.current.get(option.value) === event.target);
+    // `null` for a modified key (Alt+Arrow is browser Back/Forward) or a key
+    // that is not ours: leave it to the browser, do not prevent it.
+    const target = rovingTarget(options, event, focused?.value, value, rtl);
+    if (target === null) return;
+    event.preventDefault();
+    tabs.current.get(target)?.focus();
+    if (target !== value) onChange(target);
+  };
+
+  return (
+    <div
+      role="tablist"
+      aria-label={label}
+      onKeyDown={onKeyDown}
+      className={cn("grid", ui.surface.bar, ui.rule.block, className)}
+      style={
+        {
+          gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
+          "--tab-accent": accent ?? "var(--ui-ink-fg)",
+        } as CSSProperties
+      }
+    >
+      {options.map((option) => {
+        const active = option.value === value;
+        return (
+          <button
+            key={option.value}
+            ref={(node) => {
+              if (node) tabs.current.set(option.value, node);
+              else tabs.current.delete(option.value);
+            }}
+            id={`${base}-tab-${option.value}`}
+            role="tab"
+            type="button"
+            aria-selected={active}
+            aria-controls={option.panelId}
+            tabIndex={option.value === tabStop ? 0 : -1}
+            disabled={option.disabled}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "flex min-h-[var(--ui-row-min)] min-w-0 items-center justify-center px-1",
+              "transition-colors disabled:opacity-50",
+              ui.display.tab,
+              ui.focus,
+              active
+                ? cn(
+                    "[font-weight:var(--ui-weight-heavy)] shadow-[inset_0_-4px_0_var(--tab-accent)]",
+                    ui.tone.default,
+                  )
+                : ui.tone.muted,
+            )}
+          >
+            <span className="truncate">{option.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Pills, chips and badges                                             */
 /* ------------------------------------------------------------------ */
 
+/**
+ * A static emphatic label — "Journée 14", "Gardiens", a countdown. Fully
+ * round (Option A). `ink` is the navy pill with plain white text; the cyan
+ * on-ink of the Fantasy-flat look is gone from Option A.
+ */
 export function UiPill({
   children,
   tone = "ink",
@@ -522,11 +901,11 @@ export function UiPill({
   return (
     <span
       className={cn(
-        "inline-flex items-center px-3 py-1",
-        ui.radius.control,
+        "inline-flex items-center gap-1.5 px-3 py-1",
+        ui.radius.full,
         ui.text.secondary,
         "[font-weight:var(--ui-weight-heavy)]",
-        tone === "ink" && ui.surface.ink,
+        tone === "ink" && ui.surface.inkPlain,
         tone === "action" && "text-[color:var(--ui-ink-deep)]",
         tone === "sunken" && cn(ui.surface.sunken, ui.tone.muted),
         className,
@@ -546,6 +925,10 @@ export function UiPill({
  * day, which is `aria-current="date"`, and a roving-focus strip has to be
  * able to call `.focus()` on the selected chip. When `aria-current` is given
  * the chip drops `aria-pressed`, so it never announces both.
+ *
+ * Option A: fully round; unselected is the sunken pill in the default text
+ * colour, selected the navy pill with white text (`ui.surface.inkPlain`,
+ * 12.81:1) rather than the cyan on-ink.
  */
 export function UiChip({
   children,
@@ -571,15 +954,16 @@ export function UiChip({
       className={cn(
         // A chip is tappable, so it sits on the 44px floor like every other
         // control in the kit.
-        "inline-flex min-h-[var(--ui-tap-min)] shrink-0 items-center px-3 py-1.5",
-        ui.radius.control,
+        // `px-3`: the 44px height already makes the pill; the boards' 14px
+        // inline padding pushed the /fantasy/players sort row (four chips) onto
+        // a second line at 390px in both languages.
+        "inline-flex min-h-[var(--ui-tap-min)] shrink-0 items-center gap-1.5 px-3 py-1.5",
+        ui.radius.full,
         ui.text.meta,
         "[font-weight:var(--ui-weight-strong)]",
         ui.focus,
         "transition-colors",
-        selected
-          ? cn(ui.surface.ink, "shadow-[var(--ui-shadow-card)]")
-          : cn(ui.surface.sunken, ui.tone.muted),
+        selected ? cn(ui.surface.inkPlain, "shadow-[var(--ui-shadow-card)]") : ui.surface.sunken,
         className,
       )}
     >
@@ -628,6 +1012,61 @@ export function UiBadge({
       style={tone === "action" ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
     >
       {children}
+    </span>
+  );
+}
+
+/**
+ * The live pill (Option A): a navy rounded-full pill (`ui.surface.inkPlain`,
+ * 12.81:1 light, 12.60 dark) with the breathing red dot and the translated
+ * live label — `t("matches.status.live")`, never an English "LIVE" — then
+ * the minute in `<bdi>` so "45+2′" keeps its order in Arabic.
+ *
+ * The dot is `live-breathe` (still under reduced motion) and is decorative:
+ * the word carries the state. The pill is not a live region; the score is.
+ * `label` replaces the word for a variant like "J.14 · EN DIRECT".
+ */
+export function UiLivePill({
+  minute,
+  label,
+  size = "sm",
+  className,
+}: {
+  /** The match minute: a number, or a string such as "45+2". The prime is added. */
+  minute?: number | string;
+  label?: ReactNode;
+  size?: "sm" | "md";
+  className?: string;
+}) {
+  const { t } = useI18n();
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center whitespace-nowrap",
+        ui.radius.full,
+        ui.surface.inkPlain,
+        size === "md"
+          ? cn("gap-1.5 px-2.5 py-1", ui.text.label)
+          : cn(
+              "gap-1 px-2 py-0.5",
+              ui.text.micro,
+              "[font-weight:var(--ui-weight-heavy)] uppercase ltr:tracking-wide",
+            ),
+        className,
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "live-breathe shrink-0 bg-[color:var(--ui-live)]",
+          ui.radius.full,
+          size === "md" ? "h-2 w-2" : "h-1.5 w-1.5",
+        )}
+      />
+      <span>{label ?? t("matches.status.live")}</span>
+      {minute !== undefined && minute !== "" ? (
+        <bdi className={ui.text.tabular}>{`${minute}′`}</bdi>
+      ) : null}
     </span>
   );
 }
@@ -1501,19 +1940,57 @@ export function UiTD({
 /**
  * Rank movement: up, down or unchanged. A glyph AND an accessible name,
  * because colour alone is not a difference a reader can rely on.
+ *
+ * `variant="quiet"` is the Option A table cell: a small ▲/▼ and the number
+ * of places moved, in the positive/negative text colour, on the tabular stat
+ * ramp so the column lines up; "=" when unchanged. The name is sr-only text
+ * beside the glyph, so it is read with the number ("up 4").
  */
 export function UiRankMovement({
   rank,
   previousRank,
   labels,
+  variant = "disc",
+  formatDelta = String,
   className,
 }: {
   rank: number;
   previousRank: number | null;
   /** Accessible names for the three outcomes. */
   labels: { up: string; down: string; same: string };
+  variant?: "disc" | "quiet";
+  /** How the quiet variant writes the number of places (e.g. a locale grouping). */
+  formatDelta?: (places: number) => string;
   className?: string;
 }) {
+  if (variant === "quiet") {
+    const delta = previousRank === null ? 0 : previousRank - rank;
+    if (delta === 0) {
+      return (
+        <span className={cn(ui.stat.sm, ui.tone.muted, className)}>
+          <span aria-hidden>=</span>
+          <span className="sr-only">{labels.same}</span>
+        </span>
+      );
+    }
+    const up = delta > 0;
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1",
+          ui.stat.sm,
+          up ? ui.tone.positive : ui.tone.negative,
+          className,
+        )}
+      >
+        <span aria-hidden className="text-[length:0.75em]">
+          {up ? "▲" : "▼"}
+        </span>
+        <span className="sr-only">{up ? labels.up : labels.down}</span>
+        <bdi>{formatDelta(Math.abs(delta))}</bdi>
+      </span>
+    );
+  }
   if (previousRank === null || previousRank === rank) {
     return (
       <span
@@ -1629,7 +2106,13 @@ export function UiStatBlock({
 
 /**
  * `PlayerPlate` — the pitch's core unit: a shirt (or any visual you pass),
- * an ink name plate and a sub plate carrying price, fixture or points.
+ * a name band and a sub band carrying price, fixture or points.
+ *
+ * Option A inverts the bands: the name sits on the SURFACE (white, heavy)
+ * and the figure on `--ui-plate-figure` (ink-deep in light) with plain white
+ * text, one rounded plate with the card shadow, so it reads on the pastel
+ * turf. The figure band has its own token because ink-deep in dark is the
+ * dark surface's lightness, and the two bands merged there.
  *
  * It renders as a `<button>` when `onClick` is given and as a plain block
  * otherwise, so an empty slot is not a fake control. `state` tints the sub
@@ -1682,40 +2165,48 @@ export function UiPlayerPlate({
         {visual ? <span className="relative block">{visual}</span> : null}
         <span
           className={cn(
-            "block w-full truncate rounded-t-[var(--ui-radius-tight)] px-1 py-0.5 text-center",
-            ui.surface.inkPlain,
-            ui.text.micro,
-            "[font-weight:var(--ui-weight-heavy)]",
+            "block w-full overflow-hidden",
+            ui.radius.segment,
+            "shadow-[var(--ui-shadow-card)]",
           )}
         >
-          {name}
-        </span>
-        <span
-          className={cn(
-            "block w-full truncate rounded-b-[var(--ui-radius-tight)] px-1 py-0.5 text-center",
-            ui.text.micro,
-            // This band carries points, price OR a fixture code, and on a
-            // pitch there are eleven of them stacked down the screen — figures
-            // a reader scans as a column even though nothing draws one. It was
-            // the only numeric surface in the product still proportional
-            // (measured: 7 non-tabular figures on /fantasy/points, 0 anywhere
-            // else). Harmless on the fixture variant: tabular-nums only
-            // affects digits, so "FUS (D)" is unchanged.
-            ui.text.tabular,
-            "[font-weight:var(--ui-weight-strong)]",
-            state === "doubtful" || state === "selected"
-              ? "text-[color:var(--ui-ink-deep)]"
-              : cn(ui.surface.card, "rounded-t-none shadow-none"),
-          )}
-          style={
-            state === "doubtful"
-              ? { backgroundColor: "var(--ui-caution)" }
-              : state === "selected"
-                ? { backgroundImage: "var(--ui-grad-action)" }
-                : undefined
-          }
-        >
-          {sub}
+          <span
+            className={cn(
+              "block w-full truncate px-1 py-0.5 text-center",
+              "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)]",
+              ui.text.micro,
+              "[font-weight:var(--ui-weight-heavy)]",
+            )}
+          >
+            {name}
+          </span>
+          <span
+            className={cn(
+              "block w-full truncate px-1 py-0.5 text-center",
+              ui.text.micro,
+              // This band carries points, price OR a fixture code, and on a
+              // pitch there are eleven of them stacked down the screen — figures
+              // a reader scans as a column even though nothing draws one. It was
+              // the only numeric surface in the product still proportional
+              // (measured: 7 non-tabular figures on /fantasy/points, 0 anywhere
+              // else). Harmless on the fixture variant: tabular-nums only
+              // affects digits, so "FUS (D)" is unchanged.
+              ui.text.tabular,
+              "[font-weight:var(--ui-weight-strong)]",
+              state === "doubtful" || state === "selected"
+                ? "text-[color:var(--ui-ink-deep)]"
+                : "bg-[color:var(--ui-plate-figure)] text-[color:var(--ui-on-ink-plain)]",
+            )}
+            style={
+              state === "doubtful"
+                ? { backgroundColor: "var(--ui-caution)" }
+                : state === "selected"
+                  ? { backgroundImage: "var(--ui-grad-action)" }
+                  : undefined
+            }
+          >
+            {sub}
+          </span>
         </span>
       </Tag>
     </div>
@@ -1803,6 +2294,11 @@ export function UiPlayerRow({
  * The mowing bands run `to bottom` and the markings are drawn from
  * `--ui-pitch-line`, so the pitch is direction-neutral and themed: a row
  * only reorders its peers under `dir="rtl"`.
+ *
+ * Option A turf: a `to bottom` wash from `--ui-pitch-turf-a` (spring) to
+ * `--ui-pitch-turf-b` (sky), both pastel mixes of the action gradient, under
+ * 36px bands of the on-ink foreground at 22%. The bench is a plain surface
+ * strip (`--ui-pitch-bench`) with muted uppercase position labels.
  */
 export function UiPitchSurface({
   rows,
@@ -1824,8 +2320,8 @@ export function UiPitchSurface({
       <div
         className="relative overflow-hidden"
         style={{
-          background:
-            "repeating-linear-gradient(to bottom, var(--ui-pitch-turf-a) 0 60px, var(--ui-pitch-turf-b) 60px 120px)",
+          backgroundImage:
+            "repeating-linear-gradient(to bottom, color-mix(in srgb, var(--ui-on-ink-plain) 22%, transparent) 0 36px, transparent 36px 72px), linear-gradient(to bottom, var(--ui-pitch-turf-a), var(--ui-pitch-turf-b))",
         }}
       >
         <svg
@@ -1874,8 +2370,8 @@ export function UiPitchSurface({
                   key={index}
                   className={cn(
                     "w-[76px] shrink-0 text-center sm:w-[84px]",
-                    ui.text.micro,
-                    "[font-weight:var(--ui-weight-strong)] text-[color:var(--ui-on-pitch)]",
+                    ui.text.label,
+                    ui.tone.muted,
                   )}
                 >
                   {label}

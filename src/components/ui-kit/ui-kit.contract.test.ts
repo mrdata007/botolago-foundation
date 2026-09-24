@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { UI_DERIVED_TOKENS, UI_THEMED_TOKENS, UI_TOKENS } from "./tokens";
+import { UI_DERIVED_TOKENS, UI_THEMED_TOKENS, UI_TOKENS, ui } from "./tokens";
 
 /**
  * The UI kit is the layer every other screen is converted against, so a
@@ -290,6 +290,8 @@ describe("ui-kit: one scale of each kind", () => {
   for (const [name, prefix] of [
     ["type ramp", "--ui-text-"],
     ["stat ramp", "--ui-stat-"],
+    ["display ramp", "--ui-display-"],
+    ["score ramp", "--ui-score-"],
     ["radius set", "--ui-radius-"],
     ["spacing scale", "--ui-space-"],
   ] as const) {
@@ -357,6 +359,12 @@ describe("ui-kit: the primitives keep their promises", () => {
       "UiEmptyState",
       "UiErrorState",
       "UiAlert",
+      // Option A
+      "UiIconButton",
+      "UiBackButton",
+      "UiTabs",
+      "UiPageTitle",
+      "UiLivePill",
     ];
     const missing = required.filter(
       (name) => !new RegExp(`export function ${name}\\b`).test(primitives),
@@ -597,4 +605,192 @@ describe("ui-kit: the shared shell is built on the kit", () => {
       expect(offenders).toEqual([]);
     });
   }
+});
+
+describe("ui-kit: Option A — the display face, club colour and shape", () => {
+  const DISPLAY_FAMILY = "[font-family:var(--ui-font-display)]";
+
+  it("keeps every stat step on the tabular body face, never the display face", () => {
+    // Changa has no `tnum` feature: `tabular-nums` does nothing on it, so a
+    // column of Changa figures does not line up. `ui.stat.*` is the ramp for
+    // figures read down a column, so it must stay Manrope and tabular.
+    const tokens = read("tokens.ts");
+    const statBase = tokens.match(/const STAT_BASE\s*=\s*\n?\s*"([^"]*)"/)?.[1] ?? "";
+    expect(statBase.startsWith("fpl-tabular")).toBe(true);
+    expect(statBase).not.toContain("font-family");
+    for (const [step, classes] of Object.entries(ui.stat)) {
+      expect({ step, tabular: classes.includes("fpl-tabular") }).toEqual({ step, tabular: true });
+      expect({ step, display: classes.includes("--ui-font-display") }).toEqual({
+        step,
+        display: false,
+      });
+    }
+  });
+
+  it("sets every display and score step in the display face, on its own leading", () => {
+    for (const [step, classes] of Object.entries(ui.display)) {
+      expect({ step, family: classes.includes(DISPLAY_FAMILY) }).toEqual({ step, family: true });
+      expect({ step, leading: /leading-\[var\(--ui-leading-display\)\]/.test(classes) }).toEqual({
+        step,
+        leading: true,
+      });
+    }
+    for (const [step, classes] of Object.entries(ui.score)) {
+      expect({ step, family: classes.includes(DISPLAY_FAMILY) }).toEqual({ step, family: true });
+      expect({ step, leading: /leading-\[var\(--ui-leading-figure\)\]/.test(classes) }).toEqual({
+        step,
+        leading: true,
+      });
+    }
+  });
+
+  it("never teaches a <bdi> as a score's flex container", () => {
+    // A `<bdi>` with no `dir` is `dir="auto"`; digits and a dash hold no
+    // strong character, so it resolves to LTR and a `<bdi>` flex row prints
+    // home on the LEFT in Arabic (measured in Chromium) while the home half of
+    // a split header sits on the right. The container inherits the page
+    // direction; each figure is its own `<bdi>`. Comments are scanned on
+    // purpose: the samples a screen lane copies live in them.
+    const bdiFlex = /<bdi\b[^>]*\bclassName=[^>]*\b(inline-)?flex\b/g;
+    const sources = [
+      [
+        "docs/engineering/DESIGN_SYSTEM_V2.md",
+        readFileSync(join(ROOT, "docs", "engineering", "DESIGN_SYSTEM_V2.md"), "utf8"),
+      ],
+      ["src/styles.css", css],
+      ...kitFiles.map((file) => [file, readFileSync(join(KIT_DIR, file), "utf8")]),
+    ];
+    for (const [file, text] of sources) {
+      expect({ file, offenders: text.match(bdiFlex) ?? [] }).toEqual({ file, offenders: [] });
+    }
+    // And the contract still shows the right pattern: a plain container, each
+    // figure in its own <bdi>.
+    const doc = sources[0][1];
+    expect(doc).toMatch(
+      /<div\s[^>]*className=\{cn\("flex items-center gap-2", ui\.score\.hero\)\}\s*>\s*<bdi>\{home\}<\/bdi>\s*<span aria-hidden>–<\/span>\s*<bdi>\{away\}<\/bdi>\s*<\/div>/,
+    );
+  });
+
+  it("never claims tabular figures, or a 900 weight, for the display face", () => {
+    // 900 does not exist in Changa (it stops at 800) and would be synthesised;
+    // `tabular-nums` on Changa is a no-op that reads like a promise.
+    for (const [step, classes] of [...Object.entries(ui.display), ...Object.entries(ui.score)]) {
+      expect({ step, hero: classes.includes("--ui-weight-hero") }).toEqual({ step, hero: false });
+      expect({ step, tabular: /fpl-tabular|tabular-nums/.test(classes) }).toEqual({
+        step,
+        tabular: false,
+      });
+    }
+  });
+
+  it("gives the display face and its leading an Arabic value", () => {
+    const arabic = css.slice(css.indexOf(":root:lang(ar)"));
+    const block = arabic.slice(0, arabic.indexOf("}"));
+    for (const token of [
+      "--ui-leading-display",
+      "--ui-leading-figure",
+      "--ui-font-display",
+      "--ui-font-body",
+    ]) {
+      expect({ token, arabic: block.includes(`${token}:`) }).toEqual({ token, arabic: true });
+    }
+    // Changa carries Arabic, and the Noto stack is its fallback there.
+    expect(block).toMatch(/--ui-font-display:\s*"Changa",\s*"Noto Sans Arabic"/);
+  });
+
+  it("keeps --ui-font-body the same stack the body uses", () => {
+    // `ui.font.body` exists to put the minute prime (which Changa lacks) back
+    // into the body face inside display text. Two copies of one stack drift
+    // unless something holds them together.
+    const theme = css.slice(css.indexOf("@theme inline"));
+    const sans = theme.match(/--font-sans:\s*([^;]+);/)?.[1];
+    const arabicStack = theme.match(/--font-arabic:\s*([^;]+);/)?.[1];
+    expect(rootDeclarations.get("--ui-font-body")).toBe(sans);
+    const arabic = css.slice(css.indexOf(":root:lang(ar)"));
+    const block = arabic.slice(0, arabic.indexOf("}"));
+    expect(block.match(/--ui-font-body:\s*([^;]+);/)?.[1]).toBe(arabicStack);
+  });
+
+  it("never makes the display face the body face", () => {
+    // The e2e suite asserts the body family per language (Manrope / Noto Sans
+    // Arabic). Changa is reachable only through `--ui-font-display`.
+    const code = css.replace(/\/\*[\s\S]*?\*\//g, "");
+    const declaring = [...code.matchAll(/([\w-]+)\s*:[^;{}]*Changa[^;{}]*;/g)].map((m) => m[1]);
+    expect(declaring.length).toBeGreaterThan(0);
+    expect([...new Set(declaring)]).toEqual(["--ui-font-display"]);
+    const theme = css.slice(css.indexOf("@theme inline"));
+    expect(theme.match(/--font-sans:\s*([^;]+);/)?.[1]).not.toContain("Changa");
+  });
+
+  it("draws UiCard and ui.surface.card on the card radius", () => {
+    expect(ui.surface.card).toContain("rounded-[var(--ui-radius-card)]");
+    expect(ui.radius.card).toBe("rounded-[var(--ui-radius-card)]");
+    expect(rootDeclarations.get("--ui-radius-card")).toBe("14px");
+  });
+
+  it("rounds every control a thumb presses", () => {
+    const primitives = read("primitives.tsx");
+    const painter = primitives.match(/function buttonClass\(([\s\S]*?)\n\}/)?.[1] ?? "";
+    expect(painter).toContain("ui.radius.full");
+    expect(painter).not.toContain("ui.radius.control");
+    for (const name of ["UiChip", "UiPill"]) {
+      const body = primitives.slice(primitives.indexOf(`export function ${name}`));
+      const end = body.indexOf("\nexport function ", 1);
+      expect({ name, full: body.slice(0, end).includes("ui.radius.full") }).toEqual({
+        name,
+        full: true,
+      });
+    }
+  });
+
+  it("themes the club tokens and maps them per element in both themes", () => {
+    const club = ["--ui-club", "--ui-on-club", "--ui-club-edge", "--ui-club-fg", "--ui-club-tint"];
+    for (const token of club) {
+      expect(UI_THEMED_TOKENS as readonly string[]).toContain(token);
+      expect(darkDeclarations.get(token)).toBe(rootDeclarations.get(token));
+    }
+    // The `[data-club]` layer reads the inline `--club-*-l` values in light
+    // and `--club-*-d` under `.dark`, on the element that carries them.
+    const light = css.match(/(^|\n)\[data-club\]\s*\{([^}]*)\}/)?.[2] ?? "";
+    const dark = css.match(/\n\.dark \[data-club\]\s*\{([^}]*)\}/)?.[1] ?? "";
+    const pairs: Array<[string, string]> = [
+      ["--ui-club", "fill"],
+      ["--ui-on-club", "on"],
+      ["--ui-club-edge", "edge"],
+      ["--ui-club-fg", "fg"],
+      ["--ui-club-tint", "tint"],
+    ];
+    for (const [token, slot] of pairs) {
+      expect(light).toMatch(new RegExp(`${token}:\\s*var\\(--club-${slot}-l,`));
+      expect(dark).toMatch(new RegExp(`${token}:\\s*var\\(--club-${slot}-d,`));
+    }
+  });
+
+  it("draws no edge bar or shadow with a physical x offset", () => {
+    // The boards drew club edges as `box-shadow: inset 4px 0 0 <club>`. An x
+    // offset is physical: it stays on the left in Arabic. The kit's edges are
+    // logical borders (`ui.edge.*`), and a shadow may only offset on the block
+    // axis (the tab indicator is `inset 0 -4px 0`).
+    for (const file of kitFiles) {
+      const code = read(file);
+      const offenders = [
+        ...code.matchAll(/shadow-\[(?:inset_)?(-?(?:\d*\.)?\d+)(?:px|rem|em)?_/g),
+        ...code.matchAll(/box-shadow\s*:\s*(?:inset\s+)?(-?(?:\d*\.)?\d+)(?:px|rem|em)?\s/g),
+      ]
+        .filter((m) => Number(m[1]) !== 0)
+        .map((m) => m[0]);
+      expect({ file, offenders }).toEqual({ file, offenders: [] });
+    }
+    expect(ui.edge.start).toContain("border-s-4");
+    expect(ui.edge.end).toContain("border-e-4");
+  });
+
+  it("keeps the stripe texture's angle in a custom property that flips in Arabic", () => {
+    const utility = css.match(/@utility club-stripes \{([\s\S]*?)\n\}/)?.[1] ?? "";
+    expect(utility).toContain("var(--stripe-angle)");
+    expect(utility).not.toMatch(/-?\d+deg/);
+    expect(rootDeclarations.get("--stripe-angle")).toBe("-45deg");
+    const rtl = [...css.matchAll(/\[dir="rtl"\][^{]*\{([^}]*)\}/g)].map((m) => m[1]).join("\n");
+    expect(rtl).toMatch(/--stripe-angle:\s*45deg/);
+  });
 });
