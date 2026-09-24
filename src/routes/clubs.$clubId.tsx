@@ -30,7 +30,8 @@ import { StandingsLegend, StandingsTable } from "@/components/matches/StandingsT
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
+import { breadcrumbJsonLd } from "@/lib/structured-data";
 import { useBackTo } from "@/lib/back-navigation";
 import { clubSeasonStats, officialRecord, previousSeason } from "@/lib/club-season";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
@@ -113,6 +114,23 @@ export const Route = createFileRoute("/clubs/$clubId")({
         { name: "twitter:description", content: description },
       ],
       links: [{ rel: "canonical", href: canonical }],
+      // The trail to the club, only when its name loaded.
+      ...(name
+        ? {
+            scripts: [
+              {
+                type: "application/ld+json",
+                children: serializeJsonLd(
+                  breadcrumbJsonLd([
+                    { name: "Accueil", path: "/" },
+                    { name: "Clubs", path: "/clubs" },
+                    { name, path: `/clubs/${encodeURIComponent(params.clubId)}` },
+                  ]),
+                ),
+              },
+            ],
+          }
+        : {}),
     };
   },
   component: ClubPage,

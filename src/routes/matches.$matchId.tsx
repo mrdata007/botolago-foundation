@@ -39,7 +39,8 @@ import { useBackTo } from "@/lib/back-navigation";
 import { clubMatchPalettes } from "@/lib/club-palette";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
-import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
+import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/structured-data";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { matchRefetchInterval } from "@/lib/match-refresh";
 
@@ -109,6 +110,27 @@ export const Route = createFileRoute("/matches/$matchId")({
     const description = named
       ? `${named.home} contre ${named.away} : score en direct, composition, statistiques et temps forts sur BotolaGO.`
       : "Score en direct, compositions, statistiques et temps forts du match sur BotolaGO.";
+    // The match and the trail to it, only from what the page loaded (see
+    // `@/lib/structured-data`); nothing for a page whose read failed.
+    const structured =
+      detail && named
+        ? [
+            sportsEventJsonLd({
+              canonicalUrl: canonical,
+              match: detail.match,
+              homeName: named.home,
+              awayName: named.away,
+            }),
+            breadcrumbJsonLd([
+              { name: "Accueil", path: "/" },
+              { name: "Matchs", path: "/matches" },
+              {
+                name: `${named.home} – ${named.away}`,
+                path: `/matches/${encodeURIComponent(params.matchId)}`,
+              },
+            ]),
+          ]
+        : [];
     return {
       meta: [
         { title },
@@ -122,6 +144,14 @@ export const Route = createFileRoute("/matches/$matchId")({
         { name: "twitter:description", content: description },
       ],
       links: [{ rel: "canonical", href: canonical }],
+      ...(structured.length
+        ? {
+            scripts: structured.map((jsonLd) => ({
+              type: "application/ld+json",
+              children: serializeJsonLd(jsonLd),
+            })),
+          }
+        : {}),
     };
   },
   component: MatchDetailPage,

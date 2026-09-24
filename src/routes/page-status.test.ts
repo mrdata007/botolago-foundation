@@ -139,3 +139,25 @@ describe("the match page's address", () => {
     expect({ ...raw, ...validate(raw) }.tab).toBeUndefined();
   });
 });
+
+describe("structured data on the detail pages", () => {
+  type Scripts = { scripts?: Array<{ type: string; children: string }> };
+  const types = (head: Scripts) =>
+    (head.scripts ?? []).map((script) => {
+      expect(script.type).toBe("application/ld+json");
+      return (JSON.parse(script.children) as { "@type": string })["@type"];
+    });
+
+  test("a club page carries its breadcrumb only when the club loaded", () => {
+    const head = (ClubRoute.options as unknown as { head: (ctx: unknown) => Scripts }).head({
+      params: { clubId: ID },
+      loaderData: { club: { name: { fr: "Wydad AC", ar: "الوداد" } }, fetchedAt: 0 },
+    });
+    expect(types(head)).toEqual(["BreadcrumbList"]);
+    const failed = (ClubRoute.options as unknown as { head: (ctx: unknown) => Scripts }).head({
+      params: { clubId: ID },
+      loaderData: UNAVAILABLE,
+    });
+    expect(failed.scripts).toBeUndefined();
+  });
+});

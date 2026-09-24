@@ -47,7 +47,8 @@ import { authService } from "@/services/auth";
 import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
 import { cn } from "@/lib/utils";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
-import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
+import { siteJsonLd } from "@/lib/structured-data";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { capitalizeFirst, groupByMatchDay } from "@/lib/match-days";
 import type { Match } from "@/types/domain";
@@ -106,6 +107,8 @@ export const Route = createFileRoute("/")({
       { name: "twitter:description", content: HOME_DESCRIPTION },
     ],
     links: [{ rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/` }],
+    // Who publishes the site, and the site itself (see `@/lib/structured-data`).
+    scripts: [{ type: "application/ld+json", children: serializeJsonLd(siteJsonLd()) }],
   }),
   component: HomePage,
 });

@@ -1,7 +1,12 @@
 import type { ArticleDetailDto } from "@/backend/news/contracts";
 import { resolveMediaUrl } from "@/lib/media";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
+import { breadcrumbJsonLd } from "@/lib/structured-data";
 
-export const PUBLIC_SITE_ORIGIN = "https://botolago.com";
+// Kept exported from here: most pages import the origin with the article
+// helpers. It lives in its own module so structured-data.ts, which this file
+// uses, can read it without an import cycle.
+export { PUBLIC_SITE_ORIGIN };
 
 export function buildCanonicalArticleUrl(articleId: string): string {
   return `${PUBLIC_SITE_ORIGIN}/news/${encodeURIComponent(articleId)}`;
@@ -174,8 +179,22 @@ export function buildArticleHead(
     // instead emitted `<script tag="script" attrs="[object Object]">`. The type
     // was lost with it, so browsers ran the JSON as JavaScript and threw on
     // every article, and no crawler ever saw the structured data.
-    ...(jsonLd
-      ? { scripts: [{ type: "application/ld+json", children: serializeJsonLd(jsonLd) }] }
+    ...(jsonLd && article
+      ? {
+          scripts: [
+            { type: "application/ld+json", children: serializeJsonLd(jsonLd) },
+            {
+              type: "application/ld+json",
+              children: serializeJsonLd(
+                breadcrumbJsonLd([
+                  { name: "Accueil", path: "/" },
+                  { name: "Actualités", path: "/news" },
+                  { name: title, path: `/news/${encodeURIComponent(article.id)}` },
+                ]),
+              ),
+            },
+          ],
+        }
       : {}),
   };
 }

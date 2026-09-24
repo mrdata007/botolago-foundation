@@ -190,13 +190,19 @@ describe("article metadata", () => {
     // but produced `<script tag="script" attrs="[object Object]">` with no type,
     // so the browser ran the JSON as JavaScript and crawlers saw nothing. This
     // is the assertion that was missing: it pins the input shape, not our own.
+    // Two blocks since the breadcrumb joined the NewsArticle; every one flat.
     const head = buildArticleHead(detail(), "article-1");
-    expect(head.scripts).toHaveLength(1);
-    const script = head.scripts![0];
-    expect(script.type).toBe("application/ld+json");
-    expect(script).not.toHaveProperty("tag");
-    expect(script).not.toHaveProperty("attrs");
-    expect(Object.keys(script).sort()).toEqual(["children", "type"]);
+    expect(head.scripts).toHaveLength(2);
+    for (const script of head.scripts!) {
+      expect(script.type).toBe("application/ld+json");
+      expect(script).not.toHaveProperty("tag");
+      expect(script).not.toHaveProperty("attrs");
+      expect(Object.keys(script).sort()).toEqual(["children", "type"]);
+    }
+    expect(head.scripts!.map((script) => JSON.parse(script.children)["@type"])).toEqual([
+      "NewsArticle",
+      "BreadcrumbList",
+    ]);
   });
 
   it("attaches a NewsArticle JSON-LD script built only from real DTO fields", () => {
