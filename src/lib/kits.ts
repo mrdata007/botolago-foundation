@@ -90,6 +90,9 @@ const BOTOLA_KITS: Array<[string, KitColours]> = [
   ["berkane", { pattern: "two-tone-sleeves", primary: "#f26522", secondary: "#111111" }],
   ["tétouan", { pattern: "bands-horizontal", primary: "#c00000", secondary: "#ffffff" }],
   ["tetouan", { pattern: "bands-horizontal", primary: "#c00000", secondary: "#ffffff" }],
+  // The production slug spells Tétouan's club "moghreb" ("moghreb-t-touan-…"),
+  // and its accent becomes a hyphen, so neither fragment above reaches it.
+  ["moghreb", { pattern: "bands-horizontal", primary: "#c00000", secondary: "#ffffff" }],
   ["maghreb", { pattern: "stripes-vertical", primary: "#ffd400", secondary: "#111111" }],
   ["hassania", { pattern: "stripes-vertical", primary: "#e63900", secondary: "#ffffff" }],
   ["tanger", { pattern: "solid", primary: "#1e5bb8", secondary: "#ffffff" }],
@@ -101,6 +104,8 @@ const BOTOLA_KITS: Array<[string, KitColours]> = [
   ["tiznit", { pattern: "two-tone-sleeves", primary: "#1e5bb8", secondary: "#ffffff" }],
   ["témara", { pattern: "central-stripe", primary: "#c8102e", secondary: "#1e3a7a" }],
   ["temara", { pattern: "central-stripe", primary: "#c8102e", secondary: "#1e3a7a" }],
+  // Témara's slug is "widad-t-mara-…": the accent became a hyphen here too.
+  ["widad", { pattern: "central-stripe", primary: "#c8102e", secondary: "#1e3a7a" }],
   ["safi", { pattern: "solid", primary: "#7a1f1f", secondary: "#ffffff" }],
   ["dche", { pattern: "solid", primary: "#f2a900", secondary: "#111111" }],
   ["mansour", { pattern: "solid", primary: "#00703c", secondary: "#ffffff" }],
@@ -122,9 +127,22 @@ const text = (value: string | LocalizedString | null | undefined) =>
   typeof value === "string" ? value : value ? `${value.fr} ${value.ar}` : "";
 
 /**
+ * A club slug read as words, without the id it ends with:
+ * "far-rabat-fd6ff8ea898c" → "far rabat". The slug is Latin in every
+ * language, and it is the only Latin the club carries in Arabic: the football
+ * API returns the name in the language asked for, so "الجيش الملكي" reaches
+ * this lookup with no fragment to match, and every club painted as the ink.
+ */
+const slugWords = (slug: string | null | undefined) =>
+  (slug ?? "")
+    .toLowerCase()
+    .replace(/-[0-9a-f]{6,}$/, "")
+    .replace(/-/g, " ");
+
+/**
  * The kit-table entry for a club: its id, then its slug, against the keyed
- * table; then a fragment of its name, short name or crest letters, in table
- * order. `key` is the id or fragment that matched.
+ * table; then a fragment of its name, short name, slug words or crest
+ * letters, in table order. `key` is the id or fragment that matched.
  */
 export function findClubKit(club: KitLookup): { key: string; kit: KitColours } | undefined {
   for (const candidate of [club.id, club.slug]) {
@@ -132,7 +150,7 @@ export function findClubKit(club: KitLookup): { key: string; kit: KitColours } |
     if (key && OVERRIDES[key]) return { key, kit: OVERRIDES[key] };
   }
   const haystack =
-    `${text(club.name)} ${text(club.shortName)} ${club.crestPlaceholder ?? ""}`.toLowerCase();
+    `${text(club.name)} ${text(club.shortName)} ${slugWords(club.slug)} ${club.crestPlaceholder ?? ""}`.toLowerCase();
   const hit = BOTOLA_KITS.find(([fragment]) => haystack.includes(fragment));
   return hit ? { key: hit[0], kit: hit[1] } : undefined;
 }
