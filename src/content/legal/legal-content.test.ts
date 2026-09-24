@@ -34,10 +34,13 @@ import { LEGAL_DOCUMENTS, type LegalBlock, type LegalDocument } from "./document
 //
 //   src/content/legal/documents.ts
 //
-//   1. Raison sociale
-//        now  fr "BotolaGO (société en cours de constitution)"
-//             ar "BotolaGO (شركة في طور التأسيس)"
-//        then the registered company name exactly as it appears on the RC.
+//   1. Raison sociale — NAME DECIDED 2026-09-24
+//        now  fr "Go Sports Technologies (société en cours de constitution)"
+//             ar "Go Sports Technologies (شركة في طور التأسيس)"
+//        The owner named the company that runs BotolaGO: Go Sports
+//        Technologies, the same organiser the prize rules name. The "being
+//        set up" status stays until the RC issues; then write the name exactly
+//        as it appears on the RC, legal form included (SARL, SA…).
 //
 //   2. RC number
 //        now  fr "RC : en cours d'immatriculation"

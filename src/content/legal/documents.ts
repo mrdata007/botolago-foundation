@@ -37,12 +37,12 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "Version 1.0 — en vigueur au 21 septembre 2026. Ces conditions régissent l'accès à l'application BotolaGO et son utilisation, y compris le jeu Fantasy et les classements.",
+        text: "Version 1.1 — en vigueur au 24 septembre 2026. Ces conditions régissent l'accès à l'application BotolaGO et son utilisation, y compris le jeu Fantasy et les classements.",
       },
       { type: "heading", text: "1. Éditeur et objet" },
       {
         type: "paragraph",
-        text: "L'application BotolaGO (ci-après « l'Application ») est éditée par BotolaGO (société en cours de constitution), société de droit marocain, RC : en cours d'immatriculation, ICE : en cours d'immatriculation, siège social : Agadir, Maroc (ci-après « BotolaGO » ou « nous »). Contact : support@botolago.com.",
+        text: "L'application BotolaGO (ci-après « l'Application ») est éditée par Go Sports Technologies (société en cours de constitution), société de droit marocain, RC : en cours d'immatriculation, ICE : en cours d'immatriculation, siège social : Agadir, Maroc (ci-après « BotolaGO » ou « nous »). Contact : support@botolago.com.",
       },
       {
         type: "paragraph",
@@ -178,12 +178,12 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "الإصدار 1.0 — ساري المفعول ابتداءً من 21 سبتمبر 2026. تحكم هذه الشروط الولوج إلى تطبيق BotolaGO واستعماله، بما في ذلك لعبة فانتازي والترتيبات.",
+        text: "الإصدار 1.1 — ساري المفعول ابتداءً من 24 سبتمبر 2026. تحكم هذه الشروط الولوج إلى تطبيق BotolaGO واستعماله، بما في ذلك لعبة فانتازي والترتيبات.",
       },
       { type: "heading", text: "1. الناشر والموضوع" },
       {
         type: "paragraph",
-        text: "تطبيق BotolaGO (المشار إليه فيما بعد بـ«التطبيق») تنشره BotolaGO (شركة في طور التأسيس)، شركة خاضعة للقانون المغربي، السجل التجاري: في طور التسجيل، التعريف الموحد للمقاولة: في طور التسجيل، المقر الاجتماعي: أكادير، المغرب (المشار إليها فيما بعد بـ«BotolaGO» أو «نحن»). للتواصل: support@botolago.com.",
+        text: "تطبيق BotolaGO (المشار إليه فيما بعد بـ«التطبيق») تنشره Go Sports Technologies (شركة في طور التأسيس)، شركة خاضعة للقانون المغربي، السجل التجاري: في طور التسجيل، التعريف الموحد للمقاولة: في طور التسجيل، المقر الاجتماعي: أكادير، المغرب (المشار إليها فيما بعد بـ«BotolaGO» أو «نحن»). للتواصل: support@botolago.com.",
       },
       {
         type: "paragraph",
@@ -322,12 +322,12 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "Version 1.0 — en vigueur au 21 septembre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.",
+        text: "Version 1.1 — en vigueur au 24 septembre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.",
       },
       { type: "heading", text: "1. Responsable du traitement" },
       {
         type: "paragraph",
-        text: "BotolaGO (société en cours de constitution), RC : en cours d'immatriculation, ICE : en cours d'immatriculation, Agadir, Maroc. Contact données personnelles : support@botolago.com. Déclaration CNDP : déclaration en cours.",
+        text: "Go Sports Technologies (société en cours de constitution), RC : en cours d'immatriculation, ICE : en cours d'immatriculation, Agadir, Maroc. Contact données personnelles : support@botolago.com. Déclaration CNDP : déclaration en cours.",
       },
       { type: "heading", text: "2. Données collectées" },
       {
@@ -513,7 +513,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "13. Contact" },
       {
         type: "paragraph",
-        text: "BotolaGO (société en cours de constitution) — Agadir, Maroc — support@botolago.com.",
+        text: "Go Sports Technologies (société en cours de constitution) — Agadir, Maroc — support@botolago.com.",
       },
     ],
   },
@@ -522,12 +522,12 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "الإصدار 1.0 — ساري المفعول ابتداءً من 21 سبتمبر 2026. تشرح هذه السياسة البيانات التي تجمعها BotolaGO، ولماذا، ومع من تُشارك، وما هي حقوقك، طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي.",
+        text: "الإصدار 1.1 — ساري المفعول ابتداءً من 24 سبتمبر 2026. تشرح هذه السياسة البيانات التي تجمعها BotolaGO، ولماذا، ومع من تُشارك، وما هي حقوقك، طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي.",
       },
       { type: "heading", text: "1. المسؤول عن المعالجة" },
       {
         type: "paragraph",
-        text: "BotolaGO (شركة في طور التأسيس)، السجل التجاري: في طور التسجيل، التعريف الموحد للمقاولة: في طور التسجيل، أكادير، المغرب. للتواصل بخصوص المعطيات الشخصية: support@botolago.com. التصريح لدى اللجنة الوطنية لمراقبة حماية المعطيات ذات الطابع الشخصي (CNDP): التصريح جارٍ.",
+        text: "Go Sports Technologies (شركة في طور التأسيس)، السجل التجاري: في طور التسجيل، التعريف الموحد للمقاولة: في طور التسجيل، أكادير، المغرب. للتواصل بخصوص المعطيات الشخصية: support@botolago.com. التصريح لدى اللجنة الوطنية لمراقبة حماية المعطيات ذات الطابع الشخصي (CNDP): التصريح جارٍ.",
       },
       { type: "heading", text: "2. البيانات التي نجمعها" },
       {
@@ -693,7 +693,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "13. للتواصل" },
       {
         type: "paragraph",
-        text: "BotolaGO (شركة في طور التأسيس) — أكادير، المغرب — support@botolago.com.",
+        text: "Go Sports Technologies (شركة في طور التأسيس) — أكادير، المغرب — support@botolago.com.",
       },
     ],
   },
