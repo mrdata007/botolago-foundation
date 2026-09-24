@@ -13,6 +13,12 @@ import { FootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
 import { clubShortCode } from "@/lib/club-identity";
+import {
+  computeLeagueTable,
+  roundsPlayed,
+  type LeagueTableRow,
+  type TableResult,
+} from "@/lib/league-table";
 import { resolveMediaUrl } from "@/lib/media";
 import { matchDayKey } from "@/lib/match-kickoff";
 import { presentMatchLiveDetail, type MatchLiveDetail } from "@/services/match-live";
@@ -150,6 +156,8 @@ function toTableRow(row: StandingRowDto): TableRow {
 
 export interface FootballSeason {
   readonly id: string;
+  /** The competition the season belongs to (Botola Pro): its fixtures are listed by it. */
+  readonly competitionId: string;
   readonly label: string;
   readonly startsOn: string;
   readonly endsOn: string;
@@ -163,6 +171,7 @@ export interface FootballSeason {
 function toSeason(season: SeasonSummaryDto): FootballSeason {
   return {
     id: season.id,
+    competitionId: season.competition.id,
     label: season.label,
     startsOn: season.startsOn,
     endsOn: season.endsOn,
@@ -199,6 +208,94 @@ export interface FootballMatchCollection {
   readonly matches: readonly Match[];
   readonly clubs: readonly Club[];
   readonly standings: readonly TableRow[];
+}
+
+/** A finished fixture as the table reads it; `null` for one without a final score. */
+function toTableResult(match: MatchCardDto): TableResult | null {
+  if (match.status !== "finished" || match.homeScore === null || match.awayScore === null) {
+    return null;
+  }
+  return {
+    homeClubId: match.homeTeam.id,
+    awayClubId: match.awayTeam.id,
+    homeScore: match.homeScore,
+    awayScore: match.awayScore,
+    kickoff: match.kickoffAt,
+  };
+}
+
+/** A stored row, with the form worked out from the results when the provider sent none. */
+function storedTableRow(row: StandingRowDto, computed: LeagueTableRow | undefined): LeagueTableRow {
+  const base = toTableRow(row);
+  return {
+    ...base,
+    form: base.form.length > 0 ? base.form : (computed?.form ?? []),
+    goalsFor: row.goalsFor,
+    goalsAgainst: row.goalsAgainst,
+  };
+}
+
+const totalPlayed = (rows: readonly { readonly played: number }[]) =>
+  rows.reduce((sum, row) => sum + row.played, 0);
+
+/** One season's league table, three ways, and the clubs to draw it with. */
+export interface FootballStandings {
+  readonly clubs: readonly Club[];
+  /** Best first. Empty until the season has a result (or the provider a table). */
+  readonly overall: readonly LeagueTableRow[];
+  /** Home matches only, then away matches only: always worked out from the results. */
+  readonly home: readonly LeagueTableRow[];
+  readonly away: readonly LeagueTableRow[];
+  /** The rounds `overall` reflects: matches played by its busiest club. */
+  readonly rounds: number;
+}
+
+/**
+ * A season's table from its fixtures, worked out from the finished results
+ * (see `league-table.ts`): nothing refreshes the stored table during a
+ * season, the fixtures do.
+ *
+ * The stored table still wins when there is one covering at least as many
+ * matches — it is the provider's, so a points deduction the results cannot
+ * know about is in it. For both completed seasons the two agree row for row;
+ * the stored rows only lack the form guide, which the results add. Home and
+ * away are always the results'. Before the first result there is no table
+ * at all, rather than sixteen rows of zeros.
+ */
+export function buildStandings(
+  fixtures: readonly MatchCardDto[],
+  stored: readonly StandingRowDto[],
+): FootballStandings {
+  const clubs = uniqueClubs(fixtures, stored);
+  const clubIds = clubs.map((club) => club.id);
+  const names = new Map(clubs.map((club) => [club.id, club.shortName.fr]));
+  const nameOf = (clubId: string) => names.get(clubId) ?? clubId;
+  const results = fixtures.flatMap((fixture) => {
+    const result = toTableResult(fixture);
+    return result ? [result] : [];
+  });
+
+  const computed = computeLeagueTable(clubIds, results, "overall", nameOf);
+  const useStored = stored.length > 0 && totalPlayed(stored) >= totalPlayed(computed);
+  const overall = useStored
+    ? [...stored]
+        .sort((a, b) => a.rank - b.rank)
+        .map((row) =>
+          storedTableRow(
+            row,
+            computed.find((candidate) => candidate.clubId === row.team.id),
+          ),
+        )
+    : results.length > 0
+      ? computed
+      : [];
+  return {
+    clubs,
+    overall,
+    home: results.length > 0 ? computeLeagueTable(clubIds, results, "home", nameOf) : [],
+    away: results.length > 0 ? computeLeagueTable(clubIds, results, "away", nameOf) : [],
+    rounds: roundsPlayed(overall),
+  };
 }
 
 export const footballService = {
@@ -244,15 +341,21 @@ export const footballService = {
     const matches = seasonId
       ? page.items.filter((match) => match.seasonId === seasonId)
       : page.items;
-    const standingsSeasonId = seasonId ?? matches[0]?.seasonId;
-    const standings = standingsSeasonId
-      ? await repository.getStandings(standingsSeasonId, language, requestContext())
-      : [];
-    return {
-      matches: matches.map(toMatch),
-      clubs: uniqueClubs(matches, standings),
-      standings: standings.map(toTableRow),
-    };
+    // The table is `getStandings`' job now: it has a tab of its own.
+    return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
+  },
+
+  /** The season's table: its fixtures and any stored table, read together (see `buildStandings`). */
+  async getStandings(
+    season: FootballSeason,
+    language: FootballLanguage,
+  ): Promise<FootballStandings> {
+    const repository = getFootballRepository();
+    const [fixtures, stored] = await Promise.all([
+      repository.getSeasonFixtures(season.competitionId, season.id, language, requestContext()),
+      repository.getStandings(season.id, language, requestContext()),
+    ]);
+    return buildStandings(fixtures, stored);
   },
 
   async getMatchDetailPage(
