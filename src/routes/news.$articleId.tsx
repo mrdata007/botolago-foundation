@@ -29,7 +29,7 @@ import { ArticleHeroFallback } from "@/components/common/ArticleHeroFallback";
 import { crestStyle } from "@/components/common/club-crest-style";
 import { readTimeLabel } from "@/lib/read-time";
 import { dictionaries } from "@/i18n/dictionaries";
-import { resolveMediaUrl } from "@/lib/media";
+import { FULL_COLUMN_SIZES, resolveMediaUrl } from "@/lib/media";
 import { buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
 import {
   bylineInitials,
@@ -310,6 +310,7 @@ function ArticlePage() {
               }
               loading="eager"
               fetchPriority="high"
+              frame={{ sizes: FULL_COLUMN_SIZES, ratio: 2, mdRatio: 16 / 7 }}
               className="absolute inset-0 animate-in fade-in duration-500"
             />
             <span aria-hidden className="absolute inset-0" style={HERO_SCRIM} />

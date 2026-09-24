@@ -8,6 +8,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
+import { FplChipInfo } from "@/components/fpl/FplChipInfo";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import {
   ui,
@@ -178,14 +179,22 @@ function TeamProfileBody() {
                     label={t("fpl.team_value")}
                     value={<Figure>{nf.format(summary?.teamValue ?? 0)}</Figure>}
                   />
-                  {CHIPS.map((chip) => (
-                    <UiKeyValueRow
-                      key={chip}
-                      label={t(`fantasy.chip.${chip}` as never)}
-                      value={<ChipState state={chipDisplayState(chips, chip)} />}
-                      className="last:border-b-0"
-                    />
-                  ))}
+                  {CHIPS.map((chip) => {
+                    const name = t(`fantasy.chip.${chip}` as never);
+                    return (
+                      <UiKeyValueRow
+                        key={chip}
+                        label={
+                          <span className="inline-flex items-center gap-1">
+                            {name}
+                            <FplChipInfo chip={chip} label={name} />
+                          </span>
+                        }
+                        value={<ChipState state={chipDisplayState(chips, chip)} />}
+                        className="last:border-b-0"
+                      />
+                    );
+                  })}
                 </div>
                 <UiLinkButton to="/fantasy/points" className="mt-4">
                   {t("fpl.gameweek_history")}

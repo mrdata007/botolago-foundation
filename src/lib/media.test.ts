@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { resolveMediaUrl } from "./media";
+import { MEDIA_WIDTHS, resolveMediaUrl, responsiveMedia } from "./media";
 
 const SUPABASE_URL = "https://botolago-test.supabase.co";
 
@@ -42,5 +42,146 @@ describe("resolveMediaUrl", () => {
     expect(resolveMediaUrl({ storagePath: "other/hero.jpg" }, SUPABASE_URL)).toBeUndefined();
     expect(resolveMediaUrl({ storagePath: "news/../hero.jpg" }, SUPABASE_URL)).toBeUndefined();
     expect(resolveMediaUrl(undefined, SUPABASE_URL)).toBeUndefined();
+  });
+});
+
+describe("responsiveMedia", () => {
+  const RENDER = `${SUPABASE_URL}/storage/v1/render/image/public`;
+  const crestUrl = `${SUPABASE_URL}/storage/v1/object/public/football-media/football/teams/16851/crest.png`;
+
+  /** `srcset` candidates as [url, descriptor] pairs. */
+  const candidates = (srcSet: string | undefined) =>
+    (srcSet ?? "").split(", ").map((candidate) => candidate.split(" "));
+
+  const square = { kind: "photo", sizes: "56px", ratio: 1 } as const;
+
+  test("offers a crest as square resized copies and keeps the original as src", () => {
+    const crest = responsiveMedia(crestUrl, { kind: "crest", sizes: "28px" }, SUPABASE_URL);
+    expect(crest.src).toBe(crestUrl);
+    expect(crest.sizes).toBe("28px");
+    expect(candidates(crest.srcSet)).toEqual(
+      MEDIA_WIDTHS.crest.map((width) => [
+        `${RENDER}/football-media/football/teams/16851/crest.png?width=${width}&height=${width}&resize=contain`,
+        `${width}w`,
+      ]),
+    );
+  });
+
+  test("cuts every photo copy to the shape of its box, one copy per listed width", () => {
+    const heroUrl = resolveMediaUrl({ storagePath: "news/2026/09/hero.jpg" }, SUPABASE_URL);
+    const photo = responsiveMedia(
+      heroUrl,
+      { kind: "photo", sizes: "190px", ratio: 16 / 10 },
+      SUPABASE_URL,
+    );
+    expect(photo.src).toBe(heroUrl);
+    expect(photo.sizes).toBe("190px");
+    expect(candidates(photo.srcSet)).toEqual(
+      MEDIA_WIDTHS.photo.map((width) => [
+        `${RENDER}/news-media/news/2026/09/hero.jpg?width=${width}&height=${Math.round(width / 1.6)}&resize=cover`,
+        `${width}w`,
+      ]),
+    );
+  });
+
+  test("gives each box shape its own height", () => {
+    const heroUrl = resolveMediaUrl({ storagePath: "news/hero.jpg" }, SUPABASE_URL);
+    const heightAt640 = (ratio: number) =>
+      responsiveMedia(heroUrl, { kind: "photo", sizes: "640px", ratio }, SUPABASE_URL)
+        .srcSet?.split(", ")
+        .find((candidate) => candidate.endsWith(" 640w"))
+        ?.match(/height=(\d+)/)?.[1];
+    expect(heightAt640(16 / 10)).toBe("400");
+    expect(heightAt640(16 / 8)).toBe("320");
+    expect(heightAt640(4 / 5)).toBe("800");
+    expect(heightAt640(1)).toBe("640");
+  });
+
+  test("a box that changes shape at sm gets a second set of cuts for wider screens", () => {
+    const heroUrl = resolveMediaUrl({ storagePath: "news/hero.jpg" }, SUPABASE_URL);
+    const lead = responsiveMedia(
+      heroUrl,
+      { kind: "photo", sizes: "640px", ratio: 4 / 3, smRatio: 16 / 10 },
+      SUPABASE_URL,
+    );
+    const heightAt640 = (srcSet: string | undefined) =>
+      srcSet
+        ?.split(", ")
+        .find((candidate) => candidate.endsWith(" 640w"))
+        ?.match(/height=(\d+)/)?.[1];
+    // Phones get the 4:3 cut; from 640px up, a 16:10 one.
+    expect(heightAt640(lead.srcSet)).toBe("480");
+    expect(lead.sources).toHaveLength(1);
+    expect(lead.sources?.[0]?.media).toBe("(min-width: 640px)");
+    expect(lead.sources?.[0]?.sizes).toBe("640px");
+    expect(heightAt640(lead.sources?.[0]?.srcSet)).toBe("400");
+
+    // A box with one shape, and every crest, needs no second set.
+    expect(responsiveMedia(heroUrl, square, SUPABASE_URL).sources).toBeUndefined();
+    expect(
+      responsiveMedia(crestUrl, { kind: "crest", sizes: "28px" }, SUPABASE_URL).sources,
+    ).toBeUndefined();
+  });
+
+  test("a box that changes shape at md too lists that cut first, since the first match wins", () => {
+    const heroUrl = resolveMediaUrl({ storagePath: "news/hero.jpg" }, SUPABASE_URL);
+    const heightAt640 = (srcSet: string | undefined) =>
+      srcSet
+        ?.split(", ")
+        .find((candidate) => candidate.endsWith(" 640w"))
+        ?.match(/height=(\d+)/)?.[1];
+
+    const hero = responsiveMedia(
+      heroUrl,
+      { kind: "photo", sizes: "100vw", ratio: 2, mdRatio: 16 / 7 },
+      SUPABASE_URL,
+    );
+    expect(heightAt640(hero.srcSet)).toBe("320");
+    expect(hero.sources?.map((source) => source.media)).toEqual(["(min-width: 768px)"]);
+    expect(heightAt640(hero.sources?.[0]?.srcSet)).toBe("280");
+
+    const both = responsiveMedia(
+      heroUrl,
+      { kind: "photo", sizes: "100vw", ratio: 1, smRatio: 4 / 3, mdRatio: 2 },
+      SUPABASE_URL,
+    );
+    expect(both.sources?.map((source) => source.media)).toEqual([
+      "(min-width: 768px)",
+      "(min-width: 640px)",
+    ]);
+    expect(both.sources?.map((source) => heightAt640(source.srcSet))).toEqual(["320", "480"]);
+  });
+
+  test("keeps the path encoding resolveMediaUrl applied, so every candidate is one token", () => {
+    const encoded = resolveMediaUrl(
+      { storagePath: "news/Équipe du jour/hero #1.webp" },
+      SUPABASE_URL,
+    );
+    const photo = responsiveMedia(encoded, square, SUPABASE_URL);
+    for (const candidate of candidates(photo.srcSet)) {
+      expect(candidate).toHaveLength(2);
+      expect(candidate[0]).toStartWith(
+        `${RENDER}/news-media/news/%C3%89quipe%20du%20jour/hero%20%231.webp?width=`,
+      );
+    }
+  });
+
+  test("leaves anything that is not our own Storage object as a plain src", () => {
+    for (const url of [
+      "https://images2.elbotola.com/article/abc_thumb.jpeg",
+      "https://other-project.supabase.co/storage/v1/object/public/football-media/football/teams/1/crest.png",
+      `${SUPABASE_URL}/storage/v1/object/public/avatars/user/avatar.png`,
+      `${SUPABASE_URL}/storage/v1/object/public/news-media/news/../../x.webp`,
+      `${SUPABASE_URL}/storage/v1/object/public/news-media/news/a.webp?download=1`,
+    ]) {
+      expect(responsiveMedia(url, square, SUPABASE_URL)).toEqual({ src: url });
+    }
+  });
+
+  test("with no configured project, or no URL, nothing is resized", () => {
+    const crest = { kind: "crest", sizes: "28px" } as const;
+    expect(responsiveMedia(crestUrl, crest, null)).toEqual({ src: crestUrl });
+    expect(responsiveMedia(undefined, crest, SUPABASE_URL)).toEqual({});
+    expect(responsiveMedia(null, square, SUPABASE_URL)).toEqual({});
   });
 });

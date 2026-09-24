@@ -40,7 +40,7 @@ on:
           - published
           - draft
       limit:
-        description: Optional number of stories (newest first); empty = all
+        description: dry-run only - newest N stories for a quick practice run; empty = all
         required: false
         type: string
 
