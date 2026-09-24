@@ -18,7 +18,9 @@ import {
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import type { MyPredictionDto } from "@/backend/predictions/contracts";
 import { FixturePredictionCard, type FixtureScore } from "./FixturePredictionCard";
+import { PredictionsShareButton, type ShareTally } from "./PredictionsShareButton";
 import { LeaguesPanel } from "./leagues/LeaguesPanel";
 import { PredictionsLeaderboard } from "./PredictionsLeaderboard";
 import { PredictionsStickyBar } from "./PredictionsStickyBar";
@@ -66,13 +68,19 @@ export function PredictionsPage({
   const guest = useGuestPredictions();
   const { round, query, now } = model;
 
-  const header = (
+  const header = (share: ReactNode) => (
     <UiPageTitle
       title={t("predictions.title")}
       trailing={
-        <UiIconButton aria-label={t("predictions.rules.title")} onClick={() => setRulesOpen(true)}>
-          <Info aria-hidden />
-        </UiIconButton>
+        <span className="flex items-center gap-2">
+          {share}
+          <UiIconButton
+            aria-label={t("predictions.rules.title")}
+            onClick={() => setRulesOpen(true)}
+          >
+            <Info aria-hidden />
+          </UiIconButton>
+        </span>
       }
       className="border-b-0"
     >
@@ -90,8 +98,8 @@ export function PredictionsPage({
     </UiPageTitle>
   );
 
-  const shell = (content: ReactNode) => (
-    <AppShell backgroundVariant="matches" pageHeader={header}>
+  const shell = (content: ReactNode, share: ReactNode = null) => (
+    <AppShell backgroundVariant="matches" pageHeader={header(share)}>
       <div className="flex flex-col gap-4 pt-2">{content}</div>
       <ScoringRulesSheet open={rulesOpen} onOpenChange={setRulesOpen} />
     </AppShell>
@@ -138,6 +146,9 @@ export function PredictionsPage({
       kind: predictionResultKind(pick, fixture.result),
     };
   };
+
+  const tally = shareTally(fixtures, picks, model.uid ? model.mine : null);
+  const share = <PredictionsShareButton roundNumber={journee.number} tally={tally} />;
 
   return shell(
     <>
@@ -233,7 +244,34 @@ export function PredictionsPage({
         </>
       )}
     </>,
+    share,
   );
+}
+
+/** What a share after results says: right predictions out of the scored ones. */
+function shareTally(
+  fixtures: readonly PredictionFixtureDto[],
+  picks: ReadonlyMap<string, Pick | null>,
+  mine: ReadonlyMap<string, MyPredictionDto> | null,
+): ShareTally | null {
+  let correct = 0;
+  let played = 0;
+  let exact = 0;
+  for (const fixture of fixtures) {
+    const kind = mine
+      ? mine.get(fixture.id)?.resultKind
+      : (() => {
+          const pick = picks.get(fixture.id);
+          return pick && fixture.final && fixture.result
+            ? predictionResultKind(pick, fixture.result)
+            : null;
+        })();
+    if (kind !== "exact" && kind !== "outcome" && kind !== "miss") continue;
+    played += 1;
+    if (kind !== "miss") correct += 1;
+    if (kind === "exact") exact += 1;
+  }
+  return played > 0 ? { correct, played, exact } : null;
 }
 
 function ComingSoon() {

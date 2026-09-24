@@ -103,6 +103,23 @@ export function claimStartedLabel(n: number, lang: Language, t: Translate): stri
   return template.replace("{n}", formatNumber(n, lang));
 }
 
+/**
+ * The share text after results. With no exact score the clause is left out
+ * rather than saying "dont 0 scores exacts"; otherwise the sentence agrees
+ * with the count. The caller fills {n}, {score} and {exact}.
+ */
+export function shareAfterTemplate(exact: number, lang: Language, t: Translate): string {
+  if (exact === 0) return t("predictions.share.after");
+  const rule = plural(exact, lang);
+  return rule === "one"
+    ? t("predictions.share.after_exact_one")
+    : rule === "two"
+      ? t("predictions.share.after_exact_two")
+      : rule === "few"
+        ? t("predictions.share.after_exact_few")
+        : t("predictions.share.after_exact_other");
+}
+
 export function roundStateLabel(state: RoundState, t: Translate): string {
   switch (state) {
     case "upcoming":

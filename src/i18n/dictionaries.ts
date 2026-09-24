@@ -1759,6 +1759,28 @@ export const dictionaries = {
     "predictions.league.not_played_other": "{n} membres n'ont pas encore joué",
     "predictions.error.league_access": "Réservé aux membres de cette ligue",
     "predictions.share.whatsapp": "WhatsApp",
+
+    /* Pronostics (BG-0146): entry points and sharing */
+    "matches.tab.predictions": "Pronostics",
+    "home.discover.predictions": "Pronostics",
+    "predictions.home.guest_line": "Devinez les scores de la journée en 1 minute",
+    "predictions.home.cta": "Pronostiquer",
+    "predictions.match.title": "Votre pronostic",
+    "predictions.match.all_round": "Pronostiquer toute la journée",
+    "predictions.league.tab": "Pronostics",
+    "predictions.share.before":
+      "J'ai fait mes pronostics pour la Journée {n} de la Botola sur BotolaGO. À toi !",
+    "predictions.share.after":
+      "Journée {n} de la Botola : {score} bons pronostics sur BotolaGO. Tu peux faire mieux ?",
+    "predictions.share.after_exact_one":
+      "Journée {n} de la Botola : {score} bons pronostics, dont 1 score exact, sur BotolaGO. Tu peux faire mieux ?",
+    "predictions.share.after_exact_two":
+      "Journée {n} de la Botola : {score} bons pronostics, dont 2 scores exacts, sur BotolaGO. Tu peux faire mieux ?",
+    "predictions.share.after_exact_few":
+      "Journée {n} de la Botola : {score} bons pronostics, dont {exact} scores exacts, sur BotolaGO. Tu peux faire mieux ?",
+    "predictions.share.after_exact_other":
+      "Journée {n} de la Botola : {score} bons pronostics, dont {exact} scores exacts, sur BotolaGO. Tu peux faire mieux ?",
+    "predictions.share.title": "Partager mes pronostics",
   },
 
   ar: {
@@ -3436,6 +3458,27 @@ export const dictionaries = {
     "predictions.league.not_played_other": "{n} عضوًا لم يشاركوا بعد",
     "predictions.error.league_access": "مخصص لأعضاء هذا الدوري",
     "predictions.share.whatsapp": "واتساب",
+
+    /* Pronostics (BG-0146): entry points and sharing */
+    "matches.tab.predictions": "التوقعات",
+    "home.discover.predictions": "التوقعات",
+    "predictions.home.guest_line": "توقّع نتائج الجولة في دقيقة واحدة",
+    "predictions.home.cta": "توقّع الآن",
+    "predictions.match.title": "توقعك",
+    "predictions.match.all_round": "توقّع كل مباريات الجولة",
+    "predictions.league.tab": "التوقعات",
+    "predictions.share.before": "أكملت توقعاتي للجولة {n} من البطولة على BotolaGO. دورك الآن!",
+    "predictions.share.after":
+      "الجولة {n} من البطولة: توقعاتي الصحيحة {score} على BotolaGO. هل تتفوق عليّ؟",
+    "predictions.share.after_exact_one":
+      "الجولة {n} من البطولة: توقعاتي الصحيحة {score}، منها نتيجة دقيقة واحدة، على BotolaGO. هل تتفوق عليّ؟",
+    "predictions.share.after_exact_two":
+      "الجولة {n} من البطولة: توقعاتي الصحيحة {score}، منها نتيجتان دقيقتان، على BotolaGO. هل تتفوق عليّ؟",
+    "predictions.share.after_exact_few":
+      "الجولة {n} من البطولة: توقعاتي الصحيحة {score}، منها {exact} نتائج دقيقة، على BotolaGO. هل تتفوق عليّ؟",
+    "predictions.share.after_exact_other":
+      "الجولة {n} من البطولة: توقعاتي الصحيحة {score}، منها {exact} نتيجة دقيقة، على BotolaGO. هل تتفوق عليّ؟",
+    "predictions.share.title": "مشاركة توقعاتي",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 

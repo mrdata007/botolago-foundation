@@ -7,6 +7,8 @@ import {
   NEWS_ENABLED,
   OAUTH_PROVIDERS_ENABLED,
   PRIZES_ENABLED,
+  PRONOSTICS_ENABLED,
+  PRONOSTICS_PROMOTED,
 } from "@/lib/feature-flags";
 import { SITEMAP_STATIC_PATHS } from "@/lib/sitemap";
 import { primaryNavItems } from "@/components/shell/primary-nav";
@@ -258,5 +260,63 @@ describe("PRIZES_ENABLED", () => {
   test("the admin console is not gated: the catalog is prepared before launch", () => {
     const source = stripComments(read("src/routes/admin.prizes.tsx"));
     expect(source).not.toContain("PRIZES_ENABLED");
+  });
+});
+
+/**
+ * BG-0146 — Pronostics. Two build flags; the database `mode` is the real gate.
+ * Like the others, these assert that each surface READS the flag, and they
+ * keep passing whichever way the flags are set.
+ */
+describe("PRONOSTICS_ENABLED / PRONOSTICS_PROMOTED", () => {
+  test("are single boolean constants, recorded once with the decision", () => {
+    expect(typeof PRONOSTICS_ENABLED).toBe("boolean");
+    expect(typeof PRONOSTICS_PROMOTED).toBe("boolean");
+    const source = read("src/lib/feature-flags.ts");
+    expect(source.match(/export const PRONOSTICS_ENABLED/g)).toHaveLength(1);
+    expect(source.match(/export const PRONOSTICS_PROMOTED/g)).toHaveLength(1);
+    expect(source).toContain("BG-0146");
+  });
+
+  test("the /pronostics routes redirect Home while the page is off", () => {
+    const source = stripComments(read("src/routes/pronostics.tsx"));
+    expect(source).toContain(
+      'if (!PRONOSTICS_ENABLED) throw redirect({ to: "/", replace: true });',
+    );
+    expect(source).toContain("beforeLoad: redirectWhilePronosticsAreHidden");
+  });
+
+  test.each([
+    ["src/routes/pronostics.index.tsx", "PRONOSTICS_PROMOTED && loaderData?.indexable"],
+    ["src/lib/sitemap.ts", "...(PRONOSTICS_PROMOTED ?"],
+    ["src/routes/index.tsx", "{PRONOSTICS_PROMOTED && ("],
+    ["src/components/matches/MatchesTabs.tsx", "...(PRONOSTICS_PROMOTED"],
+    ["src/routes/matches.$matchId.tsx", "{PRONOSTICS_PROMOTED && ("],
+    ["src/routes/fantasy.leagues.$leagueId.tsx", "...(PRONOSTICS_PROMOTED"],
+  ])("%s gates its entry point on PRONOSTICS_PROMOTED", (file, needle) => {
+    const source = stripComments(read(file));
+    expect(source).toContain('from "@/lib/feature-flags"');
+    expect(source).toContain(needle);
+  });
+
+  test("the sitemap lists /pronostics only once promoted", () => {
+    const listed = (SITEMAP_STATIC_PATHS as readonly string[]).includes("/pronostics");
+    expect(listed).toBe(PRONOSTICS_PROMOTED);
+  });
+
+  test("no other source file mentions the promoted flag", () => {
+    const allowed = new Set([
+      "src/lib/feature-flags.ts",
+      "src/routes/pronostics.index.tsx",
+      "src/lib/sitemap.ts",
+      "src/routes/index.tsx",
+      "src/components/matches/MatchesTabs.tsx",
+      "src/routes/matches.$matchId.tsx",
+      "src/routes/fantasy.leagues.$leagueId.tsx",
+    ]);
+    const strays = sourceFiles().filter(
+      (file) => !allowed.has(file) && stripComments(read(file)).includes("PRONOSTICS_PROMOTED"),
+    );
+    expect(strays).toEqual([]);
   });
 });

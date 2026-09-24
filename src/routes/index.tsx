@@ -3,10 +3,12 @@ import { BrandedText } from "@/components/brand/BrandedText";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CircleDot, Bell, Newspaper, Shield, Trophy, UserRound } from "lucide-react";
+import { CircleDot, Bell, Newspaper, Shield, Target, Trophy, UserRound } from "lucide-react";
 
 import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
+import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
+import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCard";
 import { footballService } from "@/services/football";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -352,6 +354,14 @@ function HomeContent() {
         </Section>
       )}
 
+      {/* Pronostics (BG-0146), right after the matches: shown once promoted,
+          and it hides itself while the game is off in the database. */}
+      {PRONOSTICS_PROMOTED && (
+        <Section>
+          <PredictionsHomeCard />
+        </Section>
+      )}
+
       {/* -------------------------------------------------------- */}
       {/* 3. Fantasy — the manager's card / team entry              */}
       {/* -------------------------------------------------------- */}
@@ -528,6 +538,10 @@ function HomeContent() {
           {/* News discovery tile — hidden at launch (NEWS_ENABLED). */}
           {NEWS_ENABLED && <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />}
           <DiscoveryLink to="/profile" icon={UserRound} label={t("nav.profile")} />
+          {/* A sixth tile makes two rows of three (BG-0146): shown once promoted. */}
+          {PRONOSTICS_PROMOTED && (
+            <DiscoveryLink to="/pronostics" icon={Target} label={t("home.discover.predictions")} />
+          )}
         </div>
       </Section>
     </AppShell>
@@ -544,7 +558,7 @@ function DiscoveryLink({
   icon: Icon,
   label,
 }: {
-  to: "/matches" | "/clubs" | "/fantasy" | "/news" | "/profile";
+  to: "/matches" | "/clubs" | "/fantasy" | "/news" | "/profile" | "/pronostics";
   icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   label: string;
 }) {
