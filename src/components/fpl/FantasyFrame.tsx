@@ -43,16 +43,34 @@ import { cn } from "@/lib/utils";
  * `bg-white`. The literal was the reason a dark-theme Fantasy screen
  * rendered its themed foreground on a permanently white column at 1.09:1;
  * `background="white"` now means the themed surface.
+ *
+ * TOP BAR (Option A) — `topBar="always"` is the hub (A-Fantasy): the global
+ * white bar with the wordmark and the language disc on every width, then the
+ * page's own title band. The default, `"desktop"`, is every inner screen
+ * (A-Team, A-Players): on a phone the screen's `UiHeader` — back, kicker,
+ * title — IS the top row, and the global bar only returns from `md` up, where
+ * there is room for both. Its wrapper is `display: contents` rather than a
+ * block: a sticky bar inside a box exactly its own height has nowhere to
+ * stick, so the desktop bar used to scroll away with the page.
+ *
+ * BOTTOM NAV — opt-in per route, unchanged: the Option A screens pass it
+ * (every A board shows the nav), and a screen whose own bottom bar is not yet
+ * lifted above the nav leaves it off. A bar that sticks to the bottom of a
+ * screen that has the nav sits at `bottom-[var(--bottomnav-h)]` (0 from `md`,
+ * where the nav is hidden).
  */
 export function FantasyFrame({
   children,
   bottomNav = false,
+  topBar = "desktop",
   className,
   background = "light",
 }: {
   children: ReactNode;
-  /** The hub keeps the application bottom navigation exactly like the reference. */
+  /** Render the application bottom navigation (phones; it is `md:hidden`). */
   bottomNav?: boolean;
+  /** `always` shows the global top bar on phones too — the hub, which has no `UiHeader`. */
+  topBar?: "desktop" | "always";
   className?: string;
   background?: "light" | "white";
 }) {
@@ -62,9 +80,13 @@ export function FantasyFrame({
   const surface = background === "white" ? ui.surface.bar : ui.surface.page;
   return (
     <div className={cn("fpl-root relative min-h-dvh", surface)}>
-      <div className="hidden md:block">
+      {topBar === "always" ? (
         <TopBar />
-      </div>
+      ) : (
+        <div className="hidden md:contents">
+          <TopBar />
+        </div>
+      )}
       <main
         className={cn(
           // Same column as `UiScreen width="content"`, which is what every

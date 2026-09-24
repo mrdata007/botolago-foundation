@@ -28,8 +28,26 @@
   --radius-dialog: 1.25rem; /* dialogs */
 
   /* ---- Sticky offsets ------------------------------------------ */
-  --topbar-h: calc(env(safe-area-inset-top, 0px) + 4.25rem);
-  --bottomnav-h: calc(env(safe-area-inset-bottom, 0px) + 4.75rem);
+  /* The TopBar's own height, term for term: its top padding
+     (`ui.safe.top`), the 44px row, `pb-2` and the 1px rule. It was a flat
+     4.25rem, 3px taller than the bar, so page content showed through a
+     sliver between the bar and anything stuck under it. */
+  --topbar-h: calc(max(env(safe-area-inset-top, 0px), 0.75rem) + var(--ui-tap-min) + 0.5rem + 1px);
+  /* The BottomNav's own height, term for term like the top bar's: `pt-2`,
+     the item's `py-1` twice, the 32px pill, the 4px gap, one micro label
+     line, the safe-bottom padding (`ui.safe.bottom`) and the 1px rule. The
+     label line is the micro size times the flat leading, so the bar measures
+     the same in Arabic, whose 1.95 leading makes it 6px taller; a flat
+     4.75rem left sticky bars 6px under the Arabic nav and 8px above it on a
+     phone with a home indicator. */
+  --bottomnav-h: calc(
+    0.5rem + 0.5rem + 2rem + 0.25rem + var(--ui-text-micro) * var(--ui-leading-flat) +
+      max(env(safe-area-inset-bottom, 0px), 0.5rem) + 1px
+  );
+  /* The live strip under the top bar (LiveStrip): its height, and how much
+     of it is showing — 0 unless `data-live-strip="shown"` is on the root. */
+  --livestrip-h-open: calc(var(--ui-tap-min) + 0.5rem);
+  --livestrip-h: 0px;
 
   /* ---- Brand core ---------------------------------------------- */
   --brand-primary: oklch(0.32 0.1 258); /* deep BotolaGO blue */
@@ -520,6 +538,10 @@
 
   /* The splash shine's travel and skew. +1 with the reading direction. */
   --splash-dir: 1;
+
+  /* The lean of the `club-stripes` texture. A gradient angle is physical
+     (rule 3), so the angle lives here and flips below, like the origins. */
+  --stripe-angle: -45deg;
 }
 
 [dir="rtl"] {
@@ -527,6 +549,23 @@
   --mesh-x-trail: 0%;
   --mesh-x-lead-out: 108%;
   --splash-dir: -1;
+  --stripe-angle: 45deg;
+}
+
+/* Option A's diagonal texture on a club-coloured block (the goal panel,
+   the team strip, the player hero, the profile card): 14px bands of
+   `--ui-club-band` at `--stripe-alpha` (7% by default; 4% on navy bands)
+   over whatever fill the element already paints. The band is the colour
+   the block's text is NOT (dark under white text, white under dark text),
+   so the texture never takes that text under 4.5:1. It sets only
+   `background-image`, so pair it with a background COLOUR, never with
+   another image. The angle is `--stripe-angle`, which mirrors in Arabic. */
+@utility club-stripes {
+  background-image: repeating-linear-gradient(
+    var(--stripe-angle),
+    color-mix(in srgb, var(--ui-club-band) var(--stripe-alpha, 7%), transparent) 0 14px,
+    transparent 14px 28px
+  );
 }
 
 @utility mesh-base {
@@ -822,12 +861,57 @@ html[dir="rtl"] .lucide-arrow-left {
   box-shadow: var(--shadow-subtle);
 }
 
+/* Live dot — a slow fade in and out, 1.5s a cycle (after premierleague.com).
+   It replaced an expanding "ping" ring, which read as an alarm rather than
+   the restrained urgency the live indicator is meant to carry. */
+@keyframes live-breathe {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@utility live-breathe {
+  animation: live-breathe 1.5s ease-in-out infinite;
+}
+
+/* A match event that arrives while the page is open (a live refresh) fades
+   in and opens to its own height, so it is noticed without a jump. The grid
+   track goes from 0fr to 1fr; the element's one child must be
+   `min-h-0 overflow-hidden` for the track to collapse. */
+@keyframes event-enter {
+  from {
+    opacity: 0;
+    grid-template-rows: 0fr;
+  }
+  to {
+    opacity: 1;
+    grid-template-rows: 1fr;
+  }
+}
+
+@utility event-enter {
+  display: grid;
+  animation: event-enter var(--duration-hero) var(--ease-standard) both;
+}
+
+/* The live strip is showing, so sticky bars below the top bar make room. */
+:root[data-live-strip="shown"] {
+  --livestrip-h: var(--livestrip-h-open);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
+    /* A delay would still hold content back (hidden, with fill-mode
+       `both`) before it appeared all at once. */
+    animation-delay: 0s !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
@@ -837,6 +921,9 @@ html[dir="rtl"] .lucide-arrow-left {
   .shimmer {
     animation: none !important;
     background-image: none !important;
+  }
+  .live-breathe {
+    animation: none !important;
   }
 }
 
@@ -884,6 +971,61 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-text-label: 12px; /* badges, column heads */
   --ui-text-micro: 11px; /* nav labels, micro captions */
 
+  /* ---- Display face (Option A) -----------------------------------
+     Changa, a Kufi-flavoured display sans with an Arabic subset,
+     for the loud words: hub and screen titles, section headings, tab
+     labels, team names in headers, and a STANDALONE figure (a score box,
+     the Fantasy points number). Manrope stays the body face — the e2e
+     suite asserts the body family per language — so this token is only
+     ever reached for through `ui.font.display`, `ui.display.*` and
+     `ui.score.*`, never by `body`.
+
+     Three facts about the font decide how it may be used, all read from
+     its tables rather than assumed:
+       - NO `tnum` feature, and proportional digits (500-675 units). So
+         `tabular-nums` does nothing on it, and a column of figures that
+         must line up stays on `ui.stat.*` (Manrope). Changa digits are
+         for a figure that stands alone.
+       - NO U+2032 prime. A minute (63′) set in it falls back mid-token;
+         render the prime in the body face (`ui.font.body`).
+       - 800 is its heaviest weight. `--ui-weight-hero` (900) would be
+         synthesised or snapped; the display ramp tops out at heavy.
+     Spelled out rather than chained through `--font-sans`: that one is an
+     `@theme inline` value, which Tailwind inlines into utilities and does
+     not promise to emit as a custom property. */
+  --ui-font-display: "Changa", "Manrope", ui-sans-serif, system-ui, sans-serif;
+  /* The body face, as a token: the same stack `body` uses (`--font-sans`,
+     and `--font-arabic` in the Arabic block below). Only for putting a
+     glyph Changa lacks — the minute prime — back into the body face INSIDE
+     display text (`ui.font.body`); `body` itself keeps `--font-sans`. The
+     contract test holds the two stacks equal. */
+  --ui-font-body: "Manrope", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* ---- Display ramp: the Changa sizes the text ramp does not have ----
+     The hub title (34), the screen header (19), the section band (17) and
+     the tab label (16) reuse `--ui-text-*` in the display face; these are
+     the three sizes Option A adds. */
+  --ui-display-mega: 112px; /* the goal takeover's "BUT !" */
+  --ui-display-hero: 46px; /* hero headline: "Journée 14", a player's surname */
+  --ui-display-section: 22px; /* section heading, split-header team name */
+
+  /* ---- Score ramp: Changa numerals for a figure that STANDS ALONE ----
+     A score box, the Fantasy points number, a rank hero. Not tabular and
+     never tabular (see above), so never for a figure read down a column —
+     rankings, stats values, prices and points in lists stay `ui.stat.*`.
+     Digits and figure punctuation only: a unit or an ordinal ("pts", "e")
+     is a sibling span on the text or display ramp (see the figure leading
+     below). Render a score as three flex children (home, separator, away),
+     never as the string "1 – 1", in a container that inherits the page
+     direction (a div or span — never a `<bdi>`, which is dir=auto and
+     resolves digits to LTR), each figure in its own `<bdi>`. Then RTL puts
+     home on the right. */
+  --ui-score-hero: 52px; /* match hero score box, Fantasy card points */
+  --ui-score-lg: 40px; /* live card score, H2H tallies */
+  --ui-score-md: 30px; /* match-list card score, rank hero */
+  --ui-score-sm: 24px; /* compact bar score, summary strips */
+  --ui-score-row: 20px; /* list-row kickoff time or score, league rank */
+
   /* ---- Leading ---------------------------------------------------
      BG-0124. The ramp used to carry size and weight only, and each
      component picked its own `leading-*`. Nine different values were
@@ -915,6 +1057,23 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-leading-flat: 1.4; /* single-line labels, headings, stats */
   --ui-leading-copy: 1.55; /* body copy, rows, buttons */
   --ui-leading-prose: 1.7; /* long-form paragraphs: rules, help, legal */
+  /* Changa carries its own metrics (ascender 1227, descender -613 per
+     1000, cap height 625). The derivation above predicts ~1.05 for an
+     accented capital; measured on the page instead (canvas TextMetrics
+     against the laid-out line box, sample "ÉÂÇ Journée gjpyQ", every
+     display step), 1.15 let the accent rise 0.6px above the box at 19px
+     and 46px — cut by `truncate`. 1.2 still grazed at 19px (the ascent
+     rounds to whole pixels there). 1.25 clears every step by ≥ 0.4px.
+     Arabic redeclares it. */
+  --ui-leading-display: 1.25; /* ui.display.*: titles, headings, tab labels */
+  /* Changa DIGITS only (ui.score.*): no descender, no accent, and the same
+     Latin glyphs in both languages (ar-MA formats Latin digits), so the
+     Arabic block restates this value rather than raising it — a 52px score
+     on a 1.95 line box would be a 101px score box. Which is why the score
+     ramp carries digits and nothing else: Arabic LETTERS in Changa do not
+     fit 1.1 (measured at 20px, "الثالث" rises 2px above the box and
+     `truncate` cuts it; "3e", "20:30" and "63" sit 5px inside). */
+  --ui-leading-figure: 1.1;
 
   /* ---- Stat ramp -------------------------------------------------
      Numerals only: scores, points, prices, ranks. Its own scale
@@ -946,12 +1105,19 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-weight-heavy: 800;
   --ui-weight-hero: 900;
 
-  /* ---- Radius set: Fantasy is square-ish, not the pill-shaped V2 -- */
-  --ui-radius-tight: 4px; /* difficulty squares, micro tags */
-  --ui-radius-control: 6px; /* buttons, cards, pills, banners */
-  --ui-radius-segment: 8px; /* selected tab */
-  --ui-radius-track: 10px; /* segmented-control track, inputs */
-  --ui-radius-sheet: 16px; /* bottom sheet, modal */
+  /* ---- Radius set ------------------------------------------------
+     Option A: cards are 14px, feature surfaces (score header, Fantasy
+     card, hero cards, sheets) 16px, and every control a thumb presses —
+     buttons, chips, pills, icon buttons — is fully round
+     (`ui.radius.full`), so `control` is left to the small inline boxes
+     (alerts, skeletons, menu rows). 14 rather than a second 16: the scale
+     holds one value per step, and the contract test rejects a repeat. */
+  --ui-radius-tight: 4px; /* difficulty squares, micro tags, form chips */
+  --ui-radius-control: 6px; /* alerts, skeletons, menu rows, banners */
+  --ui-radius-segment: 8px; /* selected tab, player plate bands */
+  --ui-radius-track: 10px; /* segmented-control track, inputs, thumbnails */
+  --ui-radius-card: 14px; /* UiCard / ui.surface.card, list groups */
+  --ui-radius-sheet: 16px; /* bottom sheet, modal, feature cards */
   --ui-radius-column: 28px; /* desktop phone column */
 
   /* ---- Spacing scale ---------------------------------------------
@@ -980,7 +1146,20 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-on-surface-muted: oklch(0.45 0.02 258);
   --ui-on-surface-faint: oklch(0.555 0.02 258); /* placeholders, disabled copy */
   --ui-rule: oklch(0.93 0.006 250); /* 1px divider */
+  /* A boundary that has to be SEEN, not just sensed: a field's outline, an
+     outline button. `--ui-rule` is a hairline at 1.2:1, which is right for
+     a divider and fails WCAG 1.4.11 for a control's edge. This clears 3:1
+     on the surface and the page in both themes (3.36 / 3.13 light,
+     3.15 / 3.58 dark). */
+  --ui-rule-strong: oklch(0.64 0.02 258);
   --ui-scrim: color-mix(in oklab, oklch(0.16 0.03 260) 45%, transparent);
+
+  /* The score box: the white plate a score sits on across a split
+     club-colour header. It stays LIGHT in the dark theme, like the action
+     gradient and the caution amber, because it has to separate from dark
+     club fills either way; its digits are ink-deep in both (16.59 / 14.18). */
+  --ui-scorebox: oklch(1 0 0);
+  --ui-on-scorebox: var(--ui-ink-deep);
 
   /* ---- Brand ink -------------------------------------------------
      `--ui-ink` fills and borders. `--ui-ink-fg` is the foreground you
@@ -991,6 +1170,10 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-ink-fg: oklch(0.32 0.1 258);
   --ui-on-ink: oklch(0.88 0.11 205); /* cyan text on ink */
   --ui-on-ink-plain: oklch(1 0 0);
+  /* The quieter line on an ink fill: a kicker, a label over a figure on a
+     navy strip. Mixed with the ink itself rather than with `transparent`,
+     so it is one opaque colour: 8.37:1 on ink in light, 8.25 in dark. */
+  --ui-on-ink-muted: color-mix(in srgb, var(--ui-on-ink-plain) 78%, var(--ui-ink));
   /* The foreground for the header/hero BAND. The band is light in the light
      theme and deep in the dark one, so unlike `--ui-ink-deep` (which sits on
      the action gradient, light in both themes) this one flips. */
@@ -998,8 +1181,9 @@ html[dir="rtl"] .lucide-arrow-left {
 
   /* ---- On the dark mesh ------------------------------------------
      The product has a second register: a deep mesh that the welcome
-     screen, the auth screens and the first-launch language chooser
-     all sit on. It is deliberate — a focused room with one job — and
+     screen, the splash and the first-launch language chooser sit on
+     (the auth screens left it for Option A's light photo band and
+     white sheet). It is deliberate — a focused room with one job — and
      the page tokens above are built for the light app surface, so
      they do not serve it.
 
@@ -1054,6 +1238,11 @@ html[dir="rtl"] .lucide-arrow-left {
   /* ---- Accents: the two stops of the Fantasy CTA gradient -------- */
   --ui-accent-spring: oklch(0.88 0.19 152);
   --ui-accent-sky: oklch(0.88 0.11 205);
+  /* A gain written ON the action gradient ("▲ 1 210" on the Fantasy card).
+     `--ui-positive` fails there (3.85 light, 1.15 dark), and the gradient
+     does not flip with the theme, so neither does this: 6.53 / 6.34 on the
+     light stops, 5.37 / 5.22 on the dark ones. */
+  --ui-on-action-positive: oklch(0.4 0.1 155);
 
   /* ---- Status ----------------------------------------------------
      `positive` and `negative` are read as TEXT as well as painted as
@@ -1081,6 +1270,34 @@ html[dir="rtl"] .lucide-arrow-left {
   /* Caution is a light amber in BOTH themes, so its foreground never flips. */
   --ui-on-caution: var(--ui-ink-deep);
 
+  /* ---- Club colour (Option A) -------------------------------------
+     The five colours a club-coloured element paints with. These are the
+     DEFAULTS — the brand ink family, so an element with no club, or a club
+     with no known colour, still renders as a navy block with white text.
+     A real club arrives per element: `clubStyle(club)` from
+     `src/lib/club-palette.ts` sets `data-club` and ten `--club-*` inline
+     properties (a light and a dark answer for each), and the `[data-club]`
+     layer after the `.dark` block below maps the current theme's answer
+     onto these names. The kit only ever reads the `--ui-club*` names.
+
+       --ui-club       the fill (a split header half, a crest disc, a bar)
+       --ui-on-club    text on that fill — white, or ink-deep where white
+                       fails; decided per theme (FUS orange takes dark text)
+       --ui-club-edge  a 4px edge bar or ring, ≥ 3:1 against the surface
+       --ui-club-fg    the club colour as TEXT on a surface (≥ 4.5:1);
+                       `--ui-on-surface` in dark and wherever it cannot pass
+       --ui-club-tint  a quiet wash of the club behind an icon or a quote
+       --ui-club-band  the `club-stripes` band: the text colour it is NOT
+
+     Plain aliases, redeclared identically under `.dark` (the
+     `--ui-wash-neutral` precedent), so the manifest lists them as themed. */
+  --ui-club: var(--ui-ink);
+  --ui-on-club: var(--ui-on-ink-plain);
+  --ui-club-edge: var(--ui-ink-fg);
+  --ui-club-fg: var(--ui-ink-fg);
+  --ui-club-tint: var(--ui-surface-sunken);
+  --ui-club-band: var(--ui-on-ink-plain);
+
   /* ---- Gradients -------------------------------------------------
      `to bottom` on purpose: a `deg` angle is physical and mirrors
      wrong under `dir="rtl"`. The radial origins are centred for the
@@ -1105,21 +1322,49 @@ html[dir="rtl"] .lucide-arrow-left {
       oklch(0.46 0.16 270) 100%
     );
 
-  /* ---- Elevation: one shadow set, four steps -------------------- */
+  /* ---- Elevation: one shadow set, five steps -------------------- */
   --ui-shadow-card: 0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 12%, transparent);
   --ui-shadow-raised: 0 -1px 0 0 color-mix(in oklab, var(--ui-ink) 8%, transparent);
+  /* The one lifted step (Option A): the score box, a hero card, the primary
+     call to action. A long soft drop, pulled in by the negative spread so it
+     reads as height rather than as a grey halo. The boards drew eight
+     variants of it; this is the one. */
+  --ui-shadow-lifted: 0 14px 26px -16px color-mix(in oklab, var(--ui-ink-deep) 55%, transparent);
   --ui-shadow-overlay: 0 -8px 24px -8px color-mix(in oklab, var(--ui-ink) 28%, transparent);
   --ui-shadow-column: var(--shadow-floating);
 
   /* ---- Fantasy domain --------------------------------------------
      Promoted from `--fpl-*`: these have no kit equivalent (a pitch is
      a pitch) but they now live under the kit's naming and contract,
-     and each has a dark counterpart. */
-  --ui-pitch-turf-a: oklch(0.71 0.17 146);
-  --ui-pitch-turf-b: oklch(0.67 0.17 146);
-  --ui-pitch-bench: oklch(0.8 0.12 146);
+     and each has a dark counterpart.
+
+     The Fantasy turf is Option A's pastel: the two action-gradient stops
+     at 45% over the surface, run `to bottom` from spring to sky under 22%
+     white mowing bands. DERIVED, so the dark turf comes for free (the stops
+     and the surface both flip) and cannot drift from the gradient it
+     echoes. Player plates carry their own surface and ink bands, so no
+     text sits on the turf itself. */
+  --ui-pitch-turf-a: color-mix(in srgb, var(--ui-accent-spring) 45%, var(--ui-surface));
+  --ui-pitch-turf-b: color-mix(in srgb, var(--ui-accent-sky) 45%, var(--ui-surface));
+  /* The bench is a plain surface strip under the turf. */
+  --ui-pitch-bench: var(--ui-surface);
   --ui-pitch-line: color-mix(in oklab, oklch(1 0 0) 92%, transparent);
   --ui-on-pitch: oklch(0.18 0.04 260);
+  /* The player plate's figure band (points, price, fixture) under the name
+     band, with `--ui-on-ink-plain` on it. Ink-deep in light, as the boards
+     draw it (16.59:1). NOT ink-deep in dark: there it is oklch(0.22 0.07),
+     the same lightness as the dark surface the name band sits on
+     (0.22 0.03) — 1.00:1, the two bands merged into one slab. The dark value
+     is a step lighter than the ink: ΔEok 15 from the surface (1.58:1),
+     text 10.05:1. */
+  --ui-plate-figure: var(--ui-ink-deep);
+
+  /* The MATCH lineup pitch (Compos tab): a real grass green, darker than
+     the Fantasy pastel because player names sit directly on it, in
+     `--ui-on-ink-plain` with no text-shadow — 4.84 / 5.61 light,
+     7.41 / 8.44 dark. Bands run `to bottom` from a to b. */
+  --ui-lineup-turf-a: oklch(0.536 0.129 153);
+  --ui-lineup-turf-b: oklch(0.502 0.122 152);
 
   /* Fixture Difficulty Rating, 1 easiest → 5 hardest, each with the
      foreground that clears AA on it. */
@@ -1168,6 +1413,19 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-leading-flat: 1.95;
   --ui-leading-copy: 1.9;
   --ui-leading-prose: 2;
+  /* Changa's Arabic glyphs use the font's full ascender and descender
+     (1227 / 613 per 1000, a 1.84 content area), so display text gets the
+     same 1.95 as `flat`. The figure leading is restated, NOT raised: the
+     score digits are Latin in Arabic too (ar-MA), the same glyphs as in
+     French, and raising it would only make every score box taller. An
+     Arabic unit or ordinal next to a score is a sibling span on the text or
+     display ramp, never inside `ui.score.*`. */
+  --ui-leading-display: 1.95;
+  --ui-leading-figure: 1.1;
+  /* Changa carries Arabic, so Arabic titles keep the same display voice as
+     French ones; the Noto stack is the fallback while it loads. */
+  --ui-font-display: "Changa", "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
+  --ui-font-body: "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
 }
 
 .dark {
@@ -1178,7 +1436,10 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-on-surface-muted: oklch(0.76 0.02 258);
   --ui-on-surface-faint: oklch(0.64 0.02 258);
   --ui-rule: color-mix(in oklab, oklch(0.97 0.01 250) 14%, transparent);
+  --ui-rule-strong: oklch(0.52 0.02 258);
   --ui-scrim: color-mix(in oklab, oklch(0.08 0.02 260) 68%, transparent);
+  --ui-scorebox: oklch(0.93 0.01 250);
+  --ui-on-scorebox: var(--ui-ink-deep);
 
   --ui-ink: oklch(0.3 0.08 260);
   --ui-ink-deep: oklch(0.22 0.07 260);
@@ -1198,6 +1459,7 @@ html[dir="rtl"] .lucide-arrow-left {
 
   --ui-accent-spring: oklch(0.82 0.18 152);
   --ui-accent-sky: oklch(0.82 0.11 205);
+  --ui-on-action-positive: oklch(0.4 0.1 155);
 
   --ui-positive: oklch(0.78 0.17 150);
   --ui-negative: oklch(0.75 0.19 355);
@@ -1207,6 +1469,13 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-on-positive: var(--ui-ink-deep);
   --ui-on-negative: var(--ui-ink-deep);
   --ui-on-caution: var(--ui-ink-deep);
+
+  --ui-club: var(--ui-ink);
+  --ui-on-club: var(--ui-on-ink-plain);
+  --ui-club-edge: var(--ui-ink-fg);
+  --ui-club-fg: var(--ui-ink-fg);
+  --ui-club-tint: var(--ui-surface-sunken);
+  --ui-club-band: var(--ui-on-ink-plain);
 
   --ui-grad-header: linear-gradient(
     to bottom,
@@ -1225,13 +1494,15 @@ html[dir="rtl"] .lucide-arrow-left {
 
   --ui-shadow-card: 0 1px 2px 0 color-mix(in oklab, oklch(0 0 0) 55%, transparent);
   --ui-shadow-raised: 0 -1px 0 0 color-mix(in oklab, oklch(1 0 0) 8%, transparent);
+  --ui-shadow-lifted: 0 14px 26px -16px color-mix(in oklab, oklch(0 0 0) 75%, transparent);
   --ui-shadow-overlay: 0 -8px 24px -8px color-mix(in oklab, oklch(0 0 0) 70%, transparent);
 
-  --ui-pitch-turf-a: oklch(0.45 0.11 146);
-  --ui-pitch-turf-b: oklch(0.42 0.11 146);
-  --ui-pitch-bench: oklch(0.36 0.08 146);
+  --ui-pitch-bench: var(--ui-surface);
   --ui-pitch-line: color-mix(in oklab, oklch(1 0 0) 72%, transparent);
   --ui-on-pitch: oklch(0.97 0.01 250);
+  --ui-plate-figure: oklch(0.36 0.09 260);
+  --ui-lineup-turf-a: oklch(0.42 0.1 150);
+  --ui-lineup-turf-b: oklch(0.39 0.095 150);
 
   --ui-fdr-1: oklch(0.42 0.12 152);
   --ui-fdr-2: oklch(0.63 0.13 152);
@@ -1295,6 +1566,47 @@ html[dir="rtl"] .lucide-arrow-left {
   --news-plate-analysis: oklch(0.28 0.09 295);
   --news-plate-interviews: oklch(0.29 0.08 165);
   --news-plate-for-you: oklch(0.29 0.11 245);
+}
+
+/* ==================================================================
+   The club layer (`[data-club]`)
+   ------------------------------------------------------------------
+   `clubStyle(club)` (src/lib/club-palette.ts) puts `data-club` and twelve
+   inline custom properties on an element: `--club-{fill,on,edge,fg,tint,band}`
+   with an `-l` (light) and a `-d` (dark) answer each. The club palette
+   computes both, because the foreground on a club colour is decided by
+   measured contrast and the answer differs by theme — FUS orange carries
+   dark text, and the fill itself is deepened 15% into the dark page.
+
+   These two rules pick the current theme's answer and hand it to the
+   `--ui-club*` names the kit reads, on the SAME element that carries the
+   inline values — a custom property is resolved where it is declared, so
+   mapping it anywhere else would freeze the root's defaults. Children
+   inherit the resolved colours. No theme is read in React, so this is
+   correct on the server render and when `.dark` arrives later.
+
+   Each `var()` falls back to the ink default, so a `data-club` with no
+   `--club-*` value in scope paints as the brand ink (one WITHOUT inline
+   values inside another club's element inherits that club's). A nested
+   `data-club` with its own values re-maps from them, so a home half and
+   an away half can sit side by side inside a card that carries neither.
+   ================================================================== */
+[data-club] {
+  --ui-club: var(--club-fill-l, var(--ui-ink));
+  --ui-on-club: var(--club-on-l, var(--ui-on-ink-plain));
+  --ui-club-edge: var(--club-edge-l, var(--ui-ink-fg));
+  --ui-club-fg: var(--club-fg-l, var(--ui-ink-fg));
+  --ui-club-tint: var(--club-tint-l, var(--ui-surface-sunken));
+  --ui-club-band: var(--club-band-l, var(--ui-on-ink-plain));
+}
+
+.dark [data-club] {
+  --ui-club: var(--club-fill-d, var(--ui-ink));
+  --ui-on-club: var(--club-on-d, var(--ui-on-ink-plain));
+  --ui-club-edge: var(--club-edge-d, var(--ui-ink-fg));
+  --ui-club-fg: var(--club-fg-d, var(--ui-ink-fg));
+  --ui-club-tint: var(--club-tint-d, var(--ui-surface-sunken));
+  --ui-club-band: var(--club-band-d, var(--ui-on-ink-plain));
 }
 
 /* ==================================================================

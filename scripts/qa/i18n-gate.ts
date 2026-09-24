@@ -331,7 +331,51 @@ export const BASELINES: Baselines = {
   // for exactly this and referenced nowhere until now. W3 257 -> 252; nothing
   // orphaned in exchange. W4 unchanged: each key is its own literal
   // `t("news.tab.…")` call in a switch, not built from the slug.
-  W3: 252,
+  //
+  // Motion pass (scorers under the score): the match header's "+" opens each
+  // goal's assist, labelled with `matches.event.assist` — already translated
+  // in both languages and referenced by nothing until now. W3 252 -> 251.
+  // Every key the pass added is referenced by the component that added it,
+  // and each is its own literal call, so W1, W2 and W4 do not move.
+  //
+  // Option A, Lane 1 (Home + Matches): W3 251 -> 252, net +4 orphaned / -3
+  // adopted. Orphaned: `home.deadline` (the band's pill now reads
+  // `home.deadline_fantasy`, "Date limite Fantasy"), `matches.section.live`
+  // and `matches.competition.country` (A-Matches drops the per-status section
+  // titles and the deleted CompetitionHeader), `fantasy.transfers` (Home's
+  // Fantasy card is the gradient card: rank and gameweek points only). Left
+  // in the dictionary, as above: a screen lane does not delete keys.
+  // Adopted: `matches.date.yesterday` / `.tomorrow` (the date band and Home's
+  // day groups name the day) and `matches.a11y.live_minute` (a live card's
+  // accessible name states the minute).
+  //
+  // Option A, Lane 2 (match page): 251 -> 245. The Stats tab now names each
+  // statistic through `matches.stats.<code>` (the API's label is English in
+  // every language), giving eight written-but-uncalled keys their first call,
+  // and `matches.detail.summary` heads the Résumé panel (-9); the retired
+  // header footer and section title orphan `matches.detail.elapsed`,
+  // `.competition` and `.lineups_title` (+3, left in place like the others).
+  // Lanes 1 and 2 together: 251 + 1 - 6, plus `matches.kickoff`, which
+  // each lane still called once from a screen the other rewrote (the
+  // match card, the match header) and so neither saw orphaned. 247.
+  //
+  // Option A, Lane 5 (Fantasy lists): player tabs + podium gone (6 keys orphaned), 4 unused keys now called, 8 new keys referenced. 251 -> 253.
+  // With Lanes 1 and 2: 247 + 2 = 249.
+  //
+  // Option A, Lane 4 (Fantasy core): the hub calls `fpl.no_team_yet` (-1)
+  // and drops the "Suivre BotolaGO" tiles, orphaning `fpl.follow` (+1).
+  // Merged with Lane 5, `fpl.rankings` goes too: each lane removed one of its
+  // two callers (the hub tile, the rankings page) and kept the other's. 250.
+  //
+  // Option A, Lane 6 (account): Profile follows A-Profile — single-line rows (the
+  // four `profile.*_desc` go), no personal-details group (`.section.personal`,
+  // `.email`, `.username`), one Notifications row for three (`.notif.*`): +10;
+  // the language row's value names the language, so `language.french/.arabic`
+  // gain their first call sites: -2. Keys left in place, as above. The board's
+  // "Mes clubs" heading is a new key (`profile.clubs.title`), not a rewording
+  // of the still-unused `profile.followed_clubs`. W3 251 -> 259.
+  // With Lanes 1, 2, 4 and 5: 250 + 8 = 258.
+  W3: 258,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
@@ -341,7 +385,21 @@ export const BASELINES: Baselines = {
   // each carried `t(canCreate ? "fantasy.create.title" : "fantasy.title")`.
   // They are one `CreateTeamLink` now, so the same dynamic call appears once.
   // 71 -> 70.
-  W4: 70,
+  //
+  // Option A, Lane 1: that link is now `FantasyCreateCard`, which picks its
+  // title with two literal calls instead. 70 -> 69.
+  //
+  // Option A, Lane 2 (match page): EventTimeline's `t(table[event.type])` is a
+  // literal-key switch now. 70 -> 69.
+  // Both together: 70 -> 68.
+  //
+  // Option A, Lane 5 (Fantasy lists): player-page tab loop + status template gone, players sort loop now literal calls. 70 -> 67.
+  // With Lanes 1 and 2: 68 - 3 = 65.
+  //
+  // Option A, Lane 4 (Fantasy core): FplChipsRow names each chip with a literal
+  // `t("fantasy.chip.…")` branch instead of a `fantasy.chip.` template. 70 -> 69.
+  // With Lanes 1, 2 and 5: 65 - 1 = 64.
+  W4: 64,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];

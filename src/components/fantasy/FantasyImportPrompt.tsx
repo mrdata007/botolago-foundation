@@ -223,13 +223,16 @@ export function FantasyImportPrompt() {
         )}
       </div>
 
+      {/* `flex-auto`, not `flex-1`: `sm` pills keep their label on one line,
+          and a zero basis would squeeze "Commencer une nouvelle équipe" below
+          it. They grow into the room on their line; the row wraps. */}
       <div className="mt-3 flex flex-wrap gap-2">
         <UiButton
           size="sm"
           variant="gradient"
           onClick={importNow}
           disabled={phase === "saving" || phase === "success"}
-          className="flex-1"
+          className="flex-auto"
         >
           {t("fantasy.import.cta_save")}
         </UiButton>
@@ -238,7 +241,7 @@ export function FantasyImportPrompt() {
           variant="outline"
           onClick={startNew}
           disabled={phase === "saving"}
-          className="flex-1"
+          className="flex-auto"
         >
           {t("fantasy.import.cta_start_new")}
         </UiButton>

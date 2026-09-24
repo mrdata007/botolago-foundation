@@ -94,9 +94,11 @@ describe("BG-0076: the plate is wired to the existing failure path", () => {
   it("every ArticleCard variant passes a placeholder", () => {
     const mediaImages = CARD.match(/<MediaImage\b/g) ?? [];
     const placeholders = CARD.match(/placeholder=\{heroPlaceholder\(/g) ?? [];
-    // Five variants: lead, row, compact, horizontal, imageLed.
-    expect(mediaImages).toHaveLength(5);
-    expect(placeholders).toHaveLength(5);
+    // Option A draws the five variants in two shapes, one image each: the
+    // photo card (`lead`, `imageLed`) and the row (`horizontal`, `row`,
+    // `compact`). Every image the card renders passes the plate.
+    expect(mediaImages).toHaveLength(2);
+    expect(placeholders).toHaveLength(2);
   });
 
   it("the article detail hero passes one too", () => {

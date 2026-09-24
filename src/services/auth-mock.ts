@@ -109,7 +109,7 @@ export class LocalMockAuthService implements AuthService {
         createdAt: new Date().toISOString(),
         verified: true,
         provider: "email",
-        favoriteClubId: "wac",
+        favoriteClubId: "war", // the mock clubs key Wydad by its source slug
         passwordDigest: digest(MOCK_DEMO_PASSWORD),
       });
       safeSet(K_USERS, users);

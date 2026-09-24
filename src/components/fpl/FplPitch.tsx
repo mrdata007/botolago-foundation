@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
-import { UiPitchSurface } from "@/components/ui-kit";
+import { ui, UiPitchSurface } from "@/components/ui-kit";
+import { cn } from "@/lib/utils";
 
 /**
  * The Fantasy pitch.
@@ -20,6 +21,11 @@ import { UiPitchSurface } from "@/components/ui-kit";
  * The props are unchanged on purpose. `/fantasy/team`, `/fantasy/points` and
  * `SquadBuilderScreen` (which is what `/fantasy/transfers` and
  * `/fantasy/create` render) all call it exactly as before.
+ *
+ * Option A (A-Team): the turf and the bench strip sit together in one card —
+ * the feature radius (`--ui-radius-sheet`, the pitch is a feature surface),
+ * the card shadow, clipped so the turf's corners follow the card's. The card
+ * sits in the page gutter; `className` positions it.
  */
 export function FplPitch({
   rows,
@@ -37,12 +43,21 @@ export function FplPitch({
   className?: string;
 }) {
   return (
-    <UiPitchSurface
-      rows={rows}
-      bench={bench}
-      benchLabels={benchLabels}
-      benchHighlighted={benchHighlighted}
-      className={className}
-    />
+    <div
+      className={cn(
+        "overflow-hidden",
+        ui.radius.sheet,
+        ui.shadow.card,
+        "bg-[color:var(--ui-pitch-bench)]",
+        className,
+      )}
+    >
+      <UiPitchSurface
+        rows={rows}
+        bench={bench}
+        benchLabels={benchLabels}
+        benchHighlighted={benchHighlighted}
+      />
+    </div>
   );
 }

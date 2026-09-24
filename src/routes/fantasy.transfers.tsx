@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AddPlayerScreen } from "@/components/fpl/AddPlayerScreen";
+import { findClub } from "@/components/fpl/club-lookup";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { PlayerActionSheet } from "@/components/fpl/PlayerActionSheet";
@@ -51,10 +52,14 @@ function isTransfersDraftPayload(v: unknown): v is TransfersDraftPayload {
  * opens its actions ("Transfer out" → Add Player locked to that position).
  * The incoming player is shown highlighted, the stat bar tracks free
  * transfers / wildcard / cost / bank, and "Next" opens the confirmation screen.
+ *
+ * Option A (A-Players): "FANTASY · Transferts" in the sub-page header, the
+ * figures on the navy strip, the pitch card, and the Add / Next dock above
+ * the bottom navigation.
  */
 function TransfersPage() {
   return (
-    <FantasyFrame>
+    <FantasyFrame bottomNav>
       <TransfersBody />
     </FantasyFrame>
   );
@@ -165,7 +170,7 @@ function TransfersBody() {
   if (screen.phase !== "ready" || !team || !gameweek) {
     return (
       <>
-        <UiHeader title={t("fpl.transfers")} tone="gradient" backTo="/fantasy" />
+        <UiHeader kicker={t("fantasy.title")} title={t("fpl.transfers")} backTo="/fantasy" />
         <FantasyScreenGate state={screen} next="/fantasy/transfers">
           <div />
         </FantasyScreenGate>
@@ -596,20 +601,26 @@ function TransfersBody() {
     <>
       <SquadBuilderScreen
         title={t("fpl.transfers")}
+        kicker={t("fantasy.title")}
         backTo="/fantasy"
         gameweek={gameweek.number}
         deadlineIso={gameweek.deadline}
         stats={[
-          { label: t("fpl.free_transfers"), value: freeTransfersLabel },
           {
-            label: t("fpl.wildcard"),
-            value:
+            label: t("fpl.free_transfers"),
+            value: freeTransfersLabel,
+            // "Illimité" under a Wildcard / Free Hit is a word, not a figure.
+            text: chipsState.active === "wildcard" || chipsState.active === "free_hit",
+            // The board's three columns (A-Players): the Wildcard's state
+            // rides under the free transfers it multiplies, rather than as a
+            // fourth column too narrow for "INDISPONIBLE".
+            sub: `${t("fpl.wildcard")} · ${
               wildcardState === "active"
                 ? t("fpl.state.active")
                 : wildcardState === "available"
                   ? t("fpl.state.play")
-                  : t("fpl.state.unavailable"),
-            tone: wildcardState === "available" || wildcardState === "active" ? "ink" : "grey",
+                  : t("fpl.state.unavailable")
+            }`,
           },
           { label: t("fpl.cost"), value: String(preview.hitPoints) },
           {
@@ -655,7 +666,7 @@ function TransfersBody() {
             key: "form",
             label: t("fpl.form"),
             // BG-0071: a dash, not 0.0, while no gameweek has scored.
-            render: (p) => (p.form === null ? t("fantasy.stat.none") : p.form.toFixed(1)),
+            render: (p) => (p.form === null ? t("fantasy.stat.none") : nf.format(p.form)),
           },
           { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
           { key: "sell", label: t("fpl.selling_price"), render: (p) => nf.format(p.price) },
@@ -695,7 +706,7 @@ function TransfersBody() {
       <PlayerActionSheet
         open={sheetFor !== null}
         player={sheetPlayer}
-        club={sheetPlayer ? clubs.find((c) => c.id === sheetPlayer.clubId) : undefined}
+        club={sheetPlayer ? findClub(clubs, sheetPlayer.clubId) : undefined}
         isStarter={false}
         onClose={() => setSheetFor(null)}
         onTransferOut={

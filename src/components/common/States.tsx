@@ -5,12 +5,17 @@ import { cn } from "@/lib/utils";
 import { ui, UiButton } from "@/components/ui-kit";
 
 /**
- * Loading / empty / error / offline states.
+ * Loading / empty / error / offline states, in the Option A register.
  *
- * Converted to the shared UI kit: the kit type scale, radii, surfaces and
- * status tokens replace the Design System V2 surfaces, the Tailwind type
- * ramp and the hardcoded amber/destructive palettes. They stay calm and
- * quiet — the states are not decoration.
+ * Calm and quiet — the states are not decoration — but in the same shape
+ * language as everything around them: the 14px card radius, filled panels
+ * rather than dashed outlines, and the glyph in a ROUND disc like the icon
+ * discs on the boards' shortcut tiles and profile rows. The retry is the
+ * kit's round ink button.
+ *
+ * The empty panel stays a SUNKEN fill rather than a white card: it is placed
+ * both on the page and inside cards (the Home fixtures card), and a white
+ * card nested in a white card has no edge.
  *
  * The public props of every export are unchanged.
  */
@@ -22,7 +27,10 @@ export function LoadingState({ label }: { label?: string }) {
       role="status"
       className={cn("flex items-center justify-center gap-2 py-8", ui.text.body, ui.tone.muted)}
     >
-      <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
+      <Loader2
+        className={cn("h-4 w-4 animate-spin motion-reduce:animate-none", ui.tone.ink)}
+        aria-hidden
+      />
       <span>{label ?? t("state.loading")}</span>
     </div>
   );
@@ -45,9 +53,8 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col items-center justify-center gap-2 text-center",
-        ui.radius.control,
-        "border border-dashed border-[color:var(--ui-rule)]",
+        "flex min-w-0 flex-col items-center justify-center gap-2.5 text-center",
+        ui.radius.card,
         ui.surface.sunken,
         compact ? "px-4 py-6" : "px-6 py-10",
         ui.text.secondary,
@@ -65,12 +72,19 @@ export function EmptyState({
           className={cn("w-auto max-w-full object-contain", compact ? "h-20" : "h-28")}
         />
       ) : (
+        // The surface disc on the sunken panel: the same round icon plate the
+        // boards put on shortcut tiles, one step lighter than its ground.
         <div
-          className={cn("grid h-9 w-9 place-items-center rounded-full", ui.tone.ink)}
-          style={{ background: "color-mix(in oklab, var(--ui-ink) 12%, transparent)" }}
+          className={cn(
+            "grid h-11 w-11 place-items-center",
+            ui.radius.full,
+            ui.surface.bar,
+            ui.tone.ink,
+            ui.shadow.card,
+          )}
           aria-hidden
         >
-          <Inbox className="h-4 w-4" aria-hidden />
+          <Inbox className="h-5 w-5" aria-hidden />
         </div>
       )}
       <span className="max-w-[28ch]">{children ?? t("state.empty")}</span>
@@ -83,15 +97,25 @@ export function ErrorState({ onRetry }: { onRetry?: () => void }) {
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col items-center gap-3 py-8",
-        ui.radius.control,
-        "border border-[color:color-mix(in_oklab,var(--ui-negative)_35%,transparent)]",
+        "flex min-w-0 flex-col items-center gap-3 px-4 py-8 text-center",
+        ui.radius.card,
+        "border border-[color:color-mix(in_oklab,var(--ui-negative)_30%,transparent)]",
         ui.text.body,
       )}
-      style={{ background: "color-mix(in oklab, var(--ui-negative) 6%, transparent)" }}
+      style={{ background: "color-mix(in oklab, var(--ui-negative) 6%, var(--ui-surface))" }}
     >
-      <AlertTriangle className="h-5 w-5 text-[color:var(--ui-negative)]" aria-hidden />
-      <span className={ui.tone.default}>{t("state.error")}</span>
+      {/* The glyph on a 12% negative disc — the Profile log-out row's
+          pairing — rather than a bare red triangle. */}
+      <span
+        className={cn("grid h-11 w-11 place-items-center", ui.radius.full, ui.tone.negative)}
+        style={{ background: "color-mix(in oklab, var(--ui-negative) 12%, var(--ui-surface))" }}
+        aria-hidden
+      >
+        <AlertTriangle className="h-5 w-5" aria-hidden />
+      </span>
+      <span className={cn(ui.tone.default, "[font-weight:var(--ui-weight-strong)]")}>
+        {t("state.error")}
+      </span>
       {onRetry && (
         <UiButton variant="ink" size="sm" onClick={onRetry}>
           {t("state.retry")}
@@ -106,18 +130,21 @@ export function OfflineBanner() {
   return (
     <div
       className={cn(
-        "flex min-w-0 items-center gap-2 px-3 py-2",
-        ui.radius.control,
+        "flex min-w-0 items-center gap-2 px-3.5 py-2",
+        // The card radius, not a pill: the Arabic line can wrap, and a
+        // two-line pill reads as a mistake.
+        ui.radius.card,
         "border border-[color:color-mix(in_oklab,var(--ui-caution)_40%,transparent)]",
         ui.text.meta,
+        "[font-weight:var(--ui-weight-strong)]",
       )}
       style={{
-        background: "color-mix(in oklab, var(--ui-caution) 14%, transparent)",
+        background: "color-mix(in oklab, var(--ui-caution) 14%, var(--ui-surface))",
         color: "color-mix(in oklab, var(--ui-caution) 70%, var(--ui-on-surface))",
       }}
     >
       <WifiOff className="h-4 w-4 shrink-0" aria-hidden />
-      <span>{t("state.offline")}</span>
+      <span className="min-w-0">{t("state.offline")}</span>
     </div>
   );
 }

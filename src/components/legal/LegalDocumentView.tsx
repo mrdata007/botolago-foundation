@@ -20,6 +20,13 @@ import { cn } from "@/lib/utils";
  * ancestor; this subtree then mirrors on its own. No `tracking-*` utility
  * appears anywhere in the file: Arabic letterforms join, and letter-spacing
  * breaks the joins in either direction. Both rules are pinned by a test.
+ *
+ * OPTION A. The title and the section headings are the display face
+ * (`ui.display.title` / `ui.display.section`, Changa, which has Arabic
+ * glyphs and its own Arabic leading); the prose stays on the body face, where
+ * long reading belongs. The tables are cards: the 14px card radius and a
+ * sunken head. None of the display steps carries letter-spacing, and none is
+ * spelled here, so the rule above holds.
  */
 export function LegalDocumentView({
   doc,
@@ -34,7 +41,7 @@ export function LegalDocumentView({
     // sized by its widest descendant. Without it a table's intrinsic minimum
     // would propagate out and widen the page past the gutter at 390px.
     <article className="min-w-0 pb-6 text-start">
-      <h1 className={cn("text-balance", ui.text.hero, ui.tone.default)}>{doc.title}</h1>
+      <h1 className={cn("text-balance", ui.display.title, ui.tone.default)}>{doc.title}</h1>
       {doc.blocks.map((block, index) => (
         <Block key={index} block={block} tableScrollHint={tableScrollHint} />
       ))}
@@ -48,7 +55,11 @@ function Block({ block, tableScrollHint }: { block: LegalBlock; tableScrollHint:
       // Every heading in both documents is a top-level numbered section
       // ("1. …" … "16. …"); the source has no sub-headings, so a single <h2>
       // level under the document's <h1> is the whole outline.
-      return <h2 className={cn("mt-7", ui.text.section, ui.tone.default)}>{block.text}</h2>;
+      return (
+        <h2 className={cn("mt-7 text-balance", ui.display.section, ui.tone.default)}>
+          {block.text}
+        </h2>
+      );
 
     // `prose` rather than `secondary` + `leading-relaxed`. Terms and Privacy
     // are by some distance the longest copy in the product -- a weight tally
@@ -109,17 +120,15 @@ function Table({
       role="group"
       aria-label={scrollHint}
       tabIndex={0}
-      className={cn(
-        "mt-4 max-w-full overflow-x-auto",
-        ui.radius.control,
-        ui.rule.all,
-        ui.surface.card,
-        ui.focus,
-      )}
+      // A card (`ui.surface.card` carries the 14px card radius and its
+      // shadow) with a hairline, so a table reads as one object on the page.
+      className={cn("mt-4 max-w-full overflow-x-auto", ui.surface.card, ui.rule.all, ui.focus)}
     >
       <table className={cn(minWidth, "border-collapse text-start", ui.text.meta)}>
         <thead>
-          <tr className="bg-muted/60">
+          {/* The kit's table head: the sunken surface. It was the V1
+              `bg-muted/60`, the last shadcn token on the legal pages. */}
+          <tr className={ui.surface.sunken}>
             {head.map((cell, index) => (
               <th
                 key={index}

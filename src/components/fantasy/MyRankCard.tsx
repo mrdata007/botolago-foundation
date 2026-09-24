@@ -1,38 +1,28 @@
 import { Hourglass, Target, UserPlus } from "lucide-react";
+import type { ReactNode } from "react";
 
-import { ui, UiButton, UiCard, UiLinkButton, UiSkeleton, UiStatBlock } from "@/components/ui-kit";
+import { RankOrdinal } from "@/components/fantasy-lists/RankOrdinal";
+import { rankOrdinal } from "@/components/fantasy-lists/rank-ordinal";
+import { ui, UiIconButton, UiLinkButton, UiRankMovement, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { LeagueStanding } from "@/types/fantasy";
-import { RankChangeIndicator } from "./RankChangeIndicator";
 import { selectMyRankState, type TeamPresence } from "./my-rank-state";
 
 /**
- * "My rank" summary card, on the kit.
+ * "Your position" — the line above the rankings table (A-Rankings).
  *
- * The card still takes team ownership (`presence`) separately from the
- * standing, and `selectMyRankState` still decides which of the four states is
- * shown — that logic is untouched. What changed is how each state is drawn:
- * `UiCard` for the surface, `UiStatBlock` for the three figures (so they are
- * tabular and line up with every other figure in Fantasy), `UiSkeleton` for
- * the pending shimmer, and kit buttons for the two actions.
+ * The approved board draws it as a line, not a card: a 4px action-gradient
+ * bar on the inline start, the kicker, the rank as a display figure with its
+ * ordinal ("12 483ᵉ"), then "team · points · movement". The four states are
+ * unchanged — `selectMyRankState` still decides which one shows, from team
+ * ownership (`presence`) rather than from the missing standing — and each
+ * keeps its `data-testid` wrapper and, for the pending shimmer, its busy
+ * status role.
  *
- * The literal `bg-white` is gone from all four branches. On a themed page it
- * was an un-themed surface: in dark mode the card stayed white while the text
- * token went light, which is the 1.09:1 measurement this work exists to fix.
- *
- * `UiCard` deliberately takes no arbitrary DOM props, so the `data-testid`
- * hooks and the live-region roles sit on a style-free wrapper rather than
- * being dropped.
+ * "Go to my position" stays: it is a round control at the end of the line,
+ * named by its label, rather than the full-width button it used to be.
  */
-
-/**
- * The three figures sit open on the card, split by hairlines, rather than
- * in three grey plates inside it: the numbers are the content, the plates
- * were only chrome, and the card already draws the surface.
- */
-const FIGURE = "px-1 py-1";
-
 export function MyRankCard({
   standing,
   presence,
@@ -47,7 +37,9 @@ export function MyRankCard({
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const state = selectMyRankState({ standing, presence });
 
-  const kicker = <p className={cn(ui.text.label, ui.tone.ink)}>{t("fantasy.rankings.my_rank")}</p>;
+  const kicker = (
+    <p className={cn(ui.text.label, ui.tone.muted)}>{t("fantasy.rankings.my_rank")}</p>
+  );
 
   if (state.kind === "pending") {
     return (
@@ -57,15 +49,11 @@ export function MyRankCard({
         aria-busy="true"
         aria-label={t("state.loading")}
       >
-        <UiCard>
+        <PositionLine>
           {kicker}
-          <UiSkeleton className="mt-2 h-4 w-32 max-w-full" />
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <UiSkeleton className="h-12" />
-            <UiSkeleton className="h-12" />
-            <UiSkeleton className="h-12" />
-          </div>
-        </UiCard>
+          <UiSkeleton className="mt-2 h-8 w-36 max-w-full" />
+          <UiSkeleton className="mt-2 h-4 w-52 max-w-full" />
+        </PositionLine>
       </div>
     );
   }
@@ -73,20 +61,19 @@ export function MyRankCard({
   if (state.kind === "no_team") {
     return (
       <div data-testid="my-rank-card-no-team">
-        <UiCard className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className={cn(ui.text.bodyStrong, ui.tone.default)}>
-              {t("fantasy.rankings.no_team")}
-            </p>
-            <p className={cn(ui.text.secondary, ui.tone.muted)}>
-              {t("fantasy.rankings.no_team_desc")}
-            </p>
-          </div>
-          <UiLinkButton to="/fantasy/create" size="sm" className="shrink-0">
+        <PositionLine>
+          {kicker}
+          <p className={cn("mt-1.5", ui.text.bodyStrong, ui.tone.default)}>
+            {t("fantasy.rankings.no_team")}
+          </p>
+          <p className={cn(ui.text.secondary, ui.tone.muted)}>
+            {t("fantasy.rankings.no_team_desc")}
+          </p>
+          <UiLinkButton to="/fantasy/create" size="sm" className="mt-3 self-start">
             <UserPlus className="h-4 w-4" aria-hidden />
             {t("fantasy.rankings.create_team")}
           </UiLinkButton>
-        </UiCard>
+        </PositionLine>
       </div>
     );
   }
@@ -94,21 +81,21 @@ export function MyRankCard({
   if (state.kind === "unranked") {
     return (
       <div data-testid="my-rank-card-unranked">
-        <UiCard>
+        <PositionLine>
           {kicker}
           {state.teamName ? (
-            <p dir="auto" className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}>
+            <p dir="auto" className={cn("mt-1.5 truncate", ui.text.bodyStrong, ui.tone.default)}>
               {state.teamName}
             </p>
           ) : null}
-          <p className={cn("mt-2 flex items-start gap-2", ui.text.bodyStrong, ui.tone.default)}>
-            <Hourglass className={cn("mt-0.5 h-4 w-4 shrink-0", ui.tone.muted)} aria-hidden />
+          <p className={cn("mt-1.5 flex items-start gap-2", ui.text.bodyStrong, ui.tone.default)}>
+            <Hourglass className={cn("mt-1 h-4 w-4 shrink-0", ui.tone.muted)} aria-hidden />
             {t("fantasy.rankings.no_rank_yet")}
           </p>
-          <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
+          <p className={cn(ui.text.secondary, ui.tone.muted)}>
             {t("fantasy.rankings.no_rank_yet_desc")}
           </p>
-        </UiCard>
+        </PositionLine>
       </div>
     );
   }
@@ -116,47 +103,76 @@ export function MyRankCard({
   const ranked = state.standing;
   return (
     <div data-testid="my-rank-card">
-      <UiCard>
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            {kicker}
-            <p dir="auto" className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}>
-              {ranked.teamName}
-            </p>
-          </div>
-          <RankChangeIndicator rank={ranked.rank} previousRank={ranked.previousRank} />
-        </div>
-        <div className="mt-3 grid grid-cols-3 divide-x divide-[color:var(--ui-rule)]">
-          <UiStatBlock
-            align="center"
-            tone="ink"
-            label={t("fantasy.overall_rank")}
-            value={nf.format(ranked.rank)}
-            size="lg"
-            className={FIGURE}
+      <PositionLine
+        trailing={
+          onJump ? (
+            <UiIconButton aria-label={t("fantasy.rankings.jump_to_me")} onClick={onJump}>
+              <Target aria-hidden />
+            </UiIconButton>
+          ) : null
+        }
+      >
+        {kicker}
+        <p className={cn("mt-2", ui.tone.default)}>
+          <RankOrdinal
+            size="hero"
+            parts={rankOrdinal(ranked.rank, lang, t, (value) => nf.format(value))}
           />
-          <UiStatBlock
-            align="center"
-            label={t("fantasy.total_points")}
-            value={nf.format(ranked.totalScore)}
-            size="lg"
-            className={FIGURE}
+        </p>
+        <p
+          className={cn(
+            "mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1",
+            ui.text.secondary,
+            ui.tone.default,
+          )}
+        >
+          <span dir="auto" className="min-w-0 truncate [font-weight:var(--ui-weight-strong)]">
+            {ranked.teamName}
+          </span>
+          <span aria-hidden className={ui.tone.muted}>
+            ·
+          </span>
+          <span className="whitespace-nowrap">
+            <bdi className={cn(ui.text.tabular, "[font-weight:var(--ui-weight-strong)]")}>
+              {nf.format(ranked.totalScore)}
+            </bdi>{" "}
+            <span className={ui.tone.muted}>{t("fantasy.points.abbr")}</span>
+          </span>
+          <span aria-hidden className={ui.tone.muted}>
+            ·
+          </span>
+          <UiRankMovement
+            variant="quiet"
+            rank={ranked.rank}
+            previousRank={ranked.previousRank}
+            formatDelta={(places) => nf.format(places)}
+            labels={{
+              up: t("fantasy.rank.up"),
+              down: t("fantasy.rank.down"),
+              same: t("fantasy.rank.same"),
+            }}
           />
-          <UiStatBlock
-            align="center"
-            label={t("fantasy.gw_points")}
-            value={nf.format(ranked.gameweekScore)}
-            size="lg"
-            className={FIGURE}
-          />
-        </div>
-        {onJump ? (
-          <UiButton variant="outline" className="mt-3" onClick={onJump}>
-            <Target className="h-4 w-4" aria-hidden />
-            {t("fantasy.rankings.jump_to_me")}
-          </UiButton>
-        ) : null}
-      </UiCard>
+        </p>
+      </PositionLine>
+    </div>
+  );
+}
+
+/**
+ * The line's frame: the gradient edge bar, the content, and an optional
+ * control at the inline end. The bar is `ui.edge.bar` repainted with the
+ * action gradient — a `to bottom` token, so it reads the same in Arabic.
+ */
+function PositionLine({ children, trailing }: { children: ReactNode; trailing?: ReactNode }) {
+  return (
+    <div className="flex gap-3">
+      <span
+        aria-hidden
+        className={ui.edge.bar}
+        style={{ backgroundImage: "var(--ui-grad-action)" }}
+      />
+      <div className="flex min-w-0 flex-1 flex-col py-1">{children}</div>
+      {trailing ? <div className="shrink-0 self-center">{trailing}</div> : null}
     </div>
   );
 }

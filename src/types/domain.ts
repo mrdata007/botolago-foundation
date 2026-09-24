@@ -83,6 +83,9 @@ export interface Match {
   minute?: number;
   homeScore?: number;
   awayScore?: number;
+  /** The score at half-time, once the provider has recorded it. */
+  halfTimeHomeScore?: number;
+  halfTimeAwayScore?: number;
   venue: LocalizedString;
   /**
    * Whether `kickoff` has stopped describing a real date.

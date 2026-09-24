@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useId } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Loader2, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 import {
   AuthShell,
@@ -8,14 +8,15 @@ import {
   AuthSecondaryButton,
   AuthDivider,
   AuthFormError,
-  authLinkClass,
+  AuthPasswordToggle,
   GoogleGlyph,
   AppleGlyph,
 } from "@/components/auth/AuthShell";
+import { authFieldClass, authFieldIconClass, authLinkClass } from "@/components/auth/auth-classes";
 import { ConsentLine } from "@/components/legal/ConsentLine";
 import { OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
 import { noticeConsentSegments } from "@/components/legal/consent-segments";
-import { ui, UiInput } from "@/components/ui-kit";
+import { ui, UiButton, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
@@ -137,12 +138,42 @@ function LoginPage() {
       title={t("auth.login.title")}
       subtitle={t("auth.login.subtitle")}
       footer={
-        <span>
-          {t("auth.login.no_account")}{" "}
-          <Link to="/auth/register" search={{ next: next ?? "/" }} className={authLinkClass.onMesh}>
-            {t("auth.login.create_link")}
-          </Link>
-        </span>
+        <>
+          <p
+            className={cn(
+              "flex flex-wrap items-center justify-center gap-x-1 text-center",
+              ui.text.secondary,
+              "[font-weight:var(--ui-weight-body)]",
+              ui.tone.muted,
+            )}
+          >
+            <span>{t("auth.login.no_account")}</span>
+            <Link
+              to="/auth/register"
+              search={{ next: next ?? "/" }}
+              className={authLinkClass.onSurface}
+            >
+              {t("auth.login.create_link")}
+            </Link>
+          </p>
+          {/* `linkClassName` is passed rather than defaulted: the brand
+              foreground (`--ui-ink-fg`), heavy and underlined, as the board
+              sets the two document names. The leading is the token, which is
+              redeclared for Arabic (BG-0124); a bare `leading-relaxed` is not. */}
+          <p
+            className={cn(
+              "text-center",
+              ui.text.micro,
+              "leading-[var(--ui-leading-copy)]",
+              ui.tone.muted,
+            )}
+          >
+            <ConsentLine
+              segments={noticeConsentSegments(t)}
+              linkClassName={authLinkClass.consent}
+            />
+          </p>
+        </>
       }
     >
       <form onSubmit={onSubmit} noValidate className="grid gap-3">
@@ -157,69 +188,47 @@ function LoginPage() {
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email ? t(errors.email) : undefined}
           reserveError
+          fieldClassName={authFieldClass(!!errors.email)}
+          leading={<Mail className={authFieldIconClass} aria-hidden />}
         />
 
+        {/* The field renders its own label again. "Mot de passe oublié ?"
+            used to share the label row, which is why this one field wired its
+            label by hand; the board puts the link UNDER the field, at the
+            inline end, so the frame can own label, box and error like every
+            other field here. The link sits after the reserved error line: the
+            error is the one thing that must not move. */}
         <div>
-          {/* The one field in this family that does NOT let `UiInput` render
-              its own label. The "forgot password" link has to sit on the label
-              row, and a link inside a `<label>` is folded into the input's
-              accessible name — the field would announce as "Mot de passe Mot
-              de passe oublié ?". So the label is placed here, drawn with the
-              exact classes `UiInput` gives its own (`ui.text.meta` at the
-              heavy weight), and the field is left unlabelled-by-prop and wired
-              with `htmlFor`. Same treatment, different owner — not the 12px
-              uppercase label this form used to carry. */}
-          <div className="mb-1 flex items-center justify-between">
-            <label
-              htmlFor={passwordId}
-              className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}
-            >
-              {t("auth.password")}
-            </label>
-            <Link
-              to="/auth/forgot-password"
-              className={cn(
-                "inline-flex items-center -me-2 px-2",
-                ui.space.tap,
-                ui.text.meta,
-                "[font-weight:var(--ui-weight-heavy)]",
-                ui.tone.default,
-                "underline underline-offset-4",
-              )}
-            >
-              {t("auth.login.forgot")}
-            </Link>
-          </div>
           <UiInput
             id={passwordId}
+            label={t("auth.password")}
             type={showPw ? "text" : "password"}
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             error={errors.password ? t(errors.password) : undefined}
             reserveError
-            trailing={
-              <button
-                type="button"
-                onClick={() => setShowPw((s) => !s)}
-                aria-label={showPw ? t("auth.hide_password") : t("auth.show_password")}
-                className={cn(
-                  "grid place-items-center px-2",
-                  ui.space.tap,
-                  ui.radius.control,
-                  ui.tone.muted,
-                  ui.focus,
-                  "hover:bg-[color:var(--ui-surface-sunken)]",
-                )}
-              >
-                {showPw ? (
-                  <EyeOff className="h-4 w-4" aria-hidden />
-                ) : (
-                  <Eye className="h-4 w-4" aria-hidden />
-                )}
-              </button>
-            }
+            fieldClassName={authFieldClass(!!errors.password)}
+            leading={<Lock className={authFieldIconClass} aria-hidden />}
+            trailing={<AuthPasswordToggle shown={showPw} onToggle={() => setShowPw((s) => !s)} />}
           />
+          <div className="-mt-1 flex justify-end">
+            <Link
+              to="/auth/forgot-password"
+              className={cn(
+                "-me-2 inline-flex items-center px-2",
+                ui.space.tap,
+                ui.radius.full,
+                ui.text.meta,
+                "[font-weight:var(--ui-weight-heavy)]",
+                ui.tone.ink,
+                "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                ui.focus,
+              )}
+            >
+              {t("auth.login.forgot")}
+            </Link>
+          </div>
         </div>
 
         {errors.form && <AuthFormError>{t(errors.form)}</AuthFormError>}
@@ -234,12 +243,13 @@ function LoginPage() {
         {/* BG-0111 — no OAuth provider is enabled on this project, so the
             divider goes with the buttons: an "ou continuer avec" rule with
             nothing under it reads as a broken screen. See
-            `OAUTH_PROVIDERS_ENABLED`. */}
+            `OAUTH_PROVIDERS_ENABLED`. Google is the white outline pill, Apple
+            its own navy one (`ink`), as the board draws them. */}
         {OAUTH_PROVIDERS_ENABLED && (
           <>
             <AuthDivider label={t("auth.or_continue_with")} />
 
-            <div className="grid gap-2">
+            <div className="grid gap-2.5">
               <AuthSecondaryButton
                 type="button"
                 onClick={() => onSocial("google")}
@@ -247,34 +257,17 @@ function LoginPage() {
               >
                 <GoogleGlyph /> {t("auth.google")}
               </AuthSecondaryButton>
-              <AuthSecondaryButton
+              <UiButton
+                variant="ink"
                 type="button"
                 onClick={() => onSocial("apple")}
                 disabled={submitting}
               >
                 <AppleGlyph /> {t("auth.apple")}
-              </AuthSecondaryButton>
+              </UiButton>
             </div>
           </>
         )}
-
-        {/* `linkClassName` is passed rather than defaulted: `ConsentLine`'s
-            own default paints the links in `--brand-primary` (= `--ui-ink`),
-            a fill colour used as a foreground — BG-0083, and 1.25:1 on dark.
-            `authLinkClass.consent` is the theme-correct brand foreground.
-            `leading-relaxed` went the same way: a Tailwind literal on a line
-            that wraps in both languages, where the leading token is
-            redeclared for Arabic (BG-0124) and a bare 1.625 is not. */}
-        <p
-          className={cn(
-            "mt-2 text-center",
-            ui.text.micro,
-            "leading-[var(--ui-leading-copy)]",
-            ui.tone.muted,
-          )}
-        >
-          <ConsentLine segments={noticeConsentSegments(t)} linkClassName={authLinkClass.consent} />
-        </p>
       </form>
     </AuthShell>
   );

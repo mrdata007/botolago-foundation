@@ -12,7 +12,9 @@ export function AuthModeBadge() {
     <div
       aria-hidden
       className={cn(
-        "pointer-events-none fixed bottom-2 start-2 z-[100] px-2 py-0.5",
+        // Above the bottom nav, not on it: at `bottom-2` the badge sat over
+        // the first nav item and hid its label in every mock-mode screen.
+        "pointer-events-none fixed bottom-[calc(var(--bottomnav-h)+0.5rem)] start-2 z-[100] px-2 py-0.5",
         ui.radius.full,
         ui.text.label,
         // The kit's caution token rather than a raw amber, so the badge stays

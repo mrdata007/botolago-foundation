@@ -1,52 +1,115 @@
+import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { Clock } from "lucide-react";
 import type { Article, Club } from "@/types/domain";
-import { ClubCrest } from "./ClubCrest";
 import { useI18n } from "@/i18n/provider";
 import { formatRelativeTime } from "@/lib/format-time";
 import { SavedButton } from "@/components/news/SavedButton";
+import { categoryLabel, clubsForArticle, plateEdgeClass } from "@/components/news/news-data";
 import { cn } from "@/lib/utils";
-import { ui } from "@/components/ui-kit";
+import { ui, UiPill } from "@/components/ui-kit";
+import { crestStyle } from "./club-crest-style";
 import { MediaImage } from "./FailureAwareImage";
 import { ArticleHeroFallback } from "./ArticleHeroFallback";
 import { readTimeLabel } from "@/lib/read-time";
 
 /**
- * Article card, five variants:
- *   - `lead`        hero editorial card (16:10 image + overlay)
- *   - `row`         standard image-on-top card (default)
- *   - `compact`     media list row
- *   - `horizontal`  side-by-side image + text (dense lists)
- *   - `imageLed`    tall image-first card for "top stories" grid
+ * Article card (Option A "Club colours"). Five variant names, two shapes:
  *
- * Converted to the shared UI kit (`@/components/ui-kit`): the Fantasy type
- * scale, radii, surfaces and focus ring replace the Design System V2 glass
- * surfaces, the Tailwind type ramp and the ad-hoc rounding. The public props
- * are unchanged.
+ *   - `lead`        the lead story: a photo card on the sheet radius with the
+ *                   lifted shadow, a `to bottom` ink-deep scrim, the "À la
+ *                   une" pill, a Changa headline and the byline/time/read-time
+ *                   line — and the Save control over the photo
+ *   - `imageLed`    the same photo card, a size down, for the first "À ne
+ *                   pas manquer" story; its pill is the story's tag
+ *   - `horizontal`  the Option A row: a card with a 4px club edge on the
+ *   - `row`         inline start, the headline, a "tag · time" line and an
+ *                   88×68 thumbnail at the inline end, Save on the thumbnail
+ *   - `compact`     the same row without Save, its headline held to two
+ *                   lines — Home's preview, the second and third featured
+ *                   stories. Same thumbnail as the full row: a featured list
+ *                   mixes the two, and the board draws every row alike
  *
- * Photo overlays are the one place this card paints on top of an image. The
- * scrim is mixed from `--ui-ink-deep` and the copy uses `--ui-on-ink-plain`,
- * so it is still token-derived and survives a theme switch — no literal black
- * or white anywhere.
+ * The club colours come from `crestStyle(club)` (the memoised `clubStyle`)
+ * of the first club the article names, so the edge, the pill and the crest
+ * all read `--ui-club*`. An article that names no club takes its category's
+ * plate colour as the edge instead (`plateEdgeClass`).
  *
- * House rules: logical properties only, every `tracking-*` is `ltr:`-prefixed
- * (Arabic letterforms join and must never be letter-spaced — BG-0069).
+ * Save is never inside the link (a button inside an `<a>` is invalid and
+ * announces twice — `ArticleCard.semantics.test.ts`): it is the link's
+ * sibling, placed over the card.
+ *
+ * Every image goes through `MediaImage` with the branded plate
+ * (`ArticleHeroFallback`) as its placeholder, so a missing or broken photo is
+ * a deliberate plate, never an empty block (BG-0076).
+ *
+ * House rules: logical properties only, every `tracking-*` `ltr:`-prefixed,
+ * gradients `to bottom`, no literal colour — the copy on a photo is
+ * `--ui-on-ink-plain` over an `--ui-ink-deep` scrim.
  */
 
-/** Scrim painted over a photo so overlaid copy stays legible. */
-const scrim = (from: number, via: number) => ({
-  backgroundImage: `linear-gradient(to top, color-mix(in oklab, var(--ui-ink-deep) ${from}%, transparent), color-mix(in oklab, var(--ui-ink-deep) ${via}%, transparent) 45%, transparent)`,
-});
+/**
+ * The scrim behind the copy on a photo card. It belongs to the copy block, not
+ * to the card: a card-wide ramp (clear for the top fifth) left a three-line
+ * Arabic headline, which starts near the top of the card, on almost bare
+ * photo. On the copy block it fades in over the extra top padding and is
+ * already 72% ink-deep where the pill starts, however long the headline.
+ */
+const COPY_SCRIM = {
+  backgroundImage:
+    "linear-gradient(to bottom, transparent, color-mix(in oklab, var(--ui-ink-deep) 72%, transparent) 3rem, color-mix(in oklab, var(--ui-ink-deep) 94%, transparent))",
+};
+
+/** Hover, after premierleague.com: the photo zooms in a touch and the title
+ *  dims slightly, both at the same quick pace. */
+const IMAGE_ZOOM =
+  "transition-transform duration-[var(--duration-sheet)] ease-[var(--ease-standard)]";
+const TITLE_HOVER =
+  "transition-opacity duration-[var(--duration-sheet)] ease-[var(--ease-standard)] group-hover:opacity-85";
+
+/** Press feedback shared by both shapes. */
+const PRESS =
+  "transition-[box-shadow,transform] duration-[var(--duration-quick)] ease-[var(--ease-standard)] active:translate-y-px";
+
+/** A small separator dot, tinted from the text around it. */
+function Dot({ onPhoto = false }: { onPhoto?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "h-1 w-1 shrink-0 opacity-60",
+        ui.radius.full,
+        onPhoto ? "bg-[color:var(--ui-on-ink-muted)]" : "bg-[color:var(--ui-on-surface-muted)]",
+      )}
+    />
+  );
+}
+
+/**
+ * The emphatic label on a photo card: a 24px pill in the article's club
+ * colour (the ink when it names no club), label type. On a photo it needs no
+ * ring — the scrim behind it is dark. One line: a long tag ends in an
+ * ellipsis rather than wrapping out of a 24px pill.
+ */
+function CardPill({ children }: { children: ReactNode }) {
+  return (
+    <UiPill className={cn("h-6 max-w-full px-2.5 py-0", ui.text.label, ui.club.fill)}>
+      <span className="min-w-0 truncate">{children}</span>
+    </UiPill>
+  );
+}
 
 export function ArticleCard({
   article,
   variant = "row",
   clubs,
+  flag,
 }: {
   article: Article;
   variant?: "row" | "lead" | "compact" | "horizontal" | "imageLed";
-  /** Optional club directory used to render team crest badges. */
+  /** The club directory the article's `clubIds` are looked up in. */
   clubs?: readonly Club[];
+  /** An editorial flag shown with the card's label — the breaking-news pill. */
+  flag?: ReactNode;
 }) {
   const { tr, t, lang } = useI18n();
   const contentLanguage = article.language ?? lang;
@@ -54,351 +117,198 @@ export function ArticleCard({
     lang: contentLanguage,
     dir: contentLanguage === "ar" ? "rtl" : "ltr",
   };
-  const articleClubs = (clubs ?? []).filter((c) => article.clubIds.includes(c.id)).slice(0, 2);
+  const leadClub = clubsForArticle(article.clubIds, clubs ?? [])[0];
+  const club = leadClub ? crestStyle(leadClub) : null;
 
   /**
-   * The branded plate that stands in for a missing or broken hero (BG-0076).
-   * Rendered by `MediaImage` behind the photo and shown only when there is no
-   * hero URL or the one we have fails, so a card with a real photo is
-   * untouched. It is `absolute inset-0`, so every variant keeps the aspect
-   * ratio it already declared and nothing shifts.
+   * The branded plate that stands in for a missing or broken photo (BG-0076).
+   * `MediaImage` paints it behind the photo and shows it only when there is no
+   * URL or the one we have fails, so a card with a real photo is untouched.
    */
   const heroPlaceholder = () => <ArticleHeroFallback category={article.category} />;
 
-  /** Copy that sits on a photo: always the plain-on-ink token, never white. */
-  const onPhoto = "text-[color:var(--ui-on-ink-plain)]";
-
-  const crestRow = (tone: "light" | "dark" = "light") =>
-    articleClubs.length > 0 ? (
-      <span className="inline-flex min-w-0 items-center gap-1.5">
-        {articleClubs.map((c) => (
-          <span key={c.id} className="inline-flex min-w-0 items-center gap-1">
-            <ClubCrest
-              club={c}
-              size="sm"
-              className={cn("h-5 w-5 rounded-[var(--ui-radius-control)]", ui.text.micro)}
-            />
-            {/* A truncating span's min-content is the full untruncated name,
-                and in a grid of cards that minimum propagates out into the
-                track and widens the card past the page gutter. A `max-w`
-                caps the contribution instead of removing it, so a three-letter
-                short name still renders whole and the byline gives ground
-                first. */}
-            <span
-              className={cn(
-                "max-w-[8ch] truncate",
-                ui.text.micro,
-                "[font-weight:var(--ui-weight-heavy)]",
-                tone === "dark" ? cn(onPhoto, "opacity-90") : ui.tone.muted,
-              )}
-            >
-              {tr(c.shortName)}
-            </span>
-          </span>
-        ))}
-      </span>
-    ) : null;
+  /**
+   * The story's label: its editorial tag, in the edition's own language, or
+   * else its category in the reader's. An Arabic tag read from the French UI
+   * resets the label type's tracking itself: Tailwind's `ltr:` also matches
+   * inside a `dir="rtl"` subtree of an LTR page, and letter-spacing is
+   * inherited, so the pill would pull the joined letters apart (BG-0069).
+   */
+  const kicker = article.tag ? (
+    <span
+      {...contentAttributes}
+      className={contentLanguage === "ar" ? "ltr:tracking-normal" : undefined}
+    >
+      {tr(article.tag)}
+    </span>
+  ) : (
+    categoryLabel({ slug: article.category, name: article.category }, t)
+  );
 
   const time = formatRelativeTime(article.publishedAt, lang);
+  const readTime = readTimeLabel(article.readMinutes, lang, t);
   const to = "/news/$articleId";
   const params = { articleId: article.id };
   const ariaLabel = tr(article.title);
 
-  /** The card shell: an opaque kit surface with the kit press feedback. */
-  const cardShell = cn(
-    ui.surface.card,
-    ui.focus,
-    "block min-w-0 overflow-hidden",
-    "transition-[box-shadow,transform] duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
-    "hover:shadow-[var(--ui-shadow-raised)] active:translate-y-px",
-  );
-
-  /** A dot separator, tinted from the surrounding text. */
-  const dot = (tone: "light" | "dark" = "light") => (
-    <span
-      className={cn(
-        "h-1 w-1 shrink-0 rounded-full",
-        tone === "dark"
-          ? "bg-[color:var(--ui-on-ink-plain)] opacity-50"
-          : "bg-[color:var(--ui-on-surface-muted)] opacity-50",
-      )}
-      aria-hidden
-    />
-  );
-
-  /** The tag pill used over a photo: surface chip, ink text. */
-  const photoTag = (className?: string) =>
-    article.tag ? (
-      <span
-        className={cn(
-          "inline-flex items-center px-2.5 py-1",
-          ui.radius.full,
-          ui.text.label,
-          "bg-[color:var(--ui-surface)] text-[color:var(--ui-ink)] shadow-[var(--ui-shadow-card)]",
-          className,
-        )}
-      >
-        {tr(article.tag)}
-      </span>
-    ) : null;
-
-  if (variant === "lead") {
+  if (variant === "lead" || variant === "imageLed") {
+    const isLead = variant === "lead";
     return (
-      <div className="group relative min-w-0">
-        <Link to={to} params={params} aria-label={ariaLabel} className={cn(cardShell, "relative")}>
+      <div className="group relative min-w-0" data-club={club?.["data-club"]} style={club?.style}>
+        <Link
+          to={to}
+          params={params}
+          aria-label={ariaLabel}
+          className={cn(
+            // The photo fills the card and the copy sits in flow at its base,
+            // so a long headline (Arabic runs at twice the line height) grows
+            // the card instead of being cut off under a fixed aspect ratio.
+            "relative isolate flex min-w-0 flex-col justify-end overflow-hidden",
+            isLead ? "min-h-[14.5rem] sm:min-h-[20rem]" : "min-h-[12.5rem] sm:min-h-[15rem]",
+            "bg-[color:var(--ui-ink-deep)]",
+            ui.radius.sheet,
+            ui.shadow.lifted,
+            ui.focus,
+            PRESS,
+          )}
+        >
           <MediaImage
             src={article.heroUrl}
             alt=""
             fallback={article.heroGradient}
             placeholder={heroPlaceholder()}
-            loading="eager"
-            fetchPriority="high"
-            className="aspect-[4/3] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.02] sm:aspect-[16/10]"
+            loading={isLead ? "eager" : undefined}
+            fetchPriority={isLead ? "high" : undefined}
+            className="absolute inset-0"
+            imageClassName={cn("group-hover:scale-[1.03]", IMAGE_ZOOM)}
           />
-          <div className="absolute inset-0" style={scrim(88, 35)} aria-hidden />
-          <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-            {photoTag()}
-            <h3 {...contentAttributes} className={cn("mt-2.5", ui.text.title, onPhoto)}>
-              {tr(article.title)}
-            </h3>
-            <p
+          <div
+            className="relative flex min-w-0 flex-col items-start gap-2 px-4 pb-4 pt-12 sm:px-5 sm:pb-5 sm:pt-14"
+            style={COPY_SCRIM}
+          >
+            {/* `max-w-full`: in this `items-start` column a row sizes to its
+                content, and a one-line pill has no smaller minimum — without a
+                cap a long tag widened the row past the card, where the card's
+                overflow clipped it instead of the pill truncating it. */}
+            <div className="flex max-w-full flex-wrap items-center gap-1.5">
+              <CardPill>{isLead ? t("news.section.lead") : kicker}</CardPill>
+              {flag}
+            </div>
+            <h3
               {...contentAttributes}
               className={cn(
-                "mt-1.5 line-clamp-2 max-sm:hidden",
-                ui.text.secondary,
-                onPhoto,
-                "opacity-85",
+                "line-clamp-3 max-w-full",
+                isLead ? ui.display.teamLg : ui.display.team,
+                ui.tone.onInkPlain,
+                TITLE_HOVER,
               )}
             >
-              {tr(article.excerpt)}
-            </p>
-            {articleClubs.length > 0 && <div className="mt-2.5">{crestRow("dark")}</div>}
-            <div
-              // Wraps rather than truncating: at 390px the byline, the read
-              // time and the relative time do not fit on one line in French.
+              {tr(article.title)}
+            </h3>
+            {isLead && (
+              <p
+                {...contentAttributes}
+                className={cn("line-clamp-2 max-sm:hidden", ui.text.secondary, ui.tone.onInkMuted)}
+              >
+                {tr(article.excerpt)}
+              </p>
+            )}
+            <p
               className={cn(
-                "mt-3 flex flex-wrap items-center gap-x-3 gap-y-1",
-                ui.text.micro,
-                onPhoto,
-                "opacity-85",
+                // Wraps rather than truncating: byline, time and read time do
+                // not fit one line at 390px in every language.
+                "flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5",
+                ui.text.meta,
+                "[font-weight:var(--ui-weight-strong)]",
+                ui.tone.onInkMuted,
               )}
             >
-              <span className="min-w-0 truncate">{tr(article.authorName)}</span>
-              {dot("dark")}
-              <span className="inline-flex items-center gap-1">
-                <Clock className="h-3 w-3" aria-hidden />
-                {readTimeLabel(article.readMinutes, lang, t)}
-              </span>
-              {time && (
+              {isLead && (
                 <>
-                  {dot("dark")}
-                  <span>{time}</span>
+                  <span className="min-w-0 truncate">{tr(article.authorName)}</span>
+                  {time && <Dot onPhoto />}
                 </>
               )}
-            </div>
+              {time && <span>{time}</span>}
+              <Dot onPhoto />
+              <span>{readTime}</span>
+            </p>
           </div>
         </Link>
-        <div className="absolute end-3 top-3 z-10">
-          <SavedButton articleId={article.id} variant="overlay" />
-        </div>
+        {isLead && (
+          <SavedButton
+            articleId={article.id}
+            variant="overlay"
+            className="absolute end-3 top-3 z-10"
+          />
+        )}
       </div>
     );
   }
 
-  if (variant === "compact") {
-    return (
+  // `horizontal`, `row` and `compact`: the Option A row.
+  const dense = variant === "compact";
+  return (
+    <div className="group relative min-w-0" data-club={club?.["data-club"]} style={club?.style}>
       <Link
         to={to}
         params={params}
         aria-label={ariaLabel}
-        className={cn(cardShell, "flex items-center gap-3 p-3", ui.space.row)}
+        className={cn(
+          ui.surface.card,
+          ui.focus,
+          PRESS,
+          "hover:shadow-[var(--ui-shadow-raised)]",
+          // Edge (4px) + 14px = the board's 18px to the text. The thumbnail
+          // column is a grid track, so it lands at the inline end in both
+          // directions; the row aligns to the top so Save stays on the
+          // thumbnail's corner however many lines the title takes.
+          "grid min-w-0 grid-cols-[minmax(0,1fr)_5.5rem] items-start gap-3.5 py-3 pe-3 ps-3.5",
+          leadClub ? ui.edge.start : plateEdgeClass(article.category),
+        )}
       >
+        <div className="min-w-0">
+          {flag && <div className="mb-1.5 flex">{flag}</div>}
+          <h3
+            {...contentAttributes}
+            className={cn(
+              dense ? "line-clamp-2" : "line-clamp-3",
+              ui.text.bodyStrong,
+              ui.tone.default,
+              TITLE_HOVER,
+            )}
+          >
+            {tr(article.title)}
+          </h3>
+          <p
+            className={cn(
+              "mt-1 flex min-w-0 items-center gap-1.5",
+              ui.text.meta,
+              "[font-weight:var(--ui-weight-strong)]",
+              ui.tone.muted,
+            )}
+          >
+            <span className="min-w-0 truncate">{kicker}</span>
+            {time && (
+              <>
+                <Dot />
+                <span className="shrink-0">{time}</span>
+              </>
+            )}
+          </p>
+        </div>
         <MediaImage
           src={article.heroUrl}
           alt=""
           fallback={article.heroGradient}
           placeholder={heroPlaceholder()}
-          className={cn("h-14 w-14 shrink-0", ui.radius.control)}
+          className={cn("h-17 w-22", ui.radius.track)}
+          imageClassName={cn("group-hover:scale-[1.05]", IMAGE_ZOOM)}
         />
-        <div className="min-w-0 flex-1">
-          <h4
-            {...contentAttributes}
-            className={cn("line-clamp-2", ui.text.bodyStrong, ui.tone.default)}
-          >
-            {tr(article.title)}
-          </h4>
-          <div
-            className={cn("mt-1 flex min-w-0 items-center gap-1.5", ui.text.micro, ui.tone.muted)}
-          >
-            {crestRow()}
-            <span className="min-w-0 truncate">{tr(article.authorName)}</span>
-            {time && (
-              <>
-                {dot()}
-                <span className="shrink-0">{time}</span>
-              </>
-            )}
-          </div>
-        </div>
       </Link>
-    );
-  }
-
-  if (variant === "horizontal") {
-    return (
-      <div className="group relative min-w-0">
-        <Link
-          to={to}
-          params={params}
-          aria-label={ariaLabel}
-          className={cn(cardShell, "grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 p-2")}
-        >
-          <div className={cn("relative overflow-hidden", ui.radius.control)}>
-            <MediaImage
-              src={article.heroUrl}
-              alt=""
-              fallback={article.heroGradient}
-              placeholder={heroPlaceholder()}
-              className="h-full min-h-[7.5rem] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.05]"
-            />
-          </div>
-          <div className="flex min-w-0 flex-col justify-between py-1 pe-1">
-            <div className="min-w-0">
-              {article.tag && (
-                <div className={cn(ui.text.label, "text-[color:var(--ui-ink)]")}>
-                  {tr(article.tag)}
-                </div>
-              )}
-              <h3
-                {...contentAttributes}
-                className={cn("mt-0.5 line-clamp-3", ui.text.bodyStrong, ui.tone.default)}
-              >
-                {tr(article.title)}
-              </h3>
-              {articleClubs.length > 0 && <div className="mt-1.5">{crestRow()}</div>}
-            </div>
-            <div
-              className={cn(
-                "mt-2 flex items-center justify-between gap-2 pe-10",
-                ui.text.micro,
-                ui.tone.muted,
-              )}
-            >
-              <span className="inline-flex min-w-0 items-center gap-1">
-                {time && <span className="min-w-0 truncate">{time}</span>}
-                {time && dot()}
-                <Clock className="h-3 w-3 shrink-0" aria-hidden />
-                <span className="shrink-0">{readTimeLabel(article.readMinutes, lang, t)}</span>
-              </span>
-            </div>
-          </div>
-        </Link>
-        <SavedButton
-          articleId={article.id}
-          variant="icon"
-          className="absolute bottom-2 end-2 z-10 h-9 w-9"
-        />
-      </div>
-    );
-  }
-
-  if (variant === "imageLed") {
-    return (
-      <Link
-        to={to}
-        params={params}
-        aria-label={ariaLabel}
-        className={cn(cardShell, "group relative")}
-      >
-        <div className="relative overflow-hidden">
-          <MediaImage
-            src={article.heroUrl}
-            alt=""
-            fallback={article.heroGradient}
-            placeholder={heroPlaceholder()}
-            className="aspect-[4/5] w-full transition-transform sm:aspect-[16/9] duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
-          />
-          <div className="absolute inset-0" style={scrim(85, 25)} aria-hidden />
-          {photoTag("absolute start-3 top-3")}
-          <div className="absolute inset-x-0 bottom-0 p-3">
-            <h3 {...contentAttributes} className={cn("line-clamp-3", ui.text.subtitle, onPhoto)}>
-              {tr(article.title)}
-            </h3>
-            {articleClubs.length > 0 && <div className="mt-1.5">{crestRow("dark")}</div>}
-            <div
-              className={cn("mt-1.5 flex items-center gap-2", ui.text.micro, onPhoto, "opacity-85")}
-            >
-              {time && <span>{time}</span>}
-              <span className="inline-flex items-center gap-1">
-                <Clock className="h-3 w-3" aria-hidden />
-                {readTimeLabel(article.readMinutes, lang, t)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </Link>
-    );
-  }
-
-  // default: row
-  return (
-    <div className="group relative min-w-0">
-      <Link to={to} params={params} aria-label={ariaLabel} className={cardShell}>
-        <div className="relative overflow-hidden">
-          <MediaImage
-            src={article.heroUrl}
-            alt=""
-            fallback={article.heroGradient}
-            placeholder={heroPlaceholder()}
-            className="aspect-[16/8] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
-          />
-        </div>
-        <div className="p-4">
-          {article.tag && (
-            <div className={cn(ui.text.label, "text-[color:var(--ui-ink)]")}>{tr(article.tag)}</div>
-          )}
-          <h3
-            {...contentAttributes}
-            className={cn("mt-1 line-clamp-2", ui.text.subtitle, ui.tone.default)}
-          >
-            {tr(article.title)}
-          </h3>
-          <p
-            {...contentAttributes}
-            className={cn("mt-1.5 line-clamp-2", ui.text.meta, ui.tone.muted)}
-          >
-            {tr(article.excerpt)}
-          </p>
-          {articleClubs.length > 0 && <div className="mt-2.5">{crestRow()}</div>}
-          <div
-            className={cn(
-              "mt-3 flex items-center justify-between gap-2 pe-10",
-              ui.text.micro,
-              ui.tone.muted,
-            )}
-          >
-            <span className="inline-flex min-w-0 items-center gap-1.5">
-              <span className="min-w-0 truncate">{tr(article.authorName)}</span>
-              {time && (
-                <>
-                  {dot()}
-                  <span className="shrink-0">{time}</span>
-                </>
-              )}
-              {dot()}
-              <span className="inline-flex shrink-0 items-center gap-1">
-                <Clock className="h-3 w-3" aria-hidden />
-                {readTimeLabel(article.readMinutes, lang, t)}
-              </span>
-            </span>
-          </div>
-        </div>
-      </Link>
-      <SavedButton
-        articleId={article.id}
-        variant="icon"
-        className="absolute bottom-3 end-3 z-10 h-9 w-9"
-      />
+      {!dense && (
+        <SavedButton articleId={article.id} variant="thumb" className="absolute end-4 top-4 z-10" />
+      )}
     </div>
   );
 }

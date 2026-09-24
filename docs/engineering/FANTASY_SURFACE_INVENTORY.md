@@ -121,3 +121,10 @@ Two live behaviours that must survive, because they are already correct in produ
 - The deadline is `2026-09-24T18:30Z`, rendered **pinned to Africa/Casablanca** ("jeudi 24 sept.,
   19:30"). Any new date formatting must pass `timeZone: MATCH_TIME_ZONE`; a formatter without it
   follows the viewer's browser and will disagree with the card beside it. See BG-0100.
+
+## Since the baseline: Option A (2026-09-24)
+
+The tables above are the 2026-09-21 baseline and are left as measured. The Option A pass
+(club colours) moved every Fantasy route onto the kit and removed five components that no longer
+had an importer: `RankingsPodium` (the approved rankings board has no podium), `LegacyFantasyPage`,
+`fpl/primitives` (`FplHeader` and friends), `DifficultyBadge` and `RankChangeIndicator`.

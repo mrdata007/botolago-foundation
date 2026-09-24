@@ -1,7 +1,7 @@
-import type { ArticleCardDto } from "@/backend/news/contracts";
+import type { ArticleCardDto, NewsTeamFilterDto } from "@/backend/news/contracts";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import { presentArticle } from "@/services/news";
-import type { Article } from "@/types/domain";
+import type { Article, ArticleCategory, Club } from "@/types/domain";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 /**
@@ -144,4 +144,102 @@ export function appendFeedPage(
 /** Normalizes a language selection into the router's expected dir attribute. */
 export function dirFor(language: "fr" | "ar"): "ltr" | "rtl" {
   return language === "ar" ? "rtl" : "ltr";
+}
+
+/**
+ * A News team filter as the `Club` the News screens colour their cards,
+ * chips and crests from.
+ *
+ * The News service presents the same rows for its team filter, but its
+ * `presentTeam` (`src/services/news.ts`) replaces a missing `primary_color` —
+ * every production club, BG-0112 — with a literal navy. `clubPalette` takes a real hex as the club's own colour
+ * ahead of the kit table (`src/lib/club-palette.ts`), so on News every club
+ * painted that one navy. Here a missing colour stays missing (an empty
+ * string, which is not a hex), and the palette falls through to the kit
+ * table, as it already does for the football clubs, whose presenter leaves
+ * `var(--ui-ink)` there. A real colour in the data is kept and wins, as the
+ * palette's source order says it should.
+ */
+export function presentNewsTeam(team: NewsTeamFilterDto): Club {
+  return {
+    id: team.id,
+    slug: team.slug,
+    name: { fr: team.name, ar: team.name },
+    shortName: { fr: team.shortName, ar: team.shortName },
+    city: { fr: team.city ?? "", ar: team.city ?? "" },
+    primaryColor: team.primaryColor ?? "",
+    secondaryColor: team.secondaryColor ?? undefined,
+    crestPlaceholder: team.code ?? team.shortName.slice(0, 3).toUpperCase(),
+  };
+}
+
+/**
+ * The category's plate colour (`--news-plate-*`, the ground of the branded
+ * hero plate) as the 4px inline-start edge of an Option A news row, for an
+ * article that names no club — a club's row takes the club's edge from
+ * `clubStyle`. Spelled out per category because Tailwind only generates the
+ * class names it can read.
+ *
+ * Light only: the plates measure 9.1–11.4:1 against the light card surface
+ * but 1.15–1.31:1 against the dark one, where the edge would vanish — so in
+ * dark it is the brand foreground, the edge a club-less `ui.edge.start`
+ * draws.
+ */
+const PLATE_EDGE: Record<ArticleCategory, string> = {
+  for_you: "border-s-[color:var(--news-plate-for-you)]",
+  latest: "border-s-[color:var(--news-plate-latest)]",
+  transfers: "border-s-[color:var(--news-plate-transfers)]",
+  analysis: "border-s-[color:var(--news-plate-analysis)]",
+  interviews: "border-s-[color:var(--news-plate-interviews)]",
+};
+
+export function plateEdgeClass(category: ArticleCategory): string {
+  return `border-s-4 ${PLATE_EDGE[category]} dark:border-s-[color:var(--ui-ink-fg)]`;
+}
+
+/**
+ * The clubs an article names, in the ARTICLE's order — the first one colours
+ * the card's edge — looked up in the club directory. An id the directory does
+ * not know is skipped rather than guessed at.
+ */
+export function clubsForArticle(clubIds: readonly string[], clubs: readonly Club[]): Club[] {
+  const byId = new Map(clubs.map((club) => [club.id, club]));
+  return clubIds.flatMap((id) => {
+    const club = byId.get(id);
+    return club ? [club] : [];
+  });
+}
+
+/** Arabic script: its letters join, so two of them side by side read as a word. */
+const ARABIC_SCRIPT = /\p{Script=Arabic}/u;
+
+/**
+ * The initials in the byline disc: "Youssef Amrani" → "YA", the first letter
+ * of the first and of the last word. A name in Arabic script gets its first
+ * letter only — two Arabic letters written together join into what reads as
+ * a word, not as two initials. Empty for an empty name.
+ */
+export function bylineInitials(name: string): string {
+  const words = name.trim().split(/\s+/u).filter(Boolean);
+  if (words.length === 0) return "";
+  const first = (word: string) => Array.from(word)[0] ?? "";
+  if (ARABIC_SCRIPT.test(words[0])) return first(words[0]);
+  const initials =
+    words.length > 1 ? first(words[0]) + first(words[words.length - 1]) : first(words[0]);
+  return initials.toLocaleUpperCase("fr");
+}
+
+/**
+ * The article's date without the time, in the reader's language —
+ * "23 sept. 2026" / "23 شتنبر 2026" (ar-MA: Moroccan month names, Latin
+ * digits, like every other date in the product). Empty for an invalid date.
+ */
+export function formatArticleDate(iso: string, lang: "fr" | "ar"): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
 }

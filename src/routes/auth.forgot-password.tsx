@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useId, useState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Mail } from "lucide-react";
 import { AuthShell, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthShell";
+import { authFieldClass, authFieldIconClass } from "@/components/auth/auth-classes";
 import { ui, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
@@ -52,17 +53,22 @@ function ForgotPage() {
 
   if (sent) {
     return (
-      <AuthShell title={t("auth.forgot.success_title")} subtitle={t("auth.forgot.success_body")}>
-        <div className="flex flex-col items-center gap-4 py-2 text-center">
+      <AuthShell
+        compact
+        title={t("auth.forgot.success_title")}
+        subtitle={t("auth.forgot.success_body")}
+      >
+        <div className="flex flex-col items-center gap-5 py-2 text-center">
+          {/* A round positive disc, like every glyph plate in Option A. */}
           <div
             className={cn(
               "grid h-14 w-14 place-items-center",
-              ui.radius.control,
+              ui.radius.full,
               "bg-[color:color-mix(in_oklab,var(--ui-positive)_18%,transparent)]",
               ui.tone.positive,
             )}
           >
-            <CheckCircle2 className="h-8 w-8" aria-hidden />
+            <CheckCircle2 className="h-7 w-7" aria-hidden />
           </div>
           <AuthSecondaryButton onClick={() => navigate({ to: "/auth/login" })}>
             {t("auth.forgot.back_to_login")}
@@ -73,7 +79,7 @@ function ForgotPage() {
   }
 
   return (
-    <AuthShell title={t("auth.forgot.title")} subtitle={t("auth.forgot.subtitle")}>
+    <AuthShell compact title={t("auth.forgot.title")} subtitle={t("auth.forgot.subtitle")}>
       <form onSubmit={onSubmit} noValidate className="grid gap-3">
         {/* The hand-rolled field used to render an error line the input was
             never described by: `aria-describedby` was missing here, so the
@@ -85,6 +91,7 @@ function ForgotPage() {
           type="email"
           autoComplete="email"
           inputMode="email"
+          placeholder={t("auth.email_placeholder")}
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
@@ -92,6 +99,8 @@ function ForgotPage() {
           }}
           error={error ? t(error) : undefined}
           reserveError
+          fieldClassName={authFieldClass(!!error)}
+          leading={<Mail className={authFieldIconClass} aria-hidden />}
         />
         <AuthPrimaryButton type="submit" disabled={submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}

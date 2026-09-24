@@ -7,9 +7,15 @@ import { cn } from "@/lib/utils";
 /**
  * The "‹ Journée N ›" stepper, on the kit.
  *
- * One control for both places that step through gameweeks — the Points header
- * and Top players — so they cannot drift apart again. `tone="onGradient"`
- * puts it on a header band; the default sits on a page surface.
+ * One control for both places that step through gameweeks — the Points
+ * screen and Top players — so they cannot drift apart again.
+ * `tone="onGradient"` puts it on a header band; the default sits on a page
+ * surface.
+ *
+ * Option A (default tone): a white pill on the card shadow, like the
+ * "Terrain | Liste" toggle it sits beside, with round 44px steppers at its
+ * ends and the gameweek between them — "JOURNÉE" in label type and the
+ * number on the stat ramp, on one baseline.
  *
  * The steppers were 36px squares (under the 44px floor) and announced
  * themselves as "Journée -1" / "Journée +1"; they now name the gameweek they
@@ -51,7 +57,7 @@ export function GameweekSelector({
     "transition-colors disabled:opacity-40",
     tone === "onGradient"
       ? "text-[color:var(--ui-on-grad-header)] hover:bg-[color:color-mix(in_oklab,var(--ui-on-grad-header)_12%,transparent)]"
-      : cn(ui.tone.ink, "hover:bg-[color:var(--ui-surface)]"),
+      : cn(ui.surface.sunken, ui.tone.ink),
   );
 
   return (
@@ -60,13 +66,14 @@ export function GameweekSelector({
       aria-label={t("fantasy.points.gameweek")}
       className={cn(
         "inline-flex items-center gap-1 p-1",
-        ui.radius.track,
         // On a header band the stepper is deliberately untinted. A
         // translucent white track over the *dark* header gradient measured
         // 4.01:1 against `--ui-on-grad-header` — under AA — whereas
         // `--ui-on-grad-header` on the band itself is the pairing the design
         // system guarantees in both themes (measured 8.9:1).
-        tone === "onGradient" ? "bg-transparent" : ui.surface.sunken,
+        tone === "onGradient"
+          ? cn("bg-transparent", ui.radius.track)
+          : cn(ui.radius.full, "bg-[color:var(--ui-surface)]", ui.shadow.card),
         className,
       )}
     >
@@ -79,7 +86,14 @@ export function GameweekSelector({
       >
         <ChevronLeft className="h-5 w-5" aria-hidden />
       </button>
-      <div className="flex min-w-0 flex-1 select-none flex-col items-center gap-0.5">
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 select-none items-center justify-center",
+          // A header band stacks the label over the number; the Option A pill
+          // sets them on one baseline, which is what fits a 44px row.
+          tone === "onGradient" ? "flex-col gap-0.5" : "items-baseline gap-1.5 px-1",
+        )}
+      >
         {showLabel ? (
           <span
             className={cn(

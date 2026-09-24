@@ -114,14 +114,12 @@ function CallbackPage() {
   }, [navigate]);
 
   return (
-    <AuthShell title={t("auth.callback.title")} subtitle={t("auth.callback.subtitle")}>
+    <AuthShell compact title={t("auth.callback.title")} subtitle={t("auth.callback.subtitle")}>
       {busy && !error ? (
-        // Was `text-muted-foreground` — the V1 palette, which this screen is
-        // the last place in the auth family to reference. `ui.tone.muted` is
-        // the same role on `--ui-on-surface-muted`, and unlike the V1 token it
-        // is declared for both themes.
-        <div className={cn("flex items-center justify-center py-6", ui.tone.muted)}>
-          <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+        // The spinner in the brand foreground, as the shared `LoadingState`
+        // draws it, rather than muted: it is the one thing on the sheet.
+        <div className={cn("flex items-center justify-center py-6", ui.tone.ink)}>
+          <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
         </div>
       ) : null}
       {error && (

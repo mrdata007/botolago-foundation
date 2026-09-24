@@ -3,20 +3,29 @@ import { ArrowLeftRight, Info, Shield, ShieldHalf, Trash2, Undo2, X } from "luci
 import type { ReactNode } from "react";
 
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
-import { ui, UiSheet } from "@/components/ui-kit";
+import { ui, UiIconButton, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { clubStyle } from "@/lib/club-palette";
 import { getKitForClub } from "@/lib/kits";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
 
 /**
- * Bottom action sheet opened from a player on the Pick Team pitch.
+ * Bottom action sheet opened from a player on the pitch.
  *
  * It is a kit `UiSheet`, not the shadcn one: that sheet ships its own close
  * control labelled with a hardcoded English "Close", which sat next to the
  * translated one on every Fantasy sheet in the product. The kit's overlay
  * labels its close control `t("fpl.close")` and nothing else.
+ *
+ * Option A: the sheet opens on the player's club — the header is the club's
+ * own colour block (`clubStyle` + `ui.club.fill`, with the diagonal
+ * `club-stripes`), the shirt on a surface disc lifted off it, the name in the
+ * display face, and a glass close disc whose icon takes the measured on-club
+ * colour (dark on FUS orange, white on Wydad red). A player whose club cannot
+ * be resolved gets the ink block, the palette's own fallback. The actions are
+ * rows with a soft icon disc, each clearing the 48px row floor.
  */
 export function PlayerActionSheet({
   open,
@@ -60,44 +69,62 @@ export function PlayerActionSheet({
           : t("player.pos.FWD");
 
   const rowClass = cn(
-    "flex w-full items-center gap-3 px-4 text-start",
+    "flex w-full items-center gap-3 px-4 py-1 text-start",
     ui.space.row,
     ui.rule.block,
     ui.text.body,
     "[font-weight:var(--ui-weight-heavy)]",
     ui.tone.default,
+    "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
     ui.focus,
   );
-  const action = (icon: ReactNode, label: ReactNode, onSelect: () => void, key: string) => (
+  const disc = (tone: "ink" | "negative") =>
+    cn(
+      "grid h-9 w-9 shrink-0 place-items-center",
+      ui.radius.full,
+      ui.surface.sunken,
+      tone === "negative" ? ui.tone.negative : ui.tone.ink,
+    );
+  const action = (
+    icon: ReactNode,
+    label: ReactNode,
+    onSelect: () => void,
+    key: string,
+    tone: "ink" | "negative" = "ink",
+  ) => (
     <button key={key} type="button" className={rowClass} onClick={onSelect}>
-      {icon}
+      <span className={disc(tone)}>{icon}</span>
       {label}
     </button>
   );
 
+  const clubColours = clubStyle(club);
   const header = (
-    <div className={cn("flex items-center gap-3 px-4 py-3", ui.surface.inkPlain)}>
-      <JerseyVisual kit={kit} size={36} imageUrl={player.jerseyImageUrl} />
-      <div className="min-w-0 flex-1">
-        <p className={cn("truncate", ui.text.subtitle)}>{tr(player.name)}</p>
-        <p className={cn("truncate opacity-80", ui.text.meta)}>
-          {club ? tr(club.shortName) : ""} · {positionLabel(player.position)}
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label={t("fpl.close")}
+    <div
+      {...clubColours}
+      className={cn("flex items-center gap-3 px-4 pb-4 pt-5", ui.club.fill, ui.club.stripes)}
+    >
+      <span
         className={cn(
-          "grid shrink-0 place-items-center",
-          ui.space.tap,
+          "grid h-14 w-14 shrink-0 place-items-center",
           ui.radius.full,
-          ui.focus,
-          "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_15%,transparent)]",
+          ui.club.inverse,
+          ui.shadow.lifted,
         )}
       >
-        <X className="h-5 w-5" aria-hidden />
-      </button>
+        <JerseyVisual kit={kit} size={34} variant="flat" imageUrl={player.jerseyImageUrl} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className={cn("truncate", ui.display.team)}>{tr(player.name)}</p>
+        <p className={cn("truncate", ui.text.meta, "[font-weight:var(--ui-weight-strong)]")}>
+          {[club ? tr(club.shortName) : null, positionLabel(player.position)]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      </div>
+      <UiIconButton variant="glass" aria-label={t("fpl.close")} onClick={onClose}>
+        <X aria-hidden />
+      </UiIconButton>
     </div>
   );
 
@@ -113,23 +140,18 @@ export function PlayerActionSheet({
     >
       {isStarter && onCaptain
         ? action(
-            <Shield className={cn("h-5 w-5", ui.tone.ink)} aria-hidden />,
+            <Shield className="h-5 w-5" aria-hidden />,
             t("fpl.make_captain"),
             onCaptain,
             "captain",
           )
         : null}
       {isStarter && onVice
-        ? action(
-            <ShieldHalf className={cn("h-5 w-5", ui.tone.ink)} aria-hidden />,
-            t("fpl.make_vice"),
-            onVice,
-            "vice",
-          )
+        ? action(<ShieldHalf className="h-5 w-5" aria-hidden />, t("fpl.make_vice"), onVice, "vice")
         : null}
       {onSubstitute
         ? action(
-            <ArrowLeftRight className={cn("h-5 w-5", ui.tone.ink)} aria-hidden />,
+            <ArrowLeftRight className="h-5 w-5" aria-hidden />,
             t("fpl.substitute"),
             onSubstitute,
             "substitute",
@@ -137,35 +159,34 @@ export function PlayerActionSheet({
         : null}
       {onTransferOut
         ? action(
-            <ArrowLeftRight className={cn("h-5 w-5", ui.tone.negative)} aria-hidden />,
+            <ArrowLeftRight className="h-5 w-5" aria-hidden />,
             t("fpl.transfer_out_player"),
             onTransferOut,
             "transfer-out",
+            "negative",
           )
         : null}
       {onUndo
-        ? action(
-            <Undo2 className={cn("h-5 w-5", ui.tone.ink)} aria-hidden />,
-            t("fpl.undo_transfer"),
-            onUndo,
-            "undo",
-          )
+        ? action(<Undo2 className="h-5 w-5" aria-hidden />, t("fpl.undo_transfer"), onUndo, "undo")
         : null}
       {onRemove
         ? action(
-            <Trash2 className={cn("h-5 w-5", ui.tone.negative)} aria-hidden />,
+            <Trash2 className="h-5 w-5" aria-hidden />,
             t("fpl.remove"),
             onRemove,
             "remove",
+            "negative",
           )
         : null}
       <Link
         to="/fantasy/players/$playerId"
         params={{ playerId: player.id }}
-        className={rowClass}
+        className={cn(rowClass, "border-b-0")}
         onClick={onClose}
       >
-        <Info className={cn("h-5 w-5", ui.tone.ink)} aria-hidden />
+        <span className={disc("ink")}>
+          <Info className="h-5 w-5" aria-hidden />
+        </span>
         {t("fpl.player_info")}
       </Link>
     </UiSheet>

@@ -1,47 +1,68 @@
-import profileCover from "@/assets/photos/profile-cover.webp";
-import { BrandedText } from "@/components/brand/BrandedText";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { AppShell } from "@/components/shell/AppShell";
-import { ClubCrest } from "@/components/common/ClubCrest";
-import { Trans } from "@/components/common/Trans";
-import { useI18n } from "@/i18n/provider";
-import { useAuth } from "@/auth/AuthProvider";
-import { authService } from "@/services/auth";
-import { footballService } from "@/services/football";
-import { Logo } from "@/components/brand/Logo";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  UserCircle,
-  LogIn,
-  UserPlus,
-  LogOut,
-  Pencil,
-  Bell,
-  Check,
-  X,
-  Bookmark,
-  Trophy,
-  Languages,
-  Palette,
-  ChevronRight,
-  KeyRound,
-  ShieldCheck,
-  Trash2,
   AlertTriangle,
-  Loader2,
-  Mail,
-  AtSign,
+  Bell,
+  Bookmark,
+  Check,
+  ChevronRight,
+  CircleHelp,
   FileText,
+  Globe,
+  KeyRound,
+  Loader2,
+  LockKeyhole,
+  LogIn,
+  LogOut,
+  Palette,
+  Pencil,
+  ShieldCheck,
+  Star,
+  Trash2,
+  Trophy,
+  UserPlus,
+  UserRound,
+  X,
 } from "lucide-react";
-import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
-import { ThemeSwitcher } from "@/components/shell/ThemeSwitcher";
-import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
 import { toast } from "sonner";
-import { NEWS_ENABLED } from "@/lib/feature-flags";
+import { BrandedText } from "@/components/brand/BrandedText";
+import { Logo } from "@/components/brand/Logo";
+import { authOutlineClass } from "@/components/auth/auth-classes";
+import { profileClubs, profileInitials } from "@/components/auth/account-model";
+import { ClubCrest } from "@/components/common/ClubCrest";
+import { Section } from "@/components/common/Section";
+import { SectionHeader } from "@/components/common/SectionHeader";
+import { Trans } from "@/components/common/Trans";
+import { AppShell } from "@/components/shell/AppShell";
+import { ThemeSwitcher } from "@/components/shell/ThemeSwitcher";
+import {
+  ui,
+  UiBadge,
+  UiButton,
+  UiCard,
+  UiCheckbox,
+  UiIconLinkButton,
+  UiLinkButton,
+  UiMenu,
+  UiMenuItem,
+  UiModal,
+  UiPageTitle,
+} from "@/components/ui-kit";
+import { useAuth } from "@/auth/AuthProvider";
+import { useI18n } from "@/i18n/provider";
+import { clubStyle } from "@/lib/club-palette";
+import { findClub } from "@/components/fantasy/club-identity";
+import { DARK_MODE_ENABLED, NEWS_ENABLED } from "@/lib/feature-flags";
 import { useSavedArticles } from "@/lib/saved-articles";
-import { ui, UiBadge, UiButton, UiCard, UiCheckbox, UiModal } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+import { authService, IS_MOCK_AUTH } from "@/services/auth";
+import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import { fantasyService } from "@/services/fantasy-runtime";
+import { followService } from "@/services/follows";
+import { footballService } from "@/services/football";
+import { useFantasyAvailability } from "@/services/use-fantasy-availability";
+import type { Club, FantasySummary } from "@/types/domain";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -64,49 +85,124 @@ export const Route = createFileRoute("/profile")({
 /* -------------------------------------------------------------------------- */
 /* Shared row idioms                                                          */
 /*                                                                            */
-/* Profile is a list-of-rows screen, so the Fantasy language shows up here as */
-/* one row shape reused everywhere: a `--ui-row-min` tall line on the surface */
-/* token, 15px body copy, a hairline `--ui-rule` divider at the block end and */
-/* a 6px-radius glyph tile. No glass, no V2 radii, no Tailwind type ramp.     */
+/* Option A (A-Profile): Changa section headings over 14px cards of rows. A   */
+/* row is a 36px ROUND icon disc, the label in heavy body type, an optional   */
+/* muted value, and a chevron; rows are ruled on their block start. Logical   */
+/* utilities only — `ChevronRight` is mirrored for Arabic by styles.css.      */
 /* -------------------------------------------------------------------------- */
 
-/** The tappable / static row frame: ≥48px tall, gutter-padded, logical only. */
-const ROW = cn("flex w-full items-center justify-between gap-3 px-4 py-3", ui.space.row);
+/** The row frame: at least the 48px row height, gutter-padded. */
+const ROW = cn("flex w-full items-center gap-3 px-4 py-2 text-start", ui.space.row);
 
 /** Rows after the first inside a card carry the divider on their block start. */
 const ROW_RULE = ui.rule.blockStart;
 
 const ROW_INTERACTIVE = cn(
-  "text-start transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
-  "focus-visible:bg-[color:var(--ui-surface-sunken)] focus-visible:outline-none",
+  "transition-colors duration-[var(--duration-quick)] hover:bg-[color:var(--ui-surface-sunken)]",
+  // The card clips its children (`overflow-hidden`), which would cut an outer
+  // ring in half, so the focus ring is drawn inside the row — in the brand
+  // foreground, which is what `ui.focus` draws everywhere else.
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-fg)]",
 );
 
-/** 32px glyph tile — decorative, so it may sit below the 44px tap minimum. */
-function RowGlyph({
+/** The 36px round glyph disc — decorative, so it may sit below the 44px floor. */
+function RowDisc({
   children,
   tone = "sunken",
 }: {
-  children: React.ReactNode;
-  tone?: "sunken" | "ink" | "negative";
+  children: ReactNode;
+  tone?: "sunken" | "negative";
 }) {
   return (
     <span
       aria-hidden
       className={cn(
-        "grid h-8 w-8 shrink-0 place-items-center",
-        ui.radius.control,
-        tone === "sunken" && cn(ui.surface.sunken, ui.tone.muted),
-        // BG-0083: the 12% mix is a FILL and is correct; the text beside it
-        // was the same token, which is a dark navy in both themes. The brand
-        // foreground is `--ui-ink-fg`.
-        tone === "ink" &&
-          cn("bg-[color:color-mix(in_oklab,var(--ui-ink)_12%,transparent)]", ui.tone.ink),
+        "grid h-9 w-9 shrink-0 place-items-center [&_svg]:h-4.5 [&_svg]:w-4.5",
+        ui.radius.full,
+        tone === "sunken" && cn(ui.surface.sunken, ui.tone.ink),
         tone === "negative" &&
-          "bg-[color:color-mix(in_oklab,var(--ui-negative)_16%,transparent)] text-[color:var(--ui-negative)]",
+          cn("bg-[color:color-mix(in_oklab,var(--ui-negative)_14%,transparent)]", ui.tone.negative),
       )}
     >
       {children}
     </span>
+  );
+}
+
+interface RowContent {
+  icon: ReactNode;
+  label: ReactNode;
+  /** A short muted value before the chevron: "Français", "2/3". */
+  value?: ReactNode;
+  tone?: "default" | "negative";
+  /** Rows that go somewhere carry one; a row that acts in place does not. */
+  chevron?: boolean;
+}
+
+function RowInner({ icon, label, value, tone = "default", chevron = true }: RowContent) {
+  return (
+    <>
+      <RowDisc tone={tone === "negative" ? "negative" : "sunken"}>{icon}</RowDisc>
+      {/* Wraps rather than truncates: "Authentification à deux facteurs" is
+          wider than the label track at 390px. */}
+      <span
+        className={cn(
+          "min-w-0 flex-1 text-pretty",
+          ui.text.bodyStrong,
+          tone === "negative" ? ui.tone.negative : ui.tone.default,
+        )}
+      >
+        {label}
+      </span>
+      {value !== undefined ? (
+        <span className={cn("shrink-0 whitespace-nowrap", ui.text.meta, ui.tone.muted)}>
+          {value}
+        </span>
+      ) : null}
+      {chevron ? (
+        <ChevronRight className={cn("h-4.5 w-4.5 shrink-0", ui.tone.muted)} aria-hidden />
+      ) : null}
+    </>
+  );
+}
+
+/** A row that goes to a page: a real link (href, middle-click, copy-link). */
+function RowLink({
+  to,
+  search,
+  ruled = false,
+  ...content
+}: RowContent & { to: string; search?: Record<string, unknown>; ruled?: boolean }) {
+  return (
+    <Link to={to} search={search} className={cn(ROW, ROW_INTERACTIVE, ruled && ROW_RULE)}>
+      <RowInner {...content} />
+    </Link>
+  );
+}
+
+/** A row that acts in place (sign out opens its confirmation). */
+function RowButton({
+  onClick,
+  ruled = false,
+  ...content
+}: RowContent & { onClick: () => void; ruled?: boolean }) {
+  return (
+    <button type="button" onClick={onClick} className={cn(ROW, ROW_INTERACTIVE, ruled && ROW_RULE)}>
+      <RowInner {...content} />
+    </button>
+  );
+}
+
+/**
+ * A titled card of rows. The heading is the shared Option A section header —
+ * Changa 22/800, sentence case — over one 14px card.
+ */
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <Section>
+      <SectionHeader title={title} />
+      <div className={cn("overflow-hidden", ui.surface.card)}>{children}</div>
+    </Section>
   );
 }
 
@@ -122,7 +218,7 @@ function ProfileRootRoute() {
 }
 
 function ProfilePage() {
-  const { t, tr, lang } = useI18n();
+  const { t, lang } = useI18n();
   const { user, status, signOut } = useAuth();
   const navigate = useNavigate();
   const clubsQ = useQuery({
@@ -131,9 +227,9 @@ function ProfilePage() {
   });
   const [signOutOpen, setSignOutOpen] = useState(false);
 
-  const favoriteClub = user?.favoriteClubId
-    ? clubsQ.data?.find((c) => c.id === user.favoriteClubId)
-    : undefined;
+  // By id, then by slug: the mock club list mints synthetic ids and keys
+  // clubs by slug ("war"), as the Fantasy screens found.
+  const favoriteClub = findClub(clubsQ.data, user?.favoriteClubId);
 
   const onSignOut = async (resetLocalData: boolean) => {
     await signOut({ resetLocalData });
@@ -143,15 +239,13 @@ function ProfilePage() {
   };
 
   return (
-    <AppShell>
-      <h1 className={cn("pt-2", ui.text.hero, ui.tone.ink)}>
-        <span className="whitespace-pre-wrap">{t("profile.title")}</span>
-      </h1>
-
+    // The hub title band (A-Profile): white, full-bleed, Changa 34, under the
+    // top bar and outside the content gutter.
+    <AppShell pageHeader={<UiPageTitle title={t("profile.title")} />}>
       {status === "authenticated" && user ? (
         <AuthenticatedProfile
           user={user}
-          favoriteClubLabel={favoriteClub ? tr(favoriteClub.name) : undefined}
+          clubs={clubsQ.data}
           favoriteClub={favoriteClub}
           onSignOut={() => setSignOutOpen(true)}
         />
@@ -184,304 +278,348 @@ function ProfilePage() {
   );
 }
 
+type ProfileUser = NonNullable<ReturnType<typeof useAuth>["user"]>;
+
 function AuthenticatedProfile({
   user,
-  favoriteClubLabel,
+  clubs,
   favoriteClub,
   onSignOut,
 }: {
-  user: NonNullable<ReturnType<typeof useAuth>["user"]>;
-  favoriteClubLabel?: string;
-  favoriteClub?: ReturnType<typeof useI18n> extends unknown
-    ? Parameters<typeof ClubCrest>[0]["club"] | undefined
-    : never;
+  user: ProfileUser;
+  clubs: readonly Club[] | undefined;
+  favoriteClub: Club | undefined;
   onSignOut: () => void;
 }) {
-  const { t } = useI18n();
-  const navigate = useNavigate();
-  const saved = useSavedArticles();
+  const { t, tr, lang } = useI18n();
+  const { status } = useAuth();
 
-  const notifOnCount =
-    (user.notifications.matchAlerts ? 1 : 0) +
-    (user.notifications.breakingNews ? 1 : 0) +
-    (user.notifications.fantasyDeadlines ? 1 : 0);
+  // The Fantasy strip on the identity card reads the queries Home already
+  // runs, under the same keys, so it shares Home's cache and its gating: no
+  // summary for a guest source, none while the game is not open.
+  const { source, key } = useFantasyDataSource();
+  const availability = useFantasyAvailability();
+  const fantasyReady = !availability.isError && availability.data?.status === "ready";
+  const summaryQ = useQuery({
+    queryKey: key("summary"),
+    queryFn: () => fantasyService.getSummary(),
+    enabled: fantasyReady && source !== "guest",
+  });
 
-  const notifItems: Array<[keyof typeof user.notifications, string]> = [
-    ["matchAlerts", t("profile.notif.match")],
-    ["breakingNews", t("profile.notif.news")],
-    ["fantasyDeadlines", t("profile.notif.deadline")],
-  ];
+  // "Mes clubs" — the clubs this reader follows. Same query key as News,
+  // which invalidates it after a follow or an unfollow. Mock mode has no
+  // Supabase behind it (the follow repository would throw), so it is not
+  // asked there and the section simply does not appear.
+  const followedQ = useQuery({
+    queryKey: ["identity", "followed-team-ids", status],
+    queryFn: () => followService.getFollowedTeamIds(),
+    enabled: !IS_MOCK_AUTH,
+  });
+  const tiles = useMemo(() => {
+    const byId = new Map((clubs ?? []).map((club) => [club.id, club] as const));
+    const followed = (followedQ.data ?? []).flatMap((id) => byId.get(id) ?? []);
+    return profileClubs(favoriteClub, followed);
+  }, [clubs, followedQ.data, favoriteClub]);
+
+  const notificationsOn = [
+    user.notifications.matchAlerts,
+    user.notifications.breakingNews,
+    user.notifications.fantasyDeadlines,
+  ].filter(Boolean).length;
 
   return (
     <>
-      {/* Hero card */}
-      <section
-        className={cn("mt-4 overflow-hidden p-5", ui.surface.card)}
-        aria-labelledby="profile-hero-name"
-      >
-        {/* A pitch seen from above, as a cover strip across the top of the
-            card. Decorative; mirrored in Arabic so its calm side stays under
-            the start of the card. */}
-        <img
-          src={profileCover}
-          alt=""
-          aria-hidden
-          loading="lazy"
-          decoding="async"
-          className="-mx-5 -mt-5 mb-4 block h-24 w-[calc(100%+2.5rem)] max-w-none object-cover object-[50%_68%] rtl:-scale-x-100"
-        />
-        <div className="flex items-center gap-4">
-          <div
-            className={cn(
-              "grid h-20 w-20 shrink-0 place-items-center overflow-hidden",
-              ui.radius.control,
-              "text-[color:var(--ui-ink-deep)] shadow-[var(--ui-shadow-card)]",
-            )}
-            style={{ backgroundImage: "var(--ui-grad-action)" }}
-          >
-            {user.avatarDataUrl ? (
-              <img src={user.avatarDataUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <UserCircle className="h-11 w-11" aria-hidden />
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div id="profile-hero-name" className={cn("truncate", ui.text.title, ui.tone.default)}>
-              {user.displayName}
-            </div>
-            <div className={cn("mt-0.5 truncate", ui.text.meta, ui.tone.ink)}>@{user.username}</div>
-            <div className={cn("mt-0.5 truncate", ui.text.meta, ui.tone.muted)}>{user.email}</div>
-          </div>
-          <UiButton
-            size="sm"
-            variant="outline"
-            onClick={() => navigate({ to: "/auth/profile-setup" })}
-            className="shrink-0 gap-1 px-2.5 text-[color:var(--ui-on-surface)]"
-            aria-label={t("profile.edit")}
-          >
-            <Pencil className="h-3.5 w-3.5" aria-hidden />
-            <span className="hidden sm:inline">{t("profile.edit")}</span>
-          </UiButton>
-        </div>
+      <IdentityCard user={user} club={favoriteClub} summary={summaryQ.data ?? undefined} />
 
-        {/* Stats strip — three tiles with News, two without it, so the row
-            stays balanced instead of leaving a gap where the saved-articles
-            tile was (owner decision — see `@/lib/feature-flags`). */}
-        <div className={cn("mt-5 grid gap-2", NEWS_ENABLED ? "grid-cols-3" : "grid-cols-2")}>
-          <StatTile
-            icon={<Trophy className="h-4 w-4" aria-hidden />}
-            label={t("profile.fav_club")}
-            value={favoriteClubLabel ?? "—"}
-            valueSlot={
-              favoriteClub ? (
-                <div className="flex items-center gap-1.5">
-                  <ClubCrest club={favoriteClub} />
+      {tiles.length > 0 ? (
+        <Section>
+          <SectionHeader title={t("profile.clubs.title")} />
+          <ul className="grid grid-cols-3 gap-2">
+            {tiles.map(({ club, favorite }) => {
+              const colours = clubStyle(club);
+              return (
+                // A tile per club: its crest disc, its name, and a 4px base
+                // in its edge colour (`ui.edge.blockEnd`, a logical border —
+                // the board drew an inset shadow). Not a link: there is no
+                // club page to open.
+                <li
+                  key={club.id}
+                  data-club={colours["data-club"]}
+                  style={colours.style}
+                  className={cn(
+                    "relative flex min-h-28 min-w-0 flex-col items-center justify-end gap-2 px-2 pb-3 pt-8 text-center",
+                    ui.surface.card,
+                    ui.edge.blockEnd,
+                  )}
+                >
+                  {favorite ? (
+                    // Centred with logical insets, never `left: 50%`.
+                    <UiBadge
+                      tone="action"
+                      className="absolute inset-x-0 top-2 mx-auto w-fit gap-1 px-2 py-0.5"
+                    >
+                      <Star className="h-3 w-3 fill-current" aria-hidden />
+                      {t("profile.clubs.favorite")}
+                    </UiBadge>
+                  ) : null}
+                  <ClubCrest club={club} />
                   <span
                     className={cn(
-                      "truncate",
+                      "w-full truncate",
                       ui.text.meta,
                       "[font-weight:var(--ui-weight-heavy)]",
-                      ui.text.tabular,
                       ui.tone.default,
                     )}
                   >
-                    {favoriteClubLabel}
+                    {tr(club.name)}
                   </span>
-                </div>
-              ) : undefined
-            }
-          />
-          {/* Saved articles — hidden at launch (NEWS_ENABLED); there is no
-              News surface to save from or navigate to. */}
-          {NEWS_ENABLED && (
-            <StatTile
-              icon={<Bookmark className="h-4 w-4" aria-hidden />}
-              label={t("news.bookmark")}
-              value={String(saved.hydrated ? saved.ids.length : 0)}
-              monoValue
-            />
-          )}
-          <StatTile
-            icon={<Bell className="h-4 w-4" aria-hidden />}
-            label={t("profile.notifications")}
-            value={`${notifOnCount}/3`}
-            monoValue
-          />
-        </div>
-      </section>
+                </li>
+              );
+            })}
+          </ul>
+        </Section>
+      ) : null}
 
-      {/* Personal details */}
-      <Group title={t("profile.section.personal")}>
-        <InfoRow icon={<Mail className="h-4 w-4" />} label={t("profile.email")}>
-          {user.email}
-        </InfoRow>
-        <InfoRow icon={<AtSign className="h-4 w-4" />} label={t("profile.username")} ruled>
-          @{user.username}
-        </InfoRow>
-        <InfoRow icon={<Trophy className="h-4 w-4" />} label={t("profile.fav_club")} ruled>
-          {favoriteClub ? (
-            <span className="flex items-center gap-1.5">
-              <ClubCrest club={favoriteClub} />
-              {favoriteClubLabel}
-            </span>
-          ) : (
-            "—"
-          )}
-        </InfoRow>
-        <NavRow
-          icon={<Pencil className="h-4 w-4" />}
-          label={t("profile.edit")}
-          ruled
-          onClick={() => navigate({ to: "/auth/profile-setup" })}
-        />
-      </Group>
-
-      {/* Preferences group */}
       <Group title={t("profile.section.preferences")}>
-        {notifItems.map(([k, label], i) => (
-          <div key={k} className={cn(ROW, i > 0 && ROW_RULE)}>
-            <div className={cn("flex items-center gap-3", ui.text.body, ui.tone.default)}>
-              <RowGlyph tone="ink">
-                <Bell className="h-4 w-4" />
-              </RowGlyph>
-              <span className="[font-weight:var(--ui-weight-heavy)]">{label}</span>
-            </div>
-            <UiBadge tone={user.notifications[k] ? "positive" : "neutral"}>
-              {user.notifications[k] ? "ON" : "OFF"}
-            </UiBadge>
-          </div>
-        ))}
-        <LanguageRow ruled />
+        <LanguageRow />
+        {/* One row for the three switches, with how many are on. They are
+            edited on the wizard's notifications step — there is no other
+            settings screen — and the wizard comes back here when done. */}
+        <RowLink
+          to="/auth/profile-setup"
+          search={{ next: "/profile", step: 3 }}
+          ruled
+          icon={<Bell />}
+          label={t("profile.notifications")}
+          value={
+            <bdi dir="ltr" className={ui.stat.sm}>
+              {notificationsOn}/3
+            </bdi>
+          }
+        />
         <ThemeRow ruled />
       </Group>
 
-      {/* Account security */}
-      <Group title={t("profile.section.security")}>
-        <NavRow
-          icon={<KeyRound className="h-4 w-4" />}
+      <Group title={t("profile.section.account")}>
+        {/* Saved articles — hidden at launch (NEWS_ENABLED); there is no
+            News surface to save from. */}
+        {NEWS_ENABLED && (
+          <div className={ROW}>
+            <RowInner
+              icon={<Bookmark />}
+              label={t("profile.saved_articles")}
+              chevron={false}
+              value={<SavedArticlesCount />}
+            />
+          </div>
+        )}
+        <RowLink
+          to="/auth/update-password"
+          ruled={NEWS_ENABLED}
+          icon={<KeyRound />}
           label={t("profile.change_password")}
-          description={t("profile.change_password_desc")}
-          onClick={() => navigate({ to: "/auth/update-password" })}
         />
-        <NavRow
-          icon={<ShieldCheck className="h-4 w-4" />}
+        <RowLink
+          to="/profile/security"
+          ruled
+          icon={<ShieldCheck />}
           label={t("profile.mfa_setup")}
-          description={t("profile.mfa_setup_desc")}
-          ruled
-          onClick={() => navigate({ to: "/profile/security" })}
         />
-        <NavRow
-          icon={<LogOut className="h-4 w-4" />}
-          label={t("profile.sign_out")}
-          ruled
+        <RowLink to="/fantasy/help" ruled icon={<CircleHelp />} label={t("fpl.help_rules")} />
+        <RowButton
           onClick={onSignOut}
+          ruled
+          tone="negative"
+          chevron={false}
+          icon={<LogOut />}
+          label={t("profile.sign_out")}
         />
       </Group>
 
-      {/* Legal — same Group chrome and row layout as the sections above, so it
-          reads as one more section rather than a bolted-on footer. These are
-          plain router links rather than buttons because they navigate. */}
+      {/* Legal — its own group, with both documents: a reader has to be able
+          to reach what they agreed to. Plain router links, since they go to
+          a page. */}
       <Group title={t("profile.section.legal")}>
-        <LegalRow
-          to="/terms"
-          label={t("profile.legal.terms")}
-          description={t("profile.legal.terms_desc")}
-        />
-        <LegalRow
-          to="/privacy"
-          label={t("profile.legal.privacy")}
-          description={t("profile.legal.privacy_desc")}
-          divided
-        />
+        <RowLink to="/terms" icon={<FileText />} label={t("profile.legal.terms")} />
+        <RowLink to="/privacy" ruled icon={<LockKeyhole />} label={t("profile.legal.privacy")} />
       </Group>
 
-      {/* Danger zone */}
       <DeleteAccountSection />
     </>
   );
 }
 
-/* -------------------------------- rows ------------------------------------ */
-
-function InfoRow({
-  icon,
-  label,
-  children,
-  ruled = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  children: React.ReactNode;
-  ruled?: boolean;
-}) {
-  return (
-    <div className={cn(ROW, ruled && ROW_RULE)}>
-      <div className={cn("flex min-w-0 items-center gap-3", ui.text.body, ui.tone.default)}>
-        <RowGlyph tone="ink">{icon}</RowGlyph>
-        <span className="[font-weight:var(--ui-weight-heavy)]">{label}</span>
-      </div>
-      <span
-        className={cn(
-          "min-w-0 truncate text-end",
-          ui.text.body,
-          "[font-weight:var(--ui-weight-heavy)]",
-          ui.tone.default,
-        )}
-      >
-        {children}
-      </span>
-    </div>
-  );
-}
-
-function NavRow({
-  icon,
-  label,
-  description,
-  onClick,
-  ruled = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  description?: string;
-  onClick: () => void;
-  ruled?: boolean;
-}) {
-  return (
-    <button type="button" onClick={onClick} className={cn(ROW, ROW_INTERACTIVE, ruled && ROW_RULE)}>
-      <span className={cn("flex min-w-0 items-center gap-3", ui.text.body, ui.tone.default)}>
-        <RowGlyph>{icon}</RowGlyph>
-        <span className="min-w-0 text-start">
-          <span className="block [font-weight:var(--ui-weight-heavy)]">{label}</span>
-          {description ? (
-            <span className={cn("block", ui.text.meta, ui.tone.muted)}>{description}</span>
-          ) : null}
-        </span>
-      </span>
-      <ChevronRight className={cn("h-4 w-4 shrink-0", ui.tone.muted)} aria-hidden />
-    </button>
-  );
-}
+/* ------------------------------ identity card ----------------------------- */
 
 /**
- * The two device preferences, as rows. They are device-scoped rather than
- * account-scoped — they live in this browser's `localStorage` — so they belong
- * to every visitor, signed in or not, and are rendered by all three profile
- * states rather than only the authenticated one. A preference nobody who is
- * signed out can reach is the defect BG-0081 was opened for.
+ * The club-colour identity card (A-Profile). The favourite club's colours come
+ * from the club palette — a real colour from data, else the kit table, else
+ * the ink — so a reader with no favourite gets the navy card, with the same
+ * stripes. The text on it is the palette's measured foreground.
+ *
+ * Each part renders only from data the account has: the photo or the
+ * initials, the name, the username and e-mail (isolated left-to-right, so
+ * "@" stays at the front in Arabic), the supporter chip when there is a
+ * favourite, and the Fantasy strip when there is a team summary.
+ */
+function IdentityCard({
+  user,
+  club,
+  summary,
+}: {
+  user: ProfileUser;
+  club: Club | undefined;
+  summary: FantasySummary | undefined;
+}) {
+  const { t, tr, lang } = useI18n();
+  const initials = profileInitials(user.displayName, user.username);
+  const nf = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"), [lang]);
+
+  return (
+    <section
+      {...clubStyle(club ?? null)}
+      aria-labelledby="profile-hero-name"
+      className={cn(
+        "overflow-hidden",
+        ui.radius.sheet,
+        ui.shadow.lifted,
+        ui.club.fill,
+        ui.club.stripes,
+      )}
+    >
+      <div className="flex items-center gap-3.5 p-4">
+        {/* The avatar: a surface disc lifted off the club block. */}
+        <span
+          className={cn(
+            "grid h-16 w-16 shrink-0 place-items-center overflow-hidden",
+            ui.radius.full,
+            ui.club.inverse,
+            ui.shadow.lifted,
+          )}
+        >
+          {user.avatarDataUrl ? (
+            <img src={user.avatarDataUrl} alt="" className="h-full w-full object-cover" />
+          ) : initials ? (
+            <span aria-hidden className={ui.display.section}>
+              {initials}
+            </span>
+          ) : (
+            <UserRound className="h-8 w-8" aria-hidden />
+          )}
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <h2 id="profile-hero-name" className={cn("truncate", ui.display.section)}>
+            {user.displayName || `@${user.username}`}
+          </h2>
+          {user.username ? (
+            <p className={cn("truncate", ui.text.meta)}>
+              <bdi dir="ltr">@{user.username}</bdi>
+            </p>
+          ) : null}
+          {user.email ? (
+            <p className={cn("truncate", ui.text.meta)}>
+              <bdi dir="ltr">{user.email}</bdi>
+            </p>
+          ) : null}
+          {club ? (
+            // The supporter chip: a white pill with the club's own crest
+            // disc. The board's "Supporter du …" cannot be written for every
+            // club ("du Wydad", but "de l'AS FAR", "de la Renaissance"), so
+            // the chip carries the name and says what it is to assistive tech.
+            // A `div`: the crest disc is one, and a `p` may not hold it.
+            <div
+              className={cn(
+                "mt-2 inline-flex max-w-full items-center gap-1.5 py-0.5 pe-3 ps-0.5",
+                ui.radius.full,
+                ui.surface.bar,
+              )}
+            >
+              <ClubCrest club={club} size="xs" className="h-6 w-6" />
+              <span
+                className={cn("truncate", ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}
+              >
+                <span className="sr-only">{t("profile.fav_club")} </span>
+                {tr(club.name)}
+              </span>
+            </div>
+          ) : null}
+        </div>
+
+        <UiIconLinkButton
+          variant="glass"
+          to="/auth/profile-setup"
+          search={{ next: "/profile" }}
+          aria-label={t("profile.edit")}
+          className="-me-1.5 self-start"
+        >
+          <Pencil aria-hidden />
+        </UiIconLinkButton>
+      </div>
+
+      {summary ? (
+        // The Fantasy strip: the team and its points on the action gradient,
+        // ink-deep text as the gradient requires, into the team page.
+        <Link
+          to="/fantasy/team"
+          className={cn(
+            "flex min-h-[var(--ui-tap-min)] items-center gap-2.5 px-4 py-2.5",
+            "text-[color:var(--ui-ink-deep)]",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-deep)]",
+          )}
+          style={{ backgroundImage: "var(--ui-grad-action)" }}
+        >
+          <Trophy className="h-4.5 w-4.5 shrink-0" aria-hidden />
+          <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
+            <span className={cn("min-w-0 truncate", ui.text.bodyStrong)}>{summary.teamName}</span>
+            <span aria-hidden className={ui.text.bodyStrong}>
+              ·
+            </span>
+            <bdi className={cn("shrink-0", ui.stat.md)}>{nf.format(summary.totalPoints)}</bdi>
+            <span
+              aria-hidden
+              className={cn("shrink-0", ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}
+            >
+              {t("fantasy.points.abbr")}
+            </span>
+            <span className="sr-only">{t("fpl.points")}</span>
+          </span>
+          <ChevronRight className="h-4.5 w-4.5 shrink-0" aria-hidden />
+        </Link>
+      ) : null}
+    </section>
+  );
+}
+
+/* -------------------------------- rows ------------------------------------ */
+
+/**
+ * The language, as a row whose value is the current language and which opens
+ * the choice as a menu. Device-scoped (it lives in this browser's storage), so
+ * every visitor has it, signed in or not — BG-0081.
  */
 function LanguageRow({ ruled = false }: { ruled?: boolean }) {
-  const { t } = useI18n();
+  const { t, lang, setLanguage } = useI18n();
   return (
-    <div className={cn(ROW, ruled && ROW_RULE)}>
-      <div className={cn("flex items-center gap-3", ui.text.body, ui.tone.default)}>
-        <RowGlyph tone="ink">
-          <Languages className="h-4 w-4" />
-        </RowGlyph>
-        <span className="[font-weight:var(--ui-weight-heavy)]">{t("language.switch")}</span>
-      </div>
-      <LanguageSwitcher />
-    </div>
+    <UiMenu
+      label={t("language.switch")}
+      trigger={
+        <button type="button" className={cn(ROW, ROW_INTERACTIVE, ruled && ROW_RULE)}>
+          <RowInner
+            icon={<Globe />}
+            label={t("language.switch")}
+            value={lang === "fr" ? t("language.french") : t("language.arabic")}
+          />
+        </button>
+      }
+    >
+      <UiMenuItem onSelect={() => setLanguage("fr")} selected={lang === "fr"}>
+        {t("language.french")}
+      </UiMenuItem>
+      <UiMenuItem onSelect={() => setLanguage("ar")} selected={lang === "ar"}>
+        {t("language.arabic")}
+      </UiMenuItem>
+    </UiMenu>
   );
 }
 
@@ -494,24 +632,33 @@ function LanguageRow({ ruled = false }: { ruled?: boolean }) {
  * control. Gating the switcher alone left the glyph and the "Apparence" label
  * rendering above nothing, so Preferences read as a heading with an empty row
  * under it. Returning `null` gates both call sites at once, and neither is
- * left with a dangling top rule: `DevicePreferences` still opens with an
- * unruled `LanguageRow`, and the signed-in group's own rows carry their rule
- * on the leading edge.
+ * left with a dangling top rule: the rows above carry their rule on their own
+ * leading edge. (The board's "Apparence — Clair" row is this row; it stays off
+ * while the flag is.)
  */
 function ThemeRow({ ruled = false }: { ruled?: boolean }) {
   const { t } = useI18n();
   if (!DARK_MODE_ENABLED) return null;
   return (
-    <div className={cn("px-4 py-3", ui.space.row, ruled && ROW_RULE)}>
-      <div className={cn("flex items-center gap-3", ui.text.body, ui.tone.default)}>
-        <RowGlyph tone="ink">
-          <Palette className="h-4 w-4" />
-        </RowGlyph>
-        <span className="[font-weight:var(--ui-weight-heavy)]">{t("theme.switch")}</span>
+    <div className={cn("px-4 py-2", ui.space.row, ruled && ROW_RULE)}>
+      <div className="flex items-center gap-3">
+        <RowDisc>
+          <Palette />
+        </RowDisc>
+        <span className={cn(ui.text.bodyStrong, ui.tone.default)}>{t("theme.switch")}</span>
       </div>
-      <ThemeSwitcher className="mt-3" />
+      <ThemeSwitcher className="mb-1 mt-2" />
     </div>
   );
+}
+
+/**
+ * The saved-articles count, while News is on. Its own component so the hook
+ * runs only where the row is drawn. A figure, so tabular.
+ */
+function SavedArticlesCount() {
+  const saved = useSavedArticles();
+  return <span className={ui.stat.sm}>{saved.hydrated ? saved.ids.length : 0}</span>;
 }
 
 /** The preferences a signed-out visitor still has: language and appearance. */
@@ -578,32 +725,27 @@ function DeleteAccountSection() {
 
   return (
     <>
-      <section className="mt-6">
-        <div className={cn("mb-2 px-1", ui.text.label, "text-[color:var(--ui-negative)]")}>
-          {t("profile.section.danger")}
-        </div>
+      {/* Not on the board, and kept: deleting the account is a right the
+          product owes the reader. Same heading as the groups above, over a
+          card washed in the negative tint. */}
+      <Section>
+        <SectionHeader title={t("profile.section.danger")} />
         <div
           className={cn(
             "overflow-hidden border",
-            ui.radius.control,
+            ui.radius.card,
             "border-[color:color-mix(in_oklab,var(--ui-negative)_30%,transparent)]",
-            "bg-[color:color-mix(in_oklab,var(--ui-negative)_7%,var(--ui-surface))]",
-            "shadow-[var(--ui-shadow-card)]",
+            "bg-[color:color-mix(in_oklab,var(--ui-negative)_6%,var(--ui-surface))]",
+            ui.shadow.card,
           )}
         >
           {pending ? (
             <div className="flex items-start gap-3 px-4 py-4">
-              <RowGlyph tone="negative">
-                <AlertTriangle className="h-4 w-4" />
-              </RowGlyph>
+              <RowDisc tone="negative">
+                <AlertTriangle />
+              </RowDisc>
               <div className="min-w-0 flex-1">
-                <div
-                  className={cn(
-                    ui.text.body,
-                    "[font-weight:var(--ui-weight-heavy)]",
-                    ui.tone.default,
-                  )}
-                >
+                <div className={cn(ui.text.bodyStrong, ui.tone.default)}>
                   {t("profile.delete_pending_title")}
                 </div>
                 <p className={cn("mt-0.5", ui.text.meta, ui.tone.muted)}>
@@ -614,7 +756,7 @@ function DeleteAccountSection() {
                   variant="outline"
                   onClick={cancelDeletion}
                   disabled={submitting}
-                  className="mt-3 text-[color:var(--ui-on-surface)]"
+                  className={cn("mt-3", authOutlineClass)}
                 >
                   {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
                   {t("profile.delete_cancel_request_cta")}
@@ -627,32 +769,27 @@ function DeleteAccountSection() {
               onClick={() => setDialogOpen(true)}
               className={cn(
                 ROW,
-                "text-start transition-colors focus-visible:outline-none",
-                "hover:bg-[color:color-mix(in_oklab,var(--ui-negative)_12%,transparent)]",
-                "focus-visible:bg-[color:color-mix(in_oklab,var(--ui-negative)_12%,transparent)]",
+                "py-3 transition-colors",
+                "hover:bg-[color:color-mix(in_oklab,var(--ui-negative)_10%,transparent)]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-negative)]",
               )}
             >
-              <span className={cn("flex min-w-0 items-center gap-3", ui.text.body)}>
-                <RowGlyph tone="negative">
-                  <Trash2 className="h-4 w-4" />
-                </RowGlyph>
-                <span className="min-w-0 text-start">
-                  <span className="block [font-weight:var(--ui-weight-heavy)] text-[color:var(--ui-negative)]">
-                    {t("profile.delete_account")}
-                  </span>
-                  <span className={cn("block", ui.text.meta, ui.tone.muted)}>
-                    {t("profile.delete_account_desc")}
-                  </span>
+              <RowDisc tone="negative">
+                <Trash2 />
+              </RowDisc>
+              <span className="min-w-0 flex-1 text-start">
+                <span className={cn("block", ui.text.bodyStrong, ui.tone.negative)}>
+                  {t("profile.delete_account")}
+                </span>
+                <span className={cn("block", ui.text.meta, ui.tone.muted)}>
+                  {t("profile.delete_account_desc")}
                 </span>
               </span>
-              <ChevronRight
-                className="h-4 w-4 shrink-0 text-[color:var(--ui-negative)]"
-                aria-hidden
-              />
+              <ChevronRight className={cn("h-4.5 w-4.5 shrink-0", ui.tone.negative)} aria-hidden />
             </button>
           )}
         </div>
-      </section>
+      </Section>
 
       <UiModal
         open={dialogOpen}
@@ -685,7 +822,7 @@ function DeleteAccountSection() {
           label={t("profile.delete_confirm_checkbox")}
           className={cn(
             "border p-3",
-            ui.radius.control,
+            ui.radius.card,
             "border-[color:color-mix(in_oklab,var(--ui-negative)_30%,transparent)]",
             "bg-[color:color-mix(in_oklab,var(--ui-negative)_7%,transparent)]",
             ui.text.meta,
@@ -696,143 +833,28 @@ function DeleteAccountSection() {
   );
 }
 
-/* ------------------------------ subcomponents ----------------------------- */
-
-function StatTile({
-  icon,
-  label,
-  value,
-  valueSlot,
-  monoValue,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  valueSlot?: React.ReactNode;
-  monoValue?: boolean;
-}) {
-  return (
-    <div className={cn("min-w-0 p-3", ui.radius.control, ui.surface.sunken)}>
-      {/* The label wraps rather than truncates: at 390px a three-up tile is
-          ~100px wide and "Notifications" / "الإشعارات" does not fit on one
-          line at any step of the scale. `ui.text.micro` keeps it on the
-          language's 11px step, and its tracking is `ltr:`-only. */}
-      <div className={cn("flex items-start gap-1.5", ui.tone.muted)}>
-        <span className={cn("shrink-0", ui.tone.ink)}>{icon}</span>
-        <span
-          className={cn(
-            ui.text.micro,
-            "[font-weight:var(--ui-weight-heavy)] uppercase leading-tight ltr:tracking-wide",
-          )}
-        >
-          {label}
-        </span>
-      </div>
-      <div className="mt-1.5 min-w-0">
-        {valueSlot ?? (
-          <div
-            className={cn(
-              "truncate",
-              ui.text.body,
-              "[font-weight:var(--ui-weight-hero)]",
-              ui.tone.default,
-              monoValue && ui.text.tabular,
-            )}
-          >
-            {value}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
- * One row of the legal Group. Same chrome as the account-security rows above
- * (icon chip, title over description, chevron), but a router `Link` rather
- * than a `button` — it goes to a page. `text-start` and the logical `gap`
- * keep it mirrored in Arabic; the chevron is `ChevronRight`, matching the
- * rest of the page, which already flips with the RTL layout.
- */
-function LegalRow({
-  to,
-  label,
-  description,
-  divided,
-}: {
-  to: "/terms" | "/privacy";
-  label: string;
-  description: string;
-  divided?: boolean;
-}) {
-  return (
-    <Link
-      to={to}
-      // Was the one row in this file still on the V1 palette (`bg-muted/50`,
-      // `bg-muted/60`) and the one not built from the shared row idioms.
-      className={cn(ROW, ROW_INTERACTIVE, divided && ROW_RULE)}
-    >
-      <div className={cn("flex items-center gap-3", ui.text.secondary, ui.tone.default)}>
-        <span
-          className={cn(
-            "grid h-8 w-8 place-items-center",
-            ui.radius.control,
-            ui.surface.sunken,
-            ui.tone.muted,
-          )}
-          aria-hidden
-        >
-          <FileText className="h-4 w-4" />
-        </span>
-        <span className="text-start">
-          <span className="block [font-weight:var(--ui-weight-heavy)]">{label}</span>
-          <span className={cn("block", ui.text.meta, ui.tone.muted)}>{description}</span>
-        </span>
-      </div>
-      <ChevronRight className={cn("h-4 w-4 shrink-0", ui.tone.muted)} aria-hidden />
-    </Link>
-  );
-}
-
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="mt-6">
-      <h2 className={cn("mb-2 px-1", ui.text.label, ui.tone.muted)}>{title}</h2>
-      <div className={cn("overflow-hidden", ui.surface.card)}>{children}</div>
-    </section>
-  );
-}
-
 /* ---------------------------- guest / anonymous --------------------------- */
 
+/**
+ * The two signed-out states, as before: what the visitor is, what an account
+ * would give them, and the two ways in — now as links (they go to a page),
+ * the gradient pill for creating an account and the sheet's white pill for
+ * signing in. Then the device preferences every visitor has.
+ */
 function GuestProfile() {
   const { t } = useI18n();
-  const navigate = useNavigate();
   return (
     <>
-      <div className="mt-4 grid gap-3">
-        <UiCard padding="lg">
-          <UiBadge tone="action" className="mb-2">
-            {t("profile.guest_badge")}
-          </UiBadge>
-          <h2 className={cn(ui.text.section, ui.tone.default)}>
-            <Trans text={t("profile.guest_title")} />
-          </h2>
-          <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("profile.guest_body")}</p>
-          <div className="mt-4 grid gap-2">
-            <UiButton onClick={() => navigate({ to: "/auth/register" })}>
-              <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
-            </UiButton>
-            <UiButton
-              variant="outline"
-              onClick={() => navigate({ to: "/auth/login" })}
-              className="text-[color:var(--ui-on-surface)]"
-            >
-              <LogIn className="h-4 w-4" aria-hidden /> {t("auth.prompt.login")}
-            </UiButton>
-          </div>
-        </UiCard>
-      </div>
+      <UiCard padding="lg">
+        <UiBadge tone="action" className="mb-3">
+          {t("profile.guest_badge")}
+        </UiBadge>
+        <h2 className={cn(ui.display.section, ui.tone.default)}>
+          <Trans text={t("profile.guest_title")} accentClassName={ui.tone.ink} />
+        </h2>
+        <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("profile.guest_body")}</p>
+        <SignInLinks />
+      </UiCard>
       <DevicePreferences />
     </>
   );
@@ -840,29 +862,31 @@ function GuestProfile() {
 
 function AnonymousProfile() {
   const { t } = useI18n();
-  const navigate = useNavigate();
   return (
     <>
-      <UiCard padding="lg" className="mt-4 text-center">
+      <UiCard padding="lg" className="text-center">
         <Logo variant="icon" className="!h-14 !w-14" />
-        <h2 className={cn("mt-3", ui.text.section, ui.tone.default)}>
+        <h2 className={cn("mt-3", ui.display.section, ui.tone.default)}>
           <BrandedText text={t("profile.anon_title")} />
         </h2>
         <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("profile.anon_body")}</p>
-        <div className="mt-4 grid gap-2">
-          <UiButton onClick={() => navigate({ to: "/auth/register" })}>
-            <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
-          </UiButton>
-          <UiButton
-            variant="outline"
-            onClick={() => navigate({ to: "/auth/login" })}
-            className="text-[color:var(--ui-on-surface)]"
-          >
-            <LogIn className="h-4 w-4" aria-hidden /> {t("auth.prompt.login")}
-          </UiButton>
-        </div>
+        <SignInLinks />
       </UiCard>
       <DevicePreferences />
     </>
+  );
+}
+
+function SignInLinks() {
+  const { t } = useI18n();
+  return (
+    <div className="mt-5 grid gap-2.5">
+      <UiLinkButton to="/auth/register">
+        <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
+      </UiLinkButton>
+      <UiLinkButton to="/auth/login" variant="outline" className={authOutlineClass}>
+        <LogIn className="h-4 w-4" aria-hidden /> {t("auth.prompt.login")}
+      </UiLinkButton>
+    </div>
   );
 }

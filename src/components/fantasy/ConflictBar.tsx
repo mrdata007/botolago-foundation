@@ -60,13 +60,16 @@ export function ConflictBar({
   return (
     <UiAlert tone="negative" title={t(titleKey)} testId="conflict-bar">
       <p className="whitespace-normal break-words">{t(explanationKey)}</p>
+      {/* `flex-auto`, not `flex-1`: `sm` pills keep their label on one line,
+          and a zero basis would squeeze "Continuer avec mes modifications"
+          below it. They grow into the room on their line; the row wraps. */}
       <div className="mt-2 flex flex-wrap gap-2">
         <UiButton
           variant="gradient"
           size="sm"
           onClick={onReloadLatest}
           disabled={busy}
-          className="flex-1"
+          className="flex-auto"
         >
           {t("fantasy.conflict.reload_latest")}
         </UiButton>
@@ -75,7 +78,7 @@ export function ConflictBar({
           size="sm"
           onClick={onKeepWorking}
           disabled={busy}
-          className="flex-1"
+          className="flex-auto"
         >
           {t("fantasy.conflict.keep_working")}
         </UiButton>
