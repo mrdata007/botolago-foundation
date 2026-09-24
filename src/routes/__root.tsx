@@ -16,6 +16,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useI18n } from "@/i18n/provider";
 import { SplashScreen } from "@/components/splash/SplashScreen";
+import { SPLASH_INIT_SCRIPT } from "@/components/splash/launch-splash";
 import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
@@ -246,7 +247,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // Gated on DARK_MODE_ENABLED: the default choice is "system", so leaving
     // this in with the control hidden would still serve dark mode to every
     // visitor whose OS prefers it.
-    scripts: DARK_MODE_ENABLED ? [{ children: THEME_INIT_SCRIPT }] : [],
+    //
+    // The splash script is the same kind of thing: whether this load opens on
+    // the launch splash has to be settled before the first paint, or the page
+    // shows first and the splash lands on top of it once the app has loaded.
+    scripts: [
+      ...(DARK_MODE_ENABLED ? [{ children: THEME_INIT_SCRIPT }] : []),
+      { children: SPLASH_INIT_SCRIPT },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -294,37 +302,30 @@ function RootComponent() {
 
 /**
  * Deterministic launch sequence:
- * SSR + first client render: only <Outlet /> (no splash, no language dialog)
- *   → identical markup, no hydration mismatch.
+ * SSR + first client render: the splash markup and <Outlet /> (no language
+ *   dialog) → identical markup, no hydration mismatch. Whether the splash is
+ *   visible is CSS, from the head script's decision, settled before the first
+ *   paint (src/components/splash/launch-splash.ts).
  * After mount:
- *   1. If splash not yet shown this session → show splash.
- *   2. When splash finishes → language chooser (if not already chosen).
+ *   1. If this load shows the splash, it plays out and leaves; if not, it is
+ *      dropped at once, having never been on screen.
+ *   2. When it is gone → language chooser (if not already chosen).
  *   3. Otherwise → normal routes.
  * Splash and language chooser never render simultaneously.
  */
 function LaunchGate() {
   const { hasChosen, isHydrated } = useI18n();
-  const [mounted, setMounted] = useState(false);
-  const [splashDone, setSplashDone] = useState(true);
+  const [splashDone, setSplashDone] = useState(false);
 
-  useEffect(() => {
-    const shown = sessionStorage.getItem("botolago.splashShown") === "1";
-    setSplashDone(shown);
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (splashDone) sessionStorage.setItem("botolago.splashShown", "1");
-  }, [splashDone]);
-
-  const showSplash = mounted && !splashDone;
-  const showLanguage = mounted && splashDone && isHydrated && !hasChosen;
+  const showLanguage = splashDone && isHydrated && !hasChosen;
 
   return (
     <>
+      {/* First in the document, so it is parsed, and painted, before the
+          page it covers. */}
+      {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
       <Outlet />
       {showLanguage && <FirstLaunchLanguage />}
-      {showSplash && <SplashScreen onDone={() => setSplashDone(true)} />}
     </>
   );
 }
