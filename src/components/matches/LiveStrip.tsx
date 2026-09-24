@@ -1,14 +1,12 @@
 import { useEffect } from "react";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui } from "@/components/ui-kit";
 import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
 import { useI18n } from "@/i18n/provider";
 import { clubMatchPalettes } from "@/lib/club-palette";
-import { liveStripRefetchInterval } from "@/lib/match-refresh";
 import { cn } from "@/lib/utils";
-import { footballService } from "@/services/football";
+import { useLiveMatches } from "./use-live-matches";
 
 /**
  * Live scores pinned under the top bar (after premierleague.com's live bar).
@@ -31,14 +29,7 @@ import { footballService } from "@/services/football";
  */
 export function LiveStrip() {
   const { t, tr, lang } = useI18n();
-  const liveQ = useQuery({
-    queryKey: ["football", "live-matches", lang],
-    queryFn: () => footballService.getLiveMatches(lang),
-    // Scores and minutes move while a match is on; with nothing live it keeps
-    // a slow watch, so a match that kicks off brings the strip up.
-    refetchInterval: (query) => liveStripRefetchInterval(query.state.data?.matches.length ?? 0),
-    refetchIntervalInBackground: false,
-  });
+  const liveQ = useLiveMatches();
   const hidden = useHideOnScroll();
 
   const matches = liveQ.data?.matches ?? [];

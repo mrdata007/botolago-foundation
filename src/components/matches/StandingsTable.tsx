@@ -1,266 +1,230 @@
-import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowDown, ArrowUp } from "lucide-react";
 import { ClubCrest } from "@/components/common/ClubCrest";
-import { useI18n } from "@/i18n/provider";
-import { rowClubName } from "@/lib/club-identity";
-import { clubStyle } from "@/lib/club-palette";
-import { cn } from "@/lib/utils";
-import type { Club, TableRow } from "@/types/domain";
+import { clubLabel } from "@/components/fantasy/club-identity";
 import { ui } from "@/components/ui-kit";
+import { useI18n } from "@/i18n/provider";
+import { clubStyle } from "@/lib/club-palette";
+import { leagueZone, type LeagueTableRow, type LeagueZone } from "@/lib/league-table";
+import { cn } from "@/lib/utils";
+import type { Club } from "@/types/domain";
 import { formatGoalDifference } from "./head-to-head";
-
-export type SortKey =
-  | "position"
-  | "played"
-  | "won"
-  | "drawn"
-  | "lost"
-  | "goalDifference"
-  | "points";
-
-/** Pure, side-effect-free sort used by the table — kept exported and testable
- * so the ordering rules can be verified without rendering. */
-export function sortStandings(
-  rows: readonly TableRow[],
-  sortKey: SortKey,
-  direction: "asc" | "desc",
-): TableRow[] {
-  const copy = [...rows];
-  const dir = direction === "asc" ? 1 : -1;
-  copy.sort((a, b) => {
-    const diff = (a[sortKey] - b[sortKey]) * dir;
-    return diff !== 0 ? diff : a.position - b.position;
-  });
-  return copy;
-}
+import { zoneLabel } from "./standings-copy";
 
 /**
- * Full sortable standings table, backed exclusively by the season's real
- * `StandingRowDto` rows (played/won/drawn/lost/goal difference/points/form).
- * Sorting is a pure client-side re-order of already-fetched data — no
- * numbers are invented or recomputed.
+ * What the table shows: the season (`overall`), home or away matches only,
+ * or the season with the last five results in place of the figures (`form`).
+ */
+export type StandingsView = "overall" | "home" | "away" | "form";
+
+/** The zone colours: a 4px bar at the row's start edge, keyed in the legend. */
+const ZONE_BAR: Record<LeagueZone, string> = {
+  champions_league: "bg-[color:var(--ui-ink-fg)]",
+  confederation_cup: "bg-[color:var(--ui-positive)]",
+  relegation: "bg-[color:var(--ui-negative)]",
+};
+
+const ZONES: readonly LeagueZone[] = ["champions_league", "confederation_cup", "relegation"];
+
+/**
+ * The league table (A-Standings, "Classique"): one card, a sunken head in
+ * label type, every club on a row with its crest, and every figure on the
+ * tabular stat ramp — played, won, drawn, lost, goal difference, points.
+ * The African places and the drop are a 4px bar on the row's start edge
+ * (named for assistive tech inside the rank cell), keyed by `StandingsLegend`;
+ * a home or away table qualifies for nothing, so it has no bars.
  *
- * On the kit (Option A): a 14px card, the sunken head in label type, every
- * figure on the tabular stat ramp, and the form as `FormChips`.
+ * Built for 390px without a sideways scroll: the club column takes what the
+ * figures leave and a long name wraps between words, onto two lines at most
+ * in practice. Under 360px the won/drawn/lost columns step out — played,
+ * goal difference and points stay.
  *
- * Each club opens its club page. `highlightClubId` marks one row — the club
- * whose page the table sits on — with its tint and a 4px edge in its colour.
- *
- * The scroller is `relative` so the header's visually hidden full labels are
- * positioned inside it: without that, the last one ("Points") sat outside it,
- * 1px wide at x = 469 on a 390px phone, and widened the body's overflow —
- * clipped, so never seen, but it made every width measurement of the page
- * lie.
+ * Each club's name opens its club page. `highlightClubId` tints the reader's
+ * own club in its colours; `currentClubId` tints the club whose page the
+ * table sits on and marks its row as the current one.
  */
 export function StandingsTable({
   rows,
   clubById,
+  view,
+  caption,
   highlightClubId,
-  fitPhone = false,
+  currentClubId,
 }: {
-  rows: readonly TableRow[];
+  rows: readonly LeagueTableRow[];
   clubById: (id: string) => Club | undefined;
+  view: StandingsView;
+  caption: string;
   highlightClubId?: string;
-  /**
-   * Below `sm`, leave the form column out and drop the table's minimum
-   * width, so the points are on screen without scrolling sideways. For a
-   * page that shows the form elsewhere (a club page's overview).
-   */
-  fitPhone?: boolean;
+  currentClubId?: string;
 }) {
   const { t, tr } = useI18n();
-  const [sortKey, setSortKey] = useState<SortKey>("position");
-  const [direction, setDirection] = useState<"asc" | "desc">("asc");
+  const zoned = view === "overall" || view === "form";
+  const figures = view !== "form";
+  // The head row's type is `ui.text.label` on the `thead`: 12px, 800, uppercase.
+  const head = "py-2";
+  const narrow = "max-[359px]:hidden";
 
-  const sorted = useMemo(() => sortStandings(rows, sortKey, direction), [rows, sortKey, direction]);
-
-  const toggleSort = (key: SortKey) => {
-    if (key === sortKey) {
-      setDirection((d) => (d === "asc" ? "desc" : "asc"));
-      return;
-    }
-    setSortKey(key);
-    // Points/played/etc. read naturally best-first; rank/position ascending.
-    setDirection(key === "position" ? "asc" : "desc");
-  };
-
-  /** `fullLabel` is always an already-resolved translation string, passed in
-   * by the caller from a literal key lookup — kept that way so every
-   * translation lookup here stays statically visible to the i18n audit. */
-  const headerButton = (key: SortKey, short: string, fullLabel: string) => {
-    const active = sortKey === key;
-    return (
-      <button
-        type="button"
-        onClick={() => toggleSort(key)}
-        aria-label={t("matches.table.sort_by").replace("{column}", fullLabel)}
-        className={cn(
-          // These were 6–24px wide by 15px tall: the column headers are the
-          // only way to sort the table and they were far under the 44px tap
-          // floor the rest of the product holds to. The table already lives
-          // in an `overflow-x-auto` scroller, so widening the hit areas costs
-          // nothing at 390px. Their cells take only 2px a side on top of the
-          // 44px: at 8px a side the five figure columns alone came to 300px
-          // and pushed the 640px desktop column into a scroll that hid the
-          // points (17px of it in Arabic).
-          "inline-flex items-center justify-center gap-0.5 transition-colors",
-          ui.space.tap,
-          ui.radius.full,
-          ui.focus,
-          "hover:bg-[color:var(--ui-surface)]",
-          active ? ui.tone.ink : ui.tone.muted,
-        )}
-      >
-        <span aria-hidden>{short}</span>
-        <span className="sr-only">{fullLabel}</span>
-        {active &&
-          (direction === "asc" ? (
-            <ArrowUp className="h-3 w-3" aria-hidden />
-          ) : (
-            <ArrowDown className="h-3 w-3" aria-hidden />
-          ))}
-      </button>
-    );
-  };
+  const short = (abbr: string, full: string) => (
+    <>
+      <span aria-hidden>{abbr}</span>
+      <span className="sr-only">{full}</span>
+    </>
+  );
 
   return (
     <div className={cn("overflow-hidden", ui.surface.card)}>
-      <div className="relative overflow-x-auto">
-        <table
-          className={cn(
-            "w-full",
-            fitPhone ? "sm:min-w-[26rem]" : "min-w-[26rem]",
-            ui.text.secondary,
+      <table className="w-full table-fixed border-collapse">
+        <caption className="sr-only">{caption}</caption>
+        <colgroup>
+          <col className="w-9" />
+          <col />
+          {figures ? (
+            <>
+              <col className="w-6" />
+              <col className={cn("w-[1.375rem]", narrow)} />
+              <col className={cn("w-[1.375rem]", narrow)} />
+              <col className={cn("w-[1.375rem]", narrow)} />
+              <col className="w-9" />
+            </>
+          ) : (
+            <col className="w-[6.5rem]" />
           )}
-        >
-          {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
-          <thead className={cn(ui.surface.sunken, ui.text.label, ui.tone.muted)}>
-            <tr>
-              <th
-                scope="col"
-                aria-label={t("matches.table.rank")}
-                className={cn("py-1 text-start", fitPhone ? "px-0.5 sm:px-3" : "px-3")}
-              >
-                {headerButton("position", "#", t("matches.table.rank"))}
-              </th>
-              <th scope="col" className="px-3 py-1 text-start">
-                {t("matches.table.team")}
-              </th>
-              <th scope="col" className="px-0.5 py-1 text-center">
-                {headerButton("played", t("matches.table.played_short"), t("matches.table.played"))}
-              </th>
-              <th scope="col" className="hidden px-0.5 py-1 text-center sm:table-cell">
-                {headerButton("won", t("matches.table.won_short"), t("matches.table.won"))}
-              </th>
-              <th scope="col" className="hidden px-0.5 py-1 text-center sm:table-cell">
-                {headerButton("drawn", t("matches.table.drawn_short"), t("matches.table.drawn"))}
-              </th>
-              <th scope="col" className="hidden px-0.5 py-1 text-center sm:table-cell">
-                {headerButton("lost", t("matches.table.lost_short"), t("matches.table.lost"))}
-              </th>
-              <th scope="col" className="px-0.5 py-1 text-center">
-                {headerButton(
-                  "goalDifference",
-                  t("matches.table.goal_difference_short"),
-                  t("matches.table.goal_difference"),
-                )}
-              </th>
-              <th
-                scope="col"
-                className={cn("px-2 py-1 text-center", fitPhone && "hidden sm:table-cell")}
-              >
+          <col className="w-11" />
+        </colgroup>
+        {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
+        <thead className={cn(ui.surface.sunken, ui.text.label, ui.tone.muted)}>
+          <tr>
+            <th scope="col" className={cn(head, "ps-3 text-center")}>
+              {short("#", t("matches.table.rank"))}
+            </th>
+            <th scope="col" className={cn(head, "ps-1 text-start")}>
+              {t("matches.table.team")}
+            </th>
+            {figures ? (
+              <>
+                <th scope="col" className={cn(head, "text-center")}>
+                  {short(t("matches.table.played_short"), t("matches.table.played"))}
+                </th>
+                <th scope="col" className={cn(head, "text-center", narrow)}>
+                  {short(t("matches.table.won_short"), t("matches.table.won"))}
+                </th>
+                <th scope="col" className={cn(head, "text-center", narrow)}>
+                  {short(t("matches.table.drawn_short"), t("matches.table.drawn"))}
+                </th>
+                <th scope="col" className={cn(head, "text-center", narrow)}>
+                  {short(t("matches.table.lost_short"), t("matches.table.lost"))}
+                </th>
+                <th scope="col" className={cn(head, "text-center")}>
+                  {short(
+                    t("matches.table.goal_difference_short"),
+                    t("matches.table.goal_difference"),
+                  )}
+                </th>
+              </>
+            ) : (
+              <th scope="col" className={cn(head, "text-center")}>
                 {t("matches.table.form")}
               </th>
-              <th scope="col" className={cn("py-1 text-end", fitPhone ? "px-0.5 sm:px-3" : "px-3")}>
-                {headerButton("points", t("matches.table.points_short"), t("matches.table.points"))}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((row) => {
-              const club = clubById(row.clubId);
-              if (!club) return null;
-              const highlighted = row.clubId === highlightClubId;
-              const colours = highlighted ? clubStyle(club) : undefined;
-              return (
-                <tr
-                  key={row.clubId}
-                  data-club={colours?.["data-club"]}
-                  style={colours?.style}
-                  aria-current={highlighted ? "true" : undefined}
-                  className={cn(ui.rule.blockStart, highlighted && ui.club.tint)}
+            )}
+            <th scope="col" className={cn(head, "pe-3 text-end")}>
+              {short(t("matches.table.points_short"), t("matches.table.points"))}
+            </th>
+          </tr>
+        </thead>
+        <tbody className={ui.text.secondary}>
+          {rows.map((row) => {
+            const club = clubById(row.clubId);
+            if (!club) return null;
+            const zone = zoned ? leagueZone(row.position, rows.length) : null;
+            const mine = row.clubId === highlightClubId;
+            const current = row.clubId === currentClubId;
+            const tint = mine || current ? clubStyle(club) : undefined;
+            return (
+              <tr
+                key={row.clubId}
+                data-club={tint?.["data-club"]}
+                style={tint?.style}
+                aria-current={current ? "true" : undefined}
+                className={cn(ui.rule.blockStart, tint && ui.club.tint)}
+              >
+                <td
+                  className={cn("relative py-2.5 pe-1 ps-3 text-center", ui.stat.sm, ui.tone.muted)}
                 >
-                  <td
+                  {zone ? (
+                    <span
+                      aria-hidden
+                      className={cn("absolute inset-y-0 start-0 w-1", ZONE_BAR[zone])}
+                    />
+                  ) : null}
+                  {row.position}
+                  {zone ? <span className="sr-only">, {zoneLabel(zone, t)}</span> : null}
+                </td>
+                <td className="py-0 pe-2 ps-1">
+                  {/* The name is the link to the club page, at the 44px tap
+                      floor. The link carries the cell's padding, so the row
+                      is exactly as tall as without it. */}
+                  <Link
+                    to="/clubs/$clubId"
+                    params={{ clubId: club.id }}
                     className={cn(
-                      "px-3 py-2",
-                      ui.stat.sm,
-                      highlighted ? cn(ui.edge.start, ui.tone.default) : ui.tone.muted,
+                      "-ms-1 flex min-h-[var(--ui-tap-min)] min-w-0 items-center gap-2 py-2.5 ps-1",
+                      ui.radius.control,
+                      "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                      ui.focus,
                     )}
                   >
-                    {row.position}
-                  </td>
-                  <td className={cn("px-1.5 py-0.5", fitPhone && "w-full max-w-0 sm:max-w-none")}>
-                    {/* The whole name is the link, at the 44px floor: the
-                        row's other cells keep their own padding, so the row
-                        is no taller than it was. */}
-                    <Link
-                      to="/clubs/$clubId"
-                      params={{ clubId: club.id }}
+                    <ClubCrest club={club} size="sm" />
+                    <span
                       className={cn(
-                        "flex min-h-[var(--ui-tap-min)] min-w-0 items-center gap-2 px-1.5",
-                        ui.radius.control,
-                        "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
-                        ui.focus,
+                        "min-w-0 [font-weight:var(--ui-weight-strong)] leading-[var(--ui-leading-flat)]",
+                        ui.tone.default,
                       )}
                     >
-                      <ClubCrest club={club} size="sm" />
-                      <span
-                        className={cn(
-                          "truncate",
-                          highlighted
-                            ? "[font-weight:var(--ui-weight-heavy)]"
-                            : "[font-weight:var(--ui-weight-strong)]",
-                          ui.tone.default,
-                        )}
-                      >
-                        {rowClubName(tr(club.shortName), tr(club.name))}
-                      </span>
-                    </Link>
-                  </td>
-                  <td className={cn("px-2 py-2 text-center", ui.stat.sm)}>{row.played}</td>
-                  <td className={cn("hidden px-2 py-2 text-center sm:table-cell", ui.stat.sm)}>
-                    {row.won}
-                  </td>
-                  <td className={cn("hidden px-2 py-2 text-center sm:table-cell", ui.stat.sm)}>
-                    {row.drawn}
-                  </td>
-                  <td className={cn("hidden px-2 py-2 text-center sm:table-cell", ui.stat.sm)}>
-                    {row.lost}
-                  </td>
-                  <td className={cn("px-2 py-2 text-center", ui.stat.sm)}>
-                    <bdi>{formatGoalDifference(row.goalDifference)}</bdi>
-                  </td>
-                  <td className={cn("px-2 py-2 text-center", fitPhone && "hidden sm:table-cell")}>
+                      {clubLabel(club, tr)}
+                      {mine ? <span className="sr-only"> ({t("standings.your_club")})</span> : null}
+                    </span>
+                  </Link>
+                </td>
+                {figures ? (
+                  <>
+                    <td className={cn("text-center", ui.stat.sm)}>{row.played}</td>
+                    <td className={cn("text-center", ui.stat.sm, narrow)}>{row.won}</td>
+                    <td className={cn("text-center", ui.stat.sm, narrow)}>{row.drawn}</td>
+                    <td className={cn("text-center", ui.stat.sm, narrow)}>{row.lost}</td>
+                    <td className={cn("text-center", ui.stat.sm)}>
+                      <bdi>{formatGoalDifference(row.goalDifference)}</bdi>
+                    </td>
+                  </>
+                ) : (
+                  <td className="text-center">
                     <FormChips form={row.form} />
                   </td>
-                  <td
-                    className={cn(
-                      "py-2 text-end",
-                      fitPhone ? "px-2 sm:px-3" : "px-3",
-                      ui.stat.md,
-                      ui.tone.default,
-                    )}
-                  >
-                    {row.points}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                )}
+                <td className={cn("pe-3 text-end", ui.stat.md, ui.tone.default)}>{row.points}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
+  );
+}
+
+/** The key to the zone bars, under an overall table. */
+export function StandingsLegend({ className }: { className?: string }) {
+  const { t } = useI18n();
+  return (
+    <ul
+      aria-label={t("standings.legend")}
+      className={cn("flex flex-col gap-2 px-1", ui.text.meta, ui.tone.muted, className)}
+    >
+      {ZONES.map((zone) => (
+        <li key={zone} className="flex items-center gap-2.5">
+          <span aria-hidden className={cn("h-4 w-1 shrink-0", ui.radius.full, ZONE_BAR[zone])} />
+          {zoneLabel(zone, t)}
+        </li>
+      ))}
+    </ul>
   );
 }
 

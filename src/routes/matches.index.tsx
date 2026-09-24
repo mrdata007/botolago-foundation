@@ -1,4 +1,3 @@
-import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -6,13 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import { footballService, type FootballSeason } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
 import { MatchCard } from "@/components/common/MatchCard";
-import { SectionHeader, SectionHeaderLink } from "@/components/common/SectionHeader";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import { Section } from "@/components/common/Section";
 import { DateStrip } from "@/components/matches/DateStrip";
 import { LiveStrip } from "@/components/matches/LiveStrip";
+import { MatchesTabs } from "@/components/matches/MatchesTabs";
+import { validateMatchesSearch } from "@/components/matches/matches-search";
 import { SeasonPicker } from "@/components/matches/SeasonPicker";
-import { StandingsTable } from "@/components/matches/StandingsTable";
-import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
+import { EmptyState, ErrorState } from "@/components/common/States";
 import { MatchCardSkeleton } from "@/components/common/Skeletons";
 import { ui, UiCard, UiChip, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -28,6 +28,8 @@ const MATCHES_DESCRIPTION =
   "Suivez tous les matchs de la Botola Pro : scores en direct, calendrier, résultats et classement.";
 
 export const Route = createFileRoute("/matches/")({
+  // `?season=<id>`: the season the Classement tab was showing (matches-search.ts).
+  validateSearch: validateMatchesSearch,
   head: () => ({
     meta: [
       { title: MATCHES_TITLE },
@@ -103,7 +105,8 @@ function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
  * through `--livestrip-h`) as the page scrolls. The page itself opens on the
  * date band — the day, its round, the previous / next day — and lists that
  * day's matches as club-colour rows: live and upcoming together, then the
- * results. The standings close the page.
+ * results. The league table is the other tab, `/matches/standings`: the
+ * Calendrier | Classement tabs sit between the title band and the live strip.
  *
  * The title band, the strip and the chips are the shell's `pageHeader`, so
  * all three run edge to edge and the chips can stick for the whole page: a
@@ -117,6 +120,7 @@ function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
  */
 function MatchesPage() {
   const { t, lang } = useI18n();
+  const { season: requestedSeasonId } = Route.useSearch();
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>("all");
@@ -131,10 +135,14 @@ function MatchesPage() {
 
   useEffect(() => {
     if (seasons.length === 0 || selectedSeason) return;
-    const initialSeason = seasons.find((season) => season.isCurrent) ?? seasons[0]!;
+    // The season the other tab was on, else the current one.
+    const initialSeason =
+      seasons.find((season) => season.id === requestedSeasonId) ??
+      seasons.find((season) => season.isCurrent) ??
+      seasons[0]!;
     setSelectedSeasonId(initialSeason.id);
     setSelectedDate(dateForSeason(initialSeason));
-  }, [seasons, selectedSeason]);
+  }, [seasons, selectedSeason, requestedSeasonId]);
 
   const canLoadMatches = seasonsQ.isSuccess && (seasons.length === 0 || selectedSeason != null);
 
@@ -263,9 +271,10 @@ function MatchesPage() {
                 onChange={handleSeasonChange}
               />
             }
-            // One white band with the chips under it: no rule between them.
+            // The tabs draw the rule under the band.
             className="border-b-0"
           />
+          <MatchesTabs active="calendar" season={selectedSeason} />
           <LiveStrip />
           <StatusFilters value={filter} onChange={setFilter} liveCount={dayCounts.live} />
         </>
@@ -354,26 +363,6 @@ function MatchesPage() {
             <EmptyState compact>{t("matches.section.no_finished")}</EmptyState>
           </div>
         )}
-
-      {/* Standings — persistent context regardless of the selected date. Each
-          club in it opens its club page; "Clubs" lists them all. */}
-      <Section>
-        <SectionHeader
-          title={t("matches.table_preview")}
-          eyebrow={t("matches.competition.botola")}
-          action={<SectionHeaderLink to="/clubs">{t("clubs.title")}</SectionHeaderLink>}
-        />
-        {loading ? (
-          <LoadingState />
-        ) : seasonsQ.isError || matchesQ.isError ? null : (matchesQ.data?.standings.length ?? 0) ===
-          0 ? (
-          <EmptyState compact illustration={standingsSoonArt}>
-            {t("matches.table.empty")}
-          </EmptyState>
-        ) : (
-          <StandingsTable rows={matchesQ.data?.standings ?? []} clubById={clubById} />
-        )}
-      </Section>
 
       {/* An intentional spacer so the last card clears the bottom nav shadow. */}
       <div className="h-6" aria-hidden />

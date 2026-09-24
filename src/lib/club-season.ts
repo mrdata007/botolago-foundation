@@ -16,6 +16,7 @@
 
 import type { FootballPosition, SquadRole } from "@/backend/football/contracts";
 import { FOOTBALL_POSITIONS } from "@/backend/football/contracts";
+import type { LeagueTableRow } from "@/lib/league-table";
 import type { Match, TableRow } from "@/types/domain";
 
 export type MatchOutcome = "W" | "D" | "L";
@@ -151,17 +152,18 @@ export function clubSeasonStats(matches: readonly Match[], clubId: string): Club
  * when there is one (the official figures), the sum of the fixtures when
  * there is not.
  */
-export function officialRecord(row: TableRow | undefined, fromFixtures: RecordLine): RecordLine {
+export function officialRecord(
+  row: LeagueTableRow | undefined,
+  fromFixtures: RecordLine,
+): RecordLine {
   if (!row) return fromFixtures;
-  const goalsFor = row.goalsFor ?? fromFixtures.goalsFor;
-  const goalsAgainst = row.goalsAgainst ?? fromFixtures.goalsAgainst;
   return {
     played: row.played,
     won: row.won,
     drawn: row.drawn,
     lost: row.lost,
-    goalsFor,
-    goalsAgainst,
+    goalsFor: row.goalsFor,
+    goalsAgainst: row.goalsAgainst,
   };
 }
 

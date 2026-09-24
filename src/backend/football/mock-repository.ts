@@ -301,6 +301,18 @@ export class MockFootballRepository implements FootballRepository {
       providerUpdatedAt: new Date(0).toISOString(),
     }));
   }
+  async getSeasonFixtures(
+    competitionId: string,
+    seasonId: string,
+    language: FootballLanguage,
+    _context: RepositoryContext,
+  ): Promise<readonly MatchCardDto[]> {
+    const season = mockSeasons.find((candidate) => candidate.id === seasonId);
+    if (!season || competitionId !== COMPETITION_ID) return [];
+    return mock.matches
+      .map((match) => fixture(match, language, season))
+      .sort((a, b) => a.kickoffAt.localeCompare(b.kickoffAt) || a.id.localeCompare(b.id));
+  }
   async getCompetition(): Promise<CompetitionSummaryDto> {
     return competition;
   }

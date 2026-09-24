@@ -353,6 +353,13 @@ export interface FootballRepository {
     language: FootballLanguage,
     context: RepositoryContext,
   ): Promise<readonly StandingRowDto[]>;
+  /** Every fixture of one competition season, in kickoff order, whatever its status. */
+  getSeasonFixtures(
+    competitionId: string,
+    seasonId: string,
+    language: FootballLanguage,
+    context: RepositoryContext,
+  ): Promise<readonly MatchCardDto[]>;
   getCompetition(
     id: string,
     language: FootballLanguage,

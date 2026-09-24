@@ -109,9 +109,6 @@ export interface TableRow {
   drawn: number;
   lost: number;
   goalDifference: number;
-  /** Goals scored and conceded, when the source table carries them. */
-  goalsFor?: number;
-  goalsAgainst?: number;
   points: number;
   form: ("W" | "D" | "L")[];
 }

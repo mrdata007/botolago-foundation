@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import type { LeagueTableRow } from "@/lib/league-table";
 import type { Match, TableRow } from "@/types/domain";
 import {
   clubFixtures,
@@ -144,7 +145,7 @@ describe("officialRecord", () => {
   const fixtures = { played: 3, won: 1, drawn: 1, lost: 1, goalsFor: 4, goalsAgainst: 4 };
 
   test("prefers the table, which carries what the fixtures cannot", () => {
-    const row: TableRow = {
+    const row: LeagueTableRow = {
       position: 5,
       clubId: CLUB,
       played: 30,
@@ -167,20 +168,8 @@ describe("officialRecord", () => {
     });
   });
 
-  test("falls back to the fixtures without a table row, and for goals the row lacks", () => {
+  test("falls back to the fixtures without a table row", () => {
     expect(officialRecord(undefined, fixtures)).toEqual(fixtures);
-    const row: TableRow = {
-      position: 1,
-      clubId: CLUB,
-      played: 3,
-      won: 1,
-      drawn: 1,
-      lost: 1,
-      goalDifference: 0,
-      points: 4,
-      form: [],
-    };
-    expect(officialRecord(row, fixtures).goalsFor).toBe(4);
   });
 });
 

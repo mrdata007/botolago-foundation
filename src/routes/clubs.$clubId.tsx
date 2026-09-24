@@ -20,7 +20,7 @@ import { SectionHeader } from "@/components/common/SectionHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { ShareButton } from "@/components/fantasy-lists/ShareButton";
 import { SeasonPicker } from "@/components/matches/SeasonPicker";
-import { StandingsTable } from "@/components/matches/StandingsTable";
+import { StandingsLegend, StandingsTable } from "@/components/matches/StandingsTable";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -166,9 +166,11 @@ function ClubPage() {
     queryFn: () => footballService.getClubSeasonMatches(clubId, season ?? null, lang),
     enabled: validId && seasonsQ.isSuccess,
   });
-  const tableQ = useQuery({
-    queryKey: ["football", "season-table", season?.id ?? "none", lang],
-    queryFn: () => footballService.getSeasonTable(season!.id, lang),
+  // The season's table, worked out from its results: the Classement tab's
+  // query, so the two pages share one cache entry.
+  const standingsQ = useQuery({
+    queryKey: ["football", "standings", season?.id, lang],
+    queryFn: () => footballService.getStandings(season!, lang),
     enabled: season !== undefined,
   });
   // The current squad is the club's active memberships; a past season's is
@@ -194,16 +196,16 @@ function ClubPage() {
   const club = clubQ.data;
   const clubs = useMemo(() => {
     const byId = new Map<string, Club>();
-    for (const item of [...(matchesQ.data?.clubs ?? []), ...(tableQ.data?.clubs ?? [])]) {
+    for (const item of [...(matchesQ.data?.clubs ?? []), ...(standingsQ.data?.clubs ?? [])]) {
       byId.set(item.id, item);
     }
     if (club) byId.set(club.id, club);
     return byId;
-  }, [club, matchesQ.data?.clubs, tableQ.data?.clubs]);
+  }, [club, matchesQ.data?.clubs, standingsQ.data?.clubs]);
   const clubById = (id: string) => clubs.get(id);
 
   const matches = matchesQ.data?.matches;
-  const standings = tableQ.data?.standings ?? [];
+  const standings = standingsQ.data?.overall ?? [];
   const row = standings.find((line) => line.clubId === clubId);
   const stats = useMemo(() => clubSeasonStats(matches ?? [], clubId), [matches, clubId]);
   const record = officialRecord(row, stats.overall);
@@ -342,23 +344,27 @@ function ClubPage() {
         {tab === "standings" && (
           <Section>
             <SectionHeader title={t("matches.table_preview")} eyebrow={seasonLine} />
-            {seasonsQ.isError || tableQ.isError ? (
+            {seasonsQ.isError || standingsQ.isError ? (
               <ErrorState
-                onRetry={() => void (seasonsQ.isError ? seasonsQ.refetch() : tableQ.refetch())}
+                onRetry={() => void (seasonsQ.isError ? seasonsQ.refetch() : standingsQ.refetch())}
               />
-            ) : seasonsQ.isPending || (season !== undefined && tableQ.isPending) ? (
+            ) : seasonsQ.isPending || (season !== undefined && standingsQ.isPending) ? (
               <LoadingState />
             ) : standings.length === 0 ? (
               <EmptyState compact illustration={standingsSoonArt}>
                 {t("matches.table.empty")}
               </EmptyState>
             ) : (
-              <StandingsTable
-                rows={standings}
-                clubById={clubById}
-                highlightClubId={clubId}
-                fitPhone
-              />
+              <div className="grid min-w-0 gap-3">
+                <StandingsTable
+                  rows={standings}
+                  clubById={clubById}
+                  view="overall"
+                  caption={`${t("matches.table_preview")} · ${seasonLine}`}
+                  currentClubId={clubId}
+                />
+                <StandingsLegend />
+              </div>
             )}
           </Section>
         )}

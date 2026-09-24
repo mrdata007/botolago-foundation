@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import type { MatchCardDto, StandingRowDto } from "@/backend/football/contracts";
 import { mapFootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import {
+  buildStandings,
   footballService,
   inPlayFixtures,
   presentFootballClub,
@@ -190,14 +192,6 @@ describe("club pages", () => {
     expect(new Set(directory.clubs.map((club) => club.id)).size).toBe(directory.clubs.length);
   });
 
-  test("a season's table keeps the goals for and against", async () => {
-    const seasons = await footballService.getSeasons("fr");
-    const table = await footballService.getSeasonTable(seasons[0]!.id, "fr");
-    expect(table.standings.length).toBeGreaterThan(0);
-    expect(table.standings.every((row) => typeof row.goalsFor === "number")).toBe(true);
-    expect(table.clubs.length).toBe(table.standings.length);
-  });
-
   test("the database's TEAM_NOT_FOUND is a not-found, not an outage", () => {
     expect(mapFootballError({ code: "P0002", message: "TEAM_NOT_FOUND" }).code).toBe(
       "team_not_found",
@@ -216,5 +210,133 @@ describe("the live strip's fixtures", () => {
       { id: "f", status: "penalties" },
     ] as const;
     expect(inPlayFixtures(fixtures).map((fixture) => fixture.id)).toEqual(["a", "c", "e", "f"]);
+  });
+});
+
+describe("the season table", () => {
+  const repository = new MockFootballRepository();
+
+  /** A completed mock season: every fixture finished, with a score. */
+  async function completedSeason() {
+    const seasons = await repository.getSeasons("fr", 12, context);
+    const season = seasons.find((candidate) => candidate.status === "completed")!;
+    const fixtures = await repository.getSeasonFixtures(
+      season.competition.id,
+      season.id,
+      "fr",
+      context,
+    );
+    return { season, fixtures };
+  }
+
+  /** The table `rows` describe, as the provider would store it. */
+  function storedFrom(
+    fixtures: readonly MatchCardDto[],
+    rows: ReturnType<typeof buildStandings>["overall"],
+  ): StandingRowDto[] {
+    const teams = new Map(
+      fixtures.flatMap((fixture) => [
+        [fixture.homeTeam.id, fixture.homeTeam],
+        [fixture.awayTeam.id, fixture.awayTeam],
+      ]),
+    );
+    return rows.map((row, index) => ({
+      id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      rank: row.position,
+      team: teams.get(row.clubId)!,
+      played: row.played,
+      won: row.won,
+      drawn: row.drawn,
+      lost: row.lost,
+      goalsFor: row.goalsFor,
+      goalsAgainst: row.goalsAgainst,
+      goalDifference: row.goalDifference,
+      points: row.points,
+      form: null,
+      qualificationCode: null,
+      providerUpdatedAt: "2026-07-06T00:00:00+00:00",
+    }));
+  }
+
+  test("reads a whole season's fixtures, in kickoff order", async () => {
+    const { fixtures } = await completedSeason();
+    expect(fixtures.length).toBeGreaterThan(0);
+    const kickoffs = fixtures.map((fixture) => fixture.kickoffAt);
+    expect(kickoffs).toEqual([...kickoffs].sort());
+  });
+
+  test("with no stored table, works the table out from the finished results", async () => {
+    const { fixtures } = await completedSeason();
+    const standings = buildStandings(fixtures, []);
+    const clubs = new Set(fixtures.flatMap((f) => [f.homeTeam.id, f.awayTeam.id]));
+
+    expect(standings.overall).toHaveLength(clubs.size);
+    expect(standings.overall.map((row) => row.position)).toEqual(
+      standings.overall.map((_, index) => index + 1),
+    );
+    const sum = (key: "won" | "lost" | "goalsFor" | "goalsAgainst") =>
+      standings.overall.reduce((total, row) => total + row[key], 0);
+    expect(sum("won")).toBe(sum("lost"));
+    expect(sum("goalsFor")).toBe(sum("goalsAgainst"));
+    for (const row of standings.overall) expect(row.points).toBe(row.won * 3 + row.drawn);
+    expect(standings.rounds).toBeGreaterThan(0);
+    expect(standings.home.length).toBe(clubs.size);
+    expect(standings.away.length).toBe(clubs.size);
+  });
+
+  test("keeps a stored table covering as many matches, and adds the form from the results", async () => {
+    const { fixtures } = await completedSeason();
+    const computed = buildStandings(fixtures, []).overall;
+    // The provider's order differs from the results' — as a points deduction would make it.
+    const deducted = storedFrom(fixtures, computed).map((row) =>
+      row.rank === 1 ? { ...row, rank: 2 } : row.rank === 2 ? { ...row, rank: 1 } : row,
+    );
+    const standings = buildStandings(fixtures, deducted);
+
+    expect(standings.overall.slice(0, 2).map((row) => row.clubId)).toEqual([
+      computed[1]!.clubId,
+      computed[0]!.clubId,
+    ]);
+    expect(standings.overall[0]!.form).toEqual(computed[1]!.form);
+  });
+
+  test("drops a stored table that covers fewer matches than the results", async () => {
+    const { fixtures } = await completedSeason();
+    const computed = buildStandings(fixtures, []).overall;
+    const stale = storedFrom(fixtures, computed)
+      .reverse()
+      .map((row, index) => ({ ...row, rank: index + 1, played: 1 }));
+
+    expect(buildStandings(fixtures, stale).overall.map((row) => row.clubId)).toEqual(
+      computed.map((row) => row.clubId),
+    );
+  });
+
+  test("has no table before the first result, and counts only finished matches with a score", async () => {
+    const { fixtures } = await completedSeason();
+    const upcoming = fixtures.map((fixture) => ({
+      ...fixture,
+      status: "not_started" as const,
+      homeScore: null,
+      awayScore: null,
+    }));
+    const empty = buildStandings(upcoming, []);
+    expect([empty.overall, empty.home, empty.away, empty.rounds]).toEqual([[], [], [], 0]);
+    expect(empty.clubs.length).toBeGreaterThan(0);
+
+    const [first, ...rest] = upcoming;
+    const scoreless = { ...first!, status: "finished" as const };
+    const postponed = { ...fixtures[1]!, status: "postponed" as const };
+    expect(buildStandings([scoreless, postponed, ...rest.slice(1)], []).overall).toEqual([]);
+  });
+
+  test("the service reads the season's fixtures and its stored table together", async () => {
+    const seasons = await footballService.getSeasons("fr");
+    const current = seasons.find((season) => season.isCurrent)!;
+    expect(current.competitionId).toMatch(/^[0-9a-f-]{36}$/);
+    const standings = await footballService.getStandings(current, "fr");
+    // The mock provider's table covers more matches than the mock results.
+    expect(standings.overall.length).toBeGreaterThan(0);
+    expect(standings.rounds).toBe(Math.max(...standings.overall.map((row) => row.played)));
   });
 });

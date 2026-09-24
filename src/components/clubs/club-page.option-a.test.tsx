@@ -13,7 +13,8 @@ import {
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 import { clubSeasonStats, officialRecord } from "@/lib/club-season";
-import type { Club, Match, TableRow } from "@/types/domain";
+import type { LeagueTableRow } from "@/lib/league-table";
+import type { Club, Match } from "@/types/domain";
 import { StandingsTable } from "@/components/matches/StandingsTable";
 import { ClubHero } from "./ClubHero";
 import { ClubOverview } from "./ClubOverview";
@@ -144,7 +145,7 @@ const FAR = club("00000010-0000-4000-8000-000000000003", "FAR Rabat", "FAR");
 const clubs = new Map([WYDAD, RAJA, FAR].map((item) => [item.id, item]));
 const clubById = (id: string) => clubs.get(id);
 
-const tableRow = (item: Club, position: number, points: number, gd: number): TableRow => ({
+const tableRow = (item: Club, position: number, points: number, gd: number): LeagueTableRow => ({
   position,
   clubId: item.id,
   played: 30,
@@ -301,11 +302,19 @@ describe("club page — the squad", () => {
 });
 
 describe("the standings table", () => {
-  it("links each club to its page and marks the highlighted one", async () => {
+  it("links each club to its page and marks the page's own club as the current row", async () => {
     const html = await withRouter(
-      <StandingsTable rows={TABLE} clubById={clubById} highlightClubId={WYDAD.id} />,
+      <StandingsTable
+        rows={TABLE}
+        clubById={clubById}
+        view="overall"
+        caption="Classement"
+        currentClubId={WYDAD.id}
+      />,
     );
     for (const item of [WYDAD, RAJA, FAR]) expect(html).toContain(`href="/clubs/${item.id}"`);
     expect(html.match(/aria-current="true"/g)).toHaveLength(1);
+    // The page's club, not the reader's: no "(Votre club)" for it.
+    expect(html).not.toContain(dictionaries.fr["standings.your_club"]);
   });
 });

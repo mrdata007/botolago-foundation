@@ -84,6 +84,15 @@ export function encodeMatchCursor(cursor: MatchPageCursor | null): string | null
   return cursor ? encodeURIComponent(JSON.stringify(cursor)) : null;
 }
 
+/** The API's page ceiling (`football_competition_fixtures` refuses more than 100). */
+const SEASON_FIXTURE_PAGE_SIZE = 100;
+/**
+ * A 16-club double round-robin is 240 fixtures, three pages. Ten pages leaves
+ * room for a bigger league and still stops a cursor that never ends; a season
+ * that does not fit is an error rather than a table built from part of it.
+ */
+const SEASON_FIXTURE_PAGE_LIMIT = 10;
+
 export class SupabaseFootballRepository implements FootballRepository {
   async getSeasons(
     language: FootballLanguage,
@@ -233,6 +242,32 @@ export class SupabaseFootballRepository implements FootballRepository {
     });
     throwIfError(error);
     return parse(z.array(standingRowSchema), data);
+  }
+
+  async getSeasonFixtures(
+    competitionId: string,
+    seasonId: string,
+    language: FootballLanguage,
+    _context: RepositoryContext,
+  ): Promise<readonly MatchCardDto[]> {
+    const items: MatchCardDto[] = [];
+    let cursor: MatchPageCursor | null = null;
+    for (let page = 0; page < SEASON_FIXTURE_PAGE_LIMIT; page += 1) {
+      const { data, error } = await getFootballApi().rpc("football_competition_fixtures", {
+        p_competition_id: requireUuid(competitionId),
+        p_season_id: requireUuid(seasonId),
+        p_after_kickoff: cursor?.kickoffAt,
+        p_after_id: cursor?.id,
+        p_limit: SEASON_FIXTURE_PAGE_SIZE,
+        p_language: language,
+      });
+      throwIfError(error);
+      const parsed: MatchPageDto = parse(matchPageSchema, data);
+      items.push(...parsed.items);
+      if (!parsed.nextCursor) return items;
+      cursor = parsed.nextCursor;
+    }
+    throw new FootballError("data_unavailable", "The season has more fixtures than a table reads.");
   }
 
   async getCompetition(

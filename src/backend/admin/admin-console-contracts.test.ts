@@ -16,6 +16,8 @@ const IMPLEMENTED_ROUTES = new Set([
   "/admin/security",
   "/admin/news",
   "/admin/prizes",
+  "/admin/users",
+  "/admin/users/$userId",
 ]);
 
 /**
@@ -36,6 +38,8 @@ const SCREEN_ROUTE_FILES: Record<AdminConsoleRoute, string> = {
   "/admin/security": "../../routes/admin.security.tsx",
   "/admin/news": "../../routes/admin.news.tsx",
   "/admin/prizes": "../../routes/admin.prizes.tsx",
+  "/admin/users": "../../routes/admin.users.tsx",
+  "/admin/users/$userId": "../../routes/admin.users.$userId.tsx",
 };
 
 /** Route sources only. `admin-console-contracts.ts` is deliberately NOT read
@@ -167,6 +171,19 @@ describe("Frozen Admin Console contracts", () => {
     ]);
     expect(visibleTo(["prizes.manage"])).toEqual(["admin-nav-prizes"]);
     expect(visibleTo(["fantasy.manage_rankings"])).not.toContain("admin-nav-prizes");
+    expect(visibleTo(["users.read_support"])).toEqual(["admin-nav-users"]);
+    // Moderating without reading is not a combination any role grants, and the
+    // nav follows the page's own gate: the directory is a read surface.
+    expect(visibleTo(["users.moderate"])).not.toContain("admin-nav-users");
+  });
+
+  it("links the user directory from the nav, gated on users.read_support", () => {
+    const users = ADMIN_CONSOLE_NAV_ITEMS.find((item) => item.route === "/admin/users");
+    expect(users?.permission).toBe("users.read_support");
+    expect(users?.testId).toBe("admin-nav-users");
+    expect(users?.labels.fr).toBe("Utilisateurs");
+    expect(users?.labels.ar).toBe("المستخدمون");
+    expect(ADMIN_CONSOLE_SCREENS.some((screen) => screen.route === "/admin/users")).toBe(false);
   });
 
   it("links the prize console from the nav, gated on prizes.manage", () => {

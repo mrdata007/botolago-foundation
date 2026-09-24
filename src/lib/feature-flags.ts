@@ -7,7 +7,18 @@
  */
 
 /**
- * News — OFF at launch.
+ * News — ON since 2026-09-24.
+ *
+ * Owner decision, 2026-09-24: News is switched on. ElBotola licensed its
+ * Botola Pro articles to BotolaGO (licence recorded on `app.publishers`), the
+ * archive since 2021-09-23 was imported with ElBotola's own dates, and every
+ * licensed article credits "Source : ElBotola" / "المصدر: البطولة" with a
+ * link to the original. The owner also chose to have those articles indexed
+ * and listed in the sitemap (see `src/lib/article-meta.ts` and migration
+ * `20260924163000_news_sitemap_licensed.sql`).
+ *
+ * The history below is why it was off, and is kept because the gating it
+ * describes still applies: every News surface still reads this constant.
  *
  * Owner decision, 2026-09-21 (BG-0091): News does not ship at launch. The 108
  * published articles were machine-ingested third-party link-out stubs, so the
@@ -61,7 +72,7 @@
  * The owner chose removal, so the tab, its three dictionary keys, the type
  * field and the mock blurbs are all gone. Nothing about it is gated here.
  */
-export const NEWS_ENABLED = false;
+export const NEWS_ENABLED = true;
 
 /**
  * Dark mode — OFF at launch.
