@@ -112,6 +112,35 @@ describe("batch SQL", () => {
     expect(sql).toContain("guard: ElBotola has no recorded licence");
   });
 
+  test("provider text containing a dollar-quote tag cannot end the block early", () => {
+    const hostile = buildStories(
+      [
+        article({
+          html: "<p>Texte assez long pour passer $import$; drop table app.stories; --</p>",
+        }),
+      ],
+      [],
+      new Set(),
+    ).stories;
+    const sql = batchSql(hostile, false);
+    const tag = /^do (\$import_[0-9a-f]{24}\$)/.exec(sql)?.[1];
+    expect(tag).toBeDefined();
+    expect(sql.trimEnd().endsWith(`${tag};`)).toBe(true);
+    // The random tag appears exactly twice: opening and closing the body.
+    expect(sql.split(tag!).length - 1).toBe(2);
+    expect(batchSql(hostile, false)).not.toContain(tag!);
+  });
+
+  test("a batch whose text contains its own delimiter is refused", () => {
+    const tag = "$import_fixed$";
+    const hostile = buildStories(
+      [article({ html: `<p>Texte assez long pour passer ${tag} et la suite.</p>` })],
+      [],
+      new Set(),
+    ).stories;
+    expect(() => batchSql(hostile, false, tag)).toThrow("batch delimiter");
+  });
+
   test("a dry run always ends by rolling back", () => {
     expect(batchSql(stories, true)).toContain("raise exception 'DRY_RUN_ROLLBACK");
     expect(batchSql(stories, false)).not.toContain("DRY_RUN_ROLLBACK");

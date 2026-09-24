@@ -15,7 +15,7 @@
 //   MODE=import   batches are committed; stories already present are skipped,
 //                 so a stopped run can simply be started again
 
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { NEWS_SANITIZER_VERSION, sanitizeEditorialHtml } from "../../src/backend/news/sanitizer";
 
 export const ELBOTOLA_API = "https://api.elbotola.com";
@@ -209,8 +209,32 @@ function literal(value: string | number | null): string {
  * licence; skips stories BotolaGO already holds; refuses an edition slug that
  * something else already uses. In dry-run mode it raises at the end, so the
  * whole batch is rolled back after every statement has run.
+ *
+ * The rows sit inside the DO block's dollar-quoted body, where single-quote
+ * escaping protects nothing against the body's own closing tag. The tag is
+ * therefore random per batch, and the batch is refused outright if any
+ * provider text contains it, so ElBotola content can never end the body early.
  */
-export function batchSql(stories: readonly ImportStory[], dryRun: boolean): string {
+export function batchSql(
+  stories: readonly ImportStory[],
+  dryRun: boolean,
+  tag = `$import_${randomBytes(12).toString("hex")}$`,
+): string {
+  if (!/^\$[a-z_][a-z0-9_]*\$$/.test(tag)) throw new Error("invalid dollar-quote tag");
+  for (const story of stories) {
+    const values = [story.key, story.canonicalUrl ?? ""].concat(
+      story.editions.flatMap((edition) => [
+        edition.slug,
+        edition.title,
+        edition.summary,
+        edition.bodyHtml,
+        edition.author ?? "",
+      ]),
+    );
+    if (values.some((value) => value.includes(tag))) {
+      throw new Error("provider text contains the batch delimiter; refusing the batch");
+    }
+  }
   const rows = stories.flatMap((story) =>
     story.editions.map(
       (edition) =>
@@ -230,7 +254,7 @@ export function batchSql(stories: readonly ImportStory[], dryRun: boolean): stri
         ].join(", ")})`,
     ),
   );
-  return `do $import$
+  return `do ${tag}
 declare
   licensed_publisher app.publishers%rowtype;
   new_stories integer := 0;
@@ -290,7 +314,7 @@ ${
     : "  raise notice 'IMPORTED stories=% editions=%', new_stories, new_editions;"
 }
 end
-$import$;`;
+${tag};`;
 }
 
 // ---------------------------------------------------------------- runtime
@@ -441,6 +465,10 @@ async function main(): Promise<void> {
     runtime,
     "select count(*) from app.article_editions e where app_private.news_is_public(e)",
   );
+  const licensedStoriesSql =
+    "select count(*) from app.stories s join app.publishers p on p.id = s.publisher_id " +
+    "where p.slug = 'elbotola' and s.origin = 'partner'";
+  const elbotolaBefore = await count(runtime, licensedStoriesSql);
 
   const existingResult = await sql(
     runtime,
@@ -483,19 +511,21 @@ async function main(): Promise<void> {
       console.log(`batches done: ${offset + batch.length}/${stories.length}`);
   }
 
-  const imported = await count(
-    runtime,
-    "select count(*) from app.stories where origin = 'partner'",
-  );
+  const elbotolaAfter = await count(runtime, licensedStoriesSql);
   const publicAfter = await count(
     runtime,
     "select count(*) from app.article_editions e where app_private.news_is_public(e)",
   );
   if (publicAfter !== publicBefore) throw new Error("the number of public articles changed");
+  if (runtime.mode === "dry-run" && elbotolaAfter !== elbotolaBefore) {
+    throw new Error("a dry run left licensed ElBotola stories behind");
+  }
   console.log(
     runtime.mode === "dry-run"
-      ? `DRY RUN complete: would import stories=${committedStories} editions=${committedEditions}; nothing kept`
-      : `IMPORT complete: licensed stories now in production=${imported}; public articles unchanged (${publicAfter})`,
+      ? `DRY RUN complete: would import stories=${committedStories} editions=${committedEditions}; ` +
+          `nothing kept (ElBotola licensed stories still ${elbotolaAfter})`
+      : `IMPORT complete: ElBotola licensed stories ${elbotolaBefore} -> ${elbotolaAfter} ` +
+          `(+${elbotolaAfter - elbotolaBefore}); public articles unchanged (${publicAfter})`,
   );
 }
 
