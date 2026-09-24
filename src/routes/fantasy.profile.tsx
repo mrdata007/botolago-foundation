@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { SectionHeader } from "@/components/common/SectionHeader";
+import { chipDescription } from "@/components/fpl/chip-copy";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
@@ -181,9 +182,16 @@ function TeamProfileBody() {
                   {CHIPS.map((chip) => (
                     <UiKeyValueRow
                       key={chip}
-                      label={t(`fantasy.chip.${chip}` as never)}
+                      label={
+                        <>
+                          <span className="block">{t(`fantasy.chip.${chip}` as never)}</span>
+                          <span className={cn("block", ui.text.meta, ui.tone.muted)}>
+                            {chipDescription(chip, t)}
+                          </span>
+                        </>
+                      }
                       value={<ChipState state={chipDisplayState(chips, chip)} />}
-                      className="last:border-b-0"
+                      className="py-2.5 last:border-b-0"
                     />
                   ))}
                 </div>

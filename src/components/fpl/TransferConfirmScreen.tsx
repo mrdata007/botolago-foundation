@@ -26,7 +26,7 @@ import { FplChipsRow } from "./FplChipsRow";
  * a 4px edge in its own status colour — a logical inline-start bar, so it is
  * the right edge in Arabic — never by colour alone and never by an arrow.
  *
- * The chips are the same pills as above the Pick Team pitch (`FplChipsRow`):
+ * The chips are the same cards as above the Pick Team pitch (`FplChipsRow`):
  * a tap on an available one plays it, every other state is inert. The
  * Modify / Confirm pair sticks above the bottom navigation on a phone.
  */
