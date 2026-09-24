@@ -1,4 +1,11 @@
-import { useState, type CSSProperties, type ImgHTMLAttributes, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ImgHTMLAttributes,
+  type ReactNode,
+} from "react";
 import { responsiveMedia, type PhotoFrame, type ResponsiveMediaSource } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +37,19 @@ function ImageAttempt({
   // fail -- the image service is off in this environment -- the next try drops
   // them and loads `src` itself, and only that failing removes the picture.
   const [copiesFailed, setCopiesFailed] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  // A server-rendered image can fail before React is listening, and React
+  // does not replay the lost `error` event, so neither fallback would run.
+  // Once mounted, an image that already shows as broken is asked for again:
+  // a real failure then fires `error` anew. One that loaded, or is still
+  // loading, is left alone.
+  useEffect(() => {
+    const image = imageRef.current;
+    if (!image?.complete || image.naturalWidth > 0) return;
+    const { src: current } = image;
+    image.src = current;
+  }, []);
 
   if (!src || failed) return null;
   const useCopies = srcSet !== undefined && !copiesFailed;
@@ -37,6 +57,7 @@ function ImageAttempt({
   const image = (
     <img
       {...props}
+      ref={imageRef}
       src={src}
       srcSet={useCopies ? srcSet : undefined}
       sizes={useCopies ? sizes : undefined}
