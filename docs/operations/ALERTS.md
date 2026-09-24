@@ -37,8 +37,10 @@ database's own check names.
 | `email_delivery` | email is on but its tick stalled for 15 min | undelivered emails are waiting |
 
 The watchdog adds `page_home`, `page_matches`, `page_news`, `page_sitemapxml`
-and `public_api` (fail on a non-200, warn above 8 s) and `season_orchestrator`
-(fail when GitHub has not started it for 8 h; warn when its last run failed).
+and `public_api` (fail on a non-200, warn above 8 s), `season_orchestrator`
+(fail when GitHub has not started it for 8 h; warn when its last run failed)
+and `release_drift` (the live site's `x-botolago-release` against `main`: warn
+after 24 h of unpublished changes, fail after 72 h; `docs/operations/DEPLOYMENT.md`).
 
 ## Switching the webhook on (owner, once)
 

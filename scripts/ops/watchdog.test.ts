@@ -5,6 +5,7 @@ import {
   orchestratorRecency,
   overall,
   publicSurface,
+  releaseDrift,
   renderTable,
   type Check,
 } from "./watchdog";
@@ -108,6 +109,44 @@ describe("production watchdog", () => {
       now,
     );
     expect(recentButRed.status).toBe("warn");
+  });
+
+  test("a live site behind main is a warning after a day and a failure after three", async () => {
+    const now = new Date("2026-09-27T12:00:00Z");
+    const drift = (header: string | null, compare: Response) =>
+      releaseDrift(
+        async (target) =>
+          target.startsWith("https://botolago.com")
+            ? new Response("<html></html>", {
+                headers: header ? { "x-botolago-release": header } : {},
+              })
+            : compare.clone(),
+        "https://botolago.com",
+        "mrdata007/botolago-foundation",
+        "token",
+        now,
+      );
+    const behind = (oldestCommit: string) =>
+      Response.json({
+        ahead_by: 4,
+        commits: [{ commit: { committer: { date: oldestCommit } } }],
+      });
+
+    expect(await drift("d257de7d9b8387ea", Response.json({ ahead_by: 0, commits: [] }))).toEqual({
+      name: "release_drift",
+      status: "ok",
+      detail: "live site runs main (d257de7)",
+    });
+    expect((await drift("d257de7d9b8387ea", behind("2026-09-27T06:00:00Z"))).status).toBe("ok");
+    expect((await drift("d257de7d9b8387ea", behind("2026-09-26T06:00:00Z"))).status).toBe("warn");
+    const stale = await drift("d257de7d9b8387ea", behind("2026-09-21T09:00:00Z"));
+    expect(stale.status).toBe("fail");
+    expect(stale.detail).toContain("main is 4 commit(s) ahead of the live site (d257de7)");
+    expect(stale.detail).toContain("docs/operations/DEPLOYMENT.md");
+    expect((await drift(null, behind("2026-09-21T09:00:00Z"))).status).toBe("warn");
+    expect((await drift("d257de7d9b8387ea", new Response("{}", { status: 404 }))).detail).toContain(
+      "not a commit on GitHub",
+    );
   });
 
   test("the run page table escapes the table separator", () => {

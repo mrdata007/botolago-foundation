@@ -31,6 +31,7 @@ import { RotateCcw, Home } from "lucide-react";
 
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+import { currentRelease } from "@/lib/operational-errors";
 
 function NotFoundComponent() {
   return (
@@ -202,6 +203,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Actualités, calendrier et Fantasy de la Botola Pro, avec une interface en français et en arabe.",
       },
       { name: "author", content: "BotolaGO" },
+      // The commit this build came from (see vite.config.ts).
+      { name: "botolago-release", content: currentRelease() },
       {
         property: "og:title",
         content: "BotolaGO — Actualités, matchs et Fantasy du football marocain",

@@ -32,12 +32,18 @@ async function timed(fetchImpl: Fetch, url: string, init?: RequestInit) {
   try {
     const response = await fetchImpl(url, { ...init, signal: AbortSignal.timeout(20_000) });
     const body = await response.text();
-    return { status: response.status, ms: Math.round(performance.now() - started), body };
+    return {
+      status: response.status,
+      ms: Math.round(performance.now() - started),
+      body,
+      headers: response.headers,
+    };
   } catch (error) {
     return {
       status: 0,
       ms: Math.round(performance.now() - started),
       body: "",
+      headers: new Headers(),
       error: error instanceof Error ? error.name : "fetch_failed",
     };
   }
@@ -176,6 +182,76 @@ export async function orchestratorRecency(
   };
 }
 
+const RELEASE_WARN_HOURS = 24;
+const RELEASE_FAIL_HOURS = 72;
+
+/**
+ * Is the live site running what `main` holds? A merge is not a deployment:
+ * Lovable publishes by hand, and on 2026-09-24 the live login page still had
+ * an open redirect that `main` had fixed days before, with nothing to show
+ * it. The site names its commit in `x-botolago-release`; GitHub says how far
+ * `main` is ahead of it and since when. Warns after 24 h of unpublished
+ * changes, fails (and so alerts) after 72 h.
+ */
+export async function releaseDrift(
+  fetchImpl: Fetch,
+  siteUrl: string,
+  repository: string,
+  token: string,
+  now: Date,
+): Promise<Check> {
+  const site = await timed(fetchImpl, `${siteUrl}/`);
+  const release = site.headers.get("x-botolago-release") ?? "";
+  if (!/^[0-9a-f]{7,40}$/.test(release)) {
+    return {
+      name: "release_drift",
+      status: "warn",
+      detail: `the live site does not report its release (${release || "no header"}): published before the release header, or built without git`,
+    };
+  }
+  const short = release.slice(0, 7);
+  const compare = await timed(
+    fetchImpl,
+    `https://api.github.com/repos/${repository}/compare/${release}...main`,
+    {
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    },
+  );
+  if (compare.status === 404) {
+    return {
+      name: "release_drift",
+      status: "warn",
+      detail: `live release ${short} is not a commit on GitHub (published from an unsynced edit?)`,
+    };
+  }
+  if (compare.status !== 200) {
+    return {
+      name: "release_drift",
+      status: "warn",
+      detail: `comparison with main unavailable (${compare.status || "no answer"})`,
+    };
+  }
+  const diff = JSON.parse(compare.body) as {
+    ahead_by?: number;
+    commits?: Array<{ commit?: { committer?: { date?: string } } }>;
+  };
+  const ahead = diff.ahead_by ?? 0;
+  if (ahead === 0) {
+    return { name: "release_drift", status: "ok", detail: `live site runs main (${short})` };
+  }
+  const oldest = Date.parse(diff.commits?.[0]?.commit?.committer?.date ?? "");
+  const hours = Number.isNaN(oldest) ? 0 : (now.getTime() - oldest) / 3_600_000;
+  return {
+    name: "release_drift",
+    status: hours >= RELEASE_FAIL_HOURS ? "fail" : hours >= RELEASE_WARN_HOURS ? "warn" : "ok",
+    detail: `main is ${ahead} commit(s) ahead of the live site (${short}); oldest unpublished change ${Math.round(hours)} h old: publish from Lovable (docs/operations/DEPLOYMENT.md)`,
+  };
+}
+
 export function overall(checks: Check[]): CheckStatus {
   return checks.some((c) => c.status === "fail")
     ? "fail"
@@ -219,6 +295,15 @@ if (import.meta.main) {
   }
   if (env.GITHUB_TOKEN && env.GITHUB_REPOSITORY) {
     checks.push(await orchestratorRecency(fetch, env.GITHUB_REPOSITORY, env.GITHUB_TOKEN, now));
+    checks.push(
+      await releaseDrift(
+        fetch,
+        (env.SITE_URL ?? "https://botolago.com").replace(/\/$/, ""),
+        env.GITHUB_REPOSITORY,
+        env.GITHUB_TOKEN,
+        now,
+      ),
+    );
   }
   if (env.WATCHDOG_SIMULATE_FAILURE === "true") {
     checks.push({
