@@ -38,8 +38,11 @@ import {
 } from "@/components/admin/destructive-action";
 import {
   EMPTY_PRIZE_FORM,
+  formsAfterSave,
   toPrizeDraft,
   toPrizeForm,
+  withSavedPrize,
+  withUpdatedWinner,
   type PrizeForm,
 } from "@/components/prizes/prize-admin-form";
 import {
@@ -233,9 +236,7 @@ function WinnersPanel({ access, repository, onNotice }: PanelProps) {
   }, [load]);
 
   const replaceRow = (updated: AdminPrizeWinnerDto) =>
-    setItems((current) =>
-      current ? current.map((item) => (item.id === updated.id ? updated : item)) : current,
-    );
+    setItems((current) => (current ? withUpdatedWinner(current, updated, filter) : current));
 
   const changeStatus = async (
     winner: AdminPrizeWinnerDto,
@@ -668,14 +669,15 @@ function CatalogPanel({ access, repository, onNotice }: PanelProps) {
     if (!form) return;
     onNotice(null);
     try {
-      await repository.savePrize(
+      const saved = await repository.savePrize(
         toPrizeDraft(form),
         reason,
         crypto.randomUUID(),
         adminRepositoryContext(access),
       );
+      setPrizes((current) => withSavedPrize(current ?? [], saved));
+      setForms((current) => formsAfterSave(current, key, saved));
       onNotice({ tone: "info", text: t("prizes.admin.saved") });
-      await load();
     } catch (error) {
       onNotice({ tone: "alert", text: refusal(t, error) });
     }

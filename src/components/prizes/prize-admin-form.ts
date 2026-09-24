@@ -1,4 +1,10 @@
-import type { AdminPrizeDraft, AdminPrizeDto, PrizeTier } from "@/backend/prizes/contracts";
+import type {
+  AdminPrizeDraft,
+  AdminPrizeDto,
+  AdminPrizeWinnerDto,
+  PrizeTier,
+  PrizeWinnerStatus,
+} from "@/backend/prizes/contracts";
 
 /** The prize editor's own shape: every field is the string its input holds. */
 export interface PrizeForm {
@@ -68,4 +74,48 @@ export function toPrizeDraft(form: PrizeForm): AdminPrizeDraft {
     imageUrl: optional(form.imageUrl),
     active: form.active,
   };
+}
+
+/**
+ * The catalog after one prize is saved. Only that row changes: a save never
+ * touches another prize (a second active prize in a tier is refused, not
+ * swapped), and reloading every row would throw away what the admin is still
+ * typing in the others.
+ */
+export function withSavedPrize(prizes: readonly AdminPrizeDto[], saved: AdminPrizeDto) {
+  return prizes.some((prize) => prize.id === saved.id)
+    ? prizes.map((prize) => (prize.id === saved.id ? saved : prize))
+    : [...prizes, saved];
+}
+
+/** The editor forms after `key` ("new" or a prize id) was saved as `saved`. */
+export function formsAfterSave(
+  forms: Readonly<Record<string, PrizeForm>>,
+  key: string,
+  saved: AdminPrizeDto,
+): Record<string, PrizeForm> {
+  return {
+    ...forms,
+    ...(key === "new" ? { new: EMPTY_PRIZE_FORM } : {}),
+    [saved.id]: toPrizeForm(saved),
+  };
+}
+
+/**
+ * The winners list after one row changed. A row whose new status no longer
+ * matches the filter leaves the list: a winner just verified under "pending"
+ * must not stay there, offering the next step under the wrong heading.
+ */
+export function withUpdatedWinner(
+  items: readonly AdminPrizeWinnerDto[],
+  updated: AdminPrizeWinnerDto,
+  filter: PrizeWinnerStatus | "all",
+) {
+  return items.flatMap((item) =>
+    item.id !== updated.id
+      ? [item]
+      : filter === "all" || updated.status === filter
+        ? [updated]
+        : [],
+  );
 }

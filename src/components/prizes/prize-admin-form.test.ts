@@ -1,6 +1,14 @@
 import { describe, expect, it } from "bun:test";
 
-import { EMPTY_PRIZE_FORM, toPrizeDraft, toPrizeForm } from "./prize-admin-form";
+import type { AdminPrizeDto, AdminPrizeWinnerDto } from "@/backend/prizes/contracts";
+import {
+  EMPTY_PRIZE_FORM,
+  formsAfterSave,
+  toPrizeDraft,
+  toPrizeForm,
+  withSavedPrize,
+  withUpdatedWinner,
+} from "./prize-admin-form";
 
 describe("the prize editor form", () => {
   it("trims text, turns blank optional fields into null and parses a whole value", () => {
@@ -57,5 +65,73 @@ describe("the prize editor form", () => {
     };
     const { updatedAt: _updatedAt, ...expected } = saved;
     expect(toPrizeDraft(toPrizeForm(saved))).toEqual(expected);
+  });
+});
+
+const prize = (n: number, nameFr: string): AdminPrizeDto => ({
+  id: `00000000-0000-4000-8000-00000000000${n}`,
+  tier: "gameweek",
+  nameFr,
+  nameAr: null,
+  descriptionFr: "",
+  descriptionAr: null,
+  estimatedValueMad: 500,
+  sponsorName: null,
+  sponsorLogoUrl: null,
+  imageUrl: null,
+  active: false,
+  updatedAt: "2026-09-24T12:00:00Z",
+});
+
+describe("saving one prize in the catalog", () => {
+  it("changes only the saved row and keeps what is still being typed in the others", () => {
+    const first = prize(1, "Recharge");
+    const second = prize(2, "Maillot");
+    const forms = {
+      [first.id]: toPrizeForm(first),
+      [second.id]: { ...toPrizeForm(second), nameFr: "Maillot officiel (en cours)" },
+      new: { ...EMPTY_PRIZE_FORM, nameFr: "Brouillon" },
+    };
+    const saved = { ...first, nameFr: "Recharge mobile" };
+    expect(withSavedPrize([first, second], saved)).toEqual([saved, second]);
+    const after = formsAfterSave(forms, first.id, saved);
+    expect(after[first.id]?.nameFr).toBe("Recharge mobile");
+    expect(after[second.id]?.nameFr).toBe("Maillot officiel (en cours)");
+    expect(after.new?.nameFr).toBe("Brouillon");
+  });
+
+  it("adds a created prize and empties only the new-prize form", () => {
+    const first = prize(1, "Recharge");
+    const created = prize(3, "Écharpe");
+    const forms = {
+      [first.id]: { ...toPrizeForm(first), nameFr: "Recharge (en cours)" },
+      new: { ...EMPTY_PRIZE_FORM, nameFr: "Écharpe" },
+    };
+    expect(withSavedPrize([first], created)).toEqual([first, created]);
+    const after = formsAfterSave(forms, "new", created);
+    expect(after.new).toEqual(EMPTY_PRIZE_FORM);
+    expect(after[created.id]).toEqual(toPrizeForm(created));
+    expect(after[first.id]?.nameFr).toBe("Recharge (en cours)");
+  });
+});
+
+describe("updating one winner in a filtered list", () => {
+  const winner = (n: number, status: AdminPrizeWinnerDto["status"]) =>
+    ({ id: `w${n}`, status }) as unknown as AdminPrizeWinnerDto;
+
+  it("drops a row whose new status leaves the filter", () => {
+    const items = [winner(1, "pending"), winner(2, "pending")];
+    expect(withUpdatedWinner(items, winner(1, "verified"), "pending")).toEqual([
+      winner(2, "pending"),
+    ]);
+  });
+
+  it("keeps it when the status still matches, or when every status is shown", () => {
+    const items = [winner(1, "pending"), winner(2, "pending")];
+    expect(withUpdatedWinner(items, winner(1, "pending"), "pending")).toEqual(items);
+    expect(withUpdatedWinner(items, winner(1, "verified"), "all")).toEqual([
+      winner(1, "verified"),
+      winner(2, "pending"),
+    ]);
   });
 });

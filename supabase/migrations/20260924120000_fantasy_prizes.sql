@@ -649,37 +649,60 @@ begin
       where gameweek.fantasy_season_id = p_season_id
         and gameweek.sequence_number between p_first and p_last
         and gameweek.status in ('finalized', 'corrected') and gameweek.points_state = 'final'
-    ), period_results as (
-      select result.fantasy_team_id, sum(result.final_score)::integer as points
-      from app.fantasy_team_gameweek_results result
-      join period_gameweeks gameweek on gameweek.id = result.gameweek_id
-      where result.state = 'final'
-      group by result.fantasy_team_id
-    ), period_transfers as (
-      select batch.fantasy_team_id, sum(batch.transfers_count)::integer as transfers
-      from app.fantasy_transfer_batches batch
-      join period_gameweeks gameweek on gameweek.id = batch.gameweek_id
-      where batch.status = 'confirmed'
-        and (batch.chip_type is null or batch.chip_type not in ('wildcard', 'free_hit'))
-      group by batch.fantasy_team_id
+    ), period_totals as (
+      -- A season-wide tier: one pass over every result and transfer of the period.
+      select period_result.fantasy_team_id, period_result.points,
+        coalesce(period_transfer.transfers, 0) as transfers
+      from (
+        select result.fantasy_team_id, sum(result.final_score)::integer as points
+        from app.fantasy_team_gameweek_results result
+        join period_gameweeks gameweek on gameweek.id = result.gameweek_id
+        where result.state = 'final'
+        group by result.fantasy_team_id
+      ) period_result
+      left join (
+        select batch.fantasy_team_id, sum(batch.transfers_count)::integer as transfers
+        from app.fantasy_transfer_batches batch
+        join period_gameweeks gameweek on gameweek.id = batch.gameweek_id
+        where batch.status = 'confirmed'
+          and (batch.chip_type is null or batch.chip_type not in ('wildcard', 'free_hit'))
+        group by batch.fantasy_team_id
+      ) period_transfer on period_transfer.fantasy_team_id = period_result.fantasy_team_id
+      where p_league_id is null
+      union all
+      -- A mini-league: only its members, each read through the per-team
+      -- indexes. Season end awards every qualifying league in one transaction,
+      -- so a league must cost what its members cost, never a season-wide pass.
+      -- A member with no final result in the period is not a candidate, as above.
+      select membership.fantasy_team_id, member_result.points,
+        coalesce(member_transfer.transfers, 0)
+      from app.fantasy_league_memberships membership
+      cross join lateral (
+        select sum(result.final_score)::integer as points
+        from app.fantasy_team_gameweek_results result
+        join period_gameweeks gameweek on gameweek.id = result.gameweek_id
+        where result.fantasy_team_id = membership.fantasy_team_id and result.state = 'final'
+        having count(*) > 0
+      ) member_result
+      cross join lateral (
+        select sum(batch.transfers_count)::integer as transfers
+        from app.fantasy_transfer_batches batch
+        join period_gameweeks gameweek on gameweek.id = batch.gameweek_id
+        where batch.fantasy_team_id = membership.fantasy_team_id and batch.status = 'confirmed'
+          and (batch.chip_type is null or batch.chip_type not in ('wildcard', 'free_hit'))
+      ) member_transfer
+      where p_league_id is not null
+        and membership.league_id = p_league_id and membership.status = 'active'
     )
     select team.id as team_id, team.user_id, team.name as team_name,
-      team.created_at as team_created_at, result.points,
-      coalesce(transfer.transfers, 0) as transfers
-    from period_results result
-    join app.fantasy_teams team on team.id = result.fantasy_team_id
+      team.created_at as team_created_at, total.points, total.transfers
+    from period_totals total
+    join app.fantasy_teams team on team.id = total.fantasy_team_id
     join app.profiles profile on profile.id = team.user_id
-    left join period_transfers transfer on transfer.fantasy_team_id = team.id
     where team.fantasy_season_id = p_season_id
       and team.status = 'active'
       and profile.deleted_at is null
-      and (p_league_id is null or exists (
-        select 1 from app.fantasy_league_memberships membership
-        where membership.league_id = p_league_id
-          and membership.fantasy_team_id = team.id and membership.status = 'active'
-      ))
-    order by result.points desc, coalesce(transfer.transfers, 0) asc,
-      team.created_at asc, team.id asc
+    order by total.points desc, total.transfers asc, team.created_at asc, team.id asc
   loop
     skip := app_private.fantasy_prize_ineligibility(p_season_id, p_tier, candidate.user_id);
     if skip is not null then
