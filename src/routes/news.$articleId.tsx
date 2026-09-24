@@ -302,7 +302,12 @@ function ArticlePage() {
               fallback={gradientTokenForId(article.id)}
               // Same branded plate the cards use (BG-0076): a reader who taps a
               // hero-less card must not land on a second empty block.
-              placeholder={<ArticleHeroFallback category={article.primaryCategory?.slug} />}
+              placeholder={
+                <ArticleHeroFallback
+                  category={article.primaryCategory?.slug}
+                  headline={article.title}
+                />
+              }
               loading="eager"
               fetchPriority="high"
               className="absolute inset-0 animate-in fade-in duration-500"
