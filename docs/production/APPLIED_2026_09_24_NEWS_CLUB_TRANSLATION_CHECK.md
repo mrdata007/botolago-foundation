@@ -83,7 +83,14 @@ Nothing else was writing to production:
   run had ended at 19:07.
 - **pg_cron:**
   - `news-publish-due-editions` (every minute) had nothing to publish: no
-    edition was due within the hour.
+    edition was scheduled at all. It was not paused; its log shows what it did
+    while the scripts ran. Its 10 runs between 19:31 and 19:41 each found
+    nothing due (outcome `idle`, at most 0.19 s). The only row they wrote is
+    the job's own heartbeat, which neither script touches. Had an edition been
+    due, publishing it changes its status, not its title or text, so the new
+    trigger would not have fired. At worst one would have waited for the
+    other: the job for the first script's 2 s, or a script for the job until
+    its 5 s lock timeout stopped it with nothing saved.
   - `notification-email-tick` runs with email mode `off`, so it writes nothing.
   - `football-live-refresh` is switched on for the evening's match. It runs at
     :00, :15, :30 and :45, and writes match data, not news. It took under
