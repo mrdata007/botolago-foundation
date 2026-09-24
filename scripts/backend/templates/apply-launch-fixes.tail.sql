@@ -98,6 +98,15 @@ begin
   if has_function_privilege('service_role', 'app_private.fantasy_automation_configure(boolean)', 'execute') then
     problems := problems || 'the automation switch is callable by service_role'::text;
   end if;
+  if not has_function_privilege('service_role', 'api.service_ops_health()', 'execute')
+    or has_function_privilege('anon', 'api.service_ops_health()', 'execute')
+    or has_function_privilege('authenticated', 'api.service_ops_health()', 'execute') then
+    problems := problems || 'api.service_ops_health grants are wrong'::text;
+  end if;
+  if (select schedule from cron.job where jobname = 'ops-alert-tick') is distinct from '*/5 * * * *'
+    or (select enabled from app_private.ops_alert_state) is distinct from false then
+    problems := problems || 'the ops alert tick must be scheduled and arrive switched off'::text;
+  end if;
 
   if cardinality(problems) > 0 then
     raise exception 'stop: the update did not check out: %', problems;
@@ -139,6 +148,8 @@ begin
       join app.teams ht on ht.id = f.home_team_id
       join app.teams awt on awt.id = f.away_team_id
       where a.resolution = 'provider_postponed'),
+    'health', (select jsonb_object_agg(c ->> 'name', c ->> 'status' || ': ' || (c ->> 'detail'))
+      from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') c),
     'newTeamsJoin', (
       select case when e.id is null then 'no gameweek (registration closed)'
         else 'gameweek ' || e.sequence_number || ', deadline '

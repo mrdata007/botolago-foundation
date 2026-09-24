@@ -16,6 +16,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 BATCH = [
     "20260924190000_fantasy_postponement_and_enrolment",
     "20260924190100_fantasy_lifecycle_tick",
+    "20260924190200_ops_health_and_alerts",
 ]
 
 

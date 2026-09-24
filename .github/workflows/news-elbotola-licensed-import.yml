@@ -51,6 +51,7 @@ concurrency:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   import:
@@ -93,3 +94,17 @@ jobs:
 
       - name: Run licensed import (${{ inputs.mode }}, ${{ inputs.status }})
         run: bun scripts/backend/elbotola-licensed-import.ts
+
+      # docs/operations/ALERTS.md: a failed import opens (or updates) an
+      # ops-alert issue; the next successful import closes it.
+      - name: Alert on failure
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/ops/github-alert.ts failure "News licensed import"
+
+      - name: Clear the alert after a successful import
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/ops/github-alert.ts success "News licensed import"

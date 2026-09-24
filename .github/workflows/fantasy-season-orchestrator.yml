@@ -41,6 +41,7 @@ concurrency:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   orchestrate:
@@ -166,3 +167,18 @@ jobs:
           path: ${{ env.FANTASY_ORCHESTRATOR_EVIDENCE_DIR }}
           if-no-files-found: error
           retention-days: 14
+
+      # A red run used to be the only escalation channel, and nobody saw the
+      # two on 2026-09-24. Open (or update) an ops-alert issue that mentions
+      # the owner; the next green run closes it. docs/operations/ALERTS.md
+      - name: Alert on failure
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/ops/github-alert.ts failure "Fantasy season orchestrator" "$FANTASY_ORCHESTRATOR_EVIDENCE_DIR/fantasy-season-orchestrator.json"
+
+      - name: Clear the alert after a green run
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/ops/github-alert.ts success "Fantasy season orchestrator"
