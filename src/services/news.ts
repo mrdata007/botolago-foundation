@@ -127,6 +127,11 @@ function fallbackGradient(id: string): string {
  *
  * Nothing here fetches, rehosts or otherwise works around a third party's
  * access controls — it only removes our own display of their attribution.
+ *
+ * The one exception is licensed content: `source` is set by the API only for a
+ * story whose publisher has licensed it to BotolaGO, and it is kept, because
+ * that licence is the reason we may publish it and crediting it is the
+ * condition. An unlicensed source never has one.
  */
 /** BotolaGO's own publisher identities, as opposed to a third-party source. */
 export function isOwnPublisher(slug: string | null | undefined): boolean {

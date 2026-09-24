@@ -44,6 +44,12 @@ export const articleCardSchema = z.object({
   hero: mediaSchema,
   author: bylineSchema,
   publisher: bylineSchema,
+  /** Set only for a story whose publisher has licensed it to BotolaGO: who to
+   *  credit, and the original to link. Optional so older API builds parse. */
+  source: z
+    .object({ name: z.string().min(1), url: z.string().url().nullable() })
+    .nullable()
+    .optional(),
   primaryCategory: taxonomySchema.omit({ type: true }).nullable(),
   tags: z.array(taxonomySchema.omit({ type: true })),
   teamIds: z.array(z.string().uuid()),
