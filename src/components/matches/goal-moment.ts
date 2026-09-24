@@ -138,36 +138,6 @@ export function eventsWhenFresh<E>(
   return query.isStale && query.isFetching ? undefined : events;
 }
 
-/** How close to kick-off a scheduled match starts refreshing itself. */
-export const PRE_KICKOFF_REFRESH_MINUTES = 15;
-
-/** How long past kick-off a match still marked scheduled keeps refreshing. */
-export const POST_KICKOFF_REFRESH_MINUTES = 180;
-
-/**
- * How often the match page refetches: every 30 seconds while the match is
- * live, every minute from a quarter of an hour before a scheduled kick-off
- * until the provider flips the status (for at most three hours past it, so a
- * fixture nobody updates does not poll forever), otherwise never. A
- * reader who opened the page before kick-off used to wait for a tab focus to
- * see the match start, and so never saw a goal moment at all.
- */
-export function matchRefetchInterval(
-  match: Pick<Match, "status" | "kickoff"> | undefined,
-  now: number,
-): number | false {
-  if (!match) return false;
-  if (match.status === "live") return 30_000;
-  if (match.status !== "scheduled") return false;
-  const kickoff = Date.parse(match.kickoff);
-  if (Number.isNaN(kickoff)) return false;
-  const untilKickoff = kickoff - now;
-  return untilKickoff <= PRE_KICKOFF_REFRESH_MINUTES * 60_000 &&
-    -untilKickoff <= POST_KICKOFF_REFRESH_MINUTES * 60_000
-    ? 60_000
-    : false;
-}
-
 /**
  * Whether the match's score already counts every goal on the sheet. Scores
  * and events are written by different ingestion jobs, so a goal event can

@@ -26,9 +26,11 @@ describe("Home (A-Home)", () => {
     expect(home).toMatch(/<UiCard[\s\S]{0,120}overflow-hidden[\s\S]{0,200}day\.matches\.map/);
   });
 
-  it("follows a live score at the live strip's pace, and only while a match is on", () => {
+  it("follows a live score at the live strip's pace, and watches a match about to kick off", () => {
+    // The cadence itself is `matchesRefetchInterval`, tested in
+    // src/lib/match-refresh.test.ts: 30s while live, 60s near kick-off, else none.
     expect(home).toMatch(
-      /refetchInterval: \(query\) => \(query\.state\.data\?\.matches\.some\(isInPlay\) \? 30_000 : false\)/,
+      /refetchInterval: \(query\) => matchesRefetchInterval\(query\.state\.data\?\.matches, Date\.now\(\)\)/,
     );
   });
 

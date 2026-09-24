@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
-import { footballService, presentFootballClub, selectFootballDataMode } from "./football";
+import {
+  footballService,
+  inPlayFixtures,
+  presentFootballClub,
+  selectFootballDataMode,
+} from "./football";
 
 const context = { actorId: null, requestId: "test" } as const;
 
@@ -94,5 +99,19 @@ describe("Football frontend repository cutover", () => {
       expect(row.played).toBe(row.won + row.drawn + row.lost);
       expect(typeof row.form === "string" || row.form === null).toBe(true);
     }
+  });
+});
+
+describe("the live strip's fixtures", () => {
+  test("keeps only fixtures in play: delayed and suspended ones are not live", () => {
+    const fixtures = [
+      { id: "a", status: "live_first_half" },
+      { id: "b", status: "delayed" },
+      { id: "c", status: "half_time" },
+      { id: "d", status: "suspended" },
+      { id: "e", status: "live_second_half" },
+      { id: "f", status: "penalties" },
+    ] as const;
+    expect(inPlayFixtures(fixtures).map((fixture) => fixture.id)).toEqual(["a", "c", "e", "f"]);
   });
 });

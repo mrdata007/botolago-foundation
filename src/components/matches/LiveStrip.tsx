@@ -6,6 +6,7 @@ import { ui } from "@/components/ui-kit";
 import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
 import { useI18n } from "@/i18n/provider";
 import { clubMatchPalettes } from "@/lib/club-palette";
+import { liveStripRefetchInterval } from "@/lib/match-refresh";
 import { cn } from "@/lib/utils";
 import { footballService } from "@/services/football";
 
@@ -33,8 +34,9 @@ export function LiveStrip() {
   const liveQ = useQuery({
     queryKey: ["football", "live-matches", lang],
     queryFn: () => footballService.getLiveMatches(lang),
-    // Scores and minutes move while a match is on; nothing to poll otherwise.
-    refetchInterval: (query) => ((query.state.data?.matches.length ?? 0) > 0 ? 30_000 : false),
+    // Scores and minutes move while a match is on; with nothing live it keeps
+    // a slow watch, so a match that kicks off brings the strip up.
+    refetchInterval: (query) => liveStripRefetchInterval(query.state.data?.matches.length ?? 0),
     refetchIntervalInBackground: false,
   });
   const hidden = useHideOnScroll();

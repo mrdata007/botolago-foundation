@@ -62,6 +62,18 @@ function presentationStatus(status: MatchCardDto["status"]): MatchStatus {
 }
 
 /**
+ * The fixtures that are in play by the product's own reading of the status.
+ * The repository's live query also returns `delayed` and `suspended`
+ * fixtures, which every other screen presents as scheduled and postponed;
+ * in the live strip they would carry its live dot and a 0–0 from null scores.
+ */
+export function inPlayFixtures<T extends Pick<MatchCardDto, "status">>(
+  fixtures: readonly T[],
+): T[] {
+  return fixtures.filter((fixture) => presentationStatus(fixture.status) === "live");
+}
+
+/**
  * The provider statuses in which the fixture no longer has a date.
  *
  * Narrower than the four that collapse into the domain `postponed` above: a
@@ -209,7 +221,7 @@ export const footballService = {
   /** Matches in play right now, for the live strip. */
   async getLiveMatches(language: FootballLanguage): Promise<FootballMatchCollection> {
     const repository = getFootballRepository();
-    const matches = await repository.getLiveMatches(language, 10, requestContext());
+    const matches = inPlayFixtures(await repository.getLiveMatches(language, 10, requestContext()));
     return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
   },
 

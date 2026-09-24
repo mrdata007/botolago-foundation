@@ -23,7 +23,6 @@ import { MatchTopBar } from "@/components/matches/MatchTopBar";
 import { StatComparison } from "@/components/matches/StatComparison";
 import {
   eventsWhenFresh,
-  matchRefetchInterval,
   scoreCountsEveryGoal,
   useGoalMoment,
 } from "@/components/matches/goal-moment";
@@ -36,6 +35,7 @@ import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { matchRefetchInterval } from "@/lib/match-refresh";
 
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
 

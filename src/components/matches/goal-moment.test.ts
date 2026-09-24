@@ -5,7 +5,6 @@ import {
   eventsWhenFresh,
   goalToCelebrate,
   initialGoalMomentState,
-  matchRefetchInterval,
   scoreCountsEveryGoal,
   stepGoalMoment,
   trackArrivals,
@@ -252,37 +251,5 @@ describe("scoreCountsEveryGoal", () => {
   test("false while a goal event is ahead of the score, so no pre-goal score is shown", () => {
     expect(scoreCountsEveryGoal({ homeScore: 1, awayScore: 1 }, goals)).toBe(false);
     expect(scoreCountsEveryGoal({}, [event("g1", "goal")])).toBe(false);
-  });
-});
-
-describe("matchRefetchInterval", () => {
-  const kickoff = "2026-09-24T19:00:00Z";
-  const at = (iso: string) => Date.parse(iso);
-
-  test("every 30 seconds while live", () => {
-    expect(matchRefetchInterval({ status: "live", kickoff }, at(kickoff))).toBe(30_000);
-  });
-
-  test("every minute from 15 minutes before a scheduled kick-off", () => {
-    expect(matchRefetchInterval({ status: "scheduled", kickoff }, at("2026-09-24T18:44:00Z"))).toBe(
-      false,
-    );
-    expect(matchRefetchInterval({ status: "scheduled", kickoff }, at("2026-09-24T18:46:00Z"))).toBe(
-      60_000,
-    );
-    // Past kick-off and still "scheduled": the provider has not flipped it yet.
-    expect(matchRefetchInterval({ status: "scheduled", kickoff }, at("2026-09-24T19:05:00Z"))).toBe(
-      60_000,
-    );
-  });
-
-  test("stops three hours past kick-off, and never for finished or postponed matches", () => {
-    expect(matchRefetchInterval({ status: "scheduled", kickoff }, at("2026-09-24T22:01:00Z"))).toBe(
-      false,
-    );
-    expect(matchRefetchInterval({ status: "finished", kickoff }, at(kickoff))).toBe(false);
-    expect(matchRefetchInterval({ status: "postponed", kickoff }, at(kickoff))).toBe(false);
-    expect(matchRefetchInterval(undefined, at(kickoff))).toBe(false);
-    expect(matchRefetchInterval({ status: "scheduled", kickoff: "tbd" }, at(kickoff))).toBe(false);
   });
 });

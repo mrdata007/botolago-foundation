@@ -42,6 +42,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
 import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
 import { cn } from "@/lib/utils";
+import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { capitalizeFirst, groupByMatchDay } from "@/lib/match-days";
@@ -156,9 +157,10 @@ function HomeContent() {
     queryKey: ["football", "home-matches", lang],
     queryFn: () => footballService.getHomeMatches(lang),
     // The live card is the loudest thing on the page: while a match is on it
-    // follows the score at the live strip's own pace, and a match that ends
-    // leaves it (the home payload holds live and upcoming fixtures only).
-    refetchInterval: (query) => (query.state.data?.matches.some(isInPlay) ? 30_000 : false),
+    // follows the score at the live strip's own pace, a match that ends
+    // leaves it (the home payload holds live and upcoming fixtures only), and
+    // one about to kick off is watched so it becomes the live card on time.
+    refetchInterval: (query) => matchesRefetchInterval(query.state.data?.matches, Date.now()),
     refetchIntervalInBackground: false,
   });
   const alertsQ = useQuery({
