@@ -45,7 +45,14 @@ export interface ImportEdition {
   readonly readingTime: number;
   readonly publishedAt: string;
   readonly author: string | null;
+  readonly seoTitle: string;
+  readonly seoDescription: string;
 }
+
+/** Search-result lengths: the page appends " — BotolaGO" to the title, and
+ *  the columns allow 70 and 170 characters. */
+export const SEO_TITLE_LIMIT = 60;
+export const SEO_DESCRIPTION_LIMIT = 155;
 
 export interface ImportStory {
   readonly key: string;
@@ -129,6 +136,8 @@ export function toEdition(article: ElbotolaArticle): ImportEdition | null {
     readingTime: Math.max(1, Math.min(180, Math.ceil(words / 220))),
     publishedAt: article.publishedAt,
     author: article.author?.trim().slice(0, 120) || null,
+    seoTitle: clip(title, SEO_TITLE_LIMIT),
+    seoDescription: clip(paragraphs.join(" "), SEO_DESCRIPTION_LIMIT),
   };
 }
 
@@ -233,6 +242,8 @@ export function batchSql(
         edition.summary,
         edition.bodyHtml,
         edition.author ?? "",
+        edition.seoTitle,
+        edition.seoDescription,
       ]),
     );
     if (values.some((value) => value.includes(tag))) {
@@ -255,6 +266,8 @@ export function batchSql(
           literal(edition.readingTime),
           literal(edition.publishedAt),
           literal(edition.author),
+          literal(edition.seoTitle),
+          literal(edition.seoDescription),
         ].join(", ")})`,
     ),
   );
@@ -267,7 +280,8 @@ begin
   create temporary table licensed_batch (
     story_key text, canonical_url text, original_language text, fingerprint text,
     language text, slug text, title text, summary text, body_html text,
-    reading_time integer, published_at timestamptz, author_name text
+    reading_time integer, published_at timestamptz, author_name text,
+    seo_title text, seo_description text
   ) on commit drop;
   insert into licensed_batch values
 ${rows.join(",\n")};
@@ -299,10 +313,12 @@ ${rows.join(",\n")};
 
   insert into app.article_editions (
     story_id, language, slug, title, summary, body_format, body_source, body_html,
-    status, visibility, published_at, reading_time_minutes, sanitizer_version
+    status, visibility, published_at, reading_time_minutes, sanitizer_version,
+    seo_title, seo_description
   )
   select s.id, b.language::app.language_code, b.slug, b.title, b.summary, 'rich_text', null, b.body_html,
-    ${status === "published" ? "'published', 'public'" : "'draft', 'private'"}, b.published_at, b.reading_time, ${literal(NEWS_SANITIZER_VERSION)}
+    ${status === "published" ? "'published', 'public'" : "'draft', 'private'"}, b.published_at, b.reading_time, ${literal(NEWS_SANITIZER_VERSION)},
+    b.seo_title, b.seo_description
   from licensed_batch b join app.stories s on s.content_fingerprint = b.fingerprint;
   get diagnostics new_editions = row_count;
 
