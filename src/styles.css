@@ -33,7 +33,17 @@
      4.25rem, 3px taller than the bar, so page content showed through a
      sliver between the bar and anything stuck under it. */
   --topbar-h: calc(max(env(safe-area-inset-top, 0px), 0.75rem) + var(--ui-tap-min) + 0.5rem + 1px);
-  --bottomnav-h: calc(env(safe-area-inset-bottom, 0px) + 4.75rem);
+  /* The BottomNav's own height, term for term like the top bar's: `pt-2`,
+     the item's `py-1` twice, the 32px pill, the 4px gap, one micro label
+     line, the safe-bottom padding (`ui.safe.bottom`) and the 1px rule. The
+     label line is the micro size times the flat leading, so the bar measures
+     the same in Arabic, whose 1.95 leading makes it 6px taller; a flat
+     4.75rem left sticky bars 6px under the Arabic nav and 8px above it on a
+     phone with a home indicator. */
+  --bottomnav-h: calc(
+    0.5rem + 0.5rem + 2rem + 0.25rem + var(--ui-text-micro) * var(--ui-leading-flat) +
+      max(env(safe-area-inset-bottom, 0px), 0.5rem) + 1px
+  );
   /* The live strip under the top bar (LiveStrip): its height, and how much
      of it is showing — 0 unless `data-live-strip="shown"` is on the root. */
   --livestrip-h-open: calc(var(--ui-tap-min) + 0.5rem);

@@ -981,8 +981,10 @@ export function UiChip({
         // control in the kit.
         // `px-3`: the 44px height already makes the pill; the boards' 14px
         // inline padding pushed the /fantasy/players sort row (four chips) onto
-        // a second line at 390px in both languages.
-        "inline-flex min-h-[var(--ui-tap-min)] shrink-0 items-center gap-1.5 px-3 py-1.5",
+        // a second line at 390px in both languages. The 44px width floor is
+        // for the shortest labels ("GB" measured 42px wide); a row that must
+        // shrink its chips passes `min-w-0`.
+        "inline-flex min-h-[var(--ui-tap-min)] min-w-[var(--ui-tap-min)] shrink-0 items-center justify-center gap-1.5 px-3 py-1.5",
         ui.radius.full,
         ui.text.meta,
         "[font-weight:var(--ui-weight-strong)]",

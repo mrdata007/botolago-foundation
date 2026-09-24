@@ -14,8 +14,9 @@
 // Items stay `flex-1`, never a fixed column count: the bar lays out 4 items
 // while News is hidden (`NEWS_ENABLED=false`, filtered in primary-nav.ts)
 // and 5 when it is on. Its height — `pt-2`, a 32px pill, a gap, the micro
-// line, the item's `py-1`, safe-bottom and the rule — lands on the 76px
-// `--bottomnav-h` in styles.css.
+// line, the item's `py-1`, safe-bottom and the rule — is what
+// `--bottomnav-h` in styles.css computes, term for term (76px in French,
+// 82px in Arabic, whose micro line is taller). Change one, change both.
 //
 // RTL-safe (no physical utilities) and reduced-motion-safe (the global
 // media query in styles.css neutralises the transition).
@@ -43,7 +44,9 @@ export function BottomNav() {
         ui.shadow.raised,
       )}
     >
-      <div className="mx-auto flex max-w-2xl items-stretch justify-between px-2">
+      {/* Under 360px the bar gives its side padding to the items: at 320px
+          the Arabic "الملف الشخصي" (77px) had 72px and lost its last letter. */}
+      <div className="mx-auto flex max-w-2xl items-stretch justify-between px-2 max-[359px]:px-1">
         {primaryNavItems.map((item) => {
           const active = isPrimaryRouteActive(pathname, item.to);
           const Icon = item.icon;
@@ -54,7 +57,7 @@ export function BottomNav() {
               aria-current={active ? "page" : undefined}
               aria-label={t(item.labelKey)}
               className={cn(
-                "group flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1",
+                "group flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 py-1 max-[359px]:px-0",
                 ui.space.tap,
                 ui.radius.card,
                 ui.text.micro,

@@ -27,6 +27,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { clubStyle } from "@/lib/club-palette";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { cn } from "@/lib/utils";
+import { plateName } from "@/components/fpl/plate-name";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
 import type { Club } from "@/types/domain";
@@ -516,7 +517,8 @@ function WeeklyTopPlayersComparison({
       <div className="grid gap-3">
         {entries.map((e) => {
           const pct = Math.max(6, Math.round((e.top.weeklyPoints / Math.max(1, maxPoints)) * 100));
-          const shortName = tr(e.player.name).split(" ").slice(-1)[0];
+          // The plate's surname rule: "عطية الله", not a bare "الله".
+          const shortName = plateName(tr(e.player.name));
           const colours = coloursOf(e.club);
           return (
             // The name column is fixed, not `auto`, because every bar has to
