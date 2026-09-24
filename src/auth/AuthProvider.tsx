@@ -77,21 +77,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session.user?.id, qc]);
 
   // A banned account is signed out and sent to the sign-in page, which says
-  // why. Asked on sign-in and on every load, then again whenever the tab
+  // why. Asked on every sign-in and every load, then again whenever the tab
   // comes back into view (at most once a minute), so a ban placed while the
   // app is open takes effect the next time the person looks at it. An
   // unknown answer (offline, backend not updated) changes nothing: the
   // database refuses a banned account's writes on its own.
-  const lastStandingCheck = useRef<{ uid: string | null; at: number }>({ uid: null, at: 0 });
+  const lastVisibilityCheck = useRef(0);
   const signedInUid = session.status === "authenticated" ? (session.user?.id ?? null) : null;
   useEffect(() => {
     if (!signedInUid) return;
     let cancelled = false;
-    const check = async () => {
+    const check = async (throttled: boolean) => {
       const now = Date.now();
-      const last = lastStandingCheck.current;
-      if (last.uid === signedInUid && now - last.at < 60_000) return;
-      lastStandingCheck.current = { uid: signedInUid, at: now };
+      if (throttled && now - lastVisibilityCheck.current < 60_000) return;
+      lastVisibilityCheck.current = now;
       const standing = await fetchAccountStanding();
       if (cancelled || !standing?.banned) return;
       rememberSuspension(standing.bannedUntil);
@@ -100,9 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // cached query the banned session had loaded.
       window.location.assign("/auth/login");
     };
-    void check();
+    // A new session is always asked, however recently the last one was: an
+    // account banned while signed out must not get back in on a throttle.
+    // Only the tab-returns check below is rate-limited.
+    void check(false);
     const onVisible = () => {
-      if (document.visibilityState === "visible") void check();
+      if (document.visibilityState === "visible") void check(true);
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => {

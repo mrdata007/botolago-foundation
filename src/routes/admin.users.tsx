@@ -24,6 +24,7 @@ import {
   ADMIN_USERS_EMPTY_FILTERS,
   ADMIN_USERS_INITIAL_STATE,
   adminUsersListReducer,
+  canLoadMore,
   type AdminUsersFilters,
 } from "@/components/admin/users/user-list-state";
 import { UserDisc } from "@/components/admin/users/UserDisc";
@@ -111,10 +112,10 @@ function AdminUsersListRoute() {
   );
 
   const loadMore = useCallback(() => {
-    if (state.cursor === null || state.phase !== "ready") return;
+    if (!canLoadMore(state)) return;
     dispatch({ type: "load-more" });
     void fetchPage(state.filters, state.cursor, generation.current, true);
-  }, [fetchPage, state.cursor, state.filters, state.phase]);
+  }, [fetchPage, state]);
 
   const applyFilters = (change: Partial<AdminUsersFilters>) =>
     search({ ...state.filters, query, ...change });

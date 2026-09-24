@@ -4,6 +4,7 @@ import {
   ADMIN_USERS_EMPTY_FILTERS,
   ADMIN_USERS_INITIAL_STATE,
   adminUsersListReducer,
+  canLoadMore,
 } from "./user-list-state";
 
 function user(id: number, banned = false): AdminUserDto {
@@ -77,6 +78,53 @@ describe("user directory list state", () => {
     expect(state.items.map((item) => item.username)).toEqual(["user_1", "user_2", "user_3"]);
     expect(state.cursor).toBeNull();
     expect(adminUsersListReducer(state, { type: "load-more" })).toBe(state);
+  });
+
+  test("a failed page can be retried with load more", () => {
+    let state = adminUsersListReducer(ADMIN_USERS_INITIAL_STATE, {
+      type: "search",
+      generation: 1,
+      filters: ADMIN_USERS_EMPTY_FILTERS,
+    });
+    state = adminUsersListReducer(state, {
+      type: "page",
+      generation: 1,
+      append: false,
+      page: { items: [user(1), user(2)], nextCursor: CURSOR },
+    });
+    state = adminUsersListReducer(state, { type: "load-more" });
+    state = adminUsersListReducer(state, { type: "failure", generation: 1, code: "load_failed" });
+    expect(state.phase).toBe("error");
+    expect(state.cursor).toEqual(CURSOR);
+    expect(state.items).toHaveLength(2);
+    expect(canLoadMore(state)).toBe(true);
+
+    state = adminUsersListReducer(state, { type: "load-more" });
+    expect(state.phase).toBe("loading-more");
+    expect(state.error).toBeNull();
+    state = adminUsersListReducer(state, {
+      type: "page",
+      generation: 1,
+      append: true,
+      page: { items: [user(3)], nextCursor: null },
+    });
+    expect(state.items.map((item) => item.username)).toEqual(["user_1", "user_2", "user_3"]);
+    expect(canLoadMore(state)).toBe(false);
+  });
+
+  test("nothing loads more while a page is in flight or after the last one", () => {
+    const inFlight = {
+      ...ADMIN_USERS_INITIAL_STATE,
+      phase: "loading-more" as const,
+      cursor: CURSOR,
+    };
+    expect(canLoadMore(inFlight)).toBe(false);
+    expect(
+      canLoadMore({ ...ADMIN_USERS_INITIAL_STATE, phase: "loading" as const, cursor: CURSOR }),
+    ).toBe(false);
+    expect(
+      canLoadMore({ ...ADMIN_USERS_INITIAL_STATE, phase: "error" as const, cursor: null }),
+    ).toBe(false);
   });
 
   test("a failure keeps its code for the page to word", () => {

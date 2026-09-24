@@ -50,6 +50,15 @@ export type AdminUsersListAction =
   | { type: "failure"; generation: number; code: string }
   | { type: "replace"; user: AdminUserDto };
 
+/**
+ * Whether the next page may be fetched now: there is one, and nothing is in
+ * flight. After a failed page the list keeps its cursor, so "load more"
+ * retries that same page instead of going dead until a new search.
+ */
+export function canLoadMore(state: AdminUsersListState): boolean {
+  return state.cursor !== null && (state.phase === "ready" || state.phase === "error");
+}
+
 function mergeById(
   current: readonly AdminUserDto[],
   incoming: readonly AdminUserDto[],
@@ -73,7 +82,7 @@ export function adminUsersListReducer(
         error: null,
       };
     case "load-more":
-      if (state.cursor === null || state.phase !== "ready") return state;
+      if (!canLoadMore(state)) return state;
       return { ...state, phase: "loading-more", error: null };
     case "page":
       if (action.generation !== state.generation) return state;
