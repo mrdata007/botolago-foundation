@@ -20,9 +20,10 @@
 --   * records the migration file and runs it from that record once its
 --     sha256 matches the repository file;
 --   * checks the result: editors' rows untouched, a small change in the
---     number of links, and, where they exist (production), the 64 stories of
---     the judged review of 2026-09-24: each mistranslated club gone, each
---     right one kept, except the one whose original says only "الفتح".
+--     number of links, and, in production (where all 64 must exist), the 64
+--     stories of the judged review of 2026-09-24: each mistranslated club
+--     gone, each right one kept, except the one whose original says only
+--     "الفتح".
 --   It takes no lock that blocks readers.
 -- ============================================================================
 
@@ -130,6 +131,7 @@ declare
   );
   wydad uuid := (select id from app.teams where slug = 'wydad-casablanca-80a3fb8202ae');
   expected record;
+  reviewed integer := 0;
 begin
   if exists (
     select story_id, team_id from news_retag_before where tagged_by = 'editor'
@@ -213,6 +215,7 @@ begin
     ) as review (story_id, slug, tagged, why)
   loop
     continue when not exists (select 1 from app.stories where id = expected.story_id);
+    reviewed := reviewed + 1;
     if exists (
       select 1 from app.story_teams relation
       join app.teams team on team.id = relation.team_id
@@ -222,6 +225,11 @@ begin
         case when expected.tagged then 'be tagged' else 'not be tagged' end, expected.slug, expected.why);
     end if;
   end loop;
+  -- All 64 (production) or none (a local rehearsal): anything between means
+  -- this is not the database the review was made on.
+  if reviewed not in (0, 64) then
+    problems := problems || format('%s of the 64 reviewed stories exist here; expected all of them (production) or none', reviewed);
+  end if;
 
   if wydad is not null
     and jsonb_array_length(api.news_feed('ar', 3, p_team_id => wydad) -> 'items') <> 3 then

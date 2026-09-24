@@ -233,15 +233,18 @@ export function lastSeasonPlayed<T extends { id: string; startsOn: string }>(
 
 /**
  * Whether a season with nothing played means the club was not in it: the
- * season is over and the club has no fixture in it at all. A season still to
- * come or under way with no result yet is "not yet", not "not there".
+ * club has no fixture in the season at all, and the season is over or its
+ * fixtures are out (a relegated club looking at the new season). A season
+ * whose calendar is not published yet is "not yet", not "not there".
  */
 export function clubSeasonAbsent(
-  season: { status: string } | undefined,
+  season: { status: string; firstMatchDate: string | null } | undefined,
   matches: readonly Match[] | undefined,
 ): boolean {
-  if (!season || !matches) return false;
-  return (season.status === "completed" || season.status === "cancelled") && matches.length === 0;
+  if (!season || !matches || matches.length > 0) return false;
+  return (
+    season.status === "completed" || season.status === "cancelled" || season.firstMatchDate !== null
+  );
 }
 
 /** The ids of the seasons in which the club has at least one result. */

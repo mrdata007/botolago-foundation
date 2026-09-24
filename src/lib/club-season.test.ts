@@ -274,24 +274,33 @@ describe("lastSeasonPlayed", () => {
 
 describe("clubSeasonAbsent", () => {
   const fixture = match({ day: 1, status: "scheduled" });
+  const over = { status: "completed", firstMatchDate: "2025-09-05" };
+  const underway = { status: "active", firstMatchDate: "2026-09-24" };
+  const unpublished = { status: "planned", firstMatchDate: null };
 
   test("a finished season with no fixture for the club is one it was not in", () => {
-    expect(clubSeasonAbsent({ status: "completed" }, [])).toBe(true);
-    expect(clubSeasonAbsent({ status: "cancelled" }, [])).toBe(true);
+    expect(clubSeasonAbsent(over, [])).toBe(true);
+    expect(clubSeasonAbsent({ status: "cancelled", firstMatchDate: null }, [])).toBe(true);
   });
 
-  test("a season to come or under way is 'not yet', not 'not there'", () => {
-    expect(clubSeasonAbsent({ status: "planned" }, [])).toBe(false);
-    expect(clubSeasonAbsent({ status: "active" }, [])).toBe(false);
+  test("a season whose fixtures are out, none of them the club's: a relegated club", () => {
+    expect(clubSeasonAbsent(underway, [])).toBe(true);
+    expect(clubSeasonAbsent({ status: "planned", firstMatchDate: "2026-09-24" }, [])).toBe(true);
+  });
+
+  test("a season with no calendar yet is 'not yet', not 'not there'", () => {
+    expect(clubSeasonAbsent(unpublished, [])).toBe(false);
+    expect(clubSeasonAbsent({ status: "active", firstMatchDate: null }, [])).toBe(false);
   });
 
   test("a club with fixtures in the season was in it, played or not", () => {
-    expect(clubSeasonAbsent({ status: "completed" }, [fixture])).toBe(false);
+    expect(clubSeasonAbsent(over, [fixture])).toBe(false);
+    expect(clubSeasonAbsent(underway, [fixture])).toBe(false);
   });
 
   test("nothing is concluded before the season or its matches are known", () => {
     expect(clubSeasonAbsent(undefined, [])).toBe(false);
-    expect(clubSeasonAbsent({ status: "completed" }, undefined)).toBe(false);
+    expect(clubSeasonAbsent(over, undefined)).toBe(false);
   });
 });
 
