@@ -36,6 +36,7 @@ import {
   type FantasySnapshot,
 } from "@/services/fantasy-owned-repository";
 import { FantasyRepoError } from "@/services/fantasy-errors";
+import { forgetSharedFantasyHub } from "@/services/fantasy-hub-share";
 import {
   scopedFantasyKey,
   clearOwnedFantasyCache,
@@ -163,6 +164,7 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
   );
 
   const invalidateOwned = useCallback(() => {
+    forgetSharedFantasyHub();
     qc.invalidateQueries({ predicate: (q) => isOwnedFantasyKey(q.queryKey) });
   }, [qc]);
 
@@ -174,6 +176,7 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
   );
 
   const reload = useCallback(async () => {
+    forgetSharedFantasyHub();
     await qc.invalidateQueries({ queryKey });
     await query.refetch();
   }, [qc, queryKey, query]);
@@ -183,6 +186,7 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
   // does NOT touch drafts (see fantasy-signout-cleanup for that path) or
   // guest local prototype data.
   useEffect(() => {
+    forgetSharedFantasyHub();
     clearOwnedFantasyCache(qc);
     setMutationStatusState("idle");
     setMutationError(null);

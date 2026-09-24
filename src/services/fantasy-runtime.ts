@@ -1,6 +1,7 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
 import { selectFantasyDataMode } from "./fantasy-v2";
+import { forgetSharedFantasyHub, shareFantasyHub } from "./fantasy-hub-share";
 import {
   enrolmentGameweekOf,
   readFantasyAvailability,
@@ -179,8 +180,9 @@ function overallStandingDto(dto: FantasyOverallStandingDto): LeagueStanding {
   };
 }
 
-async function hub() {
-  return cloud.getHub("fr", context());
+/** One hub read per screen: see `fantasy-hub-share.ts`. */
+async function hub(): Promise<FantasyHubDto> {
+  return shareFantasyHub(() => cloud.getHub("fr", context()));
 }
 
 /** The hub's enrolment gameweek in the screens' `Gameweek` vocabulary. */
@@ -611,6 +613,7 @@ export const fantasyService = {
       crypto.randomUUID(),
       context(),
     )) as { leagueId: string; inviteCode?: string };
+    forgetSharedFantasyHub();
     return { id: result.leagueId, code: result.inviteCode };
   },
   async joinLeague(code: string): Promise<void> {
@@ -621,6 +624,7 @@ export const fantasyService = {
     }
     const current = await cloudTeam();
     await cloud.joinLeague(current.team.id, code, crypto.randomUUID(), context());
+    forgetSharedFantasyHub();
   },
   async leaveLeague(leagueId: string): Promise<void> {
     if (mode() === "mock") {
@@ -630,6 +634,7 @@ export const fantasyService = {
     }
     const current = await cloudTeam();
     await cloud.leaveLeague(leagueId, current.team.id, context());
+    forgetSharedFantasyHub();
   },
   async archiveLeague(leagueId: string): Promise<void> {
     if (mode() === "mock") {
@@ -639,6 +644,7 @@ export const fantasyService = {
     }
     const current = await cloudTeam();
     await cloud.archiveLeague(leagueId, current.team.id, context());
+    forgetSharedFantasyHub();
   },
 };
 
