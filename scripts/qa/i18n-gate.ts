@@ -348,7 +348,17 @@ export const BASELINES: Baselines = {
   // Adopted: `matches.date.yesterday` / `.tomorrow` (the date band and Home's
   // day groups name the day) and `matches.a11y.live_minute` (a live card's
   // accessible name states the minute).
-  W3: 252,
+  //
+  // Option A, Lane 2 (match page): 251 -> 245. The Stats tab now names each
+  // statistic through `matches.stats.<code>` (the API's label is English in
+  // every language), giving eight written-but-uncalled keys their first call,
+  // and `matches.detail.summary` heads the Résumé panel (-9); the retired
+  // header footer and section title orphan `matches.detail.elapsed`,
+  // `.competition` and `.lineups_title` (+3, left in place like the others).
+  // Lanes 1 and 2 together: 251 + 1 - 6, plus `matches.kickoff`, which
+  // each lane still called once from a screen the other rewrote (the
+  // match card, the match header) and so neither saw orphaned. 247.
+  W3: 247,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
@@ -361,7 +371,11 @@ export const BASELINES: Baselines = {
   //
   // Option A, Lane 1: that link is now `FantasyCreateCard`, which picks its
   // title with two literal calls instead. 70 -> 69.
-  W4: 69,
+  //
+  // Option A, Lane 2 (match page): EventTimeline's `t(table[event.type])` is a
+  // literal-key switch now. 70 -> 69.
+  // Both together: 70 -> 68.
+  W4: 68,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
