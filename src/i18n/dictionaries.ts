@@ -678,8 +678,7 @@ export const dictionaries = {
     "fpl.league": "Ligue",
     "fpl.notifications": "Notifications",
     "fpl.notifications_body":
-      "Recevez les bilans hebdomadaires, les alertes blessures et les rappels de date limite de votre équipe BotolaGO Fantasy.",
-    "fpl.push": "Notifications push",
+      "Recevez par e-mail un rappel avant chaque date limite et le bilan de chaque journée de votre équipe BotolaGO Fantasy.",
     "fpl.emails": "E-mails",
     "fpl.follow": "Suivre BotolaGO",
     "fpl.more_about": "En savoir plus sur BotolaGO Fantasy",
@@ -751,7 +750,6 @@ export const dictionaries = {
     "fpl.classic_help":
       "Score classique — dans une ligue classique, les équipes sont classées selon leur total de points.",
     "fpl.head_to_head": "Face à face",
-    "fpl.coming_soon": "Bientôt disponible",
     "fpl.players_to_be_added": "Joueurs ajoutés après la prochaine mise à jour des points",
     "fpl.manager": "Manager",
     "fpl.cup_not_started": "La coupe démarre à la Journée {n}.",
@@ -1146,6 +1144,8 @@ export const dictionaries = {
     "auth.setup.notif_news_desc": "Titres et transferts majeurs.",
     "auth.setup.notif_deadline": "Rappels Fantasy",
     "auth.setup.notif_deadline_desc": "Date limite avant chaque journée.",
+    "auth.setup.notif_email": "Recevoir par e-mail",
+    "auth.setup.notif_email_desc": "Avant et après les matchs, et vos rappels Fantasy.",
     "auth.setup.language_confirm": "Langue par défaut",
     "auth.setup.skip": "Passer",
     "auth.setup.next": "Suivant",
@@ -1512,6 +1512,23 @@ export const dictionaries = {
     "prizes.admin.error.account_not_found": "Aucun compte avec ce nom d'utilisateur.",
     "prizes.admin.error.not_overridable": "Un lot déjà payé ne peut plus être remplacé.",
     "prizes.admin.error.name": "Le nom doit compter entre 2 et 120 caractères.",
+    "unsubscribe.meta_title": "Se désabonner des e-mails — BotolaGO",
+    "unsubscribe.title": "E-mails BotolaGO",
+    "unsubscribe.confirm_title": "Ne plus recevoir d'e-mails de BotolaGO ?",
+    "unsubscribe.confirm_body":
+      "Cela arrête tous les e-mails de notification de BotolaGO. Vous pourrez les réactiver à tout moment dans votre profil.",
+    "unsubscribe.confirm_action": "Me désabonner",
+    "unsubscribe.loading": "Désabonnement en cours…",
+    "unsubscribe.done_title": "Vous ne recevrez plus d'e-mails de BotolaGO.",
+    "unsubscribe.already_title": "Les e-mails de BotolaGO étaient déjà désactivés.",
+    "unsubscribe.reenable_hint":
+      "Vous pouvez les réactiver à tout moment dans les notifications de votre profil.",
+    "unsubscribe.invalid_title": "Ce lien n'est plus valide",
+    "unsubscribe.invalid_body":
+      "Il a peut-être expiré ou été mal copié. Vous pouvez aussi désactiver les e-mails dans les notifications de votre profil.",
+    "unsubscribe.error_title": "Impossible de traiter votre demande",
+    "unsubscribe.error_body": "Vérifiez votre connexion, puis réessayez.",
+    "unsubscribe.manage": "Gérer mes notifications",
   },
 
   ar: {
@@ -2162,8 +2179,7 @@ export const dictionaries = {
     "fpl.league": "الدوري",
     "fpl.notifications": "الإشعارات",
     "fpl.notifications_body":
-      "استلم الملخصات الأسبوعية وتنبيهات الإصابات وتذكيرات الموعد النهائي لفريقك في BotolaGO Fantasy.",
-    "fpl.push": "إشعارات فورية",
+      "استلم عبر البريد الإلكتروني تذكيرًا قبل كل موعد نهائي وحصيلة كل جولة لفريقك في BotolaGO Fantasy.",
     "fpl.emails": "البريد الإلكتروني",
     "fpl.follow": "تابع BotolaGO",
     "fpl.more_about": "المزيد عن BotolaGO Fantasy",
@@ -2230,7 +2246,6 @@ export const dictionaries = {
     "fpl.classic": "كلاسيكي",
     "fpl.classic_help": "التنقيط الكلاسيكي — في الدوري الكلاسيكي تُرتَّب الفرق حسب مجموع نقاطها.",
     "fpl.head_to_head": "مواجهات مباشرة",
-    "fpl.coming_soon": "قريبًا",
     "fpl.players_to_be_added": "اللاعبون الذين ستتم إضافتهم بعد التحديث القادم للنقاط",
     "fpl.manager": "المدرب",
     "fpl.cup_not_started": "تبدأ الكأس في الجولة {n}.",
@@ -2598,6 +2613,8 @@ export const dictionaries = {
     "auth.setup.notif_news_desc": "أبرز العناوين والانتقالات.",
     "auth.setup.notif_deadline": "تذكيرات الفانتازي",
     "auth.setup.notif_deadline_desc": "الموعد النهائي قبل كل جولة.",
+    "auth.setup.notif_email": "استلام الإشعارات عبر البريد الإلكتروني",
+    "auth.setup.notif_email_desc": "قبل المباريات وبعدها، وتذكيرات الفانتازي الخاصة بك.",
     "auth.setup.language_confirm": "اللغة الافتراضية",
     "auth.setup.skip": "تخطّي",
     "auth.setup.next": "التالي",
@@ -2948,6 +2965,23 @@ export const dictionaries = {
     "prizes.admin.error.account_not_found": "لا يوجد حساب باسم المستخدم هذا.",
     "prizes.admin.error.not_overridable": "لا يمكن استبدال جائزة سبق تسليمها.",
     "prizes.admin.error.name": "يجب أن يتراوح الاسم بين 2 و120 حرفاً.",
+    "unsubscribe.meta_title": "إلغاء الاشتراك في رسائل BotolaGO",
+    "unsubscribe.title": "رسائل BotolaGO",
+    "unsubscribe.confirm_title": "هل تريد التوقف عن تلقي رسائل BotolaGO الإلكترونية؟",
+    "unsubscribe.confirm_body":
+      "سيؤدي ذلك إلى إيقاف جميع رسائل الإشعارات من BotolaGO عبر البريد الإلكتروني. يمكنك إعادة تفعيلها في أي وقت من ملفك الشخصي.",
+    "unsubscribe.confirm_action": "إلغاء اشتراكي",
+    "unsubscribe.loading": "جارٍ إلغاء الاشتراك…",
+    "unsubscribe.done_title": "لن تصلك بعد الآن رسائل بريد إلكتروني من BotolaGO.",
+    "unsubscribe.already_title": "رسائل BotolaGO الإلكترونية كانت معطّلة من قبل.",
+    "unsubscribe.reenable_hint":
+      "يمكنك إعادة تفعيلها في أي وقت من إعدادات الإشعارات في ملفك الشخصي.",
+    "unsubscribe.invalid_title": "هذا الرابط لم يعد صالحًا",
+    "unsubscribe.invalid_body":
+      "ربما انتهت صلاحيته أو نُسخ بشكل غير كامل. يمكنك أيضًا إيقاف الرسائل من إعدادات الإشعارات في ملفك الشخصي.",
+    "unsubscribe.error_title": "تعذّر تنفيذ طلبك",
+    "unsubscribe.error_body": "تحقّق من اتصالك ثم أعد المحاولة.",
+    "unsubscribe.manage": "إدارة إشعاراتي",
   },
 } as const satisfies Record<Language, Record<string, string>>;
 

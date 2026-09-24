@@ -4,6 +4,8 @@ import type {
   NotificationDeviceRegistrationInput,
   NotificationDeviceRepository,
   NotificationDeviceSummaryDto,
+  NotificationEmailUnsubscribeRepository,
+  NotificationEmailUnsubscribeStatus,
   NotificationListInput,
   NotificationPageDto,
   NotificationPreferenceRepository,
@@ -42,7 +44,7 @@ const cards: NotificationPageDto["items"] = [
 
 let preferences: NotificationPreferencesDto = {
   notificationsEnabled: true,
-  channels: { inApp: true, push: false, email: false },
+  channels: { inApp: true, push: false, email: true },
   categories: { matchAlerts: true, breakingNews: true, fantasyDeadlines: true },
   timezone: "Africa/Casablanca",
   quietHours: { enabled: false, start: null, end: null },
@@ -58,7 +60,7 @@ let devices: NotificationDeviceSummaryDto[] = [];
 export function resetNotificationMocks(): void {
   preferences = {
     ...preferences,
-    channels: { inApp: true, push: false, email: false },
+    channels: { inApp: true, push: false, email: true },
     quietHours: { enabled: false, start: null, end: null },
     updatedAt: now,
   };
@@ -117,6 +119,22 @@ export class MockNotificationPreferenceRepository implements NotificationPrefere
     requireActor(context);
     preferences = { ...structuredClone(input), language, updatedAt: now };
     return structuredClone(preferences);
+  }
+}
+
+/**
+ * Any non-empty token unsubscribes the one mock account, so the page can be
+ * previewed without a real e-mail.
+ */
+export class MockNotificationEmailUnsubscribeRepository implements NotificationEmailUnsubscribeRepository {
+  async unsubscribe(token: string): Promise<NotificationEmailUnsubscribeStatus> {
+    if (!token.trim()) return "invalid";
+    preferences = {
+      ...preferences,
+      channels: { ...preferences.channels, email: false },
+      updatedAt: now,
+    };
+    return "unsubscribed";
   }
 }
 
