@@ -38,7 +38,7 @@ import {
 import { FantasyRepoError } from "@/services/fantasy-errors";
 import {
   scopedFantasyKey,
-  clearOwnedFantasyCache,
+  clearOwnedFantasyCacheExcept,
   isOwnedFantasyKey,
   type FantasyKeyScope,
 } from "@/services/fantasy-data-source";
@@ -178,12 +178,17 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
     await query.refetch();
   }, [qc, queryKey, query]);
 
-  // On owner-identity change (sign-in/out, account switch): drop every owned
-  // cache entry so the next authenticated user cannot see stale data. This
-  // does NOT touch drafts (see fantasy-signout-cleanup for that path) or
-  // guest local prototype data.
+  // On owner-identity change (sign-in/out, account switch): drop every other
+  // owner's cache entries so the next authenticated user cannot see stale
+  // data. This does NOT touch drafts (see fantasy-signout-cleanup for that
+  // path) or guest local prototype data.
+  //
+  // The incoming owner's entries are kept on purpose. This effect runs after
+  // the render that already started the new snapshot query (and any owned
+  // query of the page below). Removing those cancelled their fetch and left
+  // the page on "Loading…" for good: see `clearOwnedFantasyCacheExcept`.
   useEffect(() => {
-    clearOwnedFantasyCache(qc);
+    clearOwnedFantasyCacheExcept(qc, owner);
     setMutationStatusState("idle");
     setMutationError(null);
     mutationSeqRef.current = 0;
