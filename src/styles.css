@@ -1179,8 +1179,9 @@ html[dir="rtl"] .lucide-arrow-left {
 
   /* ---- On the dark mesh ------------------------------------------
      The product has a second register: a deep mesh that the welcome
-     screen, the auth screens and the first-launch language chooser
-     all sit on. It is deliberate — a focused room with one job — and
+     screen, the splash and the first-launch language chooser sit on
+     (the auth screens left it for Option A's light photo band and
+     white sheet). It is deliberate — a focused room with one job — and
      the page tokens above are built for the light app surface, so
      they do not serve it.
 

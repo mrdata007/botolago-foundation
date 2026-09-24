@@ -52,6 +52,7 @@ import {
 import { useAuth } from "@/auth/AuthProvider";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle } from "@/lib/club-palette";
+import { findClub } from "@/components/fantasy/club-identity";
 import { DARK_MODE_ENABLED, NEWS_ENABLED } from "@/lib/feature-flags";
 import { useSavedArticles } from "@/lib/saved-articles";
 import { cn } from "@/lib/utils";
@@ -226,9 +227,9 @@ function ProfilePage() {
   });
   const [signOutOpen, setSignOutOpen] = useState(false);
 
-  const favoriteClub = user?.favoriteClubId
-    ? clubsQ.data?.find((c) => c.id === user.favoriteClubId)
-    : undefined;
+  // By id, then by slug: the mock club list mints synthetic ids and keys
+  // clubs by slug ("war"), as the Fantasy screens found.
+  const favoriteClub = findClub(clubsQ.data, user?.favoriteClubId);
 
   const onSignOut = async (resetLocalData: boolean) => {
     await signOut({ resetLocalData });

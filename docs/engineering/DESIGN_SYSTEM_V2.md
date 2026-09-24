@@ -268,8 +268,9 @@ to separate from dark club fills either way.
 | `--ui-mesh-glass`    | `--ui-on-ink-plain` at 10%                     | follows it             | the glass tile on the mesh (`ui.surface.mesh`)  |
 | `--ui-mesh-rule`     | `--ui-on-ink-plain` at 20%                     | follows it             | its hairline                                    |
 
-**The dark mesh.** The welcome screen, the auth screens and the first-launch
-language chooser sit on a deep mesh rather than on `--ui-page`. It is a
+**The dark mesh.** The welcome screen, the splash and the first-launch
+language chooser sit on a deep mesh rather than on `--ui-page` (Option A moved
+the auth screens to its light register: a photo band over a white sheet). It is a
 deliberate second register — a focused room with one job — and the page
 tokens do not serve it, so it has its own: `ui.tone.onMesh*`,
 `ui.surface.mesh` and `ui.focusOnMesh`. Never write `text-white/80` or
