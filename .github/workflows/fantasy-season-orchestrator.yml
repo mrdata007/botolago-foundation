@@ -20,8 +20,8 @@ name: Fantasy season orchestrator
 # escalation window while one of its counting fixtures still carries an
 # unconfirmed placeholder kickoff (00:00 UTC), so its deadline is not
 # authoritative; the operator procedure is in
-# docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md and the remediation
-# script is scripts/backend/fantasy-realign-gameweek-calendar.sql. The watch
+# docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md (the hand-run realign
+# scripts are retired; postponed fixtures are handled by the sync). The watch
 # window defaults to 72 h / 24 h and can be overridden with the repository
 # variables FANTASY_DEADLINE_WATCH_WARN_HOURS / _ESCALATE_HOURS.
 

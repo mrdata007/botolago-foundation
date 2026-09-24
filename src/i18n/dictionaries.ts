@@ -405,6 +405,7 @@ export const dictionaries = {
     "fantasy.gameweek.status.finalizing": "Vérification",
     "fantasy.gameweek.status.final": "Définitive",
     "fantasy.gameweek.status.cancelled": "Annulée",
+    "fantasy.gameweek.status.closed": "Clôturée",
     "fantasy.gameweek.detail.locked": "Composition verrouillée",
     "fantasy.gameweek.detail.live": "Points en cours",
     "fantasy.gameweek.detail.provisional": "Points provisoires",
@@ -858,7 +859,8 @@ export const dictionaries = {
     "fpl.error.title": "Impossible de charger cette page",
     "fpl.error.body": "Le service Fantasy n’a pas répondu. Réessayez.",
     "fpl.team_name": "Nom de l’équipe",
-    "fpl.team_name_help": "Choisissez le nom qui apparaîtra dans les classements.",
+    "fpl.team_name_help":
+      "3 à 30 caractères : lettres, chiffres, espaces, - ’ . _ — le nom qui apparaîtra dans les classements.",
     "fpl.enter_squad": "Entrer l’effectif",
     "fpl.save_team": "Enregistrer l’équipe",
     "fpl.squad_selection": "Sélection de l’effectif",
@@ -1411,7 +1413,8 @@ export const dictionaries = {
     "fantasy.create.cta_primary": "Enregistrer mon équipe",
     "fantasy.create.error.pool_unavailable": "Impossible de charger la liste des joueurs.",
     "fantasy.create.error.no_gameweek": "Aucune journée active pour le moment.",
-    "fantasy.create.error.team_name": "Nom d'équipe invalide.",
+    "fantasy.create.error.team_name":
+      "Nom d’équipe invalide : 3 à 30 caractères, lettres, chiffres, espaces et - ’ . _ uniquement, sans symbole au début ni à la fin.",
     "fantasy.create.error.size": "Sélectionnez exactement 15 joueurs.",
     "fantasy.create.error.position_count":
       "Répartition par poste invalide (2 GK, 5 DEF, 5 MID, 3 FWD).",
@@ -1425,6 +1428,18 @@ export const dictionaries = {
       "Le capitaine et le vice-capitaine doivent être différents.",
     "fantasy.create.error.captain_not_in_xi": "Le capitaine doit être titulaire.",
     "fantasy.create.error.vice_not_in_xi": "Le vice-capitaine doit être titulaire.",
+    "fantasy.create.error.deadline_passed":
+      "La date limite de cette journée est passée. Rechargez la page pour inscrire votre équipe à la prochaine journée.",
+    "fantasy.create.error.season_closed": "Les inscriptions à la saison Fantasy sont fermées.",
+    "fantasy.create.error.already_exists": "Vous avez déjà une équipe pour cette saison.",
+    "fantasy.create.error.player_unavailable":
+      "Un joueur de votre sélection n’est plus disponible. Remplacez-le puis réessayez.",
+    "fantasy.create.error.rejected":
+      "Votre équipe ne respecte pas une règle du jeu. Vérifiez votre sélection puis réessayez.",
+    "fantasy.create.error.generic":
+      "Votre équipe n’a pas pu être enregistrée. Réessayez dans un instant.",
+    "fantasy.create.enrolment_next":
+      "La Journée {current} est clôturée. Votre équipe jouera à partir de la Journée {n}.",
     "prizes.meta_title": "Lots à gagner — BotolaGO Fantasy",
     "prizes.meta_description":
       "Les lots de BotolaGO Fantasy : lot de la journée, lot du mois, lot de la saison et lots de ligue. Jeu 100 % gratuit.",
@@ -2000,6 +2015,7 @@ export const dictionaries = {
     "fantasy.gameweek.status.finalizing": "قيد المراجعة",
     "fantasy.gameweek.status.final": "نهائية",
     "fantasy.gameweek.status.cancelled": "ملغاة",
+    "fantasy.gameweek.status.closed": "انتهت المهلة",
     "fantasy.gameweek.detail.locked": "تم قفل التشكيلة",
     "fantasy.gameweek.detail.live": "النقاط قيد الاحتساب",
     "fantasy.gameweek.detail.provisional": "نقاط مبدئية",
@@ -2425,7 +2441,8 @@ export const dictionaries = {
     "fpl.error.title": "تعذّر تحميل هذه الصفحة",
     "fpl.error.body": "لم يستجب خادم الفانتازي. أعد المحاولة.",
     "fpl.team_name": "اسم الفريق",
-    "fpl.team_name_help": "اختر الاسم الذي سيظهر في الترتيب.",
+    "fpl.team_name_help":
+      "من 3 إلى 30 حرفًا: حروف وأرقام ومسافات و - ' . _ — الاسم الذي سيظهر في الترتيب.",
     "fpl.enter_squad": "إدخال التشكيلة",
     "fpl.save_team": "حفظ الفريق",
     "fpl.squad_selection": "اختيار التشكيلة",
@@ -2944,7 +2961,8 @@ export const dictionaries = {
     "fantasy.create.cta_primary": "حفظ فريقي",
     "fantasy.create.error.pool_unavailable": "تعذّر تحميل قائمة اللاعبين.",
     "fantasy.create.error.no_gameweek": "لا توجد جولة نشطة حاليًا.",
-    "fantasy.create.error.team_name": "اسم الفريق غير صالح.",
+    "fantasy.create.error.team_name":
+      "اسم الفريق غير صالح: من 3 إلى 30 حرفًا، حروف وأرقام ومسافات و - ' . _ فقط، دون رمز في البداية أو النهاية.",
     "fantasy.create.error.size": "اختر 15 لاعبًا بالضبط.",
     "fantasy.create.error.position_count":
       "توزيع المراكز غير صحيح (2 حراسة، 5 دفاع، 5 وسط، 3 هجوم).",
@@ -2957,6 +2975,16 @@ export const dictionaries = {
     "fantasy.create.error.captain_vice_same": "يجب أن يكون القائد ونائبه لاعبَين مختلفَين.",
     "fantasy.create.error.captain_not_in_xi": "يجب أن يكون القائد ضمن الأساسيين.",
     "fantasy.create.error.vice_not_in_xi": "يجب أن يكون نائب القائد ضمن الأساسيين.",
+    "fantasy.create.error.deadline_passed":
+      "انتهى الموعد النهائي لهذه الجولة. أعد تحميل الصفحة لتسجيل فريقك في الجولة المقبلة.",
+    "fantasy.create.error.season_closed": "التسجيل في موسم الفانتازي مغلق.",
+    "fantasy.create.error.already_exists": "لديك فريق بالفعل في هذا الموسم.",
+    "fantasy.create.error.player_unavailable":
+      "أحد لاعبي تشكيلتك لم يعد متاحًا. استبدله ثم أعد المحاولة.",
+    "fantasy.create.error.rejected":
+      "فريقك لا يحترم إحدى قواعد اللعبة. راجع تشكيلتك ثم أعد المحاولة.",
+    "fantasy.create.error.generic": "تعذّر حفظ فريقك. أعد المحاولة بعد لحظات.",
+    "fantasy.create.enrolment_next": "الجولة {current} مغلقة. سيشارك فريقك ابتداءً من الجولة {n}.",
     "prizes.meta_title": "الجوائز — BotolaGO Fantasy",
     "prizes.meta_description":
       "جوائز BotolaGO Fantasy: جائزة الجولة والجائزة الشهرية وجائزة الموسم وجوائز الدوريات. لعبة مجانية 100%.",

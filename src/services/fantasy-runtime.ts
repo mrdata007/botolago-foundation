@@ -1,7 +1,11 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
 import { selectFantasyDataMode } from "./fantasy-v2";
-import { readFantasyAvailability, type FantasyAvailability } from "./fantasy-availability";
+import {
+  enrolmentGameweekOf,
+  readFantasyAvailability,
+  type FantasyAvailability,
+} from "./fantasy-availability";
 import {
   buildGlobalRankings,
   selectRankingsPage,
@@ -11,6 +15,7 @@ import {
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   FantasyGameweekSummaryDto,
+  FantasyHubDto,
   FantasyOverallStandingDto,
   FantasyPlayerDto,
   FantasyPlayerGameweekHistoryEntryDto,
@@ -178,6 +183,14 @@ async function hub() {
   return cloud.getHub("fr", context());
 }
 
+/** The hub's enrolment gameweek in the screens' `Gameweek` vocabulary. */
+function enrolmentOf(current: FantasyHubDto): Gameweek["enrolment"] {
+  const enrolment = enrolmentGameweekOf(current);
+  return enrolment
+    ? { id: enrolment.id, number: enrolment.sequence, deadline: enrolment.deadlineAt }
+    : null;
+}
+
 /**
  * BG-0071 — index the season aggregate by fantasy player id so the pool pages
  * can be merged in one pass. Exported for `fantasy-runtime.test.ts`.
@@ -267,6 +280,7 @@ export const fantasyService = {
       rankingAvailable: current.rankingAvailable,
       averagePoints: summary?.averagePoints ?? null,
       highestPoints: summary?.highestPoints ?? null,
+      enrolment: enrolmentOf(current),
     };
   },
 

@@ -35,6 +35,7 @@ import { LeagueList } from "@/components/fantasy-lists/LeagueList";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
 import { PrizeWelcome } from "@/components/prizes/PrizeWelcome";
+import { FantasyUnavailableState } from "@/components/fantasy/FantasyUnavailableState";
 import { GameweekStatusText } from "@/components/fpl/GameweekStatusText";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { ui, UiCard, UiLinkButton, UiLivePill, UiPageTitle, UiSkeleton } from "@/components/ui-kit";
@@ -135,6 +136,13 @@ function FantasyHub() {
       return <FantasyPhaseBody phase="guest" next="/fantasy" retry={screen.retry} className="" />;
     }
     if (!team) {
+      // Which gameweek a new team joins: after the current deadline it is the
+      // next one, and with none to join the create button would only lead to
+      // a refusal. Mock mode carries no enrolment and keeps the button.
+      const enrolment = gameweek?.enrolment;
+      if (enrolment === null) {
+        return <FantasyUnavailableState reason="registration_closed" />;
+      }
       return (
         <>
           <div
@@ -150,6 +158,13 @@ function FantasyHub() {
             <p className={cn("mt-1", ui.text.secondary, "[font-weight:var(--ui-weight-strong)]")}>
               {t("fpl.no_team_yet")}
             </p>
+            {enrolment && gameweek && enrolment.number !== gameweek.number ? (
+              <p className={cn("mt-1", ui.text.meta)}>
+                {t("fantasy.create.enrolment_next")
+                  .replace("{current}", String(gameweek.number))
+                  .replace("{n}", String(enrolment.number))}
+              </p>
+            ) : null}
           </div>
           <UiLinkButton to="/fantasy/create" variant="ink" className="mt-3">
             <Plus className="h-5 w-5" aria-hidden />
@@ -327,7 +342,11 @@ function GameweekBand({ gameweek }: { gameweek: Gameweek }) {
             // on both screens ("13h 59min" on the last day, never "0j").
             <DeadlineCountdown iso={gameweek.deadline} />
           ) : left?.passed && gameweek.status ? (
-            <GameweekStatusText status={gameweek.status} className={cn(ui.text.label, "min-h-8")} />
+            <GameweekStatusText
+              status={gameweek.status}
+              deadlinePassed
+              className={cn(ui.text.label, "min-h-8")}
+            />
           ) : null}
         </div>
       </div>

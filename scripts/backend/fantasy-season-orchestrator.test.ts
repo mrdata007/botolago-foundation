@@ -73,7 +73,7 @@ function watchPayload(
     warnHours: 72,
     escalateHours: 24,
     serverTime: now.toISOString(),
-    remediation: "scripts/backend/fantasy-realign-gameweek-calendar.sql",
+    remediation: "docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md",
     gameweeks: gameweeks.map((gw) => ({
       gameweekId: id(100 + gw.sequence),
       sequence: gw.sequence,
@@ -503,7 +503,7 @@ describe("fantasy deadline watch", () => {
     expect(summary.affected).toBe(2);
     expect(summary.escalations.map((gw) => gw.sequence)).toEqual([3]);
     expect(summary.informational.map((gw) => gw.sequence)).toEqual([2]);
-    expect(summary.remediation).toBe("scripts/backend/fantasy-realign-gameweek-calendar.sql");
+    expect(summary.remediation).toBe("docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md");
     expect(summarizeDeadlineWatch(watch)).toEqual(summary);
   });
 
@@ -537,7 +537,7 @@ describe("fantasy deadline watch", () => {
       warnHours: 72,
       escalateHours: 24,
       affected: 1,
-      remediation: "scripts/backend/fantasy-realign-gameweek-calendar.sql",
+      remediation: "docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md",
     });
   });
 

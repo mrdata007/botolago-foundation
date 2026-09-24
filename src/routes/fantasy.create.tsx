@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { AddPlayerScreen } from "@/components/fpl/AddPlayerScreen";
 import { findClub } from "@/components/fpl/club-lookup";
+import { FantasyUnavailableState } from "@/components/fantasy/FantasyUnavailableState";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { FplStatBar } from "@/components/fpl/FplStatBar";
@@ -23,12 +24,15 @@ import {
 } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { reportOperationalError } from "@/lib/operational-errors";
 import { cn } from "@/lib/utils";
 import {
   computeSummary,
+  createTeamErrorKey,
   draftPurchasePrices,
   draftToSquad,
   initCreateDraft,
+  normalizeTeamName,
   placePlayer,
   removePlayer,
   setCaptain as setCaptainOp,
@@ -41,7 +45,7 @@ import {
 } from "@/services/fantasy-create-service";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { importDecisionService } from "@/services/fantasy-import-decision";
-import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
+import { runOwnedMutation } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import type { FantasyPlayer, SquadPlayer } from "@/types/fantasy";
@@ -168,6 +172,31 @@ function CreateTeamBody() {
     );
   }
 
+  // The gameweek this squad joins. After the current deadline it is the next
+  // gameweek (the server names it); with none to join, say so before the
+  // manager builds fifteen players for nothing. Mock mode has no enrolment
+  // field and keeps the current gameweek.
+  const enrolment =
+    gameweek.enrolment === undefined
+      ? { id: null, number: gameweek.number, deadline: gameweek.deadline }
+      : gameweek.enrolment;
+  if (!enrolment) {
+    return (
+      <>
+        <UiHeader kicker={t("fantasy.title")} title={t("fpl.squad_selection")} backTo="/fantasy" />
+        <div className={cn("pt-4", ui.space.gutter)}>
+          <FantasyUnavailableState reason="registration_closed" />
+        </div>
+      </>
+    );
+  }
+  const enrolmentNotice =
+    enrolment.number !== gameweek.number
+      ? t("fantasy.create.enrolment_next")
+          .replace("{current}", String(gameweek.number))
+          .replace("{n}", String(enrolment.number))
+      : null;
+
   const slots: BuilderSlot[] = draft.slots.map((s) => ({
     slot: s.slot,
     position: s.position,
@@ -244,7 +273,7 @@ function CreateTeamBody() {
         {
           action: () =>
             owned.repo.saveTeam({
-              teamName: draft.teamName.trim(),
+              teamName: normalizeTeamName(draft.teamName),
               managerName: user?.displayName?.trim() ? user.displayName.trim() : null,
               formation: draft.formation,
               bank: round1(summary.bankRemaining),
@@ -253,7 +282,9 @@ function CreateTeamBody() {
               squad,
               purchasePrices: draftPurchasePrices(draft, players),
               expectedVersion: owned.snapshot?.version ?? 0,
-              currentGameweekId: owned.snapshot?.currentGameweekId ?? null,
+              // The gameweek shown on this screen, never a closed one: the
+              // server refuses anything but the gameweek a new team joins.
+              currentGameweekId: enrolment.id ?? owned.snapshot?.currentGameweekId ?? null,
               lifecycle: owned.snapshot?.lifecycle ?? fantasyStateStore.read(),
             }),
           args: undefined,
@@ -268,16 +299,16 @@ function CreateTeamBody() {
         void nav({ to: "/fantasy/team" });
         return;
       }
-      const c = classifyRepoError(res.error);
-      const key: TranslationKey = c.isConflict
-        ? "fantasy.error.version_conflict"
-        : c.isNetwork
-          ? "fantasy.error.network"
-          : c.isPermission
-            ? "fantasy.error.permission"
-            : c.isValidation
-              ? "fantasy.create.error.size"
-              : "fantasy.error.import_generic";
+      // The real refusal goes to the operational log (code only, no squad or
+      // personal data); the manager gets the reason in words.
+      reportOperationalError("fantasy.create_team", res.error.domainCode ?? res.error.code, {
+        repoCode: res.error.code,
+      });
+      if (res.error.code === "already_exists") {
+        await owned.reload();
+        void nav({ to: "/fantasy/team", replace: true });
+      }
+      const key: TranslationKey = createTeamErrorKey(res.error);
       setSaveError(key);
       toast.error(t(key));
     } finally {
@@ -288,6 +319,7 @@ function CreateTeamBody() {
   if (step === "name") {
     const nameCheck = validateTeamName(draft.teamName);
     const blocking = validation.errors.filter((e) => e !== "team_name");
+    const nameInvalid = !nameCheck.ok && nameCheck.error !== "empty";
     return (
       <>
         <UiHeader
@@ -307,6 +339,11 @@ function CreateTeamBody() {
             { label: t("fpl.left_in_bank"), value: nf.format(summary.bankRemaining) },
           ]}
         />
+        {enrolmentNotice ? (
+          <div className={cn("mt-4", ui.space.gutter)}>
+            <UiAlert tone="info">{enrolmentNotice}</UiAlert>
+          </div>
+        ) : null}
         <form
           className={cn("mt-4", ui.space.gutter)}
           onSubmit={(e) => {
@@ -325,6 +362,11 @@ function CreateTeamBody() {
               fieldClassName={cn(ui.radius.card, "min-h-[var(--ui-row-min)]", ui.rule.strong)}
               autoFocus
             />
+            {nameInvalid ? (
+              <UiAlert tone="negative" className="mt-3">
+                {t("fantasy.create.error.team_name")}
+              </UiAlert>
+            ) : null}
             <div className="mt-4">
               <UiKeyValueRow
                 label={t("fpl.captain")}
@@ -377,8 +419,9 @@ function CreateTeamBody() {
         title={t("fpl.squad_selection")}
         kicker={t("fantasy.title")}
         backTo="/fantasy"
-        gameweek={gameweek.number}
-        deadlineIso={gameweek.deadline}
+        gameweek={enrolment.number}
+        deadlineIso={enrolment.deadline}
+        banner={enrolmentNotice}
         stats={[
           // No Wildcard column here: during the first selection it can only
           // ever read "Indisponible", and transfers are unlimited anyway.
