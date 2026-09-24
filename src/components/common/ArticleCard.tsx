@@ -125,7 +125,9 @@ export function ArticleCard({
    * `MediaImage` paints it behind the photo and shows it only when there is no
    * URL or the one we have fails, so a card with a real photo is untouched.
    */
-  const heroPlaceholder = () => <ArticleHeroFallback category={article.category} />;
+  const heroPlaceholder = () => (
+    <ArticleHeroFallback category={article.category} headline={tr(article.title)} />
+  );
 
   /**
    * The story's label: its editorial tag, in the edition's own language, or
