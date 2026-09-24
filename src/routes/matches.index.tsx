@@ -270,9 +270,8 @@ function MatchesPage() {
                 dir={dir}
               />
             }
-            // One white band with the chips under it: no rule between them,
-            // and on a wide screen the title lines up with the column below.
-            className={cn("border-b-0", ALIGN_WITH_COLUMN)}
+            // One white band with the chips under it: no rule between them.
+            className="border-b-0"
           />
           <LiveStrip />
           <StatusFilters value={filter} onChange={setFilter} liveCount={dayCounts.live} />
@@ -386,14 +385,6 @@ function MatchesPage() {
     </AppShell>
   );
 }
-
-/**
- * From `md`, the full-bleed bands keep their content in the reading column,
- * as the top bar does: the inline padding grows to half of what the viewport
- * has beyond the column, plus the gutter.
- */
-const ALIGN_WITH_COLUMN =
-  "md:px-[max(var(--ui-gutter),calc((100%_-_var(--ui-content-max))/2_+_var(--ui-gutter)))]";
 
 /**
  * The status filters (Tous · En direct · À venir · Résultats) as Option A's
