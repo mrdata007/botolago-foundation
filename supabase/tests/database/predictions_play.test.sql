@@ -151,6 +151,15 @@ select extensions.ok(not exists (
       'create_prediction_league', 'reset_prediction_league_invite_code')
     and not (proc.prosecdef and proc.proconfig @> array['search_path=""'])
 ), 'every Pronostics api function is security definer with an empty search_path');
+select extensions.ok(not exists (
+  select 1 from pg_proc proc
+  join pg_namespace ns on ns.oid = proc.pronamespace
+  cross join unnest(proc.proargtypes::oid[] || proc.prorettype) as arg(type_oid)
+  join pg_type type_row on type_row.oid = arg.type_oid
+  join pg_namespace type_ns on type_ns.oid = type_row.typnamespace
+  where ns.nspname = 'api' and proc.proname in ('predictions_round', 'predictions_leaderboard')
+    and type_ns.nspname <> 'pg_catalog'
+), 'the visitor functions take and return pg_catalog types only (anon has no USAGE on schema app)');
 select extensions.ok(exists (
   select 1 from cron.job where jobname = 'predictions-score-tick'
     and schedule = '*/5 * * * *' and command = 'select app_private.predictions_score_tick();'

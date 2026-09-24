@@ -381,5 +381,11 @@ select extensions.is(
   0, 'no Fantasy ranking row exists for any league the page now skips');
 select set_config('request.jwt.claims', '', true);
 
+-- Fantasy's season clean-up deletes leagues; their Pronostics members go with them.
+delete from app.fantasy_leagues where id = pg_temp.pid(5002);
+select extensions.is(
+  (select count(*)::integer from app.prediction_league_members where league_id = pg_temp.pid(5002)), 0,
+  'deleting a league deletes its Pronostics memberships');
+
 select * from extensions.finish();
 rollback;
