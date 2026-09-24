@@ -1,8 +1,18 @@
-import { useState, type CSSProperties, type ImgHTMLAttributes, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ImgHTMLAttributes,
+  type ReactNode,
+} from "react";
+import { responsiveMedia, type PhotoFrame, type ResponsiveMediaSource } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
 type ImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   src?: string;
+  /** Wider-screen cuts of `src`, tried ahead of `srcSet` (see `responsiveMedia`). */
+  sources?: readonly ResponsiveMediaSource[];
   /**
    * Called once when this attempt's `src` fails to load. The component already
    * removes the broken image from layout on its own; this reports the same
@@ -14,25 +24,71 @@ type ImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
 
 function ImageAttempt({
   src,
+  srcSet,
+  sizes,
+  sources,
   decoding = "async",
   loading = "lazy",
   onFailed,
   ...props
 }: ImageProps) {
   const [failed, setFailed] = useState(false);
-  if (!src || failed) return null;
+  // `srcSet` holds resized copies of `src` (see `responsiveMedia`). If they
+  // fail -- the image service is off in this environment -- the next try drops
+  // them and loads `src` itself, and only that failing removes the picture.
+  const [copiesFailed, setCopiesFailed] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null);
 
-  return (
+  // A server-rendered image can fail before React is listening, and React
+  // does not replay the lost `error` event, so neither fallback would run.
+  // Once mounted, an image that already shows as broken is asked for again:
+  // a real failure then fires `error` anew. One that loaded, or is still
+  // loading, is left alone.
+  useEffect(() => {
+    const image = imageRef.current;
+    if (!image?.complete || image.naturalWidth > 0) return;
+    const { src: current } = image;
+    image.src = current;
+  }, []);
+
+  if (!src || failed) return null;
+  const useCopies = srcSet !== undefined && !copiesFailed;
+
+  const image = (
     <img
       {...props}
+      ref={imageRef}
       src={src}
+      srcSet={useCopies ? srcSet : undefined}
+      sizes={useCopies ? sizes : undefined}
       decoding={decoding}
       loading={loading}
       onError={() => {
+        if (useCopies) {
+          setCopiesFailed(true);
+          return;
+        }
         setFailed(true);
         onFailed?.(src);
       }}
     />
+  );
+  if (!useCopies || !sources?.length) return image;
+
+  // `contents`: the `<picture>` adds no box, so the image still sizes and
+  // positions itself against the same parent as a bare `<img>` would.
+  return (
+    <picture className="contents">
+      {sources.map((source) => (
+        <source
+          key={source.media}
+          media={source.media}
+          srcSet={source.srcSet}
+          sizes={source.sizes}
+        />
+      ))}
+      {image}
+    </picture>
   );
 }
 
@@ -51,10 +107,19 @@ export function MediaImage({
   style,
   loading,
   fetchPriority,
+  frame,
 }: {
   src?: string;
   alt: string;
   fallback: string;
+  /**
+   * How the box is drawn: its width as a `sizes` value (`"88px"`,
+   * `READING_COLUMN_SIZES`) and its shape, width / height, which must match
+   * the box as drawn -- `smRatio` and `mdRatio` too when that shape changes
+   * at `sm:` or `md:`. With it the photo is fetched as the resized WebP copy
+   * that fits; without it, as the original file.
+   */
+  frame?: PhotoFrame;
   /**
    * Rendered inside this box, behind the photo, whenever there is no `src` or
    * the `src` that was given failed to load. It must position itself
@@ -74,6 +139,7 @@ export function MediaImage({
   // would hide a hero that is in fact loading.
   const [failedSrc, setFailedSrc] = useState<string>();
   const showPlaceholder = !src || failedSrc === src;
+  const photo = frame ? responsiveMedia(src, { kind: "photo", ...frame }) : {};
 
   return (
     <div
@@ -84,6 +150,9 @@ export function MediaImage({
       {showPlaceholder ? placeholder : null}
       <FailureAwareImage
         src={src}
+        srcSet={photo.srcSet}
+        sizes={photo.sizes}
+        sources={photo.sources}
         alt={alt}
         loading={loading}
         fetchPriority={fetchPriority}
