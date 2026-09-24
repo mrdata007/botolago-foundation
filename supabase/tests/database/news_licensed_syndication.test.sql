@@ -72,6 +72,13 @@ select ok(
   ),
   'an unlicensed third-party story is not in the feed'
 );
+select set_eq(
+  $$select (item ->> 'id')::uuid from jsonb_array_elements(api.news_search('fr', 'Article', 50) -> 'items') item
+    where item ->> 'id' like '98300000-%'$$,
+  $$values ('98300000-0000-4000-8000-000000000002'::uuid), ('98300000-0000-4000-8000-000000000004'::uuid),
+    ('98300000-0000-4000-8000-000000000005'::uuid), ('98300000-0000-4000-8000-000000000006'::uuid)$$,
+  'search finds own and licensed articles, never an unlicensed one'
+);
 select is(
   api.news_article_detail('fr', 'qa-own-publisher') -> 'source',
   'null'::jsonb,
@@ -122,6 +129,17 @@ select set_eq(
   $$select edition.id from app.article_editions edition
     where edition.visibility = 'public' and app_private.news_is_public(edition)$$,
   'the sitemap lists exactly the public editions app_private.news_is_public() allows'
+);
+
+-- Search spells news_is_public() out set-based for speed too; it must pick
+-- exactly the editions the reference predicate picks among the matches.
+select set_eq(
+  $$select (item ->> 'id')::uuid from jsonb_array_elements(api.news_search('fr', 'Article', 50) -> 'items') item
+    where item ->> 'id' like '98300000-%'$$,
+  $$select edition.id from app.article_editions edition
+    where edition.id::text like '98300000-%' and edition.language = 'fr'
+      and app_private.news_is_public(edition)$$,
+  'search returns exactly the matching editions app_private.news_is_public() allows'
 );
 
 -- The licence rule is a publication rule too, and an explicit, audited

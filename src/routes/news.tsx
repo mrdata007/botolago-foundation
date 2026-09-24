@@ -1,4 +1,3 @@
-import emptyNewsArt from "@/assets/illustrations/empty-news.webp";
 import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -10,7 +9,7 @@ import { ArticleCard } from "@/components/common/ArticleCard";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { SkeletonList } from "@/components/common/Skeletons";
-import { EmptyState, ErrorState } from "@/components/common/States";
+import { ErrorState } from "@/components/common/States";
 import { useI18n } from "@/i18n/provider";
 import { UiPageTitle } from "@/components/ui-kit";
 import { CategoryChips } from "@/components/news/CategoryChips";
@@ -166,10 +165,6 @@ function NewsPage() {
               <SectionHeader title={t("news.section.top_stories")} />
               <FeaturedGrid featured={featured} clubs={clubs} />
             </Section>
-          )}
-
-          {!lead && featured.length === 0 && (
-            <EmptyState illustration={emptyNewsArt}>{t("state.empty")}</EmptyState>
           )}
         </>
       )}
