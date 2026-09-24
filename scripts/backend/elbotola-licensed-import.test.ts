@@ -3,6 +3,7 @@ import {
   articleText,
   batchSql,
   buildStories,
+  selectFeed,
   toEdition,
   type ElbotolaArticle,
 } from "./elbotola-licensed-import";
@@ -113,6 +114,28 @@ describe("stories", () => {
     const again = buildStories([article()], [], new Set());
     expect(first.stories[0]!.fingerprint).toBe(again.stories[0]!.fingerprint);
     expect(buildStories([article()], [french], new Set([article().url])).skippedExisting).toBe(1);
+  });
+});
+
+describe("feed selection", () => {
+  const item = (id: string, day: number) => ({
+    object_id: id,
+    absolute_url: `https://www.elbotola.com/article/${id}.html`,
+    pub_date: 1_790_000_000 + day * 86_400,
+  });
+  const arabic = [item("a5", 5), item("a4", 4), item("a3", 3), item("a2", 2), item("a1", 1)];
+  const french = [item("f5", 5), item("f3", 3), item("f1", 1)];
+
+  test("a limit reads only the newest Arabic articles and the French of the same days", () => {
+    const picked = selectFeed(arabic, french, 2);
+    expect(picked.arabic.map((entry) => entry.object_id)).toEqual(["a5", "a4"]);
+    expect(picked.french.map((entry) => entry.object_id)).toEqual(["f5"]);
+  });
+
+  test("no limit reads everything", () => {
+    const picked = selectFeed(arabic, french, null);
+    expect(picked.arabic).toHaveLength(5);
+    expect(picked.french).toHaveLength(3);
   });
 });
 

@@ -402,10 +402,33 @@ async function getJson(url: string, attempts = 6): Promise<unknown> {
   }
 }
 
-interface FeedItem {
+export interface FeedItem {
   readonly object_id: string;
   readonly absolute_url: string;
   readonly pub_date: number;
+}
+
+/**
+ * With a limit, only the newest `limit` Arabic articles are read, plus the
+ * French ones published in the same window (the translations of those
+ * originals, and French-only stories of the same days). Without this, a
+ * "limit 200" practice run still read all ~15,700 articles first.
+ */
+export function selectFeed(
+  arabic: readonly FeedItem[],
+  french: readonly FeedItem[],
+  limit: number | null,
+): { arabic: FeedItem[]; french: FeedItem[] } {
+  if (limit === null) return { arabic: [...arabic], french: [...french] };
+  const newestArabic = [...arabic].sort((a, b) => b.pub_date - a.pub_date).slice(0, limit);
+  if (!newestArabic.length) {
+    return {
+      arabic: [],
+      french: [...french].sort((a, b) => b.pub_date - a.pub_date).slice(0, limit),
+    };
+  }
+  const oldest = newestArabic[newestArabic.length - 1]!.pub_date;
+  return { arabic: newestArabic, french: french.filter((item) => item.pub_date >= oldest) };
 }
 
 async function listFeed(language: "ar" | "fr", cutoff: string): Promise<FeedItem[]> {
@@ -512,8 +535,11 @@ async function main(): Promise<void> {
     ),
   );
 
-  const arabicFeed = await listFeed("ar", runtime.cutoff);
-  const frenchFeed = await listFeed("fr", runtime.cutoff);
+  const { arabic: arabicFeed, french: frenchFeed } = selectFeed(
+    await listFeed("ar", runtime.cutoff),
+    await listFeed("fr", runtime.cutoff),
+    runtime.limit,
+  );
   console.log(`listed ar=${arabicFeed.length} fr=${frenchFeed.length}`);
   const arabic = await fetchArticles(arabicFeed, "ar");
   const french = await fetchArticles(frenchFeed, "fr");
