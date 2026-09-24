@@ -201,6 +201,7 @@ export const ar = {
   "club.stats.biggest_win": "أكبر فوز",
   "club.stats.heaviest_defeat": "أثقل هزيمة",
   "club.season_empty": "لم تُلعب أي مباراة هذا الموسم بعد.",
+  "club.season_absent": "النادي ليس ضمن البطولة الاحترافية في هذا الموسم.",
   "club.view_season": "عرض موسم {season}",
   "club.news_empty": "لا توجد أخبار عن هذا النادي حالياً.",
   "club.matches_empty": "لا توجد مباريات لهذا الموسم.",

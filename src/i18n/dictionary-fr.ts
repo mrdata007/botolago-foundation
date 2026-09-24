@@ -204,6 +204,7 @@ export const fr = {
   "club.stats.biggest_win": "Plus large victoire",
   "club.stats.heaviest_defeat": "Plus lourde défaite",
   "club.season_empty": "Aucun match joué cette saison pour l'instant.",
+  "club.season_absent": "Le club ne fait pas partie de la Botola Pro pour cette saison.",
   "club.view_season": "Voir la saison {season}",
   "club.news_empty": "Aucune actualité sur ce club pour le moment.",
   "club.matches_empty": "Aucun match pour cette saison.",
