@@ -24,6 +24,7 @@ import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
 import { footballService } from "@/services/football";
+import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
 import type { Language } from "@/types/domain";
 import type { NotificationPreferences } from "@/services/auth";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -62,6 +63,12 @@ function ProfileSetupPage() {
     breakingNews: true,
     fantasyDeadlines: true,
   });
+  // E-mail is a channel, not one of the profile's three categories, so it is
+  // read from and saved to the notification preferences directly. `null`
+  // until the reader touches it: an untouched box is never written back.
+  const { preferences: notificationPrefs, setEmailEnabled } = useMyNotificationPreferences();
+  const [emailChoice, setEmailChoice] = useState<boolean | null>(null);
+  const savedEmail = notificationPrefs?.channels.email;
   const [chosenLang, setChosenLang] = useState<Language>(lang);
   const [submitting, setSubmitting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -116,8 +123,8 @@ function ProfileSetupPage() {
       notifications: prefs,
       language: chosenLang,
     });
-    setSubmitting(false);
     if (!res.ok) {
+      setSubmitting(false);
       const key =
         res.errorCode === "username_taken"
           ? "auth.error.username_taken"
@@ -127,6 +134,19 @@ function ProfileSetupPage() {
       toast.error(t(key));
       return;
     }
+    if (emailChoice !== null && savedEmail !== undefined && emailChoice !== savedEmail) {
+      try {
+        await setEmailEnabled(emailChoice);
+      } catch {
+        // The profile is saved; only the e-mail choice is not. Stay on the
+        // step so "Terminer" can be pressed again.
+        setSubmitting(false);
+        refresh();
+        toast.error(t("auth.error.generic"));
+        return;
+      }
+    }
+    setSubmitting(false);
     refresh();
     toast.success(t("auth.setup.success"));
     navigate({ to: next });
@@ -368,6 +388,17 @@ function ProfileSetupPage() {
               className={cn("px-3 py-3", ui.space.row, ui.radius.card, ui.rule.all)}
             />
           ))}
+
+          {/* The channel, after the three categories it carries. Disabled
+              until the stored value has loaded, so it never shows a guess. */}
+          <UiCheckbox
+            checked={emailChoice ?? savedEmail ?? false}
+            disabled={savedEmail === undefined || submitting}
+            onChange={(e) => setEmailChoice(e.target.checked)}
+            label={t("auth.setup.notif_email")}
+            hint={t("auth.setup.notif_email_desc")}
+            className={cn("px-3 py-3", ui.space.row, ui.radius.card, ui.rule.all)}
+          />
 
           <div>
             <div className={cn("mb-1.5", ui.text.label, ui.tone.muted)}>

@@ -155,7 +155,36 @@ export const notificationEventEnvelopeSchema = z.object({
   payload: z.record(z.string(), z.unknown()),
 });
 
+/**
+ * The one-click unsubscribe link carried by every notification e-mail.
+ *
+ * `api.unsubscribe_notification_email(p_token)` is callable signed out: the
+ * token alone names the account, and the function only ever turns e-mail OFF.
+ * A token is exactly 32 characters of base64url; anything else is answered
+ * `invalid` without a round trip.
+ */
+export const notificationEmailUnsubscribeTokenSchema = z
+  .string()
+  .trim()
+  .regex(/^[A-Za-z0-9_-]{32}$/);
+
+/** Whether `token` has the shape of an unsubscribe token (not whether it is live). */
+export function isNotificationEmailUnsubscribeToken(token: string): boolean {
+  return notificationEmailUnsubscribeTokenSchema.safeParse(token).success;
+}
+export const notificationEmailUnsubscribeStatusSchema = z.enum([
+  "unsubscribed",
+  "already_unsubscribed",
+  "invalid",
+]);
+export const notificationEmailUnsubscribeResultSchema = z.object({
+  status: notificationEmailUnsubscribeStatusSchema,
+});
+
 export type NotificationCategory = z.infer<typeof notificationCategorySchema>;
+export type NotificationEmailUnsubscribeStatus = z.infer<
+  typeof notificationEmailUnsubscribeStatusSchema
+>;
 export type NotificationCardDto = z.infer<typeof notificationCardSchema>;
 export type NotificationPageDto = z.infer<typeof notificationPageSchema>;
 export type NotificationPreferencesDto = z.infer<typeof notificationPreferencesSchema>;
@@ -196,6 +225,11 @@ export interface NotificationPreferenceRepository {
     language: "fr" | "ar",
     context: RepositoryContext,
   ): Promise<NotificationPreferencesDto>;
+}
+
+/** No actor: the page that calls this is opened from an e-mail, usually signed out. */
+export interface NotificationEmailUnsubscribeRepository {
+  unsubscribe(token: string): Promise<NotificationEmailUnsubscribeStatus>;
 }
 
 export interface NotificationDeviceRepository {
