@@ -213,16 +213,47 @@ export function standingsAround(rows: readonly TableRow[], clubId: string, size 
   return sorted.slice(start, start + size);
 }
 
-/** The season that ended before `seasonId` began, for "see last season". */
-export function previousSeason<T extends { id: string; startsOn: string }>(
+/**
+ * The latest season before `seasonId` in which the club has a result, for
+ * "see last season". A season the club was not in (a promoted club's last
+ * one, say) is skipped: offering it would lead to another empty page.
+ */
+export function lastSeasonPlayed<T extends { id: string; startsOn: string }>(
   seasons: readonly T[],
   seasonId: string | undefined,
+  playedSeasonIds: readonly string[],
 ): T | undefined {
   const current = seasons.find((season) => season.id === seasonId);
   if (!current) return undefined;
+  const played = new Set(playedSeasonIds);
   return seasons
-    .filter((season) => season.startsOn < current.startsOn)
+    .filter((season) => season.startsOn < current.startsOn && played.has(season.id))
     .sort((a, b) => b.startsOn.localeCompare(a.startsOn))[0];
+}
+
+/**
+ * Whether a season with nothing played means the club was not in it: the
+ * season is over and the club has no fixture in it at all. A season still to
+ * come or under way with no result yet is "not yet", not "not there".
+ */
+export function clubSeasonAbsent(
+  season: { status: string } | undefined,
+  matches: readonly Match[] | undefined,
+): boolean {
+  if (!season || !matches) return false;
+  return (season.status === "completed" || season.status === "cancelled") && matches.length === 0;
+}
+
+/** The ids of the seasons in which the club has at least one result. */
+export function seasonsWithResults(
+  fixtures: readonly { readonly seasonId: string; readonly match: Match }[],
+  clubId: string,
+): string[] {
+  const ids = new Set<string>();
+  for (const { seasonId, match } of fixtures) {
+    if (clubScore(match, clubId)) ids.add(seasonId);
+  }
+  return [...ids];
 }
 
 export interface SquadPlayer {

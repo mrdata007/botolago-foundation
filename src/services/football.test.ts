@@ -184,6 +184,26 @@ describe("club pages", () => {
     expect(page.clubs.some((c) => c.id === club!.id)).toBe(true);
   });
 
+  test("a club's played seasons are those with a result for it, the past season among them", async () => {
+    const repository = new MockFootballRepository();
+    const [club] = await repository.getTeams("fr", 1, context);
+    const seasons = await footballService.getSeasons("fr");
+    const past = seasons.find((season) => !season.isCurrent)!;
+    const played = await footballService.getClubSeasonsPlayed(club!.id, "fr");
+    expect(played).toContain(past.id);
+    expect(new Set(played).size).toBe(played.length);
+    const all = await repository.getTeamFixtures(
+      { teamId: club!.id, language: "fr", limit: 100 },
+      context,
+    );
+    const withResult = new Set(
+      all
+        .filter((m) => m.status === "finished" && m.homeScore !== null && m.awayScore !== null)
+        .map((m) => m.seasonId),
+    );
+    expect([...played].sort()).toEqual([...withResult].sort());
+  });
+
   test("the directory lists the current season's clubs by name", async () => {
     const directory = await footballService.getClubDirectory("fr");
     expect(directory.season?.isCurrent).toBe(true);

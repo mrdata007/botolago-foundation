@@ -26,7 +26,12 @@ import { ui, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { useBackTo } from "@/lib/back-navigation";
-import { clubSeasonStats, officialRecord, previousSeason } from "@/lib/club-season";
+import {
+  clubSeasonAbsent,
+  clubSeasonStats,
+  lastSeasonPlayed,
+  officialRecord,
+} from "@/lib/club-season";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
@@ -161,7 +166,6 @@ function ClubPage() {
   const seasons = seasonsQ.data ?? EMPTY_SEASONS;
   const season =
     seasons.find((candidate) => candidate.id === search.season) ?? defaultSeason(seasons);
-  const before = previousSeason(seasons, season?.id);
 
   const matchesQ = useQuery({
     queryKey: ["football", "club-matches", clubId, season?.id ?? "none", lang],
@@ -211,6 +215,17 @@ function ClubPage() {
   const row = standings.find((line) => line.clubId === clubId);
   const stats = useMemo(() => clubSeasonStats(matches ?? [], clubId), [matches, clubId]);
   const record = officialRecord(row, stats.overall);
+  // A season with nothing played: over, with no fixture for the club, it is
+  // one the club was not in. Either way, "see last season" offers the latest
+  // season the club has a result in, read only when it is needed.
+  const seasonAbsent = clubSeasonAbsent(season, matches);
+  const nothingPlayed = matchesQ.isSuccess && record.played === 0;
+  const playedQ = useQuery({
+    queryKey: ["football", "club-seasons-played", clubId, lang],
+    queryFn: () => footballService.getClubSeasonsPlayed(clubId, lang),
+    enabled: validId && nothingPlayed && tab === "overview",
+  });
+  const before = playedQ.data ? lastSeasonPlayed(seasons, season?.id, playedQ.data) : undefined;
 
   // Seasons failing leaves nothing to read the matches for: say so on the
   // matches, and retry the seasons.
@@ -328,6 +343,7 @@ function ClubPage() {
             stats={stats}
             record={record}
             seasonLabel={season?.label}
+            seasonAbsent={seasonAbsent}
             previousSeason={
               before ? { label: before.label, onSelect: () => selectSeason(before.id) } : undefined
             }
