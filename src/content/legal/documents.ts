@@ -13,7 +13,7 @@
 // legal-content.test.ts fails while any of them survive -- these pages must not
 // reach production carrying "BotolaGO (société en cours de constitution)" or an unissued CNDP number.
 
-import { ANALYTICS_ENABLED, PRONOSTICS_ENABLED } from "@/lib/feature-flags";
+import { ANALYTICS_ENABLED } from "@/lib/feature-flags";
 import type { Language } from "@/types/domain";
 
 export type LegalBlock =
@@ -495,13 +495,14 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "11. Cookies et traceurs" },
       {
         type: "paragraph",
-        // Follows ANALYTICS_ENABLED and PRONOSTICS_ENABLED (BG-0146).
+        // Follows ANALYTICS_ENABLED (BG-0146): the policy update that goes with
+        // Pronostics' public launch changes this paragraph in one release.
         text:
           "L'Application mobile n'utilise pas de cookies. Elle utilise des identifiants techniques (jeton de session, identifiant push) nécessaires à son fonctionnement. " +
           (ANALYTICS_ENABLED
             ? "Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires. Sa mesure d'audience (Plausible Analytics) ne dépose aucun cookie et n'enregistre rien sur votre appareil."
             : "Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires ; aucun cookie de mesure d'audience n'est déposé à ce jour.") +
-          (PRONOSTICS_ENABLED
+          (ANALYTICS_ENABLED
             ? " Les pronostics faits sans compte sont conservés dans le stockage local de votre appareil, ce qui est nécessaire au service que vous utilisez ; ils n'en sortent que si vous créez un compte, auquel ils sont alors rattachés."
             : ""),
       },
@@ -681,7 +682,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
           (ANALYTICS_ENABLED
             ? "يستعمل الموقع الإلكتروني botolago.com ملفات تعريف ارتباط وتخزيناً محلياً ضرورية فقط. ولا تُودِع أداة قياس الجمهور (Plausible Analytics) أي ملف تعريف ارتباط ولا تحفظ أي شيء على جهازك."
             : "يستعمل الموقع الإلكتروني botolago.com ملفات تعريف ارتباط وتخزيناً محلياً ضرورية فقط؛ ولا يُودَع إلى حدّ الآن أي ملف لقياس الجمهور.") +
-          (PRONOSTICS_ENABLED
+          (ANALYTICS_ENABLED
             ? " تُحفظ التوقعات المُنجزة دون حساب في التخزين المحلي لجهازك، وهو ضروري للخدمة التي تستعملها؛ ولا تغادر جهازك إلا إذا أنشأت حساباً، فتُلحق به."
             : ""),
       },

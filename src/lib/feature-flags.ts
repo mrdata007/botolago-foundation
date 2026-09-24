@@ -213,13 +213,16 @@ export const PRONOSTICS_PROMOTED = false;
  * release: before switching this on, the site `botolago.com` must exist in
  * Plausible (with the five events as goals, and only botolago.com allowed as a
  * hostname), its install snippet must match `src/lib/analytics.ts`, and the
- * owner must have approved the policy wording. Production builds only: a
- * development server or the Playwright suite never loads the script.
+ * owner must have approved the policy wording and given the policy a new
+ * version and date (its section 12 promises 7 days' notice of a substantial
+ * change). Production builds only: a development server or the Playwright
+ * suite never loads the script.
  *
  * Gated surfaces (keep this list current):
  *   - `src/routes/__root.tsx` — the Plausible script and the page views
  *   - `src/lib/analytics.ts` — `track()` sends nothing while off
  *   - `src/content/legal/documents.ts` — the processor row and the cookie
- *     clause of the privacy policy, in French and Arabic
+ *     clause of the privacy policy (with the sentence on a visitor's
+ *     predictions kept on the phone), in French and Arabic
  */
 export const ANALYTICS_ENABLED = false;

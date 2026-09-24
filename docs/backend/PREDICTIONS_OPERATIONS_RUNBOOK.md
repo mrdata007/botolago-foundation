@@ -156,7 +156,11 @@ same build. It is off. Before a pull request turns it on:
    now offers only a different snippet, the code changes to match it, keeping
    that cleaning.
 5. The owner approves the policy wording (processor row and the cookies
-   section; both languages).
+   section, which also says a visitor's predictions stay on the phone; both
+   languages), and the policy gets a new version and date: its section 12
+   promises 7 days' notice of a substantial change, and naming a new processor
+   is one. The same switch changes all of it, so version 1.1 never changes
+   silently.
 
 After the deploy: open the site, check in Plausible that the visit and a test
 event arrive, and that the browser holds no cookie and no storage entry from

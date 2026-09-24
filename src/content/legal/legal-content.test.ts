@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { ANALYTICS_ENABLED, PRONOSTICS_ENABLED } from "@/lib/feature-flags";
+import { ANALYTICS_ENABLED } from "@/lib/feature-flags";
 import { LEGAL_DOCUMENTS, type LegalBlock, type LegalDocument } from "./documents";
 
 // These two documents are binding statements about a real operator and its real
@@ -79,9 +79,11 @@ import { LEGAL_DOCUMENTS, type LegalBlock, type LegalDocument } from "./document
 //        and hosted in Germany. The row and the cookie clause now follow
 //        ANALYTICS_ENABLED, the same switch that loads the script: off, they
 //        say no tool is used; on, they name Plausible, what it counts and
-//        where, and that it sets no cookie and stores nothing on the device.
-//        The Plausible wording awaits the owner's approval before the switch
-//        is turned on. Asserted below, whichever way the switch is set.
+//        where, and that it sets no cookie and stores nothing on the device;
+//        the cookie clause also says a visitor's predictions stay on the
+//        phone until they sign up. The wording awaits the owner's approval,
+//        and the update a new version and date, before the switch is turned
+//        on. Asserted below, whichever way the switch is set.
 //
 //   8. "Supabase Auth" as the mail sender, "selon la politique de Supabase"
 //        True today: confirmation mail is sent by Supabase's own service from
@@ -237,9 +239,12 @@ describe("content integrity", () => {
 
 // Item 7 above: the policy says what the build does. The script loads only
 // when ANALYTICS_ENABLED is on (src/lib/analytics.ts), and so does the text
-// naming it; guest predictions sit in the phone's storage whenever the
-// Pronostics page exists.
-describe("the privacy policy matches the analytics and Pronostics switches", () => {
+// naming it. The sentence about a visitor's predictions on the phone rides
+// the same switch: one policy update for Pronostics' public launch, so the
+// version in force (1.1) never changes silently. Section 12 promises 7 days'
+// notice of a substantial change, so that update carries a new version and
+// date before the switch is turned on.
+describe("the privacy policy matches the analytics switch", () => {
   const fr = () => allText(LEGAL_DOCUMENTS.privacy.fr).join(" ");
   const ar = () => allText(LEGAL_DOCUMENTS.privacy.ar).join(" ");
 
@@ -261,9 +266,9 @@ describe("the privacy policy matches the analytics and Pronostics switches", () 
     expect(ar()).toContain("لا تحفظ أي شيء على جهازك");
   });
 
-  it("says that a visitor's predictions stay on the device until they sign up", () => {
-    expect(fr().includes("Les pronostics faits sans compte")).toBe(PRONOSTICS_ENABLED);
-    expect(ar().includes("التوقعات المُنجزة دون حساب")).toBe(PRONOSTICS_ENABLED);
+  it("says, in the same update, that a visitor's predictions stay on the device", () => {
+    expect(fr().includes("Les pronostics faits sans compte")).toBe(ANALYTICS_ENABLED);
+    expect(ar().includes("التوقعات المُنجزة دون حساب")).toBe(ANALYTICS_ENABLED);
   });
 
   it("holds both wordings, so switching changes the policy with the script", () => {
@@ -275,6 +280,6 @@ describe("the privacy policy matches the analytics and Pronostics switches", () 
     ]) {
       expect(source).toContain(text);
     }
-    expect(source.match(/ANALYTICS_ENABLED\s*\?/g)?.length).toBe(4);
+    expect(source.match(/ANALYTICS_ENABLED\s*\?/g)?.length).toBe(6);
   });
 });
