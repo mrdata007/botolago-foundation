@@ -266,6 +266,34 @@ describe("email dispatch request", () => {
     });
   });
 
+  it("keeps the timeout armed while a stalled response body is read", async () => {
+    const { client, calls } = fakeClient([[delivery(ID1), delivery(ID2)]]);
+    const stalledBody = (signal: AbortSignal | null | undefined, status: number) =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('{"na'));
+            signal?.addEventListener("abort", () => controller.error(new Error("aborted")));
+          },
+        }),
+        { status },
+      );
+    const statuses = [200, 500];
+    const started = Date.now();
+    const response = await handleEmailDispatchRequest(
+      request(),
+      dependencies(
+        client,
+        async (_input, init) => stalledBody(init?.signal, statuses.shift() ?? 200),
+        { RESEND_API_KEY: API_KEY, EMAIL_PROVIDER_TIMEOUT_MS: "1000" },
+      ),
+    );
+    expect(Date.now() - started).toBeLessThan(5000);
+    // Accepted with a lost body is still sent; a stalled error is classified by status.
+    expect(await response.json()).toEqual({ claimed: 2, sent: 1, retrying: 1, failed: 0 });
+    expect(recorded(calls)[1]).toMatchObject({ p_stable_error_code: "delivery_provider_error" });
+  });
+
   it("treats a network error or a timeout as retryable", async () => {
     const { client, calls } = fakeClient([[delivery(ID1)]]);
     await handleEmailDispatchRequest(

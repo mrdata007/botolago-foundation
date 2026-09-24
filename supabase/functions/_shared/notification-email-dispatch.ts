@@ -388,18 +388,30 @@ export async function sendThroughResend(
       pause: null,
     };
   }
-  clearTimeout(timer);
   const latencyMs = now() - started;
   const rateLimitRemaining = remaining(response);
 
-  if (response.ok) {
-    let id: string | null = null;
-    try {
-      const body = (await response.json()) as unknown;
-      if (isRecord(body) && typeof body.id === "string" && body.id.length <= 200) id = body.id;
-    } catch {
-      id = null;
+  // The timeout stays armed while the body is read: a response whose headers
+  // arrive and whose body then stalls must not hold the whole pass.
+  let id: string | null = null;
+  let name: string | null = null;
+  try {
+    if (response.ok) {
+      try {
+        const body = (await response.json()) as unknown;
+        if (isRecord(body) && typeof body.id === "string" && body.id.length <= 200) id = body.id;
+      } catch {
+        id = null;
+      }
+    } else {
+      name = await resendErrorName(response);
     }
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (response.ok) {
+    // Accepted (the id is only for the record; a lost body changes nothing).
     return {
       outcome: "sent",
       providerMessageId: id,
@@ -412,7 +424,6 @@ export async function sendThroughResend(
   }
 
   const status = response.status;
-  const name = await resendErrorName(response);
   const retry = (code: string, seconds: number | null) => ({
     ...base,
     outcome: "retryable_failure" as const,
