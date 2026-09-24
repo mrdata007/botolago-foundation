@@ -1,8 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import {
   calculateSnapshotResults,
+  PRIZE_EVALUATION_LIMIT,
   runFantasyLifecycle,
   scoringSnapshotSchema,
+  summarizePrizeEvaluation,
   trustedWorkerEnvironment,
   type FantasyWorkerGateway,
   type ScoringSnapshot,
@@ -214,6 +216,36 @@ describe("trusted Fantasy snapshot calculation", () => {
   });
 });
 
+/** Shaped like api.service_evaluate_fantasy_prizes after GW4 of a season closes block 1. */
+const prizeEvaluation = {
+  evaluatedCount: 1,
+  evaluated: [
+    {
+      seasonId,
+      gameweekId,
+      gameweekNumber: 4,
+      outcome: {
+        gameweek: {
+          status: "awarded",
+          winnerId: id(40),
+          fantasyTeamId: teamId,
+          points: 70,
+          tieBreak: "outright",
+          skipped: 0,
+        },
+        monthly: {
+          blockNumber: 1,
+          firstGameweekNumber: 1,
+          lastGameweekNumber: 4,
+          status: "no_active_prize",
+        },
+      },
+    },
+  ],
+  blocked: [],
+  hasMore: false,
+};
+
 type Call = { name: string; args: Record<string, unknown> };
 function harness(initialStatus = "provisional") {
   const calls: Call[] = [];
@@ -264,6 +296,8 @@ function harness(initialStatus = "provisional") {
           return { scanned: 1, enqueued: 1, skipped: 0, nextCursor: teamId, hasMore: false };
         case "service_complete_fantasy_postwork":
           return { completed: true };
+        case "service_evaluate_fantasy_prizes":
+          return prizeEvaluation;
         case "service_prepare_next_fantasy_gameweek":
           return {
             prepared: 1,
@@ -296,7 +330,8 @@ describe("bounded manual Fantasy pipeline", () => {
     expect(names.indexOf("service_run_fantasy_price_batch")).toBeGreaterThan(
       names.indexOf("service_complete_fantasy_gameweek"),
     );
-    expect(names.at(-1)).toBe("service_complete_fantasy_postwork");
+    expect(names.at(-2)).toBe("service_complete_fantasy_postwork");
+    expect(names.at(-1)).toBe("service_evaluate_fantasy_prizes");
     const results = calls.find((call) => call.name === "service_persist_fantasy_scoring_results")!
       .args.p_team_results as { provisionalScore: number }[];
     expect(results[0]!.provisionalScore).toBe(20);
@@ -338,6 +373,7 @@ describe("bounded manual Fantasy pipeline", () => {
       "service_run_fantasy_price_batch",
       "service_enqueue_gameweek_finalized_notifications",
       "service_complete_fantasy_postwork",
+      "service_evaluate_fantasy_prizes",
     ]);
     const wrong = harness("finalized");
     await expect(
@@ -393,6 +429,73 @@ describe("bounded manual Fantasy pipeline", () => {
       runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 }),
     ).rejects.toThrow("fantasy_notifications_incomplete");
     expect(calls.some((call) => call.name === "service_prepare_next_fantasy_gameweek")).toBeFalse();
+    expect(calls.some((call) => call.name === "service_evaluate_fantasy_prizes")).toBeFalse();
+  });
+
+  it("evaluates prizes once postwork is durable and before the next gameweek opens", async () => {
+    const { gateway, calls, state } = harness("finalized");
+    state.nextGameweekId = id(99);
+    await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 });
+    const names = calls.map((call) => call.name);
+    expect(names.indexOf("service_evaluate_fantasy_prizes")).toBeGreaterThan(
+      names.indexOf("service_complete_fantasy_postwork"),
+    );
+    expect(names.indexOf("service_evaluate_fantasy_prizes")).toBeLessThan(
+      names.indexOf("service_prepare_next_fantasy_gameweek"),
+    );
+    expect(calls.find((call) => call.name === "service_evaluate_fantasy_prizes")?.args).toEqual({
+      p_limit: PRIZE_EVALUATION_LIMIT,
+    });
+  });
+
+  it("reports the prize pass by status only, with no winner, team or user id", async () => {
+    const { gateway } = harness("finalized");
+    const result = await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 });
+    expect(result).toMatchObject({
+      prizes: {
+        evaluatedCount: 1,
+        hasMore: false,
+        blocked: [],
+        gameweeks: [
+          { gameweekNumber: 4, tiers: { gameweek: "awarded", monthly: "no_active_prize" } },
+        ],
+      },
+    });
+    expect(JSON.stringify((result as { prizes: unknown }).prizes)).not.toMatch(
+      /[0-9a-f]{8}-[0-9a-f]{4}-/,
+    );
+  });
+
+  it("never lets a prize failure stop the next gameweek from opening", async () => {
+    const { gateway, calls, state } = harness("finalized");
+    state.nextGameweekId = id(99);
+    const original = gateway.rpc.bind(gateway);
+    gateway.rpc = async (name, args) => {
+      if (name === "service_evaluate_fantasy_prizes") {
+        calls.push({ name, args });
+        throw new Error("fantasy_worker_rpc_failed");
+      }
+      return original(name, args);
+    };
+    const result = await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 });
+    expect(result).toMatchObject({
+      outcome: "already_finalized",
+      nextGameweekId: id(99),
+      nextGameweekStatus: "open",
+      prizes: { error: "fantasy_worker_rpc_failed" },
+    });
+    expect(calls.some((call) => call.name === "service_prepare_next_fantasy_gameweek")).toBeTrue();
+  });
+
+  it("reduces an unrecognised prize failure or payload to one safe code", async () => {
+    const { gateway, state } = harness("finalized");
+    state.nextGameweekId = null;
+    const original = gateway.rpc.bind(gateway);
+    gateway.rpc = async (name, args) =>
+      name === "service_evaluate_fantasy_prizes" ? { unexpected: true } : original(name, args);
+    expect(await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 })).toMatchObject(
+      { nextGameweekStatus: "not_staged", prizes: { error: "fantasy_prize_evaluation_failed" } },
+    );
   });
 
   it("persists the full player snapshot once across team pages and detects digest changes", async () => {
@@ -457,6 +560,41 @@ describe("bounded manual Fantasy pipeline", () => {
     await expect(
       runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1, maxBatches: 2 }),
     ).rejects.toThrow("fantasy_worker_batch_limit");
+  });
+});
+
+describe("prize evaluation summary", () => {
+  it("keeps tier statuses and drops anything that is not a plain status word", () => {
+    expect(
+      summarizePrizeEvaluation({
+        evaluatedCount: 1,
+        evaluated: [
+          {
+            seasonId,
+            gameweekId,
+            gameweekNumber: 30,
+            outcome: {
+              season: { status: "awarded", winnerId: id(41) },
+              miniLeagues: { status: "evaluated", leagues: [{ leagueId: id(42) }] },
+              odd: { status: "<b>" },
+              bare: "awarded",
+            },
+          },
+        ],
+        blocked: [{ seasonId, reason: "season_gameweek_count_too_small", gameweekCount: 30 }],
+        hasMore: true,
+      }),
+    ).toEqual({
+      evaluatedCount: 1,
+      hasMore: true,
+      blocked: ["season_gameweek_count_too_small"],
+      gameweeks: [
+        {
+          gameweekNumber: 30,
+          tiers: { season: "awarded", miniLeagues: "evaluated", odd: "unknown", bare: "unknown" },
+        },
+      ],
+    });
   });
 });
 

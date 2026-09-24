@@ -67,6 +67,9 @@ export function observePage(page: Page, options: ObservationOptions = {}) {
 export async function initializeLanguage(page: Page, language: "fr" | "ar") {
   await page.addInitScript((lang) => {
     window.localStorage.setItem("botolago.welcomed", "1");
+    // The Fantasy hub's prize welcome (PrizeWelcome, once prizes are on) is
+    // an arrival dialog; journeys that are not about it start past it.
+    window.localStorage.setItem("botolago.prizes.welcome.v1", "1");
     window.localStorage.setItem("botolago.language", lang);
     window.sessionStorage.setItem("botolago.splashShown", "1");
   }, language);

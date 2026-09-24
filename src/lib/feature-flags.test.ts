@@ -2,7 +2,13 @@ import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { DARK_MODE_ENABLED, NEWS_ENABLED, OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
+import {
+  DARK_MODE_ENABLED,
+  NEWS_ENABLED,
+  OAUTH_PROVIDERS_ENABLED,
+  PRIZES_ENABLED,
+} from "@/lib/feature-flags";
+import { SITEMAP_STATIC_PATHS } from "@/lib/sitemap";
 import { primaryNavItems } from "@/components/shell/primary-nav";
 
 /**
@@ -200,5 +206,55 @@ describe("DARK_MODE_ENABLED", () => {
     expect(body.indexOf("if (!DARK_MODE_ENABLED) return null;")).toBeLessThan(
       body.indexOf('t("theme.switch")'),
     );
+  });
+});
+
+/**
+ * Fantasy prizes ship switched off (owner decision, 2026-09-24): the public
+ * pages, the hub row and the first-visit welcome stay hidden until the final
+ * prize T&Cs, the sponsor's sign-off and the database promotion are in. Like
+ * the News block above, nothing here asserts the value -- flipping it is the
+ * supported way to launch -- only that every surface reads it.
+ */
+describe("PRIZES_ENABLED", () => {
+  test("is a single boolean constant, recorded once with its owner and date", () => {
+    expect(typeof PRIZES_ENABLED).toBe("boolean");
+    const source = read("src/lib/feature-flags.ts");
+    expect(source).toContain("Owner decision, 2026-09-24");
+    expect(source.match(/export const PRIZES_ENABLED/g)).toHaveLength(1);
+  });
+
+  test.each([
+    ["src/routes/prizes.index.tsx", "beforeLoad: redirectWhilePrizesAreHidden"],
+    [
+      "src/routes/prizes.index.tsx",
+      'if (!PRIZES_ENABLED) throw redirect({ to: "/fantasy", replace: true });',
+    ],
+    [
+      "src/routes/prizes.terms.tsx",
+      'if (!PRIZES_ENABLED) throw redirect({ to: "/fantasy", replace: true });',
+    ],
+    ["src/routes/fantasy.index.tsx", "{PRIZES_ENABLED && <PrizeWelcome hasTeam={hasTeam} />}"],
+    ["src/routes/fantasy.index.tsx", "...(PRIZES_ENABLED"],
+    ["src/lib/sitemap.ts", "...(PRIZES_ENABLED ?"],
+  ])("%s gates its prize surface on the flag", (file, needle) => {
+    const source = stripComments(read(file));
+    expect(source).toContain('from "@/lib/feature-flags"');
+    expect(source).toContain(needle);
+  });
+
+  test("the production legal gate reads the flag for the prize terms", () => {
+    const source = stripComments(read("scripts/qa/legal-placeholder-gate.ts"));
+    expect(source).toContain("includePrizeTerms: boolean = PRIZES_ENABLED");
+  });
+
+  test("the sitemap lists the prize pages only while they are on", () => {
+    const listed = (SITEMAP_STATIC_PATHS as readonly string[]).includes("/prizes");
+    expect(listed).toBe(PRIZES_ENABLED);
+  });
+
+  test("the admin console is not gated: the catalog is prepared before launch", () => {
+    const source = stripComments(read("src/routes/admin.prizes.tsx"));
+    expect(source).not.toContain("PRIZES_ENABLED");
   });
 });

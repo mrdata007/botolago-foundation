@@ -283,6 +283,80 @@ export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
 export interface FantasyWorkerGateway {
   rpc(name: string, args: Record<string, unknown>): Promise<unknown>;
 }
+
+/** Gameweeks one prize pass may evaluate; the RPC accepts 1..100. */
+export const PRIZE_EVALUATION_LIMIT = 10;
+
+export const prizeEvaluationSchema = z.object({
+  evaluatedCount: integer.min(0),
+  evaluated: z.array(
+    z.object({
+      seasonId: uuid,
+      gameweekId: uuid,
+      gameweekNumber: positive,
+      outcome: z.record(z.string(), z.unknown()),
+    }),
+  ),
+  blocked: z.array(z.object({ seasonId: uuid, reason: z.string() }).passthrough()),
+  hasMore: z.boolean(),
+});
+export type PrizeEvaluation = z.infer<typeof prizeEvaluationSchema>;
+export type PrizeEvaluationSummary =
+  | {
+      evaluatedCount: number;
+      hasMore: boolean;
+      blocked: string[];
+      gameweeks: { gameweekNumber: number; tiers: Record<string, string> }[];
+    }
+  | { error: string };
+
+/**
+ * Status-only summary of `api.service_evaluate_fantasy_prizes`. Worker output
+ * and orchestrator evidence carry which tier was awarded, never a winner,
+ * team or user id.
+ */
+export function summarizePrizeEvaluation(evaluation: PrizeEvaluation): PrizeEvaluationSummary {
+  const statusOf = (value: unknown) => {
+    const status = (value as { status?: unknown } | null)?.status;
+    return typeof status === "string" && /^[a-z][a-z_]{1,40}$/.test(status) ? status : "unknown";
+  };
+  return {
+    evaluatedCount: evaluation.evaluatedCount,
+    hasMore: evaluation.hasMore,
+    blocked: evaluation.blocked.map((item) => item.reason),
+    gameweeks: evaluation.evaluated.map((item) => ({
+      gameweekNumber: item.gameweekNumber,
+      tiers: Object.fromEntries(
+        Object.entries(item.outcome).map(([tier, value]) => [tier, statusOf(value)]),
+      ),
+    })),
+  };
+}
+
+/**
+ * Prize evaluation is a follow-on of a finalized gameweek, never a gate: a
+ * failure is reported, retried by the hourly orchestrator, and never stops the
+ * next gameweek from opening. It also absorbs the window in which this code is
+ * deployed before the prize migration is promoted.
+ */
+export async function evaluateFantasyPrizes(
+  call: (name: string, args: Record<string, unknown>) => Promise<unknown>,
+): Promise<PrizeEvaluationSummary> {
+  try {
+    return summarizePrizeEvaluation(
+      prizeEvaluationSchema.parse(
+        await call("service_evaluate_fantasy_prizes", { p_limit: PRIZE_EVALUATION_LIMIT }),
+      ),
+    );
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error && /^[a-z][a-z0-9_]{2,100}$/.test(error.message)
+          ? error.message
+          : "fantasy_prize_evaluation_failed",
+    };
+  }
+}
 export interface FantasyWorkerOptions {
   gameweekId: string;
   calculationVersion: number;
@@ -349,7 +423,10 @@ export async function runFantasyLifecycle(
         p_calculation_version: calculationVersion,
       }),
     );
-    if (!nextGameweekId) return { nextGameweekId: null, nextGameweekStatus: "not_staged" };
+    // Winners are computed only once the gameweek is final and its postwork is
+    // durable; see evaluateFantasyPrizes for why this never throws.
+    const prizes = await evaluateFantasyPrizes(call);
+    if (!nextGameweekId) return { nextGameweekId: null, nextGameweekStatus: "not_staged", prizes };
     do {
       const page = z
         .object({
@@ -368,7 +445,7 @@ export async function runFantasyLifecycle(
           }),
         );
       if (page.nextGameweekId !== nextGameweekId) throw new Error("fantasy_worker_scope_mismatch");
-      if (!page.hasMore) return { nextGameweekId, nextGameweekStatus: page.status };
+      if (!page.hasMore) return { nextGameweekId, nextGameweekStatus: page.status, prizes };
       if (!page.prepared) throw new Error("fantasy_worker_no_progress");
     } while (calls <= maxBatches);
     throw new Error("fantasy_worker_batch_limit");

@@ -36,6 +36,8 @@ import {
   type LegalBlock,
   type LegalDocument,
 } from "../../src/content/legal/documents";
+import { PRIZE_TERMS } from "../../src/content/legal/prize-terms";
+import { PRIZES_ENABLED } from "../../src/lib/feature-flags";
 
 const PRODUCTION_ORIGINS = ["https://botolago.com", "https://www.botolago.com"];
 
@@ -62,9 +64,20 @@ export function placeholdersIn(doc: LegalDocument): string[] {
   );
 }
 
-export function findPlaceholders(): { where: string; placeholder: string }[] {
+/**
+ * The prize T&Cs join the check only while the prize pages can be reached:
+ * they carry tracked `[TODO …]` spans by design until the owner supplies the
+ * final text, and a switched-off page publishes nothing.
+ */
+export function findPlaceholders(
+  includePrizeTerms: boolean = PRIZES_ENABLED,
+): { where: string; placeholder: string }[] {
   const found: { where: string; placeholder: string }[] = [];
-  for (const [name, byLang] of Object.entries(LEGAL_DOCUMENTS)) {
+  const documents: Record<string, Readonly<Record<"fr" | "ar", LegalDocument>>> = {
+    ...LEGAL_DOCUMENTS,
+    ...(includePrizeTerms ? { prizeTerms: PRIZE_TERMS } : {}),
+  };
+  for (const [name, byLang] of Object.entries(documents)) {
     for (const lang of ["fr", "ar"] as const) {
       for (const placeholder of new Set(placeholdersIn(byLang[lang]))) {
         found.push({ where: `${name}.${lang}`, placeholder });
@@ -135,8 +148,9 @@ function main(): void {
 
   console.error(
     `legal-placeholder-gate: refusing to build for production.\n\n` +
-      `${found.length} unfilled placeholder(s) would be published on the Terms or Privacy page:\n${lines}\n\n` +
-      "Each is a value only the owner holds. Fill them in src/content/legal/documents.ts,\n" +
+      `${found.length} unfilled placeholder(s) would be published on the Terms, Privacy or prize terms page:\n${lines}\n\n` +
+      "Each is a value only the owner holds. Fill them in src/content/legal/documents.ts\n" +
+      "(or src/content/legal/prize-terms.ts, or switch PRIZES_ENABLED off),\n" +
       "or stop linking the legal pages, but do not publish a bracketed blank.\n",
   );
   process.exit(1);

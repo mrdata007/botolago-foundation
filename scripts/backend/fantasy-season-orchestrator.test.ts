@@ -98,6 +98,7 @@ function gateway(
     lifecycle?: (name: string, args: Record<string, unknown>) => unknown;
     batches?: Array<{ fixturesProcessed: number; hasMore: boolean; nextCursor: string | null }>;
     watch?: unknown;
+    prizes?: unknown;
   } = {},
 ) {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
@@ -111,6 +112,16 @@ function gateway(
         const watch = options.watch ?? watchPayload([]);
         if (watch instanceof Error) throw watch;
         return watch;
+      }
+      if (name === "service_evaluate_fantasy_prizes") {
+        const prizes = options.prizes ?? {
+          evaluatedCount: 0,
+          evaluated: [],
+          blocked: [],
+          hasMore: false,
+        };
+        if (prizes instanceof Error) throw prizes;
+        return prizes;
       }
       if (options.lifecycle) return options.lifecycle(name, args);
       if (name === "service_fantasy_lifecycle_state")
@@ -260,6 +271,62 @@ describe("fantasy season orchestrator", () => {
       outcome: "failed",
       code: "fantasy_scoring_coverage_incomplete",
     });
+  });
+
+  test("every pass runs the prize catch-up once and reports it by status", async () => {
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+    const { gateway: g, calls } = gateway(cal, {
+      prizes: {
+        evaluatedCount: 1,
+        evaluated: [
+          {
+            seasonId: id(1),
+            gameweekId: id(101),
+            gameweekNumber: 30,
+            outcome: {
+              gameweek: { status: "awarded", winnerId: id(7) },
+              season: { status: "awarded" },
+            },
+          },
+        ],
+        blocked: [],
+        hasMore: false,
+      },
+    });
+    const summary = await orchestrateFantasySeason(g, { now });
+    expect(summary.verdict).toBe("ok");
+    expect(calls.filter((c) => c.name === "service_evaluate_fantasy_prizes")).toHaveLength(1);
+    expect(summary.prizes).toEqual({
+      evaluatedCount: 1,
+      hasMore: false,
+      blocked: [],
+      gameweeks: [{ gameweekNumber: 30, tiers: { gameweek: "awarded", season: "awarded" } }],
+    });
+  });
+
+  test("a prize failure or a blocked season degrades to waiting and never fails the pass", async () => {
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+    const failing = await orchestrateFantasySeason(
+      gateway(cal, { prizes: new Error("fantasy_orchestrator_rpc_failed") }).gateway,
+      { now },
+    );
+    expect(failing.verdict).toBe("waiting");
+    expect(shouldFailRun(failing.verdict)).toBe(false);
+    expect(failing.prizes).toEqual({ error: "fantasy_orchestrator_rpc_failed" });
+
+    const blocked = await orchestrateFantasySeason(
+      gateway(cal, {
+        prizes: {
+          evaluatedCount: 0,
+          evaluated: [],
+          blocked: [{ seasonId: id(1), reason: "season_gameweek_count_too_small" }],
+          hasMore: false,
+        },
+      }).gateway,
+      { now },
+    );
+    expect(blocked.verdict).toBe("waiting");
+    expect(blocked.prizes).toMatchObject({ blocked: ["season_gameweek_count_too_small"] });
   });
 
   test("performance ingestion follows the cursor and a provider failure only degrades to waiting", async () => {

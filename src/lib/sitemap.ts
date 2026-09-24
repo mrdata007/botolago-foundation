@@ -1,4 +1,5 @@
 import { buildCanonicalArticleUrl, PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { PRIZES_ENABLED } from "@/lib/feature-flags";
 
 export interface SitemapNewsEntry {
   readonly id: string;
@@ -19,6 +20,8 @@ export const SITEMAP_STATIC_PATHS = [
   "/fantasy/rules",
   "/privacy",
   "/terms",
+  // Redirected to the hub while prizes are off, so listed only when they are on.
+  ...(PRIZES_ENABLED ? (["/prizes", "/prizes/terms"] as const) : ([] as const)),
 ] as const;
 
 function escapeXml(value: string): string {
