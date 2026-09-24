@@ -32,7 +32,7 @@ database's own check names.
 | `cron_jobs` | any pg_cron job failed in the last hour | |
 | `news_publication` | the every-minute publication job has not run for 10 min | |
 | `news_import` | | an import run failed in the last 24 h |
-| `live_scores` | live refresh is on but no fixture refresh for 35 min while a match is in play | live refresh is off while a match is in play or kicks off within 6 h |
+| `live_scores` | live refresh is on but no fixture refresh for 10 min while a match is in play | live refresh is off while a match is in play or kicks off within 6 h |
 | `provider_refresh` | 3+ failed fixture refreshes in 6 h | no successful fixture refresh for 12 h |
 | `email_delivery` | email is on but its tick stalled for 15 min | undelivered emails are waiting |
 

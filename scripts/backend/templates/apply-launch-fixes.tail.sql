@@ -139,6 +139,11 @@ begin
     or not has_function_privilege('anon', 'api.news_related_articles(uuid,integer)', 'execute') then
     problems := problems || 'api.news_related_articles was not replaced, or lost its grant'::text;
   end if;
+  if (select schedule from cron.job where jobname = 'football-live-refresh') is distinct from '* * * * *'
+    or to_regclass('app_private.football_live_refresh_heartbeat') is null
+    or has_function_privilege('service_role', 'app_private.football_live_refresh_tick()', 'execute') then
+    problems := problems || 'the live refresh cadence is not in place'::text;
+  end if;
 
   if cardinality(problems) > 0 then
     raise exception 'stop: the update did not check out: %', problems;
@@ -178,6 +183,9 @@ begin
   summary := jsonb_build_object(
     'matchesByDateMs', matches_ms,
     'relatedArticlesMs', related_ms,
+    'liveScores', (select case when football_live_refresh_enabled and functions_base_url is not null
+        then 'on' else 'off (switch on: docs/backend/EMAIL_NOTIFICATIONS.md)' end
+      from app_private.notification_email_settings where id),
     'catchUp', (select coalesce(jsonb_object_agg(step, outcome), '{}'::jsonb) from launch_fix_catch_up),
     'gameweeks', (
       select coalesce(jsonb_agg(jsonb_build_object(

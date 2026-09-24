@@ -19,6 +19,7 @@ BATCH = [
     "20260924190200_ops_health_and_alerts",
     "20260924190300_timezone_validation_without_catalogue_scan",
     "20260924190400_news_related_articles_set_based",
+    "20260924190500_football_live_refresh_cadence",
 ]
 
 

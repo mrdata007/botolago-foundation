@@ -34,7 +34,9 @@
 --     for any open gameweek past its deadline);
 --   * checks the result and summarises it, including how long the /matches
 --     page's database call now takes (1,025 ms when the audit measured it)
---     and the related-articles rail under a news article (608-644 ms).
+--     and the related-articles rail under a news article (608-644 ms);
+--   * leaves live scores switched off, but ready to call every 2 minutes
+--     during a match once switched on (docs/backend/EMAIL_NOTIFICATIONS.md).
 --   Lock and statement timeouts are bounded, so it gives up rather than queue
 --   behind a long-running transaction on the live site.
 -- ============================================================================
@@ -87,6 +89,12 @@ begin
     or to_regprocedure('app_private.is_valid_timezone(text)') is not null then
     raise exception 'stop: the timezone snapshot already exists, but the migration is not recorded';
   end if;
+  if to_regclass('app_private.football_live_refresh_heartbeat') is not null then
+    raise exception 'stop: the live refresh heartbeat already exists, but the migration is not recorded';
+  end if;
+  if (select schedule from cron.job where jobname = 'football-live-refresh') is distinct from '*/15 * * * *' then
+    raise exception 'stop: the football-live-refresh job is not on its reviewed 15-minute schedule';
+  end if;
 
   -- The functions this batch replaces must still be the bodies it was
   -- reviewed against (measured on production, 2026-09-24).
@@ -100,7 +108,8 @@ begin
       ('api.service_fantasy_deadline_watch(uuid,integer,integer)', '7d9b32bb45f2fe565ad38a47c1f6db98'),
       ('api.football_matches_by_date(date,text,text,text[],uuid,uuid,timestamp with time zone,uuid,integer)', '3530bc9042d16dac749af5541c826ad0'),
       ('app_private.assert_valid_timezone(text)', 'ff87c87f861e83fff25f6d28d8d49468'),
-      ('api.news_related_articles(uuid,integer)', '29756c378f2dbd2a287aa50bea99614c')
+      ('api.news_related_articles(uuid,integer)', '29756c378f2dbd2a287aa50bea99614c'),
+      ('app_private.football_live_refresh_tick()', '0301db9dbaee6ba9324acd579d59bfc0')
     ) as t(signature, md5)
   loop
     if to_regprocedure(expected.signature) is null then

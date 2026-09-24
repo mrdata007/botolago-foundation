@@ -138,7 +138,9 @@ begin
     case when failed_news_runs > 0 then 'warn' else 'ok' end, 'detail',
     case when failed_news_runs > 0 then failed_news_runs || ' failed import run(s) in 24 h' else 'no failed import in 24 h' end);
 
-  -- Live scores: switched off near a match, or stale during one.
+  -- Live scores: switched off near a match, or stale during one. The live
+  -- refresh calls every 2 minutes during a match and every 5 before it
+  -- (20260924190500), so 10 minutes without a fixture run is a stall.
   select * into email from app_private.notification_email_settings where id;
   select count(*) filter (where f.kickoff_at between now_at - interval '3 hours' and now_at
       and f.status not in ('finished', 'postponed', 'cancelled', 'abandoned')),
@@ -154,15 +156,15 @@ begin
     case
       when not coalesce(email.football_live_refresh_enabled, false) or email.functions_base_url is null then
         case when in_play + upcoming > 0 then 'warn' else 'ok' end
-      when in_play > 0 and (last_fixture_run is null or last_fixture_run < now_at - interval '35 minutes') then 'fail'
+      when in_play > 0 and (last_fixture_run is null or last_fixture_run < now_at - interval '10 minutes') then 'fail'
       else 'ok' end,
     'detail',
     case
       when not coalesce(email.football_live_refresh_enabled, false) or email.functions_base_url is null then
         'live refresh switched off' || case when in_play + upcoming > 0
           then ' with ' || (in_play + upcoming) || ' match(es) in play or kicking off within 6 h' else '' end
-      when in_play > 0 and (last_fixture_run is null or last_fixture_run < now_at - interval '35 minutes') then
-        in_play || ' match(es) in play, no fixture refresh for over 35 min'
+      when in_play > 0 and (last_fixture_run is null or last_fixture_run < now_at - interval '10 minutes') then
+        in_play || ' match(es) in play, no fixture refresh for over 10 min'
       else 'live refresh on' end);
 
   -- Provider refresh (orchestrator or live refresh): recent failures, staleness.
