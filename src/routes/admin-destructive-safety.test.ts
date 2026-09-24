@@ -17,7 +17,11 @@ import { join } from "node:path";
 const COMPONENT = "../components/admin/AdminDestructiveAction.tsx";
 
 /** The routes that carry destructive or irreversible operations. */
-const GUARDED_ROUTES = ["admin.staff.$principalId.tsx", "admin.approvals.tsx"] as const;
+const GUARDED_ROUTES = [
+  "admin.staff.$principalId.tsx",
+  "admin.approvals.tsx",
+  "admin.prizes.tsx",
+] as const;
 
 function read(relativePath: string): string {
   return readFileSync(join(import.meta.dir, relativePath), "utf8");
@@ -100,6 +104,19 @@ describe("every confirm step is keyed by the object it acts on", () => {
   test("a per-assignment revocation is keyed by the assignment id", () => {
     const source = read("admin.staff.$principalId.tsx");
     expect(source).toContain("actionKey={`revoke-assignment:${assignment.assignmentId}`}");
+  });
+
+  test("every prize decision is keyed by the winner, prize or account it acts on", () => {
+    const source = read("admin.prizes.tsx");
+    const keys = [...source.matchAll(/actionKey=(\{`[^`]*`\}|"[^"]*")/g)].map((match) => match[1]);
+    expect(keys.length).toBeGreaterThan(0);
+    for (const key of keys) {
+      expect(key).toMatch(
+        /^(\{`(verify|pay|forfeit|override|flag-winner):\$\{winner\.id\}`\}|\{`save-prize:\$\{key\}`\}|\{`unflag:\$\{flag\.userId\}`\}|"settings:save"|"flag:new")$/,
+      );
+    }
+    // Paid is only ever offered on a verified winner; the database enforces it too.
+    expect(source).toContain('winner.status === "verified" && (');
   });
 
   test("the principal-wide operations are keyed apart from one another", () => {

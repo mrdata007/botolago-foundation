@@ -27,7 +27,9 @@ export const Route = createFileRoute("/fantasy")({
  * through `useFantasyScreen`, so a slow or failed backend request can only
  * ever degrade the one screen that depends on it, with a finite loading state
  * and an explicit retry. The reference screens carry no welcome or import
- * dialogs, so none are mounted here.
+ * dialogs, so none are mounted here. The one arrival dialog there is -- the
+ * prize welcome, while prizes are switched on -- belongs to the hub
+ * (`fantasy.index.tsx`), not to every Fantasy screen.
  */
 function FantasyLayout() {
   return <Outlet />;

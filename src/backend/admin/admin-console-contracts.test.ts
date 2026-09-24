@@ -15,6 +15,7 @@ const IMPLEMENTED_ROUTES = new Set([
   "/admin/audit",
   "/admin/security",
   "/admin/news",
+  "/admin/prizes",
 ]);
 
 /**
@@ -34,6 +35,7 @@ const SCREEN_ROUTE_FILES: Record<AdminConsoleRoute, string> = {
   "/admin/audit": "../../routes/admin.audit.tsx",
   "/admin/security": "../../routes/admin.security.tsx",
   "/admin/news": "../../routes/admin.news.tsx",
+  "/admin/prizes": "../../routes/admin.prizes.tsx",
 };
 
 /** Route sources only. `admin-console-contracts.ts` is deliberately NOT read
@@ -163,6 +165,17 @@ describe("Frozen Admin Console contracts", () => {
       "admin-nav-audit",
       "admin-nav-news",
     ]);
+    expect(visibleTo(["prizes.manage"])).toEqual(["admin-nav-prizes"]);
+    expect(visibleTo(["fantasy.manage_rankings"])).not.toContain("admin-nav-prizes");
+  });
+
+  it("links the prize console from the nav, gated on prizes.manage", () => {
+    const prizes = ADMIN_CONSOLE_NAV_ITEMS.find((item) => item.route === "/admin/prizes");
+    expect(prizes?.permission).toBe("prizes.manage");
+    expect(prizes?.testId).toBe("admin-nav-prizes");
+    expect(prizes?.labels.fr).toBe("Lots");
+    expect(prizes?.labels.ar).toBe("الجوائز");
+    expect(ADMIN_CONSOLE_SCREENS.some((screen) => screen.route === "/admin/prizes")).toBe(false);
   });
 
   it("points every nav entry at an implemented route file", async () => {

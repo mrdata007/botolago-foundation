@@ -17,6 +17,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { I18nProvider, useI18n } from "@/i18n/provider";
 import { SplashScreen } from "@/components/splash/SplashScreen";
 import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
+import { markSplashDone } from "@/lib/launch-sequence";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
@@ -316,6 +317,12 @@ function LaunchGate() {
   useEffect(() => {
     if (splashDone) sessionStorage.setItem("botolago.splashShown", "1");
   }, [splashDone]);
+
+  // `splashDone` starts true before the mount effect has read the session, so
+  // only a mounted, settled value may announce the end of the splash.
+  useEffect(() => {
+    if (mounted && splashDone) markSplashDone();
+  }, [mounted, splashDone]);
 
   const showSplash = mounted && !splashDone;
   const showLanguage = mounted && splashDone && isHydrated && !hasChosen;

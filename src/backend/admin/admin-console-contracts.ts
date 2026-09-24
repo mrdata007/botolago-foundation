@@ -1,3 +1,4 @@
+import { dictionaries } from "@/i18n/dictionaries";
 import type { AdminPermission } from "./contracts";
 
 export type AdminConsoleRoute =
@@ -7,7 +8,8 @@ export type AdminConsoleRoute =
   | "/admin/approvals"
   | "/admin/audit"
   | "/admin/security"
-  | "/admin/news";
+  | "/admin/news"
+  | "/admin/prizes";
 
 export type AdminConsoleSurface = "route" | "state" | "dialog";
 
@@ -350,6 +352,15 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
     permission: "editorial.read",
     testId: "admin-nav-news",
     labels: { fr: "Actualités", ar: "الأخبار" },
+  },
+  {
+    route: "/admin/prizes",
+    permission: "prizes.manage",
+    testId: "admin-nav-prizes",
+    labels: {
+      fr: dictionaries.fr["prizes.admin.nav"],
+      ar: dictionaries.ar["prizes.admin.nav"],
+    },
   },
 ] as const satisfies readonly {
   readonly route: Exclude<AdminConsoleRoute, "/admin" | "/admin/staff/$principalId">;
