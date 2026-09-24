@@ -13,6 +13,7 @@ import {
   type DeadlineWatch,
   type OrchestratorGateway,
 } from "./fantasy-season-orchestrator";
+import { rpcFailure } from "./fantasy-lifecycle-runner";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const now = new Date("2026-09-24T22:00:00Z");
@@ -327,6 +328,16 @@ describe("fantasy season orchestrator", () => {
     );
     expect(blocked.verdict).toBe("waiting");
     expect(blocked.prizes).toMatchObject({ blocked: ["season_gameweek_count_too_small"] });
+  });
+
+  test("before the prize migration is promoted, the pass says so and keeps its verdict", async () => {
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+    const summary = await orchestrateFantasySeason(
+      gateway(cal, { prizes: rpcFailure("fantasy_orchestrator_rpc_failed", "PGRST202") }).gateway,
+      { now },
+    );
+    expect(summary.verdict).toBe("ok");
+    expect(summary.prizes).toEqual({ skipped: "prizes_not_installed" });
   });
 
   test("performance ingestion follows the cursor and a provider failure only degrades to waiting", async () => {

@@ -284,6 +284,16 @@ export interface FantasyWorkerGateway {
   rpc(name: string, args: Record<string, unknown>): Promise<unknown>;
 }
 
+/**
+ * The error a gateway throws for a failed RPC. The message is the safe code
+ * that reaches logs; `postgrestCode` keeps PostgREST's own code (never its
+ * message), so a caller can tell a function this database does not have yet
+ * (`PGRST202`) from a call that failed.
+ */
+export function rpcFailure(code: string, postgrestCode: string | undefined): Error {
+  return Object.assign(new Error(code), { postgrestCode });
+}
+
 /** Gameweeks one prize pass may evaluate; the RPC accepts 1..100. */
 export const PRIZE_EVALUATION_LIMIT = 10;
 
@@ -308,6 +318,7 @@ export type PrizeEvaluationSummary =
       blocked: string[];
       gameweeks: { gameweekNumber: number; tiers: Record<string, string> }[];
     }
+  | { skipped: "prizes_not_installed" }
   | { error: string };
 
 /**
@@ -336,8 +347,11 @@ export function summarizePrizeEvaluation(evaluation: PrizeEvaluation): PrizeEval
 /**
  * Prize evaluation is a follow-on of a finalized gameweek, never a gate: a
  * failure is reported, retried by the hourly orchestrator, and never stops the
- * next gameweek from opening. It also absorbs the window in which this code is
- * deployed before the prize migration is promoted.
+ * next gameweek from opening.
+ *
+ * Between this code reaching `main` and the prize migration being promoted,
+ * the database has no such function. That window is expected, not a failure,
+ * so it is reported as `skipped` rather than as an error.
  */
 export async function evaluateFantasyPrizes(
   call: (name: string, args: Record<string, unknown>) => Promise<unknown>,
@@ -349,6 +363,8 @@ export async function evaluateFantasyPrizes(
       ),
     );
   } catch (error) {
+    if ((error as { postgrestCode?: unknown } | null)?.postgrestCode === "PGRST202")
+      return { skipped: "prizes_not_installed" };
     return {
       error:
         error instanceof Error && /^[a-z][a-z0-9_]{2,100}$/.test(error.message)
@@ -655,7 +671,7 @@ if (import.meta.main) {
           const code = /^[a-z][a-z0-9_]{2,100}$/.test(error.message)
             ? error.message
             : "fantasy_worker_rpc_failed";
-          throw new Error(code);
+          throw rpcFailure(code, error.code);
         }
         return data;
       },

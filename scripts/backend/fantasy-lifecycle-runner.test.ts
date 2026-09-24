@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   calculateSnapshotResults,
   PRIZE_EVALUATION_LIMIT,
+  rpcFailure,
   runFantasyLifecycle,
   scoringSnapshotSchema,
   summarizePrizeEvaluation,
@@ -485,6 +486,24 @@ describe("bounded manual Fantasy pipeline", () => {
       prizes: { error: "fantasy_worker_rpc_failed" },
     });
     expect(calls.some((call) => call.name === "service_prepare_next_fantasy_gameweek")).toBeTrue();
+  });
+
+  it("reports prizes as not installed, not failed, until the prize migration is promoted", async () => {
+    const { gateway, state } = harness("finalized");
+    state.nextGameweekId = id(99);
+    const original = gateway.rpc.bind(gateway);
+    gateway.rpc = async (name, args) => {
+      if (name === "service_evaluate_fantasy_prizes")
+        throw rpcFailure("fantasy_worker_rpc_failed", "PGRST202");
+      return original(name, args);
+    };
+    expect(await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 })).toMatchObject(
+      {
+        nextGameweekId: id(99),
+        nextGameweekStatus: "open",
+        prizes: { skipped: "prizes_not_installed" },
+      },
+    );
   });
 
   it("reduces an unrecognised prize failure or payload to one safe code", async () => {

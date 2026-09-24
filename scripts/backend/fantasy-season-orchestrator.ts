@@ -6,6 +6,7 @@ import { z } from "zod";
 import { runCurrentPerformanceBatch } from "./current-season-performances";
 import {
   evaluateFantasyPrizes,
+  rpcFailure,
   runFantasyLifecycle,
   type FantasyWorkerGateway,
 } from "./fantasy-lifecycle-runner";
@@ -30,7 +31,9 @@ import {
  *      up whatever an interrupted run left behind, including a season's last
  *      gameweek, which has no successor to bring the worker back. A failure or
  *      a blocked season degrades the verdict to `waiting`, never `failed`: a
- *      prize is never a reason to stop the game.
+ *      prize is never a reason to stop the game. Until the prize migration is
+ *      promoted the function does not exist; that is reported as `skipped`
+ *      and leaves the verdict alone.
  *   5. a second calendar pass so the summary reflects the progression.
  *   6. `api.service_fantasy_deadline_watch` — a read-only guard that reports
  *      scheduled/open gameweeks whose deadline is approaching while a counting
@@ -341,7 +344,8 @@ export async function orchestrateFantasySeason(
   }
 
   const prizes = await evaluateFantasyPrizes((name, args) => gateway.rpc(name, args));
-  if ("error" in prizes || prizes.blocked.length > 0) verdict = mergeVerdict(verdict, "waiting");
+  if ("error" in prizes || ("blocked" in prizes && prizes.blocked.length > 0))
+    verdict = mergeVerdict(verdict, "waiting");
 
   const after = calendarSyncSchema.parse(
     await gateway.rpc("service_sync_fantasy_calendar", { p_fantasy_season_id: null }),
@@ -527,7 +531,10 @@ if (import.meta.main) {
       async rpc(name, args) {
         const { data, error } = await api.rpc(name, args).abortSignal(AbortSignal.timeout(60000));
         if (error)
-          throw new Error(safeCode(new Error(error.message), "fantasy_orchestrator_rpc_failed"));
+          throw rpcFailure(
+            safeCode(new Error(error.message), "fantasy_orchestrator_rpc_failed"),
+            error.code,
+          );
         return data;
       },
       async ingestPerformances(afterFixtureExternalId) {
