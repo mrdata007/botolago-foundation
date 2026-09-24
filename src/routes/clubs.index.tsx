@@ -8,6 +8,7 @@ import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { clubStyle } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
+import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { footballService } from "@/services/football";
 import type { Club } from "@/types/domain";
 
@@ -16,6 +17,15 @@ const CLUBS_DESCRIPTION =
   "Tous les clubs de la Botola Pro : prochains matchs, résultats, classement, statistiques et effectif de chaque équipe.";
 
 export const Route = createFileRoute("/clubs/")({
+  // Every club, with a link to its page, in the server's HTML (see
+  // `@/lib/ssr-prefetch`): no other page linked to them in HTML before.
+  loader: ({ context }) =>
+    prefetchForSsr(context.queryClient, [
+      {
+        queryKey: ["football", "club-directory", "fr"],
+        queryFn: () => footballService.getClubDirectory("fr"),
+      },
+    ]),
   head: () => ({
     meta: [
       { title: CLUBS_TITLE },

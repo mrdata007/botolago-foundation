@@ -20,6 +20,36 @@ const PAGE_SIZE = 10;
  * fetches the next page via `nextCursor` and appends it, and the control is
  * hidden once the API reports no further pages — no page-number guessing.
  */
+/**
+ * The feed's query, shared with the /news loader that puts its first page in
+ * the server's HTML (`@/lib/ssr-prefetch`), so both use the same key.
+ */
+export function newsFeedQuery(
+  language: NewsLanguage,
+  categorySlug: string | null,
+  teamId: string | null,
+) {
+  return {
+    queryKey: ["news", "feed-v2", language, categorySlug, teamId] as const,
+    queryFn: ({ pageParam }: { pageParam: string | null }) =>
+      getNewsRepository().getFeed(
+        {
+          language,
+          limit: PAGE_SIZE,
+          cursor: pageParam,
+          categorySlug,
+          teamId,
+        },
+        publicNewsContext(),
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage: Awaited<ReturnType<NewsRepositoryFeed>>) =>
+      encodeNewsCursor(lastPage.nextCursor),
+  };
+}
+
+type NewsRepositoryFeed = ReturnType<typeof getNewsRepository>["getFeed"];
+
 export function LatestFeed({
   language,
   categorySlug,
@@ -35,22 +65,7 @@ export function LatestFeed({
   excludeIds?: ReadonlySet<string>;
 }) {
   const { t } = useI18n();
-  const query = useInfiniteQuery({
-    queryKey: ["news", "feed-v2", language, categorySlug, teamId],
-    queryFn: ({ pageParam }: { pageParam: string | null }) =>
-      getNewsRepository().getFeed(
-        {
-          language,
-          limit: PAGE_SIZE,
-          cursor: pageParam,
-          categorySlug,
-          teamId,
-        },
-        publicNewsContext(),
-      ),
-    initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) => encodeNewsCursor(lastPage.nextCursor),
-  });
+  const query = useInfiniteQuery(newsFeedQuery(language, categorySlug, teamId));
 
   const fetched = (query.data?.pages ?? []).flatMap((page) => page.items);
   const items = fetched.filter((item) => !excludeIds?.has(item.id));
