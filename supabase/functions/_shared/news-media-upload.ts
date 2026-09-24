@@ -26,6 +26,24 @@ const EXTENSION_BY_MIME: Record<AllowedMediaMimeType, string> = {
   "image/webp": "webp",
 };
 
+/**
+ * One year. Every upload gets a fresh random name and is never overwritten
+ * (`upsert: false`), so the bytes behind a URL never change and browsers and
+ * the CDN may keep them this long.
+ */
+export const NEWS_MEDIA_CACHE_SECONDS = 365 * 24 * 60 * 60;
+
+/**
+ * `news/{yyyy}/{mm}/{id}.{ext}`, by upload month in UTC: the same year/month
+ * grouping big editorial photo libraries use, so the bucket stays browsable
+ * as it grows. The database accepts any `news/` path of lower-case segments.
+ */
+export function newsMediaStoragePath(id: string, extension: string, uploadedAt: Date): string {
+  const year = uploadedAt.getUTCFullYear();
+  const month = String(uploadedAt.getUTCMonth() + 1).padStart(2, "0");
+  return `news/${year}/${month}/${id}.${extension}`;
+}
+
 export interface StorageUploadResult {
   readonly error: { readonly message?: string } | null;
 }
@@ -35,7 +53,7 @@ export interface StorageClient {
     upload(
       path: string,
       body: ArrayBuffer,
-      options: { contentType: string; upsert: boolean },
+      options: { contentType: string; cacheControl: string; upsert: boolean },
     ): Promise<StorageUploadResult>;
     remove(paths: string[]): Promise<{ error: { readonly message?: string } | null }>;
   };
@@ -63,6 +81,7 @@ export interface NewsMediaUploadDependencies {
   readonly serviceClient: StorageClient;
   readonly createUserClient: (accessToken: string) => UserScopedClient;
   readonly randomId?: () => string;
+  readonly now?: () => Date;
 }
 
 // The browser calls this function with a multipart body and an explicit
@@ -234,15 +253,21 @@ export async function handleNewsMediaUploadRequest(
   }
 
   const id = (deps.randomId ?? (() => crypto.randomUUID()))();
-  const storagePath = `news/${id}.${EXTENSION_BY_MIME[declaredMimeType]}`;
+  const storagePath = newsMediaStoragePath(
+    id,
+    EXTENSION_BY_MIME[declaredMimeType],
+    (deps.now ?? (() => new Date()))(),
+  );
   const bytes = await file.arrayBuffer();
   if (sniffImageMimeType(new Uint8Array(bytes)) !== declaredMimeType) {
     return jsonResponse({ error: "content_type_mismatch" }, 415);
   }
 
-  const uploaded = await deps.serviceClient
-    .from("news-media")
-    .upload(storagePath, bytes, { contentType: declaredMimeType, upsert: false });
+  const uploaded = await deps.serviceClient.from("news-media").upload(storagePath, bytes, {
+    contentType: declaredMimeType,
+    cacheControl: String(NEWS_MEDIA_CACHE_SECONDS),
+    upsert: false,
+  });
   if (uploaded.error) {
     return jsonResponse({ error: "upload_failed" }, 502);
   }

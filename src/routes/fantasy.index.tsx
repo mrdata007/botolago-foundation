@@ -231,6 +231,7 @@ function FantasyHub() {
                     src={article.heroUrl}
                     alt={article.heroAlt ?? ""}
                     fallback={article.heroGradient}
+                    frame={{ sizes: "190px", ratio: 16 / 10 }}
                     className="aspect-[16/10] w-full"
                   />
                 ) : null}

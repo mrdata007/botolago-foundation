@@ -87,6 +87,8 @@ The client policy combines timeout, bounded exponential backoff, jitter, retry b
 
 Football media accepts validated HTTPS references or controlled `football/` Storage paths. Browser upload is disabled. Do not copy provider logos, crests, player photos, or venue images until redistribution rights and required attribution are confirmed. The frozen UI remains functional with deterministic code/color fallbacks.
 
+Team crests are confirmed: on 2026-09-23 the owner confirmed the SportsMonks plan allows copying them into `football-media` and serving them from there. Player photos stay out by the owner's choice (the UI shows kit shirts instead). Competition logos and venue images remain unconfirmed.
+
 ## Validation commands
 
 ```bash

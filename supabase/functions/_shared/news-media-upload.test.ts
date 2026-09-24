@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   handleNewsMediaUploadRequest,
   MAX_MEDIA_UPLOAD_BYTES,
+  newsMediaStoragePath,
   sniffImageMimeType,
   type NewsMediaUploadDependencies,
   type RpcResult,
@@ -9,17 +10,24 @@ import {
   type UserScopedClient,
 } from "./news-media-upload";
 
+/** Where the fixed test upload (`randomId`, `now` below) is stored. */
+const STORED_PATH = "news/2026/09/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg";
+
 function storageClient(uploadError: { message?: string } | null = null): {
   client: StorageClient;
-  uploaded: Array<{ path: string; contentType: string }>;
+  uploaded: Array<{ path: string; contentType: string; cacheControl: string }>;
   removed: string[];
 } {
-  const uploaded: Array<{ path: string; contentType: string }> = [];
+  const uploaded: Array<{ path: string; contentType: string; cacheControl: string }> = [];
   const removed: string[] = [];
   const client: StorageClient = {
     from: () => ({
       upload: async (path, _body, options) => {
-        uploaded.push({ path, contentType: options.contentType });
+        uploaded.push({
+          path,
+          contentType: options.contentType,
+          cacheControl: options.cacheControl,
+        });
         return { error: uploadError };
       },
       remove: async (paths) => {
@@ -110,6 +118,7 @@ function deps(
     serviceClient: storage.client,
     createUserClient: () => user,
     randomId: () => "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    now: () => new Date("2026-09-23T12:00:00Z"),
     ...overrides,
   };
 }
@@ -194,13 +203,15 @@ describe("handleNewsMediaUploadRequest", () => {
       storagePath: string;
       publicUrl: string;
     };
-    expect(body.storagePath).toBe("news/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg");
+    expect(body.storagePath).toBe(STORED_PATH);
     expect(body.publicUrl).toBe(
-      "https://project.supabase.test/storage/v1/object/public/news-media/news/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg",
+      `https://project.supabase.test/storage/v1/object/public/news-media/${STORED_PATH}`,
     );
+    // A year of caching is safe only because the name is new and never reused.
     expect(storage.uploaded).toEqual([
-      { path: "news/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg", contentType: "image/jpeg" },
+      { path: STORED_PATH, contentType: "image/jpeg", cacheControl: "31536000" },
     ]);
+    expect(registerCalls(calls)[0]?.args.p_storage_path).toBe(STORED_PATH);
     expect(registerCalls(calls)).toHaveLength(1);
     expect(registerCalls(calls)[0]?.args.p_alt_text).toBe("Une photo du derby");
   });
@@ -269,7 +280,7 @@ describe("handleNewsMediaUploadRequest", () => {
       deps({}, storage, forbiddenUser),
     );
     expect(response.status).toBe(403);
-    expect(storage.removed).toEqual(["news/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg"]);
+    expect(storage.removed).toEqual([STORED_PATH]);
   });
 
   it("returns 502 and never registers when the storage upload itself fails", async () => {
@@ -281,6 +292,24 @@ describe("handleNewsMediaUploadRequest", () => {
     );
     expect(response.status).toBe(502);
     expect(registerCalls(calls)).toHaveLength(0);
+  });
+});
+
+describe("where an upload is stored", () => {
+  it("files it under its upload year and month, in UTC", () => {
+    expect(newsMediaStoragePath("id", "webp", new Date("2027-01-05T08:00:00Z"))).toBe(
+      "news/2027/01/id.webp",
+    );
+    // Half past midnight on 1 January at UTC+1 is still December in UTC.
+    expect(newsMediaStoragePath("id", "jpg", new Date("2027-01-01T00:30:00+01:00"))).toBe(
+      "news/2026/12/id.jpg",
+    );
+  });
+
+  it("produces a path the database's storage_path check accepts", () => {
+    // The CHECK on app.media_assets.storage_path and editorial_register_media.
+    const databaseRule = /^(football|news)\/[a-z0-9/_-]+[.](avif|jpg|jpeg|png|webp)$/;
+    expect(databaseRule.test(STORED_PATH)).toBe(true);
   });
 });
 
