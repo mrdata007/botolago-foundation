@@ -102,11 +102,7 @@ const SHEET_TOP = "relative -mt-6 rounded-t-[var(--ui-radius-sheet)] bg-[color:v
  * The article's own bar, in place of the wordmark bar (A-Article): the soft
  * "← Retour" pill at the start, round Save and Share at the end. `status`
  * hangs just under the bar, over the page (the "Lien copié" confirmation).
- *
- * `UiHeader` spans the viewport; on a wide screen its controls would sit at
- * the window's edges, far from the 672px reading column. So the band — the
- * bar's ground, its hairline, the stickiness — is this wrapper, and the
- * header inside lines up with the column, as the global bar's row does.
+ * On a wide screen the kit keeps the controls over the 672px reading column.
  */
 function ArticleBar({
   onBack,
@@ -119,15 +115,13 @@ function ArticleBar({
 }) {
   const { t } = useI18n();
   return (
-    <div className={cn("sticky top-0 z-30", ui.surface.bar, ui.rule.block)}>
-      <UiHeader
-        className="mx-auto max-w-[var(--ui-content-max)] border-b-0"
-        leading={<UiBackButton onClick={onBack} label={t("article.back")} />}
-        trailing={actions}
-      >
-        {status}
-      </UiHeader>
-    </div>
+    <UiHeader
+      sticky
+      leading={<UiBackButton onClick={onBack} label={t("article.back")} />}
+      trailing={actions}
+    >
+      {status}
+    </UiHeader>
   );
 }
 

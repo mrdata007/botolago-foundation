@@ -185,47 +185,53 @@ export function UiHeader({
       )}
       style={tone === "gradient" ? { backgroundImage: "var(--ui-grad-header)" } : undefined}
     >
-      {/* Centring: the two `1fr` tracks are equal whenever the title fits
-          between two flanks as wide as the wider one, so every such title is
-          centred on the bar. A title too wide for that slot (at 390px beside
-          the 101px "Retour" pill: anything over ~140px in French) does not
-          truncate to stay centred: the track that holds the pill cannot
-          shrink below it, the empty one can, and the title slides toward the
-          end by just enough to show in full. Equal tracks forced by a mirror
-          of the pill were tried and measured: "Statistiques joueurs" came
-          out centred as "Statistiques jou…". Keep header titles short — the
-          boards pair a short title with a `kicker`. */}
-      <div className="grid min-h-[var(--ui-tap-min)] grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <div className="justify-self-start">{leadingNode}</div>
-        {/* `min-w-0`: a grid item's minimum is its content, so without it a
+      {/* The band is full-bleed; its content keeps to the page's content
+          column (672px less the gutters), so on a wide screen Back and the
+          actions sit over the column's edges, not the window's. Inside a
+          narrower frame the cap never binds. */}
+      <div className="mx-auto w-full max-w-[calc(var(--ui-content-max)_-_2*var(--ui-gutter))]">
+        {/* Centring: the two `1fr` tracks are equal whenever the title fits
+            between two flanks as wide as the wider one, so every such title is
+            centred on the bar. A title too wide for that slot (at 390px beside
+            the 101px "Retour" pill: anything over ~140px in French) does not
+            truncate to stay centred: the track that holds the pill cannot
+            shrink below it, the empty one can, and the title slides toward the
+            end by just enough to show in full. Equal tracks forced by a mirror
+            of the pill were tried and measured: "Statistiques joueurs" came
+            out centred as "Statistiques jou…". Keep header titles short — the
+            boards pair a short title with a `kicker`. */}
+        <div className="grid min-h-[var(--ui-tap-min)] grid-cols-[1fr_auto_1fr] items-center gap-2">
+          <div className="justify-self-start">{leadingNode}</div>
+          {/* `min-w-0`: a grid item's minimum is its content, so without it a
             long title widens the middle track instead of truncating. */}
-        <div className="min-w-0 text-center">
-          {kicker ? (
-            <p
-              className={cn(
-                "truncate",
-                ui.text.label,
-                tone === "surface" && ui.tone.muted,
-                tone === "ink" && ui.tone.onInkMuted,
-              )}
-            >
-              {kicker}
-            </p>
-          ) : null}
-          {title ? (
-            <h1
-              className={cn(
-                "truncate",
-                leadingNode && trailing ? ui.display.headerSm : ui.display.header,
-              )}
-            >
-              {title}
-            </h1>
-          ) : null}
+          <div className="min-w-0 text-center">
+            {kicker ? (
+              <p
+                className={cn(
+                  "truncate",
+                  ui.text.label,
+                  tone === "surface" && ui.tone.muted,
+                  tone === "ink" && ui.tone.onInkMuted,
+                )}
+              >
+                {kicker}
+              </p>
+            ) : null}
+            {title ? (
+              <h1
+                className={cn(
+                  "truncate",
+                  leadingNode && trailing ? ui.display.headerSm : ui.display.header,
+                )}
+              >
+                {title}
+              </h1>
+            ) : null}
+          </div>
+          <div className="flex items-center gap-2 justify-self-end">{trailing}</div>
         </div>
-        <div className="flex items-center gap-2 justify-self-end">{trailing}</div>
+        {children}
       </div>
-      {children}
     </header>
   );
 }

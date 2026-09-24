@@ -106,7 +106,9 @@ function CompactBar({
       </div>
       <div
         className={cn(
-          "absolute inset-x-0 top-0 flex h-full items-start justify-between px-3",
+          // Over the page's content column on a wide screen, like the white
+          // bar's controls; the colours behind stay full-bleed.
+          "absolute inset-x-0 top-0 mx-auto flex h-full max-w-[var(--ui-content-max)] items-start justify-between px-3",
           ui.safe.top,
         )}
       >
