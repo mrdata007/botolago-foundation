@@ -3,6 +3,7 @@ import {
   articleText,
   batchSql,
   buildStories,
+  readRuntime,
   selectFeed,
   toEdition,
   withoutUnreadOriginals,
@@ -139,11 +140,19 @@ describe("feed selection", () => {
     expect(picked.french).toHaveLength(3);
   });
 
-  test("originals BotolaGO already holds do not use up the limit", () => {
-    const held = new Set([item("a5", 5).absolute_url, item("a4", 4).absolute_url]);
-    const picked = selectFeed(arabic, french, 2, held);
-    expect(picked.arabic.map((entry) => entry.object_id)).toEqual(["a3", "a2"]);
-    expect(picked.french.map((entry) => entry.object_id)).toEqual(["f5", "f3"]);
+  test("a limit is for practice runs only; an import reads the whole feed", () => {
+    const env = {
+      CONFIRMATION: "RUN_ELBOTOLA_LICENSED_IMPORT",
+      EXPECTED_COMMIT: "abc",
+      GITHUB_SHA: "abc",
+      IMPORT_STATUS: "published",
+      SUPABASE_ACCESS_TOKEN: "token",
+      SUPABASE_PRODUCTION_PROJECT_REF: "abcdefghijklmnopqrst",
+      IMPORT_LIMIT: "200",
+    };
+    expect(readRuntime({ ...env, IMPORT_MODE: "dry-run" }).limit).toBe(200);
+    expect(() => readRuntime({ ...env, IMPORT_MODE: "import" })).toThrow("dry runs only");
+    expect(readRuntime({ ...env, IMPORT_MODE: "import", IMPORT_LIMIT: "" }).limit).toBeNull();
   });
 
   test("a translation whose original was not read is held back, not imported alone", () => {

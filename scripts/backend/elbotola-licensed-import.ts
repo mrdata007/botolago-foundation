@@ -349,7 +349,7 @@ interface Runtime {
   readonly batchSize: number;
 }
 
-function readRuntime(env: Record<string, string | undefined>): Runtime {
+export function readRuntime(env: Record<string, string | undefined>): Runtime {
   if (env.CONFIRMATION !== "RUN_ELBOTOLA_LICENSED_IMPORT")
     throw new Error("confirmation text mismatch");
   if (!env.EXPECTED_COMMIT || env.EXPECTED_COMMIT !== env.GITHUB_SHA) {
@@ -369,6 +369,11 @@ function readRuntime(env: Record<string, string | undefined>): Runtime {
   const limit = env.IMPORT_LIMIT?.trim() ? Number(env.IMPORT_LIMIT) : null;
   if (limit !== null && (!Number.isInteger(limit) || limit < 1))
     throw new Error("IMPORT_LIMIT must be a positive integer");
+  // A limit makes a quick practice run. It is not a way to import the archive
+  // in slices: an import always reads the whole feed, so every translation
+  // meets its original and nothing depends on what earlier runs left behind.
+  if (limit !== null && mode === "import")
+    throw new Error("IMPORT_LIMIT is for dry runs only; an import reads the whole feed");
   return {
     accessToken,
     projectRef,
@@ -409,24 +414,18 @@ export interface FeedItem {
 }
 
 /**
- * With a limit, only the newest `limit` Arabic articles BotolaGO does not
- * already hold are read, plus the French ones published in the same window
- * (the translations of those originals, and French-only stories of the same
- * days). Without this, a "limit 200" practice run still read all ~15,700
- * articles first; skipping held originals lets repeated limited runs move on
- * through the backlog instead of re-reading the same newest articles.
+ * With a limit (dry runs only), only the newest `limit` Arabic articles are
+ * read, plus the French ones published in the same window (the translations
+ * of those originals, and French-only stories of the same days). Without
+ * this, a "limit 200" practice run still read all ~15,700 articles first.
  */
 export function selectFeed(
   arabic: readonly FeedItem[],
   french: readonly FeedItem[],
   limit: number | null,
-  existingUrls: ReadonlySet<string> = new Set(),
 ): { arabic: FeedItem[]; french: FeedItem[] } {
   if (limit === null) return { arabic: [...arabic], french: [...french] };
-  const newestArabic = arabic
-    .filter((item) => !existingUrls.has(item.absolute_url))
-    .sort((a, b) => b.pub_date - a.pub_date)
-    .slice(0, limit);
+  const newestArabic = [...arabic].sort((a, b) => b.pub_date - a.pub_date).slice(0, limit);
   if (!newestArabic.length) {
     return {
       arabic: [],
@@ -438,10 +437,9 @@ export function selectFeed(
 }
 
 /**
- * On a limited run, a French translation whose Arabic original was not read
- * this time is held back rather than imported alone: imported alone it would
- * become a French-only story, and the run that later imports its original
- * would make a second, separate story. It is picked up with its original.
+ * On a limited (practice) run, a French translation whose Arabic original
+ * was not read is left out, so the run is not counted as a French-only story
+ * that the full import would in fact attach to its original.
  */
 export function withoutUnreadOriginals(
   arabic: readonly ElbotolaArticle[],
@@ -559,7 +557,6 @@ async function main(): Promise<void> {
     await listFeed("ar", runtime.cutoff),
     await listFeed("fr", runtime.cutoff),
     runtime.limit,
-    existing,
   );
   console.log(`listed ar=${arabicFeed.length} fr=${frenchFeed.length}`);
   const arabic = await fetchArticles(arabicFeed, "ar");
