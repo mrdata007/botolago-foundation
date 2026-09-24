@@ -196,6 +196,15 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_ban_user: {
+        Args: {
+          p_duration_hours: number
+          p_idempotency_key: string
+          p_reason: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_bootstrap_first_platform_admin: {
         Args: {
           p_auth_user_id: string
@@ -285,6 +294,7 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_get_analytics_overview: { Args: never; Returns: Json }
       admin_get_approval: { Args: { p_approval_id: string }; Returns: Json }
       admin_get_fantasy_prize_settings: {
         Args: { p_season_id?: string }
@@ -304,6 +314,7 @@ export type Database = {
         Args: { p_staff_principal_id: string }
         Returns: Json
       }
+      admin_get_user: { Args: { p_user_id: string }; Returns: Json }
       admin_list_active_assignments: {
         Args: { p_staff_principal_id: string }
         Returns: Json
@@ -375,6 +386,16 @@ export type Database = {
           p_limit?: number
           p_principal_status?: string
           p_role_name?: string
+        }
+        Returns: Json
+      }
+      admin_list_users: {
+        Args: {
+          p_after_created_at?: string
+          p_after_id?: string
+          p_limit?: number
+          p_query?: string
+          p_status?: string
         }
         Returns: Json
       }
@@ -510,6 +531,10 @@ export type Database = {
           p_reason: string
           p_staff_principal_id: string
         }
+        Returns: Json
+      }
+      admin_unban_user: {
+        Args: { p_idempotency_key: string; p_reason: string; p_user_id: string }
         Returns: Json
       }
       archive_fantasy_league: {
@@ -954,6 +979,7 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      get_my_account_standing: { Args: never; Returns: Json }
       get_my_fantasy_history: {
         Args: {
           p_before_gameweek_sequence?: number

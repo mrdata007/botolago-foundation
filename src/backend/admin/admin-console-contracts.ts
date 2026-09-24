@@ -9,7 +9,9 @@ export type AdminConsoleRoute =
   | "/admin/audit"
   | "/admin/security"
   | "/admin/news"
-  | "/admin/prizes";
+  | "/admin/prizes"
+  | "/admin/users"
+  | "/admin/users/$userId";
 
 export type AdminConsoleSurface = "route" | "state" | "dialog";
 
@@ -354,6 +356,12 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
     labels: { fr: "Actualités", ar: "الأخبار" },
   },
   {
+    route: "/admin/users",
+    permission: "users.read_support",
+    testId: "admin-nav-users",
+    labels: { fr: "Utilisateurs", ar: "المستخدمون" },
+  },
+  {
     route: "/admin/prizes",
     permission: "prizes.manage",
     testId: "admin-nav-prizes",
@@ -363,7 +371,10 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
     },
   },
 ] as const satisfies readonly {
-  readonly route: Exclude<AdminConsoleRoute, "/admin" | "/admin/staff/$principalId">;
+  readonly route: Exclude<
+    AdminConsoleRoute,
+    "/admin" | "/admin/staff/$principalId" | "/admin/users/$userId"
+  >;
   readonly permission: AdminPermission;
   readonly testId: string;
   readonly labels: { readonly fr: string; readonly ar: string };

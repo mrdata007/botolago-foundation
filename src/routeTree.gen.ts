@@ -47,6 +47,7 @@ import { Route as AuthMfaChallengeRouteImport } from './routes/auth.mfa-challeng
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminSecurityRouteImport } from './routes/admin.security'
 import { Route as AdminPrizesRouteImport } from './routes/admin.prizes'
@@ -58,6 +59,7 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.players.$playerId'
 import { Route as FantasyLeaguesJoinRouteImport } from './routes/fantasy.leagues.join'
 import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
+import { Route as AdminUsersUserIdRouteImport } from './routes/admin.users.$userId'
 import { Route as AdminStaffPrincipalIdRouteImport } from './routes/admin.staff.$principalId'
 import { Route as AdminNewsNewRouteImport } from './routes/admin.news.new'
 import { Route as AdminNewsArticleEditionIdRouteImport } from './routes/admin.news.$articleEditionId'
@@ -254,6 +256,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/callback',
   getParentRoute: () => AuthRoute,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminStaffRoute = AdminStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
@@ -311,6 +318,11 @@ const FantasyLeaguesLeagueIdRoute = FantasyLeaguesLeagueIdRouteImport.update({
   path: '/$leagueId',
   getParentRoute: () => FantasyLeaguesRoute,
 } as any)
+const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => AdminUsersRoute,
+} as any)
 const AdminStaffPrincipalIdRoute = AdminStaffPrincipalIdRouteImport.update({
   id: '/$principalId',
   path: '/$principalId',
@@ -359,6 +371,7 @@ export interface FileRoutesByFullPath {
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
@@ -391,6 +404,7 @@ export interface FileRoutesByFullPath {
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
+  '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
@@ -414,6 +428,7 @@ export interface FileRoutesByTo {
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
@@ -446,6 +461,7 @@ export interface FileRoutesByTo {
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
+  '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
@@ -471,6 +487,7 @@ export interface FileRoutesById {
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/login': typeof AuthLoginRoute
@@ -503,6 +520,7 @@ export interface FileRoutesById {
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
+  '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
@@ -529,6 +547,7 @@ export interface FileRouteTypes {
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
+    | '/admin/users'
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
@@ -561,6 +580,7 @@ export interface FileRouteTypes {
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
     | '/admin/staff/$principalId'
+    | '/admin/users/$userId'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
@@ -584,6 +604,7 @@ export interface FileRouteTypes {
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
+    | '/admin/users'
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
@@ -616,6 +637,7 @@ export interface FileRouteTypes {
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
     | '/admin/staff/$principalId'
+    | '/admin/users/$userId'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
@@ -640,6 +662,7 @@ export interface FileRouteTypes {
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
+    | '/admin/users'
     | '/auth/callback'
     | '/auth/forgot-password'
     | '/auth/login'
@@ -672,6 +695,7 @@ export interface FileRouteTypes {
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
     | '/admin/staff/$principalId'
+    | '/admin/users/$userId'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
@@ -967,6 +991,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/staff': {
       id: '/admin/staff'
       path: '/staff'
@@ -1044,6 +1075,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FantasyLeaguesLeagueIdRouteImport
       parentRoute: typeof FantasyLeaguesRoute
     }
+    '/admin/users/$userId': {
+      id: '/admin/users/$userId'
+      path: '/$userId'
+      fullPath: '/admin/users/$userId'
+      preLoaderRoute: typeof AdminUsersUserIdRouteImport
+      parentRoute: typeof AdminUsersRoute
+    }
     '/admin/staff/$principalId': {
       id: '/admin/staff/$principalId'
       path: '/$principalId'
@@ -1108,6 +1146,18 @@ const AdminStaffRouteWithChildren = AdminStaffRoute._addFileChildren(
   AdminStaffRouteChildren,
 )
 
+interface AdminUsersRouteChildren {
+  AdminUsersUserIdRoute: typeof AdminUsersUserIdRoute
+}
+
+const AdminUsersRouteChildren: AdminUsersRouteChildren = {
+  AdminUsersUserIdRoute: AdminUsersUserIdRoute,
+}
+
+const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
+  AdminUsersRouteChildren,
+)
+
 interface AdminRouteChildren {
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminAuditRoute: typeof AdminAuditRoute
@@ -1115,6 +1165,7 @@ interface AdminRouteChildren {
   AdminPrizesRoute: typeof AdminPrizesRoute
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminStaffRoute: typeof AdminStaffRouteWithChildren
+  AdminUsersRoute: typeof AdminUsersRouteWithChildren
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -1124,6 +1175,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPrizesRoute: AdminPrizesRoute,
   AdminSecurityRoute: AdminSecurityRoute,
   AdminStaffRoute: AdminStaffRouteWithChildren,
+  AdminUsersRoute: AdminUsersRouteWithChildren,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
