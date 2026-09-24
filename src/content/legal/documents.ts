@@ -13,6 +13,7 @@
 // legal-content.test.ts fails while any of them survive -- these pages must not
 // reach production carrying "BotolaGO (société en cours de constitution)" or an unissued CNDP number.
 
+import { ANALYTICS_ENABLED, PRONOSTICS_ENABLED } from "@/lib/feature-flags";
 import type { Language } from "@/types/domain";
 
 export type LegalBlock =
@@ -424,7 +425,15 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
             "distribution de l'Application, notifications push, connexion sociale",
             "selon leurs politiques",
           ],
-          ["Aucun outil de mesure d'audience", "non utilisé à ce jour", "—"],
+          // The analytics row follows ANALYTICS_ENABLED: the script and this
+          // line go live together (BG-0146).
+          ANALYTICS_ENABLED
+            ? [
+                "Plausible Analytics",
+                "mesure d'audience : pages vues et événements agrégés, sans cookie ni identifiant",
+                "Union européenne — Allemagne",
+              ]
+            : ["Aucun outil de mesure d'audience", "non utilisé à ce jour", "—"],
           [
             "Supabase Auth",
             "e-mails transactionnels (confirmation de compte, réinitialisation)",
@@ -486,7 +495,15 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "11. Cookies et traceurs" },
       {
         type: "paragraph",
-        text: "L'Application mobile n'utilise pas de cookies. Elle utilise des identifiants techniques (jeton de session, identifiant push) nécessaires à son fonctionnement. Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires ; aucun cookie de mesure d'audience n'est déposé à ce jour.",
+        // Follows ANALYTICS_ENABLED and PRONOSTICS_ENABLED (BG-0146).
+        text:
+          "L'Application mobile n'utilise pas de cookies. Elle utilise des identifiants techniques (jeton de session, identifiant push) nécessaires à son fonctionnement. " +
+          (ANALYTICS_ENABLED
+            ? "Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires. Sa mesure d'audience (Plausible Analytics) ne dépose aucun cookie et n'enregistre rien sur votre appareil."
+            : "Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires ; aucun cookie de mesure d'audience n'est déposé à ce jour.") +
+          (PRONOSTICS_ENABLED
+            ? " Les pronostics faits sans compte sont conservés dans le stockage local de votre appareil, ce qui est nécessaire au service que vous utilisez ; ils n'en sortent que si vous créez un compte, auquel ils sont alors rattachés."
+            : ""),
       },
       { type: "heading", text: "12. Modifications" },
       {
@@ -594,7 +611,13 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
           ],
           ["مزوّد البيانات الرياضية", "إحصائيات المباريات (لا تُنقل إليه أي بيانات شخصية)", "—"],
           ["Apple / Google", "توزيع التطبيق، الإشعارات، تسجيل الدخول الاجتماعي", "وفق سياساتهما"],
-          ["لا تُستعمل أي أداة لقياس الجمهور", "غير مستعملة إلى حدّ الآن", "—"],
+          ANALYTICS_ENABLED
+            ? [
+                "Plausible Analytics",
+                "قياس الجمهور: الصفحات المعروضة وأحداث مجمّعة، دون ملفات تعريف الارتباط ودون أي معرّف",
+                "الاتحاد الأوروبي — ألمانيا",
+              ]
+            : ["لا تُستعمل أي أداة لقياس الجمهور", "غير مستعملة إلى حدّ الآن", "—"],
           [
             "Supabase Auth",
             "الرسائل المعاملاتية (تأكيد الحساب، إعادة تعيين كلمة المرور)",
@@ -653,7 +676,14 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "11. ملفات تعريف الارتباط وأدوات التتبع" },
       {
         type: "paragraph",
-        text: "لا يستعمل التطبيق المحمول ملفات تعريف الارتباط (cookies). يستعمل معرّفات تقنية (رمز الجلسة، معرّف الإشعارات) ضرورية لاشتغاله. يستعمل الموقع الإلكتروني botolago.com ملفات تعريف ارتباط وتخزيناً محلياً ضرورية فقط؛ ولا يُودَع إلى حدّ الآن أي ملف لقياس الجمهور.",
+        text:
+          "لا يستعمل التطبيق المحمول ملفات تعريف الارتباط (cookies). يستعمل معرّفات تقنية (رمز الجلسة، معرّف الإشعارات) ضرورية لاشتغاله. " +
+          (ANALYTICS_ENABLED
+            ? "يستعمل الموقع الإلكتروني botolago.com ملفات تعريف ارتباط وتخزيناً محلياً ضرورية فقط. ولا تُودِع أداة قياس الجمهور (Plausible Analytics) أي ملف تعريف ارتباط ولا تحفظ أي شيء على جهازك."
+            : "يستعمل الموقع الإلكتروني botolago.com ملفات تعريف ارتباط وتخزيناً محلياً ضرورية فقط؛ ولا يُودَع إلى حدّ الآن أي ملف لقياس الجمهور.") +
+          (PRONOSTICS_ENABLED
+            ? " تُحفظ التوقعات المُنجزة دون حساب في التخزين المحلي لجهازك، وهو ضروري للخدمة التي تستعملها؛ ولا تغادر جهازك إلا إذا أنشأت حساباً، فتُلحق به."
+            : ""),
       },
       { type: "heading", text: "12. التعديلات" },
       {

@@ -136,6 +136,33 @@ are finalized shortly after the whistle.
 Before Stage 4: the Arabic reviewed by the owner, and Plausible, the
 `ANALYTICS_ENABLED` build and the privacy-policy update live together.
 
+## Switching on audience measurement
+
+`ANALYTICS_ENABLED` (`src/lib/feature-flags.ts`) loads Plausible's script and
+switches the privacy policy's lines about it, in French and Arabic, in the
+same build. It is off. Before a pull request turns it on:
+
+1. In Plausible: add the site `botolago.com`, reporting time zone
+   Africa/Casablanca.
+2. Site settings → Shields → Hostnames: allow `botolago.com` and
+   `www.botolago.com` only, so preview deployments are not counted.
+3. Add the five events as goals: `pronostics_guest_start`,
+   `pronostics_guest_start_returning`, `pronostics_guest_complete`,
+   `pronostics_signup_click`, `pronostics_share`.
+4. Compare the install snippet Plausible shows with `src/lib/analytics.ts`: the
+   code uses the "manual" script (`script.manual.js`, `data-domain`) and sends
+   page views itself, so that an address is cleaned before it leaves the phone
+   (no `#…`, no query but `utm_*`, no league id, no staff page). If Plausible
+   now offers only a different snippet, the code changes to match it, keeping
+   that cleaning.
+5. The owner approves the policy wording (processor row and the cookies
+   section; both languages).
+
+After the deploy: open the site, check in Plausible that the visit and a test
+event arrive, and that the browser holds no cookie and no storage entry from
+the tool. Signed-in players are measured from the database (plan §11), so the
+five events are the only ones the page sends.
+
 ## Applying to production
 
 Not yet applied. Rules for when it is:

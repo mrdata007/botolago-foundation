@@ -7,6 +7,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -27,6 +28,13 @@ import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
 import { ThemeProvider } from "@/theme/provider";
 import { THEME_INIT_SCRIPT } from "@/theme/theme";
 import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
+import {
+  ANALYTICS_ACTIVE,
+  PLAUSIBLE_DOMAIN,
+  PLAUSIBLE_QUEUE_SCRIPT,
+  PLAUSIBLE_SCRIPT_SRC,
+  trackPageview,
+} from "@/lib/analytics";
 import { RotateCcw, Home } from "lucide-react";
 
 import { ui } from "@/components/ui-kit";
@@ -252,9 +260,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // The splash script is the same kind of thing: whether this load opens on
     // the launch splash has to be settled before the first paint, or the page
     // shows first and the splash lands on top of it once the app has loaded.
+    //
+    // Audience measurement (BG-0146, `src/lib/analytics.ts`): Plausible's
+    // "manual" script, which counts nothing on its own, after the stub that
+    // queues what the page sends before it arrives. Page views go out from
+    // `AnalyticsPageviews` below, their address cleaned first.
     scripts: [
       ...(DARK_MODE_ENABLED ? [{ children: THEME_INIT_SCRIPT }] : []),
       { children: SPLASH_INIT_SCRIPT },
+      ...(ANALYTICS_ACTIVE
+        ? [
+            { children: PLAUSIBLE_QUEUE_SCRIPT },
+            { src: PLAUSIBLE_SCRIPT_SRC, defer: true, "data-domain": PLAUSIBLE_DOMAIN },
+          ]
+        : []),
     ],
   }),
   shellComponent: RootShell,
@@ -293,12 +312,26 @@ function RootComponent() {
               <AuthPromptDialog />
               <AuthModeBadge />
               <Toaster />
+              {ANALYTICS_ACTIVE && <AnalyticsPageviews />}
             </FantasyOwnedProvider>
           </AuthProvider>
         </ThemeProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
+}
+
+/**
+ * One page view per page reached, once the router has settled on it: a change
+ * of tab or journée inside a page is the same page. The address is cleaned in
+ * `trackPageview` (no "#…", no tokens, no league id).
+ */
+function AnalyticsPageviews() {
+  const path = useRouterState({ select: (state) => state.resolvedLocation?.pathname ?? null });
+  useEffect(() => {
+    if (path !== null) trackPageview();
+  }, [path]);
+  return null;
 }
 
 /**

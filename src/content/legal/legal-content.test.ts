@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
+import { ANALYTICS_ENABLED, PRONOSTICS_ENABLED } from "@/lib/feature-flags";
 import { LEGAL_DOCUMENTS, type LegalBlock, type LegalDocument } from "./documents";
 
 // These two documents are binding statements about a real operator and its real
@@ -69,10 +72,13 @@ import { LEGAL_DOCUMENTS, type LegalBlock, type LegalDocument } from "./document
 // be revisited when that changes rather than when the company registers:
 //
 //   7. "Aucun outil de mesure d'audience" / "لا تُستعمل أي أداة لقياس الجمهور"
-//        True today: nothing in src/ loads an analytics script. The moment one
-//        is added, name it here, say what it collects, and say where it stores
-//        it -- and restore the cookie clause, which currently states that no
-//        audience-measurement cookie is set.
+//        2026-09-24 (BG-0146): the owner chose Plausible Analytics, cookie-free
+//        and hosted in Germany. The row and the cookie clause now follow
+//        ANALYTICS_ENABLED, the same switch that loads the script: off, they
+//        say no tool is used; on, they name Plausible, what it counts and
+//        where, and that it sets no cookie and stores nothing on the device.
+//        The Plausible wording awaits the owner's approval before the switch
+//        is turned on. Asserted below, whichever way the switch is set.
 //
 //   8. "Supabase Auth" as the mail sender, "selon la politique de Supabase"
 //        True today: confirmation mail is sent by Supabase's own service from
@@ -223,5 +229,49 @@ describe("content integrity", () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+});
+
+// Item 7 above: the policy says what the build does. The script loads only
+// when ANALYTICS_ENABLED is on (src/lib/analytics.ts), and so does the text
+// naming it; guest predictions sit in the phone's storage whenever the
+// Pronostics page exists.
+describe("the privacy policy matches the analytics and Pronostics switches", () => {
+  const fr = () => allText(LEGAL_DOCUMENTS.privacy.fr).join(" ");
+  const ar = () => allText(LEGAL_DOCUMENTS.privacy.ar).join(" ");
+
+  it("names Plausible, in both languages, exactly when the script can load", () => {
+    expect(fr().includes("Plausible Analytics")).toBe(ANALYTICS_ENABLED);
+    expect(ar().includes("Plausible Analytics")).toBe(ANALYTICS_ENABLED);
+    expect(fr().includes("Aucun outil de mesure d'audience")).toBe(!ANALYTICS_ENABLED);
+    expect(ar().includes("لا تُستعمل أي أداة لقياس الجمهور")).toBe(!ANALYTICS_ENABLED);
+  });
+
+  it("says where Plausible keeps the data and that it sets no cookie", () => {
+    if (!ANALYTICS_ENABLED) {
+      expect(fr()).toContain("aucun cookie de mesure d'audience n'est déposé à ce jour");
+      return;
+    }
+    expect(fr()).toContain("Union européenne — Allemagne");
+    expect(ar()).toContain("الاتحاد الأوروبي — ألمانيا");
+    expect(fr()).toContain("ne dépose aucun cookie et n'enregistre rien sur votre appareil");
+    expect(ar()).toContain("لا تحفظ أي شيء على جهازك");
+  });
+
+  it("says that a visitor's predictions stay on the device until they sign up", () => {
+    expect(fr().includes("Les pronostics faits sans compte")).toBe(PRONOSTICS_ENABLED);
+    expect(ar().includes("التوقعات المُنجزة دون حساب")).toBe(PRONOSTICS_ENABLED);
+  });
+
+  it("holds both wordings, so switching changes the policy with the script", () => {
+    const source = readFileSync(join(import.meta.dir, "documents.ts"), "utf8");
+    for (const text of [
+      "Plausible Analytics",
+      "Aucun outil de mesure d'audience",
+      "لا تُستعمل أي أداة لقياس الجمهور",
+    ]) {
+      expect(source).toContain(text);
+    }
+    expect(source.match(/ANALYTICS_ENABLED\s*\?/g)?.length).toBe(4);
   });
 });

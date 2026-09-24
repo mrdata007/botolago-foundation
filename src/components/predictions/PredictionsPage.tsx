@@ -17,6 +17,7 @@ import {
   UiTabs,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import type { MyPredictionDto } from "@/backend/predictions/contracts";
 import { FixturePredictionCard, type FixtureScore } from "./FixturePredictionCard";
@@ -227,7 +228,10 @@ export function PredictionsPage({
               <p className={cn(ui.text.meta, ui.tone.muted)}>{t("predictions.guest.cta_body")}</p>
               <UiButton
                 variant="ink"
-                onClick={() => requireAuth(() => {}, { reason: t("predictions.guest.cta_body") })}
+                onClick={() => {
+                  track("pronostics_signup_click");
+                  requireAuth(() => {}, { reason: t("predictions.guest.cta_body") });
+                }}
               >
                 {t("predictions.guest.cta_button")}
               </UiButton>
@@ -239,7 +243,10 @@ export function PredictionsPage({
             total={countable.length}
             state={model.saveState}
             onRetry={model.retrySave}
-            onSignUp={() => requireAuth(() => {}, { reason: t("predictions.guest.cta_body") })}
+            onSignUp={() => {
+              track("pronostics_signup_click");
+              requireAuth(() => {}, { reason: t("predictions.guest.cta_body") });
+            }}
           />
         </>
       )}

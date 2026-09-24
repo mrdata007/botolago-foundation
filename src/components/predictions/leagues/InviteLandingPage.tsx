@@ -8,6 +8,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiButton, UiCard, UiHeader, UiStatePanel } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { predictionsService } from "@/services/predictions";
 import { clearPendingInvite, takeInviteFromLocation } from "./invite-link";
@@ -101,9 +102,10 @@ export function InviteLandingPage() {
             <p className={ui.text.meta}>{t("predictions.leagues.invite_signup")}</p>
             <UiButton
               variant="ink"
-              onClick={() =>
-                requireAuth(() => {}, { reason: t("predictions.leagues.invite_signup") })
-              }
+              onClick={() => {
+                track("pronostics_signup_click");
+                requireAuth(() => {}, { reason: t("predictions.leagues.invite_signup") });
+              }}
             >
               {t("predictions.guest.cta_button")}
             </UiButton>

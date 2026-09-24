@@ -21,7 +21,9 @@ import {
 import { PredictionSaveQueue, type SaveQueueState } from "@/backend/predictions/save-queue";
 import { useAuth } from "@/auth/AuthProvider";
 import { useI18n } from "@/i18n/provider";
+import { track } from "@/lib/analytics";
 import { predictionsService } from "@/services/predictions";
+import { guestRoundEvents } from "./guest-analytics";
 import { getGuestStore, noteServerTime, serverNow } from "./predictions-runtime";
 
 export { getGuestStore, noteServerTime, serverNow };
@@ -376,6 +378,10 @@ export function usePredictionsRound(
         kickoffAt: fixture.kickoffAt,
         savedAt: new Date().toISOString(),
       });
+      const open = round.fixtures
+        .filter((candidate) => !candidate.void && isFixtureOpen(candidate, serverNow()))
+        .map((candidate) => candidate.id);
+      for (const event of guestRoundEvents(guest.store, seasonId, roundNo, open)) track(event);
     },
     [uid, round, guest.store, t],
   );

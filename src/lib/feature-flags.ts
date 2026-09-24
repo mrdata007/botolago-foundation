@@ -200,3 +200,23 @@ export const PRONOSTICS_ENABLED = true;
  *   - `src/routes/fantasy.leagues.$leagueId.tsx` — the league's "Pronostics" tab
  */
 export const PRONOSTICS_PROMOTED = false;
+
+/**
+ * Audience measurement — OFF until the owner switches it on (BG-0146, plan
+ * §11): Plausible Analytics, cookie-free, hosted in the EU (Germany). Page
+ * views plus five Pronostics events, names only, no identifiers.
+ *
+ * The script and the privacy policy's lines about it go live together, in one
+ * release: before switching this on, the site `botolago.com` must exist in
+ * Plausible (with the five events as goals, and only botolago.com allowed as a
+ * hostname), its install snippet must match `src/lib/analytics.ts`, and the
+ * owner must have approved the policy wording. Production builds only: a
+ * development server or the Playwright suite never loads the script.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/__root.tsx` — the Plausible script and the page views
+ *   - `src/lib/analytics.ts` — `track()` sends nothing while off
+ *   - `src/content/legal/documents.ts` — the processor row and the cookie
+ *     clause of the privacy policy, in French and Arabic
+ */
+export const ANALYTICS_ENABLED = false;

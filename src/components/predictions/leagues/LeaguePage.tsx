@@ -17,6 +17,7 @@ import {
   UiStatePanel,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { predictionsService } from "@/services/predictions";
 import { roundQueryOptions } from "../use-predictions-round";
@@ -98,7 +99,10 @@ export function LeaguePage({ leagueId }: { leagueId: string }) {
         <p className={ui.text.body}>{t("predictions.leagues.signed_out")}</p>
         <UiButton
           variant="ink"
-          onClick={() => requireAuth(() => {}, { reason: t("predictions.leagues.signed_out") })}
+          onClick={() => {
+            track("pronostics_signup_click");
+            requireAuth(() => {}, { reason: t("predictions.leagues.signed_out") });
+          }}
         >
           {t("predictions.guest.cta_button")}
         </UiButton>

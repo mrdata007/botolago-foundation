@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { ui, UiButton, UiIconButton, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { track } from "@/lib/analytics";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { cn } from "@/lib/utils";
 import { whatsappUrl } from "./leagues/invite-link";
@@ -59,6 +60,7 @@ export function PredictionsShareButton({
     typeof (navigator as Navigator & { share?: unknown }).share === "function";
 
   const done = (channel: Channel) => {
+    track("pronostics_share");
     onShare?.(channel);
     setOpen(false);
   };

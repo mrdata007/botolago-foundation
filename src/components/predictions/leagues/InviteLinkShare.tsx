@@ -3,6 +3,7 @@ import { toast } from "sonner";
 
 import { ui, UiButton, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { inviteLink, whatsappUrl } from "./invite-link";
 
@@ -34,6 +35,7 @@ export function InviteLinkShare({
     if (typeof nav.share === "function") {
       try {
         await nav.share({ text });
+        track("pronostics_share");
       } catch {
         // Declined, not failed.
       }
@@ -45,6 +47,7 @@ export function InviteLinkShare({
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(link);
+      track("pronostics_share");
       toast.success(t("article.share_copied"));
     } catch {
       toast.error(t("predictions.save.offline"));
@@ -76,6 +79,7 @@ export function InviteLinkShare({
           href={whatsappUrl(text)}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => track("pronostics_share")}
           className={cn(
             "inline-flex items-center gap-2 px-4",
             ui.space.tap,

@@ -9,6 +9,7 @@ import {
   PRIZES_ENABLED,
   PRONOSTICS_ENABLED,
   PRONOSTICS_PROMOTED,
+  ANALYTICS_ENABLED,
 } from "@/lib/feature-flags";
 import { SITEMAP_STATIC_PATHS } from "@/lib/sitemap";
 import { primaryNavItems } from "@/components/shell/primary-nav";
@@ -316,6 +317,46 @@ describe("PRONOSTICS_ENABLED / PRONOSTICS_PROMOTED", () => {
     ]);
     const strays = sourceFiles().filter(
       (file) => !allowed.has(file) && stripComments(read(file)).includes("PRONOSTICS_PROMOTED"),
+    );
+    expect(strays).toEqual([]);
+  });
+});
+
+/**
+ * BG-0146 — audience measurement. The script, the page views, the events and
+ * the privacy policy's lines about them all read this one switch, so the
+ * policy can never describe a tool the build does not load, or the reverse.
+ */
+describe("ANALYTICS_ENABLED", () => {
+  test("is a single boolean constant, recorded once with the decision", () => {
+    expect(typeof ANALYTICS_ENABLED).toBe("boolean");
+    const source = read("src/lib/feature-flags.ts");
+    expect(source.match(/export const ANALYTICS_ENABLED/g)).toHaveLength(1);
+  });
+
+  test("measurement needs the switch AND a production build", () => {
+    const source = stripComments(read("src/lib/analytics.ts"));
+    expect(source).toContain("ANALYTICS_ENABLED && import.meta.env.PROD === true");
+  });
+
+  test("the root page loads the script and counts pages only when measuring", () => {
+    const source = stripComments(read("src/routes/__root.tsx"));
+    expect(source).toContain("...(ANALYTICS_ACTIVE");
+    expect(source).toContain("{ANALYTICS_ACTIVE && <AnalyticsPageviews />}");
+  });
+
+  test("the privacy policy's analytics lines follow it", () => {
+    expect(stripComments(read("src/content/legal/documents.ts"))).toContain("ANALYTICS_ENABLED");
+  });
+
+  test("no other source file reads the switch directly", () => {
+    const allowed = new Set([
+      "src/lib/feature-flags.ts",
+      "src/lib/analytics.ts",
+      "src/content/legal/documents.ts",
+    ]);
+    const strays = sourceFiles().filter(
+      (file) => !allowed.has(file) && stripComments(read(file)).includes("ANALYTICS_ENABLED"),
     );
     expect(strays).toEqual([]);
   });
