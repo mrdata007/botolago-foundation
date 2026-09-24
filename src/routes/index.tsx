@@ -186,22 +186,22 @@ function HomeContent() {
     queryFn: () => footballService.getClubs(lang),
   });
 
-  // Standings snapshot reuses the same real data source as /matches
-  // (getHomeMatches never carries a table; a season-scoped fetch does).
-  // No standings route/component exists yet, so this section renders only
-  // once a real, non-empty table comes back — never a fabricated one.
+  // Standings snapshot: the top of the table on the Classement tab
+  // (/matches/standings), from the same query — worked out from the current
+  // season's results. It renders only once a real, non-empty table comes
+  // back — never a fabricated one, and not before the first result.
   const seasonsQ = useQuery({
     queryKey: ["football", "seasons", lang],
     queryFn: () => footballService.getSeasons(lang),
   });
-  const currentSeasonId = useMemo(
-    () => seasonsQ.data?.find((season) => season.isCurrent)?.id ?? seasonsQ.data?.[0]?.id,
+  const currentSeason = useMemo(
+    () => seasonsQ.data?.find((season) => season.isCurrent) ?? seasonsQ.data?.[0],
     [seasonsQ.data],
   );
   const standingsQ = useQuery({
-    queryKey: ["football", "home-standings", lang, currentSeasonId],
-    queryFn: () => footballService.getMatchDay(new Date(), lang, currentSeasonId),
-    enabled: seasonsQ.isSuccess,
+    queryKey: ["football", "standings", currentSeason?.id, lang],
+    queryFn: () => footballService.getStandings(currentSeason!, lang),
+    enabled: currentSeason != null,
   });
 
   const clubById = (id: string) =>
@@ -251,9 +251,9 @@ function HomeContent() {
     return [...(edition.lead ? [edition.lead] : []), ...rest].slice(0, 3);
   }, [newsQ.data]);
 
-  const standingsLoading = seasonsQ.isPending || (seasonsQ.isSuccess && standingsQ.isPending);
+  const standingsLoading = seasonsQ.isPending || (currentSeason != null && standingsQ.isPending);
   const standingsFailed = seasonsQ.isError || standingsQ.isError;
-  const standingsRows = standingsQ.data?.standings ?? [];
+  const standingsRows = standingsQ.data?.overall ?? [];
   const showStandings = standingsLoading || standingsFailed || standingsRows.length > 0;
 
   return (
@@ -432,7 +432,7 @@ function HomeContent() {
         <Section>
           <SectionHeader
             title={plain(t("matches.table_preview"))}
-            action={<ViewAllLink to="/matches" />}
+            action={<ViewAllLink to="/matches/standings" />}
           />
           {standingsLoading ? (
             <SkeletonList count={5}>{() => <StandingsRowSkeleton />}</SkeletonList>
@@ -511,7 +511,7 @@ function HomeContent() {
 }
 
 /** "Tout voir" on a section heading: the shared 44px round link. */
-function ViewAllLink({ to }: { to: "/news" | "/matches" | "/fantasy" }) {
+function ViewAllLink({ to }: { to: "/news" | "/matches" | "/matches/standings" | "/fantasy" }) {
   return <SectionHeaderLink to={to} />;
 }
 

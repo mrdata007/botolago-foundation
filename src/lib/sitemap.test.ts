@@ -15,6 +15,7 @@ describe("sitemap.xml", () => {
     expect(xml).not.toContain("/news");
     expect(xml).toContain("<loc>https://botolago.com/</loc>");
     expect(xml).toContain("<loc>https://botolago.com/fantasy/rules</loc>");
+    expect(xml).toContain("<loc>https://botolago.com/matches/standings</loc>");
   });
 
   test("never lists the CMS, sign-in or personal pages", () => {

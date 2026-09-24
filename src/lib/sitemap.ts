@@ -16,6 +16,7 @@ export interface SitemapNewsEntry {
 export const SITEMAP_STATIC_PATHS = [
   "/",
   "/matches",
+  "/matches/standings",
   "/fantasy",
   "/fantasy/rules",
   "/privacy",

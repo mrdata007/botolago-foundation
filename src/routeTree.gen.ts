@@ -25,6 +25,7 @@ import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
 import { Route as PrizesTermsRouteImport } from './routes/prizes.terms'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
+import { Route as MatchesStandingsRouteImport } from './routes/matches.standings'
 import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
 import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
 import { Route as FantasyTopPlayersRouteImport } from './routes/fantasy.top-players'
@@ -142,6 +143,11 @@ const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
   id: '/$articleId',
   path: '/$articleId',
   getParentRoute: () => NewsRoute,
+} as any)
+const MatchesStandingsRoute = MatchesStandingsRouteImport.update({
+  id: '/matches/standings',
+  path: '/matches/standings',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const MatchesMatchIdRoute = MatchesMatchIdRouteImport.update({
   id: '/matches/$matchId',
@@ -373,6 +379,7 @@ export interface FileRoutesByFullPath {
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
+  '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
@@ -427,6 +434,7 @@ export interface FileRoutesByTo {
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
+  '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
@@ -483,6 +491,7 @@ export interface FileRoutesById {
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
+  '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
@@ -540,6 +549,7 @@ export interface FileRouteTypes {
     | '/fantasy/top-players'
     | '/fantasy/transfers'
     | '/matches/$matchId'
+    | '/matches/standings'
     | '/news/$articleId'
     | '/prizes/terms'
     | '/profile/security'
@@ -594,6 +604,7 @@ export interface FileRouteTypes {
     | '/fantasy/top-players'
     | '/fantasy/transfers'
     | '/matches/$matchId'
+    | '/matches/standings'
     | '/news/$articleId'
     | '/prizes/terms'
     | '/profile/security'
@@ -649,6 +660,7 @@ export interface FileRouteTypes {
     | '/fantasy/top-players'
     | '/fantasy/transfers'
     | '/matches/$matchId'
+    | '/matches/standings'
     | '/news/$articleId'
     | '/prizes/terms'
     | '/profile/security'
@@ -679,6 +691,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
+  MatchesStandingsRoute: typeof MatchesStandingsRoute
   PrizesTermsRoute: typeof PrizesTermsRoute
   MatchesIndexRoute: typeof MatchesIndexRoute
   PrizesIndexRoute: typeof PrizesIndexRoute
@@ -799,6 +812,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/news/$articleId'
       preLoaderRoute: typeof NewsArticleIdRouteImport
       parentRoute: typeof NewsRoute
+    }
+    '/matches/standings': {
+      id: '/matches/standings'
+      path: '/matches/standings'
+      fullPath: '/matches/standings'
+      preLoaderRoute: typeof MatchesStandingsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/matches/$matchId': {
       id: '/matches/$matchId'
@@ -1229,6 +1249,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   MatchesMatchIdRoute: MatchesMatchIdRoute,
+  MatchesStandingsRoute: MatchesStandingsRoute,
   PrizesTermsRoute: PrizesTermsRoute,
   MatchesIndexRoute: MatchesIndexRoute,
   PrizesIndexRoute: PrizesIndexRoute,

@@ -65,12 +65,14 @@ describe("Matches (A-Matches)", () => {
     expect(matches).not.toContain("CompetitionHeader");
   });
 
-  it("stacks title, live strip and status chips in that order, the strip drawn once", () => {
+  it("stacks title, tabs, live strip and status chips in that order, the strip drawn once", () => {
     const title = matches.indexOf("<UiPageTitle");
+    const tabs = matches.indexOf('<MatchesTabs active="calendar" />');
     const strip = matches.indexOf("<LiveStrip />");
     const chips = matches.indexOf("<StatusFilters");
     expect(title).toBeGreaterThan(-1);
-    expect(strip).toBeGreaterThan(title);
+    expect(tabs).toBeGreaterThan(title);
+    expect(strip).toBeGreaterThan(tabs);
     expect(chips).toBeGreaterThan(strip);
     // AppShell would draw a second strip after the whole header.
     expect(matches).not.toMatch(/<AppShell[^>]*\bliveStrip\b/);
@@ -99,4 +101,88 @@ describe("Matches (A-Matches)", () => {
     expect(matches).toMatch(/variant="list"/);
     expect(matches).toContain('title={t("matches.section.finished")}');
   });
+
+  it("leaves the table to the Classement tab rather than closing the page with it", () => {
+    expect(matches).not.toContain("StandingsTable");
+    expect(matches).not.toContain("standings");
+  });
+});
+
+describe("Classement (A-Standings)", () => {
+  const standings = code("matches.standings.tsx");
+  const home = code("index.tsx");
+
+  it("is the second Matches tab: same title band and season pill, tabs, then the live strip", () => {
+    const title = standings.indexOf("<UiPageTitle");
+    const picker = standings.indexOf("<SeasonPicker");
+    const tabs = standings.indexOf('<MatchesTabs active="standings" />');
+    const strip = standings.indexOf("<LiveStrip />");
+    expect(title).toBeGreaterThan(-1);
+    expect(picker).toBeGreaterThan(title);
+    expect(tabs).toBeGreaterThan(picker);
+    expect(strip).toBeGreaterThan(tabs);
+    expect(standings).toContain('createFileRoute("/matches/standings")');
+  });
+
+  it("reads the table worked out from the season's results, shared with Home's snapshot", () => {
+    expect(standings).toContain('queryKey: ["football", "standings", season?.id, lang]');
+    expect(standings).toContain("footballService.getStandings(season!, lang)");
+    expect(home).toContain('queryKey: ["football", "standings", currentSeason?.id, lang]');
+    expect(home).toContain('<ViewAllLink to="/matches/standings" />');
+  });
+
+  it("shows the reader's club only when they have one and it is in the table", () => {
+    expect(standings).toContain("findClub(data?.clubs, user?.favoriteClubId)");
+    expect(standings).toMatch(/favourite && favouriteStanding \? \(\s*<YourClubCard/);
+  });
+
+  it("keys the zone bars only under the season table, never under home or away", () => {
+    expect(standings).toContain(
+      'shown === "overall" || shown === "form" ? <StandingsLegend /> : null',
+    );
+  });
+
+  it("offers last season's table while this one has no result yet", () => {
+    expect(standings).toContain("data.overall.length === 0");
+    expect(standings).toContain("<EmptyState illustration={standingsSoonArt}>");
+    expect(standings).toContain("setSeasonId(previous.id)");
+  });
+
+  it("keeps the four views as one named group of chips", () => {
+    expect(standings).toContain('role="group"');
+    expect(standings).toContain('aria-label={t("standings.a11y.views")}');
+    for (const key of [
+      "standings.view.overall",
+      "standings.view.home",
+      "standings.view.away",
+      "matches.table.form",
+    ]) {
+      expect(standings).toContain(`"${key}"`);
+    }
+  });
+});
+
+describe("Classement — design-system rules in source", () => {
+  const FILES = [
+    "matches.standings.tsx",
+    "../components/matches/MatchesTabs.tsx",
+    "../components/matches/SeasonPicker.tsx",
+    "../components/matches/StandingsTable.tsx",
+    "../components/matches/YourClubCard.tsx",
+    "../components/matches/standings-copy.ts",
+  ];
+  for (const file of FILES) {
+    const source = code(file);
+    it(`${file}: logical properties, ltr-only tracking, no literal colour`, () => {
+      expect(source).not.toMatch(
+        /["'`\s](?:m[lr]|p[lr]|border-[lr]|rounded-[lr]|rounded-(?:tl|tr|bl|br)|text-(?:left|right))(?:-|\b)/,
+      );
+      expect(source).not.toMatch(/["'`\s]-?(?:left|right)-(?:\d|\[|1\/2|full|px)/);
+      expect(source).not.toMatch(/(?<!ltr:)tracking-/);
+      expect(source).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+      expect(source).not.toMatch(/\brgba?\(/);
+      expect(source).not.toMatch(/(?:text|ring|border)-\[color:var\(--ui-ink\)\]/);
+      expect(source).not.toMatch(/gradient\([^)]*\d+deg/);
+    });
+  }
 });
