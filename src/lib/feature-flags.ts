@@ -136,24 +136,27 @@ export const DARK_MODE_ENABLED = false;
 export const OAUTH_PROVIDERS_ENABLED = true;
 
 /**
- * Fantasy prizes (public surfaces) — OFF until launch.
+ * Fantasy prizes (public surfaces) — ON since 2026-09-24.
  *
- * Owner decision, 2026-09-24: the sponsor-funded prize system ships switched
- * off. Three things must be true before this becomes `true`:
+ * Owner decision, 2026-09-24: the prize system shipped switched off, then the
+ * owner switched it on the same day, once the three launch conditions held:
  *
  *   1. the prize T&Cs in `src/content/legal/prize-terms.ts` carry the owner's
- *      final legal text -- every `[TODO …]` span is replaced. The production
- *      build refuses to run while this flag is on and a span survives
+ *      final text -- every `[TODO …]` span is replaced. The production build
+ *      refuses to run while this flag is on and a span survives
  *      (`scripts/qa/legal-placeholder-gate.ts`);
- *   2. the sponsor has signed off on the catalog shown on the page;
- *   3. `supabase/migrations/20260924120000_fantasy_prizes.sql` has been promoted
- *      to production through the reviewed migration path.
+ *   2. no sponsor is involved -- Go Sports Technologies provides the prizes --
+ *      so there is no sponsor sign-off to wait for (the owner dropped that
+ *      condition). A sponsor added to a prize later needs naming in the T&Cs;
+ *   3. `supabase/migrations/20260924120000_fantasy_prizes.sql` is on
+ *      production (applied 2026-09-24 13:37 UTC, history version
+ *      20260924133723).
  *
  * The flag hides what the public sees. It does not gate the admin console
- * (`/admin/prizes`, behind `prizes.manage`), which is how the catalog is
- * prepared before launch, nor winner selection, which the database only runs
- * for a tier whose prize an admin has switched on -- and the default prizes
- * are seeded switched off.
+ * (`/admin/prizes`, behind `prizes.manage`), where the catalog is managed, nor
+ * winner selection, which the database only runs for a tier whose prize an
+ * admin has switched on. The default prizes are seeded switched off; turning
+ * them on is a database change, not this flag.
  *
  * Gated surfaces (keep this list current):
  *   - `src/routes/prizes.index.tsx` + `src/routes/prizes.terms.tsx` -- the routes
@@ -161,7 +164,7 @@ export const OAUTH_PROVIDERS_ENABLED = true;
  *   - `src/lib/sitemap.ts` -- the /prizes entries
  *   - `scripts/qa/legal-placeholder-gate.ts` -- the prize T&Cs join the check
  */
-export const PRIZES_ENABLED = false;
+export const PRIZES_ENABLED = true;
 
 /**
  * Pronostics (score predictions, BG-0146) — the page exists; the database decides.

@@ -5,13 +5,15 @@ import {
   clubFixtures,
   clubResults,
   clubScore,
+  clubSeasonAbsent,
   clubSeasonStats,
   EMPTY_RECORD,
   matchOutcome,
   nextClubMatch,
   officialRecord,
+  lastSeasonPlayed,
   perMatch,
-  previousSeason,
+  seasonsWithResults,
   squadByPosition,
   standingsAround,
   type SquadPlayer,
@@ -243,22 +245,79 @@ describe("standingsAround", () => {
   });
 });
 
-describe("previousSeason", () => {
+describe("lastSeasonPlayed", () => {
   const seasons = [
     { id: "2026", startsOn: "2026-08-01" },
     { id: "2024", startsOn: "2024-08-01" },
     { id: "2025", startsOn: "2025-08-01" },
+    { id: "2023", startsOn: "2023-08-01" },
   ];
 
-  test("is the latest season that started before this one", () => {
-    expect(previousSeason(seasons, "2026")?.id).toBe("2025");
-    expect(previousSeason(seasons, "2025")?.id).toBe("2024");
+  test("is the latest earlier season the club has a result in", () => {
+    expect(lastSeasonPlayed(seasons, "2026", ["2025", "2024"])?.id).toBe("2025");
+    expect(lastSeasonPlayed(seasons, "2025", ["2025", "2024"])?.id).toBe("2024");
   });
 
-  test("is nothing for the oldest season or an unknown one", () => {
-    expect(previousSeason(seasons, "2024")).toBeUndefined();
-    expect(previousSeason(seasons, "1999")).toBeUndefined();
-    expect(previousSeason(seasons, undefined)).toBeUndefined();
+  test("skips the seasons the club was not in, as a promoted club's last one", () => {
+    expect(lastSeasonPlayed(seasons, "2026", ["2024", "2023"])?.id).toBe("2024");
+    expect(lastSeasonPlayed(seasons, "2025", ["2023"])?.id).toBe("2023");
+  });
+
+  test("is nothing when no earlier season has a result, or the season is unknown", () => {
+    expect(lastSeasonPlayed(seasons, "2026", ["2026"])).toBeUndefined();
+    expect(lastSeasonPlayed(seasons, "2026", [])).toBeUndefined();
+    expect(lastSeasonPlayed(seasons, "2023", ["2023", "2024"])).toBeUndefined();
+    expect(lastSeasonPlayed(seasons, "1999", ["2025"])).toBeUndefined();
+    expect(lastSeasonPlayed(seasons, undefined, ["2025"])).toBeUndefined();
+  });
+});
+
+describe("clubSeasonAbsent", () => {
+  const fixture = match({ day: 1, status: "scheduled" });
+  const over = { status: "completed", firstMatchDate: "2025-09-05" };
+  const underway = { status: "active", firstMatchDate: "2026-09-24" };
+  const unpublished = { status: "planned", firstMatchDate: null };
+
+  test("a finished season with no fixture for the club is one it was not in", () => {
+    expect(clubSeasonAbsent(over, [])).toBe(true);
+    expect(clubSeasonAbsent({ status: "cancelled", firstMatchDate: null }, [])).toBe(true);
+  });
+
+  test("a season whose fixtures are out, none of them the club's: a relegated club", () => {
+    expect(clubSeasonAbsent(underway, [])).toBe(true);
+    expect(clubSeasonAbsent({ status: "planned", firstMatchDate: "2026-09-24" }, [])).toBe(true);
+  });
+
+  test("a season with no calendar yet is 'not yet', not 'not there'", () => {
+    expect(clubSeasonAbsent(unpublished, [])).toBe(false);
+    expect(clubSeasonAbsent({ status: "active", firstMatchDate: null }, [])).toBe(false);
+  });
+
+  test("a club with fixtures in the season was in it, played or not", () => {
+    expect(clubSeasonAbsent(over, [fixture])).toBe(false);
+    expect(clubSeasonAbsent(underway, [fixture])).toBe(false);
+  });
+
+  test("nothing is concluded before the season or its matches are known", () => {
+    expect(clubSeasonAbsent(undefined, [])).toBe(false);
+    expect(clubSeasonAbsent(over, undefined)).toBe(false);
+  });
+});
+
+describe("seasonsWithResults", () => {
+  test("lists each season in which the club has a final score, once", () => {
+    const fixtures = [
+      { seasonId: "2025", match: match({ day: 1, homeScore: 1, awayScore: 0 }) },
+      { seasonId: "2025", match: match({ day: 2, homeScore: 0, awayScore: 0 }) },
+      { seasonId: "2024", match: match({ day: 3, homeScore: 2, awayScore: 2 }) },
+      // Not played yet, and a match the club was not in: neither counts.
+      { seasonId: "2026", match: match({ day: 4, status: "scheduled" }) },
+      {
+        seasonId: "2023",
+        match: match({ day: 5, homeClubId: "x", awayClubId: "y", homeScore: 1, awayScore: 1 }),
+      },
+    ];
+    expect(seasonsWithResults(fixtures, CLUB).sort()).toEqual(["2024", "2025"]);
   });
 });
 

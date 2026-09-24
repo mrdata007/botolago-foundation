@@ -215,11 +215,10 @@ describe("DARK_MODE_ENABLED", () => {
 });
 
 /**
- * Fantasy prizes ship switched off (owner decision, 2026-09-24): the public
- * pages, the hub row and the first-visit welcome stay hidden until the final
- * prize T&Cs, the sponsor's sign-off and the database promotion are in. Like
- * the News block above, nothing here asserts the value -- flipping it is the
- * supported way to launch -- only that every surface reads it.
+ * Fantasy prizes (owner decision, 2026-09-24): the public pages, the hub row
+ * and the first-visit welcome show only while the flag is on. Like the News
+ * block above, nothing here asserts the value -- flipping it is the supported
+ * way to launch or withdraw them -- only that every surface reads it.
  */
 describe("PRIZES_ENABLED", () => {
   test("is a single boolean constant, recorded once with its owner and date", () => {

@@ -204,6 +204,7 @@ export const dictionaries = {
     "club.stats.biggest_win": "Plus large victoire",
     "club.stats.heaviest_defeat": "Plus lourde défaite",
     "club.season_empty": "Aucun match joué cette saison pour l'instant.",
+    "club.season_absent": "Le club ne fait pas partie de la Botola Pro pour cette saison.",
     "club.view_season": "Voir la saison {season}",
     "club.news_empty": "Aucune actualité sur ce club pour le moment.",
     "club.matches_empty": "Aucun match pour cette saison.",
@@ -1459,8 +1460,6 @@ export const dictionaries = {
     "prizes.terms.meta_title": "Règlement des lots — BotolaGO Fantasy",
     "prizes.terms.meta_description":
       "Le règlement des lots de BotolaGO Fantasy : désignation des gagnants, vérification et remise.",
-    "prizes.terms.draft_notice":
-      "Version provisoire : le texte définitif sera publié avant l'ouverture des lots.",
     "prizes.welcome.title": "Jouez gratuitement, gagnez des lots !",
     "prizes.welcome.body":
       "Composez votre équipe, marquez des points à chaque journée et grimpez au classement pour tenter de remporter des lots.",
@@ -1983,6 +1982,7 @@ export const dictionaries = {
     "club.stats.biggest_win": "أكبر فوز",
     "club.stats.heaviest_defeat": "أثقل هزيمة",
     "club.season_empty": "لم تُلعب أي مباراة هذا الموسم بعد.",
+    "club.season_absent": "النادي ليس ضمن البطولة الاحترافية في هذا الموسم.",
     "club.view_season": "عرض موسم {season}",
     "club.news_empty": "لا توجد أخبار عن هذا النادي حالياً.",
     "club.matches_empty": "لا توجد مباريات لهذا الموسم.",
@@ -3169,7 +3169,6 @@ export const dictionaries = {
     "prizes.terms.meta_title": "نظام الجوائز — BotolaGO Fantasy",
     "prizes.terms.meta_description":
       "نظام جوائز BotolaGO Fantasy: تحديد الفائزين والتحقق والتسليم.",
-    "prizes.terms.draft_notice": "نسخة مؤقتة: سيُنشر النص النهائي قبل فتح الجوائز.",
     "prizes.welcome.title": "العب مجاناً واربح جوائز!",
     "prizes.welcome.body":
       "شكّل فريقك واجمع النقاط في كل جولة، وتقدّم في الترتيب لتنافس على الجوائز.",
