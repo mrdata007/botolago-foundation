@@ -1,5 +1,13 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { ChevronDown, FileText, Plus, Search } from "lucide-react";
+import {
+  CalendarClock,
+  ChevronDown,
+  ChevronRight,
+  Clock3,
+  Plus,
+  Search,
+  UserRound,
+} from "lucide-react";
 import type { ComponentProps } from "react";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { loadAdminNewsReadRouteAccess } from "@/backend/admin/route-access.functions";
@@ -28,7 +36,7 @@ import {
   AdminNotice,
   AdminSkeletonList,
 } from "@/components/admin/AdminSurfaces";
-import { ui, UiBadge, UiButton, UiInput, UiLinkButton, UiSelect } from "@/components/ui-kit";
+import { ui, UiBadge, UiButton, UiCard, UiChip, UiInput, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +46,96 @@ export const Route = createFileRoute("/admin/news")({
   pendingComponent: AdminFunctionalLoading,
   component: AdminNewsRoute,
 });
+
+interface FilterChip<T extends string> {
+  readonly value: T;
+  readonly label: string;
+}
+
+/**
+ * One labelled row of filter chips -- the app's own filter control (the
+ * Matches day filter, the Fantasy sort row): sunken pills at rest, the chosen
+ * one white on navy. It replaced three `<select>`s and a "Filtrer" button, so
+ * a filter is one tap rather than open, pick, then submit.
+ *
+ * On a phone the row scrolls sideways instead of wrapping into a block of
+ * pills; the 4px inset is room for the focus ring, which sits 4px outside a
+ * chip and would otherwise be cut by the scroll box.
+ */
+function FilterChips<T extends string>({
+  label,
+  options,
+  value,
+  onSelect,
+  "data-testid": testId,
+}: {
+  label: string;
+  options: readonly FilterChip<T>[];
+  value: T;
+  onSelect: (value: T) => void;
+  "data-testid": string;
+}) {
+  return (
+    <div className="grid min-w-0 gap-1">
+      <p className={ADMIN_LABEL_CLASS} aria-hidden>
+        {label}
+      </p>
+      <div
+        role="group"
+        aria-label={label}
+        className="-m-1 flex gap-2 overflow-x-auto p-1 [scrollbar-width:none] sm:flex-wrap"
+        data-testid={testId}
+      >
+        {options.map((option) => (
+          <UiChip
+            key={option.value || "all"}
+            selected={option.value === value}
+            onClick={() => onSelect(option.value)}
+          >
+            {option.label}
+          </UiChip>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The article's language as a 40px disc at the head of its card, drawn like
+ * the app's crest and icon discs and carrying what the language button in
+ * the top bar shows: "FR" or "ع". The full name is there for a screen
+ * reader; the two letters are for the eye.
+ */
+function LanguageDisc({ language }: { language: NewsLanguage }) {
+  return (
+    <span
+      className={cn(
+        "grid h-10 w-10 shrink-0 place-items-center",
+        ui.radius.full,
+        ui.surface.sunken,
+        ui.tone.ink,
+        ui.text.meta,
+        "[font-weight:var(--ui-weight-heavy)]",
+      )}
+    >
+      <span aria-hidden>{language === "ar" ? "ع" : "FR"}</span>
+      <span className="sr-only">{language === "ar" ? "العربية" : "Français"}</span>
+    </span>
+  );
+}
+
+/** The list count beside its heading: a quiet sunken pill on the tabular rail,
+ *  in the body face -- the heading around it is in the display face, which
+ *  has no tabular figures. */
+const COUNT_PILL = cn(
+  "px-2.5 py-0.5",
+  ui.font.body,
+  ui.radius.full,
+  ui.surface.sunken,
+  ui.tone.muted,
+  ui.text.meta,
+  ui.text.tabular,
+);
 
 const STATUSES: readonly EditorialStatus[] = [
   "draft",
@@ -279,14 +377,13 @@ function AdminNewsListRoute() {
   const rtl = lang === "ar";
   const repository = useMemo(() => new SupabaseNewsRepository(), []);
   const [state, dispatch] = useReducer(adminNewsListReducer, ADMIN_NEWS_INITIAL_STATE);
-  // The three inputs are a *draft*: they are what the editor is composing.
-  // `state.filters` is what the list on screen was actually fetched with, and
-  // it is the only thing "load more" ever pages under -- so a half-changed
-  // form can never bleed into the page that follows.
-  const [language, setLanguage] = useState<NewsLanguage | "">("");
-  const [status, setStatus] = useState<EditorialStatus | "">("");
+  // The search box is a *draft*: what the editor is typing, applied on Enter
+  // or the search button. The chips apply as they are tapped, like the
+  // app's own filter chips, so what they show selected is `state.filters` --
+  // what the list on screen was actually fetched with, and the only thing
+  // "load more" ever pages under -- and a half-typed query can never bleed
+  // into the page that follows.
   const [query, setQuery] = useState("");
-  const [scope, setScope] = useState<AdminNewsFilters["scope"]>("editorial");
   const [scheduleProblem, setScheduleProblem] = useState<ScheduleHealthProblem | null>(null);
   const generation = useRef(ADMIN_NEWS_INITIAL_STATE.generation);
 
@@ -338,6 +435,12 @@ function AdminNewsListRoute() {
     void fetchPage(state.filters, state.cursor, generation.current, true);
   }, [fetchPage, state.cursor, state.filters, state.phase]);
 
+  // A chip, or the search box, starts a new search from what is on screen
+  // plus the one change -- a new generation, so an answer to the previous
+  // filters can never land in this list. The typed query rides along.
+  const applyFilters = (change: Partial<AdminNewsFilters>) =>
+    search({ ...state.filters, query, ...change });
+
   useEffect(() => {
     if (access.state !== "authorized") return;
     search(ADMIN_NEWS_EMPTY_FILTERS);
@@ -353,94 +456,108 @@ function AdminNewsListRoute() {
   const loading = state.phase === "loading";
   const loadingMore = state.phase === "loading-more";
 
+  // The filter chips, in the order an editor reaches for them.
+  const statusChips: readonly FilterChip<EditorialStatus | "">[] = [
+    { value: "", label: rtl ? "الكل" : "Tous" },
+    ...STATUSES.map((value) => ({ value, label: NEWS_STATUS_LABELS[value][lang] })),
+  ];
+  const languageChips: readonly FilterChip<NewsLanguage | "">[] = [
+    { value: "", label: rtl ? "كل اللغات" : "Toutes les langues" },
+    { value: "fr", label: "Français" },
+    { value: "ar", label: "العربية" },
+  ];
+  const scopeChips: readonly FilterChip<AdminNewsFilters["scope"]>[] = [
+    { value: "editorial", label: rtl ? "مقالات BotolaGO" : "Articles BotolaGO" },
+    { value: "imported", label: rtl ? "محتوى مستورد" : "Contenu importé" },
+  ];
+
   return (
     <AdminFunctionalRoute
       access={access}
-      title={rtl ? "إدارة الأخبار" : "Gestion des actualités"}
+      layout="hub"
+      title={rtl ? "الأخبار" : "Actualités"}
       description={
         rtl
           ? "قائمة كل المقالات بجميع الحالات، بما فيها المسودات والمقالات غير المنشورة."
           : "Liste de tous les articles, quel que soit leur statut, brouillons et retirés inclus."
       }
       testId="admin-news-list"
-    >
-      {access.state === "authorized" && (
-        <>
-          {/* The primary action sits above the filters: writing a new article
-              is what this screen is opened for most of the time. */}
-          <UiLinkButton to="/admin/news/new" className="sm:w-auto" data-testid="admin-news-create">
+      actions={
+        access.state === "authorized" ? (
+          // The primary action sits beside the title: writing a new article
+          // is what this screen is opened for most of the time.
+          <UiLinkButton
+            to="/admin/news/new"
+            size="sm"
+            className="w-full sm:w-auto"
+            data-testid="admin-news-create"
+          >
             <Plus className="h-4 w-4" aria-hidden />
             {rtl ? "مقال جديد" : "Nouvel article"}
           </UiLinkButton>
-
-          <form
-            className={cn("mt-5", ADMIN_CARD_CLASS, "p-4 sm:p-5")}
-            onSubmit={(event) => {
-              event.preventDefault();
-              search({ language, status, query, scope });
-            }}
+        ) : undefined
+      }
+    >
+      {access.state === "authorized" && (
+        <>
+          <UiCard
+            padding="md"
+            className="grid gap-4"
+            role="search"
+            aria-label={rtl ? "تصفية المقالات" : "Filtrer les articles"}
           >
-            <h3 className={ADMIN_LABEL_CLASS}>{rtl ? "تصفية" : "Filtres"}</h3>
-            {/* The three filters were a hand-built `<label>` + `<select>` /
-                `<input>` recipe each. `UiSelect`/`UiInput` render and wire the
-                same label, so the visible words are unchanged -- but the hint
-                and error lines they own are now `aria-describedby` rather than
-                part of the control's accessible NAME, which is what a label
-                wrapping its own helper text made them. */}
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <UiSelect
-                label={rtl ? "اللغة" : "Langue"}
-                value={language}
-                onChange={(event) => setLanguage(event.target.value as NewsLanguage | "")}
-                data-testid="admin-news-filter-language"
-              >
-                <option value="">{rtl ? "الكل" : "Toutes"}</option>
-                <option value="fr">Français</option>
-                <option value="ar">العربية</option>
-              </UiSelect>
-              <UiSelect
-                label={rtl ? "الحالة" : "Statut"}
-                value={status}
-                onChange={(event) => setStatus(event.target.value as EditorialStatus | "")}
-                data-testid="admin-news-filter-status"
-              >
-                <option value="">{rtl ? "الكل" : "Tous"}</option>
-                {STATUSES.map((value) => (
-                  <option key={value} value={value}>
-                    {NEWS_STATUS_LABELS[value][lang]}
-                  </option>
-                ))}
-              </UiSelect>
-              <UiSelect
-                label={rtl ? "النوع" : "Type"}
-                value={scope}
-                onChange={(event) => setScope(event.target.value as AdminNewsFilters["scope"])}
-                data-testid="admin-news-filter-scope"
-              >
-                <option value="editorial">{rtl ? "مقالات BotolaGO" : "Articles BotolaGO"}</option>
-                <option value="imported">
-                  {rtl
-                    ? "محتوى مستورد (أرشيف، غير قابل للنشر)"
-                    : "Contenu importé (archive, non publiable)"}
-                </option>
-              </UiSelect>
+            <form
+              className="flex items-start gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                applyFilters({ query });
+              }}
+            >
               <UiInput
-                label={rtl ? "بحث في العنوان" : "Recherche dans le titre"}
+                type="search"
+                aria-label={rtl ? "بحث في العناوين" : "Rechercher un titre"}
+                placeholder={rtl ? "بحث في العناوين" : "Rechercher un titre"}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
+                leading={<Search className={cn("h-4 w-4", ui.tone.muted)} aria-hidden />}
+                className="min-w-0 flex-1"
                 data-testid="admin-news-filter-query"
               />
+              <UiButton
+                type="submit"
+                variant="ink"
+                size="sm"
+                data-testid="admin-news-filter-submit"
+              >
+                {rtl ? "بحث" : "Rechercher"}
+              </UiButton>
+            </form>
+            <FilterChips
+              label={rtl ? "الحالة" : "Statut"}
+              options={statusChips}
+              value={state.filters.status}
+              onSelect={(status) => applyFilters({ status })}
+              data-testid="admin-news-filter-status"
+            />
+            <div className="flex flex-wrap gap-x-8 gap-y-4">
+              <FilterChips
+                label={rtl ? "اللغة" : "Langue"}
+                options={languageChips}
+                value={state.filters.language}
+                onSelect={(language) => applyFilters({ language })}
+                data-testid="admin-news-filter-language"
+              />
+              {/* Third-party stubs are archived and cannot be published; they
+                  are kept apart from BotolaGO's own work. */}
+              <FilterChips
+                label={rtl ? "النوع" : "Type"}
+                options={scopeChips}
+                value={state.filters.scope}
+                onSelect={(scope) => applyFilters({ scope })}
+                data-testid="admin-news-filter-scope"
+              />
             </div>
-            <UiButton
-              type="submit"
-              className="mt-4 sm:w-auto"
-              disabled={loading || loadingMore}
-              data-testid="admin-news-filter-submit"
-            >
-              <Search className="h-4 w-4" aria-hidden />
-              {rtl ? "تصفية" : "Filtrer"}
-            </UiButton>
-          </form>
+          </UiCard>
 
           {scheduleProblem && (
             <div className="mt-4" data-testid="admin-news-schedule-warning">
@@ -458,120 +575,124 @@ function AdminNewsListRoute() {
             </div>
           )}
 
-          <h3 className={cn("mt-6", ADMIN_LABEL_CLASS)} data-testid="admin-news-result-count">
+          {/* A section heading in the display face, like the app's "À venir",
+              with the count in a quiet pill. The count carries a "more to
+              come" marker, so it is an LTR run: only the value is forced. */}
+          <h3
+            className={cn("mt-8 flex items-center gap-2", ui.display.section)}
+            data-testid="admin-news-result-count"
+          >
             {rtl ? "المقالات" : "Articles"}
-            {" · "}
-            {/* A count with a "more to come" marker is an LTR run: only the
-                value is forced, the label keeps its logical position.
-                `ui.text.tabular` rather than a hand-rolled `tabular-nums`
-                (rule 4); not a `ui.stat.*` step, because this figure is set
-                inline inside a 12px label and the smallest stat step is 13px
-                — it would sit a pixel proud of the word it follows. */}
-            <AdminDatum mono={false} className={ui.text.tabular}>
+            <AdminDatum mono={false} className={COUNT_PILL}>
               {`${state.items.length}${state.cursor === null ? "" : "+"}`}
             </AdminDatum>
           </h3>
 
-          <ul className="mt-3 grid gap-3" data-testid="admin-news-items">
+          <ul className="mt-3 grid grid-cols-1 gap-3" data-testid="admin-news-items">
             {state.items.map((item) => (
               <li key={item.id} data-testid="admin-news-item">
-                {/* The whole card is the link: a one-tap target at 390px. */}
+                {/* The whole card is the link: a one-tap target at 390px. Its
+                    hover lifts the shadow and a press settles it, as the app's
+                    article cards do. */}
                 <Link
                   to="/admin/news/$articleEditionId"
                   params={{ articleEditionId: item.id }}
-                  // The hover used to move the border as well as the fill. The
-                  // rule token is one hairline colour with no hover step, so
-                  // the surface carries the whole hover on its own -- sunken,
-                  // which is the recessed step the rest of the kit uses for
-                  // "under the pointer".
                   className={cn(
-                    "block p-4 transition-colors",
+                    "flex items-start gap-3 p-4",
                     ADMIN_CARD_CLASS,
-                    "hover:bg-[color:var(--ui-surface-sunken)]",
+                    "transition-[box-shadow,transform] duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
+                    "hover:shadow-[var(--ui-shadow-raised)] active:translate-y-px",
                     ui.focus,
                   )}
                 >
-                  <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
-                    {/* Letter-spacing is LTR-only: Arabic letters join, and
-                        widening them pulls an Arabic status label apart. The
-                        badge's own `ui.text.label` step now carries that
-                        `ltr:`-prefixed tracking, so the rule is stated once in
-                        the kit instead of at every call site.
-
-                        The wrapper span is the `data-status` hook: `UiBadge`
-                        forwards neither `data-*` nor a `testId`, unlike the
-                        state primitives, and a browser hook is not something a
-                        restyle may drop. Raised as a kit gap rather than
-                        patched here. */}
-                    <span className="shrink-0" data-status={item.status}>
-                      <UiBadge {...NEWS_STATUS_TONES[item.status]}>
-                        {NEWS_STATUS_LABELS[item.status][lang]}
-                      </UiBadge>
-                    </span>
-                    {/* Language and visibility are facts about the article
-                        rather than states of it, so they stay on the quiet
-                        neutral chip and let the status badge be the one
-                        coloured thing in the row. */}
-                    <UiBadge tone="neutral" className="shrink-0">
-                      {item.language === "ar" ? "العربية" : "Français"}
-                    </UiBadge>
-                    {item.imported && (
-                      <UiBadge tone="negative" className="shrink-0">
-                        {rtl ? "مستورد · غير قابل للنشر" : "Importé · non publiable"}
-                      </UiBadge>
-                    )}
-                    {item.visibility !== "public" && (
-                      <UiBadge tone="neutral" className={cn("shrink-0", ui.tone.faint)}>
-                        {item.visibility === "private"
-                          ? rtl
-                            ? "خاص"
-                            : "Privé"
-                          : rtl
-                            ? "غير مُدرَج"
-                            : "Non répertorié"}
-                      </UiBadge>
-                    )}
-                  </div>
-                  <h4 className={cn("mt-2", ui.text.subtitle, ui.tone.default)}>
-                    {/* The title follows its own article language, so an Arabic
-                        headline reads RTL inside a French console. */}
-                    <bdi dir={item.language === "ar" ? "rtl" : "ltr"}>{item.title}</bdi>
-                  </h4>
-                  {/* A slug is LTR data whatever the ambient direction. */}
-                  <span className="mt-1 block" data-testid="admin-news-item-slug">
-                    <AdminDatum className={cn(ui.text.meta, ui.tone.faint)}>{item.slug}</AdminDatum>
-                  </span>
-                  <dl
-                    className={cn(
-                      "mt-3 flex flex-wrap gap-x-4 gap-y-1 pt-3",
-                      ui.rule.blockStart,
-                      ui.text.meta,
-                      ui.tone.muted,
-                    )}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <dt className="sr-only">{rtl ? "الكاتب" : "Auteur"}</dt>
-                      <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                      <dd>{item.authorName ?? "—"}</dd>
+                  <LanguageDisc language={item.language} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* The wrapper span is the `data-status` hook: `UiBadge`
+                          forwards neither `data-*` nor a `testId`, and a
+                          browser hook is not something a restyle may drop.
+                          Letter-spacing stays LTR-only inside the badge's own
+                          label step: Arabic letters join. */}
+                      <span className="shrink-0" data-status={item.status}>
+                        <UiBadge {...NEWS_STATUS_TONES[item.status]}>
+                          {NEWS_STATUS_LABELS[item.status][lang]}
+                        </UiBadge>
+                      </span>
+                      {item.imported && (
+                        <UiBadge tone="negative" className="shrink-0">
+                          {rtl ? "مستورد · غير قابل للنشر" : "Importé · non publiable"}
+                        </UiBadge>
+                      )}
+                      {/* Visibility is a fact about the article rather than a
+                          state of it, so it stays on the quiet neutral chip and
+                          lets the status badge be the coloured thing. */}
+                      {item.visibility !== "public" && (
+                        <UiBadge tone="neutral" className={cn("shrink-0", ui.tone.faint)}>
+                          {item.visibility === "private"
+                            ? rtl
+                              ? "خاص"
+                              : "Privé"
+                            : rtl
+                              ? "غير مُدرَج"
+                              : "Non répertorié"}
+                        </UiBadge>
+                      )}
                     </div>
-                    {item.status === "scheduled" && item.scheduledAt && (
-                      <div data-testid="admin-news-item-scheduled-at">
-                        <dt className="inline">{rtl ? "موعد النشر: " : "Publication : "}</dt>
-                        <dd className="inline">
-                          <AdminDate>{describeScheduledAt(item.scheduledAt, lang).local}</AdminDate>
+                    <h4 className={cn("mt-2", ui.text.subtitle, ui.tone.default)}>
+                      {/* The title follows its own article language, so an
+                          Arabic headline reads RTL inside a French console. */}
+                      <bdi dir={item.language === "ar" ? "rtl" : "ltr"}>{item.title}</bdi>
+                    </h4>
+                    {/* A slug is LTR data whatever the ambient direction. */}
+                    <span className="mt-1 block" data-testid="admin-news-item-slug">
+                      <AdminDatum className={cn(ui.text.meta, ui.tone.faint)}>
+                        {item.slug}
+                      </AdminDatum>
+                    </span>
+                    <dl
+                      className={cn(
+                        "mt-3 flex flex-wrap gap-x-4 gap-y-1",
+                        ui.text.meta,
+                        ui.tone.muted,
+                      )}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <dt className="sr-only">{rtl ? "الكاتب" : "Auteur"}</dt>
+                        <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                        <dd>{item.authorName ?? "—"}</dd>
+                      </div>
+                      {item.status === "scheduled" && item.scheduledAt && (
+                        <div
+                          className={cn("flex items-center gap-1.5", ui.tone.ink)}
+                          data-testid="admin-news-item-scheduled-at"
+                        >
+                          <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          <dt className="sr-only">{rtl ? "موعد النشر" : "Publication"}</dt>
+                          <dd>
+                            <AdminDate>
+                              {describeScheduledAt(item.scheduledAt, lang).local}
+                            </AdminDate>
+                          </dd>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <dt className="sr-only">{rtl ? "آخر تحديث" : "Mise à jour"}</dt>
+                        <Clock3 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                        <dd>
+                          {/* A formatted date is text in the reader's language,
+                              not LTR data: <AdminDate>, not <AdminDatum>, or an
+                              Arabic date is drawn out of order. */}
+                          <AdminDate>{formatEditorialTimestamp(item.updatedAt, lang)}</AdminDate>
                         </dd>
                       </div>
-                    )}
-                    <div>
-                      <dt className="sr-only">{rtl ? "آخر تحديث" : "Mise à jour"}</dt>
-                      <dd>
-                        {/* A formatted date is text in the reader's language,
-                            not LTR data: <AdminDate>, not <AdminDatum>, or an
-                            Arabic date is drawn out of order. */}
-                        <AdminDate>{formatEditorialTimestamp(item.updatedAt, lang)}</AdminDate>
-                      </dd>
-                    </div>
-                  </dl>
+                    </dl>
+                  </div>
+                  {/* Mirrored under Arabic by styles.css, once for every
+                      screen; no `rtl:` flip here. */}
+                  <ChevronRight
+                    className={cn("mt-1 h-5 w-5 shrink-0 self-center", ui.tone.faint)}
+                    aria-hidden
+                  />
                 </Link>
               </li>
             ))}
@@ -580,7 +701,7 @@ function AdminNewsListRoute() {
                 the error above. */}
             {state.phase === "ready" && state.items.length === 0 && (
               <li>
-                <AdminEmptyState testId="admin-news-empty">
+                <AdminEmptyState testId="admin-news-empty" className={ADMIN_CARD_CLASS}>
                   {rtl ? "لا توجد مقالات مطابقة." : "Aucun article ne correspond à ces filtres."}
                 </AdminEmptyState>
               </li>
@@ -589,7 +710,11 @@ function AdminNewsListRoute() {
 
           {(loading || loadingMore) && (
             <div className="mt-3">
-              <AdminSkeletonList rows={loading ? 4 : 2} testId="admin-news-loading" />
+              <AdminSkeletonList
+                rows={loading ? 4 : 2}
+                testId="admin-news-loading"
+                surface="card"
+              />
               <p className="sr-only" role="status">
                 {rtl ? "جارٍ تحميل المقالات…" : "Chargement des articles…"}
               </p>
@@ -597,22 +722,25 @@ function AdminNewsListRoute() {
           )}
 
           {state.cursor !== null && (
-            <UiButton
-              onClick={loadMore}
-              disabled={loading || loadingMore}
-              aria-busy={loadingMore}
-              className="mt-4 sm:w-auto"
-              data-testid="admin-news-load-more"
-            >
-              <ChevronDown className="h-4 w-4" aria-hidden />
-              {loadingMore
-                ? rtl
-                  ? "جارٍ التحميل…"
-                  : "Chargement…"
-                : rtl
-                  ? "تحميل المزيد من المقالات"
-                  : "Charger plus d’articles"}
-            </UiButton>
+            <div className="mt-4 flex justify-center">
+              <UiButton
+                variant="soft"
+                size="sm"
+                onClick={loadMore}
+                disabled={loading || loadingMore}
+                aria-busy={loadingMore}
+                data-testid="admin-news-load-more"
+              >
+                <ChevronDown className="h-4 w-4" aria-hidden />
+                {loadingMore
+                  ? rtl
+                    ? "جارٍ التحميل…"
+                    : "Chargement…"
+                  : rtl
+                    ? "تحميل المزيد من المقالات"
+                    : "Charger plus d’articles"}
+              </UiButton>
+            </div>
           )}
 
           {/* "No cursor" is only the end of the list once something is in it. */}
