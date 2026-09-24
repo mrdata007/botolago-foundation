@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { loadAdminNewsWriteRouteAccess } from "@/backend/admin/route-access.functions";
@@ -15,8 +15,8 @@ import { markdownToEditorialHtml } from "@/backend/news/editorial-markdown";
 import { mapNewsError } from "@/backend/news/errors";
 import { parseTranslationSearch } from "@/backend/news/editorial-session";
 import type { NewsLanguage } from "@/backend/news/contracts";
-import { ADMIN_CARD_CLASS, ADMIN_LABEL_CLASS, AdminNotice } from "@/components/admin/AdminSurfaces";
-import { ui, UiButton, UiInput, UiLinkButton, UiSelect, UiTextarea } from "@/components/ui-kit";
+import { ADMIN_CARD_CLASS, AdminBackLink, AdminNotice } from "@/components/admin/AdminSurfaces";
+import { ui, UiButton, UiInput, UiSelect, UiTextarea } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
 import { cn } from "@/lib/utils";
@@ -44,13 +44,15 @@ function EditorSection({
 }) {
   return (
     <section className={cn(ADMIN_CARD_CLASS, "p-4 sm:p-5")} data-testid={testId}>
-      <h3 className={ADMIN_LABEL_CLASS}>{heading}</h3>
-      {/* `leading-5` is gone rather than converted: every step of the type
-          ramp carries its own leading token now (BG-0124), and a literal one
-          under-sets the Arabic face, which runs at 1.95 against the Latin
-          1.4 at the same pixel size. */}
+      {/* The card heading in the display face, the 19px step under the page
+          title -- as the app titles a block. */}
+      <h3 className={cn(ui.display.header, ui.tone.default)}>{heading}</h3>
+      {/* Every ramp step carries its own leading token (BG-0124), redeclared
+          for the Arabic face, which runs at 1.95 against the Latin 1.4. */}
       {hint && <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>{hint}</p>}
-      <div className="mt-4 grid gap-4">{children}</div>
+      {/* A `minmax(0, 1fr)` column: the card's width, never its widest
+          child's, so nothing in it can push the page past a phone. */}
+      <div className="mt-4 grid grid-cols-1 gap-4">{children}</div>
     </section>
   );
 }
@@ -143,25 +145,22 @@ function AdminNewsNewRoute() {
           : "Le contenu est assaini côté serveur avant tout enregistrement. L’article est créé en brouillon privé."
       }
       testId="admin-news-new"
+      layout="detail"
+      back={
+        <AdminBackLink
+          to="/admin/news"
+          label={rtl ? "كل المقالات" : "Tous les articles"}
+          testId="admin-news-back-to-list"
+        />
+      }
     >
       {access.state === "authorized" && (
         <>
-          {/* `-ms-3` pulls the ghost button's own inline padding back so the
-              link still starts on the section's edge, logically, in both
-              directions. */}
-          <UiLinkButton
-            to="/admin/news"
-            variant="ghost"
-            size="sm"
-            className="-ms-3"
-            data-testid="admin-news-back-to-list"
+          <form
+            className="grid grid-cols-1 gap-4"
+            onSubmit={submit}
+            data-testid="admin-news-new-form"
           >
-            {/* The arrow is flipped by the ambient direction, never by hand. */}
-            <ArrowLeft className="h-4 w-4" aria-hidden />
-            {rtl ? "كل المقالات" : "Tous les articles"}
-          </UiLinkButton>
-
-          <form className="mt-4 grid gap-4" onSubmit={submit} data-testid="admin-news-new-form">
             <EditorSection
               heading={rtl ? "الهوية" : "Identité"}
               hint={

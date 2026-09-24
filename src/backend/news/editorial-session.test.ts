@@ -11,6 +11,7 @@ import {
   describeEditorialError,
   describeScheduledAt,
   EDITOR_REVISION_LIMIT,
+  formatEditorialTimestamp,
   parseTranslationSearch,
   scheduleHealthProblem,
   revisionDifferences,
@@ -252,6 +253,22 @@ describe("the scheduled time as the editor reads it", () => {
     expect(shown.local).toContain("19:10");
     expect(shown.local).toContain("2026");
     expect(shown.utc).toBe("2026-09-22 18:10 UTC");
+  });
+});
+
+describe("list and revision timestamps", () => {
+  test("French: day, month, year and time to the second", () => {
+    expect(formatEditorialTimestamp("2026-09-24T08:30:08.000Z", "fr", "Africa/Casablanca")).toBe(
+      "24/09/2026 09:30:08",
+    );
+  });
+
+  test("Arabic: Latin digits and a 24-hour clock, like the scheduled time", () => {
+    const shown = formatEditorialTimestamp("2026-09-24T20:30:08.000Z", "ar", "Africa/Casablanca");
+    expect(shown).toContain("2026");
+    expect(shown).toContain("21:30:08");
+    expect(shown).not.toMatch(/[\u0660-\u0669\u06f0-\u06f9]/); // Arabic-Indic digits
+    expect(shown).not.toMatch(/[\u0635\u0645]/); // the 12-hour clock markers
   });
 });
 

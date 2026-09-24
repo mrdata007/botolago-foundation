@@ -138,6 +138,21 @@ export function describeScheduledAt(
   return { local: zone ? `${local} (${zone})` : local, utc };
 }
 
+/**
+ * A timestamp in the CMS list and the revision history, in the editor's
+ * language. Same locales as `describeScheduledAt` above, so the two read
+ * alike on one screen: the bare `ar` these rows used gave a 12-hour "ص/م"
+ * clock beside the scheduled time's 24-hour one, and leaves the digits to the
+ * browser, where the scheduled time pins Latin digits.
+ */
+export function formatEditorialTimestamp(
+  iso: string,
+  lang: NewsLanguage,
+  timeZone?: string,
+): string {
+  return new Date(iso).toLocaleString(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR", { timeZone });
+}
+
 export type ScheduleHealthProblem = "job_inactive" | "job_stalled" | "run_failed" | "overdue";
 
 /**

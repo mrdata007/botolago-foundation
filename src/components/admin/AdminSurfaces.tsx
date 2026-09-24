@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { ui, UiAlert, UiBadge, UiCard, UiSkeleton } from "@/components/ui-kit";
+import { ui, UiAlert, UiBackButton, UiBadge, UiCard, UiSkeleton } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 /**
@@ -27,14 +27,12 @@ import { cn } from "@/lib/utils";
  *     letter-spacing on Arabic in either direction, not merely a smaller one.
  *  3. Colour. Every surface, foreground, radius and shadow below is a `--ui-*`
  *     token from `@/components/ui-kit`; there is no `slate-*`, `emerald-*`,
- *     `rose-*` or `amber-*` left. The console still reads dark because the
- *     shell puts `dark` on its outermost element, which is where `styles.css`
- *     redeclares every colour-bearing `--ui-*` token -- custom properties
- *     inherit, so the whole console resolves to the dark values. The console
- *     stays dark by SCOPE, not by hardcoded greys, so it now also follows the
- *     kit's contrast decisions: `--ui-on-caution` on the amber fill rather
- *     than amber-on-amber, `--ui-on-ink` on the brand fill, and the one card
- *     shadow rather than a second scale.
+ *     `rose-*` or `amber-*` left. That is what let the console leave its dark
+ *     register: it used to put `dark` on its outermost element, and dropping
+ *     that one class moved every Admin screen onto BotolaGO's own light look
+ *     -- the page, the white cards, the round controls -- with the kit's
+ *     contrast decisions intact (`--ui-on-caution` on the amber fill,
+ *     `--ui-on-ink` on the brand fill, the one card shadow).
  */
 
 /**
@@ -52,16 +50,15 @@ import { cn } from "@/lib/utils";
  * The string this replaces carried no foreground either; it inherited one from
  * the shell, and it still does.
  *
- * Radius moved 16px -> `--ui-radius-control` (6px). The system has six radius
- * steps and a card sits on `control`; 16px is `--ui-radius-sheet`, which is
- * the bottom sheet and the modal. Shadow moved from `shadow-lg
- * shadow-slate-950/40` to `--ui-shadow-card`, the one card shadow -- there is
- * no second elevation scale.
+ * The shape is Option A's card: the 14px card radius (`--ui-radius-card`),
+ * the one card shadow, and no border -- the app draws a card by its shadow
+ * on the page, not by a hairline. It sat on the 6px control step, with a
+ * rule, while the console was its own dark room; next to BotolaGO's screens
+ * that read as a different product.
  */
 export const ADMIN_CARD_CLASS = cn(
   "bg-[color:var(--ui-surface)]",
-  ui.radius.control,
-  ui.rule.all,
+  ui.radius.card,
   "shadow-[var(--ui-shadow-card)]",
 );
 
@@ -69,16 +66,13 @@ export const ADMIN_CARD_CLASS = cn(
  * Inner surface, for cards nested inside an already-raised Admin panel.
  *
  * `--ui-surface-sunken` is the kit's recessed step -- tracks, table heads,
- * nested panels. In the dark theme it resolves LIGHTER than `--ui-surface`,
- * where `bg-slate-950/40` painted darker than the card it sat in. The token
- * names the ROLE rather than the direction, and the role is the one this had:
- * a second level inside a card. Same foreground note as above.
+ * nested panels: a second level inside a card. Same foreground note as
+ * above. It takes the 10px track radius, the step the fields beside it use,
+ * so a row inside a 14px card nests rather than competing with it; the
+ * hairline it carried is the sunken colour itself in the light theme, so it
+ * drew nothing and is gone.
  */
-export const ADMIN_PANEL_CLASS = cn(
-  "bg-[color:var(--ui-surface-sunken)]",
-  ui.radius.control,
-  ui.rule.all,
-);
+export const ADMIN_PANEL_CLASS = cn("bg-[color:var(--ui-surface-sunken)]", ui.radius.track);
 
 /**
  * Small uppercase label above a value.
@@ -117,6 +111,28 @@ export function AdminIconTile({ icon: Icon }: { icon: LucideIcon }) {
       aria-hidden
     >
       <Icon className="h-5 w-5" />
+    </span>
+  );
+}
+
+/**
+ * The way back to a hub from a page under it: the app's own back pill
+ * (`UiBackButton`, a soft round control whose arrow `styles.css` mirrors for
+ * Arabic). The kit's pill takes no `data-*`, so a browser hook sits on a
+ * wrapper that is exactly the pill's size.
+ */
+export function AdminBackLink({
+  to,
+  label,
+  testId,
+}: {
+  to: string;
+  label: string;
+  testId?: string;
+}) {
+  return (
+    <span className="inline-flex" data-testid={testId}>
+      <UiBackButton to={to} label={label} />
     </span>
   );
 }
@@ -192,6 +208,27 @@ export function AdminDatum({
 }
 
 /**
+ * A date written out in the reader's language -- "24/09/2026 09:30:08",
+ * "jeudi 24 septembre 2026 à 13:10 (UTC+1)", or its Arabic equivalent.
+ *
+ * Deliberately not an <AdminDatum>. A formatted date is text in the reader's
+ * language, not LTR data: the Arabic formatter puts right-to-left marks after
+ * the day and the month, and forcing `dir="ltr"` on that string reordered it
+ * on screen -- measured in the News CMS, "24/9/2026 9:40:00 ص" was drawn as
+ * "/9/2026 9:40:00 ص24". So the value is still isolated from the sentence
+ * around it, but takes its direction from its own text (`dir="auto"`), and it
+ * wraps between words: AdminDatum's `break-all`, right for a UUID, split
+ * "(UTC)" into "(UT" and "C)".
+ */
+export function AdminDate({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <bdi dir="auto" className={cn("break-words", className)}>
+      {children}
+    </bdi>
+  );
+}
+
+/**
  * Status pill. `tone` carries meaning through colour and through its text.
  *
  * The four Admin tones map onto the kit's badge tones. Only one of them is not
@@ -244,10 +281,26 @@ export function AdminSectionHeading({ id, children }: { id?: string; children: R
  * says or what it announces, so the paragraph stays and only its colours,
  * radius and type move onto tokens.
  */
-export function AdminEmptyState({ children, testId }: { children: ReactNode; testId?: string }) {
+export function AdminEmptyState({
+  children,
+  testId,
+  className,
+}: {
+  children: ReactNode;
+  testId?: string;
+  /** A screen whose list sits on the page rather than in a card passes
+   *  `ADMIN_CARD_CLASS`, so the empty state is a card like its rows. */
+  className?: string;
+}) {
   return (
     <p
-      className={cn(ADMIN_PANEL_CLASS, "px-4 py-6 text-center", ui.text.secondary, ui.tone.muted)}
+      className={cn(
+        ADMIN_PANEL_CLASS,
+        "px-4 py-6 text-center",
+        ui.text.secondary,
+        ui.tone.muted,
+        className,
+      )}
       data-testid={testId}
     >
       {children}
@@ -265,12 +318,32 @@ export function AdminEmptyState({ children, testId }: { children: ReactNode; tes
  * `animate-pulse` was doing here. `aria-hidden` stays on the list, so the
  * placeholders are still invisible to a screen reader.
  */
-export function AdminSkeletonList({ rows = 3, testId }: { rows?: number; testId?: string }) {
+export function AdminSkeletonList({
+  rows = 3,
+  testId,
+  surface = "panel",
+}: {
+  rows?: number;
+  testId?: string;
+  /**
+   * `card`: each placeholder is a white card holding two bars, the way the
+   * app draws a loading list on the page. The default `panel` is the plain
+   * block, for a list already inside a card.
+   */
+  surface?: "panel" | "card";
+}) {
   return (
     <div className="grid gap-3" aria-hidden data-testid={testId}>
-      {Array.from({ length: rows }, (_, index) => (
-        <UiSkeleton key={index} className="h-20" />
-      ))}
+      {Array.from({ length: rows }, (_, index) =>
+        surface === "card" ? (
+          <div key={index} className={cn(ADMIN_CARD_CLASS, "grid gap-2 p-4")}>
+            <UiSkeleton className="h-5 w-2/3" />
+            <UiSkeleton className="h-4 w-1/3" />
+          </div>
+        ) : (
+          <UiSkeleton key={index} className="h-20" />
+        ),
+      )}
     </div>
   );
 }
