@@ -5,14 +5,16 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { AddPlayerScreen } from "@/components/fpl/AddPlayerScreen";
+import { findClub } from "@/components/fpl/club-lookup";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
+import { FplStatBar } from "@/components/fpl/FplStatBar";
 import { PlayerActionSheet } from "@/components/fpl/PlayerActionSheet";
 import { SquadBuilderScreen, type BuilderSlot } from "@/components/fpl/SquadBuilderScreen";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import {
+  ui,
   UiAlert,
-  UiBanner,
   UiButton,
   UiCard,
   UiHeader,
@@ -21,6 +23,7 @@ import {
 } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 import {
   computeSummary,
   draftPurchasePrices,
@@ -74,10 +77,14 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
  * First-time squad selection, reconstructed on the FPL "Transfers" composition
  * (FPL-002 with empty slots → FPL-003 Add Player → FPL-005 filled squad),
  * followed by the team-name step that FPL asks for before entering the squad.
+ *
+ * Option A: the same screen as Transfers — sub-page header, navy strip,
+ * pitch card, the Add / Next dock above the bottom navigation — and the name
+ * step keeps that header and strip over one card.
  */
 function CreateTeamPage() {
   return (
-    <FantasyFrame>
+    <FantasyFrame bottomNav>
       <CreateTeamBody />
     </FantasyFrame>
   );
@@ -153,7 +160,7 @@ function CreateTeamBody() {
   if (screen.phase !== "ready" || !gameweek) {
     return (
       <>
-        <UiHeader title={t("fpl.squad_selection")} tone="gradient" backTo="/fantasy" />
+        <UiHeader kicker={t("fantasy.title")} title={t("fpl.squad_selection")} backTo="/fantasy" />
         <FantasyScreenGate state={screen} next="/fantasy/create" redirectNoTeam={false}>
           <div />
         </FantasyScreenGate>
@@ -284,19 +291,30 @@ function CreateTeamBody() {
     return (
       <>
         <UiHeader
+          kicker={t("fantasy.title")}
           title={t("fpl.squad_selection")}
-          tone="gradient"
           onBack={() => setStep("squad")}
         />
-        <UiBanner>{t("fpl.players_selected").replace("{n}", String(summary.filled))}</UiBanner>
+        {/* The squad and the budget it leaves, on the same navy strip as the
+            pitch step; the card below only asks what is still open. */}
+        <FplStatBar
+          items={[
+            {
+              label: t("fpl.squad"),
+              value: t("fpl.players_selected").replace("{n}", String(summary.filled)),
+              text: true,
+            },
+            { label: t("fpl.left_in_bank"), value: nf.format(summary.bankRemaining) },
+          ]}
+        />
         <form
-          className="mx-3 mt-3"
+          className={cn("mt-4", ui.space.gutter)}
           onSubmit={(e) => {
             e.preventDefault();
             void save();
           }}
         >
-          <UiCard>
+          <UiCard padding="lg">
             <UiInput
               label={t("fpl.team_name")}
               hint={t("fpl.team_name_help")}
@@ -304,16 +322,10 @@ function CreateTeamBody() {
               maxLength={TEAM_NAME_MAX_LENGTH}
               onChange={(e) => setDraft(setTeamNameOp(draft, e.target.value))}
               placeholder={t("fpl.team_name")}
+              fieldClassName={cn(ui.radius.card, "min-h-[var(--ui-row-min)]", ui.rule.strong)}
               autoFocus
             />
             <div className="mt-4">
-              {/* The banner above already says "{n}/15 joueurs"; the row says
-                  which total it is, not the same sentence twice. */}
-              <UiKeyValueRow label={t("fpl.squad")} value={`${summary.filled}/15`} />
-              <UiKeyValueRow
-                label={t("fpl.left_in_bank")}
-                value={nf.format(summary.bankRemaining)}
-              />
               <UiKeyValueRow
                 label={t("fpl.captain")}
                 value={
@@ -363,12 +375,14 @@ function CreateTeamBody() {
     <>
       <SquadBuilderScreen
         title={t("fpl.squad_selection")}
+        kicker={t("fantasy.title")}
         backTo="/fantasy"
         gameweek={gameweek.number}
         deadlineIso={gameweek.deadline}
         stats={[
-          { label: t("fpl.free_transfers"), value: t("fpl.unlimited") },
-          { label: t("fpl.wildcard"), value: t("fpl.state.unavailable"), tone: "grey" },
+          // No Wildcard column here: during the first selection it can only
+          // ever read "Indisponible", and transfers are unlimited anyway.
+          { label: t("fpl.free_transfers"), value: t("fpl.unlimited"), text: true },
           { label: t("fpl.cost"), value: "0" },
           { label: t("fpl.bank"), value: nf.format(summary.bankRemaining) },
         ]}
@@ -397,13 +411,13 @@ function CreateTeamBody() {
             key: "form",
             label: t("fpl.form"),
             // BG-0071: a dash, not 0.0, while no gameweek has scored.
-            render: (p) => (p.form === null ? t("fantasy.stat.none") : p.form.toFixed(1)),
+            render: (p) => (p.form === null ? t("fantasy.stat.none") : nf.format(p.form)),
           },
           { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
           {
             key: "sel",
             label: t("fantasy.picker.sort.ownership"),
-            render: (p) => `${p.ownership.toFixed(1)}%`,
+            render: (p) => `${nf.format(p.ownership)}%`,
           },
         ]}
       />
@@ -454,10 +468,9 @@ function CreateTeamBody() {
         }
         club={
           sheetSlot !== null
-            ? clubs.find(
-                (c) =>
-                  c.id ===
-                  playerOf(draft.slots.find((s) => s.slot === sheetSlot)?.playerId ?? null)?.clubId,
+            ? findClub(
+                clubs,
+                playerOf(draft.slots.find((s) => s.slot === sheetSlot)?.playerId ?? null)?.clubId,
               )
             : undefined
         }

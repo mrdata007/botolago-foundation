@@ -361,7 +361,12 @@ export const BASELINES: Baselines = {
   //
   // Option A, Lane 5 (Fantasy lists): player tabs + podium gone (6 keys orphaned), 4 unused keys now called, 8 new keys referenced. 251 -> 253.
   // With Lanes 1 and 2: 247 + 2 = 249.
-  W3: 249,
+  //
+  // Option A, Lane 4 (Fantasy core): the hub calls `fpl.no_team_yet` (-1)
+  // and drops the "Suivre BotolaGO" tiles, orphaning `fpl.follow` (+1).
+  // Merged with Lane 5, `fpl.rankings` goes too: each lane removed one of its
+  // two callers (the hub tile, the rankings page) and kept the other's. 250.
+  W3: 250,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
@@ -381,7 +386,11 @@ export const BASELINES: Baselines = {
   //
   // Option A, Lane 5 (Fantasy lists): player-page tab loop + status template gone, players sort loop now literal calls. 70 -> 67.
   // With Lanes 1 and 2: 68 - 3 = 65.
-  W4: 65,
+  //
+  // Option A, Lane 4 (Fantasy core): FplChipsRow names each chip with a literal
+  // `t("fantasy.chip.…")` branch instead of a `fantasy.chip.` template. 70 -> 69.
+  // With Lanes 1, 2 and 5: 65 - 1 = 64.
+  W4: 64,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];

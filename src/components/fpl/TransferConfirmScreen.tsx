@@ -1,21 +1,34 @@
+import type { CSSProperties } from "react";
+
+import { SectionHeader } from "@/components/common/SectionHeader";
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
-import { ui, UiBanner, UiButton, UiCard, UiHeader, UiKeyValueRow } from "@/components/ui-kit";
+import { ui, UiButton, UiCard, UiHeader, UiKeyValueRow } from "@/components/ui-kit";
 import type { ChipKey, ChipState } from "@/lib/fantasy-engine";
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer } from "@/types/fantasy";
+import { findClub } from "./club-lookup";
+import { formatDeadline } from "./deadline";
+import { FplChipsRow } from "./FplChipsRow";
 
 /**
  * FPL-007 transfer confirmation.
  *
  * It belongs to the same screen as the pitch it came from, so it keeps that
- * screen's chrome: the gradient header, the gameweek + deadline line, the ink
- * banner, then Out / In, the points overview and the chips. Nothing here is a
- * direction: the old `ArrowLeft` / `ArrowRight` pair pointed the wrong way
- * under `dir="rtl"`, so out and in are stated as toned badges instead.
+ * screen's chrome: the sub-page header ("FANTASY · Transferts", Back returns to
+ * the pitch), the navy band stating what is about to happen and before when,
+ * then Out / In, the points overview and the transfer chips.
+ *
+ * Nothing here is a direction: the old `ArrowLeft` / `ArrowRight` pair pointed
+ * the wrong way under `dir="rtl"`, so out and in are stated in words, each on
+ * a 4px edge in its own status colour — a logical inline-start bar, so it is
+ * the right edge in Arabic — never by colour alone and never by an arrow.
+ *
+ * The chips are the same pills as above the Pick Team pitch (`FplChipsRow`):
+ * a tap on an available one plays it, every other state is inert. The
+ * Modify / Confirm pair sticks above the bottom navigation on a phone.
  */
 export function TransferConfirmScreen({
   pairs,
@@ -51,57 +64,62 @@ export function TransferConfirmScreen({
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });
-  const deadline = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    // BG-0100: the competition's calendar, never the viewer's browser.
-    timeZone: MATCH_TIME_ZONE,
-  }).format(new Date(deadlineIso));
 
-  const clubOf = (id: string) => clubs.find((c) => c.id === id);
-  const chipLabel = (key: ChipKey) =>
-    key === "wildcard"
-      ? t("fantasy.chip.wildcard")
-      : key === "free_hit"
-        ? t("fantasy.chip.free_hit")
-        : key === "bench_boost"
-          ? t("fantasy.chip.bench_boost")
-          : t("fantasy.chip.triple_captain");
-  const chipStateLabel = (state: ChipState) =>
-    state === "active"
-      ? t("fpl.state.active")
-      : state === "available"
-        ? t("fpl.state.play")
-        : state === "used"
-          ? t("fpl.state.used")
-          : t("fpl.state.unavailable");
+  const clubOf = (id: string) => findClub(clubs, id);
 
-  const tile = (player: FantasyPlayer) => {
+  const line = (player: FantasyPlayer, side: "out" | "in") => {
     const club = clubOf(player.clubId);
     return (
-      <div className="flex min-w-0 items-center gap-2">
-        <JerseyVisual
-          kit={getKitForClub(club, player.kitPattern)}
-          size={30}
-          imageUrl={player.jerseyImageUrl}
+      <div className="flex min-w-0 items-stretch">
+        <span
+          aria-hidden
+          className={cn(
+            "w-1 shrink-0",
+            side === "out" ? "bg-[color:var(--ui-negative)]" : "bg-[color:var(--ui-positive)]",
+          )}
         />
-        <div className="min-w-0">
-          <div
+        <div className="flex min-w-0 flex-1 items-center gap-3 py-2.5 pe-4 ps-3">
+          <span
             className={cn(
-              "truncate",
-              ui.text.meta,
-              "[font-weight:var(--ui-weight-heavy)]",
-              ui.tone.default,
+              "w-[4.75rem] shrink-0",
+              ui.text.label,
+              side === "out" ? ui.tone.negative : ui.tone.positive,
             )}
           >
-            {tr(player.name)}
+            {side === "out" ? t("fpl.transfer_out") : t("fpl.transfer_in")}
+          </span>
+          <span
+            className={cn(
+              "grid h-10 w-10 shrink-0 place-items-center",
+              ui.radius.full,
+              ui.surface.sunken,
+            )}
+          >
+            <JerseyVisual
+              kit={getKitForClub(club, player.kitPattern)}
+              size={24}
+              variant="flat"
+              imageUrl={player.jerseyImageUrl}
+            />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div
+              className={cn(
+                "truncate",
+                ui.text.secondary,
+                "[font-weight:var(--ui-weight-heavy)]",
+                ui.tone.default,
+              )}
+            >
+              {tr(player.name)}
+            </div>
+            <div className={cn("truncate", ui.text.micro, ui.tone.muted)}>
+              {club ? tr(club.shortName) : ""}
+            </div>
           </div>
-          <div className={cn("truncate", ui.text.micro, ui.tone.muted)}>
-            {club ? tr(club.shortName) : ""} ·{" "}
-            <span className={ui.text.tabular}>{nf.format(player.price)}</span>
-          </div>
+          <span className={cn("shrink-0", ui.stat.sm, ui.tone.default)}>
+            {nf.format(player.price)}
+          </span>
         </div>
       </div>
     );
@@ -109,93 +127,71 @@ export function TransferConfirmScreen({
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
-      <UiHeader title={t("fpl.transfers")} tone="gradient" onBack={onEdit}>
-        <p className={cn("mt-1 text-center", ui.text.secondary)}>
+      <UiHeader kicker={t("fantasy.title")} title={t("fpl.transfers")} onBack={onEdit} />
+      <div
+        className={cn("px-[var(--ui-gutter)] py-3", ui.surface.inkPlain, ui.club.stripes)}
+        style={{ "--stripe-alpha": "4%" } as CSSProperties}
+      >
+        <p className={cn("text-balance", ui.display.team)}>
+          {pairs.length === 1
+            ? t("fpl.about_to_transfer_one")
+            : t("fpl.about_to_transfer").replace("{n}", String(pairs.length))}
+        </p>
+        <p className={cn("mt-1", ui.text.meta, ui.tone.onInkMuted)}>
           {t("fpl.gameweek")} {gameweek} · {t("fpl.deadline")}
           {/* French sets a narrow no-break space before a colon. */}
-          {lang === "fr" ? "\u202F:" : ":"}{" "}
-          <strong className="whitespace-nowrap [font-weight:var(--ui-weight-heavy)]">
-            {deadline}
+          {lang === "fr" ? " :" : ":"}{" "}
+          <strong className={cn("whitespace-nowrap", ui.tone.onInkPlain)}>
+            {formatDeadline(deadlineIso, lang)}
           </strong>
         </p>
-      </UiHeader>
-      <UiBanner>
-        {pairs.length === 1
-          ? t("fpl.about_to_transfer_one")
-          : t("fpl.about_to_transfer").replace("{n}", String(pairs.length))}
-      </UiBanner>
+      </div>
 
-      <UiCard padding="sm" className="mx-3 mt-3">
+      <UiCard padding="none" className={cn("mt-4 overflow-hidden", "mx-[var(--ui-gutter)]")}>
         {/*
           Out and in are stacked, not columned: at 390px two columns cut a real
-          Botola name in half, and the pair reads as a sentence anyway. The side
-          each line belongs to is carried by a coloured inline-start rule plus a
-          worded caption — never by an arrow, which points the wrong way in
-          Arabic, and never by colour alone.
+          Botola name in half, and the pair reads as a sentence anyway.
         */}
         <ul>
           {pairs.map((pair) => (
-            <li key={pair.out.id + pair.in.id} className={cn("py-2", ui.rule.block)}>
-              <div className="flex min-w-0 items-center gap-2 border-s-2 border-[color:var(--ui-negative)] ps-2">
-                <span className={cn("min-w-[4.5rem] shrink-0", ui.text.label, ui.tone.negative)}>
-                  {t("fpl.transfer_out")}
-                </span>
-                {tile(pair.out)}
-              </div>
-              <div className="mt-2 flex min-w-0 items-center gap-2 border-s-2 border-[color:var(--ui-positive)] ps-2">
-                <span className={cn("min-w-[4.5rem] shrink-0", ui.text.label, ui.tone.positive)}>
-                  {t("fpl.transfer_in")}
-                </span>
-                {tile(pair.in)}
-              </div>
+            <li key={pair.out.id + pair.in.id} className={ui.rule.block}>
+              {line(pair.out, "out")}
+              {line(pair.in, "in")}
             </li>
           ))}
         </ul>
-        <p className={cn("pt-3 text-center", ui.text.meta, ui.tone.muted)}>
+        <p className={cn("px-4 py-3 text-center", ui.text.meta, ui.tone.muted)}>
           {t("fpl.transfers_active_note").replace("{n}", String(gameweek))}
         </p>
       </UiCard>
 
-      <UiCard padding="sm" className="mx-3 mt-3 pt-4">
-        <h2 className={cn(ui.text.section, ui.tone.default)}>{t("fpl.points_overview")}</h2>
-        <UiKeyValueRow label={t("fpl.free_transfers_used")} value={freeUsed} />
-        <UiKeyValueRow
-          label={t("fpl.additional_transfers_used")}
-          value={`${paidUsed} (${hitPoints} ${t("fantasy.points.abbr")})`}
-        />
-        <UiKeyValueRow
-          label={t("fpl.left_in_bank")}
-          value={nf.format(bankAfter)}
-          className="border-b-0"
-        />
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {chips.map((chip) => {
-            const enabled = chip.state === "available" && !!onChip;
-            return (
-              <UiButton
-                key={chip.key}
-                variant={chip.state === "active" ? "gradient" : enabled ? "ink" : "light"}
-                disabled={!enabled}
-                onClick={() => onChip?.(chip.key)}
-                className="flex-col gap-0 py-1"
-              >
-                <span className="truncate">{chipLabel(chip.key)}</span>
-                <span className={cn("truncate", ui.text.micro)}>{chipStateLabel(chip.state)}</span>
-              </UiButton>
-            );
-          })}
-        </div>
-      </UiCard>
+      <section className={cn("mt-6", ui.space.gutter)}>
+        <SectionHeader title={t("fpl.points_overview")} />
+        <UiCard padding="none" className="px-3">
+          <UiKeyValueRow label={t("fpl.free_transfers_used")} value={freeUsed} />
+          <UiKeyValueRow
+            label={t("fpl.additional_transfers_used")}
+            value={`${paidUsed} (${hitPoints} ${t("fantasy.points.abbr")})`}
+          />
+          <UiKeyValueRow
+            label={t("fpl.left_in_bank")}
+            value={nf.format(bankAfter)}
+            className="border-b-0"
+          />
+        </UiCard>
+        <FplChipsRow className="mt-3" chips={chips} onSelect={onChip} />
+      </section>
 
       <div
         className={cn(
-          "sticky bottom-0 z-30 mt-4 grid grid-cols-2 gap-2 px-3 pt-2",
+          "sticky bottom-[var(--bottomnav-h)] z-30 mt-6 grid grid-cols-2 gap-2 pb-2.5 pt-2.5 md:bottom-0 md:pb-3",
+          ui.space.gutter,
           ui.surface.bar,
           ui.rule.blockStart,
-          ui.safe.bottom,
+          ui.shadow.raised,
         )}
       >
-        <UiButton variant="light" onClick={onEdit} disabled={busy}>
+        <UiButton variant="soft" onClick={onEdit} disabled={busy}>
           {t("fpl.edit_transfers")}
         </UiButton>
         <UiButton variant="ink" onClick={onConfirm} disabled={busy}>

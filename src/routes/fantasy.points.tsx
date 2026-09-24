@@ -4,22 +4,25 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { SectionHeader } from "@/components/common/SectionHeader";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
+import { findClub } from "@/components/fpl/club-lookup";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { FplPitch } from "@/components/fpl/FplPitch";
 import { FplPlayerCard } from "@/components/fpl/FplPlayerCard";
+import { FplStatBar } from "@/components/fpl/FplStatBar";
 import { SquadListTable } from "@/components/fpl/SquadListTable";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import {
   ui,
+  UiCard,
   UiEmptyState,
   UiErrorState,
   UiHeader,
   UiKeyValueRow,
   UiSegmented,
   UiSkeleton,
-  UiStatBlock,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -45,10 +48,16 @@ export const Route = createFileRoute("/fantasy/points")({
  * The screen is deliberately plain: the numbers carry the meaning, so they
  * get the stat ramp (tabular, aligned, one weight per step) and almost no
  * chrome — no badges around totals, no gradients behind them.
+ *
+ * Option A (A-Team): the team is the header's title under a "FANTASY"
+ * kicker, the gameweek stepper sits in the header band, and the navy strip
+ * leads with the gameweek's points and its scoring state beside the
+ * gameweek's average and best — the board's "58 pts · EN DIRECT | MOYENNE |
+ * MEILLEUR". Then the "Terrain | Liste" pill and the pitch card.
  */
 function PointsPage() {
   return (
-    <FantasyFrame>
+    <FantasyFrame bottomNav>
       <PointsBody />
     </FantasyFrame>
   );
@@ -118,7 +127,7 @@ function PointsBody() {
   if (screen.phase !== "ready" || !team || gw === null) {
     return (
       <>
-        <UiHeader title={t("fpl.points")} backTo="/fantasy" tone="gradient" />
+        <UiHeader kicker={t("fantasy.title")} title={t("fpl.points")} backTo="/fantasy" />
         <FantasyScreenGate state={screen} next="/fantasy/points">
           <div />
         </FantasyScreenGate>
@@ -131,7 +140,7 @@ function PointsBody() {
   const min = Math.min(...available);
   const max = Math.max(...available);
   const playerOf = (id: string) => players.find((p) => p.id === id);
-  const clubOf = (id: string) => clubs.find((c) => c.id === id);
+  const clubOf = (id: string) => findClub(clubs, id);
   const posOf = (id: string) => playerOf(id)?.position;
   const breakdown = new Map((vm?.breakdown ?? []).map((b) => [b.playerId, b]));
 
@@ -248,56 +257,71 @@ function PointsBody() {
 
   return (
     <>
-      <UiHeader title={team.teamName} backTo="/fantasy" tone="gradient">
+      <UiHeader kicker={t("fantasy.title")} title={team.teamName} backTo="/fantasy">
         <GameweekSelector
           className="mt-2 flex w-full"
-          tone="onGradient"
           showLabel
           value={gw}
           min={min}
           max={max}
           onChange={setGw}
         />
+      </UiHeader>
+
+      <FplStatBar
+        hero
+        items={[
+          {
+            label: t("fpl.points"),
+            value: total ?? none,
+            unit: total === null ? undefined : t("fantasy.points.abbr"),
+            sub: statusLabel ? (
+              <span className={cn("inline-flex items-center gap-1.5", ui.text.label)}>
+                {gwStatus === "live" ? (
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "live-breathe h-1.5 w-1.5 shrink-0 bg-[color:var(--ui-live)]",
+                      ui.radius.full,
+                    )}
+                  />
+                ) : null}
+                {statusLabel}
+              </span>
+            ) : undefined,
+          },
+          { label: t("fpl.average"), value: average ?? none },
+          { label: t("fpl.highest"), value: highest ?? none },
+        ]}
+      />
+
+      <div className={cn("pt-3", ui.space.gutter)}>
         <UiSegmented
-          className="mt-2"
-          tone="onGradient"
+          variant="pill"
           value={view}
           onChange={setView}
           label={t("fantasy.view.toggle_label")}
           options={[
-            { value: "squad", label: t("fpl.squad") },
+            { value: "squad", label: t("fantasy.view.pitch") },
             { value: "list", label: t("fpl.list") },
           ]}
         />
-      </UiHeader>
-
-      <div
-        className={cn("grid grid-cols-3 items-end gap-2 px-4 py-3", ui.surface.bar, ui.rule.block)}
-      >
-        <UiStatBlock align="center" size="lg" label={t("fpl.average")} value={average ?? none} />
-        <UiStatBlock
-          align="center"
-          size="hero"
-          tone="ink"
-          label={t("fpl.points")}
-          value={total ?? none}
-          sub={statusLabel}
-        />
-        <UiStatBlock align="center" size="lg" label={t("fpl.highest")} value={highest ?? none} />
       </div>
 
       {resultQ.isPending ? (
-        <div role="status" aria-label={t("state.loading")} className="px-4 py-3">
-          <UiSkeleton className="h-[420px] w-full" />
+        <div role="status" aria-label={t("state.loading")} className={cn("pt-3", ui.space.gutter)}>
+          <UiSkeleton className={cn("h-[420px] w-full", ui.radius.sheet)} />
         </div>
       ) : view === "squad" ? (
         <FplPitch
+          className="mx-[var(--ui-gutter)] mt-3"
           rows={[row("GK", 1), row("DEF", cfg.DEF), row("MID", cfg.MID), row("FWD", cfg.FWD)]}
           bench={benchIds.map(card)}
           benchLabels={benchLabels}
         />
       ) : (
         <SquadListTable
+          className="mx-[var(--ui-gutter)] mt-3"
           squad={squadForList}
           players={players}
           clubs={clubs}
@@ -329,10 +353,10 @@ function PointsBody() {
               // BG-0071: a dash, not 0.0, while no gameweek has scored. The
               // key is named inline, not through `none`, because the guard in
               // fantasy-runtime.test.ts reads the source line.
-              render: (p) => (p.form === null ? t("fantasy.stat.none") : p.form.toFixed(1)),
+              render: (p) => (p.form === null ? t("fantasy.stat.none") : nf.format(p.form)),
             },
             { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
-            { key: "sel", label: t("fpl.selected"), render: (p) => `${p.ownership.toFixed(1)}%` },
+            { key: "sel", label: t("fpl.selected"), render: (p) => `${nf.format(p.ownership)}%` },
             {
               key: "pts",
               label: `GW${gw}`,
@@ -340,16 +364,18 @@ function PointsBody() {
                 const pts = pointsFor(p.id);
                 return pts === null ? none : `${pts}${t("fantasy.points.abbr")}`;
               },
-              className: "font-extrabold",
+              // The column a reader came for: the heavy step of the ramp,
+              // not the off-token `font-extrabold` it used to carry.
+              className: "[font-weight:var(--ui-weight-heavy)]",
             },
           ]}
         />
       )}
 
       {vm ? (
-        <section className="px-4 py-3">
-          <h2 className={cn(ui.text.label, ui.tone.muted)}>{t("fpl.points_overview")}</h2>
-          <div className="mt-1">
+        <section className={cn("mt-6", ui.space.gutter)}>
+          <SectionHeader title={t("fpl.points_overview")} />
+          <UiCard padding="none" className="px-3">
             <UiKeyValueRow
               label={t("fantasy.points.effective_captain")}
               value={
@@ -388,39 +414,59 @@ function PointsBody() {
                 }
               />
             ) : null}
-            <UiKeyValueRow label={t("fantasy.points.active_chip")} value={activeChipLabel} />
-          </div>
+            <UiKeyValueRow
+              label={t("fantasy.points.active_chip")}
+              value={activeChipLabel}
+              className="border-b-0"
+            />
+          </UiCard>
         </section>
       ) : null}
 
       {autoSubs.length > 0 ? (
-        <section className={cn("px-4 py-3", ui.surface.sunken)}>
-          <h2 className={cn(ui.text.label, ui.tone.muted)}>{t("fantasy.points.autosubs")}</h2>
-          <ul className="mt-2 grid gap-1">
-            {autoSubs.map((sub) => (
-              <li
-                key={`${sub.outId}-${sub.inId}`}
-                className={cn("flex items-baseline gap-2", ui.text.secondary, ui.tone.default)}
-              >
-                <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span className="min-w-0 truncate">
-                  {nameOf(sub.outId)} → {nameOf(sub.inId)}
-                </span>
-                <span className={cn("ms-auto shrink-0", ui.text.meta, ui.tone.muted)}>
-                  {t(`fantasy.points.autosub_reason.${sub.reasonKey}` as never)}
-                </span>
-              </li>
-            ))}
-          </ul>
+        <section className={cn("mt-6", ui.space.gutter)}>
+          <SectionHeader title={t("fantasy.points.autosubs")} />
+          <UiCard padding="none">
+            <ul>
+              {autoSubs.map((sub) => (
+                <li
+                  key={`${sub.outId}-${sub.inId}`}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5",
+                    ui.space.row,
+                    ui.rule.block,
+                    "last:border-b-0",
+                    ui.text.secondary,
+                    ui.tone.default,
+                  )}
+                >
+                  {/* Out → in, with a mirrored glyph between the names: the
+                      literal "→" it replaces does not turn round in Arabic,
+                      so it pointed from the player coming on to the one
+                      going off. `lucide-arrow-right` is mirrored in styles.css. */}
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                    <span className="min-w-0 truncate">{nameOf(sub.outId)}</span>
+                    <ArrowRight className={cn("h-3.5 w-3.5 shrink-0", ui.tone.muted)} aria-hidden />
+                    <span className="min-w-0 truncate [font-weight:var(--ui-weight-heavy)]">
+                      {nameOf(sub.inId)}
+                    </span>
+                  </span>
+                  <span className={cn("shrink-0", ui.text.meta, ui.tone.muted)}>
+                    {t(`fantasy.points.autosub_reason.${sub.reasonKey}` as never)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </UiCard>
         </section>
       ) : null}
 
       {resultQ.isError ? (
-        <div className="px-4 py-3">
+        <div className={cn("pt-4", ui.space.gutter)}>
           <UiErrorState body={t("fpl.error.body")} onRetry={() => void resultQ.refetch()} />
         </div>
       ) : !resultQ.isPending && !vm ? (
-        <div className="px-4 py-3">
+        <div className={cn("pt-4", ui.space.gutter)}>
           <UiEmptyState illustration={pointsPendingArt} title={t("fpl.points_not_available")} />
         </div>
       ) : null}

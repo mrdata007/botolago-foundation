@@ -586,6 +586,15 @@ export const dictionaries = {
     "fantasy.view.squad": "Équipe",
     "fantasy.view.list": "Liste",
     "fantasy.view.toggle_label": "Mode d'affichage",
+    // Option A (A-Team): the pitch side of the "Terrain | Liste" toggle.
+    "fantasy.view.pitch": "Terrain",
+    // Option A Fantasy hub (A-Fantasy). A league row's rank reads "3e sur 24":
+    // the figure is set in the display face and the rest of the phrase beside
+    // it, so the whole phrase is one string with a {rank} slot, and French
+    // takes "er" for the first place (Intl.PluralRules ordinal "one").
+    "fantasy.hub.my_leagues": "Mes ligues",
+    "fantasy.hub.league_rank_one": "{rank}er sur {n}",
+    "fantasy.hub.league_rank_other": "{rank}e sur {n}",
     "fantasy.bench_short": "Banc",
     "fantasy.xpts": "xPts",
     "fantasy.chip.bench_boost": "Bench Boost",
@@ -1887,6 +1896,10 @@ export const dictionaries = {
     "fantasy.view.squad": "التشكيلة",
     "fantasy.view.list": "القائمة",
     "fantasy.view.toggle_label": "طريقة العرض",
+    "fantasy.view.pitch": "الملعب",
+    "fantasy.hub.my_leagues": "دورياتي",
+    "fantasy.hub.league_rank_one": "{rank} من أصل {n}",
+    "fantasy.hub.league_rank_other": "{rank} من أصل {n}",
     "fantasy.bench_short": "بديل",
     "fantasy.xpts": "نقاط متوقعة",
     "fantasy.chip.bench_boost": "تعزيز الاحتياط",

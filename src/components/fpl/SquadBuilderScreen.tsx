@@ -1,17 +1,19 @@
 import { Plus, RotateCcw, UserPlus } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { crestStyle } from "@/components/common/club-crest-style";
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
-import { ui, UiBanner, UiButton, UiHeader, UiSegmented } from "@/components/ui-kit";
+import { ui, UiBanner, UiButton, UiHeader, UiIconButton, UiSegmented } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position, SquadPlayer } from "@/types/fantasy";
+import { findClub } from "./club-lookup";
+import { formatDeadline } from "./deadline";
 import { FplEmptySlot, FplPlayerCard } from "./FplPlayerCard";
 import { FplPitch } from "./FplPitch";
-import { FplStatBar } from "./FplStatBar";
+import { FplStatBar, type FplStatItem } from "./FplStatBar";
 import { SquadListTable, type SquadListColumn } from "./SquadListTable";
 
 export interface BuilderSlot {
@@ -29,28 +31,18 @@ export interface BuilderSlot {
 const ROWS: Position[] = ["GK", "DEF", "MID", "FWD"];
 
 /**
- * The gameweek deadline, pinned to the competition's own calendar.
- *
- * `timeZone: MATCH_TIME_ZONE` is not decoration: without it the formatter
- * follows the viewer's browser and this line disagrees with every other
- * deadline on the screen for anyone outside Morocco (BG-0100).
+ * "Journée 14 · Date limite : 24 sept., 19:30", set as the navy strip's last
+ * line. The formatter is pinned to the competition's calendar (BG-0100).
  */
 function DeadlineLine({ gameweek, deadlineIso }: { gameweek: number; deadlineIso: string }) {
   const { t, lang } = useI18n();
-  const formatted = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: MATCH_TIME_ZONE,
-  }).format(new Date(deadlineIso));
   return (
-    <p className={cn("mt-1 text-center", ui.text.secondary)}>
+    <p className={cn("min-w-0", ui.text.meta, ui.tone.onInkMuted)}>
       {t("fpl.gameweek")} {gameweek} · {t("fpl.deadline")}
       {/* French sets a narrow no-break space before a colon. */}
-      {lang === "fr" ? "\u202F:" : ":"}{" "}
-      <strong className="whitespace-nowrap [font-weight:var(--ui-weight-heavy)]">
-        {formatted}
+      {lang === "fr" ? " :" : ":"}{" "}
+      <strong className={cn("whitespace-nowrap", ui.tone.onInkPlain)}>
+        {formatDeadline(deadlineIso, lang)}
       </strong>
     </p>
   );
@@ -64,9 +56,16 @@ function DeadlineLine({ gameweek, deadlineIso }: { gameweek: number; deadlineIso
  * the player's actions, and once an incoming player has been chosen from
  * "Add Player" every card that cannot be replaced is dimmed while the
  * "Incoming Player" strip sits above the bottom bar (FPL-004).
+ *
+ * Option A (A-Players, A-Team): the sub-page header with a kicker, the navy
+ * summary strip, the "Terrain | Liste" pill, the pitch card, and a bottom
+ * dock — "Ajouter un joueur" (the gradient primary) and "Suivant" (ink) — that
+ * sticks above the bottom navigation on a phone (`--bottomnav-h`) and to the
+ * bottom of the column from `md`, where the nav is hidden.
  */
 export function SquadBuilderScreen({
   title,
+  kicker,
   backTo,
   onBack,
   gameweek,
@@ -91,11 +90,13 @@ export function SquadBuilderScreen({
   children,
 }: {
   title: ReactNode;
+  /** The small line above the title ("FANTASY"). */
+  kicker?: ReactNode;
   backTo?: string;
   onBack?: () => void;
   gameweek: number;
   deadlineIso: string;
-  stats: Array<{ label: ReactNode; value: ReactNode; tone?: "ink" | "grey" }>;
+  stats: FplStatItem[];
   slots: BuilderSlot[];
   clubs: Club[];
   players: FantasyPlayer[];
@@ -121,7 +122,7 @@ export function SquadBuilderScreen({
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });
-  const clubOf = (id: string) => clubs.find((c) => c.id === id);
+  const clubOf = (id: string) => findClub(clubs, id);
   const replaceMode = !!incoming;
   const positionLabel = (value: Position) =>
     value === "GK"
@@ -169,42 +170,50 @@ export function SquadBuilderScreen({
     }));
 
   const incomingClub = incoming ? clubOf(incoming.clubId) : undefined;
+  const incomingEdge = incomingClub ? crestStyle(incomingClub) : null;
 
   return (
     <>
       <UiHeader
         title={title}
-        tone="gradient"
+        kicker={kicker}
         backTo={backTo}
         onBack={onBack}
         trailing={
           onReset && !resetDisabled ? (
-            <UiButton variant="ink" size="sm" onClick={onReset}>
-              <RotateCcw className="h-3.5 w-3.5" aria-hidden /> {t("fpl.reset")}
-            </UiButton>
+            // A round control rather than a labelled pill, so the screen's
+            // title keeps the width between the two flanks; the name stays
+            // on the control for assistive tech and as its tooltip.
+            <UiIconButton aria-label={t("fpl.reset")} title={t("fpl.reset")} onClick={onReset}>
+              <RotateCcw aria-hidden />
+            </UiIconButton>
           ) : null
         }
-      >
-        <DeadlineLine gameweek={gameweek} deadlineIso={deadlineIso} />
+      />
+      <FplStatBar
+        items={stats}
+        footer={<DeadlineLine gameweek={gameweek} deadlineIso={deadlineIso} />}
+      />
+      {banner ? <UiBanner>{banner}</UiBanner> : null}
+
+      <div className={cn("pt-3", ui.space.gutter)}>
         <UiSegmented
-          className="mt-3"
-          tone="onGradient"
-          label={t("fpl.squad")}
+          variant="pill"
+          label={t("fantasy.view.toggle_label")}
           value={view}
           onChange={onViewChange}
           options={[
-            { value: "squad", label: t("fpl.squad") },
+            { value: "squad", label: t("fantasy.view.pitch") },
             { value: "list", label: t("fpl.list") },
           ]}
         />
-      </UiHeader>
-      {banner ? <UiBanner>{banner}</UiBanner> : null}
-      <FplStatBar items={stats} />
+      </div>
 
       {view === "squad" ? (
-        <FplPitch rows={ROWS.map(row)} />
+        <FplPitch className="mx-[var(--ui-gutter)] mt-3" rows={ROWS.map(row)} />
       ) : (
         <SquadListTable
+          className="mx-[var(--ui-gutter)] mt-3"
           squad={squadForList}
           players={players}
           clubs={clubs}
@@ -218,30 +227,47 @@ export function SquadBuilderScreen({
 
       {children}
 
-      <div className={cn("sticky bottom-0 z-30 mt-3", ui.surface.bar, ui.safe.bottom)}>
+      <div
+        className={cn(
+          "sticky bottom-[var(--bottomnav-h)] z-30 mt-4 md:bottom-0",
+          ui.surface.bar,
+          ui.rule.blockStart,
+          ui.shadow.raised,
+          "pb-2.5 pt-2.5 md:pb-3",
+        )}
+      >
         {incoming ? (
-          <div
-            role="status"
-            className={cn("flex items-center gap-2", ui.rule.block, ui.rule.blockStart)}
-          >
-            <span
+          <div role="status" className={cn("pb-2.5", ui.space.gutter)}>
+            <div
+              data-club={incomingEdge?.["data-club"]}
+              style={incomingEdge?.style}
               className={cn(
-                "inline-flex items-center gap-2 px-3",
-                ui.space.row,
-                ui.surface.inkPlain,
-                ui.text.meta,
-                "[font-weight:var(--ui-weight-heavy)]",
+                "flex min-w-0 items-center gap-2.5 py-1.5 pe-1 ps-2.5",
+                ui.surface.card,
+                ui.edge.start,
               )}
             >
-              {t("fpl.incoming_player")} <UserPlus className="h-4 w-4" aria-hidden />
-            </span>
-            <span className="flex min-w-0 flex-1 items-center gap-2 py-1">
-              <JerseyVisual
-                kit={getKitForClub(incomingClub, incoming.kitPattern)}
-                size={28}
-                imageUrl={incoming.jerseyImageUrl}
-              />
-              <span className="min-w-0">
+              <span
+                className={cn(
+                  "grid h-9 w-9 shrink-0 place-items-center",
+                  ui.radius.full,
+                  ui.surface.sunken,
+                )}
+              >
+                <JerseyVisual
+                  kit={getKitForClub(incomingClub, incoming.kitPattern)}
+                  size={22}
+                  variant="flat"
+                  imageUrl={incoming.jerseyImageUrl}
+                />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span
+                  className={cn("flex min-w-0 items-center gap-1.5", ui.text.label, ui.tone.ink)}
+                >
+                  <UserPlus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span className="truncate">{t("fpl.incoming_player")}</span>
+                </span>
                 <span
                   className={cn(
                     "block truncate",
@@ -254,27 +280,24 @@ export function SquadBuilderScreen({
                 </span>
                 <span className={cn("block truncate", ui.text.micro, ui.tone.muted)}>
                   {incomingClub ? tr(incomingClub.shortName) : ""} ·{" "}
-                  {positionLabel(incoming.position)} · {nf.format(incoming.price)}
+                  {positionLabel(incoming.position)} ·{" "}
+                  <span className={ui.text.tabular}>{nf.format(incoming.price)}</span>
                 </span>
               </span>
-            </span>
-            {onCancelIncoming ? (
-              <UiButton variant="ghost" size="sm" className="me-1" onClick={onCancelIncoming}>
-                {t("fpl.cancel")}
-              </UiButton>
-            ) : null}
+              {onCancelIncoming ? (
+                <UiButton variant="soft" size="sm" onClick={onCancelIncoming}>
+                  {t("fpl.cancel")}
+                </UiButton>
+              ) : null}
+            </div>
+            <p className={cn("pt-2 text-center", ui.text.meta, ui.tone.ink)}>
+              {t("fpl.select_replacement")}
+            </p>
           </div>
         ) : null}
-        {incoming ? (
-          <p className={cn("px-3 pt-2 text-center", ui.text.meta, ui.tone.ink)}>
-            {t("fpl.select_replacement")}
-          </p>
-        ) : null}
-        {/* px-2 alone was not enough: "Ajouter un joueur" needs ~173px with
-            its icon and a half row gives it 163px at 390, so it wrapped to two
-            cramped lines. The primary action takes 3/5 of the row; its
-            one-word sibling does not need half. */}
-        <div className="grid grid-cols-[3fr_2fr] gap-2 px-3 pt-2">
+        {/* The primary action takes 3/5 of the row: "Ajouter un joueur" needs
+            ~173px with its icon, and half of a 390px row is 163px. */}
+        <div className={cn("grid grid-cols-[3fr_2fr] gap-2", ui.space.gutter)}>
           <UiButton
             className="px-2"
             variant="gradient"

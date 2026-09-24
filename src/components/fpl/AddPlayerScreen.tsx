@@ -1,16 +1,17 @@
-import { Check, Lock, Plus, X } from "lucide-react";
+import { Check, Lock, Plus, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { crestStyle } from "@/components/common/club-crest-style";
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import {
   ui,
   UiBadge,
-  UiBanner,
   UiButton,
+  UiChip,
   UiEmptyState,
-  UiHeader,
+  UiIconButton,
   UiInput,
-  UiSegmented,
+  UiPill,
   UiSelect,
   UiSheet,
 } from "@/components/ui-kit";
@@ -19,8 +20,9 @@ import { getKitForClub } from "@/lib/kits";
 import { cn } from "@/lib/utils";
 import type { Club, Player } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
+import { findClub } from "./club-lookup";
 
-type SortKey = "form" | "price" | "selected";
+type SortKey = "form" | "price" | "selected" | "points";
 
 /**
  * Why a row cannot be picked. The screen never decides any of these: the
@@ -36,9 +38,9 @@ const ALL_POSITIONS: Position[] = ["GK", "DEF", "MID", "FWD"];
  * Three filters abreast at 390px: the kit field's 15px body size and 12px
  * gutters leave a club name no room, so the filter row steps down one notch
  * on the type ramp and tightens its gutters. Both are ramp steps, not new
- * numbers.
+ * numbers. Round, like every control in Option A.
  */
-const FILTER_FIELD = "px-2 pe-7 text-[length:var(--ui-text-meta)]";
+const FILTER_FIELD = "rounded-full px-3 pe-8 text-[length:var(--ui-text-meta)]";
 
 /**
  * BG-0071 — descending form, with "no value yet" (`null`) sorted below every
@@ -62,9 +64,19 @@ const compareForm = (a: number | null, b: number | null) =>
  * rendered on the row as a disabled state with its reason.
  *
  * The position control is the other half of that: it is the single source of
- * truth for what the list contains. When a slot imposes a position, the select
- * carries THAT position, is disabled, and offers no other option — it can no
- * longer say "Tous" over a list of goalkeepers.
+ * truth for what the list contains. When a slot imposes a position, the
+ * control carries THAT position, cannot be changed, and offers no other — it
+ * can no longer say "Tous" over a list of goalkeepers.
+ *
+ * Option A (A-Players): a white sheet header — title, the bank on a navy
+ * pill, a round close — then a round search field, the positions as a row of
+ * pill chips, the club / price / sort filters, and "N joueurs sur M". Each row
+ * is ONE button (the e2e picker reads `li button`, and a control nested in a
+ * control is invalid HTML): the club's edge bar, the club's shirt in a soft
+ * disc, name, "ATT · Club", "Forme · Sélection", the price over the season's
+ * points, and a decorative 44px disc saying what a tap does — "+" to add, a
+ * navy check for a player already in the squad (or already in this slot), a
+ * lock for any other refusal.
  */
 export function AddPlayerScreen({
   players,
@@ -82,7 +94,7 @@ export function AddPlayerScreen({
 }: {
   players: FantasyPlayer[];
   clubs: Club[];
-  /** Remaining budget shown in the banner and used to block unaffordable rows. */
+  /** Remaining budget shown in the header and used to block unaffordable rows. */
   bank: number;
   position?: Position;
   /** Keep the position filter pinned to the slot being filled. */
@@ -108,6 +120,7 @@ export function AddPlayerScreen({
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });
+  const whole = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
 
   const [pos, setPos] = useState<Position | "">("");
   const [maxPrice, setMaxPrice] = useState<number | "">("");
@@ -185,131 +198,148 @@ export function AddPlayerScreen({
     list.sort((a, b) => {
       if (sort === "form") return compareForm(a.form, b.form) || b.price - a.price;
       if (sort === "selected") return b.ownership - a.ownership || b.price - a.price;
+      if (sort === "points") return b.totalPoints - a.totalPoints || b.price - a.price;
       return b.price - a.price || a.name.fr.localeCompare(b.name.fr);
     });
     return list;
   }, [players, effectivePos, clubId, maxPrice, query, sort]);
 
-  const clubOf = (id: string) => clubs.find((c) => c.id === id);
   const current = currentPlayerId ? players.find((p) => p.id === currentPlayerId) : undefined;
 
   const header = (
-    <div className={cn("shrink-0", ui.surface.bar)}>
-      <UiHeader
-        title={t("fpl.add_player")}
-        tone="gradient"
-        leading={
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("fpl.close")}
-            className={cn(
-              "grid place-items-center",
-              ui.space.tap,
-              ui.radius.full,
-              ui.focus,
-              "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_35%,transparent)]",
-            )}
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
-        }
-      >
-        <div className="mt-2 flex items-end gap-2">
-          <UiInput
-            className="min-w-0 flex-1"
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label={t("fpl.search_player")}
-            placeholder={t("fpl.search_player")}
-          />
-          {query ? (
-            <UiButton variant="light" size="sm" onClick={() => setQuery("")}>
-              <X className="h-4 w-4" aria-hidden />
-              <span className="sr-only">{t("fpl.cancel")}</span>
-            </UiButton>
-          ) : null}
-        </div>
-      </UiHeader>
+    <div className={cn("shrink-0 pb-1", ui.surface.bar, ui.rule.block)}>
+      <div className="flex items-center gap-2 pe-3 ps-4 pt-3">
+        {/* The dialog's name is the sheet's own (visually hidden) title; this
+            is the same words for the eye, so it is hidden from the tree. */}
+        <p aria-hidden className={cn("min-w-0 flex-1 truncate", ui.display.header)}>
+          {t("fpl.add_player")}
+        </p>
+        <UiPill className="shrink-0">
+          {t("fpl.bank")} <span className={ui.text.tabular}>{nf.format(bank)}</span>
+        </UiPill>
+        <UiIconButton aria-label={t("fpl.close")} onClick={onClose}>
+          <X aria-hidden />
+        </UiIconButton>
+      </div>
 
-      <UiBanner>
-        {t("fpl.bank")} <span className={ui.text.tabular}>{nf.format(bank)}</span>
-      </UiBanner>
-
-      <div className={cn("px-3 py-2", ui.surface.bar, ui.rule.block)}>
-        <div className="grid grid-cols-3 gap-2">
-          {pinned ? (
-            /**
-             * An imposed position is not a control, so it is not drawn as one.
-             * A disabled select still opens, still lists "Tous", and still
-             * reads as a filter the list is ignoring; a pill states the fact.
-             */
-            <div className="flex flex-col gap-1">
-              <span className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}>
-                {t("fantasy.picker.filter_position")}
-              </span>
-              <span
-                className={cn(
-                  "inline-flex min-h-[var(--ui-tap-min)] items-center gap-1 px-2",
-                  ui.radius.track,
-                  ui.surface.sunken,
-                  ui.text.meta,
-                  "[font-weight:var(--ui-weight-heavy)]",
-                )}
+      <div className="px-4 pt-3">
+        <UiInput
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label={t("fpl.search_player")}
+          placeholder={t("fpl.search_player")}
+          leading={<Search className={cn("h-[18px] w-[18px]", ui.tone.muted)} aria-hidden />}
+          trailing={
+            query ? (
+              <UiIconButton
+                variant="ghost"
+                aria-label={t("fpl.cancel")}
+                onClick={() => setQuery("")}
               >
-                <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                <span className="truncate">{positionLabel(pinned)}</span>
-              </span>
-            </div>
-          ) : (
-            <UiSelect
-              label={t("fantasy.picker.filter_position")}
-              value={effectivePos}
-              onChange={(e) => setPos(e.target.value as Position | "")}
-              fieldClassName={FILTER_FIELD}
-              options={[
-                { value: "", label: t("fpl.all") },
-                ...selectable.map((p) => ({ value: p, label: positionLabel(p) })),
-              ]}
-            />
-          )}
-          <UiSelect
-            label={t("fantasy.picker.filter_price")}
-            value={maxPrice === "" ? "" : String(maxPrice)}
-            onChange={(e) => setMaxPrice(e.target.value === "" ? "" : Number(e.target.value))}
-            fieldClassName={FILTER_FIELD}
-            options={[
-              { value: "", label: t("fpl.unlimited") },
-              ...prices.map((p) => ({ value: String(p), label: nf.format(p) })),
-            ]}
-          />
-          <UiSelect
-            label={t("fantasy.picker.filter_club")}
-            value={clubId}
-            onChange={(e) => setClubId(e.target.value)}
-            fieldClassName={FILTER_FIELD}
-            options={[
-              { value: "", label: t("fpl.all") },
-              ...clubs.map((c) => ({ value: c.id, label: tr(c.shortName) })),
-            ]}
-          />
-        </div>
+                <X aria-hidden />
+              </UiIconButton>
+            ) : undefined
+          }
+          fieldClassName={cn("min-h-[var(--ui-row-min)] ps-11", ui.radius.full, ui.rule.strong)}
+        />
+      </div>
+
+      <div className="px-4 pt-2.5">
         {pinned ? (
-          <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>{t("fpl.pick.position_locked")}</p>
-        ) : null}
-        <UiSegmented
-          className="mt-2"
+          /**
+           * An imposed position is not a control, so it is not drawn as one.
+           * A disabled chip row still reads as a filter the list is ignoring;
+           * a pill with a lock states the fact.
+           */
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span
+              className={cn(
+                "inline-flex min-h-[var(--ui-tap-min)] items-center gap-1.5 px-4",
+                ui.radius.full,
+                ui.surface.inkPlain,
+                ui.text.meta,
+                "[font-weight:var(--ui-weight-heavy)]",
+              )}
+            >
+              <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span className="sr-only">{t("fantasy.picker.filter_position")}: </span>
+              {positionLabel(pinned)}
+            </span>
+            <span className={cn("min-w-0", ui.text.meta, ui.tone.muted)}>
+              {t("fpl.pick.position_locked")}
+            </span>
+          </div>
+        ) : (
+          <div
+            role="group"
+            aria-label={t("fantasy.picker.filter_position")}
+            className="grid grid-cols-5 gap-2"
+          >
+            {(["", ...ALL_POSITIONS] as const).map((value) => (
+              <UiChip
+                key={value || "all"}
+                selected={effectivePos === value}
+                disabled={value !== "" && !selectable.includes(value)}
+                onClick={() => setPos(value)}
+                className="justify-center px-1 disabled:opacity-45"
+              >
+                <span className="truncate">
+                  {value === "" ? t("fpl.all") : positionLabel(value)}
+                </span>
+              </UiChip>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 px-4 pt-2">
+        <UiSelect
+          label={t("fantasy.picker.filter_club")}
+          value={clubId}
+          onChange={(e) => setClubId(e.target.value)}
+          fieldClassName={FILTER_FIELD}
+          options={[
+            { value: "", label: t("fpl.all") },
+            ...clubs.map((c) => ({ value: c.id, label: tr(c.shortName) })),
+          ]}
+        />
+        <UiSelect
+          label={t("fantasy.picker.filter_price")}
+          value={maxPrice === "" ? "" : String(maxPrice)}
+          onChange={(e) => setMaxPrice(e.target.value === "" ? "" : Number(e.target.value))}
+          fieldClassName={FILTER_FIELD}
+          options={[
+            { value: "", label: t("fpl.unlimited") },
+            ...prices.map((p) => ({ value: String(p), label: nf.format(p) })),
+          ]}
+        />
+        <UiSelect
           label={t("fantasy.picker.sort")}
           value={sort}
-          onChange={setSort}
+          onChange={(e) => setSort(e.target.value as SortKey)}
+          fieldClassName={FILTER_FIELD}
           options={[
             { value: "price", label: t("fantasy.picker.sort.price") },
+            { value: "points", label: t("fantasy.picker.sort.points") },
             { value: "form", label: t("fantasy.picker.sort.form") },
             { value: "selected", label: t("fantasy.picker.sort.ownership") },
           ]}
         />
       </div>
+
+      <p
+        className={cn(
+          "px-4 pt-2",
+          ui.text.meta,
+          "[font-weight:var(--ui-weight-strong)]",
+          ui.tone.muted,
+        )}
+      >
+        {t("fantasy.players.showing")
+          .replace("{n}", whole.format(rows.length))
+          .replace("{total}", whole.format(players.length))}
+      </p>
     </div>
   );
 
@@ -338,113 +368,154 @@ export function AddPlayerScreen({
       ) : (
         <ul>
           {rows.map((player) => {
-            const club = clubOf(player.clubId);
+            const club = findClub(clubs, player.clubId);
             const kit = getKitForClub(club, player.kitPattern);
             const block = blockOf(player);
             const isCurrent = player.id === currentPlayerId;
+            const owned = isCurrent || block === "taken";
+            const edge = club ? crestStyle(club) : null;
             // BG-0071: a dash, not 0.0, while no gameweek has scored.
-            const form = player.form === null ? t("fantasy.stat.none") : player.form.toFixed(1);
-            const extra =
-              sort === "form"
-                ? `${t("fantasy.picker.sort.form")} ${form}`
-                : sort === "selected"
-                  ? `${nf.format(player.ownership)}%`
-                  : null;
-            const meta = [club ? tr(club.shortName) : null, positionLabel(player.position), extra]
+            const form = player.form === null ? t("fantasy.stat.none") : nf.format(player.form);
+            const meta = [positionLabel(player.position), club ? tr(club.shortName) : null]
               .filter(Boolean)
               .join(" · ");
 
             return (
-              <li key={player.id} className={ui.rule.block}>
+              <li
+                key={player.id}
+                data-club={edge?.["data-club"]}
+                style={edge?.style}
+                className={ui.rule.block}
+              >
                 <button
                   type="button"
                   disabled={!!block}
                   onClick={() => onPick(player)}
                   aria-pressed={isCurrent}
                   className={cn(
-                    "flex w-full items-center gap-2 px-3 py-2 text-start",
-                    ui.space.row,
+                    "flex w-full items-stretch text-start",
                     ui.focus,
                     "disabled:cursor-not-allowed",
                     isCurrent &&
-                      "bg-[color:color-mix(in_oklab,var(--ui-ink-fg)_12%,var(--ui-surface))]",
+                      "bg-[color:color-mix(in_oklab,var(--ui-ink-fg)_10%,var(--ui-surface))]",
                   )}
                 >
-                  {/*
-                    A blocked row is dimmed on its artwork only. The reason it
-                    is blocked is the one thing the manager has to be able to
-                    read, so the text keeps a foreground that clears AA — a
-                    45%-opacity row measured 3.1:1 and taught nothing.
-                  */}
-                  <span className={cn("shrink-0", block && "opacity-60")}>
-                    <JerseyVisual kit={kit} size={28} imageUrl={player.jerseyImageUrl} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex min-w-0 items-center gap-1.5">
+                  {/* The club's 4px edge, flush with the sheet's inline-start
+                      edge — its own flex child, because the row also carries
+                      the hairline and `ui.rule.block` colours every side. */}
+                  <span aria-hidden className={cn("w-1 shrink-0", ui.club.edgeFill)} />
+                  {/* Three lines of text set the row's height (~70px, the
+                      board's); the row floor is the kit's, not a literal. */}
+                  <span
+                    className={cn(
+                      "flex min-w-0 flex-1 items-center gap-3 py-2 pe-3 ps-3",
+                      ui.space.row,
+                    )}
+                  >
+                    {/*
+                      A blocked row is dimmed on its artwork only. The reason
+                      it is blocked is the one thing the manager has to be able
+                      to read, so the text keeps a foreground that clears AA —
+                      a 45%-opacity row measured 3.1:1 and taught nothing.
+                    */}
+                    <span
+                      className={cn(
+                        "grid h-11 w-11 shrink-0 place-items-center",
+                        ui.radius.full,
+                        ui.surface.sunken,
+                        block && !owned && "opacity-60",
+                      )}
+                    >
+                      <JerseyVisual
+                        kit={kit}
+                        size={28}
+                        variant="flat"
+                        imageUrl={player.jerseyImageUrl}
+                      />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span
+                          className={cn(
+                            "min-w-0 truncate",
+                            ui.text.body,
+                            "[font-weight:var(--ui-weight-heavy)]",
+                            block && !owned ? ui.tone.muted : ui.tone.default,
+                          )}
+                        >
+                          {tr(player.name)}
+                        </span>
+                        {player.status === "available" ? null : (
+                          <UiBadge
+                            tone={player.status === "doubtful" ? "caution" : "negative"}
+                            className="shrink-0 px-2 py-0"
+                          >
+                            {statusLabel(player.status)}
+                          </UiBadge>
+                        )}
+                      </span>
                       <span
                         className={cn(
-                          "min-w-0 truncate",
-                          ui.text.body,
-                          "[font-weight:var(--ui-weight-heavy)]",
-                          block ? ui.tone.muted : ui.tone.default,
+                          "block truncate",
+                          ui.text.meta,
+                          "[font-weight:var(--ui-weight-strong)]",
+                          ui.tone.muted,
                         )}
                       >
-                        {tr(player.name)}
+                        {meta}
                       </span>
-                      {player.status === "available" ? null : (
-                        <UiBadge
-                          tone={player.status === "doubtful" ? "neutral" : "negative"}
-                          className="shrink-0 px-2 py-0"
+                      {block ? (
+                        <span
+                          className={cn(
+                            "block truncate",
+                            ui.text.meta,
+                            "[font-weight:var(--ui-weight-heavy)]",
+                            block === "taken" ? ui.tone.muted : ui.tone.negative,
+                          )}
                         >
-                          {statusLabel(player.status)}
-                        </UiBadge>
+                          {blockLabel(block)}
+                        </span>
+                      ) : (
+                        <span className={cn("block truncate", ui.text.meta, ui.tone.muted)}>
+                          {t("fpl.form")} {form} · {t("fantasy.picker.sort.ownership")}{" "}
+                          {nf.format(player.ownership)}&nbsp;%
+                        </span>
                       )}
                     </span>
-                    <span className={cn("block truncate", ui.text.meta, ui.tone.muted)}>
-                      {meta}
-                      {block ? (
-                        <>
-                          {meta ? " · " : null}
-                          <span
-                            className={cn(
-                              block === "taken" ? ui.tone.muted : ui.tone.negative,
-                              "[font-weight:var(--ui-weight-heavy)]",
-                            )}
-                          >
-                            {blockLabel(block)}
-                          </span>
-                        </>
-                      ) : null}
+                    <span className="flex shrink-0 flex-col items-end">
+                      <span
+                        className={cn(
+                          ui.stat.md,
+                          block && !owned ? ui.tone.muted : ui.tone.default,
+                        )}
+                      >
+                        {nf.format(player.price)}
+                      </span>
+                      <span className={cn(ui.text.micro, ui.tone.muted)}>
+                        <span className={ui.text.tabular}>{whole.format(player.totalPoints)}</span>{" "}
+                        {t("fantasy.points.abbr")}
+                      </span>
                     </span>
-                  </span>
-                  <span
-                    className={cn(
-                      "shrink-0 text-end",
-                      ui.stat.sm,
-                      block ? ui.tone.muted : ui.tone.default,
-                    )}
-                  >
-                    {nf.format(player.price)}
-                  </span>
-                  <span
-                    aria-hidden
-                    className={cn(
-                      "grid h-7 w-7 shrink-0 place-items-center",
-                      ui.radius.full,
-                      block
-                        ? cn(ui.surface.sunken, ui.tone.faint)
-                        : isCurrent
-                          ? cn(ui.surface.ink, ui.tone.onInk)
-                          : cn(ui.surface.sunken, ui.tone.ink),
-                    )}
-                  >
-                    {block ? (
-                      <Lock className="h-4 w-4" />
-                    ) : isCurrent ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Plus className="h-4 w-4" />
-                    )}
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "grid h-11 w-11 shrink-0 place-items-center",
+                        ui.radius.full,
+                        owned
+                          ? ui.surface.inkPlain
+                          : block
+                            ? cn(ui.surface.sunken, ui.tone.faint)
+                            : cn(ui.surface.sunken, ui.tone.ink),
+                      )}
+                    >
+                      {owned ? (
+                        <Check className="h-[18px] w-[18px]" />
+                      ) : block ? (
+                        <Lock className="h-4 w-4" />
+                      ) : (
+                        <Plus className="h-[18px] w-[18px]" />
+                      )}
+                    </span>
                   </span>
                 </button>
               </li>
