@@ -67,7 +67,7 @@ describe("Matches (A-Matches)", () => {
 
   it("stacks title, tabs, live strip and status chips in that order, the strip drawn once", () => {
     const title = matches.indexOf("<UiPageTitle");
-    const tabs = matches.indexOf('<MatchesTabs active="calendar" />');
+    const tabs = matches.indexOf('<MatchesTabs active="calendar" season={selectedSeason} />');
     const strip = matches.indexOf("<LiveStrip />");
     const chips = matches.indexOf("<StatusFilters");
     expect(title).toBeGreaterThan(-1);
@@ -115,13 +115,25 @@ describe("Classement (A-Standings)", () => {
   it("is the second Matches tab: same title band and season pill, tabs, then the live strip", () => {
     const title = standings.indexOf("<UiPageTitle");
     const picker = standings.indexOf("<SeasonPicker");
-    const tabs = standings.indexOf('<MatchesTabs active="standings" />');
+    const tabs = standings.indexOf('<MatchesTabs active="standings" season={season} />');
     const strip = standings.indexOf("<LiveStrip />");
     expect(title).toBeGreaterThan(-1);
     expect(picker).toBeGreaterThan(title);
     expect(tabs).toBeGreaterThan(picker);
     expect(strip).toBeGreaterThan(tabs);
     expect(standings).toContain('createFileRoute("/matches/standings")');
+  });
+
+  it("keeps the season a reader chose when they switch tabs, both ways", () => {
+    const calendar = code("matches.index.tsx");
+    const tabs = code("../components/matches/MatchesTabs.tsx");
+    for (const page of [calendar, standings]) {
+      expect(page).toContain("validateSearch: validateMatchesSearch");
+      expect(page).toContain("const { season: requestedSeasonId } = Route.useSearch();");
+    }
+    expect(standings).toContain("useState<string | null>(() => requestedSeasonId ?? null)");
+    expect(calendar).toContain("seasons.find((season) => season.id === requestedSeasonId)");
+    expect(tabs).toContain("search: seasonSearch(season)");
   });
 
   it("reads the table worked out from the season's results, shared with Home's snapshot", () => {
@@ -166,6 +178,7 @@ describe("Classement — design-system rules in source", () => {
   const FILES = [
     "matches.standings.tsx",
     "../components/matches/MatchesTabs.tsx",
+    "../components/matches/matches-search.ts",
     "../components/matches/SeasonPicker.tsx",
     "../components/matches/StandingsTable.tsx",
     "../components/matches/YourClubCard.tsx",

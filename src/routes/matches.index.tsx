@@ -10,6 +10,7 @@ import { Section } from "@/components/common/Section";
 import { DateStrip } from "@/components/matches/DateStrip";
 import { LiveStrip } from "@/components/matches/LiveStrip";
 import { MatchesTabs } from "@/components/matches/MatchesTabs";
+import { validateMatchesSearch } from "@/components/matches/matches-search";
 import { SeasonPicker } from "@/components/matches/SeasonPicker";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { MatchCardSkeleton } from "@/components/common/Skeletons";
@@ -27,6 +28,8 @@ const MATCHES_DESCRIPTION =
   "Suivez tous les matchs de la Botola Pro : scores en direct, calendrier, résultats et classement.";
 
 export const Route = createFileRoute("/matches/")({
+  // `?season=<id>`: the season the Classement tab was showing (matches-search.ts).
+  validateSearch: validateMatchesSearch,
   head: () => ({
     meta: [
       { title: MATCHES_TITLE },
@@ -117,6 +120,7 @@ function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
  */
 function MatchesPage() {
   const { t, lang } = useI18n();
+  const { season: requestedSeasonId } = Route.useSearch();
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>("all");
@@ -131,10 +135,14 @@ function MatchesPage() {
 
   useEffect(() => {
     if (seasons.length === 0 || selectedSeason) return;
-    const initialSeason = seasons.find((season) => season.isCurrent) ?? seasons[0]!;
+    // The season the other tab was on, else the current one.
+    const initialSeason =
+      seasons.find((season) => season.id === requestedSeasonId) ??
+      seasons.find((season) => season.isCurrent) ??
+      seasons[0]!;
     setSelectedSeasonId(initialSeason.id);
     setSelectedDate(dateForSeason(initialSeason));
-  }, [seasons, selectedSeason]);
+  }, [seasons, selectedSeason, requestedSeasonId]);
 
   const canLoadMatches = seasonsQ.isSuccess && (seasons.length === 0 || selectedSeason != null);
 
@@ -266,7 +274,7 @@ function MatchesPage() {
             // The tabs draw the rule under the band.
             className="border-b-0"
           />
-          <MatchesTabs active="calendar" />
+          <MatchesTabs active="calendar" season={selectedSeason} />
           <LiveStrip />
           <StatusFilters value={filter} onChange={setFilter} liveCount={dayCounts.live} />
         </>

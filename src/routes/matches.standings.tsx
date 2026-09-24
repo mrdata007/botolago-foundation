@@ -8,6 +8,7 @@ import { EmptyState, ErrorState } from "@/components/common/States";
 import { findClub } from "@/components/fantasy/club-identity";
 import { LiveStrip } from "@/components/matches/LiveStrip";
 import { MatchesTabs } from "@/components/matches/MatchesTabs";
+import { validateMatchesSearch } from "@/components/matches/matches-search";
 import { SeasonPicker } from "@/components/matches/SeasonPicker";
 import {
   StandingsLegend,
@@ -29,6 +30,8 @@ const STANDINGS_DESCRIPTION =
   "Le classement de la Botola Pro Inwi : points, victoires, nuls, défaites, différence de buts et forme des 16 clubs, à domicile et à l'extérieur.";
 
 export const Route = createFileRoute("/matches/standings")({
+  // `?season=<id>`: the season the Calendrier tab was showing (matches-search.ts).
+  validateSearch: validateMatchesSearch,
   head: () => ({
     meta: [
       { title: STANDINGS_TITLE },
@@ -64,7 +67,9 @@ const EMPTY_SEASONS: readonly FootballSeason[] = [];
 function StandingsPage() {
   const { t, lang } = useI18n();
   const { user } = useAuth();
-  const [seasonId, setSeasonId] = useState<string | null>(null);
+  const { season: requestedSeasonId } = Route.useSearch();
+  // The season the other tab was on, else (below) the current one.
+  const [seasonId, setSeasonId] = useState<string | null>(() => requestedSeasonId ?? null);
   const [view, setView] = useState<StandingsView>("overall");
 
   const seasonsQ = useQuery({
@@ -140,7 +145,7 @@ function StandingsPage() {
             // The tabs draw the rule under the band.
             className="border-b-0"
           />
-          <MatchesTabs active="standings" />
+          <MatchesTabs active="standings" season={season} />
           <LiveStrip />
         </>
       }
