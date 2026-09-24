@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { clubInitials, clubShortCode } from "@/lib/club-identity";
+import { clubInitials, clubShortCode, rowClubName } from "@/lib/club-identity";
 
 /**
  * BG-0111 — the pitch fixture plate rendered "(D)" with no opponent because
@@ -60,5 +60,17 @@ describe("clubShortCode", () => {
 
   test("is empty only when neither source carries letters", () => {
     expect(clubShortCode(null, "")).toBe("");
+  });
+});
+
+describe("rowClubName", () => {
+  test("a short name that is only a code gives way to the club's name", () => {
+    expect(rowClubName("WCA", "Wydad Casablanca")).toBe("Wydad Casablanca");
+  });
+
+  test("a short name that is words stays, in either script", () => {
+    expect(rowClubName("RCA Zemamra", "Renaissance Club Athletic Zemamra")).toBe("RCA Zemamra");
+    expect(rowClubName("FUS Rabat", "FUS Rabat")).toBe("FUS Rabat");
+    expect(rowClubName("الوداد", "الوداد الرياضي")).toBe("الوداد");
   });
 });

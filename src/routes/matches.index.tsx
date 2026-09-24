@@ -6,20 +6,14 @@ import { useEffect, useMemo, useState } from "react";
 import { footballService, type FootballSeason } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
 import { MatchCard } from "@/components/common/MatchCard";
-import { SectionHeader } from "@/components/common/SectionHeader";
+import { SectionHeader, SectionHeaderLink } from "@/components/common/SectionHeader";
 import { Section } from "@/components/common/Section";
 import { DateStrip } from "@/components/matches/DateStrip";
 import { LiveStrip } from "@/components/matches/LiveStrip";
+import { SeasonPicker } from "@/components/matches/SeasonPicker";
 import { StandingsTable } from "@/components/matches/StandingsTable";
 import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
 import { MatchCardSkeleton } from "@/components/common/Skeletons";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ui, UiCard, UiChip, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -122,7 +116,7 @@ function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
  * there is one competition, and no club filter behind the second.
  */
 function MatchesPage() {
-  const { t, lang, dir } = useI18n();
+  const { t, lang } = useI18n();
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>("all");
@@ -267,7 +261,6 @@ function MatchesPage() {
                 selected={selectedSeason}
                 loading={seasonsQ.isLoading}
                 onChange={handleSeasonChange}
-                dir={dir}
               />
             }
             // One white band with the chips under it: no rule between them.
@@ -362,11 +355,13 @@ function MatchesPage() {
           </div>
         )}
 
-      {/* Standings — persistent context regardless of the selected date */}
+      {/* Standings — persistent context regardless of the selected date. Each
+          club in it opens its club page; "Clubs" lists them all. */}
       <Section>
         <SectionHeader
           title={t("matches.table_preview")}
           eyebrow={t("matches.competition.botola")}
+          action={<SectionHeaderLink to="/clubs">{t("clubs.title")}</SectionHeaderLink>}
         />
         {loading ? (
           <LoadingState />
@@ -472,88 +467,5 @@ function StatusFilters({
         })}
       </div>
     </div>
-  );
-}
-
-/**
- * The season control beside the title: a soft round pill ("2026/2027 ⌄")
- * over the Radix select. The trigger renders the season label itself; left to
- * Radix it clones the whole selected item — label *and* "current" badge —
- * into the pill, where the badge was clipped at 390px (BG-0111).
- */
-function SeasonPicker({
-  seasons,
-  selected,
-  loading,
-  onChange,
-  dir,
-}: {
-  seasons: readonly FootballSeason[];
-  selected: FootballSeason | undefined;
-  loading: boolean;
-  onChange: (seasonId: string) => void;
-  dir: "ltr" | "rtl";
-}) {
-  const { t } = useI18n();
-  return (
-    <Select
-      dir={dir}
-      value={selected?.id ?? ""}
-      onValueChange={onChange}
-      disabled={seasons.length === 0}
-    >
-      <SelectTrigger
-        aria-label={t("matches.season.label")}
-        className={cn(
-          "h-auto min-h-[var(--ui-tap-min)] w-auto gap-1.5 border-0 py-0 pe-3 ps-3.5 shadow-none",
-          ui.radius.full,
-          ui.surface.sunken,
-          ui.text.meta,
-          "[font-weight:var(--ui-weight-heavy)]",
-          "[&>svg]:opacity-100",
-          ui.focus,
-        )}
-      >
-        <SelectValue
-          placeholder={loading ? t("matches.season.loading") : t("matches.season.unavailable")}
-        >
-          {selected ? <span className={ui.text.tabular}>{selected.label}</span> : undefined}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent className={cn(ui.radius.card, ui.rule.all, "bg-[color:var(--ui-surface)]")}>
-        {seasons.map((season) => (
-          <SelectItem
-            key={season.id}
-            value={season.id}
-            className={cn("min-h-[var(--ui-tap-min)]", ui.radius.control)}
-          >
-            <span className="flex items-center gap-2">
-              <span
-                className={cn(
-                  ui.text.body,
-                  "[font-weight:var(--ui-weight-heavy)]",
-                  ui.text.tabular,
-                )}
-              >
-                {season.label}
-              </span>
-              {season.isCurrent && (
-                <span
-                  className={cn(
-                    "inline-flex items-center px-2 py-0.5",
-                    ui.radius.full,
-                    ui.text.label,
-                    ui.surface.sunken,
-                    ui.tone.default,
-                  )}
-                >
-                  {t("matches.season.current")}
-                </span>
-              )}
-            </span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
   );
 }

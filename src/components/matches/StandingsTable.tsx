@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { useI18n } from "@/i18n/provider";
+import { rowClubName } from "@/lib/club-identity";
+import { clubStyle } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import type { Club, TableRow } from "@/types/domain";
 import { ui } from "@/components/ui-kit";
@@ -40,13 +43,31 @@ export function sortStandings(
  *
  * On the kit (Option A): a 14px card, the sunken head in label type, every
  * figure on the tabular stat ramp, and the form as `FormChips`.
+ *
+ * Each club opens its club page. `highlightClubId` marks one row — the club
+ * whose page the table sits on — with its tint and a 4px edge in its colour.
+ *
+ * The scroller is `relative` so the header's visually hidden full labels are
+ * positioned inside it: without that, the last one ("Points") sat outside it,
+ * 1px wide at x = 469 on a 390px phone, and widened the body's overflow —
+ * clipped, so never seen, but it made every width measurement of the page
+ * lie.
  */
 export function StandingsTable({
   rows,
   clubById,
+  highlightClubId,
+  fitPhone = false,
 }: {
   rows: readonly TableRow[];
   clubById: (id: string) => Club | undefined;
+  highlightClubId?: string;
+  /**
+   * Below `sm`, leave the form column out and drop the table's minimum
+   * width, so the points are on screen without scrolling sideways. For a
+   * page that shows the form elsewhere (a club page's overview).
+   */
+  fitPhone?: boolean;
 }) {
   const { t, tr } = useI18n();
   const [sortKey, setSortKey] = useState<SortKey>("position");
@@ -105,12 +126,22 @@ export function StandingsTable({
 
   return (
     <div className={cn("overflow-hidden", ui.surface.card)}>
-      <div className="overflow-x-auto">
-        <table className={cn("w-full min-w-[26rem]", ui.text.secondary)}>
+      <div className="relative overflow-x-auto">
+        <table
+          className={cn(
+            "w-full",
+            fitPhone ? "sm:min-w-[26rem]" : "min-w-[26rem]",
+            ui.text.secondary,
+          )}
+        >
           {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
           <thead className={cn(ui.surface.sunken, ui.text.label, ui.tone.muted)}>
             <tr>
-              <th scope="col" aria-label={t("matches.table.rank")} className="px-3 py-1 text-start">
+              <th
+                scope="col"
+                aria-label={t("matches.table.rank")}
+                className={cn("py-1 text-start", fitPhone ? "px-0.5 sm:px-3" : "px-3")}
+              >
                 {headerButton("position", "#", t("matches.table.rank"))}
               </th>
               <th scope="col" className="px-3 py-1 text-start">
@@ -135,10 +166,13 @@ export function StandingsTable({
                   t("matches.table.goal_difference"),
                 )}
               </th>
-              <th scope="col" className="px-2 py-1 text-center">
+              <th
+                scope="col"
+                className={cn("px-2 py-1 text-center", fitPhone && "hidden sm:table-cell")}
+              >
                 {t("matches.table.form")}
               </th>
-              <th scope="col" className="px-3 py-1 text-end">
+              <th scope="col" className={cn("py-1 text-end", fitPhone ? "px-0.5 sm:px-3" : "px-3")}>
                 {headerButton("points", t("matches.table.points_short"), t("matches.table.points"))}
               </th>
             </tr>
@@ -147,21 +181,52 @@ export function StandingsTable({
             {sorted.map((row) => {
               const club = clubById(row.clubId);
               if (!club) return null;
+              const highlighted = row.clubId === highlightClubId;
+              const colours = highlighted ? clubStyle(club) : undefined;
               return (
-                <tr key={row.clubId} className={ui.rule.blockStart}>
-                  <td className={cn("px-3 py-2", ui.stat.sm, ui.tone.muted)}>{row.position}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
+                <tr
+                  key={row.clubId}
+                  data-club={colours?.["data-club"]}
+                  style={colours?.style}
+                  aria-current={highlighted ? "true" : undefined}
+                  className={cn(ui.rule.blockStart, highlighted && ui.club.tint)}
+                >
+                  <td
+                    className={cn(
+                      "px-3 py-2",
+                      ui.stat.sm,
+                      highlighted ? cn(ui.edge.start, ui.tone.default) : ui.tone.muted,
+                    )}
+                  >
+                    {row.position}
+                  </td>
+                  <td className={cn("px-1.5 py-0.5", fitPhone && "w-full max-w-0 sm:max-w-none")}>
+                    {/* The whole name is the link, at the 44px floor: the
+                        row's other cells keep their own padding, so the row
+                        is no taller than it was. */}
+                    <Link
+                      to="/clubs/$clubId"
+                      params={{ clubId: club.id }}
+                      className={cn(
+                        "flex min-h-[var(--ui-tap-min)] min-w-0 items-center gap-2 px-1.5",
+                        ui.radius.control,
+                        "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                        ui.focus,
+                      )}
+                    >
                       <ClubCrest club={club} size="sm" />
                       <span
                         className={cn(
-                          "truncate [font-weight:var(--ui-weight-strong)]",
+                          "truncate",
+                          highlighted
+                            ? "[font-weight:var(--ui-weight-heavy)]"
+                            : "[font-weight:var(--ui-weight-strong)]",
                           ui.tone.default,
                         )}
                       >
-                        {tr(club.shortName)}
+                        {rowClubName(tr(club.shortName), tr(club.name))}
                       </span>
-                    </div>
+                    </Link>
                   </td>
                   <td className={cn("px-2 py-2 text-center", ui.stat.sm)}>{row.played}</td>
                   <td className={cn("hidden px-2 py-2 text-center sm:table-cell", ui.stat.sm)}>
@@ -176,10 +241,17 @@ export function StandingsTable({
                   <td className={cn("px-2 py-2 text-center", ui.stat.sm)}>
                     <bdi>{formatGoalDifference(row.goalDifference)}</bdi>
                   </td>
-                  <td className="px-2 py-2 text-center">
+                  <td className={cn("px-2 py-2 text-center", fitPhone && "hidden sm:table-cell")}>
                     <FormChips form={row.form} />
                   </td>
-                  <td className={cn("px-3 py-2 text-end", ui.stat.md, ui.tone.default)}>
+                  <td
+                    className={cn(
+                      "py-2 text-end",
+                      fitPhone ? "px-2 sm:px-3" : "px-3",
+                      ui.stat.md,
+                      ui.tone.default,
+                    )}
+                  >
                     {row.points}
                   </td>
                 </tr>

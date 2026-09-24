@@ -3,7 +3,7 @@ import { BrandedText } from "@/components/brand/BrandedText";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CircleDot, Bell, Newspaper, Trophy, UserRound } from "lucide-react";
+import { CircleDot, Bell, Newspaper, Shield, Trophy, UserRound } from "lucide-react";
 
 import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
@@ -25,6 +25,8 @@ import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { STRETCHED_LINK } from "@/components/clubs/stretched-link";
+import { rowClubName } from "@/lib/club-identity";
 import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import {
@@ -444,12 +446,22 @@ function HomeContent() {
               }}
             />
           ) : (
-            <UiCard padding="none" className="divide-y divide-[color:var(--ui-rule)]">
+            <UiCard
+              padding="none"
+              className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+            >
               {standingsRows.slice(0, 5).map((row) => {
                 const club = clubById(row.clubId);
                 if (!club) return null;
+                // Each club opens its club page. The name is the link and its
+                // ::after stretches over the row, so the whole row is the
+                // target while the link is named by the club alone and the
+                // figures are still read as figures.
                 return (
-                  <div key={row.clubId} className="flex items-center gap-2.5 px-3.5 py-2">
+                  <div
+                    key={row.clubId}
+                    className="relative flex items-center gap-2.5 px-3.5 py-2 transition-colors hover:bg-[color:var(--ui-surface-sunken)]"
+                  >
                     <span
                       className={cn("w-5 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}
                       aria-hidden
@@ -457,16 +469,19 @@ function HomeContent() {
                       {row.position}
                     </span>
                     <ClubCrest club={club} size="sm" />
-                    <span
+                    <Link
+                      to="/clubs/$clubId"
+                      params={{ clubId: club.id }}
                       className={cn(
                         "min-w-0 flex-1 truncate",
                         ui.text.body,
                         "[font-weight:var(--ui-weight-heavy)]",
                         ui.tone.default,
+                        STRETCHED_LINK,
                       )}
                     >
-                      {tr(club.shortName)}
-                    </span>
+                      {rowClubName(tr(club.shortName), tr(club.name))}
+                    </Link>
                     <span
                       className={cn("w-7 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}
                       aria-label={t("matches.table.played")}
@@ -498,8 +513,11 @@ function HomeContent() {
       {/* -------------------------------------------------------- */}
       <Section className="pb-2">
         <SectionHeader title={<BrandedText text={t("home.explore")} />} />
-        <div className={cn("grid gap-2", NEWS_ENABLED ? "grid-cols-4" : "grid-cols-3")}>
+        {/* Four across; with News on, five tiles do not fit a 390px row
+            ("Actualités" is wider than a fifth of it), so they wrap in threes. */}
+        <div className={cn("grid gap-2", NEWS_ENABLED ? "grid-cols-3" : "grid-cols-4")}>
           <DiscoveryLink to="/matches" icon={CircleDot} label={t("nav.matches")} />
+          <DiscoveryLink to="/clubs" icon={Shield} label={t("clubs.title")} />
           <DiscoveryLink to="/fantasy" icon={Trophy} label={t("nav.fantasy")} />
           {/* News discovery tile — hidden at launch (NEWS_ENABLED). */}
           {NEWS_ENABLED && <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />}
@@ -520,7 +538,7 @@ function DiscoveryLink({
   icon: Icon,
   label,
 }: {
-  to: "/matches" | "/fantasy" | "/news" | "/profile";
+  to: "/matches" | "/clubs" | "/fantasy" | "/news" | "/profile";
   icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   label: string;
 }) {

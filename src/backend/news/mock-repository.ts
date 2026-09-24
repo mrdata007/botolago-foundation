@@ -30,8 +30,14 @@ const articleUuid = (index: number) =>
   `a0000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
 const storyUuid = (index: number) =>
   `b0000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
+/**
+ * The same ids the mock football repository gives the same clubs. In
+ * production an article's `teamIds` and a football club's id are both
+ * `app.teams.id`; mock mode has to agree with itself the same way, or a club
+ * page asking for "this club's news" finds none.
+ */
 const teamUuid = (index: number) =>
-  `c0000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
+  `00000010-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
 const taxonomyUuid = (index: number) =>
   `d0000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
 

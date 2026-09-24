@@ -63,6 +63,16 @@ export function clubInitials(shortName: string | null | undefined): string {
 }
 
 /**
+ * The name a list row or a table line prints beside a club's crest: its
+ * short name, unless that is only a code ("WCA" — Wydad's `short_name` on
+ * production), which the crest disc already shows; then the full name. The
+ * match card has made this call since BG-0111; tables make it here.
+ */
+export function rowClubName(shortName: string, name: string): string {
+  return /^[A-Z0-9]{2,6}$/.test(shortName.trim()) ? name : shortName;
+}
+
+/**
  * The club's own short code when it has one, otherwise letters derived from
  * its short name. A blank or whitespace-only code counts as "has none" —
  * `??` does not catch `""`, which is exactly how an empty plate shipped.
