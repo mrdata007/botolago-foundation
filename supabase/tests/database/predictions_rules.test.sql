@@ -19,6 +19,9 @@ select extensions.is(app_private.prediction_points(0, 2, 1, 3), 1, 'right away w
 select extensions.is(app_private.prediction_points(1, 0, 0, 1), 0, 'wrong outcome: 0');
 select extensions.is(app_private.prediction_points(1, 1, 1, 0), 0, 'a draw against a home win: 0');
 select extensions.is(app_private.prediction_points(2, 0, 0, 0), 0, 'a home win against a draw: 0');
+select extensions.is(app_private.prediction_points(7, 3, 7, 3), 3, 'a high exact score: 3');
+select extensions.is(app_private.prediction_points(5, 4, 1, 0), 1, 'a high score, right outcome: 1');
+-- The same cases as src/backend/predictions/scoring-cases.ts; a new case goes in both.
 select extensions.is(app_private.prediction_result_kind(2, 1, 2, 1), 'exact', 'kind exact');
 select extensions.is(app_private.prediction_result_kind(2, 0, 1, 0), 'outcome', 'kind outcome');
 select extensions.is(app_private.prediction_result_kind(0, 1, 1, 0), 'miss', 'kind miss');
