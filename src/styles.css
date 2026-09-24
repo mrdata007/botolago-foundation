@@ -898,6 +898,59 @@ html[dir="rtl"] .lucide-arrow-left {
   animation: event-enter var(--duration-hero) var(--ease-standard) both;
 }
 
+/* The launch splash (src/components/splash/). It is in the server HTML on
+   every load, so that a first visit paints it before any app code has run,
+   and it stays hidden unless the head script (`SPLASH_INIT_SCRIPT`) marked
+   this load by putting `data-splash` on <html>. Its keyframes are here rather
+   than in the component for the same reason: the splash can be on screen
+   before the parser has reached anything inside it. */
+.launch-splash {
+  display: none;
+}
+
+:root[data-splash] .launch-splash {
+  display: flex;
+}
+
+@keyframes splash-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.97) translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* --splash-dir is +1 in a left-to-right document and -1 in a right-to-left
+   one, so the shine leaves the leading edge and travels with the reading
+   direction in both. */
+@keyframes splash-sweep {
+  0% {
+    transform: translateX(0) skewX(calc(-18deg * var(--splash-dir)));
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(calc(420% * var(--splash-dir))) skewX(calc(-18deg * var(--splash-dir)));
+    opacity: 0;
+  }
+}
+
+@keyframes splash-bar {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
 /* The live strip is showing, so sticky bars below the top bar make room. */
 :root[data-live-strip="shown"] {
   --livestrip-h: var(--livestrip-h-open);
