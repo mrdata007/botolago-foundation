@@ -32,16 +32,12 @@ import {
 } from "@/lib/validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { markWelcomeDone } from "@/lib/welcome";
-import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
+import { authNextSearch } from "@/lib/auth-callback";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth/register")({
   head: () => ({ meta: [{ title: "Créer un compte — BotolaGO" }] }),
-  validateSearch: (search: Record<string, unknown>) => {
-    const next =
-      typeof search.next === "string" ? sanitizeAuthCallbackNext(search.next) : undefined;
-    return next && next !== "/" ? { next } : {};
-  },
+  validateSearch: (search: Record<string, unknown>) => authNextSearch(search.next),
   component: RegisterPage,
 });
 
