@@ -1,4 +1,4 @@
-// Prize rules for /prizes/terms, version 1.0.
+// Prize rules for /prizes/terms, version 1.1.
 //
 // The owner supplied the five values only they hold on 2026-09-24: the
 // organiser, who provides and hands over the prizes, the age rule, how winners
@@ -13,6 +13,11 @@
 // Section 2 names who provides the prizes. A sponsor can be put on a prize from
 // /admin/prizes; when one is, section 2 has to name it too.
 //
+// There is no league prize, and the rules do not mention one (owner decision,
+// 2026-09-24). The database still supports the mini_league tier, so an admin
+// could switch one on from /admin/prizes: it would then be awarded without
+// being in these rules. Section 4 needs its rule back before that happens.
+//
 // `scripts/qa/legal-placeholder-gate.ts` still reads this file while
 // PRIZES_ENABLED is on and refuses a production build if a `[…]` span appears.
 
@@ -25,7 +30,7 @@ export const PRIZE_TERMS: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "Version 1.0 — en vigueur au 24 septembre 2026. Ce règlement complète la section 7 des Conditions Générales d'Utilisation ; en cas de contradiction, le présent règlement prévaut.",
+        text: "Version 1.1 — en vigueur au 24 septembre 2026. Ce règlement complète la section 7 des Conditions Générales d'Utilisation ; en cas de contradiction, le présent règlement prévaut.",
       },
       { type: "heading", text: "1. Organisateur" },
       {
@@ -53,7 +58,6 @@ export const PRIZE_TERMS: Readonly<Record<Language, LegalDocument>> = {
           "Lot de la journée : le meilleur score de la journée, une fois ses points définitifs.",
           "Lot mensuel : le meilleur total sur un bloc de 4 journées consécutives (J1–J4, J5–J8…). Si le nombre de journées n'est pas un multiple de 4, les 2 ou 3 journées restantes forment le dernier bloc ; une journée restante seule rejoint le bloc précédent.",
           "Lot de la saison : le meilleur total de la saison après la dernière journée.",
-          "Lot de ligue : le leader de chaque ligue comptant au moins 10 membres actifs en fin de saison. Un seul lot de ligue par personne et par saison.",
           "Un même compte ne peut pas gagner le lot de la journée plus de deux fois par saison.",
           "En cas d'égalité de points : le moins de transferts effectués sur la période (hors Wildcard et Free Hit), puis l'équipe créée le plus tôt.",
           "Les comptes du personnel et les comptes signalés pour fraude présumée ne peuvent pas gagner : le lot revient au participant éligible suivant.",
@@ -84,7 +88,7 @@ export const PRIZE_TERMS: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "الإصدار 1.0 — ساري المفعول ابتداءً من 24 سبتمبر 2026. يُكمِّل هذا النظام البند 7 من الشروط العامة للاستخدام، وفي حال التعارض يسري هذا النظام.",
+        text: "الإصدار 1.1 — ساري المفعول ابتداءً من 24 سبتمبر 2026. يُكمِّل هذا النظام البند 7 من الشروط العامة للاستخدام، وفي حال التعارض يسري هذا النظام.",
       },
       { type: "heading", text: "1. الجهة المنظِّمة" },
       {
@@ -112,7 +116,6 @@ export const PRIZE_TERMS: Readonly<Record<Language, LegalDocument>> = {
           "جائزة الجولة: صاحب أعلى نقاط في الجولة بعد اعتماد نقاطها نهائياً.",
           "الجائزة الشهرية: صاحب أعلى مجموع خلال مجموعة من 4 جولات متتالية (ج1–ج4، ج5–ج8…). إذا لم يكن عدد الجولات من مضاعفات 4، تُشكِّل الجولتان أو الجولات الثلاث المتبقية المجموعة الأخيرة، وتُضَم جولة وحيدة متبقية إلى المجموعة السابقة.",
           "جائزة الموسم: صاحب أعلى مجموع في الموسم بعد الجولة الأخيرة.",
-          "جائزة الدوري: متصدر كل دوري يضم 10 أعضاء نشطين على الأقل في نهاية الموسم. جائزة دوري واحدة لكل شخص في الموسم.",
           "لا يمكن للحساب نفسه الفوز بجائزة الجولة أكثر من مرتين في الموسم.",
           "عند التعادل في النقاط: الأقل انتقالات خلال الفترة (دون احتساب Wildcard وFree Hit)، ثم الفريق الذي أُنشئ أولاً.",
           "لا يمكن لحسابات الطاقم ولا للحسابات المشتبه في احتيالها الفوز، وتؤول الجائزة إلى المشارك المؤهل التالي.",

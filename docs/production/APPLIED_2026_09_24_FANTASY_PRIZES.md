@@ -185,8 +185,10 @@ has no entry for it; this file is the record. Change prizes from now on in
   season length is the default of 30 gameweeks: the monthly blocks are GW1–4,
   GW5–8 and so on, and the season prize is decided at GW30. Change it from
   `/admin/prizes` if the season is a different length.
-- **League prizes.** No mini-league prize exists, so league leaders win nothing
-  until an admin adds one.
+- **League prizes.** There are none, by the owner's decision (2026-09-24), and
+  the prize rules and the `/prizes` page description no longer mention one. Do
+  not switch on a mini-league prize in `/admin/prizes` without first putting
+  its rule back into the prize rules.
 
 ## Check it yourself
 

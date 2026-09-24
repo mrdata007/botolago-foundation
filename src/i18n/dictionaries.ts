@@ -1428,7 +1428,7 @@ export const dictionaries = {
     "fantasy.create.error.vice_not_in_xi": "Le vice-capitaine doit être titulaire.",
     "prizes.meta_title": "Lots à gagner — BotolaGO Fantasy",
     "prizes.meta_description":
-      "Les lots de BotolaGO Fantasy : lot de la journée, lot du mois, lot de la saison et lots de ligue. Jeu 100 % gratuit.",
+      "Les lots de BotolaGO Fantasy : lot de la journée, lot du mois et lot de la saison. Jeu 100 % gratuit.",
     "prizes.title": "Lots à gagner",
     "prizes.intro":
       "Jouez gratuitement toute la saison : chaque journée, chaque bloc de 4 journées et la saison entière ont leur lot.",
@@ -2959,7 +2959,7 @@ export const dictionaries = {
     "fantasy.create.error.vice_not_in_xi": "يجب أن يكون نائب القائد ضمن الأساسيين.",
     "prizes.meta_title": "الجوائز — BotolaGO Fantasy",
     "prizes.meta_description":
-      "جوائز BotolaGO Fantasy: جائزة الجولة والجائزة الشهرية وجائزة الموسم وجوائز الدوريات. لعبة مجانية 100%.",
+      "جوائز BotolaGO Fantasy: جائزة الجولة والجائزة الشهرية وجائزة الموسم. لعبة مجانية 100%.",
     "prizes.title": "الجوائز",
     "prizes.intro":
       "العب مجاناً طوال الموسم: لكل جولة، ولكل 4 جولات متتالية، وللموسم كاملاً جائزته.",
