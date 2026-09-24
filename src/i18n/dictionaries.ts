@@ -1042,6 +1042,11 @@ export const dictionaries = {
     "auth.login.forgot": "Mot de passe oublié ?",
     "auth.login.no_account": "Pas encore de compte ?",
     "auth.login.create_link": "Créer un compte",
+    "auth.login.suspended_title": "Compte suspendu",
+    "auth.login.suspended_until":
+      "Ce compte est suspendu jusqu’au {date}. La connexion reste impossible d’ici là.",
+    "auth.login.suspended_indefinite": "Ce compte est suspendu. La connexion n’est plus possible.",
+    "auth.login.suspended_contact": "Une erreur ? Écrivez-nous à {email}.",
 
     "auth.register.title": "Créer votre compte",
     "auth.register.subtitle": "Rejoignez la communauté BotolaGO en moins d'une minute.",
@@ -2543,6 +2548,10 @@ export const dictionaries = {
     "auth.login.forgot": "نسيت كلمة المرور؟",
     "auth.login.no_account": "لا تملك حسابًا بعد؟",
     "auth.login.create_link": "إنشاء حساب",
+    "auth.login.suspended_title": "حساب موقوف",
+    "auth.login.suspended_until": "هذا الحساب موقوف حتى {date}. لا يمكن تسجيل الدخول قبل ذلك.",
+    "auth.login.suspended_indefinite": "هذا الحساب موقوف. لم يعد تسجيل الدخول ممكناً.",
+    "auth.login.suspended_contact": "هل هناك خطأ؟ راسلنا على {email}.",
 
     "auth.register.title": "إنشاء حسابك",
     "auth.register.subtitle": "انضم إلى مجتمع BotolaGO في أقل من دقيقة.",

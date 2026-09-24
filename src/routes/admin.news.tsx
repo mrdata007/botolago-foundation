@@ -29,14 +29,15 @@ import {
 } from "@/backend/news/editorial-session";
 import {
   ADMIN_CARD_CLASS,
-  ADMIN_LABEL_CLASS,
   AdminDate,
   AdminDatum,
   AdminEmptyState,
+  AdminFilterChips as FilterChips,
   AdminNotice,
   AdminSkeletonList,
+  type AdminFilterChip as FilterChip,
 } from "@/components/admin/AdminSurfaces";
-import { ui, UiBadge, UiButton, UiCard, UiChip, UiInput, UiLinkButton } from "@/components/ui-kit";
+import { ui, UiBadge, UiButton, UiCard, UiInput, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -46,59 +47,6 @@ export const Route = createFileRoute("/admin/news")({
   pendingComponent: AdminFunctionalLoading,
   component: AdminNewsRoute,
 });
-
-interface FilterChip<T extends string> {
-  readonly value: T;
-  readonly label: string;
-}
-
-/**
- * One labelled row of filter chips -- the app's own filter control (the
- * Matches day filter, the Fantasy sort row): sunken pills at rest, the chosen
- * one white on navy. It replaced three `<select>`s and a "Filtrer" button, so
- * a filter is one tap rather than open, pick, then submit.
- *
- * On a phone the row scrolls sideways instead of wrapping into a block of
- * pills; the 4px inset is room for the focus ring, which sits 4px outside a
- * chip and would otherwise be cut by the scroll box.
- */
-function FilterChips<T extends string>({
-  label,
-  options,
-  value,
-  onSelect,
-  "data-testid": testId,
-}: {
-  label: string;
-  options: readonly FilterChip<T>[];
-  value: T;
-  onSelect: (value: T) => void;
-  "data-testid": string;
-}) {
-  return (
-    <div className="grid min-w-0 gap-1">
-      <p className={ADMIN_LABEL_CLASS} aria-hidden>
-        {label}
-      </p>
-      <div
-        role="group"
-        aria-label={label}
-        className="-m-1 flex gap-2 overflow-x-auto p-1 [scrollbar-width:none] sm:flex-wrap"
-        data-testid={testId}
-      >
-        {options.map((option) => (
-          <UiChip
-            key={option.value || "all"}
-            selected={option.value === value}
-            onClick={() => onSelect(option.value)}
-          >
-            {option.label}
-          </UiChip>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /**
  * The article's language as a 40px disc at the head of its card, drawn like

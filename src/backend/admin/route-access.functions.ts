@@ -43,3 +43,8 @@ export const loadAdminPrizesRouteAccess = createServerFn({ method: "POST" }).han
   const { loadAdminRouteAccessForPermission } = await import("./route-access.server");
   return adminRouteStateSchema.parse(await loadAdminRouteAccessForPermission("prizes.manage"));
 });
+
+export const loadAdminUsersRouteAccess = createServerFn({ method: "POST" }).handler(async () => {
+  const { loadAdminRouteAccessForPermission } = await import("./route-access.server");
+  return adminRouteStateSchema.parse(await loadAdminRouteAccessForPermission("users.read_support"));
+});

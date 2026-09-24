@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { authService, type AuthSession, type AuthStatus, type AuthUser } from "@/services/auth";
 import { useI18n } from "@/i18n/provider";
 import { cleanupOwnedFantasyOnSignOut } from "@/services/fantasy-signout-cleanup";
+import { fetchAccountStanding, rememberSuspension } from "@/services/account-standing";
 
 interface AuthPromptState {
   open: boolean;
@@ -74,6 +75,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     prevUidRef.current = nextUid;
   }, [session.user?.id, qc]);
+
+  // A banned account is signed out and sent to the sign-in page, which says
+  // why. Asked on every sign-in and every load, then again whenever the tab
+  // comes back into view (at most once a minute), so a ban placed while the
+  // app is open takes effect the next time the person looks at it. An
+  // unknown answer (offline, backend not updated) changes nothing: the
+  // database refuses a banned account's writes on its own.
+  const lastVisibilityCheck = useRef(0);
+  const signedInUid = session.status === "authenticated" ? (session.user?.id ?? null) : null;
+  useEffect(() => {
+    if (!signedInUid) return;
+    let cancelled = false;
+    const check = async (throttled: boolean) => {
+      const now = Date.now();
+      if (throttled && now - lastVisibilityCheck.current < 60_000) return;
+      lastVisibilityCheck.current = now;
+      const standing = await fetchAccountStanding();
+      if (cancelled || !standing?.banned) return;
+      rememberSuspension(standing.bannedUntil);
+      await authService.signOut();
+      // A full navigation rather than a router push: it also drops every
+      // cached query the banned session had loaded.
+      window.location.assign("/auth/login");
+    };
+    // A new session is always asked, however recently the last one was: an
+    // account banned while signed out must not get back in on a throttle.
+    // Only the tab-returns check below is rate-limited.
+    void check(false);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void check(true);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [signedInUid]);
 
   const requireAuth = useCallback<AuthContextValue["requireAuth"]>((action, opts) => {
     const s = authService.getSession();

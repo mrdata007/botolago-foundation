@@ -1,7 +1,15 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { ui, UiAlert, UiBackButton, UiBadge, UiCard, UiSkeleton } from "@/components/ui-kit";
+import {
+  ui,
+  UiAlert,
+  UiBackButton,
+  UiBadge,
+  UiCard,
+  UiChip,
+  UiSkeleton,
+} from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 /**
@@ -134,6 +142,58 @@ export function AdminBackLink({
     <span className="inline-flex" data-testid={testId}>
       <UiBackButton to={to} label={label} />
     </span>
+  );
+}
+
+export interface AdminFilterChip<T extends string> {
+  readonly value: T;
+  readonly label: string;
+}
+
+/**
+ * One labelled row of filter chips -- the app's own filter control (the
+ * Matches day filter, the Fantasy sort row): sunken pills at rest, the chosen
+ * one white on navy. A filter is one tap rather than open, pick, then submit.
+ *
+ * On a phone the row scrolls sideways instead of wrapping into a block of
+ * pills; the 4px inset is room for the focus ring, which sits 4px outside a
+ * chip and would otherwise be cut by the scroll box.
+ */
+export function AdminFilterChips<T extends string>({
+  label,
+  options,
+  value,
+  onSelect,
+  "data-testid": testId,
+}: {
+  label: string;
+  options: readonly AdminFilterChip<T>[];
+  value: T;
+  onSelect: (value: T) => void;
+  "data-testid": string;
+}) {
+  return (
+    <div className="grid min-w-0 gap-1">
+      <p className={ADMIN_LABEL_CLASS} aria-hidden>
+        {label}
+      </p>
+      <div
+        role="group"
+        aria-label={label}
+        className="-m-1 flex gap-2 overflow-x-auto p-1 [scrollbar-width:none] sm:flex-wrap"
+        data-testid={testId}
+      >
+        {options.map((option) => (
+          <UiChip
+            key={option.value || "all"}
+            selected={option.value === value}
+            onClick={() => onSelect(option.value)}
+          >
+            {option.label}
+          </UiChip>
+        ))}
+      </div>
+    </div>
   );
 }
 

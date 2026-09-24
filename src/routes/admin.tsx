@@ -15,6 +15,7 @@ import {
 } from "@/backend/admin/route-access";
 import { Logo } from "@/components/brand/Logo";
 import { ADMIN_CARD_CLASS, AdminDatum, AdminSummaryCard } from "@/components/admin/AdminSurfaces";
+import { AdminAnalyticsDashboard } from "@/components/admin/AdminAnalyticsDashboard";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { ui, UiBadge, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -225,6 +226,13 @@ function AdminRoute() {
       <main className={cn(ADMIN_COLUMN, "pb-16")}>
         {isAdminRoot && (
           <>
+            {/* The numbers first: what the owner opens the console to see.
+                Only for staff holding analytics.read; the database checks it
+                again on every call. */}
+            {result.context.permissions.includes("analytics.read") && (
+              <AdminAnalyticsDashboard access={result} />
+            )}
+
             <section className="mt-8" aria-labelledby="admin-context-heading">
               {/* Section headings in the display face, like "À venir" and
                   "Classement" on the home screen. */}
