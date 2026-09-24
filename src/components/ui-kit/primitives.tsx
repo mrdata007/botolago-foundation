@@ -2491,6 +2491,17 @@ export function UiDifficultyCell({
  * token rather than something a call site has to remember to override.
  * `dir` is passed through because a menu that opens from an `end`-aligned
  * trigger has to know which edge that is.
+ *
+ * Non-modal on purpose. A modal Radix menu locks page scroll by putting
+ * `overflow: hidden` on <body>, and because styles.css gives <html>
+ * `overflow-x: clip`, that value is not handed on to the viewport: <body>
+ * becomes a scroll box of its own, and every sticky bar inside it stops
+ * sticking to the screen. The top bar that holds the language switcher jumped
+ * up by however far the page was scrolled, taking the trigger and the menu
+ * with it — 400px down the home page, the menu opened entirely above the
+ * screen, with the page behind it locked against taps and scrolling. That was
+ * the "freeze" on changing language. A non-modal menu touches none of it and
+ * still closes on an outside tap, on Escape and on a choice.
  */
 export function UiMenu({
   trigger,
@@ -2508,7 +2519,7 @@ export function UiMenu({
 }) {
   const { dir } = useI18n();
   return (
-    <Menu.Root dir={dir}>
+    <Menu.Root dir={dir} modal={false}>
       <Menu.Trigger asChild>{trigger}</Menu.Trigger>
       <Menu.Portal>
         <Menu.Content

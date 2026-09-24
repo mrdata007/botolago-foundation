@@ -1,5 +1,6 @@
 import type { Club } from "@/types/domain";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
+import { responsiveMedia } from "@/lib/media";
 import { cn } from "@/lib/utils";
 import { crestMonogramClass, crestStyle } from "./club-crest-style";
 import { FailureAwareImage } from "./FailureAwareImage";
@@ -30,6 +31,17 @@ const SIZE: Record<ClubCrestSize, string> = {
   sm: "h-8 w-8 text-[length:var(--ui-text-micro)]",
   md: "h-10 w-10 text-[length:var(--ui-text-meta)]",
   lg: "h-14 w-14 text-[length:var(--ui-text-body)]",
+};
+
+/**
+ * The width the badge itself is drawn at, for picking a resized copy: the
+ * disc less the image's 16% padding on each side, so 68% of the sizes above.
+ */
+const BADGE_SIZES: Record<ClubCrestSize, string> = {
+  xs: "19px",
+  sm: "22px",
+  md: "27px",
+  lg: "38px",
 };
 
 /**
@@ -67,6 +79,7 @@ export function ClubCrest({
   tone = "solid",
   palette,
   className,
+  loading,
 }: {
   club: Club;
   size?: ClubCrestSize;
@@ -74,10 +87,13 @@ export function ClubCrest({
   /** A resolved palette (e.g. `clubMatchPalettes(home, away).away`) that wins over the club's own. */
   palette?: ClubPalette;
   className?: string;
+  /** `"eager"` for a crest in the first screen, which should not wait. */
+  loading?: "eager" | "lazy";
 }) {
   // A passed palette is already computed, so `clubStyle` only writes it out;
   // the memoised path is for the club's own colours.
   const { style, "data-club": dataClub } = palette ? clubStyle(palette) : crestStyle(club);
+  const badge = responsiveMedia(club.crestUrl, { kind: "crest", sizes: BADGE_SIZES[size] });
   return (
     <div
       data-club={dataClub}
@@ -105,7 +121,10 @@ export function ClubCrest({
         {club.crestPlaceholder}
       </span>
       <FailureAwareImage
-        src={club.crestUrl}
+        src={badge.src}
+        srcSet={badge.srcSet}
+        sizes={badge.sizes}
+        loading={loading}
         alt=""
         aria-hidden
         className={cn(

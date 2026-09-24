@@ -11,6 +11,7 @@ import { crestStyle } from "./club-crest-style";
 import { MediaImage } from "./FailureAwareImage";
 import { ArticleHeroFallback } from "./ArticleHeroFallback";
 import { readTimeLabel } from "@/lib/read-time";
+import { READING_COLUMN_SIZES, type PhotoFrame } from "@/lib/media";
 
 /**
  * Article card (Option A "Club colours"). Five variant names, two shapes:
@@ -65,6 +66,19 @@ const IMAGE_ZOOM =
   "transition-transform duration-[var(--duration-sheet)] ease-[var(--ease-standard)]";
 const TITLE_HOVER =
   "transition-opacity duration-[var(--duration-sheet)] ease-[var(--ease-standard)] group-hover:opacity-85";
+
+/**
+ * The photo card's shape at its minimum height, for cutting the photo to fit
+ * (`MediaImage`'s `frame`). The card spans the reading column, so its width
+ * follows the screen while its height is the `min-h` below. Measured: the lead
+ * is 358 × 232px on a 390px phone (≈ 3:2) and 640 × 320px from `sm` (2:1); the
+ * `imageLed` card 358 × 200px (≈ 16:9) and 640 × 240px (8:3). A headline long
+ * enough to make the card taller gets the same cut, enlarged a little to
+ * cover; a wider phone (up to 640px) makes the card wider than the cut, which
+ * then loses some of its top and bottom.
+ */
+const LEAD_FRAME: PhotoFrame = { sizes: READING_COLUMN_SIZES, ratio: 3 / 2, smRatio: 2 };
+const IMAGE_LED_FRAME: PhotoFrame = { sizes: READING_COLUMN_SIZES, ratio: 16 / 9, smRatio: 8 / 3 };
 
 /** Press feedback shared by both shapes. */
 const PRESS =
@@ -181,6 +195,7 @@ export function ArticleCard({
             placeholder={heroPlaceholder()}
             loading={isLead ? "eager" : undefined}
             fetchPriority={isLead ? "high" : undefined}
+            frame={isLead ? LEAD_FRAME : IMAGE_LED_FRAME}
             className="absolute inset-0"
             imageClassName={cn("group-hover:scale-[1.03]", IMAGE_ZOOM)}
           />
@@ -304,6 +319,7 @@ export function ArticleCard({
           alt=""
           fallback={article.heroGradient}
           placeholder={heroPlaceholder()}
+          frame={{ sizes: "88px", ratio: 22 / 17 }}
           className={cn("h-17 w-22", ui.radius.track)}
           imageClassName={cn("group-hover:scale-[1.05]", IMAGE_ZOOM)}
         />
