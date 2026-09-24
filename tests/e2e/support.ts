@@ -105,6 +105,30 @@ export async function expectNoHorizontalOverflow(page: Page) {
  * reach, not just on the document's scroll width. A short local club name
  * hides this, which is why the assertion matters most against real data.
  */
+/**
+ * The same measure for every visible box under `scope`: what the document's
+ * scroll width cannot see behind `overflow-x: clip`, a box can.
+ */
+export async function expectNothingOffScreen(page: Page, scope = "main") {
+  const offscreen = await page.evaluate((selector) => {
+    const viewport = document.documentElement.clientWidth;
+    const found: string[] = [];
+    for (const root of document.querySelectorAll(selector)) {
+      for (const node of [root, ...root.querySelectorAll("*")]) {
+        const box = node.getBoundingClientRect();
+        if (box.width === 0 || box.height === 0) continue;
+        if (box.left >= -1 && box.right <= viewport + 1) continue;
+        const label = (node.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 24);
+        found.push(
+          `${node.tagName.toLowerCase()} "${label}" spans ${Math.round(box.left)}..${Math.round(box.right)} in a ${viewport}px viewport`,
+        );
+      }
+    }
+    return found;
+  }, scope);
+  expect(offscreen, `content outside the viewport under ${scope}`).toEqual([]);
+}
+
 export async function expectNoClippedMatchCards(page: Page) {
   const clipped = await page.evaluate(() => {
     const viewport = document.documentElement.clientWidth;

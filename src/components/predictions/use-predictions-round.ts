@@ -179,6 +179,16 @@ export interface RoundSeed {
   readonly updatedAt: number;
 }
 
+/**
+ * The server renders as a visitor. While the game is open to testers only,
+ * its "not allowed" need not be this reader's answer: the page keeps it for
+ * the first render (the server's and the browser's must agree) but as already
+ * stale, so the browser asks again at once with the reader's session.
+ */
+export function seedUpdatedAt(seed: RoundSeed): number {
+  return !seed.data.allowed && seed.data.mode === "testers" ? 0 : seed.updatedAt;
+}
+
 export function usePredictionsRound(
   roundNumber: number | null,
   seed?: RoundSeed,
@@ -194,7 +204,7 @@ export function usePredictionsRound(
   const query = useQuery<PredictionsRoundDto, PredictionsError>({
     ...roundQueryOptions(roundNumber, lang),
     initialData: serverSeed?.data,
-    initialDataUpdatedAt: serverSeed?.updatedAt,
+    initialDataUpdatedAt: serverSeed ? seedUpdatedAt(serverSeed) : undefined,
     // Every 2 minutes while a match of the journée is being played and the
     // page is on screen; otherwise never on its own.
     refetchInterval: (current) => {
