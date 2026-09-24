@@ -382,10 +382,39 @@ select extensions.throws_ok(
 );
 reset role;
 
+-- Free plan: 100 a day with 10 kept back for account emails. Squeeze the
+-- day's allowance to three to see what goes first.
+select app_private.notification_email_configure('live', null, null, null, null, 13, null, 10);
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 create temporary table email_claim on commit drop as
 select value as delivery from jsonb_array_elements(api.service_claim_email_deliveries(50, 120));
+reset role;
+select extensions.is(
+  (select jsonb_object_agg(type, total) from (
+     select delivery ->> 'type' as type, count(*) as total from email_claim group by 1) counts),
+  '{"deadline_24h": 2, "match_starting": 1}'::jsonb,
+  'with only three emails left today, the kick-off alert and deadline reminders go first'
+);
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select extensions.is(
+  api.service_claim_email_deliveries(50, 120),
+  '[]'::jsonb,
+  'and nothing more is handed out once the day''s allowance is spent'
+);
+reset role;
+select extensions.is(
+  (app_private.notification_email_quota(statement_timestamp()) ->> 'inFlight')::integer,
+  3,
+  'mail being sent counts against the allowance'
+);
+
+select app_private.notification_email_configure('live', null, null, null, null, 100, null, 10);
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+insert into email_claim
+select value from jsonb_array_elements(api.service_claim_email_deliveries(50, 120));
 reset role;
 
 -- The real clock also made today a match day (the two matches an hour from
@@ -460,6 +489,16 @@ select extensions.is(
   'claimed mail is not handed out twice'
 );
 reset role;
+select extensions.is(
+  (app_private.notification_email_quota(statement_timestamp()) ->> 'sentToday')::integer,
+  1,
+  'what the provider accepted counts towards today'
+);
+select extensions.is(
+  (app_private.notification_email_quota(statement_timestamp()) ->> 'dailyRemaining')::integer,
+  100 - 10 - 1 - 6,
+  'today''s allowance is the limit, less the reserve, what was sent and what is being sent'
+);
 
 -- ---------------------------------------------------------------------------
 -- Unsubscribe
@@ -587,6 +626,93 @@ select extensions.is(
 select extensions.ok(
   (select (api.service_notification_email_health() ->> 'tickJobActive')::boolean),
   'and sees the scheduled job'
+);
+reset role;
+
+-- ---------------------------------------------------------------------------
+-- Monthly limit and provider pause
+-- ---------------------------------------------------------------------------
+update app.notification_deliveries delivery set status = 'retry_scheduled',
+  next_retry_at = statement_timestamp() - interval '1 minute', claimed_at = null, claim_expires_at = null
+from app.notifications notification
+where notification.id = delivery.notification_id
+  and notification.user_id = 'e0600000-0000-4000-8000-000000000001'
+  and notification.notification_type = 'deadline_24h' and delivery.channel = 'email';
+
+select app_private.notification_email_configure('live', null, null, null, null, null, 1, null);
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select extensions.is(
+  api.service_claim_email_deliveries(50, 120),
+  '[]'::jsonb,
+  'nothing is handed out once the month''s allowance is spent'
+);
+reset role;
+select extensions.is(
+  (select delivery.status::text from app.notification_deliveries delivery
+   join app.notifications notification on notification.id = delivery.notification_id
+   where notification.user_id = 'e0600000-0000-4000-8000-000000000001'
+     and notification.notification_type = 'deadline_24h' and delivery.channel = 'email'),
+  'retry_scheduled',
+  'the waiting email keeps waiting rather than failing'
+);
+select extensions.is(
+  app_private.notification_email_tick() ->> 'dispatch',
+  'quota_reached',
+  'the tick does not wake the sender while the allowance is spent'
+);
+select app_private.notification_email_configure('live', null, null, null, null, null, 3000, null);
+
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select extensions.throws_ok(
+  $$select api.service_pause_email_provider('bored', statement_timestamp() + interval '1 hour')$$,
+  'PT400', 'invalid_email_provider_pause',
+  'a pause needs a known reason'
+);
+select extensions.throws_ok(
+  $$select api.service_pause_email_provider('daily_quota_exceeded', statement_timestamp() + interval '40 days')$$,
+  'PT400', 'invalid_email_provider_pause',
+  'and a bounded length'
+);
+select extensions.is(
+  api.service_pause_email_provider('daily_quota_exceeded', statement_timestamp() + interval '1 hour')
+    ->> 'pauseReason',
+  'daily_quota_exceeded',
+  'the sender can pause sending when the provider says the quota is spent'
+);
+select extensions.is(
+  api.service_claim_email_deliveries(50, 120),
+  '[]'::jsonb,
+  'nothing is handed out while paused'
+);
+select extensions.is(
+  api.service_pause_email_provider('provider_auth_failed', statement_timestamp() + interval '30 minutes')
+    ->> 'pauseReason',
+  'daily_quota_exceeded',
+  'a shorter pause never cuts a longer one short'
+);
+reset role;
+select extensions.is(
+  app_private.notification_email_tick() ->> 'dispatch',
+  'paused',
+  'the tick does not wake the sender while paused'
+);
+update app_private.notification_email_settings set provider_paused_until = null, provider_pause_reason = null;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select extensions.is(
+  jsonb_array_length(api.service_claim_email_deliveries(50, 120)),
+  1,
+  'after the pause the waiting email goes out'
+);
+reset role;
+
+set local role authenticated;
+select extensions.throws_ok(
+  $$select api.service_pause_email_provider('daily_quota_exceeded', statement_timestamp() + interval '1 hour')$$,
+  '42501', null,
+  'a browser cannot pause sending'
 );
 reset role;
 

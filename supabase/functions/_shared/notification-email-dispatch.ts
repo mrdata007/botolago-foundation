@@ -5,16 +5,22 @@
 // Each pass:
 //   1. checks that token with api.service_verify_scheduler_token;
 //   2. claims a small batch with api.service_claim_email_deliveries — the
-//      database has already decided who gets what, in which language, and
-//      has dropped anything no longer wanted or no longer timely;
+//      database has already decided who gets what, in which language, how
+//      much of the plan's daily and monthly quota is left, and has dropped
+//      anything no longer wanted or no longer timely;
 //   3. renders each email and sends it through Resend's HTTP API with the
 //      delivery id as the idempotency key, so a retry after an ambiguous
 //      failure can never produce a second email;
 //   4. records the outcome with api.service_record_notification_delivery_attempt,
 //      which schedules bounded retries and dead-letters permanent failures.
 //
-// No email address, token or provider response body is ever logged or
-// returned; the response carries counts only.
+// When Resend itself refuses to send — quota exceeded (it counts mail this
+// database does not see, such as account emails) or a rejected key — the pass
+// stops and sending is paused with api.service_pause_email_provider until the
+// quota resets, instead of burning every waiting email's attempts.
+//
+// No email address, token or provider message is ever logged or returned;
+// only Resend's error *name* is read, and the response carries counts only.
 //
 // Dependency-free so it runs under Bun (tests) and Deno (the Edge Function).
 
@@ -42,6 +48,7 @@ export interface EmailDispatchDependencies {
   readonly environment: Readonly<Record<string, string | undefined>>;
   readonly client: EmailRpcClient;
   readonly render: (delivery: ClaimedEmailDelivery, links: EmailLinkContext) => RenderedEmail;
+  /** The unsubscribe page link shown in the email body. */
   readonly unsubscribeUrl: (delivery: ClaimedEmailDelivery, links: EmailLinkContext) => string;
   readonly fetch?: FetchLike;
   readonly now?: () => number;
@@ -53,6 +60,13 @@ export interface EmailDispatchConfiguration {
   readonly from: string;
   readonly replyTo: string | null;
   readonly appUrl: string;
+  /**
+   * The one-click unsubscribe endpoint (Edge Function
+   * notification-email-unsubscribe) that mail providers POST to, RFC 8058.
+   * Null when SUPABASE_URL is not an https origin; the header then points at
+   * the unsubscribe page and carries no List-Unsubscribe-Post.
+   */
+  readonly oneClickUnsubscribeEndpoint: string | null;
   readonly batchSize: number;
   readonly budgetMs: number;
   readonly sendIntervalMs: number;
@@ -64,7 +78,14 @@ export interface EmailDispatchSummary {
   readonly sent: number;
   readonly retrying: number;
   readonly failed: number;
+  /** Set when the provider refused to send and sending was paused. */
+  readonly pausedReason?: ProviderPauseReason;
 }
+
+export type ProviderPauseReason =
+  | "daily_quota_exceeded"
+  | "monthly_quota_exceeded"
+  | "provider_auth_failed";
 
 /** What one send attempt means for the delivery. */
 export interface SendOutcome {
@@ -74,14 +95,35 @@ export interface SendOutcome {
   readonly retryAfterSeconds: number | null;
   readonly rateLimitRemaining: number | null;
   readonly latencyMs: number;
-  /** The provider refused our credentials: stop this pass. */
-  readonly haltPass: boolean;
+  /** The provider will refuse everything else too: stop and pause until then. */
+  readonly pause: { readonly reason: ProviderPauseReason; readonly until: Date } | null;
 }
 
 const RESEND_URL = "https://api.resend.com/emails";
 const MAX_ATTEMPTS = 5;
 const LEASE_SECONDS = 180;
 const MAX_REQUEST_BYTES = 4096;
+const MAX_ERROR_BODY_BYTES = 4096;
+const AUTH_PAUSE_MS = 30 * 60 * 1000;
+
+/** Resend error names this dispatcher acts on (https://resend.com/docs/api-reference/errors). */
+const RESEND_ERROR_NAMES = new Set([
+  "validation_error",
+  "invalid_idempotency_key",
+  "missing_api_key",
+  "restricted_api_key",
+  "invalid_api_key",
+  "suspended_api_key",
+  "invalid_permission",
+  "invalid_from_address",
+  "concurrent_idempotent_requests",
+  "invalid_idempotent_request",
+  "daily_quota_exceeded",
+  "monthly_quota_exceeded",
+  "rate_limit_exceeded",
+  "application_error",
+  "service_unavailable",
+]);
 
 export class EmailDispatchError extends Error {
   constructor(readonly code: string) {
@@ -116,6 +158,17 @@ function integerSetting(
 const MAILBOX =
   /^(?:[^<>\r\n]{1,80} <)?[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}>?$/;
 
+function httpsOrigin(value: string | undefined): string | null {
+  if (!value?.trim()) return null;
+  try {
+    const url = new URL(value.trim());
+    if (url.protocol !== "https:" || url.username || url.password) return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
 export function emailDispatchConfiguration(
   environment: Readonly<Record<string, string | undefined>>,
 ): EmailDispatchConfiguration {
@@ -141,15 +194,19 @@ export function emailDispatchConfiguration(
   if (parsed.protocol !== "https:" || parsed.pathname !== "/" || parsed.search || parsed.hash) {
     throw new EmailDispatchError("invalid_runtime_configuration");
   }
+  const functionsOrigin = httpsOrigin(environment.SUPABASE_URL);
   return {
     apiKey,
     from,
     replyTo,
     appUrl: parsed.origin,
+    oneClickUnsubscribeEndpoint: functionsOrigin
+      ? `${functionsOrigin}/functions/v1/notification-email-unsubscribe`
+      : null,
     batchSize: integerSetting(environment, "EMAIL_DISPATCH_BATCH_SIZE", 20, 1, 100),
     budgetMs: integerSetting(environment, "EMAIL_DISPATCH_BUDGET_MS", 40_000, 1_000, 120_000),
-    // Resend's default limit is 2 requests per second per team.
-    sendIntervalMs: integerSetting(environment, "EMAIL_SEND_INTERVAL_MS", 600, 0, 10_000),
+    // Resend allows 10 requests per second per account; stay well below.
+    sendIntervalMs: integerSetting(environment, "EMAIL_SEND_INTERVAL_MS", 200, 0, 10_000),
     timeoutMs: integerSetting(environment, "EMAIL_PROVIDER_TIMEOUT_MS", 10_000, 1_000, 30_000),
   };
 }
@@ -234,11 +291,58 @@ function remaining(response: Response): number | null {
   return Number.isInteger(value) && value >= 0 ? value : null;
 }
 
+/**
+ * Only the `name` of a Resend error, and only a known one. The message may
+ * repeat the address or the domain, so it is never read into anything.
+ */
+async function resendErrorName(response: Response): Promise<string | null> {
+  try {
+    const text = (await response.text()).slice(0, MAX_ERROR_BODY_BYTES);
+    const body = JSON.parse(text) as unknown;
+    if (isRecord(body) && typeof body.name === "string" && RESEND_ERROR_NAMES.has(body.name)) {
+      return body.name;
+    }
+  } catch {
+    // Not JSON, or unreadable: classify by status alone.
+  }
+  return null;
+}
+
+/** Midnight UTC after `now`: when Resend's daily quota resets. */
+export function nextUtcDay(now: Date): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+}
+
+/** The first instant of the next UTC month. */
+export function nextUtcMonth(now: Date): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+}
+
+function secondsUntil(target: Date, nowMs: number): number {
+  return Math.max(60, Math.ceil((target.getTime() - nowMs) / 1000));
+}
+
+/** Where the List-Unsubscribe header points, and whether it is one-click. */
+export function listUnsubscribeHeaders(
+  delivery: ClaimedEmailDelivery,
+  pageUrl: string,
+  config: EmailDispatchConfiguration,
+): Record<string, string> {
+  if (!config.oneClickUnsubscribeEndpoint) return { "List-Unsubscribe": `<${pageUrl}>` };
+  const endpoint = `${config.oneClickUnsubscribeEndpoint}?token=${encodeURIComponent(
+    delivery.unsubscribeToken,
+  )}`;
+  return {
+    "List-Unsubscribe": `<${endpoint}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  };
+}
+
 /** Sends one email through Resend and classifies the result. */
 export async function sendThroughResend(
   delivery: ClaimedEmailDelivery,
   email: RenderedEmail,
-  unsubscribeUrl: string,
+  unsubscribePageUrl: string,
   config: EmailDispatchConfiguration,
   fetchImpl: FetchLike,
   now: () => number,
@@ -267,7 +371,7 @@ export async function sendThroughResend(
         html: email.html,
         text: email.text,
         ...(config.replyTo ? { reply_to: config.replyTo } : {}),
-        headers: { "List-Unsubscribe": `<${unsubscribeUrl}>` },
+        headers: listUnsubscribeHeaders(delivery, unsubscribePageUrl, config),
         tags: [
           { name: "category", value: "notification" },
           { name: "type", value: tag(delivery.type) },
@@ -281,7 +385,7 @@ export async function sendThroughResend(
       outcome: "retryable_failure",
       stableErrorCode: controller.signal.aborted ? "delivery_timeout" : "delivery_network_error",
       latencyMs: now() - started,
-      haltPass: false,
+      pause: null,
     };
   }
   clearTimeout(timer);
@@ -303,65 +407,75 @@ export async function sendThroughResend(
       retryAfterSeconds: null,
       rateLimitRemaining,
       latencyMs,
-      haltPass: false,
+      pause: null,
     };
   }
-  // The body is never read into logs or the database; only the status is used.
-  await response.body?.cancel().catch(() => undefined);
+
   const status = response.status;
-  if (status === 429) {
-    return {
-      ...base,
-      outcome: "retryable_failure",
-      stableErrorCode: "delivery_rate_limited",
-      retryAfterSeconds: retryAfterSeconds(response) ?? 60,
-      rateLimitRemaining,
-      latencyMs,
-      haltPass: false,
-    };
+  const name = await resendErrorName(response);
+  const retry = (code: string, seconds: number | null) => ({
+    ...base,
+    outcome: "retryable_failure" as const,
+    stableErrorCode: code,
+    retryAfterSeconds: seconds,
+    rateLimitRemaining,
+    latencyMs,
+    pause: null,
+  });
+  const pauseUntil = (reason: ProviderPauseReason, until: Date, code: string): SendOutcome => ({
+    ...retry(code, secondsUntil(until, now())),
+    pause: { reason, until },
+  });
+
+  if (name === "daily_quota_exceeded") {
+    return pauseUntil(
+      "daily_quota_exceeded",
+      new Date(nextUtcDay(new Date(now())).getTime() + 60_000),
+      "delivery_quota_exceeded",
+    );
   }
+  if (name === "monthly_quota_exceeded") {
+    return pauseUntil(
+      "monthly_quota_exceeded",
+      new Date(nextUtcMonth(new Date(now())).getTime() + 60_000),
+      "delivery_quota_exceeded",
+    );
+  }
+  if (status === 429) return retry("delivery_rate_limited", retryAfterSeconds(response) ?? 60);
   if (status === 401 || status === 403) {
-    // A wrong or revoked key: nothing will succeed until it is fixed. Keep
-    // the email for later instead of burning its attempts.
+    // A wrong, revoked or suspended key, or an unverified domain: nothing
+    // will succeed until someone fixes it. Keep the mail and pause.
+    return pauseUntil(
+      "provider_auth_failed",
+      new Date(now() + AUTH_PAUSE_MS),
+      "delivery_provider_unavailable",
+    );
+  }
+  if (name === "invalid_idempotent_request") {
+    // This delivery's key was already accepted within the last 24 hours (the
+    // earlier attempt went through but its answer was lost). The reader has
+    // the email; sending it again is exactly what the key prevents.
     return {
       ...base,
-      outcome: "retryable_failure",
-      stableErrorCode: "delivery_provider_unavailable",
-      retryAfterSeconds: 1800,
+      outcome: "sent",
+      stableErrorCode: null,
       rateLimitRemaining,
       latencyMs,
-      haltPass: true,
+      pause: null,
     };
   }
-  if (status === 409) {
-    // The same idempotency key is still being processed.
-    return {
-      ...base,
-      outcome: "retryable_failure",
-      stableErrorCode: "delivery_in_progress",
-      retryAfterSeconds: 120,
-      rateLimitRemaining,
-      latencyMs,
-      haltPass: false,
-    };
-  }
-  if (status >= 500) {
-    return {
-      ...base,
-      outcome: "retryable_failure",
-      stableErrorCode: "delivery_provider_error",
-      rateLimitRemaining,
-      latencyMs,
-      haltPass: false,
-    };
-  }
+  if (status === 409) return retry("delivery_in_progress", 120);
+  if (status >= 500) return retry("delivery_provider_error", null);
   return {
     ...base,
     outcome: "permanent_failure",
-    stableErrorCode: status === 422 ? "delivery_rejected_invalid" : "delivery_permanently_failed",
+    stableErrorCode:
+      status === 422 || name === "validation_error"
+        ? "delivery_rejected_invalid"
+        : "delivery_permanently_failed",
     rateLimitRemaining,
     latencyMs,
-    haltPass: false,
+    pause: null,
   };
 }
 
@@ -391,7 +505,7 @@ const permanent = (code: string): SendOutcome => ({
   retryAfterSeconds: null,
   rateLimitRemaining: null,
   latencyMs: 0,
-  haltPass: false,
+  pause: null,
 });
 
 /** One dispatch pass: claim, render, send, record — until the budget is spent. */
@@ -402,14 +516,14 @@ export async function runEmailDispatch(
   const now = dependencies.now ?? (() => Date.now());
   const sleep =
     dependencies.sleep ??
-    ((milliseconds: number) => new Promise((r) => setTimeout(r, milliseconds)));
+    ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
   const fetchImpl = dependencies.fetch ?? fetch;
   const links: EmailLinkContext = { appUrl: config.appUrl };
   const deadline = now() + config.budgetMs;
   const counts = { claimed: 0, sent: 0, retrying: 0, failed: 0 };
-  let halted = false;
+  let paused: SendOutcome["pause"] = null;
 
-  while (!halted && now() < deadline) {
+  while (!paused && now() < deadline) {
     const claimed = readClaimedDeliveries(
       await rpc(dependencies.client, "service_claim_email_deliveries", {
         p_limit: config.batchSize,
@@ -427,12 +541,18 @@ export async function runEmailDispatch(
 
     let first = true;
     for (const delivery of claimed.valid) {
-      if (halted) {
-        // Hand the rest back at once rather than waiting for the lease.
+      if (paused) {
+        // Hand the rest back at once rather than waiting for the lease, due
+        // again when the pause ends. (If that is past its moment, the claim
+        // step cancels it then.)
         await record(dependencies.client, delivery.id, {
-          ...permanent("delivery_provider_unavailable"),
+          ...permanent(
+            paused.reason === "provider_auth_failed"
+              ? "delivery_provider_unavailable"
+              : "delivery_quota_exceeded",
+          ),
           outcome: "retryable_failure",
-          retryAfterSeconds: 1800,
+          retryAfterSeconds: secondsUntil(paused.until, now()),
         });
         counts.retrying += 1;
         continue;
@@ -441,25 +561,31 @@ export async function runEmailDispatch(
       first = false;
 
       let email: RenderedEmail;
-      let unsubscribe: string;
+      let pageUrl: string;
       try {
         email = dependencies.render(delivery, links);
-        unsubscribe = dependencies.unsubscribeUrl(delivery, links);
+        pageUrl = dependencies.unsubscribeUrl(delivery, links);
       } catch {
         await record(dependencies.client, delivery.id, permanent("template_render_failed"));
         counts.failed += 1;
         continue;
       }
-      const outcome = await sendThroughResend(delivery, email, unsubscribe, config, fetchImpl, now);
+      const outcome = await sendThroughResend(delivery, email, pageUrl, config, fetchImpl, now);
       await record(dependencies.client, delivery.id, outcome);
       if (outcome.outcome === "sent") counts.sent += 1;
       else if (outcome.outcome === "retryable_failure") counts.retrying += 1;
       else counts.failed += 1;
-      if (outcome.haltPass) halted = true;
+      if (outcome.pause) {
+        paused = outcome.pause;
+        await rpc(dependencies.client, "service_pause_email_provider", {
+          p_reason: paused.reason,
+          p_until: paused.until.toISOString(),
+        });
+      }
     }
     if (batchSize < config.batchSize) break;
   }
-  return counts;
+  return paused ? { ...counts, pausedReason: paused.reason } : counts;
 }
 
 export async function handleEmailDispatchRequest(

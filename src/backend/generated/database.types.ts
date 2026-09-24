@@ -1513,6 +1513,10 @@ export type Database = {
         }
         Returns: Json
       }
+      service_pause_email_provider: {
+        Args: { p_reason: string; p_until: string }
+        Returns: Json
+      }
       service_persist_fantasy_scoring_results: {
         Args: {
           p_calculation_version: number

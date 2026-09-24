@@ -106,6 +106,21 @@ describe("email dispatch configuration", () => {
     expect(config.replyTo).toBe("support@botolago.com");
     expect(config.appUrl).toBe("https://botolago.com");
     expect(config.batchSize).toBe(20);
+    expect(config.sendIntervalMs).toBe(200);
+    expect(config.oneClickUnsubscribeEndpoint).toBeNull();
+  });
+
+  it("only builds a one-click endpoint on an https functions origin", () => {
+    expect(
+      emailDispatchConfiguration({
+        RESEND_API_KEY: API_KEY,
+        SUPABASE_URL: "https://project.supabase.co/",
+      }).oneClickUnsubscribeEndpoint,
+    ).toBe("https://project.supabase.co/functions/v1/notification-email-unsubscribe");
+    expect(
+      emailDispatchConfiguration({ RESEND_API_KEY: API_KEY, SUPABASE_URL: "http://kong:8000" })
+        .oneClickUnsubscribeEndpoint,
+    ).toBeNull();
   });
 
   it("refuses an app URL that is not a bare https origin and a malformed sender", () => {
@@ -265,19 +280,126 @@ describe("email dispatch request", () => {
     });
   });
 
-  it("stops the pass and keeps the rest for later when the provider refuses the key", async () => {
+  it("stops the pass, pauses sending and keeps the rest when the provider refuses the key", async () => {
     let providerCalls = 0;
+    const clock = Date.parse("2026-09-26T10:00:00Z");
     const { client, calls } = fakeClient([[delivery(ID1), delivery(ID2), delivery(ID3)]]);
+    const response = await handleEmailDispatchRequest(request(), {
+      ...dependencies(client, async () => {
+        providerCalls += 1;
+        return new Response('{"name":"restricted_api_key"}', { status: 401 });
+      }),
+      now: () => clock,
+    });
+    expect(providerCalls).toBe(1);
+    expect(await response.json()).toEqual({
+      claimed: 3,
+      sent: 0,
+      retrying: 3,
+      failed: 0,
+      pausedReason: "provider_auth_failed",
+    });
+    expect(recorded(calls).every((record) => record.p_retry_after_seconds === 1800)).toBe(true);
+    expect(calls.find((call) => call.name === "service_pause_email_provider")?.args).toEqual({
+      p_reason: "provider_auth_failed",
+      p_until: "2026-09-26T10:30:00.000Z",
+    });
+  });
+
+  it("pauses until midnight UTC when the plan's daily quota is spent", async () => {
+    let providerCalls = 0;
+    const clock = Date.parse("2026-09-26T21:30:00Z");
+    const { client, calls } = fakeClient([[delivery(ID1), delivery(ID2)]]);
+    const response = await handleEmailDispatchRequest(request(), {
+      ...dependencies(client, async () => {
+        providerCalls += 1;
+        return new Response(
+          '{"name":"daily_quota_exceeded","message":"You have exceeded your daily email sending quota."}',
+          { status: 429 },
+        );
+      }),
+      now: () => clock,
+    });
+    expect(providerCalls).toBe(1);
+    expect(await response.json()).toMatchObject({
+      retrying: 2,
+      pausedReason: "daily_quota_exceeded",
+    });
+    expect(calls.find((call) => call.name === "service_pause_email_provider")?.args).toEqual({
+      p_reason: "daily_quota_exceeded",
+      p_until: "2026-09-27T00:01:00.000Z",
+    });
+    expect(recorded(calls)[0]).toMatchObject({
+      p_outcome: "retryable_failure",
+      p_stable_error_code: "delivery_quota_exceeded",
+      p_retry_after_seconds: 2.5 * 3600 + 60,
+    });
+  });
+
+  it("pauses until the first of next month when the monthly quota is spent", async () => {
+    const clock = Date.parse("2026-09-30T08:00:00Z");
+    const { client, calls } = fakeClient([[delivery(ID1)]]);
+    await handleEmailDispatchRequest(request(), {
+      ...dependencies(
+        client,
+        async () => new Response('{"name":"monthly_quota_exceeded"}', { status: 429 }),
+      ),
+      now: () => clock,
+    });
+    expect(calls.find((call) => call.name === "service_pause_email_provider")?.args).toEqual({
+      p_reason: "monthly_quota_exceeded",
+      p_until: "2026-10-01T00:01:00.000Z",
+    });
+  });
+
+  it("treats a reused idempotency key as already sent, never as a reason to send again", async () => {
+    const { client, calls } = fakeClient([[delivery(ID1)]]);
     const response = await handleEmailDispatchRequest(
       request(),
-      dependencies(client, async () => {
-        providerCalls += 1;
-        return new Response("{}", { status: 401 });
-      }),
+      dependencies(
+        client,
+        async () => new Response('{"name":"invalid_idempotent_request"}', { status: 409 }),
+      ),
     );
-    expect(providerCalls).toBe(1);
-    expect(await response.json()).toEqual({ claimed: 3, sent: 0, retrying: 3, failed: 0 });
-    expect(recorded(calls).every((record) => record.p_retry_after_seconds === 1800)).toBe(true);
+    expect(await response.json()).toEqual({ claimed: 1, sent: 1, retrying: 0, failed: 0 });
+    expect(recorded(calls)[0]).toMatchObject({ p_outcome: "sent", p_stable_error_code: null });
+  });
+
+  it("waits and retries while the same key is still being processed", async () => {
+    const { client, calls } = fakeClient([[delivery(ID1)]]);
+    await handleEmailDispatchRequest(
+      request(),
+      dependencies(
+        client,
+        async () => new Response('{"name":"concurrent_idempotent_requests"}', { status: 409 }),
+      ),
+    );
+    expect(recorded(calls)[0]).toMatchObject({
+      p_outcome: "retryable_failure",
+      p_stable_error_code: "delivery_in_progress",
+      p_retry_after_seconds: 120,
+    });
+    expect(calls.some((call) => call.name === "service_pause_email_provider")).toBe(false);
+  });
+
+  it("offers one-click unsubscribe when the functions origin is known", async () => {
+    const { client } = fakeClient([[delivery(ID1)]]);
+    const sent: Array<Record<string, unknown>> = [];
+    await handleEmailDispatchRequest(
+      request(),
+      dependencies(
+        client,
+        async (_input, init) => {
+          sent.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+          return Response.json({ id: "ok" });
+        },
+        { RESEND_API_KEY: API_KEY, SUPABASE_URL: "https://project.supabase.co" },
+      ),
+    );
+    expect(sent[0].headers).toEqual({
+      "List-Unsubscribe": `<https://project.supabase.co/functions/v1/notification-email-unsubscribe?token=${"A".repeat(32)}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    });
   });
 
   it("fails a delivery whose email cannot be rendered without touching the others", async () => {

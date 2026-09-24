@@ -21,7 +21,47 @@ confirmed email address, and a non-deleted account. Email is **on by default**
 (owner decision, 2026-09-24); the migration switched existing users on except
 anyone who had ever changed their notification preferences. Every email has an
 unsubscribe link (`/unsubscribe?token=…`, one confirmed tap, no sign-in) and a
-`List-Unsubscribe` header.
+one-click `List-Unsubscribe` header (RFC 8058): Gmail, Yahoo and Apple Mail
+show their own "Unsubscribe" button, which POSTs to the Edge Function
+`notification-email-unsubscribe`. That button matters on the free plan: Resend
+pauses an account whose spam-complaint rate goes above 0.08 % (about one
+"Report spam" per 1,250 emails), and a reader who can unsubscribe in one tap
+does not report spam.
+
+## Free plan (owner decision, 2026-09-24)
+
+Resend's free plan allows **100 emails per UTC day** (the day resets at 00:00
+UTC, 01:00 in Morocco) and **3,000 per month**. The database enforces both
+before anything is sent:
+
+- Each day, 10 emails are kept back (`daily_email_reserve`) for account emails
+  (sign-up, password reset) in case Auth mail is moved to the same Resend
+  account — so notifications use at most 90 a day.
+- Everything Resend has accepted counts, plus anything being sent right now.
+- When the allowance is short, the most time-critical emails go first:
+  kick-off alert, Fantasy deadline, match-day preview, match-day results,
+  Fantasy recap, round preview. Within one kind the order is shuffled, so the
+  same readers are not always the ones left waiting.
+- Mail that is still waiting when its moment passes is cancelled, never sent
+  late. Mail that fits when the quota resets goes out then.
+- If Resend still answers "daily/monthly quota exceeded" (for example because
+  Auth mail used it), sending pauses until the quota resets instead of failing
+  every waiting email.
+
+With about 23 people on email today, a match day needs roughly 50 emails (the
+preview and the results for each person, plus a few kick-off alerts) and a
+month roughly 1,000. The free plan runs out at around **40 people on email
+per match day** or **70 over a month**; past that, the least urgent emails
+(round preview first) start being skipped. Check where you stand with the
+`quota` block of `api.service_notification_email_health()`. After upgrading
+the plan, raise the limits:
+
+```sql
+select app_private.notification_email_configure('live', null, null, null, null,
+  1000000,   -- daily limit (paid plans have none)
+  50000,     -- monthly limit of the paid plan
+  0);        -- no daily reserve needed
+```
 
 French or Arabic follows the account's language. Times are shown in the
 account's notification timezone (default `Africa/Casablanca`). A match whose
@@ -74,8 +114,9 @@ Code: migrations `20260924140000_notification_email_types.sql` and
 
 One row, `app_private.notification_email_settings`, changed only through
 `app_private.notification_email_configure(mode, functions_base_url,
-test_user_ids, football_live_refresh_enabled, max_emails_per_run)` (postgres
-role; a `null` argument keeps the current value; every call is audited).
+test_user_ids, football_live_refresh_enabled, max_emails_per_run,
+daily_email_limit, monthly_email_limit, daily_email_reserve)` (postgres role; a
+`null` argument keeps the current value; every call is audited).
 
 | Setting                         | Values                                                                                                          |
 | ------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -83,6 +124,10 @@ role; a `null` argument keeps the current value; every call is audited).
 | `functions_base_url`            | `https://<project-ref>.supabase.co/functions/v1`; nothing is called until it is set                             |
 | `football_live_refresh_enabled` | `false` by default; independent of `mode`                                                                       |
 | `max_emails_per_run`            | emails created per 5-minute tick, default 250                                                                   |
+| `daily_email_limit`             | provider emails per UTC day, default 100 (Resend free plan)                                                     |
+| `monthly_email_limit`           | provider emails per UTC month, default 3000 (Resend free plan)                                                  |
+| `daily_email_reserve`           | kept back each day for account emails, default 10                                                               |
+| `provider_paused_until`         | set by the dispatcher when Resend refuses (quota, key); nothing is sent until then                              |
 
 The first switch away from `off` records `activated_at`; notification events
 older than that are never emailed, so the existing backlog stays unmailed.
@@ -108,11 +153,13 @@ and `AGENTS.md` (nothing else writing at the same time).
 3. **Migrations.** Apply the two migrations in order. The second one turns
    email on for existing accounts (see above) and creates the two pg_cron jobs,
    which do nothing while `mode` is `off`. It also enables `pg_net`.
-4. **Edge Functions.** Deploy `notification-email-dispatch` and
-   `football-live-refresh` (`supabase functions deploy <name> --project-ref
-tkewgajrljbwgwedqsxn`; `supabase/config.toml` deploys both with
-   `verify_jwt = false` because pg_cron authenticates with the scheduler
-   token, which the migration generated inside Vault).
+4. **Edge Functions.** Deploy `notification-email-dispatch`,
+   `notification-email-unsubscribe` and `football-live-refresh`
+   (`supabase functions deploy <name> --project-ref tkewgajrljbwgwedqsxn`).
+   `supabase/config.toml` deploys all three with `verify_jwt = false`: pg_cron
+   authenticates with the scheduler token the migration generated inside
+   Vault, and mail providers call the unsubscribe endpoint with nothing but
+   the email's own token.
 5. **Test mode** with the owner's own account:
    ```sql
    select app_private.notification_email_configure(
@@ -153,8 +200,11 @@ select id, status_code, created from net._http_response order by created desc li
 Failures keep only stable codes (`delivery_rate_limited`,
 `delivery_provider_error`, `delivery_rejected_invalid`,
 `email_no_longer_eligible`, …) — never an address or a provider message. A
-wrong or revoked API key stops the pass and keeps the mail for 30 minutes
-(`delivery_provider_unavailable`). Dead letters are in
+wrong or revoked API key, or an unverified domain, stops the pass and pauses
+sending for 30 minutes (`delivery_provider_unavailable`); "quota exceeded"
+pauses until the quota resets (`delivery_quota_exceeded`). To lift a pause by
+hand once the cause is fixed:
+`update app_private.notification_email_settings set provider_paused_until = null, provider_pause_reason = null;` Dead letters are in
 `app_private.notification_dead_letters` and replay with
 `api.service_request_notification_dead_letter_replay`.
 
@@ -164,9 +214,10 @@ paused is cancelled when sending resumes.
 
 ## Limits
 
-- Resend's free plan: 3,000 emails a month and 100 a day. With up to three
-  emails a user on a busy match day, that covers about 30 people with email on;
-  beyond that the $20/month plan (50,000 a month, no daily cap) is needed.
+- The free-plan limits above: past about 40 people on email, some of the
+  least urgent emails are skipped on busy days (see "Free plan").
+- Resend pauses sending for any account with a bounce rate above 4 % or a
+  spam-complaint rate above 0.08 %.
 - No live-event emails (goals, half-time): that is a job for push.
 - Bounces and spam complaints show in Resend's dashboard; there is no webhook
   back into the database yet, so an address that bounces is not switched off

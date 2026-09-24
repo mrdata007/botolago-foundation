@@ -55,6 +55,17 @@
 --
 -- Only events received after the first activation are ever emailed, so the
 -- backlog of older notification events is never mailed out.
+--
+-- Free-plan guardrails (owner decision 2026-09-24: stay on Resend's free
+-- plan, 100 emails per UTC day and 3,000 per month). The claim never hands
+-- out more than the day's and month's remaining allowance, keeping a small
+-- daily reserve for account emails (sign-up, password reset) should Auth mail
+-- move to the same Resend account. When the allowance is short, the most
+-- time-critical emails go first (kick-off alert, Fantasy deadline, match-day
+-- preview, results, Fantasy recap, round preview), and mail whose moment
+-- passes while it waits is cancelled, never sent late. If Resend still
+-- answers "quota exceeded", the dispatcher pauses sending until the quota
+-- resets (api.service_pause_email_provider).
 
 -- ---------------------------------------------------------------------------
 -- Extensions
@@ -72,6 +83,12 @@ create table app_private.notification_email_settings (
   functions_base_url text,
   football_live_refresh_enabled boolean not null default false,
   max_emails_per_run integer not null default 250,
+  -- Resend free plan: 100 per UTC day, 3,000 per month.
+  daily_email_limit integer not null default 100,
+  monthly_email_limit integer not null default 3000,
+  daily_email_reserve integer not null default 10,
+  provider_paused_until timestamptz,
+  provider_pause_reason text,
   activated_at timestamptz,
   updated_at timestamptz not null default statement_timestamp(),
   constraint notification_email_settings_singleton check (id),
@@ -81,7 +98,17 @@ create table app_private.notification_email_settings (
     or functions_base_url ~ '^https?://[A-Za-z0-9._:-]+/functions/v1$'
   ),
   constraint notification_email_settings_batch_check check (max_emails_per_run between 1 and 5000),
-  constraint notification_email_settings_test_users_check check (cardinality(test_user_ids) <= 20)
+  constraint notification_email_settings_test_users_check check (cardinality(test_user_ids) <= 20),
+  constraint notification_email_settings_quota_check check (
+    daily_email_limit between 1 and 1000000
+    and monthly_email_limit between 1 and 100000000
+    and daily_email_reserve between 0 and daily_email_limit
+  ),
+  constraint notification_email_settings_pause_check check (
+    (provider_paused_until is null and provider_pause_reason is null)
+    or (provider_paused_until is not null and provider_pause_reason in (
+      'daily_quota_exceeded', 'monthly_quota_exceeded', 'provider_auth_failed'))
+  )
 );
 insert into app_private.notification_email_settings (id) values (true) on conflict do nothing;
 
@@ -145,6 +172,10 @@ from public, anon, authenticated, service_role;
 create index notification_deliveries_email_claim_idx
   on app.notification_deliveries (coalesce(next_retry_at, created_at), id)
   where channel = 'email' and status in ('pending', 'retry_scheduled', 'claimed');
+-- Counts what the provider has accepted today and this month (the quota).
+create index notification_deliveries_email_sent_idx
+  on app.notification_deliveries (sent_at)
+  where channel = 'email' and provider_key = 'resend' and sent_at is not null;
 
 -- ---------------------------------------------------------------------------
 -- Scheduler token: generated inside the database, never in git. pg_cron sends
@@ -233,7 +264,10 @@ create or replace function app_private.notification_email_configure(
   p_functions_base_url text default null,
   p_test_user_ids uuid[] default null,
   p_football_live_refresh_enabled boolean default null,
-  p_max_emails_per_run integer default null
+  p_max_emails_per_run integer default null,
+  p_daily_email_limit integer default null,
+  p_monthly_email_limit integer default null,
+  p_daily_email_reserve integer default null
 )
 returns jsonb
 language plpgsql
@@ -252,6 +286,9 @@ begin
     test_user_ids = coalesce(p_test_user_ids, test_user_ids),
     football_live_refresh_enabled = coalesce(p_football_live_refresh_enabled, football_live_refresh_enabled),
     max_emails_per_run = coalesce(p_max_emails_per_run, max_emails_per_run),
+    daily_email_limit = coalesce(p_daily_email_limit, daily_email_limit),
+    monthly_email_limit = coalesce(p_monthly_email_limit, monthly_email_limit),
+    daily_email_reserve = coalesce(p_daily_email_reserve, daily_email_reserve),
     activated_at = case when p_mode <> 'off' then coalesce(activated_at, statement_timestamp()) else activated_at end,
     updated_at = statement_timestamp()
   where id
@@ -261,7 +298,10 @@ begin
       'mode', result.mode,
       'testUsers', cardinality(result.test_user_ids),
       'functionsBaseUrlSet', result.functions_base_url is not null,
-      'footballLiveRefresh', result.football_live_refresh_enabled
+      'footballLiveRefresh', result.football_live_refresh_enabled,
+      'dailyEmailLimit', result.daily_email_limit,
+      'monthlyEmailLimit', result.monthly_email_limit,
+      'dailyEmailReserve', result.daily_email_reserve
     )
   );
   return jsonb_build_object(
@@ -270,8 +310,104 @@ begin
     'functionsBaseUrl', result.functions_base_url,
     'footballLiveRefreshEnabled', result.football_live_refresh_enabled,
     'maxEmailsPerRun', result.max_emails_per_run,
+    'dailyEmailLimit', result.daily_email_limit,
+    'monthlyEmailLimit', result.monthly_email_limit,
+    'dailyEmailReserve', result.daily_email_reserve,
     'activatedAt', result.activated_at
   );
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- Quota: what the provider's plan still allows (UTC day and UTC month, as
+-- Resend counts them). Everything the provider accepted counts (sent_at is
+-- set), and so does mail currently being sent (claimed, lease not expired).
+-- ---------------------------------------------------------------------------
+create or replace function app_private.notification_email_quota(p_now timestamptz)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  settings app_private.notification_email_settings%rowtype;
+  day_start timestamptz := date_trunc('day', p_now at time zone 'UTC') at time zone 'UTC';
+  month_start timestamptz := date_trunc('month', p_now at time zone 'UTC') at time zone 'UTC';
+  sent_today integer;
+  sent_month integer;
+  in_flight integer;
+begin
+  select * into settings from app_private.notification_email_settings where id;
+  select
+    count(*) filter (where delivery.sent_at >= day_start)::integer,
+    count(*)::integer
+  into sent_today, sent_month
+  from app.notification_deliveries delivery
+  where delivery.channel = 'email' and delivery.provider_key = 'resend'
+    and delivery.sent_at >= least(day_start, month_start);
+  select count(*)::integer into in_flight
+  from app.notification_deliveries delivery
+  where delivery.channel = 'email' and delivery.provider_key = 'resend'
+    and delivery.status = 'claimed' and delivery.claim_expires_at > p_now;
+  return jsonb_build_object(
+    'dailyLimit', settings.daily_email_limit,
+    'dailyReserve', settings.daily_email_reserve,
+    'sentToday', sent_today,
+    'monthlyLimit', settings.monthly_email_limit,
+    'sentThisMonth', sent_month,
+    'inFlight', in_flight,
+    'dailyRemaining', greatest(0,
+      settings.daily_email_limit - settings.daily_email_reserve - sent_today - in_flight),
+    'monthlyRemaining', greatest(0, settings.monthly_email_limit - sent_month - in_flight),
+    'dayResetsAt', day_start + interval '1 day',
+    'monthResetsAt', month_start + interval '1 month',
+    'pausedUntil', case when settings.provider_paused_until > p_now
+      then settings.provider_paused_until end,
+    'pauseReason', case when settings.provider_paused_until > p_now
+      then settings.provider_pause_reason end
+  );
+end;
+$$;
+
+-- The dispatcher calls this when the provider itself refuses to send: quota
+-- exceeded (it may count mail this database does not see, such as account
+-- emails) or a rejected key. Nothing is claimed until the pause ends.
+create or replace function api.service_pause_email_provider(
+  p_reason text,
+  p_until timestamptz
+)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+begin
+  if not app_private.is_service_request() then
+    raise exception using errcode = 'PT403', message = 'notification_access_denied';
+  end if;
+  if p_reason is null or p_reason not in (
+      'daily_quota_exceeded', 'monthly_quota_exceeded', 'provider_auth_failed')
+    or p_until is null
+    or p_until <= statement_timestamp()
+    or p_until > statement_timestamp() + interval '32 days'
+  then
+    raise exception using errcode = 'PT400', message = 'invalid_email_provider_pause';
+  end if;
+  update app_private.notification_email_settings set
+    provider_paused_until = greatest(
+      case when provider_paused_until > statement_timestamp() then provider_paused_until end,
+      p_until),
+    provider_pause_reason = case
+      when provider_paused_until > p_until then provider_pause_reason else p_reason end,
+    updated_at = statement_timestamp()
+  where id;
+  perform app_private.write_notification_audit(
+    'notification_email_provider_paused', p_metadata := jsonb_build_object(
+      'reason', p_reason, 'until', p_until)
+  );
+  return app_private.notification_email_quota(statement_timestamp());
 end;
 $$;
 
@@ -910,6 +1046,7 @@ declare
   plan_result jsonb := null;
   fanout_result jsonb := null;
   dispatch text := 'not_needed';
+  quota jsonb := null;
   errors text[] := '{}'::text[];
   outcome text;
   summary jsonb;
@@ -945,6 +1082,7 @@ begin
   end;
 
   begin
+    quota := app_private.notification_email_quota(run_started);
     if exists (
       select 1 from app.notification_deliveries delivery
       where delivery.channel = 'email' and delivery.provider_key = 'resend'
@@ -952,12 +1090,20 @@ begin
             and coalesce(delivery.next_retry_at, delivery.created_at) <= run_started)
           or (delivery.status = 'claimed' and delivery.claim_expires_at < run_started))
     ) then
-      dispatch := case
+      -- Waking the dispatcher would only spend an Edge Function call: mail
+      -- waits (and is cancelled if its moment passes) until the quota resets.
+      if quota ->> 'pausedUntil' is not null then
+        dispatch := 'paused';
+      elsif (quota ->> 'dailyRemaining')::integer <= 0 or (quota ->> 'monthlyRemaining')::integer <= 0 then
+        dispatch := 'quota_reached';
+      else
+        dispatch := case
         when app_private.invoke_scheduled_function(
           settings.functions_base_url, 'notification-email-dispatch', '{"job":"dispatch"}'::jsonb
         ) is null then 'not_configured'
         else 'invoked'
-      end;
+        end;
+      end if;
     end if;
   exception when others then
     errors := errors || left(format('dispatch %s: %s', sqlstate, sqlerrm), 280);
@@ -967,7 +1113,8 @@ begin
     'mode', settings.mode,
     'plan', plan_result,
     'fanout', fanout_result,
-    'dispatch', dispatch
+    'dispatch', dispatch,
+    'quota', quota
   );
   outcome := case
     when cardinality(errors) = 3 then 'failed'
@@ -975,7 +1122,7 @@ begin
     when jsonb_array_length(coalesce(plan_result -> 'planned', '[]'::jsonb)) > 0
       or coalesce((fanout_result ->> 'created')::integer, 0) > 0
       or coalesce((fanout_result ->> 'cancelled')::integer, 0) > 0
-      or dispatch <> 'not_needed' then 'succeeded'
+      or dispatch in ('invoked', 'not_configured') then 'succeeded'
     else 'idle'
   end;
 
@@ -1046,6 +1193,8 @@ set search_path = ''
 as $$
 declare
   settings app_private.notification_email_settings%rowtype;
+  quota jsonb;
+  allowance integer;
   result jsonb;
 begin
   if not app_private.is_service_request() then
@@ -1054,6 +1203,9 @@ begin
   if p_limit not between 1 and 100 or p_lease_seconds not between 30 and 600 then
     raise exception using errcode = 'PT400', message = 'invalid_notification_delivery';
   end if;
+  -- One claim at a time, so two overlapping dispatcher passes cannot both
+  -- spend the same remaining quota.
+  perform pg_advisory_xact_lock(pg_catalog.hashtextextended('botolago:notification-email-claim', 0));
   select * into settings from app_private.notification_email_settings where id;
   if settings.mode = 'off' then
     return '[]'::jsonb;
@@ -1087,6 +1239,19 @@ begin
       or app_private.notification_email_event_is_stale(event, statement_timestamp())
     );
 
+  quota := app_private.notification_email_quota(statement_timestamp());
+  if quota ->> 'pausedUntil' is not null then
+    return '[]'::jsonb;
+  end if;
+  allowance := least(p_limit, (quota ->> 'dailyRemaining')::integer,
+    (quota ->> 'monthlyRemaining')::integer);
+  if allowance <= 0 then
+    return '[]'::jsonb;
+  end if;
+
+  -- When the allowance is short, the most time-critical mail goes first;
+  -- within a kind, the order is a stable shuffle so the same readers are not
+  -- always the ones left waiting.
   with claimable as (
     select delivery.id
     from app.notification_deliveries delivery
@@ -1096,9 +1261,19 @@ begin
           and coalesce(delivery.next_retry_at, delivery.created_at) <= statement_timestamp())
         or (delivery.status = 'claimed' and delivery.claim_expires_at < statement_timestamp()))
       and (settings.mode = 'live' or notification.user_id = any(settings.test_user_ids))
-    order by coalesce(delivery.next_retry_at, delivery.created_at), delivery.id
+    order by
+      case notification.notification_type::text
+        when 'match_starting' then 1
+        when 'deadline_24h' then 2
+        when 'matchday_preview' then 3
+        when 'matchday_results' then 4
+        when 'gameweek_finalized' then 5
+        when 'round_preview' then 6
+        else 7
+      end,
+      md5(delivery.id::text)
     for update of delivery skip locked
-    limit p_limit
+    limit allowance
   ),
   claimed as (
     update app.notification_deliveries delivery set
@@ -1190,6 +1365,7 @@ begin
     'tickJobActive', exists (select 1 from cron.job where jobname = 'notification-email-tick' and active),
     'lastRunAt', heartbeat.last_run_at,
     'lastOutcome', heartbeat.last_outcome,
+    'quota', app_private.notification_email_quota(statement_timestamp()),
     'emailsLast24h', (
       select jsonb_object_agg(status, total) from (
         select delivery.status::text as status, count(*) as total
@@ -1272,7 +1448,8 @@ $$;
 revoke all on function
   app_private.scheduler_token(),
   app_private.notification_email_unsubscribe_token(uuid),
-  app_private.notification_email_configure(text, text, uuid[], boolean, integer),
+  app_private.notification_email_configure(text, text, uuid[], boolean, integer, integer, integer, integer),
+  app_private.notification_email_quota(timestamptz),
   app_private.notification_email_team_json(uuid),
   app_private.notification_email_fixture_json(uuid),
   app_private.notification_email_enqueue(app.notification_type, app.notification_source_domain, uuid, text, jsonb, timestamptz),
@@ -1286,7 +1463,8 @@ from public, anon, authenticated, service_role;
 grant execute on function
   app_private.scheduler_token(),
   app_private.notification_email_unsubscribe_token(uuid),
-  app_private.notification_email_configure(text, text, uuid[], boolean, integer),
+  app_private.notification_email_configure(text, text, uuid[], boolean, integer, integer, integer, integer),
+  app_private.notification_email_quota(timestamptz),
   app_private.notification_email_team_json(uuid),
   app_private.notification_email_fixture_json(uuid),
   app_private.notification_email_enqueue(app.notification_type, app.notification_source_domain, uuid, text, jsonb, timestamptz),
@@ -1301,15 +1479,20 @@ to postgres;
 revoke all on function
   api.service_verify_scheduler_token(text),
   api.service_claim_email_deliveries(integer, integer),
+  api.service_pause_email_provider(text, timestamptz),
   api.service_notification_email_health(),
   api.unsubscribe_notification_email(text)
 from public, anon, authenticated, service_role;
 grant execute on function
   api.service_verify_scheduler_token(text),
   api.service_claim_email_deliveries(integer, integer),
+  api.service_pause_email_provider(text, timestamptz),
   api.service_notification_email_health()
 to service_role;
-grant execute on function api.unsubscribe_notification_email(text) to anon, authenticated;
+-- The page opened from an email calls it signed out (anon); the one-click
+-- endpoint mail providers POST to (Edge Function notification-email-unsubscribe)
+-- calls it with the service role.
+grant execute on function api.unsubscribe_notification_email(text) to anon, authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- Jobs. cron.schedule with a name replaces a job of that name, so re-applying
