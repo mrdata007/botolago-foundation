@@ -1539,6 +1539,7 @@ export type Database = {
         }
         Returns: Json
       }
+      service_ops_health: { Args: never; Returns: Json }
       service_pause_email_provider: {
         Args: { p_reason: string; p_until: string }
         Returns: Json
