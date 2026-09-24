@@ -79,7 +79,10 @@ export function StandingsTable({
           // only way to sort the table and they were far under the 44px tap
           // floor the rest of the product holds to. The table already lives
           // in an `overflow-x-auto` scroller, so widening the hit areas costs
-          // nothing at 390px.
+          // nothing at 390px. Their cells take only 2px a side on top of the
+          // 44px: at 8px a side the five figure columns alone came to 300px
+          // and pushed the 640px desktop column into a scroll that hid the
+          // points (17px of it in Arabic).
           "inline-flex items-center justify-center gap-0.5 transition-colors",
           ui.space.tap,
           ui.radius.full,
@@ -113,19 +116,19 @@ export function StandingsTable({
               <th scope="col" className="px-3 py-1 text-start">
                 {t("matches.table.team")}
               </th>
-              <th scope="col" className="px-2 py-1 text-center">
+              <th scope="col" className="px-0.5 py-1 text-center">
                 {headerButton("played", t("matches.table.played_short"), t("matches.table.played"))}
               </th>
-              <th scope="col" className="hidden px-2 py-1 text-center sm:table-cell">
+              <th scope="col" className="hidden px-0.5 py-1 text-center sm:table-cell">
                 {headerButton("won", t("matches.table.won_short"), t("matches.table.won"))}
               </th>
-              <th scope="col" className="hidden px-2 py-1 text-center sm:table-cell">
+              <th scope="col" className="hidden px-0.5 py-1 text-center sm:table-cell">
                 {headerButton("drawn", t("matches.table.drawn_short"), t("matches.table.drawn"))}
               </th>
-              <th scope="col" className="hidden px-2 py-1 text-center sm:table-cell">
+              <th scope="col" className="hidden px-0.5 py-1 text-center sm:table-cell">
                 {headerButton("lost", t("matches.table.lost_short"), t("matches.table.lost"))}
               </th>
-              <th scope="col" className="px-2 py-1 text-center">
+              <th scope="col" className="px-0.5 py-1 text-center">
                 {headerButton(
                   "goalDifference",
                   t("matches.table.goal_difference_short"),
