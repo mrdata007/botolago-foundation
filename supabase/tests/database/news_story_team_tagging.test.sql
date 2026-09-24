@@ -1,4 +1,4 @@
--- supabase/migrations/20260924170000_news_story_team_tagging.sql
+-- supabase/migrations/20260924180000_news_story_team_tagging.sql
 --
 -- Stories are tagged with the clubs their headlines name, by a trigger on
 -- app.article_editions. A fresh database has none of production's clubs, so

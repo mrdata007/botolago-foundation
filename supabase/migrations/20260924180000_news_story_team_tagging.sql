@@ -92,8 +92,9 @@
 -- A read-only preview of exactly this list against production (2026-09-24,
 -- the same matching written as one SELECT) tags 11,092 of 14,302 stories with
 -- 16,097 links; 6,640 stories name exactly one club; all 23 existing rows are
--- confirmed and none is removed. Locally, on 15,769 stories, the backfill
--- below took about 20 seconds, and a second run changed nothing.
+-- confirmed and none is removed. Locally, on 15,769 stories and starting
+-- from statistics as stale as production's, the backfill below took 16
+-- seconds; a second run changed nothing (6 seconds).
 --
 -- ---------------------------------------------------------------------------
 -- Who owns a row
@@ -368,18 +369,42 @@ create trigger article_editions_tag_story_teams_after_write
 after insert or delete or update of title, story_id on app.article_editions
 for each row execute function app_private.news_retag_story_teams_after_edition_write();
 
+-- The same rule as news_retag_story_teams, for every story in one pass. Not
+-- a loop over that function: its plans are made once per session from the
+-- table's statistics, and in production those say story_teams holds 23 rows.
+-- Filled 17,887 rows by a loop planned for an empty table, the local
+-- measurement took 40 s; with fresh statistics, 19 s. Set-based, it does not
+-- depend on them.
 create or replace function app_private.news_retag_all_story_teams()
 returns table (stories integer, tagged_stories integer, headline_rows integer)
 language plpgsql
 security definer
 set search_path = ''
 as $$
-declare
-  target_story uuid;
 begin
-  for target_story in select story.id from app.stories story order by story.id loop
-    perform app_private.news_retag_story_teams(target_story);
-  end loop;
+  with hand_tagged as (
+    select distinct relation.story_id
+    from app.story_teams relation
+    where relation.tagged_by = 'editor'
+  ), wanted as (
+    select distinct edition.story_id, headline.team_id
+    from app.article_editions edition
+    cross join lateral unnest(app_private.news_headline_team_ids(edition.title)) as headline(team_id)
+    where not exists (select 1 from hand_tagged where hand_tagged.story_id = edition.story_id)
+  ), removed as (
+    delete from app.story_teams relation
+    where relation.tagged_by = 'headline'
+      and not exists (select 1 from hand_tagged where hand_tagged.story_id = relation.story_id)
+      and not exists (
+        select 1 from wanted
+        where wanted.story_id = relation.story_id and wanted.team_id = relation.team_id
+      )
+  )
+  insert into app.story_teams (story_id, team_id, tagged_by)
+  select wanted.story_id, wanted.team_id, 'headline'
+  from wanted
+  on conflict (story_id, team_id) do nothing;
+
   return query
     select
       (select count(*)::integer from app.stories),
