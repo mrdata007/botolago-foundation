@@ -67,8 +67,17 @@ Read-only checks of production, 24 Sept 2026:
   - Amal Tiznit – Ittihad Tanger read `live_first_half`, 0–1, with
     `provider_updated_at` 20:30:02 UTC: the score is now refreshed during
     play, where it used to wait hours for the hourly job.
-- **After the final whistle:** _pending, the 22:25 UTC check-in: the match
-  reaches `finished` with `finalized_at` set._
+- **22:26 UTC, after the final whistle:**
+  - Amal Tiznit – Ittihad Tanger read `finished`, 1–3, `post_match`, with
+    `finalized_at` 22:00:03 UTC: finalized by the 22:00 run, minutes after the
+    whistle, where it used to wait hours for the hourly job.
+  - `cron.job_run_details`: every `football-live-refresh` run from 20:30 to
+    22:15 succeeded.
+  - The day's other fixture, FAR Rabat – Raja Casablanca (15:00 UTC), reads
+    `postponed`, 0–0. It was the second of the "2 fixtures in its window".
+  - Both rows were written again at 22:21:43 UTC, by the timing the Fantasy
+    season orchestrator's provider refresh (its run started at 22:21:09). The
+    result stayed as the live refresh had set it.
 
 ## Undo
 
