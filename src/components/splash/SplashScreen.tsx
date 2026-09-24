@@ -1,34 +1,77 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import lightWordmark from "@/assets/brand/botolago-wordmark-light.svg";
+import { claimLaunchSplash, releaseLaunchSplash } from "./launch-splash";
 
 interface SplashScreenProps {
+  /** Called once the splash has faded out, or at once when this load has none. */
   onDone: () => void;
 }
 
+// The shine's soft edges. Only a mask's alpha counts, so the colour is moot.
+// The band used to fill the logo's box edge to edge, so it read as a pale box
+// with hard top and bottom edges, and the box's own edge cut it off square as
+// it left, beside the ball. The window fades the band in and out at the ends
+// of the logo; the band fades itself out towards its top and bottom. Two masks
+// on two elements multiply, which one element would need `mask-composite` for.
+// Both are symmetric, so `to right` names no reading direction (rule 3).
+const SHINE_WINDOW = "linear-gradient(to right, transparent, black 15%, black 85%, transparent)";
+const SHINE_BAND_FADE =
+  "linear-gradient(to bottom, transparent, black 25%, black 75%, transparent)";
+
+/**
+ * The launch splash. It is in the server HTML on every load and shown only
+ * when the head script marked this load (`launch-splash.ts`), so on a first
+ * visit it is the first thing painted and its entrance plays from that paint.
+ * This component only decides when it leaves.
+ */
 export function SplashScreen({ onDone }: SplashScreenProps) {
   const [leaving, setLeaving] = useState(false);
 
+  // Read through a ref, so a parent re-render cannot restart the timers. It
+  // did: the gate passed a new function on every render, the hold began again
+  // each time, and a re-render during the fade put the language chooser back
+  // by a whole hold and fade.
+  const onDoneRef = useRef(onDone);
   useEffect(() => {
-    const prefersReduced =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    onDoneRef.current = onDone;
+  }, [onDone]);
 
-    const hold = prefersReduced ? 250 : 800;
+  useEffect(() => {
+    const shownAt = claimLaunchSplash();
+    if (shownAt === null) {
+      // Not a splash load: it was never on screen, so there is nothing to play.
+      onDoneRef.current();
+      return;
+    }
+
+    const prefersReduced =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
+
+    // The hold counts from the first paint, not from hydration. On a fast load
+    // that is the choreography it always had; on a slow one the splash has
+    // already been up for the whole load, and leaves as soon as the app can
+    // take over instead of holding it back another 800ms.
+    const hold = Math.max(0, (prefersReduced ? 250 : 800) - (performance.now() - shownAt));
     const fade = prefersReduced ? 200 : 350;
 
     const t1 = window.setTimeout(() => setLeaving(true), hold);
-    const t2 = window.setTimeout(onDone, hold + fade);
+    const t2 = window.setTimeout(() => {
+      releaseLaunchSplash();
+      onDoneRef.current();
+    }, hold + fade);
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
     };
-  }, [onDone]);
+  }, []);
 
   return (
     <div
       aria-hidden={leaving}
       role="status"
-      className={`fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden transition-all duration-[350ms] ease-out ${
+      // No `flex` here: `launch-splash` (src/styles.css) owns the display,
+      // `none` unless the head script marked this load.
+      className={`launch-splash fixed inset-0 z-[9999] items-center justify-center overflow-hidden transition-all duration-[350ms] ease-out ${
         leaving ? "opacity-0 pointer-events-none -translate-y-1 scale-[1.01]" : "opacity-100"
       }`}
       style={{
@@ -95,12 +138,19 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           */}
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 -start-1/3 w-1/3 [transform:skewX(calc(-18deg*var(--splash-dir)))] motion-safe:animate-[splash-sweep_1100ms_cubic-bezier(0.4,0,0.2,1)_220ms_both]"
-            style={{
-              background:
-                "linear-gradient(to right, transparent, hsl(0 0% 100% / 0.55), transparent)",
-            }}
-          />
+            className="pointer-events-none absolute inset-0 overflow-hidden"
+            style={{ WebkitMaskImage: SHINE_WINDOW, maskImage: SHINE_WINDOW }}
+          >
+            <span
+              className="absolute inset-y-0 -start-1/3 w-1/3 [transform:skewX(calc(-18deg*var(--splash-dir)))] motion-safe:animate-[splash-sweep_1100ms_cubic-bezier(0.4,0,0.2,1)_220ms_both]"
+              style={{
+                background:
+                  "linear-gradient(to right, transparent, hsl(0 0% 100% / 0.55), transparent)",
+                WebkitMaskImage: SHINE_BAND_FADE,
+                maskImage: SHINE_BAND_FADE,
+              }}
+            />
+          </span>
         </div>
 
         {/* accent bar */}
@@ -116,26 +166,6 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           }}
         />
       </div>
-
-      <style>{`
-        @keyframes splash-in {
-          0% { opacity: 0; transform: scale(0.97) translateY(6px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        /* --splash-dir is +1 in a left-to-right document and -1 in a
-           right-to-left one, so the shine leaves the leading edge and
-           travels with the reading direction in both. A backtick cannot
-           appear in this block: it is inside a JSX template literal. */
-        @keyframes splash-sweep {
-          0% { transform: translateX(0) skewX(calc(-18deg * var(--splash-dir))); opacity: 0; }
-          25% { opacity: 1; }
-          100% { transform: translateX(calc(420% * var(--splash-dir))) skewX(calc(-18deg * var(--splash-dir))); opacity: 0; }
-        }
-        @keyframes splash-bar {
-          0% { opacity: 0; transform: scaleX(0.1); }
-          100% { opacity: 1; transform: scaleX(1); }
-        }
-      `}</style>
     </div>
   );
 }

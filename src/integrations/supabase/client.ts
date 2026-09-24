@@ -51,9 +51,13 @@ function createSupabaseClient() {
       fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
     },
     auth: {
-      // Some SSR/test runtimes expose a partial `window` without a global
-      // Storage implementation. Probe the actual dependency, not the window.
-      storage: typeof localStorage !== "undefined" ? localStorage : undefined,
+      // No `storage` on purpose. auth-js picks `localStorage` itself where the
+      // browser allows it (its probe reads and writes inside a try/catch), and
+      // keeps the session in memory where it does not: a server runtime, a
+      // test's partial `window`, or a browser blocking site data. Handing it
+      // `localStorage` from here meant reading that global unguarded, which
+      // throws in that last case, so the client was never created and the
+      // whole app fell to the error screen on start-up.
       persistSession: true,
       autoRefreshToken: true,
     },

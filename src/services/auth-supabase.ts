@@ -35,6 +35,29 @@ function hasWindow() {
   return typeof window !== "undefined";
 }
 
+// A browser that blocks site data throws on the first touch of `localStorage`
+// instead of returning null, and `hasWindow()` does not catch that. Reading the
+// guest flag unguarded put the whole app on the error screen at start-up. Where
+// storage is refused, "guest" simply lasts until the page is reloaded.
+function readGuestFlag(): boolean {
+  if (!hasWindow()) return false;
+  try {
+    return window.localStorage.getItem(K_GUEST) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeGuestFlag(guest: boolean): void {
+  if (!hasWindow()) return;
+  try {
+    if (guest) window.localStorage.setItem(K_GUEST, "1");
+    else window.localStorage.removeItem(K_GUEST);
+  } catch {
+    /* refused: see readGuestFlag */
+  }
+}
+
 function requestId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `web-${Date.now().toString(36)}`;
 }
@@ -167,11 +190,11 @@ export class SupabaseAuthService implements AuthService {
 
   private async applySession(session: Session | null) {
     if (!session?.user) {
-      const guest = hasWindow() && window.localStorage.getItem(K_GUEST) === "1";
+      const guest = readGuestFlag();
       this.emit({ user: null, status: guest ? "guest" : "anonymous" });
       return;
     }
-    if (hasWindow()) window.localStorage.removeItem(K_GUEST);
+    writeGuestFlag(false);
     const profile = await this.loadProfile(session.user.id);
     this.emit({ user: await buildAuthUser(session.user, profile), status: "authenticated" });
   }
@@ -179,7 +202,7 @@ export class SupabaseAuthService implements AuthService {
   getSession(): AuthSession {
     this.init();
     if (!hasWindow()) return { user: null, status: "loading" };
-    if (this.cachedSession.status === "loading" && window.localStorage.getItem(K_GUEST) === "1")
+    if (this.cachedSession.status === "loading" && readGuestFlag())
       return { user: null, status: "guest" };
     return this.cachedSession;
   }
@@ -295,7 +318,7 @@ export class SupabaseAuthService implements AuthService {
   }
 
   async continueAsGuest(): Promise<AuthResult> {
-    if (hasWindow()) window.localStorage.setItem(K_GUEST, "1");
+    writeGuestFlag(true);
     this.emit({ user: null, status: "guest" });
     return { ok: true };
   }
@@ -384,18 +407,20 @@ export class SupabaseAuthService implements AuthService {
     }
     await supabase.auth.signOut({ scope }).catch(() => undefined);
     if (hasWindow()) {
-      window.localStorage.removeItem(K_GUEST);
-      if (options?.resetLocalData) {
-        ["botolago.fantasy.team", "botolago.fantasy.bank", "botolago.fantasy.transfers"].forEach(
-          (key) => window.localStorage.removeItem(key),
-        );
-      }
+      writeGuestFlag(false);
       try {
+        if (options?.resetLocalData) {
+          ["botolago.fantasy.team", "botolago.fantasy.bank", "botolago.fantasy.transfers"].forEach(
+            (key) => window.localStorage.removeItem(key),
+          );
+        }
         Object.keys(window.localStorage)
           .filter((key) => key.startsWith(K_LEGACY_PREFIX) && key !== K_GUEST)
           .forEach((key) => window.localStorage.removeItem(key));
       } catch {
-        // Browser privacy modes may deny localStorage enumeration.
+        // Browser privacy modes may deny localStorage outright, or only its
+        // enumeration. Either way sign-out must still finish below, or the
+        // UI stays signed in after Supabase has already ended the session.
       }
     }
     if (scope !== "others") this.emit({ user: null, status: "anonymous" });
