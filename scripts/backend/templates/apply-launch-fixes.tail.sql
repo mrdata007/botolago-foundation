@@ -89,6 +89,16 @@ begin
     problems := problems || 'provider_postponed resolution not allowed'::text;
   end if;
 
+  if (select schedule from cron.job where jobname = 'fantasy-lifecycle-tick') is distinct from '*/5 * * * *' then
+    problems := problems || 'fantasy-lifecycle-tick is not scheduled every five minutes'::text;
+  end if;
+  if (select lifecycle_tick_enabled from app_private.fantasy_automation_settings) is distinct from false then
+    problems := problems || 'the lifecycle tick must arrive switched off'::text;
+  end if;
+  if has_function_privilege('service_role', 'app_private.fantasy_automation_configure(boolean)', 'execute') then
+    problems := problems || 'the automation switch is callable by service_role'::text;
+  end if;
+
   if cardinality(problems) > 0 then
     raise exception 'stop: the update did not check out: %', problems;
   end if;

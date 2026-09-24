@@ -73,6 +73,10 @@ begin
   if to_regprocedure('app_private.fantasy_enrolment_gameweek(uuid)') is not null then
     raise exception 'stop: app_private.fantasy_enrolment_gameweek already exists, but the migration is not recorded';
   end if;
+  if to_regclass('app_private.fantasy_lifecycle_heartbeat') is not null
+    or exists (select 1 from cron.job where jobname = 'fantasy-lifecycle-tick') then
+    raise exception 'stop: the Fantasy lifecycle tick already exists, but the migration is not recorded';
+  end if;
 
   -- The functions this batch replaces must still be the bodies it was
   -- reviewed against (measured on production, 2026-09-24).

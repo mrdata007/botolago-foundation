@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -409,6 +409,60 @@ export async function orchestrateFantasySeason(
   };
 }
 
+type OrchestratorSummary = Awaited<ReturnType<typeof orchestrateFantasySeason>>;
+
+/**
+ * The run's health in a few table rows, for the GitHub run page
+ * ($GITHUB_STEP_SUMMARY). Built only from the sanitised summary: codes,
+ * counts, statuses and deadlines -- never a credential or a user.
+ */
+export function renderHealthSummary(summary: OrchestratorSummary): string {
+  const refresh = summary.providerRefresh;
+  const watch = summary.deadlineWatch as { escalations?: unknown[]; error?: string };
+  const rows: Array<[string, string]> = [
+    [
+      "Provider refresh",
+      !refresh
+        ? "not run"
+        : refresh.verdict === "pass"
+          ? `pass (${refresh.fixtureWindows} fixture window${refresh.fixtureWindows === 1 ? "" : "s"})`
+          : `${refresh.verdict}${refresh.errorCode ? `: \`${refresh.errorCode}\`` : ""}${refresh.fixturesRefreshed ? " (fixtures refreshed)" : ""}`,
+    ],
+    [
+      "Calendar",
+      `created ${summary.calendar.gameweeksCreated}, deadline changes ${summary.calendar.deadlineChanges}, blocked rounds ${summary.calendar.blockedRounds}`,
+    ],
+    [
+      "Gameweeks",
+      summary.calendar.gameweeks
+        .map((gw) => `GW${gw.sequence} ${gw.status} (deadline ${gw.deadlineAt.slice(0, 16)}Z)`)
+        .join("; ") || "none",
+    ],
+    [
+      "Lifecycle",
+      summary.workers
+        .map((w) => `GW${w.sequence} ${w.reason} → ${w.outcome}${w.code ? ` \`${w.code}\`` : ""}`)
+        .join("; ") || "nothing due",
+    ],
+    [
+      "Performances",
+      `${summary.performances.fixturesProcessed} fixtures in ${summary.performances.batches} batch(es)${summary.performances.error ? `, error \`${summary.performances.error}\`` : ""}`,
+    ],
+    [
+      "Deadline watch",
+      watch.error ? `error \`${watch.error}\`` : `${watch.escalations?.length ?? 0} escalation(s)`,
+    ],
+  ];
+  return [
+    `## Fantasy season orchestrator: ${summary.verdict.toUpperCase()}`,
+    "",
+    "| Check | State |",
+    "| --- | --- |",
+    ...rows.map(([check, state]) => `| ${check} | ${state.replace(/\|/g, "\\|")} |`),
+    "",
+  ].join("\n");
+}
+
 export type ProviderRefresh = {
   verdict: "pass" | "fail" | "missing";
   errorCode?: string;
@@ -566,6 +620,11 @@ if (import.meta.main) {
     await writeFile(resolve(evidenceDir, "fantasy-season-orchestrator.json"), serialized, {
       mode: 0o600,
     });
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      await appendFile(process.env.GITHUB_STEP_SUMMARY, renderHealthSummary(summary)).catch(
+        () => undefined,
+      );
+    }
     process.stdout.write(`FANTASY_ORCHESTRATOR_${summary.verdict.toUpperCase()}\n`);
     if (shouldFailRun(summary.verdict)) process.exitCode = 1;
   } catch (error) {

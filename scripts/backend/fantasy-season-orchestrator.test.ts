@@ -5,6 +5,7 @@ import {
   mergeVerdict,
   orchestrateFantasySeason,
   orchestratorEnvironment,
+  renderHealthSummary,
   selectWorkerTargets,
   shouldFailRun,
   summarizeDeadlineWatch,
@@ -397,6 +398,15 @@ describe("fantasy season orchestrator", () => {
     });
     expect(stale.verdict).toBe("waiting");
     expect(stale.providerRefresh?.errorCode).toBe("provider_down");
+
+    // The run page shows the same facts as a table, without credentials.
+    const page = renderHealthSummary(stale);
+    expect(page).toContain("## Fantasy season orchestrator: WAITING");
+    expect(page).toContain("| Provider refresh | fail: `provider_down` |");
+    expect(page).toContain("GW1 open (deadline 2026-09-25T18:30Z)");
+    expect(renderHealthSummary(refreshed)).toContain(
+      "| Provider refresh | pass (1 fixture window) |",
+    );
   });
 
   test("an unexpected calendar payload fails closed", async () => {

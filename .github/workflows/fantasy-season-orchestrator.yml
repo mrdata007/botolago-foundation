@@ -3,8 +3,8 @@ name: Fantasy season orchestrator
 # Scheduled production operation for the 2026/27 Fantasy season. It composes
 # the existing guarded operations without changing them:
 #   1. provider fixture / result refresh (scripts/backend/current-season-recovery.ts,
-#      canary mode — its final squad guard may still fail while the provider
-#      lacks the promoted clubs; the fixture phase commits before that guard);
+#      canary mode, fixtures scope: squads are frozen once the Fantasy catalog
+#      is staged, so the squad phase is not run here);
 #   2. scripts/backend/fantasy-season-orchestrator.ts: calendar sync
 #      (api.service_sync_fantasy_calendar), finished-fixture performance
 #      ingestion, the trusted lifecycle worker for gameweeks that have work,
@@ -110,6 +110,10 @@ jobs:
         env:
           CONFIRMATION: RUN_CURRENT_SEASON_RECOVERY
           CURRENT_SEASON_RECOVERY_MODE: canary
+          # Fixtures and results only: once the Fantasy catalog is staged the
+          # squad RPC refuses by design (fantasy_catalog_already_staged), so a
+          # squad phase here could only fail -- it turned every run red.
+          CURRENT_SEASON_RECOVERY_SCOPE: fixtures
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
         shell: bash
