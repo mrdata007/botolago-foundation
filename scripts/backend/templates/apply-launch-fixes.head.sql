@@ -32,7 +32,8 @@
 --   * brings the Fantasy season up to the new rule with the same service
 --     calls the season orchestrator makes (calendar sync, then the lifecycle
 --     for any open gameweek past its deadline);
---   * checks the result and summarises it.
+--   * checks the result and summarises it, including how long the /matches
+--     page's database call now takes (1,025 ms when the audit measured it).
 --   Lock and statement timeouts are bounded, so it gives up rather than queue
 --   behind a long-running transaction on the live site.
 -- ============================================================================
@@ -81,6 +82,10 @@ begin
     or exists (select 1 from cron.job where jobname = 'ops-alert-tick') then
     raise exception 'stop: the ops alert tick already exists, but the migration is not recorded';
   end if;
+  if to_regclass('app_private.timezone_names') is not null
+    or to_regprocedure('app_private.is_valid_timezone(text)') is not null then
+    raise exception 'stop: the timezone snapshot already exists, but the migration is not recorded';
+  end if;
 
   -- The functions this batch replaces must still be the bodies it was
   -- reviewed against (measured on production, 2026-09-24).
@@ -91,7 +96,9 @@ begin
       ('api.service_prepare_next_fantasy_gameweek(uuid,uuid,bigint,integer)', '98d18a8eed916af8cea3ed453e03f23f'),
       ('api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)', 'd0c4cfd5c1a9290a8805ea8395ecd82e'),
       ('api.fantasy_hub(text)', '7278bb93007935facc742ce19a4d6277'),
-      ('api.service_fantasy_deadline_watch(uuid,integer,integer)', '7d9b32bb45f2fe565ad38a47c1f6db98')
+      ('api.service_fantasy_deadline_watch(uuid,integer,integer)', '7d9b32bb45f2fe565ad38a47c1f6db98'),
+      ('api.football_matches_by_date(date,text,text,text[],uuid,uuid,timestamp with time zone,uuid,integer)', '3530bc9042d16dac749af5541c826ad0'),
+      ('app_private.assert_valid_timezone(text)', 'ff87c87f861e83fff25f6d28d8d49468')
     ) as t(signature, md5)
   loop
     if to_regprocedure(expected.signature) is null then

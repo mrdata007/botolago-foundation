@@ -108,6 +108,24 @@ begin
     problems := problems || 'the ops alert tick must be scheduled and arrive switched off'::text;
   end if;
 
+  if not app_private.is_valid_timezone('Africa/Casablanca')
+    or app_private.is_valid_timezone('UTC+3')
+    or (select count(*) from app_private.timezone_names)
+      <> (select count(*) from pg_catalog.pg_timezone_names) then
+    problems := problems || 'the timezone snapshot does not match the catalogue'::text;
+  end if;
+  if not has_function_privilege('anon',
+      'api.football_matches_by_date(date,text,text,text[],uuid,uuid,timestamptz,uuid,integer)', 'execute')
+    or has_function_privilege('anon', 'app_private.is_valid_timezone(text)', 'execute')
+    or has_function_privilege('authenticated', 'app_private.is_valid_timezone(text)', 'execute') then
+    problems := problems || 'timezone function grants are wrong'::text;
+  end if;
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname in ('api', 'app', 'app_private') and p.prokind = 'f'
+        and pg_get_functiondef(p.oid) ilike '%pg_timezone_names%') then
+    problems := problems || 'a function still scans pg_timezone_names'::text;
+  end if;
+
   if cardinality(problems) > 0 then
     raise exception 'stop: the update did not check out: %', problems;
   end if;
@@ -123,8 +141,16 @@ notify pgrst, 'reload schema';
 do $finish$
 declare
   summary jsonb;
+  started timestamptz;
+  matches_ms numeric;
 begin
+  -- The matches-page call the audit measured at 1,025 ms, timed again.
+  started := clock_timestamp();
+  perform api.football_matches_by_date(current_date, 'fr', 'Africa/Casablanca', null, null, null, null, null, 20);
+  matches_ms := round(extract(epoch from clock_timestamp() - started)::numeric * 1000, 1);
+
   summary := jsonb_build_object(
+    'matchesByDateMs', matches_ms,
     'catchUp', (select coalesce(jsonb_object_agg(step, outcome), '{}'::jsonb) from launch_fix_catch_up),
     'gameweeks', (
       select coalesce(jsonb_agg(jsonb_build_object(
