@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { CupInfo } from "@/components/fantasy-lists/CupInfo";
+import { LeagueInviteCard } from "@/components/fantasy-lists/LeagueInviteCard";
 import {
   compactMoveFormat,
   formatMove,
@@ -82,6 +83,10 @@ function LeagueDetailBody() {
   });
   const gw = screen.gameweek?.number ?? null;
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
+  // The owner cannot leave their own league (api.leave_fantasy_league refuses
+  // the owner role), so the owner gets the invite code card where everyone
+  // else gets the Leave button. `creator` is the mock store's name for owner.
+  const isOwner = leagueQ.data?.role === "owner" || leagueQ.data?.role === "creator";
 
   const leave = async () => {
     if (!leagueQ.data || busy) return;
@@ -259,14 +264,18 @@ function LeagueDetailBody() {
               </div>
 
               {leagueQ.data?.type === "private" ? (
-                <UiButton
-                  variant="outline"
-                  className={cn("mt-6 border-[color:var(--ui-rule-strong)]", ui.tone.default)}
-                  onClick={() => void leave()}
-                  disabled={busy}
-                >
-                  {t("fpl.leave_league")}
-                </UiButton>
+                isOwner ? (
+                  <LeagueInviteCard leagueId={leagueQ.data.id} hint={leagueQ.data.inviteCodeHint} />
+                ) : (
+                  <UiButton
+                    variant="outline"
+                    className={cn("mt-6 border-[color:var(--ui-rule-strong)]", ui.tone.default)}
+                    onClick={() => void leave()}
+                    disabled={busy}
+                  >
+                    {t("fpl.leave_league")}
+                  </UiButton>
+                )
               ) : null}
             </>
           ) : (

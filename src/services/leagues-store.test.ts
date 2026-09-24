@@ -58,6 +58,21 @@ describe("leaguesStore", () => {
     expect(() => leaguesStore.leave(created.id)).toThrow(LEAGUE_ERROR.NOT_CREATOR);
   });
 
+  it("creator can replace the invite code; the old one is gone", () => {
+    const created = leaguesStore.create("Tanger Tides");
+    const code = leaguesStore.resetCode(created.id);
+    expect(code).toMatch(/^BOT-[A-Z0-9]{5}$/);
+    expect(code).not.toBe(created.code);
+    expect(leaguesStore.get(created.id)?.code).toBe(code);
+  });
+
+  it("only creator can replace the invite code", () => {
+    const joined = leaguesStore.join("BOT-RRRRR");
+    expect(() => leaguesStore.resetCode(joined.id)).toThrow(LEAGUE_ERROR.NOT_CREATOR);
+    expect(leaguesStore.get(joined.id)?.code).toBe("BOT-RRRRR");
+    expect(() => leaguesStore.resetCode("missing")).toThrow(LEAGUE_ERROR.NOT_FOUND);
+  });
+
   it("only creator can delete", () => {
     const joined = leaguesStore.join("BOT-QQQQQ");
     expect(() => leaguesStore.delete(joined.id)).toThrow(LEAGUE_ERROR.NOT_CREATOR);

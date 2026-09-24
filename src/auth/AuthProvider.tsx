@@ -9,8 +9,15 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { authService, type AuthSession, type AuthStatus, type AuthUser } from "@/services/auth";
+import {
+  AUTH_MODE,
+  authService,
+  type AuthSession,
+  type AuthStatus,
+  type AuthUser,
+} from "@/services/auth";
 import { useI18n } from "@/i18n/provider";
+import { fantasyKeyOwner } from "@/services/fantasy-data-source";
 import { cleanupOwnedFantasyOnSignOut } from "@/services/fantasy-signout-cleanup";
 import { fetchAccountStanding, rememberSuspension } from "@/services/account-standing";
 
@@ -66,12 +73,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Sign-out / account-switch cleanup: purge owned Fantasy cache + drafts for
-  // the outgoing UID. Public caches and guest local prototype data untouched.
+  // the outgoing UID. Public caches and guest local prototype data untouched,
+  // and so are the queries the incoming identity has already started.
   useEffect(() => {
     const nextUid = session.user?.id ?? null;
     const prev = prevUidRef.current;
     if (prev && prev !== nextUid) {
-      cleanupOwnedFantasyOnSignOut({ qc, uid: prev });
+      cleanupOwnedFantasyOnSignOut({
+        qc,
+        uid: prev,
+        keepOwner: fantasyKeyOwner({ authMode: AUTH_MODE, userId: nextUid }),
+      });
     }
     prevUidRef.current = nextUid;
   }, [session.user?.id, qc]);

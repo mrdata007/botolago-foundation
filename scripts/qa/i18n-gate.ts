@@ -375,7 +375,12 @@ export const BASELINES: Baselines = {
   // "Mes clubs" heading is a new key (`profile.clubs.title`), not a rewording
   // of the still-unused `profile.followed_clubs`. W3 251 -> 259.
   // With Lanes 1, 2, 4 and 5: 250 + 8 = 258.
-  W3: 258,
+  //
+  // League invite code reset: the owner's confirm step on the league page
+  // gives `common.cancel` its first call site (-1). The seven new
+  // `fantasy.leagues.*` keys are each referenced by a literal call, so nothing
+  // is orphaned in exchange, and W1, W2 and W4 do not move. W3 258 -> 257.
+  W3: 257,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

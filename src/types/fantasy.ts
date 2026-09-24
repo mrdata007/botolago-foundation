@@ -81,6 +81,12 @@ export interface League {
   score: number;
   leaderName?: string;
   code?: string;
+  /**
+   * The last four characters of a private league's current invite code. The
+   * full code is stored only as a digest and cannot be shown again; the hint
+   * lets an owner tell whether the code they shared is still the live one.
+   */
+  inviteCodeHint?: string;
   role?: "owner" | "admin" | "member" | "creator";
 }
 

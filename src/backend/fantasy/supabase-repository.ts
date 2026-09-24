@@ -7,6 +7,7 @@ import {
   fantasyGameweekPageSchema,
   fantasyGameweekSummarySchema,
   fantasyHistoryPageSchema,
+  fantasyLeagueInviteCodeSchema,
   fantasyLeaguePageSchema,
   fantasyLeagueStandingPageSchema,
   fantasyOverallStandingPageSchema,
@@ -352,6 +353,15 @@ export class SupabaseFantasyRepository implements FantasyRepository {
       p_team_id: teamId,
     });
     check(error);
+  }
+
+  async resetLeagueInviteCode(leagueId: string, teamId: string, _context: RepositoryContext) {
+    const { data, error } = await getFantasyApi().rpc("reset_fantasy_league_invite_code", {
+      p_league_id: leagueId,
+      p_team_id: teamId,
+    });
+    check(error);
+    return parse(fantasyLeagueInviteCodeSchema, data);
   }
 
   async getTopPlayers(gameweekId: string, _context: RepositoryContext) {

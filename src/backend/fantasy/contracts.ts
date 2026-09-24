@@ -162,6 +162,17 @@ export type FantasyLeagueDto = z.infer<typeof fantasyLeagueSchema>;
 
 export const fantasyLeaguePageSchema = z.object({ items: z.array(fantasyLeagueSchema) });
 
+/**
+ * The answer of `api.reset_fantasy_league_invite_code`: the league's new invite
+ * code, in plaintext, exactly once. The database keeps only its digest, so this
+ * response is the one place the new code can be read — show it, never cache it.
+ */
+export const fantasyLeagueInviteCodeSchema = z.object({
+  leagueId: postgresUuidSchema,
+  inviteCode: z.string().min(1),
+});
+export type FantasyLeagueInviteCodeDto = z.infer<typeof fantasyLeagueInviteCodeSchema>;
+
 export const fantasyLeagueStandingPageSchema = z.object({
   league: z.object({
     id: postgresUuidSchema,
@@ -614,6 +625,15 @@ export interface FantasyRepository {
   ): Promise<unknown>;
   leaveLeague(leagueId: string, teamId: string, context: RepositoryContext): Promise<void>;
   archiveLeague(leagueId: string, teamId: string, context: RepositoryContext): Promise<void>;
+  /**
+   * Replaces a private league's invite code; the old code stops working at
+   * once. Owner only — anyone else gets `league_access_denied`.
+   */
+  resetLeagueInviteCode(
+    leagueId: string,
+    teamId: string,
+    context: RepositoryContext,
+  ): Promise<FantasyLeagueInviteCodeDto>;
   getTopPlayers(
     gameweekId: string,
     context: RepositoryContext,
