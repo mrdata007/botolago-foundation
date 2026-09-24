@@ -19,9 +19,11 @@ import { Route as FantasyRouteImport } from './routes/fantasy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PrizesIndexRouteImport } from './routes/prizes.index'
 import { Route as MatchesIndexRouteImport } from './routes/matches.index'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
+import { Route as PrizesTermsRouteImport } from './routes/prizes.terms'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
 import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
 import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
@@ -46,6 +48,7 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-pas
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminSecurityRouteImport } from './routes/admin.security'
+import { Route as AdminPrizesRouteImport } from './routes/admin.prizes'
 import { Route as AdminNewsRouteImport } from './routes/admin.news'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
@@ -110,6 +113,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrizesIndexRoute = PrizesIndexRouteImport.update({
+  id: '/prizes/',
+  path: '/prizes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MatchesIndexRoute = MatchesIndexRouteImport.update({
   id: '/matches/',
   path: '/matches/',
@@ -124,6 +132,11 @@ const ProfileSecurityRoute = ProfileSecurityRouteImport.update({
   id: '/security',
   path: '/security',
   getParentRoute: () => ProfileRoute,
+} as any)
+const PrizesTermsRoute = PrizesTermsRouteImport.update({
+  id: '/prizes/terms',
+  path: '/prizes/terms',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
   id: '/$articleId',
@@ -245,6 +258,11 @@ const AdminSecurityRoute = AdminSecurityRouteImport.update({
   path: '/security',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPrizesRoute = AdminPrizesRouteImport.update({
+  id: '/prizes',
+  path: '/prizes',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminNewsRoute = AdminNewsRouteImport.update({
   id: '/news',
   path: '/news',
@@ -331,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
+  '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
@@ -355,9 +374,11 @@ export interface FileRoutesByFullPath {
   '/fantasy/transfers': typeof FantasyTransfersRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
+  '/prizes/': typeof PrizesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
@@ -382,6 +403,7 @@ export interface FileRoutesByTo {
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
+  '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
@@ -406,9 +428,11 @@ export interface FileRoutesByTo {
   '/fantasy/transfers': typeof FantasyTransfersRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/fantasy': typeof FantasyIndexRoute
   '/matches': typeof MatchesIndexRoute
+  '/prizes': typeof PrizesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
@@ -435,6 +459,7 @@ export interface FileRoutesById {
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
+  '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
@@ -459,9 +484,11 @@ export interface FileRoutesById {
   '/fantasy/transfers': typeof FantasyTransfersRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
+  '/prizes/': typeof PrizesIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
@@ -489,6 +516,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/audit'
     | '/admin/news'
+    | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
     | '/auth/callback'
@@ -513,9 +541,11 @@ export interface FileRouteTypes {
     | '/fantasy/transfers'
     | '/matches/$matchId'
     | '/news/$articleId'
+    | '/prizes/terms'
     | '/profile/security'
     | '/fantasy/'
     | '/matches/'
+    | '/prizes/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/news/$articleEditionId'
@@ -540,6 +570,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/audit'
     | '/admin/news'
+    | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
     | '/auth/callback'
@@ -564,9 +595,11 @@ export interface FileRouteTypes {
     | '/fantasy/transfers'
     | '/matches/$matchId'
     | '/news/$articleId'
+    | '/prizes/terms'
     | '/profile/security'
     | '/fantasy'
     | '/matches'
+    | '/prizes'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/news/$articleEditionId'
@@ -592,6 +625,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/audit'
     | '/admin/news'
+    | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
     | '/auth/callback'
@@ -616,9 +650,11 @@ export interface FileRouteTypes {
     | '/fantasy/transfers'
     | '/matches/$matchId'
     | '/news/$articleId'
+    | '/prizes/terms'
     | '/profile/security'
     | '/fantasy/'
     | '/matches/'
+    | '/prizes/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/news/$articleEditionId'
@@ -643,7 +679,9 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
+  PrizesTermsRoute: typeof PrizesTermsRoute
   MatchesIndexRoute: typeof MatchesIndexRoute
+  PrizesIndexRoute: typeof PrizesIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
 }
@@ -720,6 +758,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/prizes/': {
+      id: '/prizes/'
+      path: '/prizes'
+      fullPath: '/prizes/'
+      preLoaderRoute: typeof PrizesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/matches/': {
       id: '/matches/'
       path: '/matches'
@@ -740,6 +785,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/profile/security'
       preLoaderRoute: typeof ProfileSecurityRouteImport
       parentRoute: typeof ProfileRoute
+    }
+    '/prizes/terms': {
+      id: '/prizes/terms'
+      path: '/prizes/terms'
+      fullPath: '/prizes/terms'
+      preLoaderRoute: typeof PrizesTermsRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/news/$articleId': {
       id: '/news/$articleId'
@@ -909,6 +961,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSecurityRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/prizes': {
+      id: '/admin/prizes'
+      path: '/prizes'
+      fullPath: '/admin/prizes'
+      preLoaderRoute: typeof AdminPrizesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/news': {
       id: '/admin/news'
       path: '/news'
@@ -1033,6 +1092,7 @@ interface AdminRouteChildren {
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminAuditRoute: typeof AdminAuditRoute
   AdminNewsRoute: typeof AdminNewsRouteWithChildren
+  AdminPrizesRoute: typeof AdminPrizesRoute
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminStaffRoute: typeof AdminStaffRouteWithChildren
 }
@@ -1041,6 +1101,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminAuditRoute: AdminAuditRoute,
   AdminNewsRoute: AdminNewsRouteWithChildren,
+  AdminPrizesRoute: AdminPrizesRoute,
   AdminSecurityRoute: AdminSecurityRoute,
   AdminStaffRoute: AdminStaffRouteWithChildren,
 }
@@ -1168,7 +1229,9 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   MatchesMatchIdRoute: MatchesMatchIdRoute,
+  PrizesTermsRoute: PrizesTermsRoute,
   MatchesIndexRoute: MatchesIndexRoute,
+  PrizesIndexRoute: PrizesIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
 }

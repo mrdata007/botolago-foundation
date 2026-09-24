@@ -38,3 +38,8 @@ export const loadAdminNewsWriteRouteAccess = createServerFn({ method: "POST" }).
     return adminRouteStateSchema.parse(await loadAdminRouteAccessForPermission("editorial.write"));
   },
 );
+
+export const loadAdminPrizesRouteAccess = createServerFn({ method: "POST" }).handler(async () => {
+  const { loadAdminRouteAccessForPermission } = await import("./route-access.server");
+  return adminRouteStateSchema.parse(await loadAdminRouteAccessForPermission("prizes.manage"));
+});

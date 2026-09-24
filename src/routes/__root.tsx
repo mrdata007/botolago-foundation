@@ -18,6 +18,7 @@ import { I18nProvider, useI18n } from "@/i18n/provider";
 import { SplashScreen } from "@/components/splash/SplashScreen";
 import { SPLASH_INIT_SCRIPT } from "@/components/splash/launch-splash";
 import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
+import { markSplashDone } from "@/lib/launch-sequence";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
@@ -316,6 +317,13 @@ function RootComponent() {
 function LaunchGate() {
   const { hasChosen, isHydrated } = useI18n();
   const [splashDone, setSplashDone] = useState(false);
+
+  // Arrival dialogs of other pages (the prize welcome) wait for this; see
+  // src/lib/launch-sequence.ts. `splashDone` only turns true after mount, once
+  // the splash has left or was never up, so it can be announced as it is.
+  useEffect(() => {
+    if (splashDone) markSplashDone();
+  }, [splashDone]);
 
   const showLanguage = splashDone && isHydrated && !hasChosen;
 

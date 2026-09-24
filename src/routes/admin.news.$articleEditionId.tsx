@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, Eye, EyeOff, ImagePlus, Loader2, Save } from "lucide-react";
+import { Eye, EyeOff, ImagePlus, Loader2, Save } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentProps, ReactNode } from "react";
 import { loadAdminNewsReadRouteAccess } from "@/backend/admin/route-access.functions";
@@ -16,6 +16,7 @@ import {
   describeEditorialError,
   describeScheduledAt,
   EDITOR_REVISION_LIMIT,
+  formatEditorialTimestamp,
   revisionDifferences,
   revisionToEditorFields,
   transitionAndReload,
@@ -36,8 +37,9 @@ import {
 } from "@/backend/news/editorial-markdown";
 import {
   ADMIN_CARD_CLASS,
-  ADMIN_LABEL_CLASS,
   ADMIN_PANEL_CLASS,
+  AdminBackLink,
+  AdminDate,
   AdminDatum,
   AdminNotice,
 } from "@/components/admin/AdminSurfaces";
@@ -77,6 +79,36 @@ const NEXT_STATUSES: Record<EditorialStatus, readonly EditorialStatus[]> = {
   unpublished: ["draft", "published", "archived"],
   rejected: ["draft"],
   archived: ["draft"],
+};
+
+/**
+ * A transition button says what it DOES: "Publier", not the status word
+ * "Publié" it leads to. The status words stay on the badges.
+ */
+const TRANSITION_LABELS: Record<EditorialStatus, { fr: string; ar: string }> = {
+  draft: { fr: "Remettre en brouillon", ar: "إرجاع إلى المسودة" },
+  in_review: { fr: "Envoyer en relecture", ar: "إرسال للمراجعة" },
+  scheduled: { fr: "Programmer", ar: "جدولة" },
+  published: { fr: "Publier", ar: "نشر" },
+  unpublished: { fr: "Dépublier", ar: "إلغاء النشر" },
+  archived: { fr: "Archiver", ar: "أرشفة" },
+  rejected: { fr: "Refuser", ar: "رفض" },
+};
+
+/**
+ * The step forward from each status, drawn as the one gradient button: the
+ * action gradient is the page's call to action, and four of them side by
+ * side said nothing about which one is next. The rest are outline, and the
+ * two that end an article's run (refuse, archive) are `destructive`. A
+ * published article has no step forward, so nothing there is the gradient.
+ */
+const FORWARD_TRANSITION: Partial<Record<EditorialStatus, EditorialStatus>> = {
+  draft: "in_review",
+  in_review: "published",
+  scheduled: "published",
+  unpublished: "published",
+  rejected: "draft",
+  archived: "draft",
 };
 
 // Mirrors api.editorial_update_article's own guard exactly (news_article_not_editable):
@@ -188,13 +220,15 @@ function EditorSection({
 }) {
   return (
     <section className={cn(ADMIN_CARD_CLASS, "p-4 sm:p-5")} aria-label={label} data-testid={testId}>
-      <h3 className={ADMIN_LABEL_CLASS}>{heading}</h3>
-      {/* `leading-5` is dropped rather than converted: every ramp step carries
-          its own leading token now (BG-0124), and that token is redeclared for
-          Arabic — 1.95 against the Latin 1.4 at the same pixel size — which a
-          literal never was. */}
+      {/* The card's heading in the display face, as the app titles a block:
+          `ui.display.header` is the 19px step, a size under the page title. */}
+      <h3 className={cn(ui.display.header, ui.tone.default)}>{heading}</h3>
+      {/* Every ramp step carries its own leading token (BG-0124), and that
+          token is redeclared for Arabic — 1.95 against the Latin 1.4. */}
       {hint && <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>{hint}</p>}
-      <div className="mt-4 grid gap-4">{children}</div>
+      {/* `grid-cols-1` for the reason given on the editor's own grid below:
+          the column is the card's width, never its widest child's. */}
+      <div className="mt-4 grid grid-cols-1 gap-4">{children}</div>
     </section>
   );
 }
@@ -244,12 +278,19 @@ function AdminNewsEditRoute() {
   } | null>(null);
   const [dirty, setDirty] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  // What the last action said, and whether it went wrong: "Enregistré." used
+  // to arrive in the same amber box as a refusal. A confirmation passes
+  // `"info"`; anything else keeps the caution tone.
+  const [notice, setNotice] = useState<{ text: string; tone: "info" | "alert" } | null>(null);
+  const setMessage = (text: string | null, tone: "info" | "alert" = "alert") =>
+    setNotice(text === null ? null : { text, tone });
   const [busy, setBusy] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const bodyImageInputRef = useRef<HTMLInputElement | null>(null);
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const previewRef = useRef<HTMLElement | null>(null);
 
   const load = async () => {
     if (access.state !== "authorized") return;
@@ -308,6 +349,25 @@ function AdminNewsEditRoute() {
       : "Des modifications non enregistrées seront perdues. Quitter la page ?",
   );
 
+  // Opening the preview brings it into view. It renders at the foot of the
+  // form, under the revision history -- measured 2,700px down on a desktop and
+  // 3,400px on a phone -- so the only visible effect of "Aperçu" used to be
+  // its own label changing. The offset clears the sticky toolbar, which would
+  // otherwise sit on the preview's first lines.
+  useEffect(() => {
+    const preview = previewRef.current;
+    if (!showPreview || !preview) return;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({
+      top:
+        preview.getBoundingClientRect().top +
+        window.scrollY -
+        (toolbarRef.current?.offsetHeight ?? 0) -
+        16,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
+  }, [showPreview]);
+
   const markDirty =
     <T,>(setter: (value: T) => void) =>
     (value: T) => {
@@ -342,7 +402,7 @@ function AdminNewsEditRoute() {
       );
       setArticle({ ...article, updatedAt: result.updatedAt, title, subtitle: subtitle || null });
       setDirty(false);
-      setMessage(rtl ? "تم الحفظ." : "Enregistré.");
+      setMessage(rtl ? "تم الحفظ." : "Enregistré.", "info");
     } catch (error) {
       const mapped = mapNewsError(error as Error);
       setMessage(
@@ -414,6 +474,8 @@ function AdminNewsEditRoute() {
           : rtl
             ? `الحالة الجديدة: ${statusLabel}. أعد تحميل الصفحة قبل الحفظ.`
             : `Nouveau statut : ${statusLabel}. Rechargez la page avant d’enregistrer.`,
+        // A re-read that failed leaves a stale save token: that one is a caution.
+        outcome.article ? "info" : "alert",
       );
     } catch (error) {
       setMessage(
@@ -436,7 +498,7 @@ function AdminNewsEditRoute() {
         { articleEditionId: article.id, placementType },
         adminRepositoryContext(access),
       );
-      setMessage(rtl ? "تم تحديد الموضع." : "Placement défini.");
+      setMessage(rtl ? "تم تحديد الموضع." : "Placement défini.", "info");
     } catch (error) {
       setMessage(
         `${rtl ? "تعذّر تحديد الموضع" : "Placement impossible"}: ${mapNewsError(error as Error).code}`,
@@ -516,6 +578,7 @@ function AdminNewsEditRoute() {
       setDirty(true);
       setMessage(
         rtl ? "تم رفع الصورة. احفظ لتطبيقها." : "Image téléversée. Enregistrez pour l’appliquer.",
+        "info",
       );
     } catch {
       setMessage(rtl ? "تعذّر رفع الصورة." : "Téléversement de l’image impossible.");
@@ -563,6 +626,7 @@ function AdminNewsEditRoute() {
         rtl
           ? "تم إدراج الصورة في موضع المؤشر. احفظ لتطبيقها."
           : "Image insérée à la position du curseur. Enregistrez pour l’appliquer.",
+        "info",
       );
       // Restore the caret after React has re-rendered the textarea value.
       window.requestAnimationFrame(() => {
@@ -614,6 +678,7 @@ function AdminNewsEditRoute() {
       rtl
         ? `تم تحميل النسخة #${revision.revisionNumber} (العنوان والملخص والمحتوى). راجعها ثم احفظ.`
         : `Version n°${revision.revisionNumber} chargée (titre, résumé, contenu). Vérifiez-la puis enregistrez.`,
+      "info",
     );
   };
   // The prose fields follow the ARTICLE's language, not the console's, so an
@@ -630,34 +695,40 @@ function AdminNewsEditRoute() {
           : "L’enregistrement est toujours explicite. Les transitions de statut sont arbitrées côté serveur selon votre rôle réel."
       }
       testId="admin-news-edit"
+      layout="detail"
+      back={
+        <AdminBackLink
+          to="/admin/news"
+          label={rtl ? "كل المقالات" : "Tous les articles"}
+          testId="admin-news-back-to-list"
+        />
+      }
     >
       {access.state === "authorized" && article && (
-        <div className="grid gap-4">
-          {/* `-ms-3` pulls the ghost button's own inline padding back so the
-              link still starts on the panel's edge, logically, in both
-              directions. */}
-          <UiLinkButton
-            to="/admin/news"
-            variant="ghost"
-            size="sm"
-            className="-ms-3 self-start"
-            data-testid="admin-news-back-to-list"
-          >
-            {/* The arrow is flipped by the ambient direction, never by hand. */}
-            <ArrowLeft className="h-4 w-4" aria-hidden />
-            {rtl ? "كل المقالات" : "Tous les articles"}
-          </UiLinkButton>
-
+        // `grid-cols-1` is a `minmax(0, 1fr)` column, and it is the fix for the
+        // editor running off a phone. A bare `grid` sizes its implicit column
+        // to its widest child's minimum width, so one label that cannot wrap
+        // widened every card on the page: measured at 375px, every card ran
+        // 7px past the console's edge, and at 320px 46px past the screen,
+        // cut off by `overflow-x: clip` rather than scrollable. The column is
+        // now the panel's width, whatever the content inside it.
+        <div className="grid grid-cols-1 gap-4">
           {/* Identity + the primary action, kept in view while the long form
-              scrolls, so "Enregistrer" is never hunted for.
+              scrolls, so "Enregistrer" is never hunted for. It is a bar lifted
+              off the content it slides over, so it takes the kit's `raised`
+              shadow -- the bottom nav's -- rather than the card's.
 
               `backdrop-blur` is gone. The card surface is `--ui-surface`, an
               opaque colour in both themes, so there was never anything behind
-              it to blur — the filter was paying for a compositor layer to
-              produce no pixels. The kit's card is opaque by design: "one
-              shadow, no glass". */}
+              it to blur. The kit's card is opaque by design: "one shadow, no
+              glass". */}
           <div
-            className={cn("sticky top-0 z-20 p-4", ADMIN_CARD_CLASS)}
+            ref={toolbarRef}
+            className={cn(
+              "sticky top-0 z-20 p-4",
+              ADMIN_CARD_CLASS,
+              "shadow-[var(--ui-shadow-raised)]",
+            )}
             data-testid="admin-news-toolbar"
           >
             <div className="flex flex-wrap items-center gap-2">
@@ -700,15 +771,20 @@ function AdminNewsEditRoute() {
                     className="-ms-3 mt-1"
                     data-testid="admin-news-open-translation"
                   >
-                    {otherLanguage === "ar"
-                      ? rtl
-                        ? "فتح النسخة العربية"
-                        : "Ouvrir l’édition arabe"
-                      : rtl
-                        ? "فتح النسخة الفرنسية"
-                        : "Ouvrir l’édition française"}
-                    {" · "}
-                    {STATUS_LABELS[existing.status][lang]}
+                    {/* May wrap: with the status after it, this label is
+                        wider than the toolbar on a 320px screen, and a `sm`
+                        link keeps its label on one line unless told. */}
+                    <span className="whitespace-normal text-start">
+                      {otherLanguage === "ar"
+                        ? rtl
+                          ? "فتح النسخة العربية"
+                          : "Ouvrir l’édition arabe"
+                        : rtl
+                          ? "فتح النسخة الفرنسية"
+                          : "Ouvrir l’édition française"}
+                      {" · "}
+                      {STATUS_LABELS[existing.status][lang]}
+                    </span>
                   </UiLinkButton>
                 );
               }
@@ -722,13 +798,15 @@ function AdminNewsEditRoute() {
                   className="-ms-3 mt-1"
                   data-testid="admin-news-create-translation"
                 >
-                  {otherLanguage === "ar"
-                    ? rtl
-                      ? "إنشاء النسخة العربية"
-                      : "Créer l’édition arabe"
-                    : rtl
-                      ? "إنشاء النسخة الفرنسية"
-                      : "Créer l’édition française"}
+                  <span className="whitespace-normal text-start">
+                    {otherLanguage === "ar"
+                      ? rtl
+                        ? "إنشاء النسخة العربية"
+                        : "Créer l’édition arabe"
+                      : rtl
+                        ? "إنشاء النسخة الفرنسية"
+                        : "Créer l’édition française"}
+                  </span>
                 </UiLinkButton>
               );
             })()}
@@ -736,9 +814,13 @@ function AdminNewsEditRoute() {
             <span className="mt-2 block">
               <AdminDatum className={cn(ui.text.meta, ui.tone.faint)}>{article.slug}</AdminDatum>
             </span>
+            {/* Side by side at every width: sharing the row on a phone
+                (`flex-1`), at their own width from `sm` up. A `md` button is
+                `w-full`, so `sm:flex-none` alone handed each one the whole
+                row and stacked them as two full-width bars on a desktop. */}
             <div className={cn("mt-3 flex flex-wrap gap-2 pt-3", ui.rule.blockStart)}>
               <UiButton
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:w-auto sm:flex-none"
                 disabled={busy || !dirty || !isEditable}
                 onClick={() => void save()}
                 data-testid="admin-news-save"
@@ -758,7 +840,7 @@ function AdminNewsEditRoute() {
               </UiButton>
               <UiButton
                 variant="outline"
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:w-auto sm:flex-none"
                 onClick={() => setShowPreview((value) => !value)}
                 data-testid="admin-news-preview-toggle"
               >
@@ -778,7 +860,7 @@ function AdminNewsEditRoute() {
             </div>
           </div>
 
-          {message && <AdminNotice tone="alert">{message}</AdminNotice>}
+          {notice && <AdminNotice tone={notice.tone}>{notice.text}</AdminNotice>}
 
           {imported && (
             <AdminNotice tone="alert">
@@ -790,15 +872,14 @@ function AdminNewsEditRoute() {
             </AdminNotice>
           )}
 
+          {/* An information notice rather than a grey panel: on the page,
+              between white cards, a sunken block read as a disabled field. */}
           {!isEditable && (
-            <p
-              className={cn(ADMIN_PANEL_CLASS, "px-4 py-3", ui.text.meta, ui.tone.muted)}
-              data-testid="admin-news-not-editable"
-            >
+            <AdminNotice testId="admin-news-not-editable">
               {rtl
                 ? "لا يمكن تعديل المحتوى في هذه الحالة. غيّر الحالة أولاً إن كان ذلك ممكناً."
                 : "Le contenu n’est pas modifiable dans ce statut. Changez d’abord de statut si possible."}
-            </p>
+            </AdminNotice>
           )}
 
           <EditorSection
@@ -852,7 +933,7 @@ function AdminNewsEditRoute() {
             }
             testId="admin-news-section-body"
           >
-            <div className="grid gap-2">
+            <div className="grid grid-cols-1 gap-2">
               {/* A comfortable writing surface: room to grow, resizable
                   vertically (the frame supplies `resize-y`), and typed in the
                   article's own direction. `min-h-80` stays a literal — it is
@@ -900,9 +981,21 @@ function AdminNewsEditRoute() {
                   data-testid="admin-news-insert-body-image"
                 >
                   <ImagePlus className="h-4 w-4" aria-hidden />
-                  {rtl ? "إدراج صورة في المحتوى" : "Insérer une image dans le contenu"}
+                  {/* "… dans le contenu" is gone from the label: the button
+                      sits under the body field, in the Contenu card, beside a
+                      hint that says where the image goes. At its old length a
+                      `sm` pill cannot wrap, and at 320px its label ran out
+                      of the pill on both sides. `whitespace-normal` is the
+                      fallback for a larger text setting: two lines inside
+                      the pill rather than text outside it. */}
+                  <span className="whitespace-normal">
+                    {rtl ? "إدراج صورة" : "Insérer une image"}
+                  </span>
                 </UiButton>
-                <span className={cn("min-w-0 flex-1", ui.text.meta, ui.tone.muted)}>
+                {/* `basis-48` rather than a zero basis: the hint drops under
+                    the button when the two do not fit side by side, instead
+                    of being squeezed into a one-word column beside it. */}
+                <span className={cn("min-w-0 grow basis-48", ui.text.meta, ui.tone.muted)}>
                   {rtl
                     ? "تُدرَج الصورة عند موضع المؤشر بصيغة ‎![نص بديل](رابط)‎، ولا تُقبل إلا الروابط الآمنة (https)."
                     : "L’image est insérée à la position du curseur au format ![texte alternatif](lien) ; seuls les liens https sont acceptés."}
@@ -922,11 +1015,12 @@ function AdminNewsEditRoute() {
           >
             {heroPreview && (
               <figure className="grid gap-1" data-testid="admin-news-hero-preview">
-                {/* Fixed ratio so the form does not jump while the file loads. */}
+                {/* Fixed ratio so the form does not jump while the file loads,
+                    on the 10px step the design system gives a thumbnail. */}
                 <img
                   src={heroPreview.url}
                   alt={heroPreview.alt}
-                  className={cn("aspect-[16/10] w-full max-w-sm object-cover", ui.radius.control)}
+                  className={cn("aspect-[16/10] w-full max-w-sm object-cover", ui.radius.track)}
                 />
                 {(heroPreview.caption || heroPreview.credit) && (
                   <figcaption dir={articleDir} className={cn(ui.text.meta, ui.tone.muted)}>
@@ -937,7 +1031,7 @@ function AdminNewsEditRoute() {
                 )}
               </figure>
             )}
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <UiInput
                 label={rtl ? "النص البديل (إلزامي)" : "Texte alternatif (obligatoire)"}
                 value={heroAlt}
@@ -964,25 +1058,17 @@ function AdminNewsEditRoute() {
                 data-testid="admin-news-hero-credit"
               />
             </div>
-            {/* The `file:` pseudo-element is the button the browser draws
-                inside the control, so it is styled here rather than through a
-                primitive — the kit has no file field. Its colours are tokens
-                now, its 44px comes from `--ui-tap-min` rather than a literal
-                `min-h-11`, and its radius is the control step (`rounded-lg`
-                is 8px, which is `--ui-radius-segment`, the selected-tab
-                step — not a button radius).
-
-                It also gains `ui.focus`. It had no focus ring at all: the one
-                control on this screen that opens a file picker was invisible
-                to a keyboard, while every button beside it drew one. */}
+            {/* The browser's own file control wrote "Choose File / No file
+                chosen" in the BROWSER's language whatever the console's, and
+                could not wear the kit's pill. So the input is hidden -- it
+                keeps the browser hook and the rule that alt text comes first
+                -- and a kit button opens it, as the body image does. */}
             <input
               ref={fileInputRef}
               type="file"
               accept={ACCEPTED_IMAGE_TYPES}
               disabled={!isEditable || busy || !heroAlt.trim()}
-              aria-label={
-                rtl ? "اختيار ملف الصورة الرئيسية" : "Choisir le fichier de l’image à la une"
-              }
+              className="hidden"
               data-testid="admin-news-hero-input"
               onChange={(event) => {
                 const file = event.target.files?.[0];
@@ -990,19 +1076,26 @@ function AdminNewsEditRoute() {
                 event.target.value = "";
                 if (file) void uploadHero(file);
               }}
-              className={cn(
-                "block w-full",
-                ui.text.body,
-                ui.tone.muted,
-                ui.focus,
-                "file:me-3 file:min-h-[var(--ui-tap-min)] file:cursor-pointer file:px-4 file:py-2",
-                "file:rounded-[var(--ui-radius-control)] file:border file:border-[color:var(--ui-rule)]",
-                "file:bg-[color:var(--ui-surface-sunken)] file:text-[color:var(--ui-on-surface)]",
-                "file:text-[length:var(--ui-text-meta)] file:[font-weight:var(--ui-weight-heavy)]",
-                "hover:file:bg-[color:var(--ui-surface)]",
-                "disabled:opacity-50",
-              )}
             />
+            <UiButton
+              variant="outline"
+              size="sm"
+              className="justify-self-start"
+              disabled={!isEditable || busy || !heroAlt.trim()}
+              onClick={() => fileInputRef.current?.click()}
+              data-testid="admin-news-hero-pick"
+            >
+              <ImagePlus className="h-4 w-4" aria-hidden />
+              <span className="whitespace-normal">
+                {heroPreview
+                  ? rtl
+                    ? "استبدال الصورة"
+                    : "Remplacer l’image"
+                  : rtl
+                    ? "اختيار صورة"
+                    : "Choisir une image"}
+              </span>
+            </UiButton>
             {heroAssetId && (
               <p className={cn(ui.text.meta, ui.tone.muted)}>
                 {rtl ? "معرّف الوسائط الحالي" : "Identifiant média actuel"}
@@ -1032,7 +1125,7 @@ function AdminNewsEditRoute() {
             }
             testId="admin-news-section-seo"
           >
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <UiInput
                 label={rtl ? "عنوان SEO" : "Titre SEO"}
                 hint={`${seoTitle.length} / 70`}
@@ -1070,14 +1163,10 @@ function AdminNewsEditRoute() {
                 data-testid="admin-news-scheduled-for"
               >
                 {rtl ? "سيُنشر تلقائياً في: " : "Publication automatique prévue le "}
-                <AdminDatum mono={false}>
-                  {
-                    describeScheduledAt(
-                      article.scheduledAt,
-                      article.language === "ar" ? "ar" : lang,
-                    ).local
-                  }
-                </AdminDatum>
+                {/* In the console's language, like the sentence it ends: it
+                    used to follow the ARTICLE's, which put an Arabic date
+                    inside this French sentence for every Arabic edition. */}
+                <AdminDate>{describeScheduledAt(article.scheduledAt, lang).local}</AdminDate>
                 <span className={cn("block", ui.text.meta, ui.tone.muted)}>
                   <AdminDatum>{describeScheduledAt(article.scheduledAt, lang).utc}</AdminDatum>
                   {rtl
@@ -1098,15 +1187,20 @@ function AdminNewsEditRoute() {
             )}
             <div className="flex flex-wrap gap-2">
               {nextStatuses.map((next) => (
-                // `destructive` is the kit's filled negative, and it replaces
-                // `adminDangerButtonClass` — a rose fill under a literal
-                // `text-white`. That pairing measured 2.31:1 in the dark
-                // theme, which is the whole reason `--ui-on-negative` exists;
-                // the variant picks the foreground the fill can carry in each
-                // theme rather than assuming white.
+                // The step forward is the gradient, the ones that end the
+                // article's run are `destructive` -- the kit's filled
+                // negative, which picks the foreground its fill can carry in
+                // each theme (white on it measured 2.31:1 in dark) -- and
+                // every other move is outline.
                 <UiButton
                   key={next}
-                  variant={next === "rejected" || next === "archived" ? "destructive" : "gradient"}
+                  variant={
+                    next === "rejected" || next === "archived"
+                      ? "destructive"
+                      : next === FORWARD_TRANSITION[article.status]
+                        ? "gradient"
+                        : "outline"
+                  }
                   size="sm"
                   disabled={busy || (next === "scheduled" && !scheduledAtLocal)}
                   onClick={() => void transition(next)}
@@ -1116,7 +1210,7 @@ function AdminNewsEditRoute() {
                     ? rtl
                       ? "إعادة الجدولة"
                       : "Reprogrammer"
-                    : STATUS_LABELS[next][lang]}
+                    : TRANSITION_LABELS[next][lang]}
                 </UiButton>
               ))}
             </div>
@@ -1175,22 +1269,28 @@ function AdminNewsEditRoute() {
                   <UiBadge {...STATUS_TONES[revision.status]}>
                     {STATUS_LABELS[revision.status][lang]}
                   </UiBadge>
-                  {/* A formatted timestamp is LTR data. */}
-                  <AdminDatum mono={false}>
-                    {new Date(revision.createdAt).toLocaleString(lang)}
-                  </AdminDatum>
+                  {/* A formatted date is text in the reader's language, not
+                      LTR data, so <AdminDate>: forced LTR, the Arabic one was
+                      drawn out of order. */}
+                  <AdminDate>{formatEditorialTimestamp(revision.createdAt, lang)}</AdminDate>
                   {(() => {
                     const differs = revisionDifferences(revision, currentProse);
                     return (
                       <>
-                        <span className="min-w-0 flex-1" data-testid="admin-news-revision-diff">
+                        {/* A real basis, for the reason on the image hint
+                            above: on a phone this line wraps rather than
+                            standing one word wide beside the button. */}
+                        <span
+                          className="min-w-0 grow basis-32"
+                          data-testid="admin-news-revision-diff"
+                        >
                           {differs.length === 0
                             ? rtl
                               ? "مطابقة للنص الحالي"
                               : "Identique au texte actuel"
                             : `${rtl ? "يختلف" : "Diffère"} : ${differs
                                 .map((field) => PROSE_FIELD_LABELS[field][lang])
-                                .join(", ")}`}
+                                .join(rtl ? "، " : ", ")}`}
                         </span>
                         <UiButton
                           variant="outline"
@@ -1216,24 +1316,39 @@ function AdminNewsEditRoute() {
 
           {showPreview && (
             <section
+              ref={previewRef}
               aria-label={rtl ? "معاينة" : "Aperçu"}
               className={cn(ADMIN_CARD_CLASS, "p-4 sm:p-6")}
               data-testid="admin-news-preview"
             >
-              <h3 className={ADMIN_LABEL_CLASS}>{rtl ? "معاينة" : "Aperçu"}</h3>
+              <h3 className={cn(ui.display.header, ui.tone.default)}>
+                {rtl ? "معاينة" : "Aperçu"}
+              </h3>
               {/* The preview renders in the ARTICLE's direction, so an Arabic
                   article is proofread exactly as a reader will see it. */}
               <div dir={articleDir} className={cn("mt-4 pt-4", ui.rule.blockStart)}>
-                {/* `text-xl sm:text-2xl` collapses to one ramp step. The ramp
-                    has no 24px, and the responsive bump was never a decision
-                    anyone made — the two literals are one step apart in
-                    Tailwind's scale, not in this product's. `ui.text.title`
-                    (19px/800) is the step the resting size was; the reader's
-                    own headline is `ui.text.hero`, which is deliberately NOT
-                    borrowed here: this headline sits inside a console card
-                    whose section labels are 12px, and a 34px headline in it
-                    would read as chrome rather than as content. */}
-                <h1 className={cn(ui.text.title, ui.tone.default)}>{title}</h1>
+                {/* The cover first, as the article page opens with it, with its
+                    caption and credit under it. A plain block rather than a
+                    <figure>: in the preview, `figure img` is the body's own
+                    images, which the CMS journey counts. */}
+                {heroPreview && (
+                  <div className="mb-4">
+                    <img
+                      src={heroPreview.url}
+                      alt={heroPreview.alt}
+                      className={cn("aspect-[2/1] w-full object-cover", ui.radius.card)}
+                    />
+                    {(heroPreview.caption || heroPreview.credit) && (
+                      <p className={cn("mt-2", ui.text.micro, ui.tone.muted)}>
+                        {[heroPreview.caption, heroPreview.credit].filter(Boolean).join(" — ")}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {/* The article page's own headline step: the display face at
+                    22px (`ui.display.section`), so the proof reads as the page
+                    will. */}
+                <h1 className={cn(ui.display.section, ui.tone.default)}>{title}</h1>
                 {subtitle && <p className={cn("mt-1", ui.text.body, ui.tone.muted)}>{subtitle}</p>}
                 <div
                   className={cn("editorial-body mt-4 max-w-none", ui.tone.default)}

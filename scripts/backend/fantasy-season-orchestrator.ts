@@ -4,7 +4,12 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import { runCurrentPerformanceBatch } from "./current-season-performances";
-import { runFantasyLifecycle, type FantasyWorkerGateway } from "./fantasy-lifecycle-runner";
+import {
+  evaluateFantasyPrizes,
+  rpcFailure,
+  runFantasyLifecycle,
+  type FantasyWorkerGateway,
+} from "./fantasy-lifecycle-runner";
 
 /**
  * Scheduled Fantasy season orchestrator.
@@ -21,8 +26,16 @@ import { runFantasyLifecycle, type FantasyWorkerGateway } from "./fantasy-lifecy
  *      that has work: an open gameweek past its deadline, a gameweek that is
  *      locked / live / provisional / finalizing, or a finalized gameweek whose
  *      staged successor has not been opened yet.
- *   4. a second calendar pass so the summary reflects the progression.
- *   5. `api.service_fantasy_deadline_watch` — a read-only guard that reports
+ *   4. `api.service_evaluate_fantasy_prizes` — a catch-up for prize winners.
+ *      The worker already evaluates what it has just finalized; this pass picks
+ *      up whatever an interrupted run left behind, including a season's last
+ *      gameweek, which has no successor to bring the worker back. A failure or
+ *      a blocked season degrades the verdict to `waiting`, never `failed`: a
+ *      prize is never a reason to stop the game. Until the prize migration is
+ *      promoted the function does not exist; that is reported as `skipped`
+ *      and leaves the verdict alone.
+ *   5. a second calendar pass so the summary reflects the progression.
+ *   6. `api.service_fantasy_deadline_watch` — a read-only guard that reports
  *      scheduled/open gameweeks whose deadline is approaching while a counting
  *      fixture still carries an unconfirmed placeholder kickoff. Inside the
  *      escalation window the verdict becomes `escalate` and the run exits 1,
@@ -330,6 +343,10 @@ export async function orchestrateFantasySeason(
     }
   }
 
+  const prizes = await evaluateFantasyPrizes((name, args) => gateway.rpc(name, args));
+  if ("error" in prizes || ("blocked" in prizes && prizes.blocked.length > 0))
+    verdict = mergeVerdict(verdict, "waiting");
+
   const after = calendarSyncSchema.parse(
     await gateway.rpc("service_sync_fantasy_calendar", { p_fantasy_season_id: null }),
   );
@@ -387,6 +404,7 @@ export async function orchestrateFantasySeason(
     },
     workers,
     skipped,
+    prizes,
     deadlineWatch,
   };
 }
@@ -513,7 +531,10 @@ if (import.meta.main) {
       async rpc(name, args) {
         const { data, error } = await api.rpc(name, args).abortSignal(AbortSignal.timeout(60000));
         if (error)
-          throw new Error(safeCode(new Error(error.message), "fantasy_orchestrator_rpc_failed"));
+          throw rpcFailure(
+            safeCode(new Error(error.message), "fantasy_orchestrator_rpc_failed"),
+            error.code,
+          );
         return data;
       },
       async ingestPerformances(afterFixtureExternalId) {

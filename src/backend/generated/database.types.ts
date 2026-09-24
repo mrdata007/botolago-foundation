@@ -171,6 +171,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_add_fantasy_prize_winner_note: {
+        Args: { p_idempotency_key: string; p_note: string; p_winner_id: string }
+        Returns: Json
+      }
       admin_approve_request: {
         Args: {
           p_approval_id: string
@@ -282,6 +286,10 @@ export type Database = {
         Returns: Json
       }
       admin_get_approval: { Args: { p_approval_id: string }; Returns: Json }
+      admin_get_fantasy_prize_settings: {
+        Args: { p_season_id?: string }
+        Returns: Json
+      }
       admin_get_owner_bootstrap_readiness: {
         Args: { p_auth_user_id: string }
         Returns: Json
@@ -347,6 +355,17 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_list_fantasy_prize_flags: { Args: never; Returns: Json }
+      admin_list_fantasy_prize_winners: {
+        Args: {
+          p_after_created_at?: string
+          p_after_id?: string
+          p_limit?: number
+          p_status?: string
+        }
+        Returns: Json
+      }
+      admin_list_fantasy_prizes: { Args: never; Returns: Json }
       admin_list_role_catalog: { Args: never; Returns: Json }
       admin_list_staff_assignments: {
         Args: {
@@ -356,6 +375,16 @@ export type Database = {
           p_limit?: number
           p_principal_status?: string
           p_role_name?: string
+        }
+        Returns: Json
+      }
+      admin_override_fantasy_prize_winner: {
+        Args: {
+          p_fantasy_team_id: string
+          p_idempotency_key: string
+          p_reason: string
+          p_username: string
+          p_winner_id: string
         }
         Returns: Json
       }
@@ -412,6 +441,53 @@ export type Database = {
           p_assignment_id: string
           p_idempotency_key: string
           p_reason: string
+        }
+        Returns: Json
+      }
+      admin_save_fantasy_prize: {
+        Args: {
+          p_active: boolean
+          p_description_ar: string
+          p_description_fr: string
+          p_estimated_value_mad: number
+          p_idempotency_key: string
+          p_image_url: string
+          p_name_ar: string
+          p_name_fr: string
+          p_prize_id: string
+          p_reason: string
+          p_sponsor_logo_url: string
+          p_sponsor_name: string
+          p_tier: string
+        }
+        Returns: Json
+      }
+      admin_save_fantasy_prize_settings: {
+        Args: {
+          p_gameweek_count: number
+          p_idempotency_key: string
+          p_mini_league_min_members: number
+          p_reason: string
+          p_season_id: string
+        }
+        Returns: Json
+      }
+      admin_set_fantasy_prize_flag: {
+        Args: {
+          p_flagged: boolean
+          p_idempotency_key: string
+          p_reason: string
+          p_user_id: string
+          p_username: string
+        }
+        Returns: Json
+      }
+      admin_set_fantasy_prize_winner_status: {
+        Args: {
+          p_idempotency_key: string
+          p_note: string
+          p_status: string
+          p_winner_id: string
         }
         Returns: Json
       }
@@ -719,6 +795,15 @@ export type Database = {
         Args: { p_season_id: string; p_through_gameweek_id?: string }
         Returns: Json
       }
+      fantasy_prize_winners: {
+        Args: {
+          p_after_created_at?: string
+          p_after_id?: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      fantasy_prizes: { Args: never; Returns: Json }
       fantasy_rules: { Args: { p_season_id: string }; Returns: Json }
       fantasy_top_players: {
         Args: { p_gameweek_id: string; p_limit?: number }
@@ -1335,6 +1420,10 @@ export type Database = {
           p_gameweek_id: string
           p_limit?: number
         }
+        Returns: Json
+      }
+      service_evaluate_fantasy_prizes: {
+        Args: { p_limit?: number }
         Returns: Json
       }
       service_fantasy_deadline_watch: {
@@ -3408,6 +3497,335 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fantasy_prize_settings: {
+        Row: {
+          created_at: string
+          fantasy_season_id: string
+          gameweek_count: number
+          mini_league_min_members: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fantasy_season_id: string
+          gameweek_count?: number
+          mini_league_min_members?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fantasy_season_id?: string
+          gameweek_count?: number
+          mini_league_min_members?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_prize_settings_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: true
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_prize_skips: {
+        Row: {
+          created_at: string
+          fantasy_season_id: string
+          fantasy_team_id: string
+          id: string
+          league_id: string | null
+          period_key: string
+          points: number
+          reason: Database["app"]["Enums"]["fantasy_prize_skip_reason"]
+          tier: Database["app"]["Enums"]["fantasy_prize_tier"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fantasy_season_id: string
+          fantasy_team_id: string
+          id?: string
+          league_id?: string | null
+          period_key: string
+          points: number
+          reason: Database["app"]["Enums"]["fantasy_prize_skip_reason"]
+          tier: Database["app"]["Enums"]["fantasy_prize_tier"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fantasy_season_id?: string
+          fantasy_team_id?: string
+          id?: string
+          league_id?: string | null
+          period_key?: string
+          points?: number
+          reason?: Database["app"]["Enums"]["fantasy_prize_skip_reason"]
+          tier?: Database["app"]["Enums"]["fantasy_prize_tier"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_prize_skips_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_prize_skips_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_prize_skips_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_prize_skips_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_prize_winners: {
+        Row: {
+          block_number: number | null
+          created_at: string
+          fantasy_season_id: string
+          fantasy_team_id: string
+          first_gameweek_number: number
+          forfeited_at: string | null
+          forfeited_by_principal_id: string | null
+          gameweek_id: string | null
+          id: string
+          last_gameweek_number: number
+          league_id: string | null
+          overridden_at: string | null
+          overridden_by_principal_id: string | null
+          override_of_winner_id: string | null
+          override_reason: string | null
+          paid_at: string | null
+          paid_by_principal_id: string | null
+          period_key: string
+          points: number
+          prize_id: string
+          prize_name_ar: string | null
+          prize_name_fr: string
+          prize_value_mad: number | null
+          runner_up_team_id: string | null
+          status: Database["app"]["Enums"]["fantasy_prize_winner_status"]
+          superseded_by_winner_id: string | null
+          team_created_at: string
+          team_name: string
+          tie_break: Database["app"]["Enums"]["fantasy_prize_tie_break"]
+          tier: Database["app"]["Enums"]["fantasy_prize_tier"]
+          transfers_in_period: number
+          updated_at: string
+          user_id: string
+          verification_notes: string | null
+          verified_at: string | null
+          verified_by_principal_id: string | null
+        }
+        Insert: {
+          block_number?: number | null
+          created_at?: string
+          fantasy_season_id: string
+          fantasy_team_id: string
+          first_gameweek_number: number
+          forfeited_at?: string | null
+          forfeited_by_principal_id?: string | null
+          gameweek_id?: string | null
+          id?: string
+          last_gameweek_number: number
+          league_id?: string | null
+          overridden_at?: string | null
+          overridden_by_principal_id?: string | null
+          override_of_winner_id?: string | null
+          override_reason?: string | null
+          paid_at?: string | null
+          paid_by_principal_id?: string | null
+          period_key: string
+          points: number
+          prize_id: string
+          prize_name_ar?: string | null
+          prize_name_fr: string
+          prize_value_mad?: number | null
+          runner_up_team_id?: string | null
+          status?: Database["app"]["Enums"]["fantasy_prize_winner_status"]
+          superseded_by_winner_id?: string | null
+          team_created_at: string
+          team_name: string
+          tie_break: Database["app"]["Enums"]["fantasy_prize_tie_break"]
+          tier: Database["app"]["Enums"]["fantasy_prize_tier"]
+          transfers_in_period: number
+          updated_at?: string
+          user_id: string
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by_principal_id?: string | null
+        }
+        Update: {
+          block_number?: number | null
+          created_at?: string
+          fantasy_season_id?: string
+          fantasy_team_id?: string
+          first_gameweek_number?: number
+          forfeited_at?: string | null
+          forfeited_by_principal_id?: string | null
+          gameweek_id?: string | null
+          id?: string
+          last_gameweek_number?: number
+          league_id?: string | null
+          overridden_at?: string | null
+          overridden_by_principal_id?: string | null
+          override_of_winner_id?: string | null
+          override_reason?: string | null
+          paid_at?: string | null
+          paid_by_principal_id?: string | null
+          period_key?: string
+          points?: number
+          prize_id?: string
+          prize_name_ar?: string | null
+          prize_name_fr?: string
+          prize_value_mad?: number | null
+          runner_up_team_id?: string | null
+          status?: Database["app"]["Enums"]["fantasy_prize_winner_status"]
+          superseded_by_winner_id?: string | null
+          team_created_at?: string
+          team_name?: string
+          tie_break?: Database["app"]["Enums"]["fantasy_prize_tie_break"]
+          tier?: Database["app"]["Enums"]["fantasy_prize_tier"]
+          transfers_in_period?: number
+          updated_at?: string
+          user_id?: string
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by_principal_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_prize_winners_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_prize_winners_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_prize_winners_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_prize_winners_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_prize_winners_override_of_winner_id_fkey"
+            columns: ["override_of_winner_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_prize_winners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_prize_winners_prize_id_fkey"
+            columns: ["prize_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_prizes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_prize_winners_runner_up_team_id_fkey"
+            columns: ["runner_up_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_prize_winners_superseded_by_winner_id_fkey"
+            columns: ["superseded_by_winner_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_prize_winners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_prize_winners_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fantasy_prizes: {
+        Row: {
+          active: boolean
+          created_at: string
+          description_ar: string | null
+          description_fr: string
+          estimated_value_mad: number | null
+          id: string
+          image_url: string | null
+          name_ar: string | null
+          name_fr: string
+          sponsor_logo_url: string | null
+          sponsor_name: string | null
+          tier: Database["app"]["Enums"]["fantasy_prize_tier"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description_ar?: string | null
+          description_fr?: string
+          estimated_value_mad?: number | null
+          id?: string
+          image_url?: string | null
+          name_ar?: string | null
+          name_fr: string
+          sponsor_logo_url?: string | null
+          sponsor_name?: string | null
+          tier: Database["app"]["Enums"]["fantasy_prize_tier"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description_ar?: string | null
+          description_fr?: string
+          estimated_value_mad?: number | null
+          id?: string
+          image_url?: string | null
+          name_ar?: string | null
+          name_fr?: string
+          sponsor_logo_url?: string | null
+          sponsor_name?: string | null
+          tier?: Database["app"]["Enums"]["fantasy_prize_tier"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       fantasy_ranking_tiebreak_rules: {
         Row: {
@@ -6362,6 +6780,24 @@ export type Database = {
         | "ineligible"
         | "unavailable"
       fantasy_points_state: "provisional" | "final"
+      fantasy_prize_skip_reason:
+        | "flagged"
+        | "staff"
+        | "gameweek_cap_reached"
+        | "mini_league_cap_reached"
+      fantasy_prize_tie_break:
+        | "outright"
+        | "fewer_transfers"
+        | "earlier_registration"
+        | "final_fallback"
+        | "admin_override"
+      fantasy_prize_tier: "gameweek" | "monthly" | "season" | "mini_league"
+      fantasy_prize_winner_status:
+        | "pending"
+        | "verified"
+        | "paid"
+        | "forfeited"
+        | "overridden"
       fantasy_run_status:
         | "pending"
         | "running"
@@ -6735,6 +7171,27 @@ export const Constants = {
         "unavailable",
       ],
       fantasy_points_state: ["provisional", "final"],
+      fantasy_prize_skip_reason: [
+        "flagged",
+        "staff",
+        "gameweek_cap_reached",
+        "mini_league_cap_reached",
+      ],
+      fantasy_prize_tie_break: [
+        "outright",
+        "fewer_transfers",
+        "earlier_registration",
+        "final_fallback",
+        "admin_override",
+      ],
+      fantasy_prize_tier: ["gameweek", "monthly", "season", "mini_league"],
+      fantasy_prize_winner_status: [
+        "pending",
+        "verified",
+        "paid",
+        "forfeited",
+        "overridden",
+      ],
       fantasy_run_status: [
         "pending",
         "running",

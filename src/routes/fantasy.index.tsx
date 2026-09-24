@@ -17,6 +17,7 @@ import {
   SlidersHorizontal,
   Star,
   TrendingUp,
+  Trophy,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -33,11 +34,12 @@ import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { LeagueList } from "@/components/fantasy-lists/LeagueList";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
+import { PrizeWelcome } from "@/components/prizes/PrizeWelcome";
 import { GameweekStatusText } from "@/components/fpl/GameweekStatusText";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { ui, UiCard, UiLinkButton, UiLivePill, UiPageTitle, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { NEWS_ENABLED } from "@/lib/feature-flags";
+import { NEWS_ENABLED, PRIZES_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -260,6 +262,10 @@ function FantasyHub() {
       <NotificationsSection />
 
       <MoreAboutSection />
+
+      {/* The hub's one arrival dialog, shown once per device while prizes are
+          on. It waits for the splash and the language chooser to let go. */}
+      {PRIZES_ENABLED && <PrizeWelcome hasTeam={hasTeam} />}
     </FantasyFrame>
   );
 }
@@ -779,6 +785,9 @@ function ToggleRow({
 function MoreAboutSection() {
   const { t } = useI18n();
   const rows: Array<{ to: string; label: string; icon: ReactNode }> = [
+    ...(PRIZES_ENABLED
+      ? [{ to: "/prizes", label: t("prizes.title"), icon: <Trophy aria-hidden /> }]
+      : []),
     { to: "/fantasy/rules", label: t("fpl.rules"), icon: <BookOpen aria-hidden /> },
     { to: "/fantasy/help", label: t("fpl.help_rules"), icon: <CircleHelp aria-hidden /> },
   ];

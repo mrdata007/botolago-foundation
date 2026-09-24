@@ -121,3 +121,31 @@ export const DARK_MODE_ENABLED = false;
  *   - `src/routes/auth.register.tsx` — divider + provider buttons
  */
 export const OAUTH_PROVIDERS_ENABLED = true;
+
+/**
+ * Fantasy prizes (public surfaces) — OFF until launch.
+ *
+ * Owner decision, 2026-09-24: the sponsor-funded prize system ships switched
+ * off. Three things must be true before this becomes `true`:
+ *
+ *   1. the prize T&Cs in `src/content/legal/prize-terms.ts` carry the owner's
+ *      final legal text -- every `[TODO …]` span is replaced. The production
+ *      build refuses to run while this flag is on and a span survives
+ *      (`scripts/qa/legal-placeholder-gate.ts`);
+ *   2. the sponsor has signed off on the catalog shown on the page;
+ *   3. `supabase/migrations/20260924120000_fantasy_prizes.sql` has been promoted
+ *      to production through the reviewed migration path.
+ *
+ * The flag hides what the public sees. It does not gate the admin console
+ * (`/admin/prizes`, behind `prizes.manage`), which is how the catalog is
+ * prepared before launch, nor winner selection, which the database only runs
+ * for a tier whose prize an admin has switched on -- and the default prizes
+ * are seeded switched off.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/prizes.index.tsx` + `src/routes/prizes.terms.tsx` -- the routes
+ *   - `src/routes/fantasy.index.tsx` -- the "Prizes" row and the first-visit popup
+ *   - `src/lib/sitemap.ts` -- the /prizes entries
+ *   - `scripts/qa/legal-placeholder-gate.ts` -- the prize T&Cs join the check
+ */
+export const PRIZES_ENABLED = false;
