@@ -1,13 +1,15 @@
 import noPlayersArt from "@/assets/illustrations/empty-watchlist.webp";
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Star } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, Plus, Scale } from "lucide-react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 import { ClubCrest } from "@/components/common/ClubCrest";
-import { clubLabel, clubToken } from "@/components/fantasy/club-identity";
-import { DifficultyBadge } from "@/components/fantasy/DifficultyBadge";
-import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
+import { crestStyle } from "@/components/common/club-crest-style";
+import { ListPager } from "@/components/fantasy-lists/ListPager";
+import { PlayerKitDisc } from "@/components/fantasy-lists/PlayerKitDisc";
+import { SearchField } from "@/components/fantasy-lists/SearchField";
+import { clubLabel, findClub, isClubKey } from "@/components/fantasy/club-identity";
 import { PlayerStatusBadge } from "@/components/fantasy/PlayerStatusBadge";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import {
@@ -18,14 +20,13 @@ import {
   UiEmptyState,
   UiErrorState,
   UiHeader,
-  UiInput,
+  UiIconButton,
   UiSelect,
   UiStatePanel,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
-import { getKitForClub } from "@/lib/kits";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
@@ -33,32 +34,42 @@ import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/players")({
+  /**
+   * `?compare=<playerId>` — "Comparer" on a player page lands here with that
+   * player already picked and compare mode on. Optional, and read once: the
+   * list works exactly as before without it.
+   */
+  validateSearch: (search: Record<string, unknown>): { compare?: string } =>
+    typeof search.compare === "string" && search.compare ? { compare: search.compare } : {},
   component: PlayersRoute,
 });
 
 /**
- * Player stats.
+ * Player stats (A-Players).
  *
- * Three things this screen does that the previous one did not:
+ * Option A: a round search field, the five position chips, the club chips,
+ * then "N joueurs sur M" beside the sort control, and the players as one card
+ * of rows — each with the club's edge bar, the shirt in a soft disc, the name
+ * over "position · club" and "form · selection", the price and points on the
+ * tabular stat ramp, and one round control at the end.
  *
- * 1. **It paginates.** The pool is 539 players and every one of them used to
- *    be in the document: 37,191px of it at a 390px viewport, which is roughly
- *    forty-four screens of scroll and a layout/paint cost paid on every
- *    keystroke in the search box. The data contract is untouched —
- *    `fantasyService.getPlayers()` still reads the pinned
- *    `api.fantasy_player_pool` keyset pages exactly as before — this is a
- *    presentational window over the result it already returns.
+ * Three things this screen does, kept from the previous pass:
  *
- * 2. **It only offers filters that can return something.** The club catalogue
- *    has 21 clubs; 16 of them have players in the pool. Offering the other
- *    five produced a chip that always yielded an empty list and no obvious way
- *    back. The chips are derived from the pool itself, so the filter cannot
- *    outrun the data whatever the catalogue says.
+ * 1. **It paginates.** The pool is 539 players; every one of them used to be
+ *    in the document (37,191px at a 390px viewport). The data contract is
+ *    untouched — this is a presentational window over what
+ *    `fantasyService.getPlayers()` already returns.
  *
- * 3. **Every filter can be undone where it was set.** Tapping a selected club
- *    or position chip clears it; tapping the active sort flips its direction.
- *    Previously only the "All" chip cleared a club, and no sort could be
- *    reversed.
+ * 2. **It only offers filters that can return something.** The club chips are
+ *    derived from the pool itself, so the filter cannot outrun the data.
+ *
+ * 3. **Every filter can be undone where it was set.** Tapping a selected chip
+ *    clears it; the direction control beside the sort flips the order.
+ *
+ * The round control is the watchlist — "+" to add, a navy check once the
+ * player is on the list, `aria-pressed` either way. Comparison keeps its own
+ * mode: the scale in the header turns the row control into "compare this
+ * player", and the two picked players are laid side by side above the list.
  */
 function PlayersRoute() {
   const isPlayerDetail = useRouterState({
@@ -67,7 +78,7 @@ function PlayersRoute() {
   });
   if (isPlayerDetail) return <Outlet />;
   return (
-    <FantasyFrame>
+    <FantasyFrame bottomNav>
       <PlayersPage />
     </FantasyFrame>
   );
@@ -77,6 +88,7 @@ type SortKey = "points" | "form" | "price" | "ownership";
 type SortDir = "asc" | "desc";
 const positions: Position[] = ["GK", "DEF", "MID", "FWD"];
 const PAGE_SIZE = 25;
+const SORT_KEYS: readonly SortKey[] = ["points", "form", "price", "ownership"];
 
 /**
  * BG-0071 — form ordering, with "no value yet" (`null`) always sorted below
@@ -96,7 +108,16 @@ const compareNumber = (a: number, b: number, dir: SortDir) => (dir === "desc" ? 
 
 function PlayersPage() {
   const { t, tr, lang } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
+  const { compare: compareFrom } = Route.useSearch();
+  const navigate = useNavigate();
+  const locale = lang === "ar" ? "ar-MA" : "fr-FR";
+  const nf = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+  // Prices read "8,0", like the picker and the pitch plates, never "8".
+  const priceNf = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+  const pctNf = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
@@ -113,8 +134,15 @@ function PlayersPage() {
   const [sort, setSort] = useState<SortKey>("points");
   const [dir, setDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(1);
-  const [compare, setCompare] = useState<string[]>([]); // up to 2
+  const [compare, setCompare] = useState<string[]>(() => (compareFrom ? [compareFrom] : [])); // up to 2
+  const [compareMode, setCompareMode] = useState(() => !!compareFrom);
   const watchlist = useWatchlist();
+
+  // The player it came with is now in state; drop it from the URL so a reload
+  // or a shared link is the plain list again.
+  useEffect(() => {
+    if (compareFrom) void navigate({ to: "/fantasy/players", search: {}, replace: true });
+  }, [compareFrom, navigate]);
 
   const toggleCompare = (id: string) => {
     setCompare((prev) => {
@@ -123,30 +151,27 @@ function PlayersPage() {
     });
   };
 
-  /**
-   * Clicking the active sort flips its direction; clicking another selects it
-   * at the direction that reads as "best first" for that column.
-   */
+  /** A new sort key starts at the direction that reads as "best first". */
   const pickSort = (key: SortKey) => {
-    if (key === sort) {
-      setDir((d) => (d === "desc" ? "asc" : "desc"));
-      return;
-    }
+    if (key === sort) return;
     setSort(key);
     setDir("desc");
   };
 
   const players = useMemo(() => playersQ.data ?? [], [playersQ.data]);
+  const clubs = useMemo(() => clubsQ.data ?? [], [clubsQ.data]);
 
   /**
    * The clubs the filter may offer: the ones that actually have a player in
    * the pool, in catalogue order. Derived, not configured, so a relegated club
-   * left `active` in the database can never become a dead-end chip.
+   * left `active` in the database can never become a dead-end chip. A player
+   * row keys its club by id in cloud mode and by slug in mock mode (BG-0111),
+   * so both are looked for.
    */
   const filterClubs = useMemo(() => {
-    const withPlayers = new Set(players.map((p) => p.clubId));
-    return (clubsQ.data ?? []).filter((c) => withPlayers.has(c.id));
-  }, [players, clubsQ.data]);
+    const keys = new Set(players.map((p) => p.clubId));
+    return clubs.filter((c) => keys.has(c.id) || (!!c.slug && keys.has(c.slug)));
+  }, [players, clubs]);
 
   /** Price bands, derived from the pool so they always bracket real values. */
   const priceSteps = useMemo(() => {
@@ -162,7 +187,10 @@ function PlayersPage() {
   const list = useMemo(() => {
     let l = players.slice();
     if (pos) l = l.filter((p) => p.position === pos);
-    if (clubId) l = l.filter((p) => p.clubId === clubId);
+    if (clubId) {
+      const club = clubs.find((c) => c.id === clubId);
+      if (club) l = l.filter((p) => isClubKey(club, p.clubId));
+    }
     if (maxPrice) l = l.filter((p) => p.price <= Number(maxPrice));
     if (q.trim()) {
       const s = q.toLowerCase();
@@ -176,7 +204,7 @@ function PlayersPage() {
       return compareNumber(a.totalPoints, b.totalPoints, dir);
     });
     return l;
-  }, [players, pos, clubId, maxPrice, q, sort, dir]);
+  }, [players, clubs, pos, clubId, maxPrice, q, sort, dir]);
 
   // Any change to the filters or the ordering puts the reader back on page 1;
   // holding page 7 of a board that just shrank to two pages shows nothing.
@@ -196,11 +224,20 @@ function PlayersPage() {
     setMaxPrice("");
   };
 
+  const header = (trailing?: React.ReactNode) => (
+    <UiHeader
+      kicker={t("nav.fantasy")}
+      title={t("fantasy.players.title")}
+      backTo="/fantasy"
+      trailing={trailing}
+    />
+  );
+
   if (playersQ.isError || clubsQ.isError) {
     return (
       <>
-        <UiHeader title={t("fpl.player_stats")} tone="gradient" backTo="/fantasy" />
-        <div className={cn("px-4 pb-6 pt-3", ui.surface.page)}>
+        {header()}
+        <div className={cn("px-4 pb-6 pt-4", ui.surface.page)}>
           <UiErrorState
             onRetry={() => {
               void playersQ.refetch();
@@ -214,50 +251,61 @@ function PlayersPage() {
   if (!playersQ.data || !clubsQ.data) {
     return (
       <>
-        <UiHeader title={t("fpl.player_stats")} tone="gradient" backTo="/fantasy" />
-        <div className={cn("px-4 pb-6 pt-3", ui.surface.page)}>
+        {header()}
+        <div className={cn("px-4 pb-6 pt-4", ui.surface.page)}>
           <UiStatePanel kind="loading" />
         </div>
       </>
     );
   }
 
-  const clubs = clubsQ.data;
-  const clubOf = (cid: string) => clubs.find((c) => c.id === cid);
+  const clubOf = (key: string) => findClub(clubs, key);
   const playerOf = (id: string) => players.find((p) => p.id === id);
 
-  const sorts: { k: SortKey; labelKey: TranslationKey }[] = [
-    { k: "points", labelKey: "fantasy.picker.sort.points" },
-    { k: "form", labelKey: "fantasy.picker.sort.form" },
-    { k: "price", labelKey: "fantasy.picker.sort.price" },
-    { k: "ownership", labelKey: "fantasy.picker.sort.ownership" },
-  ];
-  const DirGlyph = dir === "desc" ? ArrowDown : ArrowUp;
+  const sortLabel = (key: SortKey) =>
+    key === "form"
+      ? t("fantasy.picker.sort.form")
+      : key === "price"
+        ? t("fantasy.picker.sort.price")
+        : key === "ownership"
+          ? t("fantasy.picker.sort.ownership")
+          : t("fantasy.picker.sort.points");
+  const DirGlyph = dir === "desc" ? ArrowDownWideNarrow : ArrowUpNarrowWide;
   const dirLabel = dir === "desc" ? t("fantasy.players.sort_desc") : t("fantasy.players.sort_asc");
+  const soft = cn(
+    ui.radius.full,
+    "w-auto border-transparent bg-[color:var(--ui-surface-sunken)] ps-4",
+    ui.text.meta,
+    "[font-weight:var(--ui-weight-heavy)]",
+  );
 
   return (
     <>
-      <UiHeader title={t("fpl.player_stats")} tone="gradient" backTo="/fantasy" />
-      <div className={cn("px-4 pb-6 pt-3", ui.surface.page)}>
-        <UiInput
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={t("fantasy.picker.search")}
-          aria-label={t("fantasy.picker.search")}
-        />
+      {header(
+        <UiIconButton
+          aria-label={t("fantasy.players.compare")}
+          aria-pressed={compareMode}
+          variant={compareMode ? "ink" : "soft"}
+          onClick={() => setCompareMode((on) => !on)}
+        >
+          <Scale aria-hidden />
+        </UiIconButton>,
+      )}
+      <div className={cn("space-y-3 px-4 pb-8 pt-4", ui.surface.page)}>
+        <SearchField value={q} onChange={setQ} label={t("fantasy.picker.search")} />
 
         <div
-          className="mt-2 flex flex-wrap gap-1"
+          className="grid grid-cols-5 gap-2"
           role="group"
           aria-label={t("fantasy.players.filter_position")}
         >
-          <UiChip selected={pos === ""} onClick={() => setPos("")}>
+          <UiChip className="justify-center px-1" selected={pos === ""} onClick={() => setPos("")}>
             {t("common.all")}
           </UiChip>
           {positions.map((p) => (
             <UiChip
               key={p}
+              className="justify-center px-1"
               selected={pos === p}
               // Tapping the selected chip clears it.
               onClick={() => setPos((current) => (current === p ? "" : p))}
@@ -272,7 +320,7 @@ function PlayersPage() {
             player list below the fold. `-mx-4 px-4` lets the row bleed to the
             screen edge so a half-visible chip signals that it scrolls. */}
         <div
-          className="-mx-4 mt-1.5 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none]"
+          className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]"
           role="group"
           aria-label={t("fantasy.players.filter_club")}
         >
@@ -286,64 +334,95 @@ function PlayersPage() {
               selected={clubId === c.id}
               onClick={() => setClubId((current) => (current === c.id ? "" : c.id))}
             >
-              {/* The kit's small crest, not squeezed to 20px: at 20px a
-                  three-letter fallback ("WAC", "RCA") was cropped mid-letter. */}
               {/* No margin: `UiChip` spaces its children (gap-1.5). */}
-              <ClubCrest club={c} size="sm" />
+              <ClubCrest club={c} size="xs" />
               <span className="whitespace-nowrap">{clubLabel(c, tr)}</span>
             </UiChip>
           ))}
         </div>
 
         {priceSteps.length > 0 ? (
-          <UiSelect
-            className="mt-2"
-            label={t("fantasy.players.price_max")}
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            options={[
-              { value: "", label: t("fantasy.players.price_any") },
-              ...priceSteps.map((v) => ({ value: String(v), label: nf.format(v) })),
-            ]}
-          />
+          <div className="flex items-center justify-between gap-3">
+            <label
+              htmlFor="players-price"
+              className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]", ui.tone.default)}
+            >
+              {t("fantasy.players.price_max")}
+            </label>
+            <UiSelect
+              id="players-price"
+              className="shrink-0"
+              fieldClassName={soft}
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              options={[
+                { value: "", label: t("fantasy.players.price_any") },
+                ...priceSteps.map((v) => ({ value: String(v), label: nf.format(v) })),
+              ]}
+            />
+          </div>
         ) : null}
 
-        <div
-          className="mt-2 flex flex-wrap items-center gap-1"
-          role="group"
-          aria-label={t("fantasy.picker.sort")}
-        >
-          <span className={cn(ui.text.label, ui.tone.muted)}>{t("fantasy.picker.sort")}</span>
-          {sorts.map((s) => (
-            <UiChip
-              key={s.k}
-              selected={sort === s.k}
-              onClick={() => pickSort(s.k)}
-              aria-describedby={sort === s.k ? "players-sort-dir" : undefined}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <p
+            className={cn(
+              "min-w-0",
+              ui.text.meta,
+              "[font-weight:var(--ui-weight-strong)]",
+              ui.tone.muted,
+            )}
+          >
+            {list.length > 0
+              ? t("fantasy.players.showing")
+                  .replace("{n}", nf.format(visible.length))
+                  .replace("{total}", nf.format(list.length))
+              : null}
+          </p>
+          <div className="flex items-center gap-1">
+            <label
+              htmlFor="players-sort"
+              className={cn(ui.text.meta, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}
             >
-              {t(s.labelKey)}
-              {sort === s.k ? <DirGlyph className="h-3 w-3 shrink-0" aria-hidden /> : null}
-            </UiChip>
-          ))}
-          <span id="players-sort-dir" className="sr-only">
-            {dirLabel}
-          </span>
+              {t("fantasy.picker.sort")}
+            </label>
+            <UiSelect
+              id="players-sort"
+              className="shrink-0"
+              fieldClassName={soft}
+              value={sort}
+              onChange={(e) => pickSort(e.target.value as SortKey)}
+              options={SORT_KEYS.map((key) => ({ value: key, label: sortLabel(key) }))}
+            />
+            <UiIconButton
+              variant="ghost"
+              aria-label={dirLabel}
+              onClick={() => setDir((d) => (d === "desc" ? "asc" : "desc"))}
+            >
+              <DirGlyph aria-hidden />
+            </UiIconButton>
+          </div>
         </div>
 
         {compare.length === 2 ? (
-          <UiCard className="mt-3">
-            <p className={cn(ui.text.bodyStrong, ui.tone.default)}>
-              {t("fantasy.players.compare_title")}
-            </p>
-            <div className="mt-2 grid grid-cols-2 gap-3">
+          <UiCard>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className={cn("min-w-0 truncate", ui.display.section, ui.tone.default)}>
+                {t("fantasy.players.compare_title")}
+              </h2>
+              <UiButton size="sm" variant="ghost" onClick={() => setCompare([])}>
+                {t("common.reset")}
+              </UiButton>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
               {compare.map((id) => {
                 const p = playerOf(id);
                 if (!p) return null;
                 const c = clubOf(p.clubId);
+                const form = p.form === null ? t("fantasy.stat.none") : nf.format(p.form);
                 return (
-                  <div key={id} className={cn("p-2", ui.radius.control, ui.surface.sunken)}>
-                    <div className="flex items-center gap-1.5">
-                      {c ? <ClubCrest club={c} size="sm" /> : null}
+                  <div key={id} className={cn("min-w-0 p-3", ui.radius.card, ui.surface.sunken)}>
+                    <div className="flex min-w-0 items-center gap-2">
+                      {c ? <ClubCrest club={c} size="xs" /> : null}
                       <span
                         dir="auto"
                         className={cn(
@@ -355,20 +434,22 @@ function PlayersPage() {
                         {tr(p.name)}
                       </span>
                     </div>
-                    <dl className={cn("mt-2 grid grid-cols-2 gap-1", ui.text.micro)}>
-                      <CompareRow label={t("fantasy.price")} value={nf.format(p.price)} />
+                    <dl
+                      className={cn(
+                        "mt-2 grid grid-cols-[1fr_auto] gap-x-2 gap-y-1",
+                        ui.text.micro,
+                      )}
+                    >
+                      <CompareRow label={t("fantasy.price")} value={priceNf.format(p.price)} />
                       <CompareRow
                         label={t("fantasy.total_points")}
                         value={nf.format(p.totalPoints)}
                       />
-                      <CompareRow
-                        label={t("fantasy.form")}
-                        // A real 0 must read "0"; only an unknown reads "–".
-                        value={p.form === null ? t("fantasy.stat.none") : nf.format(p.form)}
-                      />
+                      {/* A real 0 must read "0"; only an unknown reads "–". */}
+                      <CompareRow label={t("fantasy.form")} value={form} />
                       <CompareRow
                         label={t("fantasy.ownership")}
-                        value={`${nf.format(p.ownership)}%`}
+                        value={pctNf.format(p.ownership / 100)}
                       />
                       <CompareRow
                         label={t("fantasy.expected_points")}
@@ -383,86 +464,69 @@ function PlayersPage() {
                 );
               })}
             </div>
-            <UiButton size="sm" variant="ghost" className="mt-2" onClick={() => setCompare([])}>
-              {t("common.reset")}
-            </UiButton>
           </UiCard>
         ) : null}
-        {compare.length === 1 ? (
+        {/* Only in compare mode: outside it the row control is the watchlist,
+            and a hint to "pick two" would point at nothing. */}
+        {compareMode && compare.length < 2 ? (
           <p
+            role="status"
             className={cn(
-              "mt-3 px-3 py-2",
-              ui.radius.control,
+              "px-4 py-3",
+              ui.radius.card,
               ui.surface.sunken,
               ui.text.meta,
-              ui.tone.muted,
+              ui.tone.default,
             )}
           >
             {t("fantasy.players.pick_two")}
           </p>
         ) : null}
 
-        <div className="mt-3">
-          {list.length === 0 ? (
-            <UiEmptyState
-              illustration={noPlayersArt}
-              title={t("fantasy.players.no_match")}
-              body={t("fantasy.players.empty_filters")}
-              action={
-                hasFilters ? (
-                  <UiButton variant="ink" className="mt-4" onClick={resetFilters}>
-                    {t("fantasy.players.reset_filters")}
-                  </UiButton>
-                ) : undefined
-              }
-            />
-          ) : (
-            <>
-              <p className={cn("pb-1", ui.text.meta, ui.tone.muted)}>
-                {t("fantasy.players.showing")
-                  .replace("{n}", nf.format(visible.length))
-                  .replace("{total}", nf.format(list.length))}
-              </p>
-              <ul>
-                {visible.map((p) => (
-                  <PlayerListRow
-                    key={p.id}
-                    player={p}
-                    club={clubOf(p.clubId)}
-                    opponent={p.nextOpponentClubId ? clubOf(p.nextOpponentClubId) : undefined}
-                    watched={watchlist.isWatched(p.id)}
-                    onToggleWatch={() => watchlist.toggle(p.id)}
-                    inCompare={compare.includes(p.id)}
-                    onToggleCompare={() => toggleCompare(p.id)}
-                    nf={nf}
-                  />
-                ))}
-              </ul>
+        {list.length === 0 ? (
+          <UiEmptyState
+            illustration={noPlayersArt}
+            title={t("fantasy.players.no_match")}
+            body={t("fantasy.players.empty_filters")}
+            action={
+              hasFilters ? (
+                <UiButton variant="ink" className="mt-4" onClick={resetFilters}>
+                  {t("fantasy.players.reset_filters")}
+                </UiButton>
+              ) : undefined
+            }
+          />
+        ) : (
+          <>
+            <ul className={cn(ui.surface.card, "overflow-hidden")}>
+              {visible.map((p, index) => (
+                <PlayerListRow
+                  key={p.id}
+                  player={p}
+                  club={clubOf(p.clubId)}
+                  last={index === visible.length - 1}
+                  watched={watchlist.isWatched(p.id)}
+                  onToggleWatch={() => watchlist.toggle(p.id)}
+                  compareMode={compareMode}
+                  inCompare={compare.includes(p.id)}
+                  onToggleCompare={() => toggleCompare(p.id)}
+                  nf={nf}
+                  priceNf={priceNf}
+                  pctNf={pctNf}
+                />
+              ))}
+            </ul>
 
-              <div data-player-pager="" className="mt-3 flex items-center justify-between gap-3">
-                <p className={cn("min-w-0", ui.text.meta, ui.tone.muted)}>
-                  {t("fantasy.rankings.page")} {nf.format(currentPage)} / {nf.format(pageCount)}
-                </p>
-                <div className="flex shrink-0 items-center gap-2">
-                  <PagerButton
-                    label={t("fantasy.rankings.prev")}
-                    disabled={currentPage <= 1}
-                    onClick={() => setPage((c) => Math.max(1, c - 1))}
-                  >
-                    <ChevronLeft className="h-4 w-4" aria-hidden />
-                  </PagerButton>
-                  <PagerButton
-                    label={t("fantasy.rankings.next")}
-                    disabled={currentPage >= pageCount}
-                    onClick={() => setPage((c) => Math.min(pageCount, c + 1))}
-                  >
-                    <ChevronRight className="h-4 w-4" aria-hidden />
-                  </PagerButton>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+            <div data-player-pager="">
+              <ListPager
+                page={currentPage}
+                pageCount={pageCount}
+                onPrevious={() => setPage((c) => Math.max(1, c - 1))}
+                onNext={() => setPage((c) => Math.min(pageCount, c + 1))}
+              />
+            </div>
+          </>
+        )}
       </div>
     </>
   );
@@ -471,151 +535,143 @@ function PlayersPage() {
 function CompareRow({ label, value }: { label: string; value: string }) {
   return (
     <>
-      <dt className={ui.tone.muted}>{label}</dt>
-      <dd className={cn("text-end", ui.stat.sm, ui.tone.default)}>{value}</dd>
+      <dt className={cn("min-w-0", ui.tone.muted)}>{label}</dt>
+      <dd className={cn("text-end", ui.stat.sm, ui.tone.default)}>
+        <bdi>{value}</bdi>
+      </dd>
     </>
-  );
-}
-
-function PagerButton({
-  label,
-  disabled,
-  onClick,
-  children,
-}: {
-  label: string;
-  disabled: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      disabled={disabled}
-      onClick={onClick}
-      className={cn(
-        "grid place-items-center transition-colors disabled:opacity-40",
-        ui.space.tap,
-        ui.radius.control,
-        ui.rule.all,
-        ui.tone.default,
-        ui.focus,
-      )}
-    >
-      {children}
-    </button>
   );
 }
 
 function PlayerListRow({
   player,
   club,
-  opponent,
+  last,
   watched,
   onToggleWatch,
+  compareMode,
   inCompare,
   onToggleCompare,
   nf,
+  priceNf,
+  pctNf,
 }: {
   player: FantasyPlayer;
   club?: Club;
-  opponent?: Club;
+  last: boolean;
   watched: boolean;
   onToggleWatch: () => void;
+  compareMode: boolean;
   inCompare: boolean;
   onToggleCompare: () => void;
   nf: Intl.NumberFormat;
+  priceNf: Intl.NumberFormat;
+  pctNf: Intl.NumberFormat;
 }) {
   const { t, tr } = useI18n();
-  const kit = getKitForClub(club, player.kitPattern);
+  const nameId = useId();
+  // The club's colours per theme, memoised per club (the crest's own cache):
+  // they paint the edge bar through `--ui-club-edge`.
+  const clubColours = club ? crestStyle(club) : undefined;
+  // An unknown form is an en dash, never a fabricated 0.0.
+  const form = player.form === null ? t("fantasy.stat.none") : nf.format(player.form);
   return (
-    <li data-player-row="" className={cn("flex items-center gap-2 py-2", ui.rule.block)}>
+    <li
+      data-player-row=""
+      data-club={clubColours?.["data-club"]}
+      style={clubColours?.style}
+      // The hairline BEFORE the edge: `ui.rule.block` sets the colour of every
+      // side, and after the edge it would repaint the club bar in the rule.
+      className={cn(
+        "flex items-center gap-3 py-2.5 pe-3 ps-3",
+        !last && ui.rule.block,
+        ui.edge.start,
+      )}
+    >
+      <PlayerKitDisc club={club} kitPattern={player.kitPattern} imageUrl={player.jerseyImageUrl} />
       <Link
         to="/fantasy/players/$playerId"
         params={{ playerId: player.id }}
         className={cn(
-          "flex min-w-0 flex-1 items-center gap-2",
-          "min-h-[var(--ui-tap-min)]",
+          "flex min-w-0 flex-1 flex-col justify-center self-stretch",
           ui.radius.control,
           ui.focus,
         )}
       >
-        <JerseyVisual kit={kit} size={32} imageUrl={player.jerseyImageUrl} />
-        <span className="min-w-0">
-          <span className="flex items-center gap-1.5">
-            {/* `dir="auto"` on the TRUNCATING element, not inside it: the
-                ellipsis is placed at the end of the element's own direction,
-                so a Latin name inside an inherited RTL box gets clipped at its
-                start ("…s de Rabat" instead of "Ittihad Tanger…"). */}
-            <span
-              dir="auto"
-              className={cn("truncate", ui.text.body, "[font-weight:var(--ui-weight-heavy)]")}
-            >
-              {tr(player.name)}
-            </span>
-            {player.status !== "available" ? <PlayerStatusBadge status={player.status} /> : null}
+        <span className="flex min-w-0 items-center gap-1.5">
+          {/* `dir="auto"` on the TRUNCATING element, not inside it: the
+              ellipsis is placed at the end of the element's own direction,
+              so a Latin name inside an inherited RTL box gets clipped at its
+              end ("Ittihad Tanger…"), not its start. */}
+          <span
+            id={nameId}
+            dir="auto"
+            className={cn(
+              "truncate",
+              ui.text.body,
+              "[font-weight:var(--ui-weight-heavy)]",
+              ui.tone.default,
+            )}
+          >
+            {tr(player.name)}
           </span>
-          <span className={cn("mt-0.5 block truncate", ui.text.micro, ui.tone.muted)}>
-            {club ? `${clubLabel(club, tr)} · ` : ""}
-            {t(`player.pos.${player.position}` as TranslationKey)} · {t("fantasy.form")}{" "}
-            {/* An unknown form is an en dash, never a fabricated 0.0. */}
-            {player.form === null ? t("fantasy.stat.none") : nf.format(player.form)} ·{" "}
-            {nf.format(player.ownership)}%
-          </span>
+          {player.status !== "available" ? (
+            <PlayerStatusBadge status={player.status} className="shrink-0" />
+          ) : null}
+        </span>
+        <span
+          className={cn(
+            "truncate",
+            ui.text.meta,
+            "[font-weight:var(--ui-weight-strong)]",
+            ui.tone.muted,
+          )}
+        >
+          {t(`player.pos.${player.position}` as TranslationKey)}
+          {club ? ` · ${clubLabel(club, tr)}` : ""}
+        </span>
+        <span className={cn("truncate", ui.text.micro, ui.tone.muted)}>
+          {t("fantasy.form")} <bdi>{form}</bdi> · {t("fantasy.players.ownership_short")}{" "}
+          <bdi>{pctNf.format(player.ownership / 100)}</bdi>
         </span>
       </Link>
 
-      {opponent && player.nextFixtureDifficulty ? (
-        <DifficultyBadge
-          difficulty={player.nextFixtureDifficulty}
-          label={`${clubToken(opponent, tr)} (${player.nextIsHome ? t("fpl.home_short") : t("fpl.away_short")})`}
-          title={`${tr(opponent.name)} (${player.nextIsHome ? t("common.home") : t("common.away")})`}
-          className="w-16 shrink-0"
-        />
-      ) : null}
-
-      <span className="shrink-0 text-end">
-        <span className={cn("block", ui.stat.sm, ui.tone.default)}>{nf.format(player.price)}</span>
-        <span className={cn("block", ui.text.micro, ui.tone.muted)}>
-          {nf.format(player.totalPoints)} {t("fantasy.points.abbr")}
+      <span className="flex shrink-0 flex-col items-end">
+        <span className="flex items-baseline gap-1">
+          <bdi className={cn(ui.stat.md, ui.tone.default)}>{priceNf.format(player.price)}</bdi>
+          <span
+            className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]", ui.tone.default)}
+          >
+            {t("fantasy.players.price_unit")}
+          </span>
+        </span>
+        <span className={cn(ui.text.meta, ui.tone.muted)}>
+          <bdi className={ui.stat.sm}>{nf.format(player.totalPoints)}</bdi>{" "}
+          {t("fantasy.points.abbr")}
         </span>
       </span>
 
-      <span className="flex shrink-0 flex-col items-stretch gap-1">
-        <button
-          type="button"
-          onClick={onToggleWatch}
+      {compareMode ? (
+        <UiIconButton
+          variant={inCompare ? "ink" : "soft"}
+          aria-pressed={inCompare}
+          aria-label={t("fantasy.players.compare")}
+          aria-describedby={nameId}
+          onClick={onToggleCompare}
+        >
+          {inCompare ? <Check aria-hidden /> : <Scale aria-hidden />}
+        </UiIconButton>
+      ) : (
+        <UiIconButton
+          variant={watched ? "ink" : "soft"}
           aria-pressed={watched}
           aria-label={watched ? t("fantasy.players.remove_watch") : t("fantasy.players.add_watch")}
-          className={cn(
-            "grid place-items-center",
-            ui.space.tap,
-            ui.radius.control,
-            ui.focus,
-            watched ? "text-[color:var(--ui-ink-deep)]" : cn(ui.surface.sunken, ui.tone.muted),
-          )}
-          style={watched ? { backgroundColor: "var(--ui-caution)" } : undefined}
+          aria-describedby={nameId}
+          onClick={onToggleWatch}
         >
-          <Star className={cn("h-4 w-4", watched && "fill-current")} aria-hidden />
-        </button>
-        <button
-          type="button"
-          onClick={onToggleCompare}
-          aria-pressed={inCompare}
-          className={cn(
-            "px-1.5",
-            "min-h-[var(--ui-tap-min)]",
-            ui.radius.control,
-            ui.text.micro,
-            "[font-weight:var(--ui-weight-heavy)]",
-            ui.focus,
-            inCompare ? ui.surface.inkPlain : cn(ui.surface.sunken, ui.tone.muted),
-          )}
-        >
-          {t("fantasy.players.compare")}
-        </button>
-      </span>
+          {watched ? <Check aria-hidden /> : <Plus aria-hidden />}
+        </UiIconButton>
+      )}
     </li>
   );
 }

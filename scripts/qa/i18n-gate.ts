@@ -358,7 +358,10 @@ export const BASELINES: Baselines = {
   // Lanes 1 and 2 together: 251 + 1 - 6, plus `matches.kickoff`, which
   // each lane still called once from a screen the other rewrote (the
   // match card, the match header) and so neither saw orphaned. 247.
-  W3: 247,
+  //
+  // Option A, Lane 5 (Fantasy lists): player tabs + podium gone (6 keys orphaned), 4 unused keys now called, 8 new keys referenced. 251 -> 253.
+  // With Lanes 1 and 2: 247 + 2 = 249.
+  W3: 249,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
@@ -375,7 +378,10 @@ export const BASELINES: Baselines = {
   // Option A, Lane 2 (match page): EventTimeline's `t(table[event.type])` is a
   // literal-key switch now. 70 -> 69.
   // Both together: 70 -> 68.
-  W4: 68,
+  //
+  // Option A, Lane 5 (Fantasy lists): player-page tab loop + status template gone, players sort loop now literal calls. 70 -> 67.
+  // With Lanes 1 and 2: 68 - 3 = 65.
+  W4: 65,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
