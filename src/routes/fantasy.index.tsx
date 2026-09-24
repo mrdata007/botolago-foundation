@@ -37,6 +37,7 @@ import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
 import { PrizeWelcome } from "@/components/prizes/PrizeWelcome";
 import { FantasyUnavailableState } from "@/components/fantasy/FantasyUnavailableState";
 import { GameweekStatusText } from "@/components/fpl/GameweekStatusText";
+import { nextDeadlineAfter } from "@/components/fantasy/gameweek-presentation";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { ui, UiCard, UiLinkButton, UiLivePill, UiPageTitle, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -304,6 +305,8 @@ function FantasyHub() {
 function GameweekBand({ gameweek }: { gameweek: Gameweek }) {
   const { t, lang } = useI18n();
   const left = useDeadlineCountdown(gameweek.deadline);
+  // Read with the countdown's tick, so it appears when the deadline passes.
+  const next = left?.passed ? nextDeadlineAfter(gameweek, Date.now()) : null;
   return (
     <section
       aria-label={`${t("fpl.gameweek")} ${gameweek.number}`}
@@ -349,6 +352,15 @@ function GameweekBand({ gameweek }: { gameweek: Gameweek }) {
             />
           ) : null}
         </div>
+        {next ? (
+          // After the deadline, the one a manager can still act on: a team
+          // that joined late plays from the next gameweek, and this is the
+          // only place its deadline is named.
+          <p className={cn("mt-1", ui.text.meta, ui.tone.onInkMuted)}>
+            {`${t("fpl.gameweek")} ${next.number} · ${t("fantasy.next_deadline")} · `}
+            <bdi>{formatDeadline(next.deadline, lang, { weekday: "short" })}</bdi>
+          </p>
+        ) : null}
       </div>
     </section>
   );

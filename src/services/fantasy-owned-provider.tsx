@@ -39,7 +39,7 @@ import { FantasyRepoError } from "@/services/fantasy-errors";
 import { forgetSharedFantasyHub } from "@/services/fantasy-hub-share";
 import {
   scopedFantasyKey,
-  clearOwnedFantasyCache,
+  clearOtherOwnersFantasyCache,
   isOwnedFantasyKey,
   type FantasyKeyScope,
 } from "@/services/fantasy-data-source";
@@ -181,19 +181,21 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
     await query.refetch();
   }, [qc, queryKey, query]);
 
-  // On owner-identity change (sign-in/out, account switch): drop every owned
-  // cache entry so the next authenticated user cannot see stale data. This
+  // On owner-identity change (sign-in/out, account switch): drop every other
+  // owner's cache entries so the next authenticated user cannot see stale
+  // data. The new owner's own queries stay: this render created them, and
+  // removing one cancels its first fetch and leaves the screen loading. This
   // does NOT touch drafts (see fantasy-signout-cleanup for that path) or
   // guest local prototype data.
   useEffect(() => {
     forgetSharedFantasyHub();
-    clearOwnedFantasyCache(qc);
+    clearOtherOwnersFantasyCache(qc, scope);
     setMutationStatusState("idle");
     setMutationError(null);
     mutationSeqRef.current = 0;
     activeSeqRef.current = 0;
-    // We intentionally depend on `owner` so identity swaps trigger cleanup.
-  }, [owner, qc]);
+    // We intentionally depend on the owner's scope so identity swaps trigger cleanup.
+  }, [scope, qc]);
 
   const value = useMemo<FantasyOwnedContextValue>(
     () => ({

@@ -375,7 +375,11 @@ export const BASELINES: Baselines = {
   // "Mes clubs" heading is a new key (`profile.clubs.title`), not a rewording
   // of the still-unused `profile.followed_clubs`. W3 251 -> 259.
   // With Lanes 1, 2, 4 and 5: 250 + 8 = 258.
-  W3: 258,
+  //
+  // Audit 2026-09-24: the Fantasy home names the next gameweek's deadline once
+  // the current one has passed, with the long-unused `fantasy.next_deadline`
+  // (-1). 257.
+  W3: 257,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
