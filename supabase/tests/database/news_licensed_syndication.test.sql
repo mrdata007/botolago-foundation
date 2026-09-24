@@ -1,6 +1,6 @@
--- News: licensed syndication (20260924100000). A licensed publisher's
--- stories carry their source; nobody else's do; and the sitemap only ever
--- advertises BotolaGO's own stories.
+-- News: licensed syndication (20260924100000, 20260924163000). A licensed
+-- publisher's stories carry their source; nobody else's do; and the sitemap
+-- advertises BotolaGO's own stories and licensed ones, never unlicensed ones.
 begin;
 
 select extensions.no_plan();
@@ -84,12 +84,42 @@ select ok(
 
 select is(
   (select array_agg(entry ->> 'slug' order by entry ->> 'slug')
-   from jsonb_array_elements(api.news_sitemap_entries()) entry),
-  array['qa-own-cms', 'qa-own-publisher'],
-  'the sitemap lists only BotolaGO''s own stories, never syndicated or third-party ones'
+   from jsonb_array_elements(api.news_sitemap_entries()) entry
+   where entry ->> 'slug' like 'qa-%'),
+  array['qa-own-cms', 'qa-own-publisher', 'qa-syndicated-ar', 'qa-syndicated-fr',
+        'qa-syndicated-no-original'],
+  'the sitemap lists BotolaGO''s own and licensed stories, never unlicensed third-party ones'
+);
+select is(
+  (select entry -> 'translations'
+   from jsonb_array_elements(api.news_sitemap_entries()) entry
+   where entry ->> 'slug' = 'qa-syndicated-ar'),
+  jsonb_build_array(jsonb_build_object('id', '98300000-0000-4000-8000-000000000002', 'language', 'fr')),
+  'a licensed Arabic edition lists its French counterpart'
+);
+select is(
+  (select entry -> 'translations'
+   from jsonb_array_elements(api.news_sitemap_entries(1)) entry),
+  (select entry -> 'translations'
+   from jsonb_array_elements(api.news_sitemap_entries()) entry
+   where entry ->> 'id' = (api.news_sitemap_entries(1) -> 0 ->> 'id')),
+  'a small limit still lists every counterpart of the editions it returns'
 );
 
+-- The sitemap spells out news_is_public() set-based for speed; it must pick
+-- exactly the editions the reference predicate picks.
 reset role;
+select set_eq(
+  $$select (entry ->> 'id')::uuid from jsonb_array_elements(api.news_sitemap_entries(50000)) entry$$,
+  $$select edition.id from app.article_editions edition
+    join app.stories story on story.id = edition.story_id
+    left join app.publishers publisher on publisher.id = story.publisher_id
+    where edition.visibility = 'public' and app_private.news_is_public(edition)
+      and (publisher.id is null or publisher.slug = 'botolago' or publisher.slug like 'botolago-%'
+           or publisher.syndication_licensed_at is not null)$$,
+  'the sitemap lists exactly the public editions app_private.news_is_public() allows'
+);
+
 select throws_ok(
   $$update app.publishers set syndication_licensed_at = statement_timestamp()
     where slug = 'qa-unlicensed'$$,

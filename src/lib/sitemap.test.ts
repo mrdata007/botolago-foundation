@@ -64,7 +64,10 @@ describe("sitemap.xml", () => {
   test("the route serves XML, reads only the sitemap RPC and only while News is enabled", () => {
     const route = readFileSync(join(import.meta.dir, "../routes/sitemap[.]xml.ts"), "utf8");
     expect(route).toContain('if (NEWS_ENABLED && getNewsDataMode() === "supabase")');
-    expect(route).toContain("getSitemapEntries()");
+    // Every public article, up to the protocol's 50,000 URLs, not the RPC's
+    // default page of 5,000: the licensed archive alone is ~15,700 editions.
+    expect(route).toContain("getSitemapEntries(SITEMAP_NEWS_LIMIT)");
+    expect(route).toContain("const SITEMAP_NEWS_LIMIT = 50_000;");
     expect(route).toContain('"content-type": "application/xml; charset=utf-8"');
   });
 });

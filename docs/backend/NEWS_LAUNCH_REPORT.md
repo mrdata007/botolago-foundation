@@ -135,3 +135,18 @@ Fastest first:
 3. **Stop automatic publishing:** run `select cron.unschedule('news-publish-due-editions');` in production. Scheduled articles then stay private until published by hand. To resume, re-apply the job line from migration `20260922180100`.
 4. **Edge functions:** `news-editorial-write` v5 is the version before PR #158 in git; redeploying it only reverts the link rules. Do not roll `news-media-upload` back: its previous version (v5) lacked the file-type check.
 5. **The database changes are forward-only.** Do not delete the migrations. The 108 archived stubs keep their full history. An editorial admin can convert one if it should ever be published.
+
+## H. Switched on (2026-09-24)
+
+The owner switched News on after the licensed ElBotola import (14,194 stories, 15,690 editions, published with ElBotola's own dates, SEO title and description on every edition).
+
+- `NEWS_ENABLED = true`.
+- **Owner decision:** licensed articles are indexed like BotolaGO's own. The `noindex` on licensed pages is removed. They still show "Source : ElBotola" / "المصدر: البطولة" and carry JSON-LD `isBasedOn`.
+  - When offered, the owner declined the alternative of pointing each page's canonical at ElBotola.
+  - **Known risk:** Google may treat a large archive of republished articles as duplicate content and rank the whole site lower.
+  - **To reverse:** restore the `noindex, follow` line in `src/lib/article-meta.ts`, and the publisher filter in `api.news_sitemap_entries`.
+- **Sitemap.** Migration `20260924163000_news_sitemap_licensed.sql`:
+  - lists licensed publishers' stories;
+  - rewrites `api.news_sitemap_entries` so it runs as one set-based query. The old per-row version took ~13 s on the archive; anon's statement timeout is 3 s.
+  - adds two partial indexes. With them the new query takes ~0.2 s, measured in a rolled-back transaction on production data. It returns the same 15,690 editions.
+  - `/sitemap.xml` now asks for up to 50,000 entries.
