@@ -1,12 +1,5 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import {
-  ClipboardCheck,
-  KeyRound,
-  ScrollText,
-  ShieldCheck,
-  UserCog,
-  type LucideIcon,
-} from "lucide-react";
+import { ClipboardCheck, KeyRound, ScrollText, UserCog, type LucideIcon } from "lucide-react";
 import {
   ADMIN_CONSOLE_NAV_ITEMS,
   ADMIN_STATE_TEST_IDS,
@@ -20,14 +13,10 @@ import {
   type UnauthenticatedDetail,
   type UnauthenticatedReason,
 } from "@/backend/admin/route-access";
-import {
-  ADMIN_CARD_CLASS,
-  ADMIN_LABEL_CLASS,
-  AdminDatum,
-  AdminIconTile,
-  AdminSummaryCard,
-} from "@/components/admin/AdminSurfaces";
-import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
+import { Logo } from "@/components/brand/Logo";
+import { ADMIN_CARD_CLASS, AdminDatum, AdminSummaryCard } from "@/components/admin/AdminSurfaces";
+import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
+import { ui, UiBadge, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -41,36 +30,27 @@ export const Route = createFileRoute("/admin")({
   component: AdminRoute,
 });
 
-// The card surface, micro-label, icon tile and summary card now live in
-// `@/components/admin/AdminSurfaces`, shared with the five security
-// sub-pages that render inside this shell's <Outlet />. One definition only.
+// The card surface, micro-label and summary card live in
+// `@/components/admin/AdminSurfaces`, shared with the sub-pages that render
+// inside this shell's <Outlet />. One definition only.
 
 /**
- * The Admin console stays dark, and it stays dark on tokens.
+ * The Admin console wears BotolaGO's own look (Option A), not a register of
+ * its own: the light page, a white top bar with the wordmark, round chips for
+ * its sections, white 14px cards, titles in the display face.
  *
- * It is not a page of the product: it is an operator's console, read beside a
- * terminal, and the ruling is that it keeps its dark register while the
- * product's screens follow the theme. That register is expressed as SCOPE
- * rather than as hardcoded greys. `src/styles.css` redeclares every
- * colour-bearing `--ui-*` token inside a plain `.dark { … }` block, and custom
- * properties inherit, so putting `dark` on the console's outermost element
- * hands the dark values to everything underneath it -- the shared surfaces in
- * `AdminSurfaces`, the nine sub-routes rendered through <Outlet />, and every
- * kit primitive any of them use.
+ * It used to be a dark operator's console, kept dark by a `dark` class on
+ * this file's two outermost elements. Every Admin surface was already on the
+ * `--ui-*` tokens, so taking that class off is what moved the whole console
+ * -- the CMS and the security pages alike -- onto the product's look; the
+ * one surface on literal greys, `AdminFunctionalRoute`, is on the kit now
+ * too. With dark mode off in the product (`DARK_MODE_ENABLED`), this is the
+ * light theme; if it is ever switched on, the console follows it.
  *
- * Both states need it, because they are two different roots: the refusal /
- * loading panel is its own <main>, and a `dark` on the authorized shell alone
- * would leave an unauthenticated operator looking at a light card. Verified by
- * rendering both and reading `--ui-page` inside the scope (oklch(0.15 0.03
- * 260), the dark value) against outside it (oklch(0.975 0.004 250)).
- *
- * The one thing `dark` cannot reach is `AdminFunctionalRoute` /
- * `AdminFunctionalLoading` in `src/backend/admin/functional-route.tsx`, which
- * wraps seven admin routes in a literal slate-900/amber section. `src/backend`
- * is owned elsewhere. Those tones still read correctly under a dark console,
- * which is part of why the ruling went this way.
+ * The content column, the top bar and the section row share one width, so
+ * the wordmark, the first chip and the page title line up on a wide screen.
  */
-const ADMIN_DARK_SCOPE = "dark";
+const ADMIN_COLUMN = cn("mx-auto w-full max-w-4xl", ui.space.gutter);
 
 function AdminLoadingShell() {
   const { lang } = useI18n();
@@ -96,27 +76,19 @@ function AdminStatePanel({
   return (
     <main
       dir={copy.dir}
-      className={cn(
-        ADMIN_DARK_SCOPE,
-        "grid min-h-dvh place-items-center py-12",
-        ui.surface.page,
-        ui.space.gutter,
-      )}
+      className={cn("grid min-h-dvh place-items-center py-12", ui.surface.page, ui.space.gutter)}
       data-admin-state={state}
       data-testid={ADMIN_STATE_TEST_IDS[state]}
     >
-      <section className={`w-full max-w-xl ${ADMIN_CARD_CLASS} p-6 sm:p-8`}>
-        <AdminIconTile icon={ShieldCheck} />
-        {/* `ui.text.title` is the ramp's screen-header step. The `text-2xl` it
-            replaces (24px) is between two steps and was not one of them; the
-            `ltr:tracking-tight` goes with it, because the type ramp owns
-            tracking now and only the stat ramp tightens. */}
-        <h1 className={cn("mt-5", ui.text.title)}>{content.title}</h1>
-        <p className={cn("mt-3", ui.text.secondary, ui.tone.muted)}>{content.description}</p>
+      <section className={cn("w-full max-w-xl p-6 sm:p-8", ADMIN_CARD_CLASS)}>
+        {/* The wordmark says whose door this is; the display face carries
+            the one thing the panel has to say. */}
+        <Logo size="sm" />
+        <h1 className={cn("mt-6", ui.display.section)}>{content.title}</h1>
+        <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{content.description}</p>
         {showSignIn && (
           // The one action on a refusal panel, so it takes the action
-          // gradient. `size="sm"` is the inline control at `--ui-tap-min`,
-          // which is the same 44px the literal `min-h-11` was asking for;
+          // gradient. `size="sm"` is the inline control at `--ui-tap-min`;
           // `w-full sm:w-auto` keeps it thumb-width on a phone.
           <UiLinkButton
             to="/auth/login"
@@ -143,10 +115,8 @@ function AdminStatePanel({
               {" : "}
             </span>
             {/* Only the value is forced LTR, so the label keeps its logical
-                position for a screen reader and survives copy/paste. Mirroring
-                the whole string by hand renders correctly and reads backwards.
-                That rule is <AdminDatum>'s whole job, so the hand-written
-                <bdi> is now one: same element, same `dir`, same mono face. */}
+                position for a screen reader and survives copy/paste. That rule
+                is <AdminDatum>'s whole job. */}
             <AdminDatum className={cn(ui.surface.sunken, ui.radius.tight, "px-2 py-0.5")}>
               {reference}
             </AdminDatum>
@@ -175,82 +145,96 @@ function AdminRoute() {
     );
   }
 
+  const rtl = copy.dir === "rtl";
   const roleNames = result.context.roles.map((role) => role.name);
   return (
-    <main
+    <div
       dir={copy.dir}
-      className={cn(ADMIN_DARK_SCOPE, "min-h-dvh py-8 sm:py-10", ui.surface.page, ui.space.gutter)}
+      className={cn("min-h-dvh", ui.surface.page)}
       data-admin-state="authorized"
       data-testid="admin-shell"
     >
-      <div className="mx-auto max-w-5xl">
-        <header className={`${ADMIN_CARD_CLASS} p-5 sm:p-6`}>
-          <div className="flex items-center gap-3">
-            <AdminIconTile icon={ShieldCheck} />
-            {/* One ramp step, not `text-xl sm:text-2xl`. The ramp is the
-                responsive answer: `--ui-text-title` is the screen-header size
-                at every width, and a breakpoint bump is a second size the
-                system does not declare. */}
-            <h1 className={cn("min-w-0", ui.text.title)}>{copy.title}</h1>
-          </div>
-          <nav
-            className={cn("mt-5 flex flex-wrap gap-2 pt-5", ui.rule.blockStart)}
-            aria-label={copy.dir === "rtl" ? "أقسام الإدارة" : "Sections administratives"}
-            data-testid="admin-navigation"
+      {/* The top bar is the app's own: an opaque bar with a hairline, the
+          wordmark at the inline start and the round "FR" / "ع" button at the
+          end. It does not stick: the article editor pins its own toolbar to
+          the top, and two sticky bars would take a phone's screen between
+          them. */}
+      <header className={cn(ui.surface.bar, ui.rule.block)}>
+        <div className={cn(ADMIN_COLUMN, "flex min-h-[var(--ui-row-min)] items-center gap-2 py-2")}>
+          {/* The wordmark goes back to the site, as a wordmark does. */}
+          <Link
+            to="/"
+            aria-label={rtl ? "BotolaGO — العودة إلى الموقع" : "BotolaGO — retour au site"}
+            className={cn("inline-flex min-h-[var(--ui-tap-min)] items-center", ui.focus)}
           >
-            {/* Filtered on the caller's own permissions, and driven entirely by
-                the contract list -- a new nav entry appears here on its own. */}
-            {ADMIN_CONSOLE_NAV_ITEMS.filter((item) =>
-              result.context.permissions.includes(item.permission),
-            ).map((item) => (
-              <Link
-                key={item.route}
-                to={item.route}
-                // The current section used to be styled through `activeProps`,
-                // and it did not work: `activeProps.className` is APPENDED to
-                // `className`, so both sets land on the element and Tailwind's
-                // emission order decides the winner. Measured in this project's
-                // own build, `.text-emerald-200` and `.bg-emerald-500/10` are
-                // both emitted BEFORE `.text-slate-200` and `.bg-slate-900/60`,
-                // so the resting colours won and the active entry rendered
-                // identically to its neighbours. `data-[status=active]:` is the
-                // same state -- TanStack's Link sets `data-status="active"` and
-                // `aria-current="page"` itself, independently of activeProps --
-                // but as an attribute selector it outranks the resting utility
-                // on specificity rather than on emission order. The accessible
-                // state is unchanged; only the paint now follows it.
-                className={cn(
-                  "inline-flex items-center px-4 transition-colors",
-                  ui.space.tap,
-                  ui.radius.control,
-                  ui.text.meta,
-                  "[font-weight:var(--ui-weight-strong)]",
-                  ui.surface.sunken,
-                  ui.tone.muted,
-                  "data-[status=active]:bg-[color:var(--ui-ink)] data-[status=active]:text-[color:var(--ui-on-ink)]",
-                  ui.focus,
-                )}
-                data-testid={item.testId}
-              >
-                {item.labels[lang]}
-              </Link>
-            ))}
-          </nav>
-        </header>
+            <Logo size="sm" />
+          </Link>
+          <h1 className="sr-only">{copy.title}</h1>
+          <span aria-hidden>
+            <UiBadge tone="outline">{rtl ? "الإدارة" : "Admin"}</UiBadge>
+          </span>
+          <div className="ms-auto">
+            <LanguageSwitcher />
+          </div>
+        </div>
+      </header>
 
+      {/* The sections, as the round chips the app filters with: sunken at
+          rest, white on navy for the current one. The row scrolls sideways on
+          a phone rather than wrapping into a block of pills. */}
+      <nav
+        className={cn(ui.surface.bar, ui.rule.block)}
+        aria-label={rtl ? "أقسام الإدارة" : "Sections administratives"}
+        data-testid="admin-navigation"
+      >
+        <div className={cn(ADMIN_COLUMN, "flex gap-2 overflow-x-auto py-2 [scrollbar-width:none]")}>
+          {/* Filtered on the caller's own permissions, and driven entirely by
+              the contract list -- a new nav entry appears here on its own. */}
+          {ADMIN_CONSOLE_NAV_ITEMS.filter((item) =>
+            result.context.permissions.includes(item.permission),
+          ).map((item) => (
+            <Link
+              key={item.route}
+              to={item.route}
+              // The current section is painted through `data-[status=active]:`
+              // rather than `activeProps`: `activeProps.className` is APPENDED
+              // to `className`, so both sets would land on the element and
+              // Tailwind's emission order would pick the winner. TanStack's
+              // Link sets `data-status="active"` and `aria-current="page"`
+              // itself; as an attribute selector the active paint outranks
+              // the resting one on specificity.
+              className={cn(
+                "inline-flex shrink-0 items-center justify-center px-4 transition-colors",
+                ui.space.tap,
+                ui.radius.full,
+                ui.text.meta,
+                "[font-weight:var(--ui-weight-strong)]",
+                ui.surface.sunken,
+                "data-[status=active]:bg-[color:var(--ui-ink)] data-[status=active]:text-[color:var(--ui-on-ink-plain)]",
+                "data-[status=active]:shadow-[var(--ui-shadow-card)]",
+                ui.focus,
+              )}
+              data-testid={item.testId}
+            >
+              {item.labels[lang]}
+            </Link>
+          ))}
+        </div>
+      </nav>
+
+      <main className={cn(ADMIN_COLUMN, "pb-16")}>
         {isAdminRoot && (
           <>
             <section className="mt-8" aria-labelledby="admin-context-heading">
-              <h2 id="admin-context-heading" className={ADMIN_LABEL_CLASS}>
+              {/* Section headings in the display face, like "À venir" and
+                  "Classement" on the home screen. */}
+              <h2 id="admin-context-heading" className={ui.display.section}>
                 {copy.labels.contextHeading}
               </h2>
               <div className="mt-3 grid gap-3 sm:grid-cols-2" data-testid="admin-home">
                 <AdminSummaryCard title={copy.labels.identity}>
                   {/* A masked address and a UUID are both LTR data: only the
-                      value is forced, the label keeps the ambient direction.
-                      That is <AdminDatum>, so the hand-written <bdi> is one --
-                      it already carries `dir="ltr"`, the mono face and the
-                      break-all these values need. */}
+                      value is forced, the label keeps the ambient direction. */}
                   <AdminDatum>{result.identity.emailSummary ?? result.identity.userId}</AdminDatum>
                 </AdminSummaryCard>
                 <AdminSummaryCard title={copy.labels.roles}>
@@ -263,19 +247,14 @@ function AdminRoute() {
                   </p>
                 </AdminSummaryCard>
                 <AdminSummaryCard title={copy.labels.permissions}>
-                  {/* A figure a reader scans, so it is on the stat ramp
-                      (rule 4) rather than on `text-2xl` + a hand-rolled
-                      `tabular-nums`. */}
+                  {/* A figure a reader scans, so it is on the stat ramp. */}
                   <p className={ui.stat.lg}>{result.context.permissions.length}</p>
                 </AdminSummaryCard>
                 <AdminSummaryCard title={copy.labels.security}>
                   <p className="flex flex-wrap items-center gap-2">
-                    {/* Not a `UiBadge`: the badge tone is the label type,
-                        which is uppercase, and this is a VALUE rather than a
-                        status word -- "AAL2 · 30 min" would be rendered
-                        "AAL2 · 30 MIN". So it stays a datum on the sunken
-                        surface, and only the emerald foreground becomes the
-                        token that means the same thing, `--ui-positive`. */}
+                    {/* Not a `UiBadge`: the badge is uppercase label type, and
+                        this is a VALUE rather than a status word -- "AAL2 · 15
+                        min" would be rendered "AAL2 · 15 MIN". */}
                     <AdminDatum
                       mono={false}
                       className={cn(
@@ -302,7 +281,7 @@ function AdminRoute() {
             </section>
 
             <section className="mt-8" aria-labelledby="admin-modules-heading">
-              <h2 id="admin-modules-heading" className={ADMIN_LABEL_CLASS}>
+              <h2 id="admin-modules-heading" className={ui.display.section}>
                 {copy.labels.modulesHeading}
               </h2>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -313,36 +292,24 @@ function AdminRoute() {
                       key={section}
                       as="article"
                       padding="md"
-                      className="flex items-start gap-3"
+                      className="flex items-center gap-3"
                     >
+                      {/* The icon disc of the app's list rows (Profile →
+                          Langue): decorative and `aria-hidden`, so not a
+                          control, and the 40px disc it is drawn as. */}
                       <span
                         className={cn(
-                          // Decorative and `aria-hidden`, so it is not a
-                          // control and rule 5's 44px floor does not apply:
-                          // this stays the 36px glyph plate it was drawn as.
-                          "grid h-9 w-9 shrink-0 place-items-center",
-                          ui.radius.control,
+                          "grid h-10 w-10 shrink-0 place-items-center",
+                          ui.radius.full,
                           ui.surface.sunken,
-                          ui.tone.muted,
+                          ui.tone.ink,
                         )}
                         aria-hidden
                       >
-                        <Icon className="h-4 w-4" />
+                        <Icon className="h-5 w-5" />
                       </span>
-                      {/* No "coming soon" badge: every module listed here is
-                          shipped and linked in the nav directly above, so the
-                          badge told an admin their own working tools were
-                          unavailable. */}
                       <div className="min-w-0 flex-1">
-                        <h3
-                          className={cn(
-                            ui.text.secondary,
-                            "[font-weight:var(--ui-weight-heavy)]",
-                            ui.tone.default,
-                          )}
-                        >
-                          {section}
-                        </h3>
+                        <h3 className={cn(ui.text.bodyStrong, ui.tone.default)}>{section}</h3>
                       </div>
                     </UiCard>
                   );
@@ -352,8 +319,8 @@ function AdminRoute() {
           </>
         )}
         <Outlet />
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
 
