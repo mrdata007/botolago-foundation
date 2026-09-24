@@ -6,9 +6,9 @@ import { useState, type ReactNode } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { SectionHeader } from "@/components/common/SectionHeader";
-import { chipDescription } from "@/components/fpl/chip-copy";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
+import { FplChipInfo } from "@/components/fpl/FplChipInfo";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import {
   ui,
@@ -179,21 +179,22 @@ function TeamProfileBody() {
                     label={t("fpl.team_value")}
                     value={<Figure>{nf.format(summary?.teamValue ?? 0)}</Figure>}
                   />
-                  {CHIPS.map((chip) => (
-                    <UiKeyValueRow
-                      key={chip}
-                      label={
-                        <>
-                          <span className="block">{t(`fantasy.chip.${chip}` as never)}</span>
-                          <span className={cn("block", ui.text.meta, ui.tone.muted)}>
-                            {chipDescription(chip, t)}
+                  {CHIPS.map((chip) => {
+                    const name = t(`fantasy.chip.${chip}` as never);
+                    return (
+                      <UiKeyValueRow
+                        key={chip}
+                        label={
+                          <span className="inline-flex items-center gap-1">
+                            {name}
+                            <FplChipInfo chip={chip} label={name} />
                           </span>
-                        </>
-                      }
-                      value={<ChipState state={chipDisplayState(chips, chip)} />}
-                      className="py-2.5 last:border-b-0"
-                    />
-                  ))}
+                        }
+                        value={<ChipState state={chipDisplayState(chips, chip)} />}
+                        className="last:border-b-0"
+                      />
+                    );
+                  })}
                 </div>
                 <UiLinkButton to="/fantasy/points" className="mt-4">
                   {t("fpl.gameweek_history")}

@@ -599,7 +599,8 @@ export const dictionaries = {
     "fantasy.chip.free_hit": "Free Hit",
     "fantasy.chip.triple_captain": "Triple Capitaine",
     "fantasy.chip.wildcard": "Joker",
-    // What each chip does, in one line under its name (chip-copy.ts).
+    // The "i" beside a chip's name and the popup it opens (FplChipInfo).
+    "fantasy.chip.info": "À propos de {chip}",
     "fantasy.chip.bench_boost_desc": "Les points de vos remplaçants comptent aussi.",
     "fantasy.chip.free_hit_desc": "Transferts illimités pour une seule journée.",
     "fantasy.chip.triple_captain_desc": "Les points du capitaine sont triplés, pas doublés.",
@@ -1921,6 +1922,7 @@ export const dictionaries = {
     "fantasy.chip.free_hit": "الضربة الحرة",
     "fantasy.chip.triple_captain": "القائد الثلاثي",
     "fantasy.chip.wildcard": "الورقة الحرة",
+    "fantasy.chip.info": "معلومات عن {chip}",
     "fantasy.chip.bench_boost_desc": "تُحتسب نقاط لاعبي الاحتياط أيضًا.",
     "fantasy.chip.free_hit_desc": "انتقالات غير محدودة لجولة واحدة فقط.",
     "fantasy.chip.triple_captain_desc": "تُثلَّث نقاط القائد بدل أن تُضاعَف.",
