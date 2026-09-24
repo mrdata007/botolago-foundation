@@ -1,10 +1,9 @@
-import createTeamArt from "@/assets/illustrations/create-team.webp";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ChevronRight, CircleDot, Bell, Newspaper, Trophy, UserRound } from "lucide-react";
+import { CircleDot, Bell, Newspaper, Trophy, UserRound } from "lucide-react";
 
 import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
@@ -12,10 +11,14 @@ import { footballService } from "@/services/football";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { AppShell } from "@/components/shell/AppShell";
-import { SectionHeader } from "@/components/common/SectionHeader";
+import {
+  SectionGroupHeader,
+  SectionHeader,
+  SectionHeaderLink,
+} from "@/components/common/SectionHeader";
 import { Trans } from "@/components/common/Trans";
 import { Section } from "@/components/common/Section";
-import { FantasySummaryCard } from "@/components/common/FantasySummaryCard";
+import { FantasyCreateCard, FantasySummaryCard } from "@/components/common/FantasySummaryCard";
 import { FantasyUnavailableState } from "@/components/fantasy/FantasyUnavailableState";
 import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import { FantasyAlertList } from "@/components/common/FantasyAlertList";
@@ -33,7 +36,7 @@ import {
   SkeletonList,
 } from "@/components/common/Skeletons";
 import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
-import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
+import { ui, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
@@ -41,6 +44,7 @@ import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
 import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { capitalizeFirst, groupByMatchDay } from "@/lib/match-days";
 import type { Match } from "@/types/domain";
 import stadiumBand from "@/assets/brand/home-band-stadium.webp";
 import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
@@ -103,29 +107,35 @@ function HomePage() {
   return <HomeContent />;
 }
 
+/** A match being played right now, for the split live card. */
+const isInPlay = (match: Match) => match.status === "live";
+
 /**
- * BotolaGO Home (Accueil) — dashboard redesign (BG-0012).
+ * BotolaGO Home (Accueil) — Option A "Club colours" (A-Home).
  *
- * A genuine "control center" landing screen, not a duplicate of the News
- * page. Fixed structure, now drawn in the product design language: the UI
- * kit's type scale, 6px radii, opaque `--ui-surface` cards and one shadow
- * token — no V2 glass (`surface-4`/`surface-2`), no Tailwind type ramp and
- * no responsive type steps, which the language never takes:
+ * A "control center" landing screen, not a duplicate of the News page. The
+ * structure is fixed (the order is pinned by `index.home-structure.test.ts`):
  *
- *   1. Gameweek band           — greeting, the gameweek, its date and the
- *                                Fantasy deadline over a night-match photograph:
- *                                the page's one anchor (Accueil art-direction pass)
- *   2. Matches                 — one fixture list grouped by day, rising out
- *                                of the band
- *   3. Fantasy                 — the manager's team and numbers, or the
- *                                way into creating one
- *   4. News preview            — a few curated cards linking into /news
- *   5. Standings snapshot      — top of the table, only when real data exists
- *   6. Discovery links         — quick access to Matches/Fantasy/News/Profile
+ *   1. Gameweek band      — a photo band flush under the bar: the date,
+ *                           "JOURNÉE 14" in the display face and the Fantasy
+ *                           deadline as a gradient pill
+ *   2. Live & upcoming    — each live match as the split club-colour card,
+ *                           the first one rising out of the band; then "À
+ *                           venir", day by day, as club-colour rows
+ *   3. Fantasy            — the manager's gradient card, or the way into
+ *                           creating a team
+ *   4. News preview       — a few curated cards linking into /news (flagged)
+ *   5. Standings snapshot — top of the table, only when real data exists
+ *   6. Discovery links    — quick access to Matches/Fantasy/News/Profile
+ *
+ * Nothing on the page is invented: the board's scorers line under the live
+ * card needs goal events the home payload does not carry, and the Fantasy
+ * card's rank movement needs a previous rank the summary does not hold, so
+ * neither is drawn.
  */
 function HomeContent() {
   const { t, tr, lang } = useI18n();
-  const { status, user } = useAuth();
+  const { status } = useAuth();
   const { source, key } = useFantasyDataSource();
   const greeting = useGreeting();
   const availability = useFantasyAvailability();
@@ -145,6 +155,11 @@ function HomeContent() {
   const matchesQ = useQuery({
     queryKey: ["football", "home-matches", lang],
     queryFn: () => footballService.getHomeMatches(lang),
+    // The live card is the loudest thing on the page: while a match is on it
+    // follows the score at the live strip's own pace, and a match that ends
+    // leaves it (the home payload holds live and upcoming fixtures only).
+    refetchInterval: (query) => (query.state.data?.matches.some(isInPlay) ? 30_000 : false),
+    refetchIntervalInBackground: false,
   });
   const alertsQ = useQuery({
     queryKey: ["alerts"],
@@ -205,10 +220,25 @@ function HomeContent() {
     return fmt.format(new Date());
   }, [lang]);
 
-  const matchDays = useMemo(
-    () => groupByMatchDay(matchesQ.data?.matches ?? [], lang),
-    [matchesQ.data, lang],
+  const homeMatches = useMemo(() => matchesQ.data?.matches ?? [], [matchesQ.data]);
+  const liveMatches = useMemo(() => homeMatches.filter(isInPlay), [homeMatches]);
+  // "Aujourd'hui" and "Demain" rather than the date the band already shows.
+  const upcomingDays = useMemo(
+    () =>
+      groupByMatchDay(
+        homeMatches.filter((match) => !isInPlay(match)),
+        {
+          locale: lang === "ar" ? "ar-MA" : "fr-FR",
+          today: t("matches.date.today"),
+          tomorrow: t("matches.date.tomorrow"),
+        },
+      ),
+    [homeMatches, lang, t],
   );
+  // The band names the Fantasy gameweek; before Fantasy has one (or for a
+  // visitor it is not open to), the league round of the next fixture.
+  const bandGameweek =
+    gwQ.data?.number ?? homeMatches.find((match) => match.gameweek > 0)?.gameweek;
 
   // Up to three curated stories: the edition's lead plus its next articles.
   // Never the full News page — a lightweight preview only.
@@ -236,81 +266,89 @@ function HomeContent() {
       <GameweekBand
         greeting={greeting}
         dateLine={dateLine}
-        gameweek={gwQ.data}
-        live={matchesQ.data?.matches.some((m) => m.status === "live") ?? false}
+        gameweek={bandGameweek}
+        deadline={gwQ.data?.deadline}
+        live={liveMatches.length > 0}
+        overlap={liveMatches.length > 0}
       />
 
       {/* -------------------------------------------------------- */}
-      {/* 2. Matches                                                */}
+      {/* 2. Live & upcoming                                        */}
       {/* -------------------------------------------------------- */}
-      {/* The fixture list rises out of the band: pulled up over its lower
-          edge so the gameweek and its matches read as one moment rather than
-          a banner followed by a separate section. */}
-      <Section className="relative -mt-10 sm:-mt-10">
-        <UiCard padding="none" className="min-w-0 overflow-hidden">
-          <div className="flex items-center justify-between gap-3 ps-4 pe-2 pt-2">
-            <h2 className={cn("truncate", ui.text.subtitle, ui.tone.default)}>
-              {plain(t("home.live_upcoming"))}
-            </h2>
-            <ViewAllLink to="/matches" />
-          </div>
-          {matchesQ.isLoading && (
-            <div className="grid gap-2 p-3">
-              <SkeletonList count={2}>{() => <MatchCardSkeleton />}</SkeletonList>
+      <h2 className="sr-only">{plain(t("home.live_upcoming"))}</h2>
+      {/* Each live match as the split club-colour card; the first rises out
+          of the band, so the gameweek and its live match read as one moment. */}
+      {liveMatches.length > 0 && (
+        <div className="relative -mt-16 grid gap-3">
+          {liveMatches.map((match) => {
+            const home = clubById(match.homeClubId);
+            const away = clubById(match.awayClubId);
+            if (!home || !away) return null;
+            return (
+              <MatchCard key={match.id} match={match} home={home} away={away} variant="hero" />
+            );
+          })}
+        </div>
+      )}
+      {(matchesQ.isError || upcomingDays.length > 0 || homeMatches.length === 0) && (
+        <Section>
+          <SectionHeader
+            as="h3"
+            title={t("matches.section.upcoming")}
+            action={<ViewAllLink to="/matches" />}
+          />
+          {matchesQ.isPending ? (
+            <UiCard
+              padding="none"
+              className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+            >
+              <MatchCardSkeleton flat />
+              <MatchCardSkeleton flat />
+            </UiCard>
+          ) : matchesQ.isError ? (
+            <ErrorState onRetry={() => void matchesQ.refetch()} />
+          ) : upcomingDays.length === 0 ? (
+            <EmptyState compact>{t("state.empty")}</EmptyState>
+          ) : (
+            <div className="grid gap-4">
+              {upcomingDays.map((day) => (
+                <div key={day.key} className="min-w-0">
+                  <SectionGroupHeader as="h4" title={day.label} />
+                  {/* The card clips the rows' club edge bars to its corners. */}
+                  <UiCard
+                    padding="none"
+                    className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+                  >
+                    {day.matches.map((m) => {
+                      const home = clubById(m.homeClubId);
+                      const away = clubById(m.awayClubId);
+                      if (!home || !away) return null;
+                      return (
+                        <MatchCard
+                          key={m.id}
+                          match={m}
+                          home={home}
+                          away={away}
+                          variant="list"
+                          listGameweek={bandGameweek}
+                        />
+                      );
+                    })}
+                  </UiCard>
+                </div>
+              ))}
             </div>
           )}
-          {matchesQ.isError && (
-            <div className="p-3">
-              <ErrorState onRetry={() => void matchesQ.refetch()} />
-            </div>
-          )}
-          {!matchesQ.isLoading && matchesQ.data?.matches.length === 0 && (
-            <div className="p-3">
-              <EmptyState compact>{t("state.empty")}</EmptyState>
-            </div>
-          )}
-          {matchDays.map((day) => (
-            <div key={day.key}>
-              <div
-                className={cn(
-                  "px-4 pb-1 pt-3",
-                  ui.text.meta,
-                  "[font-weight:var(--ui-weight-heavy)]",
-                  ui.tone.muted,
-                )}
-              >
-                {day.label}
-              </div>
-              <div className="divide-y divide-[color:var(--ui-rule)]">
-                {day.matches.map((m) => {
-                  const home = clubById(m.homeClubId);
-                  const away = clubById(m.awayClubId);
-                  if (!home || !away) return null;
-                  return (
-                    <MatchCard
-                      key={m.id}
-                      match={m}
-                      home={home}
-                      away={away}
-                      variant="list"
-                      listGameweek={gwQ.data?.number}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </UiCard>
-      </Section>
+        </Section>
+      )}
 
       {/* -------------------------------------------------------- */}
-      {/* 3. Fantasy — gameweek deadline / team entry                */}
+      {/* 3. Fantasy — the manager's card / team entry              */}
       {/* -------------------------------------------------------- */}
+      {/* The card names itself ("VOTRE FANTASY · ATLAS XI"), as the board
+          draws it; the heading is for the document outline. */}
       <Section>
-        <SectionHeader
-          title={plain(t("home.fantasy_hub"))}
-          action={<ViewAllLink to="/fantasy" className={ALIGN_WITH_TITLE} />}
-        />
+        <h2 className="sr-only">{plain(t("home.fantasy_hub"))}</h2>
         {status === "loading" || availability.isPending ? (
           <HeroSkeleton />
         ) : availability.isError ? (
@@ -318,7 +356,7 @@ function HomeContent() {
         ) : availability.data.status !== "ready" ? (
           <FantasyUnavailableState reason={availability.data.status} />
         ) : source === "guest" ? (
-          <CreateTeamLink canCreate={canCreate} />
+          <FantasyCreateCard canCreate={canCreate} />
         ) : summaryQ.isError || gwQ.isError ? (
           <ErrorState
             onRetry={() => {
@@ -327,14 +365,9 @@ function HomeContent() {
             }}
           />
         ) : summaryQ.data && gwQ.data ? (
-          <FantasySummaryCard
-            summary={{
-              ...summaryQ.data,
-              managerName: user?.displayName?.trim() || summaryQ.data.managerName,
-            }}
-          />
+          <FantasySummaryCard summary={summaryQ.data} />
         ) : summaryQ.isSuccess && summaryQ.data === null ? (
-          <CreateTeamLink canCreate={canCreate} />
+          <FantasyCreateCard canCreate={canCreate} />
         ) : (
           <HeroSkeleton />
         )}
@@ -372,7 +405,7 @@ function HomeContent() {
         <Section>
           <SectionHeader
             title={plain(t("home.news_preview"))}
-            action={<ViewAllLink to="/news" className={ALIGN_WITH_TITLE} />}
+            action={<ViewAllLink to="/news" />}
           />
           <div className="grid gap-2.5">
             {newsQ.isError ? (
@@ -397,7 +430,7 @@ function HomeContent() {
         <Section>
           <SectionHeader
             title={plain(t("matches.table_preview"))}
-            action={<ViewAllLink to="/matches" className={ALIGN_WITH_TITLE} />}
+            action={<ViewAllLink to="/matches" />}
           />
           {standingsLoading ? (
             <SkeletonList count={5}>{() => <StandingsRowSkeleton />}</SkeletonList>
@@ -414,15 +447,9 @@ function HomeContent() {
                 const club = clubById(row.clubId);
                 if (!club) return null;
                 return (
-                  <div key={row.clubId} className="flex items-center gap-2.5 px-3 py-2">
+                  <div key={row.clubId} className="flex items-center gap-2.5 px-3.5 py-2">
                     <span
-                      className={cn(
-                        "w-4 shrink-0 text-center font-mono",
-                        ui.text.meta,
-                        "[font-weight:var(--ui-weight-heavy)]",
-                        ui.text.tabular,
-                        ui.tone.muted,
-                      )}
+                      className={cn("w-5 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}
                       aria-hidden
                     >
                       {row.position}
@@ -439,35 +466,19 @@ function HomeContent() {
                       {tr(club.shortName)}
                     </span>
                     <span
-                      className={cn(
-                        "w-7 shrink-0 text-center",
-                        ui.text.micro,
-                        ui.text.tabular,
-                        ui.tone.muted,
-                      )}
+                      className={cn("w-7 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}
                       aria-label={t("matches.table.played")}
                     >
                       {row.played}
                     </span>
-                    <span
-                      className={cn(
-                        "w-8 shrink-0 text-center",
-                        ui.text.micro,
-                        ui.text.tabular,
-                        ui.tone.muted,
-                      )}
+                    <bdi
+                      className={cn("w-9 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}
                       aria-label={t("matches.table.goal_difference")}
                     >
                       {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
-                    </span>
+                    </bdi>
                     <span
-                      className={cn(
-                        "w-8 shrink-0 text-end",
-                        ui.text.body,
-                        "[font-weight:var(--ui-weight-hero)]",
-                        ui.text.tabular,
-                        ui.tone.default,
-                      )}
+                      className={cn("w-8 shrink-0 text-end", ui.stat.md, ui.tone.default)}
                       aria-label={t("matches.table.points")}
                     >
                       {row.points}
@@ -497,40 +508,9 @@ function HomeContent() {
   );
 }
 
-/** `SectionHeader` bottom-aligns its action, and the link's 44px tap box
- *  then centres its text 12px above the title's line. Pulling the box down by
- *  the header's own bottom padding puts the two on one line without
- *  shrinking the tap target. */
-const ALIGN_WITH_TITLE = "-mb-3";
-
-function ViewAllLink({
-  to,
-  className,
-}: {
-  to: "/news" | "/matches" | "/fantasy";
-  className?: string;
-}) {
-  const { t } = useI18n();
-  return (
-    <Link
-      to={to}
-      className={cn(
-        "inline-flex items-center gap-0.5 px-2 py-1.5",
-        "min-h-[var(--ui-tap-min)]",
-        ui.radius.control,
-        ui.text.meta,
-        "[font-weight:var(--ui-weight-heavy)]",
-        ui.tone.ink,
-        "transition-colors duration-[var(--duration-quick)]",
-        "hover:bg-[color:var(--ui-surface-sunken)]",
-        ui.focus,
-        className,
-      )}
-    >
-      {t("home.view_all")}
-      <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-    </Link>
-  );
+/** "Tout voir" on a section heading: the shared 44px round link. */
+function ViewAllLink({ to }: { to: "/news" | "/matches" | "/fantasy" }) {
+  return <SectionHeaderLink to={to} />;
 }
 
 function DiscoveryLink({
@@ -544,7 +524,7 @@ function DiscoveryLink({
 }) {
   // One quiet row of tiles. These repeat the navigation bar, so they carry
   // the ink colour rather than the action gradient, which on this page is
-  // kept for the one thing a guest should do (create a team).
+  // kept for Fantasy.
   return (
     <Link
       to={to}
@@ -579,53 +559,41 @@ function plain(text: string): string {
   return text.replace(/\{\/?accent\}/g, "");
 }
 
-function CreateTeamLink({ canCreate }: { canCreate: boolean }) {
-  const { t } = useI18n();
-  return (
-    <UiCard padding="md" className="flex flex-col items-center gap-3">
-      <img
-        src={createTeamArt}
-        alt=""
-        aria-hidden
-        loading="lazy"
-        decoding="async"
-        className="h-28 w-auto max-w-full object-contain"
-      />
-      <UiLinkButton to={canCreate ? "/fantasy/create" : "/fantasy"} className="w-full">
-        <Trophy className="h-4 w-4 shrink-0" aria-hidden />
-        <span className="truncate">{t(canCreate ? "fantasy.create.title" : "fantasy.title")}</span>
-        <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
-      </UiLinkButton>
-    </UiCard>
-  );
-}
-
 /**
- * The gameweek band: Home's anchor. A night-match photograph under a navy
- * scrim, in the same deep blue the welcome and sign-in screens use, so the
- * page is recognisably BotolaGO without another wordmark; on it, the
- * gameweek at hero size and — while it is still ahead — the Fantasy
- * deadline, counting down. Full-bleed on a phone, a
- * rounded panel in the content column from `sm`. Its lower edge is covered by
- * the fixture list, which is why it carries extra bottom padding.
+ * The gameweek band: Home's anchor (A-Home). A night-match photograph flush
+ * under the bar, full-bleed on a phone and a rounded panel from `sm`; on it,
+ * the date, the gameweek in the display face and — while it is still ahead —
+ * the Fantasy deadline as the gradient pill, counting down.
+ *
+ * The scrim runs `to bottom` from a light veil to near-navy: the text sits in
+ * the upper half, and the live card, when there is one, covers the dark lower
+ * edge (`overlap` leaves it the room). A degree angle would land on the wrong
+ * edge under `dir="rtl"`.
  */
 function GameweekBand({
   greeting,
   dateLine,
   gameweek,
+  deadline,
   live,
+  overlap,
 }: {
   greeting: string;
   dateLine: string;
-  gameweek?: { number: number; deadline: string };
+  gameweek?: number;
+  /** The Fantasy deadline for that gameweek, when Fantasy has one. */
+  deadline?: string;
   /** A match is being played: the band shows the crowd celebrating. */
   live: boolean;
+  /** A live card rises out of the band's lower edge. */
+  overlap: boolean;
 }) {
   const { t } = useI18n();
-  // The band's own clock, so the deadline row leaves when the deadline passes
-  // rather than sitting at "0j 0h 0min" until something else re-renders Home.
-  // One timer, set for the deadline itself; nothing ticks once it has passed.
-  const deadlineMs = gameweek ? new Date(gameweek.deadline).getTime() : null;
+  // The band's own clock, so the deadline pill leaves when the deadline
+  // passes rather than sitting at "0h 0min" until something else re-renders
+  // Home. One timer, set for the deadline itself; nothing ticks once it has
+  // passed.
+  const deadlineMs = deadline ? new Date(deadline).getTime() : null;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (deadlineMs === null || deadlineMs <= now) return;
@@ -633,13 +601,16 @@ function GameweekBand({
     const id = setTimeout(() => setNow(Date.now()), Math.min(deadlineMs - now + 250, 2 ** 31 - 1));
     return () => clearTimeout(id);
   }, [deadlineMs, now]);
-  const deadlineAhead = gameweek !== undefined && deadlineMs !== null && deadlineMs > now;
+  const deadlineAhead = deadline !== undefined && deadlineMs !== null && deadlineMs > now;
   return (
     <section
       className={cn(
         "relative isolate overflow-hidden",
-        "-mx-[var(--ui-gutter)] px-[var(--ui-gutter)] pb-14 pt-5",
-        "sm:mx-0 sm:mt-4 sm:rounded-[var(--ui-radius-control)] sm:px-6 sm:pt-6",
+        // Flush under the bar (and the live strip): UiScreen's `pt-4` is
+        // taken back on a phone, where the band runs edge to edge.
+        "-mx-[var(--ui-gutter)] -mt-4 px-[var(--ui-gutter)] pt-6",
+        overlap ? "pb-24" : "pb-7",
+        "sm:mx-0 sm:mt-0 sm:rounded-[var(--ui-radius-sheet)] sm:px-6",
         ui.tone.onInkPlain,
         "bg-[color:var(--ui-ink-deep)]",
         "animate-in fade-in-0 duration-500 ease-out",
@@ -663,58 +634,27 @@ function GameweekBand({
         fetchPriority="high"
         className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_60%] rtl:-scale-x-100"
       />
-      {/* A navy scrim over the photograph keeps the white text readable
-          wherever the floodlights land. `to bottom`: a degree angle would
-          sit on the wrong edge under `dir="rtl"`. */}
       <div
         aria-hidden
         className="absolute inset-0 -z-10"
         style={{
           backgroundImage:
-            "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 68%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 45%, transparent) 100%)",
+            "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 60%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 88%, transparent) 78%)",
         }}
       />
-      <p className={cn("truncate", ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}>
+      <p className={cn("truncate", ui.text.label)}>
         {greeting} · {capitalizeFirst(dateLine)}
       </p>
       {gameweek ? (
-        <p className={cn("mt-1.5", ui.text.hero)}>
-          {t("home.gameweek")} {gameweek.number}
+        <p className={cn("mt-1 uppercase", ui.display.hero)}>
+          {t("home.gameweek")} {gameweek}
         </p>
       ) : null}
       {deadlineAhead ? (
-        <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <span className={ui.text.label}>{t("home.deadline")}</span>
-          <DeadlineCountdown iso={gameweek.deadline} tone="onGradient" />
+        <div className="mt-3 flex">
+          <DeadlineCountdown iso={deadline} label={t("home.deadline_fantasy")} />
         </div>
       ) : null}
     </section>
   );
-}
-
-/** "mercredi 23 septembre" → "Mercredi 23 septembre". CSS `capitalize`
- *  would title-case every word, and French does not capitalise months. */
-function capitalizeFirst(text: string): string {
-  return text.charAt(0).toLocaleUpperCase() + text.slice(1);
-}
-
-/** Home's fixtures, grouped under the football day they are played on. */
-function groupByMatchDay(matches: readonly Match[], lang: string) {
-  const locale = lang === "ar" ? "ar-MA" : "fr-FR";
-  const keyFmt = new Intl.DateTimeFormat("en-CA", { timeZone: MATCH_TIME_ZONE });
-  const labelFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-  const days: { key: string; label: string; matches: Match[] }[] = [];
-  for (const match of matches) {
-    const kickoff = new Date(match.kickoff);
-    const key = keyFmt.format(kickoff);
-    const last = days[days.length - 1];
-    if (last && last.key === key) last.matches.push(match);
-    else days.push({ key, label: capitalizeFirst(labelFmt.format(kickoff)), matches: [match] });
-  }
-  return days;
 }

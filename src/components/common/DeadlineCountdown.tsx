@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useI18n } from "@/i18n/provider";
-import { Timer } from "lucide-react";
-import { ui } from "@/components/ui-kit";
+import { Clock } from "lucide-react";
+import { ui, UiPill } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 function diff(target: Date) {
@@ -13,16 +13,26 @@ function diff(target: Date) {
 }
 
 /**
- * `tone="onGradient"` is the Home gameweek band's figure: the same countdown
- * set as a stat in the band's own foreground colour (inherited), without the
- * sunken pill, which would read as a grey patch on the band.
+ * The time left before a Fantasy deadline, to the minute ("1j 13h 59min").
+ * The day part drops out on the last day rather than reading "0j".
+ *
+ * `tone="pill"` (default) is Option A's deadline pill on Home's gameweek band:
+ * the action gradient, fully round, a clock, an optional `label` and the
+ * countdown — ink-deep throughout, the one foreground the gradient carries in
+ * both themes. `tone="plain"` is the countdown alone, in the inherited type
+ * and colour, for a caller that draws its own frame.
+ *
+ * Tabular figures so the minutes do not shift the pill as they tick.
  */
 export function DeadlineCountdown({
   iso,
   tone = "pill",
+  label,
 }: {
   iso: string;
-  tone?: "pill" | "onGradient";
+  tone?: "pill" | "plain";
+  /** What the deadline is for ("Date limite Fantasy"), set before the time. */
+  label?: ReactNode;
 }) {
   const { t } = useI18n();
   const [now, setNow] = useState(() => diff(new Date(iso)));
@@ -31,37 +41,27 @@ export function DeadlineCountdown({
     return () => clearInterval(id);
   }, [iso]);
 
-  if (tone === "onGradient") {
-    return (
-      <span className={cn("inline-flex items-center gap-1.5", ui.stat.md)}>
-        <Timer className="h-4 w-4 shrink-0" aria-hidden />
-        <span className="tabular-nums">
-          {now.d}
-          {t("home.days")} {now.h}
-          {t("home.hours")} {now.m}
-          {t("home.minutes")}
-        </span>
-      </span>
-    );
-  }
+  const countdown = (
+    <span className={cn("whitespace-nowrap", ui.text.tabular)}>
+      {now.d > 0 ? `${now.d}${t("home.days")} ` : null}
+      {now.h}
+      {t("home.hours")} {now.m}
+      {t("home.minutes")}
+    </span>
+  );
+
+  if (tone === "plain") return countdown;
 
   return (
-    <div
-      className={cn(
-        "inline-flex items-center gap-2 px-3 py-1.5",
-        ui.radius.full,
-        ui.surface.sunken,
-        ui.text.meta,
-        "[font-weight:var(--ui-weight-strong)]",
-      )}
-    >
-      <Timer className="h-3.5 w-3.5 text-[color:var(--brand-accent)]" aria-hidden />
-      <span className="tabular-nums">
-        {now.d}
-        {t("home.days")} {now.h}
-        {t("home.hours")} {now.m}
-        {t("home.minutes")}
-      </span>
-    </div>
+    <UiPill tone="action" className="max-w-full">
+      <Clock className="h-4 w-4 shrink-0" aria-hidden />
+      {label ? (
+        <>
+          <span className="min-w-0 truncate">{label}</span>
+          <span aria-hidden>·</span>
+        </>
+      ) : null}
+      {countdown}
+    </UiPill>
   );
 }

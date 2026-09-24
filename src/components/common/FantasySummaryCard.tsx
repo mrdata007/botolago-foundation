@@ -1,121 +1,116 @@
 import { Link } from "@tanstack/react-router";
-import type { Club, FantasySummary } from "@/types/domain";
-import { useI18n } from "@/i18n/provider";
-import { ClubCrest } from "./ClubCrest";
 import { ChevronRight } from "lucide-react";
-import { ui, UiCard } from "@/components/ui-kit";
+import createTeamArt from "@/assets/illustrations/create-team.webp";
+import type { FantasySummary } from "@/types/domain";
+import { useI18n } from "@/i18n/provider";
+import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 /**
- * Home's "Votre Fantasy" card.
+ * Home's Fantasy card (Option A, A-Home): the action gradient, one link.
  *
- * Accueil art-direction pass: the gameweek and its deadline now lead the page
- * in Home's gameweek band, so the card no longer repeats them. What is left is
- * the manager's own state — the team, and the four numbers they open the card
- * for — composed as one strip of figures on hairlines rather than four grey
- * tiles, and a single way in: the team row itself, which links to the team.
- * The full-width gradient button it replaces was the loudest element on Home,
- * louder than the football; the section's own "Tout voir" still leads to the
- * Fantasy hub.
+ * `FantasySummaryCard` is the manager's: at the start a kicker ("VOTRE
+ * FANTASY · ATLAS XI") and the overall rank, at the end the gameweek's points
+ * as the one big figure. Only numbers the summary really carries: the board's
+ * "▲ 1 210" rank movement has no source (`FantasySummary` holds the current
+ * ranks, not the previous ones), so it is not drawn, and a manager with no
+ * rank yet simply has no rank line.
  *
- * Every `tracking-*` reaches this file through `ui.text.label`, which is
- * `ltr:`-prefixed — Arabic letterforms join and must never be letter-spaced
+ * `FantasyCreateCard` is the same object for a visitor with no team yet:
+ * the kicker, "Créer mon équipe", and the tactics-board illustration.
+ *
+ * Every foreground on the gradient is `--ui-ink-deep`, the one colour the kit
+ * pairs with it — the gradient stays light in the dark theme, so a themed
+ * text colour would fail there. `ui.text.label` carries the only tracking,
+ * `ltr:`-prefixed: Arabic letterforms join and are never letter-spaced
  * (BG-0069).
  */
 
-export function FantasySummaryCard({ summary, club }: { summary: FantasySummary; club?: Club }) {
+/** The gradient card frame both states share. */
+const CARD = cn(
+  "flex min-w-0 items-center gap-4 px-5 py-6",
+  ui.radius.sheet,
+  "text-[color:var(--ui-ink-deep)]",
+  "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+  ui.focus,
+);
+const GRADIENT = { backgroundImage: "var(--ui-grad-action)" } as const;
+
+/** "Votre {accent}Fantasy{/accent}" as a single-tone kicker: the gradient is
+ *  already the accent, so the markers are dropped rather than coloured. */
+const plain = (text: string) => text.replace(/\{\/?accent\}/g, "");
+
+export function FantasySummaryCard({ summary }: { summary: FantasySummary }) {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
-  const initials =
-    summary.teamName
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join("")
-      .toUpperCase() || "BG";
+  const points = nf.format(summary.gameweekPoints);
+  const rank = summary.overallRank === null ? null : nf.format(summary.overallRank);
+  // "58" alone is a number, not a meaning: the link's name says what each
+  // figure is, and the visual content under it is hidden from assistive tech.
+  const label = [
+    summary.teamName,
+    `${t("fantasy.gw_points")} ${points}`,
+    rank === null ? null : `${t("fantasy.overall_rank")} ${rank}`,
+    t("home.view_fantasy_team"),
+  ]
+    .filter(Boolean)
+    .join(". ");
 
   return (
-    <UiCard padding="none" className="min-w-0 overflow-hidden">
-      <Link
-        to="/fantasy/team"
-        aria-label={`${summary.teamName} — ${t("home.view_fantasy_team")}`}
-        className={cn(
-          "flex min-w-0 items-center gap-3 px-4 py-3.5",
-          "transition-colors duration-[var(--duration-quick)]",
-          "hover:bg-[color:var(--ui-surface-sunken)]",
-          ui.focus,
-        )}
-      >
-        {club ? (
-          <ClubCrest club={club} size="md" className="rounded-full" />
-        ) : (
-          <div
-            aria-hidden
+    <Link to="/fantasy/team" aria-label={label} className={CARD} style={GRADIENT}>
+      <span aria-hidden className="min-w-0 flex-1">
+        <span className={cn("block truncate", ui.text.label)}>
+          {plain(t("home.fantasy_hub"))} · {summary.teamName}
+        </span>
+        {rank === null ? null : (
+          <span
             className={cn(
-              "grid h-10 w-10 shrink-0 place-items-center rounded-full",
-              ui.surface.inkPlain,
-              ui.text.label,
+              "mt-1 block truncate",
+              ui.text.meta,
+              "[font-weight:var(--ui-weight-strong)]",
             )}
           >
-            {initials}
-          </div>
+            {t("fpl.rank")} <bdi className={ui.text.tabular}>{rank}</bdi>
+          </span>
         )}
-        <div className="min-w-0 flex-1">
-          <div className={cn("truncate", ui.text.subtitle, ui.tone.default)}>
-            {summary.teamName}
-          </div>
-          {/* BG-0074: the manager name falls back to the team name when no
-              profile can be resolved, so printing both would repeat it. */}
-          {summary.managerName && summary.managerName !== summary.teamName ? (
-            <div className={cn("truncate", ui.text.meta, ui.tone.muted)}>{summary.managerName}</div>
-          ) : null}
-        </div>
-        <span
-          className={cn(
-            "inline-flex shrink-0 items-center gap-0.5",
-            ui.text.meta,
-            "[font-weight:var(--ui-weight-heavy)]",
-            ui.tone.ink,
-          )}
-          aria-hidden
-        >
-          {t("home.view_fantasy_team")}
-          <ChevronRight className="h-4 w-4" aria-hidden />
+      </span>
+      <span aria-hidden className="flex shrink-0 items-baseline gap-1">
+        <bdi className={ui.score.hero}>{points}</bdi>
+        <span className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}>
+          {t("fantasy.points.abbr")}
         </span>
-      </Link>
-
-      {/* BG-0111 — two-up at phone width, four-up from `sm`: at 390px a
-          four-column row leaves each caption 64px, and "Classement" alone
-          measures ~70px. The figures sit on the card itself, one hairline
-          apart (the 1px gap shows the rule colour behind the cells), so the
-          four numbers read as one strip instead of four grey buttons. */}
-      <div
-        className={cn(
-          "grid grid-cols-2 gap-px text-center sm:grid-cols-4",
-          "bg-[color:var(--ui-rule)]",
-          ui.rule.blockStart,
-        )}
-      >
-        <Metric label={t("fantasy.gw_points")} value={nf.format(summary.gameweekPoints)} accent />
-        <Metric label={t("fantasy.total_points")} value={nf.format(summary.totalPoints)} />
-        <Metric
-          label={t("fantasy.overall_rank")}
-          value={summary.overallRank === null ? "—" : nf.format(summary.overallRank)}
-        />
-        <Metric label={t("fantasy.transfers")} value={String(summary.transfersLeft)} />
-      </div>
-    </UiCard>
+      </span>
+    </Link>
   );
 }
 
-function Metric({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+export function FantasyCreateCard({
+  canCreate,
+}: {
+  /** Whether a team can be created now; otherwise the card opens the hub. */
+  canCreate: boolean;
+}) {
+  const { t } = useI18n();
+  // Two literal calls rather than one call over a ternary: the i18n gate
+  // reads keys statically and counts a computed argument as opaque.
+  const title = canCreate ? t("fantasy.create.title") : t("fantasy.title");
   return (
-    <div className="min-w-0 bg-[color:var(--ui-surface)] px-1.5 py-3">
-      <div className={cn(ui.stat.lg, accent ? ui.tone.ink : ui.tone.default)}>{value}</div>
-      {/* `micro` rather than `label`: the captions stay dense next to the
-          figure, and wrap at word boundaries rather than clamp (BG-0124). */}
-      <div className={cn("mt-1 break-words", ui.text.micro, ui.tone.muted)}>{label}</div>
-    </div>
+    <Link to={canCreate ? "/fantasy/create" : "/fantasy"} className={CARD} style={GRADIENT}>
+      <span className="min-w-0 flex-1">
+        <span className={cn("block truncate", ui.text.label)}>{plain(t("home.fantasy_hub"))}</span>
+        <span className={cn("mt-1 flex items-center gap-1", ui.display.section)}>
+          <span className="min-w-0 truncate">{title}</span>
+          <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
+        </span>
+      </span>
+      <img
+        src={createTeamArt}
+        alt=""
+        aria-hidden
+        loading="lazy"
+        decoding="async"
+        className="-my-3 h-20 w-auto shrink-0 object-contain"
+      />
+    </Link>
   );
 }

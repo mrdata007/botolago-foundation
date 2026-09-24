@@ -337,7 +337,18 @@ export const BASELINES: Baselines = {
   // in both languages and referenced by nothing until now. W3 252 -> 251.
   // Every key the pass added is referenced by the component that added it,
   // and each is its own literal call, so W1, W2 and W4 do not move.
-  W3: 251,
+  //
+  // Option A, Lane 1 (Home + Matches): W3 251 -> 252, net +4 orphaned / -3
+  // adopted. Orphaned: `home.deadline` (the band's pill now reads
+  // `home.deadline_fantasy`, "Date limite Fantasy"), `matches.section.live`
+  // and `matches.competition.country` (A-Matches drops the per-status section
+  // titles and the deleted CompetitionHeader), `fantasy.transfers` (Home's
+  // Fantasy card is the gradient card: rank and gameweek points only). Left
+  // in the dictionary, as above: a screen lane does not delete keys.
+  // Adopted: `matches.date.yesterday` / `.tomorrow` (the date band and Home's
+  // day groups name the day) and `matches.a11y.live_minute` (a live card's
+  // accessible name states the minute).
+  W3: 252,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
@@ -347,7 +358,10 @@ export const BASELINES: Baselines = {
   // each carried `t(canCreate ? "fantasy.create.title" : "fantasy.title")`.
   // They are one `CreateTeamLink` now, so the same dynamic call appears once.
   // 71 -> 70.
-  W4: 70,
+  //
+  // Option A, Lane 1: that link is now `FantasyCreateCard`, which picks its
+  // title with two literal calls instead. 70 -> 69.
+  W4: 69,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];

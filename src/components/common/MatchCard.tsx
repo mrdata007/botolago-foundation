@@ -1,11 +1,11 @@
+import { useMemo, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import type { Club, Match, MatchStatus } from "@/types/domain";
 import { useI18n } from "@/i18n/provider";
 import { ClubCrest } from "./ClubCrest";
-import { LiveIndicator } from "@/components/matches/LiveIndicator";
 import { cn } from "@/lib/utils";
-import { ui } from "@/components/ui-kit";
-import { MapPin } from "lucide-react";
+import { ui, UiBadge, UiLivePill } from "@/components/ui-kit";
+import { clubMatchPalettes, clubStyle, type ClubPalette } from "@/lib/club-palette";
 import {
   isKickoffDateUnconfirmed,
   isKickoffTimeUnconfirmed,
@@ -13,44 +13,38 @@ import {
 } from "@/lib/match-kickoff";
 
 /**
- * Match card.
+ * Match card (Option A "Club colours").
  *
- * A single, reusable match card that renders every supported match state
- * with a shared score-first structure but distinct visual identity:
- *   - `scheduled`             large kickoff time, teams equal, subtle chip
- *   - `live`                  pulsing LIVE + minute, bold score, ambient tint
- *   - `finished` (FT)         final score, calm chip
- *   - `postponed` / `delayed` / `cancelled`   status chip replaces score,
- *                              kickoff time is faded and struck-through where
- *                              appropriate
- *   - `penalties` / `extra_time` / `ht`       supported for future backend
- *                              data — the card renders these states cleanly
- *                              when the domain expands
+ * One component, one router `<Link>` to `/matches/$matchId`, four shapes:
  *
- * Converted to the shared UI kit (`@/components/ui-kit`): the Fantasy type
- * scale, radii, surface and focus ring replace the glass surfaces, the ad-hoc
- * pixel type and the hardcoded status colours. The public API is unchanged:
- * `match / home / away / glass? / showVenue? / variant? / extras?`.
+ *   - `list`     the A-Home / A-Matches row, flat, for a caller's card that
+ *                stacks rows one hairline apart: a 4px club edge at each end,
+ *                the crest discs, the names, and in the middle the kickoff
+ *                time or the score in the display face. Live rows carry the
+ *                navy live pill under the score; finished rows put "Terminé"
+ *                there and quieten the loser's name.
+ *   - `row`      the same row as a card of its own (the default).
+ *   - `compact`  the standalone row that always names its round (H2H lists).
+ *   - `hero`     Home's live match: the two club colours split down the
+ *                middle, each half with its inverse crest disc and name, and
+ *                a light score box with the live pill centred over the seam.
  *
- * `variant="list"` is Home's fixture list (Accueil art-direction pass): a
- * flat row that sits inside a caller-provided card, one hairline apart from
- * its neighbours. The caller groups rows under a day heading and the page
- * names the gameweek, so the row drops the day chip, the "J. n" tag and the
- * "Coup d'envoi" caption and gives that room to the clubs: larger crests and
- * names that wrap onto a second line instead of truncating. A state that
- * changes the reading (live, full time, postponed) still gets its chip,
- * under the score. /matches keeps the card.
+ * Club colours come from `clubMatchPalettes(home, away)` — never two
+ * independent `clubStyle(club)` calls — so a clash (Wydad v Tétouan) repaints
+ * the away edge bar, half and crest together.
  *
- * Behaviour:
- *   - The whole card is a router `<Link>` to `/matches/$matchId`.
- *   - RTL-safe: logical properties only; the physical layout stays consistent
- *     (home first, away last) which matches how match centers ship in both
- *     LTR and RTL products.
- *   - `aria-label` composes a screen-reader-friendly announcement so
- *     adjacent numeric scores are never ambiguous.
- *   - Scores use the kit's tabular figures so 0–0 and 10–2 align.
- *   - Every `tracking-*` is `ltr:`-prefixed — Arabic letterforms join and
- *     must never be letter-spaced (BG-0069).
+ * Direction: home is always the first child, so it sits at the inline start
+ * (the right in Arabic) with no direction utility at all: the grid tracks,
+ * the split halves and the three-child score all mirror by themselves. Each
+ * figure is its own `<bdi>` inside a container that inherits the page
+ * direction, so the home score lands on the home side in both languages.
+ *
+ * Club names truncate on one line in a row, or wrap at word boundaries in the
+ * hero halves. They never break inside a word: `break-words` did, and
+ * printed "Wyda / d AC" once the crest disc grew.
+ *
+ * `aria-label` states the whole card (score, minute, status), so the visual
+ * content under it is hidden from assistive tech rather than read twice.
  */
 
 type ExtendedStatus =
@@ -72,15 +66,39 @@ export interface MatchCardExtras {
   penaltiesScore?: { home: number; away: number };
 }
 
-/** Shared chip shell — the kit badge shape, tone supplied by the caller. */
-const chip = "inline-flex items-center px-2 py-0.5 rounded-full";
+export type MatchCardVariant = "row" | "list" | "compact" | "hero";
+
+/** A row inside a caller's card: flat, one hairline from its neighbours. The
+ *  card clips its children to its radius (that is what tapers the edge bars
+ *  into its corners), so the focus ring is drawn inside the row. */
+const LIST_FRAME = cn(
+  "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
+  "hover:bg-[color:var(--ui-surface-sunken)]",
+  ui.focus,
+  "focus-visible:ring-inset focus-visible:ring-offset-0",
+);
+
+/** The same row as a card of its own: the card surface, clipping its edges. */
+const CARD_FRAME = cn(
+  ui.surface.card,
+  "overflow-hidden",
+  "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+  ui.focus,
+);
+
+/** The split live card: a feature surface, lifted off the page. */
+const HERO_FRAME = cn(
+  "relative overflow-hidden",
+  ui.radius.sheet,
+  ui.shadow.lifted,
+  "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+  ui.focus,
+);
 
 export function MatchCard({
   match,
   home,
   away,
-  glass = true,
-  showVenue = false,
   variant = "row",
   listGameweek,
   extras,
@@ -88,18 +106,18 @@ export function MatchCard({
   match: Match;
   home: Club;
   away: Club;
-  glass?: boolean;
-  showVenue?: boolean;
-  variant?: "row" | "compact" | "list";
-  /** List only: the gameweek the surrounding page already names. A row from
-   *  any other round keeps its "J. n" tag, so a fixture list that spans two
-   *  rounds never files a match under the wrong one. */
+  variant?: MatchCardVariant;
+  /** The gameweek the surrounding page already names. A row from any other
+   *  round keeps its "J. n" tag, so a list that spans two rounds never files
+   *  a match under the wrong one. */
   listGameweek?: number;
   extras?: MatchCardExtras;
 }) {
   const { t, tr, lang } = useI18n();
-  const kickoff = new Date(match.kickoff);
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
+  const kickoff = new Date(match.kickoff);
+  // The pair, not two independent palettes: the clash rule may re-colour away.
+  const pair = useMemo(() => clubMatchPalettes(home, away), [home, away]);
 
   const status: ExtendedStatus = extras?.displayStatus ?? match.status;
   const isLive = status === "live" || status === "half_time" || status === "extra_time";
@@ -108,7 +126,7 @@ export function MatchCard({
   const isPostponed = status === "postponed" || status === "cancelled";
   const unconfirmedDate = isKickoffDateUnconfirmed(match) || status === "cancelled";
   const unconfirmedTime = isKickoffTimeUnconfirmed(match);
-  const isList = variant === "list";
+  const isHero = variant === "hero";
 
   const timeFmt = new Intl.DateTimeFormat(locale, {
     timeZone: MATCH_TIME_ZONE,
@@ -122,173 +140,204 @@ export function MatchCard({
     month: "short",
   }).format(kickoff);
 
-  // The list has two lines per club, so a short name that is only a code
-  // ("WCA") gives way to the club's name. Short names that are already words
-  // stay: the full Arabic names ("الدفاع الحسني الجديدي") need a third line.
-  const listName = (club: Club) => {
+  // A short name that is only a code ("WCA") gives way to the club's name:
+  // the crest disc already shows the code. Short names that are words stay —
+  // the full Arabic names ("الدفاع الحسني الجديدي") would not fit a row.
+  const rowName = (club: Club) => {
     const short = tr(club.shortName);
     return /^[A-Z0-9]{2,6}$/.test(short.trim()) ? tr(club.name) : short;
   };
-  const home_s = isList ? listName(home) : tr(home.shortName);
-  const away_s = isList ? listName(away) : tr(away.shortName);
-  const showRoundTag = isList && match.gameweek !== listGameweek;
+  const homeName = isHero ? tr(home.name) : rowName(home);
+  const awayName = isHero ? tr(away.name) : rowName(away);
   const hs = match.homeScore ?? 0;
   const as = match.awayScore ?? 0;
 
+  // Who lost, for a finished row: that name steps back. A shoot-out decides a
+  // level score when its result is known.
+  const shootout = status === "penalties" ? extras?.penaltiesScore : undefined;
+  const homeMargin = shootout && hs === as ? shootout.home - shootout.away : hs - as;
+  const homeLost = isFinished && homeMargin < 0;
+  const awayLost = isFinished && homeMargin > 0;
+
+  const showRoundTag =
+    variant === "compact" || (!isHero && match.gameweek > 0 && match.gameweek !== listGameweek);
+
   const a11yLabel = (() => {
-    if (isFinished || isLive) {
-      return t("matches.a11y.score")
-        .replace("{home}", home_s)
-        .replace("{hs}", String(hs))
-        .replace("{away}", away_s)
-        .replace("{as}", String(as));
+    const score = t("matches.a11y.score")
+      .replace("{home}", tr(home.name))
+      .replace("{hs}", String(hs))
+      .replace("{away}", tr(away.name))
+      .replace("{as}", String(as));
+    if (isLive) {
+      const state =
+        match.minute === undefined
+          ? t("matches.status.live")
+          : t("matches.a11y.live_minute").replace("{minute}", String(match.minute));
+      return `${score} — ${state}`;
     }
+    if (isFinished) return `${score} — ${t("matches.a11y.status_finished")}`;
     if (isScheduled) {
-      return `${home_s} ${t("matches.vs")} ${away_s} — ${weekdayFmt} · ${unconfirmedTime ? t("matches.kickoff_unconfirmed") : t("matches.a11y.kickoff_at").replace("{time}", timeFmt)}`;
+      return `${homeName} ${t("matches.vs")} ${awayName} — ${weekdayFmt} · ${unconfirmedTime ? t("matches.kickoff_unconfirmed") : t("matches.a11y.kickoff_at").replace("{time}", timeFmt)}`;
     }
-    return `${home_s} ${t("matches.vs")} ${away_s} — ${t(`matches.a11y.status_${match.status}` as never) || t("matches.status.postponed")}`;
+    return `${homeName} ${t("matches.vs")} ${awayName} — ${t(`matches.a11y.status_${match.status}` as never) || t("matches.status.postponed")}`;
   })();
 
-  // Status chip is intentionally minimal on scheduled/finished; only "live"
-  // gets an emphatic treatment. Postponed/cancelled/delayed use the caution
-  // token so they read the same in light and dark.
-  const cautionChip = (label: string) => (
-    <span
-      className={cn(chip, ui.text.label)}
-      style={{
-        background: "color-mix(in oklab, var(--ui-caution) 20%, transparent)",
-        color: "color-mix(in oklab, var(--ui-caution) 70%, var(--ui-on-surface))",
-      }}
-    >
-      {label}
-    </span>
+  /** Three flex children in a container that follows the page direction. */
+  const score = (className: string) => (
+    <div className={cn("flex items-center gap-1.5", className)}>
+      <bdi>{hs}</bdi>
+      <span>–</span>
+      <bdi>{as}</bdi>
+    </div>
   );
 
-  const statusChip = (() => {
+  // What sits under the score or the time: the state that changes how the
+  // row is read. A scheduled row needs nothing there.
+  const caption = (() => {
     if (isLive) {
-      return <LiveIndicator minute={match.minute} />;
-    }
-    if (status === "finished") {
       return (
-        <span className={cn(chip, ui.surface.sunken, ui.tone.muted, ui.text.label)}>
-          {t("matches.status.ft")}
-        </span>
+        <UiLivePill
+          minute={match.minute}
+          size={isHero ? "md" : "sm"}
+          // Extra time names itself on the pill; the rest of play is "live".
+          label={status === "extra_time" ? t("matches.status.extra_time") : undefined}
+        />
       );
     }
     if (status === "penalties") {
       return (
-        <span className={cn(chip, ui.surface.sunken, ui.tone.ink, ui.text.label)}>
-          {t("matches.status.penalties")}
+        <span className={cn(ui.text.micro, ui.tone.muted)}>
+          {extras?.penaltiesScore
+            ? `${t("matches.penalty_shootout")} ${extras.penaltiesScore.home}–${extras.penaltiesScore.away}`
+            : t("matches.status.penalties")}
+        </span>
+      );
+    }
+    if (status === "finished") {
+      return isHero ? (
+        <span
+          className={cn(
+            "inline-flex px-2.5 py-1",
+            ui.radius.full,
+            ui.surface.inkPlain,
+            ui.text.label,
+          )}
+        >
+          {t("matches.status.ft")}
+        </span>
+      ) : (
+        <span className={cn(ui.text.micro, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}>
+          {t("matches.status.ft")}
         </span>
       );
     }
     if (isPostponed) {
-      return cautionChip(
-        status === "cancelled" ? t("matches.status.cancelled") : t("matches.status.postponed"),
+      return (
+        <UiBadge tone="caution">
+          {status === "cancelled" ? t("matches.status.cancelled") : t("matches.status.postponed")}
+        </UiBadge>
       );
     }
-    if (status === "delayed") {
-      return cautionChip(t("matches.status.delayed"));
-    }
-    // scheduled → subtle day chip
-    return (
-      <span className={cn(chip, ui.surface.sunken, ui.tone.muted, ui.text.label)}>
-        {weekdayFmt}
-      </span>
-    );
+    if (status === "delayed")
+      return <UiBadge tone="caution">{t("matches.status.delayed")}</UiBadge>;
+    return null;
   })();
 
-  // Center column: score or kickoff time. Score always uses tabular figures.
-  const centerContent = (() => {
+  // The figure in the middle: the score once a match has started, else the
+  // kickoff time — or what is actually known when the time is not.
+  const figure = (() => {
     if (isLive || isFinished) {
-      return (
-        <div className="flex flex-col items-center">
-          <div
-            className={cn(
-              "flex items-baseline gap-1.5",
-              ui.text.tabular,
-              ui.tone.default,
-              "[font-weight:var(--ui-weight-hero)]",
-              variant === "compact" ? ui.text.subtitle : ui.text.title,
-            )}
-          >
-            <span aria-hidden>{hs}</span>
-            <span aria-hidden className={ui.tone.muted}>
-              –
-            </span>
-            <span aria-hidden>{as}</span>
-          </div>
-          {status === "penalties" && extras?.penaltiesScore && (
-            <div className={cn("mt-0.5", ui.text.label, ui.text.tabular, ui.tone.ink)} aria-hidden>
-              {t("matches.penalty_shootout")} {extras.penaltiesScore.home}–
-              {extras.penaltiesScore.away}
-            </div>
-          )}
-          {status === "extra_time" && (
-            <div
-              className={cn("mt-0.5", ui.text.label, "text-[color:var(--ui-negative)]")}
-              aria-hidden
-            >
-              {t("matches.status.extra_time")}
-            </div>
-          )}
-        </div>
+      return score(
+        isHero
+          ? cn("px-4 py-1", ui.surface.scorebox, ui.radius.card, ui.shadow.lifted, ui.score.lg)
+          : cn(ui.score.row, "[font-weight:var(--ui-weight-heavy)]", ui.tone.default),
       );
     }
-    if (isPostponed) {
-      // Was a struck-through `timeFmt`. For every postponed fixture in this
-      // competition that time is the provider's UTC-midnight placeholder, so
-      // the strikethrough was drawing a line through 01:00 -- an hour the
-      // match was never going to kick off at. There is no original time to
-      // cross out, so the slot states what is actually known.
-      return (
-        <div className={cn("max-w-24 text-center", ui.text.micro, ui.tone.muted)} aria-hidden>
-          {t("matches.kickoff_date_unconfirmed")}
-        </div>
-      );
-    }
+    if (isPostponed) return null;
     if (unconfirmedDate || unconfirmedTime) {
       // Resolved before the JSX so both keys stay literal: the i18n gate reads
       // translation arguments statically and counts any expression in that
       // position -- even a ternary of two literals -- as opaque.
       let label = t("matches.kickoff_unconfirmed");
       if (unconfirmedDate) label = t("matches.kickoff_date_unconfirmed");
-      return (
-        <div className={cn("max-w-24 text-center", ui.text.micro, ui.tone.muted)} aria-hidden>
-          {label}
-        </div>
-      );
+      return <span className={cn("max-w-24", ui.text.micro, ui.tone.muted)}>{label}</span>;
     }
-    // scheduled / delayed → prominent kickoff time
-    return (
-      <div className="flex flex-col items-center">
-        <div
-          className={cn(
-            ui.text.tabular,
-            ui.tone.default,
-            "[font-weight:var(--ui-weight-hero)]",
-            variant === "compact" ? ui.text.body : ui.text.subtitle,
-          )}
-          aria-hidden
-        >
-          {timeFmt}
-        </div>
-        {isList ? null : (
-          <div className={cn(ui.text.label, ui.tone.muted)} aria-hidden>
-            {t("matches.kickoff")}
-          </div>
+    return isHero ? (
+      <bdi
+        className={cn(
+          "px-4 py-1",
+          ui.surface.scorebox,
+          ui.radius.card,
+          ui.shadow.lifted,
+          ui.score.lg,
         )}
-      </div>
+      >
+        {timeFmt}
+      </bdi>
+    ) : (
+      <bdi className={cn(ui.score.row, ui.tone.default)}>{timeFmt}</bdi>
     );
   })();
 
-  // `glass` is kept in the public API for callers; both settings now resolve
-  // to the kit's opaque card. `glass` only decides whether the card carries
-  // the press feedback of a tappable tile.
-  const surfaceClass = cn(
-    ui.surface.card,
-    glass &&
-      "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+  const roundTag = showRoundTag ? (
+    <span className={cn(ui.text.micro, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}>
+      {t("matches.gameweek")} {match.gameweek}
+    </span>
+  ) : null;
+
+  // A row's cells, padded to the board's 60px with a 32px crest; a live row's
+  // first line gives its bottom padding to the pill's line underneath.
+  const cellPad = isLive ? "pb-1.5 pt-3" : "py-3.5";
+
+  const nameClass = (lost: boolean) =>
+    cn(
+      ui.text.secondary,
+      lost
+        ? cn("[font-weight:var(--ui-weight-strong)]", ui.tone.muted)
+        : cn("[font-weight:var(--ui-weight-heavy)]", ui.tone.default),
+    );
+
+  const content: ReactNode = isHero ? (
+    <>
+      {/* The two halves, home first: flex order mirrors in Arabic. */}
+      <div className="flex">
+        <Half club={home} palette={pair.home} name={homeName} side="home" />
+        <Half club={away} palette={pair.away} name={awayName} side="away" />
+      </div>
+      {/* Centred over the seam without a physical offset: stretched across
+          the card, then shrunk to its content and centred by auto margins. */}
+      <div className="pointer-events-none absolute inset-x-0 top-4 mx-auto flex w-fit flex-col items-center gap-2">
+        {figure}
+        {caption}
+      </div>
+    </>
+  ) : (
+    // Five tracks: edge | home | figure | away | edge. A live row adds a
+    // second line for its pill, spanning the three middle tracks, so the
+    // pill never widens the figure's track and squeezes the names.
+    <div className="grid grid-cols-[4px_minmax(0,1fr)_auto_minmax(0,1fr)_4px] items-stretch gap-x-2.5">
+      <span {...clubStyle(pair.home)} className={cn(ui.club.edgeFill, isLive && "row-span-2")} />
+      <div className={cn("flex min-w-0 flex-1 items-center gap-2", cellPad)}>
+        <ClubCrest club={home} palette={pair.home} size="sm" />
+        <span className={cn("min-w-0 truncate", nameClass(homeLost))}>{homeName}</span>
+      </div>
+      <div
+        className={cn(
+          "flex min-w-16 flex-col items-center justify-center gap-1 text-center",
+          cellPad,
+        )}
+      >
+        {figure}
+        {isLive ? null : caption}
+        {roundTag}
+      </div>
+      <div className={cn("flex min-w-0 flex-1 items-center justify-end gap-2", cellPad)}>
+        <span className={cn("min-w-0 truncate text-end", nameClass(awayLost))}>{awayName}</span>
+        <ClubCrest club={away} palette={pair.away} size="sm" />
+      </div>
+      <span {...clubStyle(pair.away)} className={cn(ui.club.edgeFill, isLive && "row-span-2")} />
+      {isLive ? <div className="col-[2/5] flex justify-center pb-3">{caption}</div> : null}
+    </div>
   );
 
   return (
@@ -299,119 +348,48 @@ export function MatchCard({
       aria-label={a11yLabel}
       className={cn(
         // `min-w-0` is load-bearing, not cosmetic. Every caller renders these
-        // cards into a single-column `grid`, whose implicit `auto` track is
+        // cards into a single-column `grid` or a flex column, whose track is
         // sized to the largest item's content-based minimum. The club-name
-        // spans below are `truncate` (`white-space: nowrap`), so the card's
-        // min-content width is the full, untruncated name — and `min-w-0` on
-        // the inner name columns only relaxes *their* flex minimum, it does
-        // not stop that minimum propagating out into the grid track. Without
-        // this the track grows past the page gutter and the card's trailing
-        // edge (the away crest and name in LTR, the matchday chip in RTL) is
-        // clipped away by `html, body { overflow-x: clip }` with no scroll to
-        // reach it. `min-width: 0` is inert in normal flow, so it changes
-        // nothing except the grid/flex track this card is allowed to demand.
+        // spans are `truncate` (`white-space: nowrap`), so without it the
+        // card's minimum is the full, untruncated name, the track grows past
+        // the page gutter, and `html, body { overflow-x: clip }` clips the
+        // trailing edge away with no scroll to reach it.
         "group block min-w-0",
-        ui.focus,
-        isList
-          ? cn(
-              "transition-colors duration-[var(--duration-quick)]",
-              "hover:bg-[color:var(--ui-surface-sunken)]",
-            )
-          : surfaceClass,
-        // Live cards get a very soft ambient tint. It is a flat wash rather
-        // than a directional gradient: CSS gradients take physical angles
-        // only, and a physical angle would sit on the wrong edge in Arabic.
-        isLive && "relative overflow-hidden",
+        isHero ? HERO_FRAME : variant === "list" ? LIST_FRAME : CARD_FRAME,
       )}
     >
-      {isLive && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{ background: "color-mix(in oklab, var(--ui-negative) 6%, transparent)" }}
-        />
-      )}
-
-      <div
-        className={cn(
-          "relative flex flex-col gap-1.5",
-          variant === "compact" ? "px-3 py-2.5" : "px-3.5 py-3",
-        )}
-      >
-        {/* Top row: status chip + gameweek. The list row carries neither:
-            its day and gameweek are named once, above it. */}
-        {isList ? null : (
-          <div className="flex items-center justify-between gap-2">
-            {statusChip}
-            <span className={cn(ui.text.label, ui.text.tabular, ui.tone.muted)}>
-              {t("matches.gameweek")} {match.gameweek}
-            </span>
-          </div>
-        )}
-
-        {/* Main row: home | score/time | away */}
-        <div className="flex items-center gap-3">
-          {/* In the list, from `sm` the row turns into a scoreboard — name,
-              crest, time, crest, name — so the clubs meet at the score
-              instead of sitting at opposite edges of a wide card. */}
-          <div
-            className={cn(
-              "flex min-w-0 flex-1 items-center gap-2",
-              isList && "sm:flex-row-reverse sm:justify-start",
-            )}
-          >
-            <ClubCrest club={home} size={isList ? "md" : "sm"} />
-            <span
-              className={cn(
-                isList ? "line-clamp-2 break-words sm:text-end" : "truncate",
-                ui.tone.default,
-                variant === "compact" ? ui.text.meta : ui.text.body,
-                "[font-weight:var(--ui-weight-heavy)]",
-              )}
-            >
-              {home_s}
-            </span>
-          </div>
-
-          <div className="flex shrink-0 flex-col items-center gap-1 px-1.5">
-            {centerContent}
-            {/* A scheduled row needs nothing under its time; any other state
-                changes how the row is read, so it keeps its chip here. */}
-            {isList && status !== "scheduled" ? statusChip : null}
-            {showRoundTag ? (
-              <span className={cn(ui.text.label, ui.text.tabular, ui.tone.muted)}>
-                {t("matches.gameweek")} {match.gameweek}
-              </span>
-            ) : null}
-          </div>
-
-          <div
-            className={cn(
-              "flex min-w-0 flex-1 items-center justify-end gap-2",
-              isList && "sm:flex-row-reverse",
-            )}
-          >
-            <span
-              className={cn(
-                isList ? "line-clamp-2 break-words text-end sm:text-start" : "truncate text-end",
-                ui.tone.default,
-                variant === "compact" ? ui.text.meta : ui.text.body,
-                "[font-weight:var(--ui-weight-heavy)]",
-              )}
-            >
-              {away_s}
-            </span>
-            <ClubCrest club={away} size={isList ? "md" : "sm"} />
-          </div>
-        </div>
-
-        {showVenue && (
-          <div className={cn("flex items-center gap-1 truncate", ui.text.micro, ui.tone.muted)}>
-            <MapPin className="h-3 w-3 shrink-0" aria-hidden />
-            <span className="truncate">{tr(match.venue)}</span>
-          </div>
-        )}
-      </div>
+      {/* The label above states all of this. */}
+      <div aria-hidden>{content}</div>
     </Link>
+  );
+}
+
+/** One side of the hero: the club's colour, its crest disc and its name. */
+function Half({
+  club,
+  palette,
+  name,
+  side,
+}: {
+  club: Club;
+  palette: ClubPalette;
+  name: string;
+  side: "home" | "away";
+}) {
+  return (
+    <div
+      {...clubStyle(palette)}
+      className={cn(
+        // `pt-16` keeps the crest and the name clear of the score box and the
+        // live pill centred above them.
+        "flex min-w-0 flex-1 flex-col justify-end gap-1.5 pb-3.5 pt-16",
+        side === "home" ? "items-start pe-2 ps-3.5" : "items-end pe-3.5 ps-2 text-end",
+        ui.club.fill,
+      )}
+    >
+      <ClubCrest club={club} palette={palette} size="md" tone="inverse" />
+      {/* Two lines at most, broken between words only. */}
+      <p className={cn("line-clamp-2 max-w-full", ui.display.team)}>{name}</p>
+    </div>
   );
 }

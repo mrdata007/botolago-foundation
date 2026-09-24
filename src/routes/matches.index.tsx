@@ -1,21 +1,18 @@
-import matchesHeaderPhoto from "@/assets/photos/matches-header.webp";
-import { PhotoPageHeader } from "@/components/common/PhotoPageHeader";
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Radio, CalendarClock, CalendarRange, CheckCircle2 } from "lucide-react";
 import { footballService, type FootballSeason } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
 import { MatchCard } from "@/components/common/MatchCard";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { Section } from "@/components/common/Section";
 import { DateStrip } from "@/components/matches/DateStrip";
-import { CompetitionHeader } from "@/components/matches/CompetitionHeader";
+import { LiveStrip } from "@/components/matches/LiveStrip";
 import { StandingsTable } from "@/components/matches/StandingsTable";
 import { LoadingState, EmptyState, ErrorState } from "@/components/common/States";
-import { MatchCardSkeleton, SkeletonList } from "@/components/common/Skeletons";
+import { MatchCardSkeleton } from "@/components/common/Skeletons";
 import {
   Select,
   SelectContent,
@@ -23,17 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ui } from "@/components/ui-kit";
+import { ui, UiCard, UiChip, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import {
-  isSameMatchDay,
-  matchDayFromKey,
-  matchDayKey,
-  MATCH_TIME_ZONE,
-  startOfMatchDay,
-} from "@/lib/match-kickoff";
+import { isSameMatchDay, matchDayFromKey, matchDayKey, startOfMatchDay } from "@/lib/match-kickoff";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { matchRounds } from "@/lib/match-days";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Match } from "@/types/domain";
 
@@ -108,6 +100,27 @@ function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
   return day;
 }
 
+/**
+ * Matches (Option A, A-Matches).
+ *
+ * Under the global bar, a white title band: "Matches" in the display face
+ * with the season as a soft pill, then the live strip while anything is live,
+ * then the status chips, which stick under the bar (and under the strip,
+ * through `--livestrip-h`) as the page scrolls. The page itself opens on the
+ * date band — the day, its round, the previous / next day — and lists that
+ * day's matches as club-colour rows: live and upcoming together, then the
+ * results. The standings close the page.
+ *
+ * The title band, the strip and the chips are the shell's `pageHeader`, so
+ * all three run edge to edge and the chips can stick for the whole page: a
+ * sticky element only sticks inside its parent, and the content column ends
+ * where it does. The strip is rendered here, between the title and the
+ * chips, rather than by `AppShell` after the whole header, so that on scroll
+ * the strip sits directly under the bar and the chips directly under it.
+ *
+ * The board's "Botola Pro ▾" and "Tous les clubs ▾" chips are not drawn:
+ * there is one competition, and no club filter behind the second.
+ */
 function MatchesPage() {
   const { t, lang, dir } = useI18n();
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
@@ -174,7 +187,7 @@ function MatchesPage() {
     return list.filter((m) => sameDay(new Date(m.kickoff), selectedDate));
   }, [matchesQ.data, selectedDate]);
 
-  // Overall counts for the currently selected day, used by filter chip badges.
+  // Overall counts for the currently selected day, used by the filter chips.
   const dayCounts = useMemo(() => {
     return dayMatches.reduce(
       (acc, m) => {
@@ -209,224 +222,86 @@ function MatchesPage() {
     return buckets;
   }, [dayMatches]);
 
-  const dateFmt = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-    timeZone: MATCH_TIME_ZONE,
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(selectedDate);
+  // The round(s) the day's matches belong to: the band names them, and a row
+  // from another round carries its own "J. n" tag.
+  const dayGameweeks = useMemo(() => matchRounds(dayMatches), [dayMatches]);
+  const dayGameweek = dayGameweeks.length === 1 ? dayGameweeks[0] : undefined;
+
+  // Live first, then what is still to come: one card of rows, as the board
+  // stacks a match day. The results follow under their own heading.
+  const fixtures = [
+    ...(filter === "all" || filter === "live" ? visibleByBucket.live : []),
+    ...(filter === "all" || filter === "upcoming" ? visibleByBucket.upcoming : []),
+  ];
+  const results = filter === "all" || filter === "finished" ? visibleByBucket.finished : [];
 
   const loading = seasonsQ.isLoading || !canLoadMatches || matchesQ.isLoading;
 
-  return (
-    <AppShell backgroundVariant="matches" liveStrip>
-      <PhotoPageHeader
-        photo={matchesHeaderPhoto}
-        title={t("matches.title")}
-        aside={
-          <div className="w-[10.5rem]">
-            {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
-            <div className={cn("mb-1 flex items-center gap-1.5 px-1", ui.text.label)}>
-              <CalendarRange className="h-3.5 w-3.5" aria-hidden />
-              <span>{t("matches.season.label")}</span>
-            </div>
-            <Select
-              dir={dir}
-              value={selectedSeason?.id ?? ""}
-              onValueChange={handleSeasonChange}
-              disabled={seasons.length === 0}
-            >
-              <SelectTrigger
-                aria-label={t("matches.season.label")}
-                className={cn(
-                  "h-[var(--ui-tap-min)] px-3 shadow-none",
-                  ui.radius.control,
-                  ui.surface.card,
-                  ui.rule.all,
-                  ui.text.body,
-                  "[font-weight:var(--ui-weight-heavy)]",
-                  ui.focus,
-                )}
-              >
-                {/* The trigger renders the season label itself. Left to Radix it
-                  clones the whole selected item — label *and* "current" badge —
-                  into a 10.5rem control, where the badge was clipped at 390px. */}
-                <SelectValue
-                  placeholder={
-                    seasonsQ.isLoading
-                      ? t("matches.season.loading")
-                      : t("matches.season.unavailable")
-                  }
-                >
-                  {selectedSeason ? (
-                    <span className={cn("truncate", ui.text.tabular)}>{selectedSeason.label}</span>
-                  ) : undefined}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent
-                className={cn(ui.radius.control, ui.rule.all, "bg-[color:var(--ui-surface)]")}
-              >
-                {seasons.map((season) => (
-                  <SelectItem
-                    key={season.id}
-                    value={season.id}
-                    className={cn("min-h-[var(--ui-tap-min)]", ui.radius.control)}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          ui.text.body,
-                          "[font-weight:var(--ui-weight-heavy)]",
-                          ui.text.tabular,
-                        )}
-                      >
-                        {season.label}
-                      </span>
-                      {season.isCurrent && (
-                        <span
-                          className={cn(
-                            "inline-flex items-center px-1.5 py-0.5",
-                            ui.radius.control,
-                            ui.text.label,
-                            ui.surface.sunken,
-                            ui.tone.default,
-                          )}
-                        >
-                          {t("matches.season.current")}
-                        </span>
-                      )}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        }
-      />
-
-      {/* Date navigation */}
-      <div className="mt-3">
-        <DateStrip
-          selected={selectedDate}
-          onSelect={handleDateChange}
-          minDate={seasonBounds?.minDate}
-          maxDate={seasonBounds?.maxDate}
+  const rows = (list: readonly Match[]) =>
+    list.map((m) => {
+      const home = clubById(m.homeClubId);
+      const away = clubById(m.awayClubId);
+      if (!home || !away) return null;
+      return (
+        <MatchCard
+          key={m.id}
+          match={m}
+          home={home}
+          away={away}
+          variant="list"
+          listGameweek={dayGameweek}
         />
-      </div>
+      );
+    });
 
-      {/* Sticky status filters — the Fantasy segmented track: an opaque sunken
-          strip, 10px track / 8px segment, no glass and no blur. They sit
-          under the live strip while it is showing (`--livestrip-h`) and move
-          up with it when it slides away. */}
-      <div
-        className={cn(
-          "sticky top-[calc(var(--topbar-h)+var(--livestrip-h))] z-20 -mx-3 mt-3 px-3 pb-2 pt-1",
-          "transition-[top] duration-[var(--duration-sheet)] ease-[var(--ease-standard)]",
-          "bg-[color:var(--ui-page)]",
-        )}
-      >
-        {/* BG-0111 — the four filters are a grid, not a scroller.
-            At 390px this row measured 411px of content inside a 358px track,
-            so "Résultats" ran from 329px to 424px: cut off at the viewport
-            edge. It was reachable only by scrolling a row with the scrollbar
-            suppressed (`[scrollbar-width:none]` + `::-webkit-scrollbar:hidden`)
-            and no other affordance, so nothing on screen said it scrolled.
-
-            Four equal columns give each filter 85px. The label drops from the
-            body step to the meta step and the count moves onto its own line
-            underneath, which fits the longest French label ("Résultats",
-            62px) inside the 69px content box with room to spare and keeps the
-            fit independent of how many digits a count grows to. The row no
-            longer scrolls at all. */}
-        <div
-          role="tablist"
-          aria-label={t("matches.a11y.status_filters")}
-          className={cn(
-            "grid grid-cols-4 items-stretch gap-1 p-[3px]",
-            ui.radius.track,
-            ui.surface.sunken,
-          )}
-        >
-          {filterTabs.map((it) => {
-            const count =
-              it.key === "live"
-                ? dayCounts.live
-                : it.key === "upcoming"
-                  ? dayCounts.upcoming
-                  : it.key === "finished"
-                    ? dayCounts.finished
-                    : totalDay;
-            const active = filter === it.key;
-            return (
-              <button
-                key={it.key}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setFilter(it.key)}
-                className={cn(
-                  "flex min-w-0 flex-col items-center justify-center gap-0.5 px-1.5 py-1",
-                  "transition-colors",
-                  "min-h-[var(--ui-tap-min)]",
-                  ui.radius.segment,
-                  ui.text.meta,
-                  "[font-weight:var(--ui-weight-strong)]",
-                  ui.focus,
-                  active
-                    ? // The kit's segmented pattern, with the selected label on
-                      // `--ui-on-surface`: `--ui-ink` is a dark navy in both
-                      // themes and disappears against the dark surface.
-                      "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)] shadow-[var(--ui-shadow-card)]"
-                    : cn(ui.tone.muted, "hover:text-[color:var(--ui-on-surface)]"),
-                )}
-              >
-                <span className="max-w-full [line-height:1.2]">{t(it.label)}</span>
-                {/* Always rendered, zero included: it keeps the four segments
-                    the same height and it answers "why is this filter empty?"
-                    before the tap rather than after. Still `aria-hidden` — the
-                    tab's accessible name stays the label alone. */}
-                <span
-                  className={cn(
-                    "inline-flex min-w-5 items-center justify-center px-1.5",
-                    ui.radius.control,
-                    ui.text.micro,
-                    "[font-weight:var(--ui-weight-heavy)]",
-                    ui.text.tabular,
-                    active
-                      ? "bg-[color:color-mix(in_oklab,var(--ui-on-surface)_10%,transparent)] text-[color:var(--ui-on-surface)]"
-                      : cn(ui.surface.page, ui.tone.muted),
-                    count === 0 && "opacity-60",
-                  )}
-                  aria-hidden
-                >
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Selected-date subhead */}
-      <div className={cn("mt-2 flex items-center gap-2 px-1", ui.text.label, ui.tone.muted)}>
-        <span className="truncate">{dateFmt}</span>
-        {totalDay > 0 && (
-          <span
-            aria-hidden
-            className="inline-flex h-1 w-1 rounded-full bg-[color:var(--ui-on-surface-muted)] opacity-60"
+  return (
+    <AppShell
+      backgroundVariant="matches"
+      pageHeader={
+        <>
+          <UiPageTitle
+            title={t("matches.title")}
+            trailing={
+              <SeasonPicker
+                seasons={seasons}
+                selected={selectedSeason}
+                loading={seasonsQ.isLoading}
+                onChange={handleSeasonChange}
+                dir={dir}
+              />
+            }
+            // One white band with the chips under it: no rule between them,
+            // and on a wide screen the title lines up with the column below.
+            className={cn("border-b-0", ALIGN_WITH_COLUMN)}
           />
-        )}
-        {totalDay > 0 && <span className={cn(ui.text.tabular, ui.tone.default)}>{totalDay}</span>}
-      </div>
+          <LiveStrip />
+          <StatusFilters value={filter} onChange={setFilter} liveCount={dayCounts.live} />
+        </>
+      }
+    >
+      {/* Date navigation, flush under the chips on a phone. */}
+      <DateStrip
+        selected={selectedDate}
+        onSelect={handleDateChange}
+        minDate={seasonBounds?.minDate}
+        maxDate={seasonBounds?.maxDate}
+        gameweeks={dayGameweeks}
+        className="-mt-4 sm:mt-0"
+      />
 
       {/* Loading / error / empty */}
       {loading && (
-        <div className="mt-3">
-          <SkeletonList count={3}>{() => <MatchCardSkeleton />}</SkeletonList>
-        </div>
+        <UiCard
+          padding="none"
+          className="mt-4 divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+        >
+          <MatchCardSkeleton flat />
+          <MatchCardSkeleton flat />
+          <MatchCardSkeleton flat />
+        </UiCard>
       )}
       {(seasonsQ.isError || matchesQ.isError) && (
-        <div className="mt-3">
+        <div className="mt-4">
           <ErrorState
             onRetry={() => {
               void seasonsQ.refetch();
@@ -436,70 +311,31 @@ function MatchesPage() {
         </div>
       )}
       {!loading && !seasonsQ.isError && !matchesQ.isError && totalDay === 0 && (
-        <div className="mt-3">
+        <div className="mt-4">
           <EmptyState illustration={noMatchesArt}>
             {t("matches.section.no_matches_today")}
           </EmptyState>
         </div>
       )}
 
-      {/* Live section */}
-      {(filter === "all" || filter === "live") && visibleByBucket.live.length > 0 && (
-        <Section>
-          <SectionHeader
-            title={t("matches.section.live")}
-            eyebrow={t("matches.tab.live")}
-            icon={Radio}
-          />
-          <CompetitionHeader count={visibleByBucket.live.length} />
-          <div className="grid gap-2">
-            {visibleByBucket.live.map((m) => {
-              const home = clubById(m.homeClubId);
-              const away = clubById(m.awayClubId);
-              if (!home || !away) return null;
-              return <MatchCard key={m.id} match={m} home={home} away={away} showVenue />;
-            })}
-          </div>
-        </Section>
+      {/* The day's live and upcoming matches. The card clips the rows' club
+          edge bars to its corners. */}
+      {!loading && fixtures.length > 0 && (
+        <UiCard
+          padding="none"
+          className="mt-4 divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+        >
+          {rows(fixtures)}
+        </UiCard>
       )}
 
-      {/* Upcoming section */}
-      {(filter === "all" || filter === "upcoming") && visibleByBucket.upcoming.length > 0 && (
+      {/* The day's results. */}
+      {!loading && results.length > 0 && (
         <Section>
-          <SectionHeader
-            title={t("matches.section.upcoming")}
-            eyebrow={t("matches.tab.upcoming")}
-            icon={CalendarClock}
-          />
-          <CompetitionHeader count={visibleByBucket.upcoming.length} />
-          <div className="grid gap-2">
-            {visibleByBucket.upcoming.map((m) => {
-              const home = clubById(m.homeClubId);
-              const away = clubById(m.awayClubId);
-              if (!home || !away) return null;
-              return <MatchCard key={m.id} match={m} home={home} away={away} showVenue />;
-            })}
-          </div>
-        </Section>
-      )}
-
-      {/* Finished section */}
-      {(filter === "all" || filter === "finished") && visibleByBucket.finished.length > 0 && (
-        <Section>
-          <SectionHeader
-            title={t("matches.section.finished")}
-            eyebrow={t("matches.tab.results")}
-            icon={CheckCircle2}
-          />
-          <CompetitionHeader count={visibleByBucket.finished.length} />
-          <div className="grid gap-2">
-            {visibleByBucket.finished.map((m) => {
-              const home = clubById(m.homeClubId);
-              const away = clubById(m.awayClubId);
-              if (!home || !away) return null;
-              return <MatchCard key={m.id} match={m} home={home} away={away} showVenue />;
-            })}
-          </div>
+          <SectionHeader as="h3" title={t("matches.section.finished")} />
+          <UiCard padding="none" className="divide-y divide-[color:var(--ui-rule)] overflow-hidden">
+            {rows(results)}
+          </UiCard>
         </Section>
       )}
 
@@ -548,5 +384,185 @@ function MatchesPage() {
       {/* An intentional spacer so the last card clears the bottom nav shadow. */}
       <div className="h-6" aria-hidden />
     </AppShell>
+  );
+}
+
+/**
+ * From `md`, the full-bleed bands keep their content in the reading column,
+ * as the top bar does: the inline padding grows to half of what the viewport
+ * has beyond the column, plus the gutter.
+ */
+const ALIGN_WITH_COLUMN =
+  "md:px-[max(var(--ui-gutter),calc((100%_-_var(--ui-content-max))/2_+_var(--ui-gutter)))]";
+
+/**
+ * The status filters (Tous · En direct · À venir · Résultats) as Option A's
+ * round chips, in a white band that sticks under the top bar — and under the
+ * live strip while it shows, moving up with it when it slides away.
+ *
+ * The four chips share one line at every width. At 390px they fit as drawn;
+ * narrower, each gives ground and its label truncates rather than the row
+ * scrolling a filter off-screen with nothing to say it is there (BG-0111).
+ * "En direct" carries the breathing dot and the day's live count while a
+ * match is on, as the board draws it.
+ */
+function StatusFilters({
+  value,
+  onChange,
+  liveCount,
+}: {
+  value: StatusFilter;
+  onChange: (next: StatusFilter) => void;
+  liveCount: number;
+}) {
+  const { t } = useI18n();
+  return (
+    <div
+      className={cn(
+        "sticky top-[calc(var(--topbar-h)+var(--livestrip-h))] z-20",
+        "transition-[top] duration-[var(--duration-sheet)] ease-[var(--ease-standard)]",
+        ui.surface.bar,
+        ui.rule.block,
+      )}
+    >
+      <div
+        role="group"
+        aria-label={t("matches.a11y.status_filters")}
+        className={cn(
+          "mx-auto flex min-w-0 items-center gap-1.5 pb-2.5 pt-1 max-[359px]:gap-1 md:max-w-[var(--ui-content-max)]",
+          ui.space.gutter,
+        )}
+      >
+        {filterTabs.map((it) => {
+          const active = value === it.key;
+          const live = it.key === "live" && liveCount > 0;
+          return (
+            <UiChip
+              key={it.key}
+              selected={active}
+              onClick={() => onChange(it.key)}
+              // Measured in French, the longest set: 348px of chips at 390
+              // with the live count. Under 390 the count badge steps out
+              // (the chip still says it, for assistive tech) and under 360
+              // the chips tighten; shrinking with an ellipsis is only the
+              // last resort, for text zoomed past all of that.
+              className="min-w-0 shrink max-[359px]:px-2"
+            >
+              {live ? (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "live-breathe h-2 w-2 shrink-0 bg-[color:var(--ui-live)]",
+                    ui.radius.full,
+                  )}
+                />
+              ) : null}
+              <span className="min-w-0 truncate">{t(it.label)}</span>
+              {live ? <span className="sr-only">{liveCount}</span> : null}
+              {live ? (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "inline-grid h-6 min-w-6 shrink-0 place-items-center px-1.5 max-[389px]:hidden",
+                    ui.radius.full,
+                    ui.text.micro,
+                    "[font-weight:var(--ui-weight-heavy)]",
+                    ui.text.tabular,
+                    active
+                      ? "bg-[color:var(--ui-surface)] text-[color:var(--ui-ink-fg)]"
+                      : ui.surface.inkPlain,
+                  )}
+                >
+                  {liveCount}
+                </span>
+              ) : null}
+            </UiChip>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The season control beside the title: a soft round pill ("2026/2027 ⌄")
+ * over the Radix select. The trigger renders the season label itself; left to
+ * Radix it clones the whole selected item — label *and* "current" badge —
+ * into the pill, where the badge was clipped at 390px (BG-0111).
+ */
+function SeasonPicker({
+  seasons,
+  selected,
+  loading,
+  onChange,
+  dir,
+}: {
+  seasons: readonly FootballSeason[];
+  selected: FootballSeason | undefined;
+  loading: boolean;
+  onChange: (seasonId: string) => void;
+  dir: "ltr" | "rtl";
+}) {
+  const { t } = useI18n();
+  return (
+    <Select
+      dir={dir}
+      value={selected?.id ?? ""}
+      onValueChange={onChange}
+      disabled={seasons.length === 0}
+    >
+      <SelectTrigger
+        aria-label={t("matches.season.label")}
+        className={cn(
+          "h-auto min-h-[var(--ui-tap-min)] w-auto gap-1.5 border-0 py-0 pe-3 ps-3.5 shadow-none",
+          ui.radius.full,
+          ui.surface.sunken,
+          ui.text.meta,
+          "[font-weight:var(--ui-weight-heavy)]",
+          "[&>svg]:opacity-100",
+          ui.focus,
+        )}
+      >
+        <SelectValue
+          placeholder={loading ? t("matches.season.loading") : t("matches.season.unavailable")}
+        >
+          {selected ? <span className={ui.text.tabular}>{selected.label}</span> : undefined}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent className={cn(ui.radius.card, ui.rule.all, "bg-[color:var(--ui-surface)]")}>
+        {seasons.map((season) => (
+          <SelectItem
+            key={season.id}
+            value={season.id}
+            className={cn("min-h-[var(--ui-tap-min)]", ui.radius.control)}
+          >
+            <span className="flex items-center gap-2">
+              <span
+                className={cn(
+                  ui.text.body,
+                  "[font-weight:var(--ui-weight-heavy)]",
+                  ui.text.tabular,
+                )}
+              >
+                {season.label}
+              </span>
+              {season.isCurrent && (
+                <span
+                  className={cn(
+                    "inline-flex items-center px-2 py-0.5",
+                    ui.radius.full,
+                    ui.text.label,
+                    ui.surface.sunken,
+                    ui.tone.default,
+                  )}
+                >
+                  {t("matches.season.current")}
+                </span>
+              )}
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
