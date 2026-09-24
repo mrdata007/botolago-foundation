@@ -45,7 +45,14 @@ export interface ImportEdition {
   readonly readingTime: number;
   readonly publishedAt: string;
   readonly author: string | null;
+  readonly seoTitle: string;
+  readonly seoDescription: string;
 }
+
+/** Search-result lengths: the page appends " — BotolaGO" to the title, and
+ *  the columns allow 70 and 170 characters. */
+export const SEO_TITLE_LIMIT = 60;
+export const SEO_DESCRIPTION_LIMIT = 155;
 
 export interface ImportStory {
   readonly key: string;
@@ -129,6 +136,8 @@ export function toEdition(article: ElbotolaArticle): ImportEdition | null {
     readingTime: Math.max(1, Math.min(180, Math.ceil(words / 220))),
     publishedAt: article.publishedAt,
     author: article.author?.trim().slice(0, 120) || null,
+    seoTitle: clip(title, SEO_TITLE_LIMIT),
+    seoDescription: clip(paragraphs.join(" "), SEO_DESCRIPTION_LIMIT),
   };
 }
 
@@ -214,10 +223,14 @@ function literal(value: string | number | null): string {
  * escaping protects nothing against the body's own closing tag. The tag is
  * therefore random per batch, and the batch is refused outright if any
  * provider text contains it, so ElBotola content can never end the body early.
+ *
+ * `published` writes public editions with ElBotola's own publication date
+ * (the owner's instruction, 2026-09-24); `draft` writes private drafts.
  */
 export function batchSql(
   stories: readonly ImportStory[],
   dryRun: boolean,
+  status: "draft" | "published" = "draft",
   tag = `$import_${randomBytes(12).toString("hex")}$`,
 ): string {
   if (!/^\$[a-z_][a-z0-9_]*\$$/.test(tag)) throw new Error("invalid dollar-quote tag");
@@ -229,6 +242,8 @@ export function batchSql(
         edition.summary,
         edition.bodyHtml,
         edition.author ?? "",
+        edition.seoTitle,
+        edition.seoDescription,
       ]),
     );
     if (values.some((value) => value.includes(tag))) {
@@ -251,6 +266,8 @@ export function batchSql(
           literal(edition.readingTime),
           literal(edition.publishedAt),
           literal(edition.author),
+          literal(edition.seoTitle),
+          literal(edition.seoDescription),
         ].join(", ")})`,
     ),
   );
@@ -263,7 +280,8 @@ begin
   create temporary table licensed_batch (
     story_key text, canonical_url text, original_language text, fingerprint text,
     language text, slug text, title text, summary text, body_html text,
-    reading_time integer, published_at timestamptz, author_name text
+    reading_time integer, published_at timestamptz, author_name text,
+    seo_title text, seo_description text
   ) on commit drop;
   insert into licensed_batch values
 ${rows.join(",\n")};
@@ -295,10 +313,12 @@ ${rows.join(",\n")};
 
   insert into app.article_editions (
     story_id, language, slug, title, summary, body_format, body_source, body_html,
-    status, visibility, published_at, reading_time_minutes, sanitizer_version
+    status, visibility, published_at, reading_time_minutes, sanitizer_version,
+    seo_title, seo_description
   )
   select s.id, b.language::app.language_code, b.slug, b.title, b.summary, 'rich_text', null, b.body_html,
-    'draft', 'private', b.published_at, b.reading_time, ${literal(NEWS_SANITIZER_VERSION)}
+    ${status === "published" ? "'published', 'public'" : "'draft', 'private'"}, b.published_at, b.reading_time, ${literal(NEWS_SANITIZER_VERSION)},
+    b.seo_title, b.seo_description
   from licensed_batch b join app.stories s on s.content_fingerprint = b.fingerprint;
   get diagnostics new_editions = row_count;
 
@@ -323,6 +343,7 @@ interface Runtime {
   readonly accessToken: string;
   readonly projectRef: string;
   readonly mode: "dry-run" | "import";
+  readonly status: "draft" | "published";
   readonly cutoff: string;
   readonly limit: number | null;
   readonly batchSize: number;
@@ -337,6 +358,9 @@ function readRuntime(env: Record<string, string | undefined>): Runtime {
   const mode = env.IMPORT_MODE;
   if (mode !== "dry-run" && mode !== "import")
     throw new Error("IMPORT_MODE must be dry-run or import");
+  const status = env.IMPORT_STATUS;
+  if (status !== "draft" && status !== "published")
+    throw new Error("IMPORT_STATUS must be draft or published");
   const accessToken = env.SUPABASE_ACCESS_TOKEN?.trim();
   const projectRef = env.SUPABASE_PRODUCTION_PROJECT_REF?.trim();
   if (!accessToken || !projectRef || !/^[a-z0-9]{20}$/.test(projectRef)) {
@@ -349,6 +373,7 @@ function readRuntime(env: Record<string, string | undefined>): Runtime {
     accessToken,
     projectRef,
     mode,
+    status,
     cutoff: DEFAULT_CUTOFF,
     limit,
     batchSize: 25,
@@ -454,17 +479,22 @@ async function count(runtime: Runtime, query: string): Promise<number> {
 
 async function main(): Promise<void> {
   const runtime = readRuntime(process.env);
-  console.log(`mode=${runtime.mode} cutoff=${runtime.cutoff} limit=${runtime.limit ?? "all"}`);
+  console.log(
+    `mode=${runtime.mode} status=${runtime.status} cutoff=${runtime.cutoff} limit=${runtime.limit ?? "all"}`,
+  );
 
   const licensed = await count(
     runtime,
     "select count(*) from app.publishers where slug = 'elbotola' and syndication_licensed_at is not null",
   );
   if (licensed !== 1) throw new Error("ElBotola has no recorded licence in production");
-  const publicBefore = await count(
-    runtime,
-    "select count(*) from app.article_editions e where app_private.news_is_public(e)",
-  );
+  // Everything public that is not a licensed ElBotola story must be left
+  // exactly as it was; ElBotola's own count is reported separately.
+  const otherPublicSql =
+    "select count(*) from app.article_editions e join app.stories s on s.id = e.story_id " +
+    "left join app.publishers p on p.id = s.publisher_id " +
+    "where app_private.news_is_public(e) and not (p.slug is not distinct from 'elbotola' and s.origin = 'partner')";
+  const otherPublicBefore = await count(runtime, otherPublicSql);
   const licensedStoriesSql =
     "select count(*) from app.stories s join app.publishers p on p.id = s.publisher_id " +
     "where p.slug = 'elbotola' and s.origin = 'partner'";
@@ -498,7 +528,7 @@ async function main(): Promise<void> {
   let committedEditions = 0;
   for (let offset = 0; offset < stories.length; offset += runtime.batchSize) {
     const batch = stories.slice(offset, offset + runtime.batchSize);
-    const result = await sql(runtime, batchSql(batch, runtime.mode === "dry-run"));
+    const result = await sql(runtime, batchSql(batch, runtime.mode === "dry-run", runtime.status));
     if (runtime.mode === "dry-run") {
       const match = /DRY_RUN_ROLLBACK stories=(\d+) editions=(\d+)/.exec(result.body);
       if (!match) throw new Error(`dry-run batch at ${offset} failed with HTTP ${result.status}`);
@@ -512,20 +542,19 @@ async function main(): Promise<void> {
   }
 
   const elbotolaAfter = await count(runtime, licensedStoriesSql);
-  const publicAfter = await count(
-    runtime,
-    "select count(*) from app.article_editions e where app_private.news_is_public(e)",
-  );
-  if (publicAfter !== publicBefore) throw new Error("the number of public articles changed");
+  const otherPublicAfter = await count(runtime, otherPublicSql);
+  if (otherPublicAfter !== otherPublicBefore) {
+    throw new Error("public articles other than ElBotola's changed");
+  }
   if (runtime.mode === "dry-run" && elbotolaAfter !== elbotolaBefore) {
     throw new Error("a dry run left licensed ElBotola stories behind");
   }
   console.log(
     runtime.mode === "dry-run"
-      ? `DRY RUN complete: would import stories=${committedStories} editions=${committedEditions}; ` +
-          `nothing kept (ElBotola licensed stories still ${elbotolaAfter})`
-      : `IMPORT complete: ElBotola licensed stories ${elbotolaBefore} -> ${elbotolaAfter} ` +
-          `(+${elbotolaAfter - elbotolaBefore}); public articles unchanged (${publicAfter})`,
+      ? `DRY RUN complete: would import stories=${committedStories} editions=${committedEditions} ` +
+          `as ${runtime.status}; nothing kept (ElBotola licensed stories still ${elbotolaAfter})`
+      : `IMPORT complete (${runtime.status}): ElBotola licensed stories ${elbotolaBefore} -> ${elbotolaAfter} ` +
+          `(+${elbotolaAfter - elbotolaBefore}); other public articles unchanged (${otherPublicAfter})`,
   );
 }
 

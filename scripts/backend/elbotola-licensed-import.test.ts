@@ -49,6 +49,25 @@ describe("article text", () => {
     expect(edition.summary).toBe("أعلن نادي أمل تزنيت، في بلاغ رسمي، عن منع الجماهير.");
   });
 
+  test("every edition carries an SEO title and description within search lengths", () => {
+    const long = toEdition(
+      article({
+        title:
+          "Le Wydad annonce le début de la distribution des cartes d'abonnement pour la nouvelle saison sportive dès ce mardi",
+        html: `<p>${"Le Wydad Athletic Club a annoncé le lancement de la distribution des abonnements. ".repeat(5)}</p>`,
+      }),
+    )!;
+    expect(long.seoTitle.length).toBeLessThanOrEqual(60);
+    expect(long.seoTitle.endsWith("…")).toBe(true);
+    expect(long.seoTitle.startsWith("Le Wydad annonce le début")).toBe(true);
+    expect(long.seoDescription.length).toBeLessThanOrEqual(155);
+    expect(long.seoDescription.length).toBeGreaterThan(100);
+
+    const short = toEdition(article())!;
+    expect(short.seoTitle).toBe(short.title);
+    expect(short.seoDescription.length).toBeGreaterThan(10);
+  });
+
   test("markup injected into the text is escaped, not rendered", () => {
     const edition = toEdition(
       article({
@@ -104,12 +123,18 @@ describe("batch SQL", () => {
     new Set(),
   );
 
-  test("quotes every value and writes private drafts only", () => {
+  test("quotes every value and, by default, writes private drafts only", () => {
     const sql = batchSql(stories, false);
     expect(sql).toContain("'L''Ittihad de Tanger en stage fermé'");
     expect(sql).toContain("'draft', 'private'");
     expect(sql).not.toContain("'published'");
     expect(sql).toContain("guard: ElBotola has no recorded licence");
+  });
+
+  test("published writes public editions keeping ElBotola's date", () => {
+    const sql = batchSql(stories, false, "published");
+    expect(sql).toContain("'published', 'public', b.published_at");
+    expect(sql).not.toContain("'draft', 'private'");
   });
 
   test("provider text containing a dollar-quote tag cannot end the block early", () => {
@@ -138,7 +163,7 @@ describe("batch SQL", () => {
       [],
       new Set(),
     ).stories;
-    expect(() => batchSql(hostile, false, tag)).toThrow("batch delimiter");
+    expect(() => batchSql(hostile, false, "draft", tag)).toThrow("batch delimiter");
   });
 
   test("a dry run always ends by rolling back", () => {

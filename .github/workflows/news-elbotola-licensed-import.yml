@@ -1,9 +1,12 @@
 name: ElBotola licensed import
 
 # Imports ElBotola's Botola Pro articles (Arabic, plus French where ElBotola
-# published one, since 2021-09-23) into production as PRIVATE DRAFTS, under
-# the ElBotola licence recorded on app.publishers (2026-09-24). Nothing is
-# published by this workflow. See scripts/backend/elbotola-licensed-import.ts.
+# published one, since 2021-09-23) into production under the ElBotola licence
+# recorded on app.publishers (2026-09-24), either published with ElBotola's
+# own publication date (the owner's instruction) or as private drafts.
+# Readers only see them once NEWS_ENABLED is switched on; the pages credit
+# ElBotola and are kept out of search. See
+# scripts/backend/elbotola-licensed-import.ts.
 #
 # Run "dry-run" first: every batch is executed and rolled back. Then "import".
 # An interrupted import can be started again; stories already present are
@@ -21,13 +24,21 @@ on:
         required: true
         type: string
       mode:
-        description: dry-run (nothing kept) or import (drafts written)
+        description: dry-run (nothing kept) or import (articles written)
         required: true
         default: dry-run
         type: choice
         options:
           - dry-run
           - import
+      status:
+        description: published (with ElBotola's original date) or draft
+        required: true
+        default: published
+        type: choice
+        options:
+          - published
+          - draft
       limit:
         description: Optional number of stories (newest first); empty = all
         required: false
@@ -55,6 +66,7 @@ jobs:
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       CONFIRMATION: ${{ inputs.confirmation }}
       IMPORT_MODE: ${{ inputs.mode }}
+      IMPORT_STATUS: ${{ inputs.status }}
       IMPORT_LIMIT: ${{ inputs.limit }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
@@ -79,5 +91,5 @@ jobs:
           bun install --frozen-lockfile
           bun test scripts/backend/elbotola-licensed-import.test.ts
 
-      - name: Run licensed import (${{ inputs.mode }})
+      - name: Run licensed import (${{ inputs.mode }}, ${{ inputs.status }})
         run: bun scripts/backend/elbotola-licensed-import.ts
