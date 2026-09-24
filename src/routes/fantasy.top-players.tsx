@@ -1,3 +1,4 @@
+import podiumSoonArt from "@/assets/illustrations/podium-soon.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Award, Bookmark, Crown, Medal, Share2, Star, UserPlus } from "lucide-react";
@@ -209,6 +210,7 @@ function TopPlayersPage() {
           {/* Not "Aucun contenu disponible": a gameweek that has not been
               scored has no top five, and saying so is the whole answer. */}
           <UiEmptyState
+            illustration={podiumSoonArt}
             title={t("fantasy.top.empty_title").replace("{n}", nf.format(currentGw))}
             body={t("fantasy.top.empty_body").replace("{n}", nf.format(currentGw))}
           />
@@ -279,8 +281,12 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
             <Star className="h-3 w-3 shrink-0" aria-hidden />
             {t("fantasy.top.best_player")}
           </p>
-          <h2 dir="auto" className={cn("mt-1 truncate", ui.text.section, ui.tone.default)}>
-            {tr(player.name)}
+          {/* Same as the player page: the heading follows the page direction
+              and the name is its own auto-direction block, cut at its end. */}
+          <h2 className={cn("mt-1", ui.text.section, ui.tone.default)}>
+            <span dir="auto" className="block w-fit max-w-full truncate">
+              {tr(player.name)}
+            </span>
           </h2>
           <div className="mt-1 flex items-center gap-2">
             {club ? <ClubCrest club={club} size="sm" /> : null}

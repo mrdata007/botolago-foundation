@@ -1,3 +1,4 @@
+import rulesArt from "@/assets/illustrations/rules-hero.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { LegacyFantasyPage } from "@/components/fpl/LegacyFantasyPage";
 import { useQuery } from "@tanstack/react-query";
@@ -72,6 +73,13 @@ function RulesPage() {
           h1 through UiHeader, so this was the document's second one and a
           screen reader announced two page titles. The class is unchanged, so
           nothing moves by a pixel — only the level is corrected. */}
+      <img
+        src={rulesArt}
+        alt=""
+        aria-hidden
+        decoding="async"
+        className="mx-auto mb-4 h-auto max-h-40 w-full object-contain"
+      />
       <h2 className={cn(ui.text.title, ui.tone.ink)}>{t("fantasy.rules.title")}</h2>
       <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fantasy.rules.intro")}</p>
 

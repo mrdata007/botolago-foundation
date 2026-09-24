@@ -23,7 +23,7 @@ export function ClubCrest({
       className={cn(
         // Kit radius; the initials plate keeps an explicit on-ink text colour
         // because its background is the club's own colour, not a surface token.
-        "relative grid shrink-0 place-items-center overflow-hidden rounded-[var(--ui-radius-control)] text-[color:var(--ui-on-ink-plain)] [font-weight:var(--ui-weight-hero)] ring-1 ring-[color:var(--ui-rule)]",
+        "@container relative grid shrink-0 place-items-center overflow-hidden rounded-[var(--ui-radius-control)] text-[color:var(--ui-on-ink-plain)] [font-weight:var(--ui-weight-hero)] ring-1 ring-[color:var(--ui-rule)]",
         dims,
         className,
       )}
@@ -58,7 +58,9 @@ export function ClubCrest({
       aria-hidden
       title={club.name.fr}
     >
-      <span>{club.crestPlaceholder}</span>
+      {/* Never larger than 40% of the badge's width: three bold letters at
+          the default size did not fit a 20px badge ("WAC" showed as "WA("). */}
+      <span className="leading-none [font-size:min(1em,40cqi)]">{club.crestPlaceholder}</span>
       <FailureAwareImage
         src={club.crestUrl}
         alt=""

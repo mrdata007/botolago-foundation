@@ -1,3 +1,7 @@
+import matchesHeaderPhoto from "@/assets/photos/matches-header.webp";
+import { PhotoPageHeader } from "@/components/common/PhotoPageHeader";
+import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
+import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -33,7 +37,7 @@ import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Match } from "@/types/domain";
 
-const MATCHES_TITLE = "Matchs Botola Pro — scores en direct | BotolaGO";
+const MATCHES_TITLE = "Matches Botola Pro — scores en direct | BotolaGO";
 const MATCHES_DESCRIPTION =
   "Suivez tous les matchs de la Botola Pro : scores en direct, calendrier, résultats et classement.";
 
@@ -216,88 +220,89 @@ function MatchesPage() {
 
   return (
     <AppShell backgroundVariant="matches">
-      <header className="flex items-end gap-3 pt-2">
-        <h1 className={cn("min-w-0", ui.text.hero, ui.tone.default)}>{t("matches.title")}</h1>
-
-        <div className="ms-auto w-[10.5rem] shrink-0">
-          {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
-          <div className={cn("mb-1 flex items-center gap-1.5 px-1", ui.text.label, ui.tone.muted)}>
-            <CalendarRange
-              className="h-3.5 w-3.5 text-[color:var(--ui-on-surface-muted)]"
-              aria-hidden
-            />
-            <span>{t("matches.season.label")}</span>
-          </div>
-          <Select
-            dir={dir}
-            value={selectedSeason?.id ?? ""}
-            onValueChange={handleSeasonChange}
-            disabled={seasons.length === 0}
-          >
-            <SelectTrigger
-              aria-label={t("matches.season.label")}
-              className={cn(
-                "h-[var(--ui-tap-min)] px-3 shadow-none",
-                ui.radius.control,
-                ui.surface.card,
-                ui.rule.all,
-                ui.text.body,
-                "[font-weight:var(--ui-weight-heavy)]",
-                ui.focus,
-              )}
+      <PhotoPageHeader
+        photo={matchesHeaderPhoto}
+        title={t("matches.title")}
+        aside={
+          <div className="w-[10.5rem]">
+            {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
+            <div className={cn("mb-1 flex items-center gap-1.5 px-1", ui.text.label)}>
+              <CalendarRange className="h-3.5 w-3.5" aria-hidden />
+              <span>{t("matches.season.label")}</span>
+            </div>
+            <Select
+              dir={dir}
+              value={selectedSeason?.id ?? ""}
+              onValueChange={handleSeasonChange}
+              disabled={seasons.length === 0}
             >
-              {/* The trigger renders the season label itself. Left to Radix it
+              <SelectTrigger
+                aria-label={t("matches.season.label")}
+                className={cn(
+                  "h-[var(--ui-tap-min)] px-3 shadow-none",
+                  ui.radius.control,
+                  ui.surface.card,
+                  ui.rule.all,
+                  ui.text.body,
+                  "[font-weight:var(--ui-weight-heavy)]",
+                  ui.focus,
+                )}
+              >
+                {/* The trigger renders the season label itself. Left to Radix it
                   clones the whole selected item — label *and* "current" badge —
                   into a 10.5rem control, where the badge was clipped at 390px. */}
-              <SelectValue
-                placeholder={
-                  seasonsQ.isLoading ? t("matches.season.loading") : t("matches.season.unavailable")
-                }
-              >
-                {selectedSeason ? (
-                  <span className={cn("truncate", ui.text.tabular)}>{selectedSeason.label}</span>
-                ) : undefined}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent
-              className={cn(ui.radius.control, ui.rule.all, "bg-[color:var(--ui-surface)]")}
-            >
-              {seasons.map((season) => (
-                <SelectItem
-                  key={season.id}
-                  value={season.id}
-                  className={cn("min-h-[var(--ui-tap-min)]", ui.radius.control)}
+                <SelectValue
+                  placeholder={
+                    seasonsQ.isLoading
+                      ? t("matches.season.loading")
+                      : t("matches.season.unavailable")
+                  }
                 >
-                  <span className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        ui.text.body,
-                        "[font-weight:var(--ui-weight-heavy)]",
-                        ui.text.tabular,
-                      )}
-                    >
-                      {season.label}
-                    </span>
-                    {season.isCurrent && (
+                  {selectedSeason ? (
+                    <span className={cn("truncate", ui.text.tabular)}>{selectedSeason.label}</span>
+                  ) : undefined}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent
+                className={cn(ui.radius.control, ui.rule.all, "bg-[color:var(--ui-surface)]")}
+              >
+                {seasons.map((season) => (
+                  <SelectItem
+                    key={season.id}
+                    value={season.id}
+                    className={cn("min-h-[var(--ui-tap-min)]", ui.radius.control)}
+                  >
+                    <span className="flex items-center gap-2">
                       <span
                         className={cn(
-                          "inline-flex items-center px-1.5 py-0.5",
-                          ui.radius.control,
-                          ui.text.label,
-                          ui.surface.sunken,
-                          ui.tone.default,
+                          ui.text.body,
+                          "[font-weight:var(--ui-weight-heavy)]",
+                          ui.text.tabular,
                         )}
                       >
-                        {t("matches.season.current")}
+                        {season.label}
                       </span>
-                    )}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </header>
+                      {season.isCurrent && (
+                        <span
+                          className={cn(
+                            "inline-flex items-center px-1.5 py-0.5",
+                            ui.radius.control,
+                            ui.text.label,
+                            ui.surface.sunken,
+                            ui.tone.default,
+                          )}
+                        >
+                          {t("matches.season.current")}
+                        </span>
+                      )}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        }
+      />
 
       {/* Date navigation */}
       <div className="mt-3">
@@ -429,7 +434,9 @@ function MatchesPage() {
       )}
       {!loading && !seasonsQ.isError && !matchesQ.isError && totalDay === 0 && (
         <div className="mt-3">
-          <EmptyState>{t("matches.section.no_matches_today")}</EmptyState>
+          <EmptyState illustration={noMatchesArt}>
+            {t("matches.section.no_matches_today")}
+          </EmptyState>
         </div>
       )}
 
@@ -527,7 +534,9 @@ function MatchesPage() {
           <LoadingState />
         ) : seasonsQ.isError || matchesQ.isError ? null : (matchesQ.data?.standings.length ?? 0) ===
           0 ? (
-          <EmptyState compact>{t("matches.table.empty")}</EmptyState>
+          <EmptyState compact illustration={standingsSoonArt}>
+            {t("matches.table.empty")}
+          </EmptyState>
         ) : (
           <StandingsTable rows={matchesQ.data?.standings ?? []} clubById={clubById} />
         )}

@@ -1,3 +1,7 @@
+import fantasyHeroPhoto from "@/assets/photos/fantasy-hero.webp";
+import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
+import rankingCardPhoto from "@/assets/photos/ranking-card.webp";
+import { BrandedText } from "@/components/brand/BrandedText";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -154,12 +158,31 @@ function FantasyHub() {
         )}
         style={{ backgroundImage: "var(--ui-grad-hero)" }}
       >
-        <h1 className="pt-6">
+        {/* A floodlit pitch on the end side of the hero, fading into the
+            gradient before it reaches the title. Decorative. */}
+        <img
+          src={fantasyHeroPhoto}
+          alt=""
+          aria-hidden
+          decoding="async"
+          className="pointer-events-none absolute end-0 top-0 h-72 w-full object-cover object-[50%_75%] rtl:-scale-x-100 sm:h-64 sm:w-1/2"
+          style={{
+            // Faded towards the title and at its lower edge, so it has no
+            // hard border inside the gradient.
+            maskImage:
+              "linear-gradient(to left, black 25%, transparent 75%), linear-gradient(to bottom, black 55%, transparent 100%)",
+            maskComposite: "intersect",
+            WebkitMaskImage:
+              "linear-gradient(to left, black 25%, transparent 75%), linear-gradient(to bottom, black 55%, transparent 100%)",
+            WebkitMaskComposite: "source-in",
+          }}
+        />
+        <h1 className="relative pt-6">
           <FantasyBrand endorser="mobile" />
         </h1>
-        <div className="mt-4">{teamCard}</div>
+        <div className="relative mt-4">{teamCard}</div>
 
-        <UiCard className="mt-3 text-center" padding="md">
+        <UiCard className="relative mt-3 text-center" padding="md">
           {screen.phase === "ready" || screen.phase === "guest" || screen.phase === "no_team" ? (
             <>
               {gameweek ? (
@@ -207,24 +230,35 @@ function FantasyHub() {
         <Link
           to="/fantasy/rankings"
           className={cn(
-            "relative block overflow-hidden px-4 py-4 text-center",
+            "relative block overflow-hidden px-4 py-4 text-start",
             ui.radius.control,
             ui.surface.ink,
             ui.focus,
           )}
         >
-          <span
+          {/* The trophy photo fills the end side of the card and fades out
+              towards the title, which sits on the plain ink at the start.
+              The mask flips with the image in Arabic, so the fade always
+              faces the text. */}
+          <img
+            src={rankingCardPhoto}
+            alt=""
             aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-60"
+            loading="lazy"
+            decoding="async"
+            className="pointer-events-none absolute inset-y-0 end-0 h-full w-1/2 object-cover object-[100%_50%] rtl:-scale-x-100 sm:w-2/5"
             style={{
-              // Centred radial origins, so the highlight does not land on the
-              // opposite edge under `dir="rtl"`.
-              background:
-                "radial-gradient(70% 140% at 50% 0%, var(--ui-accent-sky) 0%, transparent 62%), radial-gradient(80% 140% at 50% 100%, var(--ui-ink-deep) 0%, transparent 68%)",
+              maskImage: "linear-gradient(to left, black 55%, transparent)",
+              WebkitMaskImage: "linear-gradient(to left, black 55%, transparent)",
             }}
           />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{ background: "color-mix(in oklab, var(--ui-ink-deep) 30%, transparent)" }}
+          />
           {/* Prose, not a figure — the stat ramp is numerals only. */}
-          <span className={cn("relative block", ui.text.hero, ui.tone.onInkPlain)}>
+          <span className={cn("relative block max-w-[55%]", ui.text.hero, ui.tone.onInkPlain)}>
             {t("fpl.rankings")}
           </span>
           <span
@@ -327,7 +361,9 @@ function FantasyHub() {
 
       {/* Follow BotolaGO */}
       <section className={cn("pt-6", ui.space.gutter)}>
-        <h2 className={cn(ui.text.section, ui.tone.default)}>{t("fpl.follow")}</h2>
+        <h2 className={cn(ui.text.section, ui.tone.default)}>
+          <BrandedText text={t("fpl.follow")} />
+        </h2>
         {/* Three tiles with News, two without it — the row stays balanced
             instead of leaving a gap where the News tile was. */}
         <div className={cn("mt-3 grid gap-2", NEWS_ENABLED ? "grid-cols-3" : "grid-cols-2")}>
@@ -358,7 +394,9 @@ function FantasyHub() {
         // edge under `dir="rtl"`.
         style={{ backgroundImage: "var(--ui-grad-header)" }}
       >
-        <h2 className={ui.text.section}>{t("fpl.more_about")}</h2>
+        <h2 className={ui.text.section}>
+          <BrandedText text={t("fpl.more_about")} tone="light" />
+        </h2>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <MoreAboutLink to="/fantasy/rules">{t("fpl.rules")}</MoreAboutLink>
           <MoreAboutLink to="/fantasy/help">{t("fpl.help_rules")}</MoreAboutLink>
@@ -529,11 +567,11 @@ function LeaguesAndCups({
           <div className="mt-4">
             <UiPill>{t("fpl.private_leagues")}</UiPill>
             {phase !== "ready" || !hasTeam ? (
-              <p className={cn("px-1 py-3", ui.text.meta, ui.tone.muted)}>{t("fpl.no_leagues")}</p>
+              <NoLeaguesNote text={t("fpl.no_leagues")} />
             ) : leaguesLoading ? (
               <UiSkeleton className="my-3 h-10" />
             ) : leagues.length === 0 ? (
-              <p className={cn("px-1 py-3", ui.text.meta, ui.tone.muted)}>{t("fpl.no_leagues")}</p>
+              <NoLeaguesNote text={t("fpl.no_leagues")} />
             ) : (
               <LeagueTable
                 caption={t("fpl.private_leagues")}
@@ -758,6 +796,23 @@ function ToggleRow({
           />
         </span>
       </button>
+    </div>
+  );
+}
+
+/** "No private leagues yet", with the same spot art as the leagues page. */
+function NoLeaguesNote({ text }: { text: string }) {
+  return (
+    <div className="flex items-center gap-3 px-1 py-3">
+      <img
+        src={emptyLeaguesArt}
+        alt=""
+        aria-hidden
+        loading="lazy"
+        decoding="async"
+        className="h-14 w-auto shrink-0 object-contain"
+      />
+      <p className={cn(ui.text.meta, ui.tone.muted)}>{text}</p>
     </div>
   );
 }

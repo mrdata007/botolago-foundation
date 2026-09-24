@@ -1,3 +1,4 @@
+import { stadiumPhotoFor } from "@/lib/stadium-photo";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -166,26 +167,45 @@ function PlayerDetailPage() {
 
   return (
     <div className={cn("px-4 pb-6 pt-3", ui.surface.page)}>
-      <UiCard className="flex items-center gap-3">
-        <JerseyVisual kit={kit} size={48} imageUrl={p.jerseyImageUrl} ariaLabel={tr(p.name)} />
-        <div className="min-w-0 flex-1">
-          <h2 dir="auto" className={cn("truncate", ui.text.section, ui.tone.default)}>
-            {tr(p.name)}
-          </h2>
-          <div className={cn("mt-0.5 flex flex-wrap items-center gap-1.5", ui.text.meta)}>
-            <span className={ui.tone.muted}>{t(`player.pos.${p.position}` as TranslationKey)}</span>
-            {club ? (
-              <span className={cn("truncate", ui.tone.muted)}>
-                ·{" "}
-                <span dir="auto" className="truncate">
-                  {tr(club.name)}
-                </span>
+      <UiCard padding="none" className="overflow-hidden">
+        {/* A stadium strip over the player's card, picked from the club so
+            team-mates share a ground. Decorative. */}
+        <img
+          src={stadiumPhotoFor(p.clubId ?? p.id)}
+          alt=""
+          aria-hidden
+          decoding="async"
+          className="h-20 w-full object-cover rtl:-scale-x-100"
+        />
+        <div className="flex items-center gap-3 p-4">
+          <JerseyVisual kit={kit} size={48} imageUrl={p.jerseyImageUrl} ariaLabel={tr(p.name)} />
+          <div className="min-w-0 flex-1">
+            {/* The heading follows the page direction, so in Arabic the name
+                sits against the jersey like its subtitle does. The name is its
+                own auto-direction block, shrunk to its width, so a long Latin
+                name is cut at its end ("Abdelkarim Benh…"), not its start. */}
+            <h2 className={cn(ui.text.section, ui.tone.default)}>
+              <span dir="auto" className="block w-fit max-w-full truncate">
+                {tr(p.name)}
               </span>
-            ) : null}
-            {p.status !== "available" ? <PlayerStatusBadge status={p.status} /> : null}
+            </h2>
+            <div className={cn("mt-0.5 flex flex-wrap items-center gap-1.5", ui.text.meta)}>
+              <span className={ui.tone.muted}>
+                {t(`player.pos.${p.position}` as TranslationKey)}
+              </span>
+              {club ? (
+                <span className={cn("truncate", ui.tone.muted)}>
+                  ·{" "}
+                  <span dir="auto" className="truncate">
+                    {tr(club.name)}
+                  </span>
+                </span>
+              ) : null}
+              {p.status !== "available" ? <PlayerStatusBadge status={p.status} /> : null}
+            </div>
           </div>
+          <UiStatBlock align="end" tone="ink" value={nf.format(p.price)} sub={t("fantasy.price")} />
         </div>
-        <UiStatBlock align="end" tone="ink" value={nf.format(p.price)} sub={t("fantasy.price")} />
       </UiCard>
 
       {/* Four labels, so this is a real segmented control again rather than a

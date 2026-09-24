@@ -18,6 +18,13 @@
 
 import { useRouterState } from "@tanstack/react-router";
 
+import welcomePhoto from "@/assets/photos/welcome.webp";
+import welcomePhotoSmall from "@/assets/photos/welcome-720.webp";
+import welcomePhotoWide from "@/assets/photos/welcome-wide.webp";
+import authPhoto from "@/assets/photos/auth.webp";
+import authPhotoSmall from "@/assets/photos/auth-720.webp";
+import authPhotoWide from "@/assets/photos/auth-wide.webp";
+
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
@@ -68,13 +75,84 @@ const WASH: Record<Exclude<BackgroundVariant, "auth">, string> = {
 
 interface Props {
   variant?: BackgroundVariant;
+  /** Auth only: a night-stadium photograph under the mesh instead of the
+   *  drawn arcs. `welcome` is the crowd, `auth` the players' tunnel. */
+  photo?: "welcome" | "auth";
 }
 
-export function PageBackground({ variant }: Props) {
+const PHOTOS = {
+  welcome: { small: welcomePhotoSmall, large: welcomePhoto, wide: welcomePhotoWide },
+  auth: { small: authPhotoSmall, large: authPhoto, wide: authPhotoWide },
+} as const;
+
+export function PageBackground({ variant, photo }: Props) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const v = variant ?? resolveVariant(pathname);
 
   // Auth keeps the V2 dark mesh — see the note at the top of this file.
+  if (v === "auth" && photo) {
+    const set = PHOTOS[photo];
+    return (
+      <div aria-hidden className="mesh-base mesh-auth">
+        {/* Portrait photograph on a phone, the landscape cut from 768px.
+            Decorative (the parent is aria-hidden) and the whole screen, so
+            it is fetched eagerly. The wide cut keeps its calm side under the
+            text, so it is mirrored in Arabic. */}
+        <picture>
+          <source media="(min-width: 768px)" srcSet={set.wide} />
+          <img
+            src={set.large}
+            srcSet={`${set.small} 720w, ${set.large} 1080w`}
+            sizes="100vw"
+            alt=""
+            decoding="async"
+            fetchPriority="high"
+            className={cn(
+              "absolute w-full object-cover md:inset-0 md:h-full md:rtl:-scale-x-100",
+              // The tunnel's only lit part, its mouth onto the pitch, sits low
+              // in the portrait cut, exactly where the phone form card covers
+              // the screen. On a phone the photo is therefore a band behind
+              // the heading, cropped to the mouth and faded into the navy.
+              photo === "auth"
+                ? "inset-x-0 top-0 h-[46svh] object-[50%_92%] [mask-image:linear-gradient(to_bottom,black_60%,transparent)] md:object-center md:[mask-image:none]"
+                : // Welcome: shifted down on a phone so the far stand's roof
+                  // edge lands below the subtitle instead of running through
+                  // it like a rule, and faded in at the top so the photo has
+                  // no hard edge of its own.
+                  "inset-x-0 top-[9svh] h-full [mask-image:linear-gradient(to_bottom,transparent,black_14%)] md:[mask-image:none]",
+            )}
+          />
+        </picture>
+        {photo === "auth" && (
+          // Phone only: a soft navy band behind the heading, so the tunnel's
+          // lit railing and pole lines sit under the copy as texture rather
+          // than as rules through it.
+          <div
+            className="absolute inset-x-0 top-0 h-[46svh] md:hidden"
+            style={{
+              backgroundImage:
+                "linear-gradient(to bottom, transparent 0%, color-mix(in oklab, var(--ui-ink-deep) 45%, transparent) 30%, color-mix(in oklab, var(--ui-ink-deep) 45%, transparent) 62%, transparent 100%)",
+            }}
+          />
+        )}
+        {/* The mesh's own navy, laid back over the photograph so the white
+            foreground keeps its contrast wherever the floodlights land.
+            `to bottom`: a degree angle would sit on the wrong edge in RTL. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              photo === "welcome"
+                ? // A deeper stop at 38% mutes the far stand's roof edge,
+                  // which otherwise ran like a rule through the subtitle.
+                  "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 62%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 70%, transparent) 38%, color-mix(in oklab, var(--ui-ink-deep) 52%, transparent) 52%, color-mix(in oklab, var(--ui-ink-deep) 72%, transparent) 100%)"
+                : "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 62%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 52%, transparent) 45%, color-mix(in oklab, var(--ui-ink-deep) 72%, transparent) 100%)",
+          }}
+        />
+      </div>
+    );
+  }
+
   if (v === "auth") {
     return (
       <div aria-hidden className="mesh-base mesh-auth">

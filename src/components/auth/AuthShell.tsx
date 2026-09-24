@@ -49,7 +49,7 @@
 
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { PageBackground } from "@/components/shell/PageBackground";
@@ -93,15 +93,16 @@ interface Props {
 }
 
 export function AuthShell({ title, subtitle, children, footer, showBack = true }: Props) {
-  const { t, dir } = useI18n();
+  const { t } = useI18n();
   // Auth pages are linked to from email (confirmation, password reset) as often
   // as they are reached in-app, so home is the fallback rather than a listing.
   const goBack = useBackTo("/");
-  const Arrow = dir === "rtl" ? ArrowRight : ArrowLeft;
+  // styles.css mirrors lucide arrows under dir="rtl"; picking the other icon here as well flipped it twice.
+  const Arrow = ArrowLeft;
 
   return (
     <div className={cn("relative min-h-[100dvh] w-full overflow-x-hidden", ui.tone.onMesh)}>
-      <PageBackground variant="auth" />
+      <PageBackground variant="auth" photo="auth" />
       <div
         className={cn(
           "relative z-10 flex min-h-[100dvh] flex-col",

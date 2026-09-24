@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { ui } from "@/components/ui-kit";
 import { MediaImage } from "./FailureAwareImage";
 import { ArticleHeroFallback } from "./ArticleHeroFallback";
+import { readTimeLabel } from "@/lib/read-time";
 
 /**
  * Article card, five variants:
@@ -62,14 +63,7 @@ export function ArticleCard({
    * untouched. It is `absolute inset-0`, so every variant keeps the aspect
    * ratio it already declared and nothing shifts.
    */
-  const heroPlaceholder = (size: "sm" | "md") => (
-    <ArticleHeroFallback
-      category={article.category}
-      clubIds={article.clubIds}
-      clubs={clubs}
-      size={size}
-    />
-  );
+  const heroPlaceholder = () => <ArticleHeroFallback category={article.category} />;
 
   /** Copy that sits on a photo: always the plain-on-ink token, never white. */
   const onPhoto = "text-[color:var(--ui-on-ink-plain)]";
@@ -156,10 +150,10 @@ export function ArticleCard({
             src={article.heroUrl}
             alt=""
             fallback={article.heroGradient}
-            placeholder={heroPlaceholder("md")}
+            placeholder={heroPlaceholder()}
             loading="eager"
             fetchPriority="high"
-            className="aspect-[16/10] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.02]"
+            className="aspect-[4/3] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.02] sm:aspect-[16/10]"
           />
           <div className="absolute inset-0" style={scrim(88, 35)} aria-hidden />
           <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
@@ -169,7 +163,12 @@ export function ArticleCard({
             </h3>
             <p
               {...contentAttributes}
-              className={cn("mt-1.5 line-clamp-2", ui.text.secondary, onPhoto, "opacity-85")}
+              className={cn(
+                "mt-1.5 line-clamp-2 max-sm:hidden",
+                ui.text.secondary,
+                onPhoto,
+                "opacity-85",
+              )}
             >
               {tr(article.excerpt)}
             </p>
@@ -188,7 +187,7 @@ export function ArticleCard({
               {dot("dark")}
               <span className="inline-flex items-center gap-1">
                 <Clock className="h-3 w-3" aria-hidden />
-                {article.readMinutes} {t("news.read_min")}
+                {readTimeLabel(article.readMinutes, lang, t)}
               </span>
               {time && (
                 <>
@@ -218,7 +217,7 @@ export function ArticleCard({
           src={article.heroUrl}
           alt=""
           fallback={article.heroGradient}
-          placeholder={heroPlaceholder("sm")}
+          placeholder={heroPlaceholder()}
           className={cn("h-14 w-14 shrink-0", ui.radius.control)}
         />
         <div className="min-w-0 flex-1">
@@ -259,8 +258,8 @@ export function ArticleCard({
               src={article.heroUrl}
               alt=""
               fallback={article.heroGradient}
-              placeholder={heroPlaceholder("sm")}
-              className="aspect-square w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.05]"
+              placeholder={heroPlaceholder()}
+              className="h-full min-h-[7.5rem] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.05]"
             />
           </div>
           <div className="flex min-w-0 flex-col justify-between py-1 pe-1">
@@ -289,9 +288,7 @@ export function ArticleCard({
                 {time && <span className="min-w-0 truncate">{time}</span>}
                 {time && dot()}
                 <Clock className="h-3 w-3 shrink-0" aria-hidden />
-                <span className="shrink-0">
-                  {article.readMinutes} {t("news.read_min")}
-                </span>
+                <span className="shrink-0">{readTimeLabel(article.readMinutes, lang, t)}</span>
               </span>
             </div>
           </div>
@@ -318,8 +315,8 @@ export function ArticleCard({
             src={article.heroUrl}
             alt=""
             fallback={article.heroGradient}
-            placeholder={heroPlaceholder("md")}
-            className="aspect-[4/5] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
+            placeholder={heroPlaceholder()}
+            className="aspect-[4/5] w-full transition-transform sm:aspect-[16/9] duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
           />
           <div className="absolute inset-0" style={scrim(85, 25)} aria-hidden />
           {photoTag("absolute start-3 top-3")}
@@ -334,7 +331,7 @@ export function ArticleCard({
               {time && <span>{time}</span>}
               <span className="inline-flex items-center gap-1">
                 <Clock className="h-3 w-3" aria-hidden />
-                {article.readMinutes} {t("news.read_min")}
+                {readTimeLabel(article.readMinutes, lang, t)}
               </span>
             </div>
           </div>
@@ -352,7 +349,7 @@ export function ArticleCard({
             src={article.heroUrl}
             alt=""
             fallback={article.heroGradient}
-            placeholder={heroPlaceholder("md")}
+            placeholder={heroPlaceholder()}
             className="aspect-[16/8] w-full transition-transform duration-500 ease-[var(--ease-standard)] group-hover:scale-[1.03]"
           />
         </div>
@@ -391,7 +388,7 @@ export function ArticleCard({
               {dot()}
               <span className="inline-flex shrink-0 items-center gap-1">
                 <Clock className="h-3 w-3" aria-hidden />
-                {article.readMinutes} {t("news.read_min")}
+                {readTimeLabel(article.readMinutes, lang, t)}
               </span>
             </span>
           </div>

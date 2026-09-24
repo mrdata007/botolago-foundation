@@ -1,3 +1,4 @@
+import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -283,6 +284,7 @@ function JoinLeagueBody() {
             {(publicQ.data ?? []).length === 0 && !publicQ.isPending ? (
               <UiEmptyState
                 className="mt-3 shadow-none"
+                illustration={emptyLeaguesArt}
                 title={t("fantasy.leagues.empty_title")}
                 body={t("fpl.no_leagues")}
               />

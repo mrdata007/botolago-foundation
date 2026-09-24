@@ -1,8 +1,9 @@
 import { ui, UiButton } from "@/components/ui-kit";
+import { BrandedText } from "@/components/brand/BrandedText";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { Logo } from "@/components/brand/Logo";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { PageBackground } from "@/components/shell/PageBackground";
 
@@ -35,10 +36,11 @@ interface Props {
  */
 
 export function WelcomeScreen({ onSignIn, onGuest }: Props) {
-  const { t, dir } = useI18n();
+  const { t } = useI18n();
   // A transform has no logical form, so the arrow is chosen rather than
   // mirrored — and the `rtl:` pair on its hover travel goes with it.
-  const Arrow = dir === "rtl" ? ArrowLeft : ArrowRight;
+  // styles.css mirrors lucide arrows under dir="rtl"; picking the other icon here as well flipped it twice.
+  const Arrow = ArrowRight;
 
   return (
     <div
@@ -51,7 +53,7 @@ export function WelcomeScreen({ onSignIn, onGuest }: Props) {
       {/* `variant="auth"` is explicit because this renders at `/`, where the
           resolver would otherwise paint the light page and every foreground
           on this screen would vanish. */}
-      <PageBackground variant="auth" />
+      <PageBackground variant="auth" photo="welcome" />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
@@ -76,13 +78,16 @@ export function WelcomeScreen({ onSignIn, onGuest }: Props) {
         <div className="mt-10 flex flex-col items-center text-center motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-700">
           <Logo
             variant="icon"
+            tone="light"
             className={cn(
-              "!h-20 !w-20 !rounded-[var(--ui-radius-sheet)] shadow-[var(--ui-shadow-raised)]",
+              "!h-20 !w-20",
               "motion-safe:animate-in motion-safe:zoom-in-95 motion-safe:duration-500",
             )}
           />
 
-          <h1 className={cn("mt-8", ui.text.hero, "ltr:tracking-tight")}>{t("welcome.title")}</h1>
+          <h1 className={cn("mt-8", ui.text.hero, "ltr:tracking-tight")}>
+            <BrandedText text={t("welcome.title")} tone="light" />
+          </h1>
           <p className={cn("mx-auto mt-4 max-w-[36ch]", ui.text.prose, ui.tone.onMeshMuted)}>
             {t("welcome.description")}
           </p>

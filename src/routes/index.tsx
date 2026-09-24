@@ -1,17 +1,10 @@
+import createTeamArt from "@/assets/illustrations/create-team.webp";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { BrandedText } from "@/components/brand/BrandedText";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  ChevronRight,
-  Flame,
-  CircleDot,
-  Bell,
-  Newspaper,
-  Trophy,
-  Compass,
-  UserRound,
-} from "lucide-react";
+import { ChevronRight, CircleDot, Bell, Newspaper, Trophy, UserRound } from "lucide-react";
 
 import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
@@ -29,6 +22,7 @@ import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import {
   HeroSkeleton,
@@ -39,7 +33,7 @@ import {
   SkeletonList,
 } from "@/components/common/Skeletons";
 import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
-import { ui } from "@/components/ui-kit";
+import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
@@ -47,6 +41,11 @@ import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
 import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import type { Match } from "@/types/domain";
+import stadiumBand from "@/assets/brand/home-band-stadium.webp";
+import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
+import liveBand from "@/assets/photos/home-band-live.webp";
+import liveBandSmall from "@/assets/photos/home-band-live-800.webp";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
 const HOME_DESCRIPTION =
@@ -113,9 +112,13 @@ function HomePage() {
  * token — no V2 glass (`surface-4`/`surface-2`), no Tailwind type ramp and
  * no responsive type steps, which the language never takes:
  *
- *   1. Compact greeting        — eyebrow + name + gameweek/date, no giant hero
- *   2. Matches                 — live/upcoming, score-first cards
- *   3. Fantasy                 — gameweek deadline + team entry/summary card
+ *   1. Gameweek band           — greeting, the gameweek, its date and the
+ *                                Fantasy deadline over a night-match photograph:
+ *                                the page's one anchor (Accueil art-direction pass)
+ *   2. Matches                 — one fixture list grouped by day, rising out
+ *                                of the band
+ *   3. Fantasy                 — the manager's team and numbers, or the
+ *                                way into creating one
  *   4. News preview            — a few curated cards linking into /news
  *   5. Standings snapshot      — top of the table, only when real data exists
  *   6. Discovery links         — quick access to Matches/Fantasy/News/Profile
@@ -202,6 +205,11 @@ function HomeContent() {
     return fmt.format(new Date());
   }, [lang]);
 
+  const matchDays = useMemo(
+    () => groupByMatchDay(matchesQ.data?.matches ?? [], lang),
+    [matchesQ.data, lang],
+  );
+
   // Up to three curated stories: the edition's lead plus its next articles.
   // Never the full News page — a lightweight preview only.
   const newsPreview = useMemo(() => {
@@ -219,70 +227,80 @@ function HomeContent() {
   return (
     <AppShell>
       {/* -------------------------------------------------------- */}
-      {/* 1. Compact greeting                                      */}
+      {/* 1. Gameweek band — the page's anchor                     */}
       {/* -------------------------------------------------------- */}
-      <div
-        className={cn(
-          "pt-3 sm:pt-4",
-          "animate-in fade-in-0 slide-in-from-bottom-2 duration-500 ease-out",
-        )}
-      >
-        <div className="inline-flex items-center gap-1.5">
-          <Flame className={cn("h-3.5 w-3.5 shrink-0", ui.tone.ink)} aria-hidden />
-          {/* `ui.text.label` replaces the V2 eyebrow idiom
-              (`text-[11px] font-black uppercase tracking-[0.16em]`): the
-              language has one label token, and its tracking is `ltr:`-only so
-              Arabic is never letter-spaced (BG-0069). */}
-          <span className={cn(ui.text.label, ui.tone.ink)}>{greeting}</span>
-        </div>
-        {/* The page's only H1, and deliberately sr-only: nothing in this block
-            is a heading a reader needs read aloud, but the document still owes
-            crawlers and screen-reader users a descriptive title.
-
-            The manager's name used to render here at `ui.text.hero` (34px),
-            between the greeting and the date. Removed by owner decision: it
-            told a signed-in reader something they already know, and a
-            signed-out one the literal word "Manager", which is the placeholder
-            showing through. The greeting now runs straight into the date. */}
-        <h1 className="sr-only">{HOME_TITLE}</h1>
-        <p className={cn("mt-2 truncate", ui.text.meta, ui.tone.muted)}>
-          {gwQ.data ? `${t("home.gameweek")} ${gwQ.data.number}` : ""}
-          {gwQ.data ? " · " : ""}
-          <span className="capitalize">{dateLine}</span>
-        </p>
-      </div>
+      {/* The page's only H1, and deliberately sr-only: the band names the
+          gameweek, which is what a reader needs, but the document still owes
+          crawlers and screen-reader users a descriptive title. */}
+      <h1 className="sr-only">{HOME_TITLE}</h1>
+      <GameweekBand
+        greeting={greeting}
+        dateLine={dateLine}
+        gameweek={gwQ.data}
+        live={matchesQ.data?.matches.some((m) => m.status === "live") ?? false}
+      />
 
       {/* -------------------------------------------------------- */}
       {/* 2. Matches                                                */}
       {/* -------------------------------------------------------- */}
-      {/* Tighter than the shared rhythm, and only here. `Section` sets
-          `mt-7 sm:mt-9`, which was measured against a greeting block that
-          ended in a 34px name line; with that line gone the same gap reads as
-          a hole. Overridden on this one section rather than in `Section`
-          itself, whose spacing every other section on this page and the
-          Fantasy hub still depend on. */}
-      <Section index={1} className="mt-5 sm:mt-7">
-        <SectionHeader
-          eyebrow={t("nav.matches")}
-          icon={CircleDot}
-          title={t("home.live_upcoming")}
-          action={<ViewAllLink to="/matches" />}
-        />
-        <div className="grid gap-2">
+      {/* The fixture list rises out of the band: pulled up over its lower
+          edge so the gameweek and its matches read as one moment rather than
+          a banner followed by a separate section. */}
+      <Section index={1} className="relative -mt-10 sm:-mt-10">
+        <UiCard padding="none" className="min-w-0 overflow-hidden">
+          <div className="flex items-center justify-between gap-3 ps-4 pe-2 pt-2">
+            <h2 className={cn("truncate", ui.text.subtitle, ui.tone.default)}>
+              {plain(t("home.live_upcoming"))}
+            </h2>
+            <ViewAllLink to="/matches" />
+          </div>
           {matchesQ.isLoading && (
-            <SkeletonList count={2}>{() => <MatchCardSkeleton />}</SkeletonList>
+            <div className="grid gap-2 p-3">
+              <SkeletonList count={2}>{() => <MatchCardSkeleton />}</SkeletonList>
+            </div>
           )}
-          {matchesQ.isError && <ErrorState onRetry={() => void matchesQ.refetch()} />}
+          {matchesQ.isError && (
+            <div className="p-3">
+              <ErrorState onRetry={() => void matchesQ.refetch()} />
+            </div>
+          )}
           {!matchesQ.isLoading && matchesQ.data?.matches.length === 0 && (
-            <EmptyState compact>{t("state.empty")}</EmptyState>
+            <div className="p-3">
+              <EmptyState compact>{t("state.empty")}</EmptyState>
+            </div>
           )}
-          {matchesQ.data?.matches.map((m) => {
-            const home = clubById(m.homeClubId);
-            const away = clubById(m.awayClubId);
-            if (!home || !away) return null;
-            return <MatchCard key={m.id} match={m} home={home} away={away} />;
-          })}
-        </div>
+          {matchDays.map((day) => (
+            <div key={day.key}>
+              <div
+                className={cn(
+                  "px-4 pb-1 pt-3",
+                  ui.text.meta,
+                  "[font-weight:var(--ui-weight-heavy)]",
+                  ui.tone.muted,
+                )}
+              >
+                {day.label}
+              </div>
+              <div className="divide-y divide-[color:var(--ui-rule)]">
+                {day.matches.map((m) => {
+                  const home = clubById(m.homeClubId);
+                  const away = clubById(m.awayClubId);
+                  if (!home || !away) return null;
+                  return (
+                    <MatchCard
+                      key={m.id}
+                      match={m}
+                      home={home}
+                      away={away}
+                      variant="list"
+                      listGameweek={gwQ.data?.number}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </UiCard>
       </Section>
 
       {/* -------------------------------------------------------- */}
@@ -290,10 +308,8 @@ function HomeContent() {
       {/* -------------------------------------------------------- */}
       <Section index={2}>
         <SectionHeader
-          eyebrow={t("nav.fantasy")}
-          icon={Trophy}
-          title={t("home.fantasy_hub")}
-          action={<ViewAllLink to="/fantasy" />}
+          title={plain(t("home.fantasy_hub"))}
+          action={<ViewAllLink to="/fantasy" className={ALIGN_WITH_TITLE} />}
         />
         {status === "loading" || availability.isPending ? (
           <HeroSkeleton />
@@ -302,18 +318,7 @@ function HomeContent() {
         ) : availability.data.status !== "ready" ? (
           <FantasyUnavailableState reason={availability.data.status} />
         ) : source === "guest" ? (
-          <Link
-            to={canCreate ? "/fantasy/create" : "/fantasy"}
-            className={cn(
-              "flex min-h-24 items-center justify-center px-4 text-center",
-              ui.surface.card,
-              ui.text.bodyStrong,
-              ui.tone.ink,
-              ui.focus,
-            )}
-          >
-            {t(canCreate ? "fantasy.create.title" : "fantasy.title")}
-          </Link>
+          <CreateTeamLink canCreate={canCreate} />
         ) : summaryQ.isError || gwQ.isError ? (
           <ErrorState
             onRetry={() => {
@@ -327,21 +332,9 @@ function HomeContent() {
               ...summaryQ.data,
               managerName: user?.displayName?.trim() || summaryQ.data.managerName,
             }}
-            gw={gwQ.data}
           />
         ) : summaryQ.isSuccess && summaryQ.data === null ? (
-          <Link
-            to={canCreate ? "/fantasy/create" : "/fantasy"}
-            className={cn(
-              "flex min-h-24 items-center justify-center px-4 text-center",
-              ui.surface.card,
-              ui.text.bodyStrong,
-              ui.tone.ink,
-              ui.focus,
-            )}
-          >
-            {t(canCreate ? "fantasy.create.title" : "fantasy.title")}
-          </Link>
+          <CreateTeamLink canCreate={canCreate} />
         ) : (
           <HeroSkeleton />
         )}
@@ -378,10 +371,8 @@ function HomeContent() {
       {NEWS_ENABLED && (
         <Section index={3}>
           <SectionHeader
-            eyebrow={t("nav.news")}
-            icon={Newspaper}
-            title={t("home.news_preview")}
-            action={<ViewAllLink to="/news" />}
+            title={plain(t("home.news_preview"))}
+            action={<ViewAllLink to="/news" className={ALIGN_WITH_TITLE} />}
           />
           <div className="grid gap-2.5">
             {newsQ.isError ? (
@@ -405,9 +396,8 @@ function HomeContent() {
       {showStandings && (
         <Section index={4}>
           <SectionHeader
-            eyebrow={t("matches.competition.botola")}
-            title={t("matches.table_preview")}
-            action={<ViewAllLink to="/matches" />}
+            title={plain(t("matches.table_preview"))}
+            action={<ViewAllLink to="/matches" className={ALIGN_WITH_TITLE} />}
           />
           {standingsLoading ? (
             <SkeletonList count={5}>{() => <StandingsRowSkeleton />}</SkeletonList>
@@ -419,15 +409,12 @@ function HomeContent() {
               }}
             />
           ) : (
-            <div className="grid gap-1.5">
+            <UiCard padding="none" className="divide-y divide-[color:var(--ui-rule)]">
               {standingsRows.slice(0, 5).map((row) => {
                 const club = clubById(row.clubId);
                 if (!club) return null;
                 return (
-                  <div
-                    key={row.clubId}
-                    className={cn("flex items-center gap-2.5 px-3 py-2", ui.surface.card)}
-                  >
+                  <div key={row.clubId} className="flex items-center gap-2.5 px-3 py-2">
                     <span
                       className={cn(
                         "w-4 shrink-0 text-center font-mono",
@@ -488,7 +475,7 @@ function HomeContent() {
                   </div>
                 );
               })}
-            </div>
+            </UiCard>
           )}
         </Section>
       )}
@@ -497,8 +484,8 @@ function HomeContent() {
       {/* 6. Discovery links                                        */}
       {/* -------------------------------------------------------- */}
       <Section index={5} className="pb-2">
-        <SectionHeader icon={Compass} title={t("home.explore")} />
-        <div className="grid grid-cols-2 gap-2">
+        <SectionHeader title={<BrandedText text={t("home.explore")} />} />
+        <div className={cn("grid gap-2", NEWS_ENABLED ? "grid-cols-4" : "grid-cols-3")}>
           <DiscoveryLink to="/matches" icon={CircleDot} label={t("nav.matches")} />
           <DiscoveryLink to="/fantasy" icon={Trophy} label={t("nav.fantasy")} />
           {/* News discovery tile — hidden at launch (NEWS_ENABLED). */}
@@ -510,7 +497,19 @@ function HomeContent() {
   );
 }
 
-function ViewAllLink({ to }: { to: "/news" | "/matches" | "/fantasy" }) {
+/** `SectionHeader` bottom-aligns its action, and the link's 44px tap box
+ *  then centres its text 12px above the title's line. Pulling the box down by
+ *  the header's own bottom padding puts the two on one line without
+ *  shrinking the tap target. */
+const ALIGN_WITH_TITLE = "-mb-3";
+
+function ViewAllLink({
+  to,
+  className,
+}: {
+  to: "/news" | "/matches" | "/fantasy";
+  className?: string;
+}) {
   const { t } = useI18n();
   return (
     <Link
@@ -525,6 +524,7 @@ function ViewAllLink({ to }: { to: "/news" | "/matches" | "/fantasy" }) {
         "transition-colors duration-[var(--duration-quick)]",
         "hover:bg-[color:var(--ui-surface-sunken)]",
         ui.focus,
+        className,
       )}
     >
       {t("home.view_all")}
@@ -542,35 +542,179 @@ function DiscoveryLink({
   icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   label: string;
 }) {
+  // One quiet row of tiles. These repeat the navigation bar, so they carry
+  // the ink colour rather than the action gradient, which on this page is
+  // kept for the one thing a guest should do (create a team).
   return (
     <Link
       to={to}
       className={cn(
-        "flex items-center gap-2.5 px-3.5 py-3",
-        "min-h-[var(--ui-row-min)]",
+        "flex min-h-16 flex-col items-center justify-center gap-1.5 px-2 py-3 text-center",
         ui.surface.card,
         "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
         ui.focus,
       )}
     >
+      <Icon className={cn("h-5 w-5 shrink-0", ui.tone.ink)} aria-hidden />
+      {/* Wraps rather than truncates: "Actualités" / "الملف الشخصي" do not
+          fit a three- or four-up tile on one line at 360px. */}
       <span
         className={cn(
-          "grid h-9 w-9 shrink-0 place-items-center",
-          ui.radius.control,
-          "text-[color:var(--ui-ink-deep)]",
+          "min-w-0 leading-tight",
+          ui.text.meta,
+          "[font-weight:var(--ui-weight-heavy)]",
+          ui.tone.default,
         )}
-        style={{ backgroundImage: "var(--ui-grad-action)" }}
-        aria-hidden
       >
-        <Icon className="h-4 w-4" aria-hidden />
-      </span>
-      {/* Wraps rather than truncates: at 390px the two-up tile leaves ~75px
-          for the label, and "Actualités" / "الملف الشخصي" do not fit on one
-          line at the language's 15px body step. */}
-      <span className={cn("min-w-0 flex-1 leading-tight", ui.text.bodyStrong, ui.tone.default)}>
         {label}
       </span>
-      <ChevronRight className={cn("ms-auto h-4 w-4 shrink-0", ui.tone.muted)} aria-hidden />
     </Link>
   );
+}
+
+/** Home titles are single-tone: the `{accent}` markers the dictionary
+ *  carries for other surfaces are dropped here, so a title introduces its
+ *  content without becoming a second accent on the page. */
+function plain(text: string): string {
+  return text.replace(/\{\/?accent\}/g, "");
+}
+
+function CreateTeamLink({ canCreate }: { canCreate: boolean }) {
+  const { t } = useI18n();
+  return (
+    <UiCard padding="md" className="flex flex-col items-center gap-3">
+      <img
+        src={createTeamArt}
+        alt=""
+        aria-hidden
+        loading="lazy"
+        decoding="async"
+        className="h-28 w-auto max-w-full object-contain"
+      />
+      <UiLinkButton to={canCreate ? "/fantasy/create" : "/fantasy"} className="w-full">
+        <Trophy className="h-4 w-4 shrink-0" aria-hidden />
+        <span className="truncate">{t(canCreate ? "fantasy.create.title" : "fantasy.title")}</span>
+        <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+      </UiLinkButton>
+    </UiCard>
+  );
+}
+
+/**
+ * The gameweek band: Home's anchor. A night-match photograph under a navy
+ * scrim, in the same deep blue the welcome and sign-in screens use, so the
+ * page is recognisably BotolaGO without another wordmark; on it, the
+ * gameweek at hero size and — while it is still ahead — the Fantasy
+ * deadline, counting down. Full-bleed on a phone, a
+ * rounded panel in the content column from `sm`. Its lower edge is covered by
+ * the fixture list, which is why it carries extra bottom padding.
+ */
+function GameweekBand({
+  greeting,
+  dateLine,
+  gameweek,
+  live,
+}: {
+  greeting: string;
+  dateLine: string;
+  gameweek?: { number: number; deadline: string };
+  /** A match is being played: the band shows the crowd celebrating. */
+  live: boolean;
+}) {
+  const { t } = useI18n();
+  // The band's own clock, so the deadline row leaves when the deadline passes
+  // rather than sitting at "0j 0h 0min" until something else re-renders Home.
+  // One timer, set for the deadline itself; nothing ticks once it has passed.
+  const deadlineMs = gameweek ? new Date(gameweek.deadline).getTime() : null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (deadlineMs === null || deadlineMs <= now) return;
+    // setTimeout holds a 32-bit delay; a longer wait just re-arms on wake.
+    const id = setTimeout(() => setNow(Date.now()), Math.min(deadlineMs - now + 250, 2 ** 31 - 1));
+    return () => clearTimeout(id);
+  }, [deadlineMs, now]);
+  const deadlineAhead = gameweek !== undefined && deadlineMs !== null && deadlineMs > now;
+  return (
+    <section
+      className={cn(
+        "relative isolate overflow-hidden",
+        "-mx-[var(--ui-gutter)] px-[var(--ui-gutter)] pb-14 pt-5",
+        "sm:mx-0 sm:mt-4 sm:rounded-[var(--ui-radius-control)] sm:px-6 sm:pt-6",
+        ui.tone.onInkPlain,
+        "bg-[color:var(--ui-ink-deep)]",
+        "animate-in fade-in-0 duration-500 ease-out",
+      )}
+    >
+      {/* The night-match photograph: floodlights and crowd on the far side,
+          dark sky behind the text. Mirrored in Arabic so the text still
+          starts on the calm side. Decorative, so hidden from assistive tech;
+          above the fold, so it is fetched eagerly. */}
+      <img
+        src={live ? liveBand : stadiumBand}
+        srcSet={
+          live
+            ? `${liveBandSmall} 800w, ${liveBand} 1600w`
+            : `${stadiumBandSmall} 800w, ${stadiumBand} 1600w`
+        }
+        sizes="(min-width: 640px) 672px, 100vw"
+        alt=""
+        aria-hidden
+        decoding="async"
+        fetchPriority="high"
+        className="absolute inset-0 -z-10 h-full w-full object-cover object-[70%_60%] rtl:-scale-x-100"
+      />
+      {/* A navy scrim over the photograph keeps the white text readable
+          wherever the floodlights land. `to bottom`: a degree angle would
+          sit on the wrong edge under `dir="rtl"`. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{
+          backgroundImage:
+            "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 68%, transparent) 0%, color-mix(in oklab, var(--ui-ink-deep) 45%, transparent) 100%)",
+        }}
+      />
+      <p className={cn("truncate", ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}>
+        {greeting} · {capitalizeFirst(dateLine)}
+      </p>
+      {gameweek ? (
+        <p className={cn("mt-1.5", ui.text.hero)}>
+          {t("home.gameweek")} {gameweek.number}
+        </p>
+      ) : null}
+      {deadlineAhead ? (
+        <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+          <span className={ui.text.label}>{t("home.deadline")}</span>
+          <DeadlineCountdown iso={gameweek.deadline} tone="onGradient" />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/** "mercredi 23 septembre" → "Mercredi 23 septembre". CSS `capitalize`
+ *  would title-case every word, and French does not capitalise months. */
+function capitalizeFirst(text: string): string {
+  return text.charAt(0).toLocaleUpperCase() + text.slice(1);
+}
+
+/** Home's fixtures, grouped under the football day they are played on. */
+function groupByMatchDay(matches: readonly Match[], lang: string) {
+  const locale = lang === "ar" ? "ar-MA" : "fr-FR";
+  const keyFmt = new Intl.DateTimeFormat("en-CA", { timeZone: MATCH_TIME_ZONE });
+  const labelFmt = new Intl.DateTimeFormat(locale, {
+    timeZone: MATCH_TIME_ZONE,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const days: { key: string; label: string; matches: Match[] }[] = [];
+  for (const match of matches) {
+    const kickoff = new Date(match.kickoff);
+    const key = keyFmt.format(kickoff);
+    const last = days[days.length - 1];
+    if (last && last.key === key) last.matches.push(match);
+    else days.push({ key, label: capitalizeFirst(labelFmt.format(kickoff)), matches: [match] });
+  }
+  return days;
 }
