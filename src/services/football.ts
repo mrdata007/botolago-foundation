@@ -112,6 +112,8 @@ function toMatch(match: MatchCardDto): Match {
     minute: match.minute ?? undefined,
     homeScore: match.homeScore ?? undefined,
     awayScore: match.awayScore ?? undefined,
+    halfTimeHomeScore: match.halfTimeHomeScore ?? undefined,
+    halfTimeAwayScore: match.halfTimeAwayScore ?? undefined,
     venue: { fr: venueName, ar: venueName },
     dateUnconfirmed: DATE_UNCONFIRMED_STATUSES.includes(match.status),
   };

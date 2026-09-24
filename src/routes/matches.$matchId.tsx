@@ -318,6 +318,11 @@ function MatchDetailPage() {
               palettes={palettes}
               lineups={lineups}
               isLive={isLive}
+              halfTime={
+                match.halfTimeHomeScore !== undefined && match.halfTimeAwayScore !== undefined
+                  ? { home: match.halfTimeHomeScore, away: match.halfTimeAwayScore }
+                  : undefined
+              }
             />
           </>
         )}

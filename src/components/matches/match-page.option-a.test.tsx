@@ -248,6 +248,25 @@ describe("match page — the Résumé timeline", () => {
     expect(html).not.toContain("Début de période");
     expect(html).not.toContain("Fin de période");
   });
+
+  it("adds the half-time score to MI-TEMPS only when the data has one", () => {
+    // No score recorded: the divider says only MI-TEMPS.
+    expect(html).not.toMatch(/Mi-temps<span/);
+    const withScore = inFrench(
+      <EventTimeline
+        events={[event("g1", "goal", "home", 12), event("pe", "period_end", null, 45, 3)]}
+        home={wydad}
+        away={far}
+        palettes={palettes}
+        isLive
+        halfTime={{ home: 1, away: 0 }}
+      />,
+    );
+    // Home first in the source, each figure isolated, the row a plain flex box.
+    expect(withScore).toMatch(
+      /Mi-temps<span class="[^"]*flex[^"]*">.*?<bdi>1<\/bdi><span>–<\/span><bdi>0<\/bdi>/,
+    );
+  });
 });
 
 describe("match page — the Stats tab", () => {

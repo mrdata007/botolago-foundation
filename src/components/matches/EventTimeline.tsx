@@ -43,6 +43,7 @@ export function EventTimeline({
   palettes,
   lineups = [],
   isLive,
+  halfTime,
 }: {
   events: readonly MatchEvent[];
   home: Club;
@@ -51,6 +52,8 @@ export function EventTimeline({
   /** Published lineups, only to put names on the events. */
   lineups?: readonly MatchLineupDto[];
   isLive: boolean;
+  /** The half-time score, when the provider has recorded one: "MI-TEMPS · 1 – 1". */
+  halfTime?: { home: number; away: number };
 }) {
   const { t } = useI18n();
 
@@ -104,14 +107,14 @@ export function EventTimeline({
         if (event.id === halfTimeEnd) {
           return (
             <li key={event.id}>
-              <HalfTimeDivider />
+              <HalfTimeDivider score={halfTime} />
             </li>
           );
         }
         const isEntering = entering.has(event.id);
         return (
           <li key={event.id} className="contents">
-            {event.id === firstSecondHalf && <HalfTimeDivider />}
+            {event.id === firstSecondHalf && <HalfTimeDivider score={halfTime} />}
             <div
               className={cn(isEntering && "event-enter")}
               onAnimationEnd={(animation) => {
@@ -140,15 +143,28 @@ export function EventTimeline({
   );
 }
 
-/** "MI-TEMPS" between two hairlines. Plain text, not `role="separator"`,
- * whose content assistive tech does not read. */
-function HalfTimeDivider() {
+/** "MI-TEMPS" between two hairlines, with the half-time score when there is
+ * one. Plain text, not `role="separator"`, whose content assistive tech does
+ * not read. */
+function HalfTimeDivider({ score }: { score?: { home: number; away: number } }) {
   const { t } = useI18n();
   return (
     <div className="flex items-center gap-2.5 py-0.5">
       <span aria-hidden className="h-px flex-1 bg-[color:var(--ui-rule)]" />
       {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
-      <span className={cn(ui.text.label, ui.tone.muted)}>{t("matches.status.ht")}</span>
+      <span className={cn("flex items-center gap-1.5", ui.text.label, ui.tone.muted)}>
+        {t("matches.status.ht")}
+        {score ? (
+          // Home first in the source, so Arabic puts it on the right, as the
+          // header does; each figure isolated, the row a plain flex box.
+          <span className={cn("flex items-center gap-1", ui.text.tabular)}>
+            <span aria-hidden>·</span>
+            <bdi>{score.home}</bdi>
+            <span>–</span>
+            <bdi>{score.away}</bdi>
+          </span>
+        ) : null}
+      </span>
       <span aria-hidden className="h-px flex-1 bg-[color:var(--ui-rule)]" />
     </div>
   );
