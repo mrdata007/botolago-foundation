@@ -21,6 +21,7 @@ const GUARDED_ROUTES = [
   "admin.staff.$principalId.tsx",
   "admin.approvals.tsx",
   "admin.prizes.tsx",
+  "admin.users.$userId.tsx",
 ] as const;
 
 function read(relativePath: string): string {
@@ -117,6 +118,12 @@ describe("every confirm step is keyed by the object it acts on", () => {
     }
     // Paid is only ever offered on a verified winner; the database enforces it too.
     expect(source).toContain('winner.status === "verified" && (');
+  });
+
+  test("a ban and its lifting are keyed by the account they act on", () => {
+    const source = read("admin.users.$userId.tsx");
+    const keys = [...source.matchAll(/actionKey=(\{`[^`]*`\}|"[^"]*")/g)].map((match) => match[1]);
+    expect(keys).toEqual(["{`unban:${user.userId}`}", "{`ban:${user.userId}`}"]);
   });
 
   test("the principal-wide operations are keyed apart from one another", () => {
