@@ -76,7 +76,15 @@ one edit away from not rolling back.
    ([EMAIL_NOTIFICATIONS.md](docs/backend/EMAIL_NOTIFICATIONS.md)); pause
    both with `select app_private.notification_email_configure('off', null,
 null, false);` before a write that touches fixtures or notifications, and
-   restore the previous settings afterwards.
+   restore the previous settings afterwards. Where the Pronostics migrations
+   are applied, pg_cron also runs `predictions-score-tick` every 5 minutes.
+   It writes predictions' points, `app.prediction_standings` and its own
+   records, and only while `app_private.prediction_settings` has a mode other
+   than `off` and scoring enabled
+   ([PREDICTIONS_OPERATIONS_RUNBOOK.md](docs/backend/PREDICTIONS_OPERATIONS_RUNBOOK.md)).
+   Pause its scoring alone before a write to those tables, and pass `true`
+   afterwards:
+   `select app_private.predictions_configure((select mode from app_private.prediction_settings), false);`
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 

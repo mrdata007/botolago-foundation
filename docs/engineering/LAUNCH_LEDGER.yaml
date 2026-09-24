@@ -1889,6 +1889,32 @@ tasks:
       its items over the 44px floor -- the right fix for a file that turned out to be dead.
       Deleting it is better than shipping a converted corpse, and it takes the last two
       shadcn dropdown imports with it.
+  BG-0146:
+    title: Pronostics — weekly Botola score predictions (MVP)
+    area: predictions
+    severity: P2
+    owner: Chief
+    state: RUNNING
+    depends_on: []
+    plan: docs/backend/PREDICTIONS_DOMAIN_PLAN.md
+    runbook: docs/backend/PREDICTIONS_OPERATIONS_RUNBOOK.md
+    evidence:
+      - "database layer: 6 migrations (20260925090000-090500), applied to no shared database"
+      - "6 pgTAP files, 253 checks; full local suite 71 files / 1959 tests green after a clean db reset; db lint clean; generated types current"
+      - "each match locks at its own kick-off against the database clock; a postponed match's stored 0-0 and a not-final full time are never scored"
+      - "scoring is re-run from the match's current facts, so provider corrections, home/away swaps, void matches and journée moves are all re-scored; a second pass with nothing new writes nothing"
+      - "one league, two games: Pronostics-only members join existing Fantasy leagues with the same invite code; Fantasy's worker now skips leagues with no Fantasy member, proven to change no Fantasy ranking"
+      - "live score refresh switched on in production 2026-09-24 19:15:55 UTC on the owner's go-ahead (docs/production/APPLIED_2026_09_24_LIVE_REFRESH_ON.md)"
+    note: >
+      Writing the tests found three real defects before anything shipped: a journée with
+      matches in play read as "upcoming" (a null from a missing scoring row dropped every
+      match from the counts), a prediction with no away score passed validation and died
+      on a not-null error, and the rankings kept a player banned after the last scoring
+      run on the public board until the next run.
+    remaining:
+      - "app: data layer, /pronostics pages, leagues screens, entry points, FR/AR text (owner reviews the Arabic)"
+      - "Plausible behind ANALYTICS_ENABLED with the privacy-policy update (FR/AR)"
+      - "guarded production apply script; apply only after Fantasy GW1 is scored, on the owner's go-ahead"
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
