@@ -1,0 +1,1479 @@
+[
+  {
+    "file": "article-mobile-ar",
+    "tDcl": 18289,
+    "tIdle": 30539,
+    "reqs": 57,
+    "html": 20151,
+    "rawText": 83,
+    "preHyd": 66,
+    "postHyd": 66,
+    "by": {
+      "img": {
+        "n": 2,
+        "transfer": 7483,
+        "decoded": 11716
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28449,
+        "decoded": 191265
+      },
+      "js": {
+        "n": 43,
+        "transfer": 401733,
+        "decoded": 1296884
+      },
+      "xhr": {
+        "n": 5,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 6,
+    "supa500": 2,
+    "supaSpan": "18227..28036",
+    "supaP50": 3180,
+    "chains": [
+      "news_article_detail@21428",
+      "news_article_detail@28036"
+    ],
+    "dupes": [
+      [
+        "POST /rest/v1/rpc/news_article_detail{\"p_identifier\":\"2064690e-15ee-4622-929f-c1e654cf9a29\",\"p_language\":\"fr\"}",
+        2
+      ],
+      [
+        "POST /rest/v1/rpc/news_article_detail{\"p_identifier\":\"2064690e-15ee-4622-929f-c1e654cf9a29\",\"p_language\":\"ar\"}",
+        2
+      ]
+    ],
+    "slow": [
+      "news_article_detail 500 5603ms",
+      "news_article_detail 200 4151ms",
+      "news_article_detail 404 3180ms"
+    ],
+    "oversized": [],
+    "imgsN": 0,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 700 normal unloaded",
+      "Changa 800 normal unloaded",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 600",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 4,
+    "failed": 2,
+    "console": 2,
+    "dom": 139,
+    "ttfb": 16582,
+    "fcp": 16884,
+    "lang": "ar",
+    "dir": "rtl",
+    "calls": [
+      "news_article_detail({p_identifier:2064690e-15ee-4622-929f-c1) 200 +4151",
+      "news_team_filters({p_language:fr}) 200 +2990",
+      "news_article_detail({p_identifier:2064690e-15ee-4622-929f-c1) 404 +3180",
+      "news_team_filters({p_language:ar}) 200 +3004",
+      "news_article_detail({p_identifier:2064690e-15ee-4622-929f-c1) 500 +5603",
+      "news_article_detail({p_identifier:2064690e-15ee-4622-929f-c1) undefined +null"
+    ]
+  },
+  {
+    "file": "article-mobile-fr",
+    "tDcl": 18632,
+    "tIdle": 30157,
+    "reqs": 55,
+    "html": 20151,
+    "rawText": 83,
+    "preHyd": 61,
+    "postHyd": 1410,
+    "by": {
+      "img": {
+        "n": 3,
+        "transfer": 39487,
+        "decoded": 43420
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28449,
+        "decoded": 191265
+      },
+      "js": {
+        "n": 43,
+        "transfer": 401712,
+        "decoded": 1296884
+      },
+      "xhr": {
+        "n": 3,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 4,
+    "supa500": 1,
+    "supaSpan": "18631..27651",
+    "supaP50": 3290,
+    "chains": [
+      "news_related_articles@21921",
+      "news_related_articles@27651"
+    ],
+    "dupes": [
+      [
+        "POST /rest/v1/rpc/news_related_articles{\"p_article_edition_id\":\"2064690e-15ee-4622-929f-c1e654cf9a29\",\"p_limit\":6}",
+        2
+      ]
+    ],
+    "slow": [
+      "news_related_articles 500 4725ms",
+      "news_article_detail 200 3290ms",
+      "news_team_filters 200 2157ms"
+    ],
+    "oversized": [
+      {
+        "src": "topic-transfer-DpmpKYCD.webp",
+        "nat": "1200x672",
+        "ren": "390x195",
+        "ratio": 3.1,
+        "lazy": "lazy",
+        "wh": true
+      }
+    ],
+    "imgsN": 1,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 700 normal unloaded",
+      "Changa 800 normal unloaded",
+      "Changa 800",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 600",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 3,
+    "failed": 1,
+    "console": 1,
+    "dom": 188,
+    "ttfb": 16885,
+    "fcp": 17552,
+    "lang": "fr",
+    "dir": "ltr",
+    "calls": [
+      "news_article_detail({p_identifier:2064690e-15ee-4622-929f-c1) 200 +3290",
+      "news_team_filters({p_language:fr}) 200 +2157",
+      "news_related_articles({p_article_edition_id:2064690e-15ee-4622) 500 +4725",
+      "news_related_articles({p_article_edition_id:2064690e-15ee-4622) undefined +null"
+    ]
+  },
+  {
+    "file": "club-mobile-fr",
+    "tDcl": 10920,
+    "tIdle": 54388,
+    "reqs": 68,
+    "html": 37907,
+    "rawText": 246,
+    "preHyd": 194,
+    "postHyd": 332,
+    "by": {
+      "img": {
+        "n": 4,
+        "transfer": 7483,
+        "decoded": 11716
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28449,
+        "decoded": 191265
+      },
+      "js": {
+        "n": 49,
+        "transfer": 416183,
+        "decoded": 1338470
+      },
+      "xhr": {
+        "n": 10,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 12,
+    "supa500": 5,
+    "supaSpan": "8963..50883",
+    "supaP50": 10054,
+    "chains": [
+      "football_season_catalog@10898",
+      "news_feed@10898",
+      "football_team_fixtures@17370",
+      "football_competition_fixtures@17373",
+      "football_standings@17373",
+      "news_feed@21016",
+      "football_competition_fixtures@28429",
+      "football_standings@28429",
+      "football_team_fixtures@28465",
+      "news_feed@30465",
+      "/storage/v1/render/image/public/football-media/football/teams/16853/crest.png?width=96&height=96&resize=contain@41909"
+    ],
+    "dupes": [
+      [
+        "POST /rest/v1/rpc/news_feed{\"p_language\":\"fr\",\"p_limit\":50,\"p_team_id\":\"1ebd788b-9f71-4a78-bfa8-68359d7f3a3f\"}",
+        3
+      ],
+      [
+        "POST /rest/v1/rpc/football_team_fixtures{\"p_team_id\":\"1ebd788b-9f71-4a78-bfa8-68359d7f3a3f\",\"p_limit\":100,\"p_language\":\"fr\"}",
+        2
+      ],
+      [
+        "POST /rest/v1/rpc/football_competition_fixtures{\"p_competition_id\":\"3e579087-e5ad-4cb1-babf-6490cf2a8ebe\",\"p_season_id\":\"d03223b0-8f4a-4309-93e1-2a708d7c3584\",\"p_limit\":100,\"p_language\":\"fr\"}",
+        2
+      ],
+      [
+        "POST /rest/v1/rpc/football_standings{\"p_season_id\":\"d03223b0-8f4a-4309-93e1-2a708d7c3584\",\"p_language\":\"fr\",\"p_group_key\":\"\",\"p_table_type\":\"overall\"}",
+        2
+      ]
+    ],
+    "slow": [
+      "football_standings 200 22249ms",
+      "news_feed 500 20418ms",
+      "football_team_fixtures 200 13412ms"
+    ],
+    "oversized": [],
+    "imgsN": 3,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 600",
+      "Changa 700 normal unloaded",
+      "Changa 700",
+      "Changa 800 normal unloaded",
+      "Changa 800",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 600",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 3,
+    "failed": 5,
+    "console": 5,
+    "dom": 246,
+    "ttfb": 8912,
+    "fcp": 9388,
+    "lang": "fr",
+    "dir": "ltr",
+    "calls": [
+      "/storage/v1/render/image/public/football-media/football/teams/228516/crest.png?width=128&height=128&resize=contain() 200 +151",
+      "football_season_catalog({p_language:fr,p_limit:12}) 200 +6455",
+      "news_feed({p_language:fr,p_limit:50,p_team_id:1ebd) 500 +9114",
+      "football_team_fixtures({p_team_id:1ebd788b-9f71-4a78-bfa8-68359) 500 +10091",
+      "football_competition_fixtures({p_competition_id:3e579087-e5ad-4cb1-bab) 500 +10054",
+      "football_standings({p_season_id:d03223b0-8f4a-4309-93e1-2a7) 200 +4414",
+      "news_feed({p_language:fr,p_limit:50,p_team_id:1ebd) 500 +7447",
+      "football_competition_fixtures({p_competition_id:3e579087-e5ad-4cb1-bab) 200 +11812",
+      "football_standings({p_season_id:d03223b0-8f4a-4309-93e1-2a7) 200 +22249",
+      "football_team_fixtures({p_team_id:1ebd788b-9f71-4a78-bfa8-68359) 200 +13412",
+      "news_feed({p_language:fr,p_limit:50,p_team_id:1ebd) 500 +20418",
+      "/storage/v1/render/image/public/football-media/football/teams/16853/crest.png?width=96&height=96&resize=contain() 200 +158"
+    ]
+  },
+  {
+    "file": "fantasy-mobile-fr",
+    "tDcl": 2402,
+    "tIdle": 40539,
+    "reqs": 74,
+    "html": 44809,
+    "rawText": 933,
+    "preHyd": 876,
+    "postHyd": 888,
+    "by": {
+      "img": {
+        "n": 4,
+        "transfer": 84803,
+        "decoded": 93242
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28449,
+        "decoded": 191265
+      },
+      "js": {
+        "n": 54,
+        "transfer": 404911,
+        "decoded": 1299098
+      },
+      "xhr": {
+        "n": 10,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 11,
+    "supa500": 5,
+    "supaSpan": "2569..38032",
+    "supaP50": 10848,
+    "chains": [
+      "fantasy_hub@13956",
+      "fantasy_hub@13957",
+      "news_feed@14681",
+      "football_team_catalog@16317",
+      "fantasy_gameweek_summary@23764",
+      "fantasy_player_season_stats@24564",
+      "news_feed@27545",
+      "fantasy_hub@38032"
+    ],
+    "dupes": [
+      [
+        "POST /rest/v1/rpc/fantasy_hub{\"p_language\":\"fr\"}",
+        4
+      ],
+      [
+        "POST /rest/v1/rpc/football_team_catalog{\"p_language\":\"fr\",\"p_limit\":100}",
+        2
+      ],
+      [
+        "POST /rest/v1/rpc/news_feed{\"p_language\":\"fr\",\"p_limit\":50}",
+        3
+      ]
+    ],
+    "slow": [
+      "football_team_catalog 500 12747ms",
+      "fantasy_player_season_stats 500 12465ms",
+      "football_team_catalog 200 12335ms"
+    ],
+    "oversized": [
+      {
+        "src": "botolago-wordmark-color-DW9xtM1W.svg",
+        "nat": "300x54",
+        "ren": "112x20",
+        "ratio": 2.7,
+        "lazy": "auto",
+        "wh": true
+      },
+      {
+        "src": "empty-leagues-CSLCNXa7.webp",
+        "nat": "622x480",
+        "ren": "62x48",
+        "ratio": 10,
+        "lazy": "lazy",
+        "wh": false
+      },
+      {
+        "src": "botolago-wordmark-color-DW9xtM1W.svg",
+        "nat": "300x54",
+        "ren": "101x18",
+        "ratio": 3,
+        "lazy": "auto",
+        "wh": true
+      }
+    ],
+    "imgsN": 3,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 700 normal unloaded",
+      "Changa 800 normal unloaded",
+      "Changa 800",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 600",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 3,
+    "failed": 5,
+    "console": 5,
+    "dom": 305,
+    "ttfb": 408,
+    "fcp": 696,
+    "lang": "fr",
+    "dir": "ltr",
+    "calls": [
+      "fantasy_hub({p_language:fr}) 200 +11378",
+      "football_team_catalog({p_language:fr,p_limit:100}) 500 +12747",
+      "news_feed({p_language:fr,p_limit:50}) 500 +11110",
+      "fantasy_hub({p_language:fr}) 200 +10607",
+      "fantasy_hub({p_language:fr}) 200 +9805",
+      "news_feed({p_language:fr,p_limit:50}) 500 +10848",
+      "football_team_catalog({p_language:fr,p_limit:100}) 200 +12335",
+      "fantasy_gameweek_summary({p_gameweek_id:7fcb28c5-9b69-4591-bcda-4) 200 +7652",
+      "fantasy_player_season_stats({p_season_id:5ada3e98-2929-405a-a3f1-a26) 500 +12465",
+      "news_feed({p_language:fr,p_limit:50}) 500 +9487",
+      "fantasy_hub({p_language:fr}) undefined +null"
+    ]
+  },
+  {
+    "file": "fantasy-rankings-mobile-fr",
+    "tDcl": 2649,
+    "tIdle": 13178,
+    "reqs": 46,
+    "html": 26924,
+    "rawText": 191,
+    "preHyd": 109,
+    "postHyd": 290,
+    "by": {
+      "img": {
+        "n": 4,
+        "transfer": 42394,
+        "decoded": 50816
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28449,
+        "decoded": 191265
+      },
+      "js": {
+        "n": 35,
+        "transfer": 383777,
+        "decoded": 1260234
+      },
+      "xhr": {
+        "n": 2,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 2,
+    "supa500": 0,
+    "supaSpan": "2708..9419",
+    "supaP50": 4890,
+    "chains": [
+      "fantasy_overall_standings@4529"
+    ],
+    "dupes": [],
+    "slow": [
+      "fantasy_overall_standings 200 4890ms",
+      "fantasy_hub 200 1817ms"
+    ],
+    "oversized": [
+      {
+        "src": "ranking-empty-BLhkpK_F.webp",
+        "nat": "188x400",
+        "ren": "53x112",
+        "ratio": 3.5,
+        "lazy": "lazy",
+        "wh": false
+      }
+    ],
+    "imgsN": 1,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 600",
+      "Changa 700 normal unloaded",
+      "Changa 800 normal unloaded",
+      "Changa 800",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 600",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 3,
+    "failed": 0,
+    "console": 0,
+    "dom": 185,
+    "ttfb": 935,
+    "fcp": 1504,
+    "lang": "fr",
+    "dir": "ltr",
+    "calls": [
+      "fantasy_hub({p_language:fr}) 200 +1817",
+      "fantasy_overall_standings({p_season_id:5ada3e98-2929-405a-a3f1-a26) 200 +4890"
+    ]
+  },
+  {
+    "file": "home-desktop-fr",
+    "tDcl": 2494,
+    "tIdle": 19037,
+    "reqs": 69,
+    "html": 45004,
+    "rawText": 395,
+    "preHyd": 290,
+    "postHyd": 255,
+    "by": {
+      "img": {
+        "n": 6,
+        "transfer": 135935,
+        "decoded": 146342
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28405,
+        "decoded": 190977
+      },
+      "js": {
+        "n": 51,
+        "transfer": 407165,
+        "decoded": 1303440
+      },
+      "xhr": {
+        "n": 7,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 7,
+    "supa500": 4,
+    "supaSpan": "2693..15531",
+    "supaP50": 7519,
+    "chains": [],
+    "dupes": [],
+    "slow": [
+      "news_feed 500 12837ms",
+      "football_team_catalog 200 7802ms",
+      "football_home_matches 500 7522ms"
+    ],
+    "oversized": [
+      {
+        "src": "botolago-mark-light-Co-4oQMn.svg",
+        "nat": "234x150",
+        "ren": "80x80",
+        "ratio": 2.9,
+        "lazy": "auto",
+        "wh": true
+      }
+    ],
+    "imgsN": 3,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 700 normal unloaded",
+      "Changa 800 normal unloaded",
+      "Changa 800",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 600",
+      "Manrope 700 normal unloaded",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 3,
+    "failed": 4,
+    "console": 4,
+    "dom": 124,
+    "ttfb": 474,
+    "fcp": 1048,
+    "lang": "fr",
+    "dir": "ltr",
+    "calls": [
+      "football_live_matches({p_language:fr,p_limit:10}) 200 +7111",
+      "fantasy_hub({p_language:fr}) 200 +6087",
+      "football_home_matches({p_language:fr,p_limit:3}) 500 +7522",
+      "news_feed({p_language:fr,p_limit:50}) 500 +6263",
+      "news_feed({p_language:ar,p_limit:50}) 500 +12837",
+      "football_team_catalog({p_language:fr,p_limit:100}) 200 +7802",
+      "football_season_catalog({p_language:fr,p_limit:12}) 500 +7519"
+    ]
+  },
+  {
+    "file": "home-mobile-ar",
+    "tDcl": 2851,
+    "tIdle": 43770,
+    "reqs": 78,
+    "html": 45004,
+    "rawText": 395,
+    "preHyd": 290,
+    "postHyd": 202,
+    "by": {
+      "img": {
+        "n": 6,
+        "transfer": 170825,
+        "decoded": 181232
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28449,
+        "decoded": 191265
+      },
+      "js": {
+        "n": 51,
+        "transfer": 407235,
+        "decoded": 1303440
+      },
+      "xhr": {
+        "n": 13,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 13,
+    "supa500": 6,
+    "supaSpan": "3088..40265",
+    "supaP50": 32742,
+    "chains": [],
+    "dupes": [
+      [
+        "POST /rest/v1/rpc/news_feed{\"p_language\":\"fr\",\"p_limit\":50}",
+        2
+      ],
+      [
+        "POST /rest/v1/rpc/news_feed{\"p_language\":\"ar\",\"p_limit\":50}",
+        2
+      ]
+    ],
+    "slow": [
+      "football_season_catalog 200 37169ms",
+      "news_feed 200 36161ms",
+      "football_season_catalog 200 35979ms"
+    ],
+    "oversized": [
+      {
+        "src": "botolago-mark-light-Co-4oQMn.svg",
+        "nat": "234x150",
+        "ren": "80x80",
+        "ratio": 2.9,
+        "lazy": "auto",
+        "wh": true
+      }
+    ],
+    "imgsN": 3,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 700 normal unloaded",
+      "Changa 800",
+      "Changa 800 normal unloaded",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 6,
+    "failed": 6,
+    "console": 6,
+    "dom": 124,
+    "ttfb": 417,
+    "fcp": 752,
+    "lang": "ar",
+    "dir": "rtl",
+    "calls": [
+      "football_live_matches({p_language:fr,p_limit:10}) 200 +20321",
+      "fantasy_hub({p_language:fr}) 500 +16697",
+      "football_home_matches({p_language:fr,p_limit:3}) 500 +21026",
+      "news_feed({p_language:fr,p_limit:50}) 500 +16866",
+      "news_feed({p_language:ar,p_limit:50}) 500 +19222",
+      "football_team_catalog({p_language:fr,p_limit:100}) 200 +20303",
+      "football_season_catalog({p_language:fr,p_limit:12}) 200 +35979",
+      "football_live_matches({p_language:ar,p_limit:10}) 200 +32742",
+      "football_home_matches({p_language:ar,p_limit:3}) 500 +33333",
+      "news_feed({p_language:ar,p_limit:50}) 200 +36161",
+      "news_feed({p_language:fr,p_limit:50}) 500 +34231",
+      "football_team_catalog({p_language:ar,p_limit:100}) 200 +35674",
+      "football_season_catalog({p_language:ar,p_limit:12}) 200 +37169"
+    ]
+  },
+  {
+    "file": "home-mobile-fr",
+    "tDcl": 2104,
+    "tIdle": 22506,
+    "reqs": 69,
+    "html": 45004,
+    "rawText": 395,
+    "preHyd": 290,
+    "postHyd": 255,
+    "by": {
+      "img": {
+        "n": 6,
+        "transfer": 170825,
+        "decoded": 181232
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28449,
+        "decoded": 191265
+      },
+      "js": {
+        "n": 51,
+        "transfer": 407238,
+        "decoded": 1303440
+      },
+      "xhr": {
+        "n": 7,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 7,
+    "supa500": 3,
+    "supaSpan": "2217..18995",
+    "supaP50": 7771,
+    "chains": [],
+    "dupes": [],
+    "slow": [
+      "football_live_matches 200 16778ms",
+      "football_season_catalog 200 12478ms",
+      "news_feed 500 12458ms"
+    ],
+    "oversized": [
+      {
+        "src": "botolago-mark-light-Co-4oQMn.svg",
+        "nat": "234x150",
+        "ren": "80x80",
+        "ratio": 2.9,
+        "lazy": "auto",
+        "wh": true
+      }
+    ],
+    "imgsN": 3,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 700 normal unloaded",
+      "Changa 800 normal unloaded",
+      "Changa 800",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 600",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 3,
+    "failed": 3,
+    "console": 3,
+    "dom": 124,
+    "ttfb": 370,
+    "fcp": 828,
+    "lang": "fr",
+    "dir": "ltr",
+    "calls": [
+      "football_live_matches({p_language:fr,p_limit:10}) 200 +16778",
+      "fantasy_hub({p_language:fr}) 200 +5169",
+      "football_home_matches({p_language:fr,p_limit:3}) 500 +6585",
+      "news_feed({p_language:fr,p_limit:50}) 500 +7336",
+      "news_feed({p_language:ar,p_limit:50}) 500 +12458",
+      "football_team_catalog({p_language:fr,p_limit:100}) 200 +7771",
+      "football_season_catalog({p_language:fr,p_limit:12}) 200 +12478"
+    ]
+  },
+  {
+    "file": "match-finished-mobile-fr",
+    "tDcl": 19737,
+    "tIdle": 48345,
+    "reqs": 63,
+    "html": 19752,
+    "rawText": 89,
+    "preHyd": 61,
+    "postHyd": 369,
+    "by": {
+      "img": {
+        "n": 6,
+        "transfer": 7483,
+        "decoded": 11716
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28449,
+        "decoded": 191265
+      },
+      "js": {
+        "n": 42,
+        "transfer": 407775,
+        "decoded": 1328921
+      },
+      "xhr": {
+        "n": 8,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 13,
+    "supa500": 2,
+    "supaSpan": "19695..46425",
+    "supaP50": 6809,
+    "chains": [
+      "football_head_to_head@26514",
+      "football_standings@26515",
+      "football_match_timeline@26515",
+      "football_match_statistics@26515",
+      "football_match_lineups@26515",
+      "news_feed@27503",
+      "/storage/v1/render/image/public/football-media/football/teams/16851/crest.png?width=128&height=128&resize=contain@44417",
+      "/storage/v1/render/image/public/football-media/football/teams/227263/crest.png?width=128&height=128&resize=contain@44417",
+      "/storage/v1/render/image/public/football-media/football/teams/16851/crest.png?width=64&height=64&resize=contain@44424",
+      "/storage/v1/render/image/public/football-media/football/teams/227263/crest.png?width=64&height=64&resize=contain@44424",
+      "news_feed@46425"
+    ],
+    "dupes": [
+      [
+        "POST /rest/v1/rpc/news_feed{\"p_language\":\"fr\",\"p_limit\":50}",
+        3
+      ]
+    ],
+    "slow": [
+      "football_match_timeline 200 17846ms",
+      "news_feed 500 16921ms",
+      "football_match_lineups 200 11685ms"
+    ],
+    "oversized": [],
+    "imgsN": 4,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 600",
+      "Changa 700 normal unloaded",
+      "Changa 700",
+      "Changa 800 normal unloaded",
+      "Changa 800",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 600",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 3,
+    "failed": 2,
+    "console": 2,
+    "dom": 228,
+    "ttfb": 18220,
+    "fcp": 18680,
+    "lang": "fr",
+    "dir": "ltr",
+    "calls": [
+      "football_match_detail({p_fixture_id:f8c23493-3b09-41d6-b8ae-be) 200 +6809",
+      "news_feed({p_language:fr,p_limit:50}) 500 +6805",
+      "football_head_to_head({p_fixture_id:f8c23493-3b09-41d6-b8ae-be) 200 +10827",
+      "football_standings({p_season_id:92e5dbe8-44a9-4b83-bdc8-78f) 200 +9354",
+      "football_match_timeline({p_fixture_id:f8c23493-3b09-41d6-b8ae-be) 200 +17846",
+      "football_match_statistics({p_fixture_id:f8c23493-3b09-41d6-b8ae-be) 200 +7383",
+      "football_match_lineups({p_fixture_id:f8c23493-3b09-41d6-b8ae-be) 200 +11685",
+      "news_feed({p_language:fr,p_limit:50}) 500 +16921",
+      "/storage/v1/render/image/public/football-media/football/teams/16851/crest.png?width=128&height=128&resize=contain() 200 +294",
+      "/storage/v1/render/image/public/football-media/football/teams/227263/crest.png?width=128&height=128&resize=contain() 200 +175",
+      "/storage/v1/render/image/public/football-media/football/teams/16851/crest.png?width=64&height=64&resize=contain() 200 +386",
+      "/storage/v1/render/image/public/football-media/football/teams/227263/crest.png?width=64&height=64&resize=contain() 200 +417",
+      "news_feed({p_language:fr,p_limit:50}) undefined +null"
+    ]
+  },
+  {
+    "file": "match-upcoming-mobile-fr",
+    "tDcl": 19659,
+    "tIdle": 39706,
+    "reqs": 54,
+    "html": 42380,
+    "rawText": 326,
+    "preHyd": 287,
+    "postHyd": 287,
+    "by": {
+      "img": {
+        "n": 4,
+        "transfer": 7483,
+        "decoded": 11716
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28449,
+        "decoded": 191265
+      },
+      "js": {
+        "n": 42,
+        "transfer": 408097,
+        "decoded": 1328921
+      },
+      "xhr": {
+        "n": 1,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 4,
+    "supa500": 1,
+    "supaSpan": "17670..37199",
+    "supaP50": 473,
+    "chains": [
+      "news_feed@19654",
+      "news_feed@37199"
+    ],
+    "dupes": [
+      [
+        "POST /rest/v1/rpc/news_feed{\"p_language\":\"fr\",\"p_limit\":50}",
+        2
+      ]
+    ],
+    "slow": [
+      "news_feed 500 16550ms",
+      "/storage/v1/render/image/public/football-media/football/teams/16853/crest.png?width=128&height=128&resize=contain 200 473ms",
+      "/storage/v1/render/image/public/football-media/football/teams/228516/crest.png?width=128&height=128&resize=contain 200 311ms"
+    ],
+    "oversized": [],
+    "imgsN": 4,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 600",
+      "Changa 700 normal unloaded",
+      "Changa 700",
+      "Changa 800 normal unloaded",
+      "Changa 800",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 600",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 3,
+    "failed": 1,
+    "console": 1,
+    "dom": 222,
+    "ttfb": 17598,
+    "fcp": 18292,
+    "lang": "fr",
+    "dir": "ltr",
+    "calls": [
+      "/storage/v1/render/image/public/football-media/football/teams/228516/crest.png?width=128&height=128&resize=contain() 200 +311",
+      "/storage/v1/render/image/public/football-media/football/teams/16853/crest.png?width=128&height=128&resize=contain() 200 +473",
+      "news_feed({p_language:fr,p_limit:50}) 500 +16550",
+      "news_feed({p_language:fr,p_limit:50}) undefined +null"
+    ]
+  },
+  {
+    "file": "matches-desktop-fr",
+    "tDcl": 2293,
+    "tIdle": 35115,
+    "reqs": 53,
+    "html": 48463,
+    "rawText": 378,
+    "preHyd": 278,
+    "postHyd": 221,
+    "by": {
+      "img": {
+        "n": 4,
+        "transfer": 55624,
+        "decoded": 64046
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28405,
+        "decoded": 190977
+      },
+      "js": {
+        "n": 40,
+        "transfer": 400488,
+        "decoded": 1300159
+      },
+      "xhr": {
+        "n": 3,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 4,
+    "supa500": 1,
+    "supaSpan": "2406..32617",
+    "supaP50": 1039,
+    "chains": [
+      "football_matches_by_date@3415",
+      "football_matches_by_date@32617"
+    ],
+    "dupes": [
+      [
+        "POST /rest/v1/rpc/football_matches_by_date{\"p_date\":\"2026-09-24\",\"p_language\":\"fr\",\"p_timezone\":\"Africa/Casablanca\",\"p_season_id\":\"d03223b0-8f4a-4309-93e1-2a708d7c3584\",\"p_limit\":100}",
+        2
+      ]
+    ],
+    "slow": [
+      "football_matches_by_date 500 28192ms",
+      "football_live_matches 200 1039ms",
+      "football_season_catalog 200 978ms"
+    ],
+    "oversized": [
+      {
+        "src": "botolago-wordmark-color-DW9xtM1W.svg",
+        "nat": "300x54",
+        "ren": "112x20",
+        "ratio": 2.7,
+        "lazy": "auto",
+        "wh": true
+      }
+    ],
+    "imgsN": 2,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 600",
+      "Changa 700 normal unloaded",
+      "Changa 800 normal unloaded",
+      "Changa 800",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 600",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 3,
+    "failed": 1,
+    "console": 1,
+    "dom": 232,
+    "ttfb": 557,
+    "fcp": 1300,
+    "lang": "fr",
+    "dir": "ltr",
+    "calls": [
+      "football_live_matches({p_language:fr,p_limit:10}) 200 +1039",
+      "football_season_catalog({p_language:fr,p_limit:12}) 200 +978",
+      "football_matches_by_date({p_date:2026-09-24,p_language:fr,p_timez) 500 +28192",
+      "football_matches_by_date({p_date:2026-09-24,p_language:fr,p_timez) undefined +null"
+    ]
+  },
+  {
+    "file": "matches-mobile-fr",
+    "tDcl": 1998,
+    "tIdle": 17032,
+    "reqs": 53,
+    "html": 48463,
+    "rawText": 378,
+    "preHyd": 278,
+    "postHyd": 221,
+    "by": {
+      "img": {
+        "n": 4,
+        "transfer": 55607,
+        "decoded": 64046
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28449,
+        "decoded": 191265
+      },
+      "js": {
+        "n": 40,
+        "transfer": 400501,
+        "decoded": 1300159
+      },
+      "xhr": {
+        "n": 3,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 4,
+    "supa500": 1,
+    "supaSpan": "1998..14530",
+    "supaP50": 1581,
+    "chains": [
+      "football_matches_by_date@3579",
+      "football_matches_by_date@14530"
+    ],
+    "dupes": [
+      [
+        "POST /rest/v1/rpc/football_matches_by_date{\"p_date\":\"2026-09-24\",\"p_language\":\"fr\",\"p_timezone\":\"Africa/Casablanca\",\"p_season_id\":\"d03223b0-8f4a-4309-93e1-2a708d7c3584\",\"p_limit\":100}",
+        2
+      ]
+    ],
+    "slow": [
+      "football_matches_by_date 500 9947ms",
+      "football_live_matches 200 1581ms",
+      "football_season_catalog 200 1541ms"
+    ],
+    "oversized": [
+      {
+        "src": "botolago-wordmark-color-DW9xtM1W.svg",
+        "nat": "300x54",
+        "ren": "112x20",
+        "ratio": 2.7,
+        "lazy": "auto",
+        "wh": true
+      },
+      {
+        "src": "matches-header-BzD6zCjr.webp",
+        "nat": "1200x514",
+        "ren": "390x72",
+        "ratio": 3.1,
+        "lazy": "auto",
+        "wh": false
+      }
+    ],
+    "imgsN": 2,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 600",
+      "Changa 700 normal unloaded",
+      "Changa 800 normal unloaded",
+      "Changa 800",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 600",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 3,
+    "failed": 1,
+    "console": 1,
+    "dom": 232,
+    "ttfb": 197,
+    "fcp": 544,
+    "lang": "fr",
+    "dir": "ltr",
+    "calls": [
+      "football_live_matches({p_language:fr,p_limit:10}) 200 +1581",
+      "football_season_catalog({p_language:fr,p_limit:12}) 200 +1541",
+      "football_matches_by_date({p_date:2026-09-24,p_language:fr,p_timez) 500 +9947",
+      "football_matches_by_date({p_date:2026-09-24,p_language:fr,p_timez) undefined +null"
+    ]
+  },
+  {
+    "file": "news-mobile-fr",
+    "tDcl": 1738,
+    "tIdle": 15648,
+    "reqs": 58,
+    "html": 30176,
+    "rawText": 140,
+    "preHyd": 75,
+    "postHyd": 1973,
+    "by": {
+      "img": {
+        "n": 10,
+        "transfer": 448221,
+        "decoded": 454860
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28392,
+        "decoded": 191265
+      },
+      "js": {
+        "n": 40,
+        "transfer": 396758,
+        "decoded": 1286711
+      },
+      "xhr": {
+        "n": 3,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 3,
+    "supa500": 0,
+    "supaSpan": "1722..12124",
+    "supaP50": 5431,
+    "chains": [],
+    "dupes": [],
+    "slow": [
+      "news_home_modules 200 10402ms",
+      "news_team_filters 200 5431ms",
+      "news_feed 200 3838ms"
+    ],
+    "oversized": [
+      {
+        "src": "botolago-wordmark-color-DW9xtM1W.svg",
+        "nat": "300x54",
+        "ren": "112x20",
+        "ratio": 2.7,
+        "lazy": "auto",
+        "wh": true
+      },
+      {
+        "src": "topic-transfer-DpmpKYCD.webp",
+        "nat": "1200x672",
+        "ren": "315x200",
+        "ratio": 3.8,
+        "lazy": "lazy",
+        "wh": true
+      },
+      {
+        "src": "topic-fans-Cx8EJXIh.webp",
+        "nat": "1200x672",
+        "ren": "315x200",
+        "ratio": 3.8,
+        "lazy": "lazy",
+        "wh": true
+      },
+      {
+        "src": "topic-press-DkXsMHAn.webp",
+        "nat": "1200x672",
+        "ren": "315x200",
+        "ratio": 3.8,
+        "lazy": "lazy",
+        "wh": true
+      },
+      {
+        "src": "topic-fans-Cx8EJXIh.webp",
+        "nat": "1200x672",
+        "ren": "315x200",
+        "ratio": 3.8,
+        "lazy": "lazy",
+        "wh": true
+      },
+      {
+        "src": "topic-referee-DtgYhdRV.webp",
+        "nat": "1200x672",
+        "ren": "315x200",
+        "ratio": 3.8,
+        "lazy": "lazy",
+        "wh": true
+      },
+      {
+        "src": "topic-transfer-DpmpKYCD.webp",
+        "nat": "1200x672",
+        "ren": "88x68",
+        "ratio": 13.6,
+        "lazy": "lazy",
+        "wh": true
+      },
+      {
+        "src": "topic-training-D4fJgy-7.webp",
+        "nat": "1200x672",
+        "ren": "88x68",
+        "ratio": 13.6,
+        "lazy": "lazy",
+        "wh": true
+      },
+      {
+        "src": "topic-stadium-CrykZwKm.webp",
+        "nat": "1200x672",
+        "ren": "88x68",
+        "ratio": 13.6,
+        "lazy": "lazy",
+        "wh": true
+      },
+      {
+        "src": "topic-injury-DcdwGHBW.webp",
+        "nat": "1200x672",
+        "ren": "88x68",
+        "ratio": 13.6,
+        "lazy": "lazy",
+        "wh": true
+      },
+      {
+        "src": "topic-training-D4fJgy-7.webp",
+        "nat": "1200x672",
+        "ren": "88x68",
+        "ratio": 13.6,
+        "lazy": "lazy",
+        "wh": true
+      }
+    ],
+    "imgsN": 11,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 700 normal unloaded",
+      "Changa 700",
+      "Changa 800 normal unloaded",
+      "Changa 800",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 3,
+    "failed": 0,
+    "console": 0,
+    "dom": 389,
+    "ttfb": 171,
+    "fcp": 684,
+    "lang": "fr",
+    "dir": "ltr",
+    "calls": [
+      "news_feed({p_language:fr,p_limit:10}) 200 +3838",
+      "news_home_modules({p_language:fr,p_limit:6}) 200 +10402",
+      "news_team_filters({p_language:fr}) 200 +5431"
+    ]
+  },
+  {
+    "file": "standings-mobile-fr",
+    "tDcl": 2951,
+    "tIdle": 44367,
+    "reqs": 53,
+    "html": 34575,
+    "rawText": 186,
+    "preHyd": 86,
+    "postHyd": 85,
+    "by": {
+      "img": {
+        "n": 3,
+        "transfer": 11757,
+        "decoded": 20496
+      },
+      "css": {
+        "n": 2,
+        "transfer": 28449,
+        "decoded": 191265
+      },
+      "js": {
+        "n": 39,
+        "transfer": 398851,
+        "decoded": 1297855
+      },
+      "xhr": {
+        "n": 4,
+        "transfer": 0,
+        "decoded": 0
+      }
+    },
+    "supaN": 6,
+    "supa500": 0,
+    "supaSpan": "2951..41872",
+    "supaP50": 7539,
+    "chains": [
+      "football_competition_fixtures@10520",
+      "football_standings@10522",
+      "football_competition_fixtures@41872",
+      "football_standings@41872"
+    ],
+    "dupes": [
+      [
+        "POST /rest/v1/rpc/football_competition_fixtures{\"p_competition_id\":\"3e579087-e5ad-4cb1-babf-6490cf2a8ebe\",\"p_season_id\":\"d03223b0-8f4a-4309-93e1-2a708d7c3584\",\"p_limit\":100,\"p_language\":\"fr\"}",
+        2
+      ],
+      [
+        "POST /rest/v1/rpc/football_standings{\"p_season_id\":\"d03223b0-8f4a-4309-93e1-2a708d7c3584\",\"p_language\":\"fr\",\"p_group_key\":\"\",\"p_table_type\":\"overall\"}",
+        2
+      ]
+    ],
+    "slow": [
+      "football_competition_fixtures 200 29664ms",
+      "football_live_matches 200 7546ms",
+      "football_season_catalog 200 7539ms"
+    ],
+    "oversized": [
+      {
+        "src": "botolago-wordmark-color-DW9xtM1W.svg",
+        "nat": "300x54",
+        "ren": "112x20",
+        "ratio": 2.7,
+        "lazy": "auto",
+        "wh": true
+      }
+    ],
+    "imgsN": 1,
+    "fontsLoaded": [
+      "Changa 600 normal unloaded",
+      "Changa 600",
+      "Changa 700 normal unloaded",
+      "Changa 800 normal unloaded",
+      "Changa 800",
+      "Manrope 400 normal unloaded",
+      "Manrope 400",
+      "Manrope 600 normal unloaded",
+      "Manrope 600",
+      "Manrope 700 normal unloaded",
+      "Manrope 700",
+      "Manrope 800 normal unloaded",
+      "Manrope 800",
+      "Noto Sans Arabic 400 normal unloaded",
+      "Noto Sans Arabic 600 normal unloaded",
+      "Noto Sans Arabic 700 normal unloaded",
+      "Noto Sans Arabic 800 normal unloaded"
+    ],
+    "fontFiles": 0,
+    "thirdParty": 3,
+    "failed": 1,
+    "console": 2,
+    "dom": 214,
+    "ttfb": 1211,
+    "fcp": 1608,
+    "lang": "fr",
+    "dir": "ltr",
+    "calls": [
+      "football_live_matches({p_language:fr,p_limit:10}) 200 +7546",
+      "football_season_catalog({p_language:fr,p_limit:12}) 200 +7539",
+      "football_competition_fixtures({p_competition_id:3e579087-e5ad-4cb1-bab) 200 +29664",
+      "football_standings({p_season_id:d03223b0-8f4a-4309-93e1-2a7) undefined +null",
+      "football_competition_fixtures({p_competition_id:3e579087-e5ad-4cb1-bab) undefined +null",
+      "football_standings({p_season_id:d03223b0-8f4a-4309-93e1-2a7) undefined +null"
+    ]
+  }
+]
