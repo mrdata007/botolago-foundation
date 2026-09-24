@@ -174,7 +174,21 @@ Not yet applied. Rules for when it is:
 - Through a guarded apply script the owner runs, rehearsed ending in
   `rollback`, then run with `commit` on the owner's go-ahead, and recorded in
   `docs/production/APPLIED_<date>_PREDICTIONS.md`, as
-  `RELEASE_ACTIVATION_MIGRATION_RUNBOOK.md` describes.
+  `RELEASE_ACTIVATION_MIGRATION_RUNBOOK.md` describes. The scripts:
+  - `scripts/backend/apply-20260925090000-predictions.sql`: parts 1 to 5,
+    installed switched off. It checks what it builds on (football, profiles,
+    Fantasy leagues, the account bans of `20260924160000`, pg_cron), records
+    each file and runs it only once its sha256 matches the repository, then
+    checks tables, row security, grants, both jobs and a visitor's read.
+  - `scripts/backend/apply-20260925090500-fantasy-league-page-skip-empty.sql`:
+    part 6, later. It refuses to run before parts 1 to 5, before Fantasy
+    gameweek 1 is finalized, or on a league page other than the one production
+    held on 2026-09-24.
+  - `scripts/backend/apply-predictions-scripts.test.ts` fails if a migration
+    changes after its script was built. Both were rehearsed on a local
+    database built like production (every migration up to `20260924190100`):
+    rehearsal saved nothing, the real run passed its checks, a second run was
+    refused.
 - The migrations leave `mode = off`: nothing is visible and the job idles
   until the switch is set.
 - Avoid the Fantasy orchestrator's hourly slot (minute 12).
