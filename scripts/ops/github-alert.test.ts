@@ -53,6 +53,66 @@ describe("alert content", () => {
     });
   });
 
+  test("names finished fixtures still without statistics past the orchestrator's threshold", () => {
+    const category = categorize({
+      verdict: "escalate",
+      performances: {
+        batches: 1,
+        fixturesProcessed: 0,
+        coverageEscalateHours: 6,
+        incomplete: [
+          {
+            fixtureExternalId: "19874708",
+            code: "invalid_provider_id",
+            diagnostic: { field: "data.lineups[12].player_id", valueType: "null" },
+            overdue: true,
+          },
+          { fixtureExternalId: "19874709", code: "provider_attempts_exhausted", overdue: false },
+          { fixtureExternalId: "<b>", code: "invalid_provider_id", overdue: true },
+        ],
+      },
+      deadlineWatch: { escalations: [] },
+    });
+    expect(category).toEqual({
+      category: "performance_coverage_overdue",
+      detail:
+        "verdict escalate; 1 finished fixture(s) without statistics past the threshold: 19874708 invalid_provider_id",
+    });
+    expect(
+      categorize({ verdict: "failed", performances: { error: "current_performance_rpc_failed" } }),
+    ).toEqual({
+      category: "current_performance_rpc_failed",
+      detail: "verdict failed; performance listing current_performance_rpc_failed",
+    });
+  });
+
+  test("names the gameweeks past their window without final points", () => {
+    expect(
+      categorize({
+        verdict: "escalate",
+        performances: { batches: 1, fixturesProcessed: 0 },
+        scoring: {
+          escalateHours: 6,
+          gameweeks: [
+            { sequence: 1, status: "live", overdue: true, workerCode: "football_not_final" },
+            { sequence: 2, status: "live", overdue: false },
+            { sequence: 3, status: "Live <b>", overdue: true, workerCode: "free text here" },
+          ],
+        },
+      }),
+    ).toEqual({
+      category: "fantasy_points_overdue",
+      detail:
+        "verdict escalate; 2 gameweek(s) without final points past the threshold: GW1 live football_not_final, GW3",
+    });
+    expect(
+      categorize({ verdict: "escalate", scoring: { error: "fantasy_orchestrator_rpc_failed" } }),
+    ).toEqual({
+      category: "fantasy_orchestrator_rpc_failed",
+      detail: "verdict escalate; gameweek windows fantasy_orchestrator_rpc_failed",
+    });
+  });
+
   test("lists the watchdog's failing checks", () => {
     const category = categorize({
       verdict: "failed",

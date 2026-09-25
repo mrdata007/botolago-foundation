@@ -24,6 +24,15 @@ name: Fantasy season orchestrator
 # scripts are retired; postponed fixtures are handled by the sync). The watch
 # window defaults to 72 h / 24 h and can be overridden with the repository
 # variables FANTASY_DEADLINE_WATCH_WARN_HOURS / _ESCALATE_HOURS.
+#
+# `escalate` also means a finished fixture has gone without certified
+# statistics for more than FANTASY_COVERAGE_ESCALATE_HOURS (default 6) after
+# its final whistle, or a gameweek has gone that long past the end of its
+# window without final points (whatever the lifecycle worker says: it reports
+# `waiting` on `football_not_final` for as long as that lasts). Until
+# 2026-09-25 both were `waiting` and exited 0, so the season's first finished
+# match stayed without points behind green runs that closed the alert
+# (docs/backend/CURRENT_FINISHED_FIXTURE_PERFORMANCES.md).
 
 on:
   schedule:
@@ -131,6 +140,7 @@ jobs:
           RECOVERY_STEP_OUTCOME: ${{ steps.recovery.outcome }}
           FANTASY_DEADLINE_WATCH_WARN_HOURS: ${{ vars.FANTASY_DEADLINE_WATCH_WARN_HOURS }}
           FANTASY_DEADLINE_WATCH_ESCALATE_HOURS: ${{ vars.FANTASY_DEADLINE_WATCH_ESCALATE_HOURS }}
+          FANTASY_COVERAGE_ESCALATE_HOURS: ${{ vars.FANTASY_COVERAGE_ESCALATE_HOURS }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
         shell: bash
@@ -140,6 +150,18 @@ jobs:
           printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
           echo "provider refresh step outcome: $RECOVERY_STEP_OUTCOME"
           bun scripts/backend/fantasy-season-orchestrator.ts
+
+      # `continue-on-error` lets the pass above run on the data already in the
+      # database, but it also lists the refresh step as a success in the run's
+      # job summary. The fixtures-only refresh has no failure the season can
+      # tolerate, so the run goes red here whatever the pass concluded, and the
+      # red step carries the name of what failed.
+      - name: Provider refresh failed
+        if: always() && steps.recovery.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "::error title=Provider refresh failed::current-season-recovery.ts failed; see the 'Refresh provider fixtures and results' log and recovery/current-season-recovery.json in the evidence"
+          exit 1
 
       - name: Scan sanitized evidence
         id: evidence_scan

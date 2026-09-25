@@ -1,12 +1,17 @@
 /**
  * Production watchdog: one answer to "is BotolaGO healthy right now?".
  *
- * Run by .github/workflows/ops-watchdog.yml every 30 minutes. It reads the
- * database's own health (`api.service_ops_health`: Fantasy tick and locks,
- * deadline watch, cron jobs, news, live scores, provider refresh, email),
- * loads the public pages and one public API call the way a visitor does, and
- * checks that the season orchestrator has actually run recently -- GitHub
- * started its hourly schedule only every 3.5-5.5 hours on 23-24 Sep 2026.
+ * Run by .github/workflows/ops-watchdog.yml every 30 minutes and after every
+ * season orchestrator run. It reads the database's own health
+ * (`api.service_ops_health`: every check the database names, reported as it
+ * states it), loads the public pages and one public API call the way a
+ * visitor does -- the sitemap must also contain entries, not only answer 200
+ * -- checks that the season orchestrator has actually run recently and that
+ * its last run was not red (GitHub started its hourly schedule only every
+ * 3.5-5.5 hours on 23-24 Sep 2026, and did not start this watchdog's own
+ * schedule at all in its first hours on main), and ages every Fantasy
+ * gameweek whose window has ended without final points, from the database,
+ * whether or not the orchestrator runs.
  *
  * Read-only. Writes `watchdog.json` (sanitised: check names, statuses and
  * one-line reasons) and a table for the run page; exits 1 when any check
@@ -82,18 +87,80 @@ export async function databaseHealth(
       },
     ];
   }
-  const payload = JSON.parse(result.body) as { checks?: Check[] };
-  const checks = (payload.checks ?? []).filter(
-    (check) =>
-      typeof check?.name === "string" &&
-      /^[a-z][a-z0-9_]{1,60}$/.test(check.name) &&
-      ["ok", "warn", "fail"].includes(check.status),
-  );
-  return checks.map((check) => ({
-    name: check.name,
-    status: check.status,
-    detail: String(check.detail ?? "").slice(0, 200),
-  }));
+  let payload: { status?: unknown; checks?: unknown };
+  try {
+    payload = JSON.parse(result.body) as typeof payload;
+  } catch {
+    return [
+      { name: "database_health", status: "fail", detail: "health RPC answered 200 without JSON" },
+    ];
+  }
+  // Every check the database names is reported, whatever it is called: new
+  // ones (statistics coverage, sitemap freshness, ...) page as soon as their
+  // migration lands, with no change here. A status this script does not know
+  // is treated as a failure rather than dropped.
+  const checks: Check[] = [];
+  for (const entry of Array.isArray(payload.checks) ? payload.checks : []) {
+    const check = (entry ?? {}) as Record<string, unknown>;
+    if (typeof check.name !== "string" || !/^[a-z][a-z0-9_]{1,60}$/.test(check.name)) continue;
+    const detail = String(check.detail ?? "").slice(0, 200);
+    checks.push(
+      check.status === "ok" || check.status === "warn" || check.status === "fail"
+        ? { name: check.name, status: check.status, detail }
+        : {
+            name: check.name,
+            status: "fail",
+            detail: `unrecognised status ${
+              typeof check.status === "string" && /^[a-z_]{1,20}$/.test(check.status)
+                ? `"${check.status}"`
+                : "(unreadable)"
+            }: ${detail}`.slice(0, 200),
+          },
+    );
+  }
+  if (checks.length === 0) {
+    return [{ name: "database_health", status: "fail", detail: "health RPC returned no checks" }];
+  }
+  if (payload.status === "fail" && !checks.some((check) => check.status === "fail")) {
+    checks.push({
+      name: "database_health",
+      status: "fail",
+      detail: "the database reports fail, but none of the checks it named explains it",
+    });
+  }
+  return checks;
+}
+
+/**
+ * A sitemap that answers 200 must also be one: a `urlset` or a sitemap index
+ * with at least one `<loc>`. `null` when the body is neither.
+ */
+export function sitemapEntries(
+  body: string,
+): { kind: "urlset" | "sitemapindex"; entries: number } | null {
+  const kind = /<urlset[\s>]/.test(body)
+    ? "urlset"
+    : /<sitemapindex[\s>]/.test(body)
+      ? "sitemapindex"
+      : null;
+  return kind ? { kind, entries: (body.match(/<loc>/g) ?? []).length } : null;
+}
+
+function pageCheck(path: string, result: { status: number; ms: number; body: string }): Check {
+  const name = `page_${path === "/" ? "home" : path.replace(/[^a-z]/g, "")}`;
+  const answered = `${path} answered ${result.status || "nothing"} in ${result.ms} ms`;
+  if (result.status !== 200) return { name, status: "fail", detail: answered };
+  if (path === "/sitemap.xml") {
+    const sitemap = sitemapEntries(result.body);
+    if (!sitemap || sitemap.entries === 0)
+      return { name, status: "fail", detail: `${answered} without a sitemap entry in the body` };
+    return {
+      name,
+      status: result.ms > SLOW_MS ? "warn" : "ok",
+      detail: `${answered} (${sitemap.entries} ${sitemap.kind === "urlset" ? "URLs" : "sitemaps"})`,
+    };
+  }
+  return { name, status: result.ms > SLOW_MS ? "warn" : "ok", detail: answered };
 }
 
 /** The public site and one public API call, as a visitor meets them. */
@@ -105,12 +172,7 @@ export async function publicSurface(
 ): Promise<Check[]> {
   const checks: Check[] = [];
   for (const path of SITE_PAGES) {
-    const result = await timed(fetchImpl, `${siteUrl}${path}`);
-    checks.push({
-      name: `page_${path === "/" ? "home" : path.replace(/[^a-z]/g, "")}`,
-      status: result.status !== 200 ? "fail" : result.ms > SLOW_MS ? "warn" : "ok",
-      detail: `${path} answered ${result.status || "nothing"} in ${result.ms} ms`,
-    });
+    checks.push(pageCheck(path, await timed(fetchImpl, `${siteUrl}${path}`)));
   }
   if (publishableKey) {
     const result = await timed(fetchImpl, `${supabaseUrl}/rest/v1/rpc/news_feed`, {
@@ -131,16 +193,19 @@ export async function publicSurface(
   return checks;
 }
 
-/** Has the season orchestrator run recently, and did its last run pass? */
-export async function orchestratorRecency(
+type WorkflowRun = { created_at: string; status: string; conclusion: string | null };
+
+/** A workflow's latest runs on main, newest first, or the status GitHub answered instead. */
+async function workflowRuns(
   fetchImpl: Fetch,
   repository: string,
   token: string,
-  now: Date,
-): Promise<Check> {
+  workflowFile: string,
+  query: string,
+): Promise<WorkflowRun[] | { unavailable: number }> {
   const result = await timed(
     fetchImpl,
-    `https://api.github.com/repos/${repository}/actions/workflows/fantasy-season-orchestrator.yml/runs?per_page=5&branch=main`,
+    `https://api.github.com/repos/${repository}/actions/workflows/${workflowFile}/runs?${query}&branch=main`,
     {
       headers: {
         Accept: "application/vnd.github+json",
@@ -149,19 +214,35 @@ export async function orchestratorRecency(
       },
     },
   );
-  if (result.status !== 200) {
+  if (result.status !== 200) return { unavailable: result.status };
+  try {
+    return (JSON.parse(result.body) as { workflow_runs?: WorkflowRun[] }).workflow_runs ?? [];
+  } catch {
+    return { unavailable: result.status };
+  }
+}
+
+/** Has the season orchestrator run recently, and did its last run pass? */
+export async function orchestratorRecency(
+  fetchImpl: Fetch,
+  repository: string,
+  token: string,
+  now: Date,
+): Promise<Check> {
+  const runs = await workflowRuns(
+    fetchImpl,
+    repository,
+    token,
+    "fantasy-season-orchestrator.yml",
+    "per_page=5",
+  );
+  if (!Array.isArray(runs)) {
     return {
       name: "season_orchestrator",
       status: "warn",
-      detail: `run history unavailable (${result.status || "no answer"})`,
+      detail: `run history unavailable (${runs.unavailable || "no answer"})`,
     };
   }
-  const runs =
-    (
-      JSON.parse(result.body) as {
-        workflow_runs?: Array<{ created_at: string; status: string; conclusion: string | null }>;
-      }
-    ).workflow_runs ?? [];
   const latest = runs[0];
   if (!latest) return { name: "season_orchestrator", status: "fail", detail: "no run found" };
   const hours = (now.getTime() - Date.parse(latest.created_at)) / 3_600_000;
@@ -173,13 +254,182 @@ export async function orchestratorRecency(
     };
   }
   const lastDone = runs.find((run) => run.status === "completed");
+  // A red run is the orchestrator saying something is wrong now: statistics
+  // missing past the threshold, a gameweek past its window without points, a
+  // failed provider refresh or worker. It pages from here too, so the page
+  // does not depend on that run's own alert step. A cancelled or skipped run
+  // said nothing and only warns.
+  const red = ["failure", "timed_out", "startup_failure"].includes(lastDone?.conclusion ?? "");
   return {
     name: "season_orchestrator",
-    status: lastDone && lastDone.conclusion !== "success" ? "warn" : "ok",
+    status: red ? "fail" : lastDone && lastDone.conclusion !== "success" ? "warn" : "ok",
     detail: `last run ${Math.round(hours * 10) / 10} h ago${
       lastDone ? `, last completed: ${lastDone.conclusion}` : ""
-    }`,
+    }${red ? " (its run summary names what escalated)" : ""}`,
   };
+}
+
+/** Mirrors COVERAGE_ESCALATE_HOURS in scripts/backend/fantasy-season-orchestrator.ts. */
+export const POINTS_ESCALATE_HOURS = 6;
+const POINTS_PENDING = ["open", "locked", "live", "provisional", "finalizing"];
+
+/**
+ * The repository variable FANTASY_COVERAGE_ESCALATE_HOURS, as the orchestrator
+ * reads it (1-168); `null` when it is set to something else.
+ */
+export function pointsEscalateHours(raw: string | undefined): number | null {
+  if (raw === undefined || raw === "") return POINTS_ESCALATE_HOURS;
+  if (!/^\d{1,3}$/.test(raw) || Number(raw) < 1 || Number(raw) > 168) return null;
+  return Number(raw);
+}
+
+/**
+ * Has every Fantasy gameweek whose window has ended got its final points?
+ * Read from the database through the same public contracts the Fantasy pages
+ * use (`api.fantasy_hub` for the season, `api.fantasy_gameweeks` for the
+ * windows), so it holds whether or not the orchestrator runs: on 2026-09-25
+ * GitHub started that job only every three to six hours. A gameweek still
+ * open, locked, live, provisional or finalizing more than `escalateHours`
+ * after its window ended (`endsAt`: last counting kickoff + 6 h) fails; one
+ * inside that allowance warns.
+ */
+export async function fantasyPoints(
+  fetchImpl: Fetch,
+  supabaseUrl: string,
+  secretKey: string,
+  now: Date,
+  escalateHours: number = POINTS_ESCALATE_HOURS,
+): Promise<Check> {
+  const call = (name: string, body: unknown) =>
+    timed(fetchImpl, `${supabaseUrl}/rest/v1/rpc/${name}`, {
+      method: "POST",
+      headers: {
+        apikey: secretKey,
+        Authorization: `Bearer ${secretKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+  const unreadable = (what: string, status: number): Check => ({
+    name: "fantasy_points",
+    status: "fail",
+    detail: `${what} unreadable (${status || "no answer"}): no gameweek can be shown to be on time`,
+  });
+  const hub = await call("fantasy_hub", { p_language: "fr" });
+  if (hub.status === 404 && hub.body.includes("fantasy_season_closed"))
+    return { name: "fantasy_points", status: "ok", detail: "no Fantasy season is open" };
+  let seasonId: unknown;
+  try {
+    seasonId = (JSON.parse(hub.body) as { season?: { id?: unknown } }).season?.id;
+  } catch {
+    seasonId = undefined;
+  }
+  if (hub.status !== 200 || typeof seasonId !== "string" || !/^[0-9a-f-]{36}$/.test(seasonId))
+    return unreadable("the Fantasy season", hub.status);
+  const windows = await call("fantasy_gameweeks", {
+    p_season_id: seasonId,
+    p_before_sequence: null,
+    p_limit: 100,
+  });
+  let items: Array<Record<string, unknown>>;
+  try {
+    const parsed = (JSON.parse(windows.body) as { items?: unknown }).items;
+    if (windows.status !== 200 || !Array.isArray(parsed)) throw new Error("unreadable");
+    items = parsed as Array<Record<string, unknown>>;
+  } catch {
+    return unreadable("the gameweek windows", windows.status);
+  }
+  const ended = items
+    .filter((gw) => POINTS_PENDING.includes(String(gw.status)))
+    .map((gw) => {
+      const end = Date.parse(String(gw.endsAt));
+      return {
+        sequence: Number(gw.sequence),
+        status: String(gw.status),
+        hours: Number.isNaN(end) ? null : Math.round(((now.getTime() - end) / 3_600_000) * 10) / 10,
+      };
+    })
+    .filter((gw) => gw.hours === null || gw.hours >= 0)
+    .sort((a, b) => a.sequence - b.sequence);
+  if (ended.length === 0)
+    return {
+      name: "fantasy_points",
+      status: "ok",
+      detail: "every gameweek whose window has ended has final points",
+    };
+  const overdue = ended.filter((gw) => gw.hours === null || gw.hours >= escalateHours);
+  const listed = ended
+    .slice(0, 5)
+    .map(
+      (gw) =>
+        `GW${Number.isSafeInteger(gw.sequence) ? gw.sequence : "?"} ${
+          /^[a-z]{1,20}$/.test(gw.status) ? gw.status : "?"
+        } ${gw.hours === null ? "(window end unreadable)" : `${gw.hours} h after its window`}`,
+    )
+    .join("; ");
+  return {
+    name: "fantasy_points",
+    status: overdue.length ? "fail" : "warn",
+    detail: `${listed}: ${
+      overdue.length
+        ? `past ${escalateHours} h without final points (docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md)`
+        : `points pending, escalates at ${escalateHours} h`
+    }`.slice(0, 200),
+  };
+}
+
+const WATCHDOG_SCHEDULE_WARN_HOURS = 2;
+
+/**
+ * Is GitHub starting this watchdog on its own schedule? On 2026-09-25 it had
+ * not, once, in the first two and a half hours after the workflow reached
+ * main, while it started the hourly orchestrator only every three to six
+ * hours. The watchdog also runs after every orchestrator run now, and this
+ * row says when its own schedule last fired. A warning, not a failure: the
+ * owner cannot repair GitHub's scheduler; the database webhook
+ * (docs/operations/ALERTS.md) is the channel that does not depend on it.
+ */
+export async function watchdogSchedule(
+  fetchImpl: Fetch,
+  repository: string,
+  token: string,
+  now: Date,
+): Promise<Check> {
+  const runs = await workflowRuns(
+    fetchImpl,
+    repository,
+    token,
+    "ops-watchdog.yml",
+    "event=schedule&per_page=1",
+  );
+  if (!Array.isArray(runs)) {
+    return {
+      name: "watchdog_schedule",
+      status: "warn",
+      detail: `run history unavailable (${runs.unavailable || "no answer"})`,
+    };
+  }
+  const latest = runs[0];
+  if (!latest) {
+    return {
+      name: "watchdog_schedule",
+      status: "warn",
+      detail:
+        "GitHub has never started this watchdog on its schedule; it runs only after the orchestrator and by hand",
+    };
+  }
+  const hours = (now.getTime() - Date.parse(latest.created_at)) / 3_600_000;
+  return hours > WATCHDOG_SCHEDULE_WARN_HOURS
+    ? {
+        name: "watchdog_schedule",
+        status: "warn",
+        detail: `GitHub last started the 30-minute schedule ${Math.round(hours * 10) / 10} h ago`,
+      }
+    : {
+        name: "watchdog_schedule",
+        status: "ok",
+        detail: `schedule last started ${Math.round(hours * 10) / 10} h ago`,
+      };
 }
 
 const RELEASE_WARN_HOURS = 24;
@@ -309,6 +559,22 @@ if (import.meta.main) {
     });
   } else {
     checks.push(...(await databaseHealth(fetch, supabaseUrl, env.SUPABASE_SECRET_KEY)));
+    const escalateHours = pointsEscalateHours(env.FANTASY_COVERAGE_ESCALATE_HOURS);
+    if (escalateHours === null)
+      checks.push({
+        name: "watchdog_config",
+        status: "warn",
+        detail: `FANTASY_COVERAGE_ESCALATE_HOURS is not 1-168; ${POINTS_ESCALATE_HOURS} h used`,
+      });
+    checks.push(
+      await fantasyPoints(
+        fetch,
+        supabaseUrl,
+        env.SUPABASE_SECRET_KEY,
+        now,
+        escalateHours ?? POINTS_ESCALATE_HOURS,
+      ),
+    );
     checks.push(
       ...(await publicSurface(
         fetch,
@@ -320,6 +586,7 @@ if (import.meta.main) {
   }
   if (env.GITHUB_TOKEN && env.GITHUB_REPOSITORY) {
     checks.push(await orchestratorRecency(fetch, env.GITHUB_REPOSITORY, env.GITHUB_TOKEN, now));
+    checks.push(await watchdogSchedule(fetch, env.GITHUB_REPOSITORY, env.GITHUB_TOKEN, now));
     checks.push(
       await releaseDrift(
         fetch,
@@ -341,6 +608,7 @@ if (import.meta.main) {
   const failing = checks.filter((c) => c.status === "fail");
   const evidence = {
     verdict: status === "fail" ? "failed" : status,
+    trigger: env.GITHUB_EVENT_NAME ?? "local",
     code: failing[0]?.name,
     failingChecks: failing.map((c) => ({ name: c.name, detail: c.detail })),
     checks,
