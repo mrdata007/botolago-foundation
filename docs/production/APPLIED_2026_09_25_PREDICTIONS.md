@@ -164,9 +164,13 @@ The owner's go-ahead, 2026-09-25: "switch it on and publish it", straight to
 Stage 5 without a testers stage (runbook, "Rollout").
 
 - **Before:** no other query running (`pg_stat_activity` at 14:56:06), the
-  switch `off`, the score job idling (last run 14:55, succeeded). This write
-  touches only `app_private.prediction_settings` and `prediction_job_runs`,
-  which no other job writes, so none of `AGENTS.md`'s pauses applied.
+  switch `off`. This write touches `app_private.prediction_settings` and
+  `prediction_job_runs`. Two scheduled jobs write that run log too:
+  `predictions-score-tick` adds a row when it has work or fails, and
+  `predictions-history-prune` (03:53 UTC) deletes old rows. Neither could
+  overlap: the tick writes nothing while the game is off and ran at 14:55:00
+  (next at 15:00:00), and the prune runs at night. Any later switch, back to
+  `off` included, needs the same check first (runbook, "The switch").
 - **Dry run:** one `DO` block ran `predictions_configure('public')` and a
   visitor's read, then raised: mode `public`, scoring on; the visitor allowed,
   journée 1, 8 matches. A re-read found the switch still `off` and no

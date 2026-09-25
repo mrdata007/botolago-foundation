@@ -54,6 +54,13 @@ select app_private.predictions_configure('public');
 Arguments left null keep their current value, except the mode, which is always
 required.
 
+Each call writes the settings row and a line in
+`app_private.prediction_job_runs`, the run log the score job also writes (at
+every fifth minute, when it has work) and the nightly prune trims (03:53 UTC).
+So check what is running first (`AGENTS.md`, "One writer at a time") and switch
+between two runs of the score job. To stop a live problem, switching off comes
+first.
+
 ## Pause and resume scoring only
 
 The game stays open; nothing is scored until scoring resumes. Matches that
