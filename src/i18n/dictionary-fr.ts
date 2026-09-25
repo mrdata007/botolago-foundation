@@ -641,6 +641,29 @@ export const fr = {
   "fantasy.onboarding.skip": "Passer",
   "fantasy.onboarding.next": "Suivant",
   "fantasy.onboarding.start": "Commencer",
+  // Audit 2026-09-25 (A16): the Fantasy hub's first-time proposition, shown
+  // in place of the team card to a visitor without a team. {size}, {budget}
+  // and {max} are filled from the squad rules the builder enforces.
+  "fantasy.intro.title": "Devenez manager en Botola Pro",
+  "fantasy.intro.lede":
+    "BotolaGO Fantasy est un jeu gratuit : vos joueurs de Botola Pro vous rapportent des points selon leurs vrais matchs, journée après journée, et vous défiez vos amis dans des ligues privées.",
+  "fantasy.intro.prizes": "Des lots récompensent les meilleurs managers.",
+  "fantasy.intro.how_title": "Comment ça marche",
+  "fantasy.intro.squad_title": "Un effectif de {size} joueurs",
+  "fantasy.intro.squad_body":
+    "2 gardiens, 5 défenseurs, 5 milieux et 3 attaquants, dont 11 titulaires à aligner à chaque journée.",
+  "fantasy.intro.budget_title": "Un budget de {budget} M",
+  "fantasy.intro.budget_body":
+    "Chaque joueur a son prix, et {max} joueurs au maximum par club : à vous de trouver le bon équilibre.",
+  "fantasy.intro.captain_title": "Un capitaine qui compte double",
+  "fantasy.intro.captain_body":
+    "Choisissez-le à chaque journée : ses points sont doublés. S’il ne joue pas, le vice-capitaine prend le relais.",
+  "fantasy.intro.deadline_title": "Une date limite par journée",
+  "fantasy.intro.deadline_body":
+    "Transferts, titulaires et capitaine se règlent avant la date limite. Ensuite, votre équipe est verrouillée jusqu’à la fin de la journée.",
+  "fantasy.intro.join_by": "Date limite pour jouer dès la Journée {n} :",
+  "fantasy.intro.sign_in_note":
+    "Connectez-vous ou créez un compte gratuit d’abord : vous passerez ensuite directement à la création de votre équipe.",
   "fantasy.validation.squad_size": "L'équipe doit compter 15 joueurs.",
   "fantasy.validation.position_count": "Composition invalide par poste.",
   "fantasy.validation.club_limit": "Trop de joueurs d'un même club (max 3).",

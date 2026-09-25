@@ -616,6 +616,29 @@ export const ar = {
   "fantasy.onboarding.skip": "تخطي",
   "fantasy.onboarding.next": "التالي",
   "fantasy.onboarding.start": "ابدأ",
+  // Audit 2026-09-25 (A16): the Fantasy hub's first-time proposition, shown
+  // in place of the team card to a visitor without a team. {size}, {budget}
+  // and {max} are filled from the squad rules the builder enforces.
+  "fantasy.intro.title": "كن مدرّباً في البطولة الاحترافية",
+  "fantasy.intro.lede":
+    "فانتازي BotolaGO لعبة مجانية: يجمع لك لاعبوك من البطولة الاحترافية النقاط حسب أدائهم في مبارياتهم الحقيقية جولةً بعد جولة، وتتحدى أصدقاءك في دوريات خاصة.",
+  "fantasy.intro.prizes": "جوائز بانتظار أفضل المدربين.",
+  "fantasy.intro.how_title": "طريقة اللعب",
+  "fantasy.intro.squad_title": "تشكيلة من {size} لاعباً",
+  "fantasy.intro.squad_body":
+    "حارسان و5 مدافعين و5 لاعبي وسط و3 مهاجمين، تختار منهم 11 أساسياً في كل جولة.",
+  "fantasy.intro.budget_title": "ميزانية {budget} م",
+  "fantasy.intro.budget_body":
+    "لكل لاعب سعره، وبحد أقصى {max} لاعبين من النادي نفسه: عليك أن تجد التوازن المناسب.",
+  "fantasy.intro.captain_title": "قائد بنقاط مضاعفة",
+  "fantasy.intro.captain_body":
+    "اختر قائدك في كل جولة لتُضاعَف نقاطه، وإذا لم يلعب يحلّ نائبه محله.",
+  "fantasy.intro.deadline_title": "موعد نهائي لكل جولة",
+  "fantasy.intro.deadline_body":
+    "أجرِ انتقالاتك واختر أساسييك وقائدك قبل الموعد النهائي، وبعده يُقفَل فريقك حتى نهاية الجولة.",
+  "fantasy.intro.join_by": "الموعد النهائي للمشاركة ابتداءً من الجولة {n}:",
+  "fantasy.intro.sign_in_note":
+    "سجّل الدخول أو أنشئ حساباً مجانياً أولاً، ثم تنتقل مباشرةً إلى إنشاء فريقك.",
   "fantasy.validation.squad_size": "يجب أن يضم الفريق 15 لاعباً.",
   "fantasy.validation.position_count": "تشكيلة المراكز غير صحيحة.",
   "fantasy.validation.club_limit": "عدد لاعبي النادي الواحد أكثر من المسموح (3).",
