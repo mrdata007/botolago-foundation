@@ -22,6 +22,35 @@ describe("site response headers", () => {
     }
   });
 
+  test("auth and private routes cannot be cached, including redirects", () => {
+    for (const path of [
+      "/auth/login",
+      "/auth/callback",
+      "/admin",
+      "/profile",
+      "/fantasy",
+      "/fantasy/",
+      "/fantasy/team",
+      "/pronostics/ligues/abc",
+      "/notifications",
+    ]) {
+      const response = withSiteHeaders(
+        new Response(null, { status: 302, headers: { "Cache-Control": "public, max-age=600" } }),
+        `https://botolago.com${path}`,
+        "6a12a6b",
+      );
+      expect(response.headers.get("cache-control")).toBe("private, no-store");
+    }
+    for (const path of ["/news", "/fantasy/rules", "/fantasyland", "/pronostics"]) {
+      const publicResponse = withSiteHeaders(
+        new Response("", { headers: { "Cache-Control": "public, max-age=60" } }),
+        `https://botolago.com${path}`,
+        "6a12a6b",
+      );
+      expect(publicResponse.headers.get("cache-control")).toBe("public, max-age=60");
+    }
+  });
+
   test("Lovable's editor preview keeps working: other hosts are not restricted", () => {
     const headers = withSiteHeaders(
       new Response(""),

@@ -4,6 +4,7 @@ import { dehydrate, hydrate, QueryClient } from "@tanstack/react-query";
 import {
   prefetchFirstPageForSsr,
   prefetchForSsr,
+  ssrAvailability,
   SSR_DEHYDRATE_OPTIONS,
   SSR_PREFETCH_BUDGET_MS,
 } from "./ssr-prefetch";
@@ -48,6 +49,7 @@ describe("server-rendered page data", () => {
       ["football", "club-directory", "fr"],
     ]);
 
+    expect(ssrAvailability(server)).toBeUndefined();
     const browser = client();
     hydrate(browser, JSON.parse(JSON.stringify(handover)));
     expect(browser.getQueryData(["football", "club-directory", "fr"])).toEqual({ clubs: ["WAC"] });
@@ -65,6 +67,7 @@ describe("server-rendered page data", () => {
       },
     ]);
     expect(dehydrate(server, SSR_DEHYDRATE_OPTIONS).queries).toEqual([]);
+    expect(ssrAvailability(server)).toEqual({ unavailable: true });
   });
 
   // 2026-09-25: with production's database overloaded, reads neither answered
@@ -105,6 +108,7 @@ describe("server-rendered page data", () => {
     );
     expect(aborted).toEqual(["seasons", "feed"]);
     expect(dehydrate(server, SSR_DEHYDRATE_OPTIONS).queries).toEqual([]);
+    expect(ssrAvailability(server)).toEqual({ unavailable: true });
     expect(dehydrate(feed, SSR_DEHYDRATE_OPTIONS).queries).toEqual([]);
   });
 
@@ -131,7 +135,7 @@ describe("server-rendered page data", () => {
       25,
     );
     const atDeadline = calls;
-    expect(atDeadline).toBeGreaterThan(0);
+    expect(atDeadline).toBe(1);
     await new Promise((resolve) => setTimeout(resolve, 60));
     expect(calls).toBe(atDeadline);
   });

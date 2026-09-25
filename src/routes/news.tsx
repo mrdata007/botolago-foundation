@@ -1,3 +1,5 @@
+import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
@@ -17,7 +19,7 @@ import { ClubFilterRow } from "@/components/news/ClubFilterRow";
 import { FeaturedGrid } from "@/components/news/FeaturedGrid";
 import { LatestFeed } from "@/components/news/LatestFeed";
 import { newsFeedQuery } from "@/components/news/news-feed-query";
-import { prefetchFirstPageForSsr, prefetchForSsr } from "@/lib/ssr-prefetch";
+import { ssrAvailability, prefetchFirstPageForSsr, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { LATEST_CAROUSEL_SIZE, LatestCarousel } from "@/components/news/LatestCarousel";
 import { NewsLeadSkeleton, NewsRowSkeleton } from "@/components/news/NewsSkeletons";
 import {
@@ -77,8 +79,13 @@ export const Route = createFileRoute("/news")({
       ]),
       prefetchFirstPageForSsr(queryClient, newsFeedQuery("fr", null, null)),
     ]);
+    return { ...ssrAvailability(queryClient), isNewsIndex: true };
   },
-  head: () => ({
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
+  head: ({ loaderData }) => ({
+    links: loaderData?.isNewsIndex
+      ? [{ rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/news` }]
+      : [],
     meta: [
       { title: "Actualités — BotolaGO" },
       {

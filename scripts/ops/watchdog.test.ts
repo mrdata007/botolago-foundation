@@ -7,38 +7,120 @@ import {
   publicSurface,
   releaseDrift,
   renderTable,
+  REQUIRED_DATABASE_CHECKS,
   type Check,
 } from "./watchdog";
 
 const url = "https://tkewgajrljbwgwedqsxn.supabase.co";
 
+/** Every check the database always reports, all healthy, then `changes` on top. */
+function healthyChecks(...changes: Check[]): Check[] {
+  return REQUIRED_DATABASE_CHECKS.map(
+    (name) =>
+      changes.find((check) => check.name === name) ?? { name, status: "ok", detail: "fine" },
+  );
+}
+
 describe("production watchdog", () => {
   test("reports each database check as the database states it", async () => {
-    const checks = await databaseHealth(
-      async () =>
-        Response.json({
-          status: "fail",
-          checks: [
-            {
-              name: "fantasy_gameweek_lock",
-              status: "fail",
-              detail: "GW1 deadline passed 390 min ago, still open",
-            },
-            { name: "cron_jobs", status: "ok", detail: "no failed run in the last hour" },
-            { name: "bad name!", status: "fail", detail: "ignored: not one of our names" },
-          ],
-        }),
-      url,
-      "secret",
-    );
-    expect(checks).toEqual([
+    const reported = healthyChecks(
       {
         name: "fantasy_gameweek_lock",
         status: "fail",
         detail: "GW1 deadline passed 390 min ago, still open",
       },
       { name: "cron_jobs", status: "ok", detail: "no failed run in the last hour" },
-    ]);
+    );
+    const checks = await databaseHealth(
+      async () => Response.json({ status: "fail", checks: reported }),
+      url,
+      "secret",
+    );
+    expect(checks).toEqual(reported);
+  });
+
+  test("a partial check list or a verdict that disagrees with its checks fails", async () => {
+    // Valid JSON, valid entries, but the core checks are gone.
+    const partial = await databaseHealth(
+      async () =>
+        Response.json({
+          status: "fail",
+          checks: [{ name: "cron_jobs", status: "ok", detail: "ok" }],
+        }),
+      url,
+      "secret",
+    );
+    expect(overall(partial)).toBe("fail");
+    expect(partial.at(-1)).toMatchObject({ name: "database_health", status: "fail" });
+    expect(partial.at(-1)?.detail).toContain("fantasy_gameweek_lock");
+
+    // Every check present and green, but the database itself says "fail".
+    const disagreeing = await databaseHealth(
+      async () => Response.json({ status: "fail", checks: healthyChecks() }),
+      url,
+      "secret",
+    );
+    expect(overall(disagreeing)).toBe("fail");
+    expect(disagreeing.at(-1)?.detail).toContain("disagrees");
+
+    // A missing top-level verdict is a malformed report.
+    const noVerdict = await databaseHealth(
+      async () => Response.json({ checks: healthyChecks() }),
+      url,
+      "secret",
+    );
+    expect(overall(noVerdict)).toBe("fail");
+
+    // The complete healthy report stays green; the optional deadline watch may be added.
+    const healthy = await databaseHealth(
+      async () =>
+        Response.json({
+          status: "ok",
+          checks: [
+            ...healthyChecks(),
+            { name: "fantasy_deadline_watch", status: "ok", detail: "no deadline at risk" },
+          ],
+        }),
+      url,
+      "secret",
+    );
+    expect(overall(healthy)).toBe("ok");
+    expect(healthy).toHaveLength(REQUIRED_DATABASE_CHECKS.length + 1);
+  });
+
+  test("malformed health responses fail closed without leaking response bodies", async () => {
+    for (const body of [
+      "upstream secret",
+      "null",
+      "{}",
+      '{"checks":[]}',
+      '{"checks":{}}',
+      '{"checks":[{"name":"bad name!","status":"ok","detail":"secret"}]}',
+      '{"checks":[{"name":"cron_jobs","status":"ok"}]}',
+    ]) {
+      const checks = await databaseHealth(async () => new Response(body), url, "secret");
+      expect(overall(checks)).toBe("fail");
+      expect(JSON.stringify(checks)).not.toContain("secret");
+    }
+    expect(overall([])).toBe("fail");
+  });
+
+  test("malformed run history cannot hide a stopped orchestrator", async () => {
+    for (const body of [
+      "not json",
+      "null",
+      "{}",
+      '{"workflow_runs":{}}',
+      '{"workflow_runs":[{"created_at":"invalid"}]}',
+    ]) {
+      const check = await orchestratorRecency(
+        async () => new Response(body),
+        "owner/repo",
+        "token",
+        new Date(),
+      );
+      expect(check.status).toBe("fail");
+    }
   });
 
   test("a database without the health migration is a warning, an unreachable one a failure", async () => {
