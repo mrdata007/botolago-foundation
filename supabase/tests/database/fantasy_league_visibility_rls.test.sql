@@ -1,5 +1,5 @@
 -- The direct-table policies on Fantasy leagues
--- (20260925210200_fantasy_league_visibility_policy.sql, audit A14 / DB-06).
+-- (20260926003200_fantasy_league_visibility_policy.sql, audit A14 / DB-06).
 --
 -- Browser roles have no SELECT on app.fantasy_leagues or
 -- app.fantasy_league_memberships in production. League reads go through
@@ -7,7 +7,7 @@
 -- this file grants SELECT to the browser roles inside its own transaction,
 -- which rolls back, and checks what each account would see.
 --
--- Before 20260925210200 every read below failed: the leagues policy compared
+-- Before 20260926003200 every read below failed: the leagues policy compared
 -- membership.league_id with membership.id, and the two policies read each
 -- other's tables, so PostgreSQL stopped with 42P17 (infinite recursion).
 begin;

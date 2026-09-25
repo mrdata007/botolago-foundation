@@ -35,7 +35,7 @@ import {
  *      does not say which fixtures are already certified, so the fixtures it
  *      kept the pass from reading prove nothing) and a failed read of the
  *      listing itself. The database's own `fantasy_fixture_coverage` check
- *      (migration 20260925210400) reads real coverage and pages when
+ *      (migration 20260926003400) reads real coverage and pages when
  *      statistics are really missing.
  *   3. the trusted lifecycle worker (`runFantasyLifecycle`) for every gameweek
  *      that has work: an open gameweek past its deadline, a gameweek that is
@@ -228,7 +228,7 @@ export type CoverageGap = IncompleteFixture & {
  * (`api.service_ops_health` counts, and the scoring snapshot RPC writes). So
  * an outage that stopped the pass from reading a fixture says nothing about
  * that fixture, and aging it would page for certified matches. It waits,
- * named by its code. Where migration 20260925210400 is applied,
+ * named by its code. Where migration 20260926003400 is applied,
  * `fantasy_fixture_coverage` in `api.service_ops_health` reads real coverage
  * and warns for a counted match still without certified statistics 6 h after
  * its final whistle, paging at 12 h.
@@ -546,7 +546,7 @@ export async function orchestrateFantasySeason(
   // listing, and the pass waited, green, while a finished match went without
   // statistics for about ten hours; payloads now fail alone, in `incomplete`,
   // and age. If the listing keeps failing, the database's
-  // `fantasy_fixture_coverage` (where 20260925210400 is applied) and the
+  // `fantasy_fixture_coverage` (where 20260926003400 is applied) and the
   // watchdog's `fantasy_points` page once statistics or points go missing.
   if (performanceError) verdict = mergeVerdict(verdict, "waiting");
   // Fixtures past the last page are never reached while the cursor restarts

@@ -44,7 +44,7 @@ export const SITEMAP_FRESHNESS_SECONDS = 300;
  * `api.news_sitemap_entries` serves a snapshot that the pg_cron job
  * `news-sitemap-refresh` recomputes every minute, but only while it is at most
  * this old; past that (the job paused, failing or gone) it computes the entries
- * live instead (migration 20260925210050, `interval '120 seconds'`, kept equal
+ * live instead (migration 20260926003050, `interval '120 seconds'`, kept equal
  * to this by src/lib/sitemap.test.ts). Two minutes rather than one, so a single
  * late or skipped run does not send every request to the live computation.
  */

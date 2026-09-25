@@ -1,6 +1,6 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
--- Apply migration 20260925210050_news_sitemap_snapshot: /sitemap.xml is served
+-- Apply migration 20260926003050_news_sitemap_snapshot: /sitemap.xml is served
 -- from a snapshot the database refreshes every minute, so one slow minute no
 -- longer turns the whole sitemap into a 503 (audit 2026-09-25 A01 / DB-01).
 -- It follows 20260925100000 (the set-based hotfix, applied on 2026-09-25 at
@@ -73,8 +73,8 @@ begin
   if to_regclass('supabase_migrations.schema_migrations') is null then
     raise exception 'stop: supabase_migrations.schema_migrations does not exist -- is this the BotolaGO database?';
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210050') then
-    raise exception 'stop: migration 20260925210050 is already recorded as applied';
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003050') then
+    raise exception 'stop: migration 20260926003050 is already recorded as applied';
   end if;
   if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260925100000') then
     raise exception 'stop: migration 20260925100000 (the set-based sitemap) is not applied yet -- this update follows it';
@@ -131,13 +131,13 @@ select set_config(
 );
 
 -- ---------------------------------------------------------------------------
--- Migration 20260925210050, exactly as in the repository, into the history
+-- Migration 20260926003050, exactly as in the repository, into the history
 -- ---------------------------------------------------------------------------
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260925210050',
+  '20260926003050',
   'news_sitemap_snapshot',
-  array[$bg_20260925210050_file$-- BotolaGO Production V2
+  array[$bg_20260926003050_file$-- BotolaGO Production V2
 -- News: /sitemap.xml is served from a snapshot the database refreshes every
 -- minute, instead of computing the whole archive on every public request.
 --
@@ -681,7 +681,7 @@ comment on function api.service_ops_health() is
 
 -- The first snapshot, so the sitemap is served from it from now on.
 select app_private.news_sitemap_refresh(true);
-$bg_20260925210050_file$]
+$bg_20260926003050_file$]
 );
 
 -- ---------------------------------------------------------------------------
@@ -689,16 +689,16 @@ $bg_20260925210050_file$]
 -- ---------------------------------------------------------------------------
 do $apply$
 declare
-  part_20260925210050 text := (
-    select statements[1] from supabase_migrations.schema_migrations where version = '20260925210050'
+  part_20260926003050 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20260926003050'
   );
 begin
-  if encode(sha256(convert_to(part_20260925210050, 'UTF8')), 'hex')
+  if encode(sha256(convert_to(part_20260926003050, 'UTF8')), 'hex')
     is distinct from '7aa0b31759393cf789410d1ae42bfe54cdd02fb0cc9a869973349bca1e5e288b' then
-    raise exception 'stop: 20260925210050 is not the repository file byte for byte -- was this script cut short or changed?';
+    raise exception 'stop: 20260926003050 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
-  execute part_20260925210050;
+  execute part_20260926003050;
 end
 $apply$;
 
@@ -759,7 +759,7 @@ begin
   if sitemap_health ->> 'status' is distinct from 'ok' then
     problems := problems || ('the health check news_sitemap is not ok: ' || coalesce(sitemap_health::text, 'missing'));
   end if;
-  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210050') then
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003050') then
     problems := problems || 'history row missing'::text;
   end if;
 
@@ -790,7 +790,7 @@ $postflight$;
 rollback;
 
 select case
-  when exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210050')
+  when exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003050')
     then 'Applied. /sitemap.xml is served from the snapshot; pg_cron refreshes it every minute.'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;

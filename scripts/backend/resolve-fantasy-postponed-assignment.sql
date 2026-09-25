@@ -79,7 +79,7 @@
 --      -> Run workflow on `main`, typing RUN_FANTASY_ORCHESTRATOR.
 --   If it stops with a message starting "stop:" or with an error code
 --   (fantasy_...), nothing was saved: the code says why
---   (supabase/migrations/20260925210500_fantasy_resolve_postponed_after_lock.sql
+--   (supabase/migrations/20260926003500_fantasy_resolve_postponed_after_lock.sql
 --   lists them). Do not edit a check to make it pass: a check firing means the
 --   database is not in the state this procedure expects.
 --
@@ -108,7 +108,7 @@ declare
   left_state text;
 begin
   if to_regprocedure('app_private.fantasy_resolve_frozen_assignment(uuid,text,text)') is null then
-    raise exception 'stop: app_private.fantasy_resolve_frozen_assignment is not installed -- apply scripts/backend/apply-20260925210500-fantasy-resolve-postponed-after-lock.sql first';
+    raise exception 'stop: app_private.fantasy_resolve_frozen_assignment is not installed -- apply scripts/backend/apply-20260926003500-fantasy-resolve-postponed-after-lock.sql first';
   end if;
   -- AGENTS.md: a write that touches Fantasy runs with the Fantasy lifecycle
   -- tick paused.
@@ -118,7 +118,7 @@ begin
 
   -- STEP 1 (reads only): every counted match of a locked or live gameweek
   -- that the ops check holds against it: postponed, cancelled or abandoned,
-  -- or moved past the gameweek's window (20260925210400, fantasy_scoring).
+  -- or moved past the gameweek's window (20260926003400, fantasy_scoring).
   -- Each says from when the tool accepts it: the kickoff the gameweek locked
   -- with plus the ruleset's post-lock completion window (48 h), as the tool
   -- computes it.

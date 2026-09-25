@@ -19,12 +19,12 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
 const script = read("scripts/backend/resolve-fantasy-postponed-assignment.sql");
-const tool = read("supabase/migrations/20260925210500_fantasy_resolve_postponed_after_lock.sql");
+const tool = read("supabase/migrations/20260926003500_fantasy_resolve_postponed_after_lock.sql");
 const opsCheck = read(
-  "supabase/migrations/20260925210400_ops_health_fantasy_coverage_and_scoring.sql",
+  "supabase/migrations/20260926003400_ops_health_fantasy_coverage_and_scoring.sql",
 );
 const leaguePolicyScript = read(
-  "scripts/backend/apply-20260925210200-league-policy-and-fk-indexes.sql",
+  "scripts/backend/apply-20260926003200-league-policy-and-fk-indexes.sql",
 );
 /** AGENTS.md with its line wrapping undone. */
 const agents = read("AGENTS.md").replace(/\s+/g, " ");
@@ -150,7 +150,7 @@ describe("resolve-fantasy-postponed-assignment.sql", () => {
         block.indexOf("if target_assignment is null then"),
       ),
     );
-    // The ops check's classes (20260925210400): called off, or moved past
+    // The ops check's classes (20260926003400): called off, or moved past
     // the window; finished matches never.
     expect(folded(opsCheck)).toContain(
       "when f.status in ('postponed', 'cancelled', 'abandoned') then 'called_off' when f.kickoff_at > a.assigned_kickoff_at and f.kickoff_at > g.ends_at then 'moved'",

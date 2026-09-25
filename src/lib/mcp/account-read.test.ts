@@ -10,7 +10,7 @@ import {
 import { PROFILE_UNAVAILABLE_TEXT, profileResult } from "./tools/get-profile";
 
 // The MCP tools read the account's own data with an OAuth access token, which
-// Supabase Auth always issues at aal1. Since 20260925210100 the database
+// Supabase Auth always issues at aal1. Since 20260926003100 the database
 // refuses that data to an aal1 session of an account with a verified factor
 // (`PT403 mfa_required`): the tools must say so, not crash or pass on the
 // database's text.

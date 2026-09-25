@@ -61,7 +61,7 @@ overall verdict that agrees with the checks.
 | `email_delivery`           | email is on but its tick stalled for 15 min                                                                                                                                                                                                                                                                                                                                                             | undelivered emails are waiting                                                                                                                                                                                                                                             |
 | `browser_errors`           | never (see below)                                                                                                                                                                                                                                                                                                                                                                                       | 25+ unhandled errors reported by visitors' browsers this hour and the last                                                                                                                                                                                                 |
 
-`fantasy_fixture_coverage` and `fantasy_scoring` (migration 20260925210400)
+`fantasy_fixture_coverage` and `fantasy_scoring` (migration 20260926003400)
 watch the current Fantasy season (`registration_open` or `active`) and the
 matches that count for its points. "Final whistle" is `app.fixtures.finalized_at`
 (kickoff + 2 h when a finished row has none). Complete statistics means what
@@ -214,8 +214,9 @@ at 10:02 UTC, and again at 14:53, with `repeat_after` 1 h and nothing sent
 yet (`last_sent_at` empty). (When it was switched on is not recorded:
 `ops_alert_state.updated_at` is rewritten by every tick.) So on production
 there is nothing to switch on: step 3 alone confirms that messages arrive,
-once migration `20260925210400` (which adds `ops_alert_test()`) is applied.
-Steps 1, 2 and 4 are for a new or replaced destination.
+once the alert-email change (migration `20260926001000`, which adds
+`ops_alert_test()`) is applied. Steps 1, 2 and 4 are for a new or replaced
+destination.
 
 It ships switched off (migration `20260924200200`), and it is the only
 channel that does not depend on GitHub's scheduler.
@@ -238,27 +239,32 @@ channel that does not depend on GitHub's scheduler.
      '<paste the new webhook URL>');
    ```
 
-3. Send a test message. This works whether alerts are on or off and changes
-   nothing else (not the switch, not the current incident):
+3. Send a test message, once the alert-email change (migration
+   `20260926001000`) is applied: it adds `app_private.ops_alert_test()`, which
+   sends one message marked TEST through every configured channel, the
+   webhook included, whether alerts are on or off, and changes nothing else
+   (not the switch, not the current incident):
 
    ```sql
    select app_private.ops_alert_test();
    ```
 
-   The channel receives a message that starts `TEST sent by hand with
-app_private.ops_alert_test(), not an incident. Alerts are ON` (or `OFF`),
-   followed by the current health exactly as a real alert would word it. The
-   result is `{requestId, alertsEnabled, healthStatus, delivery}`; a few
-   seconds later, run the query in `delivery` to see the webhook's answer:
+   Its result holds the pg_net request id of the webhook message; a few
+   seconds later, read the webhook's answer:
 
    ```sql
-   select status_code, timed_out, error_msg from net._http_response where id = <requestId>;
+   select status_code, timed_out, error_msg from net._http_response where id = <request id>;
    ```
 
    Discord answers `204`, Slack `200`. No row yet means pg_net has not sent it
    (wait a few seconds). `error_msg` or a `4xx` means the URL is wrong or was
-   revoked: repeat step 2 with a fresh one. The error `ops_alert_webhook_missing`
-   means step 2 has not been done.
+   revoked: repeat step 2 with a fresh one.
+
+   Until that change is applied there is no test message. The webhook is
+   proven by the next real alert: its answer is the `net._http_response` row
+   whose id is `last_request_id` in `app_private.ops_alert_state`. The GitHub
+   path is proven at any time by a watchdog run with `simulate_failure`
+   (below), which never reaches the webhook.
 
 4. Switch alerts on (it refuses without the Vault secret):
 
@@ -411,7 +417,7 @@ watchdog row, and the webhook never sees those.
     does not exist yet, because a later gameweek would then hold a club twice
     and the game has no double gameweeks. That gap needs an owner decision
     and future work; see
-    [FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md → After the lock](../backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md#after-the-lock-since-migration-20260925210500).
+    [FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md → After the lock](../backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md#after-the-lock-since-migration-20260926003500).
     Then switch the tick back on and dispatch the orchestrator, as after a
     manual ingest: the gameweek goes to scoring once its other matches are
     final.

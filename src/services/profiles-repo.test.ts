@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { isStorageRefusal } from "./profiles-repo";
 
-// Since 20260925210100 the avatars bucket's policies also require the account's
+// Since 20260926003100 the avatars bucket's policies also require the account's
 // second factor, when it has one. Storage then refuses the upload of a session
 // that owes its code, and says only that its policy refused. The auth service
 // tells that apart from a failed upload by this answer, then asks the session.

@@ -93,7 +93,7 @@
 --   authenticated only. PostgreSQL checks EXECUTE on a view's or a policy's
 --   functions as the querying role, but not USAGE on their schema, which
 --   authenticated does not have on app_private (as with
---   fantasy_is_active_league_member in 20260925210200).
+--   fantasy_is_active_league_member in 20260926003200).
 --
 -- Guarded tables (their writers in parentheses):
 --   identity       app.profiles, app.user_preferences (complete_onboarding,

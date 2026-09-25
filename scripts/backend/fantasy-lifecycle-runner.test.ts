@@ -199,7 +199,7 @@ describe("trusted Fantasy snapshot calculation", () => {
   });
 
   it("scores the players of a match taken out of the gameweek as players who did not play", () => {
-    // app_private.fantasy_resolve_frozen_assignment (20260925210500) supersedes
+    // app_private.fantasy_resolve_frozen_assignment (20260926003500) supersedes
     // the match's assignment, so the scoring input has no statistics row at
     // all for its players: not a row of 0 minutes, none.
     const input = snapshot();

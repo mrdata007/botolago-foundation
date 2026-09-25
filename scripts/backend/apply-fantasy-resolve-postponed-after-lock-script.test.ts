@@ -4,9 +4,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * The guarded script that puts 20260925210500 (the owner's tool that takes a
+ * The guarded script that puts 20260926003500 (the owner's tool that takes a
  * counted match out of a Fantasy gameweek that has locked) on production,
- * after 20260925210400. Like the other apply scripts, it records the
+ * after 20260926003400. Like the other apply scripts, it records the
  * migration file whole in the history and runs that record only after its
  * sha256 matches the repository file, so the file must be carried byte for
  * byte, once, and the hash it checks must be the file's. It must stay a
@@ -20,13 +20,13 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
-const VERSION = "20260925210500";
+const VERSION = "20260926003500";
 const NAME = "fantasy_resolve_postponed_after_lock";
 const TOOL = "app_private.fantasy_resolve_frozen_assignment(uuid,text,text)";
 const script = read(`scripts/backend/apply-${VERSION}-fantasy-resolve-postponed-after-lock.sql`);
 const migration = read(`supabase/migrations/${VERSION}_${NAME}.sql`);
 const leaguePolicyScript = read(
-  "scripts/backend/apply-20260925210200-league-policy-and-fk-indexes.sql",
+  "scripts/backend/apply-20260926003200-league-policy-and-fk-indexes.sql",
 );
 /** AGENTS.md with its line wrapping undone. */
 const agents = read("AGENTS.md").replace(/\s+/g, " ");
@@ -93,7 +93,7 @@ describe(`apply-${VERSION}-fantasy-resolve-postponed-after-lock.sql`, () => {
     for (const guard of [
       "set local lock_timeout = '5s';",
       `migration ${VERSION} is already recorded as applied`,
-      "migration 20260925210400 (the ops checks) is not applied yet",
+      "migration 20260926003400 (the ops checks) is not applied yet",
       "the database is missing what this update builds on",
       "app_private.fantasy_resolve_frozen_assignment already exists, but the migration is not recorded",
       "the Fantasy lifecycle tick is on",

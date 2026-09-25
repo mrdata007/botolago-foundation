@@ -4,9 +4,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * The guarded script that puts 20260925210400 (the `fantasy_fixture_coverage`
- * and `fantasy_scoring` health checks and app_private.ops_alert_test(), audit
- * A08 / DB-03) on production, after 20260925210050. Like the other apply
+ * The guarded script that puts 20260926003400 (the `fantasy_fixture_coverage`
+ * and `fantasy_scoring` health checks, audit A08 / DB-03) on production,
+ * after 20260926003050. Like the other apply
  * scripts, it records the migration file whole in the history and runs that
  * record only after its sha256 matches the repository file, so the file must
  * be carried byte for byte, once, and the hash it checks must be the file's.
@@ -19,7 +19,7 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
-const VERSION = "20260925210400";
+const VERSION = "20260926003400";
 const NAME = "ops_health_fantasy_coverage_and_scoring";
 const script = read(`scripts/backend/apply-${VERSION}-ops-health-fantasy-coverage.sql`);
 const migration = read(`supabase/migrations/${VERSION}_${NAME}.sql`);
@@ -52,10 +52,9 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
     for (const guard of [
       "set local lock_timeout = '5s';",
       `migration ${VERSION} is already recorded as applied`,
-      "migration 20260925210050 (the sitemap snapshot) is not applied yet",
+      "migration 20260926003050 (the sitemap snapshot) is not applied yet",
       "the database is missing what this update reads or changes",
-      "app_private.ops_alert_test() already exists, but the migration is not recorded",
-      // The health function as 20260925210050 installs it (local reset), and
+      // The health function as 20260926003050 installs it (local reset), and
       // the alert path as production held it on 2026-09-25 (read there).
       "    <> '3c9b47ab0e10742ebaf355861006b8bd' then",
       "      <> 'f495986586af20c728d3aa0ce2b44c10'",
@@ -77,7 +76,7 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
     const created = [...migration.matchAll(/create or replace function ([a-z_.]+\([^)]*\))/g)].map(
       (match) => match[1],
     );
-    expect(created).toEqual(["app_private.ops_health_checks()", "app_private.ops_alert_test()"]);
+    expect(created).toEqual(["app_private.ops_health_checks()"]);
     // No table, grant to a browser role, Vault or alert-state write, and no
     // schedule: switching alerts and choosing where they go stay the owner's.
     // Comments and string literals (messages, hints) blanked first.
@@ -88,16 +87,21 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
     expect(
       occurrences(statements, "revoke all on function app_private.ops_health_checks() from"),
     ).toBe(1);
-    expect(
-      occurrences(statements, "revoke all on function app_private.ops_alert_test() from"),
-    ).toBe(1);
+  });
+
+  test("leaves app_private.ops_alert_test() to the alert-email change", () => {
+    // 20260926001000 (alert emails) defines the owner's test message for the
+    // webhook and the email. Defining it here as well would overwrite
+    // whichever of the two was applied first, so neither the migration nor
+    // the script creates, checks or calls it.
+    expect(migration).not.toContain("ops_alert_test");
+    expect(script).not.toContain("ops_alert_test");
   });
 
   test("afterwards: grants, the untouched alert path and switch, both new checks", () => {
     for (const check of [
       " can run an owner-only health function",
       "api.service_ops_health() is executable by the wrong roles",
-      "ops_alert_test() is not SECURITY DEFINER with an empty search_path",
       "the alert path changed",
       "the alert switch moved",
       "the health answer is not what the migration defines",
@@ -122,7 +126,7 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
   test("a match called off or moved after the lock fails the scoring check once the rules stop keeping it", () => {
     // FANTASY_RULES_V1.md keeps such a match in its gameweek for the ruleset's
     // post-lock completion window (48 h) after its frozen kickoff. The check
-    // fails when that window ends, the moment 20260925210500's tool accepts
+    // fails when that window ends, the moment 20260926003500's tool accepts
     // the match, and names the owner's procedure, which must exist.
     const procedure = "scripts/backend/resolve-fantasy-postponed-assignment.sql";
     expect(migration).toContain(`this fails and ${procedure} takes it out'`);
@@ -140,7 +144,7 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
     );
     // The script says to install that procedure's tool right after this one.
     expect(script).toContain(
-      "scripts/backend/apply-20260925210500-fantasy-resolve-postponed-after-lock.sql:\n--   apply that one right after this one.",
+      "scripts/backend/apply-20260926003500-fantasy-resolve-postponed-after-lock.sql:\n--   apply that one right after this one.",
     );
   });
 
@@ -155,7 +159,7 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
     // that post to the webhook or switch it.
     const outside = script.replace(migration, "").replace(/--[^\n]*/g, "");
     expect(outside).not.toMatch(
-      /ops_alert_test\s*\(\s*\)\s*;|ops_alert_tick\s*\(\s*\)\s*;|ops_alert_configure\s*\(\s*(true|false)|net\.http_post/,
+      /ops_alert_tick\s*\(\s*\)\s*;|ops_alert_configure\s*\(\s*(true|false)|net\.http_post/,
     );
   });
 });

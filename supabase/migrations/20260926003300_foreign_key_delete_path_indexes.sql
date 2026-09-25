@@ -76,7 +76,7 @@ create index stories_import_converted_by_idx
 comment on index app.stories_import_converted_by_idx is
   'Serves the ON DELETE SET NULL action of stories_import_converted_by_fkey when an auth user is deleted '
   '(one lookup per deleted user instead of a scan of app.stories). Mirrors stories_created_by_idx. '
-  '20260925210300, audit A13 / DB-05.';
+  '20260926003300, audit A13 / DB-05.';
 
 create index notification_email_unsubscribe_tokens_delivery_idx
   on app_private.notification_email_unsubscribe_tokens (delivery_id)
@@ -85,4 +85,4 @@ create index notification_email_unsubscribe_tokens_delivery_idx
 comment on index app_private.notification_email_unsubscribe_tokens_delivery_idx is
   'Serves the ON DELETE SET NULL action of notification_email_unsubscribe_tokens_delivery_id_fkey, which '
   'runs once per deleted notification delivery (device unregistration, account deletion). '
-  '20260925210300, audit A13 / DB-05.';
+  '20260926003300, audit A13 / DB-05.';

@@ -45,7 +45,7 @@ export const STAFF_MFA_QUERY_META = { staffMfa: true } as const satisfies QueryM
  * one-time code, goes where a refused write goes: to the auth layer, which
  * says so and re-reads the session (a factor enrolled on another device is
  * only listed in a new token), and takes the reader to the challenge when the
- * code is owed. The database refuses those reads since 20260925210100. Most
+ * code is owed. The database refuses those reads since 20260926003100. Most
  * domain mappers already report on their way through; this also covers the
  * reads whose mapper does not, and the listener collapses repeats. Without it,
  * a page read refused this way showed its generic error and nothing else.

@@ -36,7 +36,7 @@ Google/Apple. Never wildcard an untrusted domain.
 
 ## MFA step-up for ordinary accounts
 
-Migration `20260925210100_ordinary_account_mfa_step_up` (audit A03 / DB-07).
+Migration `20260926003100_ordinary_account_mfa_step_up` (audit A03 / DB-07).
 An account with at least one **verified** factor in `auth.mfa_factors` must hold
 an `aal2` session to read or change its own data: every `api.*` function that
 reads or writes it, the four `api.my_*` views, the saved mark on the public

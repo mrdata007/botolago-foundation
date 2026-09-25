@@ -32,7 +32,7 @@ export async function dataUrlToBlob(dataUrl: string): Promise<Blob | null> {
 /**
  * `refused`: Storage turned the upload down on its policies -- what an
  * account with a second factor meets while its session still owes the code
- * (20260925210100), and also what an expired token meets. The caller asks the
+ * (20260926003100), and also what an expired token meets. The caller asks the
  * session which it was.
  */
 export type AvatarUploadError = "too_large" | "bad_type" | "upload_failed" | "refused";

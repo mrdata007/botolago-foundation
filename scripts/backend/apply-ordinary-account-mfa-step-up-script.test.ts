@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * The guarded script that puts 20260925210100 (the MFA step-up for ordinary
+ * The guarded script that puts 20260926003100 (the MFA step-up for ordinary
  * accounts, audit A03 / DB-07: their reads, writes, views, News card saved
  * mark and avatar image) on production. Like the other apply scripts, it
  * records the migration file whole in the history and runs that record only
@@ -23,12 +23,12 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
-const VERSION = "20260925210100";
+const VERSION = "20260926003100";
 const NAME = "ordinary_account_mfa_step_up";
 const script = read(`scripts/backend/apply-${VERSION}-ordinary-account-mfa-step-up.sql`);
 const migration = read(`supabase/migrations/${VERSION}_${NAME}.sql`);
 const leaguePolicyScript = read(
-  "scripts/backend/apply-20260925210200-league-policy-and-fk-indexes.sql",
+  "scripts/backend/apply-20260926003200-league-policy-and-fk-indexes.sql",
 );
 /** AGENTS.md with its line wrapping undone (it wraps one of the commands). */
 const agents = read("AGENTS.md").replace(/\s+/g, " ");
@@ -79,7 +79,7 @@ describe(`apply-${VERSION}-ordinary-account-mfa-step-up.sql`, () => {
       // views and the avatar policies, against the list read on production.
       "stop: not the version this update replaces (production on 2026-09-25)",
       "storage.objects has another avatars policy than the four",
-      "perform set_config('bg_20260925210100.replaced', replaced::text, true);",
+      "perform set_config('bg_20260926003100.replaced', replaced::text, true);",
       // The jobs that write the locked tables (AGENTS.md), paused first.
       "the Fantasy lifecycle tick is on",
       "email is not off",
@@ -103,7 +103,7 @@ describe(`apply-${VERSION}-ordinary-account-mfa-step-up.sql`, () => {
       script.indexOf("$preflight$;"),
     );
     // The Fantasy tick and email: the same condition and message as
-    // apply-20260925210200, character for character.
+    // apply-20260926003200, character for character.
     for (const condition of [
       "app_private.fantasy_automation_settings where lifecycle_tick_enabled",
       "app_private.notification_email_settings where mode <> 'off'",

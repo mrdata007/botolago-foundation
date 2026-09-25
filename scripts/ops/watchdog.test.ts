@@ -181,7 +181,7 @@ describe("production watchdog", () => {
         "secret",
       );
     // Checks from a later migration need no change here: these three come
-    // with 20260925210050 and 20260925210400.
+    // with 20260926003050 and 20260926003400.
     const added: Check[] = [
       {
         name: "fantasy_fixture_coverage",

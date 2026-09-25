@@ -1,6 +1,6 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
--- Apply migration 20260925210100_ordinary_account_mfa_step_up: an ordinary
+-- Apply migration 20260926003100_ordinary_account_mfa_step_up: an ordinary
 -- account that turned MFA on must hold an aal2 session to read or change its
 -- own data -- every api.* read and write of it, the four account views, the
 -- saved mark on the public News card, and its avatar image in Storage (audit
@@ -196,8 +196,8 @@ begin
   if to_regclass('supabase_migrations.schema_migrations') is null then
     raise exception 'stop: supabase_migrations.schema_migrations does not exist -- is this the BotolaGO database?';
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210100') then
-    raise exception 'stop: migration 20260925210100 is already recorded as applied';
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003100') then
+    raise exception 'stop: migration 20260926003100 is already recorded as applied';
   end if;
   if to_regprocedure('app_private.assert_mfa_step_up()') is not null
     or to_regprocedure('app_private.refuse_unverified_mfa_actor()') is not null
@@ -304,7 +304,7 @@ begin
   end if;
 
   -- For the postflight, which checks the result against the same list.
-  perform set_config('bg_20260925210100.replaced', replaced::text, true);
+  perform set_config('bg_20260926003100.replaced', replaced::text, true);
 end
 $preflight$;
 
@@ -323,13 +323,13 @@ lock table
   in share row exclusive mode;
 
 -- ---------------------------------------------------------------------------
--- Migration 20260925210100, exactly as in the repository, into the history
+-- Migration 20260926003100, exactly as in the repository, into the history
 -- ---------------------------------------------------------------------------
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260925210100',
+  '20260926003100',
   'ordinary_account_mfa_step_up',
-  array[$bg_20260925210100_file$-- BotolaGO Production V2
+  array[$bg_20260926003100_file$-- BotolaGO Production V2
 -- An ordinary account that turned MFA on must complete it before it reads or
 -- changes anything of its own (audit 2026-09-25 A03 / DB-07, P2).
 --
@@ -424,7 +424,7 @@ values (
 --   authenticated only. PostgreSQL checks EXECUTE on a view's or a policy's
 --   functions as the querying role, but not USAGE on their schema, which
 --   authenticated does not have on app_private (as with
---   fantasy_is_active_league_member in 20260925210200).
+--   fantasy_is_active_league_member in 20260926003200).
 --
 -- Guarded tables (their writers in parentheses):
 --   identity       app.profiles, app.user_preferences (complete_onboarding,
@@ -4332,7 +4332,7 @@ using (
   and name ~ ('^' || (select auth.uid())::text || '/avatar[.](jpg|jpeg|png|webp)$')
   and (select app_private.mfa_step_up_satisfied())
 );
-$bg_20260925210100_file$]
+$bg_20260926003100_file$]
 );
 
 -- ---------------------------------------------------------------------------
@@ -4340,16 +4340,16 @@ $bg_20260925210100_file$]
 -- ---------------------------------------------------------------------------
 do $apply$
 declare
-  part_20260925210100 text := (
-    select statements[1] from supabase_migrations.schema_migrations where version = '20260925210100'
+  part_20260926003100 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20260926003100'
   );
 begin
-  if encode(sha256(convert_to(part_20260925210100, 'UTF8')), 'hex')
-    is distinct from '231d606abb492947d49578e6119824cd2ba23c29827f94823d1bacfb8cd1e351' then
-    raise exception 'stop: 20260925210100 is not the repository file byte for byte -- was this script cut short or changed?';
+  if encode(sha256(convert_to(part_20260926003100, 'UTF8')), 'hex')
+    is distinct from 'f1669d4829af6110d10cb7fb5706fa821b2325fdad2de660743f45cc1d7a3af2' then
+    raise exception 'stop: 20260926003100 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
-  execute part_20260925210100;
+  execute part_20260926003100;
 end
 $apply$;
 
@@ -4359,7 +4359,7 @@ $apply$;
 do $postflight$
 declare
   problems text[] := '{}';
-  replaced constant jsonb := current_setting('bg_20260925210100.replaced')::jsonb;
+  replaced constant jsonb := current_setting('bg_20260926003100.replaced')::jsonb;
   api_role text;
   signature text;
   enrolled uuid;
@@ -4474,7 +4474,7 @@ begin
           ' AND ( SELECT app_private.mfa_step_up_satisfied() AS mfa_step_up_satisfied)', ''))
         = p.expression_md5);
 
-  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210100') then
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003100') then
     problems := problems || 'history row missing'::text;
   end if;
 
@@ -4573,7 +4573,7 @@ $postflight$;
 rollback;
 
 select case
-  when exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210100')
+  when exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003100')
     then 'Applied. Accounts that turned MFA on now need the code before they read or change their own data, their avatar image included.'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;

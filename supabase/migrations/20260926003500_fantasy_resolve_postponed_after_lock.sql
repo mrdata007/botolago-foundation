@@ -13,7 +13,7 @@
 --   the day holds its gameweek for as long as it lasts, and with it the next
 --   gameweek, which opens only once the previous one is finalized: every
 --   manager's team stays locked. Until now the only answer was an owner's
---   hand edit, so the ops check `fantasy_scoring` (20260925210400) was
+--   hand edit, so the ops check `fantasy_scoring` (20260926003400) was
 --   written to warn about such a match without ever failing: a failure would
 --   have paged every hour with nothing to run. With this tool it fails again,
 --   once the rule below lets the owner act, and names the procedure.
@@ -125,7 +125,7 @@
 --                                            lifecycle and the scoring refuse
 --                                            the gameweek for good
 --   "Postponed, cancelled or abandoned" and "moved past the window" are the
---   ops check's own tests (20260925210400, fantasy_scoring): fixture status,
+--   ops check's own tests (20260926003400, fantasy_scoring): fixture status,
 --   and a kickoff later than both the frozen one and the gameweek's ends_at.
 --   That check fails for such a match exactly when its 48 h end, so the tool
 --   accepts a match from the moment the check fails for it, and never before.
@@ -269,7 +269,7 @@ begin
     raise exception using errcode = 'PT409', message = 'fantasy_assignment_not_counted';
   end if;
 
-  -- The ops check's classes (20260925210400, fantasy_scoring), in its order.
+  -- The ops check's classes (20260926003400, fantasy_scoring), in its order.
   hold := case
     when fixture.status = 'finished' then null
     when fixture.status in ('postponed', 'cancelled', 'abandoned') then 'called_off'

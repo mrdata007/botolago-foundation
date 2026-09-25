@@ -6,7 +6,7 @@
 // session every read and write of the account's own data -- its profile,
 // follows, notifications, saved articles, Fantasy team and leagues,
 // Pronostics, and its avatar image in Storage -- with PostgREST code `PT403`
-// (HTTP 403) and the message `mfa_required` (20260925210100). The refusal can
+// (HTTP 403) and the message `mfa_required` (20260926003100). The refusal can
 // arrive from any domain -- a follow, a Fantasy save, a Pronostics pick, a
 // deletion request, the page that reads any of them -- and each domain's
 // mapper turns it into its own error type. Left there it read as that

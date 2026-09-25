@@ -1,5 +1,5 @@
 -- News: the sitemap is computed set-based and served from a snapshot
--- (20260925210050).
+-- (20260926003050).
 --
 --   * equivalence: app_private.news_sitemap_compute() returns exactly what the
 --     per-row definition of 20260924200600 returned (app_private.news_is_public()

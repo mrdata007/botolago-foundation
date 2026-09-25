@@ -108,7 +108,7 @@ describe("the season list", () => {
   });
 });
 
-// Since 20260925210100 the database refuses an enrolled account's reads, not
+// Since 20260926003100 the database refuses an enrolled account's reads, not
 // only its writes, to a session that has not entered its one-time code. A page
 // read refused that way showed its generic error, and nothing sent the reader
 // to the code unless the domain's mapper happened to report it.

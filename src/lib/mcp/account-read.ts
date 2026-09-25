@@ -12,7 +12,7 @@
 // keeps the session's level). That holds even when the person approved the
 // connection from a session that had entered its code; only a client that ran
 // the MFA challenge itself with that token would reach `aal2`, and MCP clients
-// do not. Since 20260925210100 the database refuses an account's own data to
+// do not. Since 20260926003100 the database refuses an account's own data to
 // an `aal1` session of an account with a verified factor (`PT403
 // mfa_required`). So for an account that turned two-step sign-in on, these
 // tools always get that refusal, and say so plainly. Accounts without a second

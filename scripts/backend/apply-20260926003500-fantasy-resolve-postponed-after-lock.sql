@@ -1,6 +1,6 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
--- Apply migration 20260925210500_fantasy_resolve_postponed_after_lock: the
+-- Apply migration 20260926003500_fantasy_resolve_postponed_after_lock: the
 -- owner's tool that takes a counted match out of a Fantasy gameweek that has
 -- already locked, when the match was postponed, cancelled or abandoned after
 -- the lock, or moved to a kickoff past the gameweek's window, and the rules
@@ -19,7 +19,7 @@
 --   Fantasy row changes, and nothing is resolved by applying it.
 --
 -- WHEN
---   Right after scripts/backend/apply-20260925210400-ops-health-fantasy-coverage.sql
+--   Right after scripts/backend/apply-20260926003400-ops-health-fantasy-coverage.sql
 --   (this one refuses before it): that migration's `fantasy_scoring` check
 --   names the procedure this one installs. Not while a Fantasy season
 --   orchestrator run is going on (GitHub -> Actions: it is scheduled at
@@ -49,7 +49,7 @@
 --   the database is not in the state this script expects.
 --
 -- WHAT IT DOES
---   * refuses to run twice, before 20260925210400, while the Fantasy tick is
+--   * refuses to run twice, before 20260926003400, while the Fantasy tick is
 --     on, on a database missing a table or column the tool reads or writes
 --     (the ruleset's post-lock completion window included), where the tool
 --     already exists, or where what it builds on is not the
@@ -89,11 +89,11 @@ begin
   if to_regclass('supabase_migrations.schema_migrations') is null then
     raise exception 'stop: supabase_migrations.schema_migrations does not exist -- is this the BotolaGO database?';
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210500') then
-    raise exception 'stop: migration 20260925210500 is already recorded as applied';
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003500') then
+    raise exception 'stop: migration 20260926003500 is already recorded as applied';
   end if;
-  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210400') then
-    raise exception 'stop: migration 20260925210400 (the ops checks) is not applied yet -- run scripts/backend/apply-20260925210400-ops-health-fantasy-coverage.sql first';
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003400') then
+    raise exception 'stop: migration 20260926003400 (the ops checks) is not applied yet -- run scripts/backend/apply-20260926003400-ops-health-fantasy-coverage.sql first';
   end if;
 
   if to_regclass('app.fantasy_fixture_assignments') is null
@@ -190,13 +190,13 @@ end
 $preflight$;
 
 -- ---------------------------------------------------------------------------
--- Migration 20260925210500, exactly as in the repository, into the history
+-- Migration 20260926003500, exactly as in the repository, into the history
 -- ---------------------------------------------------------------------------
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260925210500',
+  '20260926003500',
   'fantasy_resolve_postponed_after_lock',
-  array[$bg_20260925210500_file$-- BotolaGO Production V2
+  array[$bg_20260926003500_file$-- BotolaGO Production V2
 -- Fantasy: the owner can take a counted match out of a gameweek that has
 -- already locked, when that match was postponed, cancelled or abandoned after
 -- the lock, or moved to a kickoff past the gameweek's window.
@@ -211,7 +211,7 @@ values (
 --   the day holds its gameweek for as long as it lasts, and with it the next
 --   gameweek, which opens only once the previous one is finalized: every
 --   manager's team stays locked. Until now the only answer was an owner's
---   hand edit, so the ops check `fantasy_scoring` (20260925210400) was
+--   hand edit, so the ops check `fantasy_scoring` (20260926003400) was
 --   written to warn about such a match without ever failing: a failure would
 --   have paged every hour with nothing to run. With this tool it fails again,
 --   once the rule below lets the owner act, and names the procedure.
@@ -323,7 +323,7 @@ values (
 --                                            lifecycle and the scoring refuse
 --                                            the gameweek for good
 --   "Postponed, cancelled or abandoned" and "moved past the window" are the
---   ops check's own tests (20260925210400, fantasy_scoring): fixture status,
+--   ops check's own tests (20260926003400, fantasy_scoring): fixture status,
 --   and a kickoff later than both the frozen one and the gameweek's ends_at.
 --   That check fails for such a match exactly when its 48 h end, so the tool
 --   accepts a match from the moment the check fails for it, and never before.
@@ -467,7 +467,7 @@ begin
     raise exception using errcode = 'PT409', message = 'fantasy_assignment_not_counted';
   end if;
 
-  -- The ops check's classes (20260925210400, fantasy_scoring), in its order.
+  -- The ops check's classes (20260926003400, fantasy_scoring), in its order.
   hold := case
     when fixture.status = 'finished' then null
     when fixture.status in ('postponed', 'cancelled', 'abandoned') then 'called_off'
@@ -557,7 +557,7 @@ revoke all on function app_private.fantasy_resolve_frozen_assignment(uuid, text,
   from public, anon, authenticated, service_role;
 comment on function app_private.fantasy_resolve_frozen_assignment(uuid, text, text) is
   'Owner only, from the SQL editor (scripts/backend/resolve-fantasy-postponed-assignment.sql): takes one counted, frozen assignment of a locked or live gameweek out of it when its match was postponed, cancelled or abandoned after the lock, or moved to a kickoff past the gameweek''s window (the fantasy_scoring check''s classes), once the ruleset''s post-lock completion window (48 h, FANTASY_RULES_V1.md) since the kickoff the gameweek locked with has passed; before that it refuses (fantasy_postponement_window_open). Supersedes it (assignment_status deferred, resolution operator_deferred, counts_points false) and records app_private.admin_audit_events (fantasy_fixture.resolve_frozen_assignment) with the reason. Writes no points and never moves the match to another gameweek. Idempotent: a repeat returns the recorded outcome with alreadyResolved true. Refuses while the Fantasy tick is on.';
-$bg_20260925210500_file$]
+$bg_20260926003500_file$]
 );
 
 -- ---------------------------------------------------------------------------
@@ -565,16 +565,16 @@ $bg_20260925210500_file$]
 -- ---------------------------------------------------------------------------
 do $apply$
 declare
-  part_20260925210500 text := (
-    select statements[1] from supabase_migrations.schema_migrations where version = '20260925210500'
+  part_20260926003500 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20260926003500'
   );
 begin
-  if encode(sha256(convert_to(part_20260925210500, 'UTF8')), 'hex')
-    is distinct from '163754125b3e6169af2946ef6d4fd80ba655e584288800e941ec7e6ce379e8c9' then
-    raise exception 'stop: 20260925210500 is not the repository file byte for byte -- was this script cut short or changed?';
+  if encode(sha256(convert_to(part_20260926003500, 'UTF8')), 'hex')
+    is distinct from '8062fe9a4050deb624a8c92e2e6a14ec780ff854e110444aee8d63db32ca3616' then
+    raise exception 'stop: 20260926003500 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
-  execute part_20260925210500;
+  execute part_20260926003500;
 end
 $apply$;
 
@@ -651,7 +651,7 @@ begin
     problems := problems || 'what the tool builds on changed'::text;
   end if;
 
-  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210500') then
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003500') then
     problems := problems || 'history row missing'::text;
   end if;
 
@@ -689,7 +689,7 @@ $postflight$;
 rollback;
 
 select case
-  when exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210500')
+  when exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003500')
     then 'Applied. app_private.fantasy_resolve_frozen_assignment is installed; ' || (
       select 'counted matches held after the lock right now: ' || count(*)
         || ', past their completion window (resolvable now): '

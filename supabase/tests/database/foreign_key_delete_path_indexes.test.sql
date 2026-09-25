@@ -1,5 +1,5 @@
 -- Indexes for two foreign keys that a delete scans once per deleted row
--- (20260925210300_foreign_key_delete_path_indexes.sql, audit A13 / DB-05).
+-- (20260926003300_foreign_key_delete_path_indexes.sql, audit A13 / DB-05).
 --
 -- PostgreSQL runs a foreign key's ON DELETE action once per deleted
 -- referenced row, from a plan it prepares once and caches. Written out, the

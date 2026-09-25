@@ -32,7 +32,7 @@ type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 const SITE_PAGES = ["/", "/matches", "/news", "/sitemap.xml"] as const;
 // Checks `app_private.ops_health_checks()` emits on every call. The deadline
 // watch is left out: it only runs while a Fantasy season is planned or active.
-// So are the checks migrations 20260925210050 and 20260925210400 add
+// So are the checks migrations 20260926003050 and 20260926003400 add
 // (news_sitemap, fantasy_fixture_coverage, fantasy_scoring) until production
 // has them: they are reported whenever the database names them, and join this
 // list once every database the watchdog reads does.

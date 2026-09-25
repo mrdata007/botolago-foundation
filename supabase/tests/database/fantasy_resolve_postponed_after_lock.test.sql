@@ -1,4 +1,4 @@
--- Regression suite for 20260925210500_fantasy_resolve_postponed_after_lock:
+-- Regression suite for 20260926003500_fantasy_resolve_postponed_after_lock:
 -- app_private.fantasy_resolve_frozen_assignment, the owner's tool that takes a
 -- counted match out of a gameweek that has locked, when the match was
 -- postponed, cancelled or abandoned after the lock or moved past the

@@ -43,7 +43,7 @@ from (values
 ) fixture(id, story, language, slug, title);
 
 -- The sitemap is served from a snapshot pg_cron refreshes every minute
--- (20260925210050); refresh it now, as the job would.
+-- (20260926003050); refresh it now, as the job would.
 do $$ begin perform app_private.news_sitemap_refresh(true); end $$;
 
 set local role anon;

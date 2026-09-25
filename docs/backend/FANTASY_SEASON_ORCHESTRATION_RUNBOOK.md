@@ -139,7 +139,7 @@ database's `fantasy_scoring` check warns an hour after the certification and
 fails, paging, 8 h after it.
 
 The database watches the same two things without GitHub (migration
-`20260925210400`, `docs/operations/ALERTS.md`), from real coverage and the
+`20260926003400`, `docs/operations/ALERTS.md`), from real coverage and the
 recorded final whistle (`app.fixtures.finalized_at`, kickoff + 2 h without
 one): `fantasy_fixture_coverage` warns 6 h and fails 12 h after a counted
 match's final whistle without certified statistics, whatever the cause, a
@@ -185,7 +185,7 @@ still keep that match in its gameweek, the answer to the escalation is to wait
 for it. The database's `fantasy_scoring` check knows the rule: it warns at
 once for such a match, saying until when the rules keep it, and fails 48 h
 after the kickoff the match was frozen with, when the owner's tool starts to
-accept it: [After the lock](#after-the-lock-since-migration-20260925210500)
+accept it: [After the lock](#after-the-lock-since-migration-20260926003500)
 below.
 
 What to do: read `scoring.gameweeks[].workerCode`. `football_not_final` with
@@ -232,7 +232,7 @@ explains, an empty check list or an unreadable answer all fail.
 `page_sitemapxml` fails unless the sitemap answers 200 **and** contains at
 least one `<loc>`.
 
-Statistics and points are watched from both sides. Migration `20260925210400`
+Statistics and points are watched from both sides. Migration `20260926003400`
 adds `fantasy_fixture_coverage` and `fantasy_scoring` to `service_ops_health`:
 the watchdog reports them under those names, and they page through the
 database webhook without GitHub. Their thresholds are fixed in the migration
@@ -268,12 +268,13 @@ Owner actions, none of which this repository can do for you:
    is only for a new or replaced destination (`docs/operations/ALERTS.md`).
 2. **Test both paths once.** Actions → _Production watchdog_ → Run workflow
    with `simulate_failure` ticked: an `ops-alert` issue must open and e-mail
-   you. Run it again unticked and it must close. For the webhook, once
-   migration `20260925210400` is applied, run
-   `select app_private.ops_alert_test();` in the SQL editor: a message marked
-   TEST must reach the channel, and the webhook's answer can be read back
-   (`docs/operations/ALERTS.md`, step 3 of switching it on). It changes no
-   alert state.
+   you. Run it again unticked and it must close. That run proves the GitHub
+   path only. For the webhook, once the alert-email change (migration
+   `20260926001000`) is applied, run `select app_private.ops_alert_test();`
+   in the SQL editor: a message marked TEST must reach the channel, and the
+   webhook's answer can be read back (`docs/operations/ALERTS.md`, step 3 of
+   switching it on). It changes no alert state. Until then there is no test
+   message, and the webhook is proven by its next real alert.
 3. **Make sure the mention reaches you.** GitHub → Settings → Notifications →
    _Participating, @mentions and custom_: e-mail on. The issues mention
    `@mrdata007`.
@@ -365,7 +366,7 @@ lock refused to run while it still counted. The rule now:
   gameweeks yet: the next-gameweek progression requires one round per week).
   A match postponed after the lock stays in its gameweek for 48 h
   (`FANTASY_RULES_V1.md`), and after that the owner takes it out:
-  [After the lock](#after-the-lock-since-migration-20260925210500).
+  [After the lock](#after-the-lock-since-migration-20260926003500).
 - A round is staged when it is fully published; postponed fixtures are left
   out of the new gameweek instead of blocking it (`postponedFixtures` in the
   round's report). A round where every fixture is postponed is not staged
@@ -379,7 +380,7 @@ lock refused to run while it still counted. The rule now:
 The watch stays red for every hourly pass until the provider publishes; there
 is no auto-suppression by design.
 
-### After the lock (since migration 20260925210500)
+### After the lock (since migration 20260926003500)
 
 Everything above acts on gameweeks that have not locked. At the deadline the
 lock freezes every assignment of the gameweek, and nothing automatic touches a

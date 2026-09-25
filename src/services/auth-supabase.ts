@@ -71,7 +71,7 @@ export interface SupabaseAuthDependencies {
 
 /**
  * The profile read's answer when the database refused it for want of the
- * one-time code (`PT403 mfa_required`, 20260925210100).
+ * one-time code (`PT403 mfa_required`, 20260926003100).
  */
 const CODE_OWED = Symbol("code owed");
 
@@ -288,7 +288,7 @@ export class SupabaseAuthService implements AuthService {
    *
    * The profile and the avatar are read for a complete sign-in only. They are
    * the account's own data, which the database and Storage refuse to a
-   * session that owes its code (20260925210100), and a session in the owing
+   * session that owes its code (20260926003100), and a session in the owing
    * states is published without a user anyway. Until then it asked for both
    * on every resolution, the owing ones included. When the token says
    * "complete" and the profile read is refused all the same, the database

@@ -97,4 +97,4 @@ using (
 comment on policy fantasy_leagues_visible_select on app.fantasy_leagues is
   'A signed-in account sees public leagues and the private leagues it is an active member of. '
   'Defence in depth only: browser roles have no SELECT on this table, and league reads go through '
-  'api.* SECURITY DEFINER functions (20260925210200, audit A14 / DB-06).';
+  'api.* SECURITY DEFINER functions (20260926003200, audit A14 / DB-06).';

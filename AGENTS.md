@@ -97,7 +97,7 @@ null, false);` before a write that touches fixtures or notifications, and
    than 90 days. The switch above does not stop it; pause it by name for the
    length of a write that touches those tables, then set it back to `true`:
    `select cron.alter_job((select jobid from cron.job where jobname = 'predictions-history-prune'), active := false);`
-   Where migration 20260925210050 is applied, pg_cron also runs
+   Where migration 20260926003050 is applied, pg_cron also runs
    `news-sitemap-refresh` every minute, whatever the mode: it reads the News
    tables and writes only `app_private.news_sitemap_snapshot` (the entries
    `/sitemap.xml` serves), rewriting the entries only when they changed. Its

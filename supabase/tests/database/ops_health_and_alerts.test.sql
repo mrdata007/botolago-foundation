@@ -29,7 +29,7 @@ insert into app_private.news_schedule_heartbeat (id, last_run_at, last_outcome)
 values (true, now(), 'idle')
 on conflict (id) do update set last_run_at = excluded.last_run_at;
 delete from cron.job_run_details where status = 'failed';
--- The sitemap snapshot (20260925210050): refreshed now, whatever pg_cron has
+-- The sitemap snapshot (20260926003050): refreshed now, whatever pg_cron has
 -- been doing since the database was reset.
 do $$ begin perform app_private.news_sitemap_refresh(true); end $$;
 

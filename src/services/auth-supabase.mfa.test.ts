@@ -704,7 +704,7 @@ describe("the device's account data across sessions (AuthProvider's cleanup)", (
   });
 });
 
-// Since 20260925210100 the database refuses an enrolled account's own data to
+// Since 20260926003100 the database refuses an enrolled account's own data to
 // a session that has not entered the code, reads included, and Storage its
 // avatar image. The service used to read the profile, and sign the avatar's
 // URL, for every session it resolved -- the ones that owe the code too, whose

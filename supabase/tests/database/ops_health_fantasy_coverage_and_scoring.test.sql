@@ -1,16 +1,16 @@
--- Regression suite for 20260925210400_ops_health_fantasy_coverage_and_scoring:
+-- Regression suite for 20260926003400_ops_health_fantasy_coverage_and_scoring:
 -- the `fantasy_fixture_coverage` and `fantasy_scoring` health checks at each
 -- ok / warn / fail boundary (statistics: warn 6 h, fail 12 h after the final
 -- whistle; a counted match stuck unfinished: warn 3 h, fail 6 h after its due
 -- end; one called off or moved after the lock: warn at once, fail once the
 -- 48 h the rules keep it in the gameweek have passed since the kickoff it was
--- frozen with, naming the procedure that then resolves it (20260925210500);
+-- frozen with, naming the procedure that then resolves it (20260926003500);
 -- points: warn 1 h, fail 8 h after the last statistics were certified),
--- with several gameweeks at once, their way through the alert tick, and the
--- owner's test message. Nothing is sent from a test: pg_net only queues the
--- request, and the rollback at the end discards the queue rows.
+-- with several gameweeks at once, and their way through the alert tick.
+-- Nothing is sent from a test: pg_net only queues the request, and the
+-- rollback at the end discards the queue rows.
 begin;
-select extensions.plan(91);
+select extensions.plan(83);
 
 create function pg_temp.check(p_name text) returns jsonb language sql as $$
   select c from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') c
@@ -632,41 +632,8 @@ select extensions.is(
   array['fantasy_scoring'], 'only fantasy_scoring fails now');
 
 select extensions.is(app_private.ops_alert_tick(), 'disabled', 'alerts are off in a fresh database');
-select extensions.throws_ok($$select app_private.ops_alert_test()$$, '22023', 'ops_alert_webhook_missing',
-  'the test message needs the webhook in Vault first, and says so');
 
 select vault.create_secret('https://alerts.example.invalid/ops', 'botolago_ops_alert_webhook');
-select set_config('test.state_before',
-  (select to_jsonb(s) from app_private.ops_alert_state s where id)::text, true);
-select set_config('test.test_result', app_private.ops_alert_test()::text, true);
-select extensions.ok((current_setting('test.test_result')::jsonb ->> 'alertsEnabled')::boolean = false
-  and current_setting('test.test_result')::jsonb ->> 'healthStatus' = 'fail'
-  and current_setting('test.test_result')::jsonb ->> 'delivery'
-    = 'select status_code, timed_out, error_msg from net._http_response where id = '
-      || (current_setting('test.test_result')::jsonb ->> 'requestId') || ';',
-  'the test message goes out with alerts off, and says how to read the webhook''s answer');
-select set_config('test.body', (select convert_from(body, 'utf8') from net.http_request_queue
-  where id = (current_setting('test.test_result')::jsonb ->> 'requestId')::bigint), true);
-select extensions.ok(current_setting('test.body')::jsonb ->> 'content'
-    like 'TEST sent by hand with app_private.ops_alert_test(), not an incident. Alerts are OFF.%',
-  'it is marked TEST and says alerts are off');
-select extensions.ok(current_setting('test.body')::jsonb ->> 'content'
-    like '%' || E'\n' || '[BotolaGO production] FAIL at %- fantasy_scoring [fail]: GW2: every counted match final for % h, statistics complete for % h, no final points: scoring started, not finished%',
-  'and carries the current health in the alert''s own words, the new check included');
-select extensions.ok(current_setting('test.body')::jsonb ->> 'text' = current_setting('test.body')::jsonb ->> 'content'
-  and char_length(current_setting('test.body')::jsonb ->> 'content') <= 1950,
-  'Slack (text) and Discord (content) read the same message, within Discord''s 2,000 characters');
-select extensions.is((select to_jsonb(s) from app_private.ops_alert_state s where id)::text,
-  current_setting('test.state_before'),
-  'sending a test changes no alert state: not the switch, not the last incident');
-select extensions.ok(not has_function_privilege('service_role', 'app_private.ops_alert_test()', 'execute')
-  and not has_function_privilege('authenticated', 'app_private.ops_alert_test()', 'execute')
-  and not has_function_privilege('anon', 'app_private.ops_alert_test()', 'execute'),
-  'only the database owner can send a test');
-select extensions.ok((select prosecdef and proconfig @> array['search_path=""'] from pg_proc
-  where oid = 'app_private.ops_alert_test()'::regprocedure),
-  'the test function is SECURITY DEFINER with an empty search_path');
-
 select app_private.ops_alert_configure(true);
 select extensions.is(app_private.ops_alert_tick(), 'sent', 'with alerts on, the scoring failure pages');
 select set_config('test.alert', (select convert_from(body, 'utf8') from net.http_request_queue
@@ -690,7 +657,7 @@ select extensions.ok(current_setting('test.alert')::jsonb ->> 'text' like '%- fa
 select extensions.is((select last_signature from app_private.ops_alert_state where id), 'fantasy_fixture_coverage',
   'the incident is now the coverage check');
 
--- The sitemap check (20260925210050) is still there and still pages.
+-- The sitemap check (20260926003050) is still there and still pages.
 update app_private.news_sitemap_snapshot set computed_at = statement_timestamp() - interval '11 minutes',
   changed_at = least(changed_at, statement_timestamp() - interval '11 minutes') where id;
 select extensions.is(app_private.ops_alert_tick(), 'sent', 'a stale sitemap snapshot joins the incident and pages');

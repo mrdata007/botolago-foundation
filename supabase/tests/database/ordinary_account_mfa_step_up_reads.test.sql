@@ -1,6 +1,6 @@
 -- Ordinary-account MFA step-up: the account's reads, its views, the saved mark
 -- on the public News card and its avatar image
--- (20260925210100_ordinary_account_mfa_step_up.sql, audit 2026-09-25 A03 / DB-07).
+-- (20260926003100_ordinary_account_mfa_step_up.sql, audit 2026-09-25 A03 / DB-07).
 -- The writes are in ordinary_account_mfa_step_up.test.sql.
 --
 -- Accounts:
@@ -316,7 +316,7 @@ select extensions.is(
      and f.prosrc !~ 'app_private\.(admin_assert_permission|admin_assert_principal|has_editorial_role)\('),
   array[
     -- The staff console reads it at aal1 to show its own step-up; an ordinary
-    -- account gets staff_access_denied (20260925210100, "Not guarded").
+    -- account gets staff_access_denied (20260926003100, "Not guarded").
     'get_my_staff_context',
     -- The round and its matches, the same for everyone: auth.uid() only
     -- decides whether a tester may see Pronostics while it is testers-only.
