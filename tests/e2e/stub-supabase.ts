@@ -2,6 +2,7 @@ import type { RepositoryContext } from "../../src/backend/contracts/repository";
 import type { FootballLanguage } from "../../src/backend/football/contracts";
 import { MockFootballRepository } from "../../src/backend/football/mock-repository";
 import { MockNewsRepository } from "../../src/backend/news/mock-repository";
+import { MockPredictionsRepository } from "../../src/backend/predictions/mock-repository";
 import { MockPrizesRepository } from "../../src/backend/prizes/mock-repository";
 
 /**
@@ -25,6 +26,7 @@ const context: RepositoryContext = { actorId: null, requestId: "built-output-smo
 const football = new MockFootballRepository();
 const news = new MockNewsRepository();
 const prizes = new MockPrizesRepository();
+const predictions = new MockPredictionsRepository();
 
 /**
  * What `api.fantasy_hub` tells a visitor with no team: a season open for
@@ -124,6 +126,14 @@ const RPC: Record<string, Handler> = {
       ];
     });
   },
+  predictions_round: (args) =>
+    predictions.getRound(
+      {
+        roundNumber: typeof args.p_round_number === "number" ? args.p_round_number : null,
+        language: language(args),
+      },
+      context,
+    ),
   fantasy_hub: () => fantasyHub(),
   // Before the first deadline nothing has scored: no averages, no top
   // players, no season totals. The same state production was in at launch.
