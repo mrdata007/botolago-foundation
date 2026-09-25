@@ -72,7 +72,7 @@ describe(`apply-${VERSION}-current-performance-goals-conceded.sql`, () => {
     expect(migration.match(/^create or replace function [\w.]+/gm)).toEqual([
       "create or replace function api.ingest_current_player_fixture_performance",
     ]);
-    expect(migration).toContain("message = 'CURRENT_GOALS_CONCEDED_INCOMPLETE'");
+    expect(migration).toContain("message = 'CURRENT_GOALS_CONCEDED_MISMATCH'");
     const outsideBodies = migration.replace(/\$\$[\s\S]*?\$\$/g, "");
     expect(outsideBodies).not.toMatch(/^\s*(insert|update|delete|alter)\s/im);
   });
@@ -94,7 +94,7 @@ describe(`apply-${VERSION}-current-performance-goals-conceded.sql`, () => {
         "  -- Compute the immutable version from the actual normalized payload in SQL.",
       ),
     );
-    expect(added).toContain("CURRENT_GOALS_CONCEDED_INCOMPLETE");
+    expect(added).toContain("CURRENT_GOALS_CONCEDED_MISMATCH");
     expect(after.replace(added, "")).toBe(before);
   });
 });

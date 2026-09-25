@@ -1,8 +1,7 @@
--- 20260925120000: an absent SportsMonks statistic counts as zero, so goals
--- conceded (which decide clean sheets) are checked against the final score. A
--- side that conceded has at least one player who appeared carrying every goal
--- it conceded. A player carrying more than the score says is not refused (last
--- season had 3, never corrected).
+-- 20260925120000: goals conceded, which decide clean sheets, are checked
+-- against the final score. A player on for the whole match (90 minutes)
+-- conceded exactly what the side did, and nobody conceded more; a player on
+-- for part of the match may have conceded less.
 begin;
 select extensions.no_plan();
 
@@ -36,7 +35,7 @@ select md5('goals-conceded-fixture-' || n)::uuid, '33900000-0000-4000-8000-00000
 from generate_series(1, 2) n;
 
 -- 11 starters a side (players 1-11 home, 12-22 away) and one substitute each
--- who never came on (23 home, 24 away).
+-- (23 home, 24 away).
 insert into app.players (id, slug, full_name, display_name, position)
 select md5('goals-conceded-player-' || n)::uuid, 'goals-conceded-player-' || n,
   'Goals Conceded Player ' || n, 'GC Player ' || n,
@@ -68,22 +67,25 @@ select 'sportsmonks', 'player', (90000 + n)::text, md5('goals-conceded-player-' 
   'gc-player-' || n, statement_timestamp(), true
 from generate_series(1, 24) n;
 
--- Fixture 1, 2-1, every starter on for 90 minutes: the home side conceded one
--- goal and the away side two, while all of their starters were on the pitch.
--- Fixture 2, 1-0, as 3 of last season's matches were: the home goalkeeper
--- carries a goal conceded that the score does not count.
+-- Fixture 1, 2-1: every starter on for 90 minutes, so the home starters
+-- conceded one goal and the away starters two; neither substitute came on.
+-- Fixture 2, 1-0: the home side kept a clean sheet. Away forward 22 went off
+-- after 70 minutes, before the goal, and keeps one; substitute 24 came on for
+-- him and was on the pitch for it.
 create temp table conceded_input as
 select fixture, statement_timestamp() - interval '30 seconds' as observed_at,
   jsonb_agg(jsonb_build_object(
     'externalPlayerId', (90000 + n)::text,
     'externalTeamId', case when n <= 11 or n = 23 then '69001' else '69002' end,
-    'started', n <= 22, 'appeared', n <= 22, 'minutes', case when n <= 22 then 90 else 0 end,
+    'started', n <= 22,
+    'appeared', n <= 22 or (fixture = 2 and n = 24),
+    'minutes', case when n = 23 or (fixture = 1 and n = 24) then 0
+      when fixture = 2 and n = 22 then 70 when fixture = 2 and n = 24 then 20 else 90 end,
     'goals', case when fixture = 1 and n in (10, 11, 22) or fixture = 2 and n = 11 then 1 else 0 end,
     'assists', 0,
-    'cleanSheets', case when fixture = 2 and n between 2 and 11 then 1 else 0 end,
-    'goalsConceded', case when n > 22 then 0
-      when fixture = 1 then case when n <= 11 then 1 else 2 end
-      else case when n = 1 then 1 when n <= 11 then 0 else 1 end end,
+    'cleanSheets', case when fixture = 2 and (n <= 11 or n = 22) then 1 else 0 end,
+    'goalsConceded', case when fixture = 1 then case when n > 22 then 0 when n <= 11 then 1 else 2 end
+      else case when n <= 11 or n in (22, 23) then 0 else 1 end end,
     'saves', case when n in (1, 12) then 2 else 0 end,
     'penaltiesSaved', 0, 'penaltiesMissed', 0, 'yellowCards', 0, 'redCards', 0,
     'secondYellowDismissals', 0, 'ownGoals', 0, 'providerRating', null
@@ -104,9 +106,16 @@ set local role service_role;
 select set_config('request.jwt.claim.role', 'service_role', true);
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
--- The away side conceded, but no away player carries it (as if SportsMonks
--- had not recorded goals conceded yet): every away starter would get a clean
--- sheet. Refused.
+-- The away goalkeeper played the whole 2-1 but carries no goals conceded, as
+-- 40 goalkeepers did last season: that would be a clean sheet nobody kept.
+select extensions.throws_ok(
+  $$select api.ingest_current_player_fixture_performance('sportsmonks','28647','19900001',
+    jsonb_set(jsonb_set(rows, '{11,goalsConceded}', '0'), '{11,cleanSheets}', '1'),
+    coverage, observed_at) from conceded_input where fixture = 1$$,
+  '22023', 'CURRENT_GOALS_CONCEDED_MISMATCH',
+  'a player on for the whole match conceded what the side did'
+);
+-- No away player carries any (as if SportsMonks had not recorded them yet).
 select extensions.throws_ok(
   $$select api.ingest_current_player_fixture_performance('sportsmonks','28647','19900001',
     (select jsonb_agg(case when value ->> 'externalTeamId' = '69002'
@@ -115,30 +124,16 @@ select extensions.throws_ok(
        else value end order by ordinality)
      from jsonb_array_elements(rows) with ordinality),
     coverage, observed_at) from conceded_input where fixture = 1$$,
-  '22023', 'CURRENT_GOALS_CONCEDED_INCOMPLETE',
-  'a side that conceded must carry goals conceded on a player who appeared'
+  '22023', 'CURRENT_GOALS_CONCEDED_MISMATCH',
+  'a side that conceded cannot come in without goals conceded'
 );
--- The away side conceded two, but its players carry only one.
+-- The away substitute never came on, so only the cap applies to him.
 select extensions.throws_ok(
   $$select api.ingest_current_player_fixture_performance('sportsmonks','28647','19900001',
-    (select jsonb_agg(case when value ->> 'externalTeamId' = '69002' and (value ->> 'appeared')::boolean
-       then value || '{"goalsConceded":1}'::jsonb else value end order by ordinality)
-     from jsonb_array_elements(rows) with ordinality),
-    coverage, observed_at) from conceded_input where fixture = 1$$,
-  '22023', 'CURRENT_GOALS_CONCEDED_INCOMPLETE',
-  'a player who appeared carries every goal the side conceded'
-);
--- Only the substitute who never came on carries both: that does not count.
-select extensions.throws_ok(
-  $$select api.ingest_current_player_fixture_performance('sportsmonks','28647','19900001',
-    (select jsonb_agg(case when value ->> 'externalTeamId' = '69002'
-       then value || jsonb_build_object('goalsConceded',
-         case when (value ->> 'appeared')::boolean then 1 else 2 end)
-       else value end order by ordinality)
-     from jsonb_array_elements(rows) with ordinality),
-    coverage, observed_at) from conceded_input where fixture = 1$$,
-  '22023', 'CURRENT_GOALS_CONCEDED_INCOMPLETE',
-  'goals conceded count only on a player who appeared'
+    jsonb_set(rows, '{23,goalsConceded}', '3'), coverage, observed_at)
+    from conceded_input where fixture = 1$$,
+  '22023', 'CURRENT_GOALS_CONCEDED_MISMATCH',
+  'nobody conceded more than the side did'
 );
 reset role;
 select extensions.is(
@@ -161,18 +156,18 @@ select extensions.is(
   24, 'nobody on either side of a 2-1 keeps a clean sheet'
 );
 
--- A goal conceded the score does not count is imported, not refused.
+-- A player on for part of the match may have conceded less than the side.
 set local role service_role;
 select extensions.is(
   (select api.ingest_current_player_fixture_performance('sportsmonks','28647','19900002',
     rows, coverage, observed_at) ->> 'active' from conceded_input where fixture = 2),
-  '24', 'a player carrying more than the score says is imported, as last season'
+  '24', 'a player off the pitch for the goal is imported with none conceded'
 );
 reset role;
 select extensions.is(
   (select count(*)::integer from app.player_fixture_performances
    where fixture_id = md5('goals-conceded-fixture-2')::uuid and active and clean_sheets = 1),
-  10, 'the home starters other than the goalkeeper keep their clean sheet'
+  12, 'the home starters and the away forward who went off before the goal keep clean sheets'
 );
 
 select * from extensions.finish();

@@ -1,10 +1,11 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
 -- Apply migration 20260925120000_current_performance_goals_conceded_check:
--- the database checks goals conceded against the final score, so that
--- counting an absent SportsMonks statistic as zero (SportsMonks sends only the
--- ones that are not) cannot hand out a wrong clean sheet. The importer change
--- that counts them so follows this one. Owner decision, 2026-09-25.
+-- the database checks goals conceded, which decide clean sheets, against the
+-- final score: a player on for the whole match conceded what the side did,
+-- and nobody conceded more. The importer change that relies on it (an absent
+-- SportsMonks statistic counts as zero; goals conceded follow the final
+-- score) comes after this one. Owner decision, 2026-09-25.
 --
 -- WHEN
 --   After the pull request that adds this file is merged, with nothing
@@ -108,10 +109,9 @@ values (
   '20260925120000',
   'current_performance_goals_conceded_check',
   array[$bg_20260925120000_file$-- BotolaGO Production V2
--- This season's statistics import counts an absent SportsMonks statistic as
--- zero; the database checks goals conceded against the final score so that
--- rule cannot hand out a wrong clean sheet. Owner decision, 2026-09-25 ("you
--- decide", on the recommendation below).
+-- Goals conceded, which decide clean sheets, are checked against the final
+-- score before this season's statistics are imported. Owner decision,
+-- 2026-09-25 ("you decide", on how an absent SportsMonks statistic counts).
 --
 -- SportsMonks sends a statistic only when it is not zero. On the season's
 -- first finished match (fixture 19874708, 24 September) only the 3 scorers
@@ -122,28 +122,24 @@ values (
 -- (current_statistics_incomplete) and Gameweek 1 could not be scored.
 --
 -- The importer (scripts/backend/current-season-performances.ts) is changed to
--- count an absent statistic as zero, as last season's import always has, and
--- itself checks that every starter carries minutes played and that a
--- substitute without minutes scored, assisted, missed no penalty and put
--- through no own goal. What it cannot check is the final score, which the
--- database holds. Goals conceded decide clean sheets (60 minutes or more with
--- none conceded), so if SportsMonks had not recorded them yet, counting them
--- as zero would give every defender of a side that conceded a clean sheet.
--- api.ingest_current_player_fixture_performance now refuses, with
--- CURRENT_GOALS_CONCEDED_INCOMPLETE, a match where a side conceded but none
--- of its players who appeared carries every goal it conceded (someone on the
--- pitch throughout always does). The match then waits, and the hourly run
--- tries again. Only a finished match gets this far, and a finished match
--- always has its final score (fixtures_finished_score_check). This ships
--- before the importer change, so no match is imported under the new rule
--- without it.
+-- count an absent statistic as zero, as last season's import always has. But
+-- SportsMonks' goals conceded are not reliable on their own. In last season's
+-- 238 matches, 40 of the 327 goalkeepers who played a whole match for a side
+-- that conceded carried fewer than the score says, and 3 matches had players
+-- carrying more. Counted as they come, that hands out clean sheets nobody
+-- kept (60 minutes or more with none conceded). So the importer takes the
+-- final score as the truth: a player on for the whole match (90 minutes,
+-- where SportsMonks stops counting) conceded what the side did, and nobody
+-- conceded more than that. A player on for part of the match keeps
+-- SportsMonks' own figure, since only it knows when they were on the pitch.
 --
--- Measured on last season's 238 accepted matches, 2026-09-25: it refuses
--- none. Every side that conceded (334) had a player who appeared carrying
--- every goal (a median of 10 such players). It deliberately does not refuse
--- a player carrying more than the score says: 3 of those matches had one (a
--- goal the score does not count), SportsMonks never corrected them, and
--- refusing would have held their gameweeks for good.
+-- api.ingest_current_player_fixture_performance now checks that against the
+-- final score held here, and refuses a mismatch with
+-- CURRENT_GOALS_CONCEDED_MISMATCH: one of the two scores is not final yet, so
+-- the match waits and the hourly run tries again. Only a finished match gets
+-- this far, and a finished match always has its final score
+-- (fixtures_finished_score_check). This ships before the importer change, so
+-- no match is imported under the new rule without it.
 --
 -- Everything else in the function is 20260925110000's text, unchanged. Same
 -- signature and grants.
@@ -316,26 +312,24 @@ begin
     raise exception using errcode = '22023', message = 'CURRENT_PERFORMANCE_INCOMPLETE';
   end if;
   -- SportsMonks sends a statistic only when it is not zero, so the importer
-  -- counts an absent one as zero (20260925120000). Goals conceded decide clean
-  -- sheets, so they are checked against the final score: a side that conceded
-  -- has at least one player who appeared carrying every goal it conceded.
-  -- Otherwise the statistics are not all in yet, and the match waits for a
-  -- later observation. Carrying more than the score says is not refused (see
-  -- the migration header).
+  -- counts an absent one as zero (20260925120000). Its goals conceded are not
+  -- reliable on their own and they decide clean sheets, so the importer takes
+  -- them from the final score for a player on for the whole match (90
+  -- minutes, where SportsMonks stops counting) and caps everyone's at it.
+  -- Checked here against the score this database holds: a mismatch means one
+  -- of the two is not final yet, and the match waits.
   if exists (
-    select 1 from (values
-      (target_fixture.home_team_id, target_fixture.away_score),
-      (target_fixture.away_team_id, target_fixture.home_score)) side (team_id, conceded)
-    where side.conceded > 0 and not exists (
-      select 1 from jsonb_array_elements(p_rows) value
-      join app_private.football_provider_mappings team_map
-        on team_map.provider_name = p_provider_name and team_map.entity_type = 'team'
-        and team_map.external_id = value ->> 'externalTeamId' and team_map.active
-      where team_map.internal_entity_id = side.team_id
-        and (value ->> 'appeared')::boolean
-        and (value ->> 'goalsConceded')::integer >= side.conceded))
+    select 1
+    from jsonb_array_elements(p_rows) value
+    join app_private.football_provider_mappings team_map
+      on team_map.provider_name = p_provider_name and team_map.entity_type = 'team'
+      and team_map.external_id = value ->> 'externalTeamId' and team_map.active
+    cross join lateral (select case when team_map.internal_entity_id = target_fixture.home_team_id
+      then target_fixture.away_score else target_fixture.home_score end as conceded) side
+    where (value ->> 'goalsConceded')::integer > side.conceded
+      or ((value ->> 'minutes')::integer >= 90 and (value ->> 'goalsConceded')::integer <> side.conceded))
   then
-    raise exception using errcode = '22023', message = 'CURRENT_GOALS_CONCEDED_INCOMPLETE';
+    raise exception using errcode = '22023', message = 'CURRENT_GOALS_CONCEDED_MISMATCH';
   end if;
   -- Compute the immutable version from the actual normalized payload in SQL.
   normalized_source_version := 'sportsmonks-current-fixture:' || encode(extensions.digest(
@@ -433,7 +427,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260925120000, 'UTF8')), 'hex')
-    is distinct from '372655e3731895f13a583812b9c2a1a2f561b67c589d94a888c3eb705efd37ee' then
+    is distinct from '71b5b0a54d47a06395cc130d1075520b9cf974d094dc9f3b6c064a09df77f97f' then
     raise exception 'stop: 20260925120000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -451,8 +445,8 @@ declare
     'api.ingest_current_player_fixture_performance(text,text,text,jsonb,jsonb,timestamptz)'::regprocedure;
   definition text := pg_get_functiondef(ingest);
 begin
-  if definition not like '%message = ''CURRENT_GOALS_CONCEDED_INCOMPLETE''%'
-    or definition not like '%and (value ->> ''goalsConceded'')::integer >= side.conceded))%'
+  if definition not like '%message = ''CURRENT_GOALS_CONCEDED_MISMATCH''%'
+    or definition not like '%or ((value ->> ''minutes'')::integer >= 90 and (value ->> ''goalsConceded'')::integer <> side.conceded))%'
     or definition not like '%unnamed_starters := coalesce((p_coverage ->> ''anonymousStarterRows'')::integer, 0);%' then
     problems := problems || 'the statistics import is not the new version'::text;
   end if;
