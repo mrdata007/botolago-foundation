@@ -143,3 +143,7 @@ Production run evidence: [successful season orchestrator](https://github.com/mrd
 Main advanced to `d862cf0ef4d282f46c8717a9dceec458d607d11f` during implementation (Pronostics changes). The unpublished branch was rebased cleanly onto it. After integration, 57 relevant tests, TypeScript, production build and five browser/SEO checks passed, including French and Arabic at 390px. The full 2,977-test and 19-browser-test results above precede that unrelated main update.
 
 Publication used the connected GitHub Git Data API because command-line Git had no credentials. Each uploaded blob and commit tree was checked against its local Git SHA; logical commit boundaries were retained. No main ref was changed.
+
+### GitHub verification outcome
+
+Run [36156651234](https://github.com/mrdata007/botolago-foundation/actions/runs/36156651234) passed application quality, migration replay, all **2,283 pgTAP assertions across 85 files**, and schema lint. Generated-type verification was blocked by the external container registry: `public.ecr.aws/supabase/postgres-meta:v0.96.6` returned `toomanyrequests: Data limit exceeded` after four attempts. Recovery generation hit the same limit. This is not evidence of stale types; the overall database job is still red. No assertion or type gate was bypassed. A new CI run is required. The new raw-HTML SEO suite is now explicitly included in application CI. Local lint passed with 14 warnings and no errors.
