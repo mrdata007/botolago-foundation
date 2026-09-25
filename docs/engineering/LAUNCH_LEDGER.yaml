@@ -21,7 +21,7 @@ human_actions_open:
   - id: BG-0067
     action: Supply Terms of Service and Privacy Policy text (FR + AR). Signup already asks users to accept them and they do not exist.
   - id: BG-0146
-    action: Pronostics — check the first visits in the Seline dashboard, and read privacy policy 1.2's Seline lines; decide whether staging is brought up to date for a rehearsal; give the go-ahead for Stage 3 (the owner as the only tester) and, after Fantasy GW1 is finalized, for part 6 (apply-20260925090500, with the Fantasy tick paused for its length).
+    action: Pronostics — check the first visits in the Seline dashboard, and read privacy policy 1.2's Seline lines; decide whether staging is brought up to date for a rehearsal; after Fantasy GW1 is finalized, give the go-ahead for part 6 (apply-20260925090500, with the Fantasy tick paused for its length).
 
 tasks:
 
@@ -1916,6 +1916,7 @@ tasks:
       - "production 2026-09-25 07:33 UTC, owner's go-ahead: parts 1-5 applied switched off through apply-20260925090000-predictions.sql, after two rehearsals that saved nothing; the five recorded files match the repository by sha256, the first score tick idled, the site still shows Bientôt disponible (docs/production/APPLIED_2026_09_25_PREDICTIONS.md)"
       - "that install ran without pausing the Fantasy tick and the live score refresh, contrary to AGENTS.md. Measured afterwards: no job ran during any of its three transactions, none has failed since, and the state re-read at 07:57 UTC with nothing else running was unchanged. The part 6 script now refuses while the Fantasy tick is on (refused with it on and passed every check with it off, on a local copy of production's state)"
       - "Arabic reviewed 2026-09-25 (the owner handed the review over): the 152 predictions texts and the 2 entry-point labels read against the French, 19 fixed in src/i18n/dictionary-ar.ts"
+      - "2026-09-25, owner ('switch it on and publish it'): straight to Stage 5, no testers stage. Production mode = public at 14:56:27 UTC after a dry run that saved nothing; a visitor's read is allowed, on journée 1 with 6 matches open (first lock 26 September 16:00 UTC). PRONOSTICS_PROMOTED on, and the site published (docs/production/APPLIED_2026_09_25_PREDICTIONS.md)"
     note: >
       Writing the tests found three real defects before anything shipped: a journée with
       matches in play read as "upcoming" (a null from a missing scoring row dropped every
@@ -1926,7 +1927,7 @@ tasks:
       - "owner: check the first visits in the Seline dashboard after the deploy, and read privacy policy 1.2's Seline lines (FR/AR)"
       - "staging (srdrflfrfpwixsllveid) is behind production: no migration after 2026-09-21, no 20260924160000, no pg_cron. A Stage 2 rehearsal there needs a staging parity run first (owner's call); the apply scripts were rehearsed on a local production-like database instead"
       - "production: apply-20260925090500-fantasy-league-page-skip-empty.sql after Fantasy GW1 is finalized, with the Fantasy tick paused (it checks both), on its own go-ahead"
-      - "Stage 3: switch the game to testers with the owner's account, on the owner's go-ahead (runbook, 'The switch')"
+      - "with the game public, Pronostics-only leagues (rows in app.fantasy_leagues with no Fantasy member) can be created from now on; until part 6 is applied, the Fantasy scoring worker still walks them (two calls each, inside its 5000-call budget)"
       - "waits on BG-0001's lane: after the Fantasy season orchestrator failed its runs of 2026-09-24 from 09:57 UTC (provider refresh current_squad_empty_or_oversized, then FANTASY_ORCHESTRATOR_FAILED), GW1 was locked (open to live) on 2026-09-25 at 07:20 UTC by the new Fantasy lifecycle tick (#199, #201); part 6 waits for it to be scored and finalized"
       - "deferred: a 'share invite link' button on the Fantasy league invite code, after PR #183 moves that component"
   BG-0001:

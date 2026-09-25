@@ -8,10 +8,11 @@ Pronostics database install"):
   (Pronostics, parts 1 to 5, BG-0146, merged in #200), installed with the game
   switched **off**.
 
-Nothing is visible yet. Every Pronostics read answers "not allowed" and
-botolago.com/pronostics shows "Bientôt disponible" under `noindex` until the
-game is switched on, which is a separate step with its own go-ahead
-(`docs/backend/PREDICTIONS_OPERATIONS_RUNBOOK.md`, "The switch").
+At install nothing was visible: every Pronostics read answered "not allowed"
+and botolago.com/pronostics showed "Bientôt disponible" under `noindex`.
+
+**Update:** at 14:56:27 UTC the same day, on the owner's go-ahead ("switch it
+on and publish it"), the game was switched on for everyone (last section).
 
 Part 6, `20260925090500_fantasy_league_page_skip_empty.sql`, is **not**
 applied. It changes a Fantasy function and waits until Fantasy gameweek 1 is
@@ -148,9 +149,6 @@ select jobname, schedule, active from cron.job where jobname like 'predictions-%
 
 ## Next
 
-- Stage 3, the owner as the only tester: the owner's go-ahead, then
-  `select app_private.predictions_configure('testers', null, array['<owner user id>']::uuid[]);`
-  (runbook, "The switch").
 - Part 6, after Fantasy gameweek 1 is finalized, on its own go-ahead, which
   covers pausing the Fantasy tick for it:
   `select app_private.fantasy_automation_configure(false);`, then
@@ -159,3 +157,31 @@ select jobname, schedule, active from cron.job where jobname like 'predictions-%
   `select app_private.fantasy_automation_configure(true);`. The script refuses
   while the tick is on (checked on a local copy of production's state: it
   refused with the tick on and passed every check with it off).
+
+## Switched on for everyone (14:56 UTC)
+
+The owner's go-ahead, 2026-09-25: "switch it on and publish it", straight to
+Stage 5 without a testers stage (runbook, "Rollout").
+
+- **Before:** no other query running (`pg_stat_activity` at 14:56:06), the
+  switch `off`, the score job idling (last run 14:55, succeeded). This write
+  touches only `app_private.prediction_settings` and `prediction_job_runs`,
+  which no other job writes, so none of `AGENTS.md`'s pauses applied.
+- **Dry run:** one `DO` block ran `predictions_configure('public')` and a
+  visitor's read, then raised: mode `public`, scoring on; the visitor allowed,
+  journée 1, 8 matches. A re-read found the switch still `off` and no
+  job-run row.
+- **14:56:27 UTC:** `select app_private.predictions_configure('public');`,
+  logged in `app_private.prediction_job_runs` (operator, applied).
+- **After:** a visitor's read is allowed and lands on journée 1 (in
+  progress): 6 matches open to predict on 26 and 27 September, the first
+  locking at 16:00 UTC on the 26th; Amal Tiznit – Ittihad Tanger (played) and
+  FAR Rabat – Raja (postponed) closed. The score job ran at 15:00 and 15:05
+  with the game on, succeeded in 11–12 ms and had nothing to write yet. No
+  scheduled job failed since the switch.
+- **The ways in** (Home card, Matches tab, match page card, league tab,
+  sitemap entry, search indexing) come with `PRONOSTICS_PROMOTED` in the pull
+  request that carries this section, and the publish after it.
+
+To switch it off again: `select app_private.predictions_configure('off');`
+(runbook, "Rolling back").

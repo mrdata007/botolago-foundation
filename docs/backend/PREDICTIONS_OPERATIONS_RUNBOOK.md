@@ -136,6 +136,13 @@ are finalized shortly after the whistle.
 Before Stage 4: the Arabic review, done on 2026-09-25 (the owner handed it
 over; 19 texts fixed). Audience measurement is already on (next section).
 
+**Stage 5 since 2026-09-25**, on the owner's go-ahead ("switch it on and
+publish it"), straight from Stage 1 without a testers stage: `mode = public`
+at 14:56 UTC (`docs/production/APPLIED_2026_09_25_PREDICTIONS.md`), then
+`PRONOSTICS_PROMOTED` on and the site published. To take it back, see
+"Rolling back": the switch hides the game at once, and the Matches tab and
+the sitemap entry go with the flag in the next deploy.
+
 ## Audience measurement (Seline)
 
 On since 2026-09-25. The owner chose Seline in place of Plausible, created the
