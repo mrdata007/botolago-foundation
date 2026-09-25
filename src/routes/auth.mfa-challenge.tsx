@@ -73,7 +73,10 @@ function MfaChallengePage() {
       leaving.current = true;
       markWelcomeDone();
       if (verifiedHere.current) toast.success(t("auth.success.login"));
-      if (next !== "/" && signedIn?.profileComplete) {
+      // A verified recovery callback must finish the password reset even when
+      // the account has not completed profile setup yet. The code is already
+      // accepted here; update-password still requires the authenticated session.
+      if (next === "/auth/update-password" || (next !== "/" && signedIn?.profileComplete)) {
         window.location.href = sanitizeAuthCallbackNext(next);
         return;
       }
