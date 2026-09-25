@@ -1,4 +1,4 @@
--- Regression suite for 20260925180400_ops_health_fantasy_coverage_and_scoring:
+-- Regression suite for 20260925210400_ops_health_fantasy_coverage_and_scoring:
 -- the `fantasy_fixture_coverage` and `fantasy_scoring` health checks at each
 -- ok / warn / fail boundary (statistics: warn 6 h, fail 12 h after the final
 -- whistle; a counted match stuck unfinished: warn 3 h, fail 6 h after its due
@@ -645,7 +645,7 @@ select extensions.ok(current_setting('test.alert')::jsonb ->> 'text' like '%- fa
 select extensions.is((select last_signature from app_private.ops_alert_state where id), 'fantasy_fixture_coverage',
   'the incident is now the coverage check');
 
--- The sitemap check (20260925180050) is still there and still pages.
+-- The sitemap check (20260925210050) is still there and still pages.
 update app_private.news_sitemap_snapshot set computed_at = statement_timestamp() - interval '11 minutes',
   changed_at = least(changed_at, statement_timestamp() - interval '11 minutes') where id;
 select extensions.is(app_private.ops_alert_tick(), 'sent', 'a stale sitemap snapshot joins the incident and pages');

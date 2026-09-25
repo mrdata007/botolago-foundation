@@ -229,7 +229,7 @@ the pass from reading carries `waitingOn: "provider_outage"`, is never
 the code. The database's `fantasy_fixture_coverage` check, which reads real
 coverage, warns for a counted match still without certified statistics 6 h
 after its final whistle and fails (pages) at 12 h, outage or not, wherever
-migration 20260925180400 is applied (until then, the watchdog's `fantasy_points` row pages later, once
+migration 20260925210400 is applied (until then, the watchdog's `fantasy_points` row pages later, once
 the gameweek is past its window without points). A fixture that was read and
 not certified still ages and escalates, even one certified by an earlier pass
 (a provider correction the database refuses, for instance): the listing cannot

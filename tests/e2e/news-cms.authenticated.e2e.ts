@@ -39,7 +39,7 @@ test.describe.configure({ mode: "serial", timeout: 420_000 });
 
 /**
  * The sitemap is served from a snapshot the database recomputes every minute
- * (migration 20260925180050), so a publication shows there within about a
+ * (migration 20260925210050), so a publication shows there within about a
  * minute, not at once. Polls until `ready` holds or 150 s have passed (the
  * minute, a late pg_cron start and the refresh itself, with room to spare),
  * and returns the last body. The query string only keeps a cache in front of

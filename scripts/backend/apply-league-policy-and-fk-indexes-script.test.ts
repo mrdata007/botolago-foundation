@@ -4,8 +4,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * The guarded script that puts 20260925180200 (the private-league policy,
- * audit A14 / DB-06) and 20260925180300 (two foreign-key indexes, audit
+ * The guarded script that puts 20260925210200 (the private-league policy,
+ * audit A14 / DB-06) and 20260925210300 (two foreign-key indexes, audit
  * A13 / DB-05) on production. Like the other apply scripts, it records each
  * migration file whole in the history and runs that record only after its
  * sha256 matches the repository file. So each file must be carried byte for
@@ -18,16 +18,16 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
-const script = read("scripts/backend/apply-20260925180200-league-policy-and-fk-indexes.sql");
+const script = read("scripts/backend/apply-20260925210200-league-policy-and-fk-indexes.sql");
 const MIGRATIONS = [
-  { version: "20260925180200", name: "fantasy_league_visibility_policy" },
-  { version: "20260925180300", name: "foreign_key_delete_path_indexes" },
+  { version: "20260925210200", name: "fantasy_league_visibility_policy" },
+  { version: "20260925210300", name: "foreign_key_delete_path_indexes" },
 ].map((entry) => ({
   ...entry,
   body: read(`supabase/migrations/${entry.version}_${entry.name}.sql`),
 }));
 
-describe("apply-20260925180200-league-policy-and-fk-indexes.sql", () => {
+describe("apply-20260925210200-league-policy-and-fk-indexes.sql", () => {
   for (const { version, name, body } of MIGRATIONS) {
     test(`carries ${version} byte for byte and checks it before running it`, () => {
       const tag = `$bg_${version}_file$`;
@@ -44,8 +44,8 @@ describe("apply-20260925180200-league-policy-and-fk-indexes.sql", () => {
   }
 
   test("runs the two parts in version order", () => {
-    expect(script.indexOf("execute part_20260925180200;")).toBeLessThan(
-      script.indexOf("execute part_20260925180300;"),
+    expect(script.indexOf("execute part_20260925210200;")).toBeLessThan(
+      script.indexOf("execute part_20260925210300;"),
     );
   });
 

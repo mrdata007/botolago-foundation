@@ -88,7 +88,7 @@ No production schedule is active in Phase 4.
 
 `/sitemap.xml` lists the public editions from `api.news_sitemap_entries`,
 which serves a snapshot rather than computing the archive on each request
-(migration `20260925180050`). Computing it per request timed out in
+(migration `20260925210050`). Computing it per request timed out in
 production on 2026-09-25 and turned the whole sitemap into a 503; the
 set-based hotfix (`20260925100000`) made the computation fast again, and the
 snapshot keeps one slow minute from reaching visitors.
@@ -123,7 +123,7 @@ snapshot keeps one slow minute from reaching visitors.
   Resume both with `active := true`. From two minutes into a pause the
   sitemap is computed on every request; the health check pages after ten.
 - Production: apply it with the guarded script
-  [`apply-20260925180050-news-sitemap-snapshot.sql`](../../scripts/backend/apply-20260925180050-news-sitemap-snapshot.sql)
+  [`apply-20260925210050-news-sitemap-snapshot.sql`](../../scripts/backend/apply-20260925210050-news-sitemap-snapshot.sql)
   (rehearsal first, then `commit;`). Until then production runs
   `20260925100000` alone and computes the sitemap on every request.
 - One sitemap file holds at most 50,000 URLs. The snapshot keeps the newest

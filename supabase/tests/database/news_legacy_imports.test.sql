@@ -111,7 +111,7 @@ reset role;
 update app.article_editions set status = 'published', visibility = 'public', unpublished_at = null
 where id = '97300000-0000-4000-8000-000000000001';
 -- The sitemap is served from a snapshot pg_cron refreshes every minute
--- (20260925180050); refresh it, as the job would, so the check below looks at
+-- (20260925210050); refresh it, as the job would, so the check below looks at
 -- what the next refresh lists rather than at an older snapshot.
 do $$ begin perform app_private.news_sitemap_refresh(true); end $$;
 set local role anon;

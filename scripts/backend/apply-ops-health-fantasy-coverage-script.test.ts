@@ -4,9 +4,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * The guarded script that puts 20260925180400 (the `fantasy_fixture_coverage`
+ * The guarded script that puts 20260925210400 (the `fantasy_fixture_coverage`
  * and `fantasy_scoring` health checks and app_private.ops_alert_test(), audit
- * A08 / DB-03) on production, after 20260925180050. Like the other apply
+ * A08 / DB-03) on production, after 20260925210050. Like the other apply
  * scripts, it records the migration file whole in the history and runs that
  * record only after its sha256 matches the repository file, so the file must
  * be carried byte for byte, once, and the hash it checks must be the file's.
@@ -19,7 +19,7 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
-const VERSION = "20260925180400";
+const VERSION = "20260925210400";
 const NAME = "ops_health_fantasy_coverage_and_scoring";
 const script = read(`scripts/backend/apply-${VERSION}-ops-health-fantasy-coverage.sql`);
 const migration = read(`supabase/migrations/${VERSION}_${NAME}.sql`);
@@ -52,10 +52,10 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
     for (const guard of [
       "set local lock_timeout = '5s';",
       `migration ${VERSION} is already recorded as applied`,
-      "migration 20260925180050 (the sitemap snapshot) is not applied yet",
+      "migration 20260925210050 (the sitemap snapshot) is not applied yet",
       "the database is missing what this update reads or changes",
       "app_private.ops_alert_test() already exists, but the migration is not recorded",
-      // The health function as 20260925180050 installs it (local reset), and
+      // The health function as 20260925210050 installs it (local reset), and
       // the alert path as production held it on 2026-09-25 (read there).
       "    <> '3c9b47ab0e10742ebaf355861006b8bd' then",
       "      <> 'f495986586af20c728d3aa0ce2b44c10'",

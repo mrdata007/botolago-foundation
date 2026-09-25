@@ -16,7 +16,7 @@ import { getNewsDataMode } from "@/services/news";
  *
  * Freshness. The database serves the entries from a snapshot that pg_cron
  * recomputes every minute, and computes them live instead once the snapshot is
- * more than two minutes old (migration 20260925180050; computing the whole
+ * more than two minutes old (migration 20260925210050; computing the whole
  * archive on every request is what timed out, audit 2026-09-25 A01). A shared
  * cache may then keep this response for the remaining three minutes and a
  * browser for one (`SITEMAP_CACHE_CONTROL`), so an unpublished article leaves

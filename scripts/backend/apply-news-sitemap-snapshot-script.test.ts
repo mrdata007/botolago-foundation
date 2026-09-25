@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * The guarded script that puts 20260925180050 (the sitemap served from a
+ * The guarded script that puts 20260925210050 (the sitemap served from a
  * snapshot) on production, after 20260925100000. Like the other apply
  * scripts, it records the migration file whole in the history and runs that
  * record only after its sha256 matches the repository file, so the file must
@@ -17,7 +17,7 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
-const VERSION = "20260925180050";
+const VERSION = "20260925210050";
 const NAME = "news_sitemap_snapshot";
 const script = read(`scripts/backend/apply-${VERSION}-news-sitemap-snapshot.sql`);
 const migration = read(`supabase/migrations/${VERSION}_${NAME}.sql`);

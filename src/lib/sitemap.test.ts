@@ -88,7 +88,7 @@ describe("sitemap.xml", () => {
     // renumbered after it, so it quietly put the per-edition helper calls
     // back: 8.4 s on production against the 3 s anon timeout, and a 503
     // sitemap. The migration that defines the function last is what runs.
-    // Since 20260925180050 the public function serves a snapshot and leaves
+    // Since 20260925210050 the public function serves a snapshot and leaves
     // the query to app_private.news_sitemap_compute, so the query's checks
     // follow it there, and the public function must still call no helper.
     const directory = join(import.meta.dir, "../../supabase/migrations");

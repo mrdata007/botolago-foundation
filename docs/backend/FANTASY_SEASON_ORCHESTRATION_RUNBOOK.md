@@ -139,7 +139,7 @@ database's `fantasy_scoring` check warns an hour after the certification and
 fails, paging, 8 h after it.
 
 The database watches the same two things without GitHub (migration
-`20260925180400`, `docs/operations/ALERTS.md`), from real coverage and the
+`20260925210400`, `docs/operations/ALERTS.md`), from real coverage and the
 recorded final whistle (`app.fixtures.finalized_at`, kickoff + 2 h without
 one): `fantasy_fixture_coverage` warns 6 h and fails 12 h after a counted
 match's final whistle without certified statistics, whatever the cause, a
@@ -228,7 +228,7 @@ explains, an empty check list or an unreadable answer all fail.
 `page_sitemapxml` fails unless the sitemap answers 200 **and** contains at
 least one `<loc>`.
 
-Statistics and points are watched from both sides. Migration `20260925180400`
+Statistics and points are watched from both sides. Migration `20260925210400`
 adds `fantasy_fixture_coverage` and `fantasy_scoring` to `service_ops_health`:
 the watchdog reports them under those names, and they page through the
 database webhook without GitHub. Their thresholds are fixed in the migration
@@ -260,7 +260,7 @@ Owner actions, none of which this repository can do for you:
 2. **Test both paths once.** Actions → _Production watchdog_ → Run workflow
    with `simulate_failure` ticked: an `ops-alert` issue must open and e-mail
    you. Run it again unticked and it must close. For the webhook, once
-   migration `20260925180400` is applied, run
+   migration `20260925210400` is applied, run
    `select app_private.ops_alert_test();` in the SQL editor: a message marked
    TEST must reach the channel, and the webhook's answer can be read back
    (`docs/operations/ALERTS.md`, step 3 of switching it on). It changes no

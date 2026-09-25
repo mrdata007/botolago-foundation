@@ -56,7 +56,7 @@ watchdog change; a status other than `ok`, `warn` or `fail` fails.
 | `email_delivery`           | email is on but its tick stalled for 15 min                                                                                                                                                                                     | undelivered emails are waiting                                                                                                                                                                                                                                                  |
 | `browser_errors`           | never (see below)                                                                                                                                                                                                               | 25+ unhandled errors reported by visitors' browsers this hour and the last                                                                                                                                                                                                      |
 
-`fantasy_fixture_coverage` and `fantasy_scoring` (migration 20260925180400)
+`fantasy_fixture_coverage` and `fantasy_scoring` (migration 20260925210400)
 watch the current Fantasy season (`registration_open` or `active`) and the
 matches that count for its points. "Final whistle" is `app.fixtures.finalized_at`
 (kickoff + 2 h when a finished row has none). Complete statistics means what
@@ -202,7 +202,7 @@ at 10:02 UTC, and again at 14:53, with `repeat_after` 1 h and nothing sent
 yet (`last_sent_at` empty). (When it was switched on is not recorded:
 `ops_alert_state.updated_at` is rewritten by every tick.) So on production
 there is nothing to switch on: step 3 alone confirms that messages arrive,
-once migration `20260925180400` (which adds `ops_alert_test()`) is applied.
+once migration `20260925210400` (which adds `ops_alert_test()`) is applied.
 Steps 1, 2 and 4 are for a new or replaced destination.
 
 It ships switched off (migration `20260924200200`), and it is the only

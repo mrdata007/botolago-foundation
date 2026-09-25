@@ -1,5 +1,5 @@
 -- Ordinary-account MFA step-up
--- (20260925180100_ordinary_account_mfa_step_up.sql, audit 2026-09-25 A03 / DB-07).
+-- (20260925210100_ordinary_account_mfa_step_up.sql, audit 2026-09-25 A03 / DB-07).
 --
 -- Accounts:
 --   E  enrolled: one verified TOTP factor

@@ -1,7 +1,7 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
--- Apply migrations 20260925180200_fantasy_league_visibility_policy and
--- 20260925180300_foreign_key_delete_path_indexes (audit 2026-09-25, P3
+-- Apply migrations 20260925210200_fantasy_league_visibility_policy and
+-- 20260925210300_foreign_key_delete_path_indexes (audit 2026-09-25, P3
 -- hygiene):
 --   * A14 / DB-06: the direct-table policy on private Fantasy leagues tests
 --     the league row, not membership.id, and no longer recurses with the
@@ -83,11 +83,11 @@ begin
   if to_regclass('supabase_migrations.schema_migrations') is null then
     raise exception 'stop: supabase_migrations.schema_migrations does not exist -- is this the BotolaGO database?';
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version = '20260925180200') then
-    raise exception 'stop: migration 20260925180200 is already recorded as applied';
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210200') then
+    raise exception 'stop: migration 20260925210200 is already recorded as applied';
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version = '20260925180300') then
-    raise exception 'stop: migration 20260925180300 is already recorded as applied';
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210300') then
+    raise exception 'stop: migration 20260925210300 is already recorded as applied';
   end if;
 
   if to_regclass('app.fantasy_leagues') is null
@@ -159,14 +159,14 @@ lock table app.fantasy_leagues in access exclusive mode;
 lock table app.stories, app_private.notification_email_unsubscribe_tokens in share mode;
 
 -- ---------------------------------------------------------------------------
--- Migrations 20260925180200 and 20260925180300, exactly as in the repository,
+-- Migrations 20260925210200 and 20260925210300, exactly as in the repository,
 -- into the history
 -- ---------------------------------------------------------------------------
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260925180200',
+  '20260925210200',
   'fantasy_league_visibility_policy',
-  array[$bg_20260925180200_file$-- BotolaGO Production V2
+  array[$bg_20260925210200_file$-- BotolaGO Production V2
 -- The direct-table policy for private Fantasy leagues tests the league it is
 -- looking at, and no longer recurses (audit 2026-09-25 A14 / DB-06, P3).
 --
@@ -265,15 +265,15 @@ using (
 comment on policy fantasy_leagues_visible_select on app.fantasy_leagues is
   'A signed-in account sees public leagues and the private leagues it is an active member of. '
   'Defence in depth only: browser roles have no SELECT on this table, and league reads go through '
-  'api.* SECURITY DEFINER functions (20260925180200, audit A14 / DB-06).';
-$bg_20260925180200_file$]
+  'api.* SECURITY DEFINER functions (20260925210200, audit A14 / DB-06).';
+$bg_20260925210200_file$]
 );
 
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260925180300',
+  '20260925210300',
   'foreign_key_delete_path_indexes',
-  array[$bg_20260925180300_file$-- BotolaGO Production V2
+  array[$bg_20260925210300_file$-- BotolaGO Production V2
 -- Index two foreign keys that a real delete scans in full, one scan per
 -- deleted row (audit 2026-09-25 A13 / DB-05, P3).
 --
@@ -351,7 +351,7 @@ create index stories_import_converted_by_idx
 comment on index app.stories_import_converted_by_idx is
   'Serves the ON DELETE SET NULL action of stories_import_converted_by_fkey when an auth user is deleted '
   '(one lookup per deleted user instead of a scan of app.stories). Mirrors stories_created_by_idx. '
-  '20260925180300, audit A13 / DB-05.';
+  '20260925210300, audit A13 / DB-05.';
 
 create index notification_email_unsubscribe_tokens_delivery_idx
   on app_private.notification_email_unsubscribe_tokens (delivery_id)
@@ -360,8 +360,8 @@ create index notification_email_unsubscribe_tokens_delivery_idx
 comment on index app_private.notification_email_unsubscribe_tokens_delivery_idx is
   'Serves the ON DELETE SET NULL action of notification_email_unsubscribe_tokens_delivery_id_fkey, which '
   'runs once per deleted notification delivery (device unregistration, account deletion). '
-  '20260925180300, audit A13 / DB-05.';
-$bg_20260925180300_file$]
+  '20260925210300, audit A13 / DB-05.';
+$bg_20260925210300_file$]
 );
 
 -- ---------------------------------------------------------------------------
@@ -370,24 +370,24 @@ $bg_20260925180300_file$]
 -- ---------------------------------------------------------------------------
 do $apply$
 declare
-  part_20260925180200 text := (
-    select statements[1] from supabase_migrations.schema_migrations where version = '20260925180200'
+  part_20260925210200 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20260925210200'
   );
-  part_20260925180300 text := (
-    select statements[1] from supabase_migrations.schema_migrations where version = '20260925180300'
+  part_20260925210300 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20260925210300'
   );
 begin
-  if encode(sha256(convert_to(part_20260925180200, 'UTF8')), 'hex')
-    is distinct from 'd308f22c37e1f0b03082c8eb26b2592efdd16b3a016d7d68c453819319f0e05c' then
-    raise exception 'stop: 20260925180200 is not the repository file byte for byte -- was this script cut short or changed?';
+  if encode(sha256(convert_to(part_20260925210200, 'UTF8')), 'hex')
+    is distinct from '84cd98cd31003ecb955a700aa0276bf26970cb324f27d22f4c48d116c2890824' then
+    raise exception 'stop: 20260925210200 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
-  if encode(sha256(convert_to(part_20260925180300, 'UTF8')), 'hex')
-    is distinct from 'a95d1465d2a28e004fda8ec8f8e3df3d59351e65f376c0e16e5126abc65f4310' then
-    raise exception 'stop: 20260925180300 is not the repository file byte for byte -- was this script cut short or changed?';
+  if encode(sha256(convert_to(part_20260925210300, 'UTF8')), 'hex')
+    is distinct from 'e015647e65613ebed1d82c12b4fa0b56d3060a7e816ced17c4c81dbe8682d977' then
+    raise exception 'stop: 20260925210300 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
-  execute part_20260925180200;
-  execute part_20260925180300;
+  execute part_20260925210200;
+  execute part_20260925210300;
 end
 $apply$;
 
@@ -496,7 +496,7 @@ begin
   end if;
 
   if (select count(*) from supabase_migrations.schema_migrations
-      where version in ('20260925180200', '20260925180300')) <> 2 then
+      where version in ('20260925210200', '20260925210300')) <> 2 then
     problems := problems || 'history rows missing'::text;
   end if;
 
@@ -514,7 +514,7 @@ rollback;
 
 select case
   when (select count(*) from supabase_migrations.schema_migrations
-        where version in ('20260925180200', '20260925180300')) = 2
+        where version in ('20260925210200', '20260925210300')) = 2
     then 'Applied. The private-league policy is fixed and the two foreign keys are indexed.'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;

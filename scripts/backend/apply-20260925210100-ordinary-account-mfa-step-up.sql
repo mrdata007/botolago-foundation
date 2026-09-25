@@ -1,6 +1,6 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
--- Apply migration 20260925180100_ordinary_account_mfa_step_up: an ordinary
+-- Apply migration 20260925210100_ordinary_account_mfa_step_up: an ordinary
 -- account that turned MFA on must hold an aal2 session for every write the
 -- api.* functions make for it (audit 2026-09-25 A03 / DB-07). Refusal:
 -- SQLSTATE PT403, message 'mfa_required'. Its avatar image in Storage is not
@@ -102,8 +102,8 @@ begin
   if to_regclass('supabase_migrations.schema_migrations') is null then
     raise exception 'stop: supabase_migrations.schema_migrations does not exist -- is this the BotolaGO database?';
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version = '20260925180100') then
-    raise exception 'stop: migration 20260925180100 is already recorded as applied';
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210100') then
+    raise exception 'stop: migration 20260925210100 is already recorded as applied';
   end if;
   if to_regprocedure('app_private.assert_mfa_step_up()') is not null
     or to_regprocedure('app_private.refuse_unverified_mfa_actor()') is not null
@@ -186,13 +186,13 @@ lock table
   in share row exclusive mode;
 
 -- ---------------------------------------------------------------------------
--- Migration 20260925180100, exactly as in the repository, into the history
+-- Migration 20260925210100, exactly as in the repository, into the history
 -- ---------------------------------------------------------------------------
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20260925180100',
+  '20260925210100',
   'ordinary_account_mfa_step_up',
-  array[$bg_20260925180100_file$-- BotolaGO Production V2
+  array[$bg_20260925210100_file$-- BotolaGO Production V2
 -- An ordinary account that turned MFA on must complete it before it changes
 -- anything (audit 2026-09-25 A03 / DB-07, P2).
 --
@@ -641,7 +641,7 @@ revoke all on function api.unsubscribe_notification_email(text)
 -- service role.
 grant execute on function api.unsubscribe_notification_email(text)
   to anon, authenticated, service_role;
-$bg_20260925180100_file$]
+$bg_20260925210100_file$]
 );
 
 -- ---------------------------------------------------------------------------
@@ -649,16 +649,16 @@ $bg_20260925180100_file$]
 -- ---------------------------------------------------------------------------
 do $apply$
 declare
-  part_20260925180100 text := (
-    select statements[1] from supabase_migrations.schema_migrations where version = '20260925180100'
+  part_20260925210100 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20260925210100'
   );
 begin
-  if encode(sha256(convert_to(part_20260925180100, 'UTF8')), 'hex')
+  if encode(sha256(convert_to(part_20260925210100, 'UTF8')), 'hex')
     is distinct from 'a228ee97e1dfc01255d92a0d74cec27329a2581b2beea8433ffdd8997be82f6e' then
-    raise exception 'stop: 20260925180100 is not the repository file byte for byte -- was this script cut short or changed?';
+    raise exception 'stop: 20260925210100 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
-  execute part_20260925180100;
+  execute part_20260925210100;
 end
 $apply$;
 
@@ -716,7 +716,7 @@ begin
     problems := problems || 'the replaced functions lost or gained a grant'::text;
   end if;
 
-  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260925180100') then
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210100') then
     problems := problems || 'history row missing'::text;
   end if;
 
@@ -780,7 +780,7 @@ $postflight$;
 rollback;
 
 select case
-  when exists (select 1 from supabase_migrations.schema_migrations where version = '20260925180100')
+  when exists (select 1 from supabase_migrations.schema_migrations where version = '20260925210100')
     then 'Applied. Accounts that turned MFA on now need the code before any change to their data (not yet their avatar image).'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;
