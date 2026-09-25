@@ -359,6 +359,29 @@ describe("fantasy season orchestrator", () => {
     const degraded = await orchestrateFantasySeason(failing.gateway, { now });
     expect(degraded.verdict).toBe("waiting");
     expect(degraded.performances.error).toBe("current_statistics_incomplete");
+    expect(degraded.performances).not.toHaveProperty("diagnostic");
+
+    // What the import says about its failure reaches the evidence, flat
+    // values only.
+    const explained = gateway(cal);
+    explained.gateway.ingestPerformances = async () => {
+      throw Object.assign(new Error("current_lineup_unidentified_players"), {
+        diagnostic: {
+          fixtureExternalId: "19874708",
+          unidentifiedStarters: 1,
+          unidentifiedOthers: 0,
+          payload: { name: "dropped" },
+          note: "dropped: has spaces",
+        },
+      });
+    };
+    const reported = await orchestrateFantasySeason(explained.gateway, { now });
+    expect(reported.performances.error).toBe("current_lineup_unidentified_players");
+    expect(reported.performances.diagnostic).toEqual({
+      fixtureExternalId: "19874708",
+      unidentifiedStarters: 1,
+      unidentifiedOthers: 0,
+    });
   });
 
   test("provider refresh evidence: a squad-guard failure after the fixture phase still counts as refreshed", async () => {
