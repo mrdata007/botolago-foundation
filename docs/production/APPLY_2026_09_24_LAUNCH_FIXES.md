@@ -41,9 +41,18 @@ Gameweek 2 is created) and locks Gameweek 1.
 The script refuses to run unless production is exactly as it was reviewed
 (latest migration `20260924190100`, the 12 functions it replaces unchanged --
 related articles may already be on this batch's own body -- none of its
-objects present). Checked read-only at 21:24 UTC: all true. If
+objects present). Checked read-only at 21:24 UTC: all true; again on
+2026-09-25 at about 07:00 UTC, all true (related articles on its new body). If
 any check fails, it stops, says which, and saves nothing. **Never edit a
 check to make it pass.**
+
+**Run this script before the Pronostics scripts**
+(`apply-20260925090000-predictions.sql`, then
+`apply-20260925090500-fantasy-league-page-skip-empty.sql`, merged in #200).
+This one checks that production's latest migration is still
+`20260924190100`, so it refuses once Pronostics is recorded; and the
+Pronostics league-page script needs Gameweek 1 locked and scored, and this
+one is what locks it.
 
 ## Step 1 — Nothing else running
 
