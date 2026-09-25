@@ -12,6 +12,7 @@ import {
 import { hydrate as hydrateRouter } from "@tanstack/react-router/ssr/client";
 import { renderToString } from "react-dom/server";
 
+import { AuthProvider } from "@/auth/AuthProvider";
 import type { MatchCardDto } from "@/backend/football/contracts";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { dictionaries } from "@/i18n/dictionaries";
@@ -87,8 +88,15 @@ afterEach(() => {
   delete globals.document;
 });
 
+// The auth provider sits inside the router, as in `__root.tsx`: the match
+// page's Pronostics card reads the session, and the provider's second-factor
+// gate reads the router's location.
 const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  component: () => <Outlet />,
+  component: () => (
+    <AuthProvider>
+      <Outlet />
+    </AuthProvider>
+  ),
 });
 const routeTree = rootRoute.addChildren([
   MatchRoute.update({
