@@ -288,6 +288,12 @@ describe("current finished fixture performance ingestion", () => {
     await expect(normalizeCurrentFinishedFixture(bare, 9001)).rejects.toThrow(
       "current_starter_minutes_missing",
     );
+    // Sent as 0 is no better than left out.
+    const zero = fixture();
+    setDetail(zero, 5, 119, 0);
+    await expect(normalizeCurrentFinishedFixture(zero, 9001)).rejects.toThrow(
+      "current_starter_minutes_missing",
+    );
   });
   test("a substitute without minutes never scored, assisted, missed a penalty or put through an own goal", async () => {
     // Unused substitutes come with no statistics at all, or none but a card.
@@ -326,6 +332,12 @@ describe("current finished fixture performance ingestion", () => {
         diagnostic: { fixtureExternalId: "9001", substituteRowsWithoutMinutes: 1 },
       });
     }
+    // Minutes sent as 0 are no minutes: withBench sends every statistic, 0.
+    const zeroMinutes = withBench(fixture(), 1);
+    setDetail(zeroMinutes, 22, 52, 1);
+    await expect(normalizeCurrentFinishedFixture(zeroMinutes, 9001)).rejects.toThrow(
+      "current_statistics_inconsistent",
+    );
   });
   test("rejects wrong state, identities and incomplete starter reconciliation", async () => {
     const scheduled = fixture();

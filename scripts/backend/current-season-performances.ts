@@ -211,7 +211,8 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
       values.set(typeId, value);
       normalizationDetails.push(detail);
     }
-    if (!types.has(MINUTES)) {
+    // Minutes played decide, whether SportsMonks left them out or sent 0.
+    if (!((values.get(MINUTES) ?? 0) > 0)) {
       if (lineup.type_id === 11) startersWithoutMinutes += 1;
       else if (ON_PITCH_TYPES.some((typeId) => (values.get(typeId) ?? 0) > 0))
         benchOnPitchWithoutMinutes += 1;

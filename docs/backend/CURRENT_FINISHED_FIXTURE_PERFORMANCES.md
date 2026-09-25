@@ -46,7 +46,8 @@ explicit null is never zero: a common statistic sent as null stops the fixture.
 Absence cannot hide two things, and the importer checks both:
 
 - Every starter must carry minutes played; one without them means the
-  statistics are not in yet (`current_starter_minutes_missing`).
+  statistics are not in yet (`current_starter_minutes_missing`). Minutes sent
+  as 0 count as none, here and below.
 - A substitute without minutes never came on, so they cannot carry a goal, an
   assist, an own goal or a missed penalty (`current_statistics_inconsistent`).
   Goals conceded are exempt: a substitute who comes on late can carry them
@@ -74,7 +75,10 @@ players carrying more. So the final score decides:
 The database (migration 20260925120000) checks the same against its own final
 score. A mismatch is refused with `CURRENT_GOALS_CONCEDED_MISMATCH`: one of the
 two scores is not final yet, so the fixture waits for the next run. Coverage
-reports `absentStatisticsCountedAsZero` and `goalsConcededFromFinalScore`.
+reports `absentStatisticsCountedAsZero` and `goalsConcededFromFinalScore`. Its
+`detailRows` must be at least one per player who appeared, each of whom
+carries minutes. It no longer needs one per player, since a substitute who
+never came on may carry none.
 
 Type 194 describes a team clean-sheet aggregate and is not used as an individual
 Fantasy flag. Clean-sheet eligibility is derived from official minutes of at
