@@ -21,7 +21,7 @@ human_actions_open:
   - id: BG-0067
     action: Supply Terms of Service and Privacy Policy text (FR + AR). Signup already asks users to accept them and they do not exist.
   - id: BG-0146
-    action: Pronostics — review the Arabic (https://claude.ai/artifact/157wixboiqDFFHqFV6FWt7); check the first visits in the Seline dashboard, and read privacy policy 1.2's Seline lines; decide whether staging is brought up to date for a rehearsal; give the go-ahead for Stage 3 (the owner as the only tester) and, after Fantasy GW1 is finalized, for part 6 (apply-20260925090500).
+    action: Pronostics — check the first visits in the Seline dashboard, and read privacy policy 1.2's Seline lines; decide whether staging is brought up to date for a rehearsal; give the go-ahead for Stage 3 (the owner as the only tester) and, after Fantasy GW1 is finalized, for part 6 (apply-20260925090500, with the Fantasy tick paused for its length).
 
 tasks:
 
@@ -1901,7 +1901,7 @@ tasks:
     plan: docs/backend/PREDICTIONS_DOMAIN_PLAN.md
     runbook: docs/backend/PREDICTIONS_OPERATIONS_RUNBOOK.md
     evidence:
-      - "database layer: 6 migrations (20260925090000-090500), applied to no shared database"
+      - "database layer: 6 migrations (20260925090000-090500); parts 1-5 on production since 2026-09-25 07:33 UTC, part 6 on no shared database yet"
       - "6 pgTAP files, 253 checks; full local suite 71 files / 1959 tests green after a clean db reset; db lint clean; generated types current"
       - "each match locks at its own kick-off against the database clock; a postponed match's stored 0-0 and a not-final full time are never scored"
       - "scoring is re-run from the match's current facts, so provider corrections, home/away swaps, void matches and journée moves are all re-scored; a second pass with nothing new writes nothing"
@@ -1911,9 +1911,11 @@ tasks:
       - "Playwright on mock data: 16 Pronostics journeys in FR and AR at 360/390/430 px pass, 2 entry-point journeys skipped while PRONOSTICS_PROMOTED is off and passing with it on locally; /pronostics added to the anonymous acceptance (320 px to desktop)"
       - "audience measurement: Plausible behind ANALYTICS_ENABLED (off); page views cleaned of '#', tokens, league ids and staff pages; checked on a local production build with Plausible replaced by a recorder; the privacy-policy lines ride the same switch"
       - "2026-09-25, owner: Seline replaces Plausible and ANALYTICS_ENABLED is on; its script (token 041a77dce92a51b) on every page of production builds, counting nothing on its own; page views cleaned as before and sent only from botolago.com, events masked on league pages; privacy policy 1.2 (25 September 2026) names Seline in FR/AR"
-      - "production 2026-09-25 07:33 UTC, owner's go-ahead: parts 1-5 applied switched off through apply-20260925090000-predictions.sql, after two rehearsals that saved nothing; the five recorded files match the repository by sha256, the first score tick idled, the site still shows Bientôt disponible (docs/production/APPLIED_2026_09_25_PREDICTIONS.md)"
-      - "guarded apply scripts for production (parts 1-5 now, part 6 after Fantasy GW1 is scored), rehearsed on a local database built like production: rehearsal saved nothing, the real run passed its checks, a second run was refused; nothing run on production"
+      - "guarded apply scripts for production (parts 1-5, and part 6 after Fantasy GW1 is scored), rehearsed on a local database built like production: rehearsal saved nothing, the real run passed its checks, a second run was refused. The parts 1-5 script has since run on production (2026-09-25 07:33 UTC); the part 6 script has not"
       - "after merging main (2026-09-25): 2723 unit tests, 72 pgTAP files / 1978 tests, db lint clean, generated types current"
+      - "production 2026-09-25 07:33 UTC, owner's go-ahead: parts 1-5 applied switched off through apply-20260925090000-predictions.sql, after two rehearsals that saved nothing; the five recorded files match the repository by sha256, the first score tick idled, the site still shows Bientôt disponible (docs/production/APPLIED_2026_09_25_PREDICTIONS.md)"
+      - "that install ran without pausing the Fantasy tick and the live score refresh, contrary to AGENTS.md. Measured afterwards: no job ran during any of its three transactions, none has failed since, and the state re-read at 07:57 UTC with nothing else running was unchanged. The part 6 script now refuses while the Fantasy tick is on (refused with it on and passed every check with it off, on a local copy of production's state)"
+      - "Arabic reviewed 2026-09-25 (the owner handed the review over): the 152 predictions texts and the 2 entry-point labels read against the French, 19 fixed in src/i18n/dictionary-ar.ts"
     note: >
       Writing the tests found three real defects before anything shipped: a journée with
       matches in play read as "upcoming" (a null from a missing scoring row dropped every
@@ -1921,12 +1923,11 @@ tasks:
       on a not-null error, and the rankings kept a player banned after the last scoring
       run on the public board until the next run.
     remaining:
-      - "owner reviews the Arabic (158 texts on the review page), fixes applied to src/i18n/dictionaries.ts"
       - "owner: check the first visits in the Seline dashboard after the deploy, and read privacy policy 1.2's Seline lines (FR/AR)"
       - "staging (srdrflfrfpwixsllveid) is behind production: no migration after 2026-09-21, no 20260924160000, no pg_cron. A Stage 2 rehearsal there needs a staging parity run first (owner's call); the apply scripts were rehearsed on a local production-like database instead"
-      - "production: apply-20260925090500-fantasy-league-page-skip-empty.sql after Fantasy GW1 is finalized (it checks), on its own go-ahead"
+      - "production: apply-20260925090500-fantasy-league-page-skip-empty.sql after Fantasy GW1 is finalized, with the Fantasy tick paused (it checks both), on its own go-ahead"
       - "Stage 3: switch the game to testers with the owner's account, on the owner's go-ahead (runbook, 'The switch')"
-      - "blocked by BG-0001's lane: the Fantasy season orchestrator failed its runs of 2026-09-24 from 09:57 UTC (provider refresh current_squad_empty_or_oversized, then FANTASY_ORCHESTRATOR_FAILED); GW1 still read 'open' at about 21:50 UTC, after its 13:30 deadline"
+      - "waits on BG-0001's lane: after the Fantasy season orchestrator failed its runs of 2026-09-24 from 09:57 UTC (provider refresh current_squad_empty_or_oversized, then FANTASY_ORCHESTRATOR_FAILED), GW1 was locked (open to live) on 2026-09-25 at 07:20 UTC by the new Fantasy lifecycle tick (#199, #201); part 6 waits for it to be scored and finalized"
       - "deferred: a 'share invite link' button on the Fantasy league invite code, after PR #183 moves that component"
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
