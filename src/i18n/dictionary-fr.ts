@@ -1789,7 +1789,7 @@ export const fr = {
   "predictions.votes.deck": "Pronostics du match",
   "predictions.votes.slide": "Carte {n} sur {total}",
   "predictions.votes.cta": "Votez !",
-  "predictions.votes.total": "Votes : {n}",
+  "predictions.votes.total": "Total des votes : {n}",
   "predictions.votes.closed": "Votes clos",
   "predictions.votes.winner": "Qui va gagner ?",
   "predictions.votes.both_score": "Les deux équipes vont-elles marquer ?",
@@ -1801,6 +1801,8 @@ export const fr = {
   "predictions.votes.team_first": "{team} marque en premier",
   "predictions.votes.no_goal": "Aucun but",
   "predictions.votes.answer_share": "{answer} : {share} des votes",
+  "predictions.votes.answer_share_mine": "{answer} : {share} des votes (votre vote)",
+  "predictions.votes.edit": "Modifier mon vote",
   "predictions.votes.phone":
     "Votre vote est gardé sur ce téléphone. Créez un compte pour qu'il compte.",
   "predictions.votes.error": "Votre vote n'a pas été enregistré. Réessayez.",

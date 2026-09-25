@@ -1712,6 +1712,8 @@ export const ar = {
   "predictions.votes.team_first": "{team} يسجّل أولًا",
   "predictions.votes.no_goal": "بدون أهداف",
   "predictions.votes.answer_share": "{answer}: {share} من الأصوات",
+  "predictions.votes.answer_share_mine": "{answer}: {share} من الأصوات (صوتك)",
+  "predictions.votes.edit": "تعديل صوتي",
   "predictions.votes.phone": "صوتك محفوظ على هذا الهاتف. أنشئ حسابًا ليُحتسب.",
   "predictions.votes.error": "لم يُسجَّل صوتك. حاول مرة أخرى.",
   "predictions.votes.closed_error": "بدأت المباراة: انتهى التصويت.",

@@ -97,8 +97,10 @@ carried 0–0 on 24 Sept 2026). When it is played, it is scored like any other.
 
 Owner decision, 2026-09-25: three fan votes on every match page, in the style
 of Sofascore's, for fun: who wins, will both teams score, who scores first. No
-points; each card shows the share of fans behind each answer. They sit after
-the score card in one swipeable row with dots (`MatchPredictionCard`).
+points; once the player has voted, each card shows the share of fans behind
+each answer and the total, the player's own answer marked, and a pencil brings
+the choice back to change it until kick-off. They sit after the score card in
+one swipeable row with dots (`MatchPredictionCard`).
 
 - `app.match_votes`: one row per account, match and question, changeable until
   kick-off by the same per-match lock as predictions. Written only by

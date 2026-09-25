@@ -87,6 +87,7 @@ export function SwipeDeck({
       {count > 1 ? (
         <div className="flex items-center justify-center">
           {slides.map((slide, index) => (
+            // Sofascore's dots: round, all one size, the current one in ink.
             // The dot stays small; the button around it is a 24 x 32 px
             // target, so a thumb lands on the card it aims at.
             <button
@@ -100,10 +101,10 @@ export function SwipeDeck({
               <span
                 aria-hidden
                 className={cn(
-                  "block h-2 rounded-full transition-[width,background-color] duration-200 motion-reduce:transition-none",
+                  "block h-2.5 w-2.5 rounded-full transition-colors duration-200 motion-reduce:transition-none",
                   index === active
-                    ? "w-5 bg-[color:var(--ui-ink-fg)]"
-                    : "w-2 bg-[color:var(--ui-rule-strong)]",
+                    ? "bg-[color:var(--ui-ink-fg)]"
+                    : "bg-[color:var(--ui-rule-strong)]",
                 )}
               />
             </button>

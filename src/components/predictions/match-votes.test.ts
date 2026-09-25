@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
 import type { OpenMatchVotesDto } from "@/backend/predictions/contracts";
-import { formatShare, questionView, votePercentages, withMyVote } from "./match-votes";
+import {
+  formatShare,
+  formatVoteTotal,
+  questionView,
+  votePercentages,
+  withMyVote,
+} from "./match-votes";
 
 const votes: OpenMatchVotesDto = {
   schemaVersion: 1,
@@ -87,5 +93,17 @@ describe("formatShare", () => {
   });
   test("Arabic keeps the number whole", () => {
     expect(formatShare(56, "ar")).toContain("56");
+  });
+});
+
+describe("formatVoteTotal", () => {
+  test("short, as Sofascore writes it: whole below a thousand, then k and M", () => {
+    const fr = (n: number) => formatVoteTotal(n, "fr").replace(/\s/g, " ");
+    expect([0, 167, 999].map(fr)).toEqual(["0", "167", "999"]);
+    expect([6_900, 8_700, 55_000, 1_234_567].map(fr)).toEqual(["6,9 k", "8,7 k", "55 k", "1,2 M"]);
+  });
+  test("Arabic spells the thousands out", () => {
+    expect(formatVoteTotal(6_900, "ar")).toContain("ألف");
+    expect(formatVoteTotal(167, "ar")).toContain("167");
   });
 });

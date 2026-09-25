@@ -97,6 +97,14 @@ export function withMyVote(
   };
 }
 
+/** A card's vote count, short as Sofascore writes it: "167", "6,9 k", "55 k" ("6,9 ألف" in Arabic). */
+export function formatVoteTotal(total: number, lang: Language): string {
+  return new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(total);
+}
+
 /** "56 %" in French, the Arabic page's own spelling in Arabic. */
 export function formatShare(percent: number, lang: Language): string {
   return new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {

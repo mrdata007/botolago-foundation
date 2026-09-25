@@ -379,6 +379,11 @@ test.describe("match votes, Sofascore style", () => {
     });
   const pill = (page: Page, question: string, choice: string) =>
     page.getByTestId(`match-vote-${question}`).locator(`[data-choice="${choice}"]`);
+  // After a vote the answers are results; the pencil brings the choice back.
+  const edit = (page: Page, lang: Language, question: string) =>
+    page
+      .getByTestId(`match-vote-${question}`)
+      .getByRole("button", { name: copy(lang, "predictions.votes.edit"), exact: true });
 
   for (const lang of ["fr", "ar"] as const) {
     test(`${lang}: a visitor swipes to the votes, votes, and sees the fans' shares`, async ({
@@ -403,16 +408,29 @@ test.describe("match votes, Sofascore style", () => {
       await expect(winner).not.toContainText(/[%٪]/);
 
       await pill(page, "winner", "away").click();
-      await expect(pill(page, "winner", "away")).toHaveAttribute("aria-pressed", "true");
-      await expect(pill(page, "winner", "home")).toHaveAttribute("aria-pressed", "false");
+      await expect(pill(page, "winner", "away")).toHaveAttribute("data-mine", "true");
+      await expect(pill(page, "winner", "home")).toHaveAttribute("data-mine", "false");
       for (const choice of ["home", "draw", "away"])
         await expect(pill(page, "winner", choice)).toContainText(/\d[\s\u200e\u200f]*[%٪]/);
+      await expect(winner).toContainText(
+        copy(lang, "predictions.votes.total").split("{n}")[0]!.trim(),
+      );
       await expect(page.getByTestId("match-votes-phone")).toBeVisible();
+      await expectNothingOffScreen(page);
       await expectSwipeSlidesFit(page);
+
+      // Changed with the pencil, as on Sofascore: the choice comes back,
+      // the current answer marked, and the new one is kept.
+      await edit(page, lang, "winner").click();
+      await expect(winner).toContainText(copy(lang, "predictions.votes.cta"));
+      await expect(pill(page, "winner", "away")).toHaveAttribute("aria-pressed", "true");
+      await pill(page, "winner", "home").click();
+      await expect(pill(page, "winner", "home")).toHaveAttribute("data-mine", "true");
+      await expect(pill(page, "winner", "away")).toHaveAttribute("data-mine", "false");
 
       // Kept on the phone across a reload.
       await reloadHydrated(page, lang);
-      await expect(pill(page, "winner", "away")).toHaveAttribute("aria-pressed", "true");
+      await expect(pill(page, "winner", "home")).toHaveAttribute("data-mine", "true");
 
       // A swipe to the last card moves the dots with it.
       await page.getByTestId("match-vote-first_goal").scrollIntoViewIfNeeded();
@@ -423,7 +441,7 @@ test.describe("match votes, Sofascore style", () => {
         .evaluate((slide) => slide.scrollIntoView({ inline: "start", block: "nearest" }));
       await expect(dot(page, lang, 4)).toHaveAttribute("aria-current", "true");
       await pill(page, "first_goal", "none").click();
-      await expect(pill(page, "first_goal", "none")).toHaveAttribute("aria-pressed", "true");
+      await expect(pill(page, "first_goal", "none")).toHaveAttribute("data-mine", "true");
       await expectNothingOffScreen(page);
 
       await diagnostics.verify(testInfo);
@@ -439,23 +457,24 @@ test.describe("match votes, Sofascore style", () => {
 
       await dot(page, lang, 3).click();
       await pill(page, "both_score", "yes").click();
-      await expect(pill(page, "both_score", "yes")).toHaveAttribute("aria-pressed", "true");
+      await expect(pill(page, "both_score", "yes")).toHaveAttribute("data-mine", "true");
 
       await signIn(page, lang, `/matches/${NEXT}`);
       await dot(page, lang, 3).click();
-      await expect(pill(page, "both_score", "yes")).toHaveAttribute("aria-pressed", "true");
+      await expect(pill(page, "both_score", "yes")).toHaveAttribute("data-mine", "true");
       await expect(page.getByTestId("match-votes-phone")).toHaveCount(0);
       await expect
         .poll(() => page.evaluate((key) => window.localStorage.getItem(key), GUEST_VOTES))
         .toBeNull();
 
-      // Changed on the account, and still there after a reload.
+      // Changed on the account with the pencil, and still there after a reload.
+      await edit(page, lang, "both_score").click();
       await pill(page, "both_score", "no").click();
-      await expect(pill(page, "both_score", "no")).toHaveAttribute("aria-pressed", "true");
+      await expect(pill(page, "both_score", "no")).toHaveAttribute("data-mine", "true");
       await reloadHydrated(page, lang);
       await dot(page, lang, 3).click();
-      await expect(pill(page, "both_score", "no")).toHaveAttribute("aria-pressed", "true");
-      await expect(pill(page, "both_score", "yes")).toHaveAttribute("aria-pressed", "false");
+      await expect(pill(page, "both_score", "no")).toHaveAttribute("data-mine", "true");
+      await expect(pill(page, "both_score", "yes")).toHaveAttribute("data-mine", "false");
 
       await diagnostics.verify(testInfo);
     });
