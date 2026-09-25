@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildSitemapXml, SITEMAP_NEWS_LIMIT, type SitemapNewsEntry } from "./sitemap";
 
@@ -74,6 +74,27 @@ describe("sitemap.xml", () => {
     // the licensed archive alone is ~15,700 editions.
     expect(route).toContain("getSitemapEntries(SITEMAP_NEWS_LIMIT)");
     expect(route).toContain('"content-type": "application/xml; charset=utf-8"');
+  });
+
+  test("the latest api.news_sitemap_entries in the migrations stays set-based", () => {
+    // 20260924200600 was written before 20260924163000's set-based rewrite and
+    // renumbered after it, so it quietly put the per-edition helper calls
+    // back: 8.4 s on production against the 3 s anon timeout, and a 503
+    // sitemap. The migration that defines the function last is what runs.
+    const directory = join(import.meta.dir, "../../supabase/migrations");
+    const marker = "create or replace function api.news_sitemap_entries(";
+    const latest = readdirSync(directory)
+      .filter((name) => name.endsWith(".sql"))
+      .sort()
+      .filter((name) => readFileSync(join(directory, name), "utf8").includes(marker))
+      .at(-1);
+    expect(latest).toBeDefined();
+    const source = readFileSync(join(directory, latest!), "utf8");
+    const body = source.slice(source.indexOf(marker)).split("\n$$;")[0]!;
+    expect(body).not.toMatch(
+      /news_is_public\(|news_content_updated_at\(|news_story_is_publishable\(/,
+    );
+    expect(body).toContain("'contentUpdatedAt'");
   });
 
   test("lastmod is the last real change, else publication, never bookkeeping", () => {

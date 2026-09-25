@@ -59,5 +59,13 @@ select extensions.is((pg_temp.sitemap_entry() ->> 'contentUpdatedAt')::timestamp
 select extensions.ok(pg_temp.detail() ? 'updatedAt' and pg_temp.detail() ? 'bodyHtml',
   'the rest of the detail is unchanged');
 
+-- 20260925100000: the sitemap stays set-based. Calling the per-row helpers
+-- (SECURITY DEFINER, never inlined) took it to 8.4 s on production, past the
+-- 3 s anon timeout, and /sitemap.xml answered 503 until it was rewritten.
+select extensions.ok(
+  pg_get_functiondef('api.news_sitemap_entries(integer)'::regprocedure)
+    !~ 'news_is_public\(|news_content_updated_at\(|news_story_is_publishable\(',
+  'the sitemap calls no per-edition helper');
+
 select * from extensions.finish();
 rollback;
