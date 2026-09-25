@@ -69,27 +69,113 @@ describe("server-rendered page data", () => {
 
   // 2026-09-25: with production's database overloaded, reads neither answered
   // nor failed for many seconds, and the server render waited for all of them.
-  test("a read slower than the budget does not hold the page, and is not handed over", async () => {
+  test("a read still loading at the deadline is cancelled and not handed over", async () => {
     onServer();
     const server = client();
+    const aborted: string[] = [];
+    const neverAnswers =
+      (name: string) =>
+      ({ signal }: { signal: AbortSignal }) =>
+        new Promise<never>((_, reject) => {
+          signal.addEventListener("abort", () => {
+            aborted.push(name);
+            reject(new Error("aborted"));
+          });
+        });
     const started = Date.now();
     await prefetchForSsr(
       server,
-      [{ queryKey: ["football", "seasons", "fr"], queryFn: () => new Promise(() => {}) }],
+      [{ queryKey: ["football", "seasons", "fr"], queryFn: neverAnswers("seasons") }],
       20,
     );
+    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(aborted).toEqual(["seasons"]);
+    expect(server.getQueryState(["football", "seasons", "fr"])?.fetchStatus).toBe("idle");
+
+    const feed = client();
     await prefetchFirstPageForSsr(
-      server,
+      feed,
       {
         queryKey: ["news", "feed-v2", "fr", null, null],
-        queryFn: () => new Promise(() => {}),
+        queryFn: neverAnswers("feed"),
         initialPageParam: null,
         getNextPageParam: () => null,
       },
       20,
     );
-    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(aborted).toEqual(["seasons", "feed"]);
     expect(dehydrate(server, SSR_DEHYDRATE_OPTIONS).queries).toEqual([]);
+    expect(dehydrate(feed, SSR_DEHYDRATE_OPTIONS).queries).toEqual([]);
+  });
+
+  // The app's query client retries a failed read, on the server too: a read
+  // left running past the deadline would keep hitting the database.
+  test("cancelling at the deadline stops the retries", async () => {
+    onServer();
+    const server = new QueryClient({
+      defaultOptions: { queries: { retry: 50, retryDelay: 2 } },
+    });
+    clients.push(server);
+    let calls = 0;
+    await prefetchForSsr(
+      server,
+      [
+        {
+          queryKey: ["football", "seasons", "fr"],
+          queryFn: async () => {
+            calls += 1;
+            throw new Error("statement timeout");
+          },
+        },
+      ],
+      25,
+    );
+    const atDeadline = calls;
+    expect(atDeadline).toBeGreaterThan(0);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(calls).toBe(atDeadline);
+  });
+
+  test("a page's steps share one deadline: a step after it starts nothing", async () => {
+    onServer();
+    const server = client();
+    await prefetchForSsr(
+      server,
+      [{ queryKey: ["football", "seasons", "fr"], queryFn: () => new Promise(() => {}) }],
+      20,
+    );
+    let secondStarted = false;
+    await prefetchForSsr(
+      server,
+      [
+        {
+          queryKey: ["football", "standings", "fr"],
+          queryFn: async () => {
+            secondStarted = true;
+            return [];
+          },
+        },
+      ],
+      20,
+    );
+    expect(secondStarted).toBe(false);
+  });
+
+  test("a second step within the deadline is still loaded and handed over", async () => {
+    onServer();
+    const server = client();
+    await prefetchForSsr(server, [
+      { queryKey: ["football", "seasons", "fr"], queryFn: async () => ["2026"] },
+    ]);
+    await prefetchForSsr(server, [
+      { queryKey: ["football", "standings", "fr"], queryFn: async () => ["WAC"] },
+    ]);
+    expect(dehydrate(server, SSR_DEHYDRATE_OPTIONS).queries.map((query) => query.queryKey)).toEqual(
+      [
+        ["football", "seasons", "fr"],
+        ["football", "standings", "fr"],
+      ],
+    );
   });
 
   test("the budget is a few seconds, enough for a healthy database", () => {
