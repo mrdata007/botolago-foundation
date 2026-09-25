@@ -24,6 +24,9 @@
 -- their latest lineup, else at the one club whose squad lists them; a player
 -- SportsMonks does not show is left where they are. Nobody is removed from the
 -- game. Fantasy teams keep every player they hold, and no price changes.
+-- A player who moves keeps no record at their old club this season (the
+-- statistics import checks a club by its dates); one with this season's
+-- statistics for another club is left for a person to date the move.
 create table app_private.current_player_list_observations (
   id uuid primary key default gen_random_uuid(),
   season_id uuid not null references app.seasons(id) on delete restrict,
@@ -402,6 +405,14 @@ begin
       case
         when mapped.club_id is null then 'skip_ambiguous_club'
         when mapped.mapped_player_id is not null and not mapped.mapping_active then 'skip_inactive_mapping'
+        -- Statistics this season for another club mean a move during the
+        -- season, not a summer transfer: left for a person to date.
+        when mapped.mapped_player_id is not null and exists (
+          select 1 from app.player_fixture_performances performance
+          where performance.player_id = mapped.mapped_player_id
+            and performance.football_season_id = target_season.id
+            and performance.active and performance.team_id <> mapped.club_id
+        ) then 'skip_played_for_another_club'
         when mapped.mapped_player_id is not null then 'mapped'
         when unique_match.player_id is not null then 'link'
         when exists (select 1 from name_matches match
@@ -580,6 +591,7 @@ begin
         'skipAmbiguousName', count(*) filter (where outcome.kind = 'skip_ambiguous_name'),
         'skipNoPosition', count(*) filter (where outcome.kind = 'skip_no_position'),
         'skipInactiveMapping', count(*) filter (where outcome.kind = 'skip_inactive_mapping'),
+        'skipPlayedForAnotherClub', count(*) filter (where outcome.kind = 'skip_played_for_another_club'),
         'clubLimitViolations', (select count(*) from violations)
       ) from outcome),
     'changes', changes.items,
@@ -682,6 +694,7 @@ declare
   shirt integer;
   source_version text;
   touched integer;
+  removed_memberships jsonb := '[]'::jsonb;
   result jsonb;
 begin
   if not app_private.is_service_request() then
@@ -737,12 +750,19 @@ begin
   end if;
   source_version := 'sportsmonks-player-list:' || p_observation_id::text;
 
-  -- 1. Hand-typed duplicates nobody has used leave the list and the game.
+  -- 1. Hand-typed duplicates nobody has used leave the list and the game. Their
+  --    club records for this season are removed and kept in the result.
   for change in select value from jsonb_array_elements(plan -> 'changes') where value ? 'duplicatePlayerId'
   loop
-    update app.team_memberships membership set active = false
-    where membership.player_id = (change ->> 'duplicatePlayerId')::uuid
-      and membership.season_id = target_season.id and membership.active;
+    with removed as (
+      delete from app.team_memberships membership
+      where membership.player_id = (change ->> 'duplicatePlayerId')::uuid
+        and membership.season_id = target_season.id
+      returning to_jsonb(membership) as row_data
+    )
+    select removed_memberships || coalesce(jsonb_agg(removed.row_data), '[]'::jsonb)
+    into removed_memberships
+    from removed;
     if change ? 'duplicateFantasyPlayerId' then
       update app.fantasy_players fantasy_player set active = false, eligible = false
       where fantasy_player.id = (change ->> 'duplicateFantasyPlayerId')::uuid
@@ -755,13 +775,24 @@ begin
     end if;
   end loop;
 
-  -- 2. Players who moved leave their old club.
-  for change in select value from jsonb_array_elements(plan -> 'changes') where value ->> 'membership' = 'move'
+  -- 2. A player who moved or joins keeps no other club this season. The
+  --    statistics import checks a club by its dates, not by active, so the
+  --    other records are removed rather than deactivated; this season's moves
+  --    are summer transfers (one during the season is skipped by the plan).
+  --    The removed rows are kept in the result.
+  for change in select value from jsonb_array_elements(plan -> 'changes')
+    where value ->> 'membership' in ('move', 'join') and value ? 'playerId'
   loop
-    update app.team_memberships membership set active = false
-    where membership.player_id = (change ->> 'playerId')::uuid
-      and membership.season_id = target_season.id and membership.active
-      and membership.team_id <> (change ->> 'clubId')::uuid;
+    with removed as (
+      delete from app.team_memberships membership
+      where membership.player_id = (change ->> 'playerId')::uuid
+        and membership.season_id = target_season.id
+        and membership.team_id <> (change ->> 'clubId')::uuid
+      returning to_jsonb(membership) as row_data
+    )
+    select removed_memberships || coalesce(jsonb_agg(removed.row_data), '[]'::jsonb)
+    into removed_memberships
+    from removed;
   end loop;
 
   -- 3. Hand-typed players get their SportsMonks id; new players are created
@@ -881,7 +912,8 @@ begin
     'joined', (plan #>> '{summary,join}')::integer,
     'fantasyMoved', (plan #>> '{summary,fantasyMove}')::integer,
     'fantasyAdded', (plan #>> '{summary,fantasyAdd}')::integer,
-    'duplicatesRetired', (plan #>> '{summary,retireDuplicate}')::integer
+    'duplicatesRetired', (plan #>> '{summary,retireDuplicate}')::integer,
+    'removedMemberships', removed_memberships
   );
   insert into app_private.current_player_list_updates (observation_id, plan_digest, plan, result)
   values (p_observation_id, plan ->> 'digest', plan, result);

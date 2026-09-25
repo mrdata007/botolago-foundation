@@ -58,6 +58,7 @@ insert into roster values
   (11, 'Bilal Bee', 'defender', 2, true),
   (12, 'Bouchaib Bee', 'defender', 2, true),
   (13, 'Brahim Bee', 'forward', 2, true),
+  (15, 'Karim Played', 'forward', 1, true),      -- scored for A this season; B's squad lists them
   (14, 'Hatim Bouhbouh', 'forward', 2, false),     -- played for B, never linked
   (16, 'Mouad Goulouss', 'midfielder', 2, false),  -- the hand-typed duplicate, unused
   (19, 'Ahmed Baha', 'forward', 3, false),         -- two of them at C
@@ -74,6 +75,17 @@ insert into app.team_memberships (player_id, team_id, season_id, shirt_number, v
 select md5('player-list-' || n)::uuid, ('63a00000-0000-4000-8000-00000000000' || club)::uuid,
   '43a00000-0000-4000-8000-000000000001', null, current_date - 30, current_date + 300, true
 from roster where club is not null;
+-- Karim Played has this season's statistics for club A.
+insert into app.player_fixture_performances (
+  football_season_id, fixture_id, player_id, team_id, position, source_provider, source_version,
+  started, appeared, minutes, goals, assists, clean_sheets, goals_conceded, saves, penalties_saved,
+  penalties_missed, yellow_cards, red_cards, second_yellow_dismissals, own_goals, active, provider_observed_at
+) values (
+  '43a00000-0000-4000-8000-000000000001', '73a00000-0000-4000-8000-000000000001',
+  md5('player-list-15')::uuid, '63a00000-0000-4000-8000-000000000001', 'forward', 'sportsmonks',
+  'sportsmonks-current-fixture:' || repeat('a', 64),
+  true, true, 90, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, statement_timestamp()
+);
 -- Last season, Chafik Returner was rated 7.5 with confidence 0.8.
 insert into app.team_memberships (player_id, team_id, season_id, valid_from, valid_to, active)
 values (md5('player-list-3')::uuid, '63a00000-0000-4000-8000-000000000003',
@@ -146,7 +158,8 @@ insert into sighting values
   (10, 1, 'Yassine Belfada', 'midfielder'),
   (11, 2, 'Bilal Bee', 'defender'),
   (12, 2, 'Bouchaib Bee', 'defender'),
-  (13, 2, 'Brahim Bee', 'forward');
+  (13, 2, 'Brahim Bee', 'forward'),
+  (15, 2, 'Karim Played', 'forward');
 create temp table observation_input on commit drop as
 select jsonb_build_object(
   'providerName', 'sportsmonks',
@@ -262,22 +275,23 @@ create temp table planned on commit drop as
 select api.service_plan_current_player_list((result ->> 'observationId')::uuid) as plan from recorded;
 
 reset role;
-select extensions.is((select (result ->> 'squadPlayers')::integer from recorded), 11,
-  'the observation holds the eleven squad rows');
+select extensions.is((select (result ->> 'squadPlayers')::integer from recorded), 12,
+  'the observation holds the twelve squad rows');
 select extensions.is(
   (select plan -> 'summary' from planned),
   jsonb_build_object(
-    'observedPlayers', 13, 'changes', 6, 'unchanged', 4, 'fromLineups', 4,
+    'observedPlayers', 14, 'changes', 6, 'unchanged', 4, 'fromLineups', 4,
     'link', 1, 'add', 1, 'move', 3, 'join', 1, 'fantasyMove', 3, 'fantasyAdd', 2,
     'retireDuplicate', 1, 'usedDuplicate', 1,
     'skipAmbiguousClub', 1, 'skipAmbiguousName', 1, 'skipNoPosition', 1, 'skipInactiveMapping', 0,
+    'skipPlayedForAnotherClub', 1,
     'clubLimitViolations', 1),
   'the plan: three moves, one return, one link, one newcomer, one duplicate retired'
 );
 select extensions.is(
   (select jsonb_agg(value ->> 'reason' order by value ->> 'externalPlayerId') from planned, jsonb_array_elements(plan -> 'skipped')),
-  '["skip_ambiguous_club", "skip_no_position", "skip_ambiguous_name"]'::jsonb,
-  'two squads, no position, or two hand-typed namesakes: left alone'
+  '["skip_ambiguous_club", "skip_no_position", "skip_ambiguous_name", "skip_played_for_another_club"]'::jsonb,
+  'two squads, no position, two hand-typed namesakes, or this season''s statistics elsewhere: left alone'
 );
 select extensions.is(
   (select (value ->> 'fantasyPrice')::numeric from planned, jsonb_array_elements(plan -> 'changes') where value ->> 'externalPlayerId' = '81003'),
@@ -353,10 +367,28 @@ select pg_temp.waiting($$select api.service_apply_current_player_list((result ->
   from recorded, planned$$) as result;
 reset role;
 select extensions.is(
-  (select result - 'observationId' - 'planDigest' from applied),
+  (select result - 'observationId' - 'planDigest' - 'removedMemberships' from applied),
   jsonb_build_object('changes', 6, 'linked', 1, 'added', 1, 'moved', 3, 'joined', 1,
     'fantasyMoved', 3, 'fantasyAdded', 2, 'duplicatesRetired', 1),
   'applied as planned'
+);
+select extensions.is(
+  (select array_agg((value ->> 'player_id')::uuid order by (value ->> 'player_id')::uuid)
+   from applied, jsonb_array_elements(result -> 'removedMemberships')),
+  (select array_agg(id order by id) from (select md5('player-list-' || n)::uuid as id from unnest(array[2, 6, 10, 16]) n) ids),
+  'the three movers'' old club records and the retired double''s are removed, and kept in the result'
+);
+select extensions.is(
+  (select count(*)::integer from app.team_memberships
+   where player_id = md5('player-list-2')::uuid and season_id = '43a00000-0000-4000-8000-000000000001'
+     and team_id = '63a00000-0000-4000-8000-000000000001'),
+  0, 'so the statistics import, which checks dates, finds Badr Mover at club B only'
+);
+select extensions.is(
+  (select array_agg(team.short_name) from app.team_memberships membership
+   join app.teams team on team.id = membership.team_id
+   where membership.player_id = md5('player-list-15')::uuid and membership.active),
+  array['Club A'], 'Karim Played, with statistics for club A, is left at club A'
 );
 
 create temp view current_club as

@@ -35,7 +35,7 @@ For each player placed at a club:
 | The player                                         | What happens                                                                                               |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Listed at that club                                | Nothing                                                                                                    |
-| Listed at another club                             | Moves: the old club's record for this season closes, the new one opens                                     |
+| Listed at another club                             | Moves: their other club records for this season are removed (kept in the result), the new one opens        |
 | Known but with no club this season                 | Joins the club                                                                                             |
 | Unknown, but typed in by hand at that club by name | Gets their SportsMonks id                                                                                  |
 | Unknown, and matched to no one                     | Created, as the squad import creates players, and joins the club (a player without a position is left out) |
@@ -44,6 +44,13 @@ Some players stay as they are:
 
 - A player with two hand-typed namesakes at the club.
 - A player with no position anywhere.
+- A player with this season's statistics for another club: that is a move
+  during the season, not a summer transfer, and a person dates it.
+
+A move removes the player's other club records for this season rather than
+closing them, because the statistics import checks a club by its dates, not
+by `active`. This season's moves are summer transfers, so the player never
+belonged to the old club this season.
 
 Names match when they are equal without accents and case, and at least two
 words long (a surname alone never matches), at the same club, one to one.
@@ -111,9 +118,12 @@ Before the first run, the migration itself goes on production with
 
 Every applied change is kept in `app_private.current_player_list_updates.plan`
 with what it replaced (`fromClubIds`, `fromFantasyClubId`,
-`duplicatePlayerId`), so each can be reversed by hand:
+`duplicatePlayerId`, and the result's `removedMemberships`), so each can be
+reversed by hand:
 
-- reopen the old club record and close the new one;
+- put back a removed club record (the result's `removedMemberships` holds each
+  row whole) and remove the new one;
 - restore the Fantasy club;
 - delete a new mapping;
-- set a retired duplicate `active` and `eligible` again.
+- set a retired duplicate `active` and `eligible` again, and put back its club
+  record.
