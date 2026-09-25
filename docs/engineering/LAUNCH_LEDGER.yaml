@@ -21,7 +21,7 @@ human_actions_open:
   - id: BG-0067
     action: Supply Terms of Service and Privacy Policy text (FR + AR). Signup already asks users to accept them and they do not exist.
   - id: BG-0146
-    action: Pronostics — review the Arabic (https://claude.ai/artifact/157wixboiqDFFHqFV6FWt7); set up Plausible for botolago.com and send its install snippet; approve the privacy-policy update and give it a version and date; decide whether staging is brought up to date for a rehearsal; run scripts/backend/apply-20260925090000-predictions.sql on production when ready (part 6 waits for Fantasy GW1).
+    action: Pronostics — review the Arabic (https://claude.ai/artifact/157wixboiqDFFHqFV6FWt7); check the first visits in the Seline dashboard once the site is published, and read privacy policy 1.2's Seline lines; decide whether staging is brought up to date for a rehearsal; run scripts/backend/apply-20260925090000-predictions.sql on production when ready (part 6 waits for Fantasy GW1).
 
 tasks:
 
@@ -1910,6 +1910,7 @@ tasks:
       - "app: /pronostics (predict, results, rankings, rules), guest play kept on the phone and moved to the account at sign-in, leagues (create, join by code or link, leave), entry points and sharing behind PRONOSTICS_PROMOTED (off), FR/AR with RTL"
       - "Playwright on mock data: 16 Pronostics journeys in FR and AR at 360/390/430 px pass, 2 entry-point journeys skipped while PRONOSTICS_PROMOTED is off and passing with it on locally; /pronostics added to the anonymous acceptance (320 px to desktop)"
       - "audience measurement: Plausible behind ANALYTICS_ENABLED (off); page views cleaned of '#', tokens, league ids and staff pages; checked on a local production build with Plausible replaced by a recorder; the privacy-policy lines ride the same switch"
+      - "2026-09-25, owner: Seline replaces Plausible and ANALYTICS_ENABLED is on; its script (token 041a77dce92a51b) on every page of production builds, counting nothing on its own; page views cleaned as before and sent only from botolago.com, events masked on league pages; privacy policy 1.2 (25 September 2026) names Seline in FR/AR"
       - "guarded apply scripts for production (parts 1-5 now, part 6 after Fantasy GW1 is scored), rehearsed on a local database built like production: rehearsal saved nothing, the real run passed its checks, a second run was refused; nothing run on production"
       - "after merging main (2026-09-25): 2723 unit tests, 72 pgTAP files / 1978 tests, db lint clean, generated types current"
     note: >
@@ -1920,7 +1921,7 @@ tasks:
       run on the public board until the next run.
     remaining:
       - "owner reviews the Arabic (158 texts on the review page), fixes applied to src/i18n/dictionaries.ts"
-      - "owner: Plausible site botolago.com (goals, hostname allow-list, snippet checked against src/lib/analytics.ts); approves the policy update and gives it a new version and date (section 12: 7 days' notice); then ANALYTICS_ENABLED on, before Stage 4"
+      - "owner: check the first visits in the Seline dashboard after the deploy, and read privacy policy 1.2's Seline lines (FR/AR)"
       - "staging (srdrflfrfpwixsllveid) is behind production: no migration after 2026-09-21, no 20260924160000, no pg_cron. A Stage 2 rehearsal there needs a staging parity run first (owner's call); the apply scripts were rehearsed on a local production-like database instead"
       - "production: apply-20260925090000-predictions.sql on the owner's go-ahead at a quiet moment; apply-20260925090500-fantasy-league-page-skip-empty.sql after Fantasy GW1 is finalized (it checks)"
       - "blocked by BG-0001's lane: the Fantasy season orchestrator failed its runs of 2026-09-24 from 09:57 UTC (provider refresh current_squad_empty_or_oversized, then FANTASY_ORCHESTRATOR_FAILED); GW1 still read 'open' at about 21:50 UTC, after its 13:30 deadline"

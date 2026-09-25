@@ -75,15 +75,19 @@ import { LEGAL_DOCUMENTS, type LegalBlock, type LegalDocument } from "./document
 // be revisited when that changes rather than when the company registers:
 //
 //   7. "Aucun outil de mesure d'audience" / "لا تُستعمل أي أداة لقياس الجمهور"
-//        2026-09-24 (BG-0146): the owner chose Plausible Analytics, cookie-free
-//        and hosted in Germany. The row and the cookie clause now follow
-//        ANALYTICS_ENABLED, the same switch that loads the script: off, they
-//        say no tool is used; on, they name Plausible, what it counts and
-//        where, and that it sets no cookie and stores nothing on the device;
-//        the cookie clause also says a visitor's predictions stay on the
-//        phone until they sign up. The wording awaits the owner's approval,
-//        and the update a new version and date, before the switch is turned
-//        on. Asserted below, whichever way the switch is set.
+//        2026-09-24 (BG-0146): the owner chose Plausible Analytics; on
+//        2026-09-25 they replaced it with Seline Analytics (Warsaw; hosted in
+//        the EU with Hetzner; no cookie on visitors' devices; IP addresses
+//        never stored, only hashed with a salt that changes daily, per
+//        seline.com/privacy) and switched it on. The row and the cookie clause
+//        follow ANALYTICS_ENABLED, the same switch that loads the script: off,
+//        they say no tool is used; on, they name Seline, what it counts and
+//        where, that it sets no cookie and keeps no identifier on the device,
+//        and the one thing it does keep there: a flag in the tab's session
+//        storage ("seline:referrer") so a reload does not count the referring
+//        site twice. The cookie clause also says a visitor's predictions stay
+//        on the phone until they sign up. The policy went to version 1.2 with
+//        the switch. Asserted below, whichever way the switch is set.
 //
 //   8. "Supabase Auth" as the mail sender, "selon la politique de Supabase"
 //        True today: confirmation mail is sent by Supabase's own service from
@@ -240,30 +244,39 @@ describe("content integrity", () => {
 // Item 7 above: the policy says what the build does. The script loads only
 // when ANALYTICS_ENABLED is on (src/lib/analytics.ts), and so does the text
 // naming it. The sentence about a visitor's predictions on the phone rides
-// the same switch: one policy update for Pronostics' public launch, so the
-// version in force (1.1) never changes silently. Section 12 promises 7 days'
-// notice of a substantial change, so that update carries a new version and
-// date before the switch is turned on.
+// the same switch, so the policy changed once, as version 1.2, when the
+// switch went on; it never changes silently.
 describe("the privacy policy matches the analytics switch", () => {
   const fr = () => allText(LEGAL_DOCUMENTS.privacy.fr).join(" ");
   const ar = () => allText(LEGAL_DOCUMENTS.privacy.ar).join(" ");
 
-  it("names Plausible, in both languages, exactly when the script can load", () => {
-    expect(fr().includes("Plausible Analytics")).toBe(ANALYTICS_ENABLED);
-    expect(ar().includes("Plausible Analytics")).toBe(ANALYTICS_ENABLED);
+  it("names Seline, in both languages, exactly when the script can load", () => {
+    expect(fr().includes("Seline Analytics")).toBe(ANALYTICS_ENABLED);
+    expect(ar().includes("Seline Analytics")).toBe(ANALYTICS_ENABLED);
     expect(fr().includes("Aucun outil de mesure d'audience")).toBe(!ANALYTICS_ENABLED);
     expect(ar().includes("لا تُستعمل أي أداة لقياس الجمهور")).toBe(!ANALYTICS_ENABLED);
   });
 
-  it("says where Plausible keeps the data and that it sets no cookie", () => {
+  it("says where Seline keeps the data, that it sets no cookie and keeps no IP", () => {
     if (!ANALYTICS_ENABLED) {
       expect(fr()).toContain("aucun cookie de mesure d'audience n'est déposé à ce jour");
       return;
     }
-    expect(fr()).toContain("Union européenne — Allemagne");
-    expect(ar()).toContain("الاتحاد الأوروبي — ألمانيا");
-    expect(fr()).toContain("ne dépose aucun cookie et n'enregistre rien sur votre appareil");
-    expect(ar()).toContain("لا تحفظ أي شيء على جهازك");
+    expect(fr()).toContain("l'adresse IP n'est pas conservée");
+    expect(ar()).toContain("ولا يُحتفظ بعنوان IP");
+    expect(fr()).toContain(
+      "ne dépose aucun cookie et ne garde aucun identifiant sur votre appareil",
+    );
+    expect(ar()).toContain("ولا تحفظ أي معرّف على جهازك");
+    // The one thing the script does keep: a flag for the tab's session.
+    expect(fr()).toContain("effacée à la fermeture de l'onglet");
+    expect(ar()).toContain("تُمحى عند إغلاق علامة التبويب");
+  });
+
+  it("carries the version that added it", () => {
+    if (!ANALYTICS_ENABLED) return;
+    expect(fr()).toContain("Version 1.2 — en vigueur au 25 septembre 2026.");
+    expect(ar()).toContain("الإصدار 1.2 — ساري المفعول ابتداءً من 25 سبتمبر 2026.");
   });
 
   it("says, in the same update, that a visitor's predictions stay on the device", () => {
@@ -274,7 +287,7 @@ describe("the privacy policy matches the analytics switch", () => {
   it("holds both wordings, so switching changes the policy with the script", () => {
     const source = readFileSync(join(import.meta.dir, "documents.ts"), "utf8");
     for (const text of [
-      "Plausible Analytics",
+      "Seline Analytics",
       "Aucun outil de mesure d'audience",
       "لا تُستعمل أي أداة لقياس الجمهور",
     ]) {

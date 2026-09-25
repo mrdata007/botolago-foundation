@@ -322,7 +322,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "Version 1.1 — en vigueur au 24 septembre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.",
+        text: "Version 1.2 — en vigueur au 25 septembre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.",
       },
       { type: "heading", text: "1. Responsable du traitement" },
       {
@@ -429,9 +429,9 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
           // line go live together (BG-0146).
           ANALYTICS_ENABLED
             ? [
-                "Plausible Analytics",
-                "mesure d'audience : pages vues et événements agrégés, sans cookie ni identifiant",
-                "Union européenne — Allemagne",
+                "Seline Analytics",
+                "mesure d'audience : pages vues et événements agrégés, sans cookie ; l'adresse IP n'est pas conservée",
+                "Union européenne",
               ]
             : ["Aucun outil de mesure d'audience", "non utilisé à ce jour", "—"],
           [
@@ -495,12 +495,12 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "11. Cookies et traceurs" },
       {
         type: "paragraph",
-        // Follows ANALYTICS_ENABLED (BG-0146): the policy update that goes with
-        // Pronostics' public launch changes this paragraph in one release.
+        // Follows ANALYTICS_ENABLED (BG-0146): the policy update that went live
+        // with the Seline script (version 1.2) changed this paragraph with it.
         text:
           "L'Application mobile n'utilise pas de cookies. Elle utilise des identifiants techniques (jeton de session, identifiant push) nécessaires à son fonctionnement. " +
           (ANALYTICS_ENABLED
-            ? "Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires. Sa mesure d'audience (Plausible Analytics) ne dépose aucun cookie et n'enregistre rien sur votre appareil."
+            ? "Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires. Sa mesure d'audience (Seline Analytics) ne dépose aucun cookie et ne garde aucun identifiant sur votre appareil ; seule une mention technique, effacée à la fermeture de l'onglet, lui évite de compter deux fois le site d'où vous venez."
             : "Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires ; aucun cookie de mesure d'audience n'est déposé à ce jour.") +
           (ANALYTICS_ENABLED
             ? " Les pronostics faits sans compte sont conservés dans le stockage local de votre appareil, ce qui est nécessaire au service que vous utilisez ; ils n'en sortent que si vous créez un compte, auquel ils sont alors rattachés."
@@ -523,7 +523,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "الإصدار 1.1 — ساري المفعول ابتداءً من 24 سبتمبر 2026. تشرح هذه السياسة البيانات التي تجمعها BotolaGO، ولماذا، ومع من تُشارك، وما هي حقوقك، طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي.",
+        text: "الإصدار 1.2 — ساري المفعول ابتداءً من 25 سبتمبر 2026. تشرح هذه السياسة البيانات التي تجمعها BotolaGO، ولماذا، ومع من تُشارك، وما هي حقوقك، طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي.",
       },
       { type: "heading", text: "1. المسؤول عن المعالجة" },
       {
@@ -614,9 +614,9 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
           ["Apple / Google", "توزيع التطبيق، الإشعارات، تسجيل الدخول الاجتماعي", "وفق سياساتهما"],
           ANALYTICS_ENABLED
             ? [
-                "Plausible Analytics",
-                "قياس الجمهور: الصفحات المعروضة وأحداث مجمّعة، دون ملفات تعريف الارتباط ودون أي معرّف",
-                "الاتحاد الأوروبي — ألمانيا",
+                "Seline Analytics",
+                "قياس الجمهور: الصفحات المعروضة وأحداث مجمّعة، دون ملفات تعريف الارتباط؛ ولا يُحتفظ بعنوان IP",
+                "الاتحاد الأوروبي",
               ]
             : ["لا تُستعمل أي أداة لقياس الجمهور", "غير مستعملة إلى حدّ الآن", "—"],
           [
@@ -680,7 +680,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
         text:
           "لا يستعمل التطبيق المحمول ملفات تعريف الارتباط (cookies). يستعمل معرّفات تقنية (رمز الجلسة، معرّف الإشعارات) ضرورية لاشتغاله. " +
           (ANALYTICS_ENABLED
-            ? "يستعمل الموقع الإلكتروني botolago.com ملفات تعريف ارتباط وتخزيناً محلياً ضرورية فقط. ولا تُودِع أداة قياس الجمهور (Plausible Analytics) أي ملف تعريف ارتباط ولا تحفظ أي شيء على جهازك."
+            ? "يستعمل الموقع الإلكتروني botolago.com ملفات تعريف ارتباط وتخزيناً محلياً ضرورية فقط. ولا تُودِع أداة قياس الجمهور (Seline Analytics) أي ملف تعريف ارتباط ولا تحفظ أي معرّف على جهازك؛ وكل ما تتركه إشارة تقنية تُمحى عند إغلاق علامة التبويب، حتى لا تحتسب الموقع الذي قدمت منه مرتين."
             : "يستعمل الموقع الإلكتروني botolago.com ملفات تعريف ارتباط وتخزيناً محلياً ضرورية فقط؛ ولا يُودَع إلى حدّ الآن أي ملف لقياس الجمهور.") +
           (ANALYTICS_ENABLED
             ? " تُحفظ التوقعات المُنجزة دون حساب في التخزين المحلي لجهازك، وهو ضروري للخدمة التي تستعملها؛ ولا تغادر جهازك إلا إذا أنشأت حساباً، فتُلحق به."

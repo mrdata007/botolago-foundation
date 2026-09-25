@@ -205,24 +205,25 @@ export const PRONOSTICS_ENABLED = true;
 export const PRONOSTICS_PROMOTED = false;
 
 /**
- * Audience measurement — OFF until the owner switches it on (BG-0146, plan
- * §11): Plausible Analytics, cookie-free, hosted in the EU (Germany). Page
- * views plus five Pronostics events, names only, no identifiers.
+ * Audience measurement — ON since 2026-09-25 (BG-0146, plan §11).
+ *
+ * Owner decision, 2026-09-25: Seline, in place of the Plausible Analytics
+ * chosen on 2026-09-24. The owner created the Seline project for botolago.com
+ * and asked for its script on every page. Seline sets no cookie and keeps no
+ * identifier on the phone, does not store IP addresses, and is hosted in the
+ * EU. Page views plus five Pronostics events, names only, no identifiers.
  *
  * The script and the privacy policy's lines about it go live together, in one
- * release: before switching this on, the site `botolago.com` must exist in
- * Plausible (with the five events as goals, and only botolago.com allowed as a
- * hostname), its install snippet must match `src/lib/analytics.ts`, and the
- * owner must have approved the policy wording and given the policy a new
- * version and date (its section 12 promises 7 days' notice of a substantial
- * change). Production builds only: a development server or the Playwright
- * suite never loads the script.
+ * release: this switch turns both on, and the policy took a new version and
+ * date with them (1.2, 25 September 2026). Production builds on botolago.com
+ * only: a development server, the Playwright suite, a preview deployment or
+ * a local production build never sends anything.
  *
  * Gated surfaces (keep this list current):
- *   - `src/routes/__root.tsx` — the Plausible script and the page views
+ *   - `src/routes/__root.tsx` — the Seline script and the page views
  *   - `src/lib/analytics.ts` — `track()` sends nothing while off
  *   - `src/content/legal/documents.ts` — the processor row and the cookie
  *     clause of the privacy policy (with the sentence on a visitor's
  *     predictions kept on the phone), in French and Arabic
  */
-export const ANALYTICS_ENABLED = false;
+export const ANALYTICS_ENABLED = true;

@@ -30,9 +30,10 @@ import { THEME_INIT_SCRIPT } from "@/theme/theme";
 import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
 import {
   ANALYTICS_ACTIVE,
-  PLAUSIBLE_DOMAIN,
-  PLAUSIBLE_QUEUE_SCRIPT,
-  PLAUSIBLE_SCRIPT_SRC,
+  SELINE_MASK_PATTERNS,
+  SELINE_QUEUE_SCRIPT,
+  SELINE_SCRIPT_SRC,
+  SELINE_TOKEN,
   trackPageview,
 } from "@/lib/analytics";
 import { RotateCcw, Home } from "lucide-react";
@@ -261,17 +262,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // the launch splash has to be settled before the first paint, or the page
     // shows first and the splash lands on top of it once the app has loaded.
     //
-    // Audience measurement (BG-0146, `src/lib/analytics.ts`): Plausible's
-    // "manual" script, which counts nothing on its own, after the stub that
-    // queues what the page sends before it arrives. Page views go out from
-    // `AnalyticsPageviews` below, their address cleaned first.
+    // Audience measurement (BG-0146, `src/lib/analytics.ts`): Seline's
+    // script, told to count no page on its own, and the stub that queues what
+    // the page sends before it arrives. React hoists the async script to the
+    // top of <head>, so either may run first; the stub keeps a loaded script.
+    // Page views go out from `AnalyticsPageviews` below, their address cleaned
+    // first.
     scripts: [
       ...(DARK_MODE_ENABLED ? [{ children: THEME_INIT_SCRIPT }] : []),
       { children: SPLASH_INIT_SCRIPT },
       ...(ANALYTICS_ACTIVE
         ? [
-            { children: PLAUSIBLE_QUEUE_SCRIPT },
-            { src: PLAUSIBLE_SCRIPT_SRC, defer: true, "data-domain": PLAUSIBLE_DOMAIN },
+            { children: SELINE_QUEUE_SCRIPT },
+            {
+              src: SELINE_SCRIPT_SRC,
+              async: true,
+              "data-token": SELINE_TOKEN,
+              "data-auto-page-view": "false",
+              "data-mask-patterns": SELINE_MASK_PATTERNS,
+            },
           ]
         : []),
     ],
@@ -324,7 +333,8 @@ function RootComponent() {
 /**
  * One page view per page reached, once the router has settled on it: a change
  * of tab or journée inside a page is the same page. The address is cleaned in
- * `trackPageview` (no "#…", no tokens, no league id).
+ * `trackPageview` (no "#…", no tokens, no league id), and only botolago.com
+ * is counted.
  */
 function AnalyticsPageviews() {
   const path = useRouterState({ select: (state) => state.resolvedLocation?.pathname ?? null });

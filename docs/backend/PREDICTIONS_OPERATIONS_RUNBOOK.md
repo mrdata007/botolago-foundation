@@ -133,39 +133,50 @@ are finalized shortly after the whistle.
 | 4. Small public launch                               | `public`                        | `PRONOSTICS_ENABLED`                        |
 | 5. Everyone                                          | `public`                        | `PRONOSTICS_ENABLED`, `PRONOSTICS_PROMOTED` |
 
-Before Stage 4: the Arabic reviewed by the owner, and Plausible, the
-`ANALYTICS_ENABLED` build and the privacy-policy update live together.
+Before Stage 4: the Arabic reviewed by the owner. Audience measurement is
+already on (next section).
 
-## Switching on audience measurement
+## Audience measurement (Seline)
 
-`ANALYTICS_ENABLED` (`src/lib/feature-flags.ts`) loads Plausible's script and
-switches the privacy policy's lines about it, in French and Arabic, in the
-same build. It is off. Before a pull request turns it on:
+On since 2026-09-25. The owner chose Seline in place of Plausible, created the
+Seline project for `botolago.com` and asked for its script on every page.
+`ANALYTICS_ENABLED` (`src/lib/feature-flags.ts`) loads the script and switches
+the privacy policy's lines about it, in French and Arabic, in the same build;
+the policy went to version 1.2 (25 September 2026) with it. Section 12 of the
+policy promises 7 days' notice of a substantial change. This update was
+treated as a small one: version 1.1 already listed audience measurement as a
+purpose and usage data as collected, and its processor row said "no tool used
+to date"; version 1.2 names the tool, which sets no cookie and keeps no IP.
 
-1. In Plausible: add the site `botolago.com`, reporting time zone
-   Africa/Casablanca.
-2. Site settings → Shields → Hostnames: allow `botolago.com` and
-   `www.botolago.com` only, so preview deployments are not counted.
-3. Add the five events as goals: `pronostics_guest_start`,
-   `pronostics_guest_start_returning`, `pronostics_guest_complete`,
-   `pronostics_signup_click`, `pronostics_share`.
-4. Compare the install snippet Plausible shows with `src/lib/analytics.ts`: the
-   code uses the "manual" script (`script.manual.js`, `data-domain`) and sends
-   page views itself, so that an address is cleaned before it leaves the phone
-   (no `#…`, no query but `utm_*`, no league id, no staff page). If Plausible
-   now offers only a different snippet, the code changes to match it, keeping
-   that cleaning.
-5. The owner approves the policy wording (processor row and the cookies
-   section, which also says a visitor's predictions stay on the phone; both
-   languages), and the policy gets a new version and date: its section 12
-   promises 7 days' notice of a substantial change, and naming a new processor
-   is one. The same switch changes all of it, so version 1.1 never changes
-   silently.
+How it is installed (`src/lib/analytics.ts`, `src/routes/__root.tsx`):
 
-After the deploy: open the site, check in Plausible that the visit and a test
-event arrive, and that the browser holds no cookie and no storage entry from
-the tool. Signed-in players are measured from the database (plan §11), so the
-five events are the only ones the page sends.
+- the snippet Seline gives (`cdn.seline.com/seline.js`, `async`, token
+  `041a77dce92a51b`), in the head of every page, production builds only;
+- plus `data-auto-page-view="false"`: left on its own, the script sends each
+  address whole, query string included, where sign-in codes and unsubscribe
+  tokens live. The page sends page views itself instead, each address cleaned
+  before it leaves the phone (no `#…`, no query but `utm_*`, a league's id
+  replaced by `*`, no staff page);
+- plus `data-mask-patterns`, so an event sent from a league's page reports
+  `/pronostics/ligues/*` or `/fantasy/leagues/*` rather than the league's id;
+- a small stub keeps what the page sends before the script arrives, and the
+  script replays it (whichever of the two loads first);
+- only `botolago.com` sends anything: a preview deployment or a local
+  production build loads the script and stays silent.
+
+The five events, if Seline asks for them by name: `pronostics_guest_start`,
+`pronostics_guest_start_returning`, `pronostics_guest_complete`,
+`pronostics_signup_click`, `pronostics_share`. Signed-in players are measured
+from the database (plan §11), so these are the only events the page sends.
+
+To check after a deploy: open botolago.com, visit a few pages, and see them in
+the Seline dashboard; the browser holds no cookie from the tool, and its only
+storage entry is `seline:referrer` in the tab's session storage (the script
+notes there that the referring site was counted, so a reload does not count
+it twice).
+
+To switch it off: `ANALYTICS_ENABLED = false`. The policy then says again that
+no tool is used, which is a change of its own: give it a new version and date.
 
 ## Applying to production
 

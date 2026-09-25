@@ -635,6 +635,8 @@ Today the app has **no visitor analytics**, and the privacy policy says no audie
 
 **Decided: a cookie-free tool plus a privacy-policy update.**
 
+> **Changed 2026-09-25 (owner):** Seline replaces Plausible, and it is switched on. The owner created the Seline project for `botolago.com` and asked for its script on every page. Same approach as below (page views cleaned before they leave the phone, the same five events, names only), with the privacy policy naming Seline from version 1.2. How it is installed: `docs/backend/PREDICTIONS_OPERATIONS_RUNBOOK.md`, "Audience measurement (Seline)". The Plausible notes below are kept as the record of the first choice.
+
 **Which tool: Plausible Analytics.**
 
 - It uses no cookies and stores nothing on the phone, and it is hosted in the EU (Germany) on every plan.
