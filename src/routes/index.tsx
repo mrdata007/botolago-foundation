@@ -45,6 +45,7 @@ import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
 import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
+import { useSplashDone } from "@/lib/launch-sequence";
 import { cn } from "@/lib/utils";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
@@ -124,13 +125,17 @@ function useGreeting() {
 function HomePage() {
   const navigate = useNavigate();
   const { status } = useAuth();
-  const { t } = useI18n();
+  const { t, isHydrated, hasChosen } = useI18n();
 
   // Read localStorage only after mount so SSR and first client render match.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const showWelcome = mounted && status === "anonymous" && !hasWelcomed();
+  // An arrival dialog, so it waits for the launch sequence like the prize
+  // welcome (src/lib/launch-sequence.ts): never under the splash, never
+  // beside the language chooser.
+  const launchDone = useSplashDone() && isHydrated && hasChosen;
+  const showWelcome = mounted && launchDone && status === "anonymous" && !hasWelcomed();
 
   // The welcome screen covers the home page instead of replacing it. It used
   // to replace it, so a first visit -- and every crawler, which always visits
