@@ -37,7 +37,8 @@ import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useBackTo } from "@/lib/back-navigation";
 import { clubMatchPalettes } from "@/lib/club-palette";
-import { NEWS_ENABLED } from "@/lib/feature-flags";
+import { NEWS_ENABLED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
+import { MatchPredictionCard } from "@/components/predictions/MatchPredictionCard";
 import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/structured-data";
@@ -357,6 +358,15 @@ function MatchDetailPage() {
         events={live.events}
         lineups={lineups}
       />
+
+      {/* Pronostics (BG-0146): the same prediction as /pronostics. A card, not
+          a fifth tab (the four tabs are pinned). Shown once promoted. */}
+      {PRONOSTICS_PROMOTED && (
+        <MatchPredictionCard
+          fixtureId={match.id}
+          roundNumber={match.gameweek > 0 ? match.gameweek : null}
+        />
+      )}
 
       <MatchTabs
         active={tab}

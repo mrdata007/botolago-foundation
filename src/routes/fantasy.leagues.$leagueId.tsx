@@ -4,6 +4,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { CupInfo } from "@/components/fantasy-lists/CupInfo";
+import { LeaguePredictionsStandings } from "@/components/predictions/leagues/LeaguePredictionsStandings";
+import { roundQueryOptions } from "@/components/predictions/use-predictions-round";
 import {
   compactMoveFormat,
   formatMove,
@@ -34,6 +36,7 @@ import {
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -67,7 +70,12 @@ function LeagueDetailBody() {
   const qc = useQueryClient();
   const screen = useFantasyScreen();
   const { key } = useFantasyDataSource();
-  const [tab, setTab] = useState<"league" | "cup">("league");
+  const [tab, setTab] = useState<"league" | "predictions" | "cup">("league");
+  // The journée the Pronostics tab ranks by default (BG-0146).
+  const predictionsRound = useQuery({
+    ...roundQueryOptions(null, lang),
+    enabled: PRONOSTICS_PROMOTED && tab === "predictions",
+  });
   const [busy, setBusy] = useState(false);
 
   const leagueQ = useQuery({
@@ -136,6 +144,16 @@ function LeagueDetailBody() {
           className="px-2"
           options={[
             { value: "league", label: t("fpl.league"), panelId: "league-panel-league" },
+            // Pronostics (BG-0146): the league's other game. Shown once promoted.
+            ...(PRONOSTICS_PROMOTED
+              ? [
+                  {
+                    value: "predictions" as const,
+                    label: t("predictions.league.tab"),
+                    panelId: "league-panel-predictions",
+                  },
+                ]
+              : []),
             { value: "cup", label: t("fpl.cups"), panelId: "league-panel-cup" },
           ]}
         />
@@ -145,7 +163,16 @@ function LeagueDetailBody() {
           aria-labelledby={`league-tab-${tab}`}
           className={cn("px-4 pb-8 pt-4", ui.surface.page)}
         >
-          {tab === "league" ? (
+          {tab === "predictions" ? (
+            <LeaguePredictionsStandings
+              leagueId={leagueId}
+              roundNumber={
+                predictionsRound.data?.allowed
+                  ? (predictionsRound.data.round?.number ?? null)
+                  : null
+              }
+            />
+          ) : tab === "league" ? (
             <>
               <p className={cn("text-center", ui.text.meta, ui.tone.muted)}>
                 {t("fpl.last_updated")}:{" "}

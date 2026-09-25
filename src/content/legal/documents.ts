@@ -13,6 +13,7 @@
 // legal-content.test.ts fails while any of them survive -- these pages must not
 // reach production carrying "BotolaGO (société en cours de constitution)" or an unissued CNDP number.
 
+import { ANALYTICS_ENABLED } from "@/lib/feature-flags";
 import type { Language } from "@/types/domain";
 
 export type LegalBlock =
@@ -321,7 +322,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "Version 1.1 — en vigueur au 24 septembre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.",
+        text: "Version 1.2 — en vigueur au 25 septembre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.",
       },
       { type: "heading", text: "1. Responsable du traitement" },
       {
@@ -424,7 +425,15 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
             "distribution de l'Application, notifications push, connexion sociale",
             "selon leurs politiques",
           ],
-          ["Aucun outil de mesure d'audience", "non utilisé à ce jour", "—"],
+          // The analytics row follows ANALYTICS_ENABLED: the script and this
+          // line go live together (BG-0146).
+          ANALYTICS_ENABLED
+            ? [
+                "Seline Analytics",
+                "mesure d'audience : pages vues et événements agrégés, sans cookie ; l'adresse IP n'est pas conservée",
+                "Union européenne",
+              ]
+            : ["Aucun outil de mesure d'audience", "non utilisé à ce jour", "—"],
           [
             "Supabase Auth",
             "e-mails transactionnels (confirmation de compte, réinitialisation)",
@@ -486,7 +495,16 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "11. Cookies et traceurs" },
       {
         type: "paragraph",
-        text: "L'Application mobile n'utilise pas de cookies. Elle utilise des identifiants techniques (jeton de session, identifiant push) nécessaires à son fonctionnement. Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires ; aucun cookie de mesure d'audience n'est déposé à ce jour.",
+        // Follows ANALYTICS_ENABLED (BG-0146): the policy update that went live
+        // with the Seline script (version 1.2) changed this paragraph with it.
+        text:
+          "L'Application mobile n'utilise pas de cookies. Elle utilise des identifiants techniques (jeton de session, identifiant push) nécessaires à son fonctionnement. " +
+          (ANALYTICS_ENABLED
+            ? "Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires. Sa mesure d'audience (Seline Analytics) ne dépose aucun cookie et ne garde aucun identifiant sur votre appareil ; seule une mention technique, effacée à la fermeture de l'onglet, lui évite de compter deux fois le site d'où vous venez."
+            : "Le site web botolago.com utilise uniquement des cookies et un stockage local strictement nécessaires ; aucun cookie de mesure d'audience n'est déposé à ce jour.") +
+          (ANALYTICS_ENABLED
+            ? " Les pronostics faits sans compte sont conservés dans le stockage local de votre appareil, ce qui est nécessaire au service que vous utilisez ; ils n'en sortent que si vous créez un compte, auquel ils sont alors rattachés."
+            : ""),
       },
       { type: "heading", text: "12. Modifications" },
       {
@@ -505,7 +523,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "الإصدار 1.1 — ساري المفعول ابتداءً من 24 سبتمبر 2026. تشرح هذه السياسة البيانات التي تجمعها BotolaGO، ولماذا، ومع من تُشارك، وما هي حقوقك، طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي.",
+        text: "الإصدار 1.2 — ساري المفعول ابتداءً من 25 سبتمبر 2026. تشرح هذه السياسة البيانات التي تجمعها BotolaGO، ولماذا، ومع من تُشارك، وما هي حقوقك، طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي.",
       },
       { type: "heading", text: "1. المسؤول عن المعالجة" },
       {
@@ -594,7 +612,13 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
           ],
           ["مزوّد البيانات الرياضية", "إحصائيات المباريات (لا تُنقل إليه أي بيانات شخصية)", "—"],
           ["Apple / Google", "توزيع التطبيق، الإشعارات، تسجيل الدخول الاجتماعي", "وفق سياساتهما"],
-          ["لا تُستعمل أي أداة لقياس الجمهور", "غير مستعملة إلى حدّ الآن", "—"],
+          ANALYTICS_ENABLED
+            ? [
+                "Seline Analytics",
+                "قياس الجمهور: الصفحات المعروضة وأحداث مجمّعة، دون ملفات تعريف الارتباط؛ ولا يُحتفظ بعنوان IP",
+                "الاتحاد الأوروبي",
+              ]
+            : ["لا تُستعمل أي أداة لقياس الجمهور", "غير مستعملة إلى حدّ الآن", "—"],
           [
             "Supabase Auth",
             "الرسائل المعاملاتية (تأكيد الحساب، إعادة تعيين كلمة المرور)",
@@ -653,7 +677,14 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "11. ملفات تعريف الارتباط وأدوات التتبع" },
       {
         type: "paragraph",
-        text: "لا يستعمل التطبيق المحمول ملفات تعريف الارتباط (cookies). يستعمل معرّفات تقنية (رمز الجلسة، معرّف الإشعارات) ضرورية لاشتغاله. يستعمل الموقع الإلكتروني botolago.com ملفات تعريف ارتباط وتخزيناً محلياً ضرورية فقط؛ ولا يُودَع إلى حدّ الآن أي ملف لقياس الجمهور.",
+        text:
+          "لا يستعمل التطبيق المحمول ملفات تعريف الارتباط (cookies). يستعمل معرّفات تقنية (رمز الجلسة، معرّف الإشعارات) ضرورية لاشتغاله. " +
+          (ANALYTICS_ENABLED
+            ? "يستعمل الموقع الإلكتروني botolago.com ملفات تعريف ارتباط وتخزيناً محلياً ضرورية فقط. ولا تُودِع أداة قياس الجمهور (Seline Analytics) أي ملف تعريف ارتباط ولا تحفظ أي معرّف على جهازك؛ وكل ما تتركه إشارة تقنية تُمحى عند إغلاق علامة التبويب، حتى لا تحتسب الموقع الذي قدمت منه مرتين."
+            : "يستعمل الموقع الإلكتروني botolago.com ملفات تعريف ارتباط وتخزيناً محلياً ضرورية فقط؛ ولا يُودَع إلى حدّ الآن أي ملف لقياس الجمهور.") +
+          (ANALYTICS_ENABLED
+            ? " تُحفظ التوقعات المُنجزة دون حساب في التخزين المحلي لجهازك، وهو ضروري للخدمة التي تستعملها؛ ولا تغادر جهازك إلا إذا أنشأت حساباً، فتُلحق به."
+            : ""),
       },
       { type: "heading", text: "12. التعديلات" },
       {

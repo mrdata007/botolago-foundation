@@ -1,7 +1,7 @@
 import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
@@ -25,6 +25,10 @@ import {
   UiTHead,
   UiTR,
 } from "@/components/ui-kit";
+import {
+  clearPendingInvite,
+  pendingInviteCode,
+} from "@/components/predictions/leagues/invite-link";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -65,6 +69,14 @@ function JoinLeagueBody() {
   const [joined, setJoined] = useState<{ id: string; name: string } | null>(null);
   const [scoring, setScoring] = useState<"classic" | "h2h">("classic");
 
+  // Arriving from a Pronostics invite link (one league, two games): the code
+  // this tab holds fills the field, so nobody has to retype it. Read after
+  // mount: the server render has no tab storage.
+  useEffect(() => {
+    const pending = pendingInviteCode();
+    if (pending) setCode((current) => current || pending);
+  }, []);
+
   const publicQ = useQuery({
     queryKey: key("leagues", "public"),
     queryFn: () => fantasyService.getLeagues("public"),
@@ -82,6 +94,7 @@ function JoinLeagueBody() {
     setInvalid(false);
     try {
       await fantasyService.joinLeague(code.trim());
+      clearPendingInvite();
       await qc.invalidateQueries({ queryKey: key("leagues", "private") });
       const leagues = await fantasyService.getLeagues("private");
       const league = leagues[leagues.length - 1];

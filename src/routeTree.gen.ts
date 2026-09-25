@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as PronosticsRouteImport } from './routes/pronostics'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as NewsRouteImport } from './routes/news'
@@ -20,6 +21,7 @@ import { Route as FantasyRouteImport } from './routes/fantasy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PronosticsIndexRouteImport } from './routes/pronostics.index'
 import { Route as PrizesIndexRouteImport } from './routes/prizes.index'
 import { Route as MatchesIndexRouteImport } from './routes/matches.index'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
@@ -59,6 +61,9 @@ import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as PronosticsLiguesIndexRouteImport } from './routes/pronostics.ligues.index'
+import { Route as PronosticsLiguesRejoindreRouteImport } from './routes/pronostics.ligues.rejoindre'
+import { Route as PronosticsLiguesLeagueIdRouteImport } from './routes/pronostics.ligues.$leagueId'
 import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.players.$playerId'
 import { Route as FantasyLeaguesJoinRouteImport } from './routes/fantasy.leagues.join'
 import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
@@ -82,6 +87,11 @@ const TermsRoute = TermsRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PronosticsRoute = PronosticsRouteImport.update({
+  id: '/pronostics',
+  path: '/pronostics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -123,6 +133,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PronosticsIndexRoute = PronosticsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PronosticsRoute,
 } as any)
 const PrizesIndexRoute = PrizesIndexRouteImport.update({
   id: '/prizes/',
@@ -321,6 +336,23 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const PronosticsLiguesIndexRoute = PronosticsLiguesIndexRouteImport.update({
+  id: '/ligues/',
+  path: '/ligues/',
+  getParentRoute: () => PronosticsRoute,
+} as any)
+const PronosticsLiguesRejoindreRoute =
+  PronosticsLiguesRejoindreRouteImport.update({
+    id: '/ligues/rejoindre',
+    path: '/ligues/rejoindre',
+    getParentRoute: () => PronosticsRoute,
+  } as any)
+const PronosticsLiguesLeagueIdRoute =
+  PronosticsLiguesLeagueIdRouteImport.update({
+    id: '/ligues/$leagueId',
+    path: '/ligues/$leagueId',
+    getParentRoute: () => PronosticsRoute,
+  } as any)
 const FantasyPlayersPlayerIdRoute = FantasyPlayersPlayerIdRouteImport.update({
   id: '/$playerId',
   path: '/$playerId',
@@ -378,6 +410,7 @@ export interface FileRoutesByFullPath {
   '/news': typeof NewsRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
+  '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -420,6 +453,7 @@ export interface FileRoutesByFullPath {
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
   '/prizes/': typeof PrizesIndexRoute
+  '/pronostics/': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
@@ -429,6 +463,9 @@ export interface FileRoutesByFullPath {
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
+  '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
+  '/pronostics/ligues/': typeof PronosticsLiguesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -480,6 +517,7 @@ export interface FileRoutesByTo {
   '/fantasy': typeof FantasyIndexRoute
   '/matches': typeof MatchesIndexRoute
   '/prizes': typeof PrizesIndexRoute
+  '/pronostics': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
@@ -489,6 +527,9 @@ export interface FileRoutesByTo {
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
+  '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
+  '/pronostics/ligues': typeof PronosticsLiguesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -500,6 +541,7 @@ export interface FileRoutesById {
   '/news': typeof NewsRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
+  '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -542,6 +584,7 @@ export interface FileRoutesById {
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
   '/prizes/': typeof PrizesIndexRoute
+  '/pronostics/': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
@@ -551,6 +594,9 @@ export interface FileRoutesById {
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
+  '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
+  '/pronostics/ligues/': typeof PronosticsLiguesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -563,6 +609,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/privacy'
     | '/profile'
+    | '/pronostics'
     | '/sitemap.xml'
     | '/terms'
     | '/unsubscribe'
@@ -605,6 +652,7 @@ export interface FileRouteTypes {
     | '/fantasy/'
     | '/matches/'
     | '/prizes/'
+    | '/pronostics/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/news/$articleEditionId'
@@ -614,6 +662,9 @@ export interface FileRouteTypes {
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
+    | '/pronostics/ligues/$leagueId'
+    | '/pronostics/ligues/rejoindre'
+    | '/pronostics/ligues/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -665,6 +716,7 @@ export interface FileRouteTypes {
     | '/fantasy'
     | '/matches'
     | '/prizes'
+    | '/pronostics'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/news/$articleEditionId'
@@ -674,6 +726,9 @@ export interface FileRouteTypes {
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
+    | '/pronostics/ligues/$leagueId'
+    | '/pronostics/ligues/rejoindre'
+    | '/pronostics/ligues'
   id:
     | '__root__'
     | '/'
@@ -684,6 +739,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/privacy'
     | '/profile'
+    | '/pronostics'
     | '/sitemap.xml'
     | '/terms'
     | '/unsubscribe'
@@ -726,6 +782,7 @@ export interface FileRouteTypes {
     | '/fantasy/'
     | '/matches/'
     | '/prizes/'
+    | '/pronostics/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/news/$articleEditionId'
@@ -735,6 +792,9 @@ export interface FileRouteTypes {
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
+    | '/pronostics/ligues/$leagueId'
+    | '/pronostics/ligues/rejoindre'
+    | '/pronostics/ligues/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -746,6 +806,7 @@ export interface RootRouteChildren {
   NewsRoute: typeof NewsRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRouteWithChildren
+  PronosticsRoute: typeof PronosticsRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
@@ -783,6 +844,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pronostics': {
+      id: '/pronostics'
+      path: '/pronostics'
+      fullPath: '/pronostics'
+      preLoaderRoute: typeof PronosticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -840,6 +908,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/pronostics/': {
+      id: '/pronostics/'
+      path: '/'
+      fullPath: '/pronostics/'
+      preLoaderRoute: typeof PronosticsIndexRouteImport
+      parentRoute: typeof PronosticsRoute
     }
     '/prizes/': {
       id: '/prizes/'
@@ -1114,6 +1189,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pronostics/ligues/': {
+      id: '/pronostics/ligues/'
+      path: '/ligues'
+      fullPath: '/pronostics/ligues/'
+      preLoaderRoute: typeof PronosticsLiguesIndexRouteImport
+      parentRoute: typeof PronosticsRoute
+    }
+    '/pronostics/ligues/rejoindre': {
+      id: '/pronostics/ligues/rejoindre'
+      path: '/ligues/rejoindre'
+      fullPath: '/pronostics/ligues/rejoindre'
+      preLoaderRoute: typeof PronosticsLiguesRejoindreRouteImport
+      parentRoute: typeof PronosticsRoute
+    }
+    '/pronostics/ligues/$leagueId': {
+      id: '/pronostics/ligues/$leagueId'
+      path: '/ligues/$leagueId'
+      fullPath: '/pronostics/ligues/$leagueId'
+      preLoaderRoute: typeof PronosticsLiguesLeagueIdRouteImport
+      parentRoute: typeof PronosticsRoute
+    }
     '/fantasy/players/$playerId': {
       id: '/fantasy/players/$playerId'
       path: '/$playerId'
@@ -1346,6 +1442,24 @@ const ProfileRouteChildren: ProfileRouteChildren = {
 const ProfileRouteWithChildren =
   ProfileRoute._addFileChildren(ProfileRouteChildren)
 
+interface PronosticsRouteChildren {
+  PronosticsIndexRoute: typeof PronosticsIndexRoute
+  PronosticsLiguesLeagueIdRoute: typeof PronosticsLiguesLeagueIdRoute
+  PronosticsLiguesRejoindreRoute: typeof PronosticsLiguesRejoindreRoute
+  PronosticsLiguesIndexRoute: typeof PronosticsLiguesIndexRoute
+}
+
+const PronosticsRouteChildren: PronosticsRouteChildren = {
+  PronosticsIndexRoute: PronosticsIndexRoute,
+  PronosticsLiguesLeagueIdRoute: PronosticsLiguesLeagueIdRoute,
+  PronosticsLiguesRejoindreRoute: PronosticsLiguesRejoindreRoute,
+  PronosticsLiguesIndexRoute: PronosticsLiguesIndexRoute,
+}
+
+const PronosticsRouteWithChildren = PronosticsRoute._addFileChildren(
+  PronosticsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -1355,6 +1469,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewsRoute: NewsRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRouteWithChildren,
+  PronosticsRoute: PronosticsRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,

@@ -7,6 +7,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -27,6 +28,14 @@ import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
 import { ThemeProvider } from "@/theme/provider";
 import { THEME_INIT_SCRIPT } from "@/theme/theme";
 import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
+import {
+  ANALYTICS_ACTIVE,
+  SELINE_MASK_PATTERNS,
+  SELINE_QUEUE_SCRIPT,
+  SELINE_SCRIPT_SRC,
+  SELINE_TOKEN,
+  trackPageview,
+} from "@/lib/analytics";
 import { RotateCcw, Home } from "lucide-react";
 
 import { ui } from "@/components/ui-kit";
@@ -259,9 +268,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // The splash script is the same kind of thing: whether this load opens on
     // the launch splash has to be settled before the first paint, or the page
     // shows first and the splash lands on top of it once the app has loaded.
+    //
+    // Audience measurement (BG-0146, `src/lib/analytics.ts`): Seline's
+    // script, told to count no page on its own, and the stub that queues what
+    // the page sends before it arrives. React hoists the async script to the
+    // top of <head>, so either may run first; the stub keeps a loaded script.
+    // Page views go out from `AnalyticsPageviews` below, their address cleaned
+    // first.
     scripts: [
       ...(DARK_MODE_ENABLED ? [{ children: THEME_INIT_SCRIPT }] : []),
       { children: SPLASH_INIT_SCRIPT },
+      ...(ANALYTICS_ACTIVE
+        ? [
+            { children: SELINE_QUEUE_SCRIPT },
+            {
+              src: SELINE_SCRIPT_SRC,
+              async: true,
+              "data-token": SELINE_TOKEN,
+              "data-auto-page-view": "false",
+              "data-mask-patterns": SELINE_MASK_PATTERNS,
+            },
+          ]
+        : []),
     ],
   }),
   shellComponent: RootShell,
@@ -302,12 +330,27 @@ function RootComponent() {
               <AuthPromptDialog />
               <AuthModeBadge />
               <Toaster />
+              {ANALYTICS_ACTIVE && <AnalyticsPageviews />}
             </FantasyOwnedProvider>
           </AuthProvider>
         </ThemeProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
+}
+
+/**
+ * One page view per page reached, once the router has settled on it: a change
+ * of tab or journée inside a page is the same page. The address is cleaned in
+ * `trackPageview` (no "#…", no tokens, no league id), and only botolago.com
+ * is counted.
+ */
+function AnalyticsPageviews() {
+  const path = useRouterState({ select: (state) => state.resolvedLocation?.pathname ?? null });
+  useEffect(() => {
+    if (path !== null) trackPageview();
+  }, [path]);
+  return null;
 }
 
 /**
