@@ -44,18 +44,18 @@ const code = (path: string) =>
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
     .replace(/(^|[^:])\/\/.*$/gm, "$1");
 
+// The auth provider sits inside the router, as in `__root.tsx`: its second
+// factor gate reads the router's location.
 async function render(node: ReactElement): Promise<string> {
   const router = createRouter({
-    routeTree: createRootRoute({ component: () => node }),
+    routeTree: createRootRoute({ component: () => <AuthProvider>{node}</AuthProvider> }),
     history: createMemoryHistory({ initialEntries: ["/fantasy"] }),
   });
   await router.load();
   return renderToString(
     <QueryClientProvider client={new QueryClient()}>
       <I18nProvider>
-        <AuthProvider>
-          <RouterProvider router={router} />
-        </AuthProvider>
+        <RouterProvider router={router} />
       </I18nProvider>
     </QueryClientProvider>,
   ).replace(/<!-- -->/g, "");
