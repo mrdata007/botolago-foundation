@@ -180,7 +180,9 @@ no tool is used, which is a change of its own: give it a new version and date.
 
 ## Applying to production
 
-Not yet applied. Rules for when it is:
+Parts 1 to 5 applied on 2026-09-25 at 07:33 UTC, switched off
+(`docs/production/APPLIED_2026_09_25_PREDICTIONS.md`). Part 6 is not applied
+yet. The rules, which part 6 still follows:
 
 - Not while Fantasy gameweek 1 is being locked and scored: it is that
   pipeline's first real run and it needs a quiet database.
