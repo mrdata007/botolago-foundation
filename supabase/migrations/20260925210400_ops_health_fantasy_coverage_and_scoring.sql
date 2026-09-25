@@ -62,20 +62,29 @@
 --       - by a match postponed, cancelled or abandoned after the lock, or
 --         moved to a kickoff past the gameweek's window. Nothing in the
 --         pipeline takes a frozen assignment out of a gameweek (the calendar
---         sync and the lock touch unfrozen ones only) and no tool does it yet,
---         so what happens to that match is an owner's decision. This warns at
---         once, naming the match, for as long as it lasts, and never fails: a
---         failure would page every hour, for days, with nothing anyone can
---         run. (The lateness still reaches GitHub: the watchdog's
---         fantasy_points and the orchestrator escalate a gameweek not
---         finalized FANTASY_COVERAGE_ESCALATE_HOURS after its window ended.)
+--         sync and the lock touch unfrozen ones only). The ruleset keeps it
+--         in the gameweek if it is completed within 48 h of the kickoff the
+--         gameweek locked with (docs/backend/FANTASY_RULES_V1.md; the
+--         season's app.fantasy_fixture_rules.post_lock_completion_window_hours,
+--         48 in v1.0 and v1.1), and the gameweek waits for it that long.
+--         After that the owner takes it out with
+--         app_private.fantasy_resolve_frozen_assignment (20260925210500),
+--         run through scripts/backend/resolve-fantasy-postponed-assignment.sql,
+--         which refuses before then. So this warns at once, naming the match
+--         and saying until when the rules keep it, and fails when that window
+--         ends, the moment the tool accepts it, naming the script: a failure
+--         pages for something the owner can run. (The lateness reaches
+--         GitHub earlier: the watchdog's fantasy_points and the orchestrator
+--         escalate a gameweek not finalized FANTASY_COVERAGE_ESCALATE_HOURS
+--         after its window ended, even while the rules still keep the match.)
 --       - by a match in any other state (not started, live, suspended,
 --         delayed): warns 3 h past its due end, fails 6 h past it. Such a row
 --         has stopped following the match (the live refresh gives up on a
 --         match it has not seen start 3 h after its kickoff), or the provider
 --         has: a fault to act on. A provider refresh corrects the first -- the
 --         orchestrator's, at once when it is dispatched.
---       Held both ways, it fails and names the match that fails.
+--       Held by several matches, it names the one that fails (the oldest,
+--       when more than one does) and counts the others.
 --     Once every counted match is finished:
 --       - while a match still lacks certified statistics, warns from 6 h after
 --         the last final whistle and never fails: nothing can be scored yet,
@@ -292,10 +301,14 @@ begin
   -- defect, while the match can still finish on its own (an empty scoring
   -- table then means no points yet, never zero points). Past that it warns:
   -- at once for a match postponed, cancelled or abandoned after the lock or
-  -- moved past the gameweek's window (only an owner's decision frees the
-  -- gameweek and no tool applies one yet, so this never fails), and 3 h after
-  -- its due end (kickoff + 2 h) for a match still not started, live,
-  -- suspended or delayed, which fails 6 h after it (`stuck`). Once every
+  -- moved past the gameweek's window, which the rules keep in the gameweek
+  -- if it is completed within the ruleset's post-lock completion window of
+  -- its frozen kickoff (48 h, FANTASY_RULES_V1.md), and fails when that
+  -- window ends, the moment the owner's tool accepts it
+  -- (scripts/backend/resolve-fantasy-postponed-assignment.sql,
+  -- 20260925210500); and 3 h after its due end (kickoff + 2 h) for a match
+  -- still not started, live, suspended or delayed, which fails 6 h after it
+  -- (`stuck`). Once every
   -- counted match is final: while statistics are missing, warn from 6 h after
   -- the last whistle (fantasy_fixture_coverage fails for them); once all are
   -- certified, warn an hour after the last certification (a run scores in the
@@ -328,12 +341,17 @@ begin
         count(*) filter (where not m.complete) as without_statistics,
         max(m.certified_at) as statistics_since,
         (array_agg(jsonb_build_object('fixture', m.fixture_id, 'hold', m.hold, 'status', m.fixture_status,
-            'kickoff', m.kickoff_at, 'assigned', m.assigned_kickoff_at) order by m.stuck desc, m.due_end, m.fixture_id)
+            'kickoff', m.kickoff_at, 'assigned', m.assigned_kickoff_at, 'window', m.completion_window,
+            'resolvable', m.resolvable_at) order by m.stuck desc, m.due_end, m.fixture_id)
           filter (where m.held))[1] as held_match
       from (
         select k.*,
           k.hold in ('called_off', 'moved') or k.due_end < now_at - interval '3 hours' as held,
-          k.hold = 'unfinished' and k.due_end < now_at - interval '6 hours' as stuck
+          case k.hold
+            when 'unfinished' then k.due_end < now_at - interval '6 hours'
+            when 'called_off' then k.resolvable_at <= now_at
+            when 'moved' then k.resolvable_at <= now_at
+            else false end as stuck
         from (
           select g.id, case when watched_seasons > 1 then s.name || ' ' else '' end || 'GW' || g.sequence_number
               as gameweek, g.deadline_at, g.status::text as status,
@@ -348,9 +366,18 @@ begin
             case o.hold
               when 'called_off' then a.assigned_kickoff_at + interval '2 hours'
               when 'moved' then a.assigned_kickoff_at + interval '2 hours'
-              when 'unfinished' then f.kickoff_at + interval '2 hours' end as due_end
+              when 'unfinished' then f.kickoff_at + interval '2 hours' end as due_end,
+            -- The ruleset's post-lock completion window (48 h in v1.0 and
+            -- v1.1; 48 h too for a ruleset without one, which the tool then
+            -- refuses with fantasy_fixture_rules_missing), from the kickoff
+            -- the gameweek locked with. The tool reads the same value.
+            coalesce(fixture_rules.post_lock_completion_window_hours, 48) as completion_window,
+            a.assigned_kickoff_at
+              + make_interval(hours => coalesce(fixture_rules.post_lock_completion_window_hours, 48))
+              as resolvable_at
           from app.fantasy_gameweeks g
           join app.fantasy_seasons s on s.id = g.fantasy_season_id and s.status in ('registration_open', 'active')
+          left join app.fantasy_fixture_rules fixture_rules on fixture_rules.ruleset_id = s.ruleset_id
           join app.fantasy_fixture_assignments a on a.gameweek_id = g.id
             and a.superseded_at is null and a.counts_points
           join app.fixtures f on f.id = a.fixture_id
@@ -399,7 +426,17 @@ begin
           else 'still ' || (scoring.held_match ->> 'status') || ' '
             || floor(extract(epoch from now_at - (scoring.held_match ->> 'kickoff')::timestamptz) / 3600)
             || ' h after its kickoff' end
-        || '; points wait until it finishes or its Fantasy assignment is resolved'
+        || case
+          when scoring.held_match ->> 'hold' not in ('called_off', 'moved') then
+            '; points wait until it finishes or its Fantasy assignment is resolved'
+          when scoring.verdict = 'stalling' then
+            '; the rules keep it in the gameweek if it is completed within '
+            || (scoring.held_match ->> 'window') || ' h, by '
+            || to_char((scoring.held_match ->> 'resolvable')::timestamptz at time zone 'UTC', 'DD Mon HH24:MI')
+            || ' UTC; after that, this fails and scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out'
+          else '; not completed within the ' || (scoring.held_match ->> 'window')
+            || ' h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql'
+          end
         || case when scoring.held > 1 then ' (+' || (scoring.held - 1) || ' more match(es))' else '' end
         || case when scoring.verdict = 'stalled' and scoring.failing > 1
           then ' (+' || (scoring.failing - 1) || ' more gameweek(s))' else '' end

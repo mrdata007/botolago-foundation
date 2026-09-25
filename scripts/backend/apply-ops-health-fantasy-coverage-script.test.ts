@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -117,6 +117,31 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
       if (name === "fantasy_deadline_watch") continue;
       expect({ name, listed: postflight.includes(`'${name}'`) }).toEqual({ name, listed: true });
     }
+  });
+
+  test("a match called off or moved after the lock fails the scoring check once the rules stop keeping it", () => {
+    // FANTASY_RULES_V1.md keeps such a match in its gameweek for the ruleset's
+    // post-lock completion window (48 h) after its frozen kickoff. The check
+    // fails when that window ends, the moment 20260925210500's tool accepts
+    // the match, and names the owner's procedure, which must exist.
+    const procedure = "scripts/backend/resolve-fantasy-postponed-assignment.sql";
+    expect(migration).toContain(`this fails and ${procedure} takes it out'`);
+    expect(migration).toContain(`the rules allow: take it out with ${procedure}'`);
+    expect(existsSync(join(root, procedure))).toBe(true);
+    expect(migration).toContain("when 'called_off' then k.resolvable_at <= now_at");
+    expect(migration).toContain("when 'moved' then k.resolvable_at <= now_at");
+    expect(migration).toContain("when 'unfinished' then k.due_end < now_at - interval '6 hours'");
+    expect(migration).toContain("coalesce(fixture_rules.post_lock_completion_window_hours, 48)");
+    expect(migration).not.toMatch(/no tool (?:does it|applies one|can free)/);
+    // The ruleset table the check now reads is checked for before any write.
+    expect(script.indexOf("to_regclass('app.fantasy_fixture_rules') is null")).toBeGreaterThan(0);
+    expect(script.indexOf("to_regclass('app.fantasy_fixture_rules') is null")).toBeLessThan(
+      script.indexOf("insert into supabase_migrations.schema_migrations"),
+    );
+    // The script says to install that procedure's tool right after this one.
+    expect(script).toContain(
+      "scripts/backend/apply-20260925210500-fantasy-resolve-postponed-after-lock.sql:\n--   apply that one right after this one.",
+    );
   });
 
   test("the postflight writes nothing and nothing in the script sends an alert", () => {
