@@ -51,10 +51,17 @@ export function forgetAccountQueries(queryClient: QueryClient, uid: string): voi
  * owned Fantasy cache and drafts, its Pronostics, and every other query keyed
  * by it (followed clubs, notification preferences, saved articles), in flight
  * or not. Public caches and a guest's local prototype data stay.
+ *
+ * Like `forgetAccountQueries`, it removes only what names `uid`. Until
+ * 2026-09-25 the Fantasy and Pronostics steps removed every owned-Fantasy
+ * entry and every Pronostics entry, the incoming session's included, and
+ * those screens stayed on their loading placeholders. The Pronostics entries
+ * that name no account are reset rather than kept as they are: see
+ * `forgetAccountPredictions`.
  */
 export function forgetAccount(queryClient: QueryClient, uid: string): void {
   cleanupOwnedFantasyOnSignOut({ qc: queryClient, uid });
-  forgetAccountPredictions(queryClient);
+  forgetAccountPredictions(queryClient, uid);
   forgetAccountQueries(queryClient, uid);
 }
 

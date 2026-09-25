@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { isMfaStepUpError, onMfaStepUpRequired, reportMfaStepUp } from "./step-up";
 import { mapFantasyError } from "@/backend/fantasy/errors";
 import { IdentityError, mapIdentityError } from "@/backend/identity/errors";
-import { mapNewsError } from "@/backend/news/errors";
+import { mapNewsError, mapReaderListError } from "@/backend/news/errors";
 import { mapNotificationError } from "@/backend/notifications/errors";
 import { mapPredictionsError } from "@/backend/predictions/errors";
 import { mapSupabaseError } from "@/services/fantasy-cloud-repo";
@@ -121,7 +121,7 @@ describe("the ordinary-account error mappers report it", () => {
     ["Fantasy cloud repository", mapSupabaseError],
     ["Pronostics", mapPredictionsError],
     ["notification preferences", mapNotificationError],
-    ["saved articles", mapNewsError],
+    ["saved articles", mapReaderListError],
   ];
 
   for (const [name, map] of mappers) {
@@ -138,6 +138,38 @@ describe("the ordinary-account error mappers report it", () => {
   it("gives the identity refusal its own code instead of `internal`", () => {
     expect(mapIdentityError(stepUp()).code).toBe("mfa_required");
     expect(mapIdentityError({ code: "PT403", message: "something_else" }).code).toBe("internal");
+  });
+
+  // Security review of 2026-09-25: `mapNewsError` reported every News error,
+  // and the admin News screens map their editorial errors through it -- the
+  // very reporting this file's rule keeps away from staff screens.
+  it("leaves the News mapper the CMS uses alone; only the reader's saved list reports", () => {
+    const reports = countReports();
+    const mapped = mapNewsError(stepUp());
+    expect(reports.count).toBe(0);
+    // Still recognisable, for a screen that wants to.
+    expect(isMfaStepUpError(mapped)).toBe(true);
+
+    const root = join(import.meta.dir, "..", "..", "..");
+    const repository = readFileSync(join(root, "src/backend/news/supabase-repository.ts"), "utf8");
+    const method = (name: string) => {
+      const start = repository.indexOf(`  async ${name}(`);
+      return repository.slice(start, repository.indexOf("\n  }\n", start));
+    };
+    expect(method("save")).toContain("throwIfReaderListError(error);");
+    expect(method("unsave")).toContain("throwIfReaderListError(error);");
+    expect(repository.match(/throwIfReaderListError\(error\)/g)).toHaveLength(2);
+    for (const file of [
+      "src/routes/admin.news.tsx",
+      "src/routes/admin.news.new.tsx",
+      "src/routes/admin.news.$articleEditionId.tsx",
+    ]) {
+      const source = readFileSync(join(root, file), "utf8");
+      expect({ file, reports: /mapReaderListError|step-up/.test(source) }).toEqual({
+        file,
+        reports: false,
+      });
+    }
   });
 
   it("leaves the admin mappers alone: staff MFA has its own server-enforced flow", () => {

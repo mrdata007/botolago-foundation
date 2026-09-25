@@ -6,6 +6,7 @@ import {
   challengeSearch,
   isOpenWhileSecondFactorOwed,
   isSecondFactorOwed,
+  isSessionSettled,
   requireAuthStep,
   secondFactorGuard,
   secondFactorRedirect,
@@ -117,6 +118,22 @@ describe("sessionAccountId", () => {
   it("is nobody for a visitor, whatever else the session carries", () => {
     for (const status of ["anonymous", "guest", "loading"] as const) {
       expect(sessionAccountId({ user: null, status, pendingAccountId: user.id })).toBeNull();
+    }
+  });
+});
+
+describe("isSessionSettled", () => {
+  // What a read that answers for whoever's token it carries (the Fantasy
+  // board's "your rank") waits for.
+  it("is a complete sign-in, or nobody", () => {
+    for (const status of ["authenticated", "anonymous", "guest"] as const) {
+      expect({ status, settled: isSessionSettled(status) }).toEqual({ status, settled: true });
+    }
+  });
+
+  it("is not a session still being read, one owing its code, or none known yet", () => {
+    for (const status of ["loading", "mfa_required", "mfa_unconfirmed", undefined] as const) {
+      expect({ status, settled: isSessionSettled(status) }).toEqual({ status, settled: false });
     }
   });
 });
@@ -245,6 +262,13 @@ describe("secondFactorRedirect", () => {
     expect(challengeSearch("//attacker.invalid")).toEqual({});
     expect(challengeSearch("/\\attacker.invalid")).toEqual({});
     expect(challengeSearch("/fantasy", "?x=1")).toEqual({ next: "/fantasy?x=1" });
+  });
+
+  it("sanitises once, and that one pass already refuses a path whose dot segments resolve to '//'", () => {
+    // It used to hand the challenge `next: "//attacker.invalid"` for these.
+    expect(challengeSearch("/.//attacker.invalid")).toEqual({});
+    expect(challengeSearch("/a/..//attacker.invalid", "?x=1")).toEqual({});
+    expect(challengeSearch("/%2e//attacker.invalid")).toEqual({});
   });
 });
 

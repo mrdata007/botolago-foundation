@@ -229,8 +229,58 @@ export async function readSessionAssurance(
   } catch {
     return "unknown";
   }
+  return assuranceOfLevels(levels);
+}
+
+function assuranceOfLevels(levels: AssuranceLevels): SessionAssurance {
   if (levels.nextLevel === "aal2" && levels.currentLevel !== "aal2") {
     return "second_factor_pending";
   }
   return "complete";
+}
+
+/** The parts of a Supabase `Session` its assurance is read from. */
+export interface AssuredSession {
+  readonly access_token: string;
+  readonly user: { readonly factors?: ReadonlyArray<{ readonly status: string }> | null };
+}
+
+/** The claims of a JWT, unverified, or `null` when it is not one. */
+function jwtClaims(token: string): Record<string, unknown> | null {
+  const payload = token.split(".")[1];
+  if (!payload || !/^[A-Za-z0-9_-]+$/.test(payload)) return null;
+  try {
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const binary = atob(base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "="));
+    const claims: unknown = JSON.parse(
+      new TextDecoder().decode(Uint8Array.from(binary, (char) => char.charCodeAt(0))),
+    );
+    return claims !== null && typeof claims === "object"
+      ? (claims as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * `readSessionAssurance` for a session already in hand, read from that
+ * session alone: the `aal` claim of its own access token, and the verified
+ * factors on its own user -- the two facts
+ * `mfa.getAuthenticatorAssuranceLevel()` reads, and read the same way (the
+ * token is decoded, not verified; the database checks the real one).
+ *
+ * The difference is whose. `getAuthenticatorAssuranceLevel()` judges
+ * whichever session storage holds when it runs, and by then another tab may
+ * have put another account's there: the auth service published one account's
+ * user with another session's level (an enrolled account at aal1 next to an
+ * account with no factor read as "complete"). A token that cannot be read is
+ * `unknown`, never complete.
+ */
+export function sessionAssuranceOf(session: AssuredSession): SessionAssurance {
+  const claims = jwtClaims(session.access_token);
+  if (!claims) return "unknown";
+  const currentLevel = normalizeAssuranceLevel(typeof claims.aal === "string" ? claims.aal : null);
+  const enrolled = (session.user.factors ?? []).some((factor) => factor.status === "verified");
+  return assuranceOfLevels({ currentLevel, nextLevel: enrolled ? "aal2" : currentLevel });
 }

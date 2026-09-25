@@ -1,3 +1,4 @@
+import type { QueryClient } from "@tanstack/react-query";
 import { GuestPredictionStore } from "@/backend/predictions/guest-store";
 
 /**
@@ -28,15 +29,34 @@ export function getGuestStore(): GuestPredictionStore {
 }
 
 /**
- * Forgets every Pronostics answer in the cache when the account changes
+ * Forgets every Pronostics answer in the cache when account `uid` leaves
  * (sign-out, or another account signing in on the same phone): a private
  * league's members, rankings with "me" in them, the last account's picks. A
  * key that already carries the account keeps them apart; this makes sure none
  * outlives the session that fetched it. The guest store on the phone is not
  * touched.
+ *
+ * Only `uid`'s own entries are removed. The others carry no account (the
+ * journée, a visitor's board) and the render that switched accounts has
+ * already built them for the next session and started their reads: removing
+ * them, as this did until 2026-09-25, cancelled those reads and left the
+ * screens pending for good. They are reset instead: the answer they hold is
+ * dropped at once -- one fetched while the session was still being read can
+ * hold the last account's line on a board -- the query stays with its
+ * observers, and the ones on screen are asked again, with the session current
+ * now. Invalidating would keep showing the old answer until the new one came.
  */
-export function forgetAccountPredictions(queryClient: {
-  removeQueries(filters: { queryKey: readonly unknown[] }): void;
-}): void {
-  queryClient.removeQueries({ queryKey: ["predictions"] });
+export function forgetAccountPredictions(
+  queryClient: Pick<QueryClient, "removeQueries" | "resetQueries">,
+  uid: string,
+): void {
+  const namesAccount = (key: readonly unknown[]) => key.includes(uid);
+  queryClient.removeQueries({
+    queryKey: ["predictions"],
+    predicate: (query) => namesAccount(query.queryKey),
+  });
+  void queryClient.resetQueries({
+    queryKey: ["predictions"],
+    predicate: (query) => !namesAccount(query.queryKey),
+  });
 }

@@ -4,9 +4,12 @@ import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
 import { QueryClient, QueryObserver } from "@tanstack/react-query";
 
 import { forgetAccount, watchAccountSwitch } from "@/auth/account-queries";
+import { sessionAccountId } from "@/auth/second-factor";
 import { createStepUpResponder } from "@/auth/step-up-notice";
 import { onMfaStepUpRequired, reportMfaStepUp } from "@/backend/auth/step-up";
-import type { ProfileDto } from "@/backend/identity/contracts";
+import type { AccountSecurityRepository, ProfileDto } from "@/backend/identity/contracts";
+import type { PredictionInput, SavePredictionsDto } from "@/backend/predictions/contracts";
+import { accountSaveQueue } from "@/components/predictions/use-predictions-round";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { followedTeamIdsQueryKey } from "@/services/follows";
 import { SupabaseAuthService } from "./auth-supabase";
@@ -53,6 +56,37 @@ function profileOf(id: string): ProfileDto {
   };
 }
 
+/** An access token as the app reads one: its claims. Unsigned, as nothing here verifies it. */
+function accessToken(claims: Record<string, unknown>): string {
+  const part = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  return `${part({ alg: "HS256", typ: "JWT" })}.${part(claims)}.c2lnbmF0dXJl`;
+}
+
+/**
+ * The session Supabase Auth holds for account `id` at `assurance`: the current
+ * level in its token's `aal` claim, and a verified factor on its user when the
+ * account has one (next level aal2). A level that cannot be read -- once a
+ * failed lookup, now a token that does not decode -- is an `Error`.
+ */
+function sessionOf(id: string, assurance: Assurance): Session {
+  const user = supabaseUser(id);
+  if (assurance instanceof Error) {
+    return { user, access_token: "unreadable", refresh_token: "r" } as Session;
+  }
+  const factors =
+    assurance.nextLevel === "aal2"
+      ? [{ id: `factor-${id.slice(-1)}`, factor_type: "totp", status: "verified" }]
+      : [];
+  return {
+    user: { ...user, factors },
+    access_token: accessToken({
+      sub: id,
+      ...(assurance.currentLevel ? { aal: assurance.currentLevel } : {}),
+    }),
+    refresh_token: "r",
+  } as Session;
+}
+
 /** Supabase Auth, reduced to what the service calls, with the knobs the tests turn. */
 function fakeSupabaseAuth() {
   let current: Session | null = null;
@@ -60,11 +94,12 @@ function fakeSupabaseAuth() {
   const listeners: Array<(event: string, session: Session | null) => void> = [];
   const calls = { refresh: 0 };
 
-  const fire = (event: string) => {
-    for (const listener of listeners) listener(event, current);
+  const deliver = (event: string, session: Session | null) => {
+    for (const listener of listeners) listener(event, session);
   };
+  const fire = (event: string) => deliver(event, current);
   const open = (id: string) => {
-    current = { user: supabaseUser(id), access_token: "t", refresh_token: "r" } as Session;
+    current = sessionOf(id, assurance);
   };
 
   const auth = {
@@ -90,24 +125,44 @@ function fakeSupabaseAuth() {
       return { error: null };
     },
     mfa: {
-      getAuthenticatorAssuranceLevel: async () =>
-        assurance instanceof Error
-          ? { data: null, error: { message: assurance.message } }
-          : { data: assurance, error: null },
+      // What auth-js does without a token of its own to judge: read the
+      // session in STORAGE at that moment. The service must not ask it (see
+      // "the level is the published session's own").
+      getAuthenticatorAssuranceLevel: async () => {
+        if (!current) return { data: { currentLevel: null, nextLevel: null }, error: null };
+        const aal = JSON.parse(
+          Buffer.from(current.access_token.split(".")[1] ?? "", "base64url").toString() || "{}",
+        ).aal as string | undefined;
+        const enrolled = (current.user.factors ?? []).some((f) => f.status === "verified");
+        return {
+          data: { currentLevel: aal ?? null, nextLevel: enrolled ? "aal2" : (aal ?? null) },
+          error: null,
+        };
+      },
     },
   };
 
   return {
     auth: auth as unknown as AuthClient,
     calls,
+    /** The account whose token a request would carry now. */
+    currentUserId: () => current?.user.id ?? null,
+    /** The level the stored session reports from now on (a refresh, a code entered). */
     setAssurance(next: Assurance) {
       assurance = next;
+      if (current) current = sessionOf(current.user.id, next);
     },
     /** A session that arrives on its own: restored from storage, another tab. */
     restore(id: string) {
       open(id);
       fire("SIGNED_IN");
     },
+    /** Storage now holds account `id`'s session; this tab has not heard of it yet. */
+    hold(id: string, level: Assurance) {
+      current = sessionOf(id, level);
+    },
+    /** An auth event carrying `session`, whatever storage holds. */
+    deliver,
   };
 }
 
@@ -117,23 +172,33 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
  * A service subscribed the way AuthProvider does, with its start-up read of
  * the (empty) session settled. auth-js answers that read before it emits any
  * later sign-in, since both wait on its one lock; the fake has no lock, so the
- * tests wait instead.
+ * tests wait instead. `revocations` is what sign-out recorded, with the
+ * account whose token the record went out with.
  */
 async function start(
   profile: (id: string) => Promise<ProfileDto | null> = async (id) => profileOf(id),
 ) {
   const fake = fakeSupabaseAuth();
+  const revocations: Array<{ scope: string; actorId: string | null; token: string | null }> = [];
+  const accountSecurity: AccountSecurityRepository = {
+    requestDeletion: async () => "request",
+    cancelDeletion: async () => {},
+    listDeletionRequests: async () => [],
+    recordSessionRevocation: async (scope, context) =>
+      void revocations.push({ scope, actorId: context.actorId, token: fake.currentUserId() }),
+  };
   const service = new SupabaseAuthService({
     auth: () => fake.auth,
     profiles: {
       getMe: (context) => profile(context.actorId ?? ""),
       completeOnboarding: async () => profileOf(ACCOUNT_A),
     },
+    accountSecurity,
   });
   const statuses: string[] = [];
   service.subscribeToSession((session) => statuses.push(session.status));
   await settle();
-  return { fake, service, statuses };
+  return { fake, service, statuses, revocations };
 }
 
 const scope = globalThis as { window?: unknown };
@@ -191,7 +256,9 @@ describe("password sign-in of an account with a verified factor (aal1, next aal2
   });
 });
 
-describe("the assurance lookup fails", () => {
+// The level is read from the session's own token (below); a token that does
+// not decode is what is left of "the lookup failed", and fails the same way.
+describe("the session's level cannot be read", () => {
   it("fails closed: not signed in, retryable", async () => {
     const { fake, service } = await start();
     fake.setAssurance(new Error("Failed to fetch"));
@@ -205,7 +272,7 @@ describe("the assurance lookup fails", () => {
     });
   });
 
-  it("the retry settles it once the lookup answers", async () => {
+  it("the retry settles it once the level can be read", async () => {
     const { fake, service } = await start();
     fake.setAssurance(new Error("Failed to fetch"));
     await service.signInWithEmail("a@example.test", "correct horse");
@@ -276,6 +343,228 @@ describe("a slow resolution cannot bring an account back", () => {
     await settle();
     expect(service.getSession()).toEqual({ user: null, status: "anonymous" });
     expect(statuses).not.toContain("authenticated");
+  });
+});
+
+// Security review of 2026-09-25: when another tab signed B in, nothing was
+// published until B had been resolved (a profile read of up to four 10 s
+// attempts, then an avatar signing with no deadline). All that time the app
+// still showed A while the client already sent B's token, and A's Pronostics
+// queue, asking whether the session was still A's, heard yes: A's unsent
+// picks went out as B's.
+describe("another account's session arrives while one is signed in", () => {
+  const pick: PredictionInput = { fixtureId: "f1", home: 2, away: 1 };
+  const answer = (items: readonly PredictionInput[]) =>
+    ({
+      serverTime: "2026-09-25T20:00:00+00:00",
+      results: items.map((item) => ({
+        ...item,
+        status: "saved",
+        submittedAt: "2026-09-25T20:00:00+00:00",
+      })),
+    }) as SavePredictionsDto;
+  function timersByHand() {
+    const scheduled = new Map<number, () => void>();
+    let next = 0;
+    return {
+      setTimeout: (handler: () => void) => {
+        scheduled.set(++next, handler);
+        return next;
+      },
+      clearTimeout: (handle: unknown) => void scheduled.delete(handle as number),
+      due: () => {
+        const handlers = [...scheduled.values()];
+        scheduled.clear();
+        for (const handler of handlers) handler();
+      },
+    };
+  }
+
+  it("takes A off the screen at once, and A's queue sends nothing while B's profile is still read", async () => {
+    let releaseB: () => void = () => {};
+    const { fake, service, statuses } = await start((id) =>
+      id === ACCOUNT_B
+        ? new Promise<ProfileDto>((resolve) => (releaseB = () => resolve(profileOf(id))))
+        : Promise.resolve(profileOf(id)),
+    );
+    const left: string[] = [];
+    service.subscribeToSession(watchAccountSwitch((uid) => left.push(uid)));
+    fake.restore(ACCOUNT_A);
+    await settle();
+    expect(service.getSession().user?.id).toBe(ACCOUNT_A);
+
+    // A's Pronostics queue, on the real service, with a pick not yet sent.
+    const sent: Array<{ token: string | null; items: PredictionInput[] }> = [];
+    const drafts = new Map<string, readonly PredictionInput[]>();
+    const timers = timersByHand();
+    const queue = accountSaveQueue(
+      ACCOUNT_A,
+      { timers },
+      {
+        session: () => service.getSession(),
+        save: async (items) => {
+          sent.push({ token: fake.currentUserId(), items: [...items] });
+          return answer(items);
+        },
+        drafts: (uid) => ({
+          load: () => drafts.get(uid) ?? [],
+          save: (items) => void drafts.set(uid, items),
+        }),
+      },
+    );
+    queue.set(pick);
+
+    // Another tab signs B in. B's profile read has not answered.
+    fake.restore(ACCOUNT_B);
+    expect(fake.currentUserId()).toBe(ACCOUNT_B);
+    expect(service.getSession()).toEqual({ user: null, status: "loading" });
+    expect(sessionAccountId(service.getSession())).toBeNull();
+    // AuthProvider's leave has already run for A.
+    expect(left).toEqual([ACCOUNT_A]);
+
+    // The pick's second comes due, and the page flushes: nothing goes with
+    // B's token, and the pick waits in A's draft.
+    timers.due();
+    await queue.flush();
+    await settle();
+    expect(sent).toEqual([]);
+    expect(drafts.get(ACCOUNT_A)).toEqual([pick]);
+    expect(service.getSession().status).toBe("loading");
+
+    releaseB();
+    await settle();
+    await settle();
+    expect(service.getSession().user?.id).toBe(ACCOUNT_B);
+    expect(statuses.slice(-3)).toEqual(["authenticated", "loading", "authenticated"]);
+    // B is signed in now, and A's queue still sends nothing: not A's session.
+    await queue.flush();
+    expect(sent).toEqual([]);
+    expect(left).toEqual([ACCOUNT_A]);
+    queue.dispose();
+  });
+
+  it("the same account's new token keeps it on screen while it resolves", async () => {
+    const { fake, service, statuses } = await start();
+    fake.restore(ACCOUNT_A);
+    await settle();
+    const before = statuses.length;
+    expect((await service.refreshSession()).status).toBe("authenticated");
+    await settle();
+    expect(statuses.slice(before)).not.toContain("loading");
+    expect(service.getSession().user?.id).toBe(ACCOUNT_A);
+  });
+
+  it("an account that owes its code is taken off the screen the same way", async () => {
+    const { fake, service } = await start();
+    fake.setAssurance({ currentLevel: "aal1", nextLevel: "aal2" });
+    fake.restore(ACCOUNT_A);
+    await settle();
+    expect(service.getSession()).toMatchObject({
+      status: "mfa_required",
+      pendingAccountId: ACCOUNT_A,
+    });
+    fake.setAssurance({ currentLevel: "aal1", nextLevel: "aal1" });
+    fake.restore(ACCOUNT_B);
+    expect(service.getSession()).toEqual({ user: null, status: "loading" });
+    await settle();
+    expect(service.getSession().user?.id).toBe(ACCOUNT_B);
+  });
+});
+
+// Security review of 2026-09-25: the level came from
+// `mfa.getAuthenticatorAssuranceLevel()`, which reads whatever session STORAGE
+// holds when it runs. With another tab's sign-in already in storage, the user
+// being resolved was published at that other session's level.
+describe("the level is the published session's own", () => {
+  it("an account at aal1 with a factor is not signed in because storage holds a complete session of another account", async () => {
+    const { fake, service, statuses } = await start();
+    // Storage: B, who has no factor (complete at aal1). The event being
+    // resolved: A, enrolled, at aal1.
+    fake.hold(ACCOUNT_B, { currentLevel: "aal1", nextLevel: "aal1" });
+    fake.deliver("SIGNED_IN", sessionOf(ACCOUNT_A, { currentLevel: "aal1", nextLevel: "aal2" }));
+    await settle();
+    expect(service.getSession()).toEqual({
+      user: null,
+      status: "mfa_required",
+      pendingAccountId: ACCOUNT_A,
+    });
+    expect(statuses).not.toContain("authenticated");
+  });
+
+  it("and the other way round: an aal2 session is not held back by another account's aal1 in storage", async () => {
+    const { fake, service } = await start();
+    fake.hold(ACCOUNT_B, { currentLevel: "aal1", nextLevel: "aal2" });
+    fake.deliver("SIGNED_IN", sessionOf(ACCOUNT_A, { currentLevel: "aal2", nextLevel: "aal2" }));
+    await settle();
+    expect(service.getSession()).toMatchObject({ status: "authenticated" });
+    expect(service.getSession().user?.id).toBe(ACCOUNT_A);
+  });
+
+  it("a profile read that answered for another account is not put on this user", async () => {
+    // `my_profile` answers for whichever token the request carried.
+    const { fake, service } = await start(async () => ({
+      ...profileOf(ACCOUNT_B),
+      displayName: "Compte B",
+      username: "compte_b",
+    }));
+    fake.restore(ACCOUNT_A);
+    await settle();
+    const user = service.getSession().user;
+    expect(user?.id).toBe(ACCOUNT_A);
+    expect(user?.displayName).not.toBe("Compte B");
+    expect(user?.username).not.toBe("compte_b");
+  });
+
+  it("a completed profile is not published onto a session another tab switched in", async () => {
+    const { fake, service } = await start();
+    fake.restore(ACCOUNT_A);
+    await settle();
+    // Another tab signed B in; this tab has not heard of it yet.
+    fake.hold(ACCOUNT_B, { currentLevel: "aal1", nextLevel: "aal1" });
+    const result = await service.completeProfile({ username: "fan" });
+    expect(result).toEqual({ ok: false, errorCode: "session_expired" });
+    expect(service.getSession().user?.id).toBe(ACCOUNT_A);
+  });
+});
+
+// Security review of 2026-09-25: sign-out took its actor from `user`, which is
+// null while the code is owed, so leaving from the challenge never recorded
+// the revocation -- although the step-up migration leaves the security audit
+// log unguarded precisely so that this record works at aal1.
+describe("signing out records the session's revocation", () => {
+  it("while the code is owed, for the account behind the session, before Auth ends it", async () => {
+    const { fake, service, revocations } = await start();
+    fake.setAssurance({ currentLevel: "aal1", nextLevel: "aal2" });
+    fake.restore(ACCOUNT_A);
+    await settle();
+    expect(service.getSession().status).toBe("mfa_required");
+    await service.signOut();
+    expect(revocations).toEqual([{ scope: "local", actorId: ACCOUNT_A, token: ACCOUNT_A }]);
+    expect(service.getSession().status).toBe("anonymous");
+  });
+
+  it("when the level could not be read, likewise", async () => {
+    const { fake, service, revocations } = await start();
+    fake.setAssurance(new Error("unreadable"));
+    fake.restore(ACCOUNT_A);
+    await settle();
+    expect(service.getSession().status).toBe("mfa_unconfirmed");
+    await service.signOut({ scope: "global" });
+    expect(revocations).toEqual([{ scope: "global", actorId: ACCOUNT_A, token: ACCOUNT_A }]);
+  });
+
+  it("signed in, as before; and a visitor has nothing to record", async () => {
+    const signedIn = await start();
+    signedIn.fake.restore(ACCOUNT_A);
+    await settle();
+    await signedIn.service.signOut();
+    expect(signedIn.revocations).toEqual([
+      { scope: "local", actorId: ACCOUNT_A, token: ACCOUNT_A },
+    ]);
+
+    const visitor = await start();
+    await visitor.service.signOut();
+    expect(visitor.revocations).toEqual([]);
   });
 });
 

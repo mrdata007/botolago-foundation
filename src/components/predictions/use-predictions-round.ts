@@ -310,6 +310,17 @@ const APP_SAVE_SERVICES: SaveQueueServices = {
  * (`sessionAccountId`) -- and otherwise keeps the picks in `uid`'s draft,
  * which `uid`'s next queue loads and sends. The draft stays on the device
  * after `uid` leaves, as it always has.
+ *
+ * It asks the auth service's published session, not the Supabase client's
+ * token, because nothing can name that token ahead of time: supabase-js reads
+ * it when the request goes out, through an awaited `auth.getSession()` that
+ * reads storage (and may refresh first), so a check made now, even if one
+ * could be made synchronously, would not be about the token sent after it.
+ * The service publishes `loading` the moment a session for another account
+ * reaches this tab (auth-supabase.ts), which is what closes the window. What
+ * is left is the gap between another tab writing its session to storage and
+ * this tab hearing of it; only a save that carried the checked session's own
+ * token could close that.
  */
 export function accountSaveQueue(
   uid: string,

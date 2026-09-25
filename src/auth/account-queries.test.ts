@@ -3,7 +3,12 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { QueryClient, QueryObserver, hashKey } from "@tanstack/react-query";
 
-import { forgetAccountQueries, queryKeyNamesAccount, watchAccountSwitch } from "./account-queries";
+import {
+  forgetAccount,
+  forgetAccountQueries,
+  queryKeyNamesAccount,
+  watchAccountSwitch,
+} from "./account-queries";
 import type { AuthSession } from "@/services/auth-types";
 import { followedTeamIdsQuery, followedTeamIdsQueryKey } from "@/services/follows";
 import { notificationPreferencesQueryKey } from "@/services/use-notification-preferences";
@@ -154,6 +159,66 @@ describe("forgetAccountQueries", () => {
     expect(qc.getQueryData(["fantasy-transfer-preview", TEAM_A, 4, "p1:p2", null])).toEqual({
       transferCount: 1,
     });
+  });
+});
+
+// Security review of 2026-09-25: `forgetAccount` runs from AuthProvider's
+// effect, after the render that switched accounts. Its Fantasy step removed
+// every owned-Fantasy entry and its Pronostics step every Pronostics entry --
+// the ones that render had just built for B included -- so B's reads were
+// cancelled and B's screens sat on their loading placeholders for good.
+describe("forgetAccount on a switch from A to B", () => {
+  it("forgets A, and every screen B has already opened gets its answer", async () => {
+    const qc = client();
+    // What A's screens had.
+    const ofA = [
+      scopedFantasyKey({ source: "cloud", owner: A }, "summary"),
+      ["predictions", "mine", A, 14],
+      followedTeamIdsQueryKey(A),
+    ];
+    for (const key of ofA) qc.setQueryData(key, { owner: "A" });
+    qc.setQueryData(["predictions", "round", "current", "fr"], { owner: "A" });
+
+    // B's screens, already asking: B's own Fantasy, Pronostics and follows,
+    // the journée (no account in its key) and a visitor-scoped board.
+    const ofB = [
+      scopedFantasyKey({ source: "cloud", owner: B }, "summary"),
+      scopedFantasyKey({ source: "guest", owner: "__local__" }, "rankings", "overall", 1),
+      ["predictions", "mine", B, 14],
+      ["predictions", "round", "current", "fr"],
+      followedTeamIdsQueryKey(B),
+    ];
+    const answers = new Map<string, () => void>();
+    const observers = ofB.map(
+      (queryKey) =>
+        new QueryObserver(qc, {
+          queryKey,
+          staleTime: Infinity,
+          queryFn: () =>
+            new Promise((resolve) => answers.set(hashKey(queryKey), () => resolve({ owner: "B" }))),
+        }),
+    );
+    const stops = observers.map((observer) => observer.subscribe(() => {}));
+
+    forgetAccount(qc, A);
+
+    for (const answer of answers.values()) answer();
+    await settle();
+    await settle();
+    expect(
+      observers.map((observer) => {
+        const { status, data } = observer.getCurrentResult();
+        return { status, data };
+      }),
+    ).toEqual(ofB.map(() => ({ status: "success", data: { owner: "B" } })));
+    for (const key of ofA)
+      expect({ key, data: qc.getQueryData(key) }).toEqual({ key, data: undefined });
+    const heldForA = qc
+      .getQueryCache()
+      .getAll()
+      .filter((query) => JSON.stringify(query.state.data ?? null).includes('"A"'));
+    expect(heldForA.map((query) => query.queryKey)).toEqual([]);
+    stops.forEach((stop) => stop());
   });
 });
 

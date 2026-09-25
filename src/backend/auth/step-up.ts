@@ -15,6 +15,8 @@
 // and, when a code really is owed, takes the reader to the challenge. Admin and
 // editorial errors are deliberately NOT reported: their own screens already
 // handle their server-enforced MFA states, and this must not reroute them.
+// News has one mapper for both (`mapNewsError`, which the CMS screens use), so
+// there only the reader's saved list reports, through `mapReaderListError`.
 //
 // Nothing here imports React, the router or the Supabase client, so the
 // mappers (some of which also run on the server, where nobody listens) can

@@ -44,6 +44,19 @@ export function isSecondFactorOwed(status: AuthStatus | undefined): boolean {
 }
 
 /**
+ * The session is settled, and is a complete sign-in or nobody's. A read that
+ * answers for whoever's token the request carries -- a board's "your rank" --
+ * waits for this. While `loading`, that token may be an account still being
+ * read (or, mid-switch, the next one); while the code is owed, it is an
+ * account the app does not count as signed in. Either way the answer would be
+ * that account's, shown under a key the page keeps for visitors, before the
+ * second-factor gate moves the reader on.
+ */
+export function isSessionSettled(status: AuthStatus | undefined): boolean {
+  return status === "authenticated" || status === "anonymous" || status === "guest";
+}
+
+/**
  * Whose data the device is holding on to: the signed-in account, or the one
  * that still owes its code. Not a permission -- the second case may not read
  * or write anything -- only the answer to "has the account changed?".

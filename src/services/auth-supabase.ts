@@ -7,11 +7,15 @@ import {
   SupabaseAccountSecurityRepository,
   SupabaseProfileRepository,
 } from "@/backend/identity/supabase-repositories";
-import type { ProfileDto, ProfileRepository } from "@/backend/identity/contracts";
+import type {
+  AccountSecurityRepository,
+  ProfileDto,
+  ProfileRepository,
+} from "@/backend/identity/contracts";
 import { IdentityError, mapIdentityError } from "@/backend/identity/errors";
 import type { RepositoryContext } from "@/backend/contracts/repository";
-import { readSessionAssurance } from "@/backend/auth/mfa";
-import { sessionForAssurance } from "@/auth/second-factor";
+import { sessionAssuranceOf } from "@/backend/auth/mfa";
+import { sessionAccountId, sessionForAssurance } from "@/auth/second-factor";
 import type {
   AuthErrorCode,
   AuthResult,
@@ -31,18 +35,19 @@ import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 const K_GUEST = "botolago.auth.guest";
 const K_LEGACY_PREFIX = "botolago.auth.";
 const defaultProfiles = new SupabaseProfileRepository();
-const accountSecurity = new SupabaseAccountSecurityRepository();
+const defaultAccountSecurity = new SupabaseAccountSecurityRepository();
 
 type SupabaseAuthClient = SupabaseClient["auth"];
 
 /**
- * What the service talks to, replaceable in tests. Both default to the app's
+ * What the service talks to, replaceable in tests. All default to the app's
  * own. `auth` is a thunk because the shared client is built on first touch and
  * throws there when the environment has no Supabase configuration.
  */
 export interface SupabaseAuthDependencies {
   readonly auth?: () => SupabaseAuthClient;
   readonly profiles?: Pick<ProfileRepository, "getMe" | "completeOnboarding">;
+  readonly accountSecurity?: AccountSecurityRepository;
 }
 
 function hasWindow() {
@@ -175,7 +180,7 @@ export class SupabaseAuthService implements AuthService {
   private initialized = false;
   /**
    * Moves on every published session and every resolution that starts. A
-   * resolution (profile read plus assurance lookup, both awaited) publishes
+   * resolution (profile read and avatar signing, both awaited) publishes
    * only if nothing moved it in the meantime. Without this a slow resolution
    * of account A -- its profile read retries for up to a second -- could land
    * after A signed out, or after B signed in, and put A back on screen. The
@@ -192,6 +197,10 @@ export class SupabaseAuthService implements AuthService {
 
   private get profiles(): Pick<ProfileRepository, "getMe" | "completeOnboarding"> {
     return this.deps.profiles ?? defaultProfiles;
+  }
+
+  private get accountSecurity(): AccountSecurityRepository {
+    return this.deps.accountSecurity ?? defaultAccountSecurity;
   }
 
   private emit(session: AuthSession) {
@@ -225,31 +234,66 @@ export class SupabaseAuthService implements AuthService {
   }
 
   /**
-   * Who a Supabase user is and how far this session has got with its second
-   * factor. The two lookups run side by side, so an ordinary sign-in waits no
-   * longer than it did for the profile alone. Every path that publishes a
-   * signed-in session comes through here: the password form, the e-mail code,
-   * the callback's refresh, a token refresh, a restored session. The callback
-   * used to publish "authenticated" straight from its refresh.
+   * Who a Supabase session's user is and how far that session has got with
+   * its second factor. Every path that publishes a signed-in session comes
+   * through here: the password form, the e-mail code, the callback's refresh,
+   * a token refresh, a restored session. The callback used to publish
+   * "authenticated" straight from its refresh.
+   *
+   * Everything is read from `session` itself. The level used to come from
+   * `mfa.getAuthenticatorAssuranceLevel()`, which judges whichever session
+   * storage holds when it runs: with another tab signing in meanwhile, the
+   * user of this session was published at the other session's level. The
+   * profile read goes out with whatever token the client holds at that moment
+   * too, so a profile that is not this user's is not used either.
    */
   private async resolveSignedIn(
-    user: User,
+    session: Session,
     knownProfile?: ProfileDto | null,
   ): Promise<{ authUser: AuthUser; session: AuthSession }> {
-    const [profile, assurance] = await Promise.all([
-      knownProfile !== undefined ? knownProfile : this.loadProfile(user.id),
-      readSessionAssurance(this.auth.mfa),
-    ]);
+    const { user } = session;
+    const assurance = sessionAssuranceOf(session);
+    const read = knownProfile !== undefined ? knownProfile : await this.loadProfile(user.id);
+    const profile = read?.id === user.id ? read : null;
     const authUser = await buildAuthUser(user, profile);
     return { authUser, session: sessionForAssurance(authUser, assurance) };
   }
 
-  /** Resolve, publish unless superseded, and return what this session resolved to. */
-  private async publishSignedIn(user: User, knownProfile?: ProfileDto | null) {
+  /**
+   * Resolve, publish unless superseded, and return what this session resolved
+   * to.
+   *
+   * A session for another account than the one on screen takes that account
+   * off the screen at once, before anything is awaited: `loading`, with nobody
+   * in it. Until 2026-09-25 nothing was published until the new account had
+   * been resolved -- a profile read of up to four attempts of 10 s each, then
+   * an avatar signing with no deadline -- and all that time the app showed
+   * account A while every request already carried account B's token (another
+   * tab had signed B in). A's Pronostics queue, asking whether the session was
+   * still A's, heard yes and sent A's unsent picks as B's. Now the leave runs
+   * straight away (AuthProvider forgets A, the owned queues stop), and B
+   * follows once resolved. The same account's new token (a refresh, the code
+   * entered) keeps its screen while it resolves, as before.
+   */
+  private async publishSignedIn(session: Session, knownProfile?: ProfileDto | null) {
+    const shown = sessionAccountId(this.cachedSession);
+    if (shown && shown !== session.user.id) this.emit({ user: null, status: "loading" });
     const revision = ++this.revision;
-    const resolved = await this.resolveSignedIn(user, knownProfile);
+    const resolved = await this.resolveSignedIn(session, knownProfile);
     if (revision === this.revision) this.emit(resolved.session);
     return resolved;
+  }
+
+  /**
+   * The session to resolve `userId` by, for a call that hands back a user and
+   * (usually) its session: that session, or else the stored one when it is
+   * the same account's. `null` when neither is: another account's session is
+   * not this user's to be judged by, and its own auth event publishes it.
+   */
+  private async sessionFor(userId: string, session?: Session | null): Promise<Session | null> {
+    if (session?.user?.id === userId) return session;
+    const { data } = await this.auth.getSession();
+    return data.session?.user?.id === userId ? data.session : null;
   }
 
   private async applySession(session: Session | null): Promise<AuthSession> {
@@ -260,7 +304,7 @@ export class SupabaseAuthService implements AuthService {
       return signedOut;
     }
     writeGuestFlag(false);
-    return (await this.publishSignedIn(session.user)).session;
+    return (await this.publishSignedIn(session)).session;
   }
 
   getSession(): AuthSession {
@@ -284,7 +328,9 @@ export class SupabaseAuthService implements AuthService {
       password,
     });
     if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
-    const { authUser, session } = await this.publishSignedIn(data.user);
+    const signedIn = await this.sessionFor(data.user.id, data.session);
+    if (!signedIn) return { ok: false, errorCode: "session_expired" };
+    const { authUser, session } = await this.publishSignedIn(signedIn);
     return { ok: true, data: authUser, status: session.status };
   }
 
@@ -325,7 +371,9 @@ export class SupabaseAuthService implements AuthService {
   async refreshSession(): Promise<AuthResult<AuthUser>> {
     const { data, error } = await this.auth.refreshSession();
     if (error || !data.user) return { ok: false, errorCode: "session_expired" };
-    const { authUser, session } = await this.publishSignedIn(data.user);
+    const refreshed = await this.sessionFor(data.user.id, data.session);
+    if (!refreshed) return { ok: false, errorCode: "session_expired" };
+    const { authUser, session } = await this.publishSignedIn(refreshed);
     return { ok: true, data: authUser, status: session.status };
   }
 
@@ -358,7 +406,9 @@ export class SupabaseAuthService implements AuthService {
       type: "email",
     });
     if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
-    const { authUser, session } = await this.publishSignedIn(data.user);
+    const verified = await this.sessionFor(data.user.id, data.session);
+    if (!verified) return { ok: false, errorCode: "session_expired" };
+    const { authUser, session } = await this.publishSignedIn(verified);
     return { ok: true, data: authUser, status: session.status };
   }
 
@@ -427,9 +477,12 @@ export class SupabaseAuthService implements AuthService {
         context(current.id),
       );
       if (oldAvatarPath && oldAvatarPath !== nextAvatarPath) await deleteAvatar(oldAvatarPath);
-      const { data } = await this.auth.getUser();
-      if (!data.user) return { ok: false, errorCode: "session_expired" };
-      const { authUser, session } = await this.publishSignedIn(data.user, profile);
+      // The account that completed its profile, and only if it is still the
+      // one signed in: a session another tab switched in meanwhile is not
+      // this profile's to publish (its own event publishes it).
+      const stored = await this.sessionFor(current.id);
+      if (!stored) return { ok: false, errorCode: "session_expired" };
+      const { authUser, session } = await this.publishSignedIn(stored, profile);
       return { ok: true, data: authUser, status: session.status };
     } catch (error) {
       // A newly-created path is safe to remove. If an existing deterministic
@@ -442,7 +495,7 @@ export class SupabaseAuthService implements AuthService {
   async requestAccountDeletion(): Promise<AuthResult<{ requestId: string }>> {
     const actorId = this.cachedSession.user?.id ?? null;
     try {
-      const id = await accountSecurity.requestDeletion(context(actorId));
+      const id = await this.accountSecurity.requestDeletion(context(actorId));
       return { ok: true, data: { requestId: id } };
     } catch (error) {
       return { ok: false, errorCode: mapIdentityCode(error) };
@@ -452,7 +505,7 @@ export class SupabaseAuthService implements AuthService {
   async cancelAccountDeletion(): Promise<AuthResult> {
     const actorId = this.cachedSession.user?.id ?? null;
     try {
-      await accountSecurity.cancelDeletion(context(actorId));
+      await this.accountSecurity.cancelDeletion(context(actorId));
       return { ok: true };
     } catch (error) {
       return { ok: false, errorCode: mapIdentityCode(error) };
@@ -462,7 +515,7 @@ export class SupabaseAuthService implements AuthService {
   async getAccountDeletionStatus(): Promise<AuthResult<{ pending: boolean }>> {
     const actorId = this.cachedSession.user?.id ?? null;
     try {
-      const requests = await accountSecurity.listDeletionRequests(context(actorId));
+      const requests = await this.accountSecurity.listDeletionRequests(context(actorId));
       return {
         ok: true,
         data: { pending: requests.some((request) => request.status === "requested") },
@@ -474,9 +527,16 @@ export class SupabaseAuthService implements AuthService {
 
   async signOut(options?: SignOutOptions): Promise<void> {
     const scope = options?.scope ?? "local";
-    const actorId = this.cachedSession.user?.id ?? null;
+    // The account behind the session, owing its code or not. Leaving from the
+    // challenge ends a real session too, and the database takes this record
+    // at aal1 on purpose (the step-up migration leaves the security audit log
+    // unguarded for it); with `user` alone, which is null while the code is
+    // owed, that sign-out was never recorded.
+    const actorId = sessionAccountId(this.cachedSession);
     if (actorId) {
-      await accountSecurity.recordSessionRevocation(scope, context(actorId)).catch(() => undefined);
+      await this.accountSecurity
+        .recordSessionRevocation(scope, context(actorId))
+        .catch(() => undefined);
     }
     await this.auth.signOut({ scope }).catch(() => undefined);
     if (hasWindow()) {

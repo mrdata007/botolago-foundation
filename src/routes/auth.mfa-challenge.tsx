@@ -100,6 +100,7 @@ function MfaChallengePage() {
     setLoadingFactor(true);
     (async () => {
       try {
+        // TOTP only: phone/WebAuthn MFA are off in supabase/config.toml, so a factor is TOTP.
         const factors = await listVerifiedTotpFactors(supabase.auth.mfa);
         if (cancelled) return;
         setFactorId(factors[0]?.id ?? null);

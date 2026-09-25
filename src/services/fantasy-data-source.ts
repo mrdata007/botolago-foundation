@@ -58,6 +58,23 @@ export function belongsToFantasyScope(key: unknown, scope: FantasyKeyScope): boo
 }
 
 /**
+ * `placeholderData` for an owned query: the previous key's data stays on
+ * screen while the next key loads -- the rankings' next page, another sort --
+ * but only when that previous key was `scope`'s too.
+ *
+ * `keepPreviousData` keeps whatever the observer last showed, whoever it
+ * belonged to. After a switch from account A to B, the rankings kept A's
+ * page -- A's team, rank and points, highlighted as "me" -- on B's screen
+ * until B's board arrived, and removing A's queries could not help: the
+ * observer holds its last data itself. A new function per scope, so TanStack
+ * Query does not reuse the placeholder it computed for the last one.
+ */
+export function keepSameOwnerData(scope: FantasyKeyScope) {
+  return <T>(previous: T | undefined, previousQuery?: { queryKey: readonly unknown[] }) =>
+    previousQuery && belongsToFantasyScope(previousQuery.queryKey, scope) ? previous : undefined;
+}
+
+/**
  * Remove every owned-fantasy cache entry except `current`'s. On an identity
  * change the previous owner's data must go, but the current owner's queries
  * were created by the very render that changed the identity: removing one

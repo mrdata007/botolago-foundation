@@ -69,15 +69,19 @@ const mappings: ReadonlyArray<readonly [string, NewsErrorCode]> = [
   ["news_invalid_list_scope", "invalid_list_scope"],
 ];
 
+/**
+ * Every News error, the CMS's included, as a `NewsError`. It does not report
+ * a step-up refusal to the auth layer: the admin News screens map their
+ * editorial errors through here, and staff MFA has its own server-enforced
+ * flow that the reader's challenge must not reroute (see step-up.ts). The
+ * reader's own list reports through `mapReaderListError`.
+ */
 export function mapNewsError(error: PostgrestError | Error): NewsError {
   // Already mapped (the repository maps every RPC error once, and the CMS
   // routes map again in their catch blocks). Re-mapping read only the generic
   // message, so every CMS error -- "forbidden", the save conflict, all of
   // them -- was shown as data_unavailable.
   if (error instanceof NewsError) return error;
-  // Saving an article is a write to the reader's own list: refused while the
-  // second factor is owed, and reported so the auth layer can ask for it.
-  reportMfaStepUp(error);
   const raw = `${error.message} ${"details" in error ? (error.details ?? "") : ""}`.toLowerCase();
   const mapping = mappings.find(([needle]) => raw.includes(needle));
   if (mapping)
@@ -85,4 +89,16 @@ export function mapNewsError(error: PostgrestError | Error): NewsError {
   if ("code" in error && error.code === "42501")
     return new NewsError("unauthorized", "Authentication is required.", error);
   return new NewsError("data_unavailable", "News data is temporarily unavailable.", error);
+}
+
+/**
+ * An error from the reader's own saved list (`save_article`, `unsave_article`):
+ * the one News write the step-up rule guards (`app.saved_articles`). Refused
+ * while the second factor is owed, and reported so the auth layer can ask for
+ * it -- which `mapNewsError` did for every News error until 2026-09-25, the
+ * CMS's included, against step-up.ts's rule for staff screens.
+ */
+export function mapReaderListError(error: PostgrestError | Error): NewsError {
+  reportMfaStepUp(error);
+  return mapNewsError(error);
 }
