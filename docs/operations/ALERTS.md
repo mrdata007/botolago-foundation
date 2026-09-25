@@ -10,10 +10,11 @@ waiting behind green runs.
 
 ## Channels
 
-| Channel                                                                                           | Fires on                                                                                                                                                                    | Latency                                                                                                                           | Needs                                                                                                      |
-| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| GitHub issue labelled `ops-alert` (mentions `@mrdata007`, so GitHub e-mails and notifies the app) | a red **Fantasy season orchestrator** run ([below](#a-red-season-orchestrator-run)); a failed **News licensed import** run; a row that fails in the **Production watchdog** | immediate for the two jobs (their last step); the watchdog runs every 30 min, after every orchestrator run on `main`, and by hand | nothing: uses the run's own `GITHUB_TOKEN`                                                                 |
-| Webhook message (Discord, Slack or any JSON endpoint) from the database                           | the database's own checks turning to `fail`, a different set of them failing, still failing an hour later, and once on recovery                                             | at most 5 minutes (pg_cron, independent of GitHub)                                                                                | the owner stores a webhook URL in Vault and switches it on ([below](#switching-the-webhook-on-owner-once)) |
+| Channel                                                                                                      | Fires on                                                                                                                                                                    | Latency                                                                                                                           | Needs                                                                                                                  |
+| ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| GitHub issue labelled `ops-alert` (mentions `@mrdata007`, so GitHub e-mails and notifies the app)            | a red **Fantasy season orchestrator** run ([below](#a-red-season-orchestrator-run)); a failed **News licensed import** run; a row that fails in the **Production watchdog** | immediate for the two jobs (their last step); the watchdog runs every 30 min, after every orchestrator run on `main`, and by hand | nothing: uses the run's own `GITHUB_TOKEN`                                                                             |
+| Webhook message (Discord, Slack or any JSON endpoint) from the database                                      | the database's own checks turning to `fail`, a different set of them failing, still failing an hour later, and once on recovery                                             | at most 5 minutes (pg_cron, independent of GitHub)                                                                                | the owner stores a webhook URL in Vault and switches it on ([below](#the-webhook-switch-it-on-test-it-pause-it-owner)) |
+| Email to the owner's inbox from the database (Edge Function `ops-alert-email`, the site's own Resend sender) | the same moments as the webhook, through the same tick                                                                                                                      | at most 5 minutes (pg_cron, independent of GitHub)                                                                                | the owner stores the address and switches it on ([below](#switching-email-alerts-on-owner-once))                       |
 
 One issue per job, titled `[ops] <job> is failing`: `Fantasy season
 orchestrator`, `News licensed import`, and `Production health` for the
@@ -23,10 +24,11 @@ open: a red orchestrator run opens its own, and the watchdog that runs after it
 fails its `season_orchestrator` row and opens `Production health`. Each closes
 on its own job's next green run.
 
-The webhook sends one message per incident, repeats hourly while it lasts,
-and says `RECOVERED` once. Warnings never send. It sees the database's checks
-only: the watchdog's own rows (`fantasy_points`, `season_orchestrator`, the
-pages, `release_drift`) reach you through GitHub alone.
+The webhook and the email send one message per incident, repeat hourly while
+it lasts, and say `RECOVERED` once. Warnings never send. They see the
+database's checks only: the watchdog's own rows (`fantasy_points`,
+`season_orchestrator`, the pages, `release_drift`) reach you through GitHub
+alone.
 
 Every alert carries the environment, the job or check, the time (UTC), an
 error category, the run id and link (GitHub) and a one-line reason. None
@@ -203,6 +205,39 @@ lists every one:
 | `failed`                                                                                                          | `failed`        | the provider refresh failed (the red _Provider refresh failed_ step)                                                                                                                                                                                                                                                        |
 | `workflow_failed`                                                                                                 |                 | a step before the pass failed, so there is no evidence file: see the run log                                                                                                                                                                                                                                                |
 
+## Switching email alerts on (owner, once)
+
+Added 2026-09-25 (`20260926001000_ops_alert_email`). That day both channels
+above fired and neither reached the owner: issue #218 mentioned `@mrdata007`
+and Slack answered `ok` to a test, but nothing arrived where the owner looks.
+Email goes to the one address stored in the database, through the same Resend
+key and sender as the site's other emails (`RESEND_API_KEY` in Edge Function
+secrets), and the Edge Function never takes a recipient from its caller.
+
+1. Deploy the Edge Function `ops-alert-email` (`verify_jwt = false`, like
+   `notification-email-dispatch`; `supabase/config.toml`).
+2. Supabase dashboard → BotolaGO Production V2 → SQL Editor → run:
+
+   ```sql
+   select app_private.ops_alert_configure_email('<your address>');
+   select app_private.ops_alert_configure(true);
+   select app_private.ops_alert_test();  -- one TEST email (and webhook message) now
+   ```
+
+3. Check the test was accepted: `select status_code, content from net._http_response
+where id = <emailRequestId from the test>;` answers `200` with `"sent":true`.
+   `503 email_provider_not_configured` means `RESEND_API_KEY` is missing from
+   the Edge Function secrets. Then confirm the email is in the inbox.
+4. To stop emailing: `select app_private.ops_alert_configure_email(null);`
+
+`app_private.ops_alert_test()` works any time and leaves the alert state
+alone, so the next real incident is still announced.
+
+The checks migration 20260926003400 adds (`fantasy_fixture_coverage`,
+`fantasy_scoring`) reach the email as they reach the webhook: both are sent by
+the same `app_private.ops_alert_tick()`, which reads every check of
+`app_private.ops_health_checks()`.
+
 ## The webhook: switch it on, test it, pause it (owner)
 
 Everything below runs in Supabase dashboard → BotolaGO Production V2 → SQL
@@ -218,8 +253,8 @@ once the alert-email change (migration `20260926001000`, which adds
 `ops_alert_test()`) is applied. Steps 1, 2 and 4 are for a new or replaced
 destination.
 
-It ships switched off (migration `20260924200200`), and it is the only
-channel that does not depend on GitHub's scheduler.
+It ships switched off (migration `20260924200200`). It and the email are the
+channels that do not depend on GitHub's scheduler.
 
 1. Create a webhook: Discord → channel → Edit Channel → Integrations →
    Webhooks → New Webhook → Copy Webhook URL (or a Slack incoming webhook).
@@ -266,7 +301,9 @@ channel that does not depend on GitHub's scheduler.
    path is proven at any time by a watchdog run with `simulate_failure`
    (below), which never reaches the webhook.
 
-4. Switch alerts on (it refuses without the Vault secret):
+4. Switch alerts on. It refuses when there is nothing to send through: no
+   Vault secret (and, once `20260926001000` is applied, no email address
+   either):
 
    ```sql
    select app_private.ops_alert_configure(true);
@@ -292,11 +329,12 @@ What it last did:
 select enabled, last_status, last_sent_at from app_private.ops_alert_state;
 ```
 
-Testing both channels once, making sure the `@mrdata007` mention reaches you,
-and the optional settings are the owner's checklist in
-[FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md → Paging](../backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md#paging-what-runs-and-what-the-owner-must-set).
+Testing the GitHub and webhook channels once, making sure the `@mrdata007`
+mention reaches you, and the optional settings are the owner's checklist in
+[FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md → Paging](../backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md#paging-what-runs-and-what-the-owner-must-set);
+the email is tested in [its own section](#switching-email-alerts-on-owner-once).
 A watchdog run with `simulate_failure` tests the GitHub path only: it adds a
-watchdog row, and the webhook never sees those.
+watchdog row, and the webhook and the email never see those.
 
 ## When an alert fires
 

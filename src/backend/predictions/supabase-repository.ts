@@ -8,6 +8,7 @@ import {
   leaderboardResponseSchema,
   leagueStandingsResponseSchema,
   leaveLeagueResponseSchema,
+  matchVotesResponseSchema,
   myLeaguesResponseSchema,
   myPredictionsResponseSchema,
   predictionsRoundResponseSchema,
@@ -21,6 +22,8 @@ import {
   type LeaderboardRequest,
   type LeagueStandingsDto,
   type LeaveLeagueDto,
+  type MatchVoteInput,
+  type MatchVotesDto,
   type MyLeaguesDto,
   type MyPredictionsDto,
   type MyPredictionsRequest,
@@ -64,7 +67,7 @@ async function call<T>(
   return parse(schema, response.data);
 }
 
-/** The eleven Pronostics RPCs, through the `api` schema only. */
+/** The Pronostics RPCs (the game, its leagues, the match votes), through the `api` schema only. */
 export class SupabasePredictionsRepository implements PredictionsRepository {
   constructor(private readonly api: PredictionsApi | null = null) {}
 
@@ -189,6 +192,26 @@ export class SupabasePredictionsRepository implements PredictionsRepository {
     return call(
       this.client().rpc("reset_prediction_league_invite_code", { p_league_id: leagueId }),
       resetInviteCodeResponseSchema,
+      context,
+    );
+  }
+
+  getMatchVotes(fixtureId: string, context: RepositoryContext): Promise<MatchVotesDto> {
+    return call(
+      this.client().rpc("match_votes", { p_fixture_id: fixtureId }),
+      matchVotesResponseSchema,
+      context,
+    );
+  }
+
+  castMatchVote(input: MatchVoteInput, context: RepositoryContext): Promise<MatchVotesDto> {
+    return call(
+      this.client().rpc("cast_match_vote", {
+        p_fixture_id: input.fixtureId,
+        p_question: input.question,
+        p_choice: input.choice,
+      }),
+      matchVotesResponseSchema,
       context,
     );
   }

@@ -3,10 +3,14 @@ import type { FootballLanguage, TeamSummaryDto } from "@/backend/football/contra
 import * as mock from "@/mocks/data";
 import {
   INVITE_CODE_PATTERN,
+  isMatchVoteChoice,
   LEAGUE_NAME_MAX,
   LEAGUE_NAME_MIN,
   MAX_CLAIM_ITEMS,
   MAX_ITEMS_PER_SAVE,
+  MATCH_VOTE_CHOICES,
+  MATCH_VOTE_QUESTIONS,
+  matchVotesResponseSchema,
   type ClaimGuestPredictionsDto,
   type ClaimStatus,
   type CreateLeagueDto,
@@ -18,6 +22,10 @@ import {
   type LeagueStandingEntryDto,
   type LeagueStandingsDto,
   type LeaveLeagueDto,
+  type MatchVoteChoice,
+  type MatchVoteInput,
+  type MatchVoteQuestion,
+  type MatchVotesDto,
   type MyLeaguesDto,
   type MyPredictionsDto,
   type MyPredictionsRequest,
@@ -266,11 +274,16 @@ interface StoredLeague {
   crowd: number;
 }
 
+/** A mock account's votes on one match. */
+type StoredVotes = Partial<Record<MatchVoteQuestion, MatchVoteChoice>>;
+
 interface MockState {
   predictions: Record<string, Record<string, StoredPrediction>>;
   seeded: string[];
   leagues: StoredLeague[];
   claims: number;
+  /** Fixture id, then account id. */
+  votes: Record<string, Record<string, StoredVotes>>;
 }
 
 function initialState(): MockState {
@@ -289,6 +302,7 @@ function initialState(): MockState {
       },
     ],
     claims: 0,
+    votes: {},
   };
 }
 
@@ -305,7 +319,10 @@ function loadState(): MockState {
       loaded = null;
     }
   }
-  memoryState = loaded && Array.isArray(loaded.leagues) ? loaded : initialState();
+  memoryState =
+    loaded && Array.isArray(loaded.leagues)
+      ? { ...loaded, votes: loaded.votes ?? {} }
+      : initialState();
   return memoryState;
 }
 
@@ -524,6 +541,16 @@ function mintCode(): string {
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("")
     .toUpperCase();
+}
+
+/**
+ * The votes of the mock crowd on a match: fixed per match and question, so
+ * the shares look like a real crowd's and a test can predict them.
+ */
+function crowdVotes(fixtureId: string, question: MatchVoteQuestion): number[] {
+  let hash = 0;
+  for (const char of `${fixtureId}:${question}`) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return MATCH_VOTE_CHOICES[question].map((_, index) => 20 + ((hash >>> (index * 7)) % 60));
 }
 
 export class MockPredictionsRepository implements PredictionsRepository {
@@ -955,5 +982,49 @@ export class MockPredictionsRepository implements PredictionsRepository {
     league.code = mintCode();
     saveState(state);
     return { leagueId, inviteCode: league.code };
+  }
+
+  async getMatchVotes(fixtureId: string, context: RepositoryContext): Promise<MatchVotesDto> {
+    const now = mockServerNow();
+    if (mockMode() === "off") return { schemaVersion: 1, allowed: false, serverTime: iso(now) };
+    const fixture = FIXTURES.find((candidate) => candidate.id === fixtureId);
+    const cast = loadState().votes[fixtureId] ?? {};
+    const mine = context.actorId ? (cast[context.actorId] ?? {}) : {};
+    return matchVotesResponseSchema.parse({
+      schemaVersion: 1,
+      allowed: true,
+      serverTime: iso(now),
+      fixtureId,
+      covered: fixture !== undefined,
+      open: fixture !== undefined && isOpen(fixture, now),
+      questions: MATCH_VOTE_QUESTIONS.map((question) => {
+        const crowd = crowdVotes(fixtureId, question);
+        const counts = Object.fromEntries(
+          MATCH_VOTE_CHOICES[question].map((choice, index) => [
+            choice,
+            crowd[index]! +
+              Object.values(cast).filter((votes) => votes[question] === choice).length,
+          ]),
+        );
+        return { question, counts, mine: mine[question] ?? null };
+      }),
+    });
+  }
+
+  async castMatchVote(input: MatchVoteInput, context: RepositoryContext): Promise<MatchVotesDto> {
+    const actorId = assertAllowed(context);
+    if (
+      !MATCH_VOTE_QUESTIONS.includes(input.question) ||
+      !isMatchVoteChoice(input.question, input.choice)
+    )
+      fail("validation_failed");
+    const fixture = FIXTURES.find((candidate) => candidate.id === input.fixtureId);
+    if (!fixture) fail("match_vote_unavailable");
+    if (!isOpen(fixture, mockServerNow())) fail("match_vote_closed");
+    const state = loadState();
+    const onFixture = (state.votes[input.fixtureId] ??= {});
+    (onFixture[actorId] ??= {})[input.question] = input.choice;
+    saveState(state);
+    return this.getMatchVotes(input.fixtureId, context);
   }
 }

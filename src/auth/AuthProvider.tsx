@@ -13,7 +13,10 @@ import { useRouter } from "@tanstack/react-router";
 import { authService, type AuthSession, type AuthStatus, type AuthUser } from "@/services/auth";
 import { useI18n } from "@/i18n/provider";
 import { fetchAccountStanding, rememberSuspension } from "@/services/account-standing";
-import { claimGuestPredictionsOnSignIn } from "@/components/predictions/guest-claim";
+import {
+  claimGuestPredictionsOnSignIn,
+  sendGuestVotesOnSignIn,
+} from "@/components/predictions/guest-claim";
 import { forgetAccount, watchAccountSwitch } from "./account-queries";
 import { challengeSearch, MFA_CHALLENGE_PATH, requireAuthStep } from "./second-factor";
 import { SecondFactorGate } from "./SecondFactorGate";
@@ -118,12 +121,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [signedInUid]);
 
-  // Pronostics (BG-0146): the predictions a visitor made on this phone move to
-  // the account whenever a session appears -- register, log-in and Google
-  // alike. Nothing is sent when the phone holds none.
+  // Pronostics (BG-0146): the predictions and match votes a visitor made on
+  // this phone move to the account whenever a session appears -- register,
+  // log-in and Google alike. Nothing is sent when the phone holds none.
   useEffect(() => {
     if (!signedInUid) return;
     void claimGuestPredictionsOnSignIn({ queryClient: qc, lang: langRef.current, t: tRef.current });
+    void sendGuestVotesOnSignIn(qc);
   }, [signedInUid, qc]);
 
   // A password-only session of an account with a second factor is not signed

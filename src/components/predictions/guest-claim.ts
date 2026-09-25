@@ -1,7 +1,13 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import type { MatchVoteInput } from "@/backend/predictions/contracts";
 import { mapPredictionsError } from "@/backend/predictions/errors";
+import {
+  forgetGuestVotes,
+  guestVoteItems,
+  readGuestVotes,
+} from "@/backend/predictions/guest-votes";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { PRONOSTICS_ENABLED } from "@/lib/feature-flags";
 import { predictionsService } from "@/services/predictions";
@@ -56,4 +62,43 @@ export function claimGuestPredictionsOnSignIn({
       inFlight = null;
     });
   return inFlight;
+}
+
+let votesInFlight: Promise<void> | null = null;
+
+/**
+ * A visitor's match votes move to the account at sign-in, like their picks:
+ * each is cast as the account's own vote. Every one is tried, however old:
+ * a visitor can vote weeks ahead, and only the database knows which matches
+ * are still open. A vote refused for good (the match has kicked off, or is
+ * not one Pronostics covers) leaves the phone too; when the game is off or
+ * the network fails, the rest stay for the next sign-in.
+ */
+export function sendGuestVotesOnSignIn(queryClient: QueryClient): Promise<void> {
+  if (!PRONOSTICS_ENABLED || votesInFlight) return votesInFlight ?? Promise.resolve();
+  const items = guestVoteItems(readGuestVotes());
+  if (items.length === 0) return Promise.resolve();
+  votesInFlight = (async () => {
+    const settled: MatchVoteInput[] = [];
+    for (const item of items) {
+      try {
+        await predictionsService.castMatchVote(item);
+        settled.push(item);
+      } catch (error) {
+        const { code } = mapPredictionsError(error);
+        const final =
+          code === "match_vote_closed" ||
+          code === "match_vote_unavailable" ||
+          code === "validation_failed" ||
+          code === "account_banned";
+        if (!final) break;
+        settled.push(item);
+      }
+    }
+    forgetGuestVotes(settled);
+    void queryClient.invalidateQueries({ queryKey: ["predictions", "match-votes"] });
+  })().finally(() => {
+    votesInFlight = null;
+  });
+  return votesInFlight;
 }

@@ -86,7 +86,7 @@ select extensions.ok(
 -- ---------------------------------------------------------------------------
 select extensions.is(app_private.ops_alert_tick(), 'disabled', 'alerts ship switched off');
 select extensions.throws_ok($$select app_private.ops_alert_configure(true)$$, '22023',
-  'ops_alert_webhook_missing', 'they cannot be switched on without a webhook in Vault');
+  'ops_alert_channel_missing', 'they cannot be switched on without a channel (webhook or email)');
 select vault.create_secret('https://alerts.example.invalid/hook', 'botolago_ops_alert_webhook');
 select app_private.ops_alert_configure(true);
 

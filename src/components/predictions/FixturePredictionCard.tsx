@@ -42,6 +42,7 @@ export function FixturePredictionCard({
   open,
   scored,
   notCounted = false,
+  className,
   onStep,
 }: {
   fixture: PredictionFixtureDto;
@@ -51,6 +52,8 @@ export function FixturePredictionCard({
   scored: FixtureScore | null;
   /** A guest pick the import refused because the match had started. */
   notCounted?: boolean;
+  /** Extra layout from the host, e.g. centring when a deck makes the card taller. */
+  className?: string;
   onStep: (side: "home" | "away", delta: 1 | -1) => void;
 }) {
   const { t, lang } = useI18n();
@@ -61,7 +64,11 @@ export function FixturePredictionCard({
 
   if (fixture.final && fixture.result) {
     return (
-      <UiCard padding="sm" testId={`prediction-${fixture.id}`} className="flex flex-col gap-1.5">
+      <UiCard
+        padding="sm"
+        testId={`prediction-${fixture.id}`}
+        className={cn("flex flex-col gap-1.5", className)}
+      >
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <span className={cn("min-w-0 truncate", ui.text.bodyStrong)} dir="auto">
             {homeName}
@@ -96,7 +103,11 @@ export function FixturePredictionCard({
 
   const status = lockedStatus(fixture, open, t);
   return (
-    <UiCard padding="sm" testId={`prediction-${fixture.id}`} className="flex flex-col gap-2">
+    <UiCard
+      padding="sm"
+      testId={`prediction-${fixture.id}`}
+      className={cn("flex flex-col gap-2", className)}
+    >
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <ClubCrest club={home} size="sm" />

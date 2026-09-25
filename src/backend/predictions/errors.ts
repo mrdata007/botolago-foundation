@@ -25,6 +25,8 @@ export const PREDICTIONS_ERROR_CODES = [
   "league_access_denied",
   "league_create_limit_reached",
   "predictions_leagues_unavailable",
+  "match_vote_unavailable",
+  "match_vote_closed",
   /**
    * This session has not presented the account's second factor yet. Raised
    * by the database's shared account guard (`PT403 mfa_required`), and

@@ -399,6 +399,14 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/football-live-refresh/index.ts"
 
+# Production alerts by email (app_private.ops_alert_tick / ops_alert_test).
+# Same scheduler-token check as the two above; it mails only the address
+# stored in the database.
+[functions.ops-alert-email]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ops-alert-email/index.ts"
+
 # The List-Unsubscribe target mail providers POST to (RFC 8058 one-click). It
 # carries no credentials by design; the per-email token is the authority and
 # it can only turn email off.

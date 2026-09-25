@@ -579,6 +579,10 @@ export type Database = {
         }
         Returns: Json
       }
+      cast_match_vote: {
+        Args: { p_choice: string; p_fixture_id: string; p_question: string }
+        Returns: Json
+      }
       claim_guest_predictions: { Args: { p_items: Json }; Returns: Json }
       complete_football_ingestion: {
         Args: {
@@ -1126,6 +1130,7 @@ export type Database = {
         Args: { p_notification_id: string; p_read?: boolean }
         Returns: boolean
       }
+      match_votes: { Args: { p_fixture_id: string }; Returns: Json }
       my_notification_unread_count: {
         Args: { p_category?: Database["app"]["Enums"]["notification_category"] }
         Returns: number
@@ -1601,6 +1606,7 @@ export type Database = {
         }
         Returns: Json
       }
+      service_ops_alert_email_target: { Args: never; Returns: string }
       service_ops_health: { Args: never; Returns: Json }
       service_pause_email_provider: {
         Args: { p_reason: string; p_until: string }
@@ -5226,6 +5232,48 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_votes: {
+        Row: {
+          choice: string
+          created_at: string
+          fixture_id: string
+          question: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          choice: string
+          created_at?: string
+          fixture_id: string
+          question: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          choice?: string
+          created_at?: string
+          fixture_id?: string
+          question?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_votes_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
