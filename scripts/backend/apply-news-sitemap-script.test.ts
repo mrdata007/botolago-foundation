@@ -51,6 +51,9 @@ describe(`apply-${VERSION}-news-sitemap.sql`, () => {
       "migration 20260924200600 (truthful article dates) is not applied yet",
       // The version production held on 2026-09-25 (20260924200600), measured there.
       "    <> '66e94c912098137d30f7fd67f9555144' then",
+      // No other News writer (the every-minute publisher, the CMS, an import)
+      // until it ends: AGENTS.md, one writer at a time.
+      "lock table app.article_editions, app.article_revisions, app.stories, app.publishers\n  in share mode;",
       // The old answer, kept to compare with the new one.
       "md5(api.news_sitemap_entries(49990)::text),",
     ]) {
@@ -61,6 +64,13 @@ describe(`apply-${VERSION}-news-sitemap.sql`, () => {
         beforeFirstWrite: true,
       });
     }
+  });
+
+  test("holds News writes before it takes the old answer", () => {
+    const hold = script.indexOf("in share mode;");
+    const baseline = script.indexOf("md5(api.news_sitemap_entries(49990)::text),");
+    expect(hold).toBeGreaterThan(0);
+    expect(hold).toBeLessThan(baseline);
   });
 
   test("afterwards: set-based, still public, fast, and the same answer", () => {

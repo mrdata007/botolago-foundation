@@ -11,6 +11,14 @@
 --   News read function and nothing else, so the email, Fantasy and
 --   Pronostics jobs do not need pausing.
 --
+--   Nothing else may write News while it runs: the every-minute
+--   `news-publish-due-editions` job (when an article falls due), an editor
+--   saving in the CMS, or an import. So it holds News writes for its ~15
+--   seconds (reading News is not held, and the site keeps serving): a
+--   publication that falls due in that window goes out when it ends. If a
+--   News write is already under way, it stops within 5 seconds and saves
+--   nothing: run it again a minute later.
+--
 -- HOW TO RUN
 --   1. Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor ->
 --      New query. Make sure no other database work is running right now.
@@ -28,6 +36,7 @@
 --   * refuses to run twice, before 20260924200600, or where
 --     api.news_sitemap_entries is not the version this replaces
 --     (20260924200600, byte for byte as production held it on 2026-09-25);
+--   * holds News writes until it ends (see WHEN);
 --   * reads the whole sitemap once with the old version and keeps its
 --     fingerprint;
 --   * records the migration file in supabase_migrations.schema_migrations,
@@ -71,6 +80,12 @@ begin
   end if;
 end
 $preflight$;
+
+-- No News write until this transaction ends, so the sitemap cannot change
+-- between the two readings below (AGENTS.md, one writer at a time). Waits at
+-- most lock_timeout (5 s) for a write already under way, then stops.
+lock table app.article_editions, app.article_revisions, app.stories, app.publishers
+  in share mode;
 
 -- The whole sitemap as the old version answers it (about 8 seconds), kept
 -- for the postflight to compare against.
@@ -234,7 +249,7 @@ begin
   end if;
   if md5(answer) is distinct from current_setting('botolago.sitemap_before', true) then
     problems := problems || ('the new answer differs from the old one (' || jsonb_array_length(answer::jsonb)
-      || ' entries) -- if an article was published in the last few seconds, run again');
+      || ' entries)');
   end if;
 
   if cardinality(problems) > 0 then
