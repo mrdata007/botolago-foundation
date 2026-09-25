@@ -8,9 +8,9 @@ import {
 } from "@/backend/football/contracts";
 
 /**
- * Pronostics (score predictions, BG-0146): the DTOs of the eleven `api.*`
- * functions in supabase/migrations/20260925090200_predictions_api.sql and
- * 20260925090300_predictions_leagues.sql.
+ * Pronostics (score predictions, BG-0146): the DTOs of the `api.*` functions
+ * in supabase/migrations/20260925090200_predictions_api.sql,
+ * 20260925090300_predictions_leagues.sql and 20260925234000_match_votes.sql.
  *
  * The shapes are the whole contract: a key the database starts returning is
  * dropped by the parse rather than shown, and a key it stops returning fails
@@ -336,6 +336,79 @@ export const LEAGUE_NAME_MIN = 3;
 export const LEAGUE_NAME_MAX = 80;
 
 // ---------------------------------------------------------------------------
+// api.match_votes / api.cast_match_vote (20260925234000): fan votes, for fun
+// ---------------------------------------------------------------------------
+
+/** The three questions, in the order the database answers them. */
+export const MATCH_VOTE_QUESTIONS = ["winner", "both_score", "first_goal"] as const;
+export type MatchVoteQuestion = (typeof MATCH_VOTE_QUESTIONS)[number];
+
+/** Each question's answers, in display order (home first: on the right in Arabic). */
+export const MATCH_VOTE_CHOICES = {
+  winner: ["home", "draw", "away"],
+  both_score: ["yes", "no"],
+  first_goal: ["home", "none", "away"],
+} as const satisfies Record<MatchVoteQuestion, readonly string[]>;
+export type MatchVoteChoice = (typeof MATCH_VOTE_CHOICES)[MatchVoteQuestion][number];
+
+export function isMatchVoteChoice(question: MatchVoteQuestion, choice: string): boolean {
+  return (MATCH_VOTE_CHOICES[question] as readonly string[]).includes(choice);
+}
+
+const winnerVoteSchema = z.object({
+  question: z.literal("winner"),
+  counts: z.object({ home: count, draw: count, away: count }),
+  mine: z.enum(MATCH_VOTE_CHOICES.winner).nullable(),
+});
+const bothScoreVoteSchema = z.object({
+  question: z.literal("both_score"),
+  counts: z.object({ yes: count, no: count }),
+  mine: z.enum(MATCH_VOTE_CHOICES.both_score).nullable(),
+});
+const firstGoalVoteSchema = z.object({
+  question: z.literal("first_goal"),
+  counts: z.object({ home: count, none: count, away: count }),
+  mine: z.enum(MATCH_VOTE_CHOICES.first_goal).nullable(),
+});
+export const matchVoteQuestionSchema = z.discriminatedUnion("question", [
+  winnerVoteSchema,
+  bothScoreVoteSchema,
+  firstGoalVoteSchema,
+]);
+export type MatchVoteQuestionDto = z.infer<typeof matchVoteQuestionSchema>;
+
+const closedMatchVotesSchema = z.object({
+  schemaVersion: z.literal(1),
+  allowed: z.literal(false),
+  serverTime: timestamp,
+});
+
+const openMatchVotesSchema = z.object({
+  schemaVersion: z.literal(1),
+  allowed: z.literal(true),
+  serverTime: timestamp,
+  fixtureId: uuid,
+  /** A match Pronostics covers: the current season, with a journée. */
+  covered: z.boolean(),
+  /** Votes can still change: the match has not kicked off. */
+  open: z.boolean(),
+  questions: z.array(matchVoteQuestionSchema),
+});
+
+export const matchVotesResponseSchema = z.discriminatedUnion("allowed", [
+  closedMatchVotesSchema,
+  openMatchVotesSchema,
+]);
+export type MatchVotesDto = z.infer<typeof matchVotesResponseSchema>;
+export type OpenMatchVotesDto = z.infer<typeof openMatchVotesSchema>;
+
+export interface MatchVoteInput {
+  readonly fixtureId: string;
+  readonly question: MatchVoteQuestion;
+  readonly choice: MatchVoteChoice;
+}
+
+// ---------------------------------------------------------------------------
 // Repository
 // ---------------------------------------------------------------------------
 
@@ -380,4 +453,6 @@ export interface PredictionsRepository {
   leaveLeague(leagueId: string, context: RepositoryContext): Promise<LeaveLeagueDto>;
   createLeague(name: string, context: RepositoryContext): Promise<CreateLeagueDto>;
   resetLeagueInviteCode(leagueId: string, context: RepositoryContext): Promise<ResetInviteCodeDto>;
+  getMatchVotes(fixtureId: string, context: RepositoryContext): Promise<MatchVotesDto>;
+  castMatchVote(input: MatchVoteInput, context: RepositoryContext): Promise<MatchVotesDto>;
 }

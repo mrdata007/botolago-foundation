@@ -93,6 +93,33 @@ A cancelled or abandoned match is void automatically. A postponed match is never
 scored while postponed, whatever score the provider stores (FAR Rabat – Raja
 carried 0–0 on 24 Sept 2026). When it is played, it is scored like any other.
 
+## Match votes
+
+Owner decision, 2026-09-25: three fan votes on every match page, in the style
+of Sofascore's, for fun: who wins, will both teams score, who scores first. No
+points; each card shows the share of fans behind each answer. They sit after
+the score card in one swipeable row with dots (`MatchPredictionCard`).
+
+- `app.match_votes`: one row per account, match and question, changeable until
+  kick-off by the same per-match lock as predictions. Written only by
+  `api.cast_match_vote` (signed-in players); read only as totals by
+  `api.match_votes`, which leaves out banned and deleted accounts. No
+  scheduled job writes it.
+- The Pronostics switch covers it: off, the votes are hidden and refused with
+  the rest of the game.
+- A visitor's votes stay on the phone (`botolago.predictions.guest-votes.v1`)
+  and are cast as the account's own at sign-in.
+
+```sql
+-- The votes on one match.
+select question, choice, count(*) from app.match_votes
+where fixture_id = '<fixture id>' group by 1, 2 order by 1, 2;
+```
+
+Removing a match's votes (abuse, a match replayed from zero) is a production
+write like any other: the owner's go-ahead, then
+`delete from app.match_votes where fixture_id = '<fixture id>';`.
+
 ## After a ban or an account deletion
 
 The public rankings leave banned and deleted players out at once. Their saved

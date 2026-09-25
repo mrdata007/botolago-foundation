@@ -13,7 +13,10 @@ import { authService, type AuthSession, type AuthStatus, type AuthUser } from "@
 import { useI18n } from "@/i18n/provider";
 import { cleanupOwnedFantasyOnSignOut } from "@/services/fantasy-signout-cleanup";
 import { fetchAccountStanding, rememberSuspension } from "@/services/account-standing";
-import { claimGuestPredictionsOnSignIn } from "@/components/predictions/guest-claim";
+import {
+  claimGuestPredictionsOnSignIn,
+  sendGuestVotesOnSignIn,
+} from "@/components/predictions/guest-claim";
 import { forgetAccountPredictions } from "@/components/predictions/predictions-runtime";
 
 interface AuthPromptState {
@@ -118,12 +121,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [signedInUid]);
 
-  // Pronostics (BG-0146): the predictions a visitor made on this phone move to
-  // the account whenever a session appears -- register, log-in and Google
-  // alike. Nothing is sent when the phone holds none.
+  // Pronostics (BG-0146): the predictions and match votes a visitor made on
+  // this phone move to the account whenever a session appears -- register,
+  // log-in and Google alike. Nothing is sent when the phone holds none.
   useEffect(() => {
     if (!signedInUid) return;
     void claimGuestPredictionsOnSignIn({ queryClient: qc, lang: langRef.current, t: tRef.current });
+    void sendGuestVotesOnSignIn(qc);
   }, [signedInUid, qc]);
 
   const requireAuth = useCallback<AuthContextValue["requireAuth"]>((action, opts) => {

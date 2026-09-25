@@ -109,12 +109,19 @@ export async function expectNoHorizontalOverflow(page: Page) {
  * The same measure for every visible box under `scope`: what the document's
  * scroll width cannot see behind `overflow-x: clip`, a box can.
  */
+/**
+ * A row marked `data-swipe-row` (the match page's prediction deck) holds cards
+ * a reader swipes to: the ones waiting beside the viewport are reachable, not
+ * clipped. The row itself is still measured; what each card holds is measured
+ * against the card instead (`expectSwipeSlidesFit`).
+ */
 export async function expectNothingOffScreen(page: Page, scope = "main") {
   const offscreen = await page.evaluate((selector) => {
     const viewport = document.documentElement.clientWidth;
     const found: string[] = [];
     for (const root of document.querySelectorAll(selector)) {
       for (const node of [root, ...root.querySelectorAll("*")]) {
+        if (node.parentElement?.closest("[data-swipe-row]")) continue;
         const box = node.getBoundingClientRect();
         if (box.width === 0 || box.height === 0) continue;
         if (box.left >= -1 && box.right <= viewport + 1) continue;
@@ -147,4 +154,25 @@ export async function expectNoClippedMatchCards(page: Page) {
     return offscreen;
   });
   expect(clipped, "match-card content clipped outside the viewport").toEqual([]);
+}
+
+/** Every card of a `data-swipe-row` keeps what it holds inside its own box. */
+export async function expectSwipeSlidesFit(page: Page) {
+  const spilled = await page.evaluate(() => {
+    const found: string[] = [];
+    for (const slide of document.querySelectorAll("[data-swipe-row] > *")) {
+      const frame = slide.getBoundingClientRect();
+      for (const node of slide.querySelectorAll("*")) {
+        const box = node.getBoundingClientRect();
+        if (box.width === 0 || box.height === 0) continue;
+        if (box.left >= frame.left - 1 && box.right <= frame.right + 1) continue;
+        const label = (node.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 24);
+        found.push(
+          `${node.tagName.toLowerCase()} "${label}" spans ${Math.round(box.left - frame.left)}..${Math.round(box.right - frame.left)} in a ${Math.round(frame.width)}px card`,
+        );
+      }
+    }
+    return found;
+  });
+  expect(spilled, "content spilling out of a swiped card").toEqual([]);
 }
