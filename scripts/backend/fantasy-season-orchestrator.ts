@@ -354,7 +354,11 @@ export async function orchestrateFantasySeason(
   const providerRefresh = options.providerRefresh;
   // Without a fixture refresh the pass can only work from data already in the
   // database; it is still safe, but never "ok" until the provider is read again.
-  if (providerRefresh && !providerRefresh.fixturesRefreshed)
+  // A refresh that was expected to pass and did not (fixtures-only scope, or a
+  // failed step with no evidence) fails the run: green would close its alert
+  // while later fixtures and results stay stale.
+  if (providerRefresh?.failed) verdict = mergeVerdict(verdict, "failed");
+  else if (providerRefresh && !providerRefresh.fixturesRefreshed)
     verdict = mergeVerdict(verdict, "waiting");
 
   // The guard runs last and never short-circuits the pass.
@@ -426,7 +430,13 @@ export function renderHealthSummary(summary: OrchestratorSummary): string {
         ? "not run"
         : refresh.verdict === "pass"
           ? `pass (${refresh.fixtureWindows} fixture window${refresh.fixtureWindows === 1 ? "" : "s"})`
-          : `${refresh.verdict}${refresh.errorCode ? `: \`${refresh.errorCode}\`` : ""}${refresh.fixturesRefreshed ? " (fixtures refreshed)" : ""}`,
+          : `${refresh.verdict}${refresh.errorCode ? `: \`${refresh.errorCode}\`` : ""}${
+              refresh.fixturesRefreshed
+                ? " (fixtures refreshed)"
+                : refresh.failed && refresh.fixtureWindows > 0
+                  ? ` (partial: ${refresh.fixtureWindows} fixture window${refresh.fixtureWindows === 1 ? "" : "s"} before the failure)`
+                  : ""
+            }`,
     ],
     [
       "Calendar",
@@ -466,19 +476,45 @@ export function renderHealthSummary(summary: OrchestratorSummary): string {
 export type ProviderRefresh = {
   verdict: "pass" | "fail" | "missing";
   errorCode?: string;
+  /** Every fixture window the refresh set out to read was committed. */
   fixturesRefreshed: boolean;
   fixtureWindows: number;
+  /**
+   * The refresh was expected to pass and did not: a fixtures-only run
+   * (nothing in it is allowed to fail) that failed or refreshed only part of
+   * the season, or a refresh step that failed without leaving evidence. The
+   * orchestrator then fails the run, so it stays red and its alert open.
+   */
+  failed: boolean;
 };
 
 /**
  * Reads the sanitized evidence written by scripts/backend/current-season-recovery.ts
- * in the preceding workflow step. The recovery canary commits its fixture /
- * result phase before the squad guard that may still fail while the provider
- * lacks the promoted clubs, so "fixtures refreshed" is what matters here.
+ * in the preceding workflow step.
+ *
+ * A full-scope recovery (`recoveryScope: "all"`) commits its fixture/result
+ * phase before the squad guard, which may still fail while the provider lacks
+ * the promoted clubs: there, any committed window means the fixtures were
+ * refreshed. A fixtures-only run (`recoveryScope: "fixtures"`, what the
+ * orchestrator workflow runs) has nothing after its fixture loop, so a failed
+ * verdict means a later window failed and the season was only partly
+ * refreshed: only a pass counts, and anything else fails the run.
+ * `stepOutcome` is the refresh step's GitHub outcome; a step that failed
+ * without leaving evidence fails the run too.
  */
-export function summarizeProviderRefresh(raw: unknown): ProviderRefresh {
+export function summarizeProviderRefresh(
+  raw: unknown,
+  { stepOutcome }: { stepOutcome?: string } = {},
+): ProviderRefresh {
   if (!raw || typeof raw !== "object") {
-    return { verdict: "missing", fixturesRefreshed: false, fixtureWindows: 0 };
+    const failed = stepOutcome === "failure";
+    return {
+      verdict: failed ? "fail" : "missing",
+      ...(failed ? { errorCode: "current_season_recovery_step_failed" } : {}),
+      fixturesRefreshed: false,
+      fixtureWindows: 0,
+      failed,
+    };
   }
   const evidence = raw as Record<string, unknown>;
   const windows = Array.isArray(evidence.fixtures) ? evidence.fixtures.length : 0;
@@ -487,11 +523,14 @@ export function summarizeProviderRefresh(raw: unknown): ProviderRefresh {
     typeof evidence.errorCode === "string" && /^[a-z][a-z0-9_]{2,100}$/.test(evidence.errorCode)
       ? evidence.errorCode
       : undefined;
+  const fixturesOnly = evidence.recoveryScope === "fixtures";
+  const fixturesRefreshed = fixturesOnly ? verdict === "pass" && windows > 0 : windows > 0;
   return {
     verdict,
     ...(verdict === "fail" ? { errorCode: errorCode ?? "current_season_recovery_failed" } : {}),
-    fixturesRefreshed: windows > 0,
+    fixturesRefreshed,
     fixtureWindows: windows,
+    failed: fixturesOnly && !fixturesRefreshed,
   };
 }
 
@@ -606,6 +645,7 @@ if (import.meta.main) {
     };
     const providerRefresh = summarizeProviderRefresh(
       await readRecoveryEvidence(process.env.CURRENT_SEASON_EVIDENCE_DIR),
+      { stepOutcome: process.env.RECOVERY_STEP_OUTCOME },
     );
     const summary = {
       expectedCommit: commit,
