@@ -1,0 +1,18 @@
+HTTP/1.1 200 Connection Established
+
+HTTP/2 503 
+date: Fri, 25 Sep 2026 07:26:46 GMT
+content-type: text/plain; charset=utf-8
+content-length: 31
+cache-control: no-store
+retry-after: 300
+strict-transport-security: max-age=31536000; includeSubDomains
+referrer-policy: strict-origin-when-cross-origin
+x-content-type-options: nosniff
+content-security-policy: frame-ancestors 'self'
+x-botolago-release: 86c0facebf4ee0ed8f775c0e4fae30d93a7d6927
+x-frame-options: SAMEORIGIN
+set-cookie: __cf_bm=9N4y4O.Jxe6Z0adYD.nzUSajCuO9XkGZNG4hmYmIB2k-1790321203.4283185-1.0.1.1-ZzSk.JMlmOPlBtKSdkVFLuzTK3zAWuyGiape4095O9v0FXang2cKH0t66xq_W4TEDZjpmhYGjgiqRwyWVpIu8EpsK6tAro2uIfsoFk4EZSPIWQVvkcGObbtnet_cEIey; HttpOnly; SameSite=None; Secure; Path=/; Domain=botolago.com; Expires=Fri, 25 Sep 2026 07:56:46 GMT
+server: cloudflare
+cf-ray: a4084d616ad0f268-IAD
+
