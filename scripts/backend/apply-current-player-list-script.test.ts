@@ -57,6 +57,7 @@ describe(`apply-${VERSION}-current-player-list-update.sql`, () => {
       "migration 20260925120000 is not applied",
       "something this migration creates already exists",
       "the database is missing something this migration relies on",
+      "api.confirm_fantasy_transfers or api.create_fantasy_team is not the version this migration changes",
       "if exists (select 1 from cron.job_run_details run\n    where run.status not in ('succeeded', 'failed')) then",
     ]) {
       const at = migrationScript.indexOf(guard);
@@ -69,6 +70,8 @@ describe(`apply-${VERSION}-current-player-list-update.sql`, () => {
       "is readable from outside",
       "is callable by the wrong roles",
       "is callable from outside",
+      "transfers or new teams do not take the squads lock",
+      "managers can no longer make transfers or create a team",
       "names are not compared without accents",
       "history row missing",
     ])

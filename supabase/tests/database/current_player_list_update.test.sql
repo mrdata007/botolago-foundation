@@ -229,6 +229,17 @@ select extensions.throws_ok(
   $$select api.service_record_current_player_list(observations) from observation_input$$,
   'PT403', 'forbidden', 'a caller without the service role claim is refused'
 );
+-- The apply takes the squads lock exclusively; transfers and new teams take it
+-- shared before they check the club limit, so they wait for one another.
+select extensions.ok(
+  pg_get_functiondef('api.confirm_fantasy_transfers(uuid,uuid,jsonb,bigint,uuid,app.fantasy_chip_type)'::regprocedure)
+    like '%pg_advisory_xact_lock_shared(pg_catalog.hashtextextended(%''fantasy:squads:'' || team.fantasy_season_id::text, 0));%preview := api.preview_fantasy_transfers(%'
+  and pg_get_functiondef('api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)'::regprocedure)
+    like '%pg_advisory_xact_lock_shared(pg_catalog.hashtextextended(%''fantasy:squads:'' || season.id::text, 0));%perform app_private.fantasy_validate_selection(%'
+  and pg_get_functiondef('api.service_apply_current_player_list(uuid,text)'::regprocedure)
+    like '%pg_advisory_xact_lock(pg_catalog.hashtextextended(%''fantasy:squads:'' || target_fantasy.id::text, 0));%current_player_list_plan(p_observation_id)%',
+  'transfers and new teams wait for a player list update, and it for them'
+);
 
 set local role service_role;
 select set_config('request.jwt.claim.role', 'service_role', true);

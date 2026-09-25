@@ -45,8 +45,11 @@
 --   * records the migration file in supabase_migrations.schema_migrations,
 --     whole as statements[1], and runs it from that record once its sha256
 --     matches the repository file;
+--   * gives transfers and new teams the squads lock, where they are still the
+--     reviewed versions, so a player list update and they wait for each other;
 --   * checks the result: both tables exist and nobody but the database may
---     read them, and only the service role may call the three functions.
+--     read them, only the service role may call the three functions, and
+--     transfers and new teams take the squads lock.
 -- ============================================================================
 
 begin;
@@ -89,6 +92,15 @@ begin
     or to_regprocedure('api.service_plan_current_player_list(uuid)') is not null
     or to_regprocedure('api.service_apply_current_player_list(uuid,text)') is not null then
     raise exception 'stop: something this migration creates already exists';
+  end if;
+  -- The two Fantasy functions this migration gives the squads lock must be
+  -- the versions reviewed (as production held them on 2026-09-25).
+  if md5(pg_get_functiondef(
+      'api.confirm_fantasy_transfers(uuid,uuid,jsonb,bigint,uuid,app.fantasy_chip_type)'::regprocedure))
+      <> '18fe851308666c2c7971af349adfe5ea'
+    or md5(pg_get_functiondef('api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)'::regprocedure))
+      <> 'dbc6b8f005f2f19e67efa1dc453467bb' then
+    raise exception 'stop: api.confirm_fantasy_transfers or api.create_fantasy_team is not the version this migration changes';
   end if;
   if to_regprocedure('app_private.is_service_request()') is null
     or to_regprocedure('app_private.fantasy_initial_price_v1(text,numeric,numeric)') is null
@@ -874,7 +886,12 @@ begin
   perform app_private.hold_scheduled_jobs();
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
     'fantasy:catalog:' || target_season.id::text, 0));
-  lock table app.team_memberships, app.fantasy_players in share row exclusive mode;
+  -- Transfers and new teams take this lock shared before checking the club
+  -- limit, so none is checked against a club this update is changing.
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
+    'fantasy:squads:' || target_fantasy.id::text, 0));
+  lock table app.team_memberships, app.fantasy_players, app.fantasy_squad_memberships
+    in share row exclusive mode;
   if exists (select 1 from app_private.current_player_list_updates applied
     where applied.observation_id = p_observation_id) then
     raise exception using errcode = 'PT409', message = 'player_list_observation_already_applied';
@@ -1035,10 +1052,14 @@ begin
     );
   end loop;
 
-  -- 7. The same observation must now plan nothing.
+  -- 7. The same observation must now plan nothing, and no squad may be over
+  --    the club limit with the clubs as they now stand.
   after_plan := app_private.current_player_list_plan(p_observation_id);
   if (after_plan #>> '{summary,changes}')::integer <> 0 then
     raise exception using errcode = 'PT409', message = 'player_list_apply_incomplete';
+  end if;
+  if (after_plan #>> '{summary,clubLimitViolations}')::integer <> 0 then
+    raise exception using errcode = 'PT409', message = 'fantasy_club_limit_exceeded';
   end if;
 
   result := jsonb_build_object(
@@ -1057,6 +1078,286 @@ begin
   insert into app_private.current_player_list_updates (observation_id, plan_digest, plan, result)
   values (p_observation_id, plan ->> 'digest', plan, result);
   return result;
+end;
+$$;
+
+-- Transfers and new teams wait for a player list update, and it for them:
+-- each takes the squads lock shared before it checks the club limit (the
+-- apply takes it exclusively). Otherwise both functions are exactly as
+-- 20260803173344 and 20260924200000 left them; their grants are kept.
+create or replace function api.confirm_fantasy_transfers(
+  p_team_id uuid,
+  p_gameweek_id uuid,
+  p_transfers jsonb,
+  p_expected_version bigint,
+  p_idempotency_key uuid,
+  p_chip_type app.fantasy_chip_type default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare current_user_id uuid := auth.uid();
+declare team app.fantasy_teams%rowtype;
+declare preview jsonb;
+declare request_hash text;
+declare existing_hash text;
+declare cached_response jsonb;
+declare target_batch_id uuid;
+declare target_lineup_id uuid;
+declare updated_lineup_players integer;
+declare resulting_team_value numeric(10,2);
+begin
+  team := app_private.fantasy_assert_owner(p_team_id);
+  -- 20260925200000: transfers are checked against the clubs as they stand
+  -- once any player list update has finished, and an update waits for them.
+  perform pg_catalog.pg_advisory_xact_lock_shared(pg_catalog.hashtextextended(
+    'fantasy:squads:' || team.fantasy_season_id::text, 0));
+  if p_idempotency_key is null then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+  request_hash := encode(extensions.digest(convert_to(
+    team.id::text || ':' || p_gameweek_id::text || ':' || p_transfers::text || ':'
+      || coalesce(p_chip_type::text, ''), 'UTF8'
+  ), 'sha256'), 'hex');
+  select idempotency.request_hash, idempotency.response_body
+  into existing_hash, cached_response
+  from app_private.fantasy_idempotency_keys idempotency
+  where idempotency.user_id = current_user_id
+    and idempotency.operation = 'confirm_transfers'
+    and idempotency.idempotency_key = p_idempotency_key;
+  if found then
+    if existing_hash <> request_hash then
+      raise exception using errcode = 'PT409', message = 'idempotency_conflict';
+    end if;
+    return cached_response;
+  end if;
+
+  select * into team from app.fantasy_teams
+  where id = p_team_id and user_id = current_user_id for update;
+  preview := api.preview_fantasy_transfers(
+    p_team_id, p_gameweek_id, p_transfers, p_expected_version, p_chip_type
+  );
+  select lineup.id into target_lineup_id
+  from app.fantasy_lineups lineup
+  where lineup.fantasy_team_id = team.id and lineup.gameweek_id = p_gameweek_id
+    and lineup.locked_at is null and lineup.finalized_at is null
+  for update;
+  if target_lineup_id is null then
+    raise exception using errcode = 'PT409', message = 'fantasy_gameweek_locked';
+  end if;
+
+  if p_chip_type = 'free_hit' then
+    insert into app.fantasy_free_hit_snapshots (
+      chip_use_id, fantasy_team_id, gameweek_id, bank, team_value,
+      free_transfers, team_version
+    ) select chip.id, team.id, p_gameweek_id, team.bank, team.team_value,
+      team.free_transfers, team.version
+    from app.fantasy_chip_uses chip
+    where chip.fantasy_team_id = team.id and chip.gameweek_id = p_gameweek_id
+      and chip.chip_type = 'free_hit' and chip.cancelled_at is null
+    on conflict (chip_use_id) do nothing;
+    insert into app.fantasy_free_hit_snapshot_players (
+      snapshot_id, fantasy_player_id, purchase_price, sale_price,
+      acquired_gameweek_id
+    ) select snapshot.id, membership.fantasy_player_id,
+      membership.purchase_price, membership.current_sale_price,
+      membership.acquired_gameweek_id
+    from app.fantasy_free_hit_snapshots snapshot
+    join app.fantasy_squad_memberships membership
+      on membership.fantasy_team_id = team.id and membership.sold_at is null
+    where snapshot.fantasy_team_id = team.id and snapshot.gameweek_id = p_gameweek_id
+    on conflict (snapshot_id, fantasy_player_id) do nothing;
+  end if;
+
+  insert into app.fantasy_transfer_batches (
+    fantasy_team_id, gameweek_id, idempotency_key, base_team_version,
+    resulting_team_version, transfers_count, free_transfers_before,
+    free_transfers_used, point_hit, bank_before, bank_after, chip_type
+  ) values (
+    team.id, p_gameweek_id, p_idempotency_key, team.version, team.version + 1,
+    (preview->>'transferCount')::integer, team.free_transfers,
+    (preview->>'freeTransfersUsed')::integer, (preview->>'pointHit')::integer,
+    team.bank, (preview->>'bankAfter')::numeric, p_chip_type
+  ) returning id into target_batch_id;
+
+  insert into app.fantasy_transfers (
+    transfer_batch_id, sequence_number, player_out_id, player_in_id,
+    sale_price, purchase_price
+  ) select target_batch_id, item.ordinality::integer,
+    (item.value->>'player_out_id')::uuid,
+    (item.value->>'player_in_id')::uuid,
+    membership.current_sale_price, player_in.price
+  from jsonb_array_elements(p_transfers) with ordinality as item(value, ordinality)
+  join app.fantasy_squad_memberships membership
+    on membership.fantasy_team_id = team.id
+    and membership.fantasy_player_id = (item.value->>'player_out_id')::uuid
+    and membership.sold_at is null
+  join app.fantasy_players player_in
+    on player_in.id = (item.value->>'player_in_id')::uuid;
+
+  update app.fantasy_lineup_players lineup_player set
+    fantasy_player_id = requested.player_in_id,
+    snapshot_price = player_in.price,
+    updated_at = statement_timestamp()
+  from jsonb_to_recordset(p_transfers)
+    as requested(player_out_id uuid, player_in_id uuid)
+  join app.fantasy_players player_in on player_in.id = requested.player_in_id
+  where lineup_player.lineup_id = target_lineup_id
+    and lineup_player.fantasy_player_id = requested.player_out_id;
+  get diagnostics updated_lineup_players = row_count;
+  if updated_lineup_players <> (preview->>'transferCount')::integer then
+    raise exception using errcode = 'PT400', message = 'invalid_squad';
+  end if;
+
+  update app.fantasy_squad_memberships membership set
+    sold_gameweek_id = p_gameweek_id, sold_at = statement_timestamp()
+  where membership.fantasy_team_id = team.id and membership.sold_at is null
+    and membership.fantasy_player_id in (
+      select item.player_out_id from jsonb_to_recordset(p_transfers)
+        as item(player_out_id uuid)
+    );
+  insert into app.fantasy_squad_memberships (
+    fantasy_team_id, fantasy_player_id, purchase_price, current_sale_price,
+    acquired_gameweek_id
+  ) select team.id, player.id, player.price, player.price, p_gameweek_id
+  from jsonb_to_recordset(p_transfers) as item(player_in_id uuid)
+  join app.fantasy_players player on player.id = item.player_in_id;
+
+  select sum(player.price) into resulting_team_value
+  from app.fantasy_squad_memberships membership
+  join app.fantasy_players player on player.id = membership.fantasy_player_id
+  where membership.fantasy_team_id = team.id and membership.sold_at is null;
+  update app.fantasy_teams set
+    bank = (preview->>'bankAfter')::numeric,
+    team_value = resulting_team_value,
+    free_transfers = case when p_chip_type in ('wildcard','free_hit') then free_transfers
+      else greatest(free_transfers - (preview->>'freeTransfersUsed')::integer, 0) end,
+    version = version + 1
+  where id = team.id returning version into team.version;
+  update app.fantasy_lineups set team_version = team.version,
+    updated_at = statement_timestamp() where id = target_lineup_id;
+
+  cached_response := jsonb_build_object(
+    'transferBatchId', target_batch_id, 'preview', preview,
+    'team', app_private.fantasy_team_dto(team.id)
+  );
+  insert into app_private.fantasy_idempotency_keys (
+    user_id, operation, idempotency_key, request_hash, response_body, expires_at
+  ) values (
+    current_user_id, 'confirm_transfers', p_idempotency_key, request_hash,
+    cached_response, statement_timestamp() + interval '30 days'
+  );
+  insert into app_private.fantasy_mutation_audit (
+    user_id, fantasy_team_id, operation, accepted, base_version,
+    resulting_version, idempotency_key, safe_metadata
+  ) values (
+    current_user_id, team.id, 'confirm_transfers', true, p_expected_version,
+    team.version, p_idempotency_key, preview
+  );
+  return cached_response;
+end;
+$$;
+
+create or replace function api.create_fantasy_team(
+  p_season_id uuid,
+  p_gameweek_id uuid,
+  p_team_name text,
+  p_selection jsonb,
+  p_idempotency_key uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare current_user_id uuid := auth.uid();
+declare season app.fantasy_seasons%rowtype;
+declare gameweek app.fantasy_gameweeks%rowtype;
+declare requested app.fantasy_gameweeks%rowtype;
+declare rules app.fantasy_rulesets%rowtype;
+declare request_hash text;
+declare existing_hash text;
+declare cached_response jsonb;
+declare target_team_id uuid;
+declare target_lineup_id uuid;
+declare squad_cost numeric(10,2);
+begin
+  if current_user_id is null then raise exception using errcode = 'PT401', message = 'fantasy_team_not_found'; end if;
+  if p_idempotency_key is null or p_team_name is null
+    or p_team_name <> btrim(p_team_name) or char_length(p_team_name) not between 3 and 40
+    or p_team_name !~ '^[[:alnum:]][[:alnum:] _''.-]{1,38}[[:alnum:]]$'
+  then raise exception using errcode = 'PT400', message = 'invalid_team_name'; end if;
+  select * into season from app.fantasy_seasons where id = p_season_id and status in ('registration_open','active');
+  if not found then raise exception using errcode = 'PT409', message = 'fantasy_season_closed'; end if;
+  select * into requested from app.fantasy_gameweeks where id = p_gameweek_id;
+  if not found then raise exception using errcode = 'PT404', message = 'fantasy_gameweek_not_found'; end if;
+  if requested.fantasy_season_id <> season.id then raise exception using errcode = 'PT400', message = 'invalid_squad'; end if;
+  -- A new team joins the gameweek a squad can still enter. The client names
+  -- the one it showed the manager; any other gameweek -- past its deadline,
+  -- or no longer the next one -- is refused with the long-standing code.
+  gameweek := app_private.fantasy_enrolment_gameweek(season.id);
+  if gameweek.id is null or gameweek.id <> requested.id then
+    raise exception using errcode = 'PT409', message = 'fantasy_gameweek_locked';
+  end if;
+  select * into rules from app.fantasy_rulesets where id = season.ruleset_id;
+  request_hash := app_private.fantasy_selection_hash(p_team_name, p_gameweek_id, p_selection);
+  perform pg_advisory_xact_lock(pg_catalog.hashtextextended(current_user_id::text || ':fantasy:create:' || p_season_id::text, 0));
+  -- 20260925200000: a new squad is checked against the clubs as they stand
+  -- once any player list update has finished, and an update waits for it.
+  perform pg_catalog.pg_advisory_xact_lock_shared(pg_catalog.hashtextextended(
+    'fantasy:squads:' || season.id::text, 0));
+  select fantasy_idempotency.request_hash, fantasy_idempotency.response_body
+  into existing_hash, cached_response
+  from app_private.fantasy_idempotency_keys fantasy_idempotency
+  where fantasy_idempotency.user_id = current_user_id
+    and fantasy_idempotency.operation = 'create_team'
+    and fantasy_idempotency.idempotency_key = p_idempotency_key;
+  if found then
+    if existing_hash <> request_hash then raise exception using errcode = 'PT409', message = 'idempotency_conflict'; end if;
+    return cached_response;
+  end if;
+  if exists (select 1 from app.fantasy_teams where user_id = current_user_id and fantasy_season_id = season.id) then
+    raise exception using errcode = 'PT409', message = 'fantasy_team_already_exists';
+  end if;
+  perform app_private.fantasy_validate_selection(season.id, season.ruleset_id, p_selection);
+  select sum(player.price) into squad_cost
+  from jsonb_to_recordset(p_selection) as item(fantasy_player_id uuid)
+  join app.fantasy_players player on player.id = item.fantasy_player_id;
+  if squad_cost > rules.initial_budget then raise exception using errcode = 'PT400', message = 'budget_exceeded'; end if;
+  insert into app.fantasy_teams (
+    user_id, fantasy_season_id, current_gameweek_id, name, bank, team_value, free_transfers
+  ) values (
+    current_user_id, season.id, gameweek.id, p_team_name,
+    rules.initial_budget - squad_cost, squad_cost, rules.initial_free_transfers
+  ) returning id into target_team_id;
+  insert into app.fantasy_squad_memberships (
+    fantasy_team_id, fantasy_player_id, purchase_price, current_sale_price, acquired_gameweek_id
+  ) select target_team_id, player.id, player.price, player.price, gameweek.id
+  from jsonb_to_recordset(p_selection) as item(fantasy_player_id uuid)
+  join app.fantasy_players player on player.id = item.fantasy_player_id;
+  insert into app.fantasy_lineups (fantasy_team_id, gameweek_id, team_version)
+  values (target_team_id, gameweek.id, 1) returning id into target_lineup_id;
+  insert into app.fantasy_lineup_players (
+    lineup_id, fantasy_player_id, slot, slot_order, captain, vice_captain, multiplier, snapshot_price
+  ) select target_lineup_id, item.fantasy_player_id, item.slot, item.slot_order,
+    item.captain, item.vice_captain,
+    case when item.captain then rules.captain_multiplier else 1 end, player.price
+  from jsonb_to_recordset(p_selection) as item(
+    fantasy_player_id uuid, slot app.fantasy_lineup_slot, slot_order integer,
+    captain boolean, vice_captain boolean
+  ) join app.fantasy_players player on player.id = item.fantasy_player_id;
+  cached_response := app_private.fantasy_team_dto(target_team_id);
+  insert into app_private.fantasy_idempotency_keys (
+    user_id, operation, idempotency_key, request_hash, response_body, expires_at
+  ) values (current_user_id, 'create_team', p_idempotency_key, request_hash, cached_response, statement_timestamp() + interval '7 days');
+  insert into app_private.fantasy_mutation_audit (
+    user_id, fantasy_team_id, operation, accepted, resulting_version, idempotency_key,
+    safe_metadata
+  ) values (current_user_id, target_team_id, 'create_team', true, 1, p_idempotency_key,
+    jsonb_build_object('seasonId', season.id, 'gameweekId', gameweek.id));
+  return cached_response;
 end;
 $$;
 
@@ -1086,7 +1387,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260925200000, 'UTF8')), 'hex')
-    is distinct from '162545ab64d49765d1bfceb0e38fc77a6523aca66787e312827d83bfe56fbb33' then
+    is distinct from '11a8d1a653205ba52ea4bb4692cb1ddf5cb24de552047633b2d7f23be11efa28' then
     raise exception 'stop: 20260925200000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -1139,6 +1440,17 @@ begin
       problems := problems || format('%s is callable from outside', private_function);
     end if;
   end loop;
+  if pg_get_functiondef('api.confirm_fantasy_transfers(uuid,uuid,jsonb,bigint,uuid,app.fantasy_chip_type)'::regprocedure)
+      not like '%pg_advisory_xact_lock_shared(pg_catalog.hashtextextended(%''fantasy:squads:''%'
+    or pg_get_functiondef('api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)'::regprocedure)
+      not like '%pg_advisory_xact_lock_shared(pg_catalog.hashtextextended(%''fantasy:squads:''%' then
+    problems := problems || 'transfers or new teams do not take the squads lock'::text;
+  end if;
+  if not has_function_privilege('authenticated',
+      'api.confirm_fantasy_transfers(uuid,uuid,jsonb,bigint,uuid,app.fantasy_chip_type)', 'execute')
+    or not has_function_privilege('authenticated', 'api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)', 'execute') then
+    problems := problems || 'managers can no longer make transfers or create a team'::text;
+  end if;
   if app_private.person_name_key('  Laâziri  N''Guessan ') is distinct from 'laaziri n guessan' then
     problems := problems || 'names are not compared without accents'::text;
   end if;

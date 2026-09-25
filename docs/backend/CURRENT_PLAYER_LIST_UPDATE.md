@@ -71,7 +71,10 @@ Fantasy follows the list:
   Otherwise it stays and is listed in the plan's `usedDuplicates` for the
   owner.
 - The update refuses if it would leave any Fantasy squad over the club limit
-  (`fantasy_club_limit_exceeded`).
+  (`fantasy_club_limit_exceeded`), before and after it writes. Transfers and
+  new teams take a shared lock before they check the club limit, which the
+  update takes exclusively, so they and the update wait for each other and
+  never check against a club being changed.
 
 ## How to run it
 
