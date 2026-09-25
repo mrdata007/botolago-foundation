@@ -90,6 +90,33 @@ describe("structured data", () => {
     ).toBe("https://schema.org/EventCancelled");
   });
 
+  // PR #199 review asked for EventInProgress / EventCompleted on live and
+  // finished matches. schema.org's EventStatusType has no such members: its
+  // five are the ones below (https://schema.org/EventStatusType), and
+  // EventScheduled means "the event is taking place or has taken place on the
+  // startDate as scheduled" (https://schema.org/EventScheduled), which is what
+  // a live or finished match is. An invented value would make the data invalid.
+  test("live and finished matches are EventScheduled, and every status is a real schema.org one", () => {
+    const schemaOrgEventStatuses = [
+      "https://schema.org/EventCancelled",
+      "https://schema.org/EventMovedOnline",
+      "https://schema.org/EventPostponed",
+      "https://schema.org/EventRescheduled",
+      "https://schema.org/EventScheduled",
+    ];
+    expect(event(match({ status: "live" })).eventStatus).toBe("https://schema.org/EventScheduled");
+    expect(event(match({ status: "finished" })).eventStatus).toBe(
+      "https://schema.org/EventScheduled",
+    );
+    for (const status of ["scheduled", "live", "finished", "postponed"] as const) {
+      for (const calledOff of [false, true]) {
+        expect(schemaOrgEventStatuses).toContain(
+          event(match({ status, calledOff })).eventStatus as string,
+        );
+      }
+    }
+  });
+
   test("no venue, no location; a team name cannot close the script tag", () => {
     const value = event(match({ venue: { fr: "", ar: "" } }));
     expect(value).not.toHaveProperty("location");

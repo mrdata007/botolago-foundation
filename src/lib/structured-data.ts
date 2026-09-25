@@ -78,6 +78,9 @@ export function sportsEventJsonLd(input: {
   const { match } = input;
   const startKnown = !isKickoffDateUnconfirmed(match) && !isKickoffTimeUnconfirmed(match);
   const venue = match.venue?.fr?.trim();
+  // schema.org has five event statuses and none for "in progress" or
+  // "completed": EventScheduled is a match that "is taking place or has taken
+  // place on the startDate as scheduled", so it covers live and finished ones.
   const eventStatus =
     match.status === "postponed"
       ? match.calledOff
