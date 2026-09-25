@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
+import { ANALYTICS_ENABLED } from "@/lib/feature-flags";
 import { LEGAL_DOCUMENTS, type LegalBlock, type LegalDocument } from "./documents";
 
 // These two documents are binding statements about a real operator and its real
@@ -72,10 +75,19 @@ import { LEGAL_DOCUMENTS, type LegalBlock, type LegalDocument } from "./document
 // be revisited when that changes rather than when the company registers:
 //
 //   7. "Aucun outil de mesure d'audience" / "لا تُستعمل أي أداة لقياس الجمهور"
-//        True today: nothing in src/ loads an analytics script. The moment one
-//        is added, name it here, say what it collects, and say where it stores
-//        it -- and restore the cookie clause, which currently states that no
-//        audience-measurement cookie is set.
+//        2026-09-24 (BG-0146): the owner chose Plausible Analytics; on
+//        2026-09-25 they replaced it with Seline Analytics (Warsaw; hosted in
+//        the EU with Hetzner; no cookie on visitors' devices; IP addresses
+//        never stored, only hashed with a salt that changes daily, per
+//        seline.com/privacy) and switched it on. The row and the cookie clause
+//        follow ANALYTICS_ENABLED, the same switch that loads the script: off,
+//        they say no tool is used; on, they name Seline, what it counts and
+//        where, that it sets no cookie and keeps no identifier on the device,
+//        and the one thing it does keep there: a flag in the tab's session
+//        storage ("seline:referrer") so a reload does not count the referring
+//        site twice. The cookie clause also says a visitor's predictions stay
+//        on the phone until they sign up. The policy went to version 1.2 with
+//        the switch. Asserted below, whichever way the switch is set.
 //
 //   8. "Supabase Auth" as the mail sender, "selon la politique de Supabase"
 //        True today: confirmation mail is sent by Supabase's own service from
@@ -226,5 +238,61 @@ describe("content integrity", () => {
       }
     }
     expect(offenders).toEqual([]);
+  });
+});
+
+// Item 7 above: the policy says what the build does. The script loads only
+// when ANALYTICS_ENABLED is on (src/lib/analytics.ts), and so does the text
+// naming it. The sentence about a visitor's predictions on the phone rides
+// the same switch, so the policy changed once, as version 1.2, when the
+// switch went on; it never changes silently.
+describe("the privacy policy matches the analytics switch", () => {
+  const fr = () => allText(LEGAL_DOCUMENTS.privacy.fr).join(" ");
+  const ar = () => allText(LEGAL_DOCUMENTS.privacy.ar).join(" ");
+
+  it("names Seline, in both languages, exactly when the script can load", () => {
+    expect(fr().includes("Seline Analytics")).toBe(ANALYTICS_ENABLED);
+    expect(ar().includes("Seline Analytics")).toBe(ANALYTICS_ENABLED);
+    expect(fr().includes("Aucun outil de mesure d'audience")).toBe(!ANALYTICS_ENABLED);
+    expect(ar().includes("لا تُستعمل أي أداة لقياس الجمهور")).toBe(!ANALYTICS_ENABLED);
+  });
+
+  it("says where Seline keeps the data, that it sets no cookie and keeps no IP", () => {
+    if (!ANALYTICS_ENABLED) {
+      expect(fr()).toContain("aucun cookie de mesure d'audience n'est déposé à ce jour");
+      return;
+    }
+    expect(fr()).toContain("l'adresse IP n'est pas conservée");
+    expect(ar()).toContain("ولا يُحتفظ بعنوان IP");
+    expect(fr()).toContain(
+      "ne dépose aucun cookie et ne garde aucun identifiant sur votre appareil",
+    );
+    expect(ar()).toContain("ولا تحفظ أي معرّف على جهازك");
+    // The one thing the script does keep: a flag for the tab's session.
+    expect(fr()).toContain("effacée à la fermeture de l'onglet");
+    expect(ar()).toContain("تُمحى عند إغلاق علامة التبويب");
+  });
+
+  it("carries the version that added it", () => {
+    if (!ANALYTICS_ENABLED) return;
+    expect(fr()).toContain("Version 1.2 — en vigueur au 25 septembre 2026.");
+    expect(ar()).toContain("الإصدار 1.2 — ساري المفعول ابتداءً من 25 سبتمبر 2026.");
+  });
+
+  it("says, in the same update, that a visitor's predictions stay on the device", () => {
+    expect(fr().includes("Les pronostics faits sans compte")).toBe(ANALYTICS_ENABLED);
+    expect(ar().includes("التوقعات المُنجزة دون حساب")).toBe(ANALYTICS_ENABLED);
+  });
+
+  it("holds both wordings, so switching changes the policy with the script", () => {
+    const source = readFileSync(join(import.meta.dir, "documents.ts"), "utf8");
+    for (const text of [
+      "Seline Analytics",
+      "Aucun outil de mesure d'audience",
+      "لا تُستعمل أي أداة لقياس الجمهور",
+    ]) {
+      expect(source).toContain(text);
+    }
+    expect(source.match(/ANALYTICS_ENABLED\s*\?/g)?.length).toBe(6);
   });
 });

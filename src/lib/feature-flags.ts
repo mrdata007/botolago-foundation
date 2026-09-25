@@ -165,3 +165,65 @@ export const OAUTH_PROVIDERS_ENABLED = true;
  *   - `scripts/qa/legal-placeholder-gate.ts` -- the prize T&Cs join the check
  */
 export const PRIZES_ENABLED = true;
+
+/**
+ * Pronostics (score predictions, BG-0146) — the page exists; the database decides.
+ *
+ * Owner decision, 2026-09-24 (plan: docs/backend/PREDICTIONS_DOMAIN_PLAN.md
+ * §15). Two build flags, and a third switch that is the real gate: the
+ * database `mode` in `app_private.prediction_settings` (off / testers /
+ * public), checked inside every Pronostics function. While it is `off`, or
+ * while the viewer is not a tester, every read answers `allowed: false` and
+ * the page shows "Bientôt disponible" under `noindex`. Before the Pronostics
+ * migrations reach a database the functions do not exist, and the page shows
+ * the same thing. So this flag can be on before launch: it reveals nothing
+ * the database has not switched on, and it leaves Stage 3 a database switch
+ * rather than a deploy.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/pronostics.tsx` — the /pronostics routes (redirect Home when off)
+ */
+export const PRONOSTICS_ENABLED = true;
+
+/**
+ * Pronostics entry points — OFF until Stage 5 (plan §15).
+ *
+ * The ways in: the Home card and discovery tile, the Matches tab, the match
+ * page card, the Fantasy league tab, the sitemap entry and search indexing.
+ * The owner checks them on a preview deployment of a PR that turns this on,
+ * which is not merged before Stage 5. They also hide themselves while the
+ * database `mode` is `off`.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/pronostics.index.tsx` — `index,follow` instead of `noindex`
+ *   - `src/lib/sitemap.ts` — the /pronostics entry
+ *   - `src/routes/index.tsx` — the Home card and the sixth discovery tile
+ *   - `src/components/matches/MatchesTabs.tsx` — the "Pronostics" tab
+ *   - `src/routes/matches.$matchId.tsx` — the "Votre pronostic" card
+ *   - `src/routes/fantasy.leagues.$leagueId.tsx` — the league's "Pronostics" tab
+ */
+export const PRONOSTICS_PROMOTED = false;
+
+/**
+ * Audience measurement — ON since 2026-09-25 (BG-0146, plan §11).
+ *
+ * Owner decision, 2026-09-25: Seline, in place of the Plausible Analytics
+ * chosen on 2026-09-24. The owner created the Seline project for botolago.com
+ * and asked for its script on every page. Seline sets no cookie and keeps no
+ * identifier on the phone, does not store IP addresses, and is hosted in the
+ * EU. Page views plus five Pronostics events, names only, no identifiers.
+ *
+ * The script and the privacy policy's lines about it go live together, in one
+ * release: this switch turns both on, and the policy took a new version and
+ * date with them (1.2, 25 September 2026). Production builds on botolago.com
+ * only: a development server, the Playwright suite, a preview deployment or
+ * a local production build never sends anything.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/__root.tsx` — the Seline script and the page views
+ *   - `src/lib/analytics.ts` — `track()` sends nothing while off
+ *   - `src/content/legal/documents.ts` — the processor row and the cookie
+ *     clause of the privacy policy (with the sentence on a visitor's
+ *     predictions kept on the phone), in French and Arabic
+ */
+export const ANALYTICS_ENABLED = true;

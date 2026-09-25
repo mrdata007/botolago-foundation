@@ -13,6 +13,8 @@ import { authService, type AuthSession, type AuthStatus, type AuthUser } from "@
 import { useI18n } from "@/i18n/provider";
 import { cleanupOwnedFantasyOnSignOut } from "@/services/fantasy-signout-cleanup";
 import { fetchAccountStanding, rememberSuspension } from "@/services/account-standing";
+import { claimGuestPredictionsOnSignIn } from "@/components/predictions/guest-claim";
+import { forgetAccountPredictions } from "@/components/predictions/predictions-runtime";
 
 interface AuthPromptState {
   open: boolean;
@@ -52,9 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // React keeps the markup it was given.
   const [session, setSession] = useState<AuthSession>({ user: null, status: "loading" });
   const [prompt, setPrompt] = useState<AuthPromptState>({ open: false });
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const langRef = useRef(lang);
   langRef.current = lang;
+  const tRef = useRef(t);
+  tRef.current = t;
   const qc = useQueryClient();
   const prevUidRef = useRef<string | null>(session.user?.id ?? null);
 
@@ -72,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const prev = prevUidRef.current;
     if (prev && prev !== nextUid) {
       cleanupOwnedFantasyOnSignOut({ qc, uid: prev });
+      forgetAccountPredictions(qc);
     }
     prevUidRef.current = nextUid;
   }, [session.user?.id, qc]);
@@ -112,6 +117,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [signedInUid]);
+
+  // Pronostics (BG-0146): the predictions a visitor made on this phone move to
+  // the account whenever a session appears -- register, log-in and Google
+  // alike. Nothing is sent when the phone holds none.
+  useEffect(() => {
+    if (!signedInUid) return;
+    void claimGuestPredictionsOnSignIn({ queryClient: qc, lang: langRef.current, t: tRef.current });
+  }, [signedInUid, qc]);
 
   const requireAuth = useCallback<AuthContextValue["requireAuth"]>((action, opts) => {
     const s = authService.getSession();

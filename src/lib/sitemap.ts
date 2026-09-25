@@ -1,5 +1,5 @@
 import { buildCanonicalArticleUrl, PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
-import { PRIZES_ENABLED } from "@/lib/feature-flags";
+import { PRIZES_ENABLED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 
 export interface SitemapNewsEntry {
   readonly id: string;
@@ -26,6 +26,8 @@ export const SITEMAP_STATIC_PATHS = [
   "/terms",
   // Redirected to the hub while prizes are off, so listed only when they are on.
   ...(PRIZES_ENABLED ? (["/prizes", "/prizes/terms"] as const) : ([] as const)),
+  // Pronostics (BG-0146): indexed only once promoted.
+  ...(PRONOSTICS_PROMOTED ? (["/pronostics"] as const) : ([] as const)),
 ] as const;
 
 /** The sitemap protocol's maximum number of URLs in one sitemap file. */

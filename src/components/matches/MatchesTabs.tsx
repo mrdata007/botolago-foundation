@@ -1,10 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
 import { UiTabs } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import type { FootballSeason } from "@/services/football";
 import { seasonSearch } from "./matches-search";
 
-export type MatchesView = "calendar" | "standings";
+export type MatchesView = "calendar" | "standings" | "predictions";
 
 /**
  * The two halves of the Matches tab, under its title band: the calendar
@@ -27,6 +28,10 @@ export function MatchesTabs({
     <UiTabs<MatchesView>
       value={active}
       onChange={(next) => {
+        if (next === "predictions") {
+          void navigate({ to: "/pronostics" });
+          return;
+        }
         void navigate({
           to: next === "standings" ? "/matches/standings" : "/matches",
           search: seasonSearch(season),
@@ -37,6 +42,10 @@ export function MatchesTabs({
       options={[
         { value: "calendar", label: t("matches.view.calendar") },
         { value: "standings", label: t("matches.table_preview") },
+        // Pronostics (BG-0146), an entry point: shown once promoted.
+        ...(PRONOSTICS_PROMOTED
+          ? [{ value: "predictions" as const, label: t("matches.tab.predictions") }]
+          : []),
       ]}
     />
   );
