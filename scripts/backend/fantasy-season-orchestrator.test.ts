@@ -382,6 +382,31 @@ describe("fantasy season orchestrator", () => {
       unidentifiedStarters: 1,
       unidentifiedOthers: 0,
     });
+
+    // Which statistics are missing, as the import lists them: short lists of
+    // flat records are kept (run #43 lost this list); anything deeper is not.
+    const missing = gateway(cal);
+    missing.gateway.ingestPerformances = async () => {
+      throw Object.assign(new Error("current_statistics_incomplete"), {
+        diagnostic: {
+          fixtureExternalId: "19874708",
+          missingDetailTypes: [
+            { typeId: 52, playerRows: 25 },
+            { typeId: 119, playerRows: 5 },
+          ],
+          nested: [{ typeId: 52, rows: [{ playerId: 1 }] }],
+          tooLong: Array.from({ length: 21 }, (_, typeId) => ({ typeId })),
+        },
+      });
+    };
+    const listed = await orchestrateFantasySeason(missing.gateway, { now });
+    expect(listed.performances.diagnostic).toEqual({
+      fixtureExternalId: "19874708",
+      missingDetailTypes: [
+        { typeId: 52, playerRows: 25 },
+        { typeId: 119, playerRows: 5 },
+      ],
+    });
   });
 
   test("provider refresh evidence: a squad-guard failure after the fixture phase still counts as refreshed", async () => {
