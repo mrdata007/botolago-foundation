@@ -64,7 +64,7 @@
 --      made with its invite code, "already a member" returns the league. So
 --      every other api.* function that reads or writes the caller's own
 --      account runs the helper as the first statement of its body, as point 3
---      does (49 functions, listed below). Each is its latest definition in
+--      does (50 functions, listed below). Each is its latest definition in
 --      this tree, byte for byte, plus that one line; the triggers of point 2
 --      stay as they are, for whatever writes next.
 --   6. The account views (api.my_profile, my_followed_teams,
@@ -73,11 +73,15 @@
 --      in its WHERE: true, or the same refusal. The call names no column, so
 --      it runs once, before any row is read, and a view with no row for the
 --      account refuses too.
---   7. The public News card (app_private.news_article_card, in every feed,
---      search and article) says whether the reader saved each article. It
---      shows that mark only when app_private.mfa_step_up_satisfied(): at aal1
---      an enrolled account reads the news as a visitor does, without saved
---      marks.
+--   7. Two public reads carry one private part each, and show it only when
+--      app_private.mfa_step_up_satisfied(). The News card
+--      (app_private.news_article_card, in every feed, search and article)
+--      says whether the reader saved each article. The match votes
+--      (api.match_votes, 20260925234000, which visitors call too) give every
+--      fan's totals and the caller's own choices ('mine'). At aal1 an
+--      enrolled account reads both as a visitor does: the news without saved
+--      marks, the totals without its own choices. Refusing either read whole
+--      would only hide what the same person can read signed out.
 --   8. The avatar image. The avatars bucket's four policies on storage.objects
 --      (20260720075453) gain `and (select app_private.mfa_step_up_satisfied())`
 --      and are otherwise unchanged. Storage then answers an enrolled account
@@ -115,7 +119,8 @@
 --                  reset_prediction_league_invite_code)
 --   Pronostics     app.predictions, app.prediction_league_members,
 --                  app_private.prediction_guest_claims (save_predictions,
---                  claim_guest_predictions, join/leave_prediction_league)
+--                  claim_guest_predictions, join/leave_prediction_league),
+--                  app.match_votes (cast_match_vote, 20260925234000)
 --
 -- Guarded functions (the helper first; points 3 and 5):
 --   identity       get_my_account_standing, complete_onboarding,
@@ -143,7 +148,8 @@
 --                  line), my_prediction_leagues, predictions_league_standings,
 --                  save_predictions, claim_guest_predictions,
 --                  create/join/leave_prediction_league,
---                  reset_prediction_league_invite_code
+--                  reset_prediction_league_invite_code, cast_match_vote (it
+--                  answers with the caller's own choices)
 -- supabase/tests/database/ordinary_account_mfa_step_up_reads.test.sql fails
 -- when an api function that reads the caller neither runs the helper nor is
 -- named below.
@@ -169,21 +175,23 @@
 --     everyone. auth.uid() only decides whether a tester may see Pronostics
 --     while it is open to testers alone; nothing of the caller's comes back.
 --   - The public reads: football, the news feed, search and articles (their
---     one private part, the saved mark, is point 7), the Fantasy catalogue,
---     rules, fixtures, players and prizes, username_availability. Nothing in
---     them is the caller's.
+--     one private part, the saved mark, is point 7), the match votes' totals
+--     (their private part, the caller's own choices, is point 7 too), the
+--     Fantasy catalogue, rules, fixtures, players and prizes,
+--     username_availability. Nothing else in them is the caller's.
 --   - Staff and editorial tables and RPCs. Their own checks are stricter and
 --     stay as they are.
 --   - auth.* belongs to Supabase. The factor list and the challenge are
 --     Supabase Auth's own endpoints, which is all the web app reads before the
 --     second factor: nothing through the api.
 --
--- Deploy order: none. No api signature or JSON shape changes. Web code already
--- deployed shows an unrecognised PT403 as its generic "could not be
--- completed" error: the write does not happen, the read shows its error
--- state. The web change that sends 'mfa_required' to the challenge from any
--- refused read, and reads nothing of an account whose session owes its code,
--- can ship before or after this.
+-- Deploy order: after 20260925234000 (match votes; on production since
+-- 2026-09-25), whose two functions this replaces and whose table it guards.
+-- No api signature or JSON shape changes. Web code already deployed shows an
+-- unrecognised PT403 as its generic "could not be completed" error: the write
+-- does not happen, the read shows its error state. The web change that sends
+-- 'mfa_required' to the challenge from any refused read, and reads nothing of
+-- an account whose session owes its code, can ship before or after this.
 
 -- ---------------------------------------------------------------------------
 -- The rule
@@ -355,6 +363,10 @@ for each statement execute function app_private.refuse_unverified_mfa_actor();
 
 create trigger prediction_guest_claims_refuse_unverified_mfa_actor
 before insert or update or delete on app_private.prediction_guest_claims
+for each statement execute function app_private.refuse_unverified_mfa_actor();
+
+create trigger match_votes_refuse_unverified_mfa_actor
+before insert or update or delete on app.match_votes
 for each statement execute function app_private.refuse_unverified_mfa_actor();
 
 -- ---------------------------------------------------------------------------
@@ -573,8 +585,9 @@ revoke all on function app_private.mfa_step_up_satisfied()
 grant execute on function app_private.mfa_step_up_satisfied() to authenticated;
 comment on function app_private.mfa_step_up_satisfied() is
   'False where app_private.assert_mfa_step_up() would refuse, true otherwise. '
-  'For the avatars bucket''s storage.objects policies and the saved mark on the '
-  'public News card. Audit 2026-09-25 A03 / DB-07.';
+  'For the avatars bucket''s storage.objects policies, the saved mark on the '
+  'public News card and the caller''s own choices in api.match_votes. '
+  'Audit 2026-09-25 A03 / DB-07.';
 
 -- ---------------------------------------------------------------------------
 -- Every other api function that reads or writes the caller's own account:
@@ -3802,6 +3815,58 @@ begin
 end;
 $$;
 
+-- As in 20260925234000. Its answer is api.match_votes, the caller's own
+-- choices included.
+create or replace function api.cast_match_vote(p_fixture_id uuid, p_question text, p_choice text)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  caller uuid := (select auth.uid());
+  now_ts timestamptz := statement_timestamp();
+  fixture app.fixtures%rowtype;
+  written integer;
+begin
+  perform app_private.assert_mfa_step_up();
+  if caller is null then
+    raise exception using errcode = 'PT401', message = 'predictions_unauthenticated';
+  end if;
+  if not app_private.predictions_access_allowed(caller) then
+    raise exception using errcode = 'PT403', message = 'predictions_unavailable';
+  end if;
+  if p_fixture_id is null or p_question is null or p_choice is null or not (
+    (p_question = 'winner' and p_choice in ('home', 'draw', 'away'))
+    or (p_question = 'both_score' and p_choice in ('yes', 'no'))
+    or (p_question = 'first_goal' and p_choice in ('home', 'none', 'away'))
+  ) then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+
+  select * into fixture from app.fixtures where id = p_fixture_id;
+  if not found or fixture.round_id is null
+    or fixture.season_id is distinct from app_private.predictions_current_season() then
+    raise exception using errcode = 'PT404', message = 'match_vote_unavailable';
+  end if;
+
+  -- The lock is checked in the statement that writes, as for predictions.
+  insert into app.match_votes (fixture_id, user_id, question, choice)
+  select target.id, caller, p_question, p_choice
+  from app.fixtures target
+  where target.id = p_fixture_id
+    and app_private.prediction_fixture_open(target.status, target.kickoff_at, now_ts)
+  on conflict (fixture_id, user_id, question) do update set choice = excluded.choice;
+  get diagnostics written = row_count;
+  if written = 0 then
+    raise exception using errcode = 'PT409', message = 'match_vote_closed';
+  end if;
+
+  return api.match_votes(p_fixture_id);
+end;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- The public News card: the reader's saved mark past the step-up (point 7)
 -- ---------------------------------------------------------------------------
@@ -3891,6 +3956,93 @@ as $$
   ) competitions on true
   where story.id = edition.story_id
 $$;
+
+-- ---------------------------------------------------------------------------
+-- The public match votes: the caller's own choices past the step-up (point 7)
+-- ---------------------------------------------------------------------------
+
+-- As in 20260925234000, plus the step-up in the caller's own choices ('mine').
+-- The totals stay public: a visitor reads them, and so does an enrolled
+-- account at aal1, as a visitor does.
+create or replace function api.match_votes(p_fixture_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  caller uuid := (select auth.uid());
+  now_ts timestamptz := statement_timestamp();
+  fixture app.fixtures%rowtype;
+  covered boolean;
+  questions jsonb;
+begin
+  if not app_private.predictions_access_allowed(caller) then
+    return jsonb_build_object('schemaVersion', 1, 'allowed', false, 'serverTime', now_ts);
+  end if;
+  if p_fixture_id is null then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+
+  select * into fixture from app.fixtures where id = p_fixture_id;
+  covered := found and fixture.round_id is not null
+    and fixture.season_id is not distinct from app_private.predictions_current_season();
+
+  with counted as (
+    select vote.question, vote.choice, count(*) as votes
+    from app.match_votes vote
+    join app.profiles profile on profile.id = vote.user_id and profile.deleted_at is null
+    where vote.fixture_id = p_fixture_id
+      and not exists (
+        select 1 from app_private.user_bans ban
+        where ban.user_id = vote.user_id and ban.lifted_at is null
+          and ban.starts_at <= now_ts and (ban.ends_at is null or ban.ends_at > now_ts)
+      )
+    group by vote.question, vote.choice
+  ),
+  asked (position, question, choices) as (
+    values
+      (1, 'winner', array['home', 'draw', 'away']),
+      (2, 'both_score', array['yes', 'no']),
+      (3, 'first_goal', array['home', 'none', 'away'])
+  )
+  select jsonb_agg(jsonb_build_object(
+      'question', asked.question,
+      'counts', (
+        select jsonb_object_agg(option.choice, coalesce(counted.votes, 0))
+        from unnest(asked.choices) as option(choice)
+        left join counted on counted.question = asked.question and counted.choice = option.choice
+      ),
+      'mine', (
+        select vote.choice from app.match_votes vote
+        where vote.fixture_id = p_fixture_id and vote.question = asked.question
+          and caller is not null and vote.user_id = caller
+          and app_private.mfa_step_up_satisfied()
+      )
+    ) order by asked.position)
+  into questions
+  from asked;
+
+  return jsonb_build_object(
+    'schemaVersion', 1,
+    'allowed', true,
+    'serverTime', now_ts,
+    'fixtureId', p_fixture_id,
+    'covered', covered,
+    'open', covered
+      and app_private.prediction_fixture_open(fixture.status, fixture.kickoff_at, now_ts),
+    'questions', questions
+  );
+end;
+$$;
+
+comment on function api.match_votes(uuid) is
+  'Public: the fan votes on a match as totals per answer (banned and deleted '
+  'accounts left out), the caller''s own choices (null for visitors, and for an '
+  'account with a verified MFA factor whose session is not aal2), whether the '
+  'match is covered (current Pronostics season, has a journée) and still open '
+  '(before kick-off). allowed=false while Pronostics is off for the caller.';
 
 -- ---------------------------------------------------------------------------
 -- The account views (point 6)

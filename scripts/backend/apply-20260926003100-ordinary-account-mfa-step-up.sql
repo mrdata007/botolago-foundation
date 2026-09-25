@@ -3,30 +3,33 @@
 -- Apply migration 20260926003100_ordinary_account_mfa_step_up: an ordinary
 -- account that turned MFA on must hold an aal2 session to read or change its
 -- own data -- every api.* read and write of it, the four account views, the
--- saved mark on the public News card, and its avatar image in Storage (audit
--- 2026-09-25 A03 / DB-07). Refusal: SQLSTATE PT403, message 'mfa_required'
--- (Storage: no object found, upload refused).
+-- saved mark on the public News card, its own choices in the public match
+-- votes, and its avatar image in Storage (audit 2026-09-25 A03 / DB-07).
+-- Refusal: SQLSTATE PT403, message 'mfa_required' (Storage: no object found,
+-- upload refused; the match votes: their totals without its own choices).
 --
 -- WHEN
 --   Any time after the pull request that adds this file is merged, but not
 --   while a Fantasy season orchestrator run is going on (GitHub -> Actions: it
 --   is scheduled at minute 12, and GitHub starts it late, at any minute), and
 --   outside match hours if you can, since live scores pause for the few
---   minutes this takes (HOW TO RUN, step 2). It adds four functions and 24
---   statement triggers, and replaces 53 functions (the 51 api.* functions
---   that read or write the caller's own account, the e-mail unsubscribe link
+--   minutes this takes (HOW TO RUN, step 2). It needs the match votes
+--   (20260925234000, on production since 2026-09-25): it adds four functions
+--   and 25 statement triggers, and replaces 55 functions (the 52 api.*
+--   functions that read or write the caller's own account, the public match
+--   votes api.match_votes, the e-mail unsubscribe link
 --   api.unsubscribe_notification_email, and the News card
 --   app_private.news_article_card), the four api.my_* account views and the
 --   avatars bucket's four policies on storage.objects.
 --
 --   Adding a trigger holds writes to its table until the transaction ends,
---   so the script takes all 24 tables together first: account, notification,
+--   so the script takes all 25 tables together first: account, notification,
 --   Fantasy and Pronostics tables. The site keeps reading while it runs; a
 --   visitor's save waits for its second or so. Replacing a view or a policy
 --   locks it from then until the end, and the migration does that last: for
 --   the final second or so, profile reads (api.my_profile and the other three
 --   views) and every Storage request -- avatars, and the public news and club
---   images -- wait, then carry on. Three pg_cron jobs write to the 24 tables
+--   images -- wait, then carry on. Three pg_cron jobs write to the 25 tables
 --   -- the Fantasy lifecycle tick (app.fantasy_lineups), the email tick
 --   (app.notifications) and Pronostics scoring (app.predictions) -- so
 --   AGENTS.md ("Check the scheduled jobs too") has them paused first, with the
@@ -75,34 +78,44 @@
 --   the database is not in the state this script expects.
 --
 -- WHAT IT DOES
---   * refuses to run twice, while the Fantasy tick, email, the live score
---     refresh or Pronostics scoring is on, on a database missing a table it
---     guards or reads, where the step-up already exists, or where anything it
---     replaces is not the version production held on 2026-09-25 (md5 read
---     there: of pg_get_functiondef for the three functions of the first
---     version of this script and for the News card; of pg_get_functiondef
---     without its blank and comment-only lines for the 49 functions that gain
---     the step-up, since production's copies of four of them were applied
---     without their comments; of pg_get_viewdef for the views; of the policy
---     expressions for the avatar policies);
---   * takes the 24 tables it adds triggers to (see WHEN);
+--   * refuses to run twice, before 20260925234000 (match votes), while the
+--     Fantasy tick, email, the live score refresh or Pronostics scoring is on,
+--     on a database missing a table it guards or reads, where the step-up
+--     already exists, or where anything it replaces is not the version
+--     production held on 2026-09-25 (md5 read there: of pg_get_functiondef for
+--     the three functions of the first version of this script, for the News
+--     card and for the two match-vote functions, api.cast_match_vote and
+--     api.match_votes, as 20260925234000 installed them; of
+--     pg_get_functiondef without its blank and comment-only lines for the 49
+--     other functions that gain the step-up, since production's copies of four
+--     of them were applied without their comments; of pg_get_viewdef for the
+--     views; of the policy expressions for the avatar policies);
+--   * takes the 25 tables it adds triggers to (see WHEN);
 --   * records the migration file in supabase_migrations.schema_migrations,
 --     whole as statements[1], and runs it from that record once its sha256
 --     matches the repository file;
 --   * checks the result without writing anything: the four helpers exist, the
 --     two of the first version with no API role able to call them, the two
---     new ones callable by authenticated only; all 24 triggers exist, fire per
+--     new ones callable by authenticated only; all 25 triggers exist, fire per
 --     statement and are enabled; the replaced functions carry the step-up and
---     keep their grants; each of the 49 is its checked version plus the
---     step-up as the first statement of its body and nothing else, the News
---     card, the views and the avatar policies their checked version plus the
---     step-up and nothing else, the views still security_invoker and readable
---     by authenticated alone; an account with no factor passes; and, where an
---     account has a verified factor, its aal1 session is refused by the
---     helper, a table trigger (an UPDATE that matches no row), a read
---     (api.get_my_notification_preferences) and a view (api.my_profile), and
---     is not "satisfied" for Storage, while aal2 passes all of them. That
---     account's id and data stay inside the script and are not printed.
+--     keep their grants; each of the 49 and api.cast_match_vote is its
+--     checked version plus the step-up as the first statement of its body and
+--     nothing else, api.match_votes its checked version plus the step-up on
+--     the caller's own choices and nothing else, the News card, the views and
+--     the avatar policies their checked version plus the step-up and nothing
+--     else, the views still security_invoker and readable by authenticated
+--     alone; no api function or view a browser can call reads the caller
+--     without the step-up, apart from the three exceptions the migration names
+--     (the completeness check of ordinary_account_mfa_step_up_reads.test.sql,
+--     run on this database's own catalog, so a reader this database has and
+--     the repository does not stops the update); an account with no factor
+--     passes; and, where an account has a verified factor, its aal1 session is
+--     refused by the helper, a table trigger (an UPDATE that matches no row),
+--     a read (api.get_my_notification_preferences), a view (api.my_profile)
+--     and a match vote (api.cast_match_vote on a match that does not exist,
+--     refused before it looks), and is not "satisfied" for Storage, while aal2
+--     passes all of them but the vote, which it does not cast. That account's
+--     id and data stay inside the script and are not printed.
 -- ============================================================================
 
 begin;
@@ -124,8 +137,11 @@ declare
   -- copies of api.fantasy_leagues, fantasy_league_standings,
   -- fantasy_overall_standings and get_my_fantasy_points were applied without
   -- their comments, which is all that differs from the repository). The News
-  -- card: the md5 of pg_get_functiondef. The views: of pg_get_viewdef(v, true).
-  -- The avatar policies: of their USING and WITH CHECK, joined by '|'.
+  -- card: the md5 of pg_get_functiondef. The two match-vote functions: the
+  -- md5 of pg_get_functiondef as 20260925234000 installed them (read on
+  -- production after that migration, and the same after a local reset). The
+  -- views: of pg_get_viewdef(v, true). The avatar policies: of their USING and
+  -- WITH CHECK, joined by '|'.
   replaced constant jsonb := $replaced${
     "functions": {
       "api.activate_fantasy_chip(uuid,uuid,app.fantasy_chip_type,bigint,uuid)": "0e58bc5f6b90b88484f5ee2982ba01fa",
@@ -179,6 +195,10 @@ declare
       "api.update_my_preferences(boolean,boolean,boolean,app.language_code)": "6eff4c57fd35bc9db58cf769487291e0"
     },
     "news_card": "4c70fa9b175f5deae69a65d002003adc",
+    "match_votes": {
+      "api.cast_match_vote(uuid,text,text)": "7c92af729c8b2867049b72034270a053",
+      "api.match_votes(uuid)": "0a809ec4cdec458fb0b2a584673098d7"
+    },
     "views": {
       "api.my_account_deletion_requests": "830c2ddb2b2e2a89db30fc11874aec36",
       "api.my_followed_competitions": "c70d90a408f4110bef4ca648c13310f2",
@@ -199,6 +219,9 @@ begin
   if exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003100') then
     raise exception 'stop: migration 20260926003100 is already recorded as applied';
   end if;
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260925234000') then
+    raise exception 'stop: migration 20260925234000 (match votes) is not applied -- this update replaces its two functions and guards its table, so apply scripts/backend/apply-20260925234000-match-votes.sql first';
+  end if;
   if to_regprocedure('app_private.assert_mfa_step_up()') is not null
     or to_regprocedure('app_private.refuse_unverified_mfa_actor()') is not null
     or to_regprocedure('app_private.require_mfa_step_up()') is not null
@@ -216,7 +239,7 @@ begin
     'app.fantasy_lineup_players', 'app.fantasy_transfer_batches', 'app.fantasy_transfers',
     'app.fantasy_chip_uses', 'app.fantasy_free_hit_snapshots', 'app.fantasy_free_hit_snapshot_players',
     'app.fantasy_leagues', 'app.fantasy_league_memberships', 'app.predictions',
-    'app.prediction_league_members', 'app_private.prediction_guest_claims',
+    'app.prediction_league_members', 'app_private.prediction_guest_claims', 'app.match_votes',
     'app_private.notification_email_unsubscribe_tokens', 'app.notification_deliveries',
     'auth.mfa_factors', 'auth.mfa_factors_user_id_idx',
     'app_private.fantasy_automation_settings', 'app_private.notification_email_settings',
@@ -282,6 +305,10 @@ begin
       <> replaced ->> 'news_card' then
     drifted := drifted || 'app_private.news_article_card'::text;
   end if;
+  select drifted || coalesce(array_agg(fn.signature order by fn.signature), '{}') into drifted
+  from jsonb_each_text(replaced -> 'match_votes') as fn(signature, definition_md5)
+  where to_regprocedure(fn.signature) is null
+    or md5(pg_get_functiondef(to_regprocedure(fn.signature))) <> fn.definition_md5;
   select drifted || coalesce(array_agg(v.name order by v.name), '{}') into drifted
   from jsonb_each_text(replaced -> 'views') as v(name, definition_md5)
   where to_regclass(v.name) is null
@@ -319,7 +346,7 @@ lock table
   app.fantasy_lineup_players, app.fantasy_transfer_batches, app.fantasy_transfers,
   app.fantasy_chip_uses, app.fantasy_free_hit_snapshots, app.fantasy_free_hit_snapshot_players,
   app.fantasy_leagues, app.fantasy_league_memberships, app.predictions,
-  app.prediction_league_members, app_private.prediction_guest_claims
+  app.prediction_league_members, app_private.prediction_guest_claims, app.match_votes
   in share row exclusive mode;
 
 -- ---------------------------------------------------------------------------
@@ -395,7 +422,7 @@ values (
 --      made with its invite code, "already a member" returns the league. So
 --      every other api.* function that reads or writes the caller's own
 --      account runs the helper as the first statement of its body, as point 3
---      does (49 functions, listed below). Each is its latest definition in
+--      does (50 functions, listed below). Each is its latest definition in
 --      this tree, byte for byte, plus that one line; the triggers of point 2
 --      stay as they are, for whatever writes next.
 --   6. The account views (api.my_profile, my_followed_teams,
@@ -404,11 +431,15 @@ values (
 --      in its WHERE: true, or the same refusal. The call names no column, so
 --      it runs once, before any row is read, and a view with no row for the
 --      account refuses too.
---   7. The public News card (app_private.news_article_card, in every feed,
---      search and article) says whether the reader saved each article. It
---      shows that mark only when app_private.mfa_step_up_satisfied(): at aal1
---      an enrolled account reads the news as a visitor does, without saved
---      marks.
+--   7. Two public reads carry one private part each, and show it only when
+--      app_private.mfa_step_up_satisfied(). The News card
+--      (app_private.news_article_card, in every feed, search and article)
+--      says whether the reader saved each article. The match votes
+--      (api.match_votes, 20260925234000, which visitors call too) give every
+--      fan's totals and the caller's own choices ('mine'). At aal1 an
+--      enrolled account reads both as a visitor does: the news without saved
+--      marks, the totals without its own choices. Refusing either read whole
+--      would only hide what the same person can read signed out.
 --   8. The avatar image. The avatars bucket's four policies on storage.objects
 --      (20260720075453) gain `and (select app_private.mfa_step_up_satisfied())`
 --      and are otherwise unchanged. Storage then answers an enrolled account
@@ -446,7 +477,8 @@ values (
 --                  reset_prediction_league_invite_code)
 --   Pronostics     app.predictions, app.prediction_league_members,
 --                  app_private.prediction_guest_claims (save_predictions,
---                  claim_guest_predictions, join/leave_prediction_league)
+--                  claim_guest_predictions, join/leave_prediction_league),
+--                  app.match_votes (cast_match_vote, 20260925234000)
 --
 -- Guarded functions (the helper first; points 3 and 5):
 --   identity       get_my_account_standing, complete_onboarding,
@@ -474,7 +506,8 @@ values (
 --                  line), my_prediction_leagues, predictions_league_standings,
 --                  save_predictions, claim_guest_predictions,
 --                  create/join/leave_prediction_league,
---                  reset_prediction_league_invite_code
+--                  reset_prediction_league_invite_code, cast_match_vote (it
+--                  answers with the caller's own choices)
 -- supabase/tests/database/ordinary_account_mfa_step_up_reads.test.sql fails
 -- when an api function that reads the caller neither runs the helper nor is
 -- named below.
@@ -500,21 +533,23 @@ values (
 --     everyone. auth.uid() only decides whether a tester may see Pronostics
 --     while it is open to testers alone; nothing of the caller's comes back.
 --   - The public reads: football, the news feed, search and articles (their
---     one private part, the saved mark, is point 7), the Fantasy catalogue,
---     rules, fixtures, players and prizes, username_availability. Nothing in
---     them is the caller's.
+--     one private part, the saved mark, is point 7), the match votes' totals
+--     (their private part, the caller's own choices, is point 7 too), the
+--     Fantasy catalogue, rules, fixtures, players and prizes,
+--     username_availability. Nothing else in them is the caller's.
 --   - Staff and editorial tables and RPCs. Their own checks are stricter and
 --     stay as they are.
 --   - auth.* belongs to Supabase. The factor list and the challenge are
 --     Supabase Auth's own endpoints, which is all the web app reads before the
 --     second factor: nothing through the api.
 --
--- Deploy order: none. No api signature or JSON shape changes. Web code already
--- deployed shows an unrecognised PT403 as its generic "could not be
--- completed" error: the write does not happen, the read shows its error
--- state. The web change that sends 'mfa_required' to the challenge from any
--- refused read, and reads nothing of an account whose session owes its code,
--- can ship before or after this.
+-- Deploy order: after 20260925234000 (match votes; on production since
+-- 2026-09-25), whose two functions this replaces and whose table it guards.
+-- No api signature or JSON shape changes. Web code already deployed shows an
+-- unrecognised PT403 as its generic "could not be completed" error: the write
+-- does not happen, the read shows its error state. The web change that sends
+-- 'mfa_required' to the challenge from any refused read, and reads nothing of
+-- an account whose session owes its code, can ship before or after this.
 
 -- ---------------------------------------------------------------------------
 -- The rule
@@ -686,6 +721,10 @@ for each statement execute function app_private.refuse_unverified_mfa_actor();
 
 create trigger prediction_guest_claims_refuse_unverified_mfa_actor
 before insert or update or delete on app_private.prediction_guest_claims
+for each statement execute function app_private.refuse_unverified_mfa_actor();
+
+create trigger match_votes_refuse_unverified_mfa_actor
+before insert or update or delete on app.match_votes
 for each statement execute function app_private.refuse_unverified_mfa_actor();
 
 -- ---------------------------------------------------------------------------
@@ -904,8 +943,9 @@ revoke all on function app_private.mfa_step_up_satisfied()
 grant execute on function app_private.mfa_step_up_satisfied() to authenticated;
 comment on function app_private.mfa_step_up_satisfied() is
   'False where app_private.assert_mfa_step_up() would refuse, true otherwise. '
-  'For the avatars bucket''s storage.objects policies and the saved mark on the '
-  'public News card. Audit 2026-09-25 A03 / DB-07.';
+  'For the avatars bucket''s storage.objects policies, the saved mark on the '
+  'public News card and the caller''s own choices in api.match_votes. '
+  'Audit 2026-09-25 A03 / DB-07.';
 
 -- ---------------------------------------------------------------------------
 -- Every other api function that reads or writes the caller's own account:
@@ -4133,6 +4173,58 @@ begin
 end;
 $$;
 
+-- As in 20260925234000. Its answer is api.match_votes, the caller's own
+-- choices included.
+create or replace function api.cast_match_vote(p_fixture_id uuid, p_question text, p_choice text)
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  caller uuid := (select auth.uid());
+  now_ts timestamptz := statement_timestamp();
+  fixture app.fixtures%rowtype;
+  written integer;
+begin
+  perform app_private.assert_mfa_step_up();
+  if caller is null then
+    raise exception using errcode = 'PT401', message = 'predictions_unauthenticated';
+  end if;
+  if not app_private.predictions_access_allowed(caller) then
+    raise exception using errcode = 'PT403', message = 'predictions_unavailable';
+  end if;
+  if p_fixture_id is null or p_question is null or p_choice is null or not (
+    (p_question = 'winner' and p_choice in ('home', 'draw', 'away'))
+    or (p_question = 'both_score' and p_choice in ('yes', 'no'))
+    or (p_question = 'first_goal' and p_choice in ('home', 'none', 'away'))
+  ) then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+
+  select * into fixture from app.fixtures where id = p_fixture_id;
+  if not found or fixture.round_id is null
+    or fixture.season_id is distinct from app_private.predictions_current_season() then
+    raise exception using errcode = 'PT404', message = 'match_vote_unavailable';
+  end if;
+
+  -- The lock is checked in the statement that writes, as for predictions.
+  insert into app.match_votes (fixture_id, user_id, question, choice)
+  select target.id, caller, p_question, p_choice
+  from app.fixtures target
+  where target.id = p_fixture_id
+    and app_private.prediction_fixture_open(target.status, target.kickoff_at, now_ts)
+  on conflict (fixture_id, user_id, question) do update set choice = excluded.choice;
+  get diagnostics written = row_count;
+  if written = 0 then
+    raise exception using errcode = 'PT409', message = 'match_vote_closed';
+  end if;
+
+  return api.match_votes(p_fixture_id);
+end;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- The public News card: the reader's saved mark past the step-up (point 7)
 -- ---------------------------------------------------------------------------
@@ -4222,6 +4314,93 @@ as $$
   ) competitions on true
   where story.id = edition.story_id
 $$;
+
+-- ---------------------------------------------------------------------------
+-- The public match votes: the caller's own choices past the step-up (point 7)
+-- ---------------------------------------------------------------------------
+
+-- As in 20260925234000, plus the step-up in the caller's own choices ('mine').
+-- The totals stay public: a visitor reads them, and so does an enrolled
+-- account at aal1, as a visitor does.
+create or replace function api.match_votes(p_fixture_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  caller uuid := (select auth.uid());
+  now_ts timestamptz := statement_timestamp();
+  fixture app.fixtures%rowtype;
+  covered boolean;
+  questions jsonb;
+begin
+  if not app_private.predictions_access_allowed(caller) then
+    return jsonb_build_object('schemaVersion', 1, 'allowed', false, 'serverTime', now_ts);
+  end if;
+  if p_fixture_id is null then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+
+  select * into fixture from app.fixtures where id = p_fixture_id;
+  covered := found and fixture.round_id is not null
+    and fixture.season_id is not distinct from app_private.predictions_current_season();
+
+  with counted as (
+    select vote.question, vote.choice, count(*) as votes
+    from app.match_votes vote
+    join app.profiles profile on profile.id = vote.user_id and profile.deleted_at is null
+    where vote.fixture_id = p_fixture_id
+      and not exists (
+        select 1 from app_private.user_bans ban
+        where ban.user_id = vote.user_id and ban.lifted_at is null
+          and ban.starts_at <= now_ts and (ban.ends_at is null or ban.ends_at > now_ts)
+      )
+    group by vote.question, vote.choice
+  ),
+  asked (position, question, choices) as (
+    values
+      (1, 'winner', array['home', 'draw', 'away']),
+      (2, 'both_score', array['yes', 'no']),
+      (3, 'first_goal', array['home', 'none', 'away'])
+  )
+  select jsonb_agg(jsonb_build_object(
+      'question', asked.question,
+      'counts', (
+        select jsonb_object_agg(option.choice, coalesce(counted.votes, 0))
+        from unnest(asked.choices) as option(choice)
+        left join counted on counted.question = asked.question and counted.choice = option.choice
+      ),
+      'mine', (
+        select vote.choice from app.match_votes vote
+        where vote.fixture_id = p_fixture_id and vote.question = asked.question
+          and caller is not null and vote.user_id = caller
+          and app_private.mfa_step_up_satisfied()
+      )
+    ) order by asked.position)
+  into questions
+  from asked;
+
+  return jsonb_build_object(
+    'schemaVersion', 1,
+    'allowed', true,
+    'serverTime', now_ts,
+    'fixtureId', p_fixture_id,
+    'covered', covered,
+    'open', covered
+      and app_private.prediction_fixture_open(fixture.status, fixture.kickoff_at, now_ts),
+    'questions', questions
+  );
+end;
+$$;
+
+comment on function api.match_votes(uuid) is
+  'Public: the fan votes on a match as totals per answer (banned and deleted '
+  'accounts left out), the caller''s own choices (null for visitors, and for an '
+  'account with a verified MFA factor whose session is not aal2), whether the '
+  'match is covered (current Pronostics season, has a journée) and still open '
+  '(before kick-off). allowed=false while Pronostics is off for the caller.';
 
 -- ---------------------------------------------------------------------------
 -- The account views (point 6)
@@ -4345,7 +4524,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260926003100, 'UTF8')), 'hex')
-    is distinct from 'f1669d4829af6110d10cb7fb5706fa821b2325fdad2de660743f45cc1d7a3af2' then
+    is distinct from '9a6185c59f96a97e5641bc911705723cdbab83df6dbdd8165043288c23e9fd18' then
     raise exception 'stop: 20260926003100 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -4362,11 +4541,13 @@ declare
   replaced constant jsonb := current_setting('bg_20260926003100.replaced')::jsonb;
   api_role text;
   signature text;
+  unguarded text[];
   enrolled uuid;
   refused_by_helper boolean;
   refused_by_table boolean;
   refused_by_read boolean;
   refused_by_view boolean;
+  refused_vote boolean;
 begin
   foreach signature in array array[
     'app_private.assert_mfa_step_up()', 'app_private.refuse_unverified_mfa_actor()'
@@ -4399,11 +4580,11 @@ begin
     select count(*) from pg_catalog.pg_trigger t
     where t.tgfoid = to_regprocedure('app_private.refuse_unverified_mfa_actor()')
       and t.tgtype = 30 and t.tgenabled = 'O'
-  ) <> 24 or (
+  ) <> 25 or (
     select count(*) from pg_catalog.pg_trigger t
     where t.tgname like '%\_refuse\_unverified\_mfa\_actor' and not t.tgisinternal
-  ) <> 24 then
-    problems := problems || 'expected 24 enabled per-statement step-up triggers'::text;
+  ) <> 25 then
+    problems := problems || 'expected 25 enabled per-statement step-up triggers'::text;
   end if;
 
   if pg_get_functiondef('api.request_account_deletion()'::regprocedure) not like '%app_private.assert_mfa_step_up()%'
@@ -4436,6 +4617,31 @@ begin
       where t.line !~ '^\s*$' and t.line !~ '^\s*--'
         and t.line <> '  perform app_private.assert_mfa_step_up();')) <> fn.normalized_md5
     or not has_function_privilege('authenticated', to_regprocedure(fn.signature), 'execute');
+
+  -- The two match-vote functions: their checked version plus the step-up and
+  -- nothing else, with the grants 20260925234000 gave them. Casting a vote
+  -- runs it first; the public read shows the caller's own choices only past
+  -- it, and stays open to visitors.
+  if pg_get_functiondef('api.cast_match_vote(uuid,text,text)'::regprocedure)
+      !~ E'\nbegin\n  perform app_private\\.assert_mfa_step_up\\(\\);\n'
+    or md5(replace(pg_get_functiondef('api.cast_match_vote(uuid,text,text)'::regprocedure),
+      E'\n  perform app_private.assert_mfa_step_up();', ''))
+      <> replaced -> 'match_votes' ->> 'api.cast_match_vote(uuid,text,text)'
+    or not has_function_privilege('authenticated', 'api.cast_match_vote(uuid,text,text)', 'execute')
+    or not has_function_privilege('service_role', 'api.cast_match_vote(uuid,text,text)', 'execute')
+    or has_function_privilege('anon', 'api.cast_match_vote(uuid,text,text)', 'execute') then
+    problems := problems || 'api.cast_match_vote is not its checked version plus the step-up'::text;
+  end if;
+  if pg_get_functiondef('api.match_votes(uuid)'::regprocedure)
+      not like E'%\n          and caller is not null and vote.user_id = caller\n          and app_private.mfa_step_up_satisfied()\n%'
+    or md5(replace(pg_get_functiondef('api.match_votes(uuid)'::regprocedure),
+      E'\n          and app_private.mfa_step_up_satisfied()', ''))
+      <> replaced -> 'match_votes' ->> 'api.match_votes(uuid)'
+    or not has_function_privilege('anon', 'api.match_votes(uuid)', 'execute')
+    or not has_function_privilege('authenticated', 'api.match_votes(uuid)', 'execute')
+    or not has_function_privilege('service_role', 'api.match_votes(uuid)', 'execute') then
+    problems := problems || 'api.match_votes is not its checked version plus the step-up'::text;
+  end if;
 
   -- The News card, the views and the avatar policies: their checked version
   -- plus the step-up and nothing else.
@@ -4473,6 +4679,60 @@ begin
         || '|' || replace(coalesce(policy.with_check, ''),
           ' AND ( SELECT app_private.mfa_step_up_satisfied() AS mfa_step_up_satisfied)', ''))
         = p.expression_md5);
+
+  -- No api function or view a browser can call reads the caller without the
+  -- step-up: the completeness checks of
+  -- supabase/tests/database/ordinary_account_mfa_step_up_reads.test.sql, word
+  -- for word, on this database's own catalog. A function reads the caller when
+  -- auth.uid() or auth.jwt() is in its own body, or in an app_private helper
+  -- it calls, at any depth; a helper that applies the step-up itself (the
+  -- News card) does not count. Staff RPCs keep their own stricter check, and
+  -- the migration names three exceptions ("Not guarded"). A reader this
+  -- database has and the repository does not stops the update here.
+  with recursive fn as (
+     select p.oid, n.nspname, p.proname, p.prosrc
+     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname in ('api', 'app_private')
+   ),
+   applies_step_up as (
+     select oid from fn
+     where prosrc ~ 'app_private\.(assert_mfa_step_up|require_mfa_step_up|mfa_step_up_satisfied)\('
+   ),
+   calls as (
+     select distinct f.oid as caller, g.oid as callee
+     from fn f
+     cross join lateral regexp_matches(f.prosrc, 'app_private\.([a-z_0-9]+)\s*\(', 'g') as m(name)
+     join fn g on g.nspname = 'app_private' and g.proname = m.name[1]
+   ),
+   reads_caller(oid) as (
+     select f.oid from fn f
+     where f.prosrc ~ 'auth\.(uid|jwt)\(\)' and f.oid not in (select oid from applies_step_up)
+     union
+     select c.caller from calls c join reads_caller r on r.oid = c.callee
+     where c.caller not in (select oid from applies_step_up)
+   )
+   select coalesce(array_agg(f.proname::text order by f.proname), '{}')
+   into unguarded
+   from reads_caller r join fn f on f.oid = r.oid
+   where f.nspname = 'api'
+     and has_function_privilege('authenticated', f.oid, 'execute')
+     and f.prosrc !~ 'app_private\.(admin_assert_permission|admin_assert_principal|has_editorial_role)\('
+     and f.proname not in ('get_my_staff_context', 'predictions_round', 'record_session_revocation');
+  if cardinality(unguarded) > 0 then
+    problems := problems
+      || ('an api function reads the caller without the step-up: ' || array_to_string(unguarded, ', '));
+  end if;
+  select coalesce(array_agg(c.oid::regclass::text order by c.oid::regclass::text), '{}')
+  into unguarded
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'api' and c.relkind in ('v', 'm')
+    and has_table_privilege('authenticated', c.oid, 'select')
+    and pg_get_viewdef(c.oid) ~ 'auth\.(uid|jwt)\(\)'
+    and pg_get_viewdef(c.oid) !~ 'app_private\.require_mfa_step_up\(\)';
+  if cardinality(unguarded) > 0 then
+    problems := problems
+      || ('an api view reads the caller without the step-up: ' || array_to_string(unguarded, ', '));
+  end if;
 
   if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003100') then
     problems := problems || 'history row missing'::text;
@@ -4526,11 +4786,23 @@ begin
     exception when others then
       refused_by_view := sqlstate = 'PT403' and sqlerrm = 'mfa_required';
     end;
+    -- A vote on a match that does not exist: the step-up refuses it first.
+    -- Without the step-up it would still write nothing (Pronostics off, or no
+    -- such match), but answer something other than mfa_required.
+    refused_vote := false;
+    begin
+      perform api.cast_match_vote(gen_random_uuid(), 'winner', 'home');
+    exception when others then
+      refused_vote := sqlstate = 'PT403' and sqlerrm = 'mfa_required';
+    end;
     if not refused_by_helper or not refused_by_table then
       problems := problems || 'an enrolled account at aal1 was not refused with mfa_required'::text;
     end if;
     if not refused_by_read or not refused_by_view then
       problems := problems || 'an enrolled account at aal1 could read its own data'::text;
+    end if;
+    if not refused_vote then
+      problems := problems || 'an enrolled account at aal1 could cast a match vote'::text;
     end if;
     if app_private.mfa_step_up_satisfied() then
       problems := problems || 'Storage would serve an enrolled account at aal1'::text;

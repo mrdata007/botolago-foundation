@@ -40,8 +40,8 @@ Migration `20260926003100_ordinary_account_mfa_step_up` (audit A03 / DB-07).
 An account with at least one **verified** factor in `auth.mfa_factors` must hold
 an `aal2` session to read or change its own data: every `api.*` function that
 reads or writes it, the four `api.my_*` views, the saved mark on the public
-News card, and its avatar image in Storage. At `aal1` the database refuses
-with:
+News card, its own choices in the public match votes, and its avatar image in
+Storage. At `aal1` the database refuses with:
 
 | SQLSTATE | message        | HTTP (PostgREST) | Client action                                    |
 | -------- | -------------- | ---------------- | ------------------------------------------------ |
@@ -64,27 +64,31 @@ which has no JWT on its connection).
   view's or policy's functions as the reader, not USAGE on their schema).
 - **Reads and writes through the api.** Every `api.*` function that reads or
   writes the caller's own account runs the helper as the first statement of
-  its body: 51 of them, among them the profile and ban standing
+  its body: 52 of them, among them the profile and ban standing
   (`get_my_account_standing`), notification preferences, notifications and
   devices, the saved-article list, the Fantasy hub (it carries the caller's
   team), the owned team, its points, history and transfer preview, the
   caller's Fantasy leagues, league standings (private leagues are read through
   the caller's membership) and overall standings (`myRank`), Pronostics picks,
   leagues, league standings and leaderboard (the caller's own line), and every
-  ordinary write RPC. Writes are listed too because some answer without a
-  write a trigger would see: an idempotent replay returns the stored Fantasy
-  team, a double tap returns the Pronostics league just made with its invite
-  code. The migration header lists all 51.
+  ordinary write RPC, a fan vote on a match (`cast_match_vote`) included.
+  Writes are listed too because some answer without a write a trigger would
+  see: an idempotent replay returns the stored Fantasy team, a double tap
+  returns the Pronostics league just made with its invite code, and a vote
+  answers with the caller's own choices. The migration header lists all 52.
 - **The account views.** `api.my_profile`, `my_followed_teams`,
   `my_followed_competitions` and `my_account_deletion_requests` end their
   WHERE with `app_private.require_mfa_step_up()`. It names no column, so it
   runs once before any row is read, and a view with no row for the account
   refuses too.
-- **The News card.** Every feed, search and article card says whether the
-  reader saved it (`isSaved`, `app_private.news_article_card`). That mark is
-  shown only when `app_private.mfa_step_up_satisfied()`: at `aal1` an
-  enrolled account reads the news as a visitor does. The news itself stays
-  public.
+- **The News card and the match votes.** Every feed, search and article card
+  says whether the reader saved it (`isSaved`, `app_private.news_article_card`),
+  and `api.match_votes` gives every fan's totals with the caller's own choices
+  (`mine`). Those two private parts are shown only when
+  `app_private.mfa_step_up_satisfied()`: at `aal1` an enrolled account reads
+  the news and the vote totals as a visitor does. The news and the totals stay
+  public; refusing them would only hide what the same person can read signed
+  out.
 - **The avatar image.** The `avatars` bucket's four policies on
   `storage.objects` (select, insert, update, delete; `20260720075453`) end
   with `and (select app_private.mfa_step_up_satisfied())`, their owner-folder
@@ -93,9 +97,9 @@ which has no JWT on its connection).
   runs the helper from BEFORE INSERT/UPDATE/DELETE statement triggers on every
   table an ordinary `api.*` function writes for the caller: profile,
   preferences, follows, deletion requests, saved articles, notifications and
-  devices, all Fantasy team and league tables, and Pronostics. A statement
-  that matches no row is refused too. They stay as the backstop for a write
-  RPC added later.
+  devices, all Fantasy team and league tables, and Pronostics (picks, league
+  memberships, guest claims and match votes). A statement that matches no row
+  is refused too. They stay as the backstop for a write RPC added later.
 - **Deliberately not refused**, at `aal1` (each is named in
   `supabase/tests/database/ordinary_account_mfa_step_up_reads.test.sql`, which
   fails when a new `api` function reads the caller without the step-up and is
@@ -111,9 +115,10 @@ which has no JWT on its connection).
   - `api.predictions_round()`: the round and its matches, the same for
     everyone. `auth.uid()` there only decides whether a tester may see
     Pronostics while it is open to testers alone.
-  - The public reads (football, the news, the Fantasy catalogue, rules,
-    fixtures, players and prizes, `username_availability`) and anonymous
-    client error reports: nothing in them is the caller's.
+  - The public reads (football, the news, the match votes' totals, the
+    Fantasy catalogue, rules, fixtures, players and prizes,
+    `username_availability`) and anonymous client error reports: nothing else
+    in them is the caller's.
   - Staff and editorial RPCs, which keep their own stricter check (below).
 - **Nothing is needed before the second factor.** While the code is owed the
   web app reads nothing of the account: it takes the factor list and the
@@ -126,9 +131,9 @@ which has no JWT on its connection).
   Query read reports it through the query cache
   (`src/services/query-client.ts`) to the same responder the write mappers
   use, and a refused avatar upload re-reads the session first.
-- **Guest predictions.** Guest predictions are claimed once the sign-in is
-  complete. A claim refused all the same keeps the picks on the phone, and the
-  web app retries on the next sign-in or page load.
+- **Guest predictions and match votes.** Both are sent from the phone once the
+  sign-in is complete. A claim or vote refused all the same stays on the
+  phone, and the web app retries on the next sign-in or page load.
 - **MCP tools.** `get_profile` and `get_fantasy_team` (`src/lib/mcp`) read
   through `api.my_profile` and `api.fantasy_hub` with the connected app's
   OAuth access token. Supabase Auth issues those tokens at `aal1`: the

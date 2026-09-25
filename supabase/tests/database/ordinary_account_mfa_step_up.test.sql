@@ -9,7 +9,7 @@
 -- The rule: E is refused (PT403 mfa_required) at aal1 and passes at aal2; N
 -- and U pass at aal1; work with no actor always passes.
 begin;
-select extensions.plan(50);
+select extensions.plan(56);
 
 create function pg_temp.id(n integer) returns uuid language sql immutable as $$
   select ('a3a30000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid
@@ -146,7 +146,7 @@ select extensions.is(
     'app.fantasy_league_memberships', 'app.fantasy_leagues', 'app.fantasy_lineup_players',
     'app.fantasy_lineups', 'app.fantasy_squad_memberships', 'app.fantasy_teams',
     'app.fantasy_transfer_batches', 'app.fantasy_transfers', 'app.followed_competitions',
-    'app.followed_teams', 'app.notification_subscriptions', 'app.notifications',
+    'app.followed_teams', 'app.match_votes', 'app.notification_subscriptions', 'app.notifications',
     'app.prediction_league_members', 'app.predictions', 'app.profiles', 'app.saved_articles',
     'app.user_preferences', 'app_private.prediction_guest_claims', 'app_private.push_destinations'
   ],
@@ -155,7 +155,7 @@ select extensions.is(
 select extensions.is(
   (select count(*)::integer from pg_trigger
    where tgfoid = 'app_private.refuse_unverified_mfa_actor()'::regprocedure),
-  24, 'and no other trigger uses it (none per row, none on auth or storage)'
+  25, 'and no other trigger uses it (none per row, none on auth or storage)'
 );
 
 -- ---------------------------------------------------------------------------
@@ -222,6 +222,10 @@ select extensions.throws_ok(
   'PT403', 'mfa_required', 'enrolled at aal1: importing the phone''s guest predictions waits for the challenge'
 );
 select extensions.throws_ok(
+  $$select api.cast_match_vote('a3a30000-0000-4000-8000-000000000401', 'winner', 'home')$$,
+  'PT403', 'mfa_required', 'enrolled at aal1: a fan vote on a match is refused'
+);
+select extensions.throws_ok(
   $$select api.mark_all_my_notifications_read(null)$$,
   'PT403', 'mfa_required', 'enrolled at aal1: a write that touches no row is refused too'
 );
@@ -247,6 +251,11 @@ select extensions.throws_ok(
   $$update app.profiles set display_name = 'Taken Over' where id = 'a3a30000-0000-4000-8000-000000000021'$$,
   'PT403', 'mfa_required', 'enrolled at aal1: a direct profile write is refused at the table'
 );
+select extensions.throws_ok(
+  $$insert into app.match_votes (fixture_id, user_id, question, choice)
+    values ('a3a30000-0000-4000-8000-000000000401', 'a3a30000-0000-4000-8000-000000000021', 'winner', 'away')$$,
+  'PT403', 'mfa_required', 'enrolled at aal1: a direct vote write is refused at the table'
+);
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select extensions.is(
   (select concat_ws('/',
@@ -254,8 +263,9 @@ select extensions.is(
     (select count(*) from app.followed_teams where user_id = pg_temp.id(21)),
     (select count(*) from app.account_deletion_requests where user_id = pg_temp.id(21)),
     (select count(*) from app.predictions where user_id = pg_temp.id(21)),
+    (select count(*) from app.match_votes where user_id = pg_temp.id(21)),
     (select display_name || ':' || preferred_language from app.profiles where id = pg_temp.id(21)))),
-  '0/0/0/0/Enrolled E:fr',
+  '0/0/0/0/0/Enrolled E:fr',
   'nothing an aal1 session tried was written'
 );
 
@@ -281,6 +291,10 @@ select extensions.lives_ok(
 select extensions.lives_ok(
   $$select api.save_predictions('[{"fixtureId":"a3a30000-0000-4000-8000-000000000401","home":2,"away":1}]')$$,
   'enrolled at aal2: saving a prediction passes'
+);
+select extensions.lives_ok(
+  $$select api.cast_match_vote('a3a30000-0000-4000-8000-000000000401', 'winner', 'home')$$,
+  'enrolled at aal2: a fan vote on a match passes'
 );
 select extensions.lives_ok(
   $$select api.request_account_deletion()$$,
@@ -314,8 +328,9 @@ select extensions.is(
     (select count(*) from app.followed_teams where user_id = pg_temp.id(21)),
     (select string_agg(status::text, ',') from app.account_deletion_requests where user_id = pg_temp.id(21)),
     (select count(*) from app.predictions where user_id = pg_temp.id(21)),
+    (select string_agg(question || '=' || choice, ',') from app.match_votes where user_id = pg_temp.id(21)),
     (select display_name || ':' || preferred_language from app.profiles where id = pg_temp.id(21)))),
-  '1/1/cancelled/1/Enrolled E:ar',
+  '1/1/cancelled/1/winner=home/Enrolled E:ar',
   'the aal2 session''s writes all landed'
 );
 
@@ -341,6 +356,10 @@ select extensions.lives_ok(
 select extensions.lives_ok(
   $$select api.save_predictions('[{"fixtureId":"a3a30000-0000-4000-8000-000000000401","home":0,"away":3}]')$$,
   'not enrolled at aal1: saving a prediction passes'
+);
+select extensions.lives_ok(
+  $$select api.cast_match_vote('a3a30000-0000-4000-8000-000000000401', 'winner', 'draw')$$,
+  'not enrolled at aal1: a fan vote on a match passes'
 );
 select extensions.lives_ok(
   $$select api.request_account_deletion()$$,
@@ -377,6 +396,10 @@ select extensions.lives_ok(
   'unverified factor only, aal1: saving a prediction passes'
 );
 select extensions.lives_ok(
+  $$select api.cast_match_vote('a3a30000-0000-4000-8000-000000000401', 'winner', 'away')$$,
+  'unverified factor only, aal1: a fan vote on a match passes'
+);
+select extensions.lives_ok(
   $$select api.request_account_deletion()$$,
   'unverified factor only, aal1: asking for deletion passes'
 );
@@ -400,6 +423,10 @@ select extensions.lives_ok(
 select extensions.lives_ok(
   $$delete from app.followed_teams where user_id = 'a3a30000-0000-4000-8000-000000000021'$$,
   'the service role deletes an enrolled account''s rows'
+);
+select extensions.lives_ok(
+  $$delete from app.match_votes where user_id = 'a3a30000-0000-4000-8000-000000000021'$$,
+  'and its match votes (as deleting the account or the match does)'
 );
 select set_config('request.jwt.claims', '', true);
 select extensions.lives_ok(

@@ -9,9 +9,11 @@
 --   U  an unverified (abandoned) enrolment only
 -- The rule, for reads as for writes: E is refused (PT403 mfa_required) at aal1
 -- or with no aal claim, and passes at aal2; N and U pass at aal1; work with
--- no actor passes.
+-- no actor passes. The two public reads with a private part (the News card's
+-- saved mark, the match votes' own choices) answer E at aal1 as they answer a
+-- visitor.
 begin;
-select extensions.plan(36);
+select extensions.plan(42);
 
 create function pg_temp.id(n integer) returns uuid language sql immutable as $$
   select ('a3b30000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid
@@ -148,7 +150,8 @@ values
 
 -- Each account builds what the reads below return: a Fantasy team (its
 -- idempotency key is 500 + n), a followed club and competition, a deletion
--- request, the saved article and a prediction. E does it at aal2.
+-- request, the saved article, a prediction and two fan votes on the first
+-- match (E: home and yes, N: draw and no, U: away and yes). E does it at aal2.
 create function pg_temp.populate(p_user uuid, p_aal text, p_n integer) returns void
 language plpgsql as $$
 begin
@@ -161,6 +164,10 @@ begin
   perform api.save_article(pg_temp.id(9));
   perform api.save_predictions(jsonb_build_array(jsonb_build_object(
     'fixtureId', pg_temp.id(401), 'home', 1, 'away', 0)));
+  perform api.cast_match_vote(pg_temp.id(401), 'winner',
+    case p_n when 21 then 'home' when 22 then 'draw' else 'away' end);
+  perform api.cast_match_vote(pg_temp.id(401), 'both_score',
+    case p_n when 22 then 'no' else 'yes' end);
   perform set_config('request.jwt.claims', '', true);
 end;
 $$;
@@ -331,8 +338,8 @@ select extensions.is(
    where n.nspname = 'api'
      and p.prosrc ~ 'perform app_private\.assert_mfa_step_up\(\);'
      and has_function_privilege('authenticated', p.oid, 'execute')),
-  51,
-  'the 49 functions of point 5 and the two account-deletion functions run it'
+  52,
+  'the 50 functions of point 5 and the two account-deletion functions run it'
 );
 select extensions.is(
   (select array_agg(c.oid::regclass::text order by c.oid::regclass::text)
@@ -511,6 +518,58 @@ select extensions.is(
   api.news_article_detail('fr', 'mfa-step-up-reads') ->> 'isSaved', 'false',
   'no actor: no saved mark (nobody is reading)'
 );
+
+-- ---------------------------------------------------------------------------
+-- The match votes: every fan's totals for everyone, the caller's own choices
+-- ('mine') only past the step-up
+-- ---------------------------------------------------------------------------
+-- One line per question: its totals, then the caller's choice or '-'.
+create function pg_temp.votes() returns text language sql as $$
+  select string_agg(format('%s %s mine=%s', question ->> 'question', question -> 'counts',
+      coalesce(question ->> 'mine', '-')), E'\n' order by position)
+  from jsonb_array_elements(api.match_votes(pg_temp.id(401)) -> 'questions')
+    with ordinality as asked(question, position)
+$$;
+create function pg_temp.expected_votes(p_winner text, p_both_score text) returns text
+language sql immutable as $$
+  select concat_ws(E'\n',
+    'winner {"away": 1, "draw": 1, "home": 1} mine=' || p_winner,
+    'both_score {"no": 1, "yes": 2} mine=' || p_both_score,
+    'first_goal {"away": 0, "home": 0, "none": 0} mine=-')
+$$;
+
+select pg_temp.act(pg_temp.id(21), 'aal1');
+set local role authenticated;
+select extensions.is(pg_temp.votes(), pg_temp.expected_votes('-', '-'),
+  'enrolled at aal1: the totals, its own votes counted in them, but not its own choices');
+reset role;
+select set_config('request.jwt.claims',
+  '{"sub":"a3b30000-0000-4000-8000-000000000021","role":"authenticated"}', true);
+set local role authenticated;
+select extensions.is(pg_temp.votes(), pg_temp.expected_votes('-', '-'),
+  'enrolled with no aal claim: the same as aal1');
+reset role;
+select pg_temp.act(pg_temp.id(21), 'aal2');
+set local role authenticated;
+select extensions.is(pg_temp.votes(), pg_temp.expected_votes('home', 'yes'),
+  'enrolled at aal2: the same totals and its own choices');
+reset role;
+select pg_temp.act(pg_temp.id(22), 'aal1');
+set local role authenticated;
+select extensions.is(pg_temp.votes(), pg_temp.expected_votes('draw', 'no'),
+  'never enrolled, aal1: its own choices, as before');
+reset role;
+select pg_temp.act(pg_temp.id(23), 'aal1');
+set local role authenticated;
+select extensions.is(pg_temp.votes(), pg_temp.expected_votes('away', 'yes'),
+  'unverified factor only, aal1: its own choices');
+reset role;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+set local role anon;
+select extensions.is(pg_temp.votes(), pg_temp.expected_votes('-', '-'),
+  'a visitor: the same totals, no choices of its own');
+reset role;
+select set_config('request.jwt.claims', '', true);
 
 -- ---------------------------------------------------------------------------
 -- The avatar image
