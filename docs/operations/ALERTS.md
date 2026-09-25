@@ -7,10 +7,11 @@ deadline and live scores switched off on a match day all went unnoticed.
 
 ## Channels
 
-| Channel                                                                                           | Fires on                                                                                                          | Latency                                                                                       | Needs                                                              |
-| ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| GitHub issue labelled `ops-alert` (mentions `@mrdata007`, so GitHub e-mails and notifies the app) | a failed **Fantasy season orchestrator** or **News licensed import** run; a failing **Production watchdog** check | immediate for the two jobs; the watchdog is scheduled every 30 min (GitHub may start it late) | nothing: uses the run's own `GITHUB_TOKEN`                         |
-| Webhook message (Discord, Slack or any JSON endpoint) from the database                           | production health turning to `fail`, still failing an hour later, and once on recovery                            | at most 5 minutes (pg_cron, independent of GitHub)                                            | the owner stores a webhook URL in Vault and switches it on (below) |
+| Channel                                                                                                      | Fires on                                                                                                          | Latency                                                                                       | Needs                                                              |
+| ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| GitHub issue labelled `ops-alert` (mentions `@mrdata007`, so GitHub e-mails and notifies the app)            | a failed **Fantasy season orchestrator** or **News licensed import** run; a failing **Production watchdog** check | immediate for the two jobs; the watchdog is scheduled every 30 min (GitHub may start it late) | nothing: uses the run's own `GITHUB_TOKEN`                         |
+| Webhook message (Discord, Slack or any JSON endpoint) from the database                                      | production health turning to `fail`, still failing an hour later, and once on recovery                            | at most 5 minutes (pg_cron, independent of GitHub)                                            | the owner stores a webhook URL in Vault and switches it on (below) |
+| Email to the owner's inbox from the database (Edge Function `ops-alert-email`, the site's own Resend sender) | the same moments as the webhook, through the same tick                                                            | at most 5 minutes (pg_cron, independent of GitHub)                                            | the owner stores the address and switches it on (below)            |
 
 One issue per job: a repeated failure comments on the open issue, the next
 green run comments "Recovered" and closes it. The webhook sends one message
@@ -61,6 +62,34 @@ and `public_api` (fail on a non-200, warn above 8 s), `season_orchestrator`
 (fail when GitHub has not started it for 8 h; warn when its last run failed)
 and `release_drift` (the live site's `x-botolago-release` against `main`: warn
 after 24 h of unpublished changes, fail after 72 h; `docs/operations/DEPLOYMENT.md`).
+
+## Switching email alerts on (owner, once)
+
+Added 2026-09-25 (`20260926001000_ops_alert_email`). That day both channels
+above fired and neither reached the owner: issue #218 mentioned `@mrdata007`
+and Slack answered `ok` to a test, but nothing arrived where the owner looks.
+Email goes to the one address stored in the database, through the same Resend
+key and sender as the site's other emails (`RESEND_API_KEY` in Edge Function
+secrets), and the Edge Function never takes a recipient from its caller.
+
+1. Deploy the Edge Function `ops-alert-email` (`verify_jwt = false`, like
+   `notification-email-dispatch`; `supabase/config.toml`).
+2. Supabase dashboard → BotolaGO Production V2 → SQL Editor → run:
+
+   ```sql
+   select app_private.ops_alert_configure_email('<your address>');
+   select app_private.ops_alert_configure(true);
+   select app_private.ops_alert_test();  -- one TEST email (and webhook message) now
+   ```
+
+3. Check the test was accepted: `select status_code, content from net._http_response
+where id = <emailRequestId from the test>;` answers `200` with `"sent":true`.
+   `503 email_provider_not_configured` means `RESEND_API_KEY` is missing from
+   the Edge Function secrets. Then confirm the email is in the inbox.
+4. To stop emailing: `select app_private.ops_alert_configure_email(null);`
+
+`app_private.ops_alert_test()` works any time and leaves the alert state
+alone, so the next real incident is still announced.
 
 ## Switching the webhook on (owner, once)
 
