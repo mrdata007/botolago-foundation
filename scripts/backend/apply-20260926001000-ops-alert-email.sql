@@ -66,7 +66,12 @@ begin
   if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260924200200') then
     missing := missing || 'migration 20260924200200 (ops health and alerts)'::text;
   end if;
-  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260924140100') then
+  -- Production recorded 20260924140100 as 20260924131431, same file
+  -- (scripts/backend/production-migration-aliases.json): either one counts.
+  if not exists (
+    select 1 from supabase_migrations.schema_migrations
+    where version in ('20260924140100', '20260924131431')
+  ) then
     missing := missing || 'migration 20260924140100 (notification email delivery)'::text;
   end if;
   foreach object_name in array array[
