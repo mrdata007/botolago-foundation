@@ -25,6 +25,9 @@ const LEAGUE = 860;
 const BASE = "/v3/football";
 const CLUBS = 16;
 const MAX_FIXTURES = 20;
+/** Recording waits for a scheduled database job mid-run: 6 tries, 10 seconds apart. */
+const RECORD_ATTEMPTS = 6;
+const RECORD_RETRY_MS = 10_000;
 /** SportsMonks position ids, as the current-season squad import reads them. */
 const POSITIONS: Readonly<Record<number, string>> = {
   24: "goalkeeper",
@@ -301,6 +304,7 @@ export async function runCurrentPlayerListObservation(
   fixtureIds: readonly number[],
   request: typeof requestSportsMonksJson = requestSportsMonksJson,
   now: () => Date = () => new Date(),
+  sleep: (milliseconds: number) => Promise<unknown> = (milliseconds) => Bun.sleep(milliseconds),
 ): Promise<Row> {
   const observedAt = now().toISOString();
   const teams = await readAllProviderRows(`${BASE}/teams/seasons/${SEASON}`, {}, token, request);
@@ -320,17 +324,31 @@ export async function runCurrentPlayerListObservation(
     lineups.push(lineup.lineup);
     lineupEvidence.push(lineup.evidence);
   }
-  const recorded = row(
-    await rpc(client, "service_record_current_player_list", {
-      p_observations: {
-        providerName: "sportsmonks",
-        seasonExternalId: String(SEASON),
-        observedAt,
-        clubs,
-        lineups,
-      },
-    }),
-  );
+  const observations = {
+    providerName: "sportsmonks",
+    seasonExternalId: String(SEASON),
+    observedAt,
+    clubs,
+    lineups,
+  };
+  let recorded: Row | null = null;
+  for (let attempt = 1; recorded === null; attempt += 1) {
+    try {
+      recorded = row(
+        await rpc(client, "service_record_current_player_list", { p_observations: observations }),
+      );
+    } catch (error) {
+      // The database refuses to write while a scheduled job is mid-run
+      // (AGENTS.md, one writer at a time); such a job takes milliseconds.
+      if (
+        !(error instanceof CurrentPlayerListError) ||
+        error.diagnostic?.reason !== "scheduled_job_running" ||
+        attempt >= RECORD_ATTEMPTS
+      )
+        throw error;
+      await sleep(RECORD_RETRY_MS);
+    }
+  }
   if (typeof recorded.observationId !== "string" || !/^[0-9a-f-]{36}$/.test(recorded.observationId))
     fail("invalid_observation_record");
   const plan = row(

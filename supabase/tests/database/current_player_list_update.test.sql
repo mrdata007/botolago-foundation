@@ -176,6 +176,31 @@ select jsonb_build_object(
 ) as observations;
 grant select on observation_input to service_role;
 
+-- The local database runs the scheduled jobs too, each for a few milliseconds,
+-- and recording or applying refuses while one is mid-run. A call that must
+-- succeed waits for it, as the workflow does.
+create function pg_temp.waiting(p_call text) returns jsonb
+language plpgsql as $$
+declare
+  result jsonb;
+begin
+  for attempt in 1..200 loop
+    begin
+      execute p_call into result;
+      return result;
+    exception when others then
+      if sqlerrm <> 'scheduled_job_running' or attempt = 200 then
+        raise;
+      end if;
+      perform pg_sleep(0.05);
+    end;
+  end loop;
+end;
+$$;
+grant execute on function pg_temp.waiting(text) to service_role;
+create temp view job_mid_run as
+select jobid from cron.job order by jobid limit 1;
+
 -- Only the service role records, plans or applies.
 select extensions.ok(
   not has_function_privilege('anon', 'api.service_record_current_player_list(jsonb)', 'execute')
@@ -217,8 +242,22 @@ select extensions.throws_ok(
   'PT400', 'invalid_player_list_observations', 'an untrimmed name is refused'
 );
 
+-- While a scheduled job is mid-run, nothing is recorded.
+reset role;
+insert into cron.job_run_details (jobid, runid, job_pid, database, username, command, status, start_time)
+select jobid, 987654321, 0, current_database(), 'postgres', 'select 1', 'running', statement_timestamp()
+from job_mid_run;
+set local role service_role;
+select extensions.throws_ok(
+  $$select api.service_record_current_player_list(observations) from observation_input$$,
+  'PT409', 'scheduled_job_running', 'nothing is recorded while a scheduled job is mid-run'
+);
+reset role;
+delete from cron.job_run_details where runid = 987654321;
+set local role service_role;
+
 create temp table recorded on commit drop as
-select api.service_record_current_player_list(observations) as result from observation_input;
+select pg_temp.waiting('select api.service_record_current_player_list(observations) from observation_input') as result;
 create temp table planned on commit drop as
 select api.service_plan_current_player_list((result ->> 'observationId')::uuid) as plan from recorded;
 
@@ -296,10 +335,22 @@ select extensions.is(
 update app.fantasy_squad_memberships set sold_at = statement_timestamp(),
   sold_gameweek_id = '83a00000-0000-4000-8000-000000000003'
 where fantasy_player_id = md5('player-list-fantasy-13')::uuid;
+reset role;
+insert into cron.job_run_details (jobid, runid, job_pid, database, username, command, status, start_time)
+select jobid, 987654322, 0, current_database(), 'postgres', 'select 1', 'running', statement_timestamp()
+from job_mid_run;
+set local role service_role;
+select extensions.throws_ok(
+  $$select api.service_apply_current_player_list((result ->> 'observationId')::uuid, plan ->> 'digest')
+    from recorded, planned$$,
+  'PT409', 'scheduled_job_running', 'nor applied while a scheduled job is mid-run'
+);
+reset role;
+delete from cron.job_run_details where runid = 987654322;
 set local role service_role;
 create temp table applied on commit drop as
-select api.service_apply_current_player_list((result ->> 'observationId')::uuid, plan ->> 'digest') as result
-from recorded, planned;
+select pg_temp.waiting($$select api.service_apply_current_player_list((result ->> 'observationId')::uuid, plan ->> 'digest')
+  from recorded, planned$$) as result;
 reset role;
 select extensions.is(
   (select result - 'observationId' - 'planDigest' from applied),

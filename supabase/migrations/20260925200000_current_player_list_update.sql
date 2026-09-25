@@ -17,6 +17,8 @@
 --   3. api.service_apply_current_player_list makes the changes, only while the
 --      Fantasy tick is paused, and only when the plan still has the reviewed
 --      digest. It then plans again and refuses unless nothing is left to do.
+-- Recording and applying both refuse while a scheduled (pg_cron) job is
+-- mid-run (scheduled_job_running), so they never write alongside one.
 --
 -- Only positive evidence changes anything. A player is placed at the club of
 -- their latest lineup, else at the one club whose squad lists them; a player
@@ -235,6 +237,13 @@ begin
     or observed > statement_timestamp() + interval '1 minute'
   then
     raise exception using errcode = 'PT400', message = 'player_list_observation_not_fresh';
+  end if;
+  -- AGENTS.md, one writer at a time: nothing scheduled may be mid-run at the
+  -- moment this writes. The caller waits and tries again.
+  if exists (select 1 from cron.job_run_details run
+    where run.status not in ('succeeded', 'failed')
+      and run.start_time > statement_timestamp() - interval '15 minutes') then
+    raise exception using errcode = 'PT409', message = 'scheduled_job_running';
   end if;
   digest := encode(extensions.digest(p_observations::text, 'sha256'), 'hex');
   insert into app_private.current_player_list_observations (
@@ -718,6 +727,13 @@ begin
   end if;
   if (plan #>> '{summary,clubLimitViolations}')::integer <> 0 then
     raise exception using errcode = 'PT409', message = 'fantasy_club_limit_exceeded';
+  end if;
+  -- AGENTS.md, one writer at a time: nothing scheduled may be mid-run at the
+  -- moment this writes.
+  if exists (select 1 from cron.job_run_details run
+    where run.status not in ('succeeded', 'failed')
+      and run.start_time > statement_timestamp() - interval '15 minutes') then
+    raise exception using errcode = 'PT409', message = 'scheduled_job_running';
   end if;
   source_version := 'sportsmonks-player-list:' || p_observation_id::text;
 

@@ -32,13 +32,13 @@ Only positive evidence changes anything:
 
 For each player placed at a club:
 
-| The player                                            | What happens                                                                                        |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Listed at that club                                   | Nothing                                                                                             |
-| Listed at another club                                | Moves: the old club's record for this season closes, the new one opens                              |
-| Known but with no club this season                    | Joins the club                                                                                      |
-| Unknown, but typed in by hand at that club by name    | Gets their SportsMonks id                                                                           |
-| Unknown, and matched to no one                        | Created, as the squad import creates players, and joins the club (a player without a position is left out) |
+| The player                                         | What happens                                                                                               |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Listed at that club                                | Nothing                                                                                                    |
+| Listed at another club                             | Moves: the old club's record for this season closes, the new one opens                                     |
+| Known but with no club this season                 | Joins the club                                                                                             |
+| Unknown, but typed in by hand at that club by name | Gets their SportsMonks id                                                                                  |
+| Unknown, and matched to no one                     | Created, as the squad import creates players, and joins the club (a player without a position is left out) |
 
 Some players stay as they are:
 
@@ -78,9 +78,12 @@ Fantasy follows the list:
    It reads every club's squad and those lineups from SportsMonks and records
    them in production (`api.service_record_current_player_list`, one row in
    `app_private.current_player_list_observations`). It changes nothing else.
+   The database refuses to record while a scheduled (pg_cron) job is mid-run,
+   so the run waits and tries again, six times, 10 seconds apart.
    Its evidence, `current-player-list.json`, holds the plan
    (`api.service_plan_current_player_list`): every change, what was skipped
    and why, and a digest of the changes.
+
 2. **Review the plan.** Check the moves, additions and retirements it lists.
    `report.unobservedByClub` counts the players SportsMonks shows nowhere, and
    `report.handTypedUnmatched` lists the hand-typed players still matched to no
@@ -90,6 +93,7 @@ Fantasy follows the list:
    (rehearsal first). The apply stops if any of these hold:
    - the plan's digest has changed since it was reviewed;
    - the tick is on;
+   - a scheduled (pg_cron) job is mid-run;
    - a gameweek is being finalized;
    - the observation was already applied;
    - a squad would go over the club limit.
@@ -97,6 +101,7 @@ Fantasy follows the list:
    Once applied, it plans the same observation again and refuses unless
    nothing is left to change. The plan and the result are kept in
    `app_private.current_player_list_updates`.
+
 4. Import the statistics of the fixtures observed.
 
 Before the first run, the migration itself goes on production with

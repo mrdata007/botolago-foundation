@@ -280,6 +280,49 @@ describe("current player list observation", () => {
         reason: "player_list_club_scope_mismatch",
       },
     });
+
+    // A scheduled database job mid-run: the database refuses to record, so
+    // the run waits and tries again, six times at most.
+    const waitingFor = (refusals: number) => {
+      let left = refusals;
+      return {
+        schema: () => ({
+          rpc: async (name: string) =>
+            name === "service_record_current_player_list" && left-- > 0
+              ? { data: null, error: { code: "PT409", message: "scheduled_job_running" } }
+              : name === "service_record_current_player_list"
+                ? {
+                    data: { observationId: "0b2d3c4e-0000-4000-8000-000000000001", clubs: 16 },
+                    error: null,
+                  }
+                : { data: { digest: "a".repeat(64), summary: { changes: 1 } }, error: null },
+        }),
+      };
+    };
+    const waits: number[] = [];
+    await expect(
+      runCurrentPlayerListObservation(
+        waitingFor(2),
+        "token",
+        [],
+        provider(responses),
+        () => new Date(OBSERVED_AT),
+        async (milliseconds) => waits.push(milliseconds),
+      ),
+    ).resolves.toMatchObject({ verdict: "planned" });
+    expect(waits).toEqual([10_000, 10_000]);
+    waits.length = 0;
+    await expect(
+      runCurrentPlayerListObservation(
+        waitingFor(6),
+        "token",
+        [],
+        provider(responses),
+        () => new Date(OBSERVED_AT),
+        async (milliseconds) => waits.push(milliseconds),
+      ),
+    ).rejects.toMatchObject({ diagnostic: { reason: "scheduled_job_running" } });
+    expect(waits).toHaveLength(5);
   });
 
   test("fixture ids are a short list of distinct SportsMonks ids", () => {
