@@ -911,18 +911,29 @@ begin
     problems := problems || 'history row missing'::text;
   end if;
 
-  -- One real call of each read: the backfill names every finished match of
-  -- the current season again (28647 at SportsMonks), and the lineups of the
-  -- latest one carry the new list.
+  -- One real call of each read: the backfill names again every finished match
+  -- of the season (28647 at SportsMonks) it has not refused twice, and the
+  -- lineups of the latest one carry the new list.
   answer := api.service_football_match_details_due('sportsmonks', '28647', 'backfill', 20);
   if jsonb_typeof(answer) is distinct from 'array'
     or jsonb_array_length(answer) <> least(20, (
       select count(*) from app.fixtures fixture
-      join app.seasons season on season.id = fixture.season_id and season.is_current
+      join app_private.football_provider_mappings season_mapping
+        on season_mapping.provider_name = 'sportsmonks' and season_mapping.entity_type = 'season'
+       and season_mapping.external_id = '28647' and season_mapping.active
+       and season_mapping.internal_entity_id = fixture.season_id
       join app_private.football_provider_mappings mapping
         on mapping.provider_name = 'sportsmonks' and mapping.entity_type = 'fixture'
        and mapping.internal_entity_id = fixture.id and mapping.active
-      where fixture.status = 'finished')) then
+      where fixture.status = 'finished'
+        -- as the backfill counts them: refused twice by it, left out
+        and (select count(*)
+             from app_private.football_ingestion_rejections rejection
+             join app_private.football_ingestion_runs run on run.id = rejection.run_id
+             where run.provider_name = 'sportsmonks' and run.job_type = 'match_events'
+               and run.target_scope ->> 'scope' = 'backfill'
+               and rejection.entity_type = 'fixture'
+               and rejection.external_id = mapping.external_id) < 2)) then
     problems := problems || ('the backfill answered ' || coalesce(answer::text, 'null'));
   end if;
   select fixture.id into probe_fixture_id

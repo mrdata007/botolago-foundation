@@ -34,8 +34,18 @@ way the Résumé tab already names their goals and cards.
 
 ## Order
 
-1. **Nothing else running**: no match on, no workflow running, no other
-   database work.
+1. **Nothing else writing, for the whole of steps 2 to 4**: no match on, no
+   other database work, no workflow running in GitHub → Actions, and not at
+   minute 12 of an hour (the Fantasy orchestrator). The scheduled football
+   recovery stays off (the repository variable
+   `FOOTBALL_CURRENT_SCHEDULE_ENABLED` is not `true`). Then pause the live
+   refresh, which is the one scheduled job that calls the match-details
+   functions this changes:
+
+   ```sql
+   select cron.alter_job((select jobid from cron.job where jobname = 'football-live-refresh'), active := false);
+   ```
+
 2. **Database**: SQL Editor, paste the whole of
    [`scripts/backend/apply-20260925170000-football-lineup-named-players.sql`](../../scripts/backend/apply-20260925170000-football-lineup-named-players.sql),
    Run: **Rehearsal passed**. Change `rollback;` to `commit;`, Run:
@@ -44,7 +54,14 @@ way the Résumé tab already names their goals and cards.
    `supabase functions deploy football-live-refresh --project-ref tkewgajrljbwgwedqsxn`
 4. **Backfill**, as in
    [APPLY_2026_09_25_MATCH_DETAILS.md](APPLY_2026_09_25_MATCH_DETAILS.md)
-   step 4, until `"due"` is 0.
+   step 4, until `"due"` is 0. Then switch the live refresh back on, and
+   check it reads `true`:
+
+   ```sql
+   select cron.alter_job((select jobid from cron.job where jobname = 'football-live-refresh'), active := true);
+   select jobname, active from cron.job where jobname = 'football-live-refresh';
+   ```
+
 5. **Website**: press **Publish** in Lovable. Before that, the site in
    production shows the known players only, as today.
 
