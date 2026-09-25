@@ -7,7 +7,13 @@ import {
 } from "@/lib/page-availability";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useState, type ComponentProps } from "react";
-import { footballService, type FootballSeason } from "@/services/football";
+import {
+  footballService,
+  hasLeagueTable,
+  type FootballSeason,
+  type FootballStandings,
+  type MatchSeason,
+} from "@/services/football";
 import { newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -500,36 +506,59 @@ function MatchDetailPage() {
   );
 }
 
-/**
- * The "Face à face" tab, with the season's table where the two clubs stand.
- * The table is the Classement tab's query, with its key and its function, so
- * the two share one cache entry and one ranking: the same tie order, shared
- * ranks and provisional note. Only this tab reads it, as it is mounted only
- * while the tab is open; the detail query, refetched every 30 seconds through
- * a live match, carries no table. Nothing reads it on the server either, so
- * the server and the browser's first render both hold its place
- * (`standingsPending`), and agree.
- */
-function HeadToHeadTab({
-  season,
-  home,
-  away,
-  palettes,
-  meetings,
-}: { season: Pick<FootballSeason, "id" | "competitionId"> } & Pick<
+type HeadToHeadTabProps = { season: MatchSeason } & Pick<
   ComponentProps<typeof HeadToHead>,
   "home" | "away" | "palettes" | "meetings"
->) {
+>;
+
+/**
+ * The "Face à face" tab, with the season's table where the two clubs stand.
+ *
+ * Only a league's match has one (`hasLeagueTable`). A cup, super cup,
+ * international or friendly fixture has results in its season too, and the
+ * tab used to draw them as a merged points table under a "provisoire" note:
+ * its tab is the meetings alone, and reads neither a table nor the seasons.
+ */
+function HeadToHeadTab({ season, ...rest }: HeadToHeadTabProps) {
+  if (!hasLeagueTable(season)) return <HeadToHead {...rest} standings={[]} />;
+  return <LeagueHeadToHeadTab season={season} {...rest} />;
+}
+
+/**
+ * A league match's "Face à face" tab. The table is the Classement tab's
+ * query, with its key and its function, so the two share one cache entry and
+ * one ranking: the same tie order, shared ranks and provisional note. Only
+ * this tab reads it, as it is mounted only while the tab is open; the detail
+ * query, refetched every 30 seconds through a live match, carries no table.
+ * Nothing reads it on the server either, so the server and the browser's
+ * first render both hold its place (`standingsPending`), and agree.
+ */
+function LeagueHeadToHeadTab({ season, home, away, palettes, meetings }: HeadToHeadTabProps) {
   const { lang } = useI18n();
+  const queryClient = useQueryClient();
+  // A switch of language puts the whole page back to loading (the detail is
+  // read again), so this tab comes back new, with no previous read of its
+  // own to show. Until this language's table and season list are in, the
+  // other language's copies of the same ones stand in, from the cache: the
+  // ranks are the same in both (`buildStandings`), the clubs' names on the
+  // rows are the match's, and the key never names another season.
+  const other = lang === "ar" ? "fr" : "ar";
   const standingsQ = useQuery({
     queryKey: ["football", "standings", season.id, lang],
     queryFn: () => footballService.getStandings(season, lang),
+    placeholderData: () =>
+      queryClient.getQueryData<FootballStandings>(["football", "standings", season.id, other]),
   });
   // The season's status says whether a table worked out from the results is
-  // provisional or, the season over, unofficial.
+  // provisional or, the season over, unofficial. The detail cannot say it
+  // (`MatchSeason`), so it comes from the season list; when that read fails,
+  // or the list does not reach back to the season, the note says neither and
+  // only that the table is worked out from the results (`StandingsNotes`).
   const seasonsQ = useQuery({
     queryKey: ["football", "seasons", lang],
     queryFn: () => footballService.getSeasons(lang),
+    placeholderData: () =>
+      queryClient.getQueryData<FootballSeason[]>(["football", "seasons", other]),
   });
   const table = standingsQ.data;
   return (

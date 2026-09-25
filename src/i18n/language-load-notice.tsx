@@ -1,9 +1,11 @@
 import { AlertTriangle, Loader2, RotateCcw, X } from "lucide-react";
+import { useLayoutEffect, useRef } from "react";
 
 import { ui } from "@/components/ui-kit/tokens";
 import { cn } from "@/lib/utils";
 import { fr } from "./dictionary-fr";
 import { CHOOSER_ARABIC } from "./language-chooser-copy";
+import { LANGUAGE_SWITCHER_SELECTOR, returnFocusFromNotice } from "./language-notice-focus";
 
 /**
  * The notice a reader gets when Arabic was asked for outside the first-launch
@@ -28,6 +30,10 @@ import { CHOOSER_ARABIC } from "./language-chooser-copy";
  * and error screens, that is not licence to paint something else: the card is
  * `UiAlert tone="negative"`, Retry is `UiButton variant="ink" size="sm"` and
  * the close control is `UiIconButton variant="ghost"`, class for class.
+ *
+ * It leaves when it is closed or its Retry succeeds, taking the focused
+ * button with it; focus that was in it goes to the language switcher, else
+ * the page's `<main>`, not to the document's body (`language-notice-focus`).
  */
 export function LanguageLoadNotice({
   retrying,
@@ -39,8 +45,26 @@ export function LanguageLoadNotice({
   onRetry: () => void;
   onClose: () => void;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // A layout effect's cleanup, because React runs it before it takes the
+  // notice out of the document: focus is still on the button in it, where a
+  // passive effect's cleanup would find it already dropped to the body.
+  useLayoutEffect(() => {
+    const notice = ref.current;
+    return () => {
+      if (!notice) return;
+      returnFocusFromNotice({
+        focusInNotice: notice.contains(document.activeElement),
+        switchers: document.querySelectorAll<HTMLElement>(LANGUAGE_SWITCHER_SELECTOR),
+        landmarks: document.querySelectorAll<HTMLElement>("main"),
+        holdsFocus: (element) => document.activeElement === element,
+      });
+    };
+  }, []);
+
   return (
     <div
+      ref={ref}
       className={cn(
         "pointer-events-none fixed inset-x-0 z-40",
         "top-[calc(var(--topbar-h)+var(--livestrip-h)+0.5rem)]",

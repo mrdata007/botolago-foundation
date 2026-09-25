@@ -134,7 +134,7 @@ describe("matchDataPhase", () => {
       expect(phaseAt("2026-09-27T23:00:00Z")).toBe("unreported");
       expect(phaseAt("2026-09-28T00:30:00Z")).toBe("unreported");
       expect(noStatsMessage(phaseAt("2026-09-27T22:00:00Z"), inLanguage("fr"))).toBe(
-        "Les statistiques seront disponibles au coup d'envoi.",
+        "Le match n'a pas encore commencé : pas de statistiques à afficher.",
       );
     });
 
@@ -194,9 +194,42 @@ describe("empty-panel copy", () => {
     expect(noStatsMessage("finished", inLanguage("ar"))).toBe("إحصائيات هذه المباراة غير متوفرة.");
   });
 
-  test("before kick-off the Stats tab still says when its figures come", () => {
+  test("before kick-off, every panel says the match has not started, and promises nothing", () => {
+    // Audit A02: "Les statistiques seront disponibles au coup d'envoi" was a
+    // promise too — the provider sends some matches no statistics, events or
+    // lineups at all. What is sure before kick-off is that the match has not
+    // started; not that its data will follow.
+    const promises = {
+      fr: /seront|sera |coup d'envoi|pour le moment|pour l'instant|se met à jour|publiées|reçue/i,
+      ar: /ستتوفر|ستظهر|سيتم|عند انطلاق|حتى الآن|تلقائي|لم يتم نشر|لم تصل/,
+    };
+    // What the three panels said before kick-off until then, each caught.
+    const before = {
+      fr: [
+        "Les statistiques seront disponibles au coup d'envoi.",
+        "Aucun fait marquant pour le moment.",
+        "Les compositions ne sont pas encore publiées par la source officielle.",
+      ],
+      ar: [
+        "ستتوفر الإحصائيات عند انطلاق المباراة.",
+        "لا توجد أحداث بارزة حتى الآن.",
+        "لم يتم نشر التشكيلات بعد من المصدر الرسمي.",
+      ],
+    };
+    const notStarted = { fr: "Le match n'a pas encore commencé : ", ar: "لم تنطلق المباراة بعد: " };
+    for (const lang of ["fr", "ar"] as const) {
+      for (const line of before[lang]) expect(line).toMatch(promises[lang]);
+      for (const message of Object.values(MESSAGES)) {
+        const line = message("upcoming", inLanguage(lang));
+        expect([line, line.startsWith(notStarted[lang])]).toEqual([line, true]);
+        expect(line).not.toMatch(promises[lang]);
+      }
+    }
     expect(noStatsMessage("upcoming", inLanguage("fr"))).toBe(
-      "Les statistiques seront disponibles au coup d'envoi.",
+      "Le match n'a pas encore commencé : pas de statistiques à afficher.",
+    );
+    expect(noStatsMessage("upcoming", inLanguage("ar"))).toBe(
+      "لم تنطلق المباراة بعد: لا توجد إحصائيات لعرضها.",
     );
   });
 });

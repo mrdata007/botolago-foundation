@@ -1,6 +1,6 @@
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { SectionHeaderLink } from "@/components/common/SectionHeader";
@@ -11,6 +11,7 @@ import { LiveStrip } from "@/components/matches/LiveStrip";
 import { MatchesTabs } from "@/components/matches/MatchesTabs";
 import { validateMatchesSearch } from "@/components/matches/matches-search";
 import { SeasonPicker } from "@/components/matches/SeasonPicker";
+import { isSameStandingsQuery } from "@/components/matches/standings-query";
 import {
   StandingsLegend,
   StandingsNotes,
@@ -103,6 +104,10 @@ function StandingsPage() {
   const seasonsQ = useQuery({
     queryKey: ["football", "seasons", lang],
     queryFn: () => footballService.getSeasons(lang),
+    // The same seasons in the other language while it loads, as on the
+    // calendar: without them a switch of language drops the season, and the
+    // table with it, back to the skeleton.
+    placeholderData: keepPreviousData,
   });
   const seasons = seasonsQ.data ?? EMPTY_SEASONS;
   const season =
@@ -124,6 +129,16 @@ function StandingsPage() {
     queryKey: ["football", "standings", season?.id, lang],
     queryFn: () => footballService.getStandings(season!, lang),
     enabled: season != null,
+    // The same season's table in the language the page was just showing,
+    // while the new one loads (`isSameStandingsQuery`): the ranks do not
+    // depend on the language. Another season's never: picking one shows the
+    // skeleton until its own table is in. A new function each render, as on
+    // the calendar, so it is asked again for every key.
+    placeholderData: (previous, previousQuery) =>
+      previousQuery &&
+      isSameStandingsQuery(previousQuery.queryKey, ["football", "standings", season?.id, lang])
+        ? previous
+        : undefined,
   });
   const data = standingsQ.data;
   // A match that finishes while the page is open changes the table: the live

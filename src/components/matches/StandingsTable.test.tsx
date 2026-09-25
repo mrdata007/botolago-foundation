@@ -255,6 +255,19 @@ describe("a table with clubs level on every figure", () => {
     expect(notes).not.toContain("provisoire");
   });
 
+  test("without the season's status, a worked-out table is called neither, only worked out", () => {
+    // The match page reads the status from a season list that can fail, or
+    // not reach back to the season: a finished season's table was then
+    // called provisional.
+    const notes = inFrench(<StandingsNotes rows={overall} computed seasonStatus={undefined} />);
+    expect(notes).toContain("Classement calculé à partir des résultats des matchs.");
+    expect(notes).not.toMatch(/provisoire|non officiel/);
+    // The provider's table needs no status to say nothing.
+    expect(
+      inFrench(<StandingsNotes rows={overall} computed={false} seasonStatus={undefined} />),
+    ).toBe("");
+  });
+
   test("a snapshot names the tie it shows, and only a tie it shows", () => {
     // Home's top five: 1st and four of the fourteen clubs sharing 2nd.
     const top = inFrench(
@@ -282,6 +295,7 @@ describe("a table with clubs level on every figure", () => {
     for (const key of [
       "standings.provisional",
       "standings.unofficial",
+      "standings.computed",
       "standings.shared_rank",
       "standings.shared_rank_note",
     ] as const) {
@@ -290,6 +304,7 @@ describe("a table with clubs level on every figure", () => {
     expect(dictionaries.ar["standings.unofficial"]).toBe(
       "ترتيب غير رسمي، محسوب من نتائج المباريات.",
     );
+    expect(dictionaries.ar["standings.computed"]).toBe("ترتيب محسوب من نتائج المباريات.");
   });
 
   test("the Face-à-face table says a shared rank for assistive tech, read from the whole table", () => {

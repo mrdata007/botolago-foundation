@@ -17,7 +17,12 @@ import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 import { SSR_DEHYDRATE_OPTIONS } from "@/lib/ssr-prefetch";
-import { buildStandings, footballService, type FootballSeason } from "@/services/football";
+import {
+  buildStandings,
+  footballService,
+  type FootballSeason,
+  type MatchSeason,
+} from "@/services/football";
 import { createAppQueryClient } from "@/services/query-client";
 import { Route as MatchRoute } from "./matches.$matchId";
 
@@ -54,6 +59,7 @@ const reads = { standings: 0, seasons: 0 };
 const original = {
   getStandings: footballService.getStandings,
   getSeasons: footballService.getSeasons,
+  getMatchDetailPage: footballService.getMatchDetailPage,
 };
 function countTableReads() {
   footballService.getStandings = async (...args) => {
@@ -119,6 +125,15 @@ function appClient() {
 
 /** The "Face à face" tab of the mock season's live match. */
 const h2hPath = () => `/matches/${fixture.id}?tab=h2h`;
+
+/** Text as `react-dom/server` writes it into the markup. */
+const escapeHtml = (text: string) =>
+  text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/'/g, "&#x27;")
+    .replace(/"/g, "&quot;");
 
 /** Each row of the tab's table, as printed: its rank cell and its points. */
 const tableRows = (html: string) =>
@@ -251,5 +266,174 @@ describe("the Face-à-face tab's table", () => {
     );
     expect(html).not.toContain("<table");
     expect(html).not.toContain('aria-busy="true"');
+  });
+});
+
+describe("the Face-à-face tab of a match outside the league", () => {
+  /** The mock match's detail, as if its competition were of that kind. */
+  const playedIn = (type: MatchSeason["competitionType"]) => {
+    footballService.getMatchDetailPage = async (...args) => {
+      const detail = await original.getMatchDetailPage(...args);
+      return { ...detail, season: { ...detail.season, competitionType: type } };
+    };
+  };
+
+  test("is the meetings alone, and asks for no table and no season list", async () => {
+    globals.window = {};
+    countTableReads();
+    for (const type of ["cup", "super_cup", "international", "friendly"] as const) {
+      playedIn(type);
+      const client = appClient();
+      const router = matchRouter(client, h2hPath());
+      await router.load();
+      const html = renderRouter(client, router);
+      const cache = client.getQueryCache();
+
+      // The page, on the tab, the meetings flush to its top…
+      expect([type, html.includes('aria-labelledby="match-tab-h2h"')]).toEqual([type, true]);
+      expect(html).toContain(fr["matches.detail.head_to_head"]);
+      expect(html).toMatch(/<section class="[^"]*\bmt-0\b/);
+      // …no table, nor its place held…
+      expect(html).not.toContain(fr["matches.detail.table_context"]);
+      expect(html).not.toContain('aria-busy="true"');
+      // …and no query for either: not a fetch, not even a disabled entry.
+      expect(cache.findAll({ queryKey: ["football", "standings"] })).toHaveLength(0);
+      expect(cache.findAll({ queryKey: ["football", "seasons"] })).toHaveLength(0);
+    }
+    expect(reads).toEqual({ standings: 0, seasons: 0 });
+  });
+
+  test("draws no table even when its season's results are in the cache", async () => {
+    // What a cup match's tab used to draw: its season's results worked out
+    // into one points table, under "Classement provisoire".
+    globals.window = {};
+    playedIn("cup");
+    const client = appClient();
+    client.setQueryData(
+      ["football", "standings", season.id, "fr"],
+      buildStandings(seasonFixtures, []),
+    );
+    client.setQueryData(["football", "seasons", "fr"], [season]);
+    const router = matchRouter(client, h2hPath());
+    await router.load();
+    const html = renderRouter(client, router);
+
+    expect(html).toContain(fr["matches.detail.head_to_head"]);
+    expect(html).not.toContain("<table");
+    expect(html).not.toContain(fr["standings.provisional"]);
+  });
+});
+
+describe("the Face-à-face note on a table worked out from the results", () => {
+  /** The tab, its table the Classement's, with the season list as given (or failed). */
+  async function tab(seasons: FootballSeason[] | "failed") {
+    globals.window = {};
+    const client = appClient();
+    client.setQueryData(
+      ["football", "standings", season.id, "fr"],
+      buildStandings(seasonFixtures, []),
+    );
+    if (seasons === "failed") {
+      // A render runs no fetch: the failed read is made beforehand, and kept
+      // from the retry a tab mounting in a browser would make first.
+      client.setQueryDefaults(["football", "seasons"], { retryOnMount: false });
+      await client.prefetchQuery({
+        queryKey: ["football", "seasons", "fr"],
+        queryFn: () => Promise.reject(new Error("offline")),
+        retry: false,
+      });
+    } else {
+      client.setQueryData(["football", "seasons", "fr"], seasons);
+    }
+    const router = matchRouter(client, h2hPath());
+    await router.load();
+    return renderRouter(client, router);
+  }
+  const notes = (html: string) => ({
+    table: html.includes("<table"),
+    provisional: html.includes(fr["standings.provisional"]),
+    unofficial: html.includes(fr["standings.unofficial"]),
+    computed: html.includes(fr["standings.computed"]),
+  });
+
+  test("takes the season's status from the season list: provisional in play, unofficial once over", async () => {
+    expect(notes(await tab([season]))).toEqual({
+      table: true,
+      provisional: true,
+      unofficial: false,
+      computed: false,
+    });
+    expect(notes(await tab([{ ...season, status: "completed" }]))).toEqual({
+      table: true,
+      provisional: false,
+      unofficial: true,
+      computed: false,
+    });
+  });
+
+  test("without the status — the list failed, or does not reach back to the season — guesses neither", async () => {
+    // The match detail does not name its season's status (`MatchSeason`). A
+    // finished season missing from the list was called provisional.
+    const neither = { table: true, provisional: false, unofficial: false, computed: true };
+    expect(notes(await tab("failed"))).toEqual(neither);
+    const others = [{ ...season, id: "00000000-0000-4000-8000-000000000999" }];
+    expect(notes(await tab(others))).toEqual(neither);
+  });
+});
+
+describe("the Face-à-face table through a switch of language", () => {
+  // A switch puts the page back to loading, so the tab comes back new. The
+  // server renders French, so the tab here is French and the other language
+  // is Arabic.
+  test("stands the same season's table in from the other language while its own loads", async () => {
+    globals.window = {};
+    const client = appClient();
+    // The Arabic reading of the season: its clubs carry their Arabic names.
+    const arabic = buildStandings(
+      await new MockFootballRepository().getSeasonFixtures(
+        season.competitionId,
+        season.id,
+        "ar",
+        context,
+      ),
+      [],
+    );
+    client.setQueryData(["football", "standings", season.id, "ar"], arabic);
+    client.setQueryData(["football", "seasons", "ar"], [season]);
+
+    const router = matchRouter(client, h2hPath());
+    await router.load();
+    const html = renderRouter(client, router);
+
+    const clubs = [fixture.homeTeam.id, fixture.awayTeam.id];
+    expect(html).not.toContain('aria-busy="true"');
+    expect(tableRows(html)).toEqual(
+      arabic.overall
+        .filter((row) => clubs.includes(row.clubId))
+        .map((row) => ({ rank: String(row.position), points: String(row.points) })),
+    );
+    // Its words are the page's: the rows name the clubs as the match does,
+    // in French, and the note under them is French.
+    const body = html.split("<tbody")[1]!.split("</tbody>")[0]!;
+    const arabicName = arabic.clubs.find((club) => club.id === fixture.homeTeam.id)!.name.ar;
+    expect(arabicName).not.toBe(fixture.homeTeam.name);
+    expect(body).toContain(escapeHtml(fixture.homeTeam.name));
+    expect(body).not.toContain(arabicName);
+    expect(html).toContain(fr["standings.provisional"]);
+  });
+
+  test("never another season's table", async () => {
+    globals.window = {};
+    const client = appClient();
+    const other = "00000000-0000-4000-8000-000000000999";
+    client.setQueryData(["football", "standings", other, "ar"], buildStandings(seasonFixtures, []));
+    client.setQueryData(["football", "seasons", "ar"], [season]);
+
+    const router = matchRouter(client, h2hPath());
+    await router.load();
+    const html = renderRouter(client, router);
+
+    expect(html).toContain('<section aria-busy="true">');
+    expect(html).not.toContain("<table");
   });
 });

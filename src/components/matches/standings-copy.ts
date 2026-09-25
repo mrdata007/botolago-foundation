@@ -85,6 +85,15 @@ export function gapLabel(gap: ClubGap, lang: Language, t: Translate, format: For
   return template.replace("{n}", format(gap.points)).replace("{place}", place);
 }
 
+/**
+ * What joins the words a rank cell adds for assistive tech to its figure —
+ * "2, Ex æquo, Relégation" — in the reader's language: Arabic writes its own
+ * comma, "،". The table and the "Face à face" rows used a Latin ", " in both.
+ */
+export function listSeparator(lang: Language): string {
+  return lang === "ar" ? "، " : ", ";
+}
+
 export function zoneLabel(zone: LeagueZone, t: Translate): string {
   return zone === "champions_league"
     ? t("standings.zone.champions_league")

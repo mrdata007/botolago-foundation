@@ -20,6 +20,11 @@ import { LanguageMenuChoices } from "./LanguageMenuChoices";
  * The glyph is gone from it; the button's name still says what it does. On
  * the mesh it keeps the glyph and the glass plate, rounded like every other
  * control.
+ *
+ * `data-language-switcher` is where the Arabic-failure notice hands keyboard
+ * focus when it leaves with it (`@/i18n/language-notice-focus`). An attribute
+ * rather than an `id`: the menu gives its trigger an id of its own, which
+ * names the menu, and there can be more than one switcher on a page.
  */
 export function LanguageSwitcher({ tone = "onSurface" }: { tone?: "onSurface" | "onMesh" } = {}) {
   const { lang, t } = useI18n();
@@ -28,6 +33,7 @@ export function LanguageSwitcher({ tone = "onSurface" }: { tone?: "onSurface" | 
     tone === "onMesh" ? (
       <button
         type="button"
+        data-language-switcher=""
         className={cn(
           "inline-flex items-center justify-center gap-1.5 px-3 transition-colors",
           ui.space.tap,
@@ -45,6 +51,7 @@ export function LanguageSwitcher({ tone = "onSurface" }: { tone?: "onSurface" | 
     ) : (
       <UiIconButton
         aria-label={t("language.switch")}
+        data-language-switcher=""
         className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}
       >
         {current}

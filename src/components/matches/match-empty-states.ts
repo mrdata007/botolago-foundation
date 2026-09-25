@@ -9,7 +9,10 @@ import type { Match } from "@/types/domain";
  * Each panel used to have one empty message whatever state the match was in,
  * so a finished 1–3 match said its statistics "will be available at
  * kick-off". An empty panel only means the page holds no data for it, and
- * what that means depends on the match. Before kick-off it is expected.
+ * what that means depends on the match. Before kick-off it is expected, and
+ * the copy says why — the match has not started — without saying the data
+ * will come then: the provider sometimes sends none at all (audit A02), so
+ * "available at kick-off" was a promise too.
  * While the page is still refetching the match (`matchRefetchInterval`:
  * every 30 seconds in play, every minute from kick-off until the status
  * moves), the data may still come in, and the copy says the page updates
@@ -86,9 +89,10 @@ export function matchDataPhase(
 type Translate = (key: TranslationKey) => string;
 
 // Literal-key switches below rather than a lookup table, so the i18n gate
-// sees every key. Each panel has four things to say: when its data comes
-// (before kick-off), that nothing has come yet and the page is checking,
-// that it is not available, and why there is none (postponed, called off).
+// sees every key. Each panel has four things to say: that the match has not
+// started (before kick-off), that nothing has come yet and the page is
+// checking, that it is not available, and why there is none (postponed,
+// called off).
 
 /** The Stats tab with no statistics. */
 export function noStatsMessage(phase: MatchDataPhase, t: Translate): string {

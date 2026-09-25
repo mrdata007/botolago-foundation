@@ -18,6 +18,7 @@ import {
   newestFirst,
   summariseHeadToHead,
 } from "./head-to-head";
+import { listSeparator } from "./standings-copy";
 import { FormChips, StandingsNotes } from "./StandingsTable";
 
 /**
@@ -51,6 +52,10 @@ export function HeadToHead({
   standings: readonly TableRow[];
   /** `FootballStandings.computed`: the table is worked out from the results. */
   standingsComputed?: boolean;
+  /**
+   * The season's status, when it is known. Without it, a computed table is
+   * called neither provisional nor unofficial (`StandingsNotes`).
+   */
   seasonStatus?: FootballSeason["status"];
   /** The table is still being read: its place is held, so the meetings do not jump. */
   standingsPending?: boolean;
@@ -63,7 +68,7 @@ export function HeadToHead({
   onRetryStandings?: () => void;
   meetings: readonly Match[];
 }) {
-  const { t, tr } = useI18n();
+  const { t, tr, lang } = useI18n();
   const clubOf = (id: string) => (id === home.id ? home : id === away.id ? away : undefined);
   const paletteOf = (id: string) => (id === home.id ? palettes.home : palettes.away);
 
@@ -132,8 +137,11 @@ export function HeadToHead({
                         className={cn(FIRST_CELL, ui.edge.start, ui.stat.md, ui.tone.default)}
                       >
                         {row.position}
+                        {/* "2, Ex æquo"; in Arabic with "،". */}
                         {shared.has(row.position) ? (
-                          <span className="sr-only">, {t("standings.shared_rank")}</span>
+                          <span className="sr-only">
+                            {listSeparator(lang) + t("standings.shared_rank")}
+                          </span>
                         ) : null}
                       </UiTD>
                       <UiTD className={cn(CELL, "w-full max-w-0")}>

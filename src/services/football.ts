@@ -1,6 +1,7 @@
 import type { Club, Match, MatchStatus, TableRow } from "@/types/domain";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
+  CompetitionSummaryDto,
   FootballLanguage,
   FootballRepository,
   MatchAbsenceDto,
@@ -202,6 +203,30 @@ function toSeason(season: SeasonSummaryDto): FootballSeason {
 /** The season a club page opens on: the current one, else the latest listed. */
 export function defaultSeason(seasons: readonly FootballSeason[]): FootballSeason | undefined {
   return seasons.find((season) => season.isCurrent) ?? seasons[0];
+}
+
+/**
+ * A match's season as the match names it (`getMatchDetailPage`): what its
+ * table is read by (`getStandings`), and the kind of competition it counts
+ * in, which says whether it has a table at all (`hasLeagueTable`).
+ *
+ * Not the season's status, which says whether a table worked out from the
+ * results is provisional or unofficial (`StandingsNotes`): the fixture DTO
+ * (`api.football_match_detail`, `matchCardSchema`) names its season by id and
+ * label only. The match page reads the status from the season list.
+ */
+export interface MatchSeason extends Pick<FootballSeason, "id" | "competitionId"> {
+  readonly competitionType: CompetitionSummaryDto["type"];
+}
+
+/**
+ * Only a league's season has a table. A cup, super cup, international or
+ * friendly fixture's season has results too, and `buildStandings` would work
+ * them into a points table no such competition keeps — merging its groups
+ * and rounds into one ranking — which the page would then call provisional.
+ */
+export function hasLeagueTable(season: Pick<MatchSeason, "competitionType">): boolean {
+  return season.competitionType === "league";
 }
 
 export function presentSquadMember(member: SquadMemberDto): SquadPlayer {
@@ -418,8 +443,9 @@ export const footballService = {
    * The season's table: its fixtures and any stored table, read together (see
    * `buildStandings`). Every surface that shows a rank reads it here, under
    * `["football", "standings", seasonId, language]`: the Classement tab, Home,
-   * a club page and the match page's "Face à face" tab. It needs only the
-   * season's identity, which is what a match carries (`getMatchDetailPage`).
+   * a club page and the match page's "Face à face" tab — for a league match
+   * only (`hasLeagueTable`). It needs only the season's identity, which is
+   * what a match carries (`getMatchDetailPage`).
    */
   async getStandings(
     season: Pick<FootballSeason, "id" | "competitionId">,
@@ -438,11 +464,11 @@ export const footballService = {
    * every 30 seconds through a live match (`matchRefetchInterval`), so it
    * carries what belongs to the match and names its season (`season`); the
    * "Face à face" tab reads that season's table through `getStandings`, as the
-   * Classement tab does. It used to carry the provider's stored rows, read
-   * again on every refresh and shown as they came: the one table in the
-   * product that `buildStandings` did not make, which could order a tie, share
-   * a rank or colour a zone differently from every other, and never said it
-   * was provisional.
+   * Classement tab does, when the season is a league's (`hasLeagueTable`). It
+   * used to carry the provider's stored rows, read again on every refresh and
+   * shown as they came: the one table in the product that `buildStandings`
+   * did not make, which could order a tie, share a rank or colour a zone
+   * differently from every other, and never said it was provisional.
    */
   async getMatchDetailPage(
     id: string,
@@ -450,8 +476,11 @@ export const footballService = {
   ): Promise<
     Omit<FootballMatchCollection, "standings"> & {
       match: Match;
-      /** The match's season, by identity: what its table is read by (`getStandings`). */
-      season: Pick<FootballSeason, "id" | "competitionId">;
+      /**
+       * The match's season: what its table is read by (`getStandings`), and
+       * whether it has one (`hasLeagueTable`).
+       */
+      season: MatchSeason;
       headToHead: readonly Match[];
       live: MatchLiveDetail;
       /** Confirmed/provisional lineups, one entry per team. Empty when the
@@ -477,7 +506,11 @@ export const footballService = {
     const allMatches = [detail, ...headToHead];
     return {
       match,
-      season: { id: detail.seasonId, competitionId: detail.competition.id },
+      season: {
+        id: detail.seasonId,
+        competitionId: detail.competition.id,
+        competitionType: detail.competition.type,
+      },
       headToHead: headToHead.map(toMatch),
       live: presentMatchLiveDetail(match, timeline, statistics),
       lineups,

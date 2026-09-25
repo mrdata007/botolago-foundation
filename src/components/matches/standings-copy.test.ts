@@ -2,7 +2,14 @@ import { describe, expect, test } from "bun:test";
 
 import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
-import { gapLabel, placeLabel, pointsLabel, roundsLabel, zoneLabel } from "./standings-copy";
+import {
+  gapLabel,
+  listSeparator,
+  placeLabel,
+  pointsLabel,
+  roundsLabel,
+  zoneLabel,
+} from "./standings-copy";
 
 const inLanguage = (lang: Language) => (key: TranslationKey) => dictionaries[lang][key];
 const format = (value: number) => String(value);
@@ -72,5 +79,19 @@ describe("the table page's counted phrases", () => {
     expect(zoneLabel("champions_league", inLanguage("fr"))).toBe("Ligue des champions CAF");
     expect(zoneLabel("confederation_cup", inLanguage("ar"))).toBe("كأس الكونفدرالية الإفريقية");
     expect(zoneLabel("relegation", inLanguage("ar"))).toBe("الهبوط");
+  });
+
+  test("a rank's words for assistive tech follow it after the reader's own comma", () => {
+    // "2، مركز مشترك، الهبوط": the Arabic comma, U+060C, not the Latin one.
+    expect(listSeparator("ar")).toBe("، ");
+    expect(listSeparator("fr")).toBe(", ");
+    const heard = (lang: Language) =>
+      [
+        "2",
+        dictionaries[lang]["standings.shared_rank"],
+        zoneLabel("relegation", inLanguage(lang)),
+      ].join(listSeparator(lang));
+    expect(heard("ar")).toBe("2، مركز مشترك، الهبوط");
+    expect(heard("fr")).toBe("2, Ex æquo, Relégation");
   });
 });

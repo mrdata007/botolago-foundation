@@ -91,6 +91,19 @@ describe("match page — design-system rules in source", () => {
     expect(route).not.toContain("history.back()");
   });
 
+  it("the rank cells join their words for assistive tech with the reader's comma", () => {
+    // "2, Ex æquo" in French, "2، مركز مشترك" in Arabic (`listSeparator`):
+    // the Classement table and the Face-à-face rows put a Latin ", " in both.
+    for (const file of [
+      "src/components/matches/StandingsTable.tsx",
+      "src/components/matches/HeadToHead.tsx",
+    ]) {
+      const source = code(file);
+      expect([file, /sr-only">\s*,/.test(source)]).toEqual([file, false]);
+      expect([file, source.includes("listSeparator(lang)")]).toEqual([file, true]);
+    }
+  });
+
   it("seeds the detail query with the loader's payload, so the server and the first render agree", () => {
     const route = code("src/routes/matches.$matchId.tsx");
     expect(route).toMatch(/return \{ detail, fetchedAt \};/);
@@ -497,7 +510,7 @@ describe("match page — absent players", () => {
   );
 
   it("lists who is out even before the lineups are published", () => {
-    expect(html).toContain("Les compositions ne sont pas encore publiées");
+    expect(html).toContain("pas de compositions à afficher.");
     expect(html).toContain("Absents");
     expect(html.indexOf("Yahya Jabrane")).toBeLessThan(html.indexOf("Mohamed Hrimat"));
   });

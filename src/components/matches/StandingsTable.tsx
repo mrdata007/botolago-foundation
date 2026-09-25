@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import type { FootballSeason } from "@/services/football";
 import type { Club, TableRow } from "@/types/domain";
 import { formatGoalDifference } from "./head-to-head";
-import { zoneLabel } from "./standings-copy";
+import { listSeparator, zoneLabel } from "./standings-copy";
 
 /**
  * What the table shows: the season (`overall`), home or away matches only,
@@ -65,7 +65,7 @@ export function StandingsTable({
   highlightClubId?: string;
   currentClubId?: string;
 }) {
-  const { t, tr } = useI18n();
+  const { t, tr, lang } = useI18n();
   const zoned = view === "overall" || view === "form";
   const figures = view !== "form";
   // The head row's type is `ui.text.label` on the `thead`: 12px, 800, uppercase.
@@ -73,6 +73,7 @@ export function StandingsTable({
   const narrow = "max-[359px]:hidden";
   const zones = zoned ? tableZones(rows) : null;
   const shared = sharedPositions(rows);
+  const comma = listSeparator(lang);
 
   const short = (abbr: string, full: string) => (
     <>
@@ -167,10 +168,11 @@ export function StandingsTable({
                     />
                   ) : null}
                   {row.position}
+                  {/* Heard as "2, Ex æquo, Relégation": in Arabic with "،". */}
                   {shared.has(row.position) ? (
-                    <span className="sr-only">, {t("standings.shared_rank")}</span>
+                    <span className="sr-only">{comma + t("standings.shared_rank")}</span>
                   ) : null}
-                  {zone ? <span className="sr-only">, {zoneLabel(zone, t)}</span> : null}
+                  {zone ? <span className="sr-only">{comma + zoneLabel(zone, t)}</span> : null}
                 </td>
                 <td className="py-0 pe-2 ps-1">
                   {/* The name is the link to the club page, at the 44px tap
@@ -249,7 +251,11 @@ export function StandingsLegend({ className }: { className?: string }) {
  *
  * A computed table is "provisional" while its season is played. Once the
  * season is over it will not change, but it is still not the league's, so it
- * is "unofficial" instead.
+ * is "unofficial" instead. Without the season's status (`undefined`: the
+ * match page reads it from a season list that can fail, or not reach back
+ * that far), the note says neither: it says only that the table is worked
+ * out from the results. Picking one would be a guess, and "provisional" was
+ * the guess a finished season's table used to get.
  *
  * `rows` is the whole table, which says which ranks are shared; `shown` is
  * the part on screen when only part is (Home's top five, a club's
@@ -276,7 +282,15 @@ export function StandingsNotes({
   const over = seasonStatus === "completed" || seasonStatus === "cancelled";
   return (
     <div className={cn("grid gap-1 px-1", ui.text.meta, ui.tone.muted, className)}>
-      {computed ? <p>{over ? t("standings.unofficial") : t("standings.provisional")}</p> : null}
+      {computed ? (
+        <p>
+          {seasonStatus === undefined
+            ? t("standings.computed")
+            : over
+              ? t("standings.unofficial")
+              : t("standings.provisional")}
+        </p>
+      ) : null}
       {shared ? <p>{t("standings.shared_rank_note")}</p> : null}
     </div>
   );

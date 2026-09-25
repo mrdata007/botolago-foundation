@@ -162,6 +162,7 @@ export const fr = {
   "standings.previous_season": "Voir le classement {season}",
   "standings.provisional": "Classement provisoire, calculé à partir des résultats des matchs.",
   "standings.unofficial": "Classement non officiel, calculé à partir des résultats des matchs.",
+  "standings.computed": "Classement calculé à partir des résultats des matchs.",
   "standings.shared_rank": "Ex æquo",
   "standings.shared_rank_note":
     "Un même rang signale des clubs à égalité de points, de différence de buts et de buts marqués : l'ordre dans lequel ils sont listés ne les départage pas.",
@@ -264,12 +265,13 @@ export const fr = {
   "matches.detail.tab.stats_short": "Stats",
   "matches.detail.tab.lineups_short": "Compos",
   "matches.detail.tabs_label": "Sections du match",
-  "matches.detail.no_events": "Aucun fait marquant pour le moment.",
+  "matches.detail.no_events":
+    "Le match n'a pas encore commencé : pas de faits marquants à afficher.",
   "matches.detail.no_events_updating":
     "Aucun fait de jeu reçu pour l'instant. Cette page se met à jour automatiquement.",
   "matches.detail.no_events_unavailable":
     "Les faits marquants de ce match ne sont pas disponibles.",
-  "matches.detail.no_stats": "Les statistiques seront disponibles au coup d'envoi.",
+  "matches.detail.no_stats": "Le match n'a pas encore commencé : pas de statistiques à afficher.",
   "matches.detail.no_stats_updating":
     "Aucune statistique reçue pour l'instant. Cette page se met à jour automatiquement.",
   "matches.detail.no_stats_unavailable": "Les statistiques de ce match ne sont pas disponibles.",
@@ -277,8 +279,7 @@ export const fr = {
   "matches.detail.no_data_called_off": "Match annulé ou arrêté : pas de données à afficher.",
   "matches.detail.stats_title": "Statistiques de l'équipe",
   "matches.detail.lineups_title": "Compositions probables",
-  "matches.detail.no_lineups":
-    "Les compositions ne sont pas encore publiées par la source officielle.",
+  "matches.detail.no_lineups": "Le match n'a pas encore commencé : pas de compositions à afficher.",
   "matches.detail.no_lineups_updating":
     "Compositions pas encore reçues. Cette page se met à jour automatiquement.",
   "matches.detail.no_lineups_unavailable": "Les compositions de ce match ne sont pas disponibles.",

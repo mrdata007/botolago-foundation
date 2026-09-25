@@ -6,6 +6,7 @@ import { tableZones } from "@/lib/league-table";
 import {
   buildStandings,
   footballService,
+  hasLeagueTable,
   inPlayFixtures,
   presentFootballClub,
   selectFootballDataMode,
@@ -110,7 +111,9 @@ describe("Football frontend repository cutover", () => {
       expect(detail.season).toEqual({
         id: fixture!.seasonId,
         competitionId: fixture!.competition.id,
+        competitionType: "league",
       });
+      expect(hasLeagueTable(detail.season)).toBe(true);
       // Its season asks for the table the Classement tab shows for that season.
       const season = (await footballService.getSeasons("fr")).find(
         (candidate) => candidate.id === detail.season.id,
@@ -121,6 +124,31 @@ describe("Football frontend repository cutover", () => {
     } finally {
       MockFootballRepository.prototype.getStandings = stored;
     }
+  });
+
+  test("a match names the kind of competition it is in: only a league's season has a table", async () => {
+    const repository = new MockFootballRepository();
+    const [fixture] = await repository.getHomeMatches("fr", 1, context);
+    const stored = MockFootballRepository.prototype.getMatchDetail;
+    for (const type of ["cup", "super_cup", "international", "friendly"] as const) {
+      // The same fixture, played in a competition of that kind.
+      MockFootballRepository.prototype.getMatchDetail = async function (...args) {
+        const detail = await stored.apply(this, args);
+        return { ...detail, competition: { ...detail.competition, type } };
+      };
+      try {
+        const detail = await footballService.getMatchDetailPage(fixture!.id, "fr");
+        expect(detail.season).toEqual({
+          id: fixture!.seasonId,
+          competitionId: fixture!.competition.id,
+          competitionType: type,
+        });
+        expect([type, hasLeagueTable(detail.season)]).toEqual([type, false]);
+      } finally {
+        MockFootballRepository.prototype.getMatchDetail = stored;
+      }
+    }
+    expect(hasLeagueTable({ competitionType: "league" })).toBe(true);
   });
 
   test("standings rows expose full W/D/L/form so the table never needs invented stats", async () => {
