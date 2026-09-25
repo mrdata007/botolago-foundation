@@ -165,14 +165,28 @@ export const lineupPlayerSchema = z.object({
   order: z.number().int().positive(),
   captain: z.boolean(),
 });
-export const lineupSchema = z.object({
-  id: postgresUuidSchema,
-  team: teamSummarySchema,
-  formation: nullableText,
-  confirmed: z.boolean(),
-  publishedAt: z.string().datetime({ offset: true }).nullable(),
-  players: z.array(lineupPlayerSchema),
-});
+/** A lineup player the catalogue does not know, by the provider's name: no page, no slug. */
+export const unlistedLineupPlayerSchema = lineupPlayerSchema.omit({ slug: true });
+const SLOT_ORDER = { starting: 0, bench: 1 } as const;
+export const lineupSchema = z
+  .object({
+    id: postgresUuidSchema,
+    team: teamSummarySchema,
+    formation: nullableText,
+    confirmed: z.boolean(),
+    publishedAt: z.string().datetime({ offset: true }).nullable(),
+    players: z.array(lineupPlayerSchema),
+    unlistedPlayers: z.array(unlistedLineupPlayerSchema).default([]),
+  })
+  // One list for the page, in the provider's order, whether the catalogue
+  // knows the player or not.
+  .transform(({ unlistedPlayers, ...lineup }) => ({
+    ...lineup,
+    players: [
+      ...lineup.players,
+      ...unlistedPlayers.map((player) => ({ ...player, slug: null })),
+    ].sort((a, b) => SLOT_ORDER[a.slot] - SLOT_ORDER[b.slot] || a.order - b.order),
+  }));
 export type MatchLineupDto = z.infer<typeof lineupSchema>;
 
 export const matchStatisticSchema = z.object({

@@ -73,6 +73,8 @@ export interface MatchDetailsStatistic {
 export interface MatchDetailsLineupPlayer {
   /** `null` for the provider's anonymous rows; the database counts them as unknown. */
   readonly playerExternalId: string | null;
+  /** The provider's name, which Compos shows for a player the catalogue does not know. */
+  readonly playerName: string | null;
   readonly slot: "starting" | "bench";
   readonly position: Position | null;
   readonly shirtNumber: number | null;
@@ -557,6 +559,7 @@ function normalizeLineups(
     const player = positiveId(value.player_id);
     players[side].push({
       playerExternalId: player === null ? null : String(player),
+      playerName: text(value.player_name, 200),
       slot,
       position: POSITIONS[positiveId(value.position_id) ?? 0] ?? null,
       shirtNumber: integerBetween(value.jersey_number, 1, 99),

@@ -4,7 +4,11 @@ import { join } from "node:path";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import type { MatchAbsenceDto, MatchStatisticComparisonDto } from "@/backend/football/contracts";
+import type {
+  MatchAbsenceDto,
+  MatchLineupDto,
+  MatchStatisticComparisonDto,
+} from "@/backend/football/contracts";
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 import { clubMatchPalettes } from "@/lib/club-palette";
@@ -472,6 +476,48 @@ describe("match page — absent players", () => {
       <LineupsView lineups={[]} home={wydad} away={far} palettes={palettes} absences={[]} />,
     );
     expect(none).not.toContain("Absents");
+  });
+});
+
+describe("match page — players the catalogue does not know", () => {
+  const side = (teamId: string, names: readonly (readonly [string, string | null])[]) =>
+    ({
+      id: `lineup-${teamId}`,
+      team: { id: teamId },
+      formation: "4-3-3",
+      confirmed: true,
+      publishedAt: null,
+      players: names.map(([displayName, slug], index) => ({
+        id: `${teamId}-${index + 1}`,
+        slug,
+        displayName,
+        slot: "starting" as const,
+        position: index === 0 ? ("goalkeeper" as const) : null,
+        shirtNumber: index + 1,
+        order: index + 1,
+        captain: false,
+      })),
+    }) as unknown as MatchLineupDto;
+  const html = inFrench(
+    <LineupsView
+      lineups={[
+        side("war", [
+          ["H. Keeper", "h-keeper"],
+          ["Soufiane El Azhari", null],
+        ]),
+        side("asfar", [["A. Keeper", "a-keeper"]]),
+      ]}
+      home={wydad}
+      away={far}
+      palettes={palettes}
+      absences={[]}
+    />,
+  );
+
+  it("lists them by the provider's name beside the known ones", () => {
+    expect(html).toContain("H. Keeper");
+    expect(html).toContain("Soufiane El Azhari");
+    expect(html.indexOf("H. Keeper")).toBeLessThan(html.indexOf("Soufiane El Azhari"));
   });
 });
 

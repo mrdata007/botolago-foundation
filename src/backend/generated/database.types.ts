@@ -5025,7 +5025,8 @@ export type Database = {
           display_order: number
           id: string
           lineup_id: string
-          player_id: string
+          player_id: string | null
+          player_name: string | null
           position: Database["app"]["Enums"]["football_position"] | null
           shirt_number: number | null
           slot: Database["app"]["Enums"]["lineup_slot"]
@@ -5037,7 +5038,8 @@ export type Database = {
           display_order: number
           id?: string
           lineup_id: string
-          player_id: string
+          player_id?: string | null
+          player_name?: string | null
           position?: Database["app"]["Enums"]["football_position"] | null
           shirt_number?: number | null
           slot: Database["app"]["Enums"]["lineup_slot"]
@@ -5049,7 +5051,8 @@ export type Database = {
           display_order?: number
           id?: string
           lineup_id?: string
-          player_id?: string
+          player_id?: string | null
+          player_name?: string | null
           position?: Database["app"]["Enums"]["football_position"] | null
           shirt_number?: number | null
           slot?: Database["app"]["Enums"]["lineup_slot"]
