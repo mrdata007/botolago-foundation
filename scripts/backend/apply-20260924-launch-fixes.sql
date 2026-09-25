@@ -105,29 +105,34 @@ begin
   end if;
 
   -- The functions this batch replaces must still be the bodies it was
-  -- reviewed against (measured on production, 2026-09-24).
+  -- reviewed against (measured on production, 2026-09-24). One may already
+  -- carry this batch's own body (`applied_early`): api.news_related_articles
+  -- from 20260924200400 went live on its own on 2026-09-25 at 06:33 UTC,
+  -- while Google's crawl of the news articles had the database overloaded.
+  -- The text is identical; this batch re-creates it and records the
+  -- migration.
   for expected in
     select * from (values
-      ('api.service_sync_fantasy_calendar(uuid)', '023f32515cb970a265235fb9a158732d'),
-      ('api.service_advance_fantasy_lifecycle(uuid,bigint,integer)', '86d667920c3e5be4e63d3890bdc789c8'),
-      ('api.service_prepare_next_fantasy_gameweek(uuid,uuid,bigint,integer)', '98d18a8eed916af8cea3ed453e03f23f'),
-      ('api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)', 'd0c4cfd5c1a9290a8805ea8395ecd82e'),
-      ('api.fantasy_hub(text)', '7278bb93007935facc742ce19a4d6277'),
-      ('api.service_fantasy_deadline_watch(uuid,integer,integer)', '7d9b32bb45f2fe565ad38a47c1f6db98'),
-      ('api.football_matches_by_date(date,text,text,text[],uuid,uuid,timestamp with time zone,uuid,integer)', '3530bc9042d16dac749af5541c826ad0'),
-      ('app_private.assert_valid_timezone(text)', 'ff87c87f861e83fff25f6d28d8d49468'),
-      ('api.news_related_articles(uuid,integer)', '29756c378f2dbd2a287aa50bea99614c'),
-      ('app_private.football_live_refresh_tick()', '0301db9dbaee6ba9324acd579d59bfc0'),
-      ('api.news_article_detail(text,text)', 'f794fedd2b5bd8c793181c14617648e7'),
-      ('api.news_sitemap_entries(integer)', 'f901508e07445cb7050069869cee6bfa')
-    ) as t(signature, md5)
+      ('api.service_sync_fantasy_calendar(uuid)', '023f32515cb970a265235fb9a158732d', null::text),
+      ('api.service_advance_fantasy_lifecycle(uuid,bigint,integer)', '86d667920c3e5be4e63d3890bdc789c8', null),
+      ('api.service_prepare_next_fantasy_gameweek(uuid,uuid,bigint,integer)', '98d18a8eed916af8cea3ed453e03f23f', null),
+      ('api.create_fantasy_team(uuid,uuid,text,jsonb,uuid)', 'd0c4cfd5c1a9290a8805ea8395ecd82e', null),
+      ('api.fantasy_hub(text)', '7278bb93007935facc742ce19a4d6277', null),
+      ('api.service_fantasy_deadline_watch(uuid,integer,integer)', '7d9b32bb45f2fe565ad38a47c1f6db98', null),
+      ('api.football_matches_by_date(date,text,text,text[],uuid,uuid,timestamp with time zone,uuid,integer)', '3530bc9042d16dac749af5541c826ad0', null),
+      ('app_private.assert_valid_timezone(text)', 'ff87c87f861e83fff25f6d28d8d49468', null),
+      ('api.news_related_articles(uuid,integer)', '29756c378f2dbd2a287aa50bea99614c', '51d1a8a990469b2467a49dd0f2447d74'),
+      ('app_private.football_live_refresh_tick()', '0301db9dbaee6ba9324acd579d59bfc0', null),
+      ('api.news_article_detail(text,text)', 'f794fedd2b5bd8c793181c14617648e7', null),
+      ('api.news_sitemap_entries(integer)', 'f901508e07445cb7050069869cee6bfa', null)
+    ) as t(signature, md5, applied_early)
   loop
     if to_regprocedure(expected.signature) is null then
       problems := problems || (expected.signature || ' is missing');
       continue;
     end if;
     actual := md5(pg_get_functiondef(to_regprocedure(expected.signature)));
-    if actual <> expected.md5 then
+    if actual <> expected.md5 and actual is distinct from expected.applied_early then
       problems := problems || (expected.signature || ' changed since review (md5 ' || actual || ')');
     end if;
   end loop;
