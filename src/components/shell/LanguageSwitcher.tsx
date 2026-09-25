@@ -1,7 +1,8 @@
 import { Languages } from "lucide-react";
 import { useI18n } from "@/i18n/provider";
-import { ui, UiIconButton, UiMenu, UiMenuItem } from "@/components/ui-kit";
+import { ui, UiIconButton, UiMenu } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+import { LanguageMenuChoices } from "./LanguageMenuChoices";
 
 /**
  * `tone` says which surface the trigger is sitting on.
@@ -21,7 +22,7 @@ import { cn } from "@/lib/utils";
  * control.
  */
 export function LanguageSwitcher({ tone = "onSurface" }: { tone?: "onSurface" | "onMesh" } = {}) {
-  const { lang, setLanguage, t } = useI18n();
+  const { lang, t } = useI18n();
   const current = lang === "fr" ? "FR" : "ع";
   const trigger =
     tone === "onMesh" ? (
@@ -52,12 +53,7 @@ export function LanguageSwitcher({ tone = "onSurface" }: { tone?: "onSurface" | 
 
   return (
     <UiMenu label={t("language.switch")} trigger={trigger}>
-      <UiMenuItem onSelect={() => setLanguage("fr")} selected={lang === "fr"}>
-        Français
-      </UiMenuItem>
-      <UiMenuItem onSelect={() => setLanguage("ar")} selected={lang === "ar"}>
-        العربية
-      </UiMenuItem>
+      <LanguageMenuChoices />
     </UiMenu>
   );
 }

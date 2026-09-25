@@ -13,6 +13,9 @@ export const fr = {
   "language.arabic": "العربية",
   "language.continue": "Continuer",
   "language.switch": "Langue",
+  "language.arabic_loading": "Chargement de l'arabe…",
+  "language.arabic_failed":
+    "L'arabe n'a pas pu être chargé. Vérifiez votre connexion, puis réessayez.",
 
   /* BG-0081 — appearance (Light / Dark / System). */
   "theme.switch": "Apparence",
@@ -44,6 +47,9 @@ export const fr = {
   "home.explore": "Explorer {accent}BotolaGO{/accent}",
   "home.view_all": "Tout voir",
   "home.view_fantasy_team": "Voir mon équipe",
+  // The home page's sr-only <h1>. The French is the page's <title>, which is
+  // what the server renders and a crawler reads.
+  "home.sr_title": "BotolaGO — Actualité, matchs et Fantasy du football marocain",
 
   "news.title": "Actualités",
   "news.tab.for_you": "Pour vous",
@@ -72,6 +78,10 @@ export const fr = {
   "news.carousel.previous": "Article précédent",
   "news.carousel.next": "Article suivant",
   "news.carousel.slide": "Article {n} sur {total}",
+  // What a screen reader calls the carousel and each of its slides
+  // (`aria-roledescription`), in place of the role's own name.
+  "news.carousel.role": "carrousel",
+  "news.carousel.slide_role": "diapositive",
   "news.saved.empty":
     "Vous n'avez encore rien enregistré. Touchez le signet sur un article pour le retrouver ici.",
   "news.empty_category": "Aucun article dans cette catégorie pour le moment.",
@@ -648,6 +658,10 @@ export const fr = {
   "state.offline": "Vous êtes hors ligne. Les données peuvent être obsolètes.",
   "state.retry": "Réessayer",
   "state.go_home": "Retour à l'accueil",
+  // The toaster's landmark and its close button: sonner names them in English.
+  // `toast.close` also names the close control of the Arabic-download notice.
+  "toast.region": "Notifications",
+  "toast.close": "Fermer la notification",
   "notfound.code": "404",
   "notfound.title": "Page introuvable",
   "notfound.description": "Cette page n'existe pas ou a été déplacée.",

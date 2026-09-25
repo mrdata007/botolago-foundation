@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 import { PredictionsPage, type PredictionsTab } from "@/components/predictions/PredictionsPage";
 import { roundQueryOptions } from "@/components/predictions/use-predictions-round";
-import { dictionaries } from "@/i18n/dictionaries";
+import { fr } from "@/i18n/dictionary-fr";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
@@ -56,8 +56,8 @@ export const Route = createFileRoute("/pronostics/")({
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: dictionaries.fr["predictions.meta_title"] },
-      { name: "description", content: dictionaries.fr["predictions.meta_description"] },
+      { title: fr["predictions.meta_title"] },
+      { name: "description", content: fr["predictions.meta_description"] },
       // Indexed only once promoted AND open to everyone (plan §9).
       {
         name: "robots",
@@ -65,11 +65,11 @@ export const Route = createFileRoute("/pronostics/")({
       },
       { property: "og:type", content: "website" },
       { property: "og:title", content: OG_TITLE },
-      { property: "og:description", content: dictionaries.fr["predictions.meta_description"] },
+      { property: "og:description", content: fr["predictions.meta_description"] },
       { property: "og:url", content: CANONICAL },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: OG_TITLE },
-      { name: "twitter:description", content: dictionaries.fr["predictions.meta_description"] },
+      { name: "twitter:description", content: fr["predictions.meta_description"] },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
   }),

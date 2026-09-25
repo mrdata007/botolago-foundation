@@ -36,6 +36,7 @@ import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { Trans } from "@/components/common/Trans";
 import { AppShell } from "@/components/shell/AppShell";
+import { LanguageMenuChoices } from "@/components/shell/LanguageMenuChoices";
 import { ThemeSwitcher } from "@/components/shell/ThemeSwitcher";
 import {
   ui,
@@ -46,7 +47,6 @@ import {
   UiIconLinkButton,
   UiLinkButton,
   UiMenu,
-  UiMenuItem,
   UiModal,
   UiPageTitle,
 } from "@/components/ui-kit";
@@ -605,7 +605,7 @@ function IdentityCard({
  * every visitor has it, signed in or not — BG-0081.
  */
 function LanguageRow({ ruled = false }: { ruled?: boolean }) {
-  const { t, lang, setLanguage } = useI18n();
+  const { t, lang } = useI18n();
   return (
     <UiMenu
       label={t("language.switch")}
@@ -619,12 +619,7 @@ function LanguageRow({ ruled = false }: { ruled?: boolean }) {
         </button>
       }
     >
-      <UiMenuItem onSelect={() => setLanguage("fr")} selected={lang === "fr"}>
-        {t("language.french")}
-      </UiMenuItem>
-      <UiMenuItem onSelect={() => setLanguage("ar")} selected={lang === "ar"}>
-        {t("language.arabic")}
-      </UiMenuItem>
+      <LanguageMenuChoices />
     </UiMenu>
   );
 }

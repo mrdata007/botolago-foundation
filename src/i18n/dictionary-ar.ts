@@ -11,6 +11,8 @@ export const ar = {
   "language.arabic": "العربية",
   "language.continue": "متابعة",
   "language.switch": "اللغة",
+  "language.arabic_loading": "جارٍ تحميل العربية…",
+  "language.arabic_failed": "تعذّر تحميل العربية. تحقّق من اتصالك ثم أعد المحاولة.",
 
   /* BG-0081 — appearance (Light / Dark / System). */
   "theme.switch": "المظهر",
@@ -42,6 +44,7 @@ export const ar = {
   "home.explore": "استكشف {accent}بوتولاجو{/accent}",
   "home.view_all": "عرض الكل",
   "home.view_fantasy_team": "عرض فريقي",
+  "home.sr_title": "BotolaGO — أخبار ومباريات وفانتازي كرة القدم المغربية",
 
   "news.title": "الأخبار",
   "news.tab.for_you": "مقترح لك",
@@ -70,6 +73,8 @@ export const ar = {
   "news.carousel.previous": "المقال السابق",
   "news.carousel.next": "المقال التالي",
   "news.carousel.slide": "المقال {n} من {total}",
+  "news.carousel.role": "عرض دوّار",
+  "news.carousel.slide_role": "شريحة",
   "news.saved.empty": "لم تحفظ أي مقال بعد. المس أيقونة الحفظ في أي مقال لتجده هنا.",
   "news.empty_category": "لا توجد مقالات في هذا القسم حاليًا.",
   "news.view_all": "عرض الكل",
@@ -628,6 +633,8 @@ export const ar = {
   "state.offline": "أنت غير متصل. قد تكون البيانات قديمة.",
   "state.retry": "إعادة المحاولة",
   "state.go_home": "العودة إلى الرئيسية",
+  "toast.region": "الإشعارات",
+  "toast.close": "إغلاق الإشعار",
   "notfound.code": "404",
   "notfound.title": "الصفحة غير موجودة",
   "notfound.description": "هذه الصفحة غير موجودة أو تم نقلها.",

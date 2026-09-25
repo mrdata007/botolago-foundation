@@ -62,4 +62,18 @@ describe("the carousel follows the house rules", () => {
       }
     }
   });
+
+  // A role description is read out verbatim: written in English it told a
+  // French or Arabic screen-reader user "carousel" and "slide".
+  it("describes its roles in the reader's language, not in English", () => {
+    expect(CAROUSEL).not.toMatch(/aria-roledescription="/);
+    expect(CAROUSEL).toContain('aria-roledescription={t("news.carousel.role")}');
+    expect(CAROUSEL).toContain('aria-roledescription={t("news.carousel.slide_role")}');
+    for (const lang of ["fr", "ar"] as const) {
+      for (const key of ["news.carousel.role", "news.carousel.slide_role"] as const) {
+        expect(dictionaries[lang][key]).toBeTruthy();
+        expect(dictionaries[lang][key]).not.toMatch(/^(carousel|slide)$/i);
+      }
+    }
+  });
 });

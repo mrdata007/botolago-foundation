@@ -333,8 +333,9 @@ function HomeContent() {
       {/* -------------------------------------------------------- */}
       {/* The page's only H1, and deliberately sr-only: the band names the
           gameweek, which is what a reader needs, but the document still owes
-          crawlers and screen-reader users a descriptive title. */}
-      <h1 className="sr-only">{HOME_TITLE}</h1>
+          crawlers and screen-reader users a descriptive title. It is read in
+          the reader's language; `HOME_TITLE`, the <title>, is French for all. */}
+      <h1 className="sr-only">{t("home.sr_title")}</h1>
       <GameweekBand
         greeting={greeting}
         dateLine={dateLine}

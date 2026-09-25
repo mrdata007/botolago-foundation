@@ -399,17 +399,20 @@ function ProfileSetupPage() {
           />
 
           <div>
-            <div className={cn("mb-1.5", ui.text.label, ui.tone.muted)}>
+            <div id="setupLanguage" className={cn("mb-1.5", ui.text.label, ui.tone.muted)}>
               {t("auth.setup.language_confirm")}
             </div>
             {/* Two `UiChip`s: a pair of pressed/unpressed toggles, which is
                 what this was already (`aria-pressed`), now drawn as the kit's
                 pill — sunken, or navy when chosen. Not `UiSegmented`, which
-                would announce a two-way choice as a `role="tablist"`. */}
-            <div className="grid grid-cols-2 gap-2">
+                would announce a two-way choice as a `role="tablist"`. The
+                pair is a group named by the label above, so the two toggles
+                are heard as the answer to it, each name in its own language. */}
+            <div role="group" aria-labelledby="setupLanguage" className="grid grid-cols-2 gap-2">
               {(["fr", "ar"] as const).map((l) => (
                 <UiChip
                   key={l}
+                  lang={l}
                   selected={chosenLang === l}
                   onClick={() => setChosenLang(l)}
                   className={cn("w-full justify-center", ui.text.bodyStrong)}
