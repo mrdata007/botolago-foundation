@@ -5,7 +5,7 @@ import { onMfaStepUpRequired } from "@/backend/auth/step-up";
 import type { FantasyHubDto } from "@/backend/fantasy/contracts";
 import { mapFantasyError } from "@/backend/fantasy/errors";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
-import { toRepoError } from "./fantasy-errors";
+import { FantasyRepoError } from "./fantasy-errors";
 import {
   classifyRepoError,
   runOwnedMutation,
@@ -19,16 +19,17 @@ import { DEFAULT_STATE } from "./fantasy-state";
  * mfa_required`), followed from the server's answer to the flag the screens
  * branch on, through what production runs: `SupabaseFantasyRepository`
  * (spied to answer as its `check()` does, with `mapFantasyError`), the V2
- * adapter the owned provider hands the screens as `owned.repo`, the screens'
- * own typing where they add one, `runOwnedMutation`, and `classifyRepoError`.
+ * adapter the owned provider hands the screens as `owned.repo`,
+ * `runOwnedMutation`, and `classifyRepoError`. Each write is handed over
+ * exactly as its screen calls it.
  *
  * The review of the first fix ran this chain and found it broken for every
  * write but the lineup save: the adapter handed the transfer and chip
  * refusals on untyped, the controller filed them as `unknown`, and the
  * screens' step-up branches never ran -- "Les transferts n'ont pas pu être
  * confirmés." and "Indisponible" stayed beside the auth layer's notice. The
- * source tests in `src/routes/step-up-screens.test.ts` pin that each of those
- * screens wraps the write as `typed` does here.
+ * screens then typed those writes themselves; the adapter now does, as its
+ * file's rule says, and these cases hold without any typing on the way.
  */
 
 const SEASON = "00000000-0000-4000-8000-000000000001";
@@ -39,13 +40,8 @@ const TEAM = "00000000-0000-4000-8000-000000000201";
 const stepUp = () => ({ code: "PT403", message: "mfa_required", details: null, hint: null });
 /** A refusal a Fantasy function raises itself. */
 const raised = (message: string) => ({ code: "P0001", message, details: null, hint: null });
-
-/** `withTypedRefusal` in `fantasy.transfers.tsx` and `fantasy.team.tsx`. */
-function typed<T>(write: Promise<T>): Promise<T> {
-  return write.catch((error: unknown) => {
-    throw toRepoError(error);
-  });
-}
+/** What supabase-js hands back when the request never reached the server. */
+const offline = () => ({ code: "", message: "TypeError: Failed to fetch", details: "", hint: "" });
 
 function hubWithTeam(owner: boolean): FantasyHubDto {
   return {
@@ -95,6 +91,7 @@ const spies = [
   spyOn(SupabaseFantasyRepository.prototype, "getHub").mockImplementation(async () => hub),
   spyOn(SupabaseFantasyRepository.prototype, "createTeam").mockImplementation(refuse),
   spyOn(SupabaseFantasyRepository.prototype, "saveLineup").mockImplementation(refuse),
+  spyOn(SupabaseFantasyRepository.prototype, "previewTransfers").mockImplementation(refuse),
   spyOn(SupabaseFantasyRepository.prototype, "confirmTransfers").mockImplementation(refuse),
   spyOn(SupabaseFantasyRepository.prototype, "activateChip").mockImplementation(refuse),
   spyOn(SupabaseFantasyRepository.prototype, "cancelChip").mockImplementation(refuse),
@@ -142,13 +139,12 @@ const lineup = {
   lifecycle: DEFAULT_STATE,
 };
 
-/** Each owned write, as its screen hands it to `runOwnedMutation`. */
+/** Each owned write, as its screen hands it to `runOwnedMutation`: the adapter's call, bare. */
 const WRITES: ReadonlyArray<{
   readonly screen: string;
   readonly owner: boolean;
   readonly write: (repo: V2CloudFantasyRepository) => Promise<FantasySnapshot>;
 }> = [
-  // The adapter types what `saveTeam` throws itself; the screens call it bare.
   { screen: "Pick Team, the lineup", owner: true, write: (repo) => repo.saveTeam(lineup) },
   {
     screen: "team creation",
@@ -159,31 +155,28 @@ const WRITES: ReadonlyArray<{
     screen: "Transfers, the confirmation",
     owner: true,
     write: (repo) =>
-      typed(
-        repo.confirmTransfers({
-          expectedVersion: 3,
-          formation: "4-4-2",
-          bank: 1,
-          freeTransfers: 0,
-          pendingTransfers: 0,
-          squad: [],
-          purchasePrices: {},
-          currentGameweekId: GW,
-          lifecycle: DEFAULT_STATE,
-          transfers: [],
-        }),
-      ),
+      repo.confirmTransfers({
+        expectedVersion: 3,
+        formation: "4-4-2",
+        bank: 1,
+        freeTransfers: 0,
+        pendingTransfers: 0,
+        squad: [],
+        purchasePrices: {},
+        currentGameweekId: GW,
+        lifecycle: DEFAULT_STATE,
+        transfers: [],
+      }),
   },
   {
     screen: "Transfers and Pick Team, a chip activated",
     owner: true,
-    write: (repo) =>
-      typed(repo.activateChip({ gameweekId: GW, chip: "bench_boost", expectedVersion: 3 })),
+    write: (repo) => repo.activateChip({ gameweekId: GW, chip: "bench_boost", expectedVersion: 3 }),
   },
   {
     screen: "Pick Team, a chip cancelled",
     owner: true,
-    write: (repo) => typed(repo.cancelChip({ gameweekId: GW, expectedVersion: 3 })),
+    write: (repo) => repo.cancelChip({ gameweekId: GW, expectedVersion: 3 }),
   },
 ];
 
@@ -236,5 +229,68 @@ describe("the same writes keep every other refusal's meaning", () => {
     expect(result.error.code).toBe("validation");
     expect(flags.isStepUp || flags.isConflict || flags.isPermission).toBe(false);
     expect(told).toBe(0);
+  });
+
+  it("a lost connection is the network, so Transfers says so rather than its catch-all", async () => {
+    answer = offline();
+    for (const { screen, owner, write } of WRITES.filter((entry) => entry.owner)) {
+      hub = hubWithTeam(owner);
+      const { result, flags } = await run(write);
+      expect({ screen, code: result.error.code, isNetwork: flags.isNetwork }).toEqual({
+        screen,
+        code: "network",
+        isNetwork: true,
+      });
+    }
+    expect(told).toBe(0);
+  });
+});
+
+describe("the adapter types every refusal itself, as its file's rule says", () => {
+  // Called bare, with no controller after it: the transfer preview is read
+  // straight from the adapter (Transfers keeps "Suivant" off while it fails),
+  // and the controller is not the only caller the writes will ever have.
+  const CALLS: ReadonlyArray<{
+    readonly name: string;
+    readonly owner: boolean;
+    readonly call: (repo: V2CloudFantasyRepository) => Promise<unknown>;
+  }> = [
+    ...WRITES.map(({ screen, owner, write }) => ({ name: screen, owner, call: write })),
+    {
+      name: "Transfers, the preview",
+      owner: true,
+      call: (repo) =>
+        repo.previewTransfers({
+          expectedVersion: 3,
+          currentGameweekId: GW,
+          transfers: [],
+          chip: null,
+        }),
+    },
+  ];
+
+  it("a code owed, a stale version, the network: the repository's own codes, the answer kept", async () => {
+    for (const [refusal, code] of [
+      [stepUp(), "mfa_required"],
+      [raised("version_conflict"), "version_conflict"],
+      [offline(), "network"],
+    ] as const) {
+      answer = refusal;
+      for (const { name, owner, call } of CALLS) {
+        hub = hubWithTeam(owner);
+        const error = await call(new V2CloudFantasyRepository("user-1")).then(
+          () => null,
+          (failure: unknown) => failure,
+        );
+        expect({
+          name,
+          typed: error instanceof FantasyRepoError,
+          code: (error as FantasyRepoError | null)?.code,
+          // The Fantasy repository's error, around what the server answered.
+          answer: ((error as FantasyRepoError | null)?.cause as { cause?: unknown } | undefined)
+            ?.cause,
+        }).toEqual({ name, typed: true, code, answer: refusal });
+      }
+    }
   });
 });

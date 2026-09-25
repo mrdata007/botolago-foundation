@@ -5,6 +5,8 @@ import { Copy, Plus, Settings } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { showStepUpNotice } from "@/auth/step-up-notice";
+import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { CupInfo } from "@/components/fantasy-lists/CupInfo";
 import { LeagueList } from "@/components/fantasy-lists/LeagueList";
@@ -153,8 +155,12 @@ function LeaguesBody() {
       setCreateName("");
       await qc.invalidateQueries({ queryKey: key("leagues", "private") });
       toast.success(t("fantasy.leagues.created"));
-    } catch {
-      toast.error(t("state.error"));
+    } catch (error) {
+      // Refused until the one-time code is in: say that, once (the auth layer
+      // says it too, under the same toast id), not "Une erreur est survenue".
+      // The name stays in the field for when the code is in.
+      if (isMfaStepUpError(error)) showStepUpNotice(t);
+      else toast.error(t("state.error"));
     } finally {
       setBusy(false);
     }

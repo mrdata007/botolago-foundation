@@ -554,6 +554,46 @@ describe("the save queue", () => {
     expect(sent).toEqual([[{ fixtureId: id(1), home: 2, away: 2 }]]);
     expect(draft).toEqual([]);
   });
+
+  it("sends nothing while the session is not the account's; the changes wait in its draft", async () => {
+    const timers = fakeTimers();
+    let draft: readonly { fixtureId: string; home: number; away: number }[] = [];
+    const drafts = { load: () => draft, save: (items: typeof draft) => void (draft = items) };
+    let accountsSession = true;
+    const sent: unknown[][] = [];
+    const send = async (items: readonly { fixtureId: string; home: number; away: number }[]) => {
+      sent.push([...items]);
+      return answer(items);
+    };
+    const queue = new PredictionSaveQueue({
+      timers,
+      drafts,
+      canSend: () => accountsSession,
+      send,
+    });
+    queue.set({ fixtureId: id(1), home: 3, away: 1 });
+    accountsSession = false;
+    // Neither the second's wait coming due nor a flush sends them.
+    timers.advance(1_000);
+    await queue.flush();
+    await queue.retry();
+    expect(sent).toEqual([]);
+    expect(queue.pendingIds).toEqual([id(1)]);
+    expect(draft).toEqual([{ fixtureId: id(1), home: 3, away: 1 }]);
+    queue.dispose();
+
+    // Nor does a queue that loads the draft while the session is someone
+    // else's; once it is the account's again, they go.
+    const next = new PredictionSaveQueue({ timers, drafts, canSend: () => accountsSession, send });
+    timers.advance(0);
+    await next.flush();
+    expect(sent).toEqual([]);
+    accountsSession = true;
+    await next.flush();
+    expect(sent).toEqual([[{ fixtureId: id(1), home: 3, away: 1 }]]);
+    expect(next.state).toBe("saved");
+    expect(draft).toEqual([]);
+  });
 });
 
 // ---------------------------------------------------------------------------

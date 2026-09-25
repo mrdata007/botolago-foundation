@@ -17,6 +17,8 @@ import { mapPredictionsError, type PredictionsError } from "./errors";
  *   - `flush()` sends now: the page calls it when it is hidden.
  *   - What has not been sent is kept as a draft for the account and sent
  *     again on the next visit.
+ *   - Nothing is sent while `canSend` says the session is no longer the
+ *     account's: the changes wait in its draft, for that account.
  *   - A network failure is retried with backoff; the bar says "Hors
  *     connexion". Any other failure stops and says "Échec, réessayer".
  *
@@ -44,6 +46,14 @@ export interface SaveQueueDrafts {
 
 export interface SaveQueueOptions {
   send(items: readonly PredictionInput[]): Promise<SavePredictionsDto>;
+  /**
+   * Whether `send` would still reach the account these changes belong to. A
+   * queue holds one account's changes, but `send` carries whichever session
+   * is current when it runs. While this says no, nothing is sent -- not on
+   * the timer, not on `flush()` -- and the changes stay queued and in
+   * `drafts`. Omitted: always.
+   */
+  canSend?: () => boolean;
   /** The server's clock as the page knows it (phone clock + measured offset). */
   now?: () => number;
   delayMs?: number;
@@ -190,6 +200,10 @@ export class PredictionSaveQueue {
       if (this.stateValue === "pending") this.setState("saved");
       return Promise.resolve();
     }
+    // The session is no longer the account's (`canSend`): a send now would
+    // save these changes as someone else's, or as nobody's. They wait, in the
+    // drafts, for the account they belong to.
+    if (this.options.canSend?.() === false) return Promise.resolve();
     const batch = [...this.pending].slice(0, MAX_ITEMS_PER_SAVE);
     const sent = new Map(batch.map(([fixtureId, entry]) => [fixtureId, entry.version]));
     this.setState("saving");

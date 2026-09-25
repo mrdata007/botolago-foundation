@@ -14,7 +14,7 @@
 // `context.invalidateOwned()`.
 
 import type { QueryClient } from "@tanstack/react-query";
-import { FantasyRepoError } from "@/services/fantasy-errors";
+import { FantasyRepoError, toRepoError } from "@/services/fantasy-errors";
 import type { FantasySnapshot } from "@/services/fantasy-owned-repository";
 import type { OwnedMutationStatus } from "@/services/fantasy-owned-provider";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
@@ -88,10 +88,11 @@ export async function runOwnedMutation<TArgs>(
     input.onSuccess?.(snapshot);
     return { ok: true, snapshot };
   } catch (err) {
-    const repoErr =
-      err instanceof FantasyRepoError
-        ? err
-        : new FantasyRepoError("unknown", err instanceof Error ? err.message : String(err));
+    // Typed as the owned repository's own, its cause kept. Anything untyped
+    // used to be filed as `unknown` without it: the refusal's own code (a
+    // step-up, a stale version, the network) was lost, and the screens said
+    // their catch-all beside whatever the auth layer said.
+    const repoErr = toRepoError(err);
     const kind: "conflict" | "error" = repoErr.code === "version_conflict" ? "conflict" : "error";
     setStatus(kind, repoErr);
     return { ok: false, error: repoErr, kind };

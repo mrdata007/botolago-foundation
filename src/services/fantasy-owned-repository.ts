@@ -638,7 +638,16 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
   }
 }
 
-/** Production V2 compatibility adapter. It never reads or writes legacy public Fantasy tables. */
+/**
+ * Production V2 compatibility adapter. It never reads or writes legacy public Fantasy tables.
+ *
+ * Every method throws typed (`toRepoError`), as this file's rule says. The
+ * transfer and chip methods used to hand the RPC's refusal on as the Fantasy
+ * repository's own error, which the screens' classifier cannot read: a
+ * confirmation refused until the one-time code is in said "Les transferts
+ * n'ont pas pu être confirmés." beside the auth layer's notice, a chip said
+ * "Indisponible", and a stale version never reached the conflict branch.
+ */
 export class V2CloudFantasyRepository implements FantasyOwnedRepository {
   readonly source: FantasyRepoSource = "cloud";
   private readonly repository = new SupabaseFantasyRepository();
@@ -784,37 +793,45 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
   }
 
   async previewTransfers(input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto> {
-    const current = await this.loadSnapshot();
-    if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
-    return this.repository.previewTransfers(
-      current.teamId,
-      input.currentGameweekId,
-      input.transfers.map((transfer) => ({
-        player_out_id: transfer.outSourceId,
-        player_in_id: transfer.inSourceId,
-      })),
-      input.expectedVersion,
-      input.chip,
-      this.context(),
-    );
+    try {
+      const current = await this.loadSnapshot();
+      if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+      return await this.repository.previewTransfers(
+        current.teamId,
+        input.currentGameweekId,
+        input.transfers.map((transfer) => ({
+          player_out_id: transfer.outSourceId,
+          player_in_id: transfer.inSourceId,
+        })),
+        input.expectedVersion,
+        input.chip,
+        this.context(),
+      );
+    } catch (error) {
+      throw toRepoError(error);
+    }
   }
 
   async confirmTransfers(input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot> {
-    const current = await this.loadSnapshot();
-    if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
-    await this.repository.confirmTransfers(
-      current.teamId,
-      input.currentGameweekId,
-      input.transfers.map((transfer) => ({
-        player_out_id: transfer.outSourceId,
-        player_in_id: transfer.inSourceId,
-      })),
-      input.expectedVersion,
-      crypto.randomUUID(),
-      input.lifecycle.chips.active,
-      this.context(),
-    );
-    return this.loadSnapshot();
+    try {
+      const current = await this.loadSnapshot();
+      if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+      await this.repository.confirmTransfers(
+        current.teamId,
+        input.currentGameweekId,
+        input.transfers.map((transfer) => ({
+          player_out_id: transfer.outSourceId,
+          player_in_id: transfer.inSourceId,
+        })),
+        input.expectedVersion,
+        crypto.randomUUID(),
+        input.lifecycle.chips.active,
+        this.context(),
+      );
+      return await this.loadSnapshot();
+    } catch (error) {
+      throw toRepoError(error);
+    }
   }
 
   async activateChip(input: {
@@ -822,32 +839,40 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
     chip: FantasyChip;
     expectedVersion: number;
   }): Promise<FantasySnapshot> {
-    const current = await this.loadSnapshot();
-    if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
-    await this.repository.activateChip(
-      current.teamId,
-      input.gameweekId,
-      input.chip,
-      input.expectedVersion,
-      crypto.randomUUID(),
-      this.context(),
-    );
-    return this.loadSnapshot();
+    try {
+      const current = await this.loadSnapshot();
+      if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+      await this.repository.activateChip(
+        current.teamId,
+        input.gameweekId,
+        input.chip,
+        input.expectedVersion,
+        crypto.randomUUID(),
+        this.context(),
+      );
+      return await this.loadSnapshot();
+    } catch (error) {
+      throw toRepoError(error);
+    }
   }
 
   async cancelChip(input: {
     gameweekId: string;
     expectedVersion: number;
   }): Promise<FantasySnapshot> {
-    const current = await this.loadSnapshot();
-    if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
-    await this.repository.cancelChip(
-      current.teamId,
-      input.gameweekId,
-      input.expectedVersion,
-      this.context(),
-    );
-    return this.loadSnapshot();
+    try {
+      const current = await this.loadSnapshot();
+      if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+      await this.repository.cancelChip(
+        current.teamId,
+        input.gameweekId,
+        input.expectedVersion,
+        this.context(),
+      );
+      return await this.loadSnapshot();
+    } catch (error) {
+      throw toRepoError(error);
+    }
   }
 
   async finalizeGameweek(_input: FinalizeOwnedGameweekInput): Promise<FantasySnapshot> {

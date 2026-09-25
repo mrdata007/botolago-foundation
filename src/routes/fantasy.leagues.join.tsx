@@ -3,6 +3,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+import { showStepUpNotice } from "@/auth/step-up-notice";
+import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
@@ -101,8 +103,13 @@ function JoinLeagueBody() {
       const leagues = await fantasyService.getLeagues("private");
       const league = leagues[leagues.length - 1];
       setJoined(league ? { id: league.id, name: league.name } : { id: "", name: code.trim() });
-    } catch {
-      setInvalid(true);
+    } catch (error) {
+      // Refused until the one-time code is in: the invite code typed is not
+      // wrong, so the field is not marked "Code invalide". The notice says
+      // what is owed, once (the auth layer says it too, under the same toast
+      // id), and the invite code stays in the field for when it is in.
+      if (isMfaStepUpError(error)) showStepUpNotice(t);
+      else setInvalid(true);
     } finally {
       setBusy(false);
     }
@@ -117,8 +124,11 @@ function JoinLeagueBody() {
       await fantasyService.joinLeague(target.code ?? target.id);
       await qc.invalidateQueries({ queryKey: key("leagues", "public") });
       setJoined({ id: target.id, name: target.name });
-    } catch {
-      setInvalid(true);
+    } catch (error) {
+      // As for a private code: a code owed is the notice, not "Une erreur est
+      // survenue" in the alert under the toggle.
+      if (isMfaStepUpError(error)) showStepUpNotice(t);
+      else setInvalid(true);
     } finally {
       setBusy(false);
     }

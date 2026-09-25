@@ -2,21 +2,26 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { sessionAccountId } from "@/auth/second-factor";
 import type {
   MyPredictionDto,
   PredictionFixtureDto,
+  PredictionInput,
   PredictionsRoundDto,
   SavePredictionsDto,
 } from "@/backend/predictions/contracts";
 import type { PredictionsErrorCode } from "@/backend/predictions/errors";
 import { PredictionSaveQueue } from "@/backend/predictions/save-queue";
+import type { AuthSession, AuthUser } from "@/services/auth-types";
 import {
+  accountSaveQueue,
   awaitingScoring,
   barFor,
   nextSaveBar,
   scoringMoved,
   seedUpdatedAt,
   shownSaveState,
+  type SaveQueueServices,
 } from "./use-predictions-round";
 
 const closed = (mode: "off" | "testers"): PredictionsRoundDto => ({
@@ -194,5 +199,160 @@ describe("the save bar is one account's (nextSaveBar, barFor)", () => {
     expect(hook).toMatch(/return \(\) => \{ speaking = false;[^}]*void queue\.flush\(\);/);
     // Nothing else writes the bar.
     expect(hook.match(/setSave\(/g)).toHaveLength(3);
+  });
+});
+
+describe("a queue sends its account's picks to that account only (accountSaveQueue)", () => {
+  const A = "10000000-0000-4000-8000-00000000000a";
+  const B = "10000000-0000-4000-8000-00000000000b";
+  const signedIn = (id: string): AuthSession => ({
+    user: { id } as AuthUser,
+    status: "authenticated",
+  });
+  const pick: PredictionInput = { fixtureId: "f1", home: 2, away: 1 };
+
+  /** One device: the session the auth service holds, the save, each account's drafts. */
+  function device(initial: AuthSession) {
+    let session = initial;
+    const saves: Array<{ account: string | null; items: PredictionInput[] }> = [];
+    const drafts = new Map<string, readonly PredictionInput[]>();
+    const services: SaveQueueServices = {
+      session: () => session,
+      // As `predictionsService.save`: for whoever's session is current when it runs.
+      save: async (items) => {
+        saves.push({ account: sessionAccountId(session), items: [...items] });
+        return {
+          serverTime: "2026-09-25T20:00:00+00:00",
+          results: items.map((item) => ({
+            ...item,
+            status: "saved",
+            submittedAt: "2026-09-25T20:00:00+00:00",
+          })),
+        } as SavePredictionsDto;
+      },
+      drafts: (uid) => ({
+        load: () => drafts.get(uid) ?? [],
+        save: (items) => void drafts.set(uid, items),
+      }),
+    };
+    return {
+      services,
+      saves,
+      draftOf: (uid: string) => drafts.get(uid) ?? [],
+      becomes: (next: AuthSession) => void (session = next),
+    };
+  }
+
+  /** Timers run by hand: `due()` runs whatever has been scheduled. */
+  function timersByHand() {
+    const scheduled = new Map<number, () => void>();
+    let next = 0;
+    return {
+      setTimeout: (handler: () => void) => {
+        scheduled.set(++next, handler);
+        return next;
+      },
+      clearTimeout: (handle: unknown) => void scheduled.delete(handle as number),
+      due: () => {
+        const handlers = [...scheduled.values()];
+        scheduled.clear();
+        for (const handler of handlers) handler();
+      },
+    };
+  }
+
+  /** The hook's effect cleanup, when the page moves to another account or away. */
+  async function replace(queue: PredictionSaveQueue) {
+    await queue.flush();
+    queue.dispose();
+  }
+
+  test("A's unsent picks never reach another session: they stay A's draft", async () => {
+    for (const other of [
+      signedIn(B),
+      // B, signed in but still owing its code: the token is B's all the same.
+      { user: null, status: "mfa_required", pendingAccountId: B } satisfies AuthSession,
+      { user: null, status: "anonymous" } satisfies AuthSession,
+    ]) {
+      const timers = timersByHand();
+      const phone = device(signedIn(A));
+      const queue = accountSaveQueue(A, { timers }, phone.services);
+      queue.set(pick);
+      // The session moves on (B signs in from another tab, say) before the
+      // second's wait is over: the wait comes due, then the page replaces A's
+      // queue.
+      phone.becomes(other);
+      timers.due();
+      await replace(queue);
+      expect({ other: other.status, saves: phone.saves, draft: phone.draftOf(A) }).toEqual({
+        other: other.status,
+        saves: [],
+        draft: [pick],
+      });
+    }
+  });
+
+  test("B's queue holds none of A's picks, and A's next visit sends them, to A", async () => {
+    const timers = timersByHand();
+    const phone = device(signedIn(A));
+    const first = accountSaveQueue(A, { timers }, phone.services);
+    first.set(pick);
+    phone.becomes(signedIn(B));
+    await replace(first);
+
+    const forB = accountSaveQueue(B, { timers }, phone.services);
+    timers.due();
+    expect(forB.pendingValue(pick.fixtureId)).toBeNull();
+    await replace(forB);
+    expect(phone.saves).toEqual([]);
+    expect(phone.draftOf(B)).toEqual([]);
+
+    phone.becomes(signedIn(A));
+    const back = accountSaveQueue(A, { timers }, phone.services);
+    timers.due();
+    await back.flush();
+    expect(phone.saves).toEqual([{ account: A, items: [pick] }]);
+    expect(phone.draftOf(A)).toEqual([]);
+  });
+
+  test("the same account's picks go as before: on the page's last flush, and while its code is owed", async () => {
+    for (const same of [
+      signedIn(A),
+      // Owing its code is still the account (`sessionAccountId`): the token is
+      // A's, and whatever the server answers is A's to hear.
+      { user: null, status: "mfa_required", pendingAccountId: A } satisfies AuthSession,
+    ]) {
+      const phone = device(signedIn(A));
+      const queue = accountSaveQueue(A, { timers: timersByHand() }, phone.services);
+      queue.set(pick);
+      phone.becomes(same);
+      // Leaving the page, or the page hidden: the flush sends at once.
+      await replace(queue);
+      expect({ same: same.status, saves: phone.saves, draft: phone.draftOf(A) }).toEqual({
+        same: same.status,
+        saves: [{ account: A, items: [pick] }],
+        draft: [],
+      });
+    }
+  });
+
+  test("a save's results land in the picks of the account whose queue sent them", () => {
+    // They can land after the page has moved to another account: the queue's
+    // own account travels with them, never the page's.
+    const hook = readFileSync(join(import.meta.dir, "use-predictions-round.ts"), "utf8").replace(
+      /\s+/g,
+      " ",
+    );
+    expect(hook).toContain("const queue = accountSaveQueue(uid, {");
+    expect(hook).toContain("applyResultsRef.current(uid, results);");
+    expect(hook).toContain("(owner: string, results: readonly SaveResultDto[]) => {");
+    expect(hook).toContain("predictionsKeys.mine(owner, resolvedNumber)");
+    expect(hook).toContain("predictionsKeys.fixture(owner, result.fixtureId)");
+    // The page's own `uid` is not in the writer at all.
+    const writer = hook.slice(
+      hook.indexOf("const applyResults = useCallback("),
+      hook.indexOf("const applyResultsRef"),
+    );
+    expect(writer).not.toMatch(/\buid\b/);
   });
 });

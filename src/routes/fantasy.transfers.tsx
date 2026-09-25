@@ -25,7 +25,6 @@ import {
 } from "@/lib/fantasy-engine";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
-import { toRepoError } from "@/services/fantasy-errors";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -46,22 +45,6 @@ function isTransfersDraftPayload(v: unknown): v is TransfersDraftPayload {
   if (!v || typeof v !== "object") return false;
   const p = v as Partial<TransfersDraftPayload>;
   return Array.isArray(p.outIds) && Array.isArray(p.inIds);
-}
-
-/**
- * `write`, its refusal typed as the owned repository's own (`toRepoError`)
- * before the mutation controller files it. The V2 adapter types what a lineup
- * save throws, but hands on the transfer and chip RPCs' refusals as the
- * server's error, and the controller files anything untyped as `unknown`: a
- * confirmation refused until the one-time code is in read as "Les transferts
- * n'ont pas pu être confirmés." beside the auth layer's notice, and a stale
- * version never reached the conflict branch. A typed error passes through as
- * it is.
- */
-function withTypedRefusal<T>(write: Promise<T>): Promise<T> {
-  return write.catch((error: unknown) => {
-    throw toRepoError(error);
-  });
 }
 
 /**
@@ -417,13 +400,11 @@ function TransfersBody() {
         },
         {
           action: () =>
-            withTypedRefusal(
-              owned.repo.activateChip({
-                gameweekId: owned.snapshot!.currentGameweekId!,
-                chip: key,
-                expectedVersion: owned.snapshot!.version,
-              }),
-            ),
+            owned.repo.activateChip({
+              gameweekId: owned.snapshot!.currentGameweekId!,
+              chip: key,
+              expectedVersion: owned.snapshot!.version,
+            }),
           args: undefined,
         },
       );
@@ -495,24 +476,22 @@ function TransfersBody() {
           },
           {
             action: () =>
-              withTypedRefusal(
-                owned.repo.confirmTransfers({
-                  expectedVersion: owned.snapshot!.version,
-                  formation: team.formation,
-                  bank: v.nextBank,
-                  freeTransfers: v.nextFreeTransfers,
-                  pendingTransfers: v.pendingTransfers,
-                  squad: v.nextSquad,
-                  purchasePrices,
-                  currentGameweekId: owned.snapshot!.currentGameweekId!,
-                  lifecycle: {
-                    ...lifecycle,
-                    chips: v.chips,
-                    transferHitPoints: lifecycle.transferHitPoints + v.hitPointsApplied,
-                  },
-                  transfers,
-                }),
-              ),
+              owned.repo.confirmTransfers({
+                expectedVersion: owned.snapshot!.version,
+                formation: team.formation,
+                bank: v.nextBank,
+                freeTransfers: v.nextFreeTransfers,
+                pendingTransfers: v.pendingTransfers,
+                squad: v.nextSquad,
+                purchasePrices,
+                currentGameweekId: owned.snapshot!.currentGameweekId!,
+                lifecycle: {
+                  ...lifecycle,
+                  chips: v.chips,
+                  transferHitPoints: lifecycle.transferHitPoints + v.hitPointsApplied,
+                },
+                transfers,
+              }),
             args: undefined,
             matchingDraftKey: draftKey ?? undefined,
             savedIdleAfterMs: 2400,

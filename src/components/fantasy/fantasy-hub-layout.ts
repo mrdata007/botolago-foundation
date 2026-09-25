@@ -80,10 +80,10 @@ export interface FantasyHubLayoutInput {
  *     for the screen to be ready, because a closed season or a failed request
  *     has its own panel, and a "create my team" button over either would be
  *     a promise the backend refuses.
- *   - The prize dialog opens over the owner's dashboard only. Over the
+ *   - The prize dialog opens over the owner's dashboard only: over the
  *     proposition it would be a second explanation stacked on the first, and
- *     while the team is still loading its button would offer an owner the
- *     "create a team" it offers visitors without one.
+ *     until the team has loaded nobody knows which of the two the page will
+ *     be.
  */
 export function fantasyHubLayout({
   authStatus,

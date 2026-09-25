@@ -13,13 +13,12 @@ import { join } from "node:path";
  *
  * The mappers and classifiers that name the refusal (`isStepUp`, the
  * `mfa_required` codes) run as functions in `src/backend/auth/step-up.test.ts`,
- * and the Fantasy chain -- repository, adapter, the screens' typing, mutation
- * controller, classifier -- runs in `src/services/fantasy-owned-step-up.test.ts`.
- * These pin that each write path branches on it before its own toast, and
- * that the Fantasy writes whose refusals the adapter leaves untyped are typed
- * on the way. Source-level, like `auth-second-factor.test.ts`: the handlers
- * live inside screens that need a router and a DOM to run, and the repository
- * tests neither.
+ * the Fantasy chain -- repository, adapter, mutation controller, classifier --
+ * in `src/services/fantasy-owned-step-up.test.ts`, and the Fantasy league
+ * writes in `src/services/fantasy-leagues-step-up.test.ts`. These pin that
+ * each write path branches on it before its own toast. Source-level, like
+ * `auth-second-factor.test.ts`: the handlers live inside screens that need a
+ * router and a DOM to run, and the repository tests neither.
  */
 
 const ROOT = join(import.meta.dir, "..", "..");
@@ -49,39 +48,17 @@ const stepUpThen = (check: string, fallback: string) =>
   `if (${check}) showStepUpNotice(t); else ${fallback}`;
 
 /**
- * The screens' typing of an owned write's refusal (`withTypedRefusal`). The V2
- * adapter hands the transfer and chip refusals on untyped and the controller
- * files those as `unknown`, so without it `isStepUp` -- and `isConflict` --
- * never held there.
+ * A stale version reloads the team. The conflict reaches these screens typed:
+ * the adapter types the transfer and chip refusals itself
+ * (`fantasy-owned-step-up.test.ts` runs that), so the screens call it bare.
  */
-const TYPED_REFUSAL =
-  "function withTypedRefusal<T>(write: Promise<T>): Promise<T> { return write.catch((error: unknown) => { throw toRepoError(error); }); }";
-const TO_REPO_ERROR = 'import { toRepoError } from "@/services/fantasy-errors";';
-/** `action: () => withTypedRefusal(owned.repo.<method>(`, whatever the line breaks. */
-const typedWrite = (method: string) =>
-  new RegExp(`action: \\(\\) => withTypedRefusal\\( ?owned\\.repo\\.${method}\\(`);
-const WRITES = /owned\.repo\.(confirmTransfers|activateChip|cancelChip)\(/g;
-const TYPED_WRITES =
-  /withTypedRefusal\( ?owned\.repo\.(confirmTransfers|activateChip|cancelChip)\(/g;
-/** The transfer and chip writes on a screen that are not typed on the way. */
-const untypedWrites = (source: string) =>
-  (source.match(WRITES) ?? []).length - (source.match(TYPED_WRITES) ?? []).length;
+const RELOAD_ON_CONFLICT = "if (c.isConflict) await owned.reload();";
 
 describe("Fantasy, Transfers (/fantasy/transfers)", () => {
   const source = code("src/routes/fantasy.transfers.tsx");
 
   it("imports the shared notice", () => {
     expect(source).toContain(IMPORT);
-  });
-
-  it("types the confirmation's and the chip's refusals before the controller files them", () => {
-    expect(source).toContain(TO_REPO_ERROR);
-    expect(source).toContain(TYPED_REFUSAL);
-    const confirm = handler(source, "const confirm = async", "fantasyService.saveTeam(");
-    expect(confirm).toMatch(typedWrite("confirmTransfers"));
-    const chip = handler(source, "const activateTransferChip = async", "const confirm = async");
-    expect(chip).toMatch(typedWrite("activateChip"));
-    expect(untypedWrites(source)).toBe(0);
   });
 
   it("confirming: a code owed is not 'Accès refusé. Reconnectez-vous'", () => {
@@ -97,6 +74,7 @@ describe("Fantasy, Transfers (/fantasy/transfers)", () => {
     ]) {
       expect(confirm).toContain(`"${key}"`);
     }
+    expect(confirm).toContain(RELOAD_ON_CONFLICT);
     // The transfers are kept for when the code is in.
     expect(confirm.indexOf("fantasyDraftsStore.save")).toBeLessThan(
       confirm.indexOf("showStepUpNotice(t)"),
@@ -118,16 +96,6 @@ describe("Fantasy, Pick Team (/fantasy/team)", () => {
     expect(source).toContain(IMPORT);
   });
 
-  it("types the chips' refusals before the controller files them; the lineup save types its own", () => {
-    expect(source).toContain(TO_REPO_ERROR);
-    expect(source).toContain(TYPED_REFUSAL);
-    const activate = handler(source, "const confirmChip = async", "const cancelActiveChip = async");
-    expect(activate).toMatch(typedWrite("activateChip"));
-    const cancel = handler(source, "const cancelActiveChip = async", "const confirmPending =");
-    expect(cancel).toMatch(typedWrite("cancelChip"));
-    expect(untypedWrites(source)).toBe(0);
-  });
-
   it("saving the lineup: a code owed is not 'Accès refusé. Reconnectez-vous'", () => {
     const save = handler(source, "const save = async", "const chipViews =");
     expect(save).toContain(stepUpThen("c.isStepUp", "toast.error("));
@@ -139,6 +107,8 @@ describe("Fantasy, Pick Team (/fantasy/team)", () => {
     const activate = handler(source, "const confirmChip = async", "const cancelActiveChip = async");
     expect(activate).toContain(stepUpThen("c.isStepUp", "toast.error("));
     expect(activate).toContain('"fantasy.chip.state.unavailable"');
+    expect(activate).toContain('"fantasy.error.version_conflict"');
+    expect(activate).toContain(RELOAD_ON_CONFLICT);
   });
 
   it("cancelling a chip: the same", () => {
@@ -160,6 +130,48 @@ describe("Fantasy, team creation (/fantasy/create)", () => {
     expect(save).toContain("setSaveError(key);");
     expect(save).toContain(stepUpThen("classifyRepoError(res.error).isStepUp", "toast.error("));
     expect(save.indexOf("setSaveError(key);")).toBeLessThan(save.indexOf("showStepUpNotice(t)"));
+  });
+});
+
+describe("Fantasy, the leagues (/fantasy/leagues and below)", () => {
+  // The refusal reaches these screens as the Fantasy repository's error, with
+  // the server's answer as its `cause` (run in `fantasy-leagues-step-up.test.ts`).
+  const TEST = 'import { isMfaStepUpError } from "@/backend/auth/step-up";';
+
+  it("creating one: a code owed is not 'Une erreur est survenue'", () => {
+    const source = code("src/routes/fantasy.leagues.tsx");
+    expect(source).toContain(IMPORT);
+    expect(source).toContain(TEST);
+    const create = handler(source, "const createLeague = async", "return (");
+    expect(create).toContain("catch (error)");
+    expect(create).toContain(
+      stepUpThen("isMfaStepUpError(error)", 'toast.error(t("state.error"));'),
+    );
+  });
+
+  it("leaving one: the same", () => {
+    const source = code("src/routes/fantasy.leagues.$leagueId.tsx");
+    expect(source).toContain(IMPORT);
+    expect(source).toContain(TEST);
+    const leave = handler(source, "const leave = async", "const updated =");
+    expect(leave).toContain("catch (error)");
+    expect(leave).toContain(
+      stepUpThen("isMfaStepUpError(error)", 'toast.error(t("state.error"));'),
+    );
+  });
+
+  it("joining, with a code or a public one: a code owed is the notice, and nothing is marked invalid", () => {
+    // `invalid` reads "Code invalide…" under the code field, and "Une erreur
+    // est survenue" in the public tab's alert.
+    const source = code("src/routes/fantasy.leagues.join.tsx");
+    expect(source).toContain(IMPORT);
+    expect(source).toContain(TEST);
+    const joinPrivate = handler(source, "const joinPrivate = async", "const joinPublic = async");
+    expect(joinPrivate).toContain(stepUpThen("isMfaStepUpError(error)", "setInvalid(true);"));
+    const joinPublic = handler(source, "const joinPublic = async", "if (joined)");
+    expect(joinPublic).toContain(stepUpThen("isMfaStepUpError(error)", "setInvalid(true);"));
+    // Every other refusal still marks it, and only through those two arms.
+    expect(source.match(/setInvalid\(true\)/g)).toHaveLength(2);
   });
 });
 

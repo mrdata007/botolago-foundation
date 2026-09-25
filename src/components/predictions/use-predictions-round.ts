@@ -9,6 +9,7 @@ import type {
   PredictionFixtureDto,
   PredictionInput,
   PredictionsRoundDto,
+  SavePredictionsDto,
   SaveResultDto,
 } from "@/backend/predictions/contracts";
 import { MAX_STEPPER_GOALS } from "@/backend/predictions/contracts";
@@ -22,10 +23,17 @@ import {
   GUEST_STORE_EVENT_KEY,
   type GuestStoreState,
 } from "@/backend/predictions/guest-store";
-import { PredictionSaveQueue, type SaveQueueState } from "@/backend/predictions/save-queue";
+import {
+  PredictionSaveQueue,
+  type SaveQueueDrafts,
+  type SaveQueueOptions,
+  type SaveQueueState,
+} from "@/backend/predictions/save-queue";
 import { useAuth } from "@/auth/AuthProvider";
+import { sessionAccountId } from "@/auth/second-factor";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
+import { authService, type AuthSession } from "@/services/auth";
 import { predictionsService } from "@/services/predictions";
 import { guestRoundEvents } from "./guest-analytics";
 import { getGuestStore, noteServerTime, serverNow } from "./predictions-runtime";
@@ -273,6 +281,49 @@ export function barFor(bar: SaveBar | null, uid: string): SaveQueueState | "step
   return bar?.uid === uid ? shownSaveState(bar.state, bar.failure) : "idle";
 }
 
+/** What an account's save queue takes from the app; the tests hand it stand-ins. */
+export interface SaveQueueServices {
+  /** The session as the auth service holds it at this moment. */
+  readonly session: () => AuthSession;
+  /** The save, for whoever's session is current when it runs. */
+  readonly save: (items: readonly PredictionInput[]) => Promise<SavePredictionsDto>;
+  /** An account's unsent picks on this device. */
+  readonly drafts: (uid: string) => SaveQueueDrafts;
+}
+
+const APP_SAVE_SERVICES: SaveQueueServices = {
+  session: () => authService.getSession(),
+  save: (items) => predictionsService.save(items),
+  drafts: draftsFor,
+};
+
+/**
+ * Account `uid`'s save queue: `uid`'s picks go to `uid`, or nowhere yet.
+ *
+ * The save takes its account from the session current when it runs (the
+ * database reads it from the token), not from the queue, and a queue can
+ * outlive its account by a moment. When B signed in straight after A (from
+ * another tab, say) with /pronostics open, the page replaced A's queue on its
+ * next render, and the replaced queue's last flush saved A's unsent picks into
+ * B's account. So a queue sends only while the session is still `uid`'s --
+ * owing its one-time code counts, that is still the account
+ * (`sessionAccountId`) -- and otherwise keeps the picks in `uid`'s draft,
+ * which `uid`'s next queue loads and sends. The draft stays on the device
+ * after `uid` leaves, as it always has.
+ */
+export function accountSaveQueue(
+  uid: string,
+  options: Omit<SaveQueueOptions, "send" | "canSend" | "drafts">,
+  services: SaveQueueServices = APP_SAVE_SERVICES,
+): PredictionSaveQueue {
+  return new PredictionSaveQueue({
+    ...options,
+    send: services.save,
+    canSend: () => sessionAccountId(services.session()) === uid,
+    drafts: services.drafts(uid),
+  });
+}
+
 export function usePredictionsRound(
   roundNumber: number | null,
   seed?: RoundSeed,
@@ -357,11 +408,14 @@ export function usePredictionsRound(
   const tRef = useRef(t);
   tRef.current = t;
 
+  // A save's results, into the picks of `owner`: the account whose queue sent
+  // them. By the time an answer lands the page may hold another account, and
+  // the picks are not theirs.
   const applyResults = useCallback(
-    (results: readonly SaveResultDto[]) => {
-      if (!uid || resolvedNumber === null) return;
+    (owner: string, results: readonly SaveResultDto[]) => {
+      if (resolvedNumber === null) return;
       queryClient.setQueryData<MyPredictionsDto>(
-        predictionsKeys.mine(uid, resolvedNumber),
+        predictionsKeys.mine(owner, resolvedNumber),
         (current) => {
           if (!current) return current;
           const items = new Map(current.items.map((item) => [item.fixtureId, item]));
@@ -387,10 +441,10 @@ export function usePredictionsRound(
       );
       for (const result of results)
         void queryClient.invalidateQueries({
-          queryKey: predictionsKeys.fixture(uid, result.fixtureId),
+          queryKey: predictionsKeys.fixture(owner, result.fixtureId),
         });
     },
-    [queryClient, uid, resolvedNumber],
+    [queryClient, resolvedNumber],
   );
   const applyResultsRef = useRef(applyResults);
   applyResultsRef.current = applyResults;
@@ -402,17 +456,17 @@ export function usePredictionsRound(
     // and from here only this queue speaks for it, only while it is the page's.
     setSave({ uid, state: "idle", failure: null });
     let speaking = true;
-    const queue = new PredictionSaveQueue({
-      send: (items) => predictionsService.save(items),
+    // Sends to `uid` only, and keeps `uid`'s picks in `uid`'s draft otherwise:
+    // see `accountSaveQueue`.
+    const queue = accountSaveQueue(uid, {
       now: serverNow,
-      drafts: draftsFor(uid),
       onStateChange: (state) => {
         if (speaking) setSave((last) => nextSaveBar(last, uid, { state }));
         setPendingVersion((v) => v + 1);
       },
       onSaved: (results, serverTime) => {
         noteServerTime(serverTime);
-        applyResultsRef.current(results);
+        applyResultsRef.current(uid, results);
         setPendingVersion((v) => v + 1);
       },
       onLocked: () => {

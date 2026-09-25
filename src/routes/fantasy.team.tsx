@@ -36,7 +36,6 @@ import {
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
 import { validateTeam } from "@/lib/team-validation";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
-import { toRepoError } from "@/services/fantasy-errors";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -59,21 +58,6 @@ function isTeamDraftPayload(v: unknown): v is TeamDraftPayload {
 }
 
 const PICK_TEAM_CHIPS: ChipKey[] = ["bench_boost", "free_hit", "triple_captain"];
-
-/**
- * `write`, its refusal typed as the owned repository's own (`toRepoError`)
- * before the mutation controller files it. The V2 adapter types what the
- * lineup save throws, but hands on the chip RPCs' refusals as the server's
- * error, and the controller files anything untyped as `unknown`: a chip
- * refused until the one-time code is in read as "Indisponible" beside the auth
- * layer's notice, and a stale version never reached the conflict branch. A
- * typed error passes through as it is.
- */
-function withTypedRefusal<T>(write: Promise<T>): Promise<T> {
-  return write.catch((error: unknown) => {
-    throw toRepoError(error);
-  });
-}
 
 /** Derive the formation from the starting XI so a swap DEF↔MID or bench move re-slots correctly. */
 function formationOf(
@@ -365,13 +349,11 @@ function PickTeamBody() {
           },
           {
             action: () =>
-              withTypedRefusal(
-                owned.repo.activateChip({
-                  gameweekId: owned.snapshot!.currentGameweekId!,
-                  chip,
-                  expectedVersion: owned.snapshot!.version,
-                }),
-              ),
+              owned.repo.activateChip({
+                gameweekId: owned.snapshot!.currentGameweekId!,
+                chip,
+                expectedVersion: owned.snapshot!.version,
+              }),
             args: undefined,
             savedIdleAfterMs: 2400,
           },
@@ -417,12 +399,10 @@ function PickTeamBody() {
         },
         {
           action: () =>
-            withTypedRefusal(
-              owned.repo.cancelChip({
-                gameweekId: owned.snapshot!.currentGameweekId!,
-                expectedVersion: owned.snapshot!.version,
-              }),
-            ),
+            owned.repo.cancelChip({
+              gameweekId: owned.snapshot!.currentGameweekId!,
+              expectedVersion: owned.snapshot!.version,
+            }),
           args: undefined,
         },
       );
