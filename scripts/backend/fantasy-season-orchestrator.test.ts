@@ -241,6 +241,22 @@ describe("fantasy season orchestrator", () => {
     expect(summary.performances).toEqual({ batches: 1, fixturesProcessed: 0 });
   });
 
+  test("a setting the pass could not use is reported and leaves it waiting, not red", async () => {
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+    const summary = await orchestrateFantasySeason(gateway(cal).gateway, {
+      now,
+      invalidSettings: ["FANTASY_COVERAGE_ESCALATE_HOURS"],
+    });
+    expect(summary.verdict).toBe("waiting");
+    expect(summary.invalidSettings).toEqual(["FANTASY_COVERAGE_ESCALATE_HOURS"]);
+    expect(renderHealthSummary(summary)).toContain(
+      "| Settings | `FANTASY_COVERAGE_ESCALATE_HOURS` not usable; the default was used (waiting) |",
+    );
+    const clean = await orchestrateFantasySeason(gateway(cal).gateway, { now });
+    expect(clean).not.toHaveProperty("invalidSettings");
+    expect(renderHealthSummary(clean)).not.toContain("| Settings |");
+  });
+
   test("a worker that reports waiting leaves the pass in a waiting verdict and never fails it", async () => {
     const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-24T18:30:00Z" }]);
     const { gateway: g } = gateway(cal, {
@@ -372,7 +388,11 @@ describe("fantasy season orchestrator", () => {
     expect(summary.prizes).toEqual({ skipped: "prizes_not_installed" });
   });
 
-  test("performance ingestion follows the cursor; a fixture listing that cannot be read fails the pass", async () => {
+  // Review of 2026-09-25: one transient failure of the listing turned the run
+  // red. Per-fixture problems no longer throw (see below); what does is the
+  // listing itself, a database read. The database's own coverage check pages
+  // if statistics actually go missing, so the pass waits and names the error.
+  test("performance ingestion follows the cursor; a fixture listing that cannot be read waits, named", async () => {
     const cal = calendar([{ sequence: 1, status: "scheduled" }]);
     const { gateway: g } = gateway(cal, {
       batches: [
@@ -383,17 +403,18 @@ describe("fantasy season orchestrator", () => {
     const summary = await orchestrateFantasySeason(g, { now });
     expect(summary.performances).toEqual({ batches: 2, fixturesProcessed: 8 });
 
-    // Per-fixture problems no longer throw (see below); what does is the
-    // listing itself, which leaves nothing to wait for.
     const failing = gateway(cal);
     failing.gateway.ingestPerformances = async () => {
       throw new Error("current_performance_rpc_failed");
     };
     const failed = await orchestrateFantasySeason(failing.gateway, { now });
-    expect(failed.verdict).toBe("failed");
-    expect(shouldFailRun(failed.verdict)).toBe(true);
+    expect(failed.verdict).toBe("waiting");
+    expect(shouldFailRun(failed.verdict)).toBe(false);
     expect(failed.performances.error).toBe("current_performance_rpc_failed");
     expect(failed.performances).not.toHaveProperty("diagnostic");
+    expect(renderHealthSummary(failed)).toContain(
+      "| Performances | 0 fixtures in 0 batch(es), error `current_performance_rpc_failed` |",
+    );
 
     // What the import says about its failure reaches the evidence, flat
     // values only.
@@ -452,7 +473,7 @@ describe("fantasy season orchestrator", () => {
       });
     };
     const malformed = await orchestrateFantasySeason(malformedPage.gateway, { now });
-    expect(malformed.verdict).toBe("failed");
+    expect(malformed.verdict).toBe("waiting");
     expect(malformed.performances).toMatchObject({
       error: "invalid_provider_object",
       diagnostic: { field: "batch.items[2]", valueType: "null" },
@@ -556,20 +577,21 @@ describe("fantasy season orchestrator", () => {
     );
   });
 
-  test("coverage age prefers the recorded finalization time and treats an unknown age as overdue", () => {
+  // The fixture listing gives a kickoff and nothing else: no final whistle, no
+  // certification. `finalizedAt` was read from it but never came.
+  test("coverage age counts from kickoff + 2 h and treats an unknown age as overdue", () => {
     const at = new Date("2026-09-25T06:00:00Z");
-    const [finalized, estimated, unknown] = assessCoverage(
+    const [aged, recent, unknown] = assessCoverage(
       [
         {
           fixtureExternalId: "3",
           kickoffAt: null,
-          stage: "provider",
-          code: "provider_http_503",
+          stage: "database",
+          code: "current_performance_rpc_failed",
         },
         {
           fixtureExternalId: "1",
           kickoffAt: "2026-09-24T20:00:00Z",
-          finalizedAt: "2026-09-25T01:00:00Z",
           stage: "database",
           code: "current_performance_rpc_failed",
         },
@@ -583,13 +605,13 @@ describe("fantasy season orchestrator", () => {
       at,
       6,
     );
-    expect(finalized).toMatchObject({
+    expect(aged).toMatchObject({
       fixtureExternalId: "1",
-      finalWhistleSource: "finalized_at",
-      hoursSinceFinalWhistle: 5,
-      overdue: false,
+      finalWhistleSource: "kickoff_plus_estimate",
+      hoursSinceFinalWhistle: 8,
+      overdue: true,
     });
-    expect(estimated).toMatchObject({
+    expect(recent).toMatchObject({
       fixtureExternalId: "2",
       finalWhistleSource: "kickoff_plus_estimate",
       hoursSinceFinalWhistle: 3,
@@ -601,6 +623,76 @@ describe("fantasy season orchestrator", () => {
       hoursSinceFinalWhistle: null,
       overdue: true,
     });
+  });
+
+  // Review of 2026-09-25: a SportsMonks outage made every listed fixture a
+  // `provider` gap aged from its kickoff, certified ones included (the listing
+  // does not say which are), so the pass escalated and the watchdog paged a
+  // second time.
+  test("a provider outage never escalates on its own; it waits, named", async () => {
+    const at = new Date("2026-09-28T12:00:00Z");
+    const outage = (fixtureExternalId: string, attempted?: false) => ({
+      fixtureExternalId,
+      kickoffAt: "2026-09-26T18:00:00+00:00",
+      stage: "provider" as const,
+      code: "provider_http_503",
+      ...(attempted === false ? { attempted } : {}),
+    });
+    const [first, second] = assessCoverage([outage("19874710"), outage("19874711", false)], at);
+    for (const gap of [first, second])
+      expect(gap).toMatchObject({
+        hoursSinceFinalWhistle: 40,
+        overdue: false,
+        waitingOn: "provider_outage",
+      });
+    // Codes that are not outages are one fixture's problem, and still age.
+    for (const [stage, code] of [
+      ["provider", "provider_http_404"],
+      ["provider", "invalid_provider_json"],
+      ["database", "provider_http_503"],
+    ] as const)
+      expect(assessCoverage([{ ...outage("1"), stage, code }], at)[0]).toMatchObject({
+        overdue: true,
+      });
+
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-10-01T18:30:00Z" }]);
+    const pass = (incomplete: IncompleteFixture[]) =>
+      orchestrateFantasySeason(
+        gateway(cal, {
+          batches: [
+            {
+              fixturesProcessed: 0,
+              hasMore: false,
+              nextCursor: null,
+              incomplete,
+              providerOutage: "provider_http_503",
+            },
+          ],
+        }).gateway,
+        { now: at },
+      );
+    const waiting = await pass([outage("19874710"), outage("19874711", false)]);
+    expect(waiting.verdict).toBe("waiting");
+    expect(shouldFailRun(waiting.verdict)).toBe(false);
+    expect(waiting.performances).toMatchObject({ providerOutage: "provider_http_503" });
+    expect(renderHealthSummary(waiting)).toContain(
+      "| Finished without statistics | provider outage `provider_http_503`: 2 listed fixture(s) not read, certified or not (waiting) |",
+    );
+    // A fixture the pass did read, and could not certify, still escalates.
+    const read = await pass([
+      {
+        fixtureExternalId: "19874708",
+        kickoffAt: "2026-09-24T20:00:00+00:00",
+        stage: "database",
+        code: "current_performance_rpc_failed",
+        diagnostic: { reason: "PLAYER_MEMBERSHIP_NOT_FOUND" },
+      },
+      outage("19874710"),
+    ]);
+    expect(read.verdict).toBe("escalate");
+    expect(renderHealthSummary(read)).toContain(
+      "| Finished without statistics | 1 fixture(s), 1 past 6 h: 19874708 `current_performance_rpc_failed` PLAYER_MEMBERSHIP_NOT_FOUND, 86 h after the final whistle; provider outage `provider_http_503`: 1 listed fixture(s) not read, certified or not (waiting) |",
+    );
   });
 
   test("a fixture listing cut off at the page cap escalates instead of waiting forever", async () => {
@@ -741,7 +833,9 @@ describe("fantasy season orchestrator", () => {
     });
   });
 
-  test("windows that cannot be read escalate; none are read while no gameweek can have ended", async () => {
+  // Review of 2026-09-25: one failed read of the windows turned the run red.
+  // The watchdog's `fantasy_points` row reads the same windows on its own.
+  test("windows that cannot be read wait, named; none are read while no gameweek can have ended", async () => {
     const live = calendar([{ sequence: 1, status: "live", scoringInputVersion: 1 }]);
     const unreadable = await orchestrateFantasySeason(
       gateway(live, {
@@ -754,10 +848,45 @@ describe("fantasy season orchestrator", () => {
     );
     expect(unreadable.scoring).toEqual({ error: "fantasy_orchestrator_rpc_failed" });
     expect(renderHealthSummary(unreadable)).toContain(
-      "| Ended without final points | windows unreadable: `fantasy_orchestrator_rpc_failed` |",
+      "| Ended without final points | windows unreadable: `fantasy_orchestrator_rpc_failed` (waiting) |",
     );
     // The worker's failure still outranks it.
     expect(unreadable.verdict).toBe("failed");
+
+    // Alone, it waits: the worker only waited on the match.
+    const waited = await orchestrateFantasySeason(
+      gateway(live, {
+        lifecycle: (name, args) => {
+          const state = {
+            schemaVersion: 1,
+            gameweekId: args.p_gameweek_id,
+            seasonId: id(1),
+            status: "live",
+            lockVersion: 7,
+            sequenceNumber: 1,
+            scoringInputVersion: 1,
+            nextGameweekId: id(102),
+            advancedToGameweekId: null,
+          };
+          if (name === "service_fantasy_lifecycle_state") return state;
+          if (name === "service_advance_fantasy_lifecycle")
+            return {
+              ...state,
+              changed: false,
+              lockedLineups: 0,
+              hasMore: false,
+              waitingReason: "football_not_final",
+            };
+          throw new Error(`unexpected_rpc_${name}`);
+        },
+        windows: new Error("fantasy_orchestrator_rpc_failed"),
+      }).gateway,
+      { now },
+    );
+    expect(waited.workers[0]).toMatchObject({ outcome: "waiting", code: "football_not_final" });
+    expect(waited.scoring).toEqual({ error: "fantasy_orchestrator_rpc_failed" });
+    expect(waited.verdict).toBe("waiting");
+    expect(shouldFailRun(waited.verdict)).toBe(false);
 
     const openOnly = gateway(
       calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]),
@@ -1193,13 +1322,16 @@ describe("fantasy deadline watch", () => {
       escalateHours: 24,
     });
     expect(orchestratorEnvironment(base).coverage).toEqual({ escalateHours: 6 });
+    expect(orchestratorEnvironment(base).invalidSettings).toEqual([]);
     expect(
       orchestratorEnvironment({ ...base, FANTASY_COVERAGE_ESCALATE_HOURS: "12" }).coverage,
     ).toEqual({ escalateHours: 12 });
+    // Review of 2026-09-25: a typo here stopped the whole pass. Like the
+    // watchdog, the pass now runs on the default 6 h and names the variable.
     for (const value of ["0", "169", "6h", "-1"]) {
-      expect(() =>
-        orchestratorEnvironment({ ...base, FANTASY_COVERAGE_ESCALATE_HOURS: value }),
-      ).toThrow("fantasy_coverage_escalation_window_invalid");
+      const config = orchestratorEnvironment({ ...base, FANTASY_COVERAGE_ESCALATE_HOURS: value });
+      expect(config.coverage).toEqual({ escalateHours: 6 });
+      expect(config.invalidSettings).toEqual(["FANTASY_COVERAGE_ESCALATE_HOURS"]);
     }
     expect(
       orchestratorEnvironment({

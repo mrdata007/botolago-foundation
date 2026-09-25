@@ -731,14 +731,8 @@ describe("current finished fixture performance ingestion", () => {
     const { client, calls } = batchClient({
       items: [
         { externalFixtureId: "9001", kickoffAt: "2026-09-24T20:00:00+00:00" },
-        {
-          externalFixtureId: "9002",
-          kickoffAt: "2026-09-24T17:00:00+00:00",
-          // Carried through when the listing reports it, so the orchestrator
-          // ages the gap from the real final whistle.
-          finalizedAt: "2026-09-24T18:57:00+00:00",
-        },
-        { externalFixtureId: "9003", finalizedAt: "soon" },
+        { externalFixtureId: "9002", kickoffAt: "2026-09-24T17:00:00+00:00" },
+        { externalFixtureId: "9003", kickoffAt: "soon" },
       ],
     });
     const result = await runCurrentPerformanceBatch(
@@ -770,13 +764,13 @@ describe("current finished fixture performance ingestion", () => {
         {
           fixtureExternalId: "9002",
           kickoffAt: "2026-09-24T17:00:00+00:00",
-          finalizedAt: "2026-09-24T18:57:00+00:00",
           stage: "validation",
           code: "current_starter_minutes_missing",
           diagnostic: { fixtureExternalId: "9002", starterRows: 1 },
         },
         {
           fixtureExternalId: "9003",
+          // A time the listing cannot vouch for is left out rather than guessed.
           kickoffAt: null,
           stage: "validation",
           code: "historical_fixture_coverage_incomplete",
@@ -784,16 +778,11 @@ describe("current finished fixture performance ingestion", () => {
         },
       ],
     });
-    // A time the listing cannot vouch for is left out rather than guessed.
-    expect(result.incomplete[1]).not.toHaveProperty("finalizedAt");
   });
 
   test("a database refusal for one fixture keeps its stable code and does not stop the next", async () => {
     const { client, calls } = batchClient({
-      items: [
-        { externalFixtureId: "9001", finalizedAt: 1727218620 },
-        { externalFixtureId: "9002" },
-      ],
+      items: [{ externalFixtureId: "9001" }, { externalFixtureId: "9002" }],
       ingest: (fixtureId) =>
         fixtureId === "9001"
           ? {

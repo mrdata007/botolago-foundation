@@ -154,7 +154,7 @@ A provider outage is not a fixture problem: `provider_access_denied`,
 three attempts at a 429 or 5xx are spent. After the first, the rest of the
 page is reported with the same code and `attempted: false` instead of being
 fetched again, and the orchestrator hands the outage to its later pages, which
-are listed (so their fixtures are aged) but not fetched. Any other status,
+are listed (so their fixtures are reported) but not fetched. Any other status,
 such as a `provider_http_404` for one fixture, is that fixture's problem.
 
 ### Which provider ids may be empty
@@ -199,7 +199,7 @@ runs):
 | Field               | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `fixtureExternalId` | SportsMonks fixture id.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `kickoffAt`         | From the database listing; `finalizedAt` too once the listing provides it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `kickoffAt`         | From the database listing, the only time it gives: no final whistle, and no word on whether the fixture is already certified.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `stage`             | `provider` (the request), `validation` (the payload), `database` (the ingestion RPC).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `code`              | Stable code, e.g. `invalid_provider_id`, `invalid_provider_object`, `lineup_identity_mismatch`, `detail_identity_mismatch`, `duplicate_provider_detail`, `invalid_provider_detail`, `current_final_score_missing`, `current_starter_minutes_missing`, `current_statistics_inconsistent`, `current_lineup_unidentified_starters_exceeded`, `current_starters_incomplete`, `current_statistics_incomplete`, `historical_fixture_coverage_incomplete`, `current_performance_rpc_failed`.                                                                                                          |
 | `diagnostic`        | `field` (for example `data.lineups[12].player_id`, or `data.lineups[5].details[12]` with `typeId` for a duplicate) and `valueType` (`null`, `missing`, `array`, `string`, `numeric_string`, `fractional_number`, `non_positive_number`, `unsafe_integer`, ...); or `reason`, the database's own code (`PLAYER_MAPPING_NOT_FOUND`, `PLAYER_MEMBERSHIP_NOT_FOUND`, `CURRENT_GOALS_CONCEDED_MISMATCH`, `CURRENT_PERFORMANCE_INCOMPLETE`, ...), with `sqlState`; or counts (`starterRows`, `substituteRowsWithoutMinutes`); or the unnamed rows; or the shared normalizer's counts and `failures`. |
@@ -210,18 +210,37 @@ contract, and the value could be anything the provider sent. Free-form
 database messages are dropped; only upper-case codes defined in our
 migrations are kept.
 
-The orchestrator adds `hoursSinceFinalWhistle` (from `finalizedAt`, otherwise
-kickoff + 2 h, `finalWhistleSource` says which) and `overdue`. A fixture past
-`FANTASY_COVERAGE_ESCALATE_HOURS` (default 6) escalates the pass: exit 1, the
-`ops-alert` issue opens with category `performance_coverage_overdue`, and it
-stays open until the fixture is certified. A fixture whose age cannot be
-computed counts as overdue. The watchdog's `season_orchestrator` row fails on
-that red run too, and its `fantasy_points` row fails on its own once the
-gameweek is past its window without points
-(`FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md`).
+The orchestrator adds `hoursSinceFinalWhistle`, counted from kickoff + 2 h
+(`finalWhistleSource: kickoff_plus_estimate`, or `unknown` without a
+kickoff), and `overdue`. A fixture past `FANTASY_COVERAGE_ESCALATE_HOURS`
+(default 6; a value other than a whole number from 1 to 168 is reported in
+`invalidSettings` and 6 is used) escalates the pass: exit 1, and the
+`ops-alert` issue opens with category `performance_coverage_overdue`. A
+fixture whose age cannot be computed counts as overdue. The issue closes on
+the next green run. The watchdog's `season_orchestrator` row fails on that
+red run too, and its `fantasy_points` row fails on its own once the gameweek
+is past its window without points (`FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md`).
 
-When the listing itself fails (a malformed page, `batch.items[2]`), the pass
-fails and `performances.diagnostic` carries the field path and value type.
+A provider outage never escalates on its own. The listing names every finished
+fixture whose gameweek is not final, certified or not, and does not say which
+are certified; no read-only API does per fixture. A fixture the outage kept
+the pass from reading carries `waitingOn: "provider_outage"`, is never
+`overdue`, and leaves the pass `waiting`; `performances.providerOutage` names
+the code. The database's `fantasy_fixture_coverage` check, which reads real
+coverage, fails for a counted match still without certified statistics 6 h
+after its final whistle, outage or not, wherever migration 20260925180400 is
+applied (until then, the watchdog's `fantasy_points` row pages later, once
+the gameweek is past its window without points). A fixture that was read and
+not certified still ages and escalates, even one certified by an earlier pass
+(a provider correction the database refuses, for instance): the listing cannot
+tell the two apart.
+
+When the listing itself fails (a database error, or a malformed page at
+`batch.items[2]`), the pass waits: `performances.error` names the code and
+`performances.diagnostic` the field path and value type. One failed read is
+not an incident; if the listing keeps failing, the database's coverage check
+and the watchdog's `fantasy_points` page once statistics or points go
+missing.
 
 The manual run exits 1 unless every listed fixture was certified (or, in
 diagnose mode, would be): `pass` and `no_finished_fixtures` are the only green

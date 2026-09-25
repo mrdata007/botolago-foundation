@@ -488,9 +488,11 @@ async function rpc(client: RpcClient, name: string, args: Row): Promise<unknown>
 /** A finished fixture a pass could not certify, where it stopped, and why. */
 export type IncompleteFixture = {
   fixtureExternalId: string;
+  /**
+   * The only time the fixture listing gives: it has no final whistle
+   * (`finalized_at`), and no word on whether the fixture is already certified.
+   */
   kickoffAt: string | null;
-  /** Only when the fixture listing reports it; the age falls back to kickoff otherwise. */
-  finalizedAt?: string;
   stage: "provider" | "validation" | "database";
   code: string;
   diagnostic?: Row;
@@ -498,7 +500,7 @@ export type IncompleteFixture = {
   attempted?: false;
 };
 
-type ListedFixture = Pick<IncompleteFixture, "fixtureExternalId" | "kickoffAt" | "finalizedAt">;
+type ListedFixture = Pick<IncompleteFixture, "fixtureExternalId" | "kickoffAt">;
 
 /**
  * Failures of the provider connection rather than of one fixture. After the
@@ -608,12 +610,7 @@ export async function runCurrentPerformanceBatch(
     )
       fail("invalid_current_fixture_batch");
     previous = Number(item.externalFixtureId);
-    const finalizedAt = isoTime(item.finalizedAt);
-    listed.push({
-      fixtureExternalId: item.externalFixtureId,
-      kickoffAt: isoTime(item.kickoffAt),
-      ...(finalizedAt ? { finalizedAt } : {}),
-    });
+    listed.push({ fixtureExternalId: item.externalFixtureId, kickoffAt: isoTime(item.kickoffAt) });
   }
   if (batch.hasMore && batch.nextCursor !== String(previous)) fail("invalid_current_fixture_batch");
   // Only a finished current fixture whose gameweek is not final is listed; a
@@ -728,7 +725,6 @@ export async function runCurrentPerformanceBatch(
       incomplete.push({
         fixtureExternalId: fixture.fixtureExternalId,
         kickoffAt: fixture.kickoffAt,
-        ...(fixture.finalizedAt ? { finalizedAt: fixture.finalizedAt } : {}),
         stage: "database",
         ...failure(error),
       });

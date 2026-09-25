@@ -290,8 +290,11 @@ export function pointsEscalateHours(raw: string | undefined): number | null {
  * windows), so it holds whether or not the orchestrator runs: on 2026-09-25
  * GitHub started that job only every three to six hours. A gameweek still
  * open, locked, live, provisional or finalizing more than `escalateHours`
- * after its window ended (`endsAt`: last counting kickoff + 6 h) fails; one
- * inside that allowance warns.
+ * after its window ended fails; one inside that allowance warns. The window
+ * end is `endsAt` as `api.fantasy_gameweeks` returns it (the stored
+ * `app.fantasy_gameweeks.ends_at`), not a fixed offset from the last counted
+ * kickoff: production's GW1 ends 28 Sep 00:00 UTC, four hours after its last
+ * counted kickoff (27 Sep 20:00 UTC).
  */
 export async function fantasyPoints(
   fetchImpl: Fetch,
