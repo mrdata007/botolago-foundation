@@ -1,4 +1,4 @@
-import { describe, expect, it, mock } from "bun:test";
+import { afterAll, describe, expect, it, mock } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -10,13 +10,28 @@ import { join } from "node:path";
 
 let session: { access_token: string } | null = null;
 
+// `mock.module` is process-wide, so a mock exporting `supabase` alone took
+// `createSupabaseFetch` away from client.test.ts whenever that ran later
+// (audit 2026-09-25, A15). Keep every real export, replace only
+// `supabase.auth`, and put the real module back once this file is done. The
+// stand-in wraps the real client and switches itself off with the restore, so
+// a module that kept its own copy of `supabase` (v2-client does) is not left
+// holding it.
+const realClient = { ...(await import("./client")) };
+const sessionAuth = {
+  getSession: async () => ({ data: { session }, error: null }),
+};
+let standingIn = true;
 mock.module("./client", () => ({
-  supabase: {
-    auth: {
-      getSession: async () => ({ data: { session }, error: null }),
-    },
-  },
+  ...realClient,
+  supabase: new Proxy(realClient.supabase, {
+    get: (target, key) => (standingIn && key === "auth" ? sessionAuth : Reflect.get(target, key)),
+  }),
 }));
+afterAll(() => {
+  standingIn = false;
+  mock.module("./client", () => realClient);
+});
 
 const { attachSupabaseAuth } = await import("./auth-attacher");
 

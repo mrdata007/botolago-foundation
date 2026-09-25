@@ -7,15 +7,30 @@ import { join } from "node:path";
 // the Supabase client's options and the guest flag — and either one put the
 // whole app on the error screen at start-up, on every page.
 
+// `mock.module` is process-wide: the replacement stays in place for every test
+// file Bun runs after this one. Mocked with `supabase` alone, the client lost
+// `createSupabaseFetch`, and client.test.ts failed whenever it ran later
+// (audit 2026-09-25, A15). So every real export is kept, only `supabase.auth`
+// is replaced, and the real module goes back once this file is done. v2-client
+// copies `supabase` once, when it first loads, and a restore cannot reach that
+// copy: so the stand-in wraps the real client and switches itself off too.
+const realClient = { ...(await import("../integrations/supabase/client")) };
+const signedOutAuth = {
+  getSession: async () => ({ data: { session: null }, error: null }),
+  onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+  signOut: async () => ({ error: null }),
+};
+let standingIn = true;
 mock.module("../integrations/supabase/client", () => ({
-  supabase: {
-    auth: {
-      getSession: async () => ({ data: { session: null }, error: null }),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
-      signOut: async () => ({ error: null }),
-    },
-  },
+  ...realClient,
+  supabase: new Proxy(realClient.supabase, {
+    get: (target, key) => (standingIn && key === "auth" ? signedOutAuth : Reflect.get(target, key)),
+  }),
 }));
+afterAll(() => {
+  standingIn = false;
+  mock.module("../integrations/supabase/client", () => realClient);
+});
 
 const { SupabaseAuthService } = await import("./auth-supabase");
 

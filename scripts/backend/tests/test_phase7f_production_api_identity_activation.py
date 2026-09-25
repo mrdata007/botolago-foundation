@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import hashlib
 import importlib.util
 import json
 import os
@@ -1280,10 +1279,169 @@ class Phase7FActivationTests(unittest.TestCase):
         self.assertEqual(1, promotion.count(marker))
         self.assertIn("cancel-in-progress: false", activation)
         self.assertIn("cancel-in-progress: false", promotion)
-        self.assertEqual(
-            "777e134fb479abe8bbb57b22b9393dd52534af2cc2e72c425631d2dd3fcac988",
-            hashlib.sha256(promotion.encode()).hexdigest(),
+
+    def test_promotion_workflow_keeps_its_production_guards(self) -> None:
+        # This used to end on a SHA-256 of the whole promotion workflow, which
+        # failed on any edit -- a comment, a new batch choice -- and said
+        # nothing about which property had gone (audit 2026-09-25, A15). These
+        # are the properties that pin was standing in for.
+        promotion = (
+            REPO
+            / ".github/workflows/phase7e-b-production-migration-promotion.yml"
+        ).read_text()
+        triggers = promotion.split("\nconcurrency:", 1)[0]
+        job_header = promotion.split("    steps:", 1)[0]
+
+        # Started by hand only: nothing on push, pull request or schedule.
+        self.assertIn("\non:\n  workflow_dispatch:\n", triggers)
+        for trigger in ("push:", "pull_request", "schedule:", "workflow_run", "workflow_call"):
+            self.assertNotIn(trigger, triggers)
+        self.assertIn("\npermissions:\n  contents: read\n\n", promotion)
+        self.assertEqual(1, promotion.count("permissions:"))
+
+        # Only the owner, only from main of this repository, behind the
+        # protected environment.
+        self.assertIn(
+            "if: >-\n"
+            "      github.repository == 'mrdata007/botolago-foundation' &&\n"
+            "      github.ref == 'refs/heads/main' &&\n"
+            "      github.actor == 'mrdata007' &&\n"
+            "      github.event_name == 'workflow_dispatch'",
+            job_header,
         )
+        self.assertIn("environment: production-admin-activation", job_header)
+        self.assertIn("    runs-on: ubuntu-latest\n    timeout-minutes: 30\n", job_header)
+
+        # The job's whole environment, exactly: the fixed project refs, the
+        # dispatch inputs, and the two credentials the promoter needs. A new
+        # secret or variable is a change to review here, not one the job
+        # picks up quietly -- and secrets appear nowhere else in the file,
+        # not in a step's env and not as a whole `secrets` object.
+        job_env = dict(
+            line.strip().split(": ", 1)
+            for line in job_header.split("    env:\n", 1)[1].splitlines()
+            if line.strip() and not line.strip().startswith("#")
+        )
+        self.assertEqual(
+            {
+                "CONFIRMATION": "${{ inputs.confirmation }}",
+                "EXPECTED_COMMIT": "${{ inputs.expected_commit }}",
+                "MIGRATION_BATCH": "${{ inputs.migration_batch }}",
+                "EXPECTED_PROJECT_REF": "tkewgajrljbwgwedqsxn",
+                "KNOWN_STAGING_REF": "srdrflfrfpwixsllveid",
+                "KNOWN_LEGACY_REF": "kxpaudvntwxpahyjtxbk",
+                "BOTOLAGO_ADMIN_ENVIRONMENT": "${{ vars.BOTOLAGO_ADMIN_ENVIRONMENT }}",
+                "BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF": (
+                    "${{ vars.BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF }}"
+                ),
+                "BOTOLAGO_TARGET_ENVIRONMENT": "${{ vars.BOTOLAGO_TARGET_ENVIRONMENT }}",
+                "SUPABASE_ACCESS_TOKEN": "${{ secrets.SUPABASE_ACCESS_TOKEN }}",
+                "SUPABASE_PRODUCTION_PROJECT_NAME": (
+                    "${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}"
+                ),
+                "SUPABASE_PRODUCTION_PROJECT_REF": (
+                    "${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}"
+                ),
+                "SUPABASE_PRODUCTION_URL": "${{ vars.SUPABASE_PRODUCTION_URL }}",
+                "SUPABASE_URL": "${{ vars.SUPABASE_URL }}",
+                "SUPABASE_SECRET_KEY": "${{ secrets.SUPABASE_SECRET_KEY }}",
+            },
+            job_env,
+        )
+        expressions = [
+            " ".join(expression.split())
+            for expression in re.findall(r"\$\{\{(.*?)\}\}", promotion, re.S)
+        ]
+        self.assertEqual(
+            ["secrets.SUPABASE_ACCESS_TOKEN", "secrets.SUPABASE_SECRET_KEY"],
+            [expression for expression in expressions if "secrets" in expression],
+        )
+
+        steps = promotion.split("    steps:\n", 1)[1]
+        self.assertEqual(
+            [
+                "Initialize protected runtime and enforce immutable dispatch guards",
+                "Check out the reviewed main commit",
+                "Promote and verify the selected batch",
+                "Upload sanitized batch evidence",
+                "Remove protected runtime files",
+            ],
+            re.findall(r"^      - name: (.+)$", steps, re.M),
+        )
+        # Inputs reach bash only through the environment, never pasted into a
+        # script's text; the one upload names its batch and takes the
+        # evidence directory alone, not the runtime directory above it.
+        self.assertEqual(
+            [
+                "name: phase7e-b-production-${{ inputs.migration_batch }}-${{ github.run_id }}",
+                "path: ${{ steps.runtime.outputs.evidence_dir }}",
+            ],
+            [line.strip() for line in steps.splitlines() if "${{" in line],
+        )
+        self.assertNotRegex(promotion, r"set -\w*x|xtrace")
+
+        # The dispatch guards run before the repository is even checked out,
+        # masked credentials first, and every one of them stops the job.
+        runtime = steps.split("      - name: Check out the reviewed main commit", 1)[0]
+        script = runtime.split("        run: |\n", 1)[1]
+        self.assertEqual("set -euo pipefail", script.splitlines()[0].strip())
+        self.assertIn(
+            'for secret_value in "${SUPABASE_ACCESS_TOKEN:-}" "${SUPABASE_SECRET_KEY:-}"; do',
+            script,
+        )
+        guards = {
+            " ".join(condition.split()): body
+            for condition, body in re.findall(
+                r"^          if \[\[ (.*?) \]\]; then\n(.*?)^          fi$",
+                script,
+                re.M | re.S,
+            )
+        }
+        self.assertEqual(
+            {
+                '-z "${SUPABASE_ACCESS_TOKEN:-}" || -z "${SUPABASE_SECRET_KEY:-}"',
+                '"${GITHUB_RUN_ATTEMPT:-}" != "1"',
+                '"$EXPECTED_COMMIT" != "$GITHUB_SHA"',
+                '"$GITHUB_REF" != "refs/heads/main"',
+                '"$SUPABASE_PRODUCTION_PROJECT_REF" != "$EXPECTED_PROJECT_REF" || '
+                '"$BOTOLAGO_ADMIN_EXPECTED_PROJECT_REF" != "$EXPECTED_PROJECT_REF"',
+                '"$SUPABASE_PRODUCTION_PROJECT_REF" == "$KNOWN_STAGING_REF" || '
+                '"$SUPABASE_PRODUCTION_PROJECT_REF" == "$KNOWN_LEGACY_REF"',
+                '"$CONFIRMATION" != "$expected_confirmation"',
+            },
+            set(guards),
+        )
+        for condition, body in guards.items():
+            self.assertEqual("exit 2", body.strip().splitlines()[-1].strip(), condition)
+        self.assertLess(
+            script.index("::add-mask::"),
+            re.search(r"^          if \[\[", script, re.M).start(),
+        )
+        self.assertLess(script.index('if [[ "$CONFIRMATION"'), script.index("runtime_dir="))
+        self.assertIn(
+            'expected_confirmation="RUN_PHASE7E_B_PRODUCTION_${MIGRATION_BATCH^^}"',
+            script,
+        )
+
+        # Actions pinned to a commit, and no token left behind in the checkout.
+        for action in re.findall(r"uses: (\S+)", promotion):
+            self.assertRegex(action, r"^[\w./-]+@[0-9a-f]{40}$")
+        self.assertIn("persist-credentials: false", promotion)
+
+        # Exactly one promoter run, for the one batch that was confirmed.
+        self.assertEqual(
+            1,
+            promotion.count("python3 scripts/backend/phase7e-production-migration-promoter.py"),
+        )
+        self.assertIn('--batch "$MIGRATION_BATCH"', promotion)
+        self.assertIn('--confirmation "$CONFIRMATION"', promotion)
+        self.assertIn('--repo-root "$GITHUB_WORKSPACE"', promotion)
+        self.assertIn('--evidence-dir "$PHASE7E_B_EVIDENCE_DIR"', promotion)
+
+        # The protected runtime directory is removed whatever happened.
+        cleanup = promotion.split("      - name: Remove protected runtime files", 1)[1]
+        self.assertIn("if: always()", cleanup)
+        self.assertIn('rm -rf -- "$PHASE7E_B_RUNTIME_DIR"', cleanup)
 
     def test_workflow_scopes_secrets_and_uses_single_operator_guard(
         self,
