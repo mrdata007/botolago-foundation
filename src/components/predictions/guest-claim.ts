@@ -64,27 +64,23 @@ export function claimGuestPredictionsOnSignIn({
   return inFlight;
 }
 
-/** Matches whose phone votes are sent at sign-in; older ones have long kicked off. */
-const SENT_VOTE_MATCHES = 20;
 let votesInFlight: Promise<void> | null = null;
 
 /**
  * A visitor's match votes move to the account at sign-in, like their picks:
- * each is cast as the account's own vote. A vote refused for good (the match
- * has kicked off, or is not one Pronostics covers) leaves the phone too; when
- * the game is off or the network fails, the rest stay for the next sign-in.
- * Votes on the oldest matches are dropped unsent: those have kicked off.
+ * each is cast as the account's own vote. Every one is tried, however old:
+ * a visitor can vote weeks ahead, and only the database knows which matches
+ * are still open. A vote refused for good (the match has kicked off, or is
+ * not one Pronostics covers) leaves the phone too; when the game is off or
+ * the network fails, the rest stay for the next sign-in.
  */
 export function sendGuestVotesOnSignIn(queryClient: QueryClient): Promise<void> {
   if (!PRONOSTICS_ENABLED || votesInFlight) return votesInFlight ?? Promise.resolve();
-  const state = readGuestVotes();
-  const matchIds = Object.keys(state);
-  if (matchIds.length === 0) return Promise.resolve();
-  const recent = new Set(matchIds.slice(-SENT_VOTE_MATCHES));
-  const items = guestVoteItems(state);
+  const items = guestVoteItems(readGuestVotes());
+  if (items.length === 0) return Promise.resolve();
   votesInFlight = (async () => {
-    const settled: MatchVoteInput[] = items.filter((item) => !recent.has(item.fixtureId));
-    for (const item of items.filter((candidate) => recent.has(candidate.fixtureId))) {
+    const settled: MatchVoteInput[] = [];
+    for (const item of items) {
       try {
         await predictionsService.castMatchVote(item);
         settled.push(item);

@@ -13,8 +13,9 @@ import {
  * or refused for good because the match has kicked off).
  *
  * The most recently voted match is last; past `MAX_GUEST_VOTE_MATCHES` the
- * oldest falls off. A phone that refuses storage keeps nothing, and the page
- * still shows the vote for the visit.
+ * oldest falls off. A phone that refuses storage (blocked, or full) keeps the
+ * votes in memory for the visit instead: the page still shows every one, and
+ * a sign-in during the visit still sends them.
  */
 
 export const GUEST_VOTES_KEY = "botolago.predictions.guest-votes.v1";
@@ -48,7 +49,15 @@ function clean(value: unknown): GuestVotesState {
   return state;
 }
 
+/**
+ * What this visit wrote when the phone would not keep it. It stands in for
+ * storage until a write gets through again, so a second vote does not wipe
+ * the first.
+ */
+let visitOnly: GuestVotesState | null = null;
+
 export function readGuestVotes(): GuestVotesState {
+  if (visitOnly) return clean(visitOnly);
   try {
     const raw = storage()?.getItem(GUEST_VOTES_KEY);
     return raw ? clean(JSON.parse(raw)) : {};
@@ -58,14 +67,22 @@ export function readGuestVotes(): GuestVotesState {
 }
 
 function write(state: GuestVotesState): void {
+  // The server renders for everyone: it has no visit to keep votes for.
+  if (typeof window === "undefined") return;
   try {
     const store = storage();
-    if (!store) return;
+    if (!store) throw new Error("storage unavailable");
     if (Object.keys(state).length === 0) store.removeItem(GUEST_VOTES_KEY);
     else store.setItem(GUEST_VOTES_KEY, JSON.stringify(state));
+    visitOnly = null;
   } catch {
-    /* kept for this visit only */
+    visitOnly = clean(state);
   }
+}
+
+/** Tests only: forgets what an earlier test kept for its visit. */
+export function __forgetVisitVotesForTests(): void {
+  visitOnly = null;
 }
 
 /** Records (or changes) one vote; the match moves to the end. Returns the new state. */

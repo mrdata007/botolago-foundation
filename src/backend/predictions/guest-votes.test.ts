@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 
 import {
+  __forgetVisitVotesForTests,
   forgetGuestVotes,
   GUEST_VOTES_KEY,
   guestVoteItems,
@@ -28,7 +29,17 @@ const host = globalThis as { window?: unknown };
 const hadWindow = "window" in host;
 const originalWindow = host.window;
 
+/** A full phone: reads work, writes are refused. */
+class FullStorage extends MemoryStorage {
+  full = true;
+  override setItem(key: string, value: string) {
+    if (this.full) throw new Error("QuotaExceededError");
+    super.setItem(key, value);
+  }
+}
+
 beforeEach(() => {
+  __forgetVisitVotesForTests();
   host.window = { localStorage: new MemoryStorage() };
 });
 
@@ -84,7 +95,41 @@ describe("a visitor's match votes on the phone", () => {
     expect(readGuestVotes()).toEqual({});
   });
 
-  test("works without storage: nothing kept, nothing thrown", () => {
+  test("a phone that blocks storage keeps every vote for the visit", () => {
+    host.window = {
+      get localStorage(): Storage {
+        throw new Error("SecurityError");
+      },
+    };
+    writeGuestVote(fixture(1), "winner", "home");
+    expect(writeGuestVote(fixture(1), "both_score", "yes")).toEqual({
+      [fixture(1)]: { winner: "home", both_score: "yes" },
+    });
+    expect(readGuestVotes()).toEqual({ [fixture(1)]: { winner: "home", both_score: "yes" } });
+    // A sign-in during the visit sends them, then forgets what was sent.
+    forgetGuestVotes([{ fixtureId: fixture(1), question: "winner", choice: "home" }]);
+    expect(readGuestVotes()).toEqual({ [fixture(1)]: { both_score: "yes" } });
+  });
+
+  test("a full phone keeps the visit's votes, and stores them all once it has room", () => {
+    const phone = new FullStorage();
+    host.window = { localStorage: phone };
+    writeGuestVote(fixture(1), "winner", "away");
+    writeGuestVote(fixture(2), "first_goal", "none");
+    expect(Object.keys(readGuestVotes())).toEqual([fixture(1), fixture(2)]);
+    expect(phone.getItem(GUEST_VOTES_KEY)).toBeNull();
+
+    phone.full = false;
+    writeGuestVote(fixture(1), "both_score", "no");
+    const stored = {
+      [fixture(2)]: { first_goal: "none" },
+      [fixture(1)]: { winner: "away", both_score: "no" },
+    };
+    expect(JSON.parse(phone.getItem(GUEST_VOTES_KEY) ?? "null")).toEqual(stored);
+    expect(readGuestVotes()).toEqual(stored);
+  });
+
+  test("the server keeps nothing and throws nothing", () => {
     host.window = undefined;
     expect(writeGuestVote(fixture(1), "winner", "home")).toEqual({
       [fixture(1)]: { winner: "home" },
