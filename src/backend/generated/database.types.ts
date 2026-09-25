@@ -1398,6 +1398,10 @@ export type Database = {
         }
         Returns: Json
       }
+      service_apply_current_player_list: {
+        Args: { p_expected_plan_digest: string; p_observation_id: string }
+        Returns: Json
+      }
       service_apply_fantasy_price_changes: {
         Args: {
           p_after_player_id?: string
@@ -1612,6 +1616,10 @@ export type Database = {
         }
         Returns: Json
       }
+      service_plan_current_player_list: {
+        Args: { p_observation_id: string }
+        Returns: Json
+      }
       service_prepare_next_fantasy_gameweek: {
         Args: {
           p_batch_size?: number
@@ -1629,6 +1637,10 @@ export type Database = {
           p_season_id: string
         }
         Returns: number
+      }
+      service_record_current_player_list: {
+        Args: { p_observations: Json }
+        Returns: Json
       }
       service_record_notification_delivery_attempt: {
         Args: {
