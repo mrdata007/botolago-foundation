@@ -7,9 +7,11 @@ import {
   SupabaseAccountSecurityRepository,
   SupabaseProfileRepository,
 } from "@/backend/identity/supabase-repositories";
-import type { ProfileDto } from "@/backend/identity/contracts";
+import type { ProfileDto, ProfileRepository } from "@/backend/identity/contracts";
 import { IdentityError, mapIdentityError } from "@/backend/identity/errors";
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { readSessionAssurance } from "@/backend/auth/mfa";
+import { sessionForAssurance } from "@/auth/second-factor";
 import type {
   AuthErrorCode,
   AuthResult,
@@ -23,13 +25,25 @@ import type {
 } from "./auth-types";
 import { defaultNotifications } from "./auth-types";
 import { deleteAvatar, signedAvatarUrl, uploadAvatarFromDataUrl } from "./profiles-repo";
-import type { AuthError, Session, User } from "@supabase/supabase-js";
+import type { AuthError, Session, SupabaseClient, User } from "@supabase/supabase-js";
 import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 
 const K_GUEST = "botolago.auth.guest";
 const K_LEGACY_PREFIX = "botolago.auth.";
-const profiles = new SupabaseProfileRepository();
+const defaultProfiles = new SupabaseProfileRepository();
 const accountSecurity = new SupabaseAccountSecurityRepository();
+
+type SupabaseAuthClient = SupabaseClient["auth"];
+
+/**
+ * What the service talks to, replaceable in tests. Both default to the app's
+ * own. `auth` is a thunk because the shared client is built on first touch and
+ * throws there when the environment has no Supabase configuration.
+ */
+export interface SupabaseAuthDependencies {
+  readonly auth?: () => SupabaseAuthClient;
+  readonly profiles?: Pick<ProfileRepository, "getMe" | "completeOnboarding">;
+}
 
 function hasWindow() {
   return typeof window !== "undefined";
@@ -114,6 +128,7 @@ function mapIdentityCode(error: unknown): AuthErrorCode {
     case "invalid_reset_token":
     case "rate_limited":
     case "network":
+    case "mfa_required":
       return code;
     case "email_unverified":
       return "email_unconfirmed";
@@ -158,8 +173,29 @@ export class SupabaseAuthService implements AuthService {
   private listeners = new Set<(session: AuthSession) => void>();
   private cachedSession: AuthSession = { user: null, status: "loading" };
   private initialized = false;
+  /**
+   * Moves on every published session and every resolution that starts. A
+   * resolution (profile read plus assurance lookup, both awaited) publishes
+   * only if nothing moved it in the meantime. Without this a slow resolution
+   * of account A -- its profile read retries for up to a second -- could land
+   * after A signed out, or after B signed in, and put A back on screen. The
+   * order resolutions start in is the order auth-js observed the sessions:
+   * it answers session reads and emits its events behind one lock.
+   */
+  private revision = 0;
+
+  constructor(private readonly deps: SupabaseAuthDependencies = {}) {}
+
+  private get auth(): SupabaseAuthClient {
+    return this.deps.auth ? this.deps.auth() : supabase.auth;
+  }
+
+  private get profiles(): Pick<ProfileRepository, "getMe" | "completeOnboarding"> {
+    return this.deps.profiles ?? defaultProfiles;
+  }
 
   private emit(session: AuthSession) {
+    this.revision++;
     this.cachedSession = session;
     for (const listener of this.listeners) listener(session);
   }
@@ -167,8 +203,8 @@ export class SupabaseAuthService implements AuthService {
   private init() {
     if (this.initialized || !hasWindow()) return;
     this.initialized = true;
-    void supabase.auth.getSession().then(({ data }) => this.applySession(data.session));
-    supabase.auth.onAuthStateChange((_event, session) => {
+    void this.auth.getSession().then(({ data }) => this.applySession(data.session));
+    this.auth.onAuthStateChange((_event, session) => {
       void this.applySession(session);
     });
   }
@@ -178,7 +214,7 @@ export class SupabaseAuthService implements AuthService {
     // handles the first OAuth callback racing the Data API replica.
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
-        const profile = await profiles.getMe(context(userId));
+        const profile = await this.profiles.getMe(context(userId));
         if (profile) return profile;
       } catch (error) {
         if (attempt === 3 || mapIdentityError(error).code !== "not_found") return null;
@@ -188,15 +224,43 @@ export class SupabaseAuthService implements AuthService {
     return null;
   }
 
-  private async applySession(session: Session | null) {
+  /**
+   * Who a Supabase user is and how far this session has got with its second
+   * factor. The two lookups run side by side, so an ordinary sign-in waits no
+   * longer than it did for the profile alone. Every path that publishes a
+   * signed-in session comes through here: the password form, the e-mail code,
+   * the callback's refresh, a token refresh, a restored session. The callback
+   * used to publish "authenticated" straight from its refresh.
+   */
+  private async resolveSignedIn(
+    user: User,
+    knownProfile?: ProfileDto | null,
+  ): Promise<{ authUser: AuthUser; session: AuthSession }> {
+    const [profile, assurance] = await Promise.all([
+      knownProfile !== undefined ? knownProfile : this.loadProfile(user.id),
+      readSessionAssurance(this.auth.mfa),
+    ]);
+    const authUser = await buildAuthUser(user, profile);
+    return { authUser, session: sessionForAssurance(authUser, assurance) };
+  }
+
+  /** Resolve, publish unless superseded, and return what this session resolved to. */
+  private async publishSignedIn(user: User, knownProfile?: ProfileDto | null) {
+    const revision = ++this.revision;
+    const resolved = await this.resolveSignedIn(user, knownProfile);
+    if (revision === this.revision) this.emit(resolved.session);
+    return resolved;
+  }
+
+  private async applySession(session: Session | null): Promise<AuthSession> {
     if (!session?.user) {
       const guest = readGuestFlag();
-      this.emit({ user: null, status: guest ? "guest" : "anonymous" });
-      return;
+      const signedOut: AuthSession = { user: null, status: guest ? "guest" : "anonymous" };
+      this.emit(signedOut);
+      return signedOut;
     }
     writeGuestFlag(false);
-    const profile = await this.loadProfile(session.user.id);
-    this.emit({ user: await buildAuthUser(session.user, profile), status: "authenticated" });
+    return (await this.publishSignedIn(session.user)).session;
   }
 
   getSession(): AuthSession {
@@ -215,18 +279,17 @@ export class SupabaseAuthService implements AuthService {
   }
 
   async signInWithEmail(email: string, password: string): Promise<AuthResult<AuthUser>> {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await this.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
     if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
-    const authUser = await buildAuthUser(data.user, await this.loadProfile(data.user.id));
-    this.emit({ user: authUser, status: "authenticated" });
-    return { ok: true, data: authUser };
+    const { authUser, session } = await this.publishSignedIn(data.user);
+    return { ok: true, data: authUser, status: session.status };
   }
 
   async registerWithEmail(input: RegisterInput): Promise<AuthResult<{ email: string }>> {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await this.auth.signUp({
       email: input.email.trim(),
       password: input.password,
       options: {
@@ -246,7 +309,7 @@ export class SupabaseAuthService implements AuthService {
     const redirectTo = hasWindow()
       ? `${getRedirectBase()}/auth/callback?next=/auth/update-password`
       : undefined;
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    const { error } = await this.auth.resetPasswordForEmail(email.trim(), { redirectTo });
     // Prevent account enumeration while still surfacing transport failures.
     if (error && mapAuthError(error) === "network") return { ok: false, errorCode: "network" };
     if (error && mapAuthError(error) === "rate_limited")
@@ -255,20 +318,32 @@ export class SupabaseAuthService implements AuthService {
   }
 
   async reauthenticate(): Promise<AuthResult> {
-    const { error } = await supabase.auth.reauthenticate();
+    const { error } = await this.auth.reauthenticate();
     return error ? { ok: false, errorCode: mapAuthError(error) } : { ok: true };
   }
 
   async refreshSession(): Promise<AuthResult<AuthUser>> {
-    const { data, error } = await supabase.auth.refreshSession();
+    const { data, error } = await this.auth.refreshSession();
     if (error || !data.user) return { ok: false, errorCode: "session_expired" };
-    const user = await buildAuthUser(data.user, await this.loadProfile(data.user.id));
-    this.emit({ user, status: "authenticated" });
-    return { ok: true, data: user };
+    const { authUser, session } = await this.publishSignedIn(data.user);
+    return { ok: true, data: authUser, status: session.status };
+  }
+
+  async recheckSession(options?: { refresh?: boolean }): Promise<AuthSession> {
+    if (!hasWindow()) return this.cachedSession;
+    this.init();
+    if (options?.refresh) {
+      // A new token brings the account's current factor list (one enrolled on
+      // another device included). If the refresh fails, the session in hand
+      // is still the one to judge.
+      await this.auth.refreshSession().catch(() => undefined);
+    }
+    const { data } = await this.auth.getSession();
+    return this.applySession(data.session);
   }
 
   async updatePassword(input: UpdatePasswordInput): Promise<AuthResult> {
-    const { error } = await supabase.auth.updateUser({
+    const { error } = await this.auth.updateUser({
       password: input.password,
       nonce: input.nonce,
       current_password: input.currentPassword,
@@ -277,19 +352,18 @@ export class SupabaseAuthService implements AuthService {
   }
 
   async verifyCode(email: string, code: string): Promise<AuthResult<AuthUser>> {
-    const { data, error } = await supabase.auth.verifyOtp({
+    const { data, error } = await this.auth.verifyOtp({
       email: email.trim(),
       token: code.trim(),
       type: "email",
     });
     if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
-    const user = await buildAuthUser(data.user, await this.loadProfile(data.user.id));
-    this.emit({ user, status: "authenticated" });
-    return { ok: true, data: user };
+    const { authUser, session } = await this.publishSignedIn(data.user);
+    return { ok: true, data: authUser, status: session.status };
   }
 
   async resendCode(email: string, next?: string): Promise<AuthResult> {
-    const { error } = await supabase.auth.resend({
+    const { error } = await this.auth.resend({
       type: "signup",
       email: email.trim(),
       options: { emailRedirectTo: hasWindow() ? getCallbackUrl(next) : undefined },
@@ -302,7 +376,7 @@ export class SupabaseAuthService implements AuthService {
     next?: string,
   ): Promise<AuthResult<AuthUser>> {
     if (!hasWindow()) return { ok: false, errorCode: "generic" };
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await this.auth.signInWithOAuth({
       provider,
       options: { redirectTo: getCallbackUrl(next) },
     });
@@ -341,7 +415,7 @@ export class SupabaseAuthService implements AuthService {
     }
 
     try {
-      const profile = await profiles.completeOnboarding(
+      const profile = await this.profiles.completeOnboarding(
         {
           displayName: input.displayName?.trim() || current.displayName,
           username,
@@ -353,11 +427,10 @@ export class SupabaseAuthService implements AuthService {
         context(current.id),
       );
       if (oldAvatarPath && oldAvatarPath !== nextAvatarPath) await deleteAvatar(oldAvatarPath);
-      const { data } = await supabase.auth.getUser();
+      const { data } = await this.auth.getUser();
       if (!data.user) return { ok: false, errorCode: "session_expired" };
-      const user = await buildAuthUser(data.user, profile);
-      this.emit({ user, status: "authenticated" });
-      return { ok: true, data: user };
+      const { authUser, session } = await this.publishSignedIn(data.user, profile);
+      return { ok: true, data: authUser, status: session.status };
     } catch (error) {
       // A newly-created path is safe to remove. If an existing deterministic
       // path was overwritten, retain it because the profile still references it.
@@ -405,7 +478,7 @@ export class SupabaseAuthService implements AuthService {
     if (actorId) {
       await accountSecurity.recordSessionRevocation(scope, context(actorId)).catch(() => undefined);
     }
-    await supabase.auth.signOut({ scope }).catch(() => undefined);
+    await this.auth.signOut({ scope }).catch(() => undefined);
     if (hasWindow()) {
       writeGuestFlag(false);
       try {

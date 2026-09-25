@@ -55,6 +55,10 @@ export function leagueErrorMessage(code: PredictionsErrorCode, t: Translate): st
       return t("predictions.error.league_access");
     case "network":
       return t("predictions.save.offline");
+    // Not a league refusal: the code is owed first, and the app is taking the
+    // reader to it. The same sentence as the auth layer's toast.
+    case "mfa_required":
+      return t("auth.step_up.toast");
     default:
       return t("predictions.state.unavailable");
   }

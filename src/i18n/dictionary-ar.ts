@@ -1121,7 +1121,15 @@ export const ar = {
   "auth.mfa_challenge.error_expired": "انتهت صلاحية الرمز. حاول مجدداً.",
   "auth.mfa_challenge.error_generic": "حدث خطأ. حاول مجدداً.",
   "auth.mfa_challenge.error_no_factor": "لا يوجد تطبيق مصادقة مرتبط بهذا الحساب.",
-  "auth.mfa_challenge.continue_without": "المتابعة بدون تحقق",
+  "auth.mfa_challenge.recheck": "إعادة التحقق",
+  "auth.mfa_challenge.error_still_owed":
+    "لا يزال هذا الحساب يطلب رمز تحقق، لكن لا يوجد تطبيق مصادقة مرتبط به. سجّل الخروج، ثم تواصل مع فريق الدعم.",
+
+  "auth.assurance.error_title": "لم يتم تأكيد تسجيل الدخول",
+  "auth.assurance.error_body":
+    "تعذّر علينا التحقق مما إذا كان حسابك يتطلب رمز تحقق. أعد المحاولة أو سجّل الخروج.",
+  "auth.assurance.still_unconfirmed": "ما زال التحقق متعذّرًا. انتظر قليلًا، ثم أعد المحاولة.",
+  "auth.step_up.toast": "للمتابعة، أكّد تسجيل دخولك بالرمز الذي يعرضه تطبيق المصادقة.",
 
   "auth.forgot.title": "استعادة كلمة المرور",
   "auth.forgot.subtitle": "أدخل بريدك. إن كان لديك حساب، ستصلك رسالة لإعادة التعيين.",

@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import { clubStyle } from "@/lib/club-palette";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
+import { showStepUpNotice } from "@/auth/step-up-notice";
+import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { authService } from "@/services/auth";
 import { footballService } from "@/services/football";
 import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
@@ -123,6 +125,12 @@ function ProfileSetupPage() {
     });
     if (!res.ok) {
       setSubmitting(false);
+      // Refused until the one-time code is in: say that, once (the auth layer
+      // is saying it too, under the same toast), not "an error occurred".
+      if (res.errorCode === "mfa_required") {
+        showStepUpNotice(t);
+        return;
+      }
       const key =
         res.errorCode === "username_taken"
           ? "auth.error.username_taken"
@@ -135,12 +143,13 @@ function ProfileSetupPage() {
     if (emailChoice !== null && savedEmail !== undefined && emailChoice !== savedEmail) {
       try {
         await setEmailEnabled(emailChoice);
-      } catch {
+      } catch (error) {
         // The profile is saved; only the e-mail choice is not. Stay on the
         // step so "Terminer" can be pressed again.
         setSubmitting(false);
         refresh();
-        toast.error(t("auth.error.generic"));
+        if (isMfaStepUpError(error)) showStepUpNotice(t);
+        else toast.error(t("auth.error.generic"));
         return;
       }
     }

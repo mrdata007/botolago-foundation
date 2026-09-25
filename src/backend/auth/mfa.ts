@@ -180,7 +180,9 @@ export async function listVerifiedTotpFactors(
 }
 
 /** `supabase.auth.mfa.getAuthenticatorAssuranceLevel()`. */
-export async function getAssuranceLevels(mfa: MfaAuthClient): Promise<AssuranceLevels> {
+export async function getAssuranceLevels(
+  mfa: Pick<MfaAuthClient, "getAuthenticatorAssuranceLevel">,
+): Promise<AssuranceLevels> {
   const { data, error } = await mfa.getAuthenticatorAssuranceLevel();
   if (error || !data) throw mapMfaError(error);
   return {
@@ -201,4 +203,34 @@ export function isAal2(levels: AssuranceLevels): boolean {
  */
 export function requiresLoginChallenge(levels: AssuranceLevels): boolean {
   return levels.currentLevel === "aal1" && levels.nextLevel === "aal2";
+}
+
+/**
+ * How far the current session has got with its second factor:
+ *
+ * - `complete`: nothing is owed -- the session is at AAL2, or the account has
+ *   no verified factor to ask for.
+ * - `second_factor_pending`: the account has a verified factor (`nextLevel`
+ *   aal2) and this session has not presented it. A session whose own level is
+ *   unreadable counts as not having presented it.
+ * - `unknown`: the lookup itself failed, so nobody can say. Callers treat this
+ *   as "not signed in yet" and offer a retry. Until 2026-09-25 the login page
+ *   treated a failed lookup as success and let a password-only session of an
+ *   enrolled account straight into the app.
+ */
+export type SessionAssurance = "complete" | "second_factor_pending" | "unknown";
+
+export async function readSessionAssurance(
+  mfa: Pick<MfaAuthClient, "getAuthenticatorAssuranceLevel">,
+): Promise<SessionAssurance> {
+  let levels: AssuranceLevels;
+  try {
+    levels = await getAssuranceLevels(mfa);
+  } catch {
+    return "unknown";
+  }
+  if (levels.nextLevel === "aal2" && levels.currentLevel !== "aal2") {
+    return "second_factor_pending";
+  }
+  return "complete";
 }

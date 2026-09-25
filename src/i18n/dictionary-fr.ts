@@ -1191,7 +1191,22 @@ export const fr = {
   "auth.mfa_challenge.error_generic": "Une erreur est survenue. Réessayez.",
   "auth.mfa_challenge.error_no_factor":
     "Aucune application d'authentification n'est associée à ce compte.",
-  "auth.mfa_challenge.continue_without": "Continuer sans vérification",
+  // With no factor to ask for, the challenge's way on asks the server again;
+  // it never walks past the code. Was "Continuer sans vérification".
+  "auth.mfa_challenge.recheck": "Vérifier à nouveau",
+  "auth.mfa_challenge.error_still_owed":
+    "Ce compte demande toujours un code, mais aucune application d'authentification n'y est associée. Déconnectez-vous, puis contactez l'assistance.",
+
+  // The assurance lookup failed: whether this account owes its one-time code
+  // is unknown, so the sign-in is not treated as done (login, callback,
+  // challenge). And the toast when the server refuses a write for want of it.
+  "auth.assurance.error_title": "Connexion non confirmée",
+  "auth.assurance.error_body":
+    "Nous n'avons pas pu vérifier si votre compte demande un code de vérification. Réessayez ou déconnectez-vous.",
+  "auth.assurance.still_unconfirmed":
+    "Toujours impossible de vérifier. Patientez un instant, puis réessayez.",
+  "auth.step_up.toast":
+    "Pour continuer, confirmez votre connexion avec le code de votre application d'authentification.",
 
   "auth.forgot.title": "Mot de passe oublié",
   "auth.forgot.subtitle":

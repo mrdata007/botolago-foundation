@@ -1,9 +1,33 @@
+import { queryOptions } from "@tanstack/react-query";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type { FollowRepository } from "@/backend/identity/contracts";
 import { SupabaseFollowRepository } from "@/backend/identity/supabase-repositories";
-import { authService } from "@/services/auth";
+import { authService, IS_MOCK_AUTH } from "@/services/auth";
 import { footballService } from "@/services/football";
 import type { Club, Language } from "@/types/domain";
+
+/** Every account's followed-club ids, for invalidation after a follow or unfollow. */
+export const FOLLOWED_TEAM_IDS_QUERY_KEY = ["identity", "followed-team-ids"] as const;
+
+/** One account's followed-club ids. The account id is part of the key. */
+export function followedTeamIdsQueryKey(userId: string | null) {
+  return [...FOLLOWED_TEAM_IDS_QUERY_KEY, userId] as const;
+}
+
+/**
+ * The followed-club ids of the signed-in account `userId`, shared by the club
+ * page's follow button, News and Profile. Asked only for a real account: with
+ * nobody signed in (or a second factor still owed, where the session's user is
+ * null) there is no entry at all rather than an empty list under a shared key.
+ * Mock auth has no follow store behind it, so it is never asked there.
+ */
+export function followedTeamIdsQuery(userId: string | null) {
+  return queryOptions({
+    queryKey: followedTeamIdsQueryKey(userId),
+    queryFn: () => followService.getFollowedTeamIds(),
+    enabled: !IS_MOCK_AUTH && userId !== null,
+  });
+}
 
 function context(): RepositoryContext {
   return {

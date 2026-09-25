@@ -1,4 +1,5 @@
 import type { PostgrestError } from "@supabase/supabase-js";
+import { reportMfaStepUp } from "@/backend/auth/step-up";
 
 export const NEWS_ERROR_CODES = [
   "article_not_found",
@@ -74,6 +75,9 @@ export function mapNewsError(error: PostgrestError | Error): NewsError {
   // message, so every CMS error -- "forbidden", the save conflict, all of
   // them -- was shown as data_unavailable.
   if (error instanceof NewsError) return error;
+  // Saving an article is a write to the reader's own list: refused while the
+  // second factor is owed, and reported so the auth layer can ask for it.
+  reportMfaStepUp(error);
   const raw = `${error.message} ${"details" in error ? (error.details ?? "") : ""}`.toLowerCase();
   const mapping = mappings.find(([needle]) => raw.includes(needle));
   if (mapping)

@@ -57,10 +57,10 @@ import { findClub } from "@/components/fantasy/club-identity";
 import { DARK_MODE_ENABLED, NEWS_ENABLED } from "@/lib/feature-flags";
 import { useSavedArticles } from "@/lib/saved-articles";
 import { cn } from "@/lib/utils";
-import { authService, IS_MOCK_AUTH } from "@/services/auth";
+import { authService } from "@/services/auth";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
-import { followService } from "@/services/follows";
+import { followedTeamIdsQuery } from "@/services/follows";
 import { footballService } from "@/services/football";
 import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import type { Club, FantasySummary } from "@/types/domain";
@@ -293,7 +293,6 @@ function AuthenticatedProfile({
   onSignOut: () => void;
 }) {
   const { t, tr, lang } = useI18n();
-  const { status } = useAuth();
 
   // The Fantasy strip on the identity card reads the queries Home already
   // runs, under the same keys, so it shares Home's cache and its gating: no
@@ -307,15 +306,12 @@ function AuthenticatedProfile({
     enabled: fantasyReady && source !== "guest",
   });
 
-  // "Mes clubs" — the clubs this reader follows. Same query key as News,
-  // which invalidates it after a follow or an unfollow. Mock mode has no
+  // "Mes clubs" — the clubs this reader follows. Same query as News, which
+  // invalidates it after a follow or an unfollow, keyed by this account so the
+  // next one signed in on the phone never sees these clubs. Mock mode has no
   // Supabase behind it (the follow repository would throw), so it is not
   // asked there and the section simply does not appear.
-  const followedQ = useQuery({
-    queryKey: ["identity", "followed-team-ids", status],
-    queryFn: () => followService.getFollowedTeamIds(),
-    enabled: !IS_MOCK_AUTH,
-  });
+  const followedQ = useQuery(followedTeamIdsQuery(user.id));
   const tiles = useMemo(() => {
     const byId = new Map((clubs ?? []).map((club) => [club.id, club] as const));
     const followed = (followedQ.data ?? []).flatMap((id) => byId.get(id) ?? []);

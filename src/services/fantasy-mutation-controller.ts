@@ -117,12 +117,20 @@ export function classifyRepoError(err: FantasyRepoError): {
   isNetwork: boolean;
   isMapping: boolean;
   isValidation: boolean;
+  /** Refused until the second factor is in (`PT403 mfa_required`). */
+  isStepUp: boolean;
 } {
+  const isStepUp = err.code === "mfa_required";
   return {
     isConflict: err.code === "version_conflict",
-    isPermission: err.code === "permission_denied" || err.code === "unauthenticated",
+    // A step-up refusal is a permission refusal too, so the screens that only
+    // know `isPermission` say "Accès refusé. Reconnectez-vous puis
+    // réessayez." -- true, and what the challenge then asks for -- rather than
+    // their catch-all ("Les transferts n'ont pas pu être confirmés.").
+    isPermission: err.code === "permission_denied" || err.code === "unauthenticated" || isStepUp,
     isNetwork: err.code === "network",
     isMapping: err.code === "mapping_incomplete",
     isValidation: err.code === "validation",
+    isStepUp,
   };
 }
