@@ -233,7 +233,7 @@ describe("normalizeMatchDetails", () => {
 
   test("lists the events in match order, each on its side", () => {
     expect(
-      details.events.map((e) => [
+      details.events?.map((e) => [
         e.sequence,
         e.key,
         e.type,
@@ -255,7 +255,7 @@ describe("normalizeMatchDetails", () => {
   });
 
   test("names the players, the assist and the player replaced", () => {
-    const byKey = new Map(details.events.map((e) => [e.key, e]));
+    const byKey = new Map((details.events ?? []).map((e) => [e.key, e]));
     expect(byKey.get("5")).toMatchObject({
       playerExternalId: "501",
       relatedPlayerExternalId: "502",
@@ -384,11 +384,25 @@ describe("normalizeMatchDetails", () => {
 
   test("leaves the own goal on the provider's side when the score cannot say", () => {
     const own = event(3, "OWNGOAL", 15, { participant_id: HOME, minute: 30 });
-    const [only] = normalizeMatchDetails(fixture({ events: [own] }), EXPECTED, OBSERVED).events;
-    expect(only.teamExternalId).toBe("1001");
+    const [only] =
+      normalizeMatchDetails(fixture({ events: [own] }), EXPECTED, OBSERVED).events ?? [];
+    expect(only?.teamExternalId).toBe("1001");
   });
 
-  test("sends a section the reply lacks as empty, which the database keeps as stored", () => {
+  test("keeps the stored events unless the reply carries a readable list", () => {
+    const events = (value: unknown) =>
+      normalizeMatchDetails(fixture({ events: value }), EXPECTED, OBSERVED).events;
+    expect(events(undefined)).toBeNull();
+    expect(events(null)).toBeNull();
+    // Rows that cannot be read cannot clear anything.
+    expect(events([event(9, "HEADER", 999, { minute: 3 })])).toBeNull();
+    // An empty list is the provider's word: the only goal was ruled out.
+    expect(events([])).toEqual([]);
+    // As is a list whose one card was rescinded.
+    expect(events([event(8, "YELLOWCARD", 19, { minute: 30, rescinded: true })])).toEqual([]);
+  });
+
+  test("sends a section the reply lacks as null or empty, which the database keeps as stored", () => {
     const bare = normalizeMatchDetails(
       fixture({
         events: undefined,
@@ -402,7 +416,7 @@ describe("normalizeMatchDetails", () => {
       EXPECTED,
       OBSERVED,
     );
-    expect(bare.events).toEqual([]);
+    expect(bare.events).toBeNull();
     expect(bare.statistics).toEqual([]);
     expect(bare.lineups).toEqual([]);
     expect(bare.pressure).toEqual([]);

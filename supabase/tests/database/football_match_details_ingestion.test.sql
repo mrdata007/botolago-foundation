@@ -29,10 +29,12 @@ select extensions.ok(
   'visitors read the pressure curve and the absent players, as they read the other tabs');
 select extensions.ok(
   (select bool_and(relrowsecurity and relforcerowsecurity) from pg_class
-   where oid in ('app.fixture_pressure'::regclass, 'app.fixture_absences'::regclass))
+   where oid in ('app.fixture_pressure'::regclass, 'app.fixture_absences'::regclass,
+     'app_private.football_match_details_syncs'::regclass))
   and not has_table_privilege('anon', 'app.fixture_pressure', 'select')
-  and not has_table_privilege('service_role', 'app.fixture_absences', 'insert'),
-  'the two new tables are reached only through their functions');
+  and not has_table_privilege('service_role', 'app.fixture_absences', 'insert')
+  and not has_table_privilege('service_role', 'app_private.football_match_details_syncs', 'select'),
+  'the three new tables are reached only through their functions');
 select extensions.ok(
   (select prosecdef and proconfig = array['search_path=""'] from pg_proc
    where oid = 'api.ingest_football_match_details(text, text, jsonb)'::regprocedure),
@@ -295,7 +297,7 @@ select extensions.ok(
        from app.fixture_absences where provider_key = 'sportsmonks:sidelined:81'),
   'a player no longer listed is no longer absent; the one still out keeps his row, with the new return date');
 -- ---------------------------------------------------------------------------
--- An older reply, and an empty one.
+-- An older reply, and a thin one.
 -- ---------------------------------------------------------------------------
 select extensions.is(pg_temp.store(jsonb_build_object(
   'providerUpdatedAt', now() - interval '15 minutes',
@@ -310,8 +312,8 @@ select extensions.is(pg_temp.store(jsonb_build_object(
 select extensions.is(pg_temp.store(jsonb_build_object(
   'providerUpdatedAt', now() - interval '5 minutes',
   'sourceSequence', 3000,
-  'events', '[]'::jsonb, 'statistics', '[]'::jsonb, 'lineups', '[]'::jsonb
-)) ->> 'events', '0', 'an empty reply is accepted');
+  'statistics', '[]'::jsonb, 'lineups', '[]'::jsonb
+)) ->> 'events', '0', 'a reply with no events and empty sections is accepted');
 select extensions.ok(
   (select count(*) = 4 from app.match_events where fixture_id = 'f7500000-0000-4000-8000-000000000001')
   and (select count(*) = 2 from app.fixture_team_statistics
@@ -379,6 +381,14 @@ select extensions.is(
   (select count(*)::int from app.match_events where fixture_id = 'f7500000-0000-4000-8000-000000000001'), 4,
   'and none of them changed anything');
 
+select extensions.is(pg_temp.store(jsonb_build_object(
+  'providerUpdatedAt', now() - interval '3 minutes',
+  'sourceSequence', 3200,
+  'events', '[]'::jsonb
+)) ->> 'eventsRemoved', '4',
+  'an empty events list is the provider''s word: what it no longer reports goes, down to the last goal');
+select extensions.is(jsonb_array_length(pg_temp.timeline()), 0, 'and the Résumé is empty');
+
 -- ---------------------------------------------------------------------------
 -- Which fixtures are due.
 -- ---------------------------------------------------------------------------
@@ -430,6 +440,43 @@ select extensions.is(pg_temp.due('live'), array['9907001', '9907002', '9907004']
   'live: the match just over, the one in play and the one about to start, in kick-off order');
 select extensions.is(pg_temp.due('backfill'), array['9907003'],
   'backfill: only the finished match with nothing stored');
+
+-- An older finished match, which the provider keeps refusing.
+insert into app.fixtures (id, competition_id, season_id, home_team_id, away_team_id, kickoff_at,
+  status, period, home_score, away_score, provider_updated_at, source_sequence, finalized_at)
+values ('f7500000-0000-4000-8000-000000000006', 'f7100000-0000-4000-8000-000000000001',
+  'f7200000-0000-4000-8000-000000000001', 'f7400000-0000-4000-8000-000000000003',
+  'f7400000-0000-4000-8000-000000000001', statement_timestamp() - interval '8 days 37 seconds',
+  'finished', 'post_match', 0, 0, statement_timestamp() - interval '8 days', 1,
+  statement_timestamp() - interval '8 days');
+insert into app_private.football_provider_mappings
+  (provider_name, entity_type, external_id, internal_entity_id, last_seen_at)
+values ('sportsmonks', 'fixture', '9907006', 'f7500000-0000-4000-8000-000000000006', now());
+select extensions.is(pg_temp.due('backfill'), array['9907003', '9907006'], 'backfill: the most recent first');
+
+select extensions.is(api.ingest_football_match_details('sportsmonks', '9907003',
+  jsonb_build_object('providerUpdatedAt', now(), 'sourceSequence', 1)) ->> 'outcome', 'stored',
+  'a reply with nothing in it is stored');
+select extensions.is(pg_temp.due('backfill'), array['9907006'],
+  'and that match is done: the backfill does not ask for it again');
+
+create function pg_temp.refused(p_scope text) returns void language sql as $$
+  with run as (
+    insert into app_private.football_ingestion_runs (provider_name, job_type, target_scope)
+    values ('sportsmonks', 'match_events', jsonb_build_object('kind', 'match_details', 'scope', p_scope))
+    returning id
+  )
+  insert into app_private.football_ingestion_rejections
+    (run_id, entity_type, external_id, payload_fingerprint, error_code)
+  select id, 'fixture', '9907006', repeat('a', 64), 'provider_unavailable' from run
+$$;
+select pg_temp.refused('backfill');
+select pg_temp.refused('live');
+select extensions.is(pg_temp.due('backfill'), array['9907006'],
+  'refused once by the backfill (and once live), a match is tried again');
+select pg_temp.refused('backfill');
+select extensions.is(pg_temp.due('backfill'), '{}'::text[],
+  'refused twice by the backfill, it is left out, so the matches behind it get their turn');
 
 update app.fixtures set finalized_at = statement_timestamp() - interval '2 hours 7 seconds'
 where id = 'f7500000-0000-4000-8000-000000000001';

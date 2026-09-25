@@ -88,6 +88,9 @@ describe(`apply-${VERSION}-football-match-details.sql`, () => {
     expect(script).toContain("a function is callable by the wrong roles");
     expect(script).toContain("a new table is open to an API role");
     expect(script).toContain("the xG statistics are not defined");
+    // Its probe call marks a real match done; the backfill must still fetch it.
+    expect(script).toContain("delete from app_private.football_match_details_syncs sync");
+    expect(script).toContain("a done mark was left behind");
     expect(script).toContain(
       "answer := api.service_football_match_details_due('sportsmonks', '28647', 'backfill', 10);",
     );

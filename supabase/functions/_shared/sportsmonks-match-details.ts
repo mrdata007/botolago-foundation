@@ -116,7 +116,8 @@ export interface MatchDetailsSkipped {
 export interface NormalizedMatchDetails {
   readonly providerUpdatedAt: string;
   readonly sourceSequence: number;
-  readonly events: readonly MatchDetailsEvent[];
+  /** `null` when the reply carries no readable list: the stored events stand. */
+  readonly events: readonly MatchDetailsEvent[] | null;
   /** The provider's team statistics and, with the xG add-on, expected goals. */
   readonly statistics: readonly MatchDetailsStatistic[];
   readonly lineups: readonly MatchDetailsLineup[];
@@ -372,11 +373,18 @@ function scoreAfter(value: unknown): Record<Side, number> | null {
   return match ? { home: Number(match[1]), away: Number(match[2]) } : null;
 }
 
+/**
+ * `null` (the stored events stand) when the reply has no events section, or
+ * when it has rows and none could be read. Otherwise the list, even empty, is
+ * the provider's current word: an event missing from it is removed.
+ */
 function normalizeEvents(
-  values: readonly unknown[],
+  values: readonly unknown[] | null,
   teams: Record<Side, number>,
   skipped: MatchDetailsSkipped,
-): MatchDetailsEvent[] {
+): MatchDetailsEvent[] | null {
+  if (values === null) return null;
+  const unreadableBefore = skipped.events;
   const read: Array<{
     key: string;
     type: MatchEventType;
@@ -433,6 +441,7 @@ function normalizeEvents(
     });
     if (read.length === MAX_EVENTS) break;
   }
+  if (read.length === 0 && skipped.events > unreadableBefore) return null;
 
   read.sort(
     (left, right) =>
@@ -672,8 +681,9 @@ function normalizeAbsences(
  * the payload `api.ingest_football_match_details` takes, plus what was left
  * out. The fixture must be the one asked for, in the configured league and
  * season. A row that cannot be read is skipped and counted rather than
- * failing the fixture; a section missing from the reply is sent empty, which
- * the database reads as "keep what is stored".
+ * failing the fixture. Events and absences missing from the reply are sent as
+ * `null` and any other section as empty, which the database reads as "keep
+ * what is stored"; an events or absences list, even empty, replaces it.
  */
 export function normalizeMatchDetails(
   payload: unknown,
@@ -713,7 +723,11 @@ export function normalizeMatchDetails(
     // When BotolaGO read it: a later read always outranks an earlier one of
     // the same provider version, so two overlapping refreshes settle in order.
     sourceSequence: Math.max(0, Date.parse(observedAt)),
-    events: normalizeEvents(rows(fixture.events), teams, skipped),
+    events: normalizeEvents(
+      fixture.events === undefined || fixture.events === null ? null : rows(fixture.events),
+      teams,
+      skipped,
+    ),
     statistics: normalizeStatistics(
       [...rows(fixture.statistics), ...rows(expectedGoals)],
       teams,
@@ -805,10 +819,11 @@ function count(value: unknown): number {
 /**
  * Fetches and stores the details of every fixture the database names for
  * this scope: `live` (on, about to start, or finalized in the last two
- * hours) after each score refresh, `backfill` (finished, nothing stored) on
+ * hours) after each score refresh, `backfill` (finished, never stored) on
  * demand. Records one ingestion run (`match_events`) when anything was due,
- * with one rejection per fixture that failed. Never throws: a failure comes
- * back as `{ error }` for the caller to report.
+ * with one rejection per fixture that failed; the backfill leaves out a
+ * fixture refused twice. Never throws: a failure comes back as `{ error }` for
+ * the caller to report.
  */
 export async function runMatchDetailsRefresh(
   scope: MatchDetailsScope,

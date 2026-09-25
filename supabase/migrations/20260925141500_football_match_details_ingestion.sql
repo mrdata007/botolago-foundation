@@ -19,15 +19,21 @@
 --     derived from the provider's event id, so an event keeps its row id from
 --     one refresh to the next: the match page tracks events by id, and a new
 --     id would replay the goal takeover for a goal already on the sheet.
---     An event the provider no longer reports (a goal ruled out) is removed.
---     A section the provider sent empty is left as stored, so a thin or
---     failed reply never wipes what an earlier one delivered. An older reply
---     than the one stored changes nothing.
+--     An event the provider no longer reports (a goal ruled out) is removed,
+--     down to the last one: the events list, even empty, is the provider's
+--     current word. A section missing from the reply (and any other section
+--     sent empty) is left as stored, so a thin or failed reply never wipes
+--     what an earlier one delivered. An older reply than the one stored
+--     changes nothing.
 --   * `api.service_football_match_details_due` names the fixtures a refresh
 --     should fetch details for: those on or about to start, those finalized
 --     in the last two hours (providers settle statistics and correct events
 --     after the whistle), or, for the one-off backfill, finished fixtures
---     with no details at all.
+--     never stored and not refused twice by the backfill already.
+--     `app_private.football_match_details_syncs` marks a fixture stored, even
+--     when the provider had nothing for it, so a match with no data at the
+--     provider is not asked for again; a fixture refused twice is left out,
+--     so the ones behind it get their turn.
 --   * `app_private.football_live_refresh_tick` keeps calling the live refresh
 --     every 15 minutes for two hours after a match is finalized, so that
 --     settling reaches the page. It was idle as soon as the match ended.
@@ -45,8 +51,8 @@
 --
 -- The two ingestion RPCs are service_role only; the two read RPCs are public,
 -- like the other match reads. All are security definer with an empty
--- search_path. The two new tables are deny-by-default (RLS forced, no grant):
--- they are written and read only through those functions. The migration
+-- search_path. The three new tables are deny-by-default (RLS forced, no
+-- grant): they are written and read only through those functions. The migration
 -- writes two statistic definitions and no match data.
 
 insert into app.statistic_definitions (code, display_name, value_type, unit, display_order)
@@ -109,6 +115,17 @@ revoke all on app.fixture_absences from public, anon, authenticated, service_rol
 create trigger fixture_absences_set_updated_at before update on app.fixture_absences
 for each row execute function app_private.set_updated_at();
 
+create table app_private.football_match_details_syncs (
+  fixture_id uuid primary key references app.fixtures(id) on delete cascade,
+  first_stored_at timestamptz not null default statement_timestamp(),
+  last_stored_at timestamptz not null default statement_timestamp()
+);
+comment on table app_private.football_match_details_syncs is
+  'Fixtures whose provider details were stored at least once, even when there were none: the backfill''s done mark.';
+alter table app_private.football_match_details_syncs enable row level security;
+alter table app_private.football_match_details_syncs force row level security;
+revoke all on app_private.football_match_details_syncs from public, anon, authenticated, service_role;
+
 create or replace function api.ingest_football_match_details(
   p_provider_name text,
   p_fixture_external_id text,
@@ -154,14 +171,16 @@ begin
   then
     raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
   end if;
-  v_events := coalesce(p_details -> 'events', '[]'::jsonb);
+  -- Events and absences, absent: keep what is stored. A list, even empty, is
+  -- the provider's current word (the only goal ruled out, a player back from
+  -- injury: each drops off it).
+  v_events := nullif(coalesce(p_details -> 'events', 'null'::jsonb), 'null'::jsonb);
   v_statistics := coalesce(p_details -> 'statistics', '[]'::jsonb);
   v_lineups := coalesce(p_details -> 'lineups', '[]'::jsonb);
   v_pressure := coalesce(p_details -> 'pressure', '[]'::jsonb);
-  -- Absent: keep what is stored. A list, even empty, is the provider's
-  -- current word (a player back from injury drops off it).
   v_absences := nullif(coalesce(p_details -> 'absences', 'null'::jsonb), 'null'::jsonb);
-  if jsonb_typeof(v_events) <> 'array' or jsonb_array_length(v_events) > 400
+  if (v_events is not null
+      and (jsonb_typeof(v_events) <> 'array' or jsonb_array_length(v_events) > 400))
     or jsonb_typeof(v_statistics) <> 'array' or jsonb_array_length(v_statistics) > 200
     or jsonb_typeof(v_lineups) <> 'array' or jsonb_array_length(v_lineups) > 2
     or jsonb_typeof(v_pressure) <> 'array' or jsonb_array_length(v_pressure) > 400
@@ -170,7 +189,8 @@ begin
     or exists (
       select 1
       from jsonb_array_elements(
-        v_events || v_statistics || v_lineups || v_pressure || coalesce(v_absences, '[]'::jsonb)
+        coalesce(v_events, '[]'::jsonb) || v_statistics || v_lineups || v_pressure
+          || coalesce(v_absences, '[]'::jsonb)
       ) item
       where jsonb_typeof(item) <> 'object'
     )
@@ -243,7 +263,7 @@ begin
     select 1
     from (
       select item ->> 'teamExternalId' as external_id, false as required
-      from jsonb_array_elements(v_events) item
+      from jsonb_array_elements(coalesce(v_events, '[]'::jsonb)) item
       union all
       select item ->> 'teamExternalId', true from jsonb_array_elements(v_statistics) item
       union all
@@ -268,7 +288,7 @@ begin
   end if;
 
   -- Events ------------------------------------------------------------------
-  if jsonb_array_length(v_events) > 0 then
+  if v_events is not null then
     if exists (
       select 1 from jsonb_array_elements(v_events) item
       where coalesce(item ->> 'key', '') !~ '^[A-Za-z0-9._-]{1,120}$'
@@ -598,6 +618,11 @@ begin
     get diagnostics v_absences_removed = row_count;
   end if;
 
+  -- Done, even with nothing to store: the backfill does not ask again.
+  insert into app_private.football_match_details_syncs as sync (fixture_id)
+  values (v_fixture_id)
+  on conflict (fixture_id) do update set last_stored_at = excluded.last_stored_at;
+
   return jsonb_build_object(
     'outcome', 'stored',
     'fixtureId', v_fixture_id,
@@ -702,11 +727,29 @@ begin
             and fixture.finalized_at >= now_at - interval '2 hours')
         else
           fixture.status = 'finished'
+          -- Stored once, even with nothing in it: done.
+          and not exists (
+            select 1 from app_private.football_match_details_syncs sync
+            where sync.fixture_id = fixture.id
+          )
           and not exists (select 1 from app.match_events event where event.fixture_id = fixture.id)
           and not exists (select 1 from app.lineups lineup where lineup.fixture_id = fixture.id)
           and not exists (
             select 1 from app.fixture_team_statistics stat where stat.fixture_id = fixture.id
           )
+          -- Refused twice by the backfill (the provider will not serve it, or
+          -- the reply cannot be stored): left out, so the fixtures behind it
+          -- get their turn. The run's rejections say why.
+          and (
+            select count(*)
+            from app_private.football_ingestion_rejections rejection
+            join app_private.football_ingestion_runs run on run.id = rejection.run_id
+            where run.provider_name = p_provider_name
+              and run.job_type = 'match_events'
+              and run.target_scope ->> 'scope' = 'backfill'
+              and rejection.entity_type = 'fixture'
+              and rejection.external_id = mapping.external_id
+          ) < 2
       end
     order by rank_at, fixture.id
     limit p_limit
@@ -716,7 +759,7 @@ end;
 $$;
 
 comment on function api.service_football_match_details_due(text, text, text, integer) is
-  'The fixtures whose details a refresh should fetch: live (on, about to start, or finalized in the last two hours) or backfill (finished with none stored). Service role only.';
+  'The fixtures whose details a refresh should fetch: live (on, about to start, or finalized in the last two hours) or backfill (finished, never stored, not refused twice by the backfill). Service role only.';
 
 revoke all on function api.service_football_match_details_due(text, text, text, integer)
   from public, anon, authenticated, service_role;

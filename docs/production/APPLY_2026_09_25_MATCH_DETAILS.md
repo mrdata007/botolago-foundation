@@ -27,6 +27,9 @@ meeting between these two clubs.
   - a function that says which matches need their details fetched;
   - two new tables (the pressure curve; the injured and suspended players)
     and two new statistics (xG and xG on target);
+  - a private list of the matches whose details were saved at least once,
+    so the backfill does not ask again for a match SportsMonks has nothing
+    for;
   - two new public reads for the match page (pressure, absent players);
   - the live refresh keeps calling every 15 minutes for 2 hours after a match
     ends, because statistics settle and events get corrected after the whistle.
@@ -109,7 +112,8 @@ from net._http_response where id = <request_id>;
 
 Expect `status_code` 200 and `"stored"` equal to the number of finished matches
 listed in `"due"`. It fetches up to 10 matches per call; run it again until
-`"due"` is 0.
+`"due"` is 0. A match SportsMonks refuses twice is left out, so the others
+still get through; the runs in step 5 say which one and why.
 
 ## Step 5 — Check
 
