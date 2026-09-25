@@ -890,11 +890,19 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      football_match_absences: {
+        Args: { p_fixture_id: string; p_language?: string }
+        Returns: Json
+      }
       football_match_detail: {
         Args: { p_fixture_id: string; p_language?: string }
         Returns: Json
       }
       football_match_lineups: {
+        Args: { p_fixture_id: string; p_language?: string }
+        Returns: Json
+      }
+      football_match_pressure: {
         Args: { p_fixture_id: string; p_language?: string }
         Returns: Json
       }

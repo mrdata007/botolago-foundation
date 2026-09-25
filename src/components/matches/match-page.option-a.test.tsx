@@ -4,13 +4,14 @@ import { join } from "node:path";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import type { MatchStatisticComparisonDto } from "@/backend/football/contracts";
+import type { MatchAbsenceDto, MatchStatisticComparisonDto } from "@/backend/football/contracts";
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 import { clubMatchPalettes } from "@/lib/club-palette";
 import type { MatchEvent } from "@/services/match-live";
 import type { Club, Match } from "@/types/domain";
 import { EventTimeline } from "./EventTimeline";
+import { LineupsView } from "./LineupsView";
 import { MatchScoreHeader } from "./MatchScoreHeader";
 import { MATCH_TABS } from "./MatchTabs";
 import { FormChips } from "./StandingsTable";
@@ -41,6 +42,8 @@ const FILES = [
   "src/components/matches/MatchTabs.tsx",
   "src/components/matches/EventTimeline.tsx",
   "src/components/matches/StatComparison.tsx",
+  "src/components/matches/PressureChart.tsx",
+  "src/components/matches/Absences.tsx",
   "src/components/matches/LineupsView.tsx",
   "src/components/matches/HeadToHead.tsx",
   "src/components/matches/StandingsTable.tsx",
@@ -340,6 +343,135 @@ describe("match page — the Stats tab", () => {
     // Each pill carries its own side's colours.
     expect(cells[0]![1]).toContain(palettes.home.light.fill);
     expect(cells[3]![1]).toContain(palettes.away.light.fill);
+  });
+});
+
+describe("match page — expected goals and the pressure chart", () => {
+  const xg = (homeValue: number, awayValue: number): MatchStatisticComparisonDto => ({
+    code: "expected_goals",
+    label: "Expected goals (xG)",
+    valueType: "decimal",
+    unit: null,
+    homeValue,
+    homeDisplayValue: null,
+    awayValue,
+    awayDisplayValue: null,
+  });
+  // Home pushes 30 + 20, away 10 + 15: two thirds of the pressure is home's.
+  const pressure = [
+    { minute: 1, homeValue: 30, awayValue: null },
+    { minute: 2, homeValue: null, awayValue: 10 },
+    { minute: 46, homeValue: 20, awayValue: null },
+    { minute: 90, homeValue: null, awayValue: 15 },
+  ];
+  const render = (points: typeof pressure) =>
+    inFrench(
+      <StatComparison
+        stats={[xg(1.8421, 0.731)]}
+        home={wydad}
+        away={far}
+        palettes={palettes}
+        isLive={false}
+        pressure={points}
+      />,
+    );
+  const html = render(pressure);
+
+  it("names expected goals in French and prints them to two decimals", () => {
+    expect(html).toContain("Buts attendus (xG)");
+    expect(html).toContain("1,84");
+    expect(html).toContain("0,73");
+  });
+
+  it("leads with the pressure chart, whose legend names both clubs and their share", () => {
+    expect(html.indexOf("Pression")).toBeLessThan(html.indexOf("Buts attendus"));
+    expect(html).toMatch(
+      /WAC<\/span><bdi class="[^"]*fpl-tabular[^"]*">67<span[^>]*>%<\/span><\/bdi>/,
+    );
+    expect(html).toMatch(
+      /FAR<\/span><bdi class="[^"]*fpl-tabular[^"]*">33<span[^>]*>%<\/span><\/bdi>/,
+    );
+  });
+
+  it("marks the quarter hours, and the half-time boundary with a hairline", () => {
+    for (const tick of ["15′", "45′", "90′"]) expect(html).toContain(`>${tick}</bdi>`);
+    expect(html).not.toContain(">5′</bdi>");
+    const columns = [...html.matchAll(/<div class="(flex min-w-0 flex-1 flex-col[^"]*)"/g)];
+    expect(columns).toHaveLength(18);
+    expect(columns.filter((column) => column[1]!.includes("border-s"))).toHaveLength(1);
+    expect(columns[9]![1]).toContain("border-s");
+  });
+
+  it("paints each side's bars in its own club colour, home above the line", () => {
+    const bars = [
+      ...html.matchAll(/<span data-club="" style="([^"]*)" class="w-3\/5 max-w-3 (rounded-[tb])/g),
+    ];
+    expect(bars).toHaveLength(36);
+    expect(bars[0]![1]).toContain(palettes.home.light.edge);
+    expect(bars[0]![2]).toBe("rounded-t");
+    expect(bars[1]![1]).toContain(palettes.away.light.edge);
+    expect(bars[1]![2]).toBe("rounded-b");
+  });
+
+  it("keeps every value reachable without a pointer: a keyboard group and a table", () => {
+    expect(html).toContain(
+      'role="group" tabindex="0" aria-label="Pression par tranche de 5 minutes"',
+    );
+    expect(html).toContain('<table class="sr-only">');
+    expect(html).toContain('<th scope="row">46–50</th>');
+  });
+
+  it("draws no chart without a pressure index", () => {
+    expect(render([])).not.toContain("Pression");
+  });
+});
+
+describe("match page — absent players", () => {
+  const absence = (
+    id: string,
+    teamId: string,
+    playerName: string,
+    category: MatchAbsenceDto["category"],
+    expectedReturnOn: string | null,
+  ): MatchAbsenceDto => ({
+    id,
+    teamId,
+    playerId: null,
+    playerName,
+    position: null,
+    category,
+    expectedReturnOn,
+    gamesMissed: null,
+  });
+  const html = inFrench(
+    <LineupsView
+      lineups={[]}
+      home={wydad}
+      away={far}
+      palettes={palettes}
+      absences={[
+        absence("a1", "war", "Yahya Jabrane", "injury", "2026-10-12"),
+        absence("a2", "asfar", "Mohamed Hrimat", "suspension", null),
+      ]}
+    />,
+  );
+
+  it("lists who is out even before the lineups are published", () => {
+    expect(html).toContain("Les compositions ne sont pas encore publiées");
+    expect(html).toContain("Absents");
+    expect(html.indexOf("Yahya Jabrane")).toBeLessThan(html.indexOf("Mohamed Hrimat"));
+  });
+
+  it("says why in words, with the expected return when there is one", () => {
+    expect(html).toContain("Blessé · Retour prévu le 12 oct.");
+    expect(html).toContain("Suspendu</p>");
+  });
+
+  it("renders nothing for a match with nobody out", () => {
+    const none = inFrench(
+      <LineupsView lineups={[]} home={wydad} away={far} palettes={palettes} absences={[]} />,
+    );
+    expect(none).not.toContain("Absents");
   });
 });
 

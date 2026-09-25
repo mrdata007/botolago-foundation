@@ -22,19 +22,32 @@ meeting between these two clubs.
 ## What this change does
 
 - **Database** (`20260925141500_football_match_details_ingestion`):
-  - a function that stores one match's events, team statistics and lineups;
+  - a function that stores one match's events, team statistics, lineups,
+    expected goals (xG), pressure index and absent players;
   - a function that says which matches need their details fetched;
+  - two new tables (the pressure curve; the injured and suspended players)
+    and two new statistics (xG and xG on target);
+  - two new public reads for the match page (pressure, absent players);
   - the live refresh keeps calling every 15 minutes for 2 hours after a match
     ends, because statistics settle and events get corrected after the whistle.
 - **Edge Function `football-live-refresh`**: after the scores, it fetches the
   details of each match that is on, about to start, or finished within the
-  last 2 hours, one SportsMonks request per match. If that fails, the scores
-  are still saved as before. It also has a one-off **backfill** job for
-  finished matches that have no details yet.
+  last 2 hours, one SportsMonks request per match, including the xG and
+  Pressure Index add-ons. If the add-ons are refused, it asks again without
+  them, so goals, stats, lineups and absences still arrive. If that fails too,
+  the scores are still saved as before. It also has a one-off **backfill** job
+  for finished matches that have no details yet.
+- **Website** (the match page):
+  - Stats tab: a **pressure chart** (who was pushing, five minutes a bar, home
+    above the line, away below; tap a bar for its minutes) and **xG** rows
+    under possession;
+  - Compos tab: an **Absents** list per club (injured or suspended, with the
+    expected return date), shown even before the lineups are out.
 
 Cost: one extra SportsMonks request per match every 2 minutes while it is on
 (about 60 for a match), plus 8 after the whistle. The backfill is one request
-per finished match.
+per finished match. A plan that refuses the add-ons costs one more request
+each time.
 
 ## Step 1 — Nothing else running
 
@@ -57,9 +70,14 @@ pass**: it means production is not in the state the script was written for.
 (The script's checks were measured against production read-only on
 2026-09-25.)
 
-## Step 3 — Edge Function
+## Step 3 — Website and Edge Function
 
-From the repository, on the merged `main`:
+Merge the pull request: the website deploys from `main` as usual, and the new
+match-page parts stay hidden until there is data for them.
+
+Then the Edge Function,
+
+from the repository, on the merged `main`:
 
 ```sh
 supabase functions deploy football-live-refresh --project-ref tkewgajrljbwgwedqsxn
@@ -93,12 +111,15 @@ listed in `"due"`. It fetches up to 10 matches per call; run it again until
 ## Step 5 — Check
 
 Open the Amal Tiznit – Ittihad Tanger page. Résumé should list the goals,
-Stats the possession and shots, Compos the lineups. Or in SQL:
+Stats the pressure chart, possession, xG and shots, Compos the lineups and
+anyone who was out. Or in SQL:
 
 ```sql
 select jsonb_array_length(api.football_match_timeline('b48265b5-5df0-4ae3-815d-a0a01cde80f2', 'fr')) as events,
        jsonb_array_length(api.football_match_statistics('b48265b5-5df0-4ae3-815d-a0a01cde80f2', 'fr')) as statistics,
-       jsonb_array_length(api.football_match_lineups('b48265b5-5df0-4ae3-815d-a0a01cde80f2', 'fr')) as lineups;
+       jsonb_array_length(api.football_match_lineups('b48265b5-5df0-4ae3-815d-a0a01cde80f2', 'fr')) as lineups,
+       jsonb_array_length(api.football_match_pressure('b48265b5-5df0-4ae3-815d-a0a01cde80f2', 'fr')) as pressure_minutes,
+       jsonb_array_length(api.football_match_absences('b48265b5-5df0-4ae3-815d-a0a01cde80f2', 'fr')) as absent;
 ```
 
 Each run is recorded:
@@ -112,11 +133,17 @@ order by created_at desc limit 10;
 
 ## What to watch in the answer
 
+- **`addOnsUnavailable` above 0**: SportsMonks refused the request with the
+  xG and Pressure Index add-ons, and the rest was fetched without them. Check
+  the add-ons are active on the plan for Botola Pro.
 - **`errors: ["provider_unavailable"]` while scores keep working**: SportsMonks
-  refused the details request. The most likely cause is the plan not covering
-  one of `events`, `statistics`, `lineups` or `formations` for Botola Pro.
-  Lineups are known to work (the Fantasy player statistics use them); events
-  and statistics were not tested against the live API before this change.
+  refused the details request even without the add-ons. The most likely cause
+  is the plan not covering one of `events`, `statistics`, `lineups`,
+  `formations` or `sidelined` for Botola Pro. Lineups are known to work (the
+  Fantasy player statistics use them); the others were not tested against the
+  live API before this change (no SportsMonks key was available to test with).
+- **`pressure` at 0 with the add-on active**: SportsMonks has no pressure data
+  for that match; the chart simply does not show.
 - **`skipped`** above 0: rows SportsMonks sent that could not be read (an event
   type this code does not know, for example). They are left out, never shown
   wrongly.
@@ -134,6 +161,8 @@ details can then be removed, if wanted:
 delete from app.match_events where idempotency_key like 'sportsmonks:event:%';
 delete from app.fixture_team_statistics;
 delete from app.lineups;
+delete from app.fixture_pressure;
+delete from app.fixture_absences;
 ```
 
-The two new database functions do nothing unless called, and can stay.
+The new database functions and tables do nothing unless used, and can stay.

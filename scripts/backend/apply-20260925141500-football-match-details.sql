@@ -1,7 +1,8 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
--- Apply migration 20260925141500_football_match_details_ingestion: match details (goals, cards,
--- substitutions, team statistics, lineups) for the match page's Résumé, Stats
+-- Apply migration 20260925141500_football_match_details_ingestion: match details for the match
+-- page -- goals, cards, substitutions, team statistics, lineups, expected goals
+-- (xG), the pressure index and the absent players -- behind the Résumé, Stats
 -- and Compos tabs, which have been empty for every match.
 --
 -- WHEN
@@ -25,17 +26,21 @@
 --
 -- WHAT IT DOES
 --   * refuses to run twice, before the live-refresh cadence (20260924200500),
---     or where app_private.football_live_refresh_tick is not the version this
---     replaces (20260924200500, source measured in production on 2026-09-25);
+--     where any object it creates already exists, or where
+--     app_private.football_live_refresh_tick is not the version this replaces
+--     (20260924200500, source measured in production on 2026-09-25);
 --   * records the migration file in supabase_migrations.schema_migrations,
 --     whole as statements[1], and runs it from that record once its sha256
 --     matches the repository file;
---   * checks the result: both new functions are in place and callable by the
---     service role only, the tick has its new tier, and one real call of each
---     answers (the ingestion call carries no details and writes no row).
---   No table is created or altered; no row of match data is written. Until
---   the Edge Function is redeployed nothing calls the new functions; the tick
---   calls the current one for two hours after each match, at no harm.
+--   * checks the result: every new function body is the migration's, the
+--     ingestion is callable by the service role only and the two reads by
+--     visitors too, the two new tables are closed to every API role, the two
+--     xG statistics are defined, and one real call of each function answers
+--     (the ingestion call carries no details and writes no row).
+--   It creates two empty tables and two statistic definitions; it writes no
+--   match data. Until the Edge Function is redeployed nothing calls the new
+--   functions; the tick calls the current one for two hours after each match,
+--   at no harm.
 -- ============================================================================
 
 begin;
@@ -63,12 +68,17 @@ begin
     or to_regclass('app.lineup_players') is null
     or to_regclass('app.statistic_definitions') is null
     or to_regprocedure('app_private.fantasy_kickoff_confirmed(timestamptz)') is null
+    or to_regprocedure('app_private.set_updated_at()') is null
     or to_regclass('app_private.football_live_refresh_heartbeat') is null then
     raise exception 'stop: the database is missing the match tables or the live refresh this update builds on';
   end if;
   if to_regprocedure('api.ingest_football_match_details(text, text, jsonb)') is not null
-    or to_regprocedure('api.service_football_match_details_due(text, text, text, integer)') is not null then
-    raise exception 'stop: a match-details function already exists';
+    or to_regprocedure('api.service_football_match_details_due(text, text, text, integer)') is not null
+    or to_regprocedure('api.football_match_pressure(uuid, text)') is not null
+    or to_regprocedure('api.football_match_absences(uuid, text)') is not null
+    or to_regclass('app.fixture_pressure') is not null
+    or to_regclass('app.fixture_absences') is not null then
+    raise exception 'stop: a match-details function or table already exists';
   end if;
   if md5((select prosrc from pg_proc
           where oid = 'app_private.football_live_refresh_tick()'::regprocedure))
@@ -85,7 +95,8 @@ insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
   '20260925141500',
   'football_match_details_ingestion',
-  array[$bg_20260925141500_file$-- Match details: the events, team statistics and lineups behind a match page.
+  array[$bg_20260925141500_file$-- Match details: the events, team statistics, lineups, expected goals, pressure
+-- and absent players behind a match page.
 --
 -- The Résumé, Stats and Compos tabs read `app.match_events`,
 -- `app.fixture_team_statistics` and `app.lineups` / `app.lineup_players`
@@ -118,9 +129,82 @@ values (
 --     every 15 minutes for two hours after a match is finalized, so that
 --     settling reaches the page. It was idle as soon as the match ended.
 --
--- Both RPCs are service_role only, security definer, empty search_path, like
--- every other ingestion RPC. No table is created or altered and no row is
--- written by the migration itself.
+-- With the SportsMonks xG and Pressure Index add-ons (bought 2026-09-25):
+--
+--   * expected goals (xG) and expected goals on target (xGOT) are two more
+--     team statistics (`app.statistic_definitions`), shown in the Stats tab;
+--   * `app.fixture_pressure` holds the provider's pressure index, one value
+--     per club per minute, read by `api.football_match_pressure` for the
+--     Stats tab's pressure chart;
+--   * `app.fixture_absences` holds the players the provider lists as injured
+--     or suspended for the match, read by `api.football_match_absences` for
+--     the Compos tab.
+--
+-- The two ingestion RPCs are service_role only; the two read RPCs are public,
+-- like the other match reads. All are security definer with an empty
+-- search_path. The two new tables are deny-by-default (RLS forced, no grant):
+-- they are written and read only through those functions. The migration
+-- writes two statistic definitions and no match data.
+
+insert into app.statistic_definitions (code, display_name, value_type, unit, display_order)
+values
+  ('expected_goals', 'Expected goals (xG)', 'decimal', null, 15),
+  ('expected_goals_on_target', 'Expected goals on target (xGOT)', 'decimal', null, 16)
+on conflict (code) do nothing;
+
+create table app.fixture_pressure (
+  fixture_id uuid not null references app.fixtures(id) on delete cascade,
+  team_id uuid not null references app.teams(id) on delete restrict,
+  minute integer not null,
+  pressure numeric(8, 3) not null,
+  provider_updated_at timestamptz not null,
+  source_sequence bigint not null default 0,
+  created_at timestamptz not null default statement_timestamp(),
+  constraint fixture_pressure_pkey primary key (fixture_id, team_id, minute),
+  constraint fixture_pressure_minute_check check (minute between 0 and 180),
+  constraint fixture_pressure_value_check check (pressure between 0 and 10000),
+  constraint fixture_pressure_source_sequence_check check (source_sequence >= 0)
+);
+comment on table app.fixture_pressure is
+  'Provider pressure index per club per minute of a fixture (SportsMonks Pressure Index).';
+alter table app.fixture_pressure enable row level security;
+alter table app.fixture_pressure force row level security;
+revoke all on app.fixture_pressure from public, anon, authenticated, service_role;
+
+create table app.fixture_absences (
+  id uuid primary key default gen_random_uuid(),
+  fixture_id uuid not null references app.fixtures(id) on delete cascade,
+  team_id uuid not null references app.teams(id) on delete restrict,
+  player_id uuid references app.players(id) on delete set null,
+  player_name text,
+  category text not null,
+  expected_return_on date,
+  games_missed integer,
+  provider_key text not null,
+  provider_updated_at timestamptz not null,
+  source_sequence bigint not null default 0,
+  created_at timestamptz not null default statement_timestamp(),
+  updated_at timestamptz not null default statement_timestamp(),
+  constraint fixture_absences_fixture_key unique (fixture_id, provider_key),
+  constraint fixture_absences_category_check check (category in ('injury', 'suspension')),
+  constraint fixture_absences_player_check check (player_id is not null or player_name is not null),
+  constraint fixture_absences_player_name_check check (
+    player_name is null or (player_name = btrim(player_name) and char_length(player_name) between 1 and 200)
+  ),
+  constraint fixture_absences_games_missed_check check (
+    games_missed is null or games_missed between 0 and 500
+  ),
+  constraint fixture_absences_provider_key_check check (provider_key ~ '^[A-Za-z0-9._:-]{1,200}$'),
+  constraint fixture_absences_source_sequence_check check (source_sequence >= 0)
+);
+comment on table app.fixture_absences is
+  'Players the provider lists as injured or suspended for a fixture.';
+create index fixture_absences_fixture_idx on app.fixture_absences (fixture_id, team_id);
+alter table app.fixture_absences enable row level security;
+alter table app.fixture_absences force row level security;
+revoke all on app.fixture_absences from public, anon, authenticated, service_role;
+create trigger fixture_absences_set_updated_at before update on app.fixture_absences
+for each row execute function app_private.set_updated_at();
 
 create or replace function api.ingest_football_match_details(
   p_provider_name text,
@@ -141,6 +225,8 @@ declare
   v_events jsonb;
   v_statistics jsonb;
   v_lineups jsonb;
+  v_pressure jsonb;
+  v_absences jsonb;
   v_lineup jsonb;
   v_team_id uuid;
   v_lineup_id uuid;
@@ -155,6 +241,9 @@ declare
   v_lineups_written integer := 0;
   v_lineup_players integer := 0;
   v_unmapped_players integer := 0;
+  v_pressure_written integer := 0;
+  v_absences_written integer := 0;
+  v_absences_removed integer := 0;
 begin
   if jsonb_typeof(p_details) is distinct from 'object'
     or octet_length(p_details::text) > 262144
@@ -165,11 +254,21 @@ begin
   v_events := coalesce(p_details -> 'events', '[]'::jsonb);
   v_statistics := coalesce(p_details -> 'statistics', '[]'::jsonb);
   v_lineups := coalesce(p_details -> 'lineups', '[]'::jsonb);
+  v_pressure := coalesce(p_details -> 'pressure', '[]'::jsonb);
+  -- Absent: keep what is stored. A list, even empty, is the provider's
+  -- current word (a player back from injury drops off it).
+  v_absences := nullif(coalesce(p_details -> 'absences', 'null'::jsonb), 'null'::jsonb);
   if jsonb_typeof(v_events) <> 'array' or jsonb_array_length(v_events) > 400
     or jsonb_typeof(v_statistics) <> 'array' or jsonb_array_length(v_statistics) > 200
     or jsonb_typeof(v_lineups) <> 'array' or jsonb_array_length(v_lineups) > 2
+    or jsonb_typeof(v_pressure) <> 'array' or jsonb_array_length(v_pressure) > 400
+    or (v_absences is not null
+      and (jsonb_typeof(v_absences) <> 'array' or jsonb_array_length(v_absences) > 100))
     or exists (
-      select 1 from jsonb_array_elements(v_events || v_statistics || v_lineups) item
+      select 1
+      from jsonb_array_elements(
+        v_events || v_statistics || v_lineups || v_pressure || coalesce(v_absences, '[]'::jsonb)
+      ) item
       where jsonb_typeof(item) <> 'object'
     )
   then
@@ -224,6 +323,12 @@ begin
       union all
       select provider_updated_at, source_sequence
       from app.fixture_team_statistics where fixture_id = v_fixture_id
+      union all
+      select provider_updated_at, source_sequence
+      from app.fixture_pressure where fixture_id = v_fixture_id
+      union all
+      select provider_updated_at, source_sequence
+      from app.fixture_absences where fixture_id = v_fixture_id
     ) stored
     where (stored.provider_updated_at, stored.source_sequence) > (v_updated_at, v_sequence)
   ) then
@@ -240,6 +345,11 @@ begin
       select item ->> 'teamExternalId', true from jsonb_array_elements(v_statistics) item
       union all
       select item ->> 'teamExternalId', true from jsonb_array_elements(v_lineups) item
+      union all
+      select item ->> 'teamExternalId', true from jsonb_array_elements(v_pressure) item
+      union all
+      select item ->> 'teamExternalId', true
+      from jsonb_array_elements(coalesce(v_absences, '[]'::jsonb)) item
     ) named
     where (named.external_id is null and named.required)
       or (named.external_id is not null and not exists (
@@ -496,6 +606,95 @@ begin
     v_lineups_written := v_lineups_written + 1;
   end loop;
 
+  -- Pressure index --------------------------------------------------------
+  -- The whole curve, replaced: it only grows during a match, and the
+  -- provider may revise earlier minutes.
+  if jsonb_array_length(v_pressure) > 0 then
+    if (
+      select count(*) from (
+        select distinct item ->> 'teamExternalId', item ->> 'minute'
+        from jsonb_array_elements(v_pressure) item
+      ) pairs
+    ) <> jsonb_array_length(v_pressure) then
+      raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
+    end if;
+    delete from app.fixture_pressure where fixture_id = v_fixture_id;
+    insert into app.fixture_pressure (
+      fixture_id, team_id, minute, pressure, provider_updated_at, source_sequence
+    )
+    select
+      v_fixture_id,
+      team_map.internal_entity_id,
+      (item ->> 'minute')::integer,
+      (item ->> 'value')::numeric,
+      v_updated_at,
+      v_sequence
+    from jsonb_array_elements(v_pressure) item
+    join app_private.football_provider_mappings team_map
+      on team_map.provider_name = p_provider_name
+     and team_map.entity_type = 'team'
+     and team_map.external_id = item ->> 'teamExternalId'
+     and team_map.active;
+    get diagnostics v_pressure_written = row_count;
+  end if;
+
+  -- Absent players --------------------------------------------------------
+  if v_absences is not null then
+    if exists (
+      select 1 from jsonb_array_elements(v_absences) item
+      where coalesce(item ->> 'key', '') !~ '^[A-Za-z0-9._-]{1,120}$'
+    ) or (
+      select count(distinct item ->> 'key') from jsonb_array_elements(v_absences) item
+    ) <> jsonb_array_length(v_absences) then
+      raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
+    end if;
+
+    insert into app.fixture_absences as absence (
+      fixture_id, team_id, player_id, player_name, category, expected_return_on,
+      games_missed, provider_key, provider_updated_at, source_sequence
+    )
+    select
+      v_fixture_id,
+      team_map.internal_entity_id,
+      player_map.internal_entity_id,
+      nullif(btrim(left(btrim(item ->> 'playerName'), 200)), ''),
+      item ->> 'category',
+      (item ->> 'expectedReturnOn')::date,
+      (item ->> 'gamesMissed')::integer,
+      p_provider_name || ':sidelined:' || (item ->> 'key'),
+      v_updated_at,
+      v_sequence
+    from jsonb_array_elements(v_absences) item
+    join app_private.football_provider_mappings team_map
+      on team_map.provider_name = p_provider_name
+     and team_map.entity_type = 'team'
+     and team_map.external_id = item ->> 'teamExternalId'
+     and team_map.active
+    left join app_private.football_provider_mappings player_map
+      on player_map.provider_name = p_provider_name
+     and player_map.entity_type = 'player'
+     and player_map.external_id = item ->> 'playerExternalId'
+     and player_map.active
+    on conflict (fixture_id, provider_key) do update set
+      team_id = excluded.team_id,
+      player_id = excluded.player_id,
+      player_name = excluded.player_name,
+      category = excluded.category,
+      expected_return_on = excluded.expected_return_on,
+      games_missed = excluded.games_missed,
+      provider_updated_at = excluded.provider_updated_at,
+      source_sequence = excluded.source_sequence;
+    get diagnostics v_absences_written = row_count;
+
+    delete from app.fixture_absences absence
+    where absence.fixture_id = v_fixture_id
+      and not exists (
+        select 1 from jsonb_array_elements(v_absences) item
+        where p_provider_name || ':sidelined:' || (item ->> 'key') = absence.provider_key
+      );
+    get diagnostics v_absences_removed = row_count;
+  end if;
+
   return jsonb_build_object(
     'outcome', 'stored',
     'fixtureId', v_fixture_id,
@@ -504,20 +703,23 @@ begin
     'statistics', v_statistics_written,
     'lineups', v_lineups_written,
     'lineupPlayers', v_lineup_players,
-    'unmappedPlayers', v_unmapped_players
+    'unmappedPlayers', v_unmapped_players,
+    'pressure', v_pressure_written,
+    'absences', v_absences_written,
+    'absencesRemoved', v_absences_removed
   );
 exception
   when foreign_key_violation then
     raise exception using errcode = 'P0002', message = 'MAPPING_NOT_FOUND';
   when check_violation or not_null_violation or invalid_text_representation
-    or numeric_value_out_of_range or datetime_field_overflow or unique_violation
-    or cardinality_violation then
+    or numeric_value_out_of_range or datetime_field_overflow or invalid_datetime_format
+    or unique_violation or cardinality_violation then
     raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
 end;
 $$;
 
 comment on function api.ingest_football_match_details(text, text, jsonb) is
-  'Stores one fixture''s provider events, team statistics and lineups. Service role only.';
+  'Stores one fixture''s provider events, team statistics, lineups, pressure and absences. Service role only.';
 
 revoke all on function api.ingest_football_match_details(text, text, jsonb)
   from public, anon, authenticated, service_role;
@@ -618,6 +820,91 @@ revoke all on function api.service_football_match_details_due(text, text, text, 
 grant execute on function api.service_football_match_details_due(text, text, text, integer)
   to service_role;
 
+-- The Stats tab's pressure chart: one row per minute with both clubs' values
+-- (the provider gives one club a positive value a minute, the other none).
+create or replace function api.football_match_pressure(
+  p_fixture_id uuid,
+  p_language text default 'fr'
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  fixture_home uuid;
+  fixture_away uuid;
+  result jsonb;
+begin
+  perform app_private.football_language(p_language);
+  select home_team_id, away_team_id into fixture_home, fixture_away
+  from app.fixtures where id = p_fixture_id;
+  if fixture_home is null then
+    raise exception using errcode = 'P0002', message = 'FIXTURE_NOT_FOUND';
+  end if;
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'minute', by_minute.minute,
+    'homeValue', by_minute.home_value,
+    'awayValue', by_minute.away_value
+  ) order by by_minute.minute), '[]'::jsonb)
+  into result
+  from (
+    select
+      pressure.minute,
+      max(pressure.pressure) filter (where pressure.team_id = fixture_home) as home_value,
+      max(pressure.pressure) filter (where pressure.team_id = fixture_away) as away_value
+    from app.fixture_pressure pressure
+    where pressure.fixture_id = p_fixture_id
+    group by pressure.minute
+  ) by_minute;
+  return result;
+end;
+$$;
+
+revoke all on function api.football_match_pressure(uuid, text) from public, anon, authenticated, service_role;
+grant execute on function api.football_match_pressure(uuid, text) to anon, authenticated, service_role;
+
+-- The Compos tab's absent players: injured or suspended for this match.
+create or replace function api.football_match_absences(
+  p_fixture_id uuid,
+  p_language text default 'fr'
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  result jsonb;
+begin
+  perform app_private.football_language(p_language);
+  if not exists (select 1 from app.fixtures where id = p_fixture_id) then
+    raise exception using errcode = 'P0002', message = 'FIXTURE_NOT_FOUND';
+  end if;
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'id', absence.id,
+    'teamId', absence.team_id,
+    'playerId', absence.player_id,
+    'playerName', coalesce(player.display_name, absence.player_name),
+    'position', player.position,
+    'category', absence.category,
+    'expectedReturnOn', absence.expected_return_on,
+    'gamesMissed', absence.games_missed
+  ) order by absence.team_id, absence.category,
+    coalesce(player.display_name, absence.player_name), absence.id), '[]'::jsonb)
+  into result
+  from app.fixture_absences absence
+  left join app.players player on player.id = absence.player_id
+  where absence.fixture_id = p_fixture_id;
+  return result;
+end;
+$$;
+
+revoke all on function api.football_match_absences(uuid, text) from public, anon, authenticated, service_role;
+grant execute on function api.football_match_absences(uuid, text) to anon, authenticated, service_role;
+
 -- The live refresh tick (20260924200500), with one more tier: a match
 -- finalized in the last two hours is refreshed every 15 minutes, so its
 -- settled statistics and corrected events reach the page. Eight calls per
@@ -716,7 +1003,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260925141500, 'UTF8')), 'hex')
-    is distinct from '5298d27a99e7c7f41c514ae9bcb54f2e98f5c0b0644f69c4e31043557e01fa7a' then
+    is distinct from '4272665cbbf82c37a6d86708a87646c2d87636711706701d23d56950ee8994c5' then
     raise exception 'stop: 20260925141500 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -733,16 +1020,25 @@ declare
   ingest constant regprocedure := 'api.ingest_football_match_details(text, text, jsonb)'::regprocedure;
   due constant regprocedure :=
     'api.service_football_match_details_due(text, text, text, integer)'::regprocedure;
+  pressure constant regprocedure := 'api.football_match_pressure(uuid, text)'::regprocedure;
+  absences constant regprocedure := 'api.football_match_absences(uuid, text)'::regprocedure;
   tick constant regprocedure := 'app_private.football_live_refresh_tick()'::regprocedure;
   answer jsonb;
+  fixture_id uuid;
   fixture_external_id text;
 begin
   -- Each function body is the migration's, measured by its source.
-  if md5((select prosrc from pg_proc where oid = ingest)) <> 'a3c02569940b468eb301b6623d7520a2' then
+  if md5((select prosrc from pg_proc where oid = ingest)) <> '793f9442b5d6473fc4debfaab7cdfe07' then
     problems := problems || 'the ingestion is not the new version'::text;
   end if;
   if md5((select prosrc from pg_proc where oid = due)) <> '8e64167eaf2264f9e81e16bf0cf266f8' then
     problems := problems || 'the due list is not the new version'::text;
+  end if;
+  if md5((select prosrc from pg_proc where oid = pressure)) <> 'f282b4fdc147e90b93fa4483ea2c81ef' then
+    problems := problems || 'the pressure read is not the new version'::text;
+  end if;
+  if md5((select prosrc from pg_proc where oid = absences)) <> 'f93c980688928cfecfb1799c73c33078' then
+    problems := problems || 'the absences read is not the new version'::text;
   end if;
   if md5((select prosrc from pg_proc where oid = tick)) <> '7769564341eb9ecc8aeb33ccc11ea732' then
     problems := problems || 'the tick is not the new version'::text;
@@ -753,8 +1049,21 @@ begin
     or has_function_privilege('anon', due, 'execute')
     or has_function_privilege('authenticated', due, 'execute')
     or not has_function_privilege('service_role', due, 'execute')
+    or not has_function_privilege('anon', pressure, 'execute')
+    or not has_function_privilege('anon', absences, 'execute')
     or has_function_privilege('service_role', tick, 'execute') then
     problems := problems || 'a function is callable by the wrong roles'::text;
+  end if;
+  if not (select bool_and(relrowsecurity and relforcerowsecurity) from pg_class
+          where oid in ('app.fixture_pressure'::regclass, 'app.fixture_absences'::regclass))
+    or has_table_privilege('anon', 'app.fixture_pressure', 'select')
+    or has_table_privilege('authenticated', 'app.fixture_absences', 'select')
+    or has_table_privilege('service_role', 'app.fixture_pressure', 'insert') then
+    problems := problems || 'a new table is open to an API role'::text;
+  end if;
+  if (select count(*) from app.statistic_definitions
+      where code in ('expected_goals', 'expected_goals_on_target') and active) <> 2 then
+    problems := problems || 'the xG statistics are not defined'::text;
   end if;
   if not exists (select 1 from cron.job where jobname = 'football-live-refresh'
                  and schedule = '* * * * *' and active) then
@@ -771,7 +1080,7 @@ begin
   if jsonb_typeof(answer) is distinct from 'array' then
     problems := problems || 'the due list did not answer a list'::text;
   end if;
-  select mapping.external_id into fixture_external_id
+  select fixture.id, mapping.external_id into fixture_id, fixture_external_id
   from app.fixtures fixture
   join app.seasons season on season.id = fixture.season_id and season.is_current
   join app_private.football_provider_mappings mapping
@@ -783,8 +1092,13 @@ begin
     answer := api.ingest_football_match_details('sportsmonks', fixture_external_id,
       jsonb_build_object('providerUpdatedAt', '2000-01-01T00:00:00Z', 'sourceSequence', 0));
     if answer ->> 'outcome' not in ('stored', 'stale')
-      or coalesce((answer ->> 'events')::int, 0) + coalesce((answer ->> 'lineupPlayers')::int, 0) <> 0 then
+      or coalesce((answer ->> 'events')::int, 0) + coalesce((answer ->> 'lineupPlayers')::int, 0)
+        + coalesce((answer ->> 'pressure')::int, 0) + coalesce((answer ->> 'absences')::int, 0) <> 0 then
       problems := problems || ('the ingestion answered ' || answer::text);
+    end if;
+    if jsonb_typeof(api.football_match_pressure(fixture_id, 'fr')) is distinct from 'array'
+      or jsonb_typeof(api.football_match_absences(fixture_id, 'ar')) is distinct from 'array' then
+      problems := problems || 'a read did not answer a list'::text;
     end if;
   end if;
 

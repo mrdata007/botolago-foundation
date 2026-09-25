@@ -44,7 +44,9 @@ export type StatisticCode =
   | "offsides"
   | "saves"
   | "passes"
-  | "pass_accuracy";
+  | "pass_accuracy"
+  | "expected_goals"
+  | "expected_goals_on_target";
 
 type Position = "goalkeeper" | "defender" | "midfielder" | "forward";
 
@@ -84,19 +86,43 @@ export interface MatchDetailsLineup {
   readonly players: readonly MatchDetailsLineupPlayer[];
 }
 
+/** One club's pressure index for one minute (the Pressure Index add-on). */
+export interface MatchDetailsPressure {
+  readonly teamExternalId: string;
+  readonly minute: number;
+  readonly value: number;
+}
+
+/** A player the provider lists as injured or suspended for the match. */
+export interface MatchDetailsAbsence {
+  readonly key: string;
+  readonly teamExternalId: string;
+  readonly playerExternalId: string | null;
+  readonly playerName: string | null;
+  readonly category: "injury" | "suspension";
+  readonly expectedReturnOn: string | null;
+  readonly gamesMissed: number | null;
+}
+
 /** Provider rows left out because they could not be read, per section. */
 export interface MatchDetailsSkipped {
   events: number;
   statistics: number;
   lineupPlayers: number;
+  pressure: number;
+  absences: number;
 }
 
 export interface NormalizedMatchDetails {
   readonly providerUpdatedAt: string;
   readonly sourceSequence: number;
   readonly events: readonly MatchDetailsEvent[];
+  /** The provider's team statistics and, with the xG add-on, expected goals. */
   readonly statistics: readonly MatchDetailsStatistic[];
   readonly lineups: readonly MatchDetailsLineup[];
+  readonly pressure: readonly MatchDetailsPressure[];
+  /** `null` when the reply carries no readable list: the stored one stands. */
+  readonly absences: readonly MatchDetailsAbsence[] | null;
   readonly skipped: MatchDetailsSkipped;
 }
 
@@ -129,6 +155,10 @@ export interface MatchDetailsSummary {
   readonly lineupPlayers: number;
   /** Lineup rows for players the catalogue does not know (not listed). */
   readonly unmappedPlayers: number;
+  readonly pressure: number;
+  readonly absences: number;
+  /** Fixtures read without the xG and Pressure Index add-ons (refused with them). */
+  readonly addOnsUnavailable: number;
   readonly skipped: MatchDetailsSkipped;
   /** The distinct failure codes, when any fixture failed. */
   readonly errors: readonly string[];
@@ -139,10 +169,18 @@ export type MatchDetailsOutcome =
   | { readonly scope: MatchDetailsScope; readonly error: string };
 
 /**
- * One request per fixture. The `.type` includes carry each row's type name,
- * which is what the rows are mapped by; the numeric ids are the fallback.
+ * One request per fixture. Rows are mapped by type id, from SportsMonks'
+ * published type lists (a `type` object, when a reply carries one, must
+ * agree). The two nested includes give an absent player's dates and name.
  */
-export const MATCH_DETAILS_INCLUDE = "participants;events.type;statistics.type;lineups;formations";
+export const MATCH_DETAILS_BASE_INCLUDE =
+  "participants;events;statistics;lineups;formations;sidelined.sideline;sidelined.player";
+/**
+ * With the xG and Pressure Index add-ons. A plan without them has the whole
+ * request refused, so a refusal is retried once with the base include: the
+ * events, statistics, lineups and absences never depend on an add-on.
+ */
+export const MATCH_DETAILS_INCLUDE = `${MATCH_DETAILS_BASE_INCLUDE};xGFixture;pressure`;
 
 /** Fixtures per refresh: a live one is a Saturday's simultaneous kick-offs. */
 const DUE_LIMIT: Readonly<Record<MatchDetailsScope, number>> = { live: 8, backfill: 10 };
@@ -152,6 +190,8 @@ const DETAILS_TIMEOUT_MS = 10_000;
 const DETAILS_MAX_RETRIES = 1;
 const MAX_EVENTS = 400;
 const MAX_LINEUP_ROWS_PER_TEAM = 60;
+const MAX_PRESSURE_ROWS = 400;
+const MAX_ABSENCES = 100;
 
 /**
  * SportsMonks event types by `developer_name`, compared without separators
@@ -171,6 +211,9 @@ const EVENT_TYPES: Readonly<Record<string, MatchEventType | null>> = {
   VAR: "var",
   PENALTYSHOOTOUTGOAL: null,
   PENALTYSHOOTOUTMISS: null,
+  // A VAR card duplicates the card it reviews; a highlight is a video marker.
+  VARCARD: null,
+  HIGHLIGHT: null,
 };
 /** The same types by id, for a row whose `type` include is missing. */
 const EVENT_TYPE_IDS: Readonly<Record<number, string>> = {
@@ -185,6 +228,8 @@ const EVENT_TYPE_IDS: Readonly<Record<number, string>> = {
   21: "YELLOWREDCARD",
   22: "PENALTYSHOOTOUTMISS",
   23: "PENALTYSHOOTOUTGOAL",
+  1675: "HIGHLIGHT",
+  1697: "VARCARD",
 };
 
 /**
@@ -202,6 +247,9 @@ const STATISTIC_CODES: Readonly<Record<string, StatisticCode>> = {
   SAVES: "saves",
   PASSES: "passes",
   SUCCESSFULPASSESPERCENTAGE: "pass_accuracy",
+  // The xG add-on's rows (`xGFixture`), shaped like team statistics.
+  EXPECTEDGOALS: "expected_goals",
+  EXPECTEDGOALSONTARGET: "expected_goals_on_target",
 };
 const STATISTIC_TYPE_IDS: Readonly<Record<number, string>> = {
   34: "CORNERS",
@@ -213,6 +261,8 @@ const STATISTIC_TYPE_IDS: Readonly<Record<number, string>> = {
   80: "PASSES",
   82: "SUCCESSFULPASSESPERCENTAGE",
   86: "SHOTSONTARGET",
+  5304: "EXPECTEDGOALS",
+  5305: "EXPECTEDGOALSONTARGET",
 };
 const PERCENT_CODES: ReadonlySet<StatisticCode> = new Set(["possession", "pass_accuracy"]);
 
@@ -519,6 +569,104 @@ function normalizeLineups(
     }));
 }
 
+function normalizePressure(
+  values: readonly unknown[],
+  teams: Record<Side, number>,
+  skipped: MatchDetailsSkipped,
+): MatchDetailsPressure[] {
+  const pressure: MatchDetailsPressure[] = [];
+  const seen = new Set<string>();
+  for (const value of values) {
+    if (!isRecord(value)) {
+      skipped.pressure += 1;
+      continue;
+    }
+    const side = sideOf(teams, value.participant_id);
+    const minute = integerBetween(value.minute, 0, 180);
+    const figure = value.pressure;
+    if (
+      side === null ||
+      minute === null ||
+      typeof figure !== "number" ||
+      !Number.isFinite(figure) ||
+      figure < 0 ||
+      figure > 10_000 ||
+      seen.has(`${side}:${minute}`) ||
+      pressure.length === MAX_PRESSURE_ROWS
+    ) {
+      skipped.pressure += 1;
+      continue;
+    }
+    seen.add(`${side}:${minute}`);
+    pressure.push({ teamExternalId: String(teams[side]), minute, value: figure });
+  }
+  return pressure;
+}
+
+function isoDate(value: unknown): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value
+    ? null
+    : value;
+}
+
+/**
+ * The provider's absent players (`sidelined`, with each row's `sideline` and
+ * `player`). `null` — keep what is stored — when the reply has no such list,
+ * or lists players none of which could be read: a reply that lost its nested
+ * includes must not clear the absences.
+ */
+function normalizeAbsences(
+  values: readonly unknown[] | null,
+  teams: Record<Side, number>,
+  skipped: MatchDetailsSkipped,
+): MatchDetailsAbsence[] | null {
+  if (values === null) return null;
+  const absences: MatchDetailsAbsence[] = [];
+  const keys = new Set<string>();
+  for (const value of values) {
+    const sideline = isRecord(value) && isRecord(value.sideline) ? value.sideline : null;
+    const player = isRecord(value) && isRecord(value.player) ? value.player : null;
+    const id = isRecord(value) ? positiveId(value.id) : null;
+    const side = isRecord(value)
+      ? (sideOf(teams, value.participant_id) ?? sideOf(teams, sideline?.team_id))
+      : null;
+    const kind = typeof sideline?.category === "string" ? sideline.category.toLowerCase() : "";
+    const category = kind.includes("suspen")
+      ? "suspension"
+      : kind.includes("injur")
+        ? "injury"
+        : null;
+    const playerId = isRecord(value)
+      ? (positiveId(value.player_id) ?? positiveId(sideline?.player_id))
+      : null;
+    const playerName = text(player?.display_name ?? player?.common_name ?? player?.name, 200);
+    if (
+      id === null ||
+      side === null ||
+      category === null ||
+      (playerId === null && playerName === null) ||
+      keys.has(String(id)) ||
+      absences.length === MAX_ABSENCES
+    ) {
+      skipped.absences += 1;
+      continue;
+    }
+    keys.add(String(id));
+    absences.push({
+      key: String(id),
+      teamExternalId: String(teams[side]),
+      playerExternalId: playerId === null ? null : String(playerId),
+      playerName,
+      category,
+      expectedReturnOn: isoDate(sideline?.end_date),
+      gamesMissed: integerBetween(sideline?.games_missed, 0, 500),
+    });
+  }
+  return values.length > 0 && absences.length === 0 ? null : absences;
+}
+
 /**
  * One SportsMonks fixture (`/fixtures/{id}` with `MATCH_DETAILS_INCLUDE`) as
  * the payload `api.ingest_football_match_details` takes, plus what was left
@@ -547,7 +695,17 @@ export function normalizeMatchDetails(
     throw new FixtureRuntimeError("invalid_provider_payload");
   }
   const teams = participants(fixture);
-  const skipped: MatchDetailsSkipped = { events: 0, statistics: 0, lineupPlayers: 0 };
+  const skipped: MatchDetailsSkipped = {
+    events: 0,
+    statistics: 0,
+    lineupPlayers: 0,
+    pressure: 0,
+    absences: 0,
+  };
+  // The xG rows come back under `expected` (the include is `xGFixture`).
+  const expectedGoals = [fixture.expected, fixture.xgfixture, fixture.xGFixture].find(
+    Array.isArray,
+  );
   const providerUpdatedAt =
     providerTime(fixture.last_processed_at) ?? providerTime(fixture.updated_at) ?? observedAt;
   return {
@@ -556,8 +714,20 @@ export function normalizeMatchDetails(
     // the same provider version, so two overlapping refreshes settle in order.
     sourceSequence: Math.max(0, Date.parse(observedAt)),
     events: normalizeEvents(rows(fixture.events), teams, skipped),
-    statistics: normalizeStatistics(rows(fixture.statistics), teams, skipped),
+    statistics: normalizeStatistics(
+      [...rows(fixture.statistics), ...rows(expectedGoals)],
+      teams,
+      skipped,
+    ),
     lineups: normalizeLineups(rows(fixture.lineups), rows(fixture.formations), teams, skipped),
+    pressure: normalizePressure(rows(fixture.pressure), teams, skipped),
+    absences: normalizeAbsences(
+      fixture.sidelined === undefined || fixture.sidelined === null
+        ? null
+        : rows(fixture.sidelined),
+      teams,
+      skipped,
+    ),
     skipped,
   };
 }
@@ -678,7 +848,10 @@ export async function runMatchDetailsRefresh(
     statistics: 0,
     lineupPlayers: 0,
     unmappedPlayers: 0,
-    skipped: { events: 0, statistics: 0, lineupPlayers: 0 },
+    pressure: 0,
+    absences: 0,
+    addOnsUnavailable: 0,
+    skipped: { events: 0, statistics: 0, lineupPlayers: 0, pressure: 0, absences: 0 },
     errors: [] as string[],
   };
   // Nothing due is the usual case between kick-offs: no run is recorded.
@@ -707,12 +880,23 @@ export async function runMatchDetailsRefresh(
   const failures = await Promise.all(
     due.map(async (externalId): Promise<string | null> => {
       try {
-        const payload = await providerRequest(
-          `/fixtures/${externalId}`,
-          { include: MATCH_DETAILS_INCLUDE, timezone: "UTC" },
-          config,
-          dependencies,
-        );
+        const read = (include: string) =>
+          providerRequest(
+            `/fixtures/${externalId}`,
+            { include, timezone: "UTC" },
+            config,
+            dependencies,
+          );
+        let payload: Record<string, unknown>;
+        try {
+          payload = await read(MATCH_DETAILS_INCLUDE);
+        } catch (error) {
+          if (!(error instanceof FixtureRuntimeError) || error.code !== "provider_unavailable") {
+            throw error;
+          }
+          payload = await read(MATCH_DETAILS_BASE_INCLUDE);
+          summary.addOnsUnavailable += 1;
+        }
         const details = normalizeMatchDetails(
           payload,
           { fixtureExternalId: externalId, leagueId: config.leagueId, seasonId: config.seasonId },
@@ -736,9 +920,11 @@ export async function runMatchDetailsRefresh(
         summary.statistics += count(result.statistics);
         summary.lineupPlayers += count(result.lineupPlayers);
         summary.unmappedPlayers += count(result.unmappedPlayers);
-        summary.skipped.events += skipped.events;
-        summary.skipped.statistics += skipped.statistics;
-        summary.skipped.lineupPlayers += skipped.lineupPlayers;
+        summary.pressure += count(result.pressure);
+        summary.absences += count(result.absences);
+        for (const section of Object.keys(skipped) as Array<keyof MatchDetailsSkipped>) {
+          summary.skipped[section] += skipped[section];
+        }
         return null;
       } catch (error) {
         return failureCode(error);
@@ -780,6 +966,9 @@ export async function runMatchDetailsRefresh(
         statistics: summary.statistics,
         lineupPlayers: summary.lineupPlayers,
         unmappedPlayers: summary.unmappedPlayers,
+        pressure: summary.pressure,
+        absences: summary.absences,
+        addOnsUnavailable: summary.addOnsUnavailable,
         skipped: summary.skipped,
       },
       p_records_fetched: due.length,

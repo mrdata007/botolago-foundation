@@ -3,9 +3,11 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   FootballLanguage,
   FootballRepository,
+  MatchAbsenceDto,
   MatchCardDto,
   MatchLineupDto,
   MatchPageCursor,
+  MatchPressurePointDto,
   SeasonSummaryDto,
   SquadMemberDto,
   StandingRowDto,
@@ -417,24 +419,33 @@ export const footballService = {
       /** Confirmed/provisional lineups, one entry per team. Empty when the
        * provider has not published lineups yet — never fabricated. */
       lineups: readonly MatchLineupDto[];
+      /** The provider's pressure index, minute by minute; empty without it. */
+      pressure: readonly MatchPressurePointDto[];
+      /** Players the provider lists as injured or suspended for the match. */
+      absences: readonly MatchAbsenceDto[];
     }
   > {
     const repository = getFootballRepository();
     const detail = await repository.getMatchDetail(id, language, requestContext());
     const match = toMatch(detail);
-    const [headToHead, standings, timeline, statistics, lineups] = await Promise.all([
-      repository.getHeadToHead(id, language, 5, requestContext()),
-      repository.getStandings(detail.seasonId, language, requestContext()),
-      repository.getTimeline(id, language, requestContext()),
-      repository.getStatistics(id, language, requestContext()),
-      repository.getLineups(id, language, requestContext()),
-    ]);
+    const [headToHead, standings, timeline, statistics, lineups, pressure, absences] =
+      await Promise.all([
+        repository.getHeadToHead(id, language, 5, requestContext()),
+        repository.getStandings(detail.seasonId, language, requestContext()),
+        repository.getTimeline(id, language, requestContext()),
+        repository.getStatistics(id, language, requestContext()),
+        repository.getLineups(id, language, requestContext()),
+        repository.getPressure(id, language, requestContext()),
+        repository.getAbsences(id, language, requestContext()),
+      ]);
     const allMatches = [detail, ...headToHead];
     return {
       match,
       headToHead: headToHead.map(toMatch),
       live: presentMatchLiveDetail(match, timeline, statistics),
       lineups,
+      pressure,
+      absences,
       matches: allMatches.map(toMatch),
       clubs: uniqueClubs(allMatches, standings),
       standings: standings.map(toTableRow),

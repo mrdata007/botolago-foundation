@@ -60,7 +60,7 @@ describe(`apply-${VERSION}-football-match-details.sql`, () => {
       "set local lock_timeout = '5s';",
       `migration ${VERSION} is already recorded as applied`,
       "the live-refresh cadence (20260924200500) is not applied yet",
-      "a match-details function already exists",
+      "a match-details function or table already exists",
       // The tick as 20260924200500 wrote it, which production held on 2026-09-25.
       `<> '${md5(source(cadence, "app_private.football_live_refresh_tick()"))}' then`,
     ]) {
@@ -77,6 +77,8 @@ describe(`apply-${VERSION}-football-match-details.sql`, () => {
     for (const [signature, variable] of [
       ["api.ingest_football_match_details(", "ingest"],
       ["api.service_football_match_details_due(", "due"],
+      ["api.football_match_pressure(", "pressure"],
+      ["api.football_match_absences(", "absences"],
       ["app_private.football_live_refresh_tick()", "tick"],
     ] as const) {
       expect(script).toContain(
@@ -84,6 +86,8 @@ describe(`apply-${VERSION}-football-match-details.sql`, () => {
       );
     }
     expect(script).toContain("a function is callable by the wrong roles");
+    expect(script).toContain("a new table is open to an API role");
+    expect(script).toContain("the xG statistics are not defined");
     expect(script).toContain(
       "answer := api.service_football_match_details_due('sportsmonks', '28647', 'backfill', 10);",
     );

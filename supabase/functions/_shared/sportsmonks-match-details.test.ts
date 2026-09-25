@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { FixtureRpcClient } from "./sportsmonks-fixtures";
 import {
+  MATCH_DETAILS_BASE_INCLUDE,
   MATCH_DETAILS_INCLUDE,
   matchDetailsConfiguration,
   normalizeMatchDetails,
@@ -182,6 +183,41 @@ function fixture(overrides: Record<string, unknown> = {}) {
         { participant_id: HOME, formation: "4-3-3", location: "home" },
         { participant_id: AWAY, formation: "4-2-3-1", location: "away" },
       ],
+      // The xG add-on (`xGFixture`), which SportsMonks returns as `expected`.
+      expected: [
+        { id: 1, type_id: 5304, participant_id: HOME, location: "home", data: { value: 0.7312 } },
+        { id: 2, type_id: 5304, participant_id: AWAY, location: "away", data: { value: 2.4101 } },
+      ],
+      // The Pressure Index add-on: one club a minute has a positive value.
+      pressure: [
+        { id: 1, participant_id: HOME, minute: 1, pressure: 0 },
+        { id: 2, participant_id: AWAY, minute: 1, pressure: 12.5 },
+        { id: 3, participant_id: HOME, minute: 2, pressure: 30.25 },
+        // Unreadable: a club not in the match, a repeat, a negative value.
+        { id: 4, participant_id: 4242, minute: 3, pressure: 5 },
+        { id: 5, participant_id: HOME, minute: 2, pressure: 31 },
+        { id: 6, participant_id: AWAY, minute: 4, pressure: -1 },
+      ],
+      sidelined: [
+        {
+          id: 81,
+          participant_id: HOME,
+          player_id: 406,
+          type_id: 535,
+          sideline: { category: "injury", end_date: "2026-10-12", games_missed: 3, team_id: HOME },
+          player: { display_name: "Home Injured" },
+        },
+        {
+          id: 82,
+          participant_id: AWAY,
+          player_id: null,
+          sideline: { category: "Suspension", end_date: null, games_missed: 1 },
+          player: { common_name: "Away Banned" },
+        },
+        // Unreadable: no category; no player at all.
+        { id: 83, participant_id: HOME, player_id: 407, sideline: {}, player: null },
+        { id: 84, participant_id: HOME, player_id: null, sideline: { category: "injury" } },
+      ],
       ...overrides,
     },
   };
@@ -241,6 +277,8 @@ describe("normalizeMatchDetails", () => {
     expect(details.skipped.statistics).toBe(2);
     // The row for another club and the unknown lineup type.
     expect(details.skipped.lineupPlayers).toBe(2);
+    expect(details.skipped.pressure).toBe(3);
+    expect(details.skipped.absences).toBe(2);
   });
 
   test("maps the statistics the page defines, by type name or by id", () => {
@@ -249,7 +287,50 @@ describe("normalizeMatchDetails", () => {
       { code: "possession", teamExternalId: "1002", value: 56, displayValue: null },
       { code: "shots", teamExternalId: "1001", value: 9, displayValue: null },
       { code: "shots", teamExternalId: "1002", value: 14, displayValue: null },
+      { code: "expected_goals", teamExternalId: "1001", value: 0.7312, displayValue: null },
+      { code: "expected_goals", teamExternalId: "1002", value: 2.4101, displayValue: null },
     ]);
+  });
+
+  test("keeps the pressure curve one value per club per minute", () => {
+    expect(details.pressure).toEqual([
+      { teamExternalId: "1001", minute: 1, value: 0 },
+      { teamExternalId: "1002", minute: 1, value: 12.5 },
+      { teamExternalId: "1001", minute: 2, value: 30.25 },
+    ]);
+  });
+
+  test("lists the absent players with their club, reason and expected return", () => {
+    expect(details.absences).toEqual([
+      {
+        key: "81",
+        teamExternalId: "1001",
+        playerExternalId: "406",
+        playerName: "Home Injured",
+        category: "injury",
+        expectedReturnOn: "2026-10-12",
+        gamesMissed: 3,
+      },
+      {
+        key: "82",
+        teamExternalId: "1002",
+        playerExternalId: null,
+        playerName: "Away Banned",
+        category: "suspension",
+        expectedReturnOn: null,
+        gamesMissed: 1,
+      },
+    ]);
+  });
+
+  test("keeps the stored absences unless the reply carries a readable list", () => {
+    const absences = (sidelined: unknown) =>
+      normalizeMatchDetails(fixture({ sidelined }), EXPECTED, OBSERVED).absences;
+    expect(absences(undefined)).toBeNull();
+    // Rows whose nested includes are missing cannot clear anything.
+    expect(absences([{ id: 83, participant_id: HOME, player_id: 407 }])).toBeNull();
+    // An empty list is the provider saying nobody is out.
+    expect(absences([])).toEqual([]);
   });
 
   test("builds each club's lineup with its formation, slots and positions", () => {
@@ -309,13 +390,23 @@ describe("normalizeMatchDetails", () => {
 
   test("sends a section the reply lacks as empty, which the database keeps as stored", () => {
     const bare = normalizeMatchDetails(
-      fixture({ events: undefined, statistics: null, lineups: undefined, formations: undefined }),
+      fixture({
+        events: undefined,
+        statistics: null,
+        lineups: undefined,
+        formations: undefined,
+        expected: undefined,
+        pressure: undefined,
+        sidelined: undefined,
+      }),
       EXPECTED,
       OBSERVED,
     );
     expect(bare.events).toEqual([]);
     expect(bare.statistics).toEqual([]);
     expect(bare.lineups).toEqual([]);
+    expect(bare.pressure).toEqual([]);
+    expect(bare.absences).toBeNull();
     // No provider time either: when it was read stands in.
     expect(
       normalizeMatchDetails(fixture({ last_processed_at: null }), EXPECTED, OBSERVED)
@@ -419,6 +510,8 @@ describe("runMatchDetailsRefresh", () => {
                   statistics: 4,
                   lineupPlayers: 4,
                   unmappedPlayers: 1,
+                  pressure: 3,
+                  absences: 2,
                 },
                 error: null,
               }
@@ -437,9 +530,11 @@ describe("runMatchDetailsRefresh", () => {
       sleep: async () => undefined,
     });
 
+    // 7003 is refused, then refused again without the add-ons.
     expect(requested.map((url) => url.pathname).sort()).toEqual([
       "/v3/football/fixtures/7001",
       "/v3/football/fixtures/7002",
+      "/v3/football/fixtures/7003",
       "/v3/football/fixtures/7003",
     ]);
     expect(requested[0].searchParams.get("include")).toBe(MATCH_DETAILS_INCLUDE);
@@ -457,7 +552,10 @@ describe("runMatchDetailsRefresh", () => {
       statistics: 4,
       lineupPlayers: 4,
       unmappedPlayers: 1,
-      skipped: { events: 3, statistics: 2, lineupPlayers: 2 },
+      pressure: 3,
+      absences: 2,
+      addOnsUnavailable: 0,
+      skipped: { events: 3, statistics: 2, lineupPlayers: 2, pressure: 3, absences: 2 },
       errors: ["provider_unavailable"],
     } satisfies MatchDetailsSummary);
 
@@ -494,6 +592,35 @@ describe("runMatchDetailsRefresh", () => {
       p_records_rejected: 1,
       p_error_code: "match_details_item_rejected",
     });
+  });
+
+  test("reads without the add-ons when the plan refuses them", async () => {
+    const includes: Array<string | null> = [];
+    const outcome = await runMatchDetailsRefresh("live", {
+      environment,
+      now: () => new Date(OBSERVED),
+      client: client([], {
+        service_football_match_details_due: () => ({
+          data: [{ externalId: "7001", status: "live_first_half" }],
+          error: null,
+        }),
+        begin_football_ingestion: () => ({
+          data: "50000000-0000-4000-8000-000000000001",
+          error: null,
+        }),
+        ingest_football_match_details: () => ({ data: { outcome: "stored" }, error: null }),
+      }),
+      fetch: async (input) => {
+        const include = new URL(String(input)).searchParams.get("include");
+        includes.push(include);
+        return include === MATCH_DETAILS_INCLUDE
+          ? new Response("add-on not in plan", { status: 403 })
+          : Response.json(fixture({ expected: undefined, pressure: undefined }));
+      },
+    });
+    expect(includes).toEqual([MATCH_DETAILS_INCLUDE, MATCH_DETAILS_BASE_INCLUDE]);
+    expect(MATCH_DETAILS_INCLUDE).toBe(`${MATCH_DETAILS_BASE_INCLUDE};xGFixture;pressure`);
+    expect(outcome).toMatchObject({ stored: 1, rejected: 0, addOnsUnavailable: 1 });
   });
 
   test("does nothing, and records nothing, when no fixture is due", async () => {

@@ -18,7 +18,9 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 
 import {
   lineupSchema,
+  matchAbsenceSchema,
   matchCardSchema,
+  matchPressurePointSchema,
   matchStatisticSchema,
   timelineItemSchema,
 } from "../../src/backend/football/contracts";
@@ -214,6 +216,27 @@ function providerDetails(row: Record<string, unknown>, events: unknown[]) {
         { participant_id: PROVIDER.home, formation: "4-4-2", location: "home" },
         { participant_id: PROVIDER.away, formation: "4-3-3", location: "away" },
       ],
+      // The xG add-on's rows, under the key SportsMonks gives them.
+      expected: [
+        { type_id: 5304, participant_id: PROVIDER.home, location: "home", data: { value: 1.8421 } },
+        { type_id: 5304, participant_id: PROVIDER.away, location: "away", data: { value: 0.731 } },
+      ],
+      // The Pressure Index add-on.
+      pressure: [
+        { participant_id: PROVIDER.home, minute: 1, pressure: 30 },
+        { participant_id: PROVIDER.away, minute: 2, pressure: 12.5 },
+        { participant_id: PROVIDER.home, minute: 46, pressure: 20 },
+      ],
+      // A home defender BotolaGO's catalogue does not know, out injured.
+      sidelined: [
+        {
+          id: 9001,
+          participant_id: PROVIDER.home,
+          player_id: 990_199,
+          sideline: { category: "injury", end_date: "2026-10-12", games_missed: 3 },
+          player: { display_name: "Provider Defender" },
+        },
+      ],
     },
   };
 }
@@ -353,9 +376,12 @@ describe("live scores, provider to screen", () => {
           stored: 1,
           rejected: 0,
           events: 4,
-          statistics: 4,
+          statistics: 6,
           lineupPlayers: 4,
           unmappedPlayers: 0,
+          pressure: 3,
+          absences: 1,
+          addOnsUnavailable: 0,
         });
 
         // The mapping the ingestion created (read as the owner: it is private).
@@ -417,7 +443,23 @@ describe("live scores, provider to screen", () => {
         const stats = await readTab("football_match_statistics", matchStatisticSchema.array());
         expect(stats.map((stat) => [stat.code, stat.homeValue, stat.awayValue])).toEqual([
           ["possession", 55, 45],
+          ["expected_goals", 1.8421, 0.731],
           ["shots", 10, 7],
+        ]);
+        expect(await readTab("football_match_pressure", matchPressurePointSchema.array())).toEqual([
+          { minute: 1, homeValue: 30, awayValue: null },
+          { minute: 2, homeValue: null, awayValue: 12.5 },
+          { minute: 46, homeValue: 20, awayValue: null },
+        ]);
+        expect(await readTab("football_match_absences", matchAbsenceSchema.array())).toEqual([
+          expect.objectContaining({
+            teamId: IDS.home,
+            playerId: null,
+            playerName: "Provider Defender",
+            category: "injury",
+            expectedReturnOn: "2026-10-12",
+            gamesMissed: 3,
+          }),
         ]);
         const lineups = await readTab("football_match_lineups", lineupSchema.array());
         expect(

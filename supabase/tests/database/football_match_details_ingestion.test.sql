@@ -24,6 +24,16 @@ select extensions.ok(
     'api.service_football_match_details_due(text, text, text, integer)', 'execute'),
   'only the service role lists the fixtures due');
 select extensions.ok(
+  has_function_privilege('anon', 'api.football_match_pressure(uuid, text)', 'execute')
+  and has_function_privilege('anon', 'api.football_match_absences(uuid, text)', 'execute'),
+  'visitors read the pressure curve and the absent players, as they read the other tabs');
+select extensions.ok(
+  (select bool_and(relrowsecurity and relforcerowsecurity) from pg_class
+   where oid in ('app.fixture_pressure'::regclass, 'app.fixture_absences'::regclass))
+  and not has_table_privilege('anon', 'app.fixture_pressure', 'select')
+  and not has_table_privilege('service_role', 'app.fixture_absences', 'insert'),
+  'the two new tables are reached only through their functions');
+select extensions.ok(
   (select prosecdef and proconfig = array['search_path=""'] from pg_proc
    where oid = 'api.ingest_football_match_details(text, text, jsonb)'::regprocedure),
   'the ingestion runs as definer with an empty search_path');
@@ -51,7 +61,8 @@ values
   ('f7600000-0000-4000-8000-000000000403', 'home-sub', 'Home Sub', 'H. Sub', 'midfielder'),
   ('f7600000-0000-4000-8000-000000000501', 'away-scorer', 'Away Scorer', 'A. Scorer', 'forward'),
   ('f7600000-0000-4000-8000-000000000502', 'away-maker', 'Away Maker', 'A. Maker', 'midfielder'),
-  ('f7600000-0000-4000-8000-000000000503', 'away-sub', 'Away Sub', 'A. Sub', 'forward');
+  ('f7600000-0000-4000-8000-000000000503', 'away-sub', 'Away Sub', 'A. Sub', 'forward'),
+  ('f7600000-0000-4000-8000-000000000404', 'home-injured', 'Home Injured', 'H. Injured', 'defender');
 
 insert into app.fixtures (id, competition_id, season_id, home_team_id, away_team_id, kickoff_at,
   status, period, home_score, away_score, provider_updated_at, source_sequence, finalized_at)
@@ -74,7 +85,8 @@ values
   ('sportsmonks', 'player', '9900403', 'f7600000-0000-4000-8000-000000000403', now()),
   ('sportsmonks', 'player', '9900501', 'f7600000-0000-4000-8000-000000000501', now()),
   ('sportsmonks', 'player', '9900502', 'f7600000-0000-4000-8000-000000000502', now()),
-  ('sportsmonks', 'player', '9900503', 'f7600000-0000-4000-8000-000000000503', now());
+  ('sportsmonks', 'player', '9900503', 'f7600000-0000-4000-8000-000000000503', now()),
+  ('sportsmonks', 'player', '9900404', 'f7600000-0000-4000-8000-000000000404', now());
 
 create function pg_temp.store(p_details jsonb) returns jsonb language sql as $$
   select api.ingest_football_match_details('sportsmonks', '9907001', p_details)
@@ -115,7 +127,22 @@ select pg_temp.store(jsonb_build_object(
     jsonb_build_object('code', 'possession', 'teamExternalId', '9901002', 'value', 56),
     jsonb_build_object('code', 'shots', 'teamExternalId', '9901001', 'value', 9),
     jsonb_build_object('code', 'shots', 'teamExternalId', '9901002', 'value', 14),
-    jsonb_build_object('code', 'attacks', 'teamExternalId', '9901002', 'value', 90)
+    jsonb_build_object('code', 'attacks', 'teamExternalId', '9901002', 'value', 90),
+    jsonb_build_object('code', 'expected_goals', 'teamExternalId', '9901001', 'value', 0.731),
+    jsonb_build_object('code', 'expected_goals', 'teamExternalId', '9901002', 'value', 1.8421)
+  ),
+  'pressure', jsonb_build_array(
+    jsonb_build_object('teamExternalId', '9901001', 'minute', 1, 'value', 0),
+    jsonb_build_object('teamExternalId', '9901002', 'minute', 1, 'value', 12.5),
+    jsonb_build_object('teamExternalId', '9901001', 'minute', 2, 'value', 30.25)
+  ),
+  'absences', jsonb_build_array(
+    jsonb_build_object('key', '81', 'teamExternalId', '9901001', 'playerExternalId', '9900404',
+      'playerName', 'Provider Injured', 'category', 'injury', 'expectedReturnOn', '2026-10-12',
+      'gamesMissed', 3),
+    jsonb_build_object('key', '82', 'teamExternalId', '9901002', 'playerExternalId', '9900999',
+      'playerName', 'Unknown Suspended', 'category', 'suspension', 'expectedReturnOn', null,
+      'gamesMissed', null)
   ),
   'lineups', jsonb_build_array(
     jsonb_build_object('teamExternalId', '9901001', 'formation', '4-3-3', 'confirmed', true,
@@ -139,8 +166,8 @@ select pg_temp.store(jsonb_build_object(
 
 select extensions.is((select result from first_result),
   jsonb_build_object('outcome', 'stored', 'fixtureId', 'f7500000-0000-4000-8000-000000000001',
-    'events', 5, 'eventsRemoved', 0, 'statistics', 4, 'lineups', 2, 'lineupPlayers', 5,
-    'unmappedPlayers', 2),
+    'events', 5, 'eventsRemoved', 0, 'statistics', 6, 'lineups', 2, 'lineupPlayers', 5,
+    'unmappedPlayers', 2, 'pressure', 3, 'absences', 2, 'absencesRemoved', 0),
   'the first delivery is stored whole; the unknown statistic and the two unknown players are left out');
 
 select extensions.is(jsonb_array_length(pg_temp.timeline()), 5, 'the Résumé reads five events');
@@ -160,8 +187,26 @@ select extensions.is(
   (select jsonb_agg(jsonb_build_array(item ->> 'code', (item ->> 'homeValue')::numeric,
      (item ->> 'awayValue')::numeric) order by item ->> 'code')
    from jsonb_array_elements(api.football_match_statistics('f7500000-0000-4000-8000-000000000001', 'fr')) item),
-  '[["possession", 44, 56], ["shots", 9, 14]]'::jsonb,
-  'the Stats tab reads possession and shots for both clubs');
+  '[["expected_goals", 0.731, 1.8421], ["possession", 44, 56], ["shots", 9, 14]]'::jsonb,
+  'the Stats tab reads expected goals, possession and shots for both clubs');
+select extensions.is(
+  (select array_agg(item ->> 'code' order by ordinality)
+   from jsonb_array_elements(api.football_match_statistics('f7500000-0000-4000-8000-000000000001', 'fr'))
+     with ordinality as listed(item, ordinality)),
+  array['possession', 'expected_goals', 'shots'], 'xG is listed right after possession');
+
+select extensions.is(api.football_match_pressure('f7500000-0000-4000-8000-000000000001', 'fr'),
+  '[{"minute": 1, "homeValue": 0, "awayValue": 12.5}, {"minute": 2, "homeValue": 30.25, "awayValue": null}]'::jsonb,
+  'the pressure chart reads one row a minute with both clubs');
+select extensions.is(
+  (select jsonb_agg(jsonb_build_array(item ->> 'playerName', item ->> 'category', item ->> 'position',
+     item ->> 'expectedReturnOn', (item ->> 'gamesMissed')::int, item ->> 'teamId')
+     order by item ->> 'playerName')
+   from jsonb_array_elements(api.football_match_absences('f7500000-0000-4000-8000-000000000001', 'fr')) item),
+  jsonb_build_array(
+    jsonb_build_array('H. Injured', 'injury', 'defender', '2026-10-12', 3, 'f7400000-0000-4000-8000-000000000001'),
+    jsonb_build_array('Unknown Suspended', 'suspension', null, null, null, 'f7400000-0000-4000-8000-000000000002')),
+  'the Compos tab reads the absent players: a known one by the catalogue''s name, an unknown one by the provider''s');
 
 select extensions.is(
   (select jsonb_agg(jsonb_build_object('formation', lineup ->> 'formation',
@@ -186,6 +231,9 @@ select extensions.is(
 create temporary table kept as
 select event.provider_event_key, event.id from app.match_events event
 where event.fixture_id = 'f7500000-0000-4000-8000-000000000001';
+create temporary table kept_absence as
+select provider_key, id from app.fixture_absences
+where fixture_id = 'f7500000-0000-4000-8000-000000000001' and provider_key = 'sportsmonks:sidelined:81';
 
 select extensions.is(pg_temp.store(jsonb_build_object(
   'providerUpdatedAt', now() - interval '10 minutes',
@@ -205,7 +253,16 @@ select extensions.is(pg_temp.store(jsonb_build_object(
     jsonb_build_object('code', 'possession', 'teamExternalId', '9901001', 'value', 45),
     jsonb_build_object('code', 'possession', 'teamExternalId', '9901002', 'value', 55)
   ),
-  'lineups', '[]'::jsonb
+  'lineups', '[]'::jsonb,
+  'pressure', jsonb_build_array(
+    jsonb_build_object('teamExternalId', '9901001', 'minute', 1, 'value', 0),
+    jsonb_build_object('teamExternalId', '9901002', 'minute', 1, 'value', 11),
+    jsonb_build_object('teamExternalId', '9901001', 'minute', 2, 'value', 30.25),
+    jsonb_build_object('teamExternalId', '9901002', 'minute', 3, 'value', 40)
+  ),
+  'absences', jsonb_build_array(
+    jsonb_build_object('key', '81', 'teamExternalId', '9901001', 'playerExternalId', '9900404',
+      'category', 'injury', 'expectedReturnOn', '2026-10-19', 'gamesMissed', 4))
 )) ->> 'eventsRemoved', '2', 'a later delivery removes the two events it no longer reports');
 
 select extensions.ok(
@@ -228,7 +285,15 @@ select extensions.is(
    join app.lineups lineup on lineup.id = selection.lineup_id
    where lineup.fixture_id = 'f7500000-0000-4000-8000-000000000001'), 5,
   'an empty lineups section keeps the stored lineups');
-
+select extensions.is(
+  (select array_agg(minute || ':' || pressure order by minute, team_id) from app.fixture_pressure
+   where fixture_id = 'f7500000-0000-4000-8000-000000000001'),
+  array['1:0.000', '1:11.000', '2:30.250', '3:40.000'], 'the pressure curve is replaced whole, revised minute included');
+select extensions.ok(
+  (select count(*) = 1 from app.fixture_absences where fixture_id = 'f7500000-0000-4000-8000-000000000001')
+  and (select id = (select id from kept_absence) and expected_return_on = date '2026-10-19'
+       from app.fixture_absences where provider_key = 'sportsmonks:sidelined:81'),
+  'a player no longer listed is no longer absent; the one still out keeps his row, with the new return date');
 -- ---------------------------------------------------------------------------
 -- An older reply, and an empty one.
 -- ---------------------------------------------------------------------------
@@ -252,7 +317,15 @@ select extensions.ok(
   and (select count(*) = 2 from app.fixture_team_statistics
        where fixture_id = 'f7500000-0000-4000-8000-000000000001'),
   'but wipes nothing');
-
+select extensions.ok(
+  (select count(*) = 1 from app.fixture_absences where fixture_id = 'f7500000-0000-4000-8000-000000000001')
+  and (select count(*) = 4 from app.fixture_pressure where fixture_id = 'f7500000-0000-4000-8000-000000000001'),
+  'no absences section and no pressure keep what is stored');
+select extensions.is(pg_temp.store(jsonb_build_object(
+  'providerUpdatedAt', now() - interval '4 minutes',
+  'sourceSequence', 3100,
+  'absences', '[]'::jsonb
+)) ->> 'absencesRemoved', '1', 'an empty absences list means nobody is out any more');
 -- ---------------------------------------------------------------------------
 -- Refusals: the whole delivery, nothing half-written.
 -- ---------------------------------------------------------------------------
@@ -284,6 +357,22 @@ select extensions.throws_ok($$ select pg_temp.store(jsonb_build_object(
 select extensions.throws_ok($$ select api.ingest_football_match_details('sportsmonks', '9907999',
   jsonb_build_object('providerUpdatedAt', now(), 'sourceSequence', 1)) $$,
   'P0002', 'MAPPING_NOT_FOUND', 'a fixture BotolaGO does not know is refused');
+select extensions.throws_ok($$ select pg_temp.store(jsonb_build_object(
+  'providerUpdatedAt', now(), 'sourceSequence', 4000,
+  'pressure', jsonb_build_array(
+    jsonb_build_object('teamExternalId', '9901001', 'minute', 5, 'value', 1),
+    jsonb_build_object('teamExternalId', '9901001', 'minute', 5, 'value', 2)))) $$,
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'two pressure values for one club and minute are refused');
+select extensions.throws_ok($$ select pg_temp.store(jsonb_build_object(
+  'providerUpdatedAt', now(), 'sourceSequence', 4000,
+  'absences', jsonb_build_array(jsonb_build_object('key', '90', 'teamExternalId', '9901001',
+    'playerName', 'Someone', 'category', 'holiday')))) $$,
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'an absence that is neither an injury nor a suspension is refused');
+select extensions.throws_ok($$ select pg_temp.store(jsonb_build_object(
+  'providerUpdatedAt', now(), 'sourceSequence', 4000,
+  'absences', jsonb_build_array(jsonb_build_object('key', '90', 'teamExternalId', '9901001',
+    'playerName', 'Someone', 'category', 'injury', 'expectedReturnOn', 'soon')))) $$,
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'as is a return date that is not a date');
 select extensions.throws_ok($$ select pg_temp.store('[]'::jsonb) $$,
   '22023', 'INVALID_PROVIDER_PAYLOAD', 'a payload that is not an object is refused');
 select extensions.is(
