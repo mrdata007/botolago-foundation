@@ -230,8 +230,8 @@ export type CoverageGap = IncompleteFixture & {
  * that fixture, and aging it would page for certified matches. It waits,
  * named by its code. Where migration 20260925180400 is applied,
  * `fantasy_fixture_coverage` in `api.service_ops_health` reads real coverage
- * and pages for a counted match still without certified statistics 6 h after
- * its final whistle.
+ * and warns for a counted match still without certified statistics 6 h after
+ * its final whistle, paging at 12 h.
  */
 export function assessCoverage(
   incomplete: readonly IncompleteFixture[],

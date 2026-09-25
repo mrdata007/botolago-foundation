@@ -227,9 +227,9 @@ are certified; no read-only API does per fixture. A fixture the outage kept
 the pass from reading carries `waitingOn: "provider_outage"`, is never
 `overdue`, and leaves the pass `waiting`; `performances.providerOutage` names
 the code. The database's `fantasy_fixture_coverage` check, which reads real
-coverage, fails for a counted match still without certified statistics 6 h
-after its final whistle, outage or not, wherever migration 20260925180400 is
-applied (until then, the watchdog's `fantasy_points` row pages later, once
+coverage, warns for a counted match still without certified statistics 6 h
+after its final whistle and fails (pages) at 12 h, outage or not, wherever
+migration 20260925180400 is applied (until then, the watchdog's `fantasy_points` row pages later, once
 the gameweek is past its window without points). A fixture that was read and
 not certified still ages and escalates, even one certified by an earlier pass
 (a provider correction the database refuses, for instance): the listing cannot
@@ -362,7 +362,14 @@ time; pg_cron jobs and other lanes are not covered by that and must be checked.
    `app.fantasy_team_gameweek_results`. A fixture with statistics and a
    gameweek still `live` is expected until its last match is final.
 
-5. **Idempotent rerun.** Dispatch step 3 again, or let the next orchestrator
+5. **Score it.** Once the canary is green, dispatch _Fantasy season
+   orchestrator_ on `main` (type `RUN_FANTASY_ORCHESTRATOR`): only its worker
+   scores and finalizes a gameweek, and GitHub has started the hourly
+   schedule up to 6.3 h late. It shares the canary's concurrency group, so it
+   waits for it. Otherwise the database's `fantasy_scoring` check warns an
+   hour after the certification and pages 8 h after it
+   ([FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md](FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md)).
+6. **Idempotent rerun.** Dispatch step 3 again, or let the next orchestrator
    pass run. The fixture must come back with the same `sourceVersion` and the
    query in step 4 must return the same row counts: identical facts only
    advance the observation watermark.
