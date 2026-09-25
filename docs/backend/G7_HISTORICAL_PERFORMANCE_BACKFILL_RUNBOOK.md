@@ -145,6 +145,12 @@ changed is how many of those 22 may lack a `player_id` ("anonymous") before the 
   even the identified ones, feed pricing — because they exceed the 4-anonymous cap. This is a
   genuine data limitation in the provider's payload for those two fixtures, not a mapping defect.
 
+**Update, 2026-09-25 (owner decision):** the current season follows the same rule since
+`20260925110000_current_performance_unnamed_starters.sql`. Its first finished match (fixture
+19874708) had 3 unnamed starters and 4 other unnamed rows, and could not be imported, so Gameweek 1
+could not be scored. Up to 4 unnamed starters are now accepted there too; a match with more waits.
+The paragraph below describes the rule as it was first scoped, to last season only.
+
 This is a deliberate, scoped **relaxation** of the old rule, not "the same invariant read more
 carefully." It applies **only** to this historical (completed-season) ingestion path —
 `api.ingest_historical_player_fixture_performance` / `api.quarantine_historical_player_fixture_performance`,
