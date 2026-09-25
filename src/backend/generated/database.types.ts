@@ -1025,6 +1025,14 @@ export type Database = {
         }
         Returns: string
       }
+      ingest_football_match_details: {
+        Args: {
+          p_details: Json
+          p_fixture_external_id: string
+          p_provider_name: string
+        }
+        Returns: Json
+      }
       ingest_football_squad: {
         Args: {
           p_memberships: Json
@@ -1515,6 +1523,15 @@ export type Database = {
           p_batch_size?: number
           p_calculation_version: number
           p_gameweek_id: string
+        }
+        Returns: Json
+      }
+      service_football_match_details_due: {
+        Args: {
+          p_limit?: number
+          p_provider_name: string
+          p_scope: string
+          p_season_external_id: string
         }
         Returns: Json
       }
