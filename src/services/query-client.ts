@@ -1,4 +1,4 @@
-import { QueryCache, QueryClient, type QueryMeta } from "@tanstack/react-query";
+import { QueryCache, QueryClient } from "@tanstack/react-query";
 
 import { isMfaStepUpError, reportMfaStepUp } from "@/backend/auth/step-up";
 import { BackendError } from "@/backend/errors";
@@ -33,14 +33,6 @@ export function queryRetryDelay(attempt: number, random: () => number = Math.ran
 }
 
 /**
- * A staff screen's query says so with this meta. Staff MFA has its own states
- * and screens, and its RPCs use `mfa_required` for "no factor enrolled" (see
- * `@/backend/auth/step-up`), so their refusals must not reach the reader's
- * challenge.
- */
-export const STAFF_MFA_QUERY_META = { staffMfa: true } as const satisfies QueryMeta;
-
-/**
  * Every read the app makes through React Query, refused for want of the
  * one-time code, goes where a refused write goes: to the auth layer, which
  * says so and re-reads the session (a factor enrolled on another device is
@@ -49,9 +41,13 @@ export const STAFF_MFA_QUERY_META = { staffMfa: true } as const satisfies QueryM
  * domain mappers already report on their way through; this also covers the
  * reads whose mapper does not, and the listener collapses repeats. Without it,
  * a page read refused this way showed its generic error and nothing else.
+ *
+ * Staff screens read nothing through React Query: staff MFA has its own states
+ * and screens, and its RPCs use `mfa_required` for "no factor enrolled" (see
+ * `@/backend/auth/step-up`). A staff query added here would send those
+ * refusals to the reader's challenge, so it must keep them out first.
  */
-export function reportRefusedQuery(error: unknown, query: { meta?: QueryMeta }): void {
-  if (query.meta?.staffMfa === true) return;
+export function reportRefusedQuery(error: unknown): void {
   reportMfaStepUp(error);
 }
 

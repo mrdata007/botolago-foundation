@@ -9,7 +9,6 @@ import {
   queryRetryDelay,
   SEASON_CATALOG_STALE_MS,
   shouldRetryQuery,
-  STAFF_MFA_QUERY_META,
 } from "./query-client";
 
 describe("app query cache defaults", () => {
@@ -151,7 +150,7 @@ describe("a read refused for want of the one-time code", () => {
     }
   });
 
-  test("other failures, and a staff screen's own MFA refusal, are not reported", async () => {
+  test("other failures are not reported", async () => {
     const { reports, off } = countReports();
     const client = createAppQueryClient();
     try {
@@ -164,17 +163,16 @@ describe("a read refused for want of the one-time code", () => {
           retryDelay: 0,
         }),
       ).rejects.toThrow("upstream 500");
-      // Staff RPCs use `mfa_required` for "no factor enrolled"; their screens
-      // own that state.
+      // Another 403 is its own screen's to explain.
       await expect(
         client.fetchQuery({
-          queryKey: ["admin", "users"],
+          queryKey: ["account", "standing"],
           queryFn: async () => {
-            throw stepUp;
+            throw { code: "PT403", message: "account_banned" };
           },
-          meta: STAFF_MFA_QUERY_META,
+          retry: false,
         }),
-      ).rejects.toBe(stepUp);
+      ).rejects.toEqual({ code: "PT403", message: "account_banned" });
       expect(reports.count).toBe(0);
     } finally {
       off();
