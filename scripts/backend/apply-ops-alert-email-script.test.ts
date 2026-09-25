@@ -51,6 +51,8 @@ describe("apply-20260926001000-ops-alert-email.sql", () => {
       "app_private.ops_alert_state.email_to already exists",
       "migration 20260924200200 (ops health and alerts)",
       "migration 20260924140100 (notification email delivery)",
+      // Production's recorded version for it (production-migration-aliases.json).
+      "where version in ('20260924140100', '20260924131431')",
       "pg_cron job ops-alert-tick",
     ]) {
       const at = script.indexOf(guard);
