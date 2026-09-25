@@ -38,5 +38,8 @@ export const primaryNavItems: PrimaryNavItem[] = allPrimaryNavItems.filter(
 );
 
 export function isPrimaryRouteActive(pathname: string, route: PrimaryRoute): boolean {
-  return route === "/" ? pathname === "/" : pathname.startsWith(route);
+  if (route === "/") return pathname === "/";
+  // Pronostics lives in the Matches section (BG-0146): the bar has no sixth slot.
+  if (route === "/matches" && pathname.startsWith("/pronostics")) return true;
+  return pathname.startsWith(route);
 }

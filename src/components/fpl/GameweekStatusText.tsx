@@ -20,9 +20,16 @@ import type { FantasyGameweekStatus } from "@/types/domain";
  */
 export function GameweekStatusText({
   status,
+  deadlinePassed = false,
   className,
 }: {
   status: FantasyGameweekStatus;
+  /**
+   * The caller's own deadline clock. An `open` gameweek whose deadline has
+   * passed is closed to every change even before the scheduler records the
+   * lock, so it must not read "Ouverte" (it did on 2026-09-24).
+   */
+  deadlinePassed?: boolean;
   className?: string;
 }) {
   const { t } = useI18n();
@@ -30,19 +37,21 @@ export function GameweekStatusText({
   const label =
     status === "scheduled"
       ? t("fantasy.gameweek.status.scheduled")
-      : status === "open"
-        ? t("fantasy.gameweek.status.open")
-        : status === "locked"
-          ? t("fantasy.gameweek.status.locked")
-          : status === "live"
-            ? t("fantasy.gameweek.status.live")
-            : status === "provisional"
-              ? t("fantasy.gameweek.status.provisional")
-              : status === "finalizing"
-                ? t("fantasy.gameweek.status.finalizing")
-                : status === "cancelled"
-                  ? t("fantasy.gameweek.status.cancelled")
-                  : t("fantasy.gameweek.status.final");
+      : status === "open" && deadlinePassed
+        ? t("fantasy.gameweek.status.closed")
+        : status === "open"
+          ? t("fantasy.gameweek.status.open")
+          : status === "locked"
+            ? t("fantasy.gameweek.status.locked")
+            : status === "live"
+              ? t("fantasy.gameweek.status.live")
+              : status === "provisional"
+                ? t("fantasy.gameweek.status.provisional")
+                : status === "finalizing"
+                  ? t("fantasy.gameweek.status.finalizing")
+                  : status === "cancelled"
+                    ? t("fantasy.gameweek.status.cancelled")
+                    : t("fantasy.gameweek.status.final");
   return (
     <span className={cn("inline-flex min-w-0 items-center gap-1.5", className)}>
       {live ? (

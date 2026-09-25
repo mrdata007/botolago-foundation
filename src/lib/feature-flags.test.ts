@@ -7,6 +7,9 @@ import {
   NEWS_ENABLED,
   OAUTH_PROVIDERS_ENABLED,
   PRIZES_ENABLED,
+  PRONOSTICS_ENABLED,
+  PRONOSTICS_PROMOTED,
+  ANALYTICS_ENABLED,
 } from "@/lib/feature-flags";
 import { SITEMAP_STATIC_PATHS } from "@/lib/sitemap";
 import { primaryNavItems } from "@/components/shell/primary-nav";
@@ -179,9 +182,13 @@ describe("OAUTH_PROVIDERS_ENABLED", () => {
     const shell = read("src/components/auth/AuthShell.tsx");
     expect(shell).toContain("export function GoogleGlyph");
     expect(shell).toContain("export function AppleGlyph");
-    const dictionary = read("src/i18n/dictionaries.ts");
-    for (const key of ['"auth.google"', '"auth.apple"', '"auth.or_continue_with"']) {
-      expect(dictionary).toContain(key);
+    // One file per language since the Arabic dictionary is loaded on demand:
+    // the copy has to stay in both.
+    for (const file of ["src/i18n/dictionary-fr.ts", "src/i18n/dictionary-ar.ts"]) {
+      const dictionary = read(file);
+      for (const key of ['"auth.google"', '"auth.apple"', '"auth.or_continue_with"']) {
+        expect(`${file} ${key}: ${dictionary.includes(key)}`).toBe(`${file} ${key}: true`);
+      }
     }
   });
 });
@@ -212,11 +219,10 @@ describe("DARK_MODE_ENABLED", () => {
 });
 
 /**
- * Fantasy prizes ship switched off (owner decision, 2026-09-24): the public
- * pages, the hub row and the first-visit welcome stay hidden until the final
- * prize T&Cs, the sponsor's sign-off and the database promotion are in. Like
- * the News block above, nothing here asserts the value -- flipping it is the
- * supported way to launch -- only that every surface reads it.
+ * Fantasy prizes (owner decision, 2026-09-24): the public pages, the hub row
+ * and the first-visit welcome show only while the flag is on. Like the News
+ * block above, nothing here asserts the value -- flipping it is the supported
+ * way to launch or withdraw them -- only that every surface reads it.
  */
 describe("PRIZES_ENABLED", () => {
   test("is a single boolean constant, recorded once with its owner and date", () => {
@@ -258,5 +264,103 @@ describe("PRIZES_ENABLED", () => {
   test("the admin console is not gated: the catalog is prepared before launch", () => {
     const source = stripComments(read("src/routes/admin.prizes.tsx"));
     expect(source).not.toContain("PRIZES_ENABLED");
+  });
+});
+
+/**
+ * BG-0146 — Pronostics. Two build flags; the database `mode` is the real gate.
+ * Like the others, these assert that each surface READS the flag, and they
+ * keep passing whichever way the flags are set.
+ */
+describe("PRONOSTICS_ENABLED / PRONOSTICS_PROMOTED", () => {
+  test("are single boolean constants, recorded once with the decision", () => {
+    expect(typeof PRONOSTICS_ENABLED).toBe("boolean");
+    expect(typeof PRONOSTICS_PROMOTED).toBe("boolean");
+    const source = read("src/lib/feature-flags.ts");
+    expect(source.match(/export const PRONOSTICS_ENABLED/g)).toHaveLength(1);
+    expect(source.match(/export const PRONOSTICS_PROMOTED/g)).toHaveLength(1);
+    expect(source).toContain("BG-0146");
+  });
+
+  test("the /pronostics routes redirect Home while the page is off", () => {
+    const source = stripComments(read("src/routes/pronostics.tsx"));
+    expect(source).toContain(
+      'if (!PRONOSTICS_ENABLED) throw redirect({ to: "/", replace: true });',
+    );
+    expect(source).toContain("beforeLoad: redirectWhilePronosticsAreHidden");
+  });
+
+  test.each([
+    ["src/routes/pronostics.index.tsx", "PRONOSTICS_PROMOTED && loaderData?.indexable"],
+    ["src/lib/sitemap.ts", "...(PRONOSTICS_PROMOTED ?"],
+    ["src/routes/index.tsx", "{PRONOSTICS_PROMOTED && ("],
+    ["src/components/matches/MatchesTabs.tsx", "...(PRONOSTICS_PROMOTED"],
+    ["src/routes/matches.$matchId.tsx", "{PRONOSTICS_PROMOTED && ("],
+    ["src/routes/fantasy.leagues.$leagueId.tsx", "...(PRONOSTICS_PROMOTED"],
+  ])("%s gates its entry point on PRONOSTICS_PROMOTED", (file, needle) => {
+    const source = stripComments(read(file));
+    expect(source).toContain('from "@/lib/feature-flags"');
+    expect(source).toContain(needle);
+  });
+
+  test("the sitemap lists /pronostics only once promoted", () => {
+    const listed = (SITEMAP_STATIC_PATHS as readonly string[]).includes("/pronostics");
+    expect(listed).toBe(PRONOSTICS_PROMOTED);
+  });
+
+  test("no other source file mentions the promoted flag", () => {
+    const allowed = new Set([
+      "src/lib/feature-flags.ts",
+      "src/routes/pronostics.index.tsx",
+      "src/lib/sitemap.ts",
+      "src/routes/index.tsx",
+      "src/components/matches/MatchesTabs.tsx",
+      "src/routes/matches.$matchId.tsx",
+      "src/routes/fantasy.leagues.$leagueId.tsx",
+    ]);
+    const strays = sourceFiles().filter(
+      (file) => !allowed.has(file) && stripComments(read(file)).includes("PRONOSTICS_PROMOTED"),
+    );
+    expect(strays).toEqual([]);
+  });
+});
+
+/**
+ * BG-0146 — audience measurement. The script, the page views, the events and
+ * the privacy policy's lines about them all read this one switch, so the
+ * policy can never describe a tool the build does not load, or the reverse.
+ */
+describe("ANALYTICS_ENABLED", () => {
+  test("is a single boolean constant, recorded once with the decision", () => {
+    expect(typeof ANALYTICS_ENABLED).toBe("boolean");
+    const source = read("src/lib/feature-flags.ts");
+    expect(source.match(/export const ANALYTICS_ENABLED/g)).toHaveLength(1);
+  });
+
+  test("measurement needs the switch AND a production build", () => {
+    const source = stripComments(read("src/lib/analytics.ts"));
+    expect(source).toContain("ANALYTICS_ENABLED && import.meta.env.PROD === true");
+  });
+
+  test("the root page loads the script and counts pages only when measuring", () => {
+    const source = stripComments(read("src/routes/__root.tsx"));
+    expect(source).toContain("...(ANALYTICS_ACTIVE");
+    expect(source).toContain("{ANALYTICS_ACTIVE && <AnalyticsPageviews />}");
+  });
+
+  test("the privacy policy's analytics lines follow it", () => {
+    expect(stripComments(read("src/content/legal/documents.ts"))).toContain("ANALYTICS_ENABLED");
+  });
+
+  test("no other source file reads the switch directly", () => {
+    const allowed = new Set([
+      "src/lib/feature-flags.ts",
+      "src/lib/analytics.ts",
+      "src/content/legal/documents.ts",
+    ]);
+    const strays = sourceFiles().filter(
+      (file) => !allowed.has(file) && stripComments(read(file)).includes("ANALYTICS_ENABLED"),
+    );
+    expect(strays).toEqual([]);
   });
 });

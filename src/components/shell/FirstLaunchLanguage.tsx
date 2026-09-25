@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "@/i18n/provider";
-import { dictionaries } from "@/i18n/dictionaries";
+import { fr } from "@/i18n/dictionary-fr";
+import { CHOOSER_ARABIC } from "@/i18n/language-chooser-copy";
 import type { Language } from "@/types/domain";
 import { Logo } from "@/components/brand/Logo";
 import { Check } from "lucide-react";
@@ -39,8 +40,8 @@ export function FirstLaunchLanguage() {
   if (!isHydrated || hasChosen) return null;
 
   const options: { code: Language; native: string; sub: string; dir: "ltr" | "rtl" }[] = [
-    { code: "fr", native: "Français", sub: dictionaries.fr["app.tagline"], dir: "ltr" },
-    { code: "ar", native: "العربية", sub: dictionaries.ar["app.tagline"], dir: "rtl" },
+    { code: "fr", native: "Français", sub: fr["app.tagline"], dir: "ltr" },
+    { code: "ar", native: "العربية", sub: CHOOSER_ARABIC["app.tagline"], dir: "rtl" },
   ];
 
   return (
@@ -71,13 +72,13 @@ export function FirstLaunchLanguage() {
             <Logo />
           </div>
           <DialogPrimitive.Title className={cn("text-center", ui.display.title, ui.tone.default)}>
-            {dictionaries.fr["language.choose_title"]}
+            {fr["language.choose_title"]}
           </DialogPrimitive.Title>
           <DialogPrimitive.Description
             className={cn("mt-1 text-center", ui.text.secondary, ui.tone.muted)}
             dir="rtl"
           >
-            {dictionaries.ar["language.choose_title"]}
+            {CHOOSER_ARABIC["language.choose_title"]}
           </DialogPrimitive.Description>
 
           <div className="mt-6 grid gap-3">
@@ -153,9 +154,7 @@ export function FirstLaunchLanguage() {
               A primitive is safe here in a way `UiModal` is not: it paints,
               it does not take the dialog's dismissal behaviour away. */}
           <UiButton onClick={() => setLanguage(selected)} className="mt-6 hover:brightness-105">
-            {selected === "ar"
-              ? dictionaries.ar["language.continue"]
-              : dictionaries.fr["language.continue"]}
+            {selected === "ar" ? CHOOSER_ARABIC["language.continue"] : fr["language.continue"]}
           </UiButton>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>

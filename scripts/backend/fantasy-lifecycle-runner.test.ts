@@ -356,6 +356,71 @@ describe("bounded manual Fantasy pipeline", () => {
     ]);
   });
 
+  it("re-reads and carries on when another worker moved the gameweek first", async () => {
+    // The database lifecycle tick locked GW1 between this run's read and its
+    // write: the advance answers stale_update. That is not a failure.
+    const calls: string[] = [];
+    let advances = 0;
+    const base = {
+      gameweekId,
+      seasonId,
+      lockVersion: 1,
+      sequenceNumber: 1,
+      scoringInputVersion: 0,
+      nextGameweekId: null,
+      advancedToGameweekId: null,
+    };
+    const gateway: FantasyWorkerGateway = {
+      async rpc(name) {
+        calls.push(name);
+        if (name === "service_fantasy_lifecycle_state")
+          return calls.length === 1
+            ? { ...base, status: "open" }
+            : { ...base, status: "locked", lockVersion: 2 };
+        if (name === "service_advance_fantasy_lifecycle") {
+          advances += 1;
+          if (advances === 1) throw rpcFailure("stale_update", "PT409");
+          return {
+            ...base,
+            status: "locked",
+            lockVersion: 2,
+            changed: false,
+            hasMore: false,
+            waitingReason: "football_not_started",
+          };
+        }
+        throw new Error(`unexpected ${name}`);
+      },
+    };
+    const result = await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 });
+    expect(result).toMatchObject({ outcome: "waiting", reason: "football_not_started" });
+    expect(calls).toEqual([
+      "service_fantasy_lifecycle_state",
+      "service_advance_fantasy_lifecycle",
+      "service_fantasy_lifecycle_state",
+      "service_advance_fantasy_lifecycle",
+    ]);
+  });
+
+  it("still fails when the gameweek keeps moving under it", async () => {
+    const gateway: FantasyWorkerGateway = {
+      async rpc(name) {
+        if (name === "service_advance_fantasy_lifecycle") throw rpcFailure("stale_update", "PT409");
+        return {
+          gameweekId,
+          seasonId,
+          status: "open",
+          lockVersion: 1,
+          sequenceNumber: 1,
+          scoringInputVersion: 0,
+        };
+      },
+    };
+    await expect(
+      runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 }),
+    ).rejects.toThrow("stale_update");
+  });
+
   it("resumes finalizing without rewriting persisted player/team results", async () => {
     const { gateway, calls } = harness("finalizing");
     await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 });

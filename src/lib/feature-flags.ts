@@ -136,24 +136,27 @@ export const DARK_MODE_ENABLED = false;
 export const OAUTH_PROVIDERS_ENABLED = true;
 
 /**
- * Fantasy prizes (public surfaces) — OFF until launch.
+ * Fantasy prizes (public surfaces) — ON since 2026-09-24.
  *
- * Owner decision, 2026-09-24: the sponsor-funded prize system ships switched
- * off. Three things must be true before this becomes `true`:
+ * Owner decision, 2026-09-24: the prize system shipped switched off, then the
+ * owner switched it on the same day, once the three launch conditions held:
  *
  *   1. the prize T&Cs in `src/content/legal/prize-terms.ts` carry the owner's
- *      final legal text -- every `[TODO …]` span is replaced. The production
- *      build refuses to run while this flag is on and a span survives
+ *      final text -- every `[TODO …]` span is replaced. The production build
+ *      refuses to run while this flag is on and a span survives
  *      (`scripts/qa/legal-placeholder-gate.ts`);
- *   2. the sponsor has signed off on the catalog shown on the page;
- *   3. `supabase/migrations/20260924120000_fantasy_prizes.sql` has been promoted
- *      to production through the reviewed migration path.
+ *   2. no sponsor is involved -- Go Sports Technologies provides the prizes --
+ *      so there is no sponsor sign-off to wait for (the owner dropped that
+ *      condition). A sponsor added to a prize later needs naming in the T&Cs;
+ *   3. `supabase/migrations/20260924120000_fantasy_prizes.sql` is on
+ *      production (applied 2026-09-24 13:37 UTC, history version
+ *      20260924133723).
  *
  * The flag hides what the public sees. It does not gate the admin console
- * (`/admin/prizes`, behind `prizes.manage`), which is how the catalog is
- * prepared before launch, nor winner selection, which the database only runs
- * for a tier whose prize an admin has switched on -- and the default prizes
- * are seeded switched off.
+ * (`/admin/prizes`, behind `prizes.manage`), where the catalog is managed, nor
+ * winner selection, which the database only runs for a tier whose prize an
+ * admin has switched on. The default prizes are seeded switched off; turning
+ * them on is a database change, not this flag.
  *
  * Gated surfaces (keep this list current):
  *   - `src/routes/prizes.index.tsx` + `src/routes/prizes.terms.tsx` -- the routes
@@ -161,4 +164,66 @@ export const OAUTH_PROVIDERS_ENABLED = true;
  *   - `src/lib/sitemap.ts` -- the /prizes entries
  *   - `scripts/qa/legal-placeholder-gate.ts` -- the prize T&Cs join the check
  */
-export const PRIZES_ENABLED = false;
+export const PRIZES_ENABLED = true;
+
+/**
+ * Pronostics (score predictions, BG-0146) — the page exists; the database decides.
+ *
+ * Owner decision, 2026-09-24 (plan: docs/backend/PREDICTIONS_DOMAIN_PLAN.md
+ * §15). Two build flags, and a third switch that is the real gate: the
+ * database `mode` in `app_private.prediction_settings` (off / testers /
+ * public), checked inside every Pronostics function. While it is `off`, or
+ * while the viewer is not a tester, every read answers `allowed: false` and
+ * the page shows "Bientôt disponible" under `noindex`. Before the Pronostics
+ * migrations reach a database the functions do not exist, and the page shows
+ * the same thing. So this flag can be on before launch: it reveals nothing
+ * the database has not switched on, and it leaves Stage 3 a database switch
+ * rather than a deploy.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/pronostics.tsx` — the /pronostics routes (redirect Home when off)
+ */
+export const PRONOSTICS_ENABLED = true;
+
+/**
+ * Pronostics entry points — OFF until Stage 5 (plan §15).
+ *
+ * The ways in: the Home card and discovery tile, the Matches tab, the match
+ * page card, the Fantasy league tab, the sitemap entry and search indexing.
+ * The owner checks them on a preview deployment of a PR that turns this on,
+ * which is not merged before Stage 5. They also hide themselves while the
+ * database `mode` is `off`.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/pronostics.index.tsx` — `index,follow` instead of `noindex`
+ *   - `src/lib/sitemap.ts` — the /pronostics entry
+ *   - `src/routes/index.tsx` — the Home card and the sixth discovery tile
+ *   - `src/components/matches/MatchesTabs.tsx` — the "Pronostics" tab
+ *   - `src/routes/matches.$matchId.tsx` — the "Votre pronostic" card
+ *   - `src/routes/fantasy.leagues.$leagueId.tsx` — the league's "Pronostics" tab
+ */
+export const PRONOSTICS_PROMOTED = false;
+
+/**
+ * Audience measurement — ON since 2026-09-25 (BG-0146, plan §11).
+ *
+ * Owner decision, 2026-09-25: Seline, in place of the Plausible Analytics
+ * chosen on 2026-09-24. The owner created the Seline project for botolago.com
+ * and asked for its script on every page. Seline sets no cookie and keeps no
+ * identifier on the phone, does not store IP addresses, and is hosted in the
+ * EU. Page views plus five Pronostics events, names only, no identifiers.
+ *
+ * The script and the privacy policy's lines about it go live together, in one
+ * release: this switch turns both on, and the policy took a new version and
+ * date with them (1.2, 25 September 2026). Production builds on botolago.com
+ * only: a development server, the Playwright suite, a preview deployment or
+ * a local production build never sends anything.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/__root.tsx` — the Seline script and the page views
+ *   - `src/lib/analytics.ts` — `track()` sends nothing while off
+ *   - `src/content/legal/documents.ts` — the processor row and the cookie
+ *     clause of the privacy policy (with the sentence on a visitor's
+ *     predictions kept on the phone), in French and Arabic
+ */
+export const ANALYTICS_ENABLED = true;

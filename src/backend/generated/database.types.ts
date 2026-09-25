@@ -579,6 +579,7 @@ export type Database = {
         }
         Returns: Json
       }
+      claim_guest_predictions: { Args: { p_items: Json }; Returns: Json }
       complete_football_ingestion: {
         Args: {
           p_checkpoint?: Json
@@ -641,6 +642,7 @@ export type Database = {
         }
         Returns: Json
       }
+      create_prediction_league: { Args: { p_name: string }; Returns: Json }
       disable_my_notification_device: {
         Args: { p_device_id: string }
         Returns: boolean
@@ -1084,10 +1086,12 @@ export type Database = {
         }
         Returns: Json
       }
+      join_prediction_league: { Args: { p_invite_code: string }; Returns: Json }
       leave_fantasy_league: {
         Args: { p_league_id: string; p_team_id: string }
         Returns: boolean
       }
+      leave_prediction_league: { Args: { p_league_id: string }; Returns: Json }
       list_my_notification_devices: { Args: never; Returns: Json }
       list_my_notifications: {
         Args: {
@@ -1109,6 +1113,11 @@ export type Database = {
       my_notification_unread_count: {
         Args: { p_category?: Database["app"]["Enums"]["notification_category"] }
         Returns: number
+      }
+      my_prediction_leagues: { Args: never; Returns: Json }
+      my_predictions: {
+        Args: { p_fixture_id?: string; p_round_number?: number }
+        Returns: Json
       }
       news_article_detail: {
         Args: { p_identifier: string; p_language: string }
@@ -1261,6 +1270,24 @@ export type Database = {
         Returns: Json
       }
       news_team_filters: { Args: { p_language: string }; Returns: Json }
+      predictions_leaderboard: {
+        Args: {
+          p_after_id?: string
+          p_after_rank?: number
+          p_limit?: number
+          p_round_number?: number
+          p_scope?: string
+        }
+        Returns: Json
+      }
+      predictions_league_standings: {
+        Args: { p_league_id: string; p_round_number?: number }
+        Returns: Json
+      }
+      predictions_round: {
+        Args: { p_language?: string; p_round_number?: number }
+        Returns: Json
+      }
       preview_fantasy_catalog_activation: {
         Args: {
           p_expected_fixture_count?: number
@@ -1318,7 +1345,12 @@ export type Database = {
         }
         Returns: Json
       }
+      report_client_errors: { Args: { p_events: Json }; Returns: Json }
       request_account_deletion: { Args: never; Returns: string }
+      reset_prediction_league_invite_code: {
+        Args: { p_league_id: string }
+        Returns: Json
+      }
       resolve_football_mapping: {
         Args: {
           p_entity_type: string
@@ -1341,6 +1373,7 @@ export type Database = {
         }
         Returns: Json
       }
+      save_predictions: { Args: { p_items: Json }; Returns: Json }
       service_advance_fantasy_lifecycle: {
         Args: {
           p_batch_size?: number
@@ -1539,6 +1572,7 @@ export type Database = {
         }
         Returns: Json
       }
+      service_ops_health: { Args: never; Returns: Json }
       service_pause_email_provider: {
         Args: { p_reason: string; p_until: string }
         Returns: Json
@@ -5774,6 +5808,202 @@ export type Database = {
             columns: ["photo_asset_id"]
             isOneToOne: false
             referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_league_members: {
+        Row: {
+          created_at: string
+          id: string
+          joined_at: string
+          league_id: string
+          left_at: string | null
+          role: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          joined_at?: string
+          league_id: string
+          left_at?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          joined_at?: string
+          league_id?: string
+          left_at?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_league_members_league_id_fkey"
+            columns: ["league_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_leagues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_league_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_standings: {
+        Row: {
+          created_at: string
+          exact_count: number
+          id: string
+          miss_count: number
+          outcome_count: number
+          points: number
+          predicted_count: number
+          rank: number | null
+          round_id: string | null
+          rounds_played: number | null
+          scored_count: number
+          season_id: string
+          updated_at: string
+          user_id: string
+          void_count: number
+        }
+        Insert: {
+          created_at?: string
+          exact_count?: number
+          id?: string
+          miss_count?: number
+          outcome_count?: number
+          points?: number
+          predicted_count?: number
+          rank?: number | null
+          round_id?: string | null
+          rounds_played?: number | null
+          scored_count?: number
+          season_id: string
+          updated_at?: string
+          user_id: string
+          void_count?: number
+        }
+        Update: {
+          created_at?: string
+          exact_count?: number
+          id?: string
+          miss_count?: number
+          outcome_count?: number
+          points?: number
+          predicted_count?: number
+          rank?: number | null
+          round_id?: string | null
+          rounds_played?: number | null
+          scored_count?: number
+          season_id?: string
+          updated_at?: string
+          user_id?: string
+          void_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_standings_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_standings_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_standings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictions: {
+        Row: {
+          away_goals: number
+          away_team_id: string
+          created_at: string
+          fixture_id: string
+          home_goals: number
+          home_team_id: string
+          id: string
+          origin: string
+          points: number | null
+          result_kind: string | null
+          rule_version: number | null
+          scored_at: string | null
+          submitted_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          away_goals: number
+          away_team_id: string
+          created_at?: string
+          fixture_id: string
+          home_goals: number
+          home_team_id: string
+          id?: string
+          origin?: string
+          points?: number | null
+          result_kind?: string | null
+          rule_version?: number | null
+          scored_at?: string | null
+          submitted_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          away_goals?: number
+          away_team_id?: string
+          created_at?: string
+          fixture_id?: string
+          home_goals?: number
+          home_team_id?: string
+          id?: string
+          origin?: string
+          points?: number | null
+          result_kind?: string | null
+          rule_version?: number | null
+          scored_at?: string | null
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictions_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

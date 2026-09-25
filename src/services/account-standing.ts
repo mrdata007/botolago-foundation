@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getIdentityApi } from "@/integrations/supabase/v2-client";
+import { IS_MOCK_AUTH } from "@/services/auth";
 
 /**
  * Whether the signed-in account is banned, and what the sign-in page should
@@ -24,6 +25,9 @@ export type AccountStanding = z.infer<typeof accountStandingSchema>;
  * answer. Null means "carry on": an unknown standing never signs anyone out.
  */
 export async function fetchAccountStanding(): Promise<AccountStanding | null> {
+  // The mock sign-in (development and the Playwright suite) has no account in
+  // any database to ask about; asking would only log a missing-client error.
+  if (IS_MOCK_AUTH) return null;
   try {
     const { data, error } = await getIdentityApi().rpc("get_my_account_standing");
     if (error) return null;

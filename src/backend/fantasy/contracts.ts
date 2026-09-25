@@ -118,6 +118,21 @@ export const fantasyHubSchema = z.object({
       pointsState: z.enum(["provisional", "final"]),
     })
     .nullable(),
+  /**
+   * The gameweek a brand-new team joins right now: the open gameweek before
+   * its deadline, otherwise the staged next one. `null` when neither exists;
+   * absent from a database that predates 20260924200000.
+   */
+  enrolmentGameweek: z
+    .object({
+      id: postgresUuidSchema,
+      sequence: z.number().int().positive(),
+      name: z.string(),
+      deadlineAt: z.string(),
+      status: z.enum(FANTASY_GAMEWEEK_STATUSES),
+    })
+    .nullable()
+    .optional(),
   team: fantasyTeamSchema.nullable(),
   rankingAvailable: z.boolean(),
 });

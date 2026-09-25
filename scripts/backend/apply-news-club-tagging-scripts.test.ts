@@ -7,7 +7,10 @@ import { join } from "node:path";
  * The two guarded scripts that apply PR #194's migrations to production:
  * `apply-20260924180000-news-club-tagging.sql` (the tagger and the feed fix,
  * one transaction) and `apply-20260924180200-news-club-tagging-backfill.sql`
- * (the existing stories, a transaction of its own).
+ * (the existing stories, a transaction of its own); then the follow-up pair
+ * `apply-20260924190000-news-club-translation-check.sql` (a translation's club
+ * counts only if the original article names it) and
+ * `apply-20260924190100-news-club-retag.sql` (every story again, under it).
  *
  * Each carries its migration files once, as the history row's statements[1],
  * and runs them from that row after checking its sha256. So the scripts must
@@ -51,11 +54,48 @@ const scripts = [
       "the tagger or its 21 clubs are missing",
     ],
   },
+  {
+    path: "scripts/backend/apply-20260924190000-news-club-translation-check.sql",
+    migrations: [{ version: "20260924190000", name: "news_story_team_translation_check" }],
+    guards: [
+      "set local lock_timeout = '5s';",
+      "set local statement_timeout = '60s';",
+      "migration 20260924190000 or 20260924190100 is already recorded as applied",
+      "the club-tagging migrations 20260924180000-180200 are not all recorded",
+      "the tagger''s functions are not the versions this update replaces",
+      "one of the four new aliases is already in the list",
+    ],
+  },
+  {
+    path: "scripts/backend/apply-20260924190100-news-club-retag.sql",
+    migrations: [{ version: "20260924190100", name: "news_story_team_retag" }],
+    guards: [
+      "set local lock_timeout = '5s';",
+      "set local statement_timeout = '300s';",
+      "migration 20260924190100 is already recorded as applied",
+      "run apply-20260924190000-news-club-translation-check.sql (and commit it) first",
+    ],
+  },
 ];
+
+describe("scripts sent through the Supabase SQL API", () => {
+  // The SQL API turns \uXXXX in a request into the character it names, so a
+  // backslash in a script arrives changed and the sha256 check refuses it.
+  // The 20260924190000 pair carries none; keep it that way.
+  for (const path of [
+    "scripts/backend/apply-20260924190000-news-club-translation-check.sql",
+    "scripts/backend/apply-20260924190100-news-club-retag.sql",
+  ]) {
+    test(`${path} carries no backslash`, () => {
+      expect(read(path)).not.toContain("\\");
+    });
+  }
+});
 
 describe("the migrations production recorded", () => {
   // statements[1] of production's history rows, read back after the scripts
-  // ran on 2026-09-24 (docs/production/APPLIED_2026_09_24_NEWS_CLUB_TAGGING.md).
+  // ran on 2026-09-24 (docs/production/APPLIED_2026_09_24_NEWS_CLUB_TAGGING.md
+  // and APPLIED_2026_09_24_NEWS_CLUB_TRANSLATION_CHECK.md).
   // These files are applied: a change to them is a new migration.
   for (const [file, recorded] of [
     [
@@ -69,6 +109,14 @@ describe("the migrations production recorded", () => {
     [
       "20260924180200_news_story_team_backfill.sql",
       "33da33e73de411f87b060cf53494447766f09f81920fe6ce1d03ea21b7443b22",
+    ],
+    [
+      "20260924190000_news_story_team_translation_check.sql",
+      "7d7270bfbcad007af84ea4204e0b92fee5af87e884990b85000de77a2aefb760",
+    ],
+    [
+      "20260924190100_news_story_team_retag.sql",
+      "52306c742524d60ac145e93a4102cc39534fb776f2fa8395b3aa6bbf14bc4440",
     ],
   ]) {
     test(file, () => {

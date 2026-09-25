@@ -104,7 +104,9 @@ describe("MatchCard (Option A) — the list row", () => {
       .replace("{hs}", "2")
       .replace("{away}", "Raja CA")
       .replace("{as}", "0");
-    expect(html).toContain('href="/matches/m1?tab=summary"');
+    // The canonical match URL: `?tab=summary` made every match link a
+    // redirect to another address (audit 2026-09-24, P2-20).
+    expect(html).toContain('href="/matches/m1"');
     expect(html).toContain(`aria-label="${score} — ${fr["matches.a11y.status_finished"]}"`);
     // The label says it all; the drawing under it is not read twice.
     expect(html).toContain('<div aria-hidden="true">');

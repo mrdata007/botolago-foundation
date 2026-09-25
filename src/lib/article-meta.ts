@@ -1,10 +1,33 @@
 import type { ArticleDetailDto } from "@/backend/news/contracts";
 import { resolveMediaUrl } from "@/lib/media";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
+import { breadcrumbJsonLd } from "@/lib/structured-data";
 
-export const PUBLIC_SITE_ORIGIN = "https://botolago.com";
+// Kept exported from here: most pages import the origin with the article
+// helpers. It lives in its own module so structured-data.ts, which this file
+// uses, can read it without an import cycle.
+export { PUBLIC_SITE_ORIGIN };
 
 export function buildCanonicalArticleUrl(articleId: string): string {
   return `${PUBLIC_SITE_ORIGIN}/news/${encodeURIComponent(articleId)}`;
+}
+
+/**
+ * When an article was last really modified, or `null` when it has not been
+ * since it was published (a change within a minute of publishing is the
+ * publishing itself). Read from `contentUpdatedAt`, never `updatedAt`: a bulk
+ * update on 2026-09-24 moved `updatedAt` on 15,690 articles without changing
+ * a word, and every one of them then claimed an edit that morning (audit
+ * P1-4). Without `contentUpdatedAt` (an API build before migration
+ * 20260924200600) nothing is claimed.
+ */
+export function articleModifiedAt(
+  article: Pick<ArticleDetailDto, "publishedAt"> & { contentUpdatedAt?: string | null },
+): string | null {
+  const modified = article.contentUpdatedAt;
+  if (!modified) return null;
+  const gap = Date.parse(modified) - Date.parse(article.publishedAt);
+  return Number.isFinite(gap) && gap > 60_000 ? modified : null;
 }
 
 /**
@@ -21,10 +44,7 @@ export function buildArticleJsonLd(
 
   const heroUrl = resolveMediaUrl(article.hero);
   const authorName = article.author?.name ?? article.publisher?.name;
-  const dateModified =
-    article.updatedAt && article.updatedAt !== article.publishedAt
-      ? article.updatedAt
-      : article.publishedAt;
+  const dateModified = articleModifiedAt(article) ?? article.publishedAt;
 
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -76,7 +96,11 @@ export function serializeJsonLd(jsonLd: Record<string, unknown>): string {
  * title tag, description and OpenGraph/Twitter tags instead of silently
  * falling back to French copy.
  */
-export function buildArticleHead(article: ArticleDetailDto | null | undefined, articleId: string) {
+export function buildArticleHead(
+  article: ArticleDetailDto | null | undefined,
+  articleId: string,
+  { unavailable = false }: { unavailable?: boolean } = {},
+) {
   const title = article?.seo.title ?? article?.title ?? "Actualités";
   const description =
     article?.seo.description ??
@@ -112,9 +136,11 @@ export function buildArticleHead(article: ArticleDetailDto | null | undefined, a
   return {
     meta: [
       { title: `${title} — BotolaGO` },
-      // Nothing loaded (unknown, unpublished or withdrawn): the page renders a
-      // "not found" card with HTTP 200, so at least keep it out of the index.
-      ...(article ? [] : [{ name: "robots", content: "noindex" }]),
+      // Nothing to show: an unknown, unpublished or withdrawn article answers
+      // 404 and stays out of the index. A read that failed (`unavailable`)
+      // answers 503 and must NOT say noindex: the article exists, and a
+      // search engine would drop it (audit 2026-09-24, P1-3).
+      ...(article || unavailable ? [] : [{ name: "robots", content: "noindex" }]),
       // Licensed content from another publisher is indexed like BotolaGO's
       // own (owner decision, 2026-09-24); it still credits its source on the
       // page and in JSON-LD `isBasedOn`.
@@ -133,8 +159,8 @@ export function buildArticleHead(article: ArticleDetailDto | null | undefined, a
       ...(article?.publishedAt
         ? [{ property: "article:published_time", content: article.publishedAt }]
         : []),
-      ...(article?.updatedAt && article.updatedAt !== article.publishedAt
-        ? [{ property: "article:modified_time", content: article.updatedAt }]
+      ...(article && articleModifiedAt(article)
+        ? [{ property: "article:modified_time", content: articleModifiedAt(article)! }]
         : []),
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: title },
@@ -153,8 +179,22 @@ export function buildArticleHead(article: ArticleDetailDto | null | undefined, a
     // instead emitted `<script tag="script" attrs="[object Object]">`. The type
     // was lost with it, so browsers ran the JSON as JavaScript and threw on
     // every article, and no crawler ever saw the structured data.
-    ...(jsonLd
-      ? { scripts: [{ type: "application/ld+json", children: serializeJsonLd(jsonLd) }] }
+    ...(jsonLd && article
+      ? {
+          scripts: [
+            { type: "application/ld+json", children: serializeJsonLd(jsonLd) },
+            {
+              type: "application/ld+json",
+              children: serializeJsonLd(
+                breadcrumbJsonLd([
+                  { name: "Accueil", path: "/" },
+                  { name: "Actualités", path: "/news" },
+                  { name: title, path: `/news/${encodeURIComponent(article.id)}` },
+                ]),
+              ),
+            },
+          ],
+        }
       : {}),
   };
 }

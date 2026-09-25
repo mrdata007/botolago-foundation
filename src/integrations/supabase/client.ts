@@ -6,7 +6,39 @@ function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
 }
 
-function createSupabaseFetch(supabaseKey: string): typeof fetch {
+/**
+ * How long a data request (PostgREST, `/rest/v1/`) may take before the app
+ * gives up on it. The database cancels its own statements after 3 s for a
+ * visitor and 8 s for a signed-in user, so this only fires when the network
+ * or the platform hangs -- which on 2026-09-24 left pages on loading
+ * skeletons for a minute or more. Auth and storage requests are left alone:
+ * a sign-up can legitimately wait on the e-mail provider.
+ */
+export const REST_REQUEST_TIMEOUT_MS = 10_000;
+
+function requestUrl(input: RequestInfo | URL): string {
+  if (typeof input === "string") return input;
+  if (input instanceof URL) return input.href;
+  return input.url;
+}
+
+function withTimeout(signal: AbortSignal | null | undefined, timeoutMs: number) {
+  if (typeof AbortSignal === "undefined" || typeof AbortSignal.timeout !== "function") {
+    return signal ?? undefined;
+  }
+  const timeout = AbortSignal.timeout(timeoutMs);
+  if (!signal) return timeout;
+  // Keep the caller's own cancellation; add the deadline where the browser can.
+  return typeof AbortSignal.any === "function" ? AbortSignal.any([signal, timeout]) : signal;
+}
+
+export function createSupabaseFetch(
+  supabaseKey: string,
+  {
+    fetchImpl = (input, init) => fetch(input, init),
+    timeoutMs = REST_REQUEST_TIMEOUT_MS,
+  }: { fetchImpl?: typeof fetch; timeoutMs?: number } = {},
+): typeof fetch {
   return (input, init) => {
     const headers = new Headers(
       typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
@@ -25,7 +57,8 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
     }
 
     headers.set("apikey", supabaseKey);
-    return fetch(input, { ...init, headers });
+    if (!requestUrl(input).includes("/rest/v1/")) return fetchImpl(input, { ...init, headers });
+    return fetchImpl(input, { ...init, headers, signal: withTimeout(init?.signal, timeoutMs) });
   };
 }
 

@@ -3,18 +3,18 @@ import { useEffect } from "react";
 
 import { LegalDocumentView } from "@/components/legal/LegalDocumentView";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
-import { ui, UiAlert, UiHeader } from "@/components/ui-kit";
+import { ui, UiHeader } from "@/components/ui-kit";
 import { PRIZE_TERMS } from "@/content/legal/prize-terms";
-import { dictionaries } from "@/i18n/dictionaries";
+import { fr } from "@/i18n/dictionary-fr";
 import { useI18n } from "@/i18n/provider";
 import { PRIZES_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 
 /**
- * `/prizes/terms`: the prize rules. The text is a placeholder with tracked
- * `[TODO …]` spans until the owner supplies it; the production build refuses
- * to run while the prize pages are on and a span survives, and this page
- * redirects to the hub while they are off.
+ * `/prizes/terms`: the prize rules (`src/content/legal/prize-terms.ts`). The
+ * production build refuses to run while the prize pages are on and the text
+ * carries an unfilled `[…]` span, and this page redirects to the hub while they
+ * are off.
  */
 export const Route = createFileRoute("/prizes/terms")({
   beforeLoad: () => {
@@ -22,8 +22,8 @@ export const Route = createFileRoute("/prizes/terms")({
   },
   head: () => ({
     meta: [
-      { title: dictionaries.fr["prizes.terms.meta_title"] },
-      { name: "description", content: dictionaries.fr["prizes.terms.meta_description"] },
+      { title: fr["prizes.terms.meta_title"] },
+      { name: "description", content: fr["prizes.terms.meta_description"] },
     ],
   }),
   component: PrizeTermsRoute,
@@ -39,9 +39,6 @@ function PrizeTermsRoute() {
     <FantasyFrame bottomNav>
       <UiHeader kicker={t("prizes.title")} title={t("prizes.terms_link")} backTo="/prizes" />
       <div className={cn("grid gap-4 pt-4", ui.space.gutter)}>
-        <UiAlert tone="caution" role="status" testId="prize-terms-draft">
-          {t("prizes.terms.draft_notice")}
-        </UiAlert>
         <LegalDocumentView doc={PRIZE_TERMS[lang]} tableScrollHint={t("legal.table_scroll_hint")} />
       </div>
     </FantasyFrame>

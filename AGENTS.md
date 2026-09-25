@@ -69,14 +69,34 @@ one edit away from not rolling back.
    orchestrator and the football recovery run on their own schedules, and the
    news ingestion schedules are stood down but still dispatchable by hand.
    Inside the database, pg_cron runs `news-publish-due-editions` every minute,
-   `notification-email-tick` every 5 minutes and `football-live-refresh`
-   every 15 minutes (`select jobname, schedule, active from cron.job`). The
-   two email/results jobs write only when switched on in
+   `notification-email-tick` every 5 minutes, `fantasy-lifecycle-tick`
+   every 5 minutes and `football-live-refresh` every 15 minutes
+   (`select jobname, schedule, active from cron.job`). The two email/results
+   jobs write only when switched on in
    `app_private.notification_email_settings`
    ([EMAIL_NOTIFICATIONS.md](docs/backend/EMAIL_NOTIFICATIONS.md)); pause
    both with `select app_private.notification_email_configure('off', null,
 null, false);` before a write that touches fixtures or notifications, and
-   restore the previous settings afterwards.
+   restore the previous settings afterwards. The Fantasy tick (calendar sync
+   and gameweek transitions) writes only when switched on in
+   `app_private.fantasy_automation_settings`; pause it with
+   `select app_private.fantasy_automation_configure(false);` before a write
+   that touches Fantasy or fixture tables, and switch it back on afterwards.
+   Where the Pronostics migrations are applied, pg_cron also runs
+   `predictions-score-tick` every 5 minutes.
+   It writes predictions' points, `app.prediction_standings` and its own
+   records, and only while `app_private.prediction_settings` has a mode other
+   than `off` and scoring enabled
+   ([PREDICTIONS_OPERATIONS_RUNBOOK.md](docs/backend/PREDICTIONS_OPERATIONS_RUNBOOK.md)).
+   Pause its scoring alone before a write to those tables, and pass `true`
+   afterwards:
+   `select app_private.predictions_configure((select mode from app_private.prediction_settings), false);`
+   Its companion `predictions-history-prune` runs daily at 03:53 UTC whatever
+   the mode: it deletes `predictions-score-tick` rows older than 7 days from
+   `cron.job_run_details` and `app_private.prediction_job_runs` rows older
+   than 90 days. The switch above does not stop it; pause it by name for the
+   length of a write that touches those tables, then set it back to `true`:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'predictions-history-prune'), active := false);`
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 

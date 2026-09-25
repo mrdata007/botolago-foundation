@@ -7,6 +7,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -27,10 +28,20 @@ import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
 import { ThemeProvider } from "@/theme/provider";
 import { THEME_INIT_SCRIPT } from "@/theme/theme";
 import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
+import {
+  ANALYTICS_ACTIVE,
+  SELINE_MASK_PATTERNS,
+  SELINE_QUEUE_SCRIPT,
+  SELINE_SCRIPT_SRC,
+  SELINE_TOKEN,
+  trackPageview,
+} from "@/lib/analytics";
 import { RotateCcw, Home } from "lucide-react";
 
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+import { currentRelease, reportUnhandledError } from "@/lib/operational-errors";
+import { installClientErrorSink } from "@/lib/client-error-sink";
 
 function NotFoundComponent() {
   return (
@@ -132,6 +143,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    // React does not pass boundary-caught errors to window.onerror in
+    // production, so the client error sink hears of them here.
+    reportUnhandledError("react.error_boundary", error);
   }, [error]);
   return (
     <I18nProvider>
@@ -202,6 +216,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "Actualités, calendrier et Fantasy de la Botola Pro, avec une interface en français et en arabe.",
       },
       { name: "author", content: "BotolaGO" },
+      // The commit this build came from (see vite.config.ts).
+      { name: "botolago-release", content: currentRelease() },
       {
         property: "og:title",
         content: "BotolaGO — Actualités, matchs et Fantasy du football marocain",
@@ -252,9 +268,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // The splash script is the same kind of thing: whether this load opens on
     // the launch splash has to be settled before the first paint, or the page
     // shows first and the splash lands on top of it once the app has loaded.
+    //
+    // Audience measurement (BG-0146, `src/lib/analytics.ts`): Seline's
+    // script, told to count no page on its own, and the stub that queues what
+    // the page sends before it arrives. React hoists the async script to the
+    // top of <head>, so either may run first; the stub keeps a loaded script.
+    // Page views go out from `AnalyticsPageviews` below, their address cleaned
+    // first.
     scripts: [
       ...(DARK_MODE_ENABLED ? [{ children: THEME_INIT_SCRIPT }] : []),
       { children: SPLASH_INIT_SCRIPT },
+      ...(ANALYTICS_ACTIVE
+        ? [
+            { children: SELINE_QUEUE_SCRIPT },
+            {
+              src: SELINE_SCRIPT_SRC,
+              async: true,
+              "data-token": SELINE_TOKEN,
+              "data-auto-page-view": "false",
+              "data-mask-patterns": SELINE_MASK_PATTERNS,
+            },
+          ]
+        : []),
     ],
   }),
   shellComponent: RootShell,
@@ -283,6 +318,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  // Visitors' errors reach api.report_client_errors (production builds only).
+  useEffect(() => installClientErrorSink(), []);
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
@@ -293,12 +330,27 @@ function RootComponent() {
               <AuthPromptDialog />
               <AuthModeBadge />
               <Toaster />
+              {ANALYTICS_ACTIVE && <AnalyticsPageviews />}
             </FantasyOwnedProvider>
           </AuthProvider>
         </ThemeProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
+}
+
+/**
+ * One page view per page reached, once the router has settled on it: a change
+ * of tab or journée inside a page is the same page. The address is cleaned in
+ * `trackPageview` (no "#…", no tokens, no league id), and only botolago.com
+ * is counted.
+ */
+function AnalyticsPageviews() {
+  const path = useRouterState({ select: (state) => state.resolvedLocation?.pathname ?? null });
+  useEffect(() => {
+    if (path !== null) trackPageview();
+  }, [path]);
+  return null;
 }
 
 /**

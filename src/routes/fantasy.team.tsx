@@ -444,7 +444,11 @@ function PickTeamBody() {
         <span className={ui.text.tabular}>{countdown}</span>
       </span>
     ) : gameweek.status ? (
-      <GameweekStatusText status={gameweek.status} className={ui.text.label} />
+      <GameweekStatusText
+        status={gameweek.status}
+        deadlinePassed={deadlineLocked}
+        className={ui.text.label}
+      />
     ) : deadlineLocked ? (
       t("fpl.deadline_passed")
     ) : null;

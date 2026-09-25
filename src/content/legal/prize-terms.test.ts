@@ -1,21 +1,24 @@
 import { describe, expect, it } from "bun:test";
 
 import { findPlaceholders, placeholdersIn } from "../../../scripts/qa/legal-placeholder-gate";
-import { PRIZES_ENABLED } from "@/lib/feature-flags";
 import { LEGAL_DOCUMENTS } from "./documents";
-import { PRIZE_TERMS, PRIZE_TERMS_OPEN_SECTIONS } from "./prize-terms";
+import { PRIZE_TERMS } from "./prize-terms";
 
 const ARABIC = /[؀-ۿ]/;
 
-describe("the placeholder prize terms", () => {
-  it.each(["fr", "ar"] as const)(
-    "%s carries exactly the five open sections, each marked TODO",
-    (lang) => {
-      const spans = placeholdersIn(PRIZE_TERMS[lang]);
-      expect(spans).toHaveLength(PRIZE_TERMS_OPEN_SECTIONS.length);
-      for (const span of spans) expect(span.startsWith("TODO")).toBe(true);
-    },
-  );
+const textOf = (lang: "fr" | "ar") =>
+  [
+    PRIZE_TERMS[lang].title,
+    ...PRIZE_TERMS[lang].blocks.flatMap((block) =>
+      block.type === "list" ? block.items : block.type === "table" ? [] : [block.text],
+    ),
+  ].join("\n");
+
+describe("the prize terms", () => {
+  it.each(["fr", "ar"] as const)("%s carries no unfilled placeholder", (lang) => {
+    expect(placeholdersIn(PRIZE_TERMS[lang])).toEqual([]);
+    expect(textOf(lang)).not.toContain("TODO");
+  });
 
   it("keeps French and Arabic the same document", () => {
     const shape = (lang: "fr" | "ar") =>
@@ -30,41 +33,43 @@ describe("the placeholder prize terms", () => {
     expect(headings("ar")).toEqual(headings("fr"));
   });
 
+  it("names the same organiser in both languages, in sections 1 and 2", () => {
+    for (const lang of ["fr", "ar"] as const) {
+      const blocks = PRIZE_TERMS[lang].blocks;
+      const after = (number: string) => {
+        const at = blocks.findIndex(
+          (block) => block.type === "heading" && block.text.startsWith(`${number}.`),
+        );
+        const next = blocks[at + 1];
+        return next?.type === "paragraph" ? next.text : "";
+      };
+      expect(after("1")).toContain("Go Sports Technologies");
+      expect(after("2")).toContain("Go Sports Technologies");
+    }
+  });
+
   it("writes Arabic only in the Arabic document", () => {
-    const text = (lang: "fr" | "ar") =>
-      [
-        PRIZE_TERMS[lang].title,
-        ...PRIZE_TERMS[lang].blocks.flatMap((block) =>
-          block.type === "list" ? block.items : block.type === "table" ? [] : [block.text],
-        ),
-      ].join("\n");
-    expect(ARABIC.test(text("fr"))).toBe(false);
-    expect(ARABIC.test(text("ar"))).toBe(true);
+    expect(ARABIC.test(textOf("fr"))).toBe(false);
+    expect(ARABIC.test(textOf("ar"))).toBe(true);
   });
 
   it("is not one of the always-published legal documents", () => {
-    // The General Terms and the Privacy Policy must be publishable today; the
-    // prize terms must not be until the owner fills them in.
+    // The General Terms and the Privacy Policy are published whatever the
+    // flags say; the prize terms only while PRIZES_ENABLED is on.
     expect(Object.keys(LEGAL_DOCUMENTS)).not.toContain("prizeTerms");
   });
 });
 
 describe("the production build gate and the prize terms", () => {
-  it("reports every open prize section once the prize pages are switched on", () => {
-    const prize = findPlaceholders(true).filter((item) => item.where.startsWith("prizeTerms."));
-    expect(prize.filter((item) => item.where === "prizeTerms.fr")).toHaveLength(5);
-    expect(prize.filter((item) => item.where === "prizeTerms.ar")).toHaveLength(5);
-  });
-
-  it("ignores them while the prize pages are switched off", () => {
-    expect(findPlaceholders(false).some((item) => item.where.startsWith("prizeTerms."))).toBe(
-      false,
+  it("finds nothing to refuse in them once the prize pages are switched on", () => {
+    expect(findPlaceholders(true).filter((item) => item.where.startsWith("prizeTerms."))).toEqual(
+      [],
     );
   });
 
-  it("follows the shipped flag by default", () => {
-    expect(findPlaceholders().some((item) => item.where.startsWith("prizeTerms."))).toBe(
-      PRIZES_ENABLED,
+  it("leaves them out while the prize pages are switched off", () => {
+    expect(findPlaceholders(false).some((item) => item.where.startsWith("prizeTerms."))).toBe(
+      false,
     );
   });
 });

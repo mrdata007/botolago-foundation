@@ -48,6 +48,29 @@ export function isOwnedFantasyKey(key: unknown): boolean {
   return Array.isArray(key) && key[0] === OWNED_FANTASY_KEY_ROOT;
 }
 
+/** True when a cache key is one of ours and belongs to `scope`'s owner. */
+export function belongsToFantasyScope(key: unknown, scope: FantasyKeyScope): boolean {
+  return (
+    isOwnedFantasyKey(key) &&
+    (key as readonly unknown[])[1] === scope.source &&
+    (key as readonly unknown[])[2] === scope.owner
+  );
+}
+
+/**
+ * Remove every owned-fantasy cache entry except `current`'s. On an identity
+ * change the previous owner's data must go, but the current owner's queries
+ * were created by the very render that changed the identity: removing one
+ * also cancels its first fetch, and its observer is left waiting on a query
+ * that no longer exists, so the Fantasy screens stayed on their loading
+ * placeholders (every time in Arabic, found 2026-09-24).
+ */
+export function clearOtherOwnersFantasyCache(qc: QueryClient, current: FantasyKeyScope): void {
+  qc.removeQueries({
+    predicate: (q) => isOwnedFantasyKey(q.queryKey) && !belongsToFantasyScope(q.queryKey, current),
+  });
+}
+
 /**
  * Remove every owned-fantasy cache entry (all sources, all owners).
  * Used on sign-out so the next signed-in user starts clean.

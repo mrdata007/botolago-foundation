@@ -307,3 +307,11 @@ describe("Frozen Admin Console contracts", () => {
     }
   });
 });
+
+describe("the prizes item's Arabic label", () => {
+  it("is the Arabic dictionary's", async () => {
+    const { ar } = await import("@/i18n/dictionary-ar");
+    const item = ADMIN_CONSOLE_NAV_ITEMS.find((entry) => entry.route === "/admin/prizes");
+    expect(item?.labels.ar).toBe(ar["prizes.admin.nav"]);
+  });
+});

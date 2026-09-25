@@ -4,13 +4,41 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { dictionaries, type TranslationKey } from "./dictionaries";
+import type { TranslationKey } from "./dictionaries";
+import { fr } from "./dictionary-fr";
 import type { Language, LocalizedString } from "@/types/domain";
 
 const STORAGE_KEY = "botolago.language";
+
+type Dictionary = Readonly<Record<string, string>>;
+
+/**
+ * The Arabic dictionary is loaded on demand: every page is first rendered in
+ * French, and shipping both dictionaries in the main bundle cost every reader
+ * ~75 KB of Arabic text (audit 2026-09-24, P1-11). The switch to Arabic waits
+ * for it, so the page never shows Arabic layout with French words.
+ */
+let arabic: Dictionary | null = null;
+let arabicLoad: Promise<Dictionary> | null = null;
+
+function loadArabicDictionary(): Promise<Dictionary> {
+  arabicLoad ??= import("./dictionary-ar").then(
+    (module) => (arabic = module.ar),
+    (error: unknown) => {
+      arabicLoad = null;
+      throw error;
+    },
+  );
+  return arabicLoad;
+}
+
+function dictionaryFor(lang: Language): Dictionary {
+  return lang === "ar" && arabic ? arabic : fr;
+}
 
 interface I18nContextValue {
   lang: Language;
@@ -43,11 +71,30 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     hasChosen: true,
   });
   const [isHydrated, setIsHydrated] = useState(false);
+  // The language asked for last: a switch back to French while the Arabic
+  // dictionary is still on its way must not be undone when it arrives.
+  const wanted = useRef<Language>("fr");
 
   useEffect(() => {
     const stored = readStored();
-    if (stored) setState(stored);
     setIsHydrated(true);
+    if (!stored) return;
+    wanted.current = stored.lang;
+    if (stored.lang !== "ar") {
+      setState(stored);
+      return;
+    }
+    // An Arabic reader: remember the choice at once, show Arabic as soon as
+    // its dictionary is here; until then the page stays in French.
+    setState({ lang: "fr", hasChosen: stored.hasChosen });
+    loadArabicDictionary().then(
+      () => {
+        if (wanted.current === "ar") setState(stored);
+      },
+      () => {
+        /* offline: stay in French until the next choice */
+      },
+    );
   }, []);
 
   // Sync <html lang> and <html dir> only after mount, never during render.
@@ -60,12 +107,25 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [lang]);
 
   const setLanguage = useCallback((l: Language) => {
-    setState({ lang: l, hasChosen: true });
+    wanted.current = l;
     try {
       window.localStorage.setItem(STORAGE_KEY, l);
     } catch {
       /* ignore */
     }
+    if (l !== "ar" || arabic) {
+      setState({ lang: l, hasChosen: true });
+      return;
+    }
+    setState((current) => ({ ...current, hasChosen: true }));
+    loadArabicDictionary().then(
+      () => {
+        if (wanted.current === "ar") setState({ lang: "ar", hasChosen: true });
+      },
+      () => {
+        /* offline: stay in French; the choice is stored for next time */
+      },
+    );
   }, []);
 
   const value = useMemo<I18nContextValue>(
@@ -75,7 +135,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       isHydrated,
       hasChosen,
       setLanguage,
-      t: (key) => (dictionaries[lang] as Record<string, string>)[key] ?? key,
+      t: (key) => dictionaryFor(lang)[key] ?? key,
       tr: (s) => s[lang] ?? s.fr,
     }),
     [lang, hasChosen, isHydrated, setLanguage],

@@ -12,15 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { listVerifiedTotpFactors, verifyTotpFactor } from "@/backend/auth/mfa";
 import { MfaError, type MfaErrorCode } from "@/backend/auth/mfa-errors";
 import { markWelcomeDone } from "@/lib/welcome";
-import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
+import { authNextSearch, sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 import type { TranslationKey } from "@/i18n/dictionaries";
 
 export const Route = createFileRoute("/auth/mfa-challenge")({
   head: () => ({ meta: [{ title: "Vérification en deux étapes — BotolaGO" }] }),
-  validateSearch: (s: Record<string, unknown>) => {
-    const next = typeof s.next === "string" ? sanitizeAuthCallbackNext(s.next) : undefined;
-    return next && next !== "/" ? { next } : {};
-  },
+  validateSearch: (s: Record<string, unknown>) => authNextSearch(s.next),
   component: MfaChallengePage,
 });
 
@@ -87,7 +84,7 @@ function MfaChallengePage() {
     markWelcomeDone();
     toast.success(t("auth.success.login"));
     if (next !== "/" && user?.profileComplete) {
-      window.location.href = next;
+      window.location.href = sanitizeAuthCallbackNext(next);
       return;
     }
     if (user?.profileComplete) {

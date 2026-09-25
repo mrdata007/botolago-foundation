@@ -16,6 +16,7 @@ import {
   TEAM_NAME_MAX_LENGTH,
   validateDraft,
   validateTeamName,
+  normalizeTeamName,
 } from "./fantasy-create-service";
 import { fantasyService } from "./fantasy-mock";
 import { fantasyPlayers } from "@/mocks/fantasy-data";
@@ -34,6 +35,21 @@ describe("fantasy-create-service — team name", () => {
     expect(validateTeamName("").ok).toBe(false);
     expect(validateTeamName("   ").ok).toBe(false);
     expect(validateTeamName("a").ok).toBe(false);
+  });
+  it("matches the server's rule: 3+ characters, letters/digits at both ends", () => {
+    // api.create_fantasy_team refuses these; they used to pass here and fail
+    // only after the whole squad had been built.
+    expect(validateTeamName("Jo")).toEqual({ ok: false, error: "too_short" });
+    expect(validateTeamName("Wydad FC!")).toEqual({ ok: false, error: "invalid_characters" });
+    expect(validateTeamName("-Raja")).toEqual({ ok: false, error: "invalid_characters" });
+    // Production's ICU [[:alnum:]] accepts these (measured 2026-09-24).
+    for (const name of ["فريق الأطلس", "Équipe Élite", "L'Atlas 11", "Raja-2026", "١٢٣ نجوم"]) {
+      expect({ name, ok: validateTeamName(name).ok }).toEqual({ name, ok: true });
+    }
+  });
+  it("folds typographic apostrophes to the one the server allows", () => {
+    expect(normalizeTeamName("  L’Atlas 11 ")).toBe("L'Atlas 11");
+    expect(validateTeamName("L’Atlas 11").ok).toBe(true);
   });
   it("accepts normal names and truncates on write", () => {
     expect(validateTeamName("Wydad FC").ok).toBe(true);

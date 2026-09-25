@@ -2,7 +2,11 @@ import { describe, expect, it } from "bun:test";
 import type { FantasyHubDto } from "@/backend/fantasy/contracts";
 import { FantasyError } from "@/backend/fantasy/errors";
 import { dictionaries } from "@/i18n/dictionaries";
-import { fantasyRouteUnavailableReason, readFantasyAvailability } from "./fantasy-availability";
+import {
+  enrolmentGameweekOf,
+  fantasyRouteUnavailableReason,
+  readFantasyAvailability,
+} from "./fantasy-availability";
 
 const now = Date.parse("2026-09-14T12:00:00Z");
 const activeHub: FantasyHubDto = {
@@ -107,6 +111,47 @@ describe("Fantasy availability", () => {
       status: "ready",
       canCreate: true,
     });
+  });
+
+  it("after the deadline, a server that names the next gameweek keeps creation open (2026-09-24)", async () => {
+    const afterDeadline = Date.parse(activeHub.gameweek!.deadlineAt) + 60_000;
+    const next = {
+      id: "00000000-0000-4000-8000-000000000003",
+      sequence: 2,
+      name: "Journée 2",
+      deadlineAt: "2026-10-02T14:30:00Z",
+      status: "scheduled" as const,
+    };
+    const hub = { ...activeHub, enrolmentGameweek: next };
+    expect(await readFantasyAvailability(async () => hub, afterDeadline)).toEqual({
+      status: "ready",
+      canCreate: true,
+    });
+    expect(enrolmentGameweekOf(hub, afterDeadline)).toEqual({
+      id: next.id,
+      sequence: 2,
+      deadlineAt: next.deadlineAt,
+    });
+  });
+
+  it("a server that names no enrolment gameweek closes creation, whatever the current status", async () => {
+    expect(
+      await readFantasyAvailability(async () => ({ ...activeHub, enrolmentGameweek: null }), now),
+    ).toEqual({ status: "ready", canCreate: false });
+  });
+
+  it("never offers an enrolment gameweek whose deadline is behind the clock", () => {
+    const stale = {
+      ...activeHub,
+      enrolmentGameweek: {
+        id: "00000000-0000-4000-8000-000000000003",
+        sequence: 2,
+        name: "Journée 2",
+        deadlineAt: "2026-09-14T11:59:00Z",
+        status: "scheduled" as const,
+      },
+    };
+    expect(enrolmentGameweekOf(stale, now)).toBeNull();
   });
 
   it("gates every Fantasy route when the season is unavailable", () => {

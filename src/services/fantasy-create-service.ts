@@ -12,6 +12,7 @@
 // This module has NO React and NO Supabase imports so it is trivially
 // testable and safe to import from both the route and tests.
 
+import type { TranslationKey } from "@/i18n/dictionaries";
 import type { FantasyPlayer, FormationKey, Position, SquadPlayer } from "@/types/fantasy";
 import { FORMATIONS, SQUAD_RULES } from "@/types/fantasy";
 import { validateTeam } from "@/lib/team-validation";
@@ -43,8 +44,20 @@ export const CREATE_DEFAULT_FORMATION: FormationKey = "4-4-2";
 
 /** Max characters for a fantasy team name. Kept conservative for mobile UX. */
 export const TEAM_NAME_MAX_LENGTH = 30;
-/** Min characters (trimmed) for a valid team name. */
-export const TEAM_NAME_MIN_LENGTH = 2;
+/**
+ * Min characters (trimmed) for a valid team name. `api.create_fantasy_team`
+ * refuses fewer than 3 (`invalid_team_name`); a 2-character name used to pass
+ * here and fail on the server after the whole squad had been built.
+ */
+export const TEAM_NAME_MIN_LENGTH = 3;
+
+/**
+ * The server's own pattern (`api.create_fantasy_team`): a letter or digit at
+ * both ends, and only letters, digits, spaces, `_`, `'`, `.` or `-` between.
+ * Production's ICU `[[:alnum:]]` accepts Arabic and accented letters, as
+ * `\p{L}\p{N}` does here.
+ */
+const TEAM_NAME_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} _'.-]*[\p{L}\p{N}]$/u;
 
 // ------ Slot layout ------
 
@@ -91,14 +104,67 @@ export function initCreateDraft(teamName = ""): CreateTeamDraft {
 
 // ------ Team name ------
 
-export type TeamNameError = "too_short" | "too_long" | "empty";
+export type TeamNameError = "too_short" | "too_long" | "empty" | "invalid_characters";
+
+/**
+ * The name exactly as it is sent: trimmed, with typographic apostrophes (’ ‘,
+ * which French keyboards produce) folded to the ASCII one the server allows.
+ */
+export function normalizeTeamName(raw: string): string {
+  return raw.trim().replace(/[‘’ʼ]/gu, "'");
+}
 
 export function validateTeamName(raw: string): { ok: true } | { ok: false; error: TeamNameError } {
-  const trimmed = raw.trim();
-  if (trimmed.length === 0) return { ok: false, error: "empty" };
-  if (trimmed.length < TEAM_NAME_MIN_LENGTH) return { ok: false, error: "too_short" };
-  if (trimmed.length > TEAM_NAME_MAX_LENGTH) return { ok: false, error: "too_long" };
+  const name = normalizeTeamName(raw);
+  if (name.length === 0) return { ok: false, error: "empty" };
+  if (name.length < TEAM_NAME_MIN_LENGTH) return { ok: false, error: "too_short" };
+  if (name.length > TEAM_NAME_MAX_LENGTH) return { ok: false, error: "too_long" };
+  if (!TEAM_NAME_PATTERN.test(name)) return { ok: false, error: "invalid_characters" };
   return { ok: true };
+}
+
+// ------ Server refusal → message ------
+
+/**
+ * What the create screen tells a manager when the server refuses the squad.
+ * Every key names the actual reason; none of them says "import", which is
+ * what the screen used to show for a passed deadline.
+ */
+export function createTeamErrorKey(error: { code: string; domainCode?: string }): TranslationKey {
+  switch (error.code) {
+    case "gameweek_locked":
+      return "fantasy.create.error.deadline_passed";
+    case "season_closed":
+      return "fantasy.create.error.season_closed";
+    case "already_exists":
+      return "fantasy.create.error.already_exists";
+    case "version_conflict":
+      return "fantasy.error.version_conflict";
+    case "network":
+      return "fantasy.error.network";
+    case "permission_denied":
+    case "unauthenticated":
+      return "fantasy.error.permission";
+    case "validation":
+      switch (error.domainCode) {
+        case "budget_exceeded":
+          return "fantasy.create.error.budget";
+        case "club_limit_exceeded":
+          return "fantasy.create.error.club_limit";
+        case "invalid_team_name":
+          return "fantasy.create.error.team_name";
+        case "duplicate_player":
+          return "fantasy.create.error.duplicate";
+        case "invalid_formation":
+          return "fantasy.create.error.formation";
+        case "player_not_eligible":
+          return "fantasy.create.error.player_unavailable";
+        default:
+          return "fantasy.create.error.rejected";
+      }
+    default:
+      return "fantasy.create.error.generic";
+  }
 }
 
 // ------ Operations (pure) ------

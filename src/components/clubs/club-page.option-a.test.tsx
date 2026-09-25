@@ -242,15 +242,40 @@ describe("club page — the figures", () => {
         stats={empty}
         record={officialRecord(undefined, empty.overall)}
         seasonLabel="2026/2027"
+        seasonAbsent={false}
         previousSeason={{ label: "2025/2026", onSelect: () => undefined }}
         standingsLink={{ to: "/", params: {}, search: {} }}
       />,
     );
     expect(html).toContain(escapeHtml(dictionaries.fr["club.season_empty"]));
+    expect(html).not.toContain(escapeHtml(dictionaries.fr["club.season_absent"]));
     expect(html).toContain("Voir la saison 2025/2026");
     // No next match, no results, no table: those sections are left out.
     expect(html).not.toContain(dictionaries.fr["club.next_match"]);
     expect(html).not.toContain(dictionaries.fr["club.recent_results"]);
+  });
+
+  it("a finished season the club was not in says so, not 'nothing played yet'", async () => {
+    const empty = clubSeasonStats([], WYDAD.id);
+    const html = await withRouter(
+      <ClubOverview
+        club={WYDAD}
+        matches={{ data: [], isPending: false, isError: false, refetch: () => undefined }}
+        news={{ data: [], isPending: false, isError: false, refetch: () => undefined }}
+        clubs={[WYDAD]}
+        clubById={clubById}
+        standings={[]}
+        stats={empty}
+        record={officialRecord(undefined, empty.overall)}
+        seasonLabel="2025/2026"
+        seasonAbsent
+        previousSeason={{ label: "2024/2025", onSelect: () => undefined }}
+        standingsLink={{ to: "/", params: {}, search: {} }}
+      />,
+    );
+    expect(html).toContain(escapeHtml(dictionaries.fr["club.season_absent"]));
+    expect(html).not.toContain(escapeHtml(dictionaries.fr["club.season_empty"]));
+    expect(html).toContain("Voir la saison 2024/2025");
   });
 
   it("the overview marks the club in the table around it and links every other club", async () => {
@@ -265,6 +290,7 @@ describe("club page — the figures", () => {
         stats={stats}
         record={officialRecord(TABLE[2], stats.overall)}
         seasonLabel="2025/2026"
+        seasonAbsent={false}
         previousSeason={undefined}
         standingsLink={{ to: "/", params: {}, search: {} }}
       />,

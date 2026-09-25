@@ -26,19 +26,14 @@ import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { supabase } from "@/integrations/supabase/client";
 import { getAssuranceLevels, requiresLoginChallenge } from "@/backend/auth/mfa";
-
-function sanitizeNext(raw: unknown): string | undefined {
-  if (typeof raw !== "string" || !raw) return undefined;
-  if (!raw.startsWith("/") || raw.startsWith("//")) return undefined;
-  return raw;
-}
+import { authNextSearch, sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 
 export const Route = createFileRoute("/auth/login")({
   head: () => ({ meta: [{ title: "Se connecter — BotolaGO" }] }),
-  validateSearch: (s: Record<string, unknown>) => {
-    const next = sanitizeNext(s.next);
-    return next ? { next } : {};
-  },
+  // The shared sanitiser, as on every other auth route. This route had its
+  // own prefix-only check, which `/\evil.example` and `/<TAB>/evil.example`
+  // passed: browsers resolve both off-site (audit 2026-09-24, P1-1).
+  validateSearch: (s: Record<string, unknown>) => authNextSearch(s.next),
   component: LoginPage,
 });
 
@@ -93,7 +88,9 @@ function LoginPage() {
 
   const goAfterLogin = (profileComplete: boolean | undefined) => {
     if (next && profileComplete) {
-      window.location.href = next;
+      // Sanitised again where it is used: a full navigation is the step that
+      // would leave the site.
+      window.location.href = sanitizeAuthCallbackNext(next);
       return;
     }
     if (profileComplete) {
