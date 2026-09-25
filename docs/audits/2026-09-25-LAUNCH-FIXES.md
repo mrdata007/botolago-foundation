@@ -147,3 +147,58 @@ Publication used the connected GitHub Git Data API because command-line Git had 
 ### GitHub verification outcome
 
 Run [36156651234](https://github.com/mrdata007/botolago-foundation/actions/runs/36156651234) passed application quality, migration replay, all **2,283 pgTAP assertions across 85 files**, and schema lint. Generated-type verification was blocked by the external container registry: `public.ecr.aws/supabase/postgres-meta:v0.96.6` returned `toomanyrequests: Data limit exceeded` after four attempts. Recovery generation hit the same limit. This is not evidence of stale types; the overall database job is still red. No assertion or type gate was bypassed. A new CI run is required. The new raw-HTML SEO suite is now explicitly included in application CI. Local lint passed with 14 warnings and no errors.
+
+## 9. Launch verification — 25 September, 16:00–16:25 UTC
+
+This section records the gates that were still open above. Where it conflicts with an earlier status, this section is the newer measurement.
+
+### CI
+
+- Run [36157987718](https://github.com/mrdata007/botolago-foundation/actions/runs/36157987718) on `4af289c` passed everything. That includes 2,283 pgTAP assertions across 85 files, schema lint, and generated-type verification ("Generated database types are current"; the registry did not rate-limit it this time). The application job passed too, with the anonymous and raw-HTML SEO browser suites.
+- `f057016` fixed the two review findings:
+  - The watchdog now fails when the health payload omits a check that `ops_health_checks()` always emits, or when the payload's verdict disagrees with its own checks.
+  - `/fantasy`, `/fantasy/` and `/pronostics/ligues/...` now get `private, no-store`.
+- CI on `f057016` is green (database-quality and application-quality). Local results: 2,982 unit tests passed, typecheck passed, lint had 0 errors.
+
+### Fresh-account Fantasy journey (production, owner-approved)
+
+Staging could not run this journey. `srdrflfrfpwixsllveid` has 87 migrations (the latest is `20260921180544`). It lacks the enrolment fix `20260924200000`, has no pg_cron and no users, and its only season is the synthetic 2089/90 one with both gameweeks finalized. The owner chose one clearly named production test account instead.
+
+| Step               | Evidence                                                                                                                                                                                                                                                     |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Register           | `compak2026+launch0925@gmail.com` was created at 16:18:11Z through `/auth/register`. The app then showed `/auth/verify`.                                                                                                                                     |
+| Verification email | Arrived at 16:18:13Z from `noreply@botolago.com`, in French and Arabic, with both a 6-digit code and a link to `botolago.com/auth/callback`.                                                                                                                 |
+| Verify             | The code was entered on `/auth/verify`. `email_confirmed_at` is 16:18:40Z. The optional profile step was skipped.                                                                                                                                            |
+| Legal squad        | The squad is 2 GK, 5 DEF, 5 MID and 3 FWD, with at most 3 players per club. It cost 86.4 of 100 (bank 13.6). The create screen said "Journée 2 · Date limite : 2 oct., 15:30" and "La Journée 1 est clôturée. Votre équipe jouera à partir de la Journée 2." |
+| Submit             | Team "QA Launch 0925" (`a5fb2af2-2f82-404e-9841-0b171ec41046`) was saved. Its `current_gameweek_id` is GW2 (`d4324127-…`), with one unlocked GW2 lineup of 15 players and 15 squad memberships.                                                              |
+| Refresh            | `/fantasy/team` showed the same 15 players after a reload.                                                                                                                                                                                                   |
+| Log out / log in   | While logged out, `/fantasy/team` showed "Compte requis". After a password login, the same 15 players came back.                                                                                                                                             |
+| Gameweek/deadline  | The hub shows "Journée 1 · EN DIRECT" and "Journée 2 · Prochaine date limite · ven. 2 oct., 15:30", which is 14:30 UTC and matches the database.                                                                                                             |
+| Errors             | The run had no 4xx/5xx responses and no page errors.                                                                                                                                                                                                         |
+| Writer record      | Before (16:15:06Z): 26 users, 6 teams, 6 lineups, 90 lineup players, 94 memberships. After (16:23:03Z): 27, 7, 7, 105, 109. Exactly one account and one team were added. GW1 and GW2 were unchanged.                                                         |
+
+Follow-up, not a data defect: during a live gameweek, `/fantasy/team` and `/fantasy/points` follow the season's current gameweek. A manager who joined for GW2 therefore sees "Journée 1 · EN DIRECT" and gets "deadline passed" on edits until GW2 opens. Existing managers see the same thing. The saved GW2 lineup is correct.
+
+### Alert delivery and recovery
+
+| Path             | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GitHub issue     | Watchdog run [36159173673](https://github.com/mrdata007/botolago-foundation/actions/runs/36159173673) ran with `simulate_failure`. It opened [#218](https://github.com/mrdata007/botolago-foundation/issues/218) at 16:11:58Z, mentioning `@mrdata007`; the only failing check was `simulated_failure`. The clean run [36159264917](https://github.com/mrdata007/botolago-foundation/actions/runs/36159264917) posted "Recovered" and closed #218 at 16:12:45Z. |
+| Database webhook | `app_private.ops_alert_state` was enabled but had never sent. The Vault URL's host is `hooks.slack.com`. One owner-approved TEST message sent through the same URL (`net.http_post` request 13) got HTTP 200 `ok` from Slack at 16:14:25Z. No alert state or data was changed.                                                                                                                                                                                  |
+| Receipt          | The owner must confirm the GitHub notification for #218 (email or app) and the TEST message in the Slack channel. The connected Gmail (`compak2026@gmail.com`) is not the GitHub notification inbox for `@mrdata007`.                                                                                                                                                                                                                                           |
+
+### Production frontend
+
+- `x-botolago-release` is `d862cf0ef4d282f46c8717a9dceec458d607d11f`, which is current `main`.
+- `/auth/login?next=https://example.com`, `next=//example.com` and `next=/\example.com` each answer 307 to `/auth/login`. With a safe `next=/fantasy/team`, the register link keeps `next=%2Ffantasy%2Fteam`.
+- Raw HTML (no JavaScript):
+
+  | Page                 | Status | Result                                                      |
+  | -------------------- | ------ | ----------------------------------------------------------- |
+  | `/`                  | 200    | h1, 3 match links, 5 club links, 3 article links, canonical |
+  | `/matches/standings` | 200    | 16 club links                                               |
+  | `/clubs`             | 200    | 16 club links                                               |
+  | `/news`              | 200    | 10 article links; no canonical yet                          |
+  | `/matches`           | 200    | h1 and canonical, but no match links (about 2.4 kB of text) |
+
+  None of these pages has `noindex`. The missing `/matches` links and the missing `/news` canonical are what this PR fixes. They stay open until it is merged and published.
