@@ -27,6 +27,7 @@ import {
 } from "@/components/matches/MatchTabs";
 import { MatchTopBar } from "@/components/matches/MatchTopBar";
 import { StatComparison } from "@/components/matches/StatComparison";
+import { matchDataPhase } from "@/components/matches/match-empty-states";
 import {
   eventsWhenFresh,
   scoreCountsEveryGoal,
@@ -269,6 +270,9 @@ function MatchDetailPage() {
   }
 
   const isLive = match.status === "live";
+  // What an empty panel says: a finished match's missing data is not promised.
+  // As of the query's own read, which the server and the first render share.
+  const phase = matchDataPhase(match, detailQ.dataUpdatedAt);
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   // Pinned to the competition zone so this names the same day the card, the
   // strip and the fixture list name (BG-0100).
@@ -395,6 +399,7 @@ function MatchDetailPage() {
               palettes={palettes}
               lineups={lineups}
               isLive={isLive}
+              phase={phase}
               halfTime={
                 match.halfTimeHomeScore !== undefined && match.halfTimeAwayScore !== undefined
                   ? { home: match.halfTimeHomeScore, away: match.halfTimeAwayScore }
@@ -411,11 +416,18 @@ function MatchDetailPage() {
             away={away}
             palettes={palettes}
             isLive={isLive}
+            phase={phase}
           />
         )}
 
         {tab === "lineups" && (
-          <LineupsView lineups={lineups} home={home} away={away} palettes={palettes} />
+          <LineupsView
+            lineups={lineups}
+            home={home}
+            away={away}
+            palettes={palettes}
+            phase={phase}
+          />
         )}
 
         {tab === "h2h" && (

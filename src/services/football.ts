@@ -105,6 +105,10 @@ export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string |
   // whitespace-only code as absent and derives the letters from `short_name`,
   // which is populated for all 21.
   const placeholder = clubShortCode(team.code, team.shortName);
+  // The API has already translated `name` and `shortName` into the language
+  // asked for, so both halves below hold that one language: `.fr` is Arabic
+  // in an Arabic response. Display only — anything that orders or keys clubs
+  // uses `id` or `slug` (see `buildStandings`).
   return {
     id: team.id,
     slug: team.slug,
@@ -296,6 +300,14 @@ export interface FootballStandings {
   readonly away: readonly LeagueTableRow[];
   /** The rounds `overall` reflects: matches played by its busiest club. */
   readonly rounds: number;
+  /**
+   * `overall` is worked out from the results, not the provider's table: it
+   * cannot know a points deduction, and clubs level on every figure share a
+   * rank instead of being separated by the league's rule. Say so with it —
+   * provisional while the season is played, unofficial once it is over
+   * (`StandingsNotes`) — and never call it final.
+   */
+  readonly computed: boolean;
 }
 
 /**
@@ -309,6 +321,12 @@ export interface FootballStandings {
  * the stored rows only lack the form guide, which the results add. Home and
  * away are always the results'. Before the first result there is no table
  * at all, rather than sixteen rows of zeros.
+ *
+ * Every position is the same in French and Arabic: the stored rank is the
+ * provider's, and the computed table lists level clubs by slug. It used to
+ * list them by `shortName.fr`, which in an Arabic response is the Arabic name
+ * (see `presentFootballClub`), so switching language moved tied clubs, and
+ * their zone colours with them (audit A04).
  */
 export function buildStandings(
   fixtures: readonly MatchCardDto[],
@@ -316,14 +334,14 @@ export function buildStandings(
 ): FootballStandings {
   const clubs = uniqueClubs(fixtures, stored);
   const clubIds = clubs.map((club) => club.id);
-  const names = new Map(clubs.map((club) => [club.id, club.shortName.fr]));
-  const nameOf = (clubId: string) => names.get(clubId) ?? clubId;
+  const slugs = new Map(clubs.map((club) => [club.id, club.slug]));
+  const slugOf = (clubId: string) => slugs.get(clubId) ?? clubId;
   const results = fixtures.flatMap((fixture) => {
     const result = toTableResult(fixture);
     return result ? [result] : [];
   });
 
-  const computed = computeLeagueTable(clubIds, results, "overall", nameOf);
+  const computed = computeLeagueTable(clubIds, results, "overall", slugOf);
   const useStored = stored.length > 0 && totalPlayed(stored) >= totalPlayed(computed);
   const overall = useStored
     ? [...stored]
@@ -340,9 +358,10 @@ export function buildStandings(
   return {
     clubs,
     overall,
-    home: results.length > 0 ? computeLeagueTable(clubIds, results, "home", nameOf) : [],
-    away: results.length > 0 ? computeLeagueTable(clubIds, results, "away", nameOf) : [],
+    home: results.length > 0 ? computeLeagueTable(clubIds, results, "home", slugOf) : [],
+    away: results.length > 0 ? computeLeagueTable(clubIds, results, "away", slugOf) : [],
     rounds: roundsPlayed(overall),
+    computed: !useStored,
   };
 }
 

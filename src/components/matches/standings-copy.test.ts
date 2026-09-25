@@ -39,6 +39,11 @@ describe("the table page's counted phrases", () => {
     ]);
   });
 
+  test("a club on no points reads 0, not the one-point phrase French files 0 under", () => {
+    expect(pointsLabel(0, "fr", inLanguage("fr"), format)).toBe("0 pts");
+    expect(pointsLabel(0, "ar", inLanguage("ar"), format)).toBe("0 نقطة");
+  });
+
   test("a place is 1re, then 2e… in French, المركز in Arabic", () => {
     expect([1, 2, 14].map((n) => placeLabel(n, "fr", inLanguage("fr"), format))).toEqual([
       "1re place",

@@ -10,6 +10,7 @@ import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import { lineBlockStart, pitchLines, slotInlineStart, sortStartingXi } from "./lineup-pitch";
+import { noLineupsMessage, type MatchDataPhase } from "./match-empty-states";
 
 // Pinned by `LineupsView.test.ts`; the helper itself lives in `lineup-pitch.ts`.
 export { sortStartingXi };
@@ -57,18 +58,22 @@ const benchOf = (lineup: Lineup) =>
  *
  * Otherwise — one side missing, no formation, a player with no position — a
  * list per team, as before, rather than a guessed shape. Nothing published
- * at all is an explicit empty state, never a probable XI.
+ * at all is an explicit empty state, never a probable XI, and its message
+ * follows `phase` (see `match-empty-states`): a finished match's lineups are
+ * not "not yet published".
  */
 export function LineupsView({
   lineups,
   home,
   away,
   palettes,
+  phase,
 }: {
   lineups: readonly Lineup[];
   home: Club;
   away: Club;
   palettes: { home: ClubPalette; away: ClubPalette };
+  phase: MatchDataPhase;
 }) {
   const { t } = useI18n();
 
@@ -76,7 +81,7 @@ export function LineupsView({
   const awayLineup = lineups.find((lineup) => lineup.team.id === away.id);
 
   if (!homeLineup && !awayLineup) {
-    return <EmptyState>{t("matches.detail.no_lineups")}</EmptyState>;
+    return <EmptyState>{noLineupsMessage(phase, t)}</EmptyState>;
   }
 
   const homeLines = homeLineup ? pitchLines(starters(homeLineup), homeLineup.formation) : null;

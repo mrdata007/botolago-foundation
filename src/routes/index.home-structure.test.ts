@@ -43,6 +43,16 @@ describe("Accueil (Home) structural contract", () => {
     expect(source).toContain("showStandings &&");
   });
 
+  test("the standings snapshot says what the Classement tab says under its table", () => {
+    // Audit A04: the top five listed four of the fourteen clubs sharing 2nd,
+    // with nothing to say their order decides nothing. The notes read the
+    // whole table and the five rows shown.
+    expect(source).toContain("{standingsTop.map((row) => {");
+    expect(source.slice(indexOfOrThrow("<StandingsNotes"))).toMatch(
+      /^<StandingsNotes\s+rows=\{standingsRows\}\s+shown=\{standingsTop\}\s+computed=\{standingsQ\.data\.computed\}\s+seasonStatus=\{currentSeason\?\.status\}/,
+    );
+  });
+
   test("the news preview links into /news instead of duplicating it", () => {
     expect(source).toContain('<ViewAllLink to="/news"');
     // No per-language article fetch control on Home — that belongs to /news.

@@ -14,7 +14,12 @@ type Translate = (key: TranslationKey) => string;
 type Format = (value: number) => string;
 
 function plural(n: number, lang: Language): Intl.LDMLPluralRule {
-  return new Intl.PluralRules(lang === "ar" ? "ar" : "fr").select(n);
+  const rule = new Intl.PluralRules(lang === "ar" ? "ar" : "fr").select(n);
+  // The one and two keys spell their number out ("1 pt", "نقطة واحدة"), and
+  // French files 0 under "one" too: a club on 0 points — every club, on the
+  // first day of a season — read "1 pt". They are for exactly 1 and 2.
+  if ((rule === "one" && n !== 1) || (rule === "two" && n !== 2)) return "other";
+  return rule;
 }
 
 /** "après 5 journées" / "بعد 5 جولات". */

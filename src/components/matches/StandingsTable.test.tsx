@@ -8,14 +8,17 @@ import {
   RouterContextProvider,
 } from "@tanstack/react-router";
 
+import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 import {
   BOTOLA_2025_26_FINAL_TABLE,
   BOTOLA_2025_26_RESULTS,
 } from "@/lib/__fixtures__/botola-2025-26";
+import { clubMatchPalettes } from "@/lib/club-palette";
 import { clubStanding, computeLeagueTable, type TableResult } from "@/lib/league-table";
 import type { Club } from "@/types/domain";
-import { StandingsLegend, StandingsTable } from "./StandingsTable";
+import { HeadToHead } from "./HeadToHead";
+import { StandingsLegend, StandingsNotes, StandingsTable } from "./StandingsTable";
 import { YourClubCard } from "./YourClubCard";
 
 /**
@@ -187,5 +190,145 @@ describe("YourClubCard", () => {
     expect(codm).toContain("36 pts · à égalité de points avec la 9e place");
     expect(codm).not.toContain("CAF");
     expect(codm).not.toContain("Relégation");
+    expect(codm).not.toContain("Ex æquo");
+  });
+});
+
+/**
+ * The first day of a season (audit A04): one result, and fourteen clubs yet
+ * to play, level on every figure, sharing 2nd — a tie that spans the African
+ * places and the drop.
+ */
+describe("a table with clubs level on every figure", () => {
+  const [winner, loser, ...idle] = slugs;
+  const firstDay = computeLeagueTable(
+    slugs,
+    [
+      {
+        homeClubId: loser!,
+        awayClubId: winner!,
+        homeScore: 1,
+        awayScore: 3,
+        kickoff: "2026-09-24T20:00:00Z",
+      },
+    ],
+    "overall",
+  );
+  const html = inFrench(
+    <StandingsTable rows={firstDay} clubById={clubById} view="overall" caption="Classement" />,
+  );
+  const rows = bodyRows(html);
+  const rankCell = (row: string) => row.split("</td>")[0]!;
+
+  test("prints the shared rank on every club of the tie and says so for assistive tech", () => {
+    expect(rows).toHaveLength(16);
+    expect(rankCell(rows[0]!)).toContain(">1<");
+    for (const row of rows.slice(1, 15)) {
+      expect(rankCell(row)).toMatch(/>2<span class="sr-only">, Ex æquo<\/span>/);
+    }
+    expect(rankCell(rows[15]!)).toContain(">16<");
+    expect(rankCell(rows[0]!)).not.toContain("Ex æquo");
+  });
+
+  test("gives none of the tied clubs an African place or the drop", () => {
+    expect(rankCell(rows[0]!)).toContain("Ligue des champions CAF");
+    expect(rankCell(rows[15]!)).toContain("Relégation");
+    for (const row of rows.slice(1, 15)) {
+      expect(rankCell(row)).not.toContain('class="absolute inset-y-0 start-0 w-1');
+      expect(rankCell(row)).not.toMatch(/CAF|Relégation/);
+    }
+  });
+
+  test("the notes say the table is provisional and that a shared rank decides nothing", () => {
+    const notes = inFrench(<StandingsNotes rows={firstDay} computed seasonStatus="active" />);
+    expect(notes).toContain("Classement provisoire, calculé à partir des résultats des matchs.");
+    expect(notes).toContain("Un même rang signale des clubs à égalité");
+    // The provider's final table, one club a position: nothing to say.
+    expect(
+      inFrench(<StandingsNotes rows={overall} computed={false} seasonStatus="completed" />),
+    ).toBe("");
+  });
+
+  test("a table worked out from a finished season's results is unofficial, not provisional", () => {
+    const notes = inFrench(<StandingsNotes rows={overall} computed seasonStatus="completed" />);
+    expect(notes).toContain("Classement non officiel, calculé à partir des résultats des matchs.");
+    expect(notes).not.toContain("provisoire");
+  });
+
+  test("a snapshot names the tie it shows, and only a tie it shows", () => {
+    // Home's top five: 1st and four of the fourteen clubs sharing 2nd.
+    const top = inFrench(
+      <StandingsNotes
+        rows={firstDay}
+        shown={firstDay.slice(0, 5)}
+        computed={false}
+        seasonStatus="active"
+      />,
+    );
+    expect(top).toContain("Un même rang signale des clubs à égalité");
+    // The leader alone: no tie on screen, however many there are below.
+    const leader = inFrench(
+      <StandingsNotes
+        rows={firstDay}
+        shown={firstDay.slice(0, 1)}
+        computed={false}
+        seasonStatus="active"
+      />,
+    );
+    expect(leader).toBe("");
+  });
+
+  test("every note has its Arabic", () => {
+    for (const key of [
+      "standings.provisional",
+      "standings.unofficial",
+      "standings.shared_rank",
+      "standings.shared_rank_note",
+    ] as const) {
+      expect([key, /[؀-ۿ]/.test(dictionaries.ar[key])]).toEqual([key, true]);
+    }
+    expect(dictionaries.ar["standings.unofficial"]).toBe(
+      "ترتيب غير رسمي، محسوب من نتائج المباريات.",
+    );
+  });
+
+  test("the Face-à-face table says a shared rank for assistive tech, read from the whole table", () => {
+    // Two of the clubs sharing 2nd: level with each other and with twelve more.
+    const [first, second] = idle as [string, string];
+    const html = inFrench(
+      <HeadToHead
+        home={club(first)}
+        away={club(second)}
+        palettes={clubMatchPalettes(club(first), club(second))}
+        standings={firstDay}
+        meetings={[]}
+      />,
+    );
+    const cells = html.split("<tbody")[1]!.split("<tr").slice(1);
+    expect(cells).toHaveLength(2);
+    for (const row of cells) expect(row).toMatch(/>2<span class="sr-only">, Ex æquo<\/span>/);
+    // The leader, alone on 1st, is not.
+    const leader = inFrench(
+      <HeadToHead
+        home={club(winner!)}
+        away={club(first)}
+        palettes={clubMatchPalettes(club(winner!), club(first))}
+        standings={firstDay}
+        meetings={[]}
+      />,
+    );
+    expect(leader.split("<tbody")[1]!.split("<tr")[1]).not.toContain("Ex æquo");
+  });
+
+  test("the club card says a shared rank, and measures it against 1st", () => {
+    const club0 = idle[0]!;
+    const shared = inFrench(
+      <YourClubCard club={club(club0)} standing={clubStanding(firstDay, club0)!} />,
+    );
+    expect(shared).toContain("Ex æquo");
+    expect(shared).toContain('<span class="sr-only">2e</span>');
+    // "0 pts": French files 0 under the plural "one", whose phrase is "1 pt".
+    expect(shared).toContain("0 pts · à 3 points de la 1re place");
+    expect(shared).not.toMatch(/CAF|Relégation/);
   });
 });

@@ -9,6 +9,7 @@ import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
+import { noStatsMessage, type MatchDataPhase } from "./match-empty-states";
 
 type Stat = MatchStatisticComparisonDto;
 
@@ -62,6 +63,9 @@ function statLabel(t: (key: TranslationKey) => string, stat: Stat): string {
  * Colours are the page's resolved pair, so a clash-resolved away club is the
  * same colour here as in the header. Home is the first flex child
  * throughout, so Arabic puts it on the right like the header's home half.
+ *
+ * With no statistics, the message follows `phase` (see `match-empty-states`):
+ * a finished match's missing figures are not promised "at kick-off".
  */
 export function StatComparison({
   stats,
@@ -69,12 +73,14 @@ export function StatComparison({
   away,
   palettes,
   isLive,
+  phase,
 }: {
   stats: readonly Stat[];
   home: Club;
   away: Club;
   palettes: { home: ClubPalette; away: ClubPalette };
   isLive: boolean;
+  phase: MatchDataPhase;
 }) {
   const { t, tr, lang } = useI18n();
   const nf = useMemo(
@@ -96,7 +102,7 @@ export function StatComparison({
     return (
       <section>
         {heading}
-        <EmptyState>{t("matches.detail.no_stats")}</EmptyState>
+        <EmptyState>{noStatsMessage(phase, t)}</EmptyState>
       </section>
     );
   }

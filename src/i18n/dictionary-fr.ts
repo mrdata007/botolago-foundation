@@ -150,6 +150,11 @@ export const fr = {
   "standings.gap_lead_other": "{n} points d'avance sur la {place}",
   "standings.gap_level": "à égalité de points avec la {place}",
   "standings.previous_season": "Voir le classement {season}",
+  "standings.provisional": "Classement provisoire, calculé à partir des résultats des matchs.",
+  "standings.unofficial": "Classement non officiel, calculé à partir des résultats des matchs.",
+  "standings.shared_rank": "Ex æquo",
+  "standings.shared_rank_note":
+    "Un même rang signale des clubs à égalité de points, de différence de buts et de buts marqués : l'ordre dans lequel ils sont listés ne les départage pas.",
   "matches.season.label": "Saison",
   "matches.season.current": "Actuelle",
   "matches.season.loading": "Chargement",
@@ -250,11 +255,23 @@ export const fr = {
   "matches.detail.tab.lineups_short": "Compos",
   "matches.detail.tabs_label": "Sections du match",
   "matches.detail.no_events": "Aucun fait marquant pour le moment.",
+  "matches.detail.no_events_updating":
+    "Aucun fait de jeu reçu pour l'instant. Cette page se met à jour automatiquement.",
+  "matches.detail.no_events_unavailable":
+    "Les faits marquants de ce match ne sont pas disponibles.",
   "matches.detail.no_stats": "Les statistiques seront disponibles au coup d'envoi.",
+  "matches.detail.no_stats_updating":
+    "Aucune statistique reçue pour l'instant. Cette page se met à jour automatiquement.",
+  "matches.detail.no_stats_unavailable": "Les statistiques de ce match ne sont pas disponibles.",
+  "matches.detail.no_data_postponed": "Match reporté : pas de données à afficher.",
+  "matches.detail.no_data_called_off": "Match annulé ou arrêté : pas de données à afficher.",
   "matches.detail.stats_title": "Statistiques de l'équipe",
   "matches.detail.lineups_title": "Compositions probables",
   "matches.detail.no_lineups":
     "Les compositions ne sont pas encore publiées par la source officielle.",
+  "matches.detail.no_lineups_updating":
+    "Compositions pas encore reçues. Cette page se met à jour automatiquement.",
+  "matches.detail.no_lineups_unavailable": "Les compositions de ce match ne sont pas disponibles.",
   "matches.detail.lineup_provisional": "Provisoire",
   "matches.detail.starting_xi": "Onze de départ",
   "matches.detail.substitutes": "Remplaçants",

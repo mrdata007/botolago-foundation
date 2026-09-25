@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/common/States";
 import { ui, UiCard, UiTable, UiTBody, UiTD, UiTH, UiTHead, UiTR } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
+import { sharedPositions } from "@/lib/league-table";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
 import type { Club, Match, TableRow } from "@/types/domain";
@@ -46,6 +47,8 @@ export function HeadToHead({
   const rows = standings
     .filter((row) => row.clubId === home.id || row.clubId === away.id)
     .sort((a, b) => a.position - b.position);
+  // Read from the whole table: a club can share its rank with clubs not shown.
+  const shared = sharedPositions(standings);
 
   return (
     <div>
@@ -90,6 +93,9 @@ export function HeadToHead({
                         className={cn(FIRST_CELL, ui.edge.start, ui.stat.md, ui.tone.default)}
                       >
                         {row.position}
+                        {shared.has(row.position) ? (
+                          <span className="sr-only">, {t("standings.shared_rank")}</span>
+                        ) : null}
                       </UiTD>
                       <UiTD className={cn(CELL, "w-full max-w-0")}>
                         <span className="flex min-w-0 items-center gap-2">

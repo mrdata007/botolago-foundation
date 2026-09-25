@@ -9,7 +9,7 @@ import {
   SkeletonList,
 } from "@/components/common/Skeletons";
 import { EmptyState, ErrorState } from "@/components/common/States";
-import { FormChips } from "@/components/matches/StandingsTable";
+import { FormChips, StandingsNotes } from "@/components/matches/StandingsTable";
 import { formatGoalDifference } from "@/components/matches/head-to-head";
 import { ui, UiButton, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -24,6 +24,7 @@ import { rowClubName } from "@/lib/club-identity";
 import { clubStyle } from "@/lib/club-palette";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
+import type { FootballSeason } from "@/services/football";
 import type { Article, Club, Match, TableRow } from "@/types/domain";
 import { Link } from "@tanstack/react-router";
 import { ClubStats } from "./ClubStats";
@@ -45,7 +46,8 @@ export interface SectionData<T> {
  *   2. the club's latest three stories (News is flagged: see below)
  *   3. the last three results, with the form of the last five beside them
  *   4. the season in figures (`ClubStats`)
- *   5. the table around the club, with the way to the whole table
+ *   5. the table around the club, with the way to the whole table, and
+ *      what it cannot claim (`StandingsNotes`) as the full table says it
  *
  * A section with nothing to say is left out rather than drawn empty — a
  * finished season has no next match — except the figures, whose absence
@@ -59,6 +61,8 @@ export function ClubOverview({
   clubs,
   clubById,
   standings,
+  standingsComputed,
+  seasonStatus,
   stats,
   record,
   seasonLabel,
@@ -74,6 +78,9 @@ export function ClubOverview({
   clubs: readonly Club[];
   clubById: (id: string) => Club | undefined;
   standings: readonly TableRow[];
+  /** `FootballStandings.computed`: the table is worked out from the results. */
+  standingsComputed: boolean;
+  seasonStatus: FootballSeason["status"] | undefined;
   stats: ClubSeasonStats;
   /** The season's record: the table's when there is a row, the fixtures' otherwise. */
   record: RecordLine;
@@ -197,6 +204,13 @@ export function ClubOverview({
               />
             ))}
           </UiCard>
+          <StandingsNotes
+            rows={standings}
+            shown={around}
+            computed={standingsComputed}
+            seasonStatus={seasonStatus}
+            className="mt-2"
+          />
         </Section>
       )}
     </>

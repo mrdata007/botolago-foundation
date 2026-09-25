@@ -229,6 +229,7 @@ describe("match page — the Résumé timeline", () => {
       away={far}
       palettes={palettes}
       isLive
+      phase="live"
     />,
   );
 
@@ -262,6 +263,7 @@ describe("match page — the Résumé timeline", () => {
         away={far}
         palettes={palettes}
         isLive
+        phase="live"
         halfTime={{ home: 1, away: 0 }}
       />,
     );
@@ -301,6 +303,7 @@ describe("match page — the Stats tab", () => {
       away={far}
       palettes={palettes}
       isLive
+      phase="live"
     />,
   );
 

@@ -28,6 +28,7 @@ import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
 import { useOnLiveMatchEnd } from "@/components/matches/use-live-matches";
+import { StandingsNotes } from "@/components/matches/StandingsTable";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { STRETCHED_LINK } from "@/components/clubs/stretched-link";
 import { rowClubName } from "@/lib/club-identity";
@@ -322,6 +323,7 @@ function HomeContent() {
   const standingsLoading = seasonsQ.isPending || (currentSeason != null && standingsQ.isPending);
   const standingsFailed = seasonsQ.isError || standingsQ.isError;
   const standingsRows = standingsQ.data?.overall ?? [];
+  const standingsTop = standingsRows.slice(0, 5);
   const showStandings = standingsLoading || standingsFailed || standingsRows.length > 0;
 
   return (
@@ -524,7 +526,7 @@ function HomeContent() {
               padding="none"
               className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
             >
-              {standingsRows.slice(0, 5).map((row) => {
+              {standingsTop.map((row) => {
                 const club = clubById(row.clubId);
                 if (!club) return null;
                 // Each club opens its club page. The name is the link and its
@@ -579,6 +581,17 @@ function HomeContent() {
               })}
             </UiCard>
           )}
+          {/* Worked out from the results, and a tie the top five may cut
+              through: said here as the Classement tab says it. */}
+          {standingsQ.data && !standingsLoading && !standingsFailed ? (
+            <StandingsNotes
+              rows={standingsRows}
+              shown={standingsTop}
+              computed={standingsQ.data.computed}
+              seasonStatus={currentSeason?.status}
+              className="mt-2"
+            />
+          ) : null}
         </Section>
       )}
 

@@ -13,6 +13,7 @@ import { validateMatchesSearch } from "@/components/matches/matches-search";
 import { SeasonPicker } from "@/components/matches/SeasonPicker";
 import {
   StandingsLegend,
+  StandingsNotes,
   StandingsTable,
   type StandingsView,
 } from "@/components/matches/StandingsTable";
@@ -87,7 +88,9 @@ const EMPTY_SEASONS: readonly FootballSeason[] = [];
  *
  * The table is worked out from the season's results (`getStandings`), so it
  * fills in as the matches are played. Before the first result there is none:
- * the page says so and offers last season's final table instead.
+ * the page says so and offers last season's final table instead. A worked-out
+ * table says so under it, and is never called final: only the provider's
+ * table is (`FootballStandings.computed`).
  */
 function StandingsPage() {
   const { t, lang } = useI18n();
@@ -155,7 +158,9 @@ function StandingsPage() {
   const rounds = data ? roundsLabel(data.rounds, lang, t, (value) => nf.format(value)) : "";
   const status = [
     t("matches.competition.botola"),
-    season?.status === "completed" ? `${t("standings.final")} ${rounds}` : rounds,
+    season?.status === "completed" && !data?.computed
+      ? `${t("standings.final")} ${rounds}`
+      : rounds,
   ].join(" · ");
 
   return (
@@ -247,6 +252,12 @@ function StandingsPage() {
               highlightClubId={favourite?.id}
             />
             {shown === "overall" || shown === "form" ? <StandingsLegend /> : null}
+            {/* Home and away are always worked out from the results. */}
+            <StandingsNotes
+              rows={rows ?? []}
+              computed={shown === "home" || shown === "away" || data.computed}
+              seasonStatus={season?.status}
+            />
           </section>
         </div>
       )}

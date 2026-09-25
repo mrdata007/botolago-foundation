@@ -18,7 +18,9 @@ import type { Club, TableRow } from "@/types/domain";
  * that say where the club stands sit on a card that rises out of the band's
  * foot, as the player page draws its key numbers. Without one — before the
  * first round, or a season with no table — there is no card rather than a
- * card of dashes.
+ * card of dashes. A position the club shares with clubs level on every
+ * figure (`shared`, see `sharedPositions`) is labelled "Ex æquo" rather than
+ * "Position": the figure is the tie's, not the club's alone.
  *
  * `actions` sit under the name, on the club colour: the follow control and
  * the season picker.
@@ -28,6 +30,7 @@ export function ClubHero({
   headingId,
   kicker,
   row,
+  shared = false,
   actions,
 }: {
   club: Club;
@@ -35,6 +38,8 @@ export function ClubHero({
   /** The competition and season the page is showing, above the name. */
   kicker: string;
   row: TableRow | undefined;
+  /** Other clubs in the table hold `row.position` too. */
+  shared?: boolean;
   actions?: ReactNode;
 }) {
   const { t, tr, lang } = useI18n();
@@ -88,7 +93,7 @@ export function ClubHero({
             {/* The figure alone in Arabic, whose ordinal is a word before it
                 ("المركز 5") that the label above already says. */}
             <KeyNumber
-              label={t("matches.table.rank")}
+              label={shared ? t("standings.shared_rank") : t("matches.table.rank")}
               value={`${position.figure}${position.after}`}
             />
             <KeyNumber label={t("matches.table.points")} value={nf.format(row.points)} divided />

@@ -26,7 +26,11 @@ import { SectionHeader } from "@/components/common/SectionHeader";
 import { EmptyState, ErrorState, LoadingState } from "@/components/common/States";
 import { ShareButton } from "@/components/fantasy-lists/ShareButton";
 import { SeasonPicker } from "@/components/matches/SeasonPicker";
-import { StandingsLegend, StandingsTable } from "@/components/matches/StandingsTable";
+import {
+  StandingsLegend,
+  StandingsNotes,
+  StandingsTable,
+} from "@/components/matches/StandingsTable";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -40,6 +44,7 @@ import {
   officialRecord,
 } from "@/lib/club-season";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
+import { sharedPositions } from "@/lib/league-table";
 import { cn } from "@/lib/utils";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
 import { newsArticlesForCategory, newsService } from "@/services/news";
@@ -241,7 +246,10 @@ function ClubPage() {
 
   const matches = matchesQ.data?.matches;
   const standings = standingsQ.data?.overall ?? [];
+  const standingsComputed = standingsQ.data?.computed ?? false;
   const row = standings.find((line) => line.clubId === clubId);
+  // Level on every figure with other clubs: the hero says the rank is shared.
+  const rowShared = row ? sharedPositions(standings).has(row.position) : false;
   const stats = useMemo(() => clubSeasonStats(matches ?? [], clubId), [matches, clubId]);
   const record = officialRecord(row, stats.overall);
   // A season with nothing played: over, with no fixture for the club, it is
@@ -324,6 +332,7 @@ function ClubPage() {
         headingId={headingId}
         kicker={seasonLine}
         row={row}
+        shared={rowShared}
         actions={
           <>
             <ClubFollowButton club={club} />
@@ -369,6 +378,8 @@ function ClubPage() {
             clubs={[...clubs.values()]}
             clubById={clubById}
             standings={standings}
+            standingsComputed={standingsComputed}
+            seasonStatus={season?.status}
             stats={stats}
             record={record}
             seasonLabel={season?.label}
@@ -411,6 +422,11 @@ function ClubPage() {
                   currentClubId={clubId}
                 />
                 <StandingsLegend />
+                <StandingsNotes
+                  rows={standings}
+                  computed={standingsComputed}
+                  seasonStatus={season?.status}
+                />
               </div>
             )}
           </Section>
