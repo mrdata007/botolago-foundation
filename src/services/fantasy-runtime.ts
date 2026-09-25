@@ -1,5 +1,6 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
+import { supabaseV2 } from "@/integrations/supabase/v2-client";
 import { selectFantasyDataMode } from "./fantasy-v2";
 import { forgetSharedFantasyHub, shareFantasyHub } from "./fantasy-hub-share";
 import {
@@ -180,9 +181,23 @@ function overallStandingDto(dto: FantasyOverallStandingDto): LeagueStanding {
   };
 }
 
-/** One hub read per screen: see `fantasy-hub-share.ts`. */
+/**
+ * Whose hub a read returns: the account whose session the request will carry.
+ * An unreadable session never shares (a fresh identity per call).
+ */
+async function hubIdentity(): Promise<string> {
+  try {
+    const { data } = await supabaseV2.auth.getSession();
+    return data.session?.user.id ?? "anonymous";
+  } catch {
+    return `unknown:${crypto.randomUUID()}`;
+  }
+}
+
+/** One hub read per screen and account: see `fantasy-hub-share.ts`. */
 async function hub(): Promise<FantasyHubDto> {
-  return shareFantasyHub(() => cloud.getHub("fr", context()));
+  const identity = await hubIdentity();
+  return shareFantasyHub(() => cloud.getHub("fr", context()), { identity });
 }
 
 /** The hub's enrolment gameweek in the screens' `Gameweek` vocabulary. */
