@@ -24,6 +24,19 @@ export interface Check {
 type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 
 const SITE_PAGES = ["/", "/matches", "/news", "/sitemap.xml"] as const;
+// Checks `app_private.ops_health_checks()` emits on every call. The deadline
+// watch is left out: it only runs while a Fantasy season is planned or active.
+export const REQUIRED_DATABASE_CHECKS = [
+  "fantasy_lifecycle_tick",
+  "fantasy_gameweek_lock",
+  "cron_jobs",
+  "news_publication",
+  "news_import",
+  "live_scores",
+  "provider_refresh",
+  "email_delivery",
+  "browser_errors",
+] as const;
 const SLOW_MS = 8_000;
 const ORCHESTRATOR_STALE_HOURS = 8;
 
@@ -83,7 +96,7 @@ export async function databaseHealth(
     ];
   }
   // A broken health endpoint must not silently become an empty green report.
-  let payload: { checks?: unknown } | null;
+  let payload: { status?: unknown; checks?: unknown } | null;
   try {
     payload = JSON.parse(result.body);
   } catch {
@@ -93,6 +106,7 @@ export async function databaseHealth(
   }
   const checks = payload?.checks;
   if (
+    !["ok", "warn", "fail"].includes(payload?.status as string) ||
     !Array.isArray(checks) ||
     checks.length === 0 ||
     checks.some(
@@ -112,11 +126,30 @@ export async function databaseHealth(
       },
     ];
   }
-  return checks.map((check) => ({
+  const reported: Check[] = checks.map((check) => ({
     name: check.name,
     status: check.status,
     detail: String(check.detail ?? "").slice(0, 200),
   }));
+  // A partial list, or one that disagrees with the database's own verdict,
+  // means the report itself is broken: keep what it said and fail on top.
+  const missing = REQUIRED_DATABASE_CHECKS.filter(
+    (name) => !reported.some((check) => check.name === name),
+  );
+  if (missing.length > 0) {
+    reported.push({
+      name: "database_health",
+      status: "fail",
+      detail: `health RPC omitted required check(s): ${missing.join(", ")}`,
+    });
+  } else if (overall(reported) !== payload?.status) {
+    reported.push({
+      name: "database_health",
+      status: "fail",
+      detail: `health RPC status ${payload?.status} disagrees with its checks (${overall(reported)})`,
+    });
+  }
+  return reported;
 }
 
 /** The public site and one public API call, as a visitor meets them. */

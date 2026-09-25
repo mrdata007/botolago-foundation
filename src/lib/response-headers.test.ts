@@ -28,7 +28,10 @@ describe("site response headers", () => {
       "/auth/callback",
       "/admin",
       "/profile",
+      "/fantasy",
+      "/fantasy/",
       "/fantasy/team",
+      "/pronostics/ligues/abc",
       "/notifications",
     ]) {
       const response = withSiteHeaders(
@@ -38,12 +41,14 @@ describe("site response headers", () => {
       );
       expect(response.headers.get("cache-control")).toBe("private, no-store");
     }
-    const publicResponse = withSiteHeaders(
-      new Response("", { headers: { "Cache-Control": "public, max-age=60" } }),
-      "https://botolago.com/news",
-      "6a12a6b",
-    );
-    expect(publicResponse.headers.get("cache-control")).toBe("public, max-age=60");
+    for (const path of ["/news", "/fantasy/rules", "/fantasyland", "/pronostics"]) {
+      const publicResponse = withSiteHeaders(
+        new Response("", { headers: { "Cache-Control": "public, max-age=60" } }),
+        `https://botolago.com${path}`,
+        "6a12a6b",
+      );
+      expect(publicResponse.headers.get("cache-control")).toBe("public, max-age=60");
+    }
   });
 
   test("Lovable's editor preview keeps working: other hosts are not restricted", () => {

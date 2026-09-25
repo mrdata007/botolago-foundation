@@ -47,9 +47,10 @@ export function withSiteHeaders(
     // Not an absolute URL: no host-specific headers.
   }
   // Personalized responses and auth redirects must never enter a shared cache.
+  // The Fantasy hub itself (`/fantasy`) reads the visitor's team and leagues.
   if (
-    /^\/(auth|admin|profile|notifications|settings)(\/|$)/.test(path) ||
-    (path.startsWith("/fantasy/") && !["/fantasy/rules", "/fantasy/prizes"].includes(path))
+    /^\/(auth|admin|profile|notifications|settings|pronostics\/ligues)(\/|$)/.test(path) ||
+    (/^\/fantasy(\/|$)/.test(path) && !["/fantasy/rules", "/fantasy/prizes"].includes(path))
   ) {
     values["cache-control"] = "private, no-store";
   }
