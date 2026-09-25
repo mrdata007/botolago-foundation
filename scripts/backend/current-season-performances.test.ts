@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import {
   CURRENT_PERFORMANCE_TYPES,
   CurrentPerformanceError,
@@ -23,6 +24,33 @@ function fixture(id = 9001) {
       participants: [
         { id: 10, meta: { location: "home" } },
         { id: 20, meta: { location: "away" } },
+      ],
+      // 0-0 unless a test says otherwise (withScore).
+      scores: [
+        {
+          id: 1,
+          participant_id: 10,
+          description: "1ST_HALF",
+          score: { goals: 0, participant: "home" },
+        },
+        {
+          id: 2,
+          participant_id: 20,
+          description: "1ST_HALF",
+          score: { goals: 0, participant: "away" },
+        },
+        {
+          id: 3,
+          participant_id: 10,
+          description: "CURRENT",
+          score: { goals: 0, participant: "home" },
+        },
+        {
+          id: 4,
+          participant_id: 20,
+          description: "CURRENT",
+          score: { goals: 0, participant: "away" },
+        },
       ],
       lineups: Array.from({ length: 22 }, (_, index) => {
         const playerId = index + 100;
@@ -71,6 +99,31 @@ function withBench(payload: ReturnType<typeof fixture>, count: number) {
     });
   }
   return payload;
+}
+/** Sets the final (CURRENT) score. */
+function withScore(payload: ReturnType<typeof fixture>, home: number, away: number) {
+  for (const score of payload.data.scores)
+    if (score.description === "CURRENT")
+      score.score.goals = score.score.participant === "home" ? home : away;
+  return payload;
+}
+/** Sets one statistic on one lineup row, adding it when SportsMonks would have left it out. */
+function setDetail(
+  payload: ReturnType<typeof fixture>,
+  index: number,
+  typeId: (typeof CURRENT_PERFORMANCE_TYPES)[number],
+  value: number,
+) {
+  const lineup = payload.data.lineups[index]!;
+  const detail = lineup.details.find((candidate) => candidate.type_id === typeId);
+  if (detail) detail.data.value = value;
+  else
+    lineup.details.push({
+      ...lineup.details[0]!,
+      id: 900000 + typeId * 100 + index,
+      type_id: typeId,
+      data: { value },
+    });
 }
 /** SportsMonks' shape for a player it has not identified: no player_id, no statistics. */
 function unnamedRow(payload: ReturnType<typeof fixture>, index: number) {
@@ -154,7 +207,7 @@ async function rejection(promise: Promise<unknown>) {
 }
 
 describe("current finished fixture performance ingestion", () => {
-  test("accepts explicit zero facts and derives clean sheets from on-pitch goals conceded and official minutes", async () => {
+  test("accepts explicit zero facts and derives clean sheets from official minutes and goals conceded", async () => {
     const payload = fixture();
     const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
     expect(normalized.rows).toHaveLength(22);
@@ -163,26 +216,113 @@ describe("current finished fixture performance ingestion", () => {
       excludedIncompleteRows: 0,
       scoringStatisticsComplete: true,
       cleanSheetSource: "official_minutes_and_on_pitch_goals_conceded",
+      goalsConcededFromFinalScore: 0,
     });
-    payload.data.lineups[0].details.find((detail) => detail.type_id === 88)!.data.value = 1;
-    expect((await normalizeCurrentFinishedFixture(payload, 9001)).rows[0].cleanSheets).toBe(0);
-    payload.data.lineups[0].details.find((detail) => detail.type_id === 88)!.data.value = 0;
-    payload.data.lineups[0].details.find((detail) => detail.type_id === 119)!.data.value = 59;
-    expect((await normalizeCurrentFinishedFixture(payload, 9001)).rows[0].cleanSheets).toBe(0);
+    // Went off after 70 minutes: SportsMonks' own goals conceded decide.
+    withScore(payload, 0, 1);
+    setDetail(payload, 1, 119, 70);
+    expect((await normalizeCurrentFinishedFixture(payload, 9001)).rows[1]).toMatchObject({
+      goalsConceded: 0,
+      cleanSheets: 1,
+    });
+    setDetail(payload, 1, 88, 1);
+    expect((await normalizeCurrentFinishedFixture(payload, 9001)).rows[1].cleanSheets).toBe(0);
+    setDetail(payload, 1, 88, 0);
+    setDetail(payload, 1, 119, 59);
+    expect((await normalizeCurrentFinishedFixture(payload, 9001)).rows[1].cleanSheets).toBe(0);
     expect(CURRENT_PERFORMANCE_TYPES).not.toContain(194);
   });
-  test("missing or null common statistics cannot silently become zero", async () => {
-    const payload = fixture();
-    payload.data.lineups[0].details = payload.data.lineups[0].details.filter(
-      (detail) => detail.type_id !== 52,
-    );
-    await expect(normalizeCurrentFinishedFixture(payload, 9001)).rejects.toMatchObject({
-      code: "current_statistics_incomplete",
-      diagnostic: {
-        fixtureExternalId: "9001",
-        missingDetailTypes: [{ typeId: 52, playerRows: 1 }],
-      },
+  test("goals conceded follow the final score: all of them for a starter's 90 minutes, never more", async () => {
+    // Lost 0-2. As 37 goalkeepers did last season, SportsMonks gives the
+    // home goalkeeper none, and a defender one: both started and played 90.
+    const payload = withBench(withScore(fixture(), 0, 2), 1);
+    setDetail(payload, 3, 88, 1);
+    setDetail(payload, 5, 119, 65); // off after 65 minutes with 3: capped at 2
+    setDetail(payload, 5, 88, 3);
+    setDetail(payload, 6, 119, 75); // off after 75, before both goals
+    setDetail(payload, 7, 119, 20); // off after 20, on for the first goal only
+    setDetail(payload, 7, 88, 1);
+    // On for him from the 20th, SportsMonks counts the substitute 90 as well:
+    // only the second goal was his, and his own figure stands.
+    setDetail(payload, 22, 119, 90);
+    setDetail(payload, 22, 88, 1);
+    setDetail(payload, 12, 88, 1); // the away side conceded none
+    const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
+    expect(normalized.rows[0]).toMatchObject({ minutes: 90, goalsConceded: 2, cleanSheets: 0 });
+    expect(normalized.rows[3]).toMatchObject({ minutes: 90, goalsConceded: 2, cleanSheets: 0 });
+    expect(normalized.rows[5]).toMatchObject({ minutes: 65, goalsConceded: 2, cleanSheets: 0 });
+    expect(normalized.rows[6]).toMatchObject({ minutes: 75, goalsConceded: 0, cleanSheets: 1 });
+    expect(normalized.rows[7]).toMatchObject({ minutes: 20, goalsConceded: 1, cleanSheets: 0 });
+    expect(normalized.rows[22]).toMatchObject({ started: false, minutes: 90, goalsConceded: 1 });
+    const away = normalized.rows.filter((player) => player.externalTeamId === "20");
+    expect(away).toHaveLength(11);
+    for (const player of away) expect(player).toMatchObject({ goalsConceded: 0, cleanSheets: 1 });
+    // 8 home starters with 90 minutes lifted to 2; 1 home and 1 away capped.
+    expect(normalized.coverage).toMatchObject({ goalsConcededFromFinalScore: 10 });
+  });
+  test("no final score, no import", async () => {
+    const missing = fixture();
+    (missing.data as { scores?: unknown }).scores = undefined;
+    // No list at all is what a request without `scores` in its include gets.
+    expect((await rejection(normalizeCurrentFinishedFixture(missing, 9001))).diagnostic).toEqual({
+      fixtureExternalId: "9001",
+      field: "data.scores",
+      valueType: "missing",
     });
+    await expect(normalizeCurrentFinishedFixture(missing, 9001)).rejects.toMatchObject({
+      code: "current_final_score_missing",
+      diagnostic: { fixtureExternalId: "9001" },
+    });
+    const halfTimeOnly = fixture();
+    halfTimeOnly.data.scores = halfTimeOnly.data.scores.filter(
+      (score) => score.description !== "CURRENT",
+    );
+    await expect(normalizeCurrentFinishedFixture(halfTimeOnly, 9001)).rejects.toThrow(
+      "current_final_score_missing",
+    );
+    const twice = fixture();
+    twice.data.scores.push({ ...twice.data.scores[2]!, id: 5 });
+    await expect(normalizeCurrentFinishedFixture(twice, 9001)).rejects.toThrow(
+      "current_final_score_missing",
+    );
+  });
+  test("an absent statistic counts as zero: SportsMonks sends only the ones that are not", async () => {
+    // Fixture 19874708's shape: minutes and a rating for the players who
+    // played, and a goal only on the scorer (a 1-0).
+    const payload = withScore(fixture(), 1, 0);
+    for (const lineup of payload.data.lineups)
+      lineup.details = lineup.details.filter((detail) => [118, 119].includes(detail.type_id));
+    payload.data.lineups[10].details.push({
+      ...payload.data.lineups[10].details[0]!,
+      id: 999001,
+      type_id: 52,
+      data: { value: 1 },
+    });
+    const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
+    expect(normalized.rows).toHaveLength(22);
+    expect(normalized.rows[0]).toMatchObject({
+      goals: 0,
+      assists: 0,
+      yellowCards: 0,
+      goalsConceded: 0,
+      saves: 0,
+      penaltiesSaved: 0,
+      minutes: 90,
+      cleanSheets: 1,
+    });
+    expect(normalized.rows[10]).toMatchObject({ goals: 1 });
+    // Nobody carries goals conceded; the score says the away side conceded one.
+    expect(normalized.rows[11]).toMatchObject({ goalsConceded: 1, cleanSheets: 0 });
+    // 10 counted statistics absent on each of 22 players (saves and penalties
+    // saved included), less the one goal.
+    expect(normalized.coverage).toMatchObject({
+      absentStatisticsCountedAsZero: 22 * 10 - 1,
+      missingStatisticRows: 0,
+      scoringStatisticsComplete: true,
+      goalsConcededFromFinalScore: 11,
+    });
+  });
+  test("an explicit null is still unknown, never zero", async () => {
     const nullPayload = fixture();
     Object.assign(nullPayload.data.lineups[0].details[0].data, { value: null });
     await expect(normalizeCurrentFinishedFixture(nullPayload, 9001)).rejects.toThrow(
@@ -192,19 +332,87 @@ describe("current finished fixture performance ingestion", () => {
     optional.data.lineups[0].details = optional.data.lineups[0].details.filter(
       (detail) => detail.type_id !== 57 && detail.type_id !== 113,
     );
-    expect((await normalizeCurrentFinishedFixture(optional, 9001)).rows[0]).toMatchObject({
-      saves: null,
-      penaltiesSaved: null,
-    });
+    const absentGoalkeeping = await normalizeCurrentFinishedFixture(optional, 9001);
+    expect(absentGoalkeeping.rows[0]).toMatchObject({ saves: 0, penaltiesSaved: 0 });
+    // Both absences are counted as zero, and reported.
+    expect(absentGoalkeeping.coverage).toMatchObject({ absentStatisticsCountedAsZero: 2 });
     const optionalNulls = fixture();
     for (const detail of optionalNulls.data.lineups[0].details) {
       if ([57, 113, 118].includes(detail.type_id)) Object.assign(detail.data, { value: null });
     }
-    expect((await normalizeCurrentFinishedFixture(optionalNulls, 9001)).rows[0]).toMatchObject({
+    const nulls = await normalizeCurrentFinishedFixture(optionalNulls, 9001);
+    expect(nulls.rows[0]).toMatchObject({
       saves: null,
       penaltiesSaved: null,
       providerRating: null,
     });
+    // An explicit null is not an absence: nothing counted as zero.
+    expect(nulls.coverage).toMatchObject({ absentStatisticsCountedAsZero: 0 });
+  });
+  test("a starter without minutes played means the statistics are not in yet", async () => {
+    const payload = fixture();
+    payload.data.lineups[5].details = payload.data.lineups[5].details.filter(
+      (detail) => detail.type_id !== 119,
+    );
+    await expect(normalizeCurrentFinishedFixture(payload, 9001)).rejects.toMatchObject({
+      code: "current_starter_minutes_missing",
+      diagnostic: { fixtureExternalId: "9001", starterRows: 1 },
+    });
+    const bare = fixture();
+    bare.data.lineups[5].details = [];
+    await expect(normalizeCurrentFinishedFixture(bare, 9001)).rejects.toThrow(
+      "current_starter_minutes_missing",
+    );
+    // Sent as 0 is no better than left out.
+    const zero = fixture();
+    setDetail(zero, 5, 119, 0);
+    await expect(normalizeCurrentFinishedFixture(zero, 9001)).rejects.toThrow(
+      "current_starter_minutes_missing",
+    );
+  });
+  test("a substitute without minutes never scored, assisted, saved, missed a penalty or put through an own goal", async () => {
+    // Unused substitutes come with no statistics at all, or none but a card.
+    const unused = withBench(fixture(), 3);
+    unused.data.lineups[22]!.details = [];
+    (unused.data.lineups[23] as { details?: unknown }).details = undefined;
+    unused.data.lineups[24]!.details = unused.data.lineups[24]!.details.filter(
+      (detail) => detail.type_id === 84,
+    ).map((detail) => ({ ...detail, data: { value: 1 } })); // booked on the bench
+    const normalized = await normalizeCurrentFinishedFixture(unused, 9001);
+    const bench = normalized.rows.filter((player) => !player.started);
+    expect(bench).toHaveLength(3);
+    for (const player of bench)
+      expect(player).toMatchObject({ minutes: 0, appeared: false, saves: 0, cleanSheets: 0 });
+    expect(bench.map((player) => player.yellowCards).sort()).toEqual([0, 0, 1]);
+
+    // A late substitute can carry goals conceded without minutes played (23
+    // did last season): kept, with no appearance and no clean sheet.
+    const late = withBench(withScore(fixture(), 0, 1), 1);
+    late.data.lineups[22]!.details = late.data.lineups[22]!.details.filter(
+      (detail) => detail.type_id === 88,
+    ).map((detail) => ({ ...detail, data: { value: 1 } }));
+    expect(
+      (await normalizeCurrentFinishedFixture(late, 9001)).rows.find((player) => !player.started),
+    ).toMatchObject({ minutes: 0, appeared: false, goalsConceded: 1, cleanSheets: 0 });
+
+    // A goal, an assist, an own goal or a missed penalty without minutes says
+    // the statistics are wrong, not zero (none did last season).
+    for (const typeId of [52, 79, 324, 112, 57, 113]) {
+      const scored = withBench(fixture(), 1);
+      scored.data.lineups[22]!.details = scored.data.lineups[22]!.details.filter(
+        (detail) => detail.type_id === typeId,
+      ).map((detail) => ({ ...detail, data: { value: 1 } }));
+      await expect(normalizeCurrentFinishedFixture(scored, 9001)).rejects.toMatchObject({
+        code: "current_statistics_inconsistent",
+        diagnostic: { fixtureExternalId: "9001", substituteRowsWithoutMinutes: 1 },
+      });
+    }
+    // Minutes sent as 0 are no minutes: withBench sends every statistic, 0.
+    const zeroMinutes = withBench(fixture(), 1);
+    setDetail(zeroMinutes, 22, 52, 1);
+    await expect(normalizeCurrentFinishedFixture(zeroMinutes, 9001)).rejects.toThrow(
+      "current_statistics_inconsistent",
+    );
   });
   test("rejects wrong state, identities and incomplete starter reconciliation", async () => {
     const scheduled = fixture();
@@ -327,10 +535,22 @@ describe("current finished fixture performance ingestion", () => {
           typeId: CURRENT_PERFORMANCE_TYPES[0],
         },
       ],
+      // Absent details are no statistics (an unused substitute's shape); a
+      // value that is not a list breaks the contract.
       [
-        (p) => delete (p.data.lineups[8] as Record<string, unknown>).details,
+        (p) => Object.assign(p.data.lineups[8]!, { details: { 119: 90 } }),
         "current_statistics_incomplete",
-        { fixtureExternalId: "9001", field: "data.lineups[8].details", valueType: "missing" },
+        { fixtureExternalId: "9001", field: "data.lineups[8].details", valueType: "object" },
+      ],
+      [
+        (p) => ((p.data.scores as unknown[])[1] = "1-0"),
+        "invalid_provider_object",
+        { field: "data.scores[1]", valueType: "string" },
+      ],
+      [
+        (p) => Object.assign(p.data.scores[3]!, { score: null }),
+        "invalid_provider_object",
+        { field: "data.scores[3].score", valueType: "null" },
       ],
     ];
     for (const [mutate, code, diagnostic] of cases) {
@@ -528,6 +748,7 @@ describe("current finished fixture performance ingestion", () => {
       async (path) => {
         calls.push(`fetch ${path.slice(-4)}`);
         const payload = fixture(Number(path.slice(-4)));
+        // A starter with no statistics at all: not in yet (no minutes played).
         if (path.endsWith("9002")) payload.data.lineups[0].details = [];
         // 21 starters: the shared normalizer's own refusal, with its counts.
         if (path.endsWith("9003")) payload.data.lineups[0].type_id = 12;
@@ -551,8 +772,8 @@ describe("current finished fixture performance ingestion", () => {
           kickoffAt: "2026-09-24T17:00:00+00:00",
           finalizedAt: "2026-09-24T18:57:00+00:00",
           stage: "validation",
-          code: "current_statistics_incomplete",
-          diagnostic: { fixtureExternalId: "9002" },
+          code: "current_starter_minutes_missing",
+          diagnostic: { fixtureExternalId: "9002", starterRows: 1 },
         },
         {
           fixtureExternalId: "9003",
@@ -563,7 +784,6 @@ describe("current finished fixture performance ingestion", () => {
         },
       ],
     });
-    expect(result.incomplete[0]?.diagnostic?.missingDetailTypes).toHaveLength(9);
     // A time the listing cannot vouch for is left out rather than guessed.
     expect(result.incomplete[1]).not.toHaveProperty("finalizedAt");
   });
@@ -602,7 +822,7 @@ describe("current finished fixture performance ingestion", () => {
         diagnostic: {
           rpcName: "ingest_current_player_fixture_performance",
           sqlState: "P0002",
-          databaseCode: "PLAYER_MAPPING_NOT_FOUND",
+          reason: "PLAYER_MAPPING_NOT_FOUND",
         },
       },
     ]);
@@ -901,7 +1121,7 @@ describe("current finished fixture performance ingestion", () => {
       "test-provider-token",
       null,
       async (_path, query) => {
-        expect(query.include).toBe("lineups.details;state;participants");
+        expect(query.include).toBe("lineups.details;state;participants;scores");
         return fixture();
       },
     );
@@ -910,5 +1130,123 @@ describe("current finished fixture performance ingestion", () => {
       "football_current_performance_fixture_batch",
       "ingest_current_player_fixture_performance",
     ]);
+  });
+  // Review of the 2026-09-25 merge of main: the merge kept the per-fixture
+  // request without `scores`, and every real fixture would then have stopped
+  // at `current_final_score_missing`. The fixtures here always carry scores,
+  // whatever was asked for, so only the request itself can show it; and an
+  // assertion inside the provider stub would be caught as that fixture's own
+  // provider failure. So every request is recorded and checked afterwards.
+  test("every provider request asks for the final score, in every mode", async () => {
+    const requests: Array<{ path: string; query: Record<string, string> }> = [];
+    const provider = async (path: string, query: Record<string, string>) => {
+      requests.push({ path, query });
+      if (path.endsWith("9003")) throw new SportsMonksProbeError("provider_http_404");
+      return fixture(Number(path.slice(-4)));
+    };
+    const page = () =>
+      batchClient({
+        items: [
+          { externalFixtureId: "9001" },
+          { externalFixtureId: "9002" },
+          { externalFixtureId: "9003" },
+          { externalFixtureId: "9004" },
+        ],
+        hasMore: true,
+        nextCursor: "9004",
+      }).client;
+    const runs = [
+      // A page, as the manual run and every orchestrator pass read it; 9003 is
+      // one fixture's provider failure, and 9004 is still read after it.
+      await runCurrentPerformanceBatch(page(), "t", null, provider),
+      // A later page.
+      await runCurrentPerformanceBatch(
+        batchClient({ items: [{ externalFixtureId: "9006" }] }).client,
+        "t",
+        "9004",
+        provider,
+      ),
+      // The read-only diagnostic.
+      await runCurrentPerformanceBatch(page(), "t", null, provider, { mode: "diagnose" }),
+      // The one-fixture canary, ingesting and read-only.
+      await runCurrentPerformanceBatch(page(), "t", null, provider, {
+        onlyFixtureExternalId: "9001",
+      }),
+      await runCurrentPerformanceBatch(page(), "t", null, provider, {
+        mode: "diagnose",
+        onlyFixtureExternalId: "9001",
+      }),
+    ];
+    expect(requests.map((entry) => entry.path)).toEqual(
+      [
+        ...["9001", "9002", "9003", "9004"],
+        "9006",
+        ...["9001", "9002", "9003", "9004"],
+        "9001",
+        "9001",
+      ].map((fixtureId) => `/v3/football/fixtures/${fixtureId}`),
+    );
+    for (const { query } of requests)
+      expect(query).toEqual({
+        include: "lineups.details;state;participants;scores",
+        filters: `lineupDetailTypes:${CURRENT_PERFORMANCE_TYPES.join(",")}`,
+      });
+    // Every fixture the stub answered validated; only 9003's 404 is a gap.
+    expect(runs.map((run) => run.verdict)).toEqual([
+      "incomplete",
+      "pass",
+      "incomplete",
+      "pass",
+      "pass",
+    ]);
+    for (const run of runs)
+      for (const gap of run.incomplete)
+        expect(gap).toMatchObject({ fixtureExternalId: "9003", code: "provider_http_404" });
+
+    // The request above is this module's only one: a new provider call site
+    // has to join the modes listed here.
+    const source = readFileSync(
+      new URL("./current-season-performances.ts", import.meta.url),
+      "utf8",
+    );
+    expect(source.match(/\brequest\(/g)).toHaveLength(1);
+  });
+  test("a database refusal keeps its own reason code, and nothing else", async () => {
+    // Each fixture is written on its own, so a refusal is that fixture's
+    // `incomplete[]` entry rather than a failure of the page.
+    const refusing = (message: string) =>
+      batchClient({
+        items: [{ externalFixtureId: "9001" }],
+        ingest: () => ({ data: null, error: { code: "22023", message } }),
+      }).client;
+    const mismatch = await runCurrentPerformanceBatch(
+      refusing("CURRENT_GOALS_CONCEDED_MISMATCH"),
+      "test-provider-token",
+      null,
+      async () => fixture(),
+    );
+    expect(mismatch).toMatchObject({ verdict: "incomplete", fixturesProcessed: 0 });
+    expect(mismatch.incomplete).toEqual([
+      {
+        fixtureExternalId: "9001",
+        kickoffAt: null,
+        stage: "database",
+        code: "current_performance_rpc_failed",
+        diagnostic: {
+          rpcName: "ingest_current_player_fixture_performance",
+          sqlState: "22023",
+          reason: "CURRENT_GOALS_CONCEDED_MISMATCH",
+        },
+      },
+    ]);
+    const free = await runCurrentPerformanceBatch(
+      refusing("relation app.x does not exist at 10.0.0.1"),
+      "test-provider-token",
+      null,
+      async () => fixture(),
+    );
+    expect(free.incomplete[0]).toMatchObject({ code: "current_performance_rpc_failed" });
+    expect(free.incomplete[0]?.diagnostic).not.toHaveProperty("reason");
+    expect(JSON.stringify(free)).not.toContain("10.0.0.1");
   });
 });

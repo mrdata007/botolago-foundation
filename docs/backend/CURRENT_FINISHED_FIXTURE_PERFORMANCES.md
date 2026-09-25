@@ -21,50 +21,99 @@ ingestion would, and never calls the ingestion RPC.
 accepted by the manual runner.
 
 The provider request is `GET /v3/football/fixtures/{id}` with
-`include=lineups.details;state;participants` and the following detail-type filter:
+`include=lineups.details;state;participants;scores` and the following
+detail-type filter:
 
-| ID  | Normalized statistic                             | Missing representation                               |
+| ID  | Normalized statistic                             | When SportsMonks leaves it out                       |
 | --- | ------------------------------------------------ | ---------------------------------------------------- |
-| 52  | Goals                                            | Reject incomplete coverage                           |
-| 57  | Saves                                            | Null; SQL requires a value for canonical goalkeepers |
-| 79  | Assists                                          | Reject incomplete coverage                           |
-| 83  | Direct red cards                                 | Reject incomplete coverage                           |
-| 84  | Yellow cards                                     | Reject incomplete coverage                           |
-| 85  | Second-yellow dismissals                         | Reject incomplete coverage                           |
-| 88  | Goals conceded while the player was on the pitch | Reject incomplete coverage                           |
-| 112 | Penalties missed                                 | Reject incomplete coverage                           |
-| 113 | Penalties saved                                  | Null; SQL requires a value for canonical goalkeepers |
-| 118 | Provider rating                                  | Optional, unused by Fantasy v1 scoring               |
-| 119 | Official minutes                                 | Reject incomplete coverage                           |
-| 324 | Own goals                                        | Reject incomplete coverage                           |
+| 52  | Goals                                            | Zero                                                 |
+| 57  | Saves                                            | Zero; an explicit null stays null                    |
+| 79  | Assists                                          | Zero                                                 |
+| 83  | Direct red cards                                 | Zero                                                 |
+| 84  | Yellow cards                                     | Zero                                                 |
+| 85  | Second-yellow dismissals                         | Zero                                                 |
+| 88  | Goals conceded while the player was on the pitch | Zero, then bounded by the final score (below)        |
+| 112 | Penalties missed                                 | Zero                                                 |
+| 113 | Penalties saved                                  | Zero; an explicit null stays null                    |
+| 118 | Provider rating                                  | Null; optional, unused by Fantasy v1 scoring         |
+| 119 | Official minutes                                 | Zero for a substitute; a starter without it stops it |
+| 324 | Own goals                                        | Zero                                                 |
 
 IDs and meanings are documented in the [statistics definitions](https://docs.sportmonks.com/v3/definitions/types/statistics)
 and [player statistic definitions](https://docs.sportmonks.com/v3/definitions/types/statistics/player-statistics).
 The [fixture statistics tutorial](https://docs.sportmonks.com/v3/tutorials-and-guides/tutorials/statistics/fixture-statistics)
 documents `lineups.details`; the [fixture entities](https://docs.sportmonks.com/v3/endpoints-and-entities/entities/fixture)
-document lineup/detail identities. The [API FAQ](https://docs.sportmonks.com/v3/api-faq)
-does not guarantee that an omitted statistic means zero. Explicit numeric zero is
-accepted; missing or null common statistics cannot become zero-valued facts.
+document lineup/detail identities.
+
+Every mode sends this one request: a page, the one-fixture canary, the
+read-only diagnostic and every orchestrator pass. Without `scores` the payload
+carries no final score, and every fixture stops at
+`current_final_score_missing` with `field: data.scores` and `valueType:
+missing`. A unit test checks the request each mode builds.
+
+SportsMonks sends a statistic only when it is not zero. The season's first
+finished match (fixture 19874708) carried goals only on its 3 scorers and
+minutes only on the players who came on. So, by owner decision on 2026-09-25,
+an absent statistic counts as zero, as last season's import always has. An
+explicit null is never zero: a common statistic sent as null stops the fixture.
+Absence cannot hide two things, and the importer checks both:
+
+- Every starter must carry minutes played; one without them means the
+  statistics are not in yet (`current_starter_minutes_missing`). Minutes sent
+  as 0 count as none, here and below.
+- A substitute without minutes never came on, so they cannot carry a goal, an
+  assist, an own goal, a missed penalty, a save or a saved penalty
+  (`current_statistics_inconsistent`).
+  Goals conceded are exempt: a substitute who comes on late can carry them
+  without minutes, as 23 did last season.
+
+Goals conceded decide clean sheets, and SportsMonks' own figure is not reliable.
+Last season, 40 of the 327 goalkeepers who played a whole match for a side that
+conceded carried fewer goals conceded than the score says, and 3 matches had
+players carrying more. So the final score decides:
+
+- A starter with 90 minutes (where SportsMonks stops counting) was on from
+  kick-off to at least the 90th minute, and conceded exactly what the side
+  did.
+- Anyone else keeps SportsMonks' figure, capped at the side's. Only
+  SportsMonks knows when they were on the pitch. That includes a substitute
+  who reached 90 minutes after an early goal; 16 did last season.
+- One case counts against the player: a starter substituted in stoppage time
+  just before a stoppage-time goal is credited that goal. Minutes cannot tell
+  that exit apart. Last season at most 11 of the 2,243 such starters on sides
+  that conceded looked like it, against 53 who carried no goals conceded at
+  all (37 of them goalkeepers). Substitution events would settle it exactly.
+- A fixture without exactly one CURRENT score per side stops with
+  `current_final_score_missing`.
+
+The database (migration 20260925120000) checks the same against its own final
+score. A mismatch is refused with `CURRENT_GOALS_CONCEDED_MISMATCH`: one of the
+two scores is not final yet, so the fixture waits for the next run. Coverage
+reports `absentStatisticsCountedAsZero` and `goalsConcededFromFinalScore`. Its
+`detailRows` must be at least one per player who appeared, each of whom
+carries minutes. It no longer needs one per player, since a substitute who
+never came on may carry none.
 
 Type 194 describes a team clean-sheet aggregate and is not used as an individual
-Fantasy flag. Clean-sheet eligibility is derived from explicit official minutes
-of at least 60 and explicit on-pitch goals conceded of zero. The coverage record
-and source-version digest include that derivation's provenance. Missing
-goalkeeper-only statistics remain null for known outfield players; unknown
-canonical positions and goalkeepers without those values fail coverage. The
-scorer must also require these values for a frozen Fantasy goalkeeper position
-and restrict goalkeeper awards to goalkeepers.
+Fantasy flag. Clean-sheet eligibility is derived from official minutes of at
+least 60 and goals conceded, as above, of zero. The coverage record and
+source-version digest include that derivation's provenance. Missing
+goalkeeper-only statistics count as zero; an explicit null stays null for known
+outfield players, and unknown canonical positions and goalkeepers with a null
+fail coverage. The scorer must also require these values for a frozen Fantasy
+goalkeeper position and restrict goalkeeper awards to goalkeepers.
 
 Every named lineup player must have an existing canonical mapping and a dated
-current season team membership. Each participant's named starters plus its
-unnamed ones (below) must make exactly 11, with no duplicate lineup rows and
-no excluded row other than an unnamed one. A single fixture transaction
-replaces its active facts and writes reconciled coverage with
-`scoring_statistics_complete=true`. Existing historical coverage defaults to
-false. Unmapped players, more than 4 unnamed starters or incomplete statistics
-stop that fixture: they cannot certify that an absent player did not
-participate. Other fixtures in the same page are still certified (next
-section).
+current season team membership. The two fixture participants must reconcile to
+exactly 11 starters each. The only exception is that up to 4 unnamed starters
+are left out (BG-0011 option B, owner decision 2026-09-25; below): each
+participant's named starters plus its unnamed ones make 11. Duplicate lineup
+rows are refused, and no row other than an unnamed one is left out. A single
+fixture transaction replaces its active facts and writes reconciled coverage
+with `scoring_statistics_complete=true`. Existing historical coverage defaults
+to false. Unknown players, more than 4 unnamed starters, a starter without
+minutes, or a missing final score stop that fixture; the other fixtures of the
+page are still certified (next section).
 
 The database computes the source version from the actual normalized payload,
 retains old versions as inactive, and rejects stale observations and conflicting
@@ -90,7 +139,9 @@ PL/pgSQL call per fixture, so its deactivate/insert/coverage writes commit or
 roll back together; it computes the source version from the normalized facts,
 so the same facts again change nothing but the observation watermark; it
 refuses an older observation (`STALE_UPDATE`) and a different payload at the
-same observation time (`SOURCE_OBSERVATION_CONFLICT`); and it locks the
+same observation time (`SOURCE_OBSERVATION_CONFLICT`); it checks goals
+conceded against the final score it holds for that one fixture
+(`CURRENT_GOALS_CONCEDED_MISMATCH`, migration 20260925120000); and it locks the
 fixture against a concurrent scoring commit. Nothing links two fixtures'
 writes. Every provider payload of the page is still read and validated before
 the first write. The page listing itself (`football_current_performance_fixture_batch`)
@@ -133,8 +184,10 @@ lineup row, team, the details' fixture/lineup/player/team/type) is always
 present in a real payload. An empty or malformed one fails
 `invalid_provider_id` with its field path and value type; a present but
 malformed lineup `player_id` (a string, say) is that, not an unnamed player.
-This include set returns no coach rows (`lineups.details;state;participants`),
-so no coach id is read.
+This include set (`lineups.details;state;participants;scores`) returns no
+coach rows, so no coach id is read. The score rows are read for their
+description, side and goals only; one that is not an object fails
+`invalid_provider_object` at its path (`data.scores[3].score`).
 
 ### Reading a failure
 
@@ -143,14 +196,14 @@ Each fixture that was not certified appears once in `incomplete[]` of
 `performances.incomplete[]` of `fantasy-season-orchestrator.json` (scheduled
 runs):
 
-| Field               | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fixtureExternalId` | SportsMonks fixture id.                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `kickoffAt`         | From the database listing; `finalizedAt` too once the listing provides it.                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `stage`             | `provider` (the request), `validation` (the payload), `database` (the ingestion RPC).                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `code`              | Stable code, e.g. `invalid_provider_id`, `invalid_provider_object`, `lineup_identity_mismatch`, `detail_identity_mismatch`, `duplicate_provider_detail`, `current_lineup_unidentified_starters_exceeded`, `current_starters_incomplete`, `current_statistics_incomplete`, `historical_fixture_coverage_incomplete`, `current_performance_rpc_failed`.                                                                                                                                                 |
-| `diagnostic`        | `field` (for example `data.lineups[12].player_id`, or `data.lineups[5].details[12]` with `typeId` for a duplicate) and `valueType` (`null`, `missing`, `array`, `string`, `numeric_string`, `fractional_number`, `non_positive_number`, `unsafe_integer`, ...); or `databaseCode` (`PLAYER_MAPPING_NOT_FOUND`, `PLAYER_MEMBERSHIP_NOT_FOUND`, `CURRENT_PERFORMANCE_INCOMPLETE`, ...) with `sqlState`; or `missingDetailTypes`; or the unnamed rows; or the shared normalizer's counts and `failures`. |
-| `attempted`         | `false` only when a provider outage earlier in the pass meant it was not fetched.                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Field               | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fixtureExternalId` | SportsMonks fixture id.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `kickoffAt`         | From the database listing; `finalizedAt` too once the listing provides it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `stage`             | `provider` (the request), `validation` (the payload), `database` (the ingestion RPC).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `code`              | Stable code, e.g. `invalid_provider_id`, `invalid_provider_object`, `lineup_identity_mismatch`, `detail_identity_mismatch`, `duplicate_provider_detail`, `invalid_provider_detail`, `current_final_score_missing`, `current_starter_minutes_missing`, `current_statistics_inconsistent`, `current_lineup_unidentified_starters_exceeded`, `current_starters_incomplete`, `current_statistics_incomplete`, `historical_fixture_coverage_incomplete`, `current_performance_rpc_failed`.                                                                                                          |
+| `diagnostic`        | `field` (for example `data.lineups[12].player_id`, or `data.lineups[5].details[12]` with `typeId` for a duplicate) and `valueType` (`null`, `missing`, `array`, `string`, `numeric_string`, `fractional_number`, `non_positive_number`, `unsafe_integer`, ...); or `reason`, the database's own code (`PLAYER_MAPPING_NOT_FOUND`, `PLAYER_MEMBERSHIP_NOT_FOUND`, `CURRENT_GOALS_CONCEDED_MISMATCH`, `CURRENT_PERFORMANCE_INCOMPLETE`, ...), with `sqlState`; or counts (`starterRows`, `substituteRowsWithoutMinutes`); or the unnamed rows; or the shared normalizer's counts and `failures`. |
+| `attempted`         | `false` only when a provider outage earlier in the pass meant it was not fetched.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 The value itself never appears: a type and a path are enough to repair a
 contract, and the value could be anything the provider sent. Free-form
@@ -202,10 +255,15 @@ time; pg_cron jobs and other lanes are not covered by that and must be checked.
      ingestion RPC and the scoring check both enforce it), never a manual
      edit. `current_starters_incomplete` names the club whose named and
      unnamed starters do not make 11.
-   - `PLAYER_MAPPING_NOT_FOUND` / `PLAYER_MEMBERSHIP_NOT_FOUND`: find the rows
-     (read-only, ids from step 1), then add the mapping or membership through
-     the reviewed squad path (`current-season-recovery.ts`, roster audit), not
-     by hand:
+   - `PLAYER_MAPPING_NOT_FOUND` / `PLAYER_MEMBERSHIP_NOT_FOUND` (`reason`,
+     database stage): a named player is not in this season's list at the club
+     they played for. On 2026-09-25 that is the list itself: it is last
+     season's, and the first match alone had 18 players it could not place
+     ([APPLIED_2026_09_25_CURRENT_PERFORMANCE_ABSENT_AS_ZERO.md](../production/APPLIED_2026_09_25_CURRENT_PERFORMANCE_ABSENT_AS_ZERO.md)).
+     The regular squad import cannot correct it once the Fantasy catalog is
+     staged (`fantasy_catalog_already_staged`), and correcting it changes what
+     Fantasy offers, so it is the owner's decision. Find the rows read-only
+     (ids from step 1); never add a mapping or membership by hand:
 
      ```sql
      with lineup(external_player_id, external_team_id) as (
@@ -232,16 +290,26 @@ time; pg_cron jobs and other lanes are not covered by that and must be checked.
      (Membership is checked on the fixture's date by the RPC; replace
      `current_date` with it when the squad changed since.)
 
-   - `current_statistics_incomplete` with `missingDetailTypes`: named
-     players lack required statistics. On fixture 19874708 this is not a
-     delay: SportsMonks sends a statistic only when it is not zero, and
-     last season's accepted fixtures agree (about 2 of the 13 requested per
-     player). How a missing statistic should count is an owner decision
-     recorded in
-     `docs/production/APPLIED_2026_09_25_CURRENT_PERFORMANCE_UNNAMED_STARTERS.md`;
-     until it is made and implemented, this fixture cannot be certified and
-     rerunning will not change that. A `field` of `data.lineups[i].details`
-     means that row had no details array at all.
+   - `current_starter_minutes_missing`: a starter carries no minutes played,
+     so SportsMonks' statistics for the match are not in yet. Rerun step 1
+     later; there is nothing to repair. An absent statistic otherwise counts
+     as zero (owner decision 2026-09-25, above).
+   - `current_statistics_inconsistent`: a substitute without minutes carries
+     a goal, an assist, an own goal, a missed penalty, a save or a saved
+     penalty. SportsMonks' statistics are wrong, not zero: the fixture waits
+     for SportsMonks to correct them (rerun step 1). Never type statistics in.
+   - `current_final_score_missing`: not exactly one CURRENT score per side.
+     `field: data.scores` with `valueType: missing` means the payload has no
+     `scores` at all, which is what a request without `scores` in its include
+     gets: check the include above first. Otherwise SportsMonks' payload
+     lacks the score; the fixture waits, and a lasting gap is SportsMonks' to
+     fix.
+   - `CURRENT_GOALS_CONCEDED_MISMATCH` (`reason`, database stage):
+     SportsMonks' final score and the one BotolaGO holds disagree, so one of
+     them is not final yet. The fixture waits and the next run tries again.
+   - `current_statistics_incomplete` at `data.lineups[i].details`: that row's
+     statistics were neither a list nor absent (`valueType` says what they
+     were), a broken contract as for `invalid_provider_object`.
 
 3. **Serialized canary.** When step 1 shows the fixture validating and step 2
    left no mapping gap, dispatch the same workflow with

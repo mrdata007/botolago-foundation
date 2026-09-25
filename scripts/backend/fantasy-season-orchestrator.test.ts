@@ -522,6 +522,40 @@ describe("fantasy season orchestrator", () => {
     expect(mergeVerdict("escalate", "failed")).toBe("failed");
   });
 
+  // Run 36134333391 (2026-09-25 12:20 UTC): the database refused the season's
+  // first match with PLAYER_MEMBERSHIP_NOT_FOUND. The run page names that code.
+  test("a database refusal is named on the run page by the database's own code", async () => {
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+    const refused = await orchestrateFantasySeason(
+      gateway(cal, {
+        batches: [
+          {
+            fixturesProcessed: 0,
+            hasMore: false,
+            nextCursor: null,
+            incomplete: [
+              {
+                fixtureExternalId: "19874708",
+                kickoffAt: "2026-09-24T20:00:00+00:00",
+                stage: "database",
+                code: "current_performance_rpc_failed",
+                diagnostic: {
+                  rpcName: "ingest_current_player_fixture_performance",
+                  sqlState: "P0002",
+                  reason: "PLAYER_MEMBERSHIP_NOT_FOUND",
+                },
+              },
+            ],
+          },
+        ],
+      }).gateway,
+      { now: new Date("2026-09-25T12:25:00Z") },
+    );
+    expect(renderHealthSummary(refused)).toContain(
+      "19874708 `current_performance_rpc_failed` PLAYER_MEMBERSHIP_NOT_FOUND, 14.4 h after the final whistle",
+    );
+  });
+
   test("coverage age prefers the recorded finalization time and treats an unknown age as overdue", () => {
     const at = new Date("2026-09-25T06:00:00Z");
     const [finalized, estimated, unknown] = assessCoverage(

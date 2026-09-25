@@ -615,20 +615,16 @@ export async function orchestrateFantasySeason(
 type OrchestratorSummary = Awaited<ReturnType<typeof orchestrateFantasySeason>>;
 
 /**
- * Where a gap stopped, in a few words: the field, the database code, the
- * unnamed starters or the missing statistic types.
+ * Where a gap stopped, in a few words: the field, the database's own code or
+ * the unnamed starters.
  */
 function gapReason(gap: CoverageGap): string {
   const diagnostic = gap.diagnostic ?? {};
   if (typeof diagnostic.field === "string")
     return ` at ${diagnostic.field}${typeof diagnostic.valueType === "string" ? ` (${diagnostic.valueType})` : ""}`;
-  if (typeof diagnostic.databaseCode === "string") return ` ${diagnostic.databaseCode}`;
+  if (typeof diagnostic.reason === "string") return ` ${diagnostic.reason}`;
   if (typeof diagnostic.unidentifiedStarters === "number")
     return ` (${diagnostic.unidentifiedStarters} unnamed starters)`;
-  if (Array.isArray(diagnostic.missingDetailTypes))
-    return ` (types ${diagnostic.missingDetailTypes
-      .map((entry) => String((entry as { typeId?: unknown }).typeId))
-      .join(", ")})`;
   return "";
 }
 
@@ -807,11 +803,10 @@ function safeCode(error: unknown, fallback: string) {
 /**
  * What the statistics import says about its failure, when it says something
  * (`CurrentPerformanceError.diagnostic`): which provider field, which fixture,
- * how many rows, which statistic types are missing. Only flat strings,
- * numbers and booleans are kept, alone or in short lists of flat records
- * (`missingDetailTypes: [{ typeId, playerRows }]`), so nothing from a payload
- * can reach the evidence. A string may be a field path (`batch.items[2]`),
- * never free text.
+ * how many rows, which database code. Only flat strings, numbers and booleans
+ * are kept, alone or in short lists of flat records, so nothing from a payload
+ * can reach the evidence. A string may be a field path (`batch.items[2]`) or
+ * a database code (`CURRENT_SEASON_REQUIRED`), never free text.
  */
 export function safeDiagnostic(error: unknown): Record<string, unknown> | undefined {
   const diagnostic =

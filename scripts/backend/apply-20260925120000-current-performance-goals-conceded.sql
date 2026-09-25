@@ -68,9 +68,9 @@
 --   * records the migration file in supabase_migrations.schema_migrations,
 --     whole as statements[1], and runs it from that record once its sha256
 --     matches the repository file;
---   * checks the result: the import is the new version, with the score check
---     and still the unnamed-starter rule, and only the service role may
---     call it.
+--   * checks the result: the import is the new version, with the score check,
+--     the detail bound for players who appeared, and still the unnamed-starter
+--     rule, and only the service role may call it.
 -- ============================================================================
 
 begin;
@@ -182,6 +182,11 @@ values (
 -- (fixtures_finished_score_check). This ships before the importer change, so
 -- no match is imported under the new rule without it.
 --
+-- One bound changes with the rule: coverage must no longer report at least
+-- one statistic per player, since a substitute who never came on may carry
+-- none (SportsMonks lists them with no statistics). It must report at least
+-- one per player who appeared, each of whom carries minutes played.
+--
 -- Everything else in the function is 20260925110000's text, unchanged. Same
 -- signature and grants.
 
@@ -256,7 +261,10 @@ begin
     or (p_coverage ->> 'starterRows')::integer <> 22 - unnamed_starters
     or coalesce((p_coverage ->> 'identifiedStarterRows')::integer, 22 - unnamed_starters) <> 22 - unnamed_starters
     or (p_coverage ->> 'teamCount')::integer <> 2
-    or (p_coverage ->> 'detailRows')::integer < jsonb_array_length(p_rows)
+    -- An absent statistic counts as zero, so a substitute who never came on
+    -- may carry none; everyone who appeared carries at least their minutes.
+    or (p_coverage ->> 'detailRows')::integer
+      < (select count(*) from jsonb_array_elements(p_rows) value where value ->> 'appeared' = 'true')
   then
     raise exception using errcode = '22023', message = 'CURRENT_PERFORMANCE_INCOMPLETE';
   end if;
@@ -469,7 +477,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260925120000, 'UTF8')), 'hex')
-    is distinct from '40cef0bc1072403b3872b238cf4cc3c8fa72d4957aaa50020db73099ac7d4111' then
+    is distinct from '08c6d77890eaf41ca1ad6e3517eb893947592b153c38582314c72e58ed740751' then
     raise exception 'stop: 20260925120000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -489,6 +497,8 @@ declare
 begin
   if definition not like '%message = ''CURRENT_GOALS_CONCEDED_MISMATCH''%'
     or definition not like '%or ((value ->> ''started'')::boolean and (value ->> ''minutes'')::integer >= 90%'
+    or definition not like '%where value ->> ''appeared'' = ''true'')%'
+    or definition like '%< jsonb_array_length(p_rows)%'
     or definition not like '%unnamed_starters := coalesce((p_coverage ->> ''anonymousStarterRows'')::integer, 0);%' then
     problems := problems || 'the statistics import is not the new version'::text;
   end if;
