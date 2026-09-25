@@ -45,9 +45,9 @@ function row(value: unknown): Row {
   if (!value || typeof value !== "object" || Array.isArray(value)) fail("invalid_provider_object");
   return value as Row;
 }
-function id(value: unknown): number {
+function id(value: unknown, field: string): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1)
-    fail("invalid_provider_id");
+    fail("invalid_provider_id", { field });
   return value;
 }
 function safeFailure(error: unknown): Row {
@@ -61,14 +61,14 @@ function safeFailure(error: unknown): Row {
 export async function normalizeCurrentFinishedFixture(payload: unknown, expectedFixtureId: number) {
   const fixture = row(row(payload).data);
   if (
-    id(fixture.id) !== expectedFixtureId ||
-    id(fixture.season_id) !== SEASON ||
-    id(fixture.league_id) !== 860
+    id(fixture.id, "fixture.id") !== expectedFixtureId ||
+    id(fixture.season_id, "fixture.season_id") !== SEASON ||
+    id(fixture.league_id, "fixture.league_id") !== 860
   )
     fail("fixture_scope_mismatch");
   const state = row(fixture.state);
   if (
-    id(state.id) !== id(fixture.state_id) ||
+    id(state.id, "state.id") !== id(fixture.state_id, "fixture.state_id") ||
     !["FT", "AET", "FT_PEN"].includes(String(state.developer_name))
   )
     fail("finished_fixture_required");
@@ -79,7 +79,7 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
   )
     fail("fixture_participants_incomplete");
   const participants = fixture.participants.map(row);
-  const teamIds = new Set(participants.map((team) => id(team.id)));
+  const teamIds = new Set(participants.map((team) => id(team.id, "participant.id")));
   if (
     teamIds.size !== 2 ||
     new Set(participants.map((team) => row(team.meta).location)).size !== 2 ||
@@ -92,6 +92,19 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     fixture.lineups.length > 100
   )
     fail("current_lineups_incomplete");
+  // SportsMonks sometimes lists a player it has not identified: a lineup row
+  // with no player_id. Last season's import accepts up to 4 such starters
+  // (BG-0011 option B); this season's accepts none, so the fixture waits.
+  // Say that, with the counts, rather than failing on the first missing id.
+  const unidentified = fixture.lineups
+    .map(row)
+    .filter((lineup) => lineup.player_id === null || lineup.player_id === undefined);
+  if (unidentified.length)
+    fail("current_lineup_unidentified_players", {
+      fixtureExternalId: String(expectedFixtureId),
+      unidentifiedStarters: unidentified.filter((lineup) => lineup.type_id === 11).length,
+      unidentifiedOthers: unidentified.filter((lineup) => lineup.type_id !== 11).length,
+    });
   const missingTypes = new Map<number, number>();
   const optionalValues = new Map<string, { saves: number | null; penaltiesSaved: number | null }>();
   const lineupIds = new Set<number>();
@@ -99,11 +112,11 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
   let detailRows = 0;
   for (const raw of fixture.lineups) {
     const lineup = row(raw);
-    const lineupId = id(lineup.id);
-    const playerId = id(lineup.player_id);
-    const teamId = id(lineup.team_id);
+    const lineupId = id(lineup.id, "lineup.id");
+    const playerId = id(lineup.player_id, "lineup.player_id");
+    const teamId = id(lineup.team_id, "lineup.team_id");
     if (
-      id(lineup.fixture_id) !== expectedFixtureId ||
+      id(lineup.fixture_id, "lineup.fixture_id") !== expectedFixtureId ||
       !teamIds.has(teamId) ||
       lineupIds.has(lineupId)
     )
@@ -116,12 +129,12 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     for (const rawDetail of lineup.details) {
       detailRows += 1;
       const detail = row(rawDetail);
-      const typeId = id(detail.type_id);
+      const typeId = id(detail.type_id, "detail.type_id");
       if (
-        id(detail.fixture_id) !== expectedFixtureId ||
-        id(detail.lineup_id) !== lineupId ||
-        id(detail.player_id) !== playerId ||
-        id(detail.team_id) !== teamId
+        id(detail.fixture_id, "detail.fixture_id") !== expectedFixtureId ||
+        id(detail.lineup_id, "detail.lineup_id") !== lineupId ||
+        id(detail.player_id, "detail.player_id") !== playerId ||
+        id(detail.team_id, "detail.team_id") !== teamId
       )
         fail("detail_identity_mismatch");
       if (types.has(typeId)) fail("duplicate_provider_detail");
