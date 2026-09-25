@@ -532,16 +532,15 @@ begin
         where mapping.provider_name = 'sportsmonks' and mapping.entity_type = 'player'
           and mapping.internal_entity_id = membership.player_id)
   ), observed_keys as (
-    -- A full name (two words at least) at the same club; a surname alone never
-    -- matches.
+    -- Full names only (two words at least), at the same club: a display name
+    -- or a surname alone never identifies a person, since a match can retire
+    -- a record.
     select distinct mapped.external_player_id, mapped.club_id, name.key
     from mapped
     left join app.players player on player.id = mapped.mapped_player_id
     cross join lateral (values
       (app_private.person_name_key(mapped.detail ->> 'fullName')),
-      (app_private.person_name_key(mapped.detail ->> 'displayName')),
-      (app_private.person_name_key(player.full_name)),
-      (app_private.person_name_key(player.display_name))
+      (app_private.person_name_key(player.full_name))
     ) name(key)
     where mapped.club_id is not null and name.key like '% %'
   ), name_matches as (
@@ -1387,7 +1386,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260925200000, 'UTF8')), 'hex')
-    is distinct from '11a8d1a653205ba52ea4bb4692cb1ddf5cb24de552047633b2d7f23be11efa28' then
+    is distinct from '8c8f1fd5197a5c65e1ea288ad8ab06ad93a24f28f627e5c29a5239c18786b953' then
     raise exception 'stop: 20260925200000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 

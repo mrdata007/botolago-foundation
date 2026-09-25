@@ -399,16 +399,15 @@ begin
         where mapping.provider_name = 'sportsmonks' and mapping.entity_type = 'player'
           and mapping.internal_entity_id = membership.player_id)
   ), observed_keys as (
-    -- A full name (two words at least) at the same club; a surname alone never
-    -- matches.
+    -- Full names only (two words at least), at the same club: a display name
+    -- or a surname alone never identifies a person, since a match can retire
+    -- a record.
     select distinct mapped.external_player_id, mapped.club_id, name.key
     from mapped
     left join app.players player on player.id = mapped.mapped_player_id
     cross join lateral (values
       (app_private.person_name_key(mapped.detail ->> 'fullName')),
-      (app_private.person_name_key(mapped.detail ->> 'displayName')),
-      (app_private.person_name_key(player.full_name)),
-      (app_private.person_name_key(player.display_name))
+      (app_private.person_name_key(player.full_name))
     ) name(key)
     where mapped.club_id is not null and name.key like '% %'
   ), name_matches as (

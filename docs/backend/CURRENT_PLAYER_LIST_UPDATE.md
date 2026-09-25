@@ -52,8 +52,9 @@ closing them, because the statistics import checks a club by its dates, not
 by `active`. This season's moves are summer transfers, so the player never
 belonged to the old club this season.
 
-Names match when they are equal without accents and case, and at least two
-words long (a surname alone never matches), at the same club, one to one.
+Full names match when they are equal without accents and case, and at least
+two words long, at the same club, one to one. A display name or a surname
+alone never matches.
 
 Fantasy follows the list:
 
