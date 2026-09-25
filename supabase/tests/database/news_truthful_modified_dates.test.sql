@@ -19,9 +19,14 @@ insert into app.article_editions (
 create function pg_temp.detail() returns jsonb language sql as $$
   select api.news_article_detail('fr', '9d1a0000-0000-4000-8000-000000000201')
 $$;
-create function pg_temp.sitemap_entry() returns jsonb language sql as $$
-  select entry from jsonb_array_elements(api.news_sitemap_entries(50000)) entry
-  where entry ->> 'id' = '9d1a0000-0000-4000-8000-000000000201'
+-- The sitemap is served from a snapshot pg_cron refreshes every minute
+-- (20260925180050); refresh it first, as the job would.
+create function pg_temp.sitemap_entry() returns jsonb language plpgsql as $$
+begin
+  perform app_private.news_sitemap_refresh(true);
+  return (select entry from jsonb_array_elements(api.news_sitemap_entries(50000)) entry
+    where entry ->> 'id' = '9d1a0000-0000-4000-8000-000000000201');
+end;
 $$;
 
 select extensions.ok(not has_function_privilege('anon',
@@ -66,6 +71,13 @@ select extensions.ok(
   pg_get_functiondef('api.news_sitemap_entries(integer)'::regprocedure)
     !~ 'news_is_public\(|news_content_updated_at\(|news_story_is_publishable\(',
   'the sitemap calls no per-edition helper');
+-- 20260925180050 moved the query into app_private.news_sitemap_compute, which
+-- the public function calls when the snapshot is missing or stale and the
+-- refresh calls every minute: the same holds there.
+select extensions.ok(
+  pg_get_functiondef('app_private.news_sitemap_compute(integer)'::regprocedure)
+    !~ 'news_is_public\(|news_content_updated_at\(|news_story_is_publishable\(',
+  'nor does the computation it serves');
 
 select * from extensions.finish();
 rollback;

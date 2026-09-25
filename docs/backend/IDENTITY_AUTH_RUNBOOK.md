@@ -34,6 +34,52 @@ Google/Apple. Never wildcard an untrusted domain.
 - Normal logout is device-local. “Logout all sessions” uses global scope; “other sessions” uses others scope.
 - Session revocation intent is recorded before Auth revocation. No tokens are written to the audit log.
 
+## MFA step-up for ordinary accounts
+
+Migration `20260925180100_ordinary_account_mfa_step_up` (audit A03 / DB-07).
+An account with at least one **verified** factor in `auth.mfa_factors` must hold
+an `aal2` session to change anything it owns. At `aal1` every write is refused
+with:
+
+| SQLSTATE | message        | HTTP (PostgREST) | Client action                                    |
+| -------- | -------------- | ---------------- | ------------------------------------------------ |
+| `PT403`  | `mfa_required` | 403              | send the person to the MFA challenge, then retry |
+
+A missing `aal` claim counts as `aal1`. These pass: accounts with no factor or
+only an unverified (abandoned) enrolment, `aal2` sessions, and work with no
+actor (the service role, pg_cron, and Supabase Auth's own signup trigger,
+which has no JWT on its connection).
+
+- **Where it is enforced.** `app_private.assert_mfa_step_up()` states the
+  rule. `app_private.refuse_unverified_mfa_actor()` runs it from BEFORE
+  INSERT/UPDATE/DELETE statement triggers on every table an ordinary `api.*`
+  function writes for the caller: profile, preferences, follows, deletion
+  requests, saved articles, notifications and devices, all Fantasy team and
+  league tables, and Pronostics. A statement that matches no row is refused
+  too. `api.request_account_deletion()` and `api.cancel_account_deletion()`
+  also call the helper first, so they refuse before the rate limit, and
+  before handing back an existing request.
+- **Deliberately not refused.** These are not refused at `aal1`:
+  - Sign-out (`api.record_session_revocation` writes only the security audit
+    log), so someone who abandons the challenge can still leave.
+  - The e-mail unsubscribe link (`api.unsubscribe_notification_email`). The
+    emailed token authorises it rather than the session, and it only turns
+    e-mail off.
+  - Anonymous client error reports.
+  - Reads.
+- **Guest predictions.** Guest predictions are claimed at sign-in, before the
+  challenge. The claim is refused and the picks stay on the phone. Today the
+  web app retries on the next sign-in or page load; retrying once the session
+  reaches `aal2` would import them straight away.
+- **Staff.** Admin and editorial RPCs keep their own stricter check
+  (`admin_assert_principal`, `has_editorial_role`). There, `mfa_required`
+  means "no factor enrolled", and an enrolled staff member at `aal1` gets
+  `mfa_assurance_insufficient`.
+- **Operators impersonating an account.** An operator script that sets
+  `request.jwt.claims` to act as an account (for example
+  `fantasy-cleanup-qa-artifacts.sql`) is refused for an enrolled account
+  unless the claims carry `"aal":"aal2"`.
+
 ## Email and password lifecycle
 
 Email verification is required. Reset requests are deliberately

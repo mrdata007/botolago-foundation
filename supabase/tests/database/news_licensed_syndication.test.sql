@@ -42,6 +42,10 @@ from (values
   ('98300000-0000-4000-8000-000000000006', '98200000-0000-4000-8000-000000000005', 'fr', 'qa-syndicated-no-original', 'Article sous licence sans lien')
 ) fixture(id, story, language, slug, title);
 
+-- The sitemap is served from a snapshot pg_cron refreshes every minute
+-- (20260925180050); refresh it now, as the job would.
+do $$ begin perform app_private.news_sitemap_refresh(true); end $$;
+
 set local role anon;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 
