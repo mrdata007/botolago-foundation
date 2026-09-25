@@ -9,6 +9,16 @@ Order: **merge the pull request → database (steps 1-3) → website (step 4) �
 switches (steps 5-7) → checks (step 8).** The website also works before the
 database is done, but the Fantasy fix is in the database.
 
+**Update, 2026-09-25.** From about 04:50 UTC, Google crawling the ~15,700
+news articles overloaded the database; from about 05:15 every read timed out.
+The owner raised its compute to **Large** (restarted 06:13 UTC), and the
+related-articles speed-up (`20260924200400`, the same text) went live on its
+own at 06:33 UTC: 487 ms → 32 ms for one article. The script accepts that
+function in either form and records the migration when it runs. Live scores
+were already switched on before the script (the setting was last changed on
+2026-09-24 at 19:15 UTC), so step 6 is done, and the 2-minute match cadence
+starts as soon as the script is applied.
+
 ## What the database half does
 
 Seven migrations, applied by one guarded script,
@@ -29,8 +39,9 @@ postponed FAR Rabat v Raja Casablanca stops counting for Gameweek 1, and
 Gameweek 2 is created) and locks Gameweek 1.
 
 The script refuses to run unless production is exactly as it was reviewed
-(latest migration `20260924190100`, the 12 functions it replaces unchanged,
-none of its objects present). Checked read-only at 21:24 UTC: all true. If
+(latest migration `20260924190100`, the 12 functions it replaces unchanged --
+related articles may already be on this batch's own body -- none of its
+objects present). Checked read-only at 21:24 UTC: all true. If
 any check fails, it stops, says which, and saves nothing. **Never edit a
 check to make it pass.**
 
