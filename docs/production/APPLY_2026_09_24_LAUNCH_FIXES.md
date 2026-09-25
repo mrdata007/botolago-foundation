@@ -164,3 +164,6 @@ The audit created two test accounts on production:
 deleting accounts is irreversible. To remove them: Supabase → **Authentication**
 → **Users** → search each address → **⋯** → **Delete user**. Checked at
 21:24 UTC: both exist, and neither owns a Fantasy team.
+
+**Done, 2026-09-25 about 08:00 UTC**, on the owner's request: both accounts
+deleted. Record: [APPLIED_2026_09_25_SITEMAP_AND_AUDIT_ACCOUNTS.md](APPLIED_2026_09_25_SITEMAP_AND_AUDIT_ACCOUNTS.md).
