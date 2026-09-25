@@ -333,3 +333,15 @@ and documented envelope rather than an unresolved correctness risk.
 No full-gate capacity threshold is claimed as passed. Capacity certification
 is explicitly deferred to the activation review on XL or 2XL, before any
 production worker or Fantasy schedule is enabled.
+
+## 2026-09-25: runnable again from main
+
+The PR-specific workflow above was retired with PR #6. The same gate now runs
+from `main` as **Actions → Fantasy load test**
+(`.github/workflows/fantasy-load-test.yml`), with the harness unchanged. It
+first checks that staging carries production's migrations, the capacity seed
+and production's compute size, and stops before renting anything if not;
+**Actions → Staging database update** gets staging there. The owner's steps,
+costs and failure table are in `docs/operations/LOAD_TEST.md`. No capacity
+threshold has been measured since this report; the verdict above still
+stands until that workflow passes.
