@@ -85,8 +85,9 @@ Fantasy follows the list:
    It reads every club's squad and those lineups from SportsMonks and records
    them in production (`api.service_record_current_player_list`, one row in
    `app_private.current_player_list_observations`). It changes nothing else.
-   The database refuses to record while a scheduled (pg_cron) job is mid-run,
-   so the run waits and tries again, six times, 10 seconds apart.
+   Recording holds every scheduled (pg_cron) job off until it finishes, and
+   refuses while one is mid-run; the run then waits and tries again, six
+   times, 10 seconds apart.
    Its evidence, `current-player-list.json`, holds the plan
    (`api.service_plan_current_player_list`): every change, what was skipped
    and why, and a digest of the changes.
@@ -100,7 +101,8 @@ Fantasy follows the list:
    (rehearsal first). The apply stops if any of these hold:
    - the plan's digest has changed since it was reviewed;
    - the tick is on;
-   - a scheduled (pg_cron) job is mid-run;
+   - a scheduled (pg_cron) job is mid-run (the others are held off until the
+     apply ends);
    - a gameweek is being finalized;
    - the observation was already applied;
    - a squad would go over the club limit.

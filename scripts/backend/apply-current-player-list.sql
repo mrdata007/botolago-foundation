@@ -18,18 +18,20 @@
 --      that is (AGENTS.md, "Before writing"), before the rehearsal and again
 --      before the real run:
 --        * GitHub -> Actions: no run in progress;
---        * pg_cron: nothing mid-run. This should return no rows (the script
---          checks it again itself, and stops if not):
+--        * pg_cron: nothing mid-run. This should return no rows (the apply
+--          holds every scheduled job off while it runs, checks again itself,
+--          and stops if not):
 --            select job.jobname, run.status, run.start_time
 --            from cron.job_run_details run join cron.job job using (jobid)
---            where run.status not in ('succeeded', 'failed')
---              and run.start_time > now() - interval '15 minutes';
+--            where run.status not in ('succeeded', 'failed');
 --        * no other query running (Database -> Query performance).
 --   2. This changes the Fantasy player list, so pause the Fantasy lifecycle
 --      tick first (the script refuses while it is on):
 --        select app_private.fantasy_automation_configure(false);
---   3. Below, replace PASTE-OBSERVATION-ID with the plan's "observationId" and
---      PASTE-PLAN-DIGEST with its "digest".
+--   3. Just below this header, replace PASTE-OBSERVATION-ID with the plan's
+--      "observationId" and PASTE-PLAN-DIGEST with its "digest". They are set
+--      for the session before the transaction starts, so the result row at
+--      the end reports that observation, rehearsal or not.
 --   4. Paste this WHOLE file and press Run. As shipped it is a REHEARSAL:
 --      the plan is applied inside one transaction, checked, and then ROLLED
 --      BACK. The result row shows the plan's summary and says "Not applied".
@@ -43,13 +45,17 @@
 --   check to make it pass.
 -- ============================================================================
 
+select set_config('botolago.player_list_observation', 'PASTE-OBSERVATION-ID', false),
+  set_config('botolago.player_list_digest', 'PASTE-PLAN-DIGEST', false);
+
 begin;
 
 set local lock_timeout = '5s';
 set local statement_timeout = '120s';
 
 create temp table player_list_request on commit drop as
-select 'PASTE-OBSERVATION-ID'::text as observation_id, 'PASTE-PLAN-DIGEST'::text as plan_digest;
+select current_setting('botolago.player_list_observation') as observation_id,
+  current_setting('botolago.player_list_digest') as plan_digest;
 
 -- ---------------------------------------------------------------------------
 -- Preflight
@@ -77,10 +83,9 @@ begin
   end if;
 
   -- AGENTS.md: serialise with the scheduled jobs. The step 1 check, made
-  -- again here at the moment of writing: a job mid-run means waiting for it.
+  -- again here; the apply itself then holds them off until it ends.
   if exists (select 1 from cron.job_run_details run
-    where run.status not in ('succeeded', 'failed')
-      and run.start_time > statement_timestamp() - interval '15 minutes') then
+    where run.status not in ('succeeded', 'failed')) then
     raise exception 'stop: a scheduled (pg_cron) job is running right now -- nothing was saved; run this again in a minute';
   end if;
 end
@@ -126,5 +131,4 @@ select observation.id as observation_id,
   end as result
 from app_private.current_player_list_observations observation
 left join app_private.current_player_list_updates applied on applied.observation_id = observation.id
-order by observation.observed_at desc
-limit 1;
+where observation.id::text = current_setting('botolago.player_list_observation');

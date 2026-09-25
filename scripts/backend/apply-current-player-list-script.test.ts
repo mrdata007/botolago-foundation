@@ -46,12 +46,18 @@ describe(`apply-${VERSION}-current-player-list-update.sql`, () => {
 
   test("checks production before its first write, and the result after", () => {
     const firstWrite = migrationScript.indexOf("insert into supabase_migrations.schema_migrations");
+    // Every scheduled job is held off before anything is checked or written.
+    const hold = migrationScript.indexOf(
+      "  lock table cron.job_run_details in exclusive mode;\nexception when lock_not_available then",
+    );
+    expect(hold).toBeGreaterThan(migrationScript.indexOf("set local lock_timeout = '5s';"));
+    expect(hold).toBeLessThan(migrationScript.indexOf("do $preflight$"));
     for (const guard of [
       `migration ${VERSION} is already recorded as applied`,
       "migration 20260925120000 is not applied",
       "something this migration creates already exists",
       "the database is missing something this migration relies on",
-      "if exists (select 1 from cron.job_run_details run",
+      "if exists (select 1 from cron.job_run_details run\n    where run.status not in ('succeeded', 'failed')) then",
     ]) {
       const at = migrationScript.indexOf(guard);
       expect(at).toBeGreaterThan(-1);
@@ -71,10 +77,19 @@ describe(`apply-${VERSION}-current-player-list-update.sql`, () => {
 });
 
 describe("apply-current-player-list.sql", () => {
-  test("ships as a rehearsal, with the plan to fill in", () => {
+  test("ships as a rehearsal, with the plan to fill in once, before the transaction", () => {
     rehearsalOnly(planScript);
-    expect(planScript).toContain(
-      "select 'PASTE-OBSERVATION-ID'::text as observation_id, 'PASTE-PLAN-DIGEST'::text as plan_digest;",
+    const fill =
+      "select set_config('botolago.player_list_observation', 'PASTE-OBSERVATION-ID', false),\n" +
+      "  set_config('botolago.player_list_digest', 'PASTE-PLAN-DIGEST', false);";
+    expect(occurrences(planScript, "PASTE-OBSERVATION-ID")).toBe(2);
+    expect(planScript.indexOf(fill)).toBeGreaterThan(-1);
+    expect(planScript.indexOf(fill)).toBeLessThan(planScript.indexOf("\nbegin;\n"));
+    // The result row reports the observation filled in, after rollback or commit.
+    expect(planScript.indexOf("rollback;")).toBeLessThan(
+      planScript.indexOf(
+        "where observation.id::text = current_setting('botolago.player_list_observation');",
+      ),
     );
   });
 

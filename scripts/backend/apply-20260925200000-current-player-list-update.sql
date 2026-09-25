@@ -17,11 +17,11 @@
 --      before the real run:
 --        * GitHub -> Actions: no run in progress;
 --        * pg_cron: nothing mid-run. This should return no rows (the script
---          checks it again itself, and stops if not):
+--          holds every scheduled job off while it runs, checks again itself,
+--          and stops if not):
 --            select job.jobname, run.status, run.start_time
 --            from cron.job_run_details run join cron.job job using (jobid)
---            where run.status not in ('succeeded', 'failed')
---              and run.start_time > now() - interval '15 minutes';
+--            where run.status not in ('succeeded', 'failed');
 --        * no other query running (Database -> Query performance).
 --      Nothing needs pausing: this creates new tables and functions only, and
 --      no job reads or writes them yet.
@@ -36,9 +36,12 @@
 --   the database is not in the state this script expects.
 --
 -- WHAT IT DOES
+--   * holds every scheduled (pg_cron) job off until it ends (each records its
+--     run in cron.job_run_details before running, so a job due meanwhile
+--     starts afterwards);
 --   * refuses to run twice, before 20260925120000, where any name it creates
 --     already exists, where something it relies on is missing, or while any
---     scheduled (pg_cron) job is mid-run;
+--     scheduled job is mid-run;
 --   * records the migration file in supabase_migrations.schema_migrations,
 --     whole as statements[1], and runs it from that record once its sha256
 --     matches the repository file;
@@ -50,6 +53,18 @@ begin;
 
 set local lock_timeout = '5s';
 set local statement_timeout = '60s';
+
+-- ---------------------------------------------------------------------------
+-- Hold every scheduled (pg_cron) job off until this transaction ends
+-- (AGENTS.md, one writer at a time).
+-- ---------------------------------------------------------------------------
+do $hold$
+begin
+  lock table cron.job_run_details in exclusive mode;
+exception when lock_not_available then
+  raise exception 'stop: a scheduled (pg_cron) job is being started or finished right now -- nothing was saved; run this again in a minute';
+end
+$hold$;
 
 -- ---------------------------------------------------------------------------
 -- Preflight
@@ -67,6 +82,7 @@ begin
   end if;
   if to_regclass('app_private.current_player_list_observations') is not null
     or to_regclass('app_private.current_player_list_updates') is not null
+    or to_regprocedure('app_private.hold_scheduled_jobs()') is not null
     or to_regprocedure('app_private.person_name_key(text)') is not null
     or to_regprocedure('app_private.current_player_list_plan(uuid)') is not null
     or to_regprocedure('api.service_record_current_player_list(jsonb)') is not null
@@ -88,10 +104,9 @@ begin
   end if;
 
   -- AGENTS.md: serialise with the scheduled jobs. The step 1 check, made
-  -- again here at the moment of writing: a job mid-run means waiting for it.
+  -- again under the hold: a job mid-run means waiting for it.
   if exists (select 1 from cron.job_run_details run
-    where run.status not in ('succeeded', 'failed')
-      and run.start_time > statement_timestamp() - interval '15 minutes') then
+    where run.status not in ('succeeded', 'failed')) then
     raise exception 'stop: a scheduled (pg_cron) job is running right now -- nothing was saved; run this again in a minute';
   end if;
 end
@@ -123,8 +138,9 @@ values (
 --   3. api.service_apply_current_player_list makes the changes, only while the
 --      Fantasy tick is paused, and only when the plan still has the reviewed
 --      digest. It then plans again and refuses unless nothing is left to do.
--- Recording and applying both refuse while a scheduled (pg_cron) job is
--- mid-run (scheduled_job_running), so they never write alongside one.
+-- Recording and applying both hold every scheduled (pg_cron) job off until
+-- they finish, and refuse while one is mid-run (scheduled_job_running), so
+-- they never write alongside one.
 --
 -- Only positive evidence changes anything. A player is placed at the club of
 -- their latest lineup, else at the one club whose squad lists them; a player
@@ -207,6 +223,31 @@ as $$
     and case jsonb_typeof(p_member -> 'shirtNumber')
       when 'number' then p_member ->> 'shirtNumber' ~ '^[1-9][0-9]?$'
       when 'null' then true else p_member -> 'shirtNumber' is null end
+$$;
+
+-- Holds every scheduled (pg_cron) job off until this transaction ends, and
+-- refuses while one is mid-run (AGENTS.md, one writer at a time). pg_cron
+-- records each run in cron.job_run_details before running its command, so
+-- holding that table is the lock every scheduled writer shares: a job due
+-- meanwhile starts once this transaction has finished. A run left unfinished
+-- by a crash is marked failed when pg_cron restarts.
+create function app_private.hold_scheduled_jobs()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform set_config('lock_timeout', '5s', true);
+  begin
+    lock table cron.job_run_details in exclusive mode;
+  exception when lock_not_available then
+    raise exception using errcode = 'PT409', message = 'scheduled_job_running';
+  end;
+  if exists (select 1 from cron.job_run_details run where run.status not in ('succeeded', 'failed')) then
+    raise exception using errcode = 'PT409', message = 'scheduled_job_running';
+  end if;
+end;
 $$;
 
 -- Checks an observation's shape and scope, and returns its season. Every club
@@ -347,13 +388,9 @@ begin
   then
     raise exception using errcode = 'PT400', message = 'player_list_observation_not_fresh';
   end if;
-  -- AGENTS.md, one writer at a time: nothing scheduled may be mid-run at the
-  -- moment this writes. The caller waits and tries again.
-  if exists (select 1 from cron.job_run_details run
-    where run.status not in ('succeeded', 'failed')
-      and run.start_time > statement_timestamp() - interval '15 minutes') then
-    raise exception using errcode = 'PT409', message = 'scheduled_job_running';
-  end if;
+  -- No scheduled job runs alongside this write; while one is mid-run the
+  -- caller waits and tries again.
+  perform app_private.hold_scheduled_jobs();
   digest := encode(extensions.digest(p_observations::text, 'sha256'), 'hex');
   insert into app_private.current_player_list_observations (
     season_id, provider_name, observed_at, observation_digest, observations
@@ -832,6 +869,9 @@ begin
     where gameweek.fantasy_season_id = target_fantasy.id and gameweek.status = 'finalizing') then
     raise exception using errcode = 'PT409', message = 'fantasy_gameweek_finalizing';
   end if;
+  -- No scheduled job runs alongside this write, and nothing else writes the
+  -- players' clubs or the Fantasy catalog until it ends.
+  perform app_private.hold_scheduled_jobs();
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
     'fantasy:catalog:' || target_season.id::text, 0));
   lock table app.team_memberships, app.fantasy_players in share row exclusive mode;
@@ -846,13 +886,6 @@ begin
   end if;
   if (plan #>> '{summary,clubLimitViolations}')::integer <> 0 then
     raise exception using errcode = 'PT409', message = 'fantasy_club_limit_exceeded';
-  end if;
-  -- AGENTS.md, one writer at a time: nothing scheduled may be mid-run at the
-  -- moment this writes.
-  if exists (select 1 from cron.job_run_details run
-    where run.status not in ('succeeded', 'failed')
-      and run.start_time > statement_timestamp() - interval '15 minutes') then
-    raise exception using errcode = 'PT409', message = 'scheduled_job_running';
   end if;
   source_version := 'sportsmonks-player-list:' || p_observation_id::text;
 
@@ -1027,6 +1060,7 @@ begin
 end;
 $$;
 
+revoke all on function app_private.hold_scheduled_jobs() from public, anon, authenticated, service_role;
 revoke all on function app_private.person_name_key(text) from public, anon, authenticated, service_role;
 revoke all on function app_private.current_player_list_member_ok(jsonb, boolean)
   from public, anon, authenticated, service_role;
@@ -1052,7 +1086,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260925200000, 'UTF8')), 'hex')
-    is distinct from 'dd194a05d6246814340ce186fb85c1ec51dc8bde6775dd9b70c6b0315d4b57f2' then
+    is distinct from '162545ab64d49765d1bfceb0e38fc77a6523aca66787e312827d83bfe56fbb33' then
     raise exception 'stop: 20260925200000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -1093,6 +1127,7 @@ begin
     end if;
   end loop;
   foreach private_function in array array[
+    'app_private.hold_scheduled_jobs()'::regprocedure,
     'app_private.person_name_key(text)'::regprocedure,
     'app_private.current_player_list_member_ok(jsonb,boolean)'::regprocedure,
     'app_private.current_player_list_season(jsonb)'::regprocedure,

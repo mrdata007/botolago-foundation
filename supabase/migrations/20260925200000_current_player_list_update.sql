@@ -17,8 +17,9 @@
 --   3. api.service_apply_current_player_list makes the changes, only while the
 --      Fantasy tick is paused, and only when the plan still has the reviewed
 --      digest. It then plans again and refuses unless nothing is left to do.
--- Recording and applying both refuse while a scheduled (pg_cron) job is
--- mid-run (scheduled_job_running), so they never write alongside one.
+-- Recording and applying both hold every scheduled (pg_cron) job off until
+-- they finish, and refuse while one is mid-run (scheduled_job_running), so
+-- they never write alongside one.
 --
 -- Only positive evidence changes anything. A player is placed at the club of
 -- their latest lineup, else at the one club whose squad lists them; a player
@@ -101,6 +102,31 @@ as $$
     and case jsonb_typeof(p_member -> 'shirtNumber')
       when 'number' then p_member ->> 'shirtNumber' ~ '^[1-9][0-9]?$'
       when 'null' then true else p_member -> 'shirtNumber' is null end
+$$;
+
+-- Holds every scheduled (pg_cron) job off until this transaction ends, and
+-- refuses while one is mid-run (AGENTS.md, one writer at a time). pg_cron
+-- records each run in cron.job_run_details before running its command, so
+-- holding that table is the lock every scheduled writer shares: a job due
+-- meanwhile starts once this transaction has finished. A run left unfinished
+-- by a crash is marked failed when pg_cron restarts.
+create function app_private.hold_scheduled_jobs()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform set_config('lock_timeout', '5s', true);
+  begin
+    lock table cron.job_run_details in exclusive mode;
+  exception when lock_not_available then
+    raise exception using errcode = 'PT409', message = 'scheduled_job_running';
+  end;
+  if exists (select 1 from cron.job_run_details run where run.status not in ('succeeded', 'failed')) then
+    raise exception using errcode = 'PT409', message = 'scheduled_job_running';
+  end if;
+end;
 $$;
 
 -- Checks an observation's shape and scope, and returns its season. Every club
@@ -241,13 +267,9 @@ begin
   then
     raise exception using errcode = 'PT400', message = 'player_list_observation_not_fresh';
   end if;
-  -- AGENTS.md, one writer at a time: nothing scheduled may be mid-run at the
-  -- moment this writes. The caller waits and tries again.
-  if exists (select 1 from cron.job_run_details run
-    where run.status not in ('succeeded', 'failed')
-      and run.start_time > statement_timestamp() - interval '15 minutes') then
-    raise exception using errcode = 'PT409', message = 'scheduled_job_running';
-  end if;
+  -- No scheduled job runs alongside this write; while one is mid-run the
+  -- caller waits and tries again.
+  perform app_private.hold_scheduled_jobs();
   digest := encode(extensions.digest(p_observations::text, 'sha256'), 'hex');
   insert into app_private.current_player_list_observations (
     season_id, provider_name, observed_at, observation_digest, observations
@@ -726,6 +748,9 @@ begin
     where gameweek.fantasy_season_id = target_fantasy.id and gameweek.status = 'finalizing') then
     raise exception using errcode = 'PT409', message = 'fantasy_gameweek_finalizing';
   end if;
+  -- No scheduled job runs alongside this write, and nothing else writes the
+  -- players' clubs or the Fantasy catalog until it ends.
+  perform app_private.hold_scheduled_jobs();
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
     'fantasy:catalog:' || target_season.id::text, 0));
   lock table app.team_memberships, app.fantasy_players in share row exclusive mode;
@@ -740,13 +765,6 @@ begin
   end if;
   if (plan #>> '{summary,clubLimitViolations}')::integer <> 0 then
     raise exception using errcode = 'PT409', message = 'fantasy_club_limit_exceeded';
-  end if;
-  -- AGENTS.md, one writer at a time: nothing scheduled may be mid-run at the
-  -- moment this writes.
-  if exists (select 1 from cron.job_run_details run
-    where run.status not in ('succeeded', 'failed')
-      and run.start_time > statement_timestamp() - interval '15 minutes') then
-    raise exception using errcode = 'PT409', message = 'scheduled_job_running';
   end if;
   source_version := 'sportsmonks-player-list:' || p_observation_id::text;
 
@@ -921,6 +939,7 @@ begin
 end;
 $$;
 
+revoke all on function app_private.hold_scheduled_jobs() from public, anon, authenticated, service_role;
 revoke all on function app_private.person_name_key(text) from public, anon, authenticated, service_role;
 revoke all on function app_private.current_player_list_member_ok(jsonb, boolean)
   from public, anon, authenticated, service_role;
