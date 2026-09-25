@@ -56,6 +56,7 @@ describe(`apply-${VERSION}-current-performance-goals-conceded.sql`, () => {
       `migration ${VERSION} is already recorded as applied`,
       "migration 20260925110000 (the unnamed-starter rule) is not applied",
       "where lifecycle_tick_enabled) then",
+      "if exists (select 1 from cron.job_run_details run",
       // Production's version on 2026-09-25 after 20260925110000, measured there.
       "  )) <> '9b0c8142476872f853e06ce730fa68f8' then",
     ]) {

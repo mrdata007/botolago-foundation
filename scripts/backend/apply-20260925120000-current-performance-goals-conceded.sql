@@ -26,7 +26,8 @@
 --      again before the real run:
 --        * GitHub -> Actions: no run in progress, the two above included (the
 --          football recovery also runs on a schedule);
---        * pg_cron: nothing mid-run. This should return no rows:
+--        * pg_cron: nothing mid-run. This should return no rows (the script
+--          checks it again itself at the moment it writes, and stops if not):
 --            select job.jobname, run.status, run.start_time
 --            from cron.job_run_details run join cron.job job using (jobid)
 --            where run.status not in ('succeeded', 'failed')
@@ -41,8 +42,10 @@
 --      the email/results jobs (notification-email-tick, football-live-refresh)
 --      pause for writes to fixtures or notifications, and predictions scoring
 --      pauses for writes to the predictions tables. This write touches none of
---      those, and the hold (see WHEN) keeps any match statistics writer out
---      while it runs.
+--      those, the hold (see WHEN) keeps any match statistics writer out while
+--      it runs, and the script stops if any scheduled job is mid-run as it
+--      starts. Each pause is itself a write to settings users depend on, and
+--      has to be undone afterwards; none is needed to keep this one apart.
 --   3. Paste this WHOLE file and press Run.
 --      As shipped it is a REHEARSAL: everything is applied inside one
 --      transaction, checked, and then ROLLED BACK. The result row should say
@@ -58,9 +61,10 @@
 -- WHAT IT DOES
 --   * holds the match statistics tables until it ends (see WHEN);
 --   * refuses to run twice, before 20260925110000 (the unnamed-starter rule
---     this builds on), while the Fantasy tick is on, or where the statistics
---     import is not the version reviewed (as production held it on
---     2026-09-25 after 20260925110000);
+--     this builds on), while the Fantasy tick is on, while any scheduled
+--     (pg_cron) job is mid-run, or where the statistics import is not the
+--     version reviewed (as production held it on 2026-09-25 after
+--     20260925110000);
 --   * records the migration file in supabase_migrations.schema_migrations,
 --     whole as statements[1], and runs it from that record once its sha256
 --     matches the repository file;
@@ -109,6 +113,14 @@ begin
   -- AGENTS.md: nothing else writes Fantasy's inputs while this runs.
   if exists (select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled) then
     raise exception 'stop: the Fantasy lifecycle tick is on -- pause it first with select app_private.fantasy_automation_configure(false); and switch it back on afterwards';
+  end if;
+
+  -- AGENTS.md: serialise with the scheduled jobs. The step 1 check, made
+  -- again here at the moment of writing: a job mid-run means waiting for it.
+  if exists (select 1 from cron.job_run_details run
+    where run.status not in ('succeeded', 'failed')
+      and run.start_time > statement_timestamp() - interval '15 minutes') then
+    raise exception 'stop: a scheduled (pg_cron) job is running right now -- nothing was saved; run this again in a minute';
   end if;
 
   if md5(pg_get_functiondef(
