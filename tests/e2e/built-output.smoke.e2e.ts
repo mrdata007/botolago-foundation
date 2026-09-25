@@ -1,6 +1,7 @@
+import { execFileSync } from "node:child_process";
 import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 import { dictionaries } from "../../src/i18n/dictionaries";
-import { STUB_SUPABASE_ORIGIN } from "./built-output-env";
+import { REPOSITORY_ROOT, STUB_SUPABASE_ORIGIN } from "./built-output-env";
 import {
   expectNoClippedMatchCards,
   expectNoHorizontalOverflow,
@@ -25,12 +26,35 @@ import {
  *   E2E_BUILT_OUTPUT=1 bunx playwright test tests/e2e/built-output.smoke.e2e.ts
  */
 
+const BUILT_OUTPUT = process.env.E2E_BUILT_OUTPUT === "1";
+// In CI this suite is a gate: a workflow step that lost E2E_BUILT_OUTPUT would
+// otherwise report it skipped, and the gate would pass having run nothing.
+if (process.env.CI && !BUILT_OUTPUT) {
+  throw new Error(
+    "E2E_BUILT_OUTPUT=1 is not set: in CI the production-bundle smoke test runs or fails, it does not skip.",
+  );
+}
 test.skip(
-  process.env.E2E_BUILT_OUTPUT !== "1",
+  !BUILT_OUTPUT,
   "Needs the production build: set E2E_BUILT_OUTPUT=1 after bun tests/e2e/built-output-build.ts.",
 );
 
 test.use({ viewport: { width: 390, height: 844 } });
+
+/**
+ * The commit the bundle has to say it was built from, by vite.config.ts's
+ * rule: VITE_RELEASE_SHA when set, else this checkout's HEAD. A build left in
+ * `.output` by another commit names that one, and is not what this run is for.
+ */
+const RELEASE =
+  process.env.VITE_RELEASE_SHA ||
+  (BUILT_OUTPUT
+    ? execFileSync("git", ["rev-parse", "HEAD"], { cwd: REPOSITORY_ROOT, encoding: "utf8" }).trim()
+    : "");
+
+/** In HTML, a link to one match, article or club by its id: only data renders one. */
+const ID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+const linkTo = (section: string) => new RegExp(`<a\\b[^>]*\\bhref="/${section}/${ID}"`);
 
 type Language = "fr" | "ar";
 type Copy = (typeof dictionaries)[Language];
@@ -44,17 +68,44 @@ const MATCH_CARD = 'main a[href^="/matches/"]:not([href^="/matches/standings"])'
 /**
  * Each page, and what on it only renders once its data has: never a static
  * link or heading that an empty or failed page shows as well.
+ *
+ * `server` is the same in the HTML the server sends, for the pages whose
+ * loaders fetch their data while the server renders (`prefetchForSsr`). A
+ * read that fails there is not an error: the page goes out without its data
+ * and the browser fetches it, so the hydrated page alone cannot tell.
  */
 const PAGES: ReadonlyArray<{
   path: string;
   nav: boolean;
   content: (page: Page, copy: Copy) => Locator;
+  server?: RegExp;
 }> = [
-  { path: "/", nav: true, content: (page) => page.locator(MATCH_CARD) },
-  { path: "/news", nav: true, content: (page) => page.locator('main a[href^="/news/"]') },
-  { path: "/matches", nav: true, content: (page) => page.locator(MATCH_CARD) },
-  { path: "/matches/standings", nav: true, content: (page) => page.locator("main table tbody tr") },
-  { path: "/clubs", nav: true, content: (page) => page.locator('main a[href^="/clubs/"]') },
+  { path: "/", nav: true, content: (page) => page.locator(MATCH_CARD), server: linkTo("matches") },
+  {
+    path: "/news",
+    nav: true,
+    content: (page) => page.locator('main a[href^="/news/"]'),
+    server: linkTo("news"),
+  },
+  {
+    path: "/matches",
+    nav: true,
+    content: (page) => page.locator(MATCH_CARD),
+    server: linkTo("matches"),
+  },
+  {
+    path: "/matches/standings",
+    nav: true,
+    content: (page) => page.locator("main table tbody tr"),
+    // A table row with a link to its club, which only a loaded table has.
+    server: new RegExp(`<tr\\b[^>]*>(?:(?!</tr>)[\\s\\S])*?\\bhref="/clubs/${ID}"`),
+  },
+  {
+    path: "/clubs",
+    nav: true,
+    content: (page) => page.locator('main a[href^="/clubs/"]'),
+    server: linkTo("clubs"),
+  },
   // The gameweek band, named "Journée 1", comes from `fantasy_hub`; the hub's
   // shortcut tiles and rule links are there whatever the hub answered.
   {
@@ -120,11 +171,17 @@ for (const language of ["fr", "ar"] as const satisfies readonly Language[]) {
     await initializeLanguage(page, language);
     await unansweredStubCalls(page);
 
-    for (const { path, nav, content } of PAGES) {
+    for (const { path, nav, content, server } of PAGES) {
       const response = await page.goto(path, { waitUntil: "networkidle" });
       expect(response?.status(), `${path}: HTTP status`).toBe(200);
-      // Set by src/server.ts: this is the site's own server entry answering.
-      expect(response?.headers()["x-botolago-release"], `${path}: release header`).toBeTruthy();
+      // Set by src/server.ts: the site's own server entry answering, from a
+      // build of this commit.
+      expect(response?.headers()["x-botolago-release"], `${path}: release header`).toBe(RELEASE);
+      if (server) {
+        // The server always renders French; the browser's language comes after.
+        const sent = (await response!.text()).match(/<main\b[\s\S]*?<\/main>/)?.[0] ?? "";
+        expect(server.test(sent), `${path}: its data in the server's HTML`).toBe(true);
+      }
 
       // The chosen language is the browser's, so these only hold once the
       // client has hydrated and taken over from the server's HTML.
@@ -152,10 +209,13 @@ for (const language of ["fr", "ar"] as const satisfies readonly Language[]) {
       }
 
       // `html, body { overflow-x: clip }` hides overflow from the scroll
-      // width, so the boxes are measured too; a rail's cards are reached by
-      // swiping it, so only the rail has to fit.
+      // width, so the boxes are measured too, the site's header and tab bar
+      // as well as the page; a rail's cards are reached by swiping it, so
+      // only the rail has to fit.
       await expectNoHorizontalOverflow(page);
-      await expectNothingOffScreen(page, "main", { scrollRails: true });
+      for (const scope of ["main", "header", "nav"]) {
+        await expectNothingOffScreen(page, scope, { scrollRails: true });
+      }
       await expectNoClippedMatchCards(page);
       // BG-0035 again, on minified CSS: the Arabic font must survive the build.
       const bodyFont = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
@@ -181,6 +241,14 @@ test("robots.txt, sitemap.xml and an unknown address", async ({ request }) => {
   const xml = await sitemap.text();
   expect(xml).toMatch(/^<\?xml[^>]*>\s*<(urlset|sitemapindex)\b/);
   expect(xml).toContain("<loc>https://botolago.com/");
+  // The articles, read by the server from `news_sitemap_entries`: each
+  // edition once, the French and Arabic ones naming each other.
+  const articles = [
+    ...xml.matchAll(new RegExp(`<loc>https://botolago\\.com/news/(${ID})</loc>`, "g")),
+  ];
+  expect(articles.length, "articles in the sitemap").toBeGreaterThan(0);
+  expect(new Set(articles.map(([, id]) => id)).size, "each article once").toBe(articles.length);
+  expect(xml).toContain('<xhtml:link rel="alternate" hreflang="ar"');
 
   const missing = await request.get("/no-such-page");
   expect(missing.status()).toBe(404);

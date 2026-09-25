@@ -108,17 +108,21 @@ const RPC: Record<string, Handler> = {
           teamId: text(args.p_team_id),
         }),
   news_team_filters: (args) => news.getTeamFilters(language(args)),
+  // One entry per edition, as the real RPC answers: an article's French and
+  // Arabic editions are two ids, each naming the other. The mock feed gives
+  // both languages one id, so the Arabic edition's is derived from it.
   news_sitemap_entries: async () => {
-    const [fr, ar] = await Promise.all(
-      (["fr", "ar"] as const).map((lang) => news.getFeed({ language: lang, limit: 50 })),
-    );
-    return [...fr.items, ...ar.items].map((item) => ({
-      id: item.id,
-      language: item.language,
-      publishedAt: item.publishedAt,
-      contentUpdatedAt: item.updatedAt,
-      translations: [],
-    }));
+    const { items } = await news.getFeed({ language: "fr", limit: 50 });
+    const arabic = (id: string) => `c${id.slice(1)}`;
+    return items.flatMap((item) => {
+      const dates = { publishedAt: item.publishedAt, contentUpdatedAt: item.updatedAt };
+      const fr = { id: item.id, language: "fr" };
+      const ar = { id: arabic(item.id), language: "ar" };
+      return [
+        { ...fr, ...dates, translations: [ar] },
+        { ...ar, ...dates, translations: [fr] },
+      ];
+    });
   },
   fantasy_hub: () => fantasyHub(),
   // Before the first deadline nothing has scored: no averages, no top

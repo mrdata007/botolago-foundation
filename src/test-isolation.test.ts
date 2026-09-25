@@ -8,7 +8,21 @@ import { join, relative } from "node:path";
 // client.test.ts whenever that file happened to run later, so the full run
 // passed or failed on file order (audit 2026-09-25, A15). A file that mocks a
 // module therefore puts it back itself: inside an `afterAll`, it mocks the same
-// id again with a name bound to that module's real import.
+// id again with a copy of the real module, taken before the first mock:
+//
+//   const real = { ...(await import("./client")) };   // first
+//   mock.module("./client", () => ({ ...real, supabase: stub }));
+//   afterAll(() => { mock.module("./client", () => real); });
+//
+// Both halves of the copy matter. Imported after the mock, the module IS the
+// mock, and the "restore" puts the mock back. And `mock.module` overwrites the
+// exports of a module already loaded, so a namespace kept without spreading it
+// (`const real = await import(...)`) reads the mock's values by the time the
+// restore hands it back. Either way every later file gets the mock (both
+// checked against Bun 1.3).
+//
+// The same function is `vi.mock` and `jest.mock` in bun:test, so those count
+// too, under their own names or an alias a file imports them as.
 //
 // This reads source text, so it checks that shape and nothing more: it cannot
 // tell whether the `afterAll` runs, or whether the mock in between was partial.
@@ -34,11 +48,28 @@ function withoutComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
-/** The ids passed to `mock.module`, `null` for one that is not a plain string. */
-function mockedModuleIds(code: string): Array<string | null> {
-  return [...code.matchAll(/mock\.module\(\s*(?:(["'])([^"'`]+)\1|[^,)]*)/g)].map(
-    (match) => match[2] ?? null,
-  );
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * A pattern for the calls that replace a module: `mock.module`, `vi.mock` or
+ * `jest.mock`, and the same through an alias imported from bun:test. A
+ * namespace import (`bunTest.mock.module`) matches; `xmock.module` does not.
+ */
+function moduleMockCallee(code: string): string {
+  const method: Record<string, string> = { mock: "module", vi: "mock", jest: "mock" };
+  const callees = Object.entries(method).map(([object, name]) => `${object}\\.${name}`);
+  for (const [, specifiers] of code.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']bun:test["']/g)) {
+    for (const [, imported, local] of specifiers!.matchAll(/\b(mock|vi|jest)\s+as\s+([\w$]+)/g)) {
+      callees.push(`${escapeRegExp(local!)}\\.${method[imported!]}`);
+    }
+  }
+  return `(?<![\\w$])(?:${callees.join("|")})`;
+}
+
+/** The ids passed to a module mock, `null` for one that is not a plain string. */
+function mockedModuleIds(code: string, callee: string): Array<string | null> {
+  const call = new RegExp(`${callee}\\(\\s*(?:(["'])([^"'\`]+)\\1|[^,)]*)`, "g");
+  return [...code.matchAll(call)].map((match) => match[2] ?? null);
 }
 
 /** The argument text of every `afterAll(...)` call, found by matching brackets. */
@@ -56,28 +87,38 @@ function afterAllBodies(code: string): string[] {
   });
 }
 
-const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-/** Whether an `afterAll` mocks `id` back to a name bound to its real import. */
-function restoresRealModule(code: string, id: string): boolean {
-  const quoted = `(["'])${escapeRegExp(id)}\\1`;
-  const restore = new RegExp(`mock\\.module\\(\\s*${quoted}\\s*,\\s*\\(\\)\\s*=>\\s*(\\w+)\\s*\\)`);
+/**
+ * Whether an `afterAll` mocks `id` back to a `const` copy of its real import
+ * (`{ ...(await import(id)) }`), every such copy made before `id` is first
+ * mocked.
+ */
+function restoresRealModule(code: string, id: string, callee: string): boolean {
+  const quoted = `(?:"${escapeRegExp(id)}"|'${escapeRegExp(id)}')`;
+  const firstMock = code.search(new RegExp(`${callee}\\(\\s*${quoted}`));
+  const restore = new RegExp(`${callee}\\(\\s*${quoted}\\s*,\\s*\\(\\)\\s*=>\\s*([\\w$]+)\\s*\\)`);
   return afterAllBodies(code).some((body) => {
-    const name = body.match(restore)?.[2];
+    const name = body.match(restore)?.[1];
     if (!name) return false;
-    const binding = new RegExp(
-      `\\b(?:const|let)\\s+${name}\\s*=\\s*(?:\\{\\s*\\.\\.\\.\\s*\\(\\s*)?await\\s+import\\(\\s*${quoted}\\s*\\)`,
+    const copy = new RegExp(
+      `\\bconst\\s+${escapeRegExp(name)}\\s*=\\s*\\{\\s*\\.\\.\\.\\s*\\(?\\s*await\\s+import\\(\\s*${quoted}\\s*\\)\\s*\\)?\\s*,?\\s*\\}`,
+      "g",
     );
-    return binding.test(code);
+    const copies = [...code.matchAll(copy)];
+    return copies.length > 0 && copies.every((match) => match.index < firstMock);
   });
 }
 
 /** What a file's module mocks leave behind for the files that run after it. */
 function unrestoredModuleMocks(source: string): string[] {
   const code = withoutComments(source);
-  const ids = mockedModuleIds(code);
+  const callee = moduleMockCallee(code);
+  // Passed around rather than called, it could mock anything unseen.
+  if (new RegExp(`${callee}\\b(?!\\s*\\()`).test(code)) {
+    return ["a module mock that is not called directly"];
+  }
+  const ids = mockedModuleIds(code, callee);
   if (ids.includes(null)) return ["a mock.module id that is not a string literal"];
-  return [...new Set(ids as string[])].filter((id) => !restoresRealModule(code, id));
+  return [...new Set(ids as string[])].filter((id) => !restoresRealModule(code, id, callee));
 }
 
 describe("module mocks are undone by the file that made them", () => {
@@ -132,6 +173,63 @@ describe("module mocks are undone by the file that made them", () => {
         mock.module("./client", () => real);
       });`;
     expect(unrestoredModuleMocks(otherModule)).toEqual(["./client"]);
+  });
+
+  it("does not count a copy of the module taken after it was mocked", () => {
+    // By then the import answers with the mock, so the restore re-installs it.
+    const mockedFirst = `
+      mock.module("./dep", () => ({ value: "mocked" }));
+      const real = { ...(await import("./dep")) };
+      afterAll(() => { mock.module("./dep", () => real); });`;
+    expect(unrestoredModuleMocks(mockedFirst)).toEqual(["./dep"]);
+    // One copy before the mock does not excuse another after it.
+    const twice = `
+      const real = { ...(await import("./dep")) };
+      mock.module("./dep", () => ({ value: "mocked" }));
+      it("again", async () => { const real = { ...(await import("./dep")) }; });
+      afterAll(() => { mock.module("./dep", () => real); });`;
+    expect(unrestoredModuleMocks(twice)).toEqual(["./dep"]);
+  });
+
+  it("does not count the module's namespace kept without copying it", () => {
+    // `mock.module` overwrites a loaded module's exports, and the namespace
+    // with them: restored from it, the module stays mocked.
+    const live = `
+      const real = await import("./dep");
+      mock.module("./dep", () => ({ value: "mocked" }));
+      afterAll(() => { mock.module("./dep", () => real); });`;
+    expect(unrestoredModuleMocks(live)).toEqual(["./dep"]);
+    // A copy that can be reassigned, or that overrides what it copied, is
+    // not the real module either.
+    const reassignable = `
+      let real = { ...(await import("./dep")) };
+      mock.module("./dep", () => ({ value: "mocked" }));
+      afterAll(() => { mock.module("./dep", () => real); });`;
+    expect(unrestoredModuleMocks(reassignable)).toEqual(["./dep"]);
+    const overridden = `
+      const real = { ...(await import("./dep")), value: "mocked" };
+      mock.module("./dep", () => real);
+      afterAll(() => { mock.module("./dep", () => real); });`;
+    expect(unrestoredModuleMocks(overridden)).toEqual(["./dep"]);
+  });
+
+  it("follows vi.mock, jest.mock and an imported alias of mock", () => {
+    for (const call of ["vi.mock", "jest.mock", "bunTest.mock.module"]) {
+      expect(unrestoredModuleMocks(`${call}("./dep", () => ({}));`)).toEqual(["./dep"]);
+    }
+    const aliased = `
+      import { afterAll, mock as replace } from "bun:test";
+      replace.module("./dep", () => ({ value: "mocked" }));`;
+    expect(unrestoredModuleMocks(aliased)).toEqual(["./dep"]);
+    const restored = `
+      import { afterAll, mock as replace } from "bun:test";
+      const real = { ...(await import("./dep")) };
+      replace.module("./dep", () => ({ ...real, value: "mocked" }));
+      afterAll(() => { replace.module("./dep", () => real); });`;
+    expect(unrestoredModuleMocks(restored)).toEqual([]);
+    expect(unrestoredModuleMocks(`const swap = mock.module; swap("./dep", () => ({}));`)).toEqual([
+      "a module mock that is not called directly",
+    ]);
   });
 
   it("does not count a commented-out restore", () => {

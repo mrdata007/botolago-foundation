@@ -14,7 +14,7 @@ import { renderToString } from "react-dom/server";
 
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
-import { matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
+import { MATCH_TIME_ZONE, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
 import { SSR_DEHYDRATE_OPTIONS } from "@/lib/ssr-prefetch";
 import { footballService, type FootballSeason } from "@/services/football";
 import { createAppQueryClient } from "@/services/query-client";
@@ -69,7 +69,8 @@ function stubFootball() {
       gameweek: 3,
       homeClubId: HOME.id,
       awayClubId: AWAY.id,
-      // 20:00 in Casablanca on the day asked for.
+      // Evening in Casablanca on the day asked for: 20:00 most of the year,
+      // 19:00 while Morocco keeps UTC for Ramadan.
       kickoff: `${day}T19:00:00Z`,
       status: "scheduled",
       venue: { fr: "Stade Mohammed V", ar: "Stade Mohammed V" },
@@ -295,6 +296,15 @@ describe("/matches rows and the live strip (A05)", () => {
     const today = matchDayKey(new Date());
     const day = await footballService.getMatchDay(new Date(`${today}T12:00:00Z`), "fr");
     const [scheduled] = day.matches;
+    // The row's kick-off time as the match card formats it, in the
+    // competition's zone: "20:00" does not hold during Ramadan, when this
+    // runs on the real day.
+    const kickoffTime = new Intl.DateTimeFormat("fr-FR", {
+      timeZone: MATCH_TIME_ZONE,
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(scheduled!.kickoff));
+    expect(["20:00", "19:00"]).toContain(kickoffTime);
     const inPlay = {
       matches: [{ ...scheduled!, status: "live" as const, minute: 12, homeScore: 1, awayScore: 0 }],
       clubs: [HOME, AWAY],
@@ -310,14 +320,14 @@ describe("/matches rows and the live strip (A05)", () => {
     const fromStrip = rowLabel(await renderMatches(client));
     expect(fromStrip).toContain("Wydad AC 1, Raja CA 0");
     expect(fromStrip).toContain("12");
-    expect(fromStrip).not.toContain("20:00");
+    expect(fromStrip).not.toContain(kickoffTime);
 
     const older = appClient();
     older.setQueryData(["football", "seasons", "fr"], [SEASON]);
     older.setQueryData(dayKey, day, { updatedAt: 3_000 });
     older.setQueryData(liveKey, inPlay, { updatedAt: 2_000 });
     const fromDay = rowLabel(await renderMatches(older));
-    expect(fromDay).toContain("20:00");
+    expect(fromDay).toContain(kickoffTime);
     expect(fromDay).not.toContain("Wydad AC 1");
   });
 

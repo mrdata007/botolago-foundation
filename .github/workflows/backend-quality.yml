@@ -108,8 +108,20 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run backend:db:start
       - run: bun run backend:db:reset
+      # Opt-in database tests: each writes to the database its variable names,
+      # skips without one and fails if that database does not answer. The
+      # variable points it at this job's freshly reset stack (the `[db]` port
+      # in supabase/config.toml).
       - name: Historical performance TS-to-SQL wire-format check
         run: bun test scripts/backend/historical-performance-e2e-wire-format.test.ts
+        env:
+          BG0011_E2E_DB_URL: postgres://postgres:postgres@127.0.0.1:55322/postgres
+      # The other one, scripts/backend/football-live-refresh-e2e.test.ts
+      # (LIVE_REFRESH_E2E_DB_URL), is not run here: no run of it against a
+      # freshly reset local stack is on record (its recorded runs used plain
+      # Postgres 16 with stand-ins for the Supabase platform objects), so it
+      # has not been shown to pass on this one. Add it like the step above
+      # once it has.
       - run: bun run backend:db:test
       - run: bun run backend:db:lint
       - name: Verify generated database types

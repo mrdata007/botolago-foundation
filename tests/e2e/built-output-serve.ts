@@ -17,7 +17,11 @@
  *
  * Playwright starts it (`E2E_BUILT_OUTPUT=1`), or by hand:
  *
- *   bun tests/e2e/built-output-build.ts && bun tests/e2e/built-output-serve.ts
+ *   bun tests/e2e/built-output-build.ts && bun --no-env-file tests/e2e/built-output-serve.ts
+ *
+ * `--no-env-file` keeps a local `.env` out of this process: parts of the
+ * server code read SUPABASE_URL and the Supabase keys from the environment
+ * rather than the build.
  */
 import { join, normalize, sep } from "node:path";
 import { pathToFileURL } from "node:url";

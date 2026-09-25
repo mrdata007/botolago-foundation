@@ -17,12 +17,19 @@
 // Supabase/Postgres instance directly (every other *.test.ts either mocks its dependencies or is a
 // pgTAP .test.sql file run via `supabase test db`). This file bridges TS application code and a
 // live local Postgres itself, using Bun's built-in `Bun.SQL` client (no new dependency) pointed at
-// the local stack's direct Postgres port (`supabase/config.toml`'s `[db] port`, 55322 by default).
-// It requires `supabase db start` (or `db reset --local`) to already be running locally; if it
-// cannot connect within a short timeout, every test in this file is skipped with a clear console
-// message rather than failing the suite outright -- so this file is safe to leave in the repo for
-// contributors without a local Supabase stack running, but it MUST actually run (not skip) as part
-// of this task's own verification.
+// the local stack's direct Postgres port (`supabase/config.toml`'s `[db] port`, 55322).
+//
+// It is opt-in. It seeds rows into the database it is given and deletes them afterwards, so it runs
+// only when BG0011_E2E_DB_URL names that database explicitly, after `supabase db start` (or
+// `db reset --local`):
+//
+//   BG0011_E2E_DB_URL=postgres://postgres:postgres@127.0.0.1:55322/postgres \
+//     bun test scripts/backend/historical-performance-e2e-wire-format.test.ts
+//
+// CI's database-quality job sets it to its own freshly reset stack. Unset, the file is skipped and
+// connects to nothing: it used to default to that port, so any `bun test` wrote into whatever
+// Postgres was listening there, another lane's database included. Set but unreachable, it fails
+// rather than skipping, since it was asked to run.
 
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 
@@ -32,15 +39,22 @@ import {
   type NormalizedHistoricalFixture,
 } from "../../supabase/functions/_shared/sportsmonks-historical-player-performance";
 
-const DB_URL =
-  process.env.BG0011_E2E_DB_URL ?? "postgres://postgres:postgres@127.0.0.1:55322/postgres";
+/** The database this file writes to: named explicitly, or none (see above). */
+const DB_URL = process.env.BG0011_E2E_DB_URL || undefined;
 const SEASON_ID = 26_027;
 const CONNECT_TIMEOUT_MS = 3_000;
 
 let sql: Bun.SQL | null = null;
-let reachable = false;
+
+if (!DB_URL) {
+  console.info(
+    "[historical-performance-e2e-wire-format] Skipped: it writes to a database, so it runs only " +
+      "when BG0011_E2E_DB_URL names one (a local stack started with `supabase db start`).",
+  );
+}
 
 beforeAll(async () => {
+  if (!DB_URL) return;
   const candidate = new Bun.SQL({ url: DB_URL });
   try {
     await Promise.race([
@@ -49,25 +63,19 @@ beforeAll(async () => {
         setTimeout(() => reject(new Error("timeout")), CONNECT_TIMEOUT_MS),
       ),
     ]);
-    sql = candidate;
-    reachable = true;
   } catch (error) {
-    reachable = false;
-    console.warn(
-      `[historical-performance-e2e-wire-format] Skipping: could not reach a local Postgres at ${DB_URL} ` +
-        `within ${CONNECT_TIMEOUT_MS}ms (${(error as Error).message}). Run \`npx supabase db start\` ` +
-        `(or \`db reset --local\`) first to exercise this file for real.`,
+    await candidate.end().catch(() => undefined);
+    throw new Error(
+      "[historical-performance-e2e-wire-format] BG0011_E2E_DB_URL is set, but its database did " +
+        `not answer within ${CONNECT_TIMEOUT_MS}ms (${(error as Error).message}). Start it with ` +
+        "`supabase db start`, or unset the variable to skip this file.",
     );
-    try {
-      await candidate.end();
-    } catch {
-      // already unreachable; nothing to close
-    }
   }
+  sql = candidate;
 });
 
 afterAll(async () => {
-  if (sql && reachable) {
+  if (sql) {
     // Clean up so re-running this file against the same local stack (e.g. iterating on this test
     // itself) is idempotent rather than colliding with the previous run's seed rows.
     try {
@@ -227,15 +235,15 @@ async function seed(db: Bun.SQL): Promise<void> {
     from generate_series(1, ${ACCEPTED_IDENTIFIED_COUNT}) n`;
 }
 
-describe("BG-0011 option B: end-to-end TS -> real Postgres wire-format", () => {
+/** The connection `beforeAll` opened: the tests run only once it has. */
+function connected(): Bun.SQL {
+  if (!sql) throw new Error("[historical-performance-e2e-wire-format] Not connected.");
+  return sql;
+}
+
+describe.skipIf(!DB_URL)("BG-0011 option B: end-to-end TS -> real Postgres wire-format", () => {
   it("the ACCEPT path's real normalizeHistoricalFixture output is accepted, unmodified, by the real ingest RPC", async () => {
-    if (!reachable || !sql) {
-      console.warn(
-        "[historical-performance-e2e-wire-format] SKIPPED (no local Postgres reachable).",
-      );
-      return;
-    }
-    const db = sql;
+    const db = connected();
     await seed(db);
 
     // The player id numbering in fixturePayload/lineupRow is ACCEPTED_FIXTURE_ID*1000+index+1;
@@ -295,13 +303,7 @@ describe("BG-0011 option B: end-to-end TS -> real Postgres wire-format", () => {
   });
 
   it("the QUARANTINE path's real diagnostic coverage is accepted, unmodified, by the real quarantine RPC", async () => {
-    if (!reachable || !sql) {
-      console.warn(
-        "[historical-performance-e2e-wire-format] SKIPPED (no local Postgres reachable).",
-      );
-      return;
-    }
-    const db = sql;
+    const db = connected();
     // seed() is idempotent-enough per fixture id used here (quarantine never touches app.players
     // beyond what accept already seeded); re-running it would violate unique constraints if the
     // accept test already ran in this same process, so only seed if it hasn't been.

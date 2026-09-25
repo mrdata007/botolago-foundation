@@ -8,6 +8,9 @@ const externalBaseUrl = process.env.E2E_BASE_URL;
  * (tests/e2e/built-output-serve.ts). Build it first with
  * `bun tests/e2e/built-output-build.ts`. Never reuses a running server: one
  * left over from another checkout would be measured in place of this one.
+ * `--no-env-file`: Bun would otherwise load a local `.env` into the server,
+ * and parts of the server code read SUPABASE_URL and the Supabase keys from
+ * the environment rather than the build.
  *
  * The origin is written out rather than imported from built-output-env.ts:
  * this file runs as configuration on every Playwright run, the secret-holding
@@ -71,7 +74,7 @@ export default defineConfig({
     ? undefined
     : builtOutput
       ? {
-          command: "bun tests/e2e/built-output-serve.ts",
+          command: "bun --no-env-file tests/e2e/built-output-serve.ts",
           url: `${BUILT_OUTPUT_ORIGIN}/robots.txt`,
           reuseExistingServer: false,
           timeout: 60_000,
