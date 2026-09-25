@@ -72,12 +72,15 @@ pass**: it means production is not in the state the script was written for.
 
 ## Step 3 — Website and Edge Function
 
-Merge the pull request: the website deploys from `main` as usual, and the new
-match-page parts stay hidden until there is data for them.
+**Only after step 2.** The new match page reads `api.football_match_pressure`
+and `api.football_match_absences`; a website published before the database
+has them shows an error on every match page
+([DEPLOYMENT.md](../operations/DEPLOYMENT.md): database first). Once step 2
+says **Applied**, press **Publish** in Lovable (the merge only syncs `main`
+into Lovable). The new match-page parts stay hidden until there is data for
+them.
 
-Then the Edge Function,
-
-from the repository, on the merged `main`:
+Then the Edge Function, from the repository, on the merged `main`:
 
 ```sh
 supabase functions deploy football-live-refresh --project-ref tkewgajrljbwgwedqsxn
