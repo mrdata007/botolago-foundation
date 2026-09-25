@@ -7,6 +7,7 @@ import {
   validateCurrentSquads,
   validateCanaryRun,
   validateRecoveryMode,
+  validateRecoveryScope,
   preflightCurrentSquadRpc,
   currentRosterContractEligible,
   normalizeCurrentTeamRoster,
@@ -382,6 +383,21 @@ describe("current season recovery boundaries", () => {
         CURRENT_SEASON_RECOVERY_MODE: "refresh",
       }),
     ).toThrow("immutable_owner_dispatch_required");
+  });
+  test("the orchestrator's fixtures-only scope is a canary-only choice", () => {
+    // Once the Fantasy catalog is staged the squad RPC refuses by design, so
+    // the scheduled orchestrator refreshes fixtures only instead of failing.
+    expect(validateRecoveryScope({}, "canary")).toBe("all");
+    expect(validateRecoveryScope({ CURRENT_SEASON_RECOVERY_SCOPE: "all" }, "refresh")).toBe("all");
+    expect(validateRecoveryScope({ CURRENT_SEASON_RECOVERY_SCOPE: "fixtures" }, "canary")).toBe(
+      "fixtures",
+    );
+    expect(() =>
+      validateRecoveryScope({ CURRENT_SEASON_RECOVERY_SCOPE: "fixtures" }, "refresh"),
+    ).toThrow("invalid_recovery_scope");
+    expect(() =>
+      validateRecoveryScope({ CURRENT_SEASON_RECOVERY_SCOPE: "squads" }, "canary"),
+    ).toThrow("invalid_recovery_scope");
   });
   test("only a successful first-attempt owner canary is trusted as refresh evidence", () => {
     const run = {

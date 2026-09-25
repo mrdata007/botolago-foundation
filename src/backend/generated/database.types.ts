@@ -1345,6 +1345,7 @@ export type Database = {
         }
         Returns: Json
       }
+      report_client_errors: { Args: { p_events: Json }; Returns: Json }
       request_account_deletion: { Args: never; Returns: string }
       reset_prediction_league_invite_code: {
         Args: { p_league_id: string }
@@ -1571,6 +1572,7 @@ export type Database = {
         }
         Returns: Json
       }
+      service_ops_health: { Args: never; Returns: Json }
       service_pause_email_provider: {
         Args: { p_reason: string; p_until: string }
         Returns: Json

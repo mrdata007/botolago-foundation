@@ -83,9 +83,17 @@ describe("Accueil (Home) structural contract", () => {
       );
     });
 
-    test("the news edition query does not run while the flag is off", () => {
-      const query = source.slice(source.indexOf("queryFn: () => newsService.getEdition("));
-      expect(query.slice(0, 120)).toContain("enabled: NEWS_ENABLED");
+    // Two call sites since the server renders the home page with its news
+    // (the loader's prefetch) as well as the page's own query: each must be
+    // gated on the flag.
+    test("the news edition is not fetched while the flag is off", () => {
+      const page = source.slice(source.indexOf("queryFn: () => newsService.getEdition(lang"));
+      expect(page.slice(0, 120)).toContain("enabled: NEWS_ENABLED");
+      const loader = source.slice(0, source.indexOf("head: () => ({"));
+      const prefetch = loader.indexOf('newsService.getEdition("fr", "auto")');
+      expect(prefetch).toBeGreaterThan(-1);
+      expect(loader.slice(0, prefetch)).toContain("...(NEWS_ENABLED");
+      expect(source.split("newsService.getEdition(").length - 1).toBe(2);
     });
   });
 });

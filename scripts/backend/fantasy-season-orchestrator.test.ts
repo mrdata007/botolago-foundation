@@ -5,6 +5,7 @@ import {
   mergeVerdict,
   orchestrateFantasySeason,
   orchestratorEnvironment,
+  renderHealthSummary,
   selectWorkerTargets,
   shouldFailRun,
   summarizeDeadlineWatch,
@@ -73,7 +74,7 @@ function watchPayload(
     warnHours: 72,
     escalateHours: 24,
     serverTime: now.toISOString(),
-    remediation: "scripts/backend/fantasy-realign-gameweek-calendar.sql",
+    remediation: "docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md",
     gameweeks: gameweeks.map((gw) => ({
       gameweekId: id(100 + gw.sequence),
       sequence: gw.sequence,
@@ -372,17 +373,20 @@ describe("fantasy season orchestrator", () => {
       errorCode: "current_squad_empty_or_oversized",
       fixturesRefreshed: true,
       fixtureWindows: 1,
+      failed: false,
     });
     expect(summarizeProviderRefresh(null)).toEqual({
       verdict: "missing",
       fixturesRefreshed: false,
       fixtureWindows: 0,
+      failed: false,
     });
     expect(summarizeProviderRefresh({ verdict: "fail", errorCode: "<script>" })).toEqual({
       verdict: "fail",
       errorCode: "current_season_recovery_failed",
       fixturesRefreshed: false,
       fixtureWindows: 0,
+      failed: false,
     });
 
     const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
@@ -397,6 +401,89 @@ describe("fantasy season orchestrator", () => {
     });
     expect(stale.verdict).toBe("waiting");
     expect(stale.providerRefresh?.errorCode).toBe("provider_down");
+
+    // The run page shows the same facts as a table, without credentials.
+    const page = renderHealthSummary(stale);
+    expect(page).toContain("## Fantasy season orchestrator: WAITING");
+    expect(page).toContain("| Provider refresh | fail: `provider_down` |");
+    expect(page).toContain("GW1 open (deadline 2026-09-25T18:30Z)");
+    expect(renderHealthSummary(refreshed)).toContain(
+      "| Provider refresh | pass (1 fixture window) |",
+    );
+  });
+
+  // PR #199 review: the workflow runs the refresh with recoveryScope
+  // "fixtures", which has nothing after its fixture loop. A failed verdict
+  // there means a later window failed; counting the earlier windows as
+  // "refreshed" made the run green and closed its alert with stale results.
+  test("a fixtures-only refresh must pass in full, or the run fails", async () => {
+    const windows = [
+      { from: "2026-08-01", to: "2026-10-30" },
+      { from: "2026-10-31", to: "2027-01-28" },
+    ];
+    const full = summarizeProviderRefresh({
+      recoveryScope: "fixtures",
+      verdict: "pass",
+      fixtures: windows,
+    });
+    expect(full).toEqual({
+      verdict: "pass",
+      fixturesRefreshed: true,
+      fixtureWindows: 2,
+      failed: false,
+    });
+
+    const partial = summarizeProviderRefresh({
+      recoveryScope: "fixtures",
+      verdict: "fail",
+      errorCode: "sportsmonks_fixture_request_failed",
+      fixtures: windows.slice(0, 1),
+    });
+    expect(partial).toEqual({
+      verdict: "fail",
+      errorCode: "sportsmonks_fixture_request_failed",
+      fixturesRefreshed: false,
+      fixtureWindows: 1,
+      failed: true,
+    });
+    expect(
+      summarizeProviderRefresh({ recoveryScope: "fixtures", verdict: "fail", fixtures: [] }).failed,
+    ).toBe(true);
+
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+    const ok = await orchestrateFantasySeason(gateway(cal).gateway, { now, providerRefresh: full });
+    expect(ok.verdict).toBe("ok");
+    const partly = await orchestrateFantasySeason(gateway(cal).gateway, {
+      now,
+      providerRefresh: partial,
+    });
+    expect(partly.verdict).toBe("failed");
+    expect(shouldFailRun(partly.verdict)).toBe(true);
+    expect(renderHealthSummary(partly)).toContain(
+      "| Provider refresh | fail: `sportsmonks_fixture_request_failed` (partial: 1 fixture window before the failure) |",
+    );
+  });
+
+  test("a refresh step that failed without evidence fails the run; no step at all only waits", async () => {
+    const crashed = summarizeProviderRefresh(null, { stepOutcome: "failure" });
+    expect(crashed).toEqual({
+      verdict: "fail",
+      errorCode: "current_season_recovery_step_failed",
+      fixturesRefreshed: false,
+      fixtureWindows: 0,
+      failed: true,
+    });
+    const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+    expect(
+      (await orchestrateFantasySeason(gateway(cal).gateway, { now, providerRefresh: crashed }))
+        .verdict,
+    ).toBe("failed");
+    const notRun = summarizeProviderRefresh(null, { stepOutcome: "" });
+    expect(notRun.failed).toBe(false);
+    expect(
+      (await orchestrateFantasySeason(gateway(cal).gateway, { now, providerRefresh: notRun }))
+        .verdict,
+    ).toBe("waiting");
   });
 
   test("an unexpected calendar payload fails closed", async () => {
@@ -503,7 +590,7 @@ describe("fantasy deadline watch", () => {
     expect(summary.affected).toBe(2);
     expect(summary.escalations.map((gw) => gw.sequence)).toEqual([3]);
     expect(summary.informational.map((gw) => gw.sequence)).toEqual([2]);
-    expect(summary.remediation).toBe("scripts/backend/fantasy-realign-gameweek-calendar.sql");
+    expect(summary.remediation).toBe("docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md");
     expect(summarizeDeadlineWatch(watch)).toEqual(summary);
   });
 
@@ -537,7 +624,7 @@ describe("fantasy deadline watch", () => {
       warnHours: 72,
       escalateHours: 24,
       affected: 1,
-      remediation: "scripts/backend/fantasy-realign-gameweek-calendar.sql",
+      remediation: "docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md",
     });
   });
 

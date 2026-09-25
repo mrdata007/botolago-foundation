@@ -10,7 +10,7 @@ describe("sitemap.xml", () => {
   test("with News off, no News URL is advertised even if entries were passed", () => {
     const xml = buildSitemapXml({
       newsEnabled: false,
-      news: [{ id: FR, language: "fr", updatedAt: "2026-09-22T10:00:00Z", translations: [] }],
+      news: [{ id: FR, language: "fr", publishedAt: "2026-09-22T10:00:00Z", translations: [] }],
     });
     expect(xml).not.toContain("/news");
     expect(xml).toContain("<loc>https://botolago.com/</loc>");
@@ -37,19 +37,19 @@ describe("sitemap.xml", () => {
         {
           id: FR,
           language: "fr",
-          updatedAt: "2026-09-22T10:00:00Z",
+          publishedAt: "2026-09-22T10:00:00Z",
           translations: [{ id: AR, language: "ar" }],
         },
         {
           id: AR,
           language: "ar",
-          updatedAt: "2026-09-22T11:00:00Z",
+          publishedAt: "2026-09-22T11:00:00Z",
           translations: [{ id: FR, language: "fr" }],
         },
         {
           id: "9b2f0c1e-0000-4000-8000-0000000000f2",
           language: "fr",
-          updatedAt: "2026-09-21T10:00:00Z",
+          publishedAt: "2026-09-21T10:00:00Z",
           translations: [],
         },
       ],
@@ -76,11 +76,54 @@ describe("sitemap.xml", () => {
     expect(route).toContain('"content-type": "application/xml; charset=utf-8"');
   });
 
+  test("lastmod is the last real change, else publication, never bookkeeping", () => {
+    const xml = buildSitemapXml({
+      newsEnabled: true,
+      news: [
+        // Published in 2023, never edited: the 2026-09-24 bulk update moved
+        // its updated_at, which the sitemap no longer reads at all.
+        {
+          id: FR,
+          language: "fr",
+          publishedAt: "2023-05-14T18:30:00Z",
+          contentUpdatedAt: "2023-05-14T18:30:00Z",
+          translations: [],
+        },
+        // Edited after publishing: the edit is the lastmod.
+        {
+          id: AR,
+          language: "ar",
+          publishedAt: "2026-09-20T09:00:00Z",
+          contentUpdatedAt: "2026-09-21T16:45:00Z",
+          translations: [],
+        },
+        // An API build before the migration: publication.
+        {
+          id: "9b2f0c1e-0000-4000-8000-0000000000f3",
+          language: "fr",
+          publishedAt: "2026-09-19T08:00:00Z",
+          translations: [],
+        },
+      ],
+    });
+    expect(xml).toContain(`${FR}</loc><lastmod>2023-05-14T18:30:00.000Z</lastmod>`);
+    expect(xml).toContain(`${AR}</loc><lastmod>2026-09-21T16:45:00.000Z</lastmod>`);
+    expect(xml).toContain("0000000000f3</loc><lastmod>2026-09-19T08:00:00.000Z</lastmod>");
+    expect(xml).not.toContain("2026-09-24");
+  });
+
+  test("a failed News read is a 503, not a sitemap without the articles", () => {
+    const route = readFileSync(join(import.meta.dir, "../routes/sitemap[.]xml.ts"), "utf8");
+    expect(route).toContain("status: 503");
+    expect(route).toContain('"retry-after": "300"');
+    expect(route).not.toContain("news = [];\n          }");
+  });
+
   test("a full sitemap never exceeds the protocol's 50,000 URLs", () => {
     const entry = (i: number): SitemapNewsEntry => ({
       id: `9b2f0c1e-0000-4000-8000-${i.toString().padStart(12, "0")}`,
       language: "fr",
-      updatedAt: "2026-09-21T10:00:00.000Z",
+      publishedAt: "2026-09-21T10:00:00.000Z",
       translations: [],
     });
     const news = Array.from({ length: SITEMAP_NEWS_LIMIT }, (_, i) => entry(i));

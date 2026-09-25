@@ -9,7 +9,7 @@ import {
 import { isNotificationEmailUnsubscribeToken } from "@/backend/notifications/contracts";
 import { AppShell } from "@/components/shell/AppShell";
 import { UiPageTitle } from "@/components/ui-kit";
-import { dictionaries } from "@/i18n/dictionaries";
+import { fr } from "@/i18n/dictionary-fr";
 import { useI18n } from "@/i18n/provider";
 import { unsubscribeFromNotificationEmails } from "@/services/notifications";
 import { NOTIFICATION_PREFERENCES_QUERY_KEY } from "@/services/use-notification-preferences";
@@ -25,7 +25,7 @@ import { NOTIFICATION_PREFERENCES_QUERY_KEY } from "@/services/use-notification-
 export const Route = createFileRoute("/unsubscribe")({
   head: () => ({
     meta: [
-      { title: dictionaries.fr["unsubscribe.meta_title"] },
+      { title: fr["unsubscribe.meta_title"] },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),

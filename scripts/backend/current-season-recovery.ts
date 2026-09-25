@@ -408,6 +408,24 @@ export function validateRecoveryMode(env: NodeJS.ProcessEnv): "canary" | "refres
   return fail("current_season_schedule_not_enabled");
 }
 
+/**
+ * What a run refreshes. `all` (the default) refreshes fixtures and then the
+ * current squads. `fixtures` stops after the fixture/result phase: the Fantasy
+ * season orchestrator uses it, because once the Fantasy catalog is staged
+ * `service_ingest_current_football_squads` refuses by design
+ * (`fantasy_catalog_already_staged`), so the squad phase could only ever fail
+ * and turned every scheduled run red -- which hid real failures.
+ */
+export function validateRecoveryScope(
+  env: NodeJS.ProcessEnv,
+  mode: "canary" | "refresh",
+): "all" | "fixtures" {
+  const scope = env.CURRENT_SEASON_RECOVERY_SCOPE ?? "all";
+  if (scope === "all") return "all";
+  if (scope === "fixtures" && mode === "canary") return "fixtures";
+  return fail("invalid_recovery_scope");
+}
+
 interface CurrentSquadPreflightClient {
   schema(name: "api"): {
     rpc(
@@ -491,6 +509,7 @@ function runtimeGuard(env: NodeJS.ProcessEnv): {
   key: string;
   token: string;
   mode: "canary" | "refresh";
+  scope: "all" | "fixtures";
 } {
   if (
     env.CONFIRMATION !== CONFIRMATION ||
@@ -502,6 +521,7 @@ function runtimeGuard(env: NodeJS.ProcessEnv): {
   )
     fail("immutable_owner_dispatch_required");
   const mode = validateRecoveryMode(env);
+  const scope = validateRecoveryScope(env, mode);
   const url = env.SUPABASE_PRODUCTION_URL?.replace(/\/$/, "");
   if (
     env.SUPABASE_PRODUCTION_PROJECT_REF !== PROJECT ||
@@ -516,6 +536,7 @@ function runtimeGuard(env: NodeJS.ProcessEnv): {
     key: env.SUPABASE_SECRET_KEY,
     token: env.SPORTSMONKS_API_TOKEN,
     mode,
+    scope,
   };
 }
 
@@ -548,6 +569,7 @@ async function main(): Promise<void> {
     observedAt: new Date().toISOString(),
     mode: "current_season_recovery",
     recoveryMode: config.mode,
+    recoveryScope: config.scope,
     fantasyActivated: false,
     verdict: "in_progress",
   };
@@ -652,6 +674,13 @@ async function main(): Promise<void> {
       fixtures.push({ ...window, ...jobs });
       evidence.fixtures = fixtures;
       await save();
+    }
+    if (config.scope === "fixtures") {
+      evidence.squads = { skipped: true, reason: "fixtures_scope" };
+      evidence.verdict = "pass";
+      await save();
+      console.log("CURRENT_SEASON_RECOVERY_PASS scope=fixtures");
+      return;
     }
     const observedAt = new Date().toISOString();
     const squads: Array<{ teamExternalId: string; memberships: Row[] }> = [];

@@ -479,14 +479,32 @@ export async function runFantasyLifecycle(
     const progression = await finishPublishedWork();
     return { outcome: "already_finalized", gameweekId, ...progression, calls };
   }
+  let staleRereads = 0;
   while (["open", "locked", "live"].includes(state.status)) {
-    state = lifecycleSchema.parse(
-      await call("service_advance_fantasy_lifecycle", {
+    let advanced: unknown;
+    try {
+      advanced = await call("service_advance_fantasy_lifecycle", {
         p_gameweek_id: gameweekId,
         p_expected_lock_version: state.lockVersion,
         p_batch_size: batchSize,
-      }),
-    );
+      });
+    } catch (error) {
+      // Another worker (the database lifecycle tick, or a second run) moved
+      // the gameweek between our read and our write. The row lock and
+      // lock_version made that safe; re-read and carry on from its state
+      // instead of failing the whole pass. Bounded, so a flapping row cannot
+      // loop forever.
+      if (!(error instanceof Error) || error.message !== "stale_update" || staleRereads >= 3)
+        throw error;
+      staleRereads += 1;
+      state = lifecycleSchema.parse(
+        await call("service_fantasy_lifecycle_state", { p_gameweek_id: gameweekId }),
+      );
+      if (state.gameweekId !== gameweekId || state.seasonId !== expectedSeasonId)
+        throw new Error("fantasy_worker_scope_mismatch");
+      continue;
+    }
+    state = lifecycleSchema.parse(advanced);
     if (state.gameweekId !== gameweekId || state.seasonId !== expectedSeasonId)
       throw new Error("fantasy_worker_scope_mismatch");
     if (!state.changed && !state.hasMore)

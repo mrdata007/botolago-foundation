@@ -9,7 +9,8 @@ import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCard";
-import { footballService } from "@/services/football";
+import { footballService, type FootballSeason } from "@/services/football";
+import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { AppShell } from "@/components/shell/AppShell";
@@ -46,9 +47,11 @@ import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
 import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
+import { useSplashDone } from "@/lib/launch-sequence";
 import { cn } from "@/lib/utils";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
-import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
+import { siteJsonLd } from "@/lib/structured-data";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { capitalizeFirst, groupByMatchDay } from "@/lib/match-days";
 import type { Match } from "@/types/domain";
@@ -62,6 +65,38 @@ const HOME_DESCRIPTION =
   "Suivez la Botola Pro sur BotolaGO : résultats en direct, actualités, classement et votre équipe Fantasy.";
 
 export const Route = createFileRoute("/")({
+  // The server renders the home page with its matches, clubs, news and table
+  // (see `@/lib/ssr-prefetch`); the Fantasy blocks are the visitor's own and
+  // load in the browser.
+  loader: async ({ context }) => {
+    const { queryClient } = context;
+    await prefetchForSsr(queryClient, [
+      {
+        queryKey: ["football", "home-matches", "fr"],
+        queryFn: () => footballService.getHomeMatches("fr"),
+      },
+      { queryKey: ["football", "clubs", "fr"], queryFn: () => footballService.getClubs("fr") },
+      { queryKey: ["football", "seasons", "fr"], queryFn: () => footballService.getSeasons("fr") },
+      ...(NEWS_ENABLED
+        ? [
+            {
+              queryKey: ["news", "edition", "fr", "auto"],
+              queryFn: () => newsService.getEdition("fr", "auto"),
+            },
+          ]
+        : []),
+    ]);
+    const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
+    const current = seasons?.find((season) => season.isCurrent) ?? seasons?.[0];
+    if (current) {
+      await prefetchForSsr(queryClient, [
+        {
+          queryKey: ["football", "standings", current.id, "fr"],
+          queryFn: () => footballService.getStandings(current, "fr"),
+        },
+      ]);
+    }
+  },
   head: () => ({
     meta: [
       { title: HOME_TITLE },
@@ -75,6 +110,8 @@ export const Route = createFileRoute("/")({
       { name: "twitter:description", content: HOME_DESCRIPTION },
     ],
     links: [{ rel: "canonical", href: `${PUBLIC_SITE_ORIGIN}/` }],
+    // Who publishes the site, and the site itself (see `@/lib/structured-data`).
+    scripts: [{ type: "application/ld+json", children: serializeJsonLd(siteJsonLd()) }],
   }),
   component: HomePage,
 });
@@ -90,27 +127,48 @@ function useGreeting() {
 function HomePage() {
   const navigate = useNavigate();
   const { status } = useAuth();
-  const { t } = useI18n();
+  const { t, isHydrated, hasChosen } = useI18n();
 
   // Read localStorage only after mount so SSR and first client render match.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const showWelcome = mounted && status === "anonymous" && !hasWelcomed();
+  // An arrival dialog, so it waits for the launch sequence like the prize
+  // welcome (src/lib/launch-sequence.ts): never under the splash, never
+  // beside the language chooser.
+  const launchDone = useSplashDone() && isHydrated && hasChosen;
+  const showWelcome = mounted && launchDone && status === "anonymous" && !hasWelcomed();
 
-  if (showWelcome) {
-    return (
-      <WelcomeScreen
-        onSignIn={() => navigate({ to: "/auth/login" })}
-        onGuest={async () => {
-          await authService.continueAsGuest();
-          markWelcomeDone();
-          toast.success(t("auth.success.guest"));
-        }}
-      />
-    );
-  }
-  return <HomeContent />;
+  // The welcome screen covers the home page instead of replacing it. It used
+  // to replace it, so a first visit -- and every crawler, which always visits
+  // for the first time -- found a page with no content and no links (audit
+  // 2026-09-24, P1-2). Behind the dialog the page is inert.
+  return (
+    <>
+      <div inert={showWelcome}>
+        <HomeContent />
+      </div>
+      {showWelcome && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("welcome.title")}
+          // Above the page's bars (z-30, z-40), below the first-launch
+          // language chooser and other dialogs (z-50), as when it was the page.
+          className="fixed inset-0 z-[45] overflow-y-auto"
+        >
+          <WelcomeScreen
+            onSignIn={() => navigate({ to: "/auth/login" })}
+            onGuest={async () => {
+              await authService.continueAsGuest();
+              markWelcomeDone();
+              toast.success(t("auth.success.guest"));
+            }}
+          />
+        </div>
+      )}
+    </>
+  );
 }
 
 /** A match being played right now, for the split live card. */

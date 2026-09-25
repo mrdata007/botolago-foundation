@@ -11,17 +11,14 @@ import { useI18n } from "@/i18n/provider";
 import { authService, IS_MOCK_AUTH } from "@/services/auth";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
+import { authNextSearch } from "@/lib/auth-callback";
 
 export const Route = createFileRoute("/auth/verify")({
   head: () => ({ meta: [{ title: "Vérification — BotolaGO" }] }),
-  validateSearch: (s: Record<string, unknown>) => {
-    const next = typeof s.next === "string" ? sanitizeAuthCallbackNext(s.next) : undefined;
-    return {
-      email: typeof s.email === "string" ? s.email : "",
-      ...(next && next !== "/" ? { next } : {}),
-    };
-  },
+  validateSearch: (s: Record<string, unknown>) => ({
+    email: typeof s.email === "string" ? s.email : "",
+    ...authNextSearch(s.next),
+  }),
   component: VerifyPage,
 });
 

@@ -30,10 +30,30 @@ export async function readFantasyAvailability(
   }
   if (!hub.gameweek) return { status: "awaiting_gameweek" };
 
-  return {
-    status: "ready",
-    canCreate: hub.gameweek.status === "open" && new Date(hub.gameweek.deadlineAt).getTime() > now,
-  };
+  return { status: "ready", canCreate: enrolmentGameweekOf(hub, now) !== null };
+}
+
+export type EnrolmentGameweek = { id: string; sequence: number; deadlineAt: string };
+
+/**
+ * The gameweek a new team joins at `now`. A database with migration
+ * 20260924200000 names it (`enrolmentGameweek`, possibly the staged next
+ * gameweek once the current deadline has passed); an older one does not, and
+ * then only the current gameweek qualifies, while it is open and before its
+ * deadline. Either way a deadline already behind the clock never qualifies.
+ */
+export function enrolmentGameweekOf(
+  hub: FantasyHubDto,
+  now = Date.now(),
+): EnrolmentGameweek | null {
+  const candidate =
+    hub.enrolmentGameweek !== undefined
+      ? hub.enrolmentGameweek
+      : hub.gameweek?.status === "open"
+        ? hub.gameweek
+        : null;
+  if (!candidate || new Date(candidate.deadlineAt).getTime() <= now) return null;
+  return { id: candidate.id, sequence: candidate.sequence, deadlineAt: candidate.deadlineAt };
 }
 
 export function fantasyRouteUnavailableReason(

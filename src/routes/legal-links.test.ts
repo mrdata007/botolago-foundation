@@ -109,8 +109,11 @@ describe("the legal routes themselves", () => {
       for (const lang of ["fr", "ar"] as const) {
         expect((dictionaries[lang] as Record<string, string>)[key]?.trim()).toBeTruthy();
       }
-      expect(source).toContain(`dictionaries.fr["${key}"]`);
+      expect(source).toContain(`fr["${key}"]`);
     }
+    // The French dictionary itself: the route no longer imports both
+    // languages (the Arabic one is loaded on demand).
+    expect(source).toContain('import { fr } from "@/i18n/dictionary-fr"');
     expect(source).toContain('name: "description"');
   });
 });

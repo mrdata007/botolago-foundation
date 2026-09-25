@@ -158,12 +158,15 @@ export function DateStrip({
           "bg-[color:var(--ui-ink-deep)]",
         )}
       >
-        {/* The stands under floodlights, mirrored in Arabic. Decorative. */}
+        {/* The stands under floodlights, mirrored in Arabic. Decorative, but
+            the largest thing on /matches when it paints (its LCP), so it is
+            fetched ahead of the scripts, like the other page headers. */}
         <img
           src={matchesBandPhoto}
           alt=""
           aria-hidden
           decoding="async"
+          fetchPriority="high"
           className="absolute inset-0 -z-10 h-full w-full object-cover object-[50%_62%] rtl:-scale-x-100"
         />
         {/* A navy veil, `to bottom`: a degree angle, or the board's `to

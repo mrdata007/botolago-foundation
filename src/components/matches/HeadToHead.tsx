@@ -279,7 +279,6 @@ function MeetingRow({
       <Link
         to="/matches/$matchId"
         params={{ matchId: meeting.id }}
-        search={{ tab: "summary" }}
         aria-label={label}
         className={cn(
           "grid min-h-[var(--ui-row-min)] grid-cols-[0.25rem_minmax(0,1fr)_auto_minmax(0,1fr)_0.25rem] items-center gap-2",

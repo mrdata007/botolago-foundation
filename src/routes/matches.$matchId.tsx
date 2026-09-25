@@ -1,4 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import {
+  isMissingContent,
+  isUnavailable,
+  UNAVAILABLE,
+  unavailableHeaders,
+} from "@/lib/page-availability";
 import { useQuery } from "@tanstack/react-query";
 import { useId, useMemo, useState } from "react";
 import { footballService } from "@/services/football";
@@ -34,16 +40,24 @@ import { clubMatchPalettes } from "@/lib/club-palette";
 import { NEWS_ENABLED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { MatchPredictionCard } from "@/components/predictions/MatchPredictionCard";
 import { cn } from "@/lib/utils";
-import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
+import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/structured-data";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { matchRefetchInterval } from "@/lib/match-refresh";
 
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
 
+/** A fixture id: the page is addressed by the fixture's UUID only. */
+const MATCH_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const Route = createFileRoute("/matches/$matchId")({
-  validateSearch: (search: Record<string, unknown>): { tab: MatchTabKey } => {
-    const raw = (typeof search.tab === "string" ? search.tab : "summary") as MatchTabKey;
-    return { tab: TAB_KEYS.includes(raw) ? raw : "summary" };
+  // The summary is the page itself, `/matches/<id>`: no `?tab=summary`. Every
+  // match link used to add it, so the canonical address answered a 307 to
+  // another URL (audit 2026-09-24). The key is always returned, so an unknown
+  // `tab` in the address bar is overwritten rather than inherited.
+  validateSearch: (search: Record<string, unknown>): { tab?: MatchTabKey } => {
+    const raw = search.tab as MatchTabKey;
+    return { tab: TAB_KEYS.includes(raw) && raw !== "summary" ? raw : undefined };
   },
   /**
    * The whole French detail, not just the two names the metadata needs.
@@ -61,9 +75,14 @@ export const Route = createFileRoute("/matches/$matchId")({
    *
    * French because the server always renders French (the language is read
    * from storage after mount); an Arabic reader's query is a different key
-   * and loads after hydration. A failure falls back to generic metadata.
+   * and loads after hydration.
+   *
+   * An id that is not a fixture's (malformed, or unknown to the database) is
+   * a 404; a failed read is a 503 the crawler retries (see
+   * `@/lib/page-availability`). Both used to render "Chargement…" with 200.
    */
   loader: async ({ params, context }) => {
+    if (!MATCH_ID.test(params.matchId)) throw notFound();
     try {
       const queryKey = ["football", "match-detail", params.matchId, "fr"];
       const detail = await context.queryClient.ensureQueryData({
@@ -74,13 +93,15 @@ export const Route = createFileRoute("/matches/$matchId")({
       // seed is: the router can hand back loader data it cached minutes ago.
       const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
       return { detail, fetchedAt };
-    } catch {
-      return null;
+    } catch (error) {
+      if (isMissingContent(error)) throw notFound();
+      return UNAVAILABLE;
     }
   },
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: ({ params, loaderData }) => {
     const canonical = `${PUBLIC_SITE_ORIGIN}/matches/${encodeURIComponent(params.matchId)}`;
-    const detail = loaderData?.detail;
+    const detail = isUnavailable(loaderData) ? undefined : loaderData?.detail;
     const home = detail?.clubs.find((club) => club.id === detail.match.homeClubId)?.name.fr;
     const away = detail?.clubs.find((club) => club.id === detail.match.awayClubId)?.name.fr;
     const named = home && away ? { home, away } : null;
@@ -90,6 +111,27 @@ export const Route = createFileRoute("/matches/$matchId")({
     const description = named
       ? `${named.home} contre ${named.away} : score en direct, composition, statistiques et temps forts sur BotolaGO.`
       : "Score en direct, compositions, statistiques et temps forts du match sur BotolaGO.";
+    // The match and the trail to it, only from what the page loaded (see
+    // `@/lib/structured-data`); nothing for a page whose read failed.
+    const structured =
+      detail && named
+        ? [
+            sportsEventJsonLd({
+              canonicalUrl: canonical,
+              match: detail.match,
+              homeName: named.home,
+              awayName: named.away,
+            }),
+            breadcrumbJsonLd([
+              { name: "Accueil", path: "/" },
+              { name: "Matchs", path: "/matches" },
+              {
+                name: `${named.home} – ${named.away}`,
+                path: `/matches/${encodeURIComponent(params.matchId)}`,
+              },
+            ]),
+          ]
+        : [];
     return {
       meta: [
         { title },
@@ -103,6 +145,14 @@ export const Route = createFileRoute("/matches/$matchId")({
         { name: "twitter:description", content: description },
       ],
       links: [{ rel: "canonical", href: canonical }],
+      ...(structured.length
+        ? {
+            scripts: structured.map((jsonLd) => ({
+              type: "application/ld+json",
+              children: serializeJsonLd(jsonLd),
+            })),
+          }
+        : {}),
     };
   },
   component: MatchDetailPage,
@@ -110,8 +160,9 @@ export const Route = createFileRoute("/matches/$matchId")({
 
 function MatchDetailPage() {
   const { matchId } = Route.useParams();
-  const { tab } = Route.useSearch();
-  const loaderData = Route.useLoaderData();
+  const { tab = "summary" } = Route.useSearch();
+  const loaded = Route.useLoaderData();
+  const loaderData = isUnavailable(loaded) ? undefined : loaded;
   const navigate = useNavigate({ from: Route.fullPath });
   const { t, tr, lang } = useI18n();
   // Articles and matches are the pages most often opened from a shared link,
@@ -319,7 +370,9 @@ function MatchDetailPage() {
 
       <MatchTabs
         active={tab}
-        onChange={(key) => navigate({ search: { tab: key }, replace: true })}
+        onChange={(key) =>
+          navigate({ search: { tab: key === "summary" ? undefined : key }, replace: true })
+        }
         homePalette={palettes.home}
       />
 

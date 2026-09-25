@@ -344,7 +344,6 @@ export function MatchCard({
     <Link
       to="/matches/$matchId"
       params={{ matchId: match.id }}
-      search={{ tab: "summary" }}
       aria-label={a11yLabel}
       className={cn(
         // `min-w-0` is load-bearing, not cosmetic. Every caller renders these

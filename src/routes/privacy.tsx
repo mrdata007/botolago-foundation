@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LegalRoutePage } from "@/components/legal/LegalRoutePage";
-import { dictionaries } from "@/i18n/dictionaries";
+import { fr } from "@/i18n/dictionary-fr";
 
 /**
  * `/privacy` — public, no auth gate. See `terms.tsx` for why `head()` reads the
@@ -10,10 +10,10 @@ import { dictionaries } from "@/i18n/dictionaries";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: dictionaries.fr["legal.privacy.meta_title"] },
-      { name: "description", content: dictionaries.fr["legal.privacy.meta_description"] },
-      { property: "og:title", content: dictionaries.fr["legal.privacy.meta_title"] },
-      { property: "og:description", content: dictionaries.fr["legal.privacy.meta_description"] },
+      { title: fr["legal.privacy.meta_title"] },
+      { name: "description", content: fr["legal.privacy.meta_description"] },
+      { property: "og:title", content: fr["legal.privacy.meta_title"] },
+      { property: "og:description", content: fr["legal.privacy.meta_description"] },
       { property: "og:type", content: "website" },
     ],
   }),

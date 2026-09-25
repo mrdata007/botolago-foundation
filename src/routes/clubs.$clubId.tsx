@@ -1,5 +1,11 @@
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import {
+  isMissingContent,
+  isUnavailable,
+  UNAVAILABLE,
+  unavailableHeaders,
+} from "@/lib/page-availability";
 import { useQuery } from "@tanstack/react-query";
 import { useId, useMemo } from "react";
 import { FootballError } from "@/backend/football/errors";
@@ -24,7 +30,8 @@ import { StandingsLegend, StandingsTable } from "@/components/matches/StandingsT
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
+import { breadcrumbJsonLd } from "@/lib/structured-data";
 import { useBackTo } from "@/lib/back-navigation";
 import {
   clubSeasonAbsent,
@@ -68,12 +75,14 @@ export const Route = createFileRoute("/clubs/$clubId")({
    * The club itself, in French, for the page title and so the server renders
    * the hero rather than a spinner. As on the match page, loader data is
    * serialized to the browser and the query cache is not, so the page seeds
-   * its query with it (`initialData`) and both first renders agree. A failure
-   * — an unknown club, a network error — falls back to generic metadata and
-   * leaves the page to say what went wrong.
+   * its query with it (`initialData`) and both first renders agree.
+   *
+   * An unknown or malformed club id is a 404 and a failed read a 503 (see
+   * `@/lib/page-availability`); both used to answer 200, the first with an
+   * indexable "Club introuvable".
    */
   loader: async ({ params, context }) => {
-    if (!UUID.test(params.clubId)) return null;
+    if (!UUID.test(params.clubId)) throw notFound();
     try {
       const queryKey = ["football", "club", params.clubId, "fr"];
       const club = await context.queryClient.ensureQueryData({
@@ -82,13 +91,15 @@ export const Route = createFileRoute("/clubs/$clubId")({
       });
       const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
       return { club, fetchedAt };
-    } catch {
-      return null;
+    } catch (error) {
+      if (isMissingContent(error)) throw notFound();
+      return UNAVAILABLE;
     }
   },
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: ({ params, loaderData }) => {
     const canonical = `${PUBLIC_SITE_ORIGIN}/clubs/${encodeURIComponent(params.clubId)}`;
-    const name = loaderData?.club.name.fr;
+    const name = isUnavailable(loaderData) ? undefined : loaderData?.club.name.fr;
     const title = name
       ? `${name} — matchs, classement et effectif | BotolaGO`
       : "Club de Botola Pro — BotolaGO";
@@ -108,6 +119,23 @@ export const Route = createFileRoute("/clubs/$clubId")({
         { name: "twitter:description", content: description },
       ],
       links: [{ rel: "canonical", href: canonical }],
+      // The trail to the club, only when its name loaded.
+      ...(name
+        ? {
+            scripts: [
+              {
+                type: "application/ld+json",
+                children: serializeJsonLd(
+                  breadcrumbJsonLd([
+                    { name: "Accueil", path: "/" },
+                    { name: "Clubs", path: "/clubs" },
+                    { name, path: `/clubs/${encodeURIComponent(params.clubId)}` },
+                  ]),
+                ),
+              },
+            ],
+          }
+        : {}),
     };
   },
   component: ClubPage,
@@ -136,7 +164,8 @@ function ClubPage() {
   const { clubId } = Route.useParams();
   const search = Route.useSearch();
   const tab: ClubTabKey = search.tab ?? "overview";
-  const loaderData = Route.useLoaderData();
+  const loaded = Route.useLoaderData();
+  const loaderData = isUnavailable(loaded) ? undefined : loaded;
   const navigate = useNavigate({ from: Route.fullPath });
   const { t, tr, lang } = useI18n();
   const goBack = useBackTo("/clubs");

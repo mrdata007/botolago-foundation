@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  articleModifiedAt,
   buildArticleHead,
   buildArticleJsonLd,
   buildCanonicalArticleUrl,
@@ -125,13 +126,43 @@ describe("article metadata", () => {
     expect(head.meta).toContainEqual({ name: "description", content: "SEO description" });
   });
 
-  it("surfaces a distinct modified time only when updatedAt differs from publishedAt", () => {
-    const updated = detail({ updatedAt: "2026-08-03T09:00:00.000Z" });
-    const head = buildArticleHead(updated, "article-1");
+  // Was: "when updatedAt differs from publishedAt". updatedAt is bookkeeping:
+  // a bulk update on 2026-09-24 moved it on 15,690 unchanged articles, and
+  // every one then claimed an edit (audit P1-4). The real edit time is
+  // contentUpdatedAt.
+  it("surfaces a modified time only for a real edit after publishing", () => {
+    const edited = detail({ contentUpdatedAt: "2026-08-03T09:00:00.000Z" });
+    const head = buildArticleHead(edited, "article-1");
     expect(head.meta).toContainEqual({
       property: "article:modified_time",
       content: "2026-08-03T09:00:00.000Z",
     });
+    expect(buildArticleJsonLd(edited, "https://botolago.com/news/x")!.dateModified).toBe(
+      "2026-08-03T09:00:00.000Z",
+    );
+  });
+
+  it("a bumped updatedAt alone claims no modification", () => {
+    const touched = detail({
+      updatedAt: "2026-09-24T12:57:00.000Z",
+      contentUpdatedAt: "2026-08-02T12:00:00.000Z",
+    });
+    const head = buildArticleHead(touched, "article-1");
+    expect(head.meta).not.toContainEqual(
+      expect.objectContaining({ property: "article:modified_time" }),
+    );
+    expect(buildArticleJsonLd(touched, "https://botolago.com/news/x")!.dateModified).toBe(
+      "2026-08-02T12:00:00.000Z",
+    );
+    // An API build without contentUpdatedAt claims nothing either.
+    expect(articleModifiedAt(detail({ updatedAt: "2026-09-24T12:57:00.000Z" }))).toBeNull();
+  });
+
+  it("a page whose read failed stays indexable; a missing one does not", () => {
+    const failed = buildArticleHead(null, "article-1", { unavailable: true });
+    expect(failed.meta).not.toContainEqual(expect.objectContaining({ name: "robots" }));
+    const missing = buildArticleHead(null, "article-1");
+    expect(missing.meta).toContainEqual({ name: "robots", content: "noindex" });
   });
 
   it("falls back to a generic BotolaGO head when no article loaded, and adds no JSON-LD", () => {
@@ -159,13 +190,19 @@ describe("article metadata", () => {
     // but produced `<script tag="script" attrs="[object Object]">` with no type,
     // so the browser ran the JSON as JavaScript and crawlers saw nothing. This
     // is the assertion that was missing: it pins the input shape, not our own.
+    // Two blocks since the breadcrumb joined the NewsArticle; every one flat.
     const head = buildArticleHead(detail(), "article-1");
-    expect(head.scripts).toHaveLength(1);
-    const script = head.scripts![0];
-    expect(script.type).toBe("application/ld+json");
-    expect(script).not.toHaveProperty("tag");
-    expect(script).not.toHaveProperty("attrs");
-    expect(Object.keys(script).sort()).toEqual(["children", "type"]);
+    expect(head.scripts).toHaveLength(2);
+    for (const script of head.scripts!) {
+      expect(script.type).toBe("application/ld+json");
+      expect(script).not.toHaveProperty("tag");
+      expect(script).not.toHaveProperty("attrs");
+      expect(Object.keys(script).sort()).toEqual(["children", "type"]);
+    }
+    expect(head.scripts!.map((script) => JSON.parse(script.children)["@type"])).toEqual([
+      "NewsArticle",
+      "BreadcrumbList",
+    ]);
   });
 
   it("attaches a NewsArticle JSON-LD script built only from real DTO fields", () => {

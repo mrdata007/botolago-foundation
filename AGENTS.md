@@ -69,15 +69,21 @@ one edit away from not rolling back.
    orchestrator and the football recovery run on their own schedules, and the
    news ingestion schedules are stood down but still dispatchable by hand.
    Inside the database, pg_cron runs `news-publish-due-editions` every minute,
-   `notification-email-tick` every 5 minutes and `football-live-refresh`
-   every 15 minutes (`select jobname, schedule, active from cron.job`). The
-   two email/results jobs write only when switched on in
+   `notification-email-tick` every 5 minutes, `fantasy-lifecycle-tick`
+   every 5 minutes and `football-live-refresh` every 15 minutes
+   (`select jobname, schedule, active from cron.job`). The two email/results
+   jobs write only when switched on in
    `app_private.notification_email_settings`
    ([EMAIL_NOTIFICATIONS.md](docs/backend/EMAIL_NOTIFICATIONS.md)); pause
    both with `select app_private.notification_email_configure('off', null,
 null, false);` before a write that touches fixtures or notifications, and
-   restore the previous settings afterwards. Where the Pronostics migrations
-   are applied, pg_cron also runs `predictions-score-tick` every 5 minutes.
+   restore the previous settings afterwards. The Fantasy tick (calendar sync
+   and gameweek transitions) writes only when switched on in
+   `app_private.fantasy_automation_settings`; pause it with
+   `select app_private.fantasy_automation_configure(false);` before a write
+   that touches Fantasy or fixture tables, and switch it back on afterwards.
+   Where the Pronostics migrations are applied, pg_cron also runs
+   `predictions-score-tick` every 5 minutes.
    It writes predictions' points, `app.prediction_standings` and its own
    records, and only while `app_private.prediction_settings` has a mode other
    than `off` and scoring enabled
