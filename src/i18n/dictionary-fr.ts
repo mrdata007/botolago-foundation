@@ -28,7 +28,7 @@ export const fr = {
   "nav.news": "Actualités",
   "nav.fantasy": "Fantasy",
   "nav.matches": "Matches",
-  "nav.profile": "Profile",
+  "nav.profile": "Profil",
 
   "home.greeting_morning": "Bonjour",
   "home.greeting_afternoon": "Bon après-midi",
@@ -682,7 +682,7 @@ export const fr = {
   "common.away": "Extérieur",
   "common.vs": "vs",
 
-  "profile.title": "Profile",
+  "profile.title": "Profil",
   "profile.coming_soon": "Votre profil personnalisé arrive bientôt.",
   "profile.language": "Langue de l'application",
   "profile.followed_clubs": "Clubs suivis",

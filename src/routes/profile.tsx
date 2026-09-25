@@ -69,12 +69,12 @@ import type { Club, FantasySummary } from "@/types/domain";
 export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
-      { title: "Profile — BotolaGO" },
+      { title: "Profil — BotolaGO" },
       {
         name: "description",
         content: "Gérez votre compte, vos clubs suivis et vos préférences BotolaGO.",
       },
-      { property: "og:title", content: "Profile — BotolaGO" },
+      { property: "og:title", content: "Profil — BotolaGO" },
       {
         property: "og:description",
         content: "Gérez votre compte, vos clubs suivis et vos préférences BotolaGO.",
