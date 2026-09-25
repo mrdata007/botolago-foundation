@@ -2,7 +2,8 @@
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
 -- Arabic names for the clubs of past seasons that are not in the league now.
 --
--- STATUS: names supplied by the owner, 2026-09-25.
+-- STATUS: names supplied (Olympic Safi, Olympique Dcheïra, Yacoub El Mansour)
+-- or confirmed (Chabab Mohammédia, JS Soualem) by the owner, 2026-09-25.
 --
 -- WHY
 --   Matches -> Classement shows the 2024/25 and 2025/26 tables. BG-0068
@@ -18,7 +19,8 @@
 --   short_name is set as well, because football_team_json falls back to the
 --   Latin short name separately, and the table shows the short name. For these
 --   clubs app.teams carries short_name = name (and no code), so the Arabic short
---   name is the Arabic name.
+--   name is the Arabic name, except JS Soualem's: its full name is long for a
+--   table cell, and الشباب السالمي is the form the press uses.
 --
 -- HOW TO RUN
 --   1. Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor ->
@@ -67,7 +69,11 @@ values
   -- 2025/26.
   ('f2715f02-38ed-4feb-a4e5-72444ad39529', 'Olympique Dcheïra', 'أولمبيك الدشيرة', 'أولمبيك الدشيرة'),
   -- 2025/26.
-  ('e595b91e-4d8f-4f3d-92d7-c23d7e332544', 'Yacoub El Mansour', 'يعقوب المنصور', 'يعقوب المنصور');
+  ('e595b91e-4d8f-4f3d-92d7-c23d7e332544', 'Yacoub El Mansour', 'يعقوب المنصور', 'يعقوب المنصور'),
+  -- 2024/25.
+  ('7ff33380-1236-45e5-9c3e-97e753961cc9', 'Chabab Mohammédia', 'شباب المحمدية', 'شباب المحمدية'),
+  -- 2024/25.
+  ('318655a9-db9f-4706-abb2-df0fa4b13baf', 'JS Soualem', 'الشباب الرياضي السالمي', 'الشباب السالمي');
 
 -- ---------------------------------------------------------------------------
 -- Preflight: the right database, and each id is the club it is meant to be
@@ -166,9 +172,11 @@ select
         and team_id in (
           '32fb7b61-9af4-4667-8978-b739b5e3f170',
           'f2715f02-38ed-4feb-a4e5-72444ad39529',
-          'e595b91e-4d8f-4f3d-92d7-c23d7e332544'
+          'e595b91e-4d8f-4f3d-92d7-c23d7e332544',
+          '7ff33380-1236-45e5-9c3e-97e753961cc9',
+          '318655a9-db9f-4706-abb2-df0fa4b13baf'
         )
-    ) = 3
+    ) = 5
       then 'Applied. These clubs now show their Arabic names.'
     else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
   end as result,
