@@ -1365,7 +1365,7 @@ export const ar = {
   "fantasy.create.enrolment_next": "الجولة {current} مغلقة. سيشارك فريقك ابتداءً من الجولة {n}.",
   "prizes.meta_title": "الجوائز — BotolaGO Fantasy",
   "prizes.meta_description":
-    "جوائز BotolaGO Fantasy: جائزة الجولة والجائزة الشهرية وجائزة الموسم وجوائز الدوريات. لعبة مجانية 100%.",
+    "جوائز BotolaGO Fantasy: جائزة الجولة والجائزة الشهرية وجائزة الموسم. لعبة مجانية 100%.",
   "prizes.title": "الجوائز",
   "prizes.intro": "العب مجاناً طوال الموسم: لكل جولة، ولكل 4 جولات متتالية، وللموسم كاملاً جائزته.",
   "prizes.free_to_play": "مجاني 100% — دون أي شراء أو رهان.",
@@ -1395,7 +1395,6 @@ export const ar = {
   "prizes.empty.body": "لم تُفتح أي جائزة بعد. عُد قريباً!",
   "prizes.terms.meta_title": "نظام الجوائز — BotolaGO Fantasy",
   "prizes.terms.meta_description": "نظام جوائز BotolaGO Fantasy: تحديد الفائزين والتحقق والتسليم.",
-  "prizes.terms.draft_notice": "نسخة مؤقتة: سيُنشر النص النهائي قبل فتح الجوائز.",
   "prizes.welcome.title": "العب مجاناً واربح جوائز!",
   "prizes.welcome.body":
     "شكّل فريقك واجمع النقاط في كل جولة، وتقدّم في الترتيب لتنافس على الجوائز.",

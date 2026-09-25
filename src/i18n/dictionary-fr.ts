@@ -1439,7 +1439,7 @@ export const fr = {
     "La Journée {current} est clôturée. Votre équipe jouera à partir de la Journée {n}.",
   "prizes.meta_title": "Lots à gagner — BotolaGO Fantasy",
   "prizes.meta_description":
-    "Les lots de BotolaGO Fantasy : lot de la journée, lot du mois, lot de la saison et lots de ligue. Jeu 100 % gratuit.",
+    "Les lots de BotolaGO Fantasy : lot de la journée, lot du mois et lot de la saison. Jeu 100 % gratuit.",
   "prizes.title": "Lots à gagner",
   "prizes.intro":
     "Jouez gratuitement toute la saison : chaque journée, chaque bloc de 4 journées et la saison entière ont leur lot.",
@@ -1471,8 +1471,6 @@ export const fr = {
   "prizes.terms.meta_title": "Règlement des lots — BotolaGO Fantasy",
   "prizes.terms.meta_description":
     "Le règlement des lots de BotolaGO Fantasy : désignation des gagnants, vérification et remise.",
-  "prizes.terms.draft_notice":
-    "Version provisoire : le texte définitif sera publié avant l'ouverture des lots.",
   "prizes.welcome.title": "Jouez gratuitement, gagnez des lots !",
   "prizes.welcome.body":
     "Composez votre équipe, marquez des points à chaque journée et grimpez au classement pour tenter de remporter des lots.",
