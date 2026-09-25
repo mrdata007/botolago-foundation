@@ -99,6 +99,8 @@ def render(args: argparse.Namespace) -> int:
     violations = scan_artifacts(root)
     sanitized = not violations
     recovery_passed = bool(recovery and recovery.get("passed"))
+    # A rehearsal-only run (--scope rehearsal) passes on the rehearsal and the
+    # cleanup; the full run also needs the 2,500-user gate and soak.
     gate_passed = bool(
         sanitized
         and args.oidc_outcome == "success"
@@ -106,18 +108,19 @@ def render(args: argparse.Namespace) -> int:
         and args.cleanup_exit == 0
         and rehearsal
         and rehearsal.get("passed")
-        and full
-        and full.get("passed")
+        and (args.scope == "rehearsal" or (full and full.get("passed")))
         and recovery_passed
     )
 
     lines = [
         "<!-- phase6-capacity-evidence:start -->",
-        "## Phase 6 delegated capacity gate",
+        "## Fantasy load test (Phase 6 capacity gate, staging)",
         "",
         f"Workflow run: [{args.run_label}]({args.run_url})",
         "",
-        f"Verdict: **{'PASS — ready for review' if gate_passed else 'FAIL/BLOCKED — remains draft'}**",
+        f"Scope: {'setup rehearsal only' if args.scope == 'rehearsal' else 'rehearsal, then the 2,500-user gate and soak'}",
+        "",
+        f"Verdict: **{'PASS' if gate_passed else 'FAIL/BLOCKED'}**",
         "",
         "- Execution: protected `staging-load-test` environment with owner approval",
         "- AWS authentication: GitHub OIDC assumed-role session; no long-lived AWS keys",
@@ -149,7 +152,7 @@ def render(args: argparse.Namespace) -> int:
                 f"- integrity: `{'pass' if integrity.get('passed') else 'fail'}`",
             ]
         )
-    else:
+    elif not gate_passed:
         failure = (
             rehearsal.get("failure")
             if rehearsal
@@ -160,7 +163,7 @@ def render(args: argparse.Namespace) -> int:
     lines.extend(
         [
             "",
-            "Production V2 and Legacy were not targeted. No Fantasy worker or schedule was enabled, and this workflow never merges the PR.",
+            "Production V2 and Legacy were not targeted. No Fantasy worker or schedule was enabled.",
             "<!-- phase6-capacity-evidence:end -->",
             "",
         ]
@@ -175,6 +178,7 @@ def render(args: argparse.Namespace) -> int:
         "gatePassed": gate_passed,
         "oidcOutcome": args.oidc_outcome,
         "rehearsalPassed": bool(rehearsal and rehearsal.get("passed")),
+        "scope": args.scope,
         "fullGatePassed": bool(full and full.get("passed")),
         "violations": violations,
     }
@@ -195,6 +199,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--oidc-outcome", required=True)
     parser.add_argument("--capacity-exit", required=True, type=int)
     parser.add_argument("--cleanup-exit", required=True, type=int)
+    parser.add_argument("--scope", choices=("rehearsal", "full"), default="full")
     return parser.parse_args()
 
 

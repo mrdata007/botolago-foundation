@@ -17,6 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -38,6 +39,11 @@ jobs:
       VITE_FANTASY_DATA_MODE: supabase
     steps:
       - uses: actions/checkout@v4
+      # One writer at a time on staging (AGENTS.md).
+      - name: No other staging writer is running
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/backend/staging-writer-guard.py
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14

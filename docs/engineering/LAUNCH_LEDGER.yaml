@@ -22,6 +22,8 @@ human_actions_open:
     action: Supply Terms of Service and Privacy Policy text (FR + AR). Signup already asks users to accept them and they do not exist.
   - id: BG-0146
     action: Pronostics — check the first visits in the Seline dashboard, and read privacy policy 1.2's Seline lines; decide whether staging is brought up to date for a rehearsal; after Fantasy GW1 is finalized, give the go-ahead for part 6 (apply-20260925090500, with the Fantasy tick paused for its length).
+  - id: BG-0147
+    action: Run the Fantasy load test on staging in the order of docs/operations/LOAD_TEST.md (Staging database update plan, rehearse, apply; resize Staging V2 to production's compute size; seed; Fantasy load test rehearsal, then full; shrink staging back). Confirm the staging-load-test environment's Supabase token and AWS role from July still work.
 
 tasks:
 
@@ -1932,6 +1934,27 @@ tasks:
       - "with the game public, Pronostics-only leagues (rows in app.fantasy_leagues with no Fantasy member) can be created from now on; until part 6 is applied, the Fantasy scoring worker still walks them (two calls each, inside its 5000-call budget)"
       - "waits on BG-0001's lane: after the Fantasy season orchestrator failed its runs of 2026-09-24 from 09:57 UTC (provider refresh current_squad_empty_or_oversized, then FANTASY_ORCHESTRATOR_FAILED), GW1 was locked (open to live) on 2026-09-25 at 07:20 UTC by the new Fantasy lifecycle tick (#199, #201); part 6 waits for it to be scored and finalized"
       - "deferred: a 'share invite link' button on the Fantasy league invite code, after PR #183 moves that component"
+  BG-0147:
+    title: Fantasy load test (Phase 6 capacity gate) runnable again, from main
+    area: capacity
+    severity: P1
+    user_impact: >
+      Nobody knows how many managers the Fantasy database serves at a deadline. The only
+      finished measurement (July, Medium staging) saturated at about 65 requests a second
+      against the gate's 250 sustained and 600 burst; the 2,500-user gate never ran to a result.
+    owner: Human (AWS, staging compute) then Chief
+    state: HALTED_FOR_INPUT
+    depends_on: []
+    runbook: docs/operations/LOAD_TEST.md
+    evidence:
+      - "the gate's workflow was retired with PR #6 (#26); fantasy-load-test.yml brings it back on main with a staging readiness check before any AWS resource and the verdict on the run page; harness unchanged"
+      - "staging (srdrflfrfpwixsllveid) on 2026-09-25 was 45 migrations behind production, on the smallest compute (max_connections 60), with 0 users and 0 teams; staging-database-update.py (plan/rehearse/apply/seed/check, Staging V2 only) brings it level from the repository files"
+      - "local, 2026-09-25: a database reset to staging's level (20260921120000, apply-time versions and a staging-only history row mimicked) got the 45 migrations; a planted conflict was named by the rehearsal's prefix search and stopped apply cleanly; afterwards 421 of production's 427 API functions were byte-identical and the 6 others differ only in comment lines (MIGRATION_DRIFT.md)"
+      - "local, 2026-09-25: the unchanged harness against that database: 125 temporary users, 225 load operations all HTTP 200, every integrity count 0, cleanup back to 0; the seed loads 50,000 teams in about 85 s"
+      - "a rehearsal cannot hold the whole chain: 20260924140000 adds notification_type values that 20260924140100 uses, and Postgres refuses a new enum value in the transaction that added it; the rehearsal stops there and apply checks the rest one at a time"
+    remaining:
+      - "owner: the steps in docs/operations/LOAD_TEST.md; production's compute size read from its settings looks like Large (2 GB shared_buffers, 160 connections), to confirm in the dashboard"
+      - "not covered by this gate: match-day browsing load (scores and news reads) and sign-up bursts through Supabase Auth"
   BG-0001:
     title: Automate Fantasy season progression (calendar sync + scheduled orchestrator) — former blockers B5/B6
     area: fantasy
