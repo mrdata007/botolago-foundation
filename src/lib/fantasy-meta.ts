@@ -3,17 +3,19 @@ import { fr } from "@/i18n/dictionary-fr";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
 
 /**
- * The `head()` of every Fantasy page (audit A17).
+ * The `head()` of every Fantasy page (audit A17), and its title and
+ * description in the reader's language.
  *
  * Only the rankings, the top players and a player's page used to name
  * themselves; every other screen inherited the layout's "Fantasy — BotolaGO",
  * so a search result, a shared link, a browser tab and the history all read
  * the same for the rules, the fixture grid and the help. Each page now says
  * what it is, in copy held in both dictionaries (`fantasy.meta.*`). `head()`
- * has no reader language, so it serves the French, as every page head does.
- * The Arabic copy is not shown yet: pages that title themselves in the
- * reader's language set `document.title` after mount (the legal pages,
- * Pronostics), which no Fantasy screen does so far.
+ * has no reader language, so it serves the French, as every page head does:
+ * that is what the server renders and what a crawler reads. Once mounted, the
+ * Fantasy layout (`src/routes/fantasy.tsx`) sets the reader's own title and
+ * description for the page shown (`fantasyShownCopy`), as the legal pages and
+ * Pronostics do.
  *
  * Two kinds of page:
  *
@@ -29,9 +31,27 @@ import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
  *
  * The URLs themselves do not change.
  */
+
+/** `t` from `useI18n()`, or the French dictionary for `head()`. */
+type Translate = (key: TranslationKey) => string;
+
+/** `head()` has no reader language: it reads the French dictionary. */
+const french: Translate = (key) => fr[key];
+
+export interface FantasyPageCopy {
+  readonly title: string;
+  readonly description: string;
+}
+
 interface FantasyPageHead {
-  readonly title: TranslationKey;
-  readonly description: TranslationKey;
+  /**
+   * In the language `t` reads. Each page spells its `fantasy.meta.*` key out
+   * at its own call rather than handing a key from this table to `t`: the
+   * i18n gate reads keys as string literals at the call, and a call whose
+   * argument is a variable counts as drift (W4), as in `prize-presentation.ts`.
+   */
+  readonly title: (t: Translate) => string;
+  readonly description: (t: Translate) => string;
   /** The page's own path when it is public, else `null`. */
   readonly canonicalPath: string | null;
   readonly personal: boolean;
@@ -39,98 +59,181 @@ interface FantasyPageHead {
 
 export const FANTASY_PAGE_HEADS = {
   hub: {
-    title: "fantasy.meta.hub_title",
-    description: "fantasy.meta.hub_description",
+    title: (t) => t("fantasy.meta.hub_title"),
+    description: (t) => t("fantasy.meta.hub_description"),
     canonicalPath: "/fantasy",
     personal: false,
   },
   players: {
-    title: "fantasy.meta.players_title",
-    description: "fantasy.meta.players_description",
+    title: (t) => t("fantasy.meta.players_title"),
+    description: (t) => t("fantasy.meta.players_description"),
     canonicalPath: "/fantasy/players",
     personal: false,
   },
   topPlayers: {
-    title: "fantasy.meta.top_players_title",
-    description: "fantasy.meta.top_players_description",
+    title: (t) => t("fantasy.meta.top_players_title"),
+    description: (t) => t("fantasy.meta.top_players_description"),
     canonicalPath: "/fantasy/top-players",
     personal: false,
   },
   fixtures: {
-    title: "fantasy.meta.fixtures_title",
-    description: "fantasy.meta.fixtures_description",
+    title: (t) => t("fantasy.meta.fixtures_title"),
+    description: (t) => t("fantasy.meta.fixtures_description"),
     canonicalPath: "/fantasy/fixtures",
     personal: false,
   },
   rankings: {
-    title: "fantasy.meta.rankings_title",
-    description: "fantasy.meta.rankings_description",
+    title: (t) => t("fantasy.meta.rankings_title"),
+    description: (t) => t("fantasy.meta.rankings_description"),
     canonicalPath: "/fantasy/rankings",
     personal: false,
   },
   rules: {
-    title: "fantasy.meta.rules_title",
-    description: "fantasy.meta.rules_description",
+    title: (t) => t("fantasy.meta.rules_title"),
+    description: (t) => t("fantasy.meta.rules_description"),
     canonicalPath: "/fantasy/rules",
     personal: false,
   },
   help: {
-    title: "fantasy.meta.help_title",
-    description: "fantasy.meta.help_description",
+    title: (t) => t("fantasy.meta.help_title"),
+    description: (t) => t("fantasy.meta.help_description"),
     canonicalPath: "/fantasy/help",
     personal: false,
   },
   leagues: {
-    title: "fantasy.meta.leagues_title",
-    description: "fantasy.meta.leagues_description",
+    title: (t) => t("fantasy.meta.leagues_title"),
+    description: (t) => t("fantasy.meta.leagues_description"),
     canonicalPath: null,
     personal: true,
   },
   league: {
-    title: "fantasy.meta.league_title",
-    description: "fantasy.meta.league_description",
+    title: (t) => t("fantasy.meta.league_title"),
+    description: (t) => t("fantasy.meta.league_description"),
     canonicalPath: null,
     personal: true,
   },
   joinLeague: {
-    title: "fantasy.meta.join_league_title",
-    description: "fantasy.meta.join_league_description",
+    title: (t) => t("fantasy.meta.join_league_title"),
+    description: (t) => t("fantasy.meta.join_league_description"),
     canonicalPath: null,
     personal: true,
   },
   create: {
-    title: "fantasy.meta.create_title",
-    description: "fantasy.meta.create_description",
+    title: (t) => t("fantasy.meta.create_title"),
+    description: (t) => t("fantasy.meta.create_description"),
     canonicalPath: null,
     personal: true,
   },
   team: {
-    title: "fantasy.meta.team_title",
-    description: "fantasy.meta.team_description",
+    title: (t) => t("fantasy.meta.team_title"),
+    description: (t) => t("fantasy.meta.team_description"),
     canonicalPath: null,
     personal: true,
   },
   transfers: {
-    title: "fantasy.meta.transfers_title",
-    description: "fantasy.meta.transfers_description",
+    title: (t) => t("fantasy.meta.transfers_title"),
+    description: (t) => t("fantasy.meta.transfers_description"),
     canonicalPath: null,
     personal: true,
   },
   points: {
-    title: "fantasy.meta.points_title",
-    description: "fantasy.meta.points_description",
+    title: (t) => t("fantasy.meta.points_title"),
+    description: (t) => t("fantasy.meta.points_description"),
     canonicalPath: null,
     personal: true,
   },
   profile: {
-    title: "fantasy.meta.profile_title",
-    description: "fantasy.meta.profile_description",
+    title: (t) => t("fantasy.meta.profile_title"),
+    description: (t) => t("fantasy.meta.profile_description"),
     canonicalPath: null,
     personal: true,
   },
 } as const satisfies Record<string, FantasyPageHead>;
 
 export type FantasyPage = keyof typeof FANTASY_PAGE_HEADS;
+
+/** A fixed page's title and description, in the language `t` reads. */
+export function fantasyPageCopy(page: FantasyPage, t: Translate): FantasyPageCopy {
+  const entry: FantasyPageHead = FANTASY_PAGE_HEADS[page];
+  return { title: entry.title(t), description: entry.description(t) };
+}
+
+/**
+ * A player's page, named after the player when there is one to name, and
+ * inserted as written (a `$&` in a name stays `$&`). A read that failed still
+ * gets a truthful title, never a placeholder: it is not proof the player is
+ * gone.
+ */
+export function fantasyPlayerCopy(name: string | null | undefined, t: Translate): FantasyPageCopy {
+  const named = name?.trim();
+  return named
+    ? {
+        title: t("fantasy.meta.player_title").replace("{name}", () => named),
+        description: t("fantasy.meta.player_description").replace("{name}", () => named),
+      }
+    : {
+        title: t("fantasy.meta.player_unknown_title"),
+        description: t("fantasy.meta.player_unknown_description"),
+      };
+}
+
+/**
+ * The page each Fantasy route shows, by route id. The layout titles the
+ * deepest matched route in the reader's language; each route file names the
+ * same page in its `head()`, and a test holds the two together.
+ */
+export const FANTASY_ROUTE_PAGES = {
+  "/fantasy/": "hub",
+  "/fantasy/players": "players",
+  "/fantasy/top-players": "topPlayers",
+  "/fantasy/fixtures": "fixtures",
+  "/fantasy/rankings": "rankings",
+  "/fantasy/rules": "rules",
+  "/fantasy/help": "help",
+  "/fantasy/leagues": "leagues",
+  "/fantasy/leagues/$leagueId": "league",
+  "/fantasy/leagues/join": "joinLeague",
+  "/fantasy/create": "create",
+  "/fantasy/team": "team",
+  "/fantasy/transfers": "transfers",
+  "/fantasy/points": "points",
+  "/fantasy/profile": "profile",
+} as const satisfies Record<string, FantasyPage>;
+
+/** A player's page: named after its player, not one of the fixed pages. */
+export const FANTASY_PLAYER_ROUTE_ID = "/fantasy/players/$playerId";
+
+/**
+ * The title and description of the Fantasy page on screen, in the language
+ * `t` reads: the deepest matched route's page, or on a player's page the
+ * player (`playerName`, in the reader's language). `null` when that route is
+ * no Fantasy page, such as the layout itself under a page not found.
+ */
+export function fantasyShownCopy(
+  routeId: string | undefined,
+  playerName: string | null | undefined,
+  t: Translate,
+): FantasyPageCopy | null {
+  if (routeId === FANTASY_PLAYER_ROUTE_ID) return fantasyPlayerCopy(playerName, t);
+  if (routeId === undefined || !Object.hasOwn(FANTASY_ROUTE_PAGES, routeId)) return null;
+  return fantasyPageCopy(FANTASY_ROUTE_PAGES[routeId as keyof typeof FANTASY_ROUTE_PAGES], t);
+}
+
+/**
+ * The title the page on screen gave the router in its `head()` -- the French
+ * the router puts in the tab -- or `undefined` while that head has not run.
+ *
+ * The router writes it into the tab each time it changes. Usually that is in
+ * the same render as the page it names; but a route with a pending screen is
+ * shown before its loader and head have run, and its title arrives in a later
+ * update. The Fantasy layout follows this title, so it sets the reader's own
+ * again after the router's.
+ */
+export function shownHeadTitle(
+  matches: readonly { readonly meta?: readonly ({ readonly title?: string } | undefined)[] }[],
+): string | undefined {
+  return matches.at(-1)?.meta?.find((tag) => tag?.title)?.title;
+}
 
 function head({
   title,
@@ -178,8 +281,7 @@ export function fantasyHead(page: FantasyPage, context?: HeadMatches) {
   const entry: FantasyPageHead = FANTASY_PAGE_HEADS[page];
   const showingChild = context ? context.matches.at(-1)?.id !== context.match.id : false;
   return head({
-    title: fr[entry.title],
-    description: fr[entry.description],
+    ...fantasyPageCopy(page, french),
     canonical:
       entry.canonicalPath && !showingChild ? `${PUBLIC_SITE_ORIGIN}${entry.canonicalPath}` : null,
     personal: entry.personal,
@@ -193,14 +295,8 @@ export function fantasyHead(page: FantasyPage, context?: HeadMatches) {
  * found or not: a failed read is not proof the player is gone.
  */
 export function fantasyPlayerHead(playerId: string, playerName: string | null | undefined) {
-  const name = playerName?.trim();
   return head({
-    title: name
-      ? fr["fantasy.meta.player_title"].replace("{name}", () => name)
-      : fr["fantasy.meta.player_unknown_title"],
-    description: name
-      ? fr["fantasy.meta.player_description"].replace("{name}", () => name)
-      : fr["fantasy.meta.player_unknown_description"],
+    ...fantasyPlayerCopy(playerName, french),
     canonical: `${PUBLIC_SITE_ORIGIN}/fantasy/players/${encodeURIComponent(playerId)}`,
     personal: false,
     type: "profile",

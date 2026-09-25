@@ -11,7 +11,13 @@ import {
 } from "./article-meta";
 import type { ArticleDetailDto } from "@/backend/news/contracts";
 import { dictionaries } from "@/i18n/dictionaries";
-import { toEdition } from "../../scripts/backend/elbotola-licensed-import";
+import {
+  articleText,
+  clip,
+  SEO_DESCRIPTION_LIMIT,
+  SEO_TITLE_LIMIT,
+  toEdition,
+} from "../../scripts/backend/elbotola-licensed-import";
 
 function detail(overrides: Partial<ArticleDetailDto> = {}): ArticleDetailDto {
   return {
@@ -461,10 +467,14 @@ describe("clipped SEO copies of the headline and summary", () => {
 });
 
 // The import stored `seo_description` as the body's paragraphs joined end to
-// end and clipped before 155 characters. These editions are built by the
-// importer itself (`toEdition`), so the stored shapes are the real ones.
+// end and clipped before 155 characters. It leaves the column empty now, but
+// every published edition still carries such a copy. These editions are
+// built by the importer itself (`toEdition`, and its `clip` and `articleText`
+// for the SEO copies it used to store), so the stored shapes are the real
+// ones.
 describe("a description clipped from the body is completed from it", () => {
   const imported = (language: "fr" | "ar", paragraphs: readonly string[]) => {
+    const html = paragraphs.map((paragraph) => `<p>${paragraph}</p>`).join("");
     const edition = toEdition({
       id: "1",
       language,
@@ -472,7 +482,7 @@ describe("a description clipped from the body is completed from it", () => {
       title: "Un titre d'article importé",
       author: null,
       publishedAt: "2026-09-22T22:48:00.000Z",
-      html: paragraphs.map((paragraph) => `<p>${paragraph}</p>`).join(""),
+      html,
       translatedFrom: null,
     })!;
     return detail({
@@ -480,7 +490,10 @@ describe("a description clipped from the body is completed from it", () => {
       title: edition.title,
       summary: edition.summary,
       bodyHtml: edition.bodyHtml,
-      seo: { title: edition.seoTitle, description: edition.seoDescription },
+      seo: {
+        title: clip(edition.title, SEO_TITLE_LIMIT),
+        description: clip(articleText(html).join(" "), SEO_DESCRIPTION_LIMIT),
+      },
     });
   };
   const describedAs = (article: ArticleDetailDto, text: string) => {

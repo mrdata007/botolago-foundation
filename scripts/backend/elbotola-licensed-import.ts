@@ -45,8 +45,10 @@ export interface ImportEdition {
   readonly readingTime: number;
   readonly publishedAt: string;
   readonly author: string | null;
-  readonly seoTitle: string;
-  readonly seoDescription: string;
+  /** The headline and the text, whole, when they fit a search result; else
+   *  `null`, never a copy cut short (see `whole`). */
+  readonly seoTitle: string | null;
+  readonly seoDescription: string | null;
 }
 
 /** Search-result lengths: the page appends " — BotolaGO" to the title, and
@@ -101,11 +103,43 @@ export function articleText(html: string): string[] {
     .filter(Boolean);
 }
 
-function clip(value: string, limit: number): string {
-  const flat = value.split(/\s+/).join(" ").trim();
+function oneLine(value: string): string {
+  return value.split(/\s+/).join(" ").trim();
+}
+
+/** `value` on one line, cut at a word before `limit` with "…" when longer. */
+export function clip(value: string, limit: number): string {
+  const flat = oneLine(value);
   if (flat.length <= limit) return flat;
   const cut = flat.slice(0, limit - 1);
   return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), 1))}…`;
+}
+
+/**
+ * `value` on one line when it fits `limit`, else `null`: never a copy cut
+ * short.
+ *
+ * The SEO title and description used to be `clip`ped to the search lengths:
+ * on 2026-09-25, 13,236 of the 15,690 published editions carried a clipped
+ * title and every one a clipped description. A clipped copy only loses words
+ * (search engines and social cards shorten a long title to their own space),
+ * and the page completes those at render time (`src/lib/article-meta.ts`).
+ * An edition imported now carries none: a headline or text too long for a
+ * search result leaves its column empty, and the page takes the headline and
+ * the summary instead.
+ *
+ * One consequence is the page's to settle, not the import's. Where the text
+ * opens with a short kicker ("Mise à jour."), the summary is that kicker
+ * alone, and with no description stored the page describes the article by
+ * it: the page runs text on to the end of the paragraph a cut fell in only
+ * when the text ends in an ellipsis. The whole run would not fit the
+ * column's 170 characters, so clipping here again is no answer. On
+ * 2026-09-25, 5,876 of the 15,690 published editions opened with a paragraph
+ * shorter than the cut, 319 of them under 60 characters.
+ */
+function whole(value: string, limit: number): string | null {
+  const flat = oneLine(value);
+  return flat.length <= limit ? flat : null;
 }
 
 function slugId(url: string, fallback: string): string {
@@ -136,8 +170,8 @@ export function toEdition(article: ElbotolaArticle): ImportEdition | null {
     readingTime: Math.max(1, Math.min(180, Math.ceil(words / 220))),
     publishedAt: article.publishedAt,
     author: article.author?.trim().slice(0, 120) || null,
-    seoTitle: clip(title, SEO_TITLE_LIMIT),
-    seoDescription: clip(paragraphs.join(" "), SEO_DESCRIPTION_LIMIT),
+    seoTitle: whole(title, SEO_TITLE_LIMIT),
+    seoDescription: whole(paragraphs.join(" "), SEO_DESCRIPTION_LIMIT),
   };
 }
 
@@ -242,8 +276,8 @@ export function batchSql(
         edition.summary,
         edition.bodyHtml,
         edition.author ?? "",
-        edition.seoTitle,
-        edition.seoDescription,
+        edition.seoTitle ?? "",
+        edition.seoDescription ?? "",
       ]),
     );
     if (values.some((value) => value.includes(tag))) {
