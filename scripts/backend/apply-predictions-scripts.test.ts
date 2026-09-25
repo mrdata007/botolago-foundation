@@ -116,12 +116,14 @@ describe("apply-20260925090500-fantasy-league-page-skip-empty.sql (part 6)", () 
     expectRehearsal(scripts.leaguePage);
   });
 
-  test("waits for parts 1 to 5 and for Fantasy gameweek 1 to be scored", () => {
+  test("waits for parts 1 to 5, for Fantasy gameweek 1 to be scored, and for the Fantasy tick to be paused", () => {
     expectGuardsFirst(scripts.leaguePage, [
       "set local lock_timeout = '5s';",
       "migration 20260925090500 is already recorded as applied",
       "Pronostics parts 1 to 5 are not applied yet",
       "where sequence_number = 1 and finalized_at is not null and points_state = 'final'",
+      // AGENTS.md's pause, which parts 1 to 5 went in without.
+      "stop: the Fantasy lifecycle tick is on",
       // The version production held on 2026-09-24 (20260914200719), measured there.
       ")) <> '021d0a3422cf68d4c213b028974888d2' then",
     ]);

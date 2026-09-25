@@ -7,7 +7,9 @@ Operating it: [PREDICTIONS_OPERATIONS_RUNBOOK.md](PREDICTIONS_OPERATIONS_RUNBOOK
 
 ## What was built
 
-**Database layer** (built 24 Sept 2026; applied to no shared database yet):
+**Database layer** (built 24 Sept 2026; parts 1 to 5 on production since 25
+Sept, switched off; part 6 not yet: see the runbook's "Applying to
+production"):
 
 | Migration                                           | What it adds                                                                                            |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
@@ -29,8 +31,10 @@ Tests: `supabase/tests/database/predictions_{rules,play,claim,scoring,leaderboar
   no "next" cursor.
 - The database tests are six files, not eight; the league cases share one.
 
-**Still to build:** the app (data layer, screens, entry points, FR/AR text),
-analytics and the privacy-policy update, the production apply script. See §18.
+**Built since** (#200, #202): the app (data layer, screens, entry points, FR/AR
+text, the Arabic reviewed), audience measurement (Seline) and the
+privacy-policy update, the production apply scripts. **Still to do:** part 6 on
+production, then the rollout stages in the runbook.
 
 **Decisions** (24 Sept 2026):
 
