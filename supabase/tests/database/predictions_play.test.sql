@@ -403,6 +403,31 @@ select extensions.is(
   '3'::jsonb, 'the refused change leaves the saved prediction as it was');
 reset role;
 
+-- The provider swaps the match's home and away teams after the save: the pick
+-- reads against the teams the player chose (3 for club 105, 1 for club 106).
+update app.fixtures set home_team_id = pg_temp.pid(106), away_team_id = pg_temp.pid(105),
+  provider_updated_at = (select t0 + interval '2 seconds' from clock)
+where id = pg_temp.pid(1003);
+set local role authenticated;
+select pg_temp.as_user(pg_temp.pid(21));
+select extensions.is(
+  (select jsonb_build_object('home', item -> 'home', 'away', item -> 'away')
+   from jsonb_array_elements(api.my_predictions(1) -> 'items') item
+   where (item ->> 'fixtureId')::uuid = pg_temp.pid(1003)),
+  '{"home": 1, "away": 3}'::jsonb,
+  'after a home/away swap the journée shows the pick in the match''s new order');
+select extensions.is(
+  (select jsonb_build_object('home', item -> 'home', 'away', item -> 'away')
+   from jsonb_array_elements(api.my_predictions(null, pg_temp.pid(1003)) -> 'items') item),
+  '{"home": 1, "away": 3}'::jsonb,
+  'and so does the match page');
+reset role;
+select extensions.is(
+  (select jsonb_build_object('home', home_goals, 'away', away_goals)
+   from app.predictions where user_id = pg_temp.pid(21) and fixture_id = pg_temp.pid(1003)),
+  '{"home": 3, "away": 1}'::jsonb,
+  'the stored prediction itself is untouched');
+
 -- A cancelled match is void on the journée page.
 update app.fixtures set status = 'cancelled', provider_updated_at = (select t0 + interval '1 second' from clock)
 where id = pg_temp.pid(1006);

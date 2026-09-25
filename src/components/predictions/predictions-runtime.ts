@@ -26,3 +26,17 @@ export function getGuestStore(): GuestPredictionStore {
   guestStore ??= new GuestPredictionStore();
   return guestStore;
 }
+
+/**
+ * Forgets every Pronostics answer in the cache when the account changes
+ * (sign-out, or another account signing in on the same phone): a private
+ * league's members, rankings with "me" in them, the last account's picks. A
+ * key that already carries the account keeps them apart; this makes sure none
+ * outlives the session that fetched it. The guest store on the phone is not
+ * touched.
+ */
+export function forgetAccountPredictions(queryClient: {
+  removeQueries(filters: { queryKey: readonly unknown[] }): void;
+}): void {
+  queryClient.removeQueries({ queryKey: ["predictions"] });
+}

@@ -191,6 +191,31 @@ export function seedUpdatedAt(seed: RoundSeed): number {
   return !seed.data.allowed && seed.data.mode === "testers" ? 0 : seed.updatedAt;
 }
 
+/**
+ * A signed-in player's pick on a match that is final but not scored yet: the
+ * scoring job runs every 5 minutes, so the page keeps asking until it has.
+ */
+export function awaitingScoring(
+  fixtures: readonly PredictionFixtureDto[],
+  mine: ReadonlyMap<string, MyPredictionDto>,
+): boolean {
+  return fixtures.some(
+    (fixture) => fixture.final && !fixture.void && mine.get(fixture.id)?.resultKind === null,
+  );
+}
+
+/**
+ * The journée's `scoringVersion` rises each time a match is scored or scored
+ * again. A rise seen for the same player and journée means their points
+ * changed; a first sighting, or another journée, does not.
+ */
+export function scoringMoved(
+  previous: { readonly key: string; readonly version: number } | null,
+  next: { readonly key: string; readonly version: number },
+): boolean {
+  return previous !== null && previous.key === next.key && previous.version !== next.version;
+}
+
 export function usePredictionsRound(
   roundNumber: number | null,
   seed?: RoundSeed,
@@ -203,17 +228,20 @@ export function usePredictionsRound(
   const now = useServerClock();
 
   const serverSeed = lang === "fr" ? seed : undefined;
+  // Set below once the player's picks are known (see awaitingScoring).
+  const awaitingScoringRef = useRef(false);
   const query = useQuery<PredictionsRoundDto, PredictionsError>({
     ...roundQueryOptions(roundNumber, lang),
     initialData: serverSeed?.data,
     initialDataUpdatedAt: serverSeed ? seedUpdatedAt(serverSeed) : undefined,
-    // Every 2 minutes while a match of the journée is being played and the
-    // page is on screen; otherwise never on its own.
+    // Every 2 minutes while a match of the journée is being played, or a
+    // signed-in player's pick waits for the scoring of a finished match, and
+    // the page is on screen; otherwise never on its own.
     refetchInterval: (current) => {
       const data = current.state.data;
-      return data?.allowed && data.fixtures.some((fixture) => LIVE_STATUSES.has(fixture.status))
-        ? 120_000
-        : false;
+      const live =
+        data?.allowed && data.fixtures.some((fixture) => LIVE_STATUSES.has(fixture.status));
+      return live || awaitingScoringRef.current ? 120_000 : false;
     },
     refetchIntervalInBackground: false,
   });
@@ -243,6 +271,22 @@ export function usePredictionsRound(
     () => new Map((mineQuery.data?.items ?? []).map((item) => [item.fixtureId, item])),
     [mineQuery.data],
   );
+  awaitingScoringRef.current = Boolean(uid) && awaitingScoring(round?.fixtures ?? [], mine);
+
+  // A match was scored (or scored again) while the page was open: the round
+  // says so through scoringVersion, and the points come with the player's own
+  // predictions, so those are read again.
+  const scoringVersion = round?.round?.scoringVersion ?? null;
+  const seenScoring = useRef<{ key: string; version: number } | null>(null);
+  useEffect(() => {
+    if (!uid || resolvedNumber === null || scoringVersion === null) return;
+    const next = { key: `${uid}:${resolvedNumber}`, version: scoringVersion };
+    const moved = scoringMoved(seenScoring.current, next);
+    seenScoring.current = next;
+    if (moved) {
+      void queryClient.invalidateQueries({ queryKey: predictionsKeys.mine(uid, resolvedNumber) });
+    }
+  }, [uid, resolvedNumber, scoringVersion, queryClient]);
 
   // ---- saving (signed in) --------------------------------------------------
   const [saveState, setSaveState] = useState<SaveQueueState>("idle");

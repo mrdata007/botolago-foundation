@@ -960,8 +960,15 @@ begin
   if p_fixture_id is not null then
     select coalesce(jsonb_agg(jsonb_build_object(
         'fixtureId', prediction.fixture_id,
-        'home', prediction.home_goals,
-        'away', prediction.away_goals,
+        -- In the match's current orientation, as the scoring reads it: a
+        -- provider home/away swap after the save still shows the pick
+        -- against the teams the player chose.
+        'home', case when (prediction.home_team_id, prediction.away_team_id)
+            = (fixture.away_team_id, fixture.home_team_id)
+          then prediction.away_goals else prediction.home_goals end,
+        'away', case when (prediction.home_team_id, prediction.away_team_id)
+            = (fixture.away_team_id, fixture.home_team_id)
+          then prediction.home_goals else prediction.away_goals end,
         'submittedAt', prediction.submitted_at,
         'points', prediction.points,
         'resultKind', prediction.result_kind
@@ -981,8 +988,12 @@ begin
 
   select coalesce(jsonb_agg(jsonb_build_object(
       'fixtureId', prediction.fixture_id,
-      'home', prediction.home_goals,
-      'away', prediction.away_goals,
+      'home', case when (prediction.home_team_id, prediction.away_team_id)
+          = (fixture.away_team_id, fixture.home_team_id)
+        then prediction.away_goals else prediction.home_goals end,
+      'away', case when (prediction.home_team_id, prediction.away_team_id)
+          = (fixture.away_team_id, fixture.home_team_id)
+        then prediction.home_goals else prediction.away_goals end,
       'submittedAt', prediction.submitted_at,
       'points', prediction.points,
       'resultKind', prediction.result_kind
@@ -2701,7 +2712,7 @@ begin
     raise exception 'stop: 20260925090100 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
   if encode(sha256(convert_to(part_20260925090200, 'UTF8')), 'hex')
-    is distinct from 'cd12fe51075ba6c2abbf777a4ac3b39a38be3fed3365d0eab6a8a21cdd271e5b' then
+    is distinct from '104a1a1d8ee64471618b675c2b420267e3786044862fbc92e68051172182cfdb' then
     raise exception 'stop: 20260925090200 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
   if encode(sha256(convert_to(part_20260925090300, 'UTF8')), 'hex')

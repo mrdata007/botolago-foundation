@@ -2,7 +2,7 @@ import { Info } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
 import type { PredictionFixtureDto } from "@/backend/predictions/contracts";
-import { predictionPoints, predictionResultKind } from "@/backend/predictions/scoring";
+import { guestPickScore } from "@/backend/predictions/scoring";
 import { useAuth } from "@/auth/AuthProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import {
@@ -140,12 +140,7 @@ export function PredictionsPage({
       const saved = model.mine.get(fixture.id);
       return saved ? { points: saved.points, kind: saved.resultKind } : null;
     }
-    const pick = picks.get(fixture.id);
-    if (!pick || !fixture.final || !fixture.result) return null;
-    return {
-      points: predictionPoints(pick, fixture.result),
-      kind: predictionResultKind(pick, fixture.result),
-    };
+    return guestPickScore(picks.get(fixture.id) ?? null, fixture);
   };
 
   const tally = shareTally(fixtures, picks, model.uid ? model.mine : null);
@@ -267,12 +262,7 @@ function shareTally(
   for (const fixture of fixtures) {
     const kind = mine
       ? mine.get(fixture.id)?.resultKind
-      : (() => {
-          const pick = picks.get(fixture.id);
-          return pick && fixture.final && fixture.result
-            ? predictionResultKind(pick, fixture.result)
-            : null;
-        })();
+      : guestPickScore(picks.get(fixture.id) ?? null, fixture)?.kind;
     if (kind !== "exact" && kind !== "outcome" && kind !== "miss") continue;
     played += 1;
     if (kind !== "miss") correct += 1;
@@ -292,16 +282,16 @@ function ComingSoon() {
   );
 }
 
-/** A guest's points for the journée, on the phone: nothing is ranked. */
+/** A guest's points for the journée, on the phone: nothing is ranked, a void match counts for nothing. */
 function guestPoints(
   fixtures: readonly PredictionFixtureDto[],
   picks: ReadonlyMap<string, Pick | null>,
 ): number | null {
   let points: number | null = null;
   for (const fixture of fixtures) {
-    const pick = picks.get(fixture.id);
-    if (!pick || !fixture.final || !fixture.result) continue;
-    points = (points ?? 0) + predictionPoints(pick, fixture.result);
+    const score = guestPickScore(picks.get(fixture.id) ?? null, fixture);
+    if (!score || score.kind === "void") continue;
+    points = (points ?? 0) + score.points;
   }
   return points;
 }

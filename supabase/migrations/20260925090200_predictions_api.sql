@@ -260,8 +260,15 @@ begin
   if p_fixture_id is not null then
     select coalesce(jsonb_agg(jsonb_build_object(
         'fixtureId', prediction.fixture_id,
-        'home', prediction.home_goals,
-        'away', prediction.away_goals,
+        -- In the match's current orientation, as the scoring reads it: a
+        -- provider home/away swap after the save still shows the pick
+        -- against the teams the player chose.
+        'home', case when (prediction.home_team_id, prediction.away_team_id)
+            = (fixture.away_team_id, fixture.home_team_id)
+          then prediction.away_goals else prediction.home_goals end,
+        'away', case when (prediction.home_team_id, prediction.away_team_id)
+            = (fixture.away_team_id, fixture.home_team_id)
+          then prediction.home_goals else prediction.away_goals end,
         'submittedAt', prediction.submitted_at,
         'points', prediction.points,
         'resultKind', prediction.result_kind
@@ -281,8 +288,12 @@ begin
 
   select coalesce(jsonb_agg(jsonb_build_object(
       'fixtureId', prediction.fixture_id,
-      'home', prediction.home_goals,
-      'away', prediction.away_goals,
+      'home', case when (prediction.home_team_id, prediction.away_team_id)
+          = (fixture.away_team_id, fixture.home_team_id)
+        then prediction.away_goals else prediction.home_goals end,
+      'away', case when (prediction.home_team_id, prediction.away_team_id)
+          = (fixture.away_team_id, fixture.home_team_id)
+        then prediction.home_goals else prediction.away_goals end,
       'submittedAt', prediction.submitted_at,
       'points', prediction.points,
       'resultKind', prediction.result_kind

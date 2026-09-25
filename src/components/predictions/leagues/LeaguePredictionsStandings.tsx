@@ -17,6 +17,7 @@ import {
   UiTHead,
   UiTR,
 } from "@/components/ui-kit";
+import { useAuth } from "@/auth/AuthProvider";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "../predictions-copy";
@@ -37,12 +38,15 @@ export function LeaguePredictionsStandings({
   roundNumber: number | null;
 }) {
   const { t, lang } = useI18n();
+  const { status, user } = useAuth();
+  const uid = status === "authenticated" ? (user?.id ?? "") : "";
   const [scope, setScope] = useState<LeaderboardScope>(roundNumber === null ? "season" : "round");
   const effectiveRound = scope === "round" ? roundNumber : null;
 
-  const standings = useQuery<LeagueStandingsDto, PredictionsError>(
-    leagueStandingsQuery(leagueId, effectiveRound),
-  );
+  const standings = useQuery<LeagueStandingsDto, PredictionsError>({
+    ...leagueStandingsQuery(leagueId, effectiveRound, uid),
+    enabled: uid !== "",
+  });
 
   return (
     <section className="flex flex-col gap-3" data-testid="predictions-league-standings">

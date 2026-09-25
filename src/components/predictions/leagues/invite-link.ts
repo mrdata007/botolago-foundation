@@ -69,6 +69,19 @@ export function takeInviteFromLocation(): string | null {
   }
 }
 
+/**
+ * The code this tab holds from an invite link, without touching the address
+ * bar: the Fantasy join form fills its field with it (one league, two games).
+ */
+export function pendingInviteCode(): string | null {
+  try {
+    const stored = session()?.getItem(PENDING_KEY) ?? null;
+    return stored && isInviteCode(stored) ? normalizeInviteCode(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function clearPendingInvite(): void {
   try {
     session()?.removeItem(PENDING_KEY);

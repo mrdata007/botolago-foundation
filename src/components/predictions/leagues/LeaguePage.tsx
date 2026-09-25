@@ -46,7 +46,7 @@ export function LeaguePage({ leagueId }: { leagueId: string }) {
   const currentRound = round.data?.allowed ? (round.data.round?.number ?? null) : null;
 
   const header = useQuery<LeagueStandingsDto, PredictionsError>({
-    ...leagueStandingsQuery(leagueId, null),
+    ...leagueStandingsQuery(leagueId, null, user?.id ?? ""),
     enabled: signedIn,
   });
   const mine = useQuery<MyLeaguesDto, PredictionsError>({

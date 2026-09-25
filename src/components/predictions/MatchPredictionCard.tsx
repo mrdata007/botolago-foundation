@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 
-import { predictionPoints, predictionResultKind } from "@/backend/predictions/scoring";
+import { guestPickScore } from "@/backend/predictions/scoring";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -30,12 +30,9 @@ export function MatchPredictionCard({
   const saved = model.uid ? model.mine.get(fixture.id) : undefined;
   const scored = saved
     ? { points: saved.points, kind: saved.resultKind }
-    : !model.uid && pick && fixture.final && fixture.result
-      ? {
-          points: predictionPoints(pick, fixture.result),
-          kind: predictionResultKind(pick, fixture.result),
-        }
-      : null;
+    : model.uid
+      ? null
+      : guestPickScore(pick, fixture);
 
   return (
     <section

@@ -17,7 +17,7 @@ import {
 } from "./guest-store";
 import { MockPredictionsRepository, MOCK_INVITE_CODE } from "./mock-repository";
 import { PredictionSaveQueue, type SaveQueueState, type SaveQueueTimers } from "./save-queue";
-import { matchOutcome, predictionPoints, predictionResultKind } from "./scoring";
+import { guestPickScore, matchOutcome, predictionPoints, predictionResultKind } from "./scoring";
 import { SCORING_CASES } from "./scoring-cases";
 
 const SEASON = "00000050-0000-4000-8000-000000000001";
@@ -48,6 +48,34 @@ describe("the TypeScript scorer", () => {
       expect(sql).toContain(
         `app_private.prediction_points(${c.prediction.home}, ${c.prediction.away}, ${c.result.home}, ${c.result.away}), ${c.points},`,
       );
+  });
+});
+
+describe("guestPickScore: a guest's pick, scored like a signed-in player's", () => {
+  const pick = { home: 2, away: 1 };
+  const final = { final: true, void: false, result: { home: 2, away: 1 } };
+
+  it("scores a final match", () => {
+    expect(guestPickScore(pick, final)).toEqual({ points: 3, kind: "exact" });
+    expect(guestPickScore({ home: 1, away: 0 }, final)).toEqual({ points: 1, kind: "outcome" });
+  });
+
+  it("waits for the final", () => {
+    expect(guestPickScore(pick, { final: false, void: false, result: null })).toBeNull();
+    expect(guestPickScore(pick, { ...final, final: false })).toBeNull();
+  });
+
+  it("scores a void match as void for 0, whatever its result says", () => {
+    // An operator can void a finished match: it keeps final and a result.
+    expect(guestPickScore(pick, { ...final, void: true })).toEqual({ points: 0, kind: "void" });
+    expect(guestPickScore(pick, { final: false, void: true, result: null })).toEqual({
+      points: 0,
+      kind: "void",
+    });
+  });
+
+  it("has nothing to score without a pick", () => {
+    expect(guestPickScore(null, final)).toBeNull();
   });
 });
 

@@ -1,11 +1,13 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it } from "bun:test";
 
 import {
+  clearPendingInvite,
   codeFromHash,
   INVITE_PATH,
   inviteLink,
   isInviteCode,
   normalizeInviteCode,
+  pendingInviteCode,
   whatsappUrl,
 } from "./invite-link";
 
@@ -41,5 +43,39 @@ describe("league invite links", () => {
     );
     expect(url.origin).toBe("https://wa.me");
     expect(url.searchParams.get("text")).toContain(`#code=${CODE}`);
+  });
+});
+
+describe("the invite code a tab holds", () => {
+  const globals = globalThis as { window?: unknown };
+  const previous = globals.window;
+  const storage = new Map<string, string>();
+  const fakeWindow = {
+    sessionStorage: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => void storage.set(key, value),
+      removeItem: (key: string) => void storage.delete(key),
+    },
+  };
+  afterEach(() => {
+    storage.clear();
+    globals.window = previous;
+  });
+
+  it("is what the Fantasy join form fills in, until the join clears it", () => {
+    globals.window = fakeWindow;
+    expect(pendingInviteCode()).toBeNull();
+    storage.set("botolago.predictions.invite", CODE.toLowerCase());
+    expect(pendingInviteCode()).toBe(CODE);
+    clearPendingInvite();
+    expect(pendingInviteCode()).toBeNull();
+  });
+
+  it("ignores anything that is not a code, and a server render", () => {
+    globals.window = fakeWindow;
+    storage.set("botolago.predictions.invite", "not-a-code");
+    expect(pendingInviteCode()).toBeNull();
+    globals.window = undefined;
+    expect(pendingInviteCode()).toBeNull();
   });
 });

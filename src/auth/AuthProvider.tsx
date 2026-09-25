@@ -14,6 +14,7 @@ import { useI18n } from "@/i18n/provider";
 import { cleanupOwnedFantasyOnSignOut } from "@/services/fantasy-signout-cleanup";
 import { fetchAccountStanding, rememberSuspension } from "@/services/account-standing";
 import { claimGuestPredictionsOnSignIn } from "@/components/predictions/guest-claim";
+import { forgetAccountPredictions } from "@/components/predictions/predictions-runtime";
 
 interface AuthPromptState {
   open: boolean;
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const prev = prevUidRef.current;
     if (prev && prev !== nextUid) {
       cleanupOwnedFantasyOnSignOut({ qc, uid: prev });
+      forgetAccountPredictions(qc);
     }
     prevUidRef.current = nextUid;
   }, [session.user?.id, qc]);

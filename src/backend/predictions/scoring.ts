@@ -27,6 +27,24 @@ export function predictionPoints(prediction: ScorePair, result: ScorePair): 0 | 
   return kind === "exact" ? 3 : kind === "outcome" ? 1 : 0;
 }
 
+/**
+ * A guest's pick, scored on the phone the way the database scores a signed-in
+ * player's: a void match (cancelled, abandoned, or voided by an operator) is
+ * `void` for 0 points whatever its score; anything else waits for the final.
+ */
+export function guestPickScore(
+  pick: ScorePair | null,
+  fixture: { readonly final: boolean; readonly void: boolean; readonly result: ScorePair | null },
+): { points: 0 | 1 | 3; kind: ScoredKind | "void" } | null {
+  if (!pick) return null;
+  if (fixture.void) return { points: 0, kind: "void" };
+  if (!fixture.final || !fixture.result) return null;
+  return {
+    points: predictionPoints(pick, fixture.result),
+    kind: predictionResultKind(pick, fixture.result),
+  };
+}
+
 /** Who wins, as the results line says it: "Bon résultat (Raja gagne)". */
 export type MatchOutcome = "home" | "draw" | "away";
 
