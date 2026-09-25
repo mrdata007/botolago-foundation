@@ -65,6 +65,21 @@ describe(`apply-${VERSION}-current-performance-unnamed-starters.sql`, () => {
     }
   });
 
+  test("holds the statistics tables first, so the season orchestrator cannot overlap it", () => {
+    // Review on #206: the orchestrator runs on GitHub's schedule, which can
+    // start late, and outside any lock the SQL editor shares; the clock alone
+    // cannot keep them apart. The hold does, for the whole transaction.
+    const hold = script.indexOf(
+      "  lock table app_private.historical_performance_fixture_coverage in access exclusive mode;\n" +
+        "  lock table app.player_fixture_performances in share row exclusive mode;\n" +
+        "exception when lock_not_available then",
+    );
+    expect(hold).toBeGreaterThan(script.indexOf("set local lock_timeout = '5s';"));
+    expect(hold).toBeLessThan(script.indexOf("do $preflight$"));
+    expect(hold).toBeLessThan(script.indexOf("insert into supabase_migrations.schema_migrations"));
+    expect(script).not.toContain("Not at minute 12");
+  });
+
   test("afterwards: new rules, same callers, 3 unnamed starters scored and 5 refused", () => {
     expect(script).toContain("the coverage table rules are not the new versions");
     expect(script).toContain("the functions are callable by the wrong roles");

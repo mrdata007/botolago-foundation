@@ -8,8 +8,16 @@
 -- first match (fixture 19874708) has 3 unnamed starters.
 --
 -- WHEN
---   After the pull request that adds this file is merged. Not at minute 12
---   of an hour (the Fantasy season orchestrator writes these tables then).
+--   After the pull request that adds this file is merged, with nothing
+--   running under GitHub -> Actions -> "Fantasy season orchestrator".
+--
+--   That job writes match statistics on its own hourly schedule, and GitHub
+--   can start it late, so the clock cannot keep it apart from this script.
+--   The script does instead: before anything else it holds the two match
+--   statistics tables until it ends (a second or two). A statistics write
+--   already under way makes it stop within 5 seconds, saving nothing (run it
+--   again when the job has finished); a job that starts meanwhile waits for
+--   it. The Fantasy tick below is a different writer, paused separately.
 --
 -- HOW TO RUN
 --   1. Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor ->
@@ -30,6 +38,7 @@
 --   the database is not in the state this script expects.
 --
 -- WHAT IT DOES
+--   * holds the match statistics tables until it ends (see WHEN);
 --   * refuses to run twice, before 20260919120000 (last season's rule), while
 --     the Fantasy tick is on, or where the two functions and two table rules
 --     it replaces are not the versions reviewed (as production held them on
@@ -41,14 +50,27 @@
 --     same roles may call them, every stored coverage row still satisfies the
 --     rules, and the scoring check takes a match with 3 unnamed starters and
 --     refuses one with 5.
---   Changing a table rule briefly locks the coverage table (well under a
---   second); if another writer holds it, the script stops within 5 seconds.
 -- ============================================================================
 
 begin;
 
 set local lock_timeout = '5s';
 set local statement_timeout = '60s';
+
+-- ---------------------------------------------------------------------------
+-- Hold the match statistics tables until this transaction ends, so the
+-- season orchestrator's statistics step cannot overlap it (AGENTS.md, one
+-- writer at a time). Reading the coverage table waits too, for a second or
+-- two; the statistics themselves stay readable.
+-- ---------------------------------------------------------------------------
+do $hold$
+begin
+  lock table app_private.historical_performance_fixture_coverage in access exclusive mode;
+  lock table app.player_fixture_performances in share row exclusive mode;
+exception when lock_not_available then
+  raise exception 'stop: match statistics are being written right now (most likely by the Fantasy season orchestrator) -- nothing was saved; run this again when it has finished';
+end
+$hold$;
 
 -- ---------------------------------------------------------------------------
 -- Preflight
