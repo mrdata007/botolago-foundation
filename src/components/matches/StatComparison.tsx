@@ -9,6 +9,8 @@ import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
+import type { PressurePoint } from "./pressure-bins";
+import { PressureChart } from "./PressureChart";
 
 type Stat = MatchStatisticComparisonDto;
 
@@ -45,6 +47,10 @@ function statLabel(t: (key: TranslationKey) => string, stat: Stat): string {
       return t("matches.stats.passes");
     case "pass_accuracy":
       return t("matches.stats.pass_accuracy");
+    case "expected_goals":
+      return t("matches.stats.expected_goals");
+    case "expected_goals_on_target":
+      return t("matches.stats.expected_goals_on_target");
     default:
       return stat.label;
   }
@@ -52,6 +58,10 @@ function statLabel(t: (key: TranslationKey) => string, stat: Stat): string {
 
 /**
  * The Stats tab (A-Stats), backed only by the provider's statistics.
+ *
+ * The pressure chart comes first when the provider sends a pressure index
+ * (the SportsMonks add-on); expected goals are rows like any other, listed
+ * after possession by their definition's order.
  *
  * One card: the two clubs over their columns, possession as a 40px split bar
  * in the two fills, then a row per statistic — the higher figure in a pill
@@ -69,12 +79,15 @@ export function StatComparison({
   away,
   palettes,
   isLive,
+  pressure = [],
 }: {
   stats: readonly Stat[];
   home: Club;
   away: Club;
   palettes: { home: ClubPalette; away: ClubPalette };
   isLive: boolean;
+  /** The provider's pressure index, minute by minute; empty draws no chart. */
+  pressure?: readonly PressurePoint[];
 }) {
   const { t, tr, lang } = useI18n();
   const nf = useMemo(
@@ -92,10 +105,13 @@ export function StatComparison({
     />
   );
 
+  const chart = <PressureChart points={pressure} home={home} away={away} palettes={palettes} />;
+
   if (stats.length === 0) {
     return (
       <section>
         {heading}
+        {chart}
         <EmptyState>{t("matches.detail.no_stats")}</EmptyState>
       </section>
     );
@@ -116,6 +132,7 @@ export function StatComparison({
   return (
     <section>
       {heading}
+      {chart}
       <UiCard padding="none" className={cn(ui.radius.sheet, "px-4 pb-1 pt-3.5")}>
         <div className="flex items-center justify-between gap-3">
           <span className="flex min-w-0 items-center gap-2">

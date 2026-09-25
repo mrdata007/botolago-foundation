@@ -9,10 +9,17 @@
 // api.ingest_football_fixture writes, same freshness guard, which already
 // rejects a stale write if both ever overlap.
 //
-// Dependency-free apart from that handler, so it runs under Bun (tests) and
+// After the scores, the same call fetches the details of the matches that are
+// on or just over — events, team statistics, lineups — for the match page
+// (runMatchDetailsRefresh). That step only reports: a score is never held
+// back by it. `{"job":"match_details_backfill"}` runs the details step alone,
+// for finished matches that have none, as a one-off.
+//
+// Dependency-free apart from those handlers, so it runs under Bun (tests) and
 // Deno (the Edge Function).
 
 import { handleSportsMonksFixtureRequest, type FixtureRpcClient } from "./sportsmonks-fixtures.ts";
+import { runMatchDetailsRefresh } from "./sportsmonks-match-details.ts";
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
@@ -105,19 +112,75 @@ export async function handleFootballLiveRefreshRequest(
     return json(503, { error: "database_unavailable" });
   }
 
+  const job = await requestedJob(request);
+  if (job === null) return json(400, { error: "invalid_request" });
+
   // The fixture handler insists on a one-off trigger secret of its own; it
   // never leaves this process.
   const trigger = (dependencies.randomHex ?? defaultRandomHex)(32);
   const now = (dependencies.now ?? (() => new Date()))();
+  const environment = liveRefreshEnvironment(dependencies.environment, now, trigger);
+  const details = (scope: "live" | "backfill") =>
+    runMatchDetailsRefresh(scope, {
+      environment,
+      client: dependencies.client,
+      fetch: dependencies.fetch,
+      now: dependencies.now,
+    });
+
+  if (job === "match_details_backfill") {
+    const outcome = await details("backfill");
+    return json("error" in outcome ? 502 : 200, {
+      provider: "sportsmonks",
+      jobs: { matchDetails: outcome },
+    });
+  }
+
   const inner = new Request("https://localhost/football-live-refresh", {
     method: "POST",
     headers: { "content-type": "application/json", "x-botolago-ingestion-key": trigger },
     body: JSON.stringify({ job: "fixtures", pageSize: 50, maxPages: 3 }),
   });
-  return handleSportsMonksFixtureRequest(inner, {
-    environment: liveRefreshEnvironment(dependencies.environment, now, trigger),
+  const scores = await handleSportsMonksFixtureRequest(inner, {
+    environment,
     client: dependencies.client,
     fetch: dependencies.fetch,
     now: dependencies.now,
   });
+  const body = (await scores.json()) as Record<string, unknown>;
+  // With the provider or the configuration failing, the details would fail
+  // the same way, and only add minutes to a call pg_net stops waiting for
+  // after 60 seconds. A single rejected fixture does not stop them.
+  if (scores.status !== 200 && !DETAILS_AFTER_ERRORS.has(String(body.error))) {
+    return json(scores.status, body);
+  }
+  const outcome = await details("live");
+  return json(scores.status, { ...body, matchDetails: outcome });
+}
+
+/** Fixture-job failures that leave the provider and the database usable. */
+const DETAILS_AFTER_ERRORS: ReadonlySet<string> = new Set([
+  "fixture_item_rejected",
+  "page_budget_exhausted",
+]);
+
+/** `{"job":"fixtures"}` (the tick's, and the default) or `{"job":"match_details_backfill"}`. */
+async function requestedJob(
+  request: Request,
+): Promise<"fixtures" | "match_details_backfill" | null> {
+  const source = await request.text();
+  if (source.length > MAX_REQUEST_BYTES) return null;
+  if (!source.trim()) return "fixtures";
+  try {
+    const body = JSON.parse(source) as unknown;
+    const job =
+      typeof body === "object" && body !== null && !Array.isArray(body)
+        ? (body as { job?: unknown }).job
+        : undefined;
+    if (job === undefined || job === "fixtures") return "fixtures";
+    if (job === "match_details_backfill") return "match_details_backfill";
+    return null;
+  } catch {
+    return null;
+  }
 }

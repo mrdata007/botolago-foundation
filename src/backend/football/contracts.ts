@@ -187,6 +187,35 @@ export const matchStatisticSchema = z.object({
 });
 export type MatchStatisticComparisonDto = z.infer<typeof matchStatisticSchema>;
 
+/**
+ * One minute of the provider's pressure index (`api.football_match_pressure`):
+ * how hard each club was pushing. Only one club a minute has a positive value;
+ * a club with no row that minute is `null`.
+ */
+export const matchPressurePointSchema = z.object({
+  minute: z.number().int().nonnegative(),
+  homeValue: z.number().nonnegative().nullable(),
+  awayValue: z.number().nonnegative().nullable(),
+});
+export type MatchPressurePointDto = z.infer<typeof matchPressurePointSchema>;
+
+/** A player the provider lists as out of the match (`api.football_match_absences`). */
+export const matchAbsenceSchema = z.object({
+  id: postgresUuidSchema,
+  teamId: postgresUuidSchema,
+  playerId: nullableUuid,
+  playerName: z.string().min(1),
+  position: z.enum(FOOTBALL_POSITIONS).nullable(),
+  category: z.enum(["injury", "suspension"]),
+  /** "2026-10-12"; `null` when the provider does not know. */
+  expectedReturnOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable(),
+  gamesMissed: z.number().int().nonnegative().nullable(),
+});
+export type MatchAbsenceDto = z.infer<typeof matchAbsenceSchema>;
+
 export const standingRowSchema = z.object({
   id: postgresUuidSchema,
   rank: z.number().int().positive(),
@@ -342,6 +371,16 @@ export interface FootballRepository {
     language: FootballLanguage,
     context: RepositoryContext,
   ): Promise<readonly MatchStatisticComparisonDto[]>;
+  getPressure(
+    id: string,
+    language: FootballLanguage,
+    context: RepositoryContext,
+  ): Promise<readonly MatchPressurePointDto[]>;
+  getAbsences(
+    id: string,
+    language: FootballLanguage,
+    context: RepositoryContext,
+  ): Promise<readonly MatchAbsenceDto[]>;
   getHeadToHead(
     id: string,
     language: FootballLanguage,
