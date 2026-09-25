@@ -60,13 +60,24 @@ describe("current player list observation", () => {
       position: "midfielder",
       shirtNumber: 10,
     });
-    // A lineup row without an included player still names them.
+    // A lineup row without an included player is still named, by its label.
+    // Only SportsMonks' own full name is a full name: nothing stands in for it.
     expect(observedPlayer(8, null, "Hatim Bouhbouh", [99], 0, TODAY)).toMatchObject({
-      fullName: "Hatim Bouhbouh",
+      fullName: null,
       displayName: "Hatim Bouhbouh",
       position: null,
       shirtNumber: null,
     });
+    expect(
+      observedPlayer(
+        11,
+        { display_name: "Omar Kadi", common_name: "O. Kadi" },
+        null,
+        [27],
+        9,
+        TODAY,
+      ),
+    ).toMatchObject({ fullName: null, displayName: "Omar Kadi", position: "forward" });
     expect(observedPlayer(9, { name: "X" }, null, [24], 1, TODAY)).toBeNull();
     expect(
       observedPlayer(10, { name: "Future Born", date_of_birth: "2026-09-26" }, null, [], 1, TODAY)
@@ -168,7 +179,7 @@ describe("current player list observation", () => {
         {
           externalPlayerId: "11",
           teamExternalId: "501",
-          fullName: "Koffi Holete",
+          fullName: null,
           displayName: "Koffi Holete",
           firstName: null,
           lastName: null,

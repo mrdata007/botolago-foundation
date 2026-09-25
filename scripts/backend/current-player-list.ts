@@ -38,7 +38,8 @@ const POSITIONS: Readonly<Record<number, string>> = {
 
 export interface ObservedPlayer {
   externalPlayerId: string;
-  fullName: string;
+  /** SportsMonks' own full name (`player.name`), or null: no other name stands in for it. */
+  fullName: string | null;
   displayName: string;
   firstName: string | null;
   lastName: string | null;
@@ -95,6 +96,10 @@ function shirt(value: unknown): number | null {
 /**
  * One player as SportsMonks describes them. The first known position wins; a
  * player without a usable name is left out (and counted by the caller).
+ *
+ * The plan matches people by full name, so only SportsMonks' own full name is
+ * one. A display name, a common name or a lineup label still names the
+ * player, but never stands in for the full name.
  */
 export function observedPlayer(
   playerId: number,
@@ -104,16 +109,13 @@ export function observedPlayer(
   jerseyNumber: unknown,
   today: string,
 ): ObservedPlayer | null {
-  const fullName =
-    name(player?.name, 2, 200) ??
-    name(player?.display_name, 2, 200) ??
-    name(player?.common_name, 2, 200) ??
-    name(fallbackName, 2, 200);
+  const fullName = name(player?.name, 2, 200);
   const displayName =
     name(player?.display_name, 2, 120) ??
     name(player?.common_name, 2, 120) ??
-    name(fullName, 2, 120);
-  if (!fullName || !displayName) return null;
+    name(fullName, 2, 120) ??
+    name(fallbackName, 2, 120);
+  if (!displayName) return null;
   const position = positionIds
     .map((value) => (typeof value === "number" ? (POSITIONS[value] ?? null) : null))
     .find((value) => value !== null);

@@ -52,9 +52,12 @@ closing them, because the statistics import checks a club by its dates, not
 by `active`. This season's moves are summer transfers, so the player never
 belonged to the old club this season.
 
-Full names match when they are equal without accents and case, and at least
-two words long, at the same club, one to one. A display name or a surname
-alone never matches.
+Only SportsMonks' own full name is matched, against the full name typed in by
+hand: equal without accents and case, at least two words long, at the same
+club, one to one. A display name, a surname, or a name already in the list
+(which may have been filled in from a display name) never matches. A player
+SportsMonks gives no full name is matched to no one; if new, they are created
+under their display name, as the squad import does.
 
 Fantasy follows the list:
 

@@ -77,9 +77,11 @@ as $$
   select jsonb_typeof(p_member) = 'object'
     and coalesce(p_member ->> 'externalPlayerId', '') ~ '^[1-9][0-9]{0,19}$'
     and (not p_lineup or coalesce(p_member ->> 'teamExternalId', '') ~ '^[1-9][0-9]{0,19}$')
-    and jsonb_typeof(p_member -> 'fullName') = 'string'
-    and p_member ->> 'fullName' = btrim(p_member ->> 'fullName')
-    and char_length(p_member ->> 'fullName') between 2 and 200
+    -- SportsMonks' own full name, or null when it gives none.
+    and case jsonb_typeof(p_member -> 'fullName')
+      when 'string' then p_member ->> 'fullName' = btrim(p_member ->> 'fullName')
+        and char_length(p_member ->> 'fullName') between 2 and 200
+      when 'null' then true else p_member -> 'fullName' is null end
     and jsonb_typeof(p_member -> 'displayName') = 'string'
     and p_member ->> 'displayName' = btrim(p_member ->> 'displayName')
     and char_length(p_member ->> 'displayName') between 2 and 120
@@ -399,17 +401,15 @@ begin
         where mapping.provider_name = 'sportsmonks' and mapping.entity_type = 'player'
           and mapping.internal_entity_id = membership.player_id)
   ), observed_keys as (
-    -- Full names only (two words at least), at the same club: a display name
-    -- or a surname alone never identifies a person, since a match can retire
-    -- a record.
-    select distinct mapped.external_player_id, mapped.club_id, name.key
+    -- SportsMonks' own full name only (two words at least), at the same club,
+    -- since a match can retire a record. A display name or a surname never
+    -- identifies a person, nor does a catalog name, which may have been filled
+    -- in from a display name when the player was created.
+    select mapped.external_player_id, mapped.club_id,
+      app_private.person_name_key(mapped.detail ->> 'fullName') as key
     from mapped
-    left join app.players player on player.id = mapped.mapped_player_id
-    cross join lateral (values
-      (app_private.person_name_key(mapped.detail ->> 'fullName')),
-      (app_private.person_name_key(player.full_name))
-    ) name(key)
-    where mapped.club_id is not null and name.key like '% %'
+    where mapped.club_id is not null
+      and app_private.person_name_key(mapped.detail ->> 'fullName') like '% %'
   ), name_matches as (
     select distinct observed_keys.external_player_id, unlinked.player_id
     from observed_keys
@@ -555,7 +555,9 @@ begin
       'club', club.short_name,
       'player', outcome.kind,
       'playerId', outcome.player_id,
-      'name', outcome.detail ->> 'fullName',
+      -- A new player's full name, as the squad import sets it: SportsMonks'
+      -- full name, else the display name.
+      'name', coalesce(outcome.detail ->> 'fullName', outcome.detail ->> 'displayName'),
       'listedName', listed.full_name,
       'membership', outcome.membership,
       'fromClubIds', case when outcome.membership = 'move' then to_jsonb(outcome.current_team_ids) end,
@@ -619,7 +621,7 @@ begin
     'skipped', (
       select coalesce(jsonb_agg(jsonb_build_object(
         'externalPlayerId', outcome.external_player_id,
-        'name', outcome.detail ->> 'fullName',
+        'name', coalesce(outcome.detail ->> 'fullName', outcome.detail ->> 'displayName'),
         'reason', outcome.kind,
         'squadClubs', (select coalesce(jsonb_agg(team.short_name order by team.short_name), '[]'::jsonb)
           from app.teams team where team.id = any(outcome.squad_team_ids))
@@ -631,7 +633,7 @@ begin
         'playerId', outcome.player_id,
         'duplicatePlayerId', outcome.duplicate_player_id,
         'duplicateFantasyPlayerId', outcome.duplicate_fantasy_player_id,
-        'name', outcome.detail ->> 'fullName'
+        'name', coalesce(outcome.detail ->> 'fullName', outcome.detail ->> 'displayName')
       ) order by length(outcome.external_player_id), outcome.external_player_id), '[]'::jsonb)
       from outcome where outcome.duplicate_player_id is not null and outcome.duplicate_used),
     'clubLimitViolations', (

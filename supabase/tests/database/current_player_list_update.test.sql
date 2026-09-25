@@ -64,7 +64,8 @@ insert into roster values
   (19, 'Ahmed Baha', 'forward', 3, false),         -- two of them at C
   (20, 'Ahmed Baha', 'forward', 3, false),
   (21, 'Yassine Belfada', 'midfielder', 1, false), -- the hand-typed duplicate, owned
-  (22, 'Omar Kadi', 'forward', 3, false);          -- typed in by hand; not Omar Kadiri Benali
+  (22, 'Omar Kadi', 'forward', 3, false),          -- typed in by hand; not Omar Kadiri Benali
+  (23, 'Said Nafi', 'defender', 3, false);         -- typed in by hand; SportsMonks gives a display name only
 insert into app.players (id, slug, full_name, display_name, position)
 select md5('player-list-' || n)::uuid, 'player-list-' || n, full_name, full_name, position from roster;
 insert into app_private.football_provider_mappings (
@@ -163,8 +164,11 @@ insert into sighting values
   (13, 2, 'Brahim Bee', 'forward'),
   (15, 2, 'Karim Played', 'forward');
 -- A display name never identifies anyone: SportsMonks shows Omar Kadiri Benali
--- as "Omar Kadi", the full name of a hand-typed player at club C.
-insert into sighting values (22, 3, 'Omar Kadiri Benali', 'forward', 'Omar Kadi');
+-- as "Omar Kadi", the full name of a hand-typed player at club C, and gives
+-- player 23 no full name, only the display name "Said Nafi", another one.
+insert into sighting values
+  (22, 3, 'Omar Kadiri Benali', 'forward', 'Omar Kadi'),
+  (23, 3, null, 'defender', 'Said Nafi');
 create temp table observation_input on commit drop as
 select jsonb_build_object(
   'providerName', 'sportsmonks',
@@ -291,18 +295,18 @@ create temp table planned on commit drop as
 select api.service_plan_current_player_list((result ->> 'observationId')::uuid) as plan from recorded;
 
 reset role;
-select extensions.is((select (result ->> 'squadPlayers')::integer from recorded), 13,
-  'the observation holds the thirteen squad rows');
+select extensions.is((select (result ->> 'squadPlayers')::integer from recorded), 14,
+  'the observation holds the fourteen squad rows');
 select extensions.is(
   (select plan -> 'summary' from planned),
   jsonb_build_object(
-    'observedPlayers', 15, 'changes', 7, 'unchanged', 4, 'fromLineups', 4,
-    'link', 1, 'add', 2, 'move', 3, 'join', 1, 'fantasyMove', 3, 'fantasyAdd', 3,
+    'observedPlayers', 16, 'changes', 8, 'unchanged', 4, 'fromLineups', 4,
+    'link', 1, 'add', 3, 'move', 3, 'join', 1, 'fantasyMove', 3, 'fantasyAdd', 4,
     'retireDuplicate', 1, 'usedDuplicate', 1,
     'skipAmbiguousClub', 1, 'skipAmbiguousName', 1, 'skipNoPosition', 1, 'skipInactiveMapping', 0,
     'skipPlayedForAnotherClub', 1,
     'clubLimitViolations', 1),
-  'the plan: three moves, one return, one link, two newcomers, one duplicate retired'
+  'the plan: three moves, one return, one link, three newcomers, one duplicate retired'
 );
 select extensions.is(
   (select jsonb_agg(value ->> 'reason' order by value ->> 'externalPlayerId') from planned, jsonb_array_elements(plan -> 'skipped')),
@@ -384,8 +388,8 @@ select pg_temp.waiting($$select api.service_apply_current_player_list((result ->
 reset role;
 select extensions.is(
   (select result - 'observationId' - 'planDigest' - 'removedMemberships' from applied),
-  jsonb_build_object('changes', 7, 'linked', 1, 'added', 2, 'moved', 3, 'joined', 1,
-    'fantasyMoved', 3, 'fantasyAdded', 3, 'duplicatesRetired', 1),
+  jsonb_build_object('changes', 8, 'linked', 1, 'added', 3, 'moved', 3, 'joined', 1,
+    'fantasyMoved', 3, 'fantasyAdded', 4, 'duplicatesRetired', 1),
   'applied as planned'
 );
 select extensions.is(
@@ -479,6 +483,19 @@ select extensions.is(
      'kadiInGame', (select active and eligible from app.fantasy_players where id = md5('player-list-fantasy-22')::uuid))),
   '{"kadiriIsNew": true, "kadiStillListed": true, "kadiInGame": true}'::jsonb,
   'a display name equal to a hand-typed full name identifies no one: Omar Kadiri Benali is new, Omar Kadi untouched'
+);
+select extensions.is(
+  (select jsonb_build_object(
+     'created', (select jsonb_build_object('name', player.full_name, 'club', club.short_name,
+         'handTyped', player.id = md5('player-list-23')::uuid)
+       from app_private.football_provider_mappings mapping
+       join app.players player on player.id = mapping.internal_entity_id
+       join current_club club on club.player_id = player.id
+       where mapping.provider_name = 'sportsmonks' and mapping.entity_type = 'player' and mapping.external_id = '81023'),
+     'handTypedListed', exists (select 1 from current_club where player_id = md5('player-list-23')::uuid),
+     'handTypedInGame', (select active and eligible from app.fantasy_players where id = md5('player-list-fantasy-23')::uuid))),
+  '{"created": {"name": "Said Nafi", "club": "Club C", "handTyped": false}, "handTypedListed": true, "handTypedInGame": true}'::jsonb,
+  'a player SportsMonks gives no full name is created under their display name, as the squad import does, and matches no one'
 );
 select extensions.is(
   (select count(*)::integer from app_private.current_player_list_updates), 1, 'the update is recorded'
