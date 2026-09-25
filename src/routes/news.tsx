@@ -16,6 +16,8 @@ import { CategoryChips } from "@/components/news/CategoryChips";
 import { ClubFilterRow } from "@/components/news/ClubFilterRow";
 import { FeaturedGrid } from "@/components/news/FeaturedGrid";
 import { LatestFeed } from "@/components/news/LatestFeed";
+import { newsFeedQuery } from "@/components/news/news-feed-query";
+import { prefetchFirstPageForSsr, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { LATEST_CAROUSEL_SIZE, LatestCarousel } from "@/components/news/LatestCarousel";
 import { NewsLeadSkeleton, NewsRowSkeleton } from "@/components/news/NewsSkeletons";
 import {
@@ -51,6 +53,31 @@ function redirectWhileNewsIsHidden(): void {
 
 export const Route = createFileRoute("/news")({
   beforeLoad: redirectWhileNewsIsHidden,
+  // The lead, the top stories, the club filters and the first page of the
+  // feed, with a link to every article, in the server's HTML (see
+  // `@/lib/ssr-prefetch`); /news showed 118 characters and no article link
+  // to a crawler before. Only for /news itself: an article page, which this
+  // route also wraps, loads its own.
+  loader: async ({ context, location }) => {
+    if (location.pathname.replace(/\/$/, "") !== "/news") return;
+    const { queryClient } = context;
+    await Promise.all([
+      prefetchForSsr(queryClient, [
+        {
+          queryKey: ["news", "home-modules-v2", "fr"],
+          queryFn: () => getNewsRepository().getHomeModules("fr", 6, publicNewsContext()),
+        },
+        {
+          queryKey: ["news", "team-filters-v2", "fr"],
+          queryFn: async () =>
+            (await getNewsRepository().getTeamFilters("fr", publicNewsContext())).map(
+              presentNewsTeam,
+            ),
+        },
+      ]),
+      prefetchFirstPageForSsr(queryClient, newsFeedQuery("fr", null, null)),
+    ]);
+  },
   head: () => ({
     meta: [
       { title: "Actualités — BotolaGO" },

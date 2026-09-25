@@ -1,5 +1,5 @@
 import type { TranslationKey } from "@/i18n/dictionaries";
-import type { FantasyGameweekStatus, FantasyPointsState } from "@/types/domain";
+import type { FantasyGameweekStatus, FantasyPointsState, Gameweek } from "@/types/domain";
 
 export type GameweekStatusTone = "neutral" | "accent" | "live" | "warning" | "final";
 
@@ -89,4 +89,22 @@ export function getGameweekPresentation(
         tone: "neutral",
       };
   }
+}
+
+/**
+ * Once a gameweek's deadline has passed, the next deadline a manager can
+ * still act on: the next gameweek's, while it lies ahead. Null before the
+ * deadline, and when there is no next gameweek yet. A manager who joined
+ * after a deadline plays from that next gameweek, and nothing else on the
+ * Fantasy home names its deadline.
+ */
+export function nextDeadlineAfter(
+  gameweek: Pick<Gameweek, "number" | "deadline" | "enrolment">,
+  now: number,
+): { number: number; deadline: string } | null {
+  const next = gameweek.enrolment;
+  if (!next || next.number === gameweek.number) return null;
+  if (!(Date.parse(gameweek.deadline) <= now)) return null;
+  if (!(Date.parse(next.deadline) > now)) return null;
+  return { number: next.number, deadline: next.deadline };
 }

@@ -5,6 +5,7 @@
 // in aggregate so the UI (Pass 3 import prompt / conflict banner) can list
 // every gap at once.
 
+import { FantasyError, type FantasyErrorCode } from "@/backend/fantasy/errors";
 import { FantasyCloudError } from "@/services/fantasy-cloud-repo";
 import { MissingIdMappingError } from "@/services/fantasy-id-map";
 
@@ -19,6 +20,12 @@ export type FantasyRepoErrorCode =
   | "empty_cloud_squad"
   | "not_found"
   | "gameweek_unresolved"
+  /** The server refused: the gameweek's deadline has passed. */
+  | "gameweek_locked"
+  /** The server refused: no Fantasy season accepts teams. */
+  | "season_closed"
+  /** The server refused: this manager already has a team this season. */
+  | "already_exists"
   | "unknown";
 
 export interface MissingIds {
@@ -30,22 +37,78 @@ export class FantasyRepoError extends Error {
   readonly code: FantasyRepoErrorCode;
   readonly cause?: unknown;
   readonly missingIds?: MissingIds;
+  /** The server's own refusal code when there was one (`budget_exceeded`, …). */
+  readonly domainCode?: FantasyErrorCode;
   constructor(
     code: FantasyRepoErrorCode,
     message?: string,
     cause?: unknown,
     missingIds?: MissingIds,
+    domainCode?: FantasyErrorCode,
   ) {
     super(message ?? code);
     this.code = code;
     this.cause = cause;
     this.missingIds = missingIds;
+    this.domainCode = domainCode;
   }
+}
+
+const VALIDATION_DOMAIN_CODES: ReadonlySet<FantasyErrorCode> = new Set<FantasyErrorCode>([
+  "invalid_team_name",
+  "invalid_squad",
+  "invalid_formation",
+  "budget_exceeded",
+  "club_limit_exceeded",
+  "duplicate_player",
+  "player_not_eligible",
+  "captain_invalid",
+  "vice_captain_invalid",
+  "insufficient_free_transfers",
+  "invalid_transfer",
+  "chip_unavailable",
+  "chip_already_used",
+  "chip_conflict",
+]);
+
+/**
+ * The repository's typed Fantasy error (the RPC's own refusal) keeps its
+ * meaning. Before this mapping every such refusal -- a passed deadline
+ * included -- fell through to `unknown`, and the create screen showed its
+ * catch-all copy ("import failed") for a server that had answered precisely.
+ */
+function fromDomainError(err: FantasyError): FantasyRepoError {
+  const code: FantasyRepoErrorCode =
+    err.code === "fantasy_gameweek_locked"
+      ? "gameweek_locked"
+      : err.code === "fantasy_season_closed"
+        ? "season_closed"
+        : err.code === "fantasy_team_already_exists"
+          ? "already_exists"
+          : err.code === "version_conflict" || err.code === "idempotency_conflict"
+            ? "version_conflict"
+            : err.code.endsWith("_not_found")
+              ? "not_found"
+              : VALIDATION_DOMAIN_CODES.has(err.code)
+                ? "validation"
+                : err.code === "data_unavailable" && isNetworkFailure(err.cause)
+                  ? "network"
+                  : "unknown";
+  return new FantasyRepoError(code, err.message, err, undefined, err.code);
+}
+
+function isNetworkFailure(cause: unknown): boolean {
+  const message =
+    cause instanceof Error
+      ? cause.message
+      : ((cause as { message?: unknown } | null)?.message ?? "");
+  return typeof message === "string" && /Failed to fetch|NetworkError|network/i.test(message);
 }
 
 /** Convert a legacy cloud error / id-mapping error to the unified model. */
 export function toRepoError(err: unknown): FantasyRepoError {
   if (err instanceof FantasyRepoError) return err;
+  if (err instanceof FantasyError) return fromDomainError(err);
   if (err instanceof MissingIdMappingError) {
     return new FantasyRepoError("mapping_incomplete", err.message, err, {
       players: err.missingPlayers,

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { LegalRoutePage } from "@/components/legal/LegalRoutePage";
-import { dictionaries } from "@/i18n/dictionaries";
+import { fr } from "@/i18n/dictionary-fr";
 
 /**
  * `/terms` — public, no auth gate.
@@ -16,10 +16,10 @@ import { dictionaries } from "@/i18n/dictionaries";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: dictionaries.fr["legal.terms.meta_title"] },
-      { name: "description", content: dictionaries.fr["legal.terms.meta_description"] },
-      { property: "og:title", content: dictionaries.fr["legal.terms.meta_title"] },
-      { property: "og:description", content: dictionaries.fr["legal.terms.meta_description"] },
+      { title: fr["legal.terms.meta_title"] },
+      { name: "description", content: fr["legal.terms.meta_description"] },
+      { property: "og:title", content: fr["legal.terms.meta_title"] },
+      { property: "og:description", content: fr["legal.terms.meta_description"] },
       { property: "og:type", content: "website" },
     ],
   }),

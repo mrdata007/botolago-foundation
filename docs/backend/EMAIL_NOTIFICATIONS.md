@@ -94,15 +94,22 @@ Edge Function notification-email-dispatch
            record       → api.service_record_notification_delivery_attempt
                           (retries 5× with backoff, then the dead-letter queue)
 
-pg_cron  football-live-refresh      every 15 min
-         app_private.football_live_refresh_tick() — only while a match is on or
-         about to start → Edge Function football-live-refresh → the same
-         SportsMonks fixture handler the orchestrator uses, for yesterday–tomorrow.
+pg_cron  football-live-refresh      every minute
+         app_private.football_live_refresh_tick() — calls every 2 min while a
+         match is in play (or past kick-off), every 5 min in the 10 min before a
+         kick-off, never otherwise → Edge Function football-live-refresh → the
+         same SportsMonks fixture handler the orchestrator uses, for
+         yesterday–tomorrow.
 ```
 
 The live refresh exists because the GitHub orchestrator, scheduled hourly, ran
 only every 2–5 hours in the week of 2026-09-21; without it the results email
-could arrive hours after the final whistle.
+could arrive hours after the final whistle. The cadence (2 min in play, 5 min before
+kick-off, nothing otherwise) is migration
+`20260924200500_football_live_refresh_cadence.sql`; a two-hour match costs
+about 60 SportsMonks requests. `app_private.football_live_refresh_heartbeat`
+holds the last call, and the ops health check `live_scores` fails when a
+match is in play and no fixture refresh ran for 10 minutes.
 
 Code: migrations `20260924140000_notification_email_types.sql` and
 `20260924140100_notification_email_delivery.sql`; Edge Functions
@@ -207,6 +214,27 @@ hand once the cause is fixed:
 `update app_private.notification_email_settings set provider_paused_until = null, provider_pause_reason = null;` Dead letters are in
 `app_private.notification_dead_letters` and replay with
 `api.service_request_notification_dead_letter_replay`.
+
+**Live scores only (email stays off).** Check first that Supabase → Edge
+Functions → Secrets lists `SPORTSMONKS_API_TOKEN`, then:
+
+```sql
+select app_private.notification_email_configure(
+  'off',                                                   -- email stays off
+  'https://tkewgajrljbwgwedqsxn.supabase.co/functions/v1',
+  null,
+  true                                                     -- live scores on
+);
+```
+
+`mode` is required (`'off'`, `'test'` or `'live'`); the other `null`
+arguments keep their current value. Watch the next match:
+`select * from app_private.football_live_refresh_heartbeat;` shows the last
+call, `select status_code, created from net._http_response order by created
+desc limit 5;` the Edge Function's answers (200 expected), and
+`select job_type, status, error_code, started_at from
+app_private.football_ingestion_runs order by started_at desc limit 5;` the
+fixture runs it made. Switch off with the same call and `false`.
 
 **Pause everything:** `select app_private.notification_email_configure('off',
 null, null, false);` Queued mail waits; anything whose moment passes while

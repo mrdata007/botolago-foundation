@@ -87,7 +87,6 @@ export function LiveStrip() {
               <Link
                 to="/matches/$matchId"
                 params={{ matchId: match.id }}
-                search={{ tab: "summary" }}
                 aria-label={label}
                 className={cn(
                   "inline-flex items-center gap-2 pe-3 ps-1",

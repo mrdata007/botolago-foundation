@@ -310,6 +310,16 @@ select pg_temp.add_fixture('e0500000-0000-4000-8000-000000000021',
 select pg_temp.add_fixture('e0500000-0000-4000-8000-000000000022',
   'e0300000-0000-4000-8000-000000000003', 5, 6, statement_timestamp() + interval '50 minutes 7 seconds');
 select app_private.notification_email_plan(statement_timestamp());
+-- These two also make today a match day, but its email is due only from 07:00
+-- Morocco time (it is planned then when the first match is under two hours
+-- away), and only while 50 minutes from now is still today in Morocco. The
+-- claims below expect it only when it is due: the test runs at any hour.
+create temporary table email_real_clock on commit drop as
+select local_now::time >= time '07:00'
+   and (kickoff at time zone 'Africa/Casablanca')::date = local_now::date as matchday_due
+from (select statement_timestamp() at time zone 'Africa/Casablanca' as local_now,
+        (select kickoff_at from app.fixtures
+         where id = 'e0500000-0000-4000-8000-000000000021') as kickoff) clock;
 select extensions.is(
   (select count(*)::integer from app_private.notification_events
    where event_type = 'match_starting' and source_entity_id = 'e0500000-0000-4000-8000-000000000021'),
@@ -438,12 +448,14 @@ select value from jsonb_array_elements(api.service_claim_email_deliveries(50, 12
 reset role;
 
 -- The real clock also made today a match day (the two matches an hour from
--- now), so today's match-day email is due as well.
+-- now), so from 07:00 Morocco time today's match-day email is due as well.
 select extensions.is(
   (select jsonb_object_agg(type, total) from (
      select delivery ->> 'type' as type, count(*) as total from email_claim group by 1) counts),
-  '{"deadline_24h": 3, "match_starting": 1, "matchday_preview": 3}'::jsonb,
-  'only timely mail is claimed: today''s match-day email, the kick-off alert and the deadline reminders'
+  '{"deadline_24h": 3, "match_starting": 1}'::jsonb
+    || case when (select matchday_due from email_real_clock)
+         then '{"matchday_preview": 3}'::jsonb else '{}'::jsonb end,
+  'only timely mail is claimed: today''s match-day email once due, the kick-off alert and the deadline reminders'
 );
 select extensions.is(
   (select count(*)::integer from app.notification_deliveries delivery
@@ -482,7 +494,7 @@ select extensions.is(
 );
 select extensions.is(
   (select count(*)::integer from app_private.notification_email_unsubscribe_tokens),
-  7,
+  case when (select matchday_due from email_real_clock) then 7 else 4 end,
   'only the token hash is stored, one per claimed email'
 );
 
@@ -516,7 +528,7 @@ select extensions.is(
 );
 select extensions.is(
   (app_private.notification_email_quota(statement_timestamp()) ->> 'dailyRemaining')::integer,
-  100 - 10 - 1 - 6,
+  100 - 10 - 1 - case when (select matchday_due from email_real_clock) then 6 else 3 end,
   'today''s allowance is the limit, less the reserve, what was sent and what is being sent'
 );
 

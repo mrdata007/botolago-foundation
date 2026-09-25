@@ -747,7 +747,13 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
   async saveTeam(input: SaveOwnedTeamInput): Promise<FantasySnapshot> {
     try {
       const hub = await this.repository.getHub("fr", this.context());
-      const gameweekId = input.currentGameweekId ?? hub.gameweek?.id;
+      // A new team names the gameweek it joins -- the one the create screen
+      // showed, else the one the server says a new team joins now (the next
+      // gameweek once the current deadline has passed). The server re-checks
+      // it and refuses any other with `fantasy_gameweek_locked`.
+      const gameweekId = hub.team
+        ? (input.currentGameweekId ?? hub.gameweek?.id)
+        : (input.currentGameweekId ?? hub.enrolmentGameweek?.id ?? hub.gameweek?.id);
       if (!gameweekId)
         throw new FantasyRepoError("gameweek_unresolved", "No mutable gameweek exists");
       if (!hub.team) {

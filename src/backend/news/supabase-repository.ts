@@ -340,7 +340,8 @@ export class SupabaseNewsRepository implements NewsRepository {
         z.object({
           id: z.string().uuid(),
           language: z.enum(["fr", "ar"]),
-          updatedAt: z.string(),
+          publishedAt: z.string(),
+          contentUpdatedAt: z.string().nullable().optional(),
           translations: z.array(
             z.object({ id: z.string().uuid(), language: z.enum(["fr", "ar"]) }),
           ),

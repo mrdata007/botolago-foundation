@@ -46,6 +46,24 @@ export function sanitizeAuthCallbackNext(raw: string | null): string {
   return `${resolved.pathname}${resolved.search}${resolved.hash}`;
 }
 
+/**
+ * The `next` an auth route's `validateSearch` returns: a same-site path, or
+ * `undefined`.
+ *
+ * The key is always present. TanStack Router lays a route's validated search
+ * over the raw query the page inherits from the root route, so leaving an
+ * unsafe `next` out of the result does not remove it: the raw value comes
+ * back through `useSearch()`. It has to be overwritten. Until 2026-09-24 every
+ * auth route left it out, and the live login page carried
+ * `next=https://attacker.invalid` into its links and its post-login redirect.
+ */
+export function authNextSearch(raw: unknown): { next?: string } {
+  const next = typeof raw === "string" ? sanitizeAuthCallbackNext(raw) : undefined;
+  // Optional in the type, so links to these pages need no `next`; present at
+  // runtime, so it overwrites the raw one.
+  return { next: next && next !== "/" ? next : undefined };
+}
+
 export function cleanAuthCallbackUrl(rawUrl: string): string {
   const clean = new URL(rawUrl);
   clean.search = "";

@@ -8,8 +8,12 @@ import { getNewsDataMode } from "@/services/news";
  * /sitemap.xml. News articles are listed only while `NEWS_ENABLED` is on and
  * only from `api.news_sitemap_entries`, which returns nothing that is not
  * public right now. Cached for five minutes, so an unpublished article leaves
- * the sitemap within that window. A News read failure still serves the static
- * pages rather than failing the whole sitemap.
+ * the sitemap within that window.
+ *
+ * A News read failure answers 503 with Retry-After. It used to serve the nine
+ * static pages alone, with 200 (audit 2026-09-24, P1-13): a crawler reading
+ * that sitemap during a slow minute was told 15,700 articles had gone. A 503
+ * makes it keep the last good copy and come back.
  *
  * Every public article that fits in one sitemap is requested
  * (`SITEMAP_NEWS_LIMIT`); the licensed ElBotola archive alone is ~15,700
@@ -24,7 +28,14 @@ export const Route = createFileRoute("/sitemap.xml")({
           try {
             news = await new SupabaseNewsRepository().getSitemapEntries(SITEMAP_NEWS_LIMIT);
           } catch {
-            news = [];
+            return new Response("Sitemap temporarily unavailable", {
+              status: 503,
+              headers: {
+                "content-type": "text/plain; charset=utf-8",
+                "retry-after": "300",
+                "cache-control": "no-store",
+              },
+            });
           }
         }
         return new Response(buildSitemapXml({ newsEnabled: NEWS_ENABLED, news }), {

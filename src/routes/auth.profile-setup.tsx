@@ -28,18 +28,16 @@ import { useMyNotificationPreferences } from "@/services/use-notification-prefer
 import type { Language } from "@/types/domain";
 import type { NotificationPreferences } from "@/services/auth";
 import { ClubCrest } from "@/components/common/ClubCrest";
-import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
+import { authNextSearch } from "@/lib/auth-callback";
 
 export const Route = createFileRoute("/auth/profile-setup")({
   head: () => ({ meta: [{ title: "Personnalisez votre profil — BotolaGO" }] }),
   validateSearch: (search: Record<string, unknown>) => {
-    const next =
-      typeof search.next === "string" ? sanitizeAuthCallbackNext(search.next) : undefined;
     // `?step=3` is how Profile's Notifications row opens the wizard on the
     // step that edits them; there is no other notification settings screen.
     const step = setupStepFromSearch(search.step);
     return {
-      ...(next && next !== "/" ? { next } : {}),
+      ...authNextSearch(search.next),
       ...(step ? { step } : {}),
     };
   },

@@ -66,6 +66,10 @@ export type ArticleCardDto = z.infer<typeof articleCardSchema>;
 const entitySchema = z.object({ id: z.string().uuid(), slug: z.string(), name: z.string() });
 
 export const articleDetailSchema = articleCardSchema.extend({
+  /** When the text last really changed (migration 20260924200600); absent
+   *  from older API builds, where the publication time stands in. Not
+   *  `updatedAt`, which bookkeeping updates bump. */
+  contentUpdatedAt: z.string().datetime({ offset: true }).nullable().optional(),
   bodyHtml: z.string().min(1),
   bodyFormat: z.enum(["markdown", "rich_text"]),
   seo: z.object({ title: z.string().nullable(), description: z.string().nullable() }),

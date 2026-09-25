@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Share2 } from "lucide-react";
@@ -28,9 +28,10 @@ import { MediaImage } from "@/components/common/FailureAwareImage";
 import { ArticleHeroFallback } from "@/components/common/ArticleHeroFallback";
 import { crestStyle } from "@/components/common/club-crest-style";
 import { readTimeLabel } from "@/lib/read-time";
-import { dictionaries } from "@/i18n/dictionaries";
+import { fr } from "@/i18n/dictionary-fr";
+import { ARABIC_CATEGORY_LABELS } from "@/components/news/category-labels";
 import { FULL_COLUMN_SIZES, resolveMediaUrl } from "@/lib/media";
-import { buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
+import { articleModifiedAt, buildArticleHead, buildCanonicalArticleUrl } from "@/lib/article-meta";
 import {
   bylineInitials,
   categoryLabel,
@@ -41,6 +42,12 @@ import {
 } from "@/components/news/news-data";
 import { articleBodyClass, PULL_QUOTE_CSS } from "@/components/news/article-reading";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
+import {
+  isMissingContent,
+  isUnavailable,
+  UNAVAILABLE,
+  unavailableHeaders,
+} from "@/lib/page-availability";
 
 export const Route = createFileRoute("/news/$articleId")({
   // While News is hidden (owner decision — see `@/lib/feature-flags`) article
@@ -53,6 +60,9 @@ export const Route = createFileRoute("/news/$articleId")({
   beforeLoad: () => {
     if (!NEWS_ENABLED) throw redirect({ to: "/", replace: true });
   },
+  // A missing, unpublished or withdrawn article is a 404; a failed read is a
+  // 503 that keeps the page indexed (see `@/lib/page-availability`). It used
+  // to be `null` for both, served as 200 + noindex.
   loader: async ({ params, context }) => {
     try {
       return await context.queryClient.ensureQueryData({
@@ -65,11 +75,16 @@ export const Route = createFileRoute("/news/$articleId")({
             publicNewsContext(),
           ),
       });
-    } catch {
-      return null;
+    } catch (error) {
+      if (isMissingContent(error)) throw notFound();
+      return UNAVAILABLE;
     }
   },
-  head: ({ loaderData, params }) => buildArticleHead(loaderData, params.articleId),
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
+  head: ({ loaderData, params }) =>
+    isUnavailable(loaderData)
+      ? buildArticleHead(null, params.articleId, { unavailable: true })
+      : buildArticleHead(loaderData, params.articleId),
   component: ArticlePage,
 });
 
@@ -132,7 +147,8 @@ function ArticlePage() {
   // where there is no in-app entry to go back to; fall back to the listing.
   const goBack = useBackTo("/news");
   const [copied, setCopied] = useState(false);
-  const initialArticle = Route.useLoaderData();
+  const loaded = Route.useLoaderData();
+  const initialArticle = isUnavailable(loaded) ? undefined : loaded;
 
   const articleQ = useQuery({
     queryKey: ["news", "article-detail-v2", lang, articleId],
@@ -215,10 +231,7 @@ function ArticlePage() {
   const heroUrl = resolveMediaUrl(article.hero);
   const caption = [article.hero?.caption, article.hero?.credit].filter(Boolean).join(" — ");
   const deck = article.subtitle ?? article.summary;
-  const hasDistinctUpdate =
-    !!article.updatedAt &&
-    article.updatedAt !== article.publishedAt &&
-    Math.abs(Date.parse(article.updatedAt) - Date.parse(article.publishedAt)) > 60_000;
+  const modifiedAt = articleModifiedAt(article);
 
   const canonicalUrl = buildCanonicalArticleUrl(article.id);
   const share = async () => {
@@ -363,7 +376,8 @@ function ArticlePage() {
               <span className="min-w-0 truncate">
                 {categoryLabel(
                   article.primaryCategory,
-                  (key) => (dictionaries[contentLanguage] as Record<string, string>)[key] ?? key,
+                  (key) =>
+                    (contentLanguage === "ar" ? ARABIC_CATEGORY_LABELS[key] : fr[key]) ?? key,
                 )}
               </span>
             </UiPill>
@@ -428,16 +442,13 @@ function ArticlePage() {
                 </span>
                 <Dot />
                 <span>{readTimeLabel(article.readingTimeMinutes, lang, t)}</span>
-                {hasDistinctUpdate && (
+                {modifiedAt && (
                   <>
                     <Dot />
                     <span>
                       {`${t("article.updated")} `}
-                      <time
-                        dateTime={article.updatedAt}
-                        title={formatFullDate(article.updatedAt, lang)}
-                      >
-                        {formatRelativeTime(article.updatedAt, lang)}
+                      <time dateTime={modifiedAt} title={formatFullDate(modifiedAt, lang)}>
+                        {formatRelativeTime(modifiedAt, lang)}
                       </time>
                     </span>
                   </>

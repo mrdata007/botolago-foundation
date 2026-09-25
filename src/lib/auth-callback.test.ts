@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cleanAuthCallbackUrl, sanitizeAuthCallbackNext } from "./auth-callback";
+import { authNextSearch, cleanAuthCallbackUrl, sanitizeAuthCallbackNext } from "./auth-callback";
 
 describe("auth callback URL safety", () => {
   it("removes query and hash credentials while preserving the callback path", () => {
@@ -52,5 +52,13 @@ describe("auth callback URL safety", () => {
     expect(sanitizeAuthCallbackNext("javascript:alert(1)")).toBe("/");
     expect(sanitizeAuthCallbackNext("data:text/html,<script>alert(1)</script>")).toBe("/");
     expect(sanitizeAuthCallbackNext("http://attacker.invalid/")).toBe("/");
+  });
+
+  it("a route's validated next always carries the key, so the raw query cannot leak through", () => {
+    expect(authNextSearch("https://attacker.invalid")).toEqual({ next: undefined });
+    expect("next" in authNextSearch("/\\attacker.invalid")).toBe(true);
+    expect(authNextSearch(undefined)).toEqual({ next: undefined });
+    expect(authNextSearch("/")).toEqual({ next: undefined });
+    expect(authNextSearch("/fantasy/team")).toEqual({ next: "/fantasy/team" });
   });
 });

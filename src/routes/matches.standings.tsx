@@ -25,6 +25,7 @@ import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { clubStanding } from "@/lib/league-table";
 import { cn } from "@/lib/utils";
+import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { footballService, type FootballSeason } from "@/services/football";
 
 const STANDINGS_TITLE = "Classement Botola Pro — points, forme et buts | BotolaGO";
@@ -34,6 +35,28 @@ const STANDINGS_DESCRIPTION =
 export const Route = createFileRoute("/matches/standings")({
   // `?season=<id>`: the season the Calendrier tab was showing (matches-search.ts).
   validateSearch: validateMatchesSearch,
+  // The table itself is in the server's HTML (see `@/lib/ssr-prefetch`), for
+  // the season the page opens on: the one asked for, else the current one.
+  loaderDeps: ({ search }) => ({ season: search.season }),
+  loader: async ({ context, deps }) => {
+    const { queryClient } = context;
+    await prefetchForSsr(queryClient, [
+      { queryKey: ["football", "seasons", "fr"], queryFn: () => footballService.getSeasons("fr") },
+    ]);
+    const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
+    const season =
+      seasons?.find((candidate) => candidate.id === deps.season) ??
+      seasons?.find((candidate) => candidate.isCurrent) ??
+      seasons?.[0];
+    if (season) {
+      await prefetchForSsr(queryClient, [
+        {
+          queryKey: ["football", "standings", season.id, "fr"],
+          queryFn: () => footballService.getStandings(season, "fr"),
+        },
+      ]);
+    }
+  },
   head: () => ({
     meta: [
       { title: STANDINGS_TITLE },

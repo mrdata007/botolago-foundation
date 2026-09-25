@@ -1,7 +1,13 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
+import { supabaseV2 } from "@/integrations/supabase/v2-client";
 import { selectFantasyDataMode } from "./fantasy-v2";
-import { readFantasyAvailability, type FantasyAvailability } from "./fantasy-availability";
+import { forgetSharedFantasyHub, shareFantasyHub } from "./fantasy-hub-share";
+import {
+  enrolmentGameweekOf,
+  readFantasyAvailability,
+  type FantasyAvailability,
+} from "./fantasy-availability";
 import {
   buildGlobalRankings,
   selectRankingsPage,
@@ -11,6 +17,7 @@ import {
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   FantasyGameweekSummaryDto,
+  FantasyHubDto,
   FantasyOverallStandingDto,
   FantasyPlayerDto,
   FantasyPlayerGameweekHistoryEntryDto,
@@ -174,8 +181,31 @@ function overallStandingDto(dto: FantasyOverallStandingDto): LeagueStanding {
   };
 }
 
-async function hub() {
-  return cloud.getHub("fr", context());
+/**
+ * Whose hub a read returns: the account whose session the request will carry.
+ * An unreadable session never shares (a fresh identity per call).
+ */
+async function hubIdentity(): Promise<string> {
+  try {
+    const { data } = await supabaseV2.auth.getSession();
+    return data.session?.user.id ?? "anonymous";
+  } catch {
+    return `unknown:${crypto.randomUUID()}`;
+  }
+}
+
+/** One hub read per screen and account: see `fantasy-hub-share.ts`. */
+async function hub(): Promise<FantasyHubDto> {
+  const identity = await hubIdentity();
+  return shareFantasyHub(() => cloud.getHub("fr", context()), { identity });
+}
+
+/** The hub's enrolment gameweek in the screens' `Gameweek` vocabulary. */
+function enrolmentOf(current: FantasyHubDto): Gameweek["enrolment"] {
+  const enrolment = enrolmentGameweekOf(current);
+  return enrolment
+    ? { id: enrolment.id, number: enrolment.sequence, deadline: enrolment.deadlineAt }
+    : null;
 }
 
 /**
@@ -267,6 +297,7 @@ export const fantasyService = {
       rankingAvailable: current.rankingAvailable,
       averagePoints: summary?.averagePoints ?? null,
       highestPoints: summary?.highestPoints ?? null,
+      enrolment: enrolmentOf(current),
     };
   },
 
@@ -597,6 +628,7 @@ export const fantasyService = {
       crypto.randomUUID(),
       context(),
     )) as { leagueId: string; inviteCode?: string };
+    forgetSharedFantasyHub();
     return { id: result.leagueId, code: result.inviteCode };
   },
   async joinLeague(code: string): Promise<void> {
@@ -607,6 +639,7 @@ export const fantasyService = {
     }
     const current = await cloudTeam();
     await cloud.joinLeague(current.team.id, code, crypto.randomUUID(), context());
+    forgetSharedFantasyHub();
   },
   async leaveLeague(leagueId: string): Promise<void> {
     if (mode() === "mock") {
@@ -616,6 +649,7 @@ export const fantasyService = {
     }
     const current = await cloudTeam();
     await cloud.leaveLeague(leagueId, current.team.id, context());
+    forgetSharedFantasyHub();
   },
   async archiveLeague(leagueId: string): Promise<void> {
     if (mode() === "mock") {
@@ -625,6 +659,7 @@ export const fantasyService = {
     }
     const current = await cloudTeam();
     await cloud.archiveLeague(leagueId, current.team.id, context());
+    forgetSharedFantasyHub();
   },
 };
 

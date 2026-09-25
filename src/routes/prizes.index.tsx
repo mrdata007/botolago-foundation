@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { PrizesPage } from "@/components/prizes/PrizesPage";
 import { UiHeader } from "@/components/ui-kit";
-import { dictionaries } from "@/i18n/dictionaries";
+import { fr } from "@/i18n/dictionary-fr";
 import { useI18n } from "@/i18n/provider";
 import { PRIZES_ENABLED } from "@/lib/feature-flags";
 
@@ -21,10 +21,10 @@ export const Route = createFileRoute("/prizes/")({
   beforeLoad: redirectWhilePrizesAreHidden,
   head: () => ({
     meta: [
-      { title: dictionaries.fr["prizes.meta_title"] },
-      { name: "description", content: dictionaries.fr["prizes.meta_description"] },
-      { property: "og:title", content: dictionaries.fr["prizes.meta_title"] },
-      { property: "og:description", content: dictionaries.fr["prizes.meta_description"] },
+      { title: fr["prizes.meta_title"] },
+      { name: "description", content: fr["prizes.meta_description"] },
+      { property: "og:title", content: fr["prizes.meta_title"] },
+      { property: "og:description", content: fr["prizes.meta_description"] },
     ],
   }),
   component: PrizesRoute,

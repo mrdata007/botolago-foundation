@@ -148,6 +148,12 @@ export interface Gameweek {
   averagePoints: number | null;
   highestPoints: number | null;
   chipActive?: LocalizedString;
+  /**
+   * The gameweek a brand-new team joins right now: this one while it is open
+   * and before its deadline, otherwise the staged next one. `null` when no
+   * gameweek accepts a new team; absent in mock mode.
+   */
+  enrolment?: { id: string; number: number; deadline: string } | null;
 }
 
 export interface FantasySummary {

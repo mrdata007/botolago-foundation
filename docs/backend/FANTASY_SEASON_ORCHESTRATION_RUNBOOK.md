@@ -112,7 +112,10 @@ Reading the `deadlineWatch` block of `fantasy-season-orchestrator.json`:
   (`fixtureId`, `homeTeam`, `awayTeam`, `providerKickoffAt`,
   `assignedKickoffAt`, `originalKickoffAt`, `fixtureStatus`,
   `assignmentStatus`, `frozen`, `providerUpdatedAt`, `sourceSequence`);
-- `remediation` — always `scripts/backend/fantasy-realign-gameweek-calendar.sql`;
+- `noPlayableFixtures` — true when no fixture of the gameweek counts any more
+  (every one postponed or voided): no lock can proceed from it;
+- `remediation` — this runbook (since migration 20260924200000; it named the
+  now-retired `fantasy-realign-gameweek-calendar.sql` before);
 - `error` instead of the above — the RPC failed; the verdict degrades to
   `waiting` and the pass is otherwise unaffected.
 
@@ -123,14 +126,40 @@ Operator procedure on an `escalate` run:
 2. Check the provider (SportsMonks) for the real kickoff times. The guard never
    invents a kickoff and never moves a deadline; only a published kickoff fixes
    the condition.
-3. Once real times exist, let the next scheduled pass realign the gameweek, or
-   run `scripts/backend/fantasy-realign-gameweek-calendar.sql` for the single
-   gameweek if it is urgent.
-4. If the times cannot be published before the deadline, the gameweek must be
-   handled manually **before** the deadline elapses. Afterwards realignment is
-   impossible: the sync reports `deadline_locked` / `new_deadline_in_past`, the
-   guard trigger raises `fantasy_gameweek_locked` and the manual script refuses
-   with `current_deadline_already_passed`.
+3. Once real times exist, let the next pass realign the gameweek (dispatch the
+   workflow by hand if it is urgent). The hand-run realign scripts are retired.
+4. If the times cannot be published before the deadline, decide **before** the
+   deadline elapses. Afterwards the deadline cannot move: the sync reports
+   `deadline_locked` / `new_deadline_in_past` and the guard trigger raises
+   `fantasy_gameweek_locked`. Lineups frozen at a deadline are never re-opened.
+
+### Postponed fixtures (since migration 20260924200000)
+
+What went wrong on 2026-09-24 (GW1): a postponed fixture's kickoff anchored the
+deadline, its placeholder kickoff then froze every deadline update, and the
+lock refused to run while it still counted. The rule now:
+
+- A fixture the provider reports `postponed` does not count for its gameweek
+  while it is postponed. The calendar sync (every pass) and the lock (at the
+  deadline) defer it: `superseded_at` set, `assignment_status = 'deferred'`,
+  `resolution = 'provider_postponed'`, `counts_points = false`. The sync
+  reports `assignmentsDeferred`.
+- The deadline is re-derived from the fixtures still playable, 90 minutes
+  before the first of them, as long as the current deadline is still ahead.
+  A postponed fixture's `00:00 UTC` placeholder no longer freezes it.
+- If the provider publishes the fixture again (not postponed, confirmed
+  kickoff) while its gameweek is still `scheduled`/`open` and unfrozen, the
+  sync assigns it again. Once the gameweek has locked it stays out (no double
+  gameweeks yet: the next-gameweek progression requires one round per week).
+- A round is staged when it is fully published; postponed fixtures are left
+  out of the new gameweek instead of blocking it (`postponedFixtures` in the
+  round's report). A round where every fixture is postponed is not staged
+  (`all_fixtures_postponed`); an existing gameweek left with none reports
+  `no_playable_fixtures`, keeps its deadline, is flagged by the deadline watch
+  and cannot lock (`fantasy_fixture_assignments_missing`).
+- A brand-new manager joins the open gameweek before its deadline, otherwise
+  the staged next gameweek (`enrolmentGameweek` in `api.fantasy_hub`). There
+  is no longer a window in which Fantasy refuses every new team.
 
 The watch stays red for every hourly pass until the provider publishes; there
 is no auto-suppression by design.

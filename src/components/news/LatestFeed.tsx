@@ -1,8 +1,6 @@
 import emptyNewsArt from "@/assets/illustrations/empty-news.webp";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { getNewsRepository } from "@/services/news";
-import { encodeNewsCursor } from "@/backend/news/supabase-repository";
 import type { NewsLanguage } from "@/backend/news/contracts";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { UiButton } from "@/components/ui-kit";
@@ -11,9 +9,8 @@ import { SkeletonList } from "@/components/common/Skeletons";
 import { useI18n } from "@/i18n/provider";
 import type { Club } from "@/types/domain";
 import { NewsRowSkeleton } from "./NewsSkeletons";
-import { presentArticleForDisplay, publicNewsContext } from "./news-data";
-
-const PAGE_SIZE = 10;
+import { presentArticleForDisplay } from "./news-data";
+import { newsFeedQuery } from "./news-feed-query";
 
 /**
  * Chronological "Latest" feed with real keyset pagination: each "load more"
@@ -35,22 +32,7 @@ export function LatestFeed({
   excludeIds?: ReadonlySet<string>;
 }) {
   const { t } = useI18n();
-  const query = useInfiniteQuery({
-    queryKey: ["news", "feed-v2", language, categorySlug, teamId],
-    queryFn: ({ pageParam }: { pageParam: string | null }) =>
-      getNewsRepository().getFeed(
-        {
-          language,
-          limit: PAGE_SIZE,
-          cursor: pageParam,
-          categorySlug,
-          teamId,
-        },
-        publicNewsContext(),
-      ),
-    initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) => encodeNewsCursor(lastPage.nextCursor),
-  });
+  const query = useInfiniteQuery(newsFeedQuery(language, categorySlug, teamId));
 
   const fetched = (query.data?.pages ?? []).flatMap((page) => page.items);
   const items = fetched.filter((item) => !excludeIds?.has(item.id));

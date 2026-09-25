@@ -5,7 +5,7 @@ import { LegalDocumentView } from "@/components/legal/LegalDocumentView";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { ui, UiHeader } from "@/components/ui-kit";
 import { PRIZE_TERMS } from "@/content/legal/prize-terms";
-import { dictionaries } from "@/i18n/dictionaries";
+import { fr } from "@/i18n/dictionary-fr";
 import { useI18n } from "@/i18n/provider";
 import { PRIZES_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
@@ -22,8 +22,8 @@ export const Route = createFileRoute("/prizes/terms")({
   },
   head: () => ({
     meta: [
-      { title: dictionaries.fr["prizes.terms.meta_title"] },
-      { name: "description", content: dictionaries.fr["prizes.terms.meta_description"] },
+      { title: fr["prizes.terms.meta_title"] },
+      { name: "description", content: fr["prizes.terms.meta_description"] },
     ],
   }),
   component: PrizeTermsRoute,

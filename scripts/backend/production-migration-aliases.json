@@ -1,0 +1,121 @@
+{
+  "about": "Production V2 (tkewgajrljbwgwedqsxn) recorded these repository migrations under other version numbers. Checked 2026-09-24 (docs/backend/MIGRATION_DRIFT.md): for every one the recorded code equals the file's once comments, blank lines, indentation and the apply wrapper's timeouts are set aside, and production's schema equals a local build of the repository at the same migration apart from comments inside six function bodies. Production's history is left as it is: it is the true record of what ran there. The versions below are what a history check must accept in place of the repository's.",
+  "checkedAt": "2026-09-24",
+  "aliases": [
+    {
+      "repository": "20260919130000_news_editorial_admin_bridge",
+      "production": "20260919212409",
+      "recorded": "identical"
+    },
+    {
+      "repository": "20260919150000_news_editorial_mfa_enforcement",
+      "production": "20260919212452",
+      "recorded": "identical"
+    },
+    {
+      "repository": "20260919160000_news_editorial_server_side_sanitization",
+      "production": "20260919212553",
+      "recorded": "identical"
+    },
+    {
+      "repository": "20260921120000_fantasy_leagues_anon_callable_signature",
+      "production": "20260921111012",
+      "recorded": "same code; comments differ"
+    },
+    {
+      "repository": "20260921140000_news_article_detail_not_found_status",
+      "production": "20260921135655",
+      "recorded": "same code; comments differ"
+    },
+    {
+      "repository": "20260921160000_fantasy_player_statistics",
+      "production": "20260922131525",
+      "recorded": "same code; comments differ"
+    },
+    {
+      "repository": "20260921170000_news_stand_down",
+      "production": "20260922131708",
+      "recorded": "same code; comments differ"
+    },
+    {
+      "repository": "20260921180000_fantasy_overall_standings",
+      "production": "20260922131802",
+      "recorded": "same code; comments differ"
+    },
+    {
+      "repository": "20260921190000_team_translations",
+      "production": "20260922131948",
+      "recorded": "same code; comments differ"
+    },
+    {
+      "repository": "20260921200000_fantasy_points_read_surfaces",
+      "production": "20260922132158",
+      "recorded": "same code; comments differ"
+    },
+    {
+      "repository": "20260921220000_story_teams_seed",
+      "production": "20260922132247",
+      "recorded": "same code; comments differ"
+    },
+    {
+      "repository": "20260922180000_news_legacy_imports",
+      "production": "20260922220941",
+      "recorded": "same code; whitespace differs"
+    },
+    {
+      "repository": "20260922180100_news_scheduled_publication",
+      "production": "20260922221202",
+      "recorded": "same code; whitespace differs"
+    },
+    {
+      "repository": "20260922180200_news_public_seo",
+      "production": "20260923043708",
+      "recorded": "same code; whitespace differs"
+    },
+    {
+      "repository": "20260922200000_fixture_finalization_preserved",
+      "production": "20260923044153",
+      "recorded": "same code; whitespace differs"
+    },
+    {
+      "repository": "20260922200100_current_performance_batch_scope",
+      "production": "20260923044401",
+      "recorded": "same code; whitespace differs"
+    },
+    {
+      "repository": "20260924100000_news_licensed_syndication",
+      "production": "20260924041012",
+      "recorded": "same code; whitespace differs"
+    },
+    {
+      "repository": "20260924120000_fantasy_prizes",
+      "production": "20260924133723",
+      "recorded": "same code; comments differ; the apply wrapper's two set local timeouts recorded first"
+    },
+    {
+      "repository": "20260924140000_notification_email_types",
+      "production": "20260924130807",
+      "recorded": "identical"
+    },
+    {
+      "repository": "20260924140100_notification_email_delivery",
+      "production": "20260924131431",
+      "recorded": "identical"
+    },
+    {
+      "repository": "20260924163000_news_sitemap_licensed",
+      "production": "20260924135118",
+      "recorded": "same code; comments differ"
+    },
+    {
+      "repository": "20260924170000_news_feed_indexes",
+      "production": "20260924141229",
+      "recorded": "same code; comments differ"
+    },
+    {
+      "repository": "20260924173000_news_search_set_based",
+      "production": "20260924142407",
+      "recorded": "same code; comments differ"
+    }
+  ]
+}

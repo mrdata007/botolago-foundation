@@ -3,8 +3,8 @@ name: Fantasy season orchestrator
 # Scheduled production operation for the 2026/27 Fantasy season. It composes
 # the existing guarded operations without changing them:
 #   1. provider fixture / result refresh (scripts/backend/current-season-recovery.ts,
-#      canary mode — its final squad guard may still fail while the provider
-#      lacks the promoted clubs; the fixture phase commits before that guard);
+#      canary mode, fixtures scope: squads are frozen once the Fantasy catalog
+#      is staged, so the squad phase is not run here);
 #   2. scripts/backend/fantasy-season-orchestrator.ts: calendar sync
 #      (api.service_sync_fantasy_calendar), finished-fixture performance
 #      ingestion, the trusted lifecycle worker for gameweeks that have work,
@@ -20,8 +20,8 @@ name: Fantasy season orchestrator
 # escalation window while one of its counting fixtures still carries an
 # unconfirmed placeholder kickoff (00:00 UTC), so its deadline is not
 # authoritative; the operator procedure is in
-# docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md and the remediation
-# script is scripts/backend/fantasy-realign-gameweek-calendar.sql. The watch
+# docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md (the hand-run realign
+# scripts are retired; postponed fixtures are handled by the sync). The watch
 # window defaults to 72 h / 24 h and can be overridden with the repository
 # variables FANTASY_DEADLINE_WATCH_WARN_HOURS / _ESCALATE_HOURS.
 
@@ -41,6 +41,7 @@ concurrency:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   orchestrate:
@@ -110,6 +111,10 @@ jobs:
         env:
           CONFIRMATION: RUN_CURRENT_SEASON_RECOVERY
           CURRENT_SEASON_RECOVERY_MODE: canary
+          # Fixtures and results only: once the Fantasy catalog is staged the
+          # squad RPC refuses by design (fantasy_catalog_already_staged), so a
+          # squad phase here could only fail -- it turned every run red.
+          CURRENT_SEASON_RECOVERY_SCOPE: fixtures
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
         shell: bash
@@ -162,3 +167,18 @@ jobs:
           path: ${{ env.FANTASY_ORCHESTRATOR_EVIDENCE_DIR }}
           if-no-files-found: error
           retention-days: 14
+
+      # A red run used to be the only escalation channel, and nobody saw the
+      # two on 2026-09-24. Open (or update) an ops-alert issue that mentions
+      # the owner; the next green run closes it. docs/operations/ALERTS.md
+      - name: Alert on failure
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/ops/github-alert.ts failure "Fantasy season orchestrator" "$FANTASY_ORCHESTRATOR_EVIDENCE_DIR/fantasy-season-orchestrator.json"
+
+      - name: Clear the alert after a green run
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bun scripts/ops/github-alert.ts success "Fantasy season orchestrator"
