@@ -92,6 +92,8 @@ Fantasy follows the list:
    It reads every club's squad and those lineups from SportsMonks and records
    them in production (`api.service_record_current_player_list`, one row in
    `app_private.current_player_list_observations`). It changes nothing else.
+   It stops, recording nothing, if SportsMonks returns one player's details
+   under another player's id (`included_player_mismatch`).
    Recording holds every scheduled (pg_cron) job off until it finishes, and
    refuses while one is mid-run; the run then waits and tries again, six
    times, 10 seconds apart.

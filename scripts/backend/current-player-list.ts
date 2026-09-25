@@ -109,6 +109,11 @@ export function observedPlayer(
   jerseyNumber: unknown,
   today: string,
 ): ObservedPlayer | null {
+  // An included profile must be this player's own: a stale or malformed one
+  // would lend another person's name to this id. The squad import refuses it
+  // too (squad_player_mismatch).
+  if (player && id(player.id, "player.id") !== playerId)
+    fail("included_player_mismatch", { externalPlayerId: String(playerId) });
   const fullName = name(player?.name, 2, 200);
   const displayName =
     name(player?.display_name, 2, 120) ??

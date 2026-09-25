@@ -38,6 +38,7 @@ describe("current player list observation", () => {
       observedPlayer(
         7,
         {
+          id: 7,
           name: "  Mouad   Goulouss ",
           display_name: "M. Goulouss",
           firstname: "Mouad",
@@ -71,18 +72,28 @@ describe("current player list observation", () => {
     expect(
       observedPlayer(
         11,
-        { display_name: "Omar Kadi", common_name: "O. Kadi" },
+        { id: 11, display_name: "Omar Kadi", common_name: "O. Kadi" },
         null,
         [27],
         9,
         TODAY,
       ),
     ).toMatchObject({ fullName: null, displayName: "Omar Kadi", position: "forward" });
-    expect(observedPlayer(9, { name: "X" }, null, [24], 1, TODAY)).toBeNull();
+    expect(observedPlayer(9, { id: 9, name: "X" }, null, [24], 1, TODAY)).toBeNull();
     expect(
-      observedPlayer(10, { name: "Future Born", date_of_birth: "2026-09-26" }, null, [], 1, TODAY)
-        ?.dateOfBirth,
+      observedPlayer(
+        10,
+        { id: 10, name: "Future Born", date_of_birth: "2026-09-26" },
+        null,
+        [],
+        1,
+        TODAY,
+      )?.dateOfBirth,
     ).toBeNull();
+    // Another player's profile under this id is refused, as the squad import does.
+    expect(() =>
+      observedPlayer(12, { id: 13, name: "Someone Else" }, null, [27], 9, TODAY),
+    ).toThrow("included_player_mismatch");
   });
 
   test("a club's season squad is read first; its current roster stands in when that is empty", async () => {
@@ -142,6 +153,21 @@ describe("current player list observation", () => {
         provider({ "/v3/football/squads/seasons/28647/teams/503": { data: [squadRow(6, 504)] } }),
       ),
     ).rejects.toMatchObject({ code: "squad_scope_mismatch" });
+    await expect(
+      loadClubSquad(
+        505,
+        OBSERVED_AT,
+        "token",
+        provider({
+          "/v3/football/squads/seasons/28647/teams/505": {
+            data: [squadRow(7, 505, { player: { id: 8, name: "Stale Include" } })],
+          },
+        }),
+      ),
+    ).rejects.toMatchObject({
+      code: "included_player_mismatch",
+      diagnostic: { externalPlayerId: "7" },
+    });
   });
 
   test("a lineup names only its two clubs' players, and skips the ones SportsMonks cannot name", async () => {
@@ -206,6 +232,23 @@ describe("current player list observation", () => {
         provider({ [path]: { data: { ...fixture([]).data, season_id: 1 } } }),
       ),
     ).rejects.toMatchObject({ code: "lineup_fixture_scope_mismatch" });
+    await expect(
+      loadFixtureLineup(
+        19874708,
+        OBSERVED_AT,
+        "token",
+        provider({
+          [path]: fixture([
+            {
+              player_id: 12,
+              team_id: 501,
+              player_name: "Twelve Here",
+              player: { id: 13, name: "Thirteen Elsewhere" },
+            },
+          ]),
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "included_player_mismatch" });
   });
 
   test("records one observation of the sixteen clubs and returns its plan, and nothing else", async () => {
