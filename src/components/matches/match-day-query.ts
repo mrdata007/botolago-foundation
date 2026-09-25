@@ -1,10 +1,10 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import type { FootballLanguage } from "@/backend/football/contracts";
-import { isKickoffTimeUnconfirmed, matchDayFromKey } from "@/lib/match-kickoff";
+import { matchDayFromKey } from "@/lib/match-kickoff";
 import {
   matchRefetchInterval,
   POST_KICKOFF_REFRESH_MINUTES,
-  PRE_KICKOFF_REFRESH_MINUTES,
+  WATCH_REFRESH_MS,
 } from "@/lib/match-refresh";
 import {
   footballService,
@@ -78,15 +78,6 @@ export function clampMatchDay(
  */
 export const JUST_FINISHED_REFRESH_MINUTES = 150;
 
-/**
- * How far ahead a kick-off still books the one refetch that starts its
- * watch. Further ahead than a day, nothing is booked at all.
- */
-export const KICKOFF_WAKE_UP_HORIZON_MINUTES = 24 * 60;
-
-/** The pace of a match about to kick off (`matchRefetchInterval`). */
-const WATCH_REFRESH_MS = 60_000;
-
 function dayMatchRefetchInterval(
   match: Pick<Match, "status" | "kickoff">,
   now: number,
@@ -104,34 +95,23 @@ function dayMatchRefetchInterval(
   if (match.status === "live" && sinceKickoff > POST_KICKOFF_REFRESH_MINUTES * 60_000) {
     return false;
   }
-  // A kick-off still at the provider's placeholder hour (midnight UTC, 01:00
-  // in Casablanca) is not a time anyone plays at: watching it would poll the
-  // day every minute through the night. The strip still picks such a match
-  // up once the feed marks it started.
-  if (isKickoffTimeUnconfirmed(match)) return false;
-  const watching = matchRefetchInterval(match, now);
-  if (watching !== false || match.status !== "scheduled") return watching;
-  // Not yet a quarter of an hour from kick-off: one refetch when it is. A
-  // `false` is only looked at again when the query or the page next
-  // updates, so a page opened at 18:00 on a 20:00 kick-off could otherwise
-  // sit unrefreshed through the start of the match.
-  const untilWatch = kickoff - PRE_KICKOFF_REFRESH_MINUTES * 60_000 - now;
-  return untilWatch > 0 && untilWatch <= KICKOFF_WAKE_UP_HORIZON_MINUTES * 60_000
-    ? Math.max(untilWatch, WATCH_REFRESH_MS)
-    : false;
+  // The rest is the match page's own rule, the placeholder hour's silence
+  // and the refetch that starts the watch included: one rule, so the list
+  // and the page agree on when to look at a match to come.
+  return matchRefetchInterval(match, now);
 }
 
 /**
  * How often the Matches calendar refetches the day on show, as a TanStack
  * Query `refetchInterval`. The match page's pace (`matchRefetchInterval`):
  * every 30 seconds while a match is in play, every minute from a quarter of
- * an hour before a kick-off until the feed marks it started. What a list
- * adds: a match that has just finished keeps its day refreshing for a short
- * while, so the final score reaches the list; a match still marked live
- * three hours after kick-off no longer counts; a kick-off still at the
- * provider's placeholder hour is not watched at all; and a kick-off later in
- * the day books the single refetch that starts its watch. A past day has none
- * of these and never polls, nor does a day more than a day ahead; the
+ * an hour before a kick-off until the feed marks it started, and before that
+ * the single refetch that starts the watch, booked up to a day ahead; a
+ * kick-off still at the provider's placeholder hour is not watched at all.
+ * What a list adds: a match that has just finished keeps its day refreshing
+ * for a short while, so the final score reaches the list; and a match still
+ * marked live three hours after kick-off no longer counts. A past day has
+ * none of these and never polls, nor does a day more than a day ahead; the
  * caller sets `refetchIntervalInBackground: false`, so a hidden tab never
  * polls either.
  *

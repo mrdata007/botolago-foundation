@@ -67,28 +67,62 @@ export function articleHeadline(article: Pick<ArticleDetailDto, "seo" | "title">
 }
 
 /**
+ * How much of a description a search result shows, and the length the
+ * licensed import cut `seo_description` to (its `SEO_DESCRIPTION_LIMIT`; a
+ * test holds the two together).
+ */
+export const SEARCH_DESCRIPTION_LENGTH = 155;
+
+/**
+ * The body's text from the start to the end of the paragraph `stem` stops
+ * in, when the body opens with `stem` (comparable text) and runs on past it;
+ * else `null`.
+ */
+function runToParagraphEnd(stem: string, paragraphs: readonly string[]): string | null {
+  let opening = "";
+  for (let index = 0; index < paragraphs.length; index += 1) {
+    const paragraph = comparableText(paragraphs[index]);
+    opening = index ? `${opening} ${paragraph}` : paragraph;
+    if (opening.length < stem.length) continue;
+    // A body that ends exactly where the stem does had nothing cut from it.
+    const cut = opening.length > stem.length || index < paragraphs.length - 1;
+    return opening.startsWith(stem) && cut ? paragraphs.slice(0, index + 1).join(" ") : null;
+  }
+  return null;
+}
+
+/**
  * `clipped` completed from the body, when it is the body's opening text cut
  * short and closed with an ellipsis: the body's text from the start to the
  * end of the paragraph the cut fell in. `null` when it is not such a cut.
  *
  * The import clipped the paragraphs joined end to end, so its cut runs on
  * past a short first paragraph; completing to the end of the paragraph keeps
- * every word the clip had, and ends where the writer ended a thought.
+ * every word the clip had, and ends where the writer ended a thought. A body
+ * that ends exactly where the text before the ellipsis does had nothing cut
+ * from it: that ellipsis is the writer's own.
  */
 function completedFromBody(clipped: string, paragraphs: readonly string[]): string | null {
   const stem = ellipsisStem(comparableText(clipped));
-  if (!stem) return null;
-  let opening = "";
-  for (let index = 0; index < paragraphs.length; index += 1) {
-    const paragraph = comparableText(paragraphs[index]);
-    opening = index ? `${opening} ${paragraph}` : paragraph;
-    if (opening.length < stem.length) continue;
-    // A body that ends exactly where the text before the ellipsis does had
-    // nothing cut from it: that ellipsis is the writer's own.
-    const cut = opening.length > stem.length || index < paragraphs.length - 1;
-    return opening.startsWith(stem) && cut ? paragraphs.slice(0, index + 1).join(" ") : null;
-  }
-  return null;
+  return stem ? runToParagraphEnd(stem, paragraphs) : null;
+}
+
+/**
+ * The body's opening as the archive's copy of it reads once completed: the
+ * body's text to the end of the paragraph the licensed import's cut falls
+ * in, or the whole text when it fits the search length. That cut (`clip` in
+ * scripts/backend/elbotola-licensed-import.ts) kept the paragraphs joined end
+ * to end up to the last space before character 154, the 155th going to the
+ * "…". `completedFromBody` runs the stored copy on from there and this runs
+ * on from the same place, so both give the same text. `null` in the rare
+ * case where the text does not compare as it reads (literal markup in it).
+ */
+function openingToImportCut(paragraphs: readonly string[]): string | null {
+  const text = paragraphs.join(" ");
+  if (text.length <= SEARCH_DESCRIPTION_LENGTH) return text;
+  const cut = text.slice(0, SEARCH_DESCRIPTION_LENGTH - 1);
+  const stem = comparableText(cut.slice(0, Math.max(cut.lastIndexOf(" "), 1)));
+  return stem ? runToParagraphEnd(stem, paragraphs) : null;
 }
 
 /**
@@ -99,14 +133,27 @@ function completedFromBody(clipped: string, paragraphs: readonly string[]): stri
  * and cut before 155 characters with "…", on all 15,690 published editions
  * (2026-09-25). Where the first paragraph is longer than the cut (9,065
  * editions), completing it gives that paragraph, which is also the summary.
- * Where it is shorter (6,625), the cut ran on into the next one: those first
- * paragraphs are often a kicker ("Mise à jour.", "Les retardataires."), too
- * thin to describe the story alone, so the description runs to the end of the
- * paragraph the cut fell in and keeps every word the clip had. On the 396
- * whose first paragraph is over 300 characters the summary is itself cut
- * with "…", and the description is that whole paragraph. Nine in ten come
- * out under about 370 characters, and none over about 810; search engines
- * and social cards shorten it to their own space, as they do a long headline.
+ * Where it is shorter (6,625), the cut ran on into the next one on 5,876 of
+ * them: those first paragraphs are often a kicker ("Mise à jour.", "Les
+ * retardataires."), too thin to describe the story alone, so the description
+ * runs to the end of the paragraph the cut fell in and keeps every word the
+ * clip had. On the 396 whose first paragraph is over 300 characters the
+ * summary is itself cut with "…", and the description is that whole
+ * paragraph. Nine in ten come out under about 370 characters, and none over
+ * about 810; search engines and social cards shorten it to their own space,
+ * as they do a long headline.
+ *
+ * The import now stores no description where the text is longer than the
+ * search length, and its summary is the first paragraph whole (up to 300
+ * characters), so those 5,876 would be described by their short first
+ * paragraph alone. With no description stored, a summary that is the body's
+ * first paragraph uncut therefore runs on to the end of the paragraph the
+ * import's cut would have fallen in, or to the end of a text that fits the
+ * search length (`openingToImportCut`): an edition imported now is described
+ * as its archived copy is. BotolaGO's own editions follow the same rule, on
+ * purpose: one with no SEO description whose summary repeats a short first
+ * paragraph is described by that paragraph and the text after it, a fuller
+ * description than the paragraph alone. None was public on 2026-09-25.
  *
  * An editor's own description stands, and so does a summary written apart
  * from the body. A description clipped from such a summary gives way to it.
@@ -121,6 +168,9 @@ export function articleDescription(
   }
   const summary = article.summary.trim();
   if (!summary) return null;
+  if (paragraphs.length > 0 && comparableText(summary) === comparableText(paragraphs[0])) {
+    return openingToImportCut(paragraphs) ?? summary;
+  }
   return completedFromBody(summary, paragraphs) ?? summary;
 }
 

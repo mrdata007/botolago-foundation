@@ -106,14 +106,13 @@ describe("article text", () => {
     expect(articleDescription(presented)).toBe(articleText(longText)[0]);
   });
 
-  test("a text opening with a short kicker is described by the kicker alone", () => {
-    // The page runs a lead on to the end of the paragraph a cut fell in only
-    // when the lead ends in an ellipsis. The archive's clipped copy of this
-    // text is completed to the kicker and the whole next paragraph; an
-    // edition imported now has no copy, and its summary is the kicker.
-    // Running a short summary on the same way is src/lib/article-meta.ts's
-    // to do, and when it does, the first description below becomes the
-    // second.
+  test("a text opening with a short kicker is described by the kicker and the text after it", () => {
+    // An edition imported now has no description stored and the kicker for
+    // its summary. The page runs that summary on to the end of the paragraph
+    // the old import's cut would have fallen in (src/lib/article-meta.ts):
+    // the kicker and the whole next paragraph, as it completes the archive's
+    // clipped copy of the same text (below). It used to describe this
+    // edition by the kicker alone.
     const kicker = "Mise à jour.";
     const next =
       "La troisième journée de la Botola Pro se conclura par un affrontement de haut vol, avec le Wydad de Casablanca recevant la Jeunesse Sportive Soualem au Complexe Sportif Mohammed V à 20h.";
@@ -129,7 +128,7 @@ describe("article text", () => {
       });
     expect(edition.seoDescription).toBeNull();
     expect(edition.summary).toBe(kicker);
-    expect(describedWith(edition.seoDescription)).toBe(kicker);
+    expect(describedWith(edition.seoDescription)).toBe(`${kicker} ${next}`);
     // The archive's copy of the same text: cut by the old import, completed
     // by the page.
     expect(describedWith(clip(articleText(html).join(" "), SEO_DESCRIPTION_LIMIT))).toBe(

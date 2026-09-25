@@ -1,4 +1,5 @@
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { isKickoffTimeUnconfirmed, matchDayKey } from "@/lib/match-kickoff";
 import { matchRefetchInterval } from "@/lib/match-refresh";
 import type { Match } from "@/types/domain";
 
@@ -21,13 +22,15 @@ import type { Match } from "@/types/domain";
 /**
  * The match as its empty panels read it:
  *
- *   upcoming   — scheduled, kick-off still ahead
+ *   upcoming   — scheduled, kick-off still ahead; at the provider's
+ *                placeholder hour, until the end of its day
  *   awaiting   — kick-off passed, not yet reported under way (a late start,
  *                or a feed behind): the page is still checking
  *   live       — in play
  *   finished   — played to the end
- *   unreported — kick-off long passed and still reported as scheduled: the
- *                page has stopped checking, and says nothing will come
+ *   unreported — kick-off long passed (at the placeholder hour, its day over)
+ *                and still reported as scheduled: the page is not checking,
+ *                and says nothing will come
  *   postponed  — postponed, or suspended to be resumed
  *   called_off — cancelled or abandoned: not going to be played as scheduled
  */
@@ -63,6 +66,18 @@ export function matchDataPhase(
     case "scheduled": {
       const kickoff = Date.parse(match.kickoff);
       if (Number.isNaN(kickoff) || asOf < kickoff) return "upcoming";
+      // A kick-off still at the provider's placeholder hour (midnight UTC,
+      // 01:00 in Casablanca) names the day, not the hour. The page does not
+      // watch it (`matchRefetchInterval`), so once that hour had passed, the
+      // match was "unreported", its data not available, from 01:00 on the
+      // very day it is to be played. It is still to come until that day is
+      // over.
+      if (
+        isKickoffTimeUnconfirmed(match) &&
+        matchDayKey(new Date(asOf)) <= matchDayKey(new Date(kickoff))
+      ) {
+        return "upcoming";
+      }
       return matchRefetchInterval(match, asOf) === false ? "unreported" : "awaiting";
     }
   }

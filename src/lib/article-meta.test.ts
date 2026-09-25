@@ -6,6 +6,7 @@ import {
   buildArticleHead,
   buildArticleJsonLd,
   buildCanonicalArticleUrl,
+  SEARCH_DESCRIPTION_LENGTH,
   serializeJsonLd,
   unclippedSeoText,
 } from "./article-meta";
@@ -466,48 +467,62 @@ describe("clipped SEO copies of the headline and summary", () => {
   });
 });
 
+/**
+ * An edition the importer itself builds from these paragraphs, so the stored
+ * shapes are the real ones: `now` as it stores one today (`toEdition`: no
+ * SEO copy of a text longer than a search result shows), `archived` as every
+ * published edition still carries it, with the copies it used to store (its
+ * `clip` and `articleText`).
+ */
+function importedEdition(language: "fr" | "ar", paragraphs: readonly string[]) {
+  const html = paragraphs.map((paragraph) => `<p>${paragraph}</p>`).join("");
+  const edition = toEdition({
+    id: "1",
+    language,
+    url: "https://www.elbotola.com/article/2026-09-22-23-19-974.html",
+    title: "Un titre d'article importé",
+    author: null,
+    publishedAt: "2026-09-22T22:48:00.000Z",
+    html,
+    translatedFrom: null,
+  })!;
+  const now = detail({
+    language,
+    title: edition.title,
+    summary: edition.summary,
+    bodyHtml: edition.bodyHtml,
+    seo: { title: edition.seoTitle, description: edition.seoDescription },
+  });
+  const archived = detail({
+    ...now,
+    seo: {
+      title: clip(edition.title, SEO_TITLE_LIMIT),
+      description: clip(articleText(html).join(" "), SEO_DESCRIPTION_LIMIT),
+    },
+  });
+  return { now, archived };
+}
+
+/** `text` is the article's description everywhere the head puts one. */
+function describedAs(article: ArticleDetailDto, text: string) {
+  expect(articleDescription(article)).toBe(text);
+  expect(buildArticleJsonLd(article, "https://botolago.com/news/x")!.description).toBe(text);
+  const head = buildArticleHead(article, article.id);
+  for (const tag of [
+    { name: "description", content: text },
+    { property: "og:description", content: text },
+    { name: "twitter:description", content: text },
+  ]) {
+    expect(head.meta).toContainEqual(tag);
+  }
+}
+
 // The import stored `seo_description` as the body's paragraphs joined end to
 // end and clipped before 155 characters. It leaves the column empty now, but
-// every published edition still carries such a copy. These editions are
-// built by the importer itself (`toEdition`, and its `clip` and `articleText`
-// for the SEO copies it used to store), so the stored shapes are the real
-// ones.
+// every published edition still carries such a copy.
 describe("a description clipped from the body is completed from it", () => {
-  const imported = (language: "fr" | "ar", paragraphs: readonly string[]) => {
-    const html = paragraphs.map((paragraph) => `<p>${paragraph}</p>`).join("");
-    const edition = toEdition({
-      id: "1",
-      language,
-      url: "https://www.elbotola.com/article/2026-09-22-23-19-974.html",
-      title: "Un titre d'article importé",
-      author: null,
-      publishedAt: "2026-09-22T22:48:00.000Z",
-      html,
-      translatedFrom: null,
-    })!;
-    return detail({
-      language,
-      title: edition.title,
-      summary: edition.summary,
-      bodyHtml: edition.bodyHtml,
-      seo: {
-        title: clip(edition.title, SEO_TITLE_LIMIT),
-        description: clip(articleText(html).join(" "), SEO_DESCRIPTION_LIMIT),
-      },
-    });
-  };
-  const describedAs = (article: ArticleDetailDto, text: string) => {
-    expect(articleDescription(article)).toBe(text);
-    expect(buildArticleJsonLd(article, "https://botolago.com/news/x")!.description).toBe(text);
-    const head = buildArticleHead(article, article.id);
-    for (const tag of [
-      { name: "description", content: text },
-      { property: "og:description", content: text },
-      { name: "twitter:description", content: text },
-    ]) {
-      expect(head.meta).toContainEqual(tag);
-    }
-  };
+  const imported = (language: "fr" | "ar", paragraphs: readonly string[]) =>
+    importedEdition(language, paragraphs).archived;
 
   it("a short first paragraph: the cut ran on into the next, which is kept whole", () => {
     const kicker = "Mise à jour.";
@@ -615,6 +630,126 @@ describe("a description clipped from the body is completed from it", () => {
     expect(articleDescription(detail({ seo: { title: null, description: null } }))).toBe(
       "Résumé officiel",
     );
+  });
+});
+
+// The import leaves `seo_description` empty now where the text is longer than
+// a search result shows, and its summary is the first paragraph whole. On
+// 5,876 of the 15,690 published editions (2026-09-25) that paragraph is
+// shorter than the old cut, often a kicker, and an edition of that shape was
+// described by the kicker alone.
+describe("with no description stored, a summary that is the first paragraph runs on like the archive's copy", () => {
+  const KICKER = "Mise à jour.";
+  const NEXT =
+    "La troisième journée de la Botola Pro se conclura par un affrontement de haut vol, avec le Wydad de Casablanca recevant la Jeunesse Sportive Soualem au Complexe Sportif Mohammed V à 20h.";
+  const THIRD = "Actuellement troisième, Soualem vise une troisième victoire.";
+  const body = (paragraphs: readonly string[]) =>
+    paragraphs.map((paragraph) => `<p>${paragraph}</p>`).join("");
+  const unset = { title: null, description: null };
+
+  it("a kicker runs on to the end of the paragraph the import's cut falls in", () => {
+    const { now, archived } = importedEdition("fr", [KICKER, NEXT, THIRD]);
+    expect(now.seo.description).toBeNull();
+    expect(now.summary).toBe(KICKER);
+    describedAs(now, `${KICKER} ${NEXT}`);
+    // What the archive's clipped copy of the same text is completed to.
+    expect(articleDescription(archived)).toBe(`${KICKER} ${NEXT}`);
+  });
+
+  it("so does BotolaGO's own edition with no SEO description, on purpose", () => {
+    const own = detail({
+      source: null,
+      summary: KICKER,
+      bodyHtml: body([KICKER, NEXT, THIRD]),
+      seo: unset,
+    });
+    describedAs(own, `${KICKER} ${NEXT}`);
+  });
+
+  it("a first paragraph longer than the search length is the description alone, as before", () => {
+    const first =
+      "Le Raja Club Athletic a remporté le derby de Casablanca face au Wydad sur le score de deux buts à un, au terme d'une rencontre disputée devant un stade Mohammed V plein.";
+    expect(first.length).toBeGreaterThan(SEO_DESCRIPTION_LIMIT);
+    const { now, archived } = importedEdition("fr", [first, NEXT]);
+    expect(now.seo.description).toBeNull();
+    expect(now.summary).toBe(first);
+    describedAs(now, first);
+    expect(articleDescription(archived)).toBe(first);
+  });
+
+  it("a body shorter than the search length is described whole", () => {
+    const rest = "Le Wydad reçoit Soualem ce soir à 20h au Complexe Mohammed V.";
+    const whole = `${KICKER} ${rest}`;
+    expect(whole.length).toBeLessThan(SEO_DESCRIPTION_LIMIT);
+    // The import stores such a text whole, as it did before.
+    const { now } = importedEdition("fr", [KICKER, rest]);
+    expect(now.seo.description).toBe(whole);
+    describedAs(now, whole);
+    // With nothing stored, the same text, not the kicker alone.
+    describedAs(detail({ summary: KICKER, bodyHtml: body([KICKER, rest]), seo: unset }), whole);
+  });
+
+  it("an editor's own SEO description is kept", () => {
+    const own = "Le Wydad reçoit Soualem ce soir à 20h, pour la troisième journée.";
+    describedAs(
+      detail({
+        summary: KICKER,
+        bodyHtml: body([KICKER, NEXT, THIRD]),
+        seo: { title: null, description: own },
+      }),
+      own,
+    );
+  });
+
+  it("an Arabic edition runs on the same way", () => {
+    const kicker = "آخر المستجدات.";
+    const next =
+      "أعلن نادي الوداد الرياضي تعاقده مع المهاجم الكونغولي سيلفير غانفولا مبوسي لموسم واحد قابل للتجديد، على أن يلتحق بالمجموعة خلال الأسبوع الجاري استعدادا للمباراة المقبلة.";
+    const { now, archived } = importedEdition("ar", [
+      kicker,
+      next,
+      "ويستعد الفريق لمواجهة الجيش الملكي.",
+    ]);
+    expect(now.seo.description).toBeNull();
+    expect(now.summary).toBe(kicker);
+    describedAs(now, `${kicker} ${next}`);
+    expect(articleDescription(archived)).toBe(`${kicker} ${next}`);
+  });
+
+  it("says what the archive's copy is completed to, wherever the cut falls", () => {
+    // First paragraphs from ten characters to past the summary's 300, before
+    // a long paragraph, a run of short ones, or a word that crosses the cut,
+    // so that it falls at the end of the first paragraph.
+    const words = NEXT.split(" ");
+    const text = (length: number, from = 0) => {
+      let out = words[from % words.length]!;
+      for (let index = from + 1; out.length < length; index += 1) {
+        out += ` ${words[index % words.length]}`;
+      }
+      return out;
+    };
+    let ranOn = 0;
+    let firstAlone = 0;
+    for (let first = 10; first <= 320; first += 5) {
+      for (const rest of [
+        [text(60, 3), text(120, 7)],
+        [text(12, 1), text(15, 4), text(18, 9), text(140, 2)],
+        ["Anticonstitutionnellement, la rencontre est reportée.", text(90, 5)],
+      ]) {
+        const paragraphs = [text(first), ...rest];
+        const { now, archived } = importedEdition("fr", paragraphs);
+        const description = articleDescription(now);
+        expect([first, description]).toEqual([first, articleDescription(archived)]);
+        if (description === paragraphs[0]) firstAlone += 1;
+        else ranOn += 1;
+      }
+    }
+    expect(ranOn).toBeGreaterThan(0);
+    expect(firstAlone).toBeGreaterThan(0);
+  });
+
+  it("cuts at the import's search length", () => {
+    expect(SEARCH_DESCRIPTION_LENGTH).toBe(SEO_DESCRIPTION_LIMIT);
   });
 });
 

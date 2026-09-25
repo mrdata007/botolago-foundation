@@ -20,13 +20,17 @@ export const POST_KICKOFF_REFRESH_MINUTES = 180;
 /**
  * How far ahead a kick-off still books the one refetch that starts its
  * watch. Further ahead than a day, nothing is booked at all. The Matches
- * calendar's day list (`matchDayRefetchInterval`) books the same refetch
- * with its own copy of this horizon.
+ * calendar's day list (`matchDayRefetchInterval`) books the same refetch by
+ * asking `matchRefetchInterval` for each of its matches to come.
  */
 export const KICKOFF_WAKE_UP_HORIZON_MINUTES = 24 * 60;
 
-/** The pace of a match about to kick off, and the shortest wake-up. */
-const WATCH_REFRESH_MS = 60_000;
+/**
+ * The pace of a match about to kick off, and the shortest wake-up. The
+ * Matches calendar keeps the day of a match just finished refreshing at the
+ * same pace (`matchDayRefetchInterval`).
+ */
+export const WATCH_REFRESH_MS = 60_000;
 
 /**
  * How often the match page refetches: every 30 seconds while the match is
@@ -42,7 +46,8 @@ const WATCH_REFRESH_MS = 60_000;
  * them polling every minute for three hours of the night. On Home and the
  * Matches calendar, the live strip picks such a match up once the feed marks
  * it started. Nor do the page's empty panels say they update themselves for
- * it: `matchDataPhase` reads this function.
+ * it (`matchDataPhase` reads this function): until its day is over they say
+ * the match is still to come.
  *
  * Earlier than a quarter of an hour before kick-off, the answer is the one
  * refetch that starts the watch, booked for when it starts. TanStack Query

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { dehydrate, hydrate, QueryClient, QueryObserver } from "@tanstack/react-query";
 
 import { matchDayKey } from "@/lib/match-kickoff";
+import { KICKOFF_WAKE_UP_HORIZON_MINUTES } from "@/lib/match-refresh";
 import { prefetchForSsr, SSR_DEHYDRATE_OPTIONS } from "@/lib/ssr-prefetch";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
 import type { Match } from "@/types/domain";
@@ -9,7 +10,6 @@ import {
   clampMatchDay,
   isSameMatchDayQuery,
   JUST_FINISHED_REFRESH_MINUTES,
-  KICKOFF_WAKE_UP_HORIZON_MINUTES,
   matchDayQuery,
   matchDayRefetchInterval,
   openingMatchDay,

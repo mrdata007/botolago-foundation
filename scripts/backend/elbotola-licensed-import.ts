@@ -128,12 +128,13 @@ export function clip(value: string, limit: number): string {
  * search result leaves its column empty, and the page takes the headline and
  * the summary instead.
  *
- * One consequence is the page's to settle, not the import's. Where the text
- * opens with a short kicker ("Mise à jour."), the summary is that kicker
- * alone, and with no description stored the page describes the article by
- * it: the page runs text on to the end of the paragraph a cut fell in only
- * when the text ends in an ellipsis. The whole run would not fit the
- * column's 170 characters, so clipping here again is no answer. On
+ * Where the text opens with a short kicker ("Mise à jour."), the summary is
+ * that kicker alone. With no description stored, the page does not describe
+ * the article by it: a summary that is the first paragraph uncut runs on to
+ * the end of the paragraph this import's old cut would have fallen in, as
+ * the page completes the archive's clipped copy of the same article
+ * (`articleDescription` in src/lib/article-meta.ts). That run would not fit
+ * the column's 170 characters, so storing it here is no answer. On
  * 2026-09-25, 5,876 of the 15,690 published editions opened with a paragraph
  * shorter than the cut, 319 of them under 60 characters.
  */
