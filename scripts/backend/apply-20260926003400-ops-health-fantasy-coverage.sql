@@ -31,12 +31,14 @@
 --   statistics 12 h after its final whistle when this is applied -- on 25 Sep
 --   that was the 1-3 match of 24 Sep, final at 22:00 UTC -- the next
 --   ops-alert-tick (at most 5 minutes later) sends a FAIL message naming
---   `fantasy_fixture_coverage`. That is the check doing its job, not a fault
---   of the update. The same goes for `fantasy_scoring` if a counted match of
---   the locked gameweek was postponed, cancelled or abandoned, or moved past
---   the window, and the kickoff it was frozen with is more than 48 h ago (none
---   was on 25 Sep: GW1's seven counted matches were one finished and six not
---   started). The procedure that message names arrives with
+--   `fantasy_fixture_coverage`: to the webhook and, where 20260926001000 is
+--   applied and an address is set, by email. That is the check doing its job,
+--   not a fault of the update. The same goes for `fantasy_scoring` if a
+--   counted match of the locked gameweek was postponed, cancelled or
+--   abandoned, or moved past the window, and the kickoff it was frozen with is
+--   more than 48 h ago (none was on 25 Sep: GW1's seven counted matches were
+--   one finished and six not started). The procedure that message names
+--   arrives with
 --   scripts/backend/apply-20260926003500-fantasy-resolve-postponed-after-lock.sql:
 --   apply that one right after this one.
 --
@@ -61,16 +63,42 @@
 --     table or column the new checks read, or where the health function or
 --     the alert path (ops_alert_tick, ops_alert_message, ops_alert_configure,
 --     api.service_ops_health) is not the text this update was reviewed
---     against (md5 of pg_get_functiondef: the alert path as read on production
---     on 2026-09-25, the health function as 20260926003050 installs it);
+--     against (md5 of pg_get_functiondef: the alert path in one of its two
+--     reviewed versions, below; the health function as 20260926003050
+--     installs it);
 --   * records the migration file in supabase_migrations.schema_migrations,
 --     whole as statements[1], and runs it from that record once its sha256
 --     matches the repository file;
 --   * checks the result without writing anything: grants of the health
---     functions unchanged; the alert path byte for byte as before; the health
---     answer lists every earlier check plus the two new ones, each ok, warn or
---     fail; the alert switch is where it was; the history row is there. It
---     never calls ops_alert_tick(), so it sends nothing.
+--     functions unchanged; the alert path byte for byte as the preflight found
+--     it; the health answer lists every earlier check plus the two new ones,
+--     each ok, warn or fail; the alert switch is where it was; the history row
+--     is there. It never calls ops_alert_tick(), so it sends nothing.
+--
+-- THE ALERT PATH: TWO REVIEWED VERSIONS
+--   This update leaves the alert path alone, but its two checks reach the
+--   owner through it, so it runs only on a path it was reviewed with.
+--   ops_alert_message() and api.service_ops_health() have one version.
+--   ops_alert_tick() and ops_alert_configure() have exactly two, because the
+--   alert emails (20260926001000, on main) replace both, and nothing else is
+--   accepted:
+--     20260924200200, webhook only: what production held on 2026-09-25 until
+--       20260926001000 was applied there (read there), and what a local reset
+--       to 20260925234000 installs --
+--         ops_alert_tick       f495986586af20c728d3aa0ce2b44c10
+--         ops_alert_configure  cab30565c007fc69d2a9fb168e351e50
+--     20260926001000, webhook and email: what that migration installs (local
+--       reset of this tree), and what production holds since it was applied
+--       there (read 2026-09-25, 20260926001000 recorded) --
+--         ops_alert_tick       3e33433056b8b40b5f2c58efe9b53205
+--         ops_alert_configure  3bb66d070f45355a34243dea4b105e98
+--   Both must be of the same version, and the second counts only where
+--   20260926001000 is recorded, the first only where it is not. Either way
+--   the tick reads app_private.ops_health_checks() to decide and to write its
+--   message, so the two checks this adds page through the webhook, and
+--   through the email where it is set up. The two updates apply in either
+--   order: 20260926001000's own script checks that the alerts and the email
+--   delivery exist, not the health function this one replaces.
 -- ============================================================================
 
 begin;
@@ -84,6 +112,9 @@ set local statement_timeout = '60s';
 do $preflight$
 declare
   missing text[] := '{}';
+  tick_md5 text;
+  configure_md5 text;
+  alert_emails_recorded boolean;
 begin
   if to_regclass('supabase_migrations.schema_migrations') is null then
     raise exception 'stop: supabase_migrations.schema_migrations does not exist -- is this the BotolaGO database?';
@@ -149,20 +180,38 @@ begin
     <> '3c9b47ab0e10742ebaf355861006b8bd' then
     raise exception 'stop: app_private.ops_health_checks() is not the version this update replaces (20260926003050)';
   end if;
-  -- The alert path as production held it on 2026-09-25 (read there). This
-  -- update leaves it as it is; the postflight checks that it still is.
-  if md5(pg_get_functiondef('app_private.ops_alert_tick()'::regprocedure))
-      <> 'f495986586af20c728d3aa0ce2b44c10'
-    or md5(pg_get_functiondef('app_private.ops_alert_message(jsonb,boolean)'::regprocedure))
+  -- The alert path in one of its two reviewed versions (header, THE ALERT
+  -- PATH): ops_alert_message and api.service_ops_health as 20260924200200 left
+  -- them; ops_alert_tick and ops_alert_configure both as 20260924200200 left
+  -- them where 20260926001000 is not recorded, or both as 20260926001000
+  -- installs them where it is. This update leaves the path as it is; the
+  -- postflight checks that it still is.
+  tick_md5 := md5(pg_get_functiondef('app_private.ops_alert_tick()'::regprocedure));
+  configure_md5 := md5(pg_get_functiondef('app_private.ops_alert_configure(boolean)'::regprocedure));
+  alert_emails_recorded := exists (
+    select 1 from supabase_migrations.schema_migrations where version = '20260926001000'
+  );
+  if md5(pg_get_functiondef('app_private.ops_alert_message(jsonb,boolean)'::regprocedure))
       <> '26943b55b25673c0ad709af90eaf65fc'
-    or md5(pg_get_functiondef('app_private.ops_alert_configure(boolean)'::regprocedure))
-      <> 'cab30565c007fc69d2a9fb168e351e50'
     or md5(pg_get_functiondef('api.service_ops_health()'::regprocedure))
-      <> 'dc4a7449a164a586e75ffb04d044c631' then
-    raise exception 'stop: the alert path is not the version this update was reviewed against (20260924200200)';
+      <> 'dc4a7449a164a586e75ffb04d044c631'
+    or not (
+      -- 20260924200200: the webhook only.
+      (not alert_emails_recorded
+        and tick_md5 = 'f495986586af20c728d3aa0ce2b44c10'
+        and configure_md5 = 'cab30565c007fc69d2a9fb168e351e50')
+      -- 20260926001000: the webhook and the email.
+      or (alert_emails_recorded
+        and tick_md5 = '3e33433056b8b40b5f2c58efe9b53205'
+        and configure_md5 = '3bb66d070f45355a34243dea4b105e98')
+    ) then
+    raise exception 'stop: the alert path is not a version this update was reviewed against (20260924200200, or 20260926001000 with the alert emails)';
   end if;
 
-  -- Where the alert switch stands, to compare afterwards.
+  -- The alert path as found, and where the alert switch stands, to compare
+  -- afterwards.
+  perform set_config('bg.ops_alert_tick_before', tick_md5, true);
+  perform set_config('bg.ops_alert_configure_before', configure_md5, true);
   perform set_config('bg.ops_alerts_enabled_before',
     (select enabled::text from app_private.ops_alert_state where id), true);
 end
@@ -822,13 +871,14 @@ begin
     problems := problems || 'api.service_ops_health() is executable by the wrong roles'::text;
   end if;
 
-  -- The alert path is untouched.
+  -- The alert path is untouched: byte for byte the version the preflight
+  -- found.
   if md5(pg_get_functiondef('app_private.ops_alert_tick()'::regprocedure))
-      <> 'f495986586af20c728d3aa0ce2b44c10'
+      is distinct from current_setting('bg.ops_alert_tick_before', true)
     or md5(pg_get_functiondef('app_private.ops_alert_message(jsonb,boolean)'::regprocedure))
       <> '26943b55b25673c0ad709af90eaf65fc'
     or md5(pg_get_functiondef('app_private.ops_alert_configure(boolean)'::regprocedure))
-      <> 'cab30565c007fc69d2a9fb168e351e50'
+      is distinct from current_setting('bg.ops_alert_configure_before', true)
     or md5(pg_get_functiondef('api.service_ops_health()'::regprocedure))
       <> 'dc4a7449a164a586e75ffb04d044c631' then
     problems := problems || 'the alert path changed'::text;

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -55,12 +55,13 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
       "migration 20260926003050 (the sitemap snapshot) is not applied yet",
       "the database is missing what this update reads or changes",
       // The health function as 20260926003050 installs it (local reset), and
-      // the alert path as production held it on 2026-09-25 (read there).
+      // the alert path in one of its two reviewed versions (below).
       "    <> '3c9b47ab0e10742ebaf355861006b8bd' then",
-      "      <> 'f495986586af20c728d3aa0ce2b44c10'",
-      "      <> '26943b55b25673c0ad709af90eaf65fc'",
-      "      <> 'cab30565c007fc69d2a9fb168e351e50'",
-      "      <> 'dc4a7449a164a586e75ffb04d044c631' then",
+      "      <> '26943b55b25673c0ad709af90eaf65fc'\n",
+      "      <> 'dc4a7449a164a586e75ffb04d044c631'\n",
+      "stop: the alert path is not a version this update was reviewed against",
+      "perform set_config('bg.ops_alert_tick_before', tick_md5, true);",
+      "perform set_config('bg.ops_alert_configure_before', configure_md5, true);",
       "perform set_config('bg.ops_alerts_enabled_before',",
     ]) {
       const at = script.indexOf(guard);
@@ -87,6 +88,111 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
     expect(
       occurrences(statements, "revoke all on function app_private.ops_health_checks() from"),
     ).toBe(1);
+  });
+
+  test("accepts the alert path in exactly two reviewed versions: before and after the alert emails", () => {
+    // 20260926001000 (alert emails) replaces ops_alert_tick and
+    // ops_alert_configure and nothing else of the path. Each is accepted in
+    // the version 20260924200200 left (webhook only, production's until the
+    // alert emails were applied there) or the one 20260926001000 installs
+    // (read after a local reset, and on production once it was applied), both
+    // of the same version, the second only where 20260926001000 is recorded.
+    const alertEmails = read("supabase/migrations/20260926001000_ops_alert_email.sql");
+    const defines = (text: string) =>
+      [...text.matchAll(/create or replace function ([a-z_.]+)\(/g)].map((match) => match[1]);
+    expect(defines(alertEmails)).toContain("app_private.ops_alert_tick");
+    expect(defines(alertEmails)).toContain("app_private.ops_alert_configure");
+    expect(defines(alertEmails)).not.toContain("app_private.ops_alert_message");
+    expect(defines(alertEmails)).not.toContain("api.service_ops_health");
+
+    const preflight = between("do $preflight$", "$preflight$;");
+    const webhookOnly = {
+      tick: "f495986586af20c728d3aa0ce2b44c10",
+      configure: "cab30565c007fc69d2a9fb168e351e50",
+    };
+    const withEmail = {
+      tick: "3e33433056b8b40b5f2c58efe9b53205",
+      configure: "3bb66d070f45355a34243dea4b105e98",
+    };
+    expect(preflight).toContain(
+      "      (not alert_emails_recorded\n" +
+        `        and tick_md5 = '${webhookOnly.tick}'\n` +
+        `        and configure_md5 = '${webhookOnly.configure}')\n`,
+    );
+    expect(preflight).toContain(
+      "      or (alert_emails_recorded\n" +
+        `        and tick_md5 = '${withEmail.tick}'\n` +
+        `        and configure_md5 = '${withEmail.configure}')\n`,
+    );
+    // Nothing else: the two functions are compared with these values only,
+    // and the preflight holds no other digest than the health function's and
+    // the rest of the path's.
+    expect(
+      [...preflight.matchAll(/tick_md5 = '([0-9a-f]{32})'/g)].map((match) => match[1]).sort(),
+    ).toEqual([webhookOnly.tick, withEmail.tick].sort());
+    expect(
+      [...preflight.matchAll(/configure_md5 = '([0-9a-f]{32})'/g)].map((match) => match[1]).sort(),
+    ).toEqual([webhookOnly.configure, withEmail.configure].sort());
+    expect(new Set(preflight.match(/'[0-9a-f]{32}'/g))).toEqual(
+      new Set(
+        [
+          "3c9b47ab0e10742ebaf355861006b8bd",
+          "26943b55b25673c0ad709af90eaf65fc",
+          "dc4a7449a164a586e75ffb04d044c631",
+          webhookOnly.tick,
+          webhookOnly.configure,
+          withEmail.tick,
+          withEmail.configure,
+        ].map((digest) => `'${digest}'`),
+      ),
+    );
+    expect(preflight).toContain(
+      "alert_emails_recorded := exists (\n    select 1 from supabase_migrations.schema_migrations where version = '20260926001000'\n  );",
+    );
+    // The header gives both versions and why.
+    const header = script.slice(0, script.indexOf("\nbegin;\n"));
+    for (const digest of [...Object.values(webhookOnly), ...Object.values(withEmail)]) {
+      expect(header).toContain(digest);
+    }
+    expect(header).toContain("THE ALERT PATH: TWO REVIEWED VERSIONS");
+    // Afterwards the path must be what the preflight found, not either one.
+    const postflight = between("do $postflight$", "$postflight$;");
+    expect(postflight).toContain(
+      "is distinct from current_setting('bg.ops_alert_tick_before', true)",
+    );
+    expect(postflight).toContain(
+      "is distinct from current_setting('bg.ops_alert_configure_before', true)",
+    );
+    expect(postflight).not.toMatch(/f4959865|cab30565|3e334330|3bb66d07/);
+  });
+
+  test("none of the audit migrations redefines what the alert emails define", () => {
+    // 20260926001000 owns the alert functions it defines and the columns it
+    // adds to ops_alert_state; a later migration of this branch redefining one
+    // would silently undo it.
+    const alertEmails = read("supabase/migrations/20260926001000_ops_alert_email.sql");
+    const owned = [...alertEmails.matchAll(/create or replace function ([a-z_.]+)\(/g)].map(
+      (match) => match[1],
+    );
+    expect(owned.length).toBeGreaterThanOrEqual(8);
+    const audit = readdirSync(join(root, "supabase/migrations")).filter((file) =>
+      /^20260926003\d{3}_.+\.sql$/.test(file),
+    );
+    expect(audit.length).toBeGreaterThanOrEqual(6);
+    for (const file of audit) {
+      const statements = read(`supabase/migrations/${file}`).replace(/--[^\n]*/g, "");
+      for (const name of owned) {
+        const redefines = new RegExp(
+          `\\b(create(\\s+or\\s+replace)?|alter|drop)\\s+function\\s+${name.replace(".", "\\.")}\\s*\\(`,
+          "i",
+        ).test(statements);
+        expect({ file, name, redefines }).toEqual({ file, name, redefines: false });
+      }
+      expect({
+        file,
+        altersState: /alter\s+table\s+app_private\.ops_alert_state\b/i.test(statements),
+      }).toEqual({ file, altersState: false });
+    }
   });
 
   test("leaves app_private.ops_alert_test() to the alert-email change", () => {
