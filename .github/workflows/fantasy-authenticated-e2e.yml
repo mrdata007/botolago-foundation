@@ -37,6 +37,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -91,6 +92,13 @@ jobs:
       # production value would run against staging under a "production" label.
       # Assert presence per resolved target with booleans that never carry a
       # value, and pin the resolved URL to the target's own variable.
+      # One writer at a time on staging (AGENTS.md).
+      - name: No other staging writer is running
+        if: env.FANTASY_E2E_TARGET == 'staging'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/backend/staging-writer-guard.py
       - name: Guard credential presence per target
         shell: bash
         env:

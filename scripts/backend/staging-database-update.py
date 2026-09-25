@@ -205,21 +205,25 @@ class ManagementTarget:
         return self._query(sql, False, timeout)
 
     def compute(self) -> str:
-        """The compute add-on's variant (e.g. ci_large), or "unknown"."""
+        """The compute size (e.g. ci_large), or "unknown".
+
+        The billing add-on names it. When that cannot be read, the connection
+        limit Supabase sets for each size identifies it instead.
+        """
 
         try:
             addons = self._request(
                 "GET", f"/v1/projects/{self._project_ref}/billing/addons", None, 60
             )
         except UpdateError:
-            return "unknown"
+            addons = None
         selected = addons.get("selected_addons", []) if isinstance(addons, dict) else []
         for addon in selected if isinstance(selected, list) else []:
             if isinstance(addon, dict) and addon.get("type") == "compute_instance":
                 variant = addon.get("variant")
                 if isinstance(variant, dict) and variant.get("id"):
                     return str(variant["id"])
-        return "unknown"
+        return compute_from_connections(self)
 
 
 class LocalTarget:
@@ -255,6 +259,28 @@ class LocalTarget:
 
     def compute(self) -> str:
         return "local"
+
+
+# max_connections Supabase configures for each compute size.
+COMPUTE_BY_MAX_CONNECTIONS = {
+    60: "ci_micro",
+    90: "ci_small",
+    120: "ci_medium",
+    160: "ci_large",
+    240: "ci_xlarge",
+    380: "ci_2xlarge",
+    480: "ci_4xlarge",
+}
+
+
+def compute_from_connections(target: Target) -> str:
+    try:
+        rows = target.rows(
+            "select current_setting('max_connections')::integer as max_connections"
+        )
+        return COMPUTE_BY_MAX_CONNECTIONS.get(int(rows[0]["max_connections"]), "unknown")
+    except (UpdateError, KeyError, IndexError, TypeError, ValueError):
+        return "unknown"
 
 
 def compute_matches(actual: str, expected: str) -> bool:
@@ -403,6 +429,20 @@ def seed_running(target: Target) -> bool:
     return bool(rows) and int(rows[0]["count"]) > 0
 
 
+def assert_fantasy_tick_off(target: Target) -> None:
+    """The Fantasy tick writes Fantasy and fixture tables on its own (AGENTS.md)."""
+
+    rows = target.rows(
+        "select coalesce((select lifecycle_tick_enabled from "
+        "app_private.fantasy_automation_settings), false) as enabled"
+    )
+    if rows and rows[0].get("enabled") is True:
+        raise UpdateError(
+            "the Fantasy lifecycle tick is switched on on staging; pause it first "
+            "(select app_private.fantasy_automation_configure(false);)"
+        )
+
+
 def run_plan(target: Target, migrations: list[Migration]) -> dict[str, Any]:
     history = read_history(target)
     pending = pending_migrations(migrations, history)
@@ -490,6 +530,7 @@ def run_seed(target: Target, migrations: list[Migration]) -> dict[str, Any]:
     profile = seed_profile(target)
     if seed_loaded(profile):
         return {"target": target.label, "seed": profile, "seedLoaded": True, "ran": False}
+    assert_fantasy_tick_off(target)
     script = (
         "select set_config('botolago.capacity_environment', 'staging-v2', false);\n"
         + SEED_FILE.read_text("utf-8")
@@ -522,14 +563,15 @@ def run_check(target: Target, migrations: list[Migration]) -> dict[str, Any]:
             "the Fantasy capacity seed is not loaded; run the Staging database "
             "update workflow (seed) first"
         )
+    assert_fantasy_tick_off(target)
     expected = os.environ.get("BOTOLAGO_EXPECTED_STAGING_COMPUTE", "").strip()
     if expected:
         if report["compute"] == "unknown":
-            report["computeWarning"] = (
-                f"staging's compute size could not be read; confirm it is {expected} "
-                "in the Supabase dashboard"
+            raise UpdateError(
+                f"staging's compute size could not be read, so it cannot be shown "
+                f"to be {expected}"
             )
-        elif not compute_matches(report["compute"], expected):
+        if not compute_matches(report["compute"], expected):
             raise UpdateError(
                 f"staging runs on {report['compute']}, not {expected}; resize it "
                 "(Supabase → BotolaGO Staging V2 → Settings → Compute) first"

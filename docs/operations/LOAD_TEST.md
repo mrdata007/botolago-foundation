@@ -78,9 +78,10 @@ test plays against. Running it again does nothing.
 **Actions → Fantasy load test → Run workflow**: scope **rehearsal**,
 staging_compute = the size from step 2, confirmation `RUN_FANTASY_LOAD_TEST`.
 
-It first checks staging (updates, fake data, size) and stops before renting
-anything if staging is not ready. Then it rents the 5 computers, signs in 125
-fake accounts, sends no traffic, and cleans up. A green run proves the Amazon
+It first checks that no other job is writing to staging and that staging is
+ready (updates, fake data, size), and stops before renting anything if not.
+Then it rents the 5 computers, signs in 125 fake accounts, sends no traffic,
+and cleans up. A green run proves the Amazon
 connection, the keys and the cleanup all work.
 
 ### 5. Run the real load test (up to 2 hours, a few dollars)
@@ -102,13 +103,14 @@ previous size (Micro on 2026-09-25).
 
 ## If something fails
 
-| Where                                                    | What it means                                                                                                        | What to do                                                                                                                                   |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Staging database update fails at once                    | the `SUPABASE_ACCESS_TOKEN` stored in GitHub (Settings → Environments → `staging-load-test`) no longer works         | create a new access token in Supabase (Account → Access Tokens) and replace the secret                                                       |
-| rehearse or apply names an update                        | that update does not fit staging's current state                                                                     | send the run link to the developer; nothing else changed                                                                                     |
-| Load test stops at "Verify staging is ready"             | an update is missing, the fake data is not loaded, or staging is not the size you typed                              | the run page says which; redo that step                                                                                                      |
-| Load test stops at "Configure delegated AWS credentials" | the Amazon connection from July (variable `AWS_LOAD_TEST_ROLE_ARN`, and the matching role in AWS) is gone or changed | nothing was rented; the developer needs the AWS account to recreate the role                                                                 |
-| A run was cancelled halfway                              | fake accounts or computers may be left over                                                                          | **Actions → Phase 6 staging cleanup**, confirmation `RUN_PHASE6_STAGING_CLEANUP`; the computers also switch themselves off after 105 minutes |
+| Where                                                    | What it means                                                                                                                                                  | What to do                                                                                                                                   |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Staging database update fails at once                    | the `SUPABASE_ACCESS_TOKEN` stored in GitHub (Settings → Environments → `staging-load-test`) no longer works                                                   | create a new access token in Supabase (Account → Access Tokens) and replace the secret                                                       |
+| rehearse or apply names an update                        | that update does not fit staging's current state                                                                                                               | send the run link to the developer; nothing else changed                                                                                     |
+| A run stops at "No other staging writer is running"      | another job is writing to staging right now (the run page names it); two writers at once is how data gets damaged (`AGENTS.md`)                                | wait for that job to finish, then run again                                                                                                  |
+| Load test stops at "Verify staging is ready"             | an update is missing, the fake data is not loaded, the Fantasy tick is switched on on staging, or staging is not (or cannot be shown to be) the size you typed | the run page says which; redo that step                                                                                                      |
+| Load test stops at "Configure delegated AWS credentials" | the Amazon connection from July (variable `AWS_LOAD_TEST_ROLE_ARN`, and the matching role in AWS) is gone or changed                                           | nothing was rented; the developer needs the AWS account to recreate the role                                                                 |
+| A run was cancelled halfway                              | fake accounts or computers may be left over                                                                                                                    | **Actions → Phase 6 staging cleanup**, confirmation `RUN_PHASE6_STAGING_CLEANUP`; the computers also switch themselves off after 105 minutes |
 
 ## What this test does not cover
 

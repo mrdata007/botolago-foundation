@@ -21,8 +21,9 @@ on:
         required: true
         type: string
 
+# Shared with the other staging writers: one writer at a time (AGENTS.md).
 concurrency:
-  group: phase6-session-diagnostic-reproduction
+  group: phase6-staging-load-test
   cancel-in-progress: false
 
 permissions:

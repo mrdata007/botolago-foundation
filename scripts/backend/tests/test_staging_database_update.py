@@ -33,6 +33,7 @@ class FakeTarget:
         self.executed: list[str] = []
         self.profile = {key: 0 for key in UPDATE.SEED_PROFILE}
         self.compute_variant = "ci_large"
+        self.tick_on = False
 
     def compute(self) -> str:
         return self.compute_variant
@@ -42,6 +43,8 @@ class FakeTarget:
             return list(self.history)
         if "pg_stat_activity" in sql:
             return [{"count": 0}]
+        if "fantasy_automation_settings" in sql:
+            return [{"enabled": self.tick_on}]
         return [dict(self.profile)]
 
     def execute(self, sql: str, timeout: int) -> list[dict[str, Any]]:
@@ -180,6 +183,16 @@ class SeedTests(unittest.TestCase):
         again = UPDATE.run_seed(target, [migration("1" * 14, "a")])
         self.assertFalse(again["ran"])
 
+    def test_seed_and_check_refuse_while_the_fantasy_tick_is_on(self) -> None:
+        target = FakeTarget([{"version": "1" * 14, "name": "a"}])
+        target.tick_on = True
+        with self.assertRaisesRegex(UPDATE.UpdateError, "Fantasy lifecycle tick"):
+            UPDATE.run_seed(target, [migration("1" * 14, "a")])
+        self.assertEqual(target.executed, [])
+        target.profile = dict(UPDATE.SEED_PROFILE)
+        with self.assertRaisesRegex(UPDATE.UpdateError, "Fantasy lifecycle tick"):
+            UPDATE.run_check(target, [migration("1" * 14, "a")])
+
     def test_check_fails_until_the_seed_is_loaded(self) -> None:
         target = FakeTarget([{"version": "1" * 14, "name": "a"}])
         with self.assertRaisesRegex(UPDATE.UpdateError, "seed is not loaded"):
@@ -206,8 +219,20 @@ class ComputeTests(unittest.TestCase):
             target.compute_variant = "ci_large"
             self.assertTrue(UPDATE.run_check(target, [migration("1" * 14, "a")])["seedLoaded"])
             target.compute_variant = "unknown"
-            report = UPDATE.run_check(target, [migration("1" * 14, "a")])
-            self.assertIn("computeWarning", report)
+            with self.assertRaisesRegex(UPDATE.UpdateError, "could not be read"):
+                UPDATE.run_check(target, [migration("1" * 14, "a")])
+
+    def test_the_connection_limit_identifies_the_size(self) -> None:
+        class Rows:
+            def __init__(self, value: Any) -> None:
+                self.value = value
+
+            def rows(self, sql: str) -> list[dict[str, Any]]:
+                return [{"max_connections": self.value}]
+
+        self.assertEqual(UPDATE.compute_from_connections(Rows(160)), "ci_large")
+        self.assertEqual(UPDATE.compute_from_connections(Rows(60)), "ci_micro")
+        self.assertEqual(UPDATE.compute_from_connections(Rows(123)), "unknown")
 
 
 class TargetGuardTests(unittest.TestCase):
