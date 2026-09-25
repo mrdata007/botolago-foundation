@@ -22,6 +22,7 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "../predictions-copy";
 import { leagueStandingsQuery } from "./league-queries";
+import { leagueScope } from "./league-scope";
 import { leagueErrorMessage, notPlayedLabel } from "./leagues-copy";
 
 /**
@@ -40,7 +41,8 @@ export function LeaguePredictionsStandings({
   const { t, lang } = useI18n();
   const { status, user } = useAuth();
   const uid = status === "authenticated" ? (user?.id ?? "") : "";
-  const [scope, setScope] = useState<LeaderboardScope>(roundNumber === null ? "season" : "round");
+  const [picked, setPicked] = useState<LeaderboardScope | null>(null);
+  const scope = leagueScope(roundNumber, picked);
   const effectiveRound = scope === "round" ? roundNumber : null;
 
   const standings = useQuery<LeagueStandingsDto, PredictionsError>({
@@ -53,7 +55,7 @@ export function LeaguePredictionsStandings({
       {roundNumber !== null ? (
         <UiSegmented<LeaderboardScope>
           value={scope}
-          onChange={setScope}
+          onChange={setPicked}
           label={t("predictions.board.scope_label")}
           options={[
             {

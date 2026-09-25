@@ -186,13 +186,17 @@ export const PRIZES_ENABLED = true;
 export const PRONOSTICS_ENABLED = true;
 
 /**
- * Pronostics entry points — OFF until Stage 5 (plan §15).
+ * Pronostics entry points — ON since 2026-09-25 (plan §15, Stage 5).
+ *
+ * Owner decision, 2026-09-25: "switch it on and publish it". The database
+ * `mode` went to `public` at 14:56 UTC the same day, straight from `off`
+ * (no testers stage).
  *
  * The ways in: the Home card and discovery tile, the Matches tab, the match
  * page card, the Fantasy league tab, the sitemap entry and search indexing.
- * The owner checks them on a preview deployment of a PR that turns this on,
- * which is not merged before Stage 5. They also hide themselves while the
- * database `mode` is `off`.
+ * The Home card and the match page card hide themselves while the database
+ * `mode` is `off`; the Matches tab and the sitemap entry do not, so switching
+ * the game off for more than a moment means turning this off again too.
  *
  * Gated surfaces (keep this list current):
  *   - `src/routes/pronostics.index.tsx` — `index,follow` instead of `noindex`
@@ -202,7 +206,7 @@ export const PRONOSTICS_ENABLED = true;
  *   - `src/routes/matches.$matchId.tsx` — the "Votre pronostic" card
  *   - `src/routes/fantasy.leagues.$leagueId.tsx` — the league's "Pronostics" tab
  */
-export const PRONOSTICS_PROMOTED = false;
+export const PRONOSTICS_PROMOTED = true;
 
 /**
  * Audience measurement — ON since 2026-09-25 (BG-0146, plan §11).
