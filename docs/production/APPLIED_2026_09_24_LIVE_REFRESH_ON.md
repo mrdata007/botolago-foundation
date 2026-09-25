@@ -73,11 +73,20 @@ Read-only checks of production, 24 Sept 2026:
     whistle, where it used to wait hours for the hourly job.
   - `cron.job_run_details`: every `football-live-refresh` run from 20:30 to
     22:15 succeeded.
+  - The result arrived within 15 minutes of the final whistle: the 21:45 run
+    still found the match in play and called the Edge Function; the 22:00 run
+    found it over and set `finalized_at`.
   - The day's other fixture, FAR Rabat – Raja Casablanca (15:00 UTC), reads
     `postponed`, 0–0. It was the second of the "2 fixtures in its window".
   - Both rows were written again at 22:21:43 UTC, by the timing the Fantasy
     season orchestrator's provider refresh (its run started at 22:21:09). The
     result stayed as the live refresh had set it.
+
+- **25 Sept, 04:18 UTC:** the refresh went back to idle after the match.
+  `net._http_response` (kept since 20:00) shows Edge Function calls at the
+  21:30, 21:45 and 22:00 runs, all HTTP 200, and none after. The runs from
+  22:15 onwards kept succeeding every 15 minutes with nothing to fetch, and
+  not one run has failed since the switch.
 
 ## Undo
 
