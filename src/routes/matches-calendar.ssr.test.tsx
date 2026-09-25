@@ -15,6 +15,7 @@ import { renderToString } from "react-dom/server";
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 import { MATCH_TIME_ZONE, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
+import { RETRY_AFTER_SECONDS, UNAVAILABLE_HEADER, withPageStatus } from "@/lib/page-availability";
 import { SSR_DEHYDRATE_OPTIONS } from "@/lib/ssr-prefetch";
 import { footballService, type FootballSeason } from "@/services/football";
 import { createAppQueryClient } from "@/services/query-client";
@@ -216,6 +217,60 @@ describe("/matches in the server's HTML", () => {
     const browser = appClient();
     hydrate(browser, handover);
     expect(await renderMatches(browser)).toBe(serverHtml);
+  });
+
+  /**
+   * What the server entry makes of the page's own headers for an HTML
+   * response the router answered 200 (`src/server.ts`: `withPageStatus`).
+   */
+  async function serverResponse() {
+    const router = matchesRouter(appClient());
+    await router.load();
+    const page = router.state.matches.find((match) => match.routeId === "/matches/");
+    const response = withPageStatus(
+      new Response("<html></html>", { status: 200, headers: page?.headers }),
+    );
+    return { loaderData: page?.loaderData, response };
+  }
+
+  // A crawler that meets an empty day with 200 indexes a page with no match
+  // on it; 503 with Retry-After has it keep the page and come back.
+  test("a day read that fails on the server answers 503, not an empty 200", async () => {
+    stubFootball();
+    footballService.getMatchDay = async () => {
+      throw new Error("statement timeout");
+    };
+    delete globals.window;
+    setSystemTime(new Date("2026-09-26T12:00:00Z"));
+    const { loaderData, response } = await serverResponse();
+    // The seasons loaded: only the day's own key, `matchDayQuery`'s, can
+    // have marked the page.
+    expect(loaderData).toEqual({ unavailable: true, today: "2026-09-26" });
+    expect(response.status).toBe(503);
+    expect(response.headers.get("retry-after")).toBe(String(RETRY_AFTER_SECONDS));
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get(UNAVAILABLE_HEADER)).toBeNull();
+  });
+
+  test("a season list that fails is unavailable too; a page that loaded is a plain 200", async () => {
+    stubFootball();
+    footballService.getSeasons = async () => {
+      throw new Error("statement timeout");
+    };
+    delete globals.window;
+    setSystemTime(new Date("2026-09-26T12:00:00Z"));
+    const failed = await serverResponse();
+    // No season, so no day was asked for: the seasons' failure alone counts.
+    expect(asked).toEqual([]);
+    expect(failed.loaderData).toEqual({ unavailable: true, today: "2026-09-26" });
+    expect(failed.response.status).toBe(503);
+
+    stubFootball();
+    const loaded = await serverResponse();
+    expect(asked).toEqual(["2026-09-26"]);
+    expect(loaded.loaderData).toEqual({ today: "2026-09-26" });
+    expect(loaded.response.status).toBe(200);
+    expect(loaded.response.headers.get("retry-after")).toBeNull();
   });
 
   test("the browser opens on the server's day, even when midnight falls between the two", async () => {
