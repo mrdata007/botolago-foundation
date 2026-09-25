@@ -16,6 +16,10 @@
 --     The request carries the subject and text only; the function reads the
 --     address from api.service_ops_alert_email_target(), so the function can
 --     never be made to mail anyone else.
+--   * Email counts as a channel only when the address, the functions URL and
+--     the scheduler token all exist (app_private.ops_alert_email_ready); a
+--     tick that queues nothing returns 'send_failed' and records nothing, so
+--     the next tick tries again.
 --   * app_private.ops_alert_test() sends one TEST message through every
 --     configured channel, so delivery is proven without breaking production.
 --     It leaves the alert state (last status, signature, times) untouched.
@@ -49,6 +53,23 @@ as $$
 $$;
 revoke all on function app_private.ops_alert_webhook() from public, anon, authenticated, service_role;
 
+-- Email can only go out when an address, the functions URL and the scheduler
+-- token are all there: app_private.invoke_scheduled_function queues nothing
+-- otherwise.
+create or replace function app_private.ops_alert_email_ready()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from app_private.ops_alert_state s where s.id and s.email_to is not null)
+    and exists (select 1 from app_private.notification_email_settings n
+                where n.id and n.functions_base_url is not null)
+    and app_private.scheduler_token() is not null;
+$$;
+revoke all on function app_private.ops_alert_email_ready() from public, anon, authenticated, service_role;
+
 -- Switching alerts on now needs at least one channel, not the webhook alone.
 create or replace function app_private.ops_alert_configure(p_enabled boolean)
 returns jsonb
@@ -62,14 +83,14 @@ begin
     raise exception using errcode = '22023', message = 'ops_alert_setting_required';
   end if;
   select * into state from app_private.ops_alert_state where id;
-  if p_enabled and app_private.ops_alert_webhook() is null and state.email_to is null then
+  if p_enabled and app_private.ops_alert_webhook() is null and not app_private.ops_alert_email_ready() then
     raise exception using errcode = '22023', message = 'ops_alert_channel_missing',
       hint = 'select app_private.ops_alert_configure_email(''<address>''); or store a webhook as botolago_ops_alert_webhook in Vault';
   end if;
   update app_private.ops_alert_state set enabled = p_enabled, updated_at = statement_timestamp()
   where id returning * into state;
   return jsonb_build_object('enabled', state.enabled, 'repeatAfter', state.repeat_after,
-    'webhook', app_private.ops_alert_webhook() is not null, 'email', state.email_to is not null);
+    'webhook', app_private.ops_alert_webhook() is not null, 'email', app_private.ops_alert_email_ready());
 end;
 $$;
 revoke all on function app_private.ops_alert_configure(boolean) from public, anon, authenticated, service_role;
@@ -91,9 +112,17 @@ begin
   ) then
     raise exception using errcode = '22023', message = 'ops_alert_email_invalid';
   end if;
+  if address is not null and (
+    not exists (select 1 from app_private.notification_email_settings n
+                where n.id and n.functions_base_url is not null)
+    or app_private.scheduler_token() is null
+  ) then
+    raise exception using errcode = '22023', message = 'ops_alert_email_unreachable',
+      hint = 'the functions URL (app_private.notification_email_configure) and the Vault scheduler token botolago_scheduler_token must exist first';
+  end if;
   update app_private.ops_alert_state set email_to = address, updated_at = statement_timestamp()
   where id returning * into state;
-  return jsonb_build_object('enabled', state.enabled, 'email', state.email_to is not null);
+  return jsonb_build_object('enabled', state.enabled, 'email', app_private.ops_alert_email_ready());
 end;
 $$;
 revoke all on function app_private.ops_alert_configure_email(text) from public, anon, authenticated, service_role;
@@ -142,8 +171,7 @@ begin
       timeout_milliseconds := 10000
     );
   end if;
-  if email_to is not null then
-    -- Null when the functions URL or the scheduler token is missing.
+  if email_to is not null and app_private.ops_alert_email_ready() then
     email_request := app_private.invoke_scheduled_function(
       functions_base_url, 'ops-alert-email',
       jsonb_build_object('subject', left(p_subject, 200), 'text', left(p_text, 4000))
@@ -175,7 +203,7 @@ begin
   end if;
   select * into state from app_private.ops_alert_state where id for update;
   if not state.enabled then return 'disabled'; end if;
-  if app_private.ops_alert_webhook() is null and state.email_to is null then
+  if app_private.ops_alert_webhook() is null and not app_private.ops_alert_email_ready() then
     return 'not_configured';
   end if;
 
@@ -195,6 +223,11 @@ begin
     subject := '[BotolaGO] Production '
       || case when recovered then 'RECOVERED' else 'FAIL: ' || coalesce(signature, 'unknown') end;
     sent := app_private.ops_alert_send(subject, message);
+    -- Nothing queued means nothing sent: leave the state as it was, so the
+    -- next tick tries again instead of going quiet for repeat_after.
+    if sent ->> 'webhookRequestId' is null and sent ->> 'emailRequestId' is null then
+      return 'send_failed';
+    end if;
     update app_private.ops_alert_state
     set last_status = status, last_signature = signature, last_sent_at = statement_timestamp(),
         last_request_id = coalesce((sent ->> 'webhookRequestId')::bigint, last_request_id),
@@ -228,8 +261,7 @@ declare
   stamp text := to_char(statement_timestamp() at time zone 'UTC', 'YYYY-MM-DD HH24:MI');
   sent jsonb;
 begin
-  if app_private.ops_alert_webhook() is null
-    and (select email_to from app_private.ops_alert_state where id) is null then
+  if app_private.ops_alert_webhook() is null and not app_private.ops_alert_email_ready() then
     raise exception using errcode = '22023', message = 'ops_alert_channel_missing';
   end if;
   sent := app_private.ops_alert_send(
@@ -238,6 +270,9 @@ begin
       || 'A delivery test of the production alerts. No action needed: when something breaks, a message like this one arrives here.'
       || E'\nWhere to look: GitHub issues labelled ops-alert; runbook docs/operations/ALERTS.md'
   );
+  if sent ->> 'webhookRequestId' is null and sent ->> 'emailRequestId' is null then
+    raise exception using errcode = 'P0001', message = 'ops_alert_test_not_queued';
+  end if;
   return sent || jsonb_build_object('sentAt', statement_timestamp());
 end;
 $$;

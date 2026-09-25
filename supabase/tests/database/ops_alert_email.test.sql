@@ -31,6 +31,14 @@ select extensions.throws_ok($$select app_private.ops_alert_configure_email('a@b.
   '22023', 'ops_alert_email_invalid', 'so is one carrying a second line');
 select extensions.throws_ok($$select app_private.ops_alert_test()$$, '22023', 'ops_alert_channel_missing',
   'a test needs a channel');
+select extensions.throws_ok($$select app_private.ops_alert_configure_email('owner@example.test')$$,
+  '22023', 'ops_alert_email_unreachable', 'an address is refused while the functions URL is missing');
+
+-- Where the email request goes: the functions URL the email setup stores.
+update app_private.notification_email_settings
+set functions_base_url = 'https://functions.example.invalid/functions/v1';
+select extensions.ok(app_private.scheduler_token() ~ '^[0-9a-f]{64}$', 'the scheduler token exists');
+
 select app_private.ops_alert_configure_email('  owner@example.test ');
 select extensions.is((select email_to from app_private.ops_alert_state), 'owner@example.test',
   'a valid address is stored, trimmed');
@@ -40,11 +48,6 @@ select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select extensions.is(api.service_ops_alert_email_target(), 'owner@example.test',
   'the function reads the configured address');
 select set_config('request.jwt.claims', '', true);
-
--- Where the email request goes: the functions URL the email setup stores.
-update app_private.notification_email_settings
-set functions_base_url = 'https://functions.example.invalid/functions/v1';
-select extensions.ok(app_private.scheduler_token() ~ '^[0-9a-f]{64}$', 'the scheduler token exists');
 
 -- ---------------------------------------------------------------------------
 -- An incident: a failed scheduled job, every other check pinned healthy.
@@ -116,8 +119,26 @@ select extensions.ok((select convert_from(body, 'utf8')::jsonb ->> 'subject' fro
   order by id desc limit 1) = '[BotolaGO] Production RECOVERED',
   'by email as RECOVERED');
 
--- Without any channel the tick sends nothing.
+-- Email that can no longer be delivered is not a channel: nothing is
+-- recorded as sent.
 delete from vault.secrets where name = 'botolago_ops_alert_webhook';
+update app_private.notification_email_settings set functions_base_url = null;
+insert into cron.job_run_details (jobid, runid, job_pid, database, username, command, status,
+  return_message, start_time, end_time)
+select jobid, 999997, 1, current_database(), 'postgres', 'select 1', 'failed', 'job startup timeout',
+  now() - interval '1 minute', now() - interval '1 minute'
+from cron.job where jobname = 'news-publish-due-editions';
+select set_config('test.before', (select row_to_json(s)::text from (
+  select last_status, last_signature, last_sent_at from app_private.ops_alert_state) s), true);
+select extensions.is(app_private.ops_alert_tick(), 'not_configured',
+  'without the functions URL, email is not a channel');
+select extensions.is((select row_to_json(s)::text from (
+  select last_status, last_signature, last_sent_at from app_private.ops_alert_state) s),
+  current_setting('test.before'), 'and nothing is recorded as sent');
+select extensions.throws_ok($$select app_private.ops_alert_test()$$, '22023', 'ops_alert_channel_missing',
+  'nor can a test pretend to go out');
+
+-- Without any channel the tick sends nothing.
 select app_private.ops_alert_configure_email(null);
 select extensions.is(app_private.ops_alert_tick(), 'not_configured', 'no channel, nothing sent');
 
