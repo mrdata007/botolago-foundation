@@ -95,15 +95,36 @@ the full names differ, and only full names match
 | Koffi Holete (defender, 5.0)     | Koffi Benjamin Holete, 37597609 ("Koffi Holete") | created as a new player at Amal Tiznit |
 | Mouad Goulouss (midfielder, 7.2) | Mouad Goullous, 37649020 ("Mouad Goulouss")      | moved from CODM Meknès to Amal Tiznit  |
 
-Both are in the game twice now. The hand-typed rows have never been picked,
-held or scored, so they can be retired. That is the owner's call.
-[`fantasy-deactivate-duplicate-player.sql`](../../scripts/backend/fantasy-deactivate-duplicate-player.sql)
-takes one out of the game per run; their Amal Tiznit club records would go
-separately.
+The hand-typed rows had never been picked, held or scored. Asked, the owner
+answered "remove it" the same afternoon.
 
-41 hand-typed players are still matched to nobody: 18 at Amal Tiznit (these
-two among them) and all 23 at Widad Témara. SportsMonks does not show them
-yet.
+Both copies were removed, one transaction each: Koffi Holete at 15:05 UTC,
+Mouad Goulouss at 15:06. Each was rehearsed first and re-read to confirm
+nothing was saved. The Fantasy tick was paused (15:03:21–15:06:53), and each
+transaction held every pg_cron job off. In each one:
+
+- The reviewed body of
+  [`fantasy-deactivate-duplicate-player.sql`](../../scripts/backend/fantasy-deactivate-duplicate-player.sql)
+  took the copy out of the game (`active` and `eligible` false). Its guards
+  passed: never in a squad, never traded, no points, selected by nobody. It
+  wrote admin audit events 3 and 5.
+- The copy's Amal Tiznit record for 2026/27 was deleted, as the update itself
+  retires an unused double. The transaction first checked three things: the
+  copy has no SportsMonks id; it has no statistics; and the real player is
+  linked, listed at Amal Tiznit and in the game there.
+
+| Copy removed                                            | Fantasy row taken out of the game      | Club record deleted (kept here to undo)                                                                                                 |
+| ------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Koffi Holete (`d4e78442-7b82-42fd-b019-0bd42eef3744`)   | `5bc46158-3b8a-47d8-af17-9392237ded27` | `f07a786c-e4aa-44ae-8d4c-6e0107a38764`: Amal Tiznit (`1ebd788b-9f71-4a78-bfa8-68359d7f3a3f`), 2026-09-24 to 2027-06-30, no shirt number |
+| Mouad Goulouss (`4a2c9add-74de-4840-b7b1-92abf340121e`) | `90752243-3d59-4319-bfc3-995fb2d36384` | `6e3eccb7-1ee7-47c5-9818-bcb690b97873`: Amal Tiznit, 2026-09-24 to 2027-06-30, shirt 10                                                 |
+
+After: 603 players listed this season and in the game. The 6 teams still hold
+their 90 players, and planning the observation again still changes nothing.
+To undo one, set its Fantasy row `active` and `eligible` again and put back
+its club record from the table.
+
+39 other hand-typed players are still matched to nobody: 16 at Amal Tiznit
+and all 23 at Widad Témara. SportsMonks does not show them yet.
 
 ## The first match imports
 
