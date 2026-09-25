@@ -120,7 +120,13 @@ Fantasy follows the list:
    nothing is left to change. The plan and the result are kept in
    `app_private.current_player_list_updates`.
 
-4. Import the statistics of the fixtures observed.
+4. Import the statistics of the fixtures observed ("Ingest current finished
+   Football performances"), with the tick still paused and the email and
+   live-score jobs paused too
+   (`select app_private.notification_email_configure('off', null, null, false);`,
+   after noting their settings). Then restore those settings and switch the
+   tick back on (AGENTS.md, "Before writing"). Do this after the day's last
+   match, so no live score waits on it.
 
 Before the first run, the migration itself goes on production with
 [`apply-20260925200000-current-player-list-update.sql`](../../scripts/backend/apply-20260925200000-current-player-list-update.sql).

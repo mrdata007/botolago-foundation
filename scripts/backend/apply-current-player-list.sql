@@ -40,6 +40,9 @@
 --      again. The result row should say "Applied".
 --   6. Whatever the result, switch the tick back on:
 --        select app_private.fantasy_automation_configure(true);
+--      If the statistics of the observed fixtures import next, do that first,
+--      with the tick still paused (docs/backend/CURRENT_PLAYER_LIST_UPDATE.md,
+--      step 4).
 --   If any check fails, the script stops with a message saying what, and
 --   nothing is saved. A plan whose digest no longer matches has changed since
 --   it was reviewed: observe again and review the new plan. Do not edit a
@@ -130,7 +133,8 @@ rollback;
 
 select observation.id as observation_id,
   case when applied.id is not null
-    then 'Applied. ' || applied.result::text || ' Switch the Fantasy tick back on.'
+    then 'Applied. ' || applied.result::text
+      || ' Switch the Fantasy tick back on, after the statistics import if one follows.'
     else 'Not applied (a rehearsal saves nothing). Plan: '
       || (app_private.current_player_list_plan(observation.id) -> 'summary')::text
       || ' Change rollback; to commit; and run again. Then switch the Fantasy tick back on.'

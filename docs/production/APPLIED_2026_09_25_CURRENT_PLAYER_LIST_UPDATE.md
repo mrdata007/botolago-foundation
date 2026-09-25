@@ -114,15 +114,43 @@ Tiznit's goalkeeper, 1 for Ittihad Tanger's. Amal Tiznit's goal went to one of
 the 7 players SportsMonks leaves without an id, so no player is credited with
 it.
 
+The import writes match statistics, so AGENTS.md ("Before writing") asks for
+the Fantasy tick and the live-score job to be paused while it runs. Run #3
+ran after the tick was back on (14:40:33), with the live-score job on. The
+email jobs were off. So it ran as the hourly season orchestrator runs the same
+import. No scheduled job ran while it did: the last runs before it, the
+live-score refresh and the news publisher, ended at 14:41:00.03. The workflow
+started at 14:41:09 and finished at 14:41:29, and the Fantasy tick's next run
+was at 14:45. The steps below keep the pauses through the import.
+
 The Fantasy tick never scores. Gameweek 1 is scored when it closes, after 27
 September's matches.
 
 ## After each match
 
-Early squads are thin, so a lineup can name players the list does not have.
-Before a finished match's statistics can import, run the observation with
-that fixture's id, review the plan, and apply it with the tick paused. Then
-the import runs. Gameweek 1 has six more matches on 26 and 27 September.
+Early squads are thin, so a lineup can name players the list does not have,
+and their statistics cannot import until the list has them. Gameweek 1 has
+six more matches on 26 and 27 September. After the day's last match, not
+while one is being played:
+
+1. Check that nothing else is writing (AGENTS.md, "Before writing").
+2. Pause the Fantasy tick
+   (`select app_private.fantasy_automation_configure(false);`). Note the
+   email settings, then pause the email and live-score jobs:
+
+   ```sql
+   select mode, football_live_refresh_enabled from app_private.notification_email_settings;
+   select app_private.notification_email_configure('off', null, null, false);
+   ```
+
+3. Run "Observe current Football player list" with the day's fixture ids,
+   review the plan, and apply it with
+   [`apply-current-player-list.sql`](../../scripts/backend/apply-current-player-list.sql).
+4. Run "Ingest current finished Football performances".
+5. Restore the email settings noted in step 2. Today that is
+   `select app_private.notification_email_configure('off', null, null, true);`.
+   Then switch the tick back on
+   (`select app_private.fantasy_automation_configure(true);`).
 
 ## Found while running: the plan script's result row
 
