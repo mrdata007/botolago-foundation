@@ -4,12 +4,13 @@
 -- (audit 2026-09-25 A08 / DB-03 and the monitoring gap under A02):
 --   * two operations health checks: `fantasy_fixture_coverage` (a finished
 --     match counting for Fantasy points without certified player statistics:
---     warn at 3 h after the final whistle, fail at 6 h) and `fantasy_scoring`
---     (a locked gameweek held by a counted match that will not finish on its
---     own -- postponed, cancelled or abandoned after the lock, moved past the
---     window, or unfinished 6 h after its due end -- or whose counted matches
---     have all been final for 6 h, with statistics certified for 1 h, still
---     not finalized);
+--     warn at 6 h after the final whistle, fail at 12 h) and `fantasy_scoring`
+--     (a locked gameweek held by a counted match still not started, live or
+--     suspended 3 h after its due end: warn, 6 h: fail; held by one
+--     postponed, cancelled or abandoned after the lock, or moved past the
+--     window: warn only, since no tool can free the gameweek yet; or whose
+--     counted matches are all final with statistics certified, still not
+--     finalized: warn 1 h, fail 8 h after the last certification);
 --   * app_private.ops_alert_test(), which sends one TEST message to the
 --     configured webhook and changes nothing else.
 --   It replaces app_private.ops_health_checks() and adds one function. It
@@ -22,9 +23,10 @@
 --   one refuses before it: the health function it replaces is the one that
 --   migration installs). Any time of day; it needs well under a second.
 --
---   Alerts are on in production (read 2026-09-25 10:02 UTC). If a counted
---   match still lacks player statistics 6 h after its final whistle when this
---   is applied -- on 25 Sep that was the 1-3 match of 24 Sep -- the next
+--   Alerts are on in production (read 2026-09-25 at 10:02 and 14:34 UTC), and
+--   repeat hourly while a check fails. If a counted match still lacks player
+--   statistics 12 h after its final whistle when this is applied -- on 25 Sep
+--   that was the 1-3 match of 24 Sep, final at 22:00 UTC -- the next
 --   ops-alert-tick (at most 5 minutes later) sends a FAIL message naming
 --   `fantasy_fixture_coverage`. That is the check doing its job, not a fault
 --   of the update.
@@ -186,9 +188,18 @@ values (
 --   * The 80 pg_cron "job startup timeout" failures (16:35-16:48 on 24 Sep,
 --     05:15-06:10 on 25 Sep) are what `cron_jobs` already fails on. They went
 --     unheard because ops_alert_state.enabled was false at the audit. At 10:02
---     UTC it read true, with a webhook in Vault, so the checks below page from
---     the moment they are applied. (When it was switched is not recorded:
---     ops_alert_state.updated_at is rewritten by every tick.)
+--     UTC it read true, with a webhook in Vault (and still did at 14:53, with
+--     repeat_after 1 h), so the checks below page from the moment they are
+--     applied, and page again every hour while they keep failing. A `fail`
+--     must therefore mean something to act on, not an ordinary night. (When
+--     alerts were switched on is not recorded: ops_alert_state.updated_at is
+--     rewritten by every tick.)
+--   * Statistics and points come only from the GitHub season orchestrator
+--     (or the same code dispatched by hand). It is scheduled hourly, but
+--     GitHub started its scheduled runs in the 48 h to 13:43 UTC on 25 Sep
+--     3.1 to 6.3 h apart (16:53, 20:18, 23:39, 04:44, 09:57, 15:02, 19:06,
+--     22:21, 01:27, 07:43, 13:43), and a run may last up to its job's
+--     40-minute limit (those took about a minute each).
 --
 -- Two checks join app_private.ops_health_checks(), in the same vocabulary as
 -- the others (ok / warn / fail, one line of detail) and so through the same
@@ -203,10 +214,13 @@ values (
 --     statistics are not certified complete: no coverage row, or one without
 --     scoring_statistics_complete and reconciled (what the scoring worker
 --     requires, 20260914200719; a certified row is reconciled by constraint,
---     and both are read as the worker reads them). Warns 3 h after the final
---     whistle; fails 6 h after it. The orchestrator is scheduled hourly (GitHub
---     has started it up to 5.5 h apart), so 3 h is two missed chances and 6 h
---     is an incident.
+--     and both are read as the worker reads them). Warns 6 h after the final
+--     whistle; fails 12 h after it. On an ordinary night a match waits up to
+--     6.3 h for the next orchestrator run, so 6 h is a warning, not a page.
+--     By 12 h at least one run has started and ended even at the widest gap
+--     seen, and usually two or three have: still no statistics is then an
+--     incident, whatever the cause, a provider outage included. The 1-3 match
+--     of 24 Sep would have warned at 04:00 and failed at 10:00 UTC on 25 Sep.
 --     Matches of a finalized, corrected or cancelled gameweek are out of
 --     scope: their points are settled.
 --
@@ -217,32 +231,48 @@ values (
 --     20260924200000), and no scoring snapshot is not zero points, it is no
 --     points yet. So the gameweek is `ok` while each unfinished match can still
 --     finish on its own: its kickoff is ahead, or its due end (kickoff + 2 h)
---     is under 3 h ago. It is stalled when one cannot:
---       - postponed, cancelled or abandoned after the lock, or moved to a
---         kickoff past the gameweek's window: nothing in the pipeline takes a
---         frozen assignment out of a gameweek (the calendar sync and the lock
---         touch unfrozen ones only), so it needs an owner's decision. Warns at
---         once; fails 6 h after the end it was due at the kickoff the gameweek
---         locked with (assigned_kickoff_at + 2 h);
---       - any other status (not started, live, suspended, delayed) 3 h past
---         its due end warns, 6 h past it fails: the live refresh looks back
---         3 h only, so such a row is not going to be corrected by itself.
---     Once every counted match is finished, and the last has been final for
---     6 h:
---       - fails when every match's statistics have been complete for at least
---         an hour and the gameweek is still not finalized. The orchestrator
---         ingests statistics and scores in the same pass (40 min at most), so
---         an hour after the last statistics were certified the pass that could
---         score has ended. The detail names the stage it stopped at.
+--     is under 3 h ago. Past that the gameweek is held:
+--       - by a match postponed, cancelled or abandoned after the lock, or
+--         moved to a kickoff past the gameweek's window. Nothing in the
+--         pipeline takes a frozen assignment out of a gameweek (the calendar
+--         sync and the lock touch unfrozen ones only) and no tool does it yet,
+--         so what happens to that match is an owner's decision. This warns at
+--         once, naming the match, for as long as it lasts, and never fails: a
+--         failure would page every hour, for days, with nothing anyone can
+--         run. (The lateness still reaches GitHub: the watchdog's
+--         fantasy_points and the orchestrator escalate a gameweek not
+--         finalized FANTASY_COVERAGE_ESCALATE_HOURS after its window ended.)
+--       - by a match in any other state (not started, live, suspended,
+--         delayed): warns 3 h past its due end, fails 6 h past it. Such a row
+--         has stopped following the match (the live refresh gives up on a
+--         match it has not seen start 3 h after its kickoff), or the provider
+--         has: a fault to act on. A provider refresh corrects the first -- the
+--         orchestrator's, at once when it is dispatched.
+--       Held both ways, it fails and names the match that fails.
+--     Once every counted match is finished:
+--       - while a match still lacks certified statistics, warns from 6 h after
+--         the last final whistle and never fails: nothing can be scored yet,
+--         and fantasy_fixture_coverage (warns 6 h, fails 12 h after that
+--         match's whistle) pages for the cause, so it pages once, not twice;
+--       - once every match's statistics are certified: ok for an hour, then
+--         warns, and fails 8 h after the last certification with the
+--         gameweek still not finalized. The detail names the stage it stopped
+--         at. Only the orchestrator scores and finalizes (the pg_cron tick
+--         stops at provisional, 20260924200100). A run that certifies
+--         statistics scores them in the same pass, within its 40 minutes, so
+--         an hour later that run has ended: warn. Statistics certified outside
+--         a run (the manual one-fixture canary,
+--         docs/backend/CURRENT_FINISHED_FIXTURE_PERFORMANCES.md) wait for the
+--         next one: up to 6.3 h to its start at the widest gap seen, and its
+--         40 minutes, 7 h in all; 8 h keeps an hour's margin. The runbooks
+--         say to dispatch the orchestrator after a manual ingest instead,
+--         which scores the gameweek at once.
 --         "Certified" is when the match's current statistics version was
 --         stored (its active app.player_fixture_performances rows, written in
 --         the same transaction that certifies the coverage row), not the
 --         coverage row's created_at, which an earlier uncertified import may
 --         have set, nor its updated_at, which every re-observation of the same
---         facts moves;
---       - warns when a match still lacks statistics: nothing can be scored
---         yet, and fantasy_fixture_coverage has already failed for that match,
---         so the root cause pages once rather than twice.
+--         facts moves.
 --     A season has one gameweek past its lock at a time
 --     (fantasy_gameweeks_one_current_idx), so several at once means several
 --     Fantasy competitions. Then both checks name a gameweek with its season,
@@ -256,7 +286,8 @@ values (
 --
 -- Thresholds are written next to their checks, as in 20260924200200: the ops
 -- model keeps no settings for them. Changing one is a migration, reviewed like
--- the check itself.
+-- the check itself. FANTASY_COVERAGE_ESCALATE_HOURS, the GitHub variable the
+-- orchestrator and the watchdog read, does not reach them.
 --
 -- The sitemap check `news_sitemap` (20260925180050) is kept byte for byte:
 -- warns when the snapshot is 2+ min old or a refresh took 1.5 s, fails when it
@@ -286,8 +317,12 @@ values (
 -- local database seeded with a whole season (30 gameweeks, 240 counted
 -- fixtures, 239 coverage rows, 7,170 performance rows, GW30 live with 7 of 8
 -- matches final), runs of 200 calls each: ops_health_checks() took 0.35-0.50
--- ms a call as 20260925180050 left it and 0.78-0.96 ms with the two checks. It
--- runs every 5 minutes (alert tick) and every 30 (watchdog).
+-- ms a call as 20260925180050 left it and 0.78-0.96 ms with the two checks.
+-- After the thresholds were revised, on one such seed (240 counted fixtures,
+-- 7,140 performance rows, GW30 held by a match stuck live), three runs each:
+-- 0.94-1.14 ms a call, against 0.98-1.05 ms for the first version of the
+-- checks on the same data. It runs every 5 minutes (alert tick) and every 30
+-- (watchdog).
 
 -- Health: 20260925180050's checks, unchanged, plus `fantasy_fixture_coverage`
 -- and `fantasy_scoring` after `fantasy_deadline_watch`.
@@ -309,6 +344,7 @@ declare
   watched_seasons integer;
   scoring record;
   held_label text;
+  scoring_stage text;
   failed_jobs text;
   news_beat timestamptz;
   sitemap record;
@@ -382,14 +418,14 @@ begin
   -- points (20260925180400). Complete means what the scoring worker requires:
   -- a coverage row certified scoring_statistics_complete and reconciled. The
   -- final whistle is finalized_at, or kickoff + 2 h for a finished row without
-  -- one. Warn 3 h after it, fail 6 h after it. Settled gameweeks are out of
-  -- scope.
+  -- one. Warn 6 h after it (GitHub has left 6.3 h between orchestrator runs),
+  -- fail 12 h after it. Settled gameweeks are out of scope.
   select
     count(*) filter (where m.complete) as covered,
-    count(*) filter (where not m.complete and m.final_at >= now_at - interval '3 hours') as waiting,
-    count(*) filter (where not m.complete and m.final_at < now_at - interval '3 hours') as late,
-    count(*) filter (where not m.complete and m.final_at < now_at - interval '6 hours') as overdue,
-    count(*) filter (where not m.complete and m.partial and m.final_at < now_at - interval '3 hours') as partial,
+    count(*) filter (where not m.complete and m.final_at >= now_at - interval '6 hours') as waiting,
+    count(*) filter (where not m.complete and m.final_at < now_at - interval '6 hours') as late,
+    count(*) filter (where not m.complete and m.final_at < now_at - interval '12 hours') as overdue,
+    count(*) filter (where not m.complete and m.partial and m.final_at < now_at - interval '6 hours') as partial,
     min(m.final_at) filter (where not m.complete) as oldest_final,
     (array_agg(m.gameweek order by m.final_at, m.gameweek) filter (where not m.complete))[1]
       as oldest_gameweek
@@ -412,8 +448,8 @@ begin
     'detail',
     case
       when coverage.late > 0 then
-        case when coverage.overdue > 0 then coverage.overdue || ' counted match(es) final 6+ h ago'
-          else coverage.late || ' counted match(es) final 3+ h ago' end
+        case when coverage.overdue > 0 then coverage.overdue || ' counted match(es) final 12+ h ago'
+          else coverage.late || ' counted match(es) final 6+ h ago' end
         || ' without complete player statistics (oldest: ' || coverage.oldest_gameweek || ', final '
         || floor(extract(epoch from now_at - coverage.oldest_final) / 3600) || ' h ago'
         || case when coverage.partial > 0 then '; ' || coverage.partial || ' with partial statistics' else '' end
@@ -421,22 +457,24 @@ begin
       when coverage.covered + coverage.waiting = 0 then 'no finished match counts for Fantasy points yet'
       else coverage.covered || ' of ' || (coverage.covered + coverage.waiting)
         || ' finished counted match(es) with complete player statistics'
-        || case when coverage.waiting > 0 then ' (the others final under 3 h ago)' else '' end
+        || case when coverage.waiting > 0 then ' (the others final under 6 h ago)' else '' end
     end);
 
   -- Fantasy: points for every gameweek past its lock (20260925180400).
   -- An unfinished counted match holds the gameweek; that is play, not a
   -- defect, while the match can still finish on its own (an empty scoring
-  -- table then means no points yet, never zero points). It is a stall when it
-  -- cannot: postponed, cancelled or abandoned after the lock, or moved past
-  -- the gameweek's window (warn at once, fail 6 h after the end it was due at
-  -- its frozen kickoff), or anything else still unfinished 3 h (warn) or 6 h
-  -- (fail) after its due end, kickoff + 2 h. Once every counted match is
-  -- final, six hours after the last whistle: fail when every match's
-  -- statistics have been certified for an hour (the orchestrator scores in
-  -- the same pass that ingests them, 40 min at most) and the gameweek is
-  -- still not finalized; warn while statistics are missing, which
-  -- fantasy_fixture_coverage already fails on.
+  -- table then means no points yet, never zero points). Past that it warns:
+  -- at once for a match postponed, cancelled or abandoned after the lock or
+  -- moved past the gameweek's window (only an owner's decision frees the
+  -- gameweek and no tool applies one yet, so this never fails), and 3 h after
+  -- its due end (kickoff + 2 h) for a match still not started, live,
+  -- suspended or delayed, which fails 6 h after it (`stuck`). Once every
+  -- counted match is final: while statistics are missing, warn from 6 h after
+  -- the last whistle (fantasy_fixture_coverage fails for them); once all are
+  -- certified, warn an hour after the last certification (a run scores in the
+  -- pass that certifies, within its 40 minutes) and fail 8 h after it (a
+  -- manual ingest waits for the next run, and GitHub has left 6.3 h between
+  -- runs) while the gameweek is still not finalized.
   select w.*,
     count(*) filter (where w.verdict in ('stalled', 'fail')) over () as failing,
     exists (select 1 from app_private.fantasy_scoring_snapshots snapshot where snapshot.gameweek_id = w.id)
@@ -445,28 +483,30 @@ begin
   from (
     select v.*,
       case
-        when v.overdue > 0 then 'stalled'
+        when v.stuck > 0 then 'stalled'
         when v.finished < v.matches and v.held > 0 then 'stalling'
         when v.finished < v.matches then 'in_play'
-        when v.last_final >= now_at - interval '6 hours' then 'due'
-        when v.without_statistics > 0 then 'warn'
+        when v.without_statistics > 0 then
+          case when v.last_final >= now_at - interval '6 hours' then 'due' else 'warn' end
         when v.statistics_since >= now_at - interval '1 hour' then 'due'
+        when v.statistics_since >= now_at - interval '8 hours' then 'unscored'
         else 'fail' end as verdict
     from (
       select m.id, m.gameweek, m.deadline_at, m.status,
         count(*) as matches,
         count(*) filter (where m.hold is null) as finished,
         count(*) filter (where m.held) as held,
-        count(*) filter (where m.due_end < now_at - interval '6 hours') as overdue,
+        count(*) filter (where m.stuck) as stuck,
         max(m.final_at) filter (where m.hold is null) as last_final,
         count(*) filter (where not m.complete) as without_statistics,
         max(m.certified_at) as statistics_since,
         (array_agg(jsonb_build_object('fixture', m.fixture_id, 'hold', m.hold, 'status', m.fixture_status,
-            'kickoff', m.kickoff_at, 'assigned', m.assigned_kickoff_at) order by m.due_end, m.fixture_id)
+            'kickoff', m.kickoff_at, 'assigned', m.assigned_kickoff_at) order by m.stuck desc, m.due_end, m.fixture_id)
           filter (where m.held))[1] as held_match
       from (
         select k.*,
-          k.hold in ('called_off', 'moved') or k.due_end < now_at - interval '3 hours' as held
+          k.hold in ('called_off', 'moved') or k.due_end < now_at - interval '3 hours' as held,
+          k.hold = 'unfinished' and k.due_end < now_at - interval '6 hours' as stuck
         from (
           select g.id, case when watched_seasons > 1 then s.name || ' ' else '' end || 'GW' || g.sequence_number
               as gameweek, g.deadline_at, g.status::text as status,
@@ -500,7 +540,7 @@ begin
     ) v
   ) w
   order by case w.verdict when 'stalled' then 0 when 'fail' then 0 when 'stalling' then 1 when 'warn' then 1
-    when 'due' then 2 else 3 end, w.deadline_at, w.id
+    when 'unscored' then 1 when 'due' then 2 else 3 end, w.deadline_at, w.id
   limit 1;
   if scoring.verdict in ('stalled', 'stalling') then
     select home.short_name || ' v ' || away.short_name into held_label
@@ -509,9 +549,15 @@ begin
     join app.teams away on away.id = f.away_team_id
     where f.id = (scoring.held_match ->> 'fixture')::uuid;
   end if;
+  -- Where a gameweek whose statistics are all certified stopped.
+  scoring_stage := case
+    when scoring.status in ('locked', 'live') then 'still ' || scoring.status || ', not handed to scoring'
+    when scoring.status = 'finalizing' then 'points sealed, finalization not finished'
+    when scoring.scoring_started then 'scoring started, not finished'
+    else 'no scoring run has stored anything' end;
   checks := checks || jsonb_build_object('name', 'fantasy_scoring', 'status',
     case when scoring.verdict in ('stalled', 'fail') then 'fail'
-      when scoring.verdict in ('stalling', 'warn') then 'warn' else 'ok' end,
+      when scoring.verdict in ('stalling', 'warn', 'unscored') then 'warn' else 'ok' end,
     'detail',
     case
       when scoring.verdict in ('stalled', 'stalling') then scoring.gameweek || ': counted match '
@@ -532,19 +578,20 @@ begin
           then ' (+' || (scoring.failing - 1) || ' more gameweek(s))' else '' end
       else case scoring.verdict
         when 'fail' then scoring.gameweek || ': every counted match final for '
-          || floor(extract(epoch from now_at - scoring.last_final) / 3600) || ' h with complete statistics, no final points: '
-          || case
-            when scoring.status in ('locked', 'live') then 'still ' || scoring.status || ', not handed to scoring'
-            when scoring.status = 'finalizing' then 'points sealed, finalization not finished'
-            when scoring.scoring_started then 'scoring started, not finished'
-            else 'no scoring run has stored anything' end
+          || floor(extract(epoch from now_at - scoring.last_final) / 3600) || ' h, statistics complete for '
+          || floor(extract(epoch from now_at - scoring.statistics_since) / 3600) || ' h, no final points: '
+          || scoring_stage
           || case when scoring.failing > 1 then ' (+' || (scoring.failing - 1) || ' more gameweek(s))' else '' end
+        when 'unscored' then scoring.gameweek || ': statistics complete for '
+          || floor(extract(epoch from now_at - scoring.statistics_since) / 3600) || ' h, no final points yet ('
+          || scoring_stage || '): only a Fantasy season orchestrator run scores; fails at '
+          || to_char((scoring.statistics_since + interval '8 hours') at time zone 'UTC', 'HH24:MI') || ' UTC'
         when 'warn' then scoring.gameweek || ': every counted match final for '
           || floor(extract(epoch from now_at - scoring.last_final) / 3600) || ' h, no points yet: '
           || scoring.without_statistics || ' match(es) still without complete player statistics (fantasy_fixture_coverage)'
         when 'due' then scoring.gameweek || ': every counted match final, points due by '
-          || to_char(greatest(scoring.last_final + interval '6 hours',
-               coalesce(scoring.statistics_since, scoring.last_final) + interval '1 hour') at time zone 'UTC', 'HH24:MI')
+          || to_char(case when scoring.without_statistics > 0 then scoring.last_final + interval '6 hours'
+               else scoring.statistics_since + interval '1 hour' end at time zone 'UTC', 'HH24:MI')
           || ' UTC'
         when 'in_play' then scoring.gameweek || ' ' || scoring.status || ': ' || scoring.finished
           || ' of ' || scoring.matches || ' counted matches final; points come after the last one'
@@ -756,7 +803,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260925180400, 'UTF8')), 'hex')
-    is distinct from 'e6222b6697b4d5dfe4a4552cddcc8989aa29b7ebd634871dae5eda67386da51f' then
+    is distinct from 'af1534aeffa834eb896f54dc57c1e6dc695221ba3852fd0ed4d0729a49d8d9e9' then
     raise exception 'stop: 20260925180400 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 

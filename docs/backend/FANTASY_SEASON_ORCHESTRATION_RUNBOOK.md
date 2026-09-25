@@ -92,25 +92,60 @@ Each finished fixture is now certified on its own
 the pass could not certify is listed in `performances.incomplete[]` with its
 stage, code, field path or database code, and its age:
 
-| Condition                                                                                                      | Verdict                            |
-| -------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| a fixture incomplete, less than `FANTASY_COVERAGE_ESCALATE_HOURS` after the final whistle                      | `waiting` (exit 0)                 |
-| a fixture incomplete for longer, or its age unknown                                                            | `escalate` (exit 1, alert)         |
-| a gameweek not finalized, less than `FANTASY_COVERAGE_ESCALATE_HOURS` after its window ended                   | `waiting` (exit 0)                 |
-| a gameweek not finalized for longer, its window end unreadable, or the windows themselves unreadable           | `escalate` (exit 1, alert)         |
-| the fixture listing cut off at `maxPerformanceBatches` (fixtures beyond it are never reached)                  | `escalate`                         |
-| the fixture listing itself failed (`performances.error`, with `performances.diagnostic` when it names a field) | `failed` (it was `waiting` before) |
+| Condition                                                                                                                          | Verdict                     |
+| ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| a fixture read and not certified, less than `FANTASY_COVERAGE_ESCALATE_HOURS` after its final whistle                              | `waiting` (exit 0)          |
+| a fixture read and not certified for longer, or of unknown age                                                                     | `escalate` (exit 1, alert)  |
+| a fixture a provider outage kept the pass from reading (`waitingOn: "provider_outage"`, the code in `performances.providerOutage`) | `waiting`, whatever its age |
+| a gameweek not finalized, less than `FANTASY_COVERAGE_ESCALATE_HOURS` after its window ended                                       | `waiting` (exit 0)          |
+| a gameweek not finalized for longer, or its window end unreadable                                                                  | `escalate` (exit 1, alert)  |
+| the gameweek windows could not be read at all (`scoring.error`)                                                                    | `waiting`                   |
+| the fixture listing cut off at `maxPerformanceBatches` (fixtures beyond it are never reached)                                      | `escalate`                  |
+| the fixture listing could not be read (`performances.error`, with `performances.diagnostic` when it names a field)                 | `waiting`                   |
+| `FANTASY_COVERAGE_ESCALATE_HOURS` set to anything but a whole number from 1 to 168 (`invalidSettings`, a _Settings_ row)           | `waiting`, on 6 h           |
 
-The final whistle is `finalizedAt` when the listing carries it, otherwise
-kickoff + 2 h (`finalWhistleSource`). The default threshold is 6 h; the
-repository variable `FANTASY_COVERAGE_ESCALATE_HOURS` (integer 1–168)
-overrides it, and anything else fails the run closed with
-`fantasy_coverage_escalation_window_invalid`. The run page gains a
-_Finished without statistics_ row, and the alert issue's category becomes
-`performance_coverage_overdue` with the fixture ids and codes. The issue stays
-open until the fixture is certified: an escalated fixture keeps its gameweek
-from finalizing, so it stays in the listing and escalates every pass. The
+A provider outage, a failed read and an unusable setting are named on the run
+page but do not escalate. The listing does not say which fixtures are already
+certified, so a fixture an outage kept the pass from reading proves nothing,
+and one failed read is not an incident. Per-fixture problems no longer reach
+the listing's error, so this does not bring back the green hours of 24–25
+September. When statistics or points really go missing, the database's own
+checks (below) and the watchdog's `fantasy_points` page, whatever GitHub's
+runs say.
+
+The pass ages a fixture from kickoff + 2 h (its `finalWhistleSource` is
+`kickoff_plus_estimate`, or `unknown` without a kickoff): the listing gives no
+final whistle. The default threshold is 6 h; the repository variable
+`FANTASY_COVERAGE_ESCALATE_HOURS` (a whole number from 1 to 168) overrides it.
+Any other value is reported in `invalidSettings` and 6 h is used; it used to
+stop the pass with `fantasy_coverage_escalation_window_invalid`. The run page
+gains a _Finished without statistics_ row, and the alert issue's category
+becomes `performance_coverage_overdue` with the fixture ids and codes. An
+escalated fixture keeps its gameweek from finalizing, so it stays in the
+listing and escalates every pass that reads it; the issue closes on the next
+green run. A run that waited on a provider outage is green without having read
+the fixture, so a closed issue does not prove the statistics arrived: the
+database's `fantasy_fixture_coverage` keeps failing until they do. The
 recovery procedure is in `CURRENT_FINISHED_FIXTURE_PERFORMANCES.md`.
+
+**After a manual ingest, dispatch the orchestrator.** The recovery procedure
+certifies statistics with the manual workflow (its one-fixture canary), but
+only this orchestrator's worker scores and finalizes a gameweek, and GitHub
+has started the hourly schedule up to 6.3 h late. So once the manual run is
+green: Actions → _Fantasy season orchestrator_ → Run workflow on `main`, with
+`RUN_FANTASY_ORCHESTRATOR` typed as the confirmation. It shares the manual
+run's concurrency group, so it waits for it to finish. Otherwise the
+database's `fantasy_scoring` check warns an hour after the certification and
+fails, paging, 8 h after it.
+
+The database watches the same two things without GitHub (migration
+`20260925180400`, `docs/operations/ALERTS.md`), from real coverage and the
+recorded final whistle (`app.fixtures.finalized_at`, kickoff + 2 h without
+one): `fantasy_fixture_coverage` warns 6 h and fails 12 h after a counted
+match's final whistle without certified statistics, whatever the cause, a
+provider outage included, and `fantasy_scoring` ages the gameweek. Their
+thresholds are fixed in that migration; `FANTASY_COVERAGE_ESCALATE_HOURS` does
+not change them.
 
 ### Points not final after the gameweek's window
 
@@ -126,20 +161,28 @@ that, so the pass also ages the gameweek:
 - after the second calendar sync, when any gameweek is `locked`, `live`,
   `provisional` or `finalizing` (or `open` past its deadline), the pass reads
   `api.fantasy_gameweeks` (read-only, the contract the Fantasy pages use) for
-  each gameweek's `endsAt`: the database's end of its window, the last
-  counting kickoff + 6 h, set by the calendar sync until the deadline locks it;
+  each gameweek's `endsAt`, the end of its window as stored
+  (`app.fantasy_gameweeks.ends_at`). The calendar sync sets it to the last
+  counting kickoff + 6 h, but only while the gameweek is `scheduled` or `open`
+  with no frozen assignment; after that it no longer moves. So it is not
+  always last kickoff + 6 h: production's GW1 ends at 00:00 UTC on 28 Sep, 4 h
+  after its last kickoff (read 2026-09-25);
 - a gameweek still in one of those states after its window ended is listed in
   `scoring.gameweeks[]` with `hoursSinceWindowEnd`, `overdue`, and the
   worker's `workerCode` when it ran for it; the run page gains an _Ended
   without final points_ row;
 - past `FANTASY_COVERAGE_ESCALATE_HOURS` (the same allowance, counted from the
-  window end: 6 h by default, so last kickoff + 12 h) the pass escalates. An
-  unreadable end, or windows that cannot be read at all
-  (`scoring.error`), escalate too.
+  window end, 6 h by default) the pass escalates, and so does a gameweek whose
+  window end is unreadable. Windows that could not be read at all
+  (`scoring.error`) leave the pass `waiting`, named: the next pass reads them
+  again, and the watchdog's `fantasy_points` reads them on its own schedule.
 
 `endsAt` does not follow a counting match moved after the deadline, so such a
 gameweek escalates early. That is intended: a match moved after the lock needs
-an owner decision (`fantasy_fixture_resolution_required` path) either way.
+an owner decision (`fantasy_fixture_resolution_required` path) either way. The
+database's `fantasy_scoring` check only warns for it, and for a match
+postponed, cancelled or abandoned after the lock: no tool applies that
+decision yet, and a failure there would page every hour until one does.
 
 What to do: read `scoring.gameweeks[].workerCode`. `football_not_final` with
 every fixture certified means a fixture lacks `finalized_at` or an assignment
@@ -161,11 +204,11 @@ job summary. Two changes keep a failure visible:
 
 ## Paging: what runs, and what the owner must set
 
-| Channel                                                  | Depends on                                         | State on 2026-09-25                                                  |
-| -------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------- |
-| Red orchestrator run → `ops-alert` issue                 | GitHub starting the hourly schedule                | works; GitHub started it at 22:21, 01:27 and 07:43 UTC (3–6 h apart) |
-| Production watchdog (`ops-watchdog.yml`) → `ops-alert`   | GitHub schedule, **and now** each orchestrator run | on `main` since 05:24 UTC; GitHub had not started it once by 07:47   |
-| Database webhook (`app_private.ops_alert_tick`, pg_cron) | nothing on GitHub                                  | `enabled = false`, never sent                                        |
+| Channel                                                  | Depends on                                         | State on 2026-09-25                                                                                                            |
+| -------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Red orchestrator run → `ops-alert` issue                 | GitHub starting the hourly schedule                | works; GitHub started its scheduled runs 3.1–6.3 h apart in the 48 h to 13:43 UTC                                              |
+| Production watchdog (`ops-watchdog.yml`) → `ops-alert`   | GitHub schedule, **and now** each orchestrator run | on `main` since 05:24 UTC; GitHub had not started it once by 07:47                                                             |
+| Database webhook (`app_private.ops_alert_tick`, pg_cron) | nothing on GitHub                                  | on: `enabled = true` with a webhook in Vault at 10:02 and 14:53 UTC, repeating hourly; nothing sent yet (`last_sent_at` empty) |
 
 Why the watchdog had not run: nothing in its workflow gates it. There is no
 repository variable in its `if:` and its ref condition is `main`, which is
@@ -183,9 +226,18 @@ check with status `fail` pages; `warn` shows on the run page and exits 0. A
 status other than `ok`/`warn`/`fail`, an overall `fail` that no named check
 explains, an empty check list or an unreadable answer all fail.
 `page_sitemapxml` fails unless the sitemap answers 200 **and** contains at
-least one `<loc>`. As of 2026-09-25 `service_ops_health` has no statistics
-coverage or scoring-age check (only `news_sitemap` is being added), so the
-watchdog covers both itself:
+least one `<loc>`.
+
+Statistics and points are watched from both sides. Migration `20260925180400`
+adds `fantasy_fixture_coverage` and `fantasy_scoring` to `service_ops_health`:
+the watchdog reports them under those names, and they page through the
+database webhook without GitHub. Their thresholds are fixed in the migration
+and allow for GitHub's late schedule: statistics warn 6 h and fail 12 h after
+the final whistle; points fail 6 h past the due end of a match stuck
+unfinished, or 8 h after the last statistics were certified; a match
+postponed, cancelled, abandoned or moved after the lock only ever warns
+(`docs/operations/ALERTS.md` has every threshold). The watchdog also keeps
+two rows of its own, which were the only check before that migration:
 
 - `fantasy_points` reads `api.fantasy_hub` and `api.fantasy_gameweeks` (both
   read-only) and fails when a gameweek is still not finalized more than
@@ -196,27 +248,34 @@ watchdog covers both itself:
   reaches it: that run's summary names the fixture. It used to warn. A
   cancelled or skipped run warns; no run for 8 h fails, as before.
 
-A statistics-coverage check inside `service_ops_health` (finished current
-fixtures with no accepted coverage row, aged like the orchestrator does) would
-page through the database webhook as well, without GitHub; it is a database
-change and is not in this lane.
-
 Owner actions, none of which this repository can do for you:
 
-1. **Switch on the database webhook.** It is the only channel that does not
-   depend on GitHub's scheduler. The steps are in `docs/operations/ALERTS.md`:
-   a Vault secret `botolago_ops_alert_webhook`, then
-   `select app_private.ops_alert_configure(true);`.
+1. **The database webhook is already on.** Production read
+   `ops_alert_state.enabled = true`, with a webhook in Vault, at 10:02 and
+   again at 14:53 UTC on 2026-09-25, and no message sent yet. It is the only
+   channel that does not depend on GitHub's scheduler, so prove that its
+   messages arrive: step 2. Switching it on (a Vault secret
+   `botolago_ops_alert_webhook`, then `select app_private.ops_alert_configure(true);`)
+   is only for a new or replaced destination (`docs/operations/ALERTS.md`).
 2. **Test both paths once.** Actions → _Production watchdog_ → Run workflow
    with `simulate_failure` ticked: an `ops-alert` issue must open and e-mail
-   you. Run it again unticked and it must close. For the webhook, the first
-   failing check after step 1 must reach the channel.
+   you. Run it again unticked and it must close. For the webhook, once
+   migration `20260925180400` is applied, run
+   `select app_private.ops_alert_test();` in the SQL editor: a message marked
+   TEST must reach the channel, and the webhook's answer can be read back
+   (`docs/operations/ALERTS.md`, step 3 of switching it on). It changes no
+   alert state.
 3. **Make sure the mention reaches you.** GitHub → Settings → Notifications →
    _Participating, @mentions and custom_: e-mail on. The issues mention
    `@mrdata007`.
-4. **Optional.** Repository variable `FANTASY_COVERAGE_ESCALATE_HOURS` (default
-   6), read by the orchestrator and the watchdog alike; set it at repository
-   level, like `FANTASY_AUTOMATION_ENABLED`. Environment secret
+4. **Optional.** Repository variable `FANTASY_COVERAGE_ESCALATE_HOURS`
+   (default 6); set it at repository level, like `FANTASY_AUTOMATION_ENABLED`.
+   It moves the GitHub side only: the orchestrator's statistics and points
+   escalation and the watchdog's `fantasy_points` row. The database checks
+   keep the fixed thresholds given above. A value that is not a whole number
+   from 1 to 168 is not used, and 6 h is: the orchestrator names it in
+   `invalidSettings` (a _Settings_ row; the run waits) and the watchdog in its
+   `watchdog_config` row (a warning). Environment secret
    `SUPABASE_PRODUCTION_PUBLISHABLE_KEY` on `production-admin-activation`:
    without it the watchdog's `public_api` row is skipped silently.
 

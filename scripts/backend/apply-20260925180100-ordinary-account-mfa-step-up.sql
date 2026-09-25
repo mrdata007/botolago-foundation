@@ -1,41 +1,78 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
 -- Apply migration 20260925180100_ordinary_account_mfa_step_up: an ordinary
--- account that turned MFA on must hold an aal2 session to change anything it
--- owns (audit 2026-09-25 A03 / DB-07). Refusal: SQLSTATE PT403, message
--- 'mfa_required'.
+-- account that turned MFA on must hold an aal2 session for every write the
+-- api.* functions make for it (audit 2026-09-25 A03 / DB-07). Refusal:
+-- SQLSTATE PT403, message 'mfa_required'. Its avatar image in Storage is not
+-- covered (known gap: docs/backend/IDENTITY_AUTH_RUNBOOK.md).
 --
 -- WHEN
---   Any time after the pull request that adds this file is merged, and not at
---   minute 12 of an hour (the Fantasy season orchestrator). It adds two
---   functions and 24 statement triggers, and replaces three functions:
+--   Any time after the pull request that adds this file is merged, but not
+--   while a Fantasy season orchestrator run is going on (GitHub -> Actions: it
+--   is scheduled at minute 12, and GitHub starts it late, at any minute), and
+--   outside match hours if you can, since live scores pause for the few
+--   minutes this takes (HOW TO RUN, step 2). It adds two functions and 24
+--   statement triggers, and replaces three functions:
 --   api.request_account_deletion, api.cancel_account_deletion and
---   api.unsubscribe_notification_email. No job needs pausing.
+--   api.unsubscribe_notification_email.
 --
 --   Adding a trigger holds writes to its table until the transaction ends,
---   so the script takes all 24 tables together first. The site keeps reading
---   while it runs. A Fantasy, Pronostics or notification tick that writes
---   during its second or so waits for it. If a write is already under way,
---   the script stops within 5 seconds and saves nothing: run it again a
---   minute later.
+--   so the script takes all 24 tables together first: account, notification,
+--   Fantasy and Pronostics tables. The site keeps reading while it runs; a
+--   visitor's save waits for its second or so. Three pg_cron jobs write to
+--   those tables -- the Fantasy lifecycle tick (app.fantasy_lineups), the
+--   email tick (app.notifications) and Pronostics scoring (app.predictions)
+--   -- so AGENTS.md ("Check the scheduled jobs too") has them paused first,
+--   with the live score refresh, which AGENTS.md pauses together with email.
+--   The script refuses to run while any of them is on. The other jobs (news
+--   publication, the sitemap refresh, the ops alert tick and the nightly
+--   history prunes) write none of these tables and stay on. If a write is
+--   already under way, the script stops within 5 seconds and saves nothing:
+--   run it again a minute later.
 --
 -- HOW TO RUN
 --   1. Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor ->
 --      New query. Make sure no other database work is running right now.
---   2. Paste this WHOLE file and press Run.
+--   2. Pause the jobs, as AGENTS.md asks. First note how they stand, to put
+--      them back exactly as they were (production on 2026-09-25 at 14:34 UTC:
+--      tick on, email off, live scores on, Pronostics off with scoring on):
+--        select f.lifecycle_tick_enabled as fantasy_tick, e.mode as email_mode,
+--          e.football_live_refresh_enabled as live_scores,
+--          p.mode as pronostics_mode, p.scoring_enabled as pronostics_scoring
+--        from app_private.fantasy_automation_settings f,
+--          app_private.notification_email_settings e, app_private.prediction_settings p;
+--      Then:
+--        a. the Fantasy lifecycle tick (fantasy automation):
+--             select app_private.fantasy_automation_configure(false);
+--        b. email and the live score refresh, the two email/results jobs:
+--             select app_private.notification_email_configure('off', null, null, false);
+--        c. Pronostics scoring, only if Pronostics is not off (while its mode
+--           is off the job writes nothing, and the script accepts it):
+--             select app_private.predictions_configure((select mode from app_private.prediction_settings), false);
+--   3. Paste this WHOLE file and press Run.
 --      As shipped it is a REHEARSAL: everything is applied inside one
 --      transaction, checked, and then ROLLED BACK. The result row should say
 --      "Rehearsal passed".
---   3. Change the line `rollback;` near the bottom to `commit;` and press Run
+--   4. Change the line `rollback;` near the bottom to `commit;` and press Run
 --      again. The result row should say "Applied".
+--   5. Whatever the result, put back what step 2 noted:
+--        a. if the tick was on:
+--             select app_private.fantasy_automation_configure(true);
+--        b. email and live scores as they were, here email_mode and
+--           live_scores from step 2 (on 2026-09-25: 'off' and true):
+--             select app_private.notification_email_configure('<email_mode>', null, null, <live_scores>);
+--        c. if step 2c paused Pronostics scoring:
+--             select app_private.predictions_configure((select mode from app_private.prediction_settings), true);
 --   If any check fails, the script stops with a message saying what, and
 --   nothing is saved. Do not edit a check to make it pass: a check firing means
 --   the database is not in the state this script expects.
 --
 -- WHAT IT DOES
---   * refuses to run twice, on a database missing a table it guards, where
---     the step-up already exists, or where a function it replaces is not the
---     version production held on 2026-09-25 (md5 read there);
+--   * refuses to run twice, while the Fantasy tick, email, the live score
+--     refresh or Pronostics scoring is on, on a database missing a table it
+--     guards or reads, where the step-up already exists, or where a function
+--     it replaces is not the version production held on 2026-09-25 (md5 read
+--     there);
 --   * takes the 24 tables it adds triggers to (see WHEN);
 --   * records the migration file in supabase_migrations.schema_migrations,
 --     whole as statements[1], and runs it from that record once its sha256
@@ -85,7 +122,9 @@ begin
     'app.fantasy_leagues', 'app.fantasy_league_memberships', 'app.predictions',
     'app.prediction_league_members', 'app_private.prediction_guest_claims',
     'app_private.notification_email_unsubscribe_tokens', 'app.notification_deliveries',
-    'auth.mfa_factors', 'auth.mfa_factors_user_id_idx'
+    'auth.mfa_factors', 'auth.mfa_factors_user_id_idx',
+    'app_private.fantasy_automation_settings', 'app_private.notification_email_settings',
+    'app_private.prediction_settings'
   ] loop
     if to_regclass(object_name) is null then
       missing := missing || object_name;
@@ -97,6 +136,23 @@ begin
   end if;
   if cardinality(missing) > 0 then
     raise exception 'stop: the database is missing what this update builds on: %', missing;
+  end if;
+
+  -- AGENTS.md: a write that touches Fantasy runs with the Fantasy lifecycle
+  -- tick paused, one that touches notifications with email (and with it the
+  -- live score refresh) off, and one that touches Pronostics with its scoring
+  -- paused. This one locks tables of all three and adds triggers to them.
+  if exists (select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled) then
+    raise exception 'stop: the Fantasy lifecycle tick is on -- pause it first with select app_private.fantasy_automation_configure(false); and switch it back on afterwards';
+  end if;
+  if exists (select 1 from app_private.notification_email_settings where mode <> 'off') then
+    raise exception 'stop: email is not off -- pause it as AGENTS.md says, and restore it afterwards';
+  end if;
+  if exists (select 1 from app_private.notification_email_settings where football_live_refresh_enabled) then
+    raise exception 'stop: the live score refresh is on -- pause it with email as AGENTS.md says, select app_private.notification_email_configure(''off'', null, null, false); and restore both afterwards';
+  end if;
+  if exists (select 1 from app_private.prediction_settings where mode <> 'off' and scoring_enabled) then
+    raise exception 'stop: Pronostics scoring is on -- pause it first with select app_private.predictions_configure((select mode from app_private.prediction_settings), false); and pass true afterwards';
   end if;
 
   -- The three functions it replaces, as production held them on 2026-09-25.
@@ -725,6 +781,6 @@ rollback;
 
 select case
   when exists (select 1 from supabase_migrations.schema_migrations where version = '20260925180100')
-    then 'Applied. Accounts that turned MFA on now need the code before any change.'
+    then 'Applied. Accounts that turned MFA on now need the code before any change to their data (not yet their avatar image).'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;

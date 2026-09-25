@@ -38,8 +38,10 @@ Google/Apple. Never wildcard an untrusted domain.
 
 Migration `20260925180100_ordinary_account_mfa_step_up` (audit A03 / DB-07).
 An account with at least one **verified** factor in `auth.mfa_factors` must hold
-an `aal2` session to change anything it owns. At `aal1` every write is refused
-with:
+an `aal2` session for the writes the database makes on its behalf: every table
+an ordinary `api.*` function writes for it (listed below). One thing it owns is
+outside that: its avatar image in Storage (known gap, below). At `aal1` every
+guarded write is refused with:
 
 | SQLSTATE | message        | HTTP (PostgREST) | Client action                                    |
 | -------- | -------------- | ---------------- | ------------------------------------------------ |
@@ -67,6 +69,16 @@ which has no JWT on its connection).
     e-mail off.
   - Anonymous client error reports.
   - Reads.
+- **Known gap: the avatar image.** The web app uploads it straight to
+  Storage, with `upsert`, at `<user-id>/avatar.<ext>`
+  (`uploadAvatarFromDataUrl` in `src/services/profiles-repo.ts`), and the
+  `avatars` bucket's policies (`20260720075453`) check only that the path is
+  the caller's own. So a password-only (`aal1`) session of an enrolled account
+  can upload, replace or delete its avatar object. With the same file type the
+  upload overwrites the picture the profile already shows, although the
+  profile's own change (`avatar_path` on `app.profiles`) is refused. The
+  step-up does not reach `storage.objects`, which belongs to Supabase; closing
+  this takes a reviewed change to the bucket's policies, not yet made.
 - **Guest predictions.** Guest predictions are claimed at sign-in, before the
   challenge. The claim is refused and the picks stay on the phone. Today the
   web app retries on the next sign-in or page load; retrying once the session
@@ -116,7 +128,8 @@ receive access.
 ## Avatar storage
 
 The `avatars` bucket is private, limited to 5 MiB JPEG/PNG/WebP files, and
-enforces `<user-id>/avatar.<extension>`. Display uses short-lived signed URLs.
+enforces `<user-id>/avatar.<extension>`. Its writes are not behind the MFA
+step-up (known gap above). Display uses short-lived signed URLs.
 Replacement updates the database before removing a differently named prior
 object. A future privileged maintenance job should identify unreferenced
 objects older than 24 hours; no public bucket or external avatar URL is stored.
