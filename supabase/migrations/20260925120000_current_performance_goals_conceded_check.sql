@@ -42,6 +42,11 @@
 -- (fixtures_finished_score_check). This ships before the importer change, so
 -- no match is imported under the new rule without it.
 --
+-- One bound changes with the rule: coverage must no longer report at least
+-- one statistic per player, since a substitute who never came on may carry
+-- none (SportsMonks lists them with no statistics). It must report at least
+-- one per player who appeared, each of whom carries minutes played.
+--
 -- Everything else in the function is 20260925110000's text, unchanged. Same
 -- signature and grants.
 
@@ -116,7 +121,10 @@ begin
     or (p_coverage ->> 'starterRows')::integer <> 22 - unnamed_starters
     or coalesce((p_coverage ->> 'identifiedStarterRows')::integer, 22 - unnamed_starters) <> 22 - unnamed_starters
     or (p_coverage ->> 'teamCount')::integer <> 2
-    or (p_coverage ->> 'detailRows')::integer < jsonb_array_length(p_rows)
+    -- An absent statistic counts as zero, so a substitute who never came on
+    -- may carry none; everyone who appeared carries at least their minutes.
+    or (p_coverage ->> 'detailRows')::integer
+      < (select count(*) from jsonb_array_elements(p_rows) value where value ->> 'appeared' = 'true')
   then
     raise exception using errcode = '22023', message = 'CURRENT_PERFORMANCE_INCOMPLETE';
   end if;

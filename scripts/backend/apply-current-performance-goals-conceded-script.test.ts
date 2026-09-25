@@ -78,7 +78,7 @@ describe(`apply-${VERSION}-current-performance-goals-conceded.sql`, () => {
     expect(outsideBodies).not.toMatch(/^\s*(insert|update|delete|alter)\s/im);
   });
 
-  test("the new import is 20260925110000's plus the score check, nothing else", () => {
+  test("the new import is 20260925110000's plus the score check and the detail bound, nothing else", () => {
     const body = (text: string) => {
       const start = text.indexOf(
         "create or replace function api.ingest_current_player_fixture_performance(",
@@ -96,6 +96,15 @@ describe(`apply-${VERSION}-current-performance-goals-conceded.sql`, () => {
       ),
     );
     expect(added).toContain("CURRENT_GOALS_CONCEDED_MISMATCH");
-    expect(after.replace(added, "")).toBe(before);
+    // One statistic per player who appeared, no longer one per player.
+    const oldBound = "    or (p_coverage ->> 'detailRows')::integer < jsonb_array_length(p_rows)\n";
+    const newBound =
+      "    -- An absent statistic counts as zero, so a substitute who never came on\n" +
+      "    -- may carry none; everyone who appeared carries at least their minutes.\n" +
+      "    or (p_coverage ->> 'detailRows')::integer\n" +
+      "      < (select count(*) from jsonb_array_elements(p_rows) value where value ->> 'appeared' = 'true')\n";
+    expect(occurrences(before, oldBound)).toBe(1);
+    expect(occurrences(after, newBound)).toBe(1);
+    expect(after.replace(added, "").replace(newBound, oldBound)).toBe(before);
   });
 });

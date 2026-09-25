@@ -17,7 +17,37 @@ type Row = Record<string, unknown>;
 export const CURRENT_PERFORMANCE_TYPES = [
   52, 57, 79, 83, 84, 85, 88, 112, 113, 118, 119, 324,
 ] as const;
-const REQUIRED_TYPES = [52, 79, 83, 84, 85, 88, 112, 119, 324] as const;
+// SportsMonks sends a statistic only when it is not zero: on 2026-09-24's
+// first match (fixture 19874708) only the 3 scorers carried goals and only the
+// players who came on carried minutes, and last season's accepted fixtures
+// average about 2 statistic rows per player out of 13. So an absent statistic
+// counts as zero (owner delegated the decision, 2026-09-25), with checks that
+// absence cannot hide: every starter carries minutes played, and a substitute
+// without minutes never scored, assisted, missed a penalty, put through an own
+// goal, made a save or saved a penalty (none did in last season's 238
+// matches; a late substitute can carry goals conceded without minutes, as 23
+// did).
+//
+// Goals conceded, which decide clean sheets, follow the final score instead:
+// SportsMonks' own figure is not reliable (last season 40 of the 327
+// goalkeepers who played a whole match for a side that conceded carried
+// fewer). A starter with 90 minutes conceded what the side did; anyone else
+// keeps SportsMonks' figure, since only it knows when they were on the pitch,
+// capped at the side's. A substitute can reach 90 after an early goal (16 did
+// last season). The one case this counts against a player is a starter
+// substituted in stoppage time just before a stoppage-time goal (at most 11 of
+// 2,243 last season). The database checks the same against its own final
+// score (20260925120000).
+/** Counted as zero when absent (an explicit null on 57 or 113 stays null and is not counted). */
+const COUNTED_TYPES = [52, 57, 79, 83, 84, 85, 88, 112, 113, 119, 324] as const;
+const MINUTES = 119;
+/**
+ * Goals, saves, assists, penalties missed and saved, own goals: never without
+ * minutes played (the scorer awards saves without looking at minutes).
+ */
+const ON_PITCH_TYPES = [52, 57, 79, 112, 113, 324] as const;
+/** SportsMonks stops counting at 90: a starter with 90 minutes was on from kick-off to the 90th. */
+const WHOLE_MATCH_MINUTES = 90;
 const SEASON = 28647;
 interface PerformanceRow extends Omit<HistoricalPlayerPerformanceRow, "saves" | "penaltiesSaved"> {
   readonly saves: number | null;
@@ -87,6 +117,23 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     participants.some((team) => !["home", "away"].includes(String(row(team.meta).location)))
   )
     fail("fixture_participants_incomplete");
+  // Each side's final score, read as the fixtures sync reads it for the
+  // database: the one CURRENT score of each location.
+  const scores = Array.isArray(fixture.scores) ? fixture.scores.map(row) : [];
+  const goalsFor = new Map<number, number>();
+  for (const team of participants) {
+    const location = String(row(team.meta).location);
+    const current = scores.filter(
+      (score) =>
+        String(score.description).toUpperCase() === "CURRENT" &&
+        String(row(score.score).participant).toLowerCase() === location,
+    );
+    const goals = current.length === 1 ? row(current[0]!.score).goals : undefined;
+    if (typeof goals !== "number" || !Number.isSafeInteger(goals) || goals < 0)
+      fail("current_final_score_missing", { fixtureExternalId: String(expectedFixtureId) });
+    goalsFor.set(id(team.id, "participant.id"), goals);
+  }
+  const totalGoals = [...goalsFor.values()].reduce((sum, goals) => sum + goals, 0);
   if (
     !Array.isArray(fixture.lineups) ||
     fixture.lineups.length < 22 ||
@@ -108,11 +155,13 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
       unidentifiedStarters: unidentifiedStarters.length,
       unidentifiedOthers: unidentified.length - unidentifiedStarters.length,
     });
-  const missingTypes = new Map<number, number>();
   const optionalValues = new Map<string, { saves: number | null; penaltiesSaved: number | null }>();
   const lineupIds = new Set<number>();
   const normalizationLineups: Row[] = [];
   let detailRows = 0;
+  let absentAsZero = 0;
+  let startersWithoutMinutes = 0;
+  let benchOnPitchWithoutMinutes = 0;
   for (const raw of fixture.lineups) {
     const lineup = row(raw);
     if (isUnidentified(lineup)) {
@@ -136,11 +185,13 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     )
       fail("lineup_identity_mismatch");
     lineupIds.add(lineupId);
-    if (!Array.isArray(lineup.details)) fail("current_statistics_incomplete");
+    // A substitute who never came on may come with no statistics at all.
+    const details = lineup.details === undefined || lineup.details === null ? [] : lineup.details;
+    if (!Array.isArray(details)) fail("current_statistics_incomplete");
     const types = new Set<number>();
     const values = new Map<number, number>();
     const normalizationDetails: Row[] = [];
-    for (const rawDetail of lineup.details) {
+    for (const rawDetail of details) {
       detailRows += 1;
       const detail = row(rawDetail);
       const typeId = id(detail.type_id, "detail.type_id");
@@ -165,20 +216,30 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
       values.set(typeId, value);
       normalizationDetails.push(detail);
     }
-    for (const typeId of REQUIRED_TYPES)
-      if (!types.has(typeId)) missingTypes.set(typeId, (missingTypes.get(typeId) ?? 0) + 1);
+    // Minutes played decide, whether SportsMonks left them out or sent 0.
+    if (!((values.get(MINUTES) ?? 0) > 0)) {
+      if (lineup.type_id === 11) startersWithoutMinutes += 1;
+      else if (ON_PITCH_TYPES.some((typeId) => (values.get(typeId) ?? 0) > 0))
+        benchOnPitchWithoutMinutes += 1;
+    }
+    absentAsZero += COUNTED_TYPES.filter((typeId) => !types.has(typeId)).length;
+    // Absent is zero; an explicit null stays unknown (and the database refuses
+    // an unknown goalkeeper statistic).
     optionalValues.set(String(playerId), {
-      saves: values.get(57) ?? null,
-      penaltiesSaved: values.get(113) ?? null,
+      saves: types.has(57) ? (values.get(57) ?? null) : 0,
+      penaltiesSaved: types.has(113) ? (values.get(113) ?? null) : 0,
     });
     normalizationLineups.push({ ...lineup, details: normalizationDetails });
   }
-  if (missingTypes.size)
-    fail("current_statistics_incomplete", {
+  if (startersWithoutMinutes)
+    fail("current_starter_minutes_missing", {
       fixtureExternalId: String(expectedFixtureId),
-      missingDetailTypes: [...missingTypes]
-        .sort((a, b) => a[0] - b[0])
-        .map(([typeId, playerRows]) => ({ typeId, playerRows })),
+      starterRows: startersWithoutMinutes,
+    });
+  if (benchOnPitchWithoutMinutes)
+    fail("current_statistics_inconsistent", {
+      fixtureExternalId: String(expectedFixtureId),
+      substituteRowsWithoutMinutes: benchOnPitchWithoutMinutes,
     });
   const normalized = await normalizeHistoricalFixture(
     { data: { ...fixture, lineups: normalizationLineups } },
@@ -206,13 +267,25 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     if (named > 11 - unnamed || named < 11 - unnamed - unplaced)
       fail("current_starters_incomplete");
   }
-  const rows: PerformanceRow[] = normalized.rows.map((player) => ({
-    ...player,
-    ...optionalValues.get(player.externalPlayerId)!,
-    // Type88 is goals conceded while the player was on the pitch. Type194 is
-    // a team/season aggregate and is deliberately not used as player eligibility.
-    cleanSheets: player.minutes >= 60 && player.goalsConceded === 0 ? 1 : 0,
-  }));
+  let goalsConcededFromFinalScore = 0;
+  const rows: PerformanceRow[] = normalized.rows.map((player) => {
+    // Type88 is goals conceded while the player was on the pitch, when
+    // SportsMonks has it; the final score bounds it and decides it for a
+    // starter with 90 minutes. Type194 is a team/season aggregate and is
+    // deliberately not used as player eligibility.
+    const conceded = totalGoals - goalsFor.get(Number(player.externalTeamId))!;
+    const goalsConceded =
+      player.started && player.minutes >= WHOLE_MATCH_MINUTES
+        ? conceded
+        : Math.min(player.goalsConceded, conceded);
+    if (goalsConceded !== player.goalsConceded) goalsConcededFromFinalScore += 1;
+    return {
+      ...player,
+      ...optionalValues.get(player.externalPlayerId)!,
+      goalsConceded,
+      cleanSheets: player.minutes >= 60 && goalsConceded === 0 ? 1 : 0,
+    };
+  });
   return {
     fixtureExternalId: String(expectedFixtureId),
     rows,
@@ -220,7 +293,11 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
       ...normalized.coverage,
       detailRows,
       scoringStatisticsComplete: true,
+      // None is missing once an absent statistic counts as zero; how many did
+      // is kept for the record.
       missingStatisticRows: 0,
+      absentStatisticsCountedAsZero: absentAsZero,
+      goalsConcededFromFinalScore,
       cleanSheetSource: "official_minutes_and_on_pitch_goals_conceded",
       goalkeeperStatistics: "explicit_value_or_null_canonical_position_checked_in_database",
     },
@@ -265,6 +342,11 @@ async function rpc(client: RpcClient, name: string, args: Row): Promise<unknown>
       rpcName: name,
       ...(result.error.code && /^[A-Z0-9]{5}$/.test(result.error.code)
         ? { sqlState: result.error.code }
+        : {}),
+      // The database's own refusal codes (CURRENT_GOALS_CONCEDED_INCOMPLETE,
+      // PLAYER_MAPPING_NOT_FOUND, ...) say why; nothing else is kept.
+      ...(result.error.message && /^[A-Z][A-Z_]{2,39}$/.test(result.error.message)
+        ? { reason: result.error.message }
         : {}),
     });
   return result.data;
@@ -321,7 +403,7 @@ export async function runCurrentPerformanceBatch(
     const payload = await request(
       `/v3/football/fixtures/${item.externalFixtureId}`,
       {
-        include: "lineups.details;state;participants",
+        include: "lineups.details;state;participants;scores",
         filters: `lineupDetailTypes:${CURRENT_PERFORMANCE_TYPES.join(",")}`,
       },
       token,

@@ -139,6 +139,15 @@ select extensions.throws_ok(
   '22023', 'CURRENT_GOALS_CONCEDED_MISMATCH',
   'nobody conceded more than the side did'
 );
+-- 23 players appeared in the 2-1 (22 starters and substitute 23), each with
+-- at least their minutes: coverage cannot report fewer statistics than that.
+select extensions.throws_ok(
+  $$select api.ingest_current_player_fixture_performance('sportsmonks','28647','19900001',
+    rows, jsonb_set(coverage, '{detailRows}', '22'), observed_at)
+    from conceded_input where fixture = 1$$,
+  '22023', 'CURRENT_PERFORMANCE_INCOMPLETE',
+  'every player who appeared carries at least one statistic'
+);
 reset role;
 select extensions.is(
   (select count(*)::integer from app.player_fixture_performances
@@ -162,10 +171,13 @@ select extensions.is(
 );
 
 -- A player on for part of the match may have conceded less than the side.
+-- Substitute 23 never came on and, as SportsMonks sends such a player, carries
+-- no statistics: 23 for the 24 players is enough.
 set local role service_role;
 select extensions.is(
   (select api.ingest_current_player_fixture_performance('sportsmonks','28647','19900002',
-    rows, coverage, observed_at) ->> 'active' from conceded_input where fixture = 2),
+    rows, jsonb_set(coverage, '{detailRows}', '23'), observed_at) ->> 'active'
+   from conceded_input where fixture = 2),
   '24', 'a player off the pitch for the goal is imported with none conceded'
 );
 reset role;
