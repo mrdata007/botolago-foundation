@@ -109,11 +109,12 @@ export interface NormalizedHistoricalFixture {
 }
 
 /** BG-0011 option B: at most this many of the 22 raw provider starter rows may be anonymous
- * (missing `player_id`) before the whole fixture is quarantined. Historical ingestion path only
- * (`api.ingest_historical_player_fixture_performance` / `app_private.historical_performance_fixture_coverage`);
- * the live current-season scoring path (`sportsmonks-current-fixture:` source-version prefix,
- * separate tables in `20260914200726_current_finished_fixture_performances.sql`) is untouched and
- * still requires zero anonymous starters. */
+ * (missing `player_id`) before the whole fixture is quarantined
+ * (`api.ingest_historical_player_fixture_performance` / `app_private.historical_performance_fixture_coverage`).
+ * Since 20260925110000 (owner decision 2026-09-25) the current-season scoring path
+ * (`sportsmonks-current-fixture:` prefix, `scripts/backend/current-season-performances.ts`,
+ * `api.ingest_current_player_fixture_performance`) follows the same limit; a current fixture
+ * over it is not imported and its gameweek waits. */
 export const MAX_ANONYMOUS_STARTER_ROWS = 4;
 const RAW_STARTER_ROW_COUNT = 22;
 

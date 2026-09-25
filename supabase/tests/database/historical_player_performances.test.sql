@@ -909,7 +909,8 @@ reset role;
 -- 'sportsmonks-current-fixture:', from 20260914200726_current_finished_fixture_performances.sql).
 -- Prove the new CHECK constraint is a hard DB-level guarantee -- not an accident of column
 -- defaults -- that only the historical 'sportsmonks-fixture:' prefix can ever carry a nonzero
--- anonymous-starter count.
+-- anonymous-starter count. Superseded by 20260925110000: the owner extended the rule to this
+-- season on 2026-09-25, so the tail of this section now proves the same bounds for both prefixes.
 -- ---------------------------------------------------------------------------
 
 insert into app.fixtures (
@@ -962,18 +963,26 @@ select extensions.is(
   'the current-season-shaped row keeps coverage_outcome at its default of accepted'
 );
 
--- An attempt to give that SAME current-season-prefixed row a nonzero anonymous-starter count is
--- REJECTED by the new constraint -- proving the scoping is enforced, not coincidental.
+-- 20260925110000 (owner decision 2026-09-25): this season follows last season's rule, so the
+-- scope guarantee above now covers both prefixes. A current-season row may carry up to 4 unnamed
+-- starters, counted consistently...
+select extensions.lives_ok(
+  $$update app_private.historical_performance_fixture_coverage
+    set anonymous_starter_rows = 3, identified_starter_rows = 19, starter_rows = 19,
+      lineup_rows_seen = 25, excluded_incomplete_rows = 3
+    where fixture_id = '52000000-0000-4000-8000-000000000005'$$,
+  'since 20260925110000 a current-season row may carry up to 4 unnamed starters, counted consistently'
+);
+-- ...never more named starters than 22 minus the unnamed ones...
 select extensions.throws_ok(
   $$update app_private.historical_performance_fixture_coverage
-    set anonymous_starter_rows = 3, identified_starter_rows = 19
+    set starter_rows = 22
     where fixture_id = '52000000-0000-4000-8000-000000000005'$$,
   '23514',
   null,
-  'a current-season-prefixed row can never carry a nonzero anonymous-starter count'
+  'a current-season row cannot claim more named starters than 22 minus its unnamed ones'
 );
--- Also rejected via the same insert-on-conflict path the RPCs themselves use (not just a bare
--- update), against fixture 5's existing row.
+-- ...and never 5 or more on an accepted row, through the insert-on-conflict path the RPCs use.
 select extensions.throws_ok(
   $$insert into app_private.historical_performance_fixture_coverage (
     fixture_id, football_season_id, source_provider, source_version,
@@ -986,14 +995,17 @@ select extensions.throws_ok(
     '42000000-0000-4000-8000-000000000001',
     'sportsmonks',
     'sportsmonks-current-fixture:' || repeat('2', 64),
-    22, 22, 0, 3, 19, 22, 2, 44, 0, 22, true, statement_timestamp()
+    27, 22, 5, 5, 17, 17, 2, 44, 0, 22, true, statement_timestamp()
   ) on conflict (fixture_id) do update set
     source_version = excluded.source_version,
+    lineup_rows_seen = excluded.lineup_rows_seen,
+    excluded_incomplete_rows = excluded.excluded_incomplete_rows,
     anonymous_starter_rows = excluded.anonymous_starter_rows,
-    identified_starter_rows = excluded.identified_starter_rows$$,
+    identified_starter_rows = excluded.identified_starter_rows,
+    starter_rows = excluded.starter_rows$$,
   '23514',
   null,
-  'a current-season-prefixed insert/upsert with a nonzero anonymous-starter count is rejected outright'
+  'a current-season row with 5 unnamed starters can never be an accepted row'
 );
 
 select * from extensions.finish();

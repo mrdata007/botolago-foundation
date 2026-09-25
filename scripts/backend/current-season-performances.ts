@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
+  MAX_ANONYMOUS_STARTER_ROWS,
   normalizeHistoricalFixture,
   HistoricalPerformanceRuntimeError,
   type HistoricalPlayerPerformanceRow,
@@ -93,17 +94,19 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
   )
     fail("current_lineups_incomplete");
   // SportsMonks sometimes lists a player it has not identified: a lineup row
-  // with no player_id. Last season's import accepts up to 4 such starters
-  // (BG-0011 option B); this season's accepts none, so the fixture waits.
-  // Say that, with the counts, rather than failing on the first missing id.
-  const unidentified = fixture.lineups
-    .map(row)
-    .filter((lineup) => lineup.player_id === null || lineup.player_id === undefined);
-  if (unidentified.length)
-    fail("current_lineup_unidentified_players", {
+  // with no player_id. Owner decision 2026-09-25: this season follows last
+  // season's rule (BG-0011 option B). Up to 4 of the 22 starters may be
+  // unnamed; unnamed rows are skipped, never credited to anyone, and every
+  // named player is scored as usual. More than 4 and the fixture waits.
+  const isUnidentified = (lineup: Row) =>
+    lineup.player_id === null || lineup.player_id === undefined;
+  const unidentified = fixture.lineups.map(row).filter(isUnidentified);
+  const unidentifiedStarters = unidentified.filter((lineup) => lineup.type_id === 11);
+  if (unidentifiedStarters.length > MAX_ANONYMOUS_STARTER_ROWS)
+    fail("current_lineup_unidentified_starters_exceeded", {
       fixtureExternalId: String(expectedFixtureId),
-      unidentifiedStarters: unidentified.filter((lineup) => lineup.type_id === 11).length,
-      unidentifiedOthers: unidentified.filter((lineup) => lineup.type_id !== 11).length,
+      unidentifiedStarters: unidentifiedStarters.length,
+      unidentifiedOthers: unidentified.length - unidentifiedStarters.length,
     });
   const missingTypes = new Map<number, number>();
   const optionalValues = new Map<string, { saves: number | null; penaltiesSaved: number | null }>();
@@ -112,6 +115,17 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
   let detailRows = 0;
   for (const raw of fixture.lineups) {
     const lineup = row(raw);
+    if (isUnidentified(lineup)) {
+      // Passed on as a bare row so the shared normalizer counts it (as
+      // excluded, and as an unnamed starter when type_id is 11); it carries
+      // no statistics to anyone.
+      normalizationLineups.push({
+        type_id: lineup.type_id,
+        team_id: lineup.team_id,
+        player_id: null,
+      });
+      continue;
+    }
     const lineupId = id(lineup.id, "lineup.id");
     const playerId = id(lineup.player_id, "lineup.player_id");
     const teamId = id(lineup.team_id, "lineup.team_id");
@@ -171,17 +185,27 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     expectedFixtureId,
     SEASON,
   );
+  // Only the unnamed rows may be left out, and the shared normalizer must
+  // have seen exactly the unnamed starters counted above.
   if (
-    normalized.coverage.excludedIncompleteRows !== 0 ||
+    normalized.coverage.excludedIncompleteRows !== unidentified.length ||
+    normalized.coverage.anonymousStarterRows !== unidentifiedStarters.length ||
     normalized.coverage.invalidDetailRows !== 0
   )
     fail("current_lineups_incomplete");
-  for (const teamId of teamIds)
-    if (
-      normalized.rows.filter((player) => player.externalTeamId === String(teamId) && player.started)
-        .length !== 11
-    )
+  // Each club fields 11 starters: its named ones plus its unnamed ones. An
+  // unnamed starter whose club is not given could belong to either side.
+  const unplaced = unidentifiedStarters.filter(
+    (lineup) => !teamIds.has(lineup.team_id as number),
+  ).length;
+  for (const teamId of teamIds) {
+    const unnamed = unidentifiedStarters.filter((lineup) => lineup.team_id === teamId).length;
+    const named = normalized.rows.filter(
+      (player) => player.externalTeamId === String(teamId) && player.started,
+    ).length;
+    if (named > 11 - unnamed || named < 11 - unnamed - unplaced)
       fail("current_starters_incomplete");
+  }
   const rows: PerformanceRow[] = normalized.rows.map((player) => ({
     ...player,
     ...optionalValues.get(player.externalPlayerId)!,
