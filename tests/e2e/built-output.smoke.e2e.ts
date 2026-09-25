@@ -71,8 +71,9 @@ const MATCH_CARD = 'main a[href^="/matches/"]:not([href^="/matches/standings"])'
  *
  * `server` is the same in the HTML the server sends, for the pages whose
  * loaders fetch their data while the server renders (`prefetchForSsr`). A
- * read that fails there is not an error: the page goes out without its data
- * and the browser fetches it, so the hydrated page alone cannot tell.
+ * read that fails there sends the page out without its data, as a 503
+ * (`ssrAvailability`, which the status check below also catches), and the
+ * browser then fetches the data itself: the hydrated page alone cannot tell.
  */
 const PAGES: ReadonlyArray<{
   path: string;
