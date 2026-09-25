@@ -133,8 +133,8 @@ are finalized shortly after the whistle.
 | 4. Small public launch                               | `public`                        | `PRONOSTICS_ENABLED`                        |
 | 5. Everyone                                          | `public`                        | `PRONOSTICS_ENABLED`, `PRONOSTICS_PROMOTED` |
 
-Before Stage 4: the Arabic reviewed by the owner. Audience measurement is
-already on (next section).
+Before Stage 4: the Arabic review, done on 2026-09-25 (the owner handed it
+over; 19 texts fixed). Audience measurement is already on (next section).
 
 ## Audience measurement (Seline)
 
@@ -180,12 +180,21 @@ no tool is used, which is a change of its own: give it a new version and date.
 
 ## Applying to production
 
-Not yet applied. Rules for when it is:
+Parts 1 to 5 applied on 2026-09-25 at 07:33 UTC, switched off
+(`docs/production/APPLIED_2026_09_25_PREDICTIONS.md`). They went in without
+first pausing the Fantasy tick and the live score refresh, which `AGENTS.md`
+asks for; the record says so, and what was measured instead. Part 6 is not
+applied yet. The rules, which part 6 still follows:
 
 - Not while Fantasy gameweek 1 is being locked and scored: it is that
   pipeline's first real run and it needs a quiet database.
 - `20260925090500_fantasy_league_page_skip_empty.sql` (the only change to an
   existing Fantasy function) goes only after Fantasy gameweek 1 has been scored.
+- With the Fantasy lifecycle tick paused for the rehearsal and the run
+  (`select app_private.fantasy_automation_configure(false);`), and switched
+  back on after (`select app_private.fantasy_automation_configure(true);`).
+  Its script refuses while the tick is on. While paused, the operations health
+  check shows the tick as a warning; that is expected.
 - Through a guarded apply script the owner runs, rehearsed ending in
   `rollback`, then run with `commit` on the owner's go-ahead, and recorded in
   `docs/production/APPLIED_<date>_PREDICTIONS.md`, as
@@ -197,13 +206,16 @@ Not yet applied. Rules for when it is:
     checks tables, row security, grants, both jobs and a visitor's read.
   - `scripts/backend/apply-20260925090500-fantasy-league-page-skip-empty.sql`:
     part 6, later. It refuses to run before parts 1 to 5, before Fantasy
-    gameweek 1 is finalized, or on a league page other than the one production
-    held on 2026-09-24.
+    gameweek 1 is finalized, while the Fantasy tick is on, or on a league
+    page other than the one production held on 2026-09-24.
   - `scripts/backend/apply-predictions-scripts.test.ts` fails if a migration
     changes after its script was built. Both were rehearsed on a local
     database built like production (every migration up to `20260924190100`):
     rehearsal saved nothing, the real run passed its checks, a second run was
-    refused.
+    refused. Part 6's tick check, added on 2026-09-25, was tried on a local
+    database set to production's state before part 6 (same migrations, the
+    old league page byte for byte, a finalized gameweek 1): it refused with
+    the tick on and passed every check with it off.
 - The migrations leave `mode = off`: nothing is visible and the job idles
   until the switch is set.
 - Avoid the Fantasy orchestrator's hourly slot (minute 12).

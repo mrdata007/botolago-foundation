@@ -133,6 +133,24 @@ describe("current finished fixture performance ingestion", () => {
       "lineup_identity_mismatch",
     );
   });
+  test("an unidentified player is named as such, with counts, not as a bad id", async () => {
+    // 2026-09-25: every run since the first finished match reported only
+    // `invalid_provider_id`, so nobody could tell which value was wrong.
+    const unnamed = fixture();
+    (unnamed.data.lineups[3] as { player_id: number | null }).player_id = null;
+    unnamed.data.lineups.push({ ...unnamed.data.lineups[4]!, id: 99, type_id: 12 });
+    (unnamed.data.lineups[22] as { player_id: number | null }).player_id = null;
+    await expect(normalizeCurrentFinishedFixture(unnamed, 9001)).rejects.toMatchObject({
+      code: "current_lineup_unidentified_players",
+      diagnostic: { fixtureExternalId: "9001", unidentifiedStarters: 1, unidentifiedOthers: 1 },
+    });
+    const badDetail = fixture();
+    (badDetail.data.lineups[0].details[0] as { lineup_id: number | null }).lineup_id = null;
+    await expect(normalizeCurrentFinishedFixture(badDetail, 9001)).rejects.toMatchObject({
+      code: "invalid_provider_id",
+      diagnostic: { field: "detail.lineup_id" },
+    });
+  });
   test("requires reviewed manual main execution and never enables a schedule", () => {
     expect(currentPerformanceGuard(env).expectedCommit).toBe(env.EXPECTED_COMMIT);
     for (const override of [

@@ -14,21 +14,26 @@
 -- HOW TO RUN
 --   1. Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor ->
 --      New query. Make sure no other database work is running right now.
---   2. Paste this WHOLE file and press Run.
+--   2. Pause the Fantasy lifecycle tick, as AGENTS.md asks before a write that
+--      touches Fantasy (this script refuses while it is on):
+--        select app_private.fantasy_automation_configure(false);
+--   3. Paste this WHOLE file and press Run.
 --      As shipped it is a REHEARSAL: everything is applied inside one
 --      transaction, checked, and then ROLLED BACK. The result row should say
 --      "Rehearsal passed".
---   3. Change the line `rollback;` near the bottom to `commit;` and press Run
+--   4. Change the line `rollback;` near the bottom to `commit;` and press Run
 --      again. The result row should say "Applied".
+--   5. Whatever the result, switch the tick back on (if it was on at step 2):
+--        select app_private.fantasy_automation_configure(true);
 --   If any check fails, the script stops with a message saying what, and
 --   nothing is saved. Do not edit a check to make it pass: a check firing means
 --   the database is not in the state this script expects.
 --
 -- WHAT IT DOES
 --   * refuses to run twice, before Pronostics parts 1 to 5, before Fantasy
---     gameweek 1 is scored, or where api.service_fantasy_scoring_league_page is
---     not the version this replaces (20260914200719, byte for byte as
---     production held it on 2026-09-24);
+--     gameweek 1 is scored, while the Fantasy lifecycle tick is on, or where
+--     api.service_fantasy_scoring_league_page is not the version this replaces
+--     (20260914200719, byte for byte as production held it on 2026-09-24);
 --   * records the migration file in supabase_migrations.schema_migrations,
 --     whole as statements[1], and runs it from that record once its sha256
 --     matches the repository file;
@@ -72,6 +77,15 @@ begin
     where sequence_number = 1 and finalized_at is not null and points_state = 'final'
   ) then
     raise exception 'stop: Fantasy gameweek 1 has not been scored yet -- wait until it is finalized';
+  end if;
+
+  -- AGENTS.md: a write that touches Fantasy runs with the Fantasy lifecycle
+  -- tick paused. Parts 1 to 5 went in with it running
+  -- (docs/production/APPLIED_2026_09_25_PREDICTIONS.md); this part does not.
+  if to_regclass('app_private.fantasy_automation_settings') is not null then
+    if exists (select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled) then
+      raise exception 'stop: the Fantasy lifecycle tick is on -- pause it first with select app_private.fantasy_automation_configure(false); and switch it back on afterwards';
+    end if;
   end if;
 
   if md5(pg_get_functiondef(
