@@ -242,9 +242,10 @@ describe("current finished fixture performance ingestion", () => {
     expect(normalized.rows[10]).toMatchObject({ goals: 1 });
     // Nobody carries goals conceded; the score says the away side conceded one.
     expect(normalized.rows[11]).toMatchObject({ goalsConceded: 1, cleanSheets: 0 });
-    // 8 counted statistics absent on each of 22 players, less the one goal.
+    // 10 counted statistics absent on each of 22 players (saves and penalties
+    // saved included), less the one goal.
     expect(normalized.coverage).toMatchObject({
-      absentStatisticsCountedAsZero: 22 * 8 - 1,
+      absentStatisticsCountedAsZero: 22 * 10 - 1,
       missingStatisticRows: 0,
       scoringStatisticsComplete: true,
       goalsConcededFromFinalScore: 11,
@@ -260,19 +261,22 @@ describe("current finished fixture performance ingestion", () => {
     optional.data.lineups[0].details = optional.data.lineups[0].details.filter(
       (detail) => detail.type_id !== 57 && detail.type_id !== 113,
     );
-    expect((await normalizeCurrentFinishedFixture(optional, 9001)).rows[0]).toMatchObject({
-      saves: 0,
-      penaltiesSaved: 0,
-    });
+    const absentGoalkeeping = await normalizeCurrentFinishedFixture(optional, 9001);
+    expect(absentGoalkeeping.rows[0]).toMatchObject({ saves: 0, penaltiesSaved: 0 });
+    // Both absences are counted as zero, and reported.
+    expect(absentGoalkeeping.coverage).toMatchObject({ absentStatisticsCountedAsZero: 2 });
     const optionalNulls = fixture();
     for (const detail of optionalNulls.data.lineups[0].details) {
       if ([57, 113, 118].includes(detail.type_id)) Object.assign(detail.data, { value: null });
     }
-    expect((await normalizeCurrentFinishedFixture(optionalNulls, 9001)).rows[0]).toMatchObject({
+    const nulls = await normalizeCurrentFinishedFixture(optionalNulls, 9001);
+    expect(nulls.rows[0]).toMatchObject({
       saves: null,
       penaltiesSaved: null,
       providerRating: null,
     });
+    // An explicit null is not an absence: nothing counted as zero.
+    expect(nulls.coverage).toMatchObject({ absentStatisticsCountedAsZero: 0 });
   });
   test("a starter without minutes played means the statistics are not in yet", async () => {
     const payload = fixture();

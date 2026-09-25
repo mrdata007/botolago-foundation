@@ -38,7 +38,8 @@ export const CURRENT_PERFORMANCE_TYPES = [
 // substituted in stoppage time just before a stoppage-time goal (at most 11 of
 // 2,243 last season). The database checks the same against its own final
 // score (20260925120000).
-const COUNTED_TYPES = [52, 79, 83, 84, 85, 88, 112, 119, 324] as const;
+/** Counted as zero when absent (an explicit null on 57 or 113 stays null and is not counted). */
+const COUNTED_TYPES = [52, 57, 79, 83, 84, 85, 88, 112, 113, 119, 324] as const;
 const MINUTES = 119;
 /**
  * Goals, saves, assists, penalties missed and saved, own goals: never without
