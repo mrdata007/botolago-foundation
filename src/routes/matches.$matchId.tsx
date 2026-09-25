@@ -5,9 +5,9 @@ import {
   UNAVAILABLE,
   unavailableHeaders,
 } from "@/lib/page-availability";
-import { useQuery } from "@tanstack/react-query";
-import { useId, useMemo, useState } from "react";
-import { footballService } from "@/services/football";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useId, useMemo, useState, type ComponentProps } from "react";
+import { footballService, type FootballSeason } from "@/services/football";
 import { newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -44,7 +44,7 @@ import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/structured-data";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
-import { matchRefetchInterval } from "@/lib/match-refresh";
+import { matchRefetchInterval, rereadTableOnFinish } from "@/lib/match-refresh";
 
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
 
@@ -202,6 +202,17 @@ function MatchDetailPage() {
   });
 
   const match = detailQ.data?.match;
+  const season = detailQ.data?.season;
+
+  // The final whistle moves the "Face à face" tab's table. This page shows no
+  // live strip, so it hears the whistle from its own reads of the match, in
+  // either language (`rereadTableOnFinish`).
+  const queryClient = useQueryClient();
+  useEffect(
+    () => rereadTableOnFinish(queryClient, ["football", "match-detail", matchId]),
+    [queryClient, matchId],
+  );
+
   const clubById = (id?: string) => detailQ.data?.clubs.find((club) => club.id === id);
   const home = clubById(match?.homeClubId);
   const away = clubById(match?.awayClubId);
@@ -434,12 +445,12 @@ function MatchDetailPage() {
           />
         )}
 
-        {tab === "h2h" && (
-          <HeadToHead
+        {tab === "h2h" && season && (
+          <HeadToHeadTab
+            season={season}
             home={home}
             away={away}
             palettes={palettes}
-            standings={detailQ.data?.standings ?? []}
             meetings={h2h}
           />
         )}
@@ -486,5 +497,58 @@ function MatchDetailPage() {
         />
       ) : null}
     </AppShell>
+  );
+}
+
+/**
+ * The "Face à face" tab, with the season's table where the two clubs stand.
+ * The table is the Classement tab's query, with its key and its function, so
+ * the two share one cache entry and one ranking: the same tie order, shared
+ * ranks and provisional note. Only this tab reads it, as it is mounted only
+ * while the tab is open; the detail query, refetched every 30 seconds through
+ * a live match, carries no table. Nothing reads it on the server either, so
+ * the server and the browser's first render both hold its place
+ * (`standingsPending`), and agree.
+ */
+function HeadToHeadTab({
+  season,
+  home,
+  away,
+  palettes,
+  meetings,
+}: { season: Pick<FootballSeason, "id" | "competitionId"> } & Pick<
+  ComponentProps<typeof HeadToHead>,
+  "home" | "away" | "palettes" | "meetings"
+>) {
+  const { lang } = useI18n();
+  const standingsQ = useQuery({
+    queryKey: ["football", "standings", season.id, lang],
+    queryFn: () => footballService.getStandings(season, lang),
+  });
+  // The season's status says whether a table worked out from the results is
+  // provisional or, the season over, unofficial.
+  const seasonsQ = useQuery({
+    queryKey: ["football", "seasons", lang],
+    queryFn: () => footballService.getSeasons(lang),
+  });
+  const table = standingsQ.data;
+  return (
+    <HeadToHead
+      home={home}
+      away={away}
+      palettes={palettes}
+      standings={table?.overall ?? []}
+      standingsComputed={table?.computed ?? false}
+      seasonStatus={seasonsQ.data?.find((candidate) => candidate.id === season.id)?.status}
+      standingsPending={standingsQ.isPending || seasonsQ.isPending}
+      // A failed read with no table in hand is said as one, not taken for a
+      // season with no table yet.
+      standingsFailed={standingsQ.isError && !table}
+      onRetryStandings={() => {
+        void standingsQ.refetch();
+        if (seasonsQ.isError) void seasonsQ.refetch();
+      }}
+      meetings={meetings}
+    />
   );
 }

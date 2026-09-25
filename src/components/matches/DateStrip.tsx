@@ -33,6 +33,13 @@ import {
  * the strip highlights, groups and labels the same day as the match cards
  * below it for a viewer in any zone (BG-0100).
  *
+ * "Today" is the page's, when it passes one (`today`): /matches opens on the
+ * day its loader decided on the server, and the strip has to call that same
+ * day "today". Worked out from the browser's clock instead, a page that
+ * reached the browser just after midnight (or on a device whose clock is
+ * off) called the day the server rendered "yesterday" and added the "Today"
+ * button, a first render that did not match the server's HTML.
+ *
  * Still true:
  *  - ≥44 px targets: the glass controls, each day chip, the shortcut
  *  - no horizontal page overflow: the chips scroll inside their own row,
@@ -48,6 +55,7 @@ const NBSP = String.fromCharCode(0xa0);
 export function DateStrip({
   selected,
   onSelect,
+  today: todayProp,
   rangeDays = 7,
   minDate,
   maxDate,
@@ -56,6 +64,11 @@ export function DateStrip({
 }: {
   selected: Date;
   onSelect: (d: Date) => void;
+  /**
+   * The day the page counts as today, when it has decided one (the /matches
+   * loader's). Without it, today by this device's clock, read once.
+   */
+  today?: Date;
   /** Days on each side of the pivot; total = 2*rangeDays + 1. */
   rangeDays?: number;
   /** Optional season boundaries. */
@@ -72,7 +85,7 @@ export function DateStrip({
   // Every boundary below is competition-zone midnight. Using the browser's
   // midnight instead is what filed a 20:00 Casablanca kickoff under the wrong
   // day for anyone outside UTC+1 (BG-0100).
-  const today = useMemo(() => startOfMatchDay(new Date()), []);
+  const today = useMemo(() => startOfMatchDay(todayProp ?? new Date()), [todayProp]);
   const selectedDay = useMemo(() => startOfMatchDay(selected), [selected]);
   const minimumDay = useMemo(() => (minDate ? startOfMatchDay(minDate) : null), [minDate]);
   const maximumDay = useMemo(() => (maxDate ? startOfMatchDay(maxDate) : null), [maxDate]);

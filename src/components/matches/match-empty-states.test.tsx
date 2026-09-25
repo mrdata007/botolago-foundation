@@ -9,7 +9,7 @@ import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 import { clubMatchPalettes } from "@/lib/club-palette";
-import { POST_KICKOFF_REFRESH_MINUTES } from "@/lib/match-refresh";
+import { matchRefetchInterval, POST_KICKOFF_REFRESH_MINUTES } from "@/lib/match-refresh";
 import { toMatch } from "@/services/football";
 import type { Club, Language, Match } from "@/types/domain";
 import { EventTimeline } from "./EventTimeline";
@@ -116,6 +116,23 @@ describe("matchDataPhase", () => {
 
     test("with no readable kick-off, stays upcoming rather than guessing", () => {
       expect(matchDataPhase({ status: "scheduled", kickoff: "" }, at(10_000))).toBe("upcoming");
+    });
+
+    test("is awaited exactly while the page checks for it, a placeholder kick-off included", () => {
+      // "This page updates itself" is only said while it does. A kick-off at
+      // the provider's placeholder hour (midnight UTC) is not watched
+      // (`matchRefetchInterval`), so its panels never say so.
+      for (const placeholderOrNot of [kickoff, "2026-09-27T00:00:00Z"]) {
+        const match = { status: "scheduled" as const, kickoff: placeholderOrNot };
+        for (let offset = 0; offset <= 4 * 60; offset += 5) {
+          const asOf = Date.parse(placeholderOrNot) + offset * 60_000;
+          expect([placeholderOrNot, offset, matchDataPhase(match, asOf) === "awaiting"]).toEqual([
+            placeholderOrNot,
+            offset,
+            matchRefetchInterval(match, asOf) !== false,
+          ]);
+        }
+      }
     });
   });
 });

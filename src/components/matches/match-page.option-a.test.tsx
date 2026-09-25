@@ -101,6 +101,37 @@ describe("match page — design-system rules in source", () => {
   });
 });
 
+describe("match page — the Face-à-face table", () => {
+  const route = code("src/routes/matches.$matchId.tsx");
+  const classement = code("src/routes/matches.standings.tsx");
+
+  it("is the Classement tab's query, in the tab's own component", () => {
+    // Same key, same function: one cache entry, one ranking. Rendered for
+    // real, and asked for by that tab alone, in
+    // src/routes/match-detail-h2h.ssr.test.tsx.
+    const key = /queryKey: \["football", "standings", season\??\.id, lang\]/;
+    expect(classement).toMatch(key);
+    expect(route).toMatch(key);
+    expect(route).toContain("queryFn: () => footballService.getStandings(season, lang)");
+    expect(route).toMatch(/\{tab === "h2h" && season && \(\s*<HeadToHeadTab\b/);
+    // The detail query, refetched through a live match, carries no table.
+    expect(route).not.toContain("detailQ.data?.standings");
+  });
+
+  it("hears the final whistle from its own reads of the match, whichever tab is open", () => {
+    // The rule is `rereadTableOnFinish`, run on a real query cache in
+    // src/lib/match-refresh.test.ts; the page starts it for its match, with
+    // its detail query's key less the language.
+    const start = route.search(
+      /useEffect\(\s*\(\) => rereadTableOnFinish\(queryClient, \["football", "match-detail", matchId\]\),\s*\[queryClient, matchId\],?\s*\);/,
+    );
+    expect(start).toBeGreaterThan(-1);
+    expect(route).toContain('queryKey: ["football", "match-detail", matchId, lang]');
+    // In the page, not in the tab: a whistle heard on the Résumé tab counts.
+    expect(start).toBeLessThan(route.indexOf("function HeadToHeadTab("));
+  });
+});
+
 describe("match page — copy", () => {
   it("the tabs use the short labels, which fit a 390px column in Changa", () => {
     expect(MATCH_TABS.map((tab) => dictionaries.fr[tab.label])).toEqual([

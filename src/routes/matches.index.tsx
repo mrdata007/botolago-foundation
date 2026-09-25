@@ -183,6 +183,9 @@ function MatchesPage() {
     openingSeason(seasons, requestedSeasonId);
   const matchDay = selectedDay ?? openingMatchDay(selectedSeason, today);
   const selectedDate = useMemo(() => dateFromKey(matchDay), [matchDay]);
+  // The date band's "today" is the loader's too, not this device's clock, so
+  // the band names the day the server rendered as the server named it.
+  const todayDate = useMemo(() => dateFromKey(today), [today]);
 
   const dayQuery = matchDayQuery(matchDay, lang, selectedSeason?.id);
   const matchesQ = useQuery({
@@ -357,6 +360,7 @@ function MatchesPage() {
       <DateStrip
         selected={selectedDate}
         onSelect={handleDateChange}
+        today={todayDate}
         minDate={seasonBounds?.minDate}
         maxDate={seasonBounds?.maxDate}
         gameweeks={dayGameweeks}

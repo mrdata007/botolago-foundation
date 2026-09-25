@@ -320,6 +320,99 @@ describe("a table with clubs level on every figure", () => {
     expect(leader.split("<tbody")[1]!.split("<tr")[1]).not.toContain("Ex æquo");
   });
 
+  test("the Face-à-face table says under it what the Classement tab says", () => {
+    const [first, second] = idle as [string, string];
+    const faceToFace = (
+      homeSlug: string,
+      awaySlug: string,
+      table: typeof overall,
+      computed: boolean,
+      seasonStatus: "active" | "completed",
+    ) =>
+      inFrench(
+        <HeadToHead
+          home={club(homeSlug)}
+          away={club(awaySlug)}
+          palettes={clubMatchPalettes(club(homeSlug), club(awaySlug))}
+          standings={table}
+          standingsComputed={computed}
+          seasonStatus={seasonStatus}
+          meetings={[]}
+        />,
+      );
+    // Two clubs sharing 2nd on the first day, in a table worked out from the results.
+    const early = faceToFace(first, second, firstDay, true, "active");
+    expect(early).toContain("Classement provisoire, calculé à partir des résultats des matchs.");
+    expect(early).toContain("Un même rang signale des clubs à égalité");
+    // The same results, the season over: unofficial, never final.
+    expect(faceToFace(first, second, firstDay, true, "completed")).toContain(
+      "Classement non officiel, calculé à partir des résultats des matchs.",
+    );
+    // The provider's final table, each club on a rank of its own: nothing to say.
+    const final = faceToFace("raja-casablanca", "wydad-casablanca", overall, false, "completed");
+    expect(final.split("<tbody")[1]!.split("<tr").slice(1)).toHaveLength(2);
+    expect(final).not.toMatch(/provisoire|non officiel|Un même rang/);
+  });
+
+  test("the Face-à-face tab holds the table's place while it loads, and opens on the meetings without one", () => {
+    const [first, second] = idle as [string, string];
+    const tab = (standingsPending: boolean, table: typeof overall) =>
+      inFrench(
+        <HeadToHead
+          home={club(first)}
+          away={club(second)}
+          palettes={clubMatchPalettes(club(first), club(second))}
+          standings={table}
+          standingsPending={standingsPending}
+          meetings={[]}
+        />,
+      );
+    const loading = tab(true, []);
+    expect(loading).toContain('<section aria-busy="true">');
+    expect(loading).toContain(dictionaries.fr["matches.detail.table_context"]);
+    expect(loading).not.toContain("<table");
+    // A table already in hand is not drawn under a "loading" flag either.
+    expect(tab(true, firstDay)).not.toContain("<table");
+    // No table for the season yet: the meetings open the tab, flush to its top.
+    const none = tab(false, []);
+    expect(none).not.toContain(dictionaries.fr["matches.detail.table_context"]);
+    expect(none).toMatch(/<section class="[^"]*\bmt-0\b/);
+    expect(loading).not.toMatch(/<section class="[^"]*\bmt-0\b/);
+  });
+
+  test("the Face-à-face tab says a table it could not read, with a retry, in the table's place", () => {
+    const [first, second] = idle as [string, string];
+    const tab = (props: { standingsFailed: boolean; standingsPending?: boolean }) =>
+      inFrench(
+        <HeadToHead
+          home={club(first)}
+          away={club(second)}
+          palettes={clubMatchPalettes(club(first), club(second))}
+          standings={[]}
+          {...props}
+          onRetryStandings={() => {}}
+          meetings={[]}
+        />,
+      );
+    const failed = tab({ standingsFailed: true });
+    const fr = dictionaries.fr;
+    // Under the table's own heading, before the meetings: not a season with no table.
+    const heading = failed.indexOf(fr["matches.detail.table_context"]);
+    expect(heading).toBeGreaterThan(-1);
+    expect(failed.indexOf(fr["state.error"])).toBeGreaterThan(heading);
+    expect(failed).toContain(`>${fr["state.retry"]}</button>`);
+    expect(failed.indexOf(fr["matches.detail.head_to_head"])).toBeGreaterThan(
+      failed.indexOf(fr["state.error"]),
+    );
+    expect(failed).not.toContain("<table");
+    // The meetings keep their distance from the section above them.
+    expect(failed).not.toMatch(/<section class="[^"]*\bmt-0\b/);
+    // A read still going wins: its place is held, not failed.
+    const retrying = tab({ standingsFailed: true, standingsPending: true });
+    expect(retrying).toContain('<section aria-busy="true">');
+    expect(retrying).not.toContain(fr["state.error"]);
+  });
+
   test("the club card says a shared rank, and measures it against 1st", () => {
     const club0 = idle[0]!;
     const shared = inFrench(

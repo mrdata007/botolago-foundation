@@ -93,6 +93,36 @@ describe("Football frontend repository cutover", () => {
     expect(detail.match.id).toBe(matches[0]!.id);
   });
 
+  test("the match page's payload names its season and reads no table: the tab reads the Classement's", async () => {
+    const repository = new MockFootballRepository();
+    const [fixture] = await repository.getHomeMatches("fr", 1, context);
+    const stored = MockFootballRepository.prototype.getStandings;
+    let tableReads = 0;
+    MockFootballRepository.prototype.getStandings = function (...args) {
+      tableReads += 1;
+      return stored.apply(this, args);
+    };
+    try {
+      // Refetched every 30 seconds through a live match: no table in it.
+      const detail = await footballService.getMatchDetailPage(fixture!.id, "fr");
+      expect(tableReads).toBe(0);
+      expect("standings" in detail).toBe(false);
+      expect(detail.season).toEqual({
+        id: fixture!.seasonId,
+        competitionId: fixture!.competition.id,
+      });
+      // Its season asks for the table the Classement tab shows for that season.
+      const season = (await footballService.getSeasons("fr")).find(
+        (candidate) => candidate.id === detail.season.id,
+      )!;
+      expect(await footballService.getStandings(detail.season, "fr")).toEqual(
+        await footballService.getStandings(season, "fr"),
+      );
+    } finally {
+      MockFootballRepository.prototype.getStandings = stored;
+    }
+  });
+
   test("standings rows expose full W/D/L/form so the table never needs invented stats", async () => {
     const repository = new MockFootballRepository();
     const seasons = await repository.getSeasons("fr", 12, context);

@@ -234,13 +234,15 @@ describe("/matches in the server's HTML", () => {
     // The page reaches the browser a minute later: Sunday there.
     setSystemTime(new Date("2026-09-26T23:00:30Z"));
     globals.window = { $_TSR: routes };
-    // All `hydrate` asks of the document is the CSP nonce.
+    // All `hydrate` asks of the document is the CSP nonce. It stays for the
+    // render: a hydrated router with a document renders no Suspense boundary
+    // of its own, as it does in a browser, so the two trees can be compared
+    // whole.
     globals.document = { querySelector: () => null };
     const browser = appClient();
     hydrate(browser, queries);
     const router = matchesRouter(browser);
     await hydrateRouter(router);
-    delete globals.document;
     const browserHtml = renderRouter(browser, router);
 
     expect(router.state.matches.at(-1)?.loaderData).toEqual({ today: "2026-09-26" });
@@ -249,6 +251,11 @@ describe("/matches in the server's HTML", () => {
     expect(browserHtml).toContain("/matches/7b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d");
     // Saturday's fixtures, from the handover: nothing asked for Sunday.
     expect(asked).toEqual(["2026-09-26"]);
+    // The whole page, not only its day: the date band still calls Saturday
+    // "today" and offers no way back to it. Reading the browser's own clock,
+    // it called Saturday "yesterday" and added the "Today" button, and React
+    // threw the server's tree away.
+    expect(browserHtml).toBe(serverHtml);
   });
 
   test("a reader who comes back after midnight opens on the new day, not the last visit's", async () => {
