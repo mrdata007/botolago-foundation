@@ -19,9 +19,6 @@
 --   the script stops within 5 seconds and saves nothing: run it again a
 --   minute later.
 --
---   Its version sorts before 20260925110000, which production already
---   records. That is expected; this script records its own row.
---
 -- HOW TO RUN
 --   1. Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor ->
 --      New query. Make sure no other database work is running right now.

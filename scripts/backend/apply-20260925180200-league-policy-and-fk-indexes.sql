@@ -26,9 +26,6 @@
 --   already under way, the script stops within 5 seconds and saves nothing:
 --   run it again a minute later.
 --
---   Its versions sort before 20260925110000, which production already
---   records. That is expected; this script records its own rows.
---
 -- HOW TO RUN
 --   1. Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor ->
 --      New query. Make sure no other database work is running right now.
@@ -381,11 +378,11 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260925180200, 'UTF8')), 'hex')
-    is distinct from '7b8b39e449973e96fcc394bfaaeff16e43f8065e2f0427f47030911859cc2dcc' then
+    is distinct from 'd308f22c37e1f0b03082c8eb26b2592efdd16b3a016d7d68c453819319f0e05c' then
     raise exception 'stop: 20260925180200 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
   if encode(sha256(convert_to(part_20260925180300, 'UTF8')), 'hex')
-    is distinct from '76cf4687b8b80faf588d4fb035d193377b66139514d1275bc5287e4558a413d1' then
+    is distinct from 'a95d1465d2a28e004fda8ec8f8e3df3d59351e65f376c0e16e5126abc65f4310' then
     raise exception 'stop: 20260925180300 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 

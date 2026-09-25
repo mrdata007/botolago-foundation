@@ -22,9 +22,6 @@
 --   one refuses before it: the health function it replaces is the one that
 --   migration installs). Any time of day; it needs well under a second.
 --
---   Its version sorts before 20260925110000, which production already
---   records. That is expected; this script records its own row.
---
 --   Alerts are on in production (read 2026-09-25 10:02 UTC). If a counted
 --   match still lacks player statistics 6 h after its final whistle when this
 --   is applied -- on 25 Sep that was the 1-3 match of 24 Sep -- the next
@@ -759,7 +756,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260925180400, 'UTF8')), 'hex')
-    is distinct from 'e34cfe441e4f7da12ed35b23983fa03ac03eff0b416012cb42258d7866da3cff' then
+    is distinct from 'e6222b6697b4d5dfe4a4552cddcc8989aa29b7ebd634871dae5eda67386da51f' then
     raise exception 'stop: 20260925180400 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
