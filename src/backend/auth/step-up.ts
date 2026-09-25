@@ -3,20 +3,25 @@
 //
 // An account that has enrolled a second factor may be holding a session that
 // only reached AAL1 (password or link, no code yet). The server refuses that
-// session's writes to the account's own data, and its sensitive account RPCs,
-// with PostgREST code `PT403` (HTTP 403) and the message `mfa_required`. The
-// refusal can arrive from any domain -- a follow, a Fantasy save, a Pronostics
-// pick, a deletion request -- and each domain's mapper turns it into its own
-// error type. Left there it read as that domain's generic failure ("Une erreur
-// est survenue"), which tells the reader nothing about the code they owe.
+// session every read and write of the account's own data -- its profile,
+// follows, notifications, saved articles, Fantasy team and leagues,
+// Pronostics, and its avatar image in Storage -- with PostgREST code `PT403`
+// (HTTP 403) and the message `mfa_required` (20260925210100). The refusal can
+// arrive from any domain -- a follow, a Fantasy save, a Pronostics pick, a
+// deletion request, the page that reads any of them -- and each domain's
+// mapper turns it into its own error type. Left there it read as that
+// domain's generic failure ("Une erreur est survenue"), which tells the reader
+// nothing about the code they owe.
 //
-// So every ordinary-account mapper reports it here on the way through, and the
-// auth layer (`SecondFactorGate`) listens: it re-reads the session's assurance
-// and, when a code really is owed, takes the reader to the challenge. Admin and
-// editorial errors are deliberately NOT reported: their own screens already
-// handle their server-enforced MFA states, and this must not reroute them.
-// News has one mapper for both (`mapNewsError`, which the CMS screens use), so
-// there only the reader's saved list reports, through `mapReaderListError`.
+// So every ordinary-account mapper reports it here on the way through, as does
+// the app's query cache for any read that fails with it
+// (`@/services/query-client`), and the auth layer (`SecondFactorGate`) listens:
+// it re-reads the session's assurance and, when a code really is owed, takes
+// the reader to the challenge. Admin and editorial errors are deliberately NOT
+// reported: their own screens already handle their server-enforced MFA states,
+// and this must not reroute them. News has one mapper for both
+// (`mapNewsError`, which the CMS screens use), so there only the reader's
+// saved list reports, through `mapReaderListError`.
 //
 // Nothing here imports React, the router or the Supabase client, so the
 // mappers (some of which also run on the server, where nobody listens) can

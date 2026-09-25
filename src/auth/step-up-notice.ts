@@ -1,7 +1,7 @@
-// What the reader is told when the server refuses a write for want of the
-// one-time code (`PT403 mfa_required`, see `@/backend/auth/step-up`), and the
-// listener `SecondFactorGate` hangs on those refusals. Kept apart from the
-// component so the listener's rules run as plain functions in the tests.
+// What the reader is told when the server refuses a read or a write for want
+// of the one-time code (`PT403 mfa_required`, see `@/backend/auth/step-up`),
+// and the listener `SecondFactorGate` hangs on those refusals. Kept apart from
+// the component so the listener's rules run as plain functions in the tests.
 
 import { toast } from "sonner";
 import type { TranslationKey } from "@/i18n/dictionaries";

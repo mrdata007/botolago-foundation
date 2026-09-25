@@ -14,8 +14,8 @@ import type {
 } from "@/backend/identity/contracts";
 import { IdentityError, mapIdentityError } from "@/backend/identity/errors";
 import type { RepositoryContext } from "@/backend/contracts/repository";
-import { sessionAssuranceOf } from "@/backend/auth/mfa";
-import { sessionAccountId, sessionForAssurance } from "@/auth/second-factor";
+import { sessionAssuranceOf, type SessionAssurance } from "@/backend/auth/mfa";
+import { isSecondFactorOwed, sessionAccountId, sessionForAssurance } from "@/auth/second-factor";
 import type {
   AuthErrorCode,
   AuthResult,
@@ -28,7 +28,12 @@ import type {
   UpdatePasswordInput,
 } from "./auth-types";
 import { defaultNotifications } from "./auth-types";
-import { deleteAvatar, signedAvatarUrl, uploadAvatarFromDataUrl } from "./profiles-repo";
+import {
+  deleteAvatar,
+  signedAvatarUrl,
+  uploadAvatarFromDataUrl,
+  type AvatarUploadError,
+} from "./profiles-repo";
 import type { AuthError, Session, SupabaseClient, User } from "@supabase/supabase-js";
 import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 
@@ -39,6 +44,19 @@ const defaultAccountSecurity = new SupabaseAccountSecurityRepository();
 
 type SupabaseAuthClient = SupabaseClient["auth"];
 
+/** The avatar image in Storage, as the service uses it. */
+export interface AvatarStorage {
+  readonly signedUrl: (path: string) => Promise<string | null>;
+  readonly upload: typeof uploadAvatarFromDataUrl;
+  readonly remove: (path: string) => Promise<void>;
+}
+
+const defaultAvatars: AvatarStorage = {
+  signedUrl: signedAvatarUrl,
+  upload: uploadAvatarFromDataUrl,
+  remove: deleteAvatar,
+};
+
 /**
  * What the service talks to, replaceable in tests. All default to the app's
  * own. `auth` is a thunk because the shared client is built on first touch and
@@ -48,7 +66,14 @@ export interface SupabaseAuthDependencies {
   readonly auth?: () => SupabaseAuthClient;
   readonly profiles?: Pick<ProfileRepository, "getMe" | "completeOnboarding">;
   readonly accountSecurity?: AccountSecurityRepository;
+  readonly avatars?: AvatarStorage;
 }
+
+/**
+ * The profile read's answer when the database refused it for want of the
+ * one-time code (`PT403 mfa_required`, 20260925210100).
+ */
+const CODE_OWED = Symbol("code owed");
 
 function hasWindow() {
   return typeof window !== "undefined";
@@ -144,14 +169,20 @@ function mapIdentityCode(error: unknown): AuthErrorCode {
 
 export { mapAuthError as __mapAuthErrorForTests };
 
-async function buildAuthUser(user: User, profile: ProfileDto | null): Promise<AuthUser> {
+async function buildAuthUser(
+  user: User,
+  profile: ProfileDto | null,
+  signAvatar: AvatarStorage["signedUrl"],
+): Promise<AuthUser> {
   const displayName =
     profile?.displayName.trim() ||
     String(user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? "").trim();
   const username = profile?.username?.trim() || String(user.user_metadata?.username ?? "").trim();
   const avatarPath = profile?.avatarPath ?? undefined;
+  // No URL (refused, missing, offline) shows no picture, and is not asked
+  // again until the session is next resolved.
   const avatarDataUrl = avatarPath
-    ? ((await signedAvatarUrl(avatarPath).catch(() => null)) ?? undefined)
+    ? ((await signAvatar(avatarPath).catch(() => null)) ?? undefined)
     : undefined;
   const rawProvider = String(user.app_metadata?.provider ?? "email");
   const provider: AuthUser["provider"] =
@@ -203,6 +234,10 @@ export class SupabaseAuthService implements AuthService {
     return this.deps.accountSecurity ?? defaultAccountSecurity;
   }
 
+  private get avatars(): AvatarStorage {
+    return this.deps.avatars ?? defaultAvatars;
+  }
+
   private emit(session: AuthSession) {
     this.revision++;
     this.cachedSession = session;
@@ -218,7 +253,7 @@ export class SupabaseAuthService implements AuthService {
     });
   }
 
-  private async loadProfile(userId: string): Promise<ProfileDto | null> {
+  private async loadProfile(userId: string): Promise<ProfileDto | null | typeof CODE_OWED> {
     // The signup trigger commits before Auth returns. A small bounded retry also
     // handles the first OAuth callback racing the Data API replica.
     for (let attempt = 0; attempt < 4; attempt++) {
@@ -226,7 +261,11 @@ export class SupabaseAuthService implements AuthService {
         const profile = await this.profiles.getMe(context(userId));
         if (profile) return profile;
       } catch (error) {
-        if (attempt === 3 || mapIdentityError(error).code !== "not_found") return null;
+        const code = mapIdentityError(error).code;
+        // Not a failure to retry: the database knows of a factor this session
+        // has not presented.
+        if (code === "mfa_required") return CODE_OWED;
+        if (attempt === 3 || code !== "not_found") return null;
       }
       await new Promise((resolve) => setTimeout(resolve, 150 + attempt * 100));
     }
@@ -246,16 +285,29 @@ export class SupabaseAuthService implements AuthService {
    * user of this session was published at the other session's level. The
    * profile read goes out with whatever token the client holds at that moment
    * too, so a profile that is not this user's is not used either.
+   *
+   * The profile and the avatar are read for a complete sign-in only. They are
+   * the account's own data, which the database and Storage refuse to a
+   * session that owes its code (20260925210100), and a session in the owing
+   * states is published without a user anyway. Until then it asked for both
+   * on every resolution, the owing ones included. When the token says
+   * "complete" and the profile read is refused all the same, the database
+   * knows of a factor this token's user record does not list yet (one
+   * enrolled on another device): the session owes its code.
    */
   private async resolveSignedIn(
     session: Session,
     knownProfile?: ProfileDto | null,
   ): Promise<{ authUser: AuthUser; session: AuthSession }> {
     const { user } = session;
-    const assurance = sessionAssuranceOf(session);
-    const read = knownProfile !== undefined ? knownProfile : await this.loadProfile(user.id);
-    const profile = read?.id === user.id ? read : null;
-    const authUser = await buildAuthUser(user, profile);
+    let assurance: SessionAssurance = sessionAssuranceOf(session);
+    let profile: ProfileDto | null = null;
+    if (assurance === "complete") {
+      const read = knownProfile !== undefined ? knownProfile : await this.loadProfile(user.id);
+      if (read === CODE_OWED) assurance = "second_factor_pending";
+      else profile = read?.id === user.id ? read : null;
+    }
+    const authUser = await buildAuthUser(user, profile, this.avatars.signedUrl);
     return { authUser, session: sessionForAssurance(authUser, assurance) };
   }
 
@@ -458,8 +510,8 @@ export class SupabaseAuthService implements AuthService {
     let nextAvatarPath = input.removeAvatar ? null : (oldAvatarPath ?? null);
     let uploadedPath: string | null = null;
     if (!input.removeAvatar && input.avatarDataUrl?.startsWith("data:")) {
-      const uploaded = await uploadAvatarFromDataUrl(current.id, input.avatarDataUrl);
-      if (!uploaded.ok) return { ok: false, errorCode: "generic" };
+      const uploaded = await this.avatars.upload(current.id, input.avatarDataUrl);
+      if (!uploaded.ok) return { ok: false, errorCode: await this.avatarUploadFailure(uploaded) };
       uploadedPath = uploaded.path;
       nextAvatarPath = uploaded.path;
     }
@@ -476,7 +528,8 @@ export class SupabaseAuthService implements AuthService {
         },
         context(current.id),
       );
-      if (oldAvatarPath && oldAvatarPath !== nextAvatarPath) await deleteAvatar(oldAvatarPath);
+      if (oldAvatarPath && oldAvatarPath !== nextAvatarPath)
+        await this.avatars.remove(oldAvatarPath);
       // The account that completed its profile, and only if it is still the
       // one signed in: a session another tab switched in meanwhile is not
       // this profile's to publish (its own event publishes it).
@@ -487,9 +540,23 @@ export class SupabaseAuthService implements AuthService {
     } catch (error) {
       // A newly-created path is safe to remove. If an existing deterministic
       // path was overwritten, retain it because the profile still references it.
-      if (uploadedPath && uploadedPath !== oldAvatarPath) await deleteAvatar(uploadedPath);
+      if (uploadedPath && uploadedPath !== oldAvatarPath) await this.avatars.remove(uploadedPath);
       return { ok: false, errorCode: mapIdentityCode(error) };
     }
+  }
+
+  /**
+   * Why an avatar upload failed, for the screen. Storage says only that its
+   * policy refused, which is what an account with a second factor meets while
+   * its session owes the code -- one enrolled on another device since this
+   * session's token was issued. So the session is asked again, with a fresh
+   * token: when the code is owed, that is the answer (the screen says so, and
+   * the gate takes the reader to it). Otherwise, the generic failure.
+   */
+  private async avatarUploadFailure(failure: { error: AvatarUploadError }): Promise<AuthErrorCode> {
+    if (failure.error !== "refused") return "generic";
+    const rechecked = await this.recheckSession({ refresh: true }).catch(() => null);
+    return rechecked && isSecondFactorOwed(rechecked.status) ? "mfa_required" : "generic";
   }
 
   async requestAccountDeletion(): Promise<AuthResult<{ requestId: string }>> {

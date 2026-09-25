@@ -12,7 +12,7 @@ import type { PredictionInput, SavePredictionsDto } from "@/backend/predictions/
 import { accountSaveQueue } from "@/components/predictions/use-predictions-round";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { followedTeamIdsQueryKey } from "@/services/follows";
-import { SupabaseAuthService } from "./auth-supabase";
+import { SupabaseAuthService, type AvatarStorage } from "./auth-supabase";
 
 // The session the app publishes must say how far the sign-in got. Before
 // 2026-09-25 every path that created a Supabase session -- the password form,
@@ -177,6 +177,7 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
  */
 async function start(
   profile: (id: string) => Promise<ProfileDto | null> = async (id) => profileOf(id),
+  avatars?: AvatarStorage,
 ) {
   const fake = fakeSupabaseAuth();
   const revocations: Array<{ scope: string; actorId: string | null; token: string | null }> = [];
@@ -194,6 +195,7 @@ async function start(
       completeOnboarding: async () => profileOf(ACCOUNT_A),
     },
     accountSecurity,
+    ...(avatars ? { avatars } : {}),
   });
   const statuses: string[] = [];
   service.subscribeToSession((session) => statuses.push(session.status));
@@ -699,5 +701,178 @@ describe("the device's account data across sessions (AuthProvider's cleanup)", (
       .some((query) => JSON.stringify(query.state.data ?? null).includes(WYDAD));
     expect(cachedAnywhere).toBe(false);
     stopB();
+  });
+});
+
+// Since 20260925210100 the database refuses an enrolled account's own data to
+// a session that has not entered the code, reads included, and Storage its
+// avatar image. The service used to read the profile, and sign the avatar's
+// URL, for every session it resolved -- the ones that owe the code too, whose
+// user it then discards.
+describe("the account's own data while the code is owed", () => {
+  const stepUpRefusal = { code: "PT403", message: "mfa_required", details: null, hint: null };
+  const withAvatar = (id: string): ProfileDto => ({
+    ...profileOf(id),
+    avatarPath: `${id}/avatar.jpg`,
+  });
+
+  /** Storage's avatar calls, counted, answering as `answers` says. */
+  function fakeAvatars() {
+    const calls = { signed: [] as string[], uploads: 0 };
+    const answers: {
+      signed: (path: string) => Promise<string | null>;
+      upload: AvatarStorage["upload"];
+    } = {
+      signed: async (path) => `https://storage.test/${path}?token=signed`,
+      upload: async (userId) => ({ ok: true, path: `${userId}/avatar.png` }),
+    };
+    const avatars: AvatarStorage = {
+      signedUrl: (path) => {
+        calls.signed.push(path);
+        return answers.signed(path);
+      },
+      upload: (userId, dataUrl) => {
+        calls.uploads++;
+        return answers.upload(userId, dataUrl);
+      },
+      remove: async () => {},
+    };
+    return { avatars, calls, answers };
+  }
+
+  it("a session that owes its code reads neither the profile nor the avatar", async () => {
+    const reads: string[] = [];
+    const { avatars, calls } = fakeAvatars();
+    const { fake, service } = await start(async (id) => {
+      reads.push(id);
+      return withAvatar(id);
+    }, avatars);
+    fake.setAssurance({ currentLevel: "aal1", nextLevel: "aal2" });
+    fake.restore(ACCOUNT_A);
+    await settle();
+    expect(service.getSession()).toEqual({
+      user: null,
+      status: "mfa_required",
+      pendingAccountId: ACCOUNT_A,
+    });
+    expect((await service.signInWithEmail("a@example.test", "correct horse")).status).toBe(
+      "mfa_required",
+    );
+    await service.refreshSession();
+    expect(reads).toEqual([]);
+    expect(calls.signed).toEqual([]);
+
+    // The code is in: now, and only now, the account is read.
+    fake.setAssurance({ currentLevel: "aal2", nextLevel: "aal2" });
+    const session = await service.recheckSession();
+    expect(session.status).toBe("authenticated");
+    expect(reads).toEqual([ACCOUNT_A]);
+    expect(calls.signed).toEqual([`${ACCOUNT_A}/avatar.jpg`]);
+    expect(session.user?.avatarDataUrl).toBe(
+      `https://storage.test/${ACCOUNT_A}/avatar.jpg?token=signed`,
+    );
+  });
+
+  it("the same when the level cannot be read: nothing is read until it can", async () => {
+    const reads: string[] = [];
+    const { avatars, calls } = fakeAvatars();
+    const { fake, service } = await start(async (id) => {
+      reads.push(id);
+      return withAvatar(id);
+    }, avatars);
+    fake.setAssurance(new Error("unreadable"));
+    fake.restore(ACCOUNT_A);
+    await settle();
+    expect(service.getSession().status).toBe("mfa_unconfirmed");
+    expect(reads).toEqual([]);
+    expect(calls.signed).toEqual([]);
+  });
+
+  it("a token that lists no factor, refused by the database all the same, owes its code", async () => {
+    // A factor enrolled on another device: this session's token was issued
+    // before it, so its user record lists none, and the token reads complete.
+    const reads: string[] = [];
+    const { avatars, calls } = fakeAvatars();
+    const { fake, service, statuses } = await start(async (id) => {
+      reads.push(id);
+      throw stepUpRefusal;
+    }, avatars);
+    fake.restore(ACCOUNT_A);
+    await settle();
+    expect(service.getSession()).toEqual({
+      user: null,
+      status: "mfa_required",
+      pendingAccountId: ACCOUNT_A,
+    });
+    expect(statuses).not.toContain("authenticated");
+    // Asked once: a refusal is not a replica lag to wait out.
+    expect(reads).toEqual([ACCOUNT_A]);
+    expect(calls.signed).toEqual([]);
+  });
+
+  it("an avatar Storage will not sign shows no picture, and is not asked again", async () => {
+    const { avatars, calls, answers } = fakeAvatars();
+    answers.signed = async () => null;
+    const refused = await start(async (id) => withAvatar(id), avatars);
+    refused.fake.restore(ACCOUNT_A);
+    await settle();
+    await settle();
+    const user = refused.service.getSession().user;
+    expect(user?.id).toBe(ACCOUNT_A);
+    expect(user?.avatarPath).toBe(`${ACCOUNT_A}/avatar.jpg`);
+    expect(user?.avatarDataUrl).toBeUndefined();
+    expect(calls.signed).toEqual([`${ACCOUNT_A}/avatar.jpg`]);
+
+    const failing = fakeAvatars();
+    failing.answers.signed = async () => {
+      throw new Error("Failed to fetch");
+    };
+    const offline = await start(async (id) => withAvatar(id), failing.avatars);
+    offline.fake.restore(ACCOUNT_A);
+    await settle();
+    await settle();
+    expect(offline.service.getSession()).toMatchObject({ status: "authenticated" });
+    expect(offline.service.getSession().user?.avatarDataUrl).toBeUndefined();
+    expect(failing.calls.signed).toHaveLength(1);
+  });
+
+  it("an avatar upload Storage refuses, once the session turns out to owe its code, says so", async () => {
+    const { avatars, calls, answers } = fakeAvatars();
+    answers.upload = async () => ({ ok: false, error: "refused" });
+    const { fake, service } = await start(async (id) => profileOf(id), avatars);
+    fake.restore(ACCOUNT_A);
+    await settle();
+    expect(service.getSession().status).toBe("authenticated");
+
+    // A factor was enrolled on another device; a fresh token lists it.
+    fake.setAssurance({ currentLevel: "aal1", nextLevel: "aal2" });
+    const refreshesBefore = fake.calls.refresh;
+    const result = await service.completeProfile({ avatarDataUrl: "data:image/png;base64,AAAA" });
+    expect(result).toEqual({ ok: false, errorCode: "mfa_required" });
+    expect(calls.uploads).toBe(1);
+    expect(fake.calls.refresh).toBe(refreshesBefore + 1);
+    expect(service.getSession()).toMatchObject({ user: null, status: "mfa_required" });
+  });
+
+  it("a refused upload with nothing owed, or a failed one, stays the generic failure", async () => {
+    const { avatars, answers } = fakeAvatars();
+    answers.upload = async () => ({ ok: false, error: "refused" });
+    const { fake, service } = await start(async (id) => profileOf(id), avatars);
+    fake.restore(ACCOUNT_A);
+    await settle();
+    expect(await service.completeProfile({ avatarDataUrl: "data:image/png;base64,AAAA" })).toEqual({
+      ok: false,
+      errorCode: "generic",
+    });
+    expect(service.getSession().status).toBe("authenticated");
+
+    // Not a refusal (too large, network): no session check at all.
+    answers.upload = async () => ({ ok: false, error: "upload_failed" });
+    const refreshesBefore = fake.calls.refresh;
+    expect(await service.completeProfile({ avatarDataUrl: "data:image/png;base64,AAAA" })).toEqual({
+      ok: false,
+      errorCode: "generic",
+    });
+    expect(fake.calls.refresh).toBe(refreshesBefore);
   });
 });

@@ -92,11 +92,12 @@ export function mapNewsError(error: PostgrestError | Error): NewsError {
 }
 
 /**
- * An error from the reader's own saved list (`save_article`, `unsave_article`):
- * the one News write the step-up rule guards (`app.saved_articles`). Refused
- * while the second factor is owed, and reported so the auth layer can ask for
- * it -- which `mapNewsError` did for every News error until 2026-09-25, the
- * CMS's included, against step-up.ts's rule for staff screens.
+ * An error from the reader's own saved list (`news_saved_articles`,
+ * `save_article`, `unsave_article`): the one part of News the step-up rule
+ * guards (`app.saved_articles`, 20260925210100). Refused while the second
+ * factor is owed, and reported so the auth layer can ask for it -- which
+ * `mapNewsError` did for every News error until 2026-09-25, the CMS's
+ * included, against step-up.ts's rule for staff screens.
  */
 export function mapReaderListError(error: PostgrestError | Error): NewsError {
   reportMfaStepUp(error);

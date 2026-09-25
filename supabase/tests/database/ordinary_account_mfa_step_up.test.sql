@@ -444,13 +444,15 @@ select extensions.throws_ok(
 select set_config('app.mfa_step_up_waiver', '', true);
 
 -- ---------------------------------------------------------------------------
--- Reads are not refused here.
+-- Reads are refused too (ordinary_account_mfa_step_up_reads.test.sql has the
+-- rest: every read, the account views, the News card and the avatar image).
 -- ---------------------------------------------------------------------------
 select pg_temp.act(pg_temp.id(21), 'aal1');
 set local role authenticated;
-select extensions.is(
-  (select count(*)::integer from api.my_profile), 1,
-  'enrolled at aal1: reading the own profile is not refused by this migration'
+select extensions.throws_ok(
+  $$select count(*) from api.my_profile$$,
+  'PT403', 'mfa_required',
+  'enrolled at aal1: reading the own profile is refused as well'
 );
 reset role;
 

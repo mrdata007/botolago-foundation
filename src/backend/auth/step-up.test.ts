@@ -158,7 +158,9 @@ describe("the ordinary-account error mappers report it", () => {
     };
     expect(method("save")).toContain("throwIfReaderListError(error);");
     expect(method("unsave")).toContain("throwIfReaderListError(error);");
-    expect(repository.match(/throwIfReaderListError\(error\)/g)).toHaveLength(2);
+    // Reading the list is refused as well since 20260925210100.
+    expect(method("getSaved")).toContain("throwIfReaderListError(error);");
+    expect(repository.match(/throwIfReaderListError\(error\)/g)).toHaveLength(3);
     for (const file of [
       "src/routes/admin.news.tsx",
       "src/routes/admin.news.new.tsx",

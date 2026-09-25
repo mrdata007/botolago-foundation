@@ -38,51 +38,108 @@ Google/Apple. Never wildcard an untrusted domain.
 
 Migration `20260925210100_ordinary_account_mfa_step_up` (audit A03 / DB-07).
 An account with at least one **verified** factor in `auth.mfa_factors` must hold
-an `aal2` session for the writes the database makes on its behalf: every table
-an ordinary `api.*` function writes for it (listed below). One thing it owns is
-outside that: its avatar image in Storage (known gap, below). At `aal1` every
-guarded write is refused with:
+an `aal2` session to read or change its own data: every `api.*` function that
+reads or writes it, the four `api.my_*` views, the saved mark on the public
+News card, and its avatar image in Storage. At `aal1` the database refuses
+with:
 
 | SQLSTATE | message        | HTTP (PostgREST) | Client action                                    |
 | -------- | -------------- | ---------------- | ------------------------------------------------ |
 | `PT403`  | `mfa_required` | 403              | send the person to the MFA challenge, then retry |
+
+Storage has no such code: to that session the avatar object is simply not
+there (no signed URL), an upload is refused as a policy violation, and a
+replacement or removal touches nothing.
 
 A missing `aal` claim counts as `aal1`. These pass: accounts with no factor or
 only an unverified (abandoned) enrolment, `aal2` sessions, and work with no
 actor (the service role, pg_cron, and Supabase Auth's own signup trigger,
 which has no JWT on its connection).
 
-- **Where it is enforced.** `app_private.assert_mfa_step_up()` states the
-  rule. `app_private.refuse_unverified_mfa_actor()` runs it from BEFORE
-  INSERT/UPDATE/DELETE statement triggers on every table an ordinary `api.*`
-  function writes for the caller: profile, preferences, follows, deletion
-  requests, saved articles, notifications and devices, all Fantasy team and
-  league tables, and Pronostics. A statement that matches no row is refused
-  too. `api.request_account_deletion()` and `api.cancel_account_deletion()`
-  also call the helper first, so they refuse before the rate limit, and
-  before handing back an existing request.
-- **Deliberately not refused.** These are not refused at `aal1`:
+- **The rule.** `app_private.assert_mfa_step_up()` states it once.
+  `app_private.require_mfa_step_up()` (true, or the refusal) and
+  `app_private.mfa_step_up_satisfied()` (true or false) are its boolean forms
+  for a view's WHERE, a policy and the News card; both call it, and only
+  `authenticated` may execute them (PostgreSQL checks EXECUTE on a stored
+  view's or policy's functions as the reader, not USAGE on their schema).
+- **Reads and writes through the api.** Every `api.*` function that reads or
+  writes the caller's own account runs the helper as the first statement of
+  its body: 51 of them, among them the profile and ban standing
+  (`get_my_account_standing`), notification preferences, notifications and
+  devices, the saved-article list, the Fantasy hub (it carries the caller's
+  team), the owned team, its points, history and transfer preview, the
+  caller's Fantasy leagues, league standings (private leagues are read through
+  the caller's membership) and overall standings (`myRank`), Pronostics picks,
+  leagues, league standings and leaderboard (the caller's own line), and every
+  ordinary write RPC. Writes are listed too because some answer without a
+  write a trigger would see: an idempotent replay returns the stored Fantasy
+  team, a double tap returns the Pronostics league just made with its invite
+  code. The migration header lists all 51.
+- **The account views.** `api.my_profile`, `my_followed_teams`,
+  `my_followed_competitions` and `my_account_deletion_requests` end their
+  WHERE with `app_private.require_mfa_step_up()`. It names no column, so it
+  runs once before any row is read, and a view with no row for the account
+  refuses too.
+- **The News card.** Every feed, search and article card says whether the
+  reader saved it (`isSaved`, `app_private.news_article_card`). That mark is
+  shown only when `app_private.mfa_step_up_satisfied()`: at `aal1` an
+  enrolled account reads the news as a visitor does. The news itself stays
+  public.
+- **The avatar image.** The `avatars` bucket's four policies on
+  `storage.objects` (select, insert, update, delete; `20260720075453`) end
+  with `and (select app_private.mfa_step_up_satisfied())`, their owner-folder
+  rules unchanged.
+- **Writes, whatever the route.** `app_private.refuse_unverified_mfa_actor()`
+  runs the helper from BEFORE INSERT/UPDATE/DELETE statement triggers on every
+  table an ordinary `api.*` function writes for the caller: profile,
+  preferences, follows, deletion requests, saved articles, notifications and
+  devices, all Fantasy team and league tables, and Pronostics. A statement
+  that matches no row is refused too. They stay as the backstop for a write
+  RPC added later.
+- **Deliberately not refused**, at `aal1` (each is named in
+  `supabase/tests/database/ordinary_account_mfa_step_up_reads.test.sql`, which
+  fails when a new `api` function reads the caller without the step-up and is
+  not on this list):
   - Sign-out (`api.record_session_revocation` writes only the security audit
     log), so someone who abandons the challenge can still leave.
   - The e-mail unsubscribe link (`api.unsubscribe_notification_email`). The
     emailed token authorises it rather than the session, and it only turns
     e-mail off.
-  - Anonymous client error reports.
-  - Reads.
-- **Known gap: the avatar image.** The web app uploads it straight to
-  Storage, with `upsert`, at `<user-id>/avatar.<ext>`
-  (`uploadAvatarFromDataUrl` in `src/services/profiles-repo.ts`), and the
-  `avatars` bucket's policies (`20260720075453`) check only that the path is
-  the caller's own. So a password-only (`aal1`) session of an enrolled account
-  can upload, replace or delete its avatar object. With the same file type the
-  upload overwrites the picture the profile already shows, although the
-  profile's own change (`avatar_path` on `app.profiles`) is refused. The
-  step-up does not reach `storage.objects`, which belongs to Supabase; closing
-  this takes a reviewed change to the bucket's policies, not yet made.
-- **Guest predictions.** Guest predictions are claimed at sign-in, before the
-  challenge. The claim is refused and the picks stay on the phone. Today the
-  web app retries on the next sign-in or page load; retrying once the session
-  reaches `aal2` would import them straight away.
+  - `api.get_my_staff_context()`. The staff console is outside the web app's
+    challenge gate and reads it at `aal1` to show its own step-up; an ordinary
+    account gets `staff_access_denied` from it.
+  - `api.predictions_round()`: the round and its matches, the same for
+    everyone. `auth.uid()` there only decides whether a tester may see
+    Pronostics while it is open to testers alone.
+  - The public reads (football, the news, the Fantasy catalogue, rules,
+    fixtures, players and prizes, `username_availability`) and anonymous
+    client error reports: nothing in them is the caller's.
+  - Staff and editorial RPCs, which keep their own stricter check (below).
+- **Nothing is needed before the second factor.** While the code is owed the
+  web app reads nothing of the account: it takes the factor list and the
+  challenge from Supabase Auth itself, resolves the session without reading
+  the profile or signing the avatar (`resolveSignedIn` in
+  `src/services/auth-supabase.ts`), and asks for the ban standing only of a
+  complete sign-in. A read refused all the same -- a factor enrolled on another
+  device is only listed in a new token -- goes to the challenge: the profile
+  read in session resolution treats the refusal as "code owed", any React
+  Query read reports it through the query cache
+  (`src/services/query-client.ts`) to the same responder the write mappers
+  use, and a refused avatar upload re-reads the session first.
+- **Guest predictions.** Guest predictions are claimed once the sign-in is
+  complete. A claim refused all the same keeps the picks on the phone, and the
+  web app retries on the next sign-in or page load.
+- **MCP tools.** `get_profile` and `get_fantasy_team` (`src/lib/mcp`) read
+  through `api.my_profile` and `api.fantasy_hub` with the connected app's
+  OAuth access token. Supabase Auth issues those tokens at `aal1`: the
+  authorization-code exchange starts a new session whose only method is
+  `oauth_provider/authorization_code`, which is not a second factor, even when
+  the person approved the connection after entering the code (only a client
+  that ran the MFA challenge itself with the token would reach `aal2`). So for
+  an account with a verified factor both tools answer with an error that says
+  the account uses two-step sign-in and does not share its data with connected
+  apps (`src/lib/mcp/account-read.ts`); `list_fixtures` is public and
+  unaffected, and so is an account without a second factor.
 - **Staff.** Admin and editorial RPCs keep their own stricter check
   (`admin_assert_principal`, `has_editorial_role`). There, `mfa_required`
   means "no factor enrolled", and an enrolled staff member at `aal1` gets
@@ -128,8 +185,11 @@ receive access.
 ## Avatar storage
 
 The `avatars` bucket is private, limited to 5 MiB JPEG/PNG/WebP files, and
-enforces `<user-id>/avatar.<extension>`. Its writes are not behind the MFA
-step-up (known gap above). Display uses short-lived signed URLs.
+enforces `<user-id>/avatar.<extension>`. An account with a verified factor
+needs an `aal2` session to read, upload, replace or remove its avatar (MFA
+step-up, above). Display uses short-lived signed URLs; one Storage will not
+sign shows no picture, and is not asked for again until the session is next
+resolved.
 Replacement updates the database before removing a differently named prior
 object. A future privileged maintenance job should identify unreferenced
 objects older than 24 hours; no public bucket or external avatar URL is stored.

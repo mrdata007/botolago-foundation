@@ -13,11 +13,12 @@ import { createStepUpResponder, showStepUpNotice } from "./step-up-notice";
  *    in `second-factor.ts` sends the reader to the challenge, carrying where
  *    they were as a sanitised `next`. `replace`, so Back does not return to a
  *    page that would only send them forward again.
- * 2. When the database refuses a write for want of the code (`PT403
- *    mfa_required`, reported by the domain error mappers), the reader is told
- *    so at once, and the session is re-read with a fresh token -- a factor
- *    enrolled on another device is only listed in a new one. If a code is now
- *    owed, (1) takes over. See `createStepUpResponder`.
+ * 2. When the database refuses a read or a write for want of the code
+ *    (`PT403 mfa_required`, reported by the domain error mappers and by the
+ *    query cache), the reader is told so at once, and the session is re-read
+ *    with a fresh token -- a factor enrolled on another device is only listed
+ *    in a new one. If a code is now owed, (1) takes over. See
+ *    `createStepUpResponder`.
  *
  * Staff pages are outside (1) by design: they have their own server-enforced
  * MFA state and screen.

@@ -5,14 +5,17 @@ import { join } from "node:path";
 
 /**
  * The guarded script that puts 20260925210100 (the MFA step-up for ordinary
- * accounts, audit A03 / DB-07) on production. Like the other apply scripts,
- * it records the migration file whole in the history and runs that record
- * only after its sha256 matches the repository file, so the file must be
- * carried byte for byte, once, and the hash it checks must be the file's. It
- * must stay a rehearsal unless edited on purpose, and its checks must not
- * write. It locks and adds triggers to Fantasy, Pronostics and notification
- * tables, so it must refuse while the jobs that write them are on, as
- * AGENTS.md asks, and tell the operator how to pause and restore each.
+ * accounts, audit A03 / DB-07: their reads, writes, views, News card saved
+ * mark and avatar image) on production. Like the other apply scripts, it
+ * records the migration file whole in the history and runs that record only
+ * after its sha256 matches the repository file, so the file must be carried
+ * byte for byte, once, and the hash it checks must be the file's. It must stay
+ * a rehearsal unless edited on purpose, and its checks must not write. It
+ * locks and adds triggers to Fantasy, Pronostics and notification tables, so
+ * it must refuse while the jobs that write them are on, as AGENTS.md asks,
+ * and tell the operator how to pause and restore each. Everything the
+ * migration replaces must be checked against the version production held
+ * before it runs, and against that version plus the step-up after.
  */
 
 const root = join(import.meta.dir, "../..");
@@ -67,11 +70,16 @@ describe(`apply-${VERSION}-ordinary-account-mfa-step-up.sql`, () => {
       `migration ${VERSION} is already recorded as applied`,
       "the MFA step-up already exists, but the migration is not recorded",
       "the database is missing what this update builds on",
-      // The three functions it replaces, as production held them on
-      // 2026-09-25 (md5 of pg_get_functiondef, read there).
+      // The three functions the first version replaced, as production held
+      // them on 2026-09-25 (md5 of pg_get_functiondef, read there).
       "    <> '1a1f5fedb7256c03c28305d0cd0ce76a' then",
       "    <> 'b118e6b4b14e793b18532b2abdbc71be' then",
       "    <> '9c655d051942d266429196779a06b160' then",
+      // Everything else it replaces: the 49 functions, the News card, the
+      // views and the avatar policies, against the list read on production.
+      "stop: not the version this update replaces (production on 2026-09-25)",
+      "storage.objects has another avatars policy than the four",
+      "perform set_config('bg_20260925210100.replaced', replaced::text, true);",
       // The jobs that write the locked tables (AGENTS.md), paused first.
       "the Fantasy lifecycle tick is on",
       "email is not off",
@@ -167,18 +175,88 @@ describe(`apply-${VERSION}-ordinary-account-mfa-step-up.sql`, () => {
     expect(locked).toEqual(triggered);
   });
 
-  test("afterwards: functions private, 24 statement triggers, replacements in place, refusal observed", () => {
+  test("afterwards: helpers private, 24 statement triggers, replacements in place, refusal observed", () => {
     for (const check of [
       "' can run ' || signature",
+      " is not callable by authenticated alone",
       "expected 24 enabled per-statement step-up triggers",
       "a replaced function is not the new version",
       "the replaced functions lost or gained a grant",
+      "'not its checked version plus the step-up: ' || fn.signature",
+      "app_private.news_article_card is not its checked version plus the step-up",
+      "'not its checked version plus the step-up: ' || v.name",
+      "'not its checked version plus the step-up: ' || p.name",
       "history row missing",
+      "an account with no factor was not let through",
       "an account with no factor was refused: ",
       "an enrolled account at aal1 was not refused with mfa_required",
+      "an enrolled account at aal1 could read its own data",
+      "Storage would serve an enrolled account at aal1",
+      "Storage would refuse an enrolled account at aal2",
       "an enrolled account at aal2 was refused: ",
+      "an enrolled account at aal2 could not read its own data",
     ]) {
       expect({ check, found: script.includes(check) }).toEqual({ check, found: true });
+    }
+  });
+
+  test("checks everything the migration replaces, and only that, against production's version", () => {
+    const preflight = script.slice(
+      script.indexOf("do $preflight$"),
+      script.indexOf("$preflight$;"),
+    );
+    const list = JSON.parse(
+      preflight.slice(
+        preflight.indexOf("$replaced$") + "$replaced$".length,
+        preflight.lastIndexOf("$replaced$"),
+      ),
+    ) as {
+      functions: Record<string, string>;
+      news_card: string;
+      views: Record<string, string>;
+      policies: Record<string, string>;
+    };
+    const name = (signature: string) => signature.slice(0, signature.indexOf("("));
+    // Functions: every api function the migration replaces is in the list, or
+    // is one of the three the first version checked by their own md5.
+    const replacedByMigration = [
+      ...migration.matchAll(/^create or replace function (api\.[a-z_]+)\(/gm),
+    ].map((match) => match[1]);
+    const checkedByOwnMd5 = [
+      "api.cancel_account_deletion",
+      "api.request_account_deletion",
+      "api.unsubscribe_notification_email",
+    ];
+    expect([...Object.keys(list.functions).map(name), ...checkedByOwnMd5].sort()).toEqual(
+      [...replacedByMigration].sort(),
+    );
+    expect(Object.keys(list.functions)).toHaveLength(49);
+    for (const digest of [...Object.values(list.functions), list.news_card]) {
+      expect(digest).toMatch(/^[0-9a-f]{32}$/);
+    }
+    expect(migration).toContain("create or replace function app_private.news_article_card(");
+    // Views and policies: the ones the migration replaces.
+    expect(Object.keys(list.views).sort()).toEqual(
+      [...migration.matchAll(/^create or replace view (api\.[a-z_]+)\n/gm)].map((m) => m[1]).sort(),
+    );
+    expect(Object.keys(list.policies).sort()).toEqual(
+      [...migration.matchAll(/^drop policy ([a-z_]+) on storage\.objects;\ncreate policy \1\n/gm)]
+        .map((m) => m[1])
+        .sort(),
+    );
+    // Each of the 49 gains the one line, first in its body.
+    const firstStatement = "\nbegin\n  perform app_private.assert_mfa_step_up();\n";
+    const apiFunctions = migration
+      .split(/\n(?=create or replace function )/)
+      .filter((statement) => statement.startsWith("create or replace function api."));
+    for (const signature of Object.keys(list.functions)) {
+      const statement = apiFunctions.find((text) =>
+        text.startsWith(`create or replace function ${name(signature)}(`),
+      );
+      expect({ signature, guarded: statement?.split(firstStatement).length }).toEqual({
+        signature,
+        guarded: 2,
+      });
     }
   });
 

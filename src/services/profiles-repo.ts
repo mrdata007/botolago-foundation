@@ -29,7 +29,29 @@ export async function dataUrlToBlob(dataUrl: string): Promise<Blob | null> {
   }
 }
 
-export type AvatarUploadError = "too_large" | "bad_type" | "upload_failed";
+/**
+ * `refused`: Storage turned the upload down on its policies -- what an
+ * account with a second factor meets while its session still owes the code
+ * (20260925210100), and also what an expired token meets. The caller asks the
+ * session which it was.
+ */
+export type AvatarUploadError = "too_large" | "bad_type" | "upload_failed" | "refused";
+
+/**
+ * Storage's answer when a bucket policy rejects a request: 403, sent either as
+ * the HTTP status or as the body's `statusCode` (with HTTP 400), or failing
+ * both, its row-level security message.
+ */
+export function isStorageRefusal(error: unknown): boolean {
+  if (error === null || typeof error !== "object") return false;
+  const { status, statusCode, message } = error as {
+    status?: unknown;
+    statusCode?: unknown;
+    message?: unknown;
+  };
+  if (status === 403 || statusCode === 403 || statusCode === "403") return true;
+  return typeof message === "string" && /row-level security/i.test(message);
+}
 
 export async function uploadAvatarFromDataUrl(
   userId: string,
@@ -46,7 +68,7 @@ export async function uploadAvatarFromDataUrl(
     contentType: blob.type,
     cacheControl: "3600",
   });
-  if (error) return { ok: false, error: "upload_failed" };
+  if (error) return { ok: false, error: isStorageRefusal(error) ? "refused" : "upload_failed" };
   return { ok: true, path };
 }
 
@@ -58,6 +80,13 @@ export async function deleteAvatar(path: string): Promise<void> {
   }
 }
 
+/**
+ * A short-lived URL for the avatar at `path`, or `null` when Storage gives
+ * none: no such object, a network failure, or a session its policy does not
+ * serve (an account with a second factor whose code is still owed finds no
+ * object). The picture is then simply not shown; nothing asks again until the
+ * session is next resolved.
+ */
 export async function signedAvatarUrl(path: string, expiresIn = 60 * 60): Promise<string | null> {
   const { data, error } = await supabase.storage
     .from(AVATAR_BUCKET)
