@@ -43,9 +43,9 @@ describe("shareAfterTemplate", () => {
 
 describe("remainingLabel", () => {
   test("picks the Arabic form by count and keeps Western digits", () => {
-    expect(remainingLabel(1, "ar", translate("ar"))).toBe("مباراة واحدة للتوقع");
-    expect(remainingLabel(2, "ar", translate("ar"))).toBe("مباراتان للتوقع");
-    expect(remainingLabel(5, "ar", translate("ar"))).toBe("5 مباريات للتوقع");
+    expect(remainingLabel(1, "ar", translate("ar"))).toBe("مباراة واحدة تنتظر توقعك");
+    expect(remainingLabel(2, "ar", translate("ar"))).toBe("مباراتان تنتظران توقعك");
+    expect(remainingLabel(5, "ar", translate("ar"))).toBe("5 مباريات تنتظر توقعك");
     expect(remainingLabel(5, "fr", translate("fr"))).toBe("5 matchs à pronostiquer");
   });
 });
