@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import type { LeagueStandingsDto, MyLeaguesDto } from "@/backend/predictions/contracts";
 import { mapPredictionsError, type PredictionsError } from "@/backend/predictions/errors";
 import { useAuth } from "@/auth/AuthProvider";
+import { showStepUpNotice } from "@/auth/step-up-notice";
 import { AppShell } from "@/components/shell/AppShell";
 import {
   ui,
@@ -57,13 +58,22 @@ export function LeaguePage({ leagueId }: { leagueId: string }) {
   });
   const membership = mine.data?.items.find((item) => item.leagueId === leagueId);
 
+  // A new code or leaving, refused. A refusal for want of the one-time code is
+  // the auth layer's to announce: under its toast id it shows once, where this
+  // page used to toast the same sentence a second time as an error. Every
+  // other refusal keeps its own sentence.
+  const onWriteError = (failure: unknown) => {
+    const code = mapPredictionsError(failure).code;
+    if (code === "mfa_required") showStepUpNotice(t);
+    else toast.error(leagueErrorMessage(code, t));
+  };
   const reset = useMutation({
     mutationFn: () => predictionsService.resetInviteCode(leagueId),
     onSuccess: (result) => {
       setNewCode(result.inviteCode);
       void queryClient.invalidateQueries({ queryKey: ["predictions", "league", leagueId] });
     },
-    onError: (failure) => toast.error(leagueErrorMessage(mapPredictionsError(failure).code, t)),
+    onError: onWriteError,
   });
   const leave = useMutation({
     mutationFn: () => predictionsService.leaveLeague(leagueId),
@@ -74,7 +84,7 @@ export function LeaguePage({ leagueId }: { leagueId: string }) {
       );
       void navigate({ to: "/pronostics", search: { tab: "ligues" } });
     },
-    onError: (failure) => toast.error(leagueErrorMessage(mapPredictionsError(failure).code, t)),
+    onError: onWriteError,
   });
 
   const name = header.data?.league.name;

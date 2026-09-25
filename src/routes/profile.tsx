@@ -51,6 +51,7 @@ import {
   UiPageTitle,
 } from "@/components/ui-kit";
 import { useAuth } from "@/auth/AuthProvider";
+import { showStepUpNotice } from "@/auth/step-up-notice";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle } from "@/lib/club-palette";
 import { findClub } from "@/components/fantasy/club-identity";
@@ -699,7 +700,11 @@ function DeleteAccountSection() {
     const res = await authService.requestAccountDeletion();
     setSubmitting(false);
     if (!res.ok) {
-      toast.error(t("profile.delete_error_toast"));
+      // A deletion request is a sensitive account action: refused until the
+      // one-time code is in. Say that, once (the auth layer says it too,
+      // under the same toast id), not "Une erreur est survenue".
+      if (res.errorCode === "mfa_required") showStepUpNotice(t);
+      else toast.error(t("profile.delete_error_toast"));
       return;
     }
     setPending(true);
@@ -713,7 +718,9 @@ function DeleteAccountSection() {
     const res = await authService.cancelAccountDeletion();
     setSubmitting(false);
     if (!res.ok) {
-      toast.error(t("profile.delete_error_toast"));
+      // The same for withdrawing the request.
+      if (res.errorCode === "mfa_required") showStepUpNotice(t);
+      else toast.error(t("profile.delete_error_toast"));
       return;
     }
     setPending(false);

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { showStepUpNotice } from "@/auth/step-up-notice";
 import { findClub } from "@/components/fpl/club-lookup";
 import { countdownText, formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
@@ -35,6 +36,7 @@ import {
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
 import { validateTeam } from "@/lib/team-validation";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
+import { toRepoError } from "@/services/fantasy-errors";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -57,6 +59,21 @@ function isTeamDraftPayload(v: unknown): v is TeamDraftPayload {
 }
 
 const PICK_TEAM_CHIPS: ChipKey[] = ["bench_boost", "free_hit", "triple_captain"];
+
+/**
+ * `write`, its refusal typed as the owned repository's own (`toRepoError`)
+ * before the mutation controller files it. The V2 adapter types what the
+ * lineup save throws, but hands on the chip RPCs' refusals as the server's
+ * error, and the controller files anything untyped as `unknown`: a chip
+ * refused until the one-time code is in read as "Indisponible" beside the auth
+ * layer's notice, and a stale version never reached the conflict branch. A
+ * typed error passes through as it is.
+ */
+function withTypedRefusal<T>(write: Promise<T>): Promise<T> {
+  return write.catch((error: unknown) => {
+    throw toRepoError(error);
+  });
+}
 
 /** Derive the formation from the starting XI so a swap DEF↔MID or bench move re-slots correctly. */
 function formationOf(
@@ -284,17 +301,23 @@ function PickTeamBody() {
           return;
         }
         const c = classifyRepoError(res.error);
-        toast.error(
-          t(
-            c.isConflict
-              ? "fantasy.error.version_conflict"
-              : c.isNetwork
-                ? "fantasy.error.network"
-                : c.isPermission
-                  ? "fantasy.error.permission"
-                  : "fantasy.error.transfer_failed",
-          ),
-        );
+        // Refused until the one-time code is in: say that, once (the auth
+        // layer says it too, under the same toast id), not "Accès refusé.
+        // Reconnectez-vous" -- signing in again is not what is owed. The
+        // lineup waits in its draft.
+        if (c.isStepUp) showStepUpNotice(t);
+        else
+          toast.error(
+            t(
+              c.isConflict
+                ? "fantasy.error.version_conflict"
+                : c.isNetwork
+                  ? "fantasy.error.network"
+                  : c.isPermission
+                    ? "fantasy.error.permission"
+                    : "fantasy.error.transfer_failed",
+            ),
+          );
         if (c.isConflict) await owned.reload();
         return;
       }
@@ -342,11 +365,13 @@ function PickTeamBody() {
           },
           {
             action: () =>
-              owned.repo.activateChip({
-                gameweekId: owned.snapshot!.currentGameweekId!,
-                chip,
-                expectedVersion: owned.snapshot!.version,
-              }),
+              withTypedRefusal(
+                owned.repo.activateChip({
+                  gameweekId: owned.snapshot!.currentGameweekId!,
+                  chip,
+                  expectedVersion: owned.snapshot!.version,
+                }),
+              ),
             args: undefined,
             savedIdleAfterMs: 2400,
           },
@@ -354,9 +379,13 @@ function PickTeamBody() {
         if (res.ok) toast.success(t("fantasy.chip.activated"));
         else {
           const c = classifyRepoError(res.error);
-          toast.error(
-            t(c.isConflict ? "fantasy.error.version_conflict" : "fantasy.chip.state.unavailable"),
-          );
+          // Refused until the one-time code is in: the chip is not
+          // "Indisponible". The auth layer's notice says what is owed, once.
+          if (c.isStepUp) showStepUpNotice(t);
+          else
+            toast.error(
+              t(c.isConflict ? "fantasy.error.version_conflict" : "fantasy.chip.state.unavailable"),
+            );
           if (c.isConflict) await owned.reload();
         }
       } else {
@@ -388,14 +417,18 @@ function PickTeamBody() {
         },
         {
           action: () =>
-            owned.repo.cancelChip({
-              gameweekId: owned.snapshot!.currentGameweekId!,
-              expectedVersion: owned.snapshot!.version,
-            }),
+            withTypedRefusal(
+              owned.repo.cancelChip({
+                gameweekId: owned.snapshot!.currentGameweekId!,
+                expectedVersion: owned.snapshot!.version,
+              }),
+            ),
           args: undefined,
         },
       );
       if (res.ok) toast.success(t("fantasy.chip.cancelled"));
+      // As for activating it: a code owed is said as such, once.
+      else if (classifyRepoError(res.error).isStepUp) showStepUpNotice(t);
       else toast.error(t("fantasy.chip.state.unavailable"));
       return;
     }

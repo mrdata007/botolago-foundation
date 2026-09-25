@@ -878,7 +878,6 @@ export const fr = {
   "fpl.more_about": "En savoir plus sur BotolaGO Fantasy",
   "fpl.rules": "Règles du jeu",
   "fpl.help_rules": "Aide & Règles",
-  "fpl.create_team": "Créer une équipe",
   "fpl.free_transfers": "Transferts gratuits",
   "fpl.wildcard": "Joker",
   "fpl.cost": "Coût",
@@ -1799,6 +1798,10 @@ export const fr = {
   "predictions.save.saved": "Enregistré",
   "predictions.save.offline": "Hors connexion · nouvel essai automatique",
   "predictions.save.failed": "Échec de l'enregistrement",
+  // The save was refused until the one-time code is in (`PT403
+  // mfa_required`): not a failure, the picks wait. Short, for the bar; the
+  // toast (`auth.step_up.toast`) says where the code comes from.
+  "predictions.save.step_up": "Code requis pour enregistrer",
   "predictions.save.locked": "Match commencé : pronostic verrouillé",
   "predictions.guest.saved_local": "Enregistré sur ce téléphone",
   "predictions.guest.cta_title": "Entrez au classement",

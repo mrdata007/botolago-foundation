@@ -285,11 +285,22 @@ describe("the Fantasy hub around the proposition", () => {
   });
 
   it("opens the prize welcome over the owner's dashboard only", () => {
-    expect(hub).toContain(
-      "{PRIZES_ENABLED && layout.prizeWelcome && <PrizeWelcome hasTeam={hasTeam} />}",
-    );
+    expect(hub).toContain("{PRIZES_ENABLED && layout.prizeWelcome && <PrizeWelcome />}");
     expect(hub.match(/<PrizeWelcome/g)).toHaveLength(1);
     expect(personal).not.toContain("<PrizeWelcome");
+  });
+
+  it("leaves the prize welcome one way on: its visitor always has a team", () => {
+    // `layout.prizeWelcome` is an owner's only (fantasy-hub-layout.test.ts),
+    // so the "Créer une équipe" it kept for a visitor without a team could
+    // not be reached: the proposition is where that visitor is asked.
+    const welcome = code("src/components/prizes/PrizeWelcome.tsx");
+    expect(welcome).toContain("export function PrizeWelcome() {");
+    expect(welcome).not.toContain("hasTeam");
+    expect(welcome).not.toContain('to="/fantasy/create"');
+    expect(welcome).not.toContain("fpl.create_team");
+    expect(welcome).toContain('{t("prizes.welcome.go")}');
+    expect(welcome).toContain('to="/prizes"');
   });
 
   it("keeps the band caption the e2e journey finds the hub by", () => {

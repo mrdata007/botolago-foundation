@@ -56,6 +56,10 @@ export function InviteLandingPage() {
     onError: (failure) => {
       const mapped = mapPredictionsError(failure);
       if (mapped.code === "invite_code_invalid") clearPendingInvite();
+      // A code owed keeps its sentence here, unlike in the league forms: this
+      // page has no field it could mark invalid, and the sentence stands
+      // beside the only way to try again, as /fantasy/create's alert keeps
+      // it. The invite itself is kept for when the code is in.
       setError(leagueErrorMessage(mapped.code, t));
     },
   });

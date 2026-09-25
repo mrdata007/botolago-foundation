@@ -232,7 +232,7 @@ function FantasyHub() {
           on. It waits for the splash and the language chooser to let go, and
           opens over the owner's dashboard only: a visitor without a team has
           the proposition, which names the prizes inline. */}
-      {PRIZES_ENABLED && layout.prizeWelcome && <PrizeWelcome hasTeam={hasTeam} />}
+      {PRIZES_ENABLED && layout.prizeWelcome && <PrizeWelcome />}
     </FantasyFrame>
   );
 }

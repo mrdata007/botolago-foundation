@@ -33,7 +33,10 @@ import { fantasyHubLayout } from "./fantasy-hub-layout";
  * router for the links, React Query, the French dictionary, the auth
  * provider the switches read), as the club and match page tests do. The
  * auth provider renders its server state there, so the switches are drawn
- * disabled: what is checked is whether they are on the page at all.
+ * disabled: what is checked is whether they are on the page at all. It sits
+ * inside the router, where the app's root route puts it: its second-factor
+ * gate reads the current location, and outside the router every render here
+ * threw before a word of the hub was drawn.
  */
 
 const fr = dictionaries.fr;
@@ -44,8 +47,6 @@ const code = (path: string) =>
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
     .replace(/(^|[^:])\/\/.*$/gm, "$1");
 
-// The auth provider sits inside the router, as in `__root.tsx`: its second
-// factor gate reads the router's location.
 async function render(node: ReactElement): Promise<string> {
   const router = createRouter({
     routeTree: createRootRoute({ component: () => <AuthProvider>{node}</AuthProvider> }),

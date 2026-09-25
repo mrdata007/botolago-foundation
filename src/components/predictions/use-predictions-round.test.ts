@@ -1,11 +1,23 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import type {
   MyPredictionDto,
   PredictionFixtureDto,
   PredictionsRoundDto,
+  SavePredictionsDto,
 } from "@/backend/predictions/contracts";
-import { awaitingScoring, scoringMoved, seedUpdatedAt } from "./use-predictions-round";
+import type { PredictionsErrorCode } from "@/backend/predictions/errors";
+import { PredictionSaveQueue } from "@/backend/predictions/save-queue";
+import {
+  awaitingScoring,
+  barFor,
+  nextSaveBar,
+  scoringMoved,
+  seedUpdatedAt,
+  shownSaveState,
+} from "./use-predictions-round";
 
 const closed = (mode: "off" | "testers"): PredictionsRoundDto => ({
   schemaVersion: 1,
@@ -69,5 +81,118 @@ describe("scoringMoved: when a player's points must be read again", () => {
     expect(scoringMoved({ key: "u:14", version: 3 }, { key: "u:14", version: 3 })).toBe(false);
     expect(scoringMoved({ key: "u:13", version: 2 }, { key: "u:14", version: 5 })).toBe(false);
     expect(scoringMoved({ key: "u:14", version: 2 }, { key: "v:14", version: 5 })).toBe(false);
+  });
+});
+
+describe("shownSaveState: a code owed is not a failed save", () => {
+  // The server's refusal of a password-only session of an account with a
+  // second factor, as supabase-js hands it back.
+  const stepUp = { code: "PT403", message: "mfa_required", details: null, hint: null };
+  const saved = (items: readonly { fixtureId: string; home: number; away: number }[]) =>
+    ({
+      serverTime: "2026-09-25T20:00:00+00:00",
+      results: items.map((item) => ({
+        ...item,
+        status: "saved",
+        submittedAt: "2026-09-25T20:00:00+00:00",
+      })),
+    }) as SavePredictionsDto;
+
+  test("the queue's stop on that refusal reads as step_up; the picks wait, and go on a retry", async () => {
+    let refuse = true;
+    let failure: PredictionsErrorCode | null = null;
+    const queue = new PredictionSaveQueue({
+      timers: { setTimeout: () => 0, clearTimeout: () => {} },
+      // What the page's hook keeps from each refusal.
+      onError: (error) => {
+        failure = error.code;
+      },
+      send: async (items) => {
+        if (refuse) throw stepUp;
+        return saved(items);
+      },
+    });
+    queue.set({ fixtureId: "f1", home: 2, away: 1 });
+    await queue.flush();
+    expect(queue.state).toBe("error");
+    expect(shownSaveState(queue.state, failure)).toBe("step_up");
+    expect(queue.pendingIds).toEqual(["f1"]);
+
+    // The code is in: "Réessayer" sends them.
+    refuse = false;
+    await queue.retry();
+    expect(shownSaveState(queue.state, failure)).toBe("saved");
+    expect(queue.pendingIds).toEqual([]);
+  });
+
+  test("every other refusal the queue stops on is still a failed save", () => {
+    const others: (PredictionsErrorCode | null)[] = [
+      "data_unavailable",
+      "account_banned",
+      "predictions_unavailable",
+      "predictions_unauthenticated",
+      "predictions_invalid_payload",
+      "validation_failed",
+      null,
+    ];
+    for (const failure of others) {
+      expect({ failure, shown: shownSaveState("error", failure) }).toEqual({
+        failure,
+        shown: "error",
+      });
+    }
+  });
+
+  test("a step-up already behind does not colour the states that follow it", () => {
+    for (const state of ["idle", "pending", "saving", "saved", "offline"] as const) {
+      expect(shownSaveState(state, "mfa_required")).toBe(state);
+    }
+  });
+});
+
+describe("the save bar is one account's (nextSaveBar, barFor)", () => {
+  const A = "10000000-0000-4000-8000-00000000000a";
+  const B = "10000000-0000-4000-8000-00000000000b";
+  // A's queue stopped on a code owed: its refusal, then its state.
+  const owedByA = nextSaveBar(nextSaveBar(null, A, { failure: "mfa_required" }), A, {
+    state: "error",
+  });
+
+  test("the render after a switch says nothing yet, not the last account's 'Code requis'", () => {
+    expect(barFor(owedByA, A)).toBe("step_up");
+    // B's first render comes before the effect that makes B's queue.
+    expect(barFor(owedByA, B)).toBe("idle");
+    expect(barFor(null, B)).toBe("idle");
+  });
+
+  test("a queue moves its own account's bar on, and nothing of another's comes with it", () => {
+    expect(nextSaveBar(owedByA, B, { state: "error" })).toEqual({
+      uid: B,
+      state: "error",
+      failure: null,
+    });
+    // Within one account the last refusal stays until the next, as before.
+    expect(nextSaveBar(owedByA, A, { state: "saving" })).toEqual({
+      uid: A,
+      state: "saving",
+      failure: "mfa_required",
+    });
+  });
+
+  test("a replaced queue's last flush does not speak for the bar", () => {
+    // Its answer lands after the next queue has started the bar clean: the
+    // hook's callbacks only write while their queue is the page's.
+    const hook = readFileSync(join(import.meta.dir, "use-predictions-round.ts"), "utf8").replace(
+      /\s+/g,
+      " ",
+    );
+    expect(hook).toContain('setSave({ uid, state: "idle", failure: null }); let speaking = true;');
+    expect(hook).toContain("if (speaking) setSave((last) => nextSaveBar(last, uid, { state }));");
+    expect(hook).toContain(
+      "if (speaking) setSave((last) => nextSaveBar(last, uid, { failure: error.code }));",
+    );
+    expect(hook).toMatch(/return \(\) => \{ speaking = false;[^}]*void queue\.flush\(\);/);
+    // Nothing else writes the bar.
+    expect(hook.match(/setSave\(/g)).toHaveLength(3);
   });
 });

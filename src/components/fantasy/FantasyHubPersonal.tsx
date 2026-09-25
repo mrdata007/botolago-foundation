@@ -5,6 +5,8 @@ import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { showStepUpNotice } from "@/auth/step-up-notice";
+import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { SectionGroupHeader, SectionHeader } from "@/components/common/SectionHeader";
 import { LeagueList } from "@/components/fantasy-lists/LeagueList";
 import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
@@ -464,6 +466,9 @@ function NotificationsSection() {
   const email = !!preferences?.channels.email;
 
   // Both switches write the same preferences row, so one waits for the other.
+  // Either write can be refused until the one-time code is in: that is said
+  // as such, once (the auth layer says it too, under the same toast id), not
+  // "Une erreur est survenue", as on the profile's notifications step.
   const toggleReminders = async () => {
     if (!enabled || busy) return;
     setBusy(true);
@@ -471,7 +476,10 @@ function NotificationsSection() {
       const result = await authService.completeProfile({
         notifications: { fantasyDeadlines: !reminders },
       });
-      if (!result.ok) toast.error(t("state.error"));
+      if (!result.ok) {
+        if (result.errorCode === "mfa_required") showStepUpNotice(t);
+        else toast.error(t("state.error"));
+      }
       refresh();
     } finally {
       setBusy(false);
@@ -483,8 +491,9 @@ function NotificationsSection() {
     setBusy(true);
     try {
       await setEmailEnabled(!email);
-    } catch {
-      toast.error(t("state.error"));
+    } catch (error) {
+      if (isMfaStepUpError(error)) showStepUpNotice(t);
+      else toast.error(t("state.error"));
     } finally {
       setBusy(false);
     }

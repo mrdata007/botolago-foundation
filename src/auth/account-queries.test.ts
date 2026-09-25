@@ -127,6 +127,34 @@ describe("forgetAccountQueries", () => {
     expect(queryKeyNamesAccount(["identity", "followed-team-ids", A], A)).toBe(true);
     expect(queryKeyNamesAccount(["news", "article", `${A}-slug`], A)).toBe(false);
   });
+
+  it("forgets the Transfers preview, which a team id alone left behind", () => {
+    // The key shape `/fantasy/transfers` builds (pinned below): root, account,
+    // team, version, the pairs, the chip.
+    const TEAM_A = "30000000-0000-4000-8000-00000000000a";
+    const TEAM_B = "30000000-0000-4000-8000-00000000000b";
+    const preview = (uid: string, team: string) => [
+      "fantasy-transfer-preview",
+      uid,
+      team,
+      4,
+      "p1:p2",
+      null,
+    ];
+    const qc = client();
+    qc.setQueryData(preview(A, TEAM_A), { transferCount: 1 });
+    qc.setQueryData(preview(B, TEAM_B), { transferCount: 2 });
+    // What the key used to be: nothing in it names the account.
+    qc.setQueryData(["fantasy-transfer-preview", TEAM_A, 4, "p1:p2", null], { transferCount: 1 });
+
+    forgetAccountQueries(qc, A);
+
+    expect(qc.getQueryData(preview(A, TEAM_A))).toBeUndefined();
+    expect(qc.getQueryData(preview(B, TEAM_B))).toEqual({ transferCount: 2 });
+    expect(qc.getQueryData(["fantasy-transfer-preview", TEAM_A, 4, "p1:p2", null])).toEqual({
+      transferCount: 1,
+    });
+  });
 });
 
 describe("no personal query is keyed by the auth status", () => {
@@ -152,6 +180,18 @@ describe("no personal query is keyed by the auth status", () => {
       readFileSync(file, "utf8").includes('"followed-team-ids"'),
     );
     expect(spelled.map((file) => relative(src, file))).toEqual(["services/follows.ts"]);
+  });
+
+  it("the Transfers preview key names the account, right after its root", () => {
+    // Scoped by the team alone, it outlived a sign-out and a switch: the
+    // forgetting above looks for the account's id, and a team id is not it.
+    const spelled = sources(src).filter((file) =>
+      readFileSync(file, "utf8").includes('"fantasy-transfer-preview"'),
+    );
+    expect(spelled.map((file) => relative(src, file))).toEqual(["routes/fantasy.transfers.tsx"]);
+    const transfers = readFileSync(join(src, "routes/fantasy.transfers.tsx"), "utf8");
+    const key = /queryKey:\s*\[\s*"fantasy-transfer-preview",\s*([^,\s]+),/.exec(transfers);
+    expect(key?.[1]).toBe("owned.userId");
   });
 
   it("AuthProvider hands every session to the account watcher, which forgets through forgetAccount", () => {

@@ -244,10 +244,7 @@ describe("PRIZES_ENABLED", () => {
     ],
     // The welcome also waits for the owner's dashboard (audit 2026-09-25,
     // A16); the flag still gates it first.
-    [
-      "src/routes/fantasy.index.tsx",
-      "{PRIZES_ENABLED && layout.prizeWelcome && <PrizeWelcome hasTeam={hasTeam} />}",
-    ],
+    ["src/routes/fantasy.index.tsx", "{PRIZES_ENABLED && layout.prizeWelcome && <PrizeWelcome />}"],
     // The proposition's prize line reads the catalog only while the flag is on.
     ["src/routes/fantasy.index.tsx", "enabled: PRIZES_ENABLED && layout.intro !== null"],
     ["src/routes/fantasy.index.tsx", "...(PRIZES_ENABLED"],

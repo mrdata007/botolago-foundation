@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { showStepUpNotice } from "@/auth/step-up-notice";
 import { mapPredictionsError } from "@/backend/predictions/errors";
 import { ui, UiButton, UiCard, UiInput } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -29,7 +30,14 @@ export function JoinLeagueForm() {
       );
       void navigate({ to: "/pronostics/ligues/$leagueId", params: { leagueId: result.leagueId } });
     },
-    onError: (failure) => setError(leagueErrorMessage(mapPredictionsError(failure).code, t)),
+    onError: (failure) => {
+      // Refused until the one-time code is in: the auth layer says so, once
+      // (one toast under its id). Nothing is wrong with the code typed, so the
+      // field is not marked invalid with that sentence; other refusals are.
+      const refusal = mapPredictionsError(failure).code;
+      if (refusal === "mfa_required") showStepUpNotice(t);
+      else setError(leagueErrorMessage(refusal, t));
+    },
   });
 
   return (
