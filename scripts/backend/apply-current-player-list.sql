@@ -30,8 +30,9 @@
 --        select app_private.fantasy_automation_configure(false);
 --   3. Just below this header, replace PASTE-OBSERVATION-ID with the plan's
 --      "observationId" and PASTE-PLAN-DIGEST with its "digest". They are set
---      for the session before the transaction starts, so the result row at
---      the end reports that observation, rehearsal or not.
+--      for the session in a transaction of their own, committed before the
+--      work starts, so the result row at the end reports that observation,
+--      rehearsal or not.
 --   4. Paste this WHOLE file and press Run. As shipped it is a REHEARSAL:
 --      the plan is applied inside one transaction, checked, and then ROLLED
 --      BACK. The result row shows the plan's summary and says "Not applied".
@@ -39,14 +40,22 @@
 --      again. The result row should say "Applied".
 --   6. Whatever the result, switch the tick back on:
 --        select app_private.fantasy_automation_configure(true);
+--      If the statistics of the observed fixtures import next, do that first,
+--      with the tick still paused (docs/backend/CURRENT_PLAYER_LIST_UPDATE.md,
+--      step 4).
 --   If any check fails, the script stops with a message saying what, and
 --   nothing is saved. A plan whose digest no longer matches has changed since
 --   it was reviewed: observe again and review the new plan. Do not edit a
 --   check to make it pass.
 -- ============================================================================
 
+-- Committed on their own: the SQL editor sends this whole file as one query,
+-- and PostgreSQL would otherwise fold these settings into the transaction
+-- below, so a rehearsal's rollback would clear them.
+begin;
 select set_config('botolago.player_list_observation', 'PASTE-OBSERVATION-ID', false),
   set_config('botolago.player_list_digest', 'PASTE-PLAN-DIGEST', false);
+commit;
 
 begin;
 
@@ -124,7 +133,8 @@ rollback;
 
 select observation.id as observation_id,
   case when applied.id is not null
-    then 'Applied. ' || applied.result::text || ' Switch the Fantasy tick back on.'
+    then 'Applied. ' || applied.result::text
+      || ' Switch the Fantasy tick back on, after the statistics import if one follows.'
     else 'Not applied (a rehearsal saves nothing). Plan: '
       || (app_private.current_player_list_plan(observation.id) -> 'summary')::text
       || ' Change rollback; to commit; and run again. Then switch the Fantasy tick back on.'

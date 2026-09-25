@@ -80,16 +80,34 @@ describe(`apply-${VERSION}-current-player-list-update.sql`, () => {
 });
 
 describe("apply-current-player-list.sql", () => {
-  test("ships as a rehearsal, with the plan to fill in once, before the transaction", () => {
-    rehearsalOnly(planScript);
+  test("ships as a rehearsal, with the plan to fill in once, committed on its own", () => {
+    const lines = planScript.split("\n").map((line) => line.trim());
+    // Two transactions: the plan's values, then the work, which ships as a
+    // rehearsal.
+    expect(lines.filter((line) => line === "begin;")).toHaveLength(2);
+    expect(lines.filter((line) => line === "commit;")).toHaveLength(1);
+    expect(lines.filter((line) => line === "rollback;")).toHaveLength(1);
+    // The values are committed before the work starts. The SQL editor sends
+    // the whole file as one query, and PostgreSQL folds statements before a
+    // begin into its transaction, so a rehearsal's rollback would clear them.
     const fill =
+      "\nbegin;\n" +
       "select set_config('botolago.player_list_observation', 'PASTE-OBSERVATION-ID', false),\n" +
-      "  set_config('botolago.player_list_digest', 'PASTE-PLAN-DIGEST', false);";
+      "  set_config('botolago.player_list_digest', 'PASTE-PLAN-DIGEST', false);\n" +
+      "commit;\n";
     expect(occurrences(planScript, "PASTE-OBSERVATION-ID")).toBe(2);
-    expect(planScript.indexOf(fill)).toBeGreaterThan(-1);
-    expect(planScript.indexOf(fill)).toBeLessThan(planScript.indexOf("\nbegin;\n"));
+    const filled = planScript.indexOf(fill);
+    expect(filled).toBeGreaterThan(-1);
+    expect(planScript.indexOf("\nbegin;\n")).toBe(filled);
+    const work = planScript.indexOf("\nbegin;\n", filled + fill.length - 1);
+    const rehearsal = planScript.indexOf("\nrollback;\n");
+    expect(work).toBeGreaterThan(filled);
+    expect(planScript.indexOf("select api.service_apply_current_player_list(")).toBeGreaterThan(
+      work,
+    );
+    expect(rehearsal).toBeGreaterThan(work);
     // The result row reports the observation filled in, after rollback or commit.
-    expect(planScript.indexOf("rollback;")).toBeLessThan(
+    expect(rehearsal).toBeLessThan(
       planScript.indexOf(
         "where observation.id::text = current_setting('botolago.player_list_observation');",
       ),
