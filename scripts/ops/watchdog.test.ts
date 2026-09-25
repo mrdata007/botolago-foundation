@@ -25,7 +25,6 @@ describe("production watchdog", () => {
               detail: "GW1 deadline passed 390 min ago, still open",
             },
             { name: "cron_jobs", status: "ok", detail: "no failed run in the last hour" },
-            { name: "bad name!", status: "fail", detail: "ignored: not one of our names" },
           ],
         }),
       url,
@@ -39,6 +38,41 @@ describe("production watchdog", () => {
       },
       { name: "cron_jobs", status: "ok", detail: "no failed run in the last hour" },
     ]);
+  });
+
+  test("malformed health responses fail closed without leaking response bodies", async () => {
+    for (const body of [
+      "upstream secret",
+      "null",
+      "{}",
+      '{"checks":[]}',
+      '{"checks":{}}',
+      '{"checks":[{"name":"bad name!","status":"ok","detail":"secret"}]}',
+      '{"checks":[{"name":"cron_jobs","status":"ok"}]}',
+    ]) {
+      const checks = await databaseHealth(async () => new Response(body), url, "secret");
+      expect(overall(checks)).toBe("fail");
+      expect(JSON.stringify(checks)).not.toContain("secret");
+    }
+    expect(overall([])).toBe("fail");
+  });
+
+  test("malformed run history cannot hide a stopped orchestrator", async () => {
+    for (const body of [
+      "not json",
+      "null",
+      "{}",
+      '{"workflow_runs":{}}',
+      '{"workflow_runs":[{"created_at":"invalid"}]}',
+    ]) {
+      const check = await orchestratorRecency(
+        async () => new Response(body),
+        "owner/repo",
+        "token",
+        new Date(),
+      );
+      expect(check.status).toBe("fail");
+    }
   });
 
   test("a database without the health migration is a warning, an unreachable one a failure", async () => {
