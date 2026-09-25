@@ -1,3 +1,4 @@
+import { UNAVAILABLE } from "./page-availability";
 import type { DehydrateOptions, QueryClient, QueryFunction, QueryKey } from "@tanstack/react-query";
 
 /**
@@ -31,6 +32,16 @@ export const SSR_PREFETCH_BUDGET_MS = 3_000;
 
 /** Each render's deadline. The server makes a query client per request (`src/router.tsx`). */
 const renderDeadlines = new WeakMap<QueryClient, number>();
+const renderQueries = new WeakMap<QueryClient, QueryKey[]>();
+
+/** Failed or timed-out public reads are temporary failures, never empty 200 pages. */
+export function ssrAvailability(queryClient: QueryClient) {
+  if (!isServerRender()) return undefined;
+  const keys = renderQueries.get(queryClient) ?? [];
+  return keys.some((key) => queryClient.getQueryState(key)?.status !== "success")
+    ? UNAVAILABLE
+    : undefined;
+}
 
 /**
  * Runs one step of a render's prefetching within what is left of its budget
@@ -43,6 +54,7 @@ async function prefetchStep(
   start: () => Promise<unknown>,
   budgetMs: number,
 ): Promise<void> {
+  renderQueries.set(queryClient, [...(renderQueries.get(queryClient) ?? []), ...queryKeys]);
   const now = Date.now();
   let deadline = renderDeadlines.get(queryClient);
   if (deadline === undefined) {
@@ -96,6 +108,7 @@ export async function prefetchForSsr(
             queryKey: query.queryKey,
             queryFn: query.queryFn,
             meta: SSR_QUERY_META,
+            retry: false,
           }),
         ),
       ),
@@ -126,6 +139,7 @@ export async function prefetchFirstPageForSsr<TPage, TParam>(
         initialPageParam: query.initialPageParam,
         getNextPageParam: query.getNextPageParam,
         meta: SSR_QUERY_META,
+        retry: false,
       }),
     budgetMs,
   );

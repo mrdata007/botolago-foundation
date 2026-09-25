@@ -477,6 +477,19 @@ describe("Available news editions", () => {
     return { french, arabic, languages, repository };
   }
 
+  test("a three-story preview bounds both edition reads", async () => {
+    const { repository } = await fixtures();
+    const limits: number[] = [];
+    const getFeed = repository.getFeed;
+    repository.getFeed = (input, requestContext) => {
+      limits.push(input.limit!);
+      return getFeed(input, requestContext);
+    };
+    const edition = await getNewsEdition(repository, "fr", "auto", context, now, 3);
+    expect(limits).toEqual([3, 3]);
+    expect(edition.articles.length).toBeGreaterThan(0);
+  });
+
   test("keeps a French reader on the French edition even when the Arabic feed is fresher", async () => {
     const { repository, french, arabic, languages } = await fixtures();
     expect(Date.parse(arabic.publishedAt)).toBeGreaterThan(Date.parse(french.publishedAt));

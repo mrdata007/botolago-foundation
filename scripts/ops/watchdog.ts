@@ -24,6 +24,19 @@ export interface Check {
 type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 
 const SITE_PAGES = ["/", "/matches", "/news", "/sitemap.xml"] as const;
+// Checks `app_private.ops_health_checks()` emits on every call. The deadline
+// watch is left out: it only runs while a Fantasy season is planned or active.
+export const REQUIRED_DATABASE_CHECKS = [
+  "fantasy_lifecycle_tick",
+  "fantasy_gameweek_lock",
+  "cron_jobs",
+  "news_publication",
+  "news_import",
+  "live_scores",
+  "provider_refresh",
+  "email_delivery",
+  "browser_errors",
+] as const;
 const SLOW_MS = 8_000;
 const ORCHESTRATOR_STALE_HOURS = 8;
 
@@ -82,18 +95,61 @@ export async function databaseHealth(
       },
     ];
   }
-  const payload = JSON.parse(result.body) as { checks?: Check[] };
-  const checks = (payload.checks ?? []).filter(
-    (check) =>
-      typeof check?.name === "string" &&
-      /^[a-z][a-z0-9_]{1,60}$/.test(check.name) &&
-      ["ok", "warn", "fail"].includes(check.status),
-  );
-  return checks.map((check) => ({
+  // A broken health endpoint must not silently become an empty green report.
+  let payload: { status?: unknown; checks?: unknown } | null;
+  try {
+    payload = JSON.parse(result.body);
+  } catch {
+    return [
+      { name: "database_health", status: "fail", detail: "health RPC returned invalid JSON" },
+    ];
+  }
+  const checks = payload?.checks;
+  if (
+    !["ok", "warn", "fail"].includes(payload?.status as string) ||
+    !Array.isArray(checks) ||
+    checks.length === 0 ||
+    checks.some(
+      (check) =>
+        !check ||
+        typeof check.name !== "string" ||
+        !/^[a-z][a-z0-9_]{1,60}$/.test(check.name) ||
+        !["ok", "warn", "fail"].includes(check.status) ||
+        typeof check.detail !== "string",
+    )
+  ) {
+    return [
+      {
+        name: "database_health",
+        status: "fail",
+        detail: "health RPC returned missing or invalid checks",
+      },
+    ];
+  }
+  const reported: Check[] = checks.map((check) => ({
     name: check.name,
     status: check.status,
     detail: String(check.detail ?? "").slice(0, 200),
   }));
+  // A partial list, or one that disagrees with the database's own verdict,
+  // means the report itself is broken: keep what it said and fail on top.
+  const missing = REQUIRED_DATABASE_CHECKS.filter(
+    (name) => !reported.some((check) => check.name === name),
+  );
+  if (missing.length > 0) {
+    reported.push({
+      name: "database_health",
+      status: "fail",
+      detail: `health RPC omitted required check(s): ${missing.join(", ")}`,
+    });
+  } else if (overall(reported) !== payload?.status) {
+    reported.push({
+      name: "database_health",
+      status: "fail",
+      detail: `health RPC status ${payload?.status} disagrees with its checks (${overall(reported)})`,
+    });
+  }
+  return reported;
 }
 
 /** The public site and one public API call, as a visitor meets them. */
@@ -156,15 +212,28 @@ export async function orchestratorRecency(
       detail: `run history unavailable (${result.status || "no answer"})`,
     };
   }
-  const runs =
-    (
-      JSON.parse(result.body) as {
-        workflow_runs?: Array<{ created_at: string; status: string; conclusion: string | null }>;
-      }
-    ).workflow_runs ?? [];
+  let runs: Array<{ created_at: string; status: string; conclusion: string | null }>;
+  try {
+    const payload = JSON.parse(result.body);
+    if (!Array.isArray(payload?.workflow_runs)) throw new Error("invalid_run_history");
+    runs = payload.workflow_runs;
+  } catch {
+    return {
+      name: "season_orchestrator",
+      status: "fail",
+      detail: "run history returned invalid data",
+    };
+  }
   const latest = runs[0];
   if (!latest) return { name: "season_orchestrator", status: "fail", detail: "no run found" };
   const hours = (now.getTime() - Date.parse(latest.created_at)) / 3_600_000;
+  if (!Number.isFinite(hours) || hours < 0) {
+    return {
+      name: "season_orchestrator",
+      status: "fail",
+      detail: "latest run has an invalid timestamp",
+    };
+  }
   if (hours > ORCHESTRATOR_STALE_HOURS) {
     return {
       name: "season_orchestrator",
@@ -239,7 +308,13 @@ export async function releaseDrift(
   // Only "identical" means the live site runs main. "behind" and "diverged"
   // mean the live site runs commits main does not have (published from
   // outside main), which `ahead_by: 0` alone does not reveal.
-  const diff = JSON.parse(compare.body) as {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(compare.body);
+  } catch {
+    parsed = null;
+  }
+  const diff = (parsed ?? {}) as {
     status?: string;
     ahead_by?: number;
     behind_by?: number;
@@ -278,7 +353,7 @@ export async function releaseDrift(
 }
 
 export function overall(checks: Check[]): CheckStatus {
-  return checks.some((c) => c.status === "fail")
+  return checks.length === 0 || checks.some((c) => c.status === "fail")
     ? "fail"
     : checks.some((c) => c.status === "warn")
       ? "warn"

@@ -1,3 +1,5 @@
+import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
+import { unavailableHeaders } from "@/lib/page-availability";
 import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -30,6 +32,36 @@ const MATCHES_DESCRIPTION =
 export const Route = createFileRoute("/matches/")({
   // `?season=<id>`: the season the Classement tab was showing (matches-search.ts).
   validateSearch: validateMatchesSearch,
+  loaderDeps: ({ search }) => ({ season: search.season }),
+  loader: async ({ context, deps }) => {
+    const { queryClient } = context;
+    await prefetchForSsr(queryClient, [
+      {
+        queryKey: ["football", "seasons", "fr"],
+        queryFn: () => footballService.getSeasons("fr"),
+      },
+    ]);
+    const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
+    const season =
+      seasons?.find((item) => item.id === deps.season) ??
+      seasons?.find((item) => item.isCurrent) ??
+      seasons?.[0];
+    const date = season ? dateForSeason(season) : new Date();
+    if (seasons) {
+      await prefetchForSsr(queryClient, [
+        {
+          queryKey: ["football", "matches", matchDayKey(date), season?.id ?? "default", "fr"],
+          queryFn: () => footballService.getMatchDay(date, "fr", season?.id),
+        },
+      ]);
+    }
+    return {
+      ...ssrAvailability(queryClient),
+      initialDate: date.toISOString(),
+      initialSeasonId: season?.id ?? null,
+    };
+  },
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => ({
     meta: [
       { title: MATCHES_TITLE },
@@ -121,8 +153,9 @@ function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
 function MatchesPage() {
   const { t, lang } = useI18n();
   const { season: requestedSeasonId } = Route.useSearch();
-  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
-  const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
+  const initial = Route.useLoaderData();
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date(initial.initialDate));
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(initial.initialSeasonId);
   const [filter, setFilter] = useState<StatusFilter>("all");
 
   const seasonsQ = useQuery({

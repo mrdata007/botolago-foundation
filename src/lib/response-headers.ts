@@ -38,10 +38,21 @@ export function withSiteHeaders(
 ): Response {
   const values: Record<string, string> = { "x-botolago-release": release };
   let host = "";
+  let path = "";
   try {
-    host = new URL(requestUrl).hostname.toLowerCase();
+    const url = new URL(requestUrl);
+    host = url.hostname.toLowerCase();
+    path = url.pathname;
   } catch {
     // Not an absolute URL: no host-specific headers.
+  }
+  // Personalized responses and auth redirects must never enter a shared cache.
+  // The Fantasy hub itself (`/fantasy`) reads the visitor's team and leagues.
+  if (
+    /^\/(auth|admin|profile|notifications|settings|pronostics\/ligues)(\/|$)/.test(path) ||
+    (/^\/fantasy(\/|$)/.test(path) && !["/fantasy/rules", "/fantasy/prizes"].includes(path))
+  ) {
+    values["cache-control"] = "private, no-store";
   }
   if (PRODUCTION_HOSTS.has(host)) {
     values["content-security-policy"] = "frame-ancestors 'self'";
