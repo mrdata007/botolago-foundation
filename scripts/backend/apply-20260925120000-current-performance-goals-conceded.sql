@@ -2,8 +2,8 @@
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
 -- Apply migration 20260925120000_current_performance_goals_conceded_check:
 -- the database checks goals conceded, which decide clean sheets, against the
--- final score: a player on for the whole match conceded what the side did,
--- and nobody conceded more. The importer change that relies on it (an absent
+-- final score: a starter with 90 minutes conceded what the side did, and
+-- nobody conceded more. The importer change that relies on it (an absent
 -- SportsMonks statistic counts as zero; goals conceded follow the final
 -- score) comes after this one. Owner decision, 2026-09-25.
 --
@@ -21,10 +21,28 @@
 --
 -- HOW TO RUN
 --   1. Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor ->
---      New query. Make sure no other database work is running right now.
---   2. Pause the Fantasy lifecycle tick, as AGENTS.md asks before a write that
---      touches Fantasy's inputs (this script refuses while it is on):
+--      New query. Check that nothing else is writing, and wait for anything
+--      that is (AGENTS.md, "Before writing"). Do this before the rehearsal and
+--      again before the real run:
+--        * GitHub -> Actions: no run in progress, the two above included (the
+--          football recovery also runs on a schedule);
+--        * pg_cron: nothing mid-run. This should return no rows:
+--            select job.jobname, run.status, run.start_time
+--            from cron.job_run_details run join cron.job job using (jobid)
+--            where run.status not in ('succeeded', 'failed')
+--              and run.start_time > now() - interval '15 minutes';
+--        * no other query running (Database -> Query performance).
+--   2. Pause the writers whose tables this write touches, as AGENTS.md asks.
+--      It changes one function and holds the match statistics tables, which
+--      are Fantasy's inputs, so that is the Fantasy lifecycle tick (this
+--      script refuses while it is on):
 --        select app_private.fantasy_automation_configure(false);
+--      AGENTS.md's other switches cover other tables and stay as they are:
+--      the email/results jobs (notification-email-tick, football-live-refresh)
+--      pause for writes to fixtures or notifications, and predictions scoring
+--      pauses for writes to the predictions tables. This write touches none of
+--      those, and the hold (see WHEN) keeps any match statistics writer out
+--      while it runs.
 --   3. Paste this WHOLE file and press Run.
 --      As shipped it is a REHEARSAL: everything is applied inside one
 --      transaction, checked, and then ROLLED BACK. The result row should say
@@ -128,10 +146,21 @@ values (
 -- that conceded carried fewer than the score says, and 3 matches had players
 -- carrying more. Counted as they come, that hands out clean sheets nobody
 -- kept (60 minutes or more with none conceded). So the importer takes the
--- final score as the truth: a player on for the whole match (90 minutes,
--- where SportsMonks stops counting) conceded what the side did, and nobody
--- conceded more than that. A player on for part of the match keeps
--- SportsMonks' own figure, since only it knows when they were on the pitch.
+-- final score as the truth. A starter with 90 minutes (where SportsMonks
+-- stops counting) was on from kick-off to at least the 90th minute and
+-- conceded what the side did, and nobody conceded more than that. Anyone
+-- else keeps SportsMonks' own figure, since only it knows when they were on
+-- the pitch: a substitute can reach 90 minutes after an early goal (16 did).
+--
+-- One case this counts against the player: a starter substituted in stoppage
+-- time just before a stoppage-time goal is credited that goal. Minutes cannot
+-- tell that exit apart, and SportsMonks' own figure, which could, is the one
+-- that is missing or short above. Last season at most 11 of the 2,243 such
+-- starters on sides that conceded look like that exit (a substitute on for a
+-- minute or less carries the difference), and 8 of them would lose a clean
+-- sheet. Of the other 74 shortfalls, 53 carried none at all, 37 of them
+-- goalkeepers: each a clean sheet nobody kept. Substitution events would
+-- settle it exactly.
 --
 -- api.ingest_current_player_fixture_performance now checks that against the
 -- final score held here, and refuses a mismatch with
@@ -314,10 +343,10 @@ begin
   -- SportsMonks sends a statistic only when it is not zero, so the importer
   -- counts an absent one as zero (20260925120000). Its goals conceded are not
   -- reliable on their own and they decide clean sheets, so the importer takes
-  -- them from the final score for a player on for the whole match (90
-  -- minutes, where SportsMonks stops counting) and caps everyone's at it.
-  -- Checked here against the score this database holds: a mismatch means one
-  -- of the two is not final yet, and the match waits.
+  -- them from the final score for a starter with 90 minutes (where
+  -- SportsMonks stops counting) and caps everyone's at it. Checked here
+  -- against the score this database holds: a mismatch means one of the two
+  -- is not final yet, and the match waits.
   if exists (
     select 1
     from jsonb_array_elements(p_rows) value
@@ -327,7 +356,8 @@ begin
     cross join lateral (select case when team_map.internal_entity_id = target_fixture.home_team_id
       then target_fixture.away_score else target_fixture.home_score end as conceded) side
     where (value ->> 'goalsConceded')::integer > side.conceded
-      or ((value ->> 'minutes')::integer >= 90 and (value ->> 'goalsConceded')::integer <> side.conceded))
+      or ((value ->> 'started')::boolean and (value ->> 'minutes')::integer >= 90
+        and (value ->> 'goalsConceded')::integer <> side.conceded))
   then
     raise exception using errcode = '22023', message = 'CURRENT_GOALS_CONCEDED_MISMATCH';
   end if;
@@ -427,7 +457,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260925120000, 'UTF8')), 'hex')
-    is distinct from '71b5b0a54d47a06395cc130d1075520b9cf974d094dc9f3b6c064a09df77f97f' then
+    is distinct from '40cef0bc1072403b3872b238cf4cc3c8fa72d4957aaa50020db73099ac7d4111' then
     raise exception 'stop: 20260925120000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -446,7 +476,7 @@ declare
   definition text := pg_get_functiondef(ingest);
 begin
   if definition not like '%message = ''CURRENT_GOALS_CONCEDED_MISMATCH''%'
-    or definition not like '%or ((value ->> ''minutes'')::integer >= 90 and (value ->> ''goalsConceded'')::integer <> side.conceded))%'
+    or definition not like '%or ((value ->> ''started'')::boolean and (value ->> ''minutes'')::integer >= 90%'
     or definition not like '%unnamed_starters := coalesce((p_coverage ->> ''anonymousStarterRows'')::integer, 0);%' then
     problems := problems || 'the statistics import is not the new version'::text;
   end if;

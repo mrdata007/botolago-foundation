@@ -18,10 +18,21 @@
 -- that conceded carried fewer than the score says, and 3 matches had players
 -- carrying more. Counted as they come, that hands out clean sheets nobody
 -- kept (60 minutes or more with none conceded). So the importer takes the
--- final score as the truth: a player on for the whole match (90 minutes,
--- where SportsMonks stops counting) conceded what the side did, and nobody
--- conceded more than that. A player on for part of the match keeps
--- SportsMonks' own figure, since only it knows when they were on the pitch.
+-- final score as the truth. A starter with 90 minutes (where SportsMonks
+-- stops counting) was on from kick-off to at least the 90th minute and
+-- conceded what the side did, and nobody conceded more than that. Anyone
+-- else keeps SportsMonks' own figure, since only it knows when they were on
+-- the pitch: a substitute can reach 90 minutes after an early goal (16 did).
+--
+-- One case this counts against the player: a starter substituted in stoppage
+-- time just before a stoppage-time goal is credited that goal. Minutes cannot
+-- tell that exit apart, and SportsMonks' own figure, which could, is the one
+-- that is missing or short above. Last season at most 11 of the 2,243 such
+-- starters on sides that conceded look like that exit (a substitute on for a
+-- minute or less carries the difference), and 8 of them would lose a clean
+-- sheet. Of the other 74 shortfalls, 53 carried none at all, 37 of them
+-- goalkeepers: each a clean sheet nobody kept. Substitution events would
+-- settle it exactly.
 --
 -- api.ingest_current_player_fixture_performance now checks that against the
 -- final score held here, and refuses a mismatch with
@@ -204,10 +215,10 @@ begin
   -- SportsMonks sends a statistic only when it is not zero, so the importer
   -- counts an absent one as zero (20260925120000). Its goals conceded are not
   -- reliable on their own and they decide clean sheets, so the importer takes
-  -- them from the final score for a player on for the whole match (90
-  -- minutes, where SportsMonks stops counting) and caps everyone's at it.
-  -- Checked here against the score this database holds: a mismatch means one
-  -- of the two is not final yet, and the match waits.
+  -- them from the final score for a starter with 90 minutes (where
+  -- SportsMonks stops counting) and caps everyone's at it. Checked here
+  -- against the score this database holds: a mismatch means one of the two
+  -- is not final yet, and the match waits.
   if exists (
     select 1
     from jsonb_array_elements(p_rows) value
@@ -217,7 +228,8 @@ begin
     cross join lateral (select case when team_map.internal_entity_id = target_fixture.home_team_id
       then target_fixture.away_score else target_fixture.home_score end as conceded) side
     where (value ->> 'goalsConceded')::integer > side.conceded
-      or ((value ->> 'minutes')::integer >= 90 and (value ->> 'goalsConceded')::integer <> side.conceded))
+      or ((value ->> 'started')::boolean and (value ->> 'minutes')::integer >= 90
+        and (value ->> 'goalsConceded')::integer <> side.conceded))
   then
     raise exception using errcode = '22023', message = 'CURRENT_GOALS_CONCEDED_MISMATCH';
   end if;

@@ -1,7 +1,7 @@
 -- 20260925120000: goals conceded, which decide clean sheets, are checked
--- against the final score. A player on for the whole match (90 minutes)
--- conceded exactly what the side did, and nobody conceded more; a player on
--- for part of the match may have conceded less.
+-- against the final score. A starter with 90 minutes conceded exactly what the
+-- side did, and nobody conceded more; anyone else, a substitute with 90
+-- minutes included, may have conceded less.
 begin;
 select extensions.no_plan();
 
@@ -67,8 +67,10 @@ select 'sportsmonks', 'player', (90000 + n)::text, md5('goals-conceded-player-' 
   'gc-player-' || n, statement_timestamp(), true
 from generate_series(1, 24) n;
 
--- Fixture 1, 2-1: every starter on for 90 minutes, so the home starters
--- conceded one goal and the away starters two; neither substitute came on.
+-- Fixture 1, 2-1: the home side conceded one goal, in the 2nd minute; home
+-- defender 2 went off injured after 3 minutes, and substitute 23, on for him,
+-- reached SportsMonks' 90 without having been on for it. The other starters
+-- played 90 minutes: the home ones conceded one goal, the away ones two.
 -- Fixture 2, 1-0: the home side kept a clean sheet. Away forward 22 went off
 -- after 70 minutes, before the goal, and keeps one; substitute 24 came on for
 -- him and was on the pitch for it.
@@ -78,12 +80,14 @@ select fixture, statement_timestamp() - interval '30 seconds' as observed_at,
     'externalPlayerId', (90000 + n)::text,
     'externalTeamId', case when n <= 11 or n = 23 then '69001' else '69002' end,
     'started', n <= 22,
-    'appeared', n <= 22 or (fixture = 2 and n = 24),
-    'minutes', case when n = 23 or (fixture = 1 and n = 24) then 0
-      when fixture = 2 and n = 22 then 70 when fixture = 2 and n = 24 then 20 else 90 end,
+    'appeared', n <= 22 or (fixture = 1 and n = 23) or (fixture = 2 and n = 24),
+    'minutes', case when fixture = 1
+      then case when n = 2 then 3 when n = 24 then 0 else 90 end
+      else case when n = 22 then 70 when n = 23 then 0 when n = 24 then 20 else 90 end end,
     'goals', case when fixture = 1 and n in (10, 11, 22) or fixture = 2 and n = 11 then 1 else 0 end,
     'assists', 0,
-    'cleanSheets', case when fixture = 2 and (n <= 11 or n = 22) then 1 else 0 end,
+    'cleanSheets', case when fixture = 1 and n = 23 or fixture = 2 and (n <= 11 or n = 22)
+      then 1 else 0 end,
     'goalsConceded', case when fixture = 1 then case when n > 22 then 0 when n <= 11 then 1 else 2 end
       else case when n <= 11 or n in (22, 23) then 0 else 1 end end,
     'saves', case when n in (1, 12) then 2 else 0 end,
@@ -106,14 +110,14 @@ set local role service_role;
 select set_config('request.jwt.claim.role', 'service_role', true);
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
--- The away goalkeeper played the whole 2-1 but carries no goals conceded, as
--- 40 goalkeepers did last season: that would be a clean sheet nobody kept.
+-- The away goalkeeper started and played 90 minutes of the 2-1 but carries no
+-- goals conceded, as 37 goalkeepers did last season: a clean sheet nobody kept.
 select extensions.throws_ok(
   $$select api.ingest_current_player_fixture_performance('sportsmonks','28647','19900001',
     jsonb_set(jsonb_set(rows, '{11,goalsConceded}', '0'), '{11,cleanSheets}', '1'),
     coverage, observed_at) from conceded_input where fixture = 1$$,
   '22023', 'CURRENT_GOALS_CONCEDED_MISMATCH',
-  'a player on for the whole match conceded what the side did'
+  'a starter with 90 minutes conceded what the side did'
 );
 -- No away player carries any (as if SportsMonks had not recorded them yet).
 select extensions.throws_ok(
@@ -151,9 +155,10 @@ select extensions.is(
 );
 reset role;
 select extensions.is(
-  (select count(*)::integer from app.player_fixture_performances
-   where fixture_id = md5('goals-conceded-fixture-1')::uuid and active and clean_sheets = 0),
-  24, 'nobody on either side of a 2-1 keeps a clean sheet'
+  (select array_agg(player_id) from app.player_fixture_performances
+   where fixture_id = md5('goals-conceded-fixture-1')::uuid and active and clean_sheets = 1),
+  array[md5('goals-conceded-player-23')::uuid],
+  'of a 2-1, only the substitute on after the early goal keeps a clean sheet'
 );
 
 -- A player on for part of the match may have conceded less than the side.
