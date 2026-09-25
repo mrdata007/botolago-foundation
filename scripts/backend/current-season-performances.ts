@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
+  MAX_ANONYMOUS_STARTER_ROWS,
   normalizeHistoricalFixture,
   HistoricalPerformanceRuntimeError,
   type HistoricalPlayerPerformanceRow,
@@ -45,9 +46,9 @@ function row(value: unknown): Row {
   if (!value || typeof value !== "object" || Array.isArray(value)) fail("invalid_provider_object");
   return value as Row;
 }
-function id(value: unknown): number {
+function id(value: unknown, field: string): number {
   if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 1)
-    fail("invalid_provider_id");
+    fail("invalid_provider_id", { field });
   return value;
 }
 function safeFailure(error: unknown): Row {
@@ -61,14 +62,14 @@ function safeFailure(error: unknown): Row {
 export async function normalizeCurrentFinishedFixture(payload: unknown, expectedFixtureId: number) {
   const fixture = row(row(payload).data);
   if (
-    id(fixture.id) !== expectedFixtureId ||
-    id(fixture.season_id) !== SEASON ||
-    id(fixture.league_id) !== 860
+    id(fixture.id, "fixture.id") !== expectedFixtureId ||
+    id(fixture.season_id, "fixture.season_id") !== SEASON ||
+    id(fixture.league_id, "fixture.league_id") !== 860
   )
     fail("fixture_scope_mismatch");
   const state = row(fixture.state);
   if (
-    id(state.id) !== id(fixture.state_id) ||
+    id(state.id, "state.id") !== id(fixture.state_id, "fixture.state_id") ||
     !["FT", "AET", "FT_PEN"].includes(String(state.developer_name))
   )
     fail("finished_fixture_required");
@@ -79,7 +80,7 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
   )
     fail("fixture_participants_incomplete");
   const participants = fixture.participants.map(row);
-  const teamIds = new Set(participants.map((team) => id(team.id)));
+  const teamIds = new Set(participants.map((team) => id(team.id, "participant.id")));
   if (
     teamIds.size !== 2 ||
     new Set(participants.map((team) => row(team.meta).location)).size !== 2 ||
@@ -92,6 +93,21 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     fixture.lineups.length > 100
   )
     fail("current_lineups_incomplete");
+  // SportsMonks sometimes lists a player it has not identified: a lineup row
+  // with no player_id. Owner decision 2026-09-25: this season follows last
+  // season's rule (BG-0011 option B). Up to 4 of the 22 starters may be
+  // unnamed; unnamed rows are skipped, never credited to anyone, and every
+  // named player is scored as usual. More than 4 and the fixture waits.
+  const isUnidentified = (lineup: Row) =>
+    lineup.player_id === null || lineup.player_id === undefined;
+  const unidentified = fixture.lineups.map(row).filter(isUnidentified);
+  const unidentifiedStarters = unidentified.filter((lineup) => lineup.type_id === 11);
+  if (unidentifiedStarters.length > MAX_ANONYMOUS_STARTER_ROWS)
+    fail("current_lineup_unidentified_starters_exceeded", {
+      fixtureExternalId: String(expectedFixtureId),
+      unidentifiedStarters: unidentifiedStarters.length,
+      unidentifiedOthers: unidentified.length - unidentifiedStarters.length,
+    });
   const missingTypes = new Map<number, number>();
   const optionalValues = new Map<string, { saves: number | null; penaltiesSaved: number | null }>();
   const lineupIds = new Set<number>();
@@ -99,11 +115,22 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
   let detailRows = 0;
   for (const raw of fixture.lineups) {
     const lineup = row(raw);
-    const lineupId = id(lineup.id);
-    const playerId = id(lineup.player_id);
-    const teamId = id(lineup.team_id);
+    if (isUnidentified(lineup)) {
+      // Passed on as a bare row so the shared normalizer counts it (as
+      // excluded, and as an unnamed starter when type_id is 11); it carries
+      // no statistics to anyone.
+      normalizationLineups.push({
+        type_id: lineup.type_id,
+        team_id: lineup.team_id,
+        player_id: null,
+      });
+      continue;
+    }
+    const lineupId = id(lineup.id, "lineup.id");
+    const playerId = id(lineup.player_id, "lineup.player_id");
+    const teamId = id(lineup.team_id, "lineup.team_id");
     if (
-      id(lineup.fixture_id) !== expectedFixtureId ||
+      id(lineup.fixture_id, "lineup.fixture_id") !== expectedFixtureId ||
       !teamIds.has(teamId) ||
       lineupIds.has(lineupId)
     )
@@ -116,12 +143,12 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     for (const rawDetail of lineup.details) {
       detailRows += 1;
       const detail = row(rawDetail);
-      const typeId = id(detail.type_id);
+      const typeId = id(detail.type_id, "detail.type_id");
       if (
-        id(detail.fixture_id) !== expectedFixtureId ||
-        id(detail.lineup_id) !== lineupId ||
-        id(detail.player_id) !== playerId ||
-        id(detail.team_id) !== teamId
+        id(detail.fixture_id, "detail.fixture_id") !== expectedFixtureId ||
+        id(detail.lineup_id, "detail.lineup_id") !== lineupId ||
+        id(detail.player_id, "detail.player_id") !== playerId ||
+        id(detail.team_id, "detail.team_id") !== teamId
       )
         fail("detail_identity_mismatch");
       if (types.has(typeId)) fail("duplicate_provider_detail");
@@ -158,17 +185,27 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     expectedFixtureId,
     SEASON,
   );
+  // Only the unnamed rows may be left out, and the shared normalizer must
+  // have seen exactly the unnamed starters counted above.
   if (
-    normalized.coverage.excludedIncompleteRows !== 0 ||
+    normalized.coverage.excludedIncompleteRows !== unidentified.length ||
+    normalized.coverage.anonymousStarterRows !== unidentifiedStarters.length ||
     normalized.coverage.invalidDetailRows !== 0
   )
     fail("current_lineups_incomplete");
-  for (const teamId of teamIds)
-    if (
-      normalized.rows.filter((player) => player.externalTeamId === String(teamId) && player.started)
-        .length !== 11
-    )
+  // Each club fields 11 starters: its named ones plus its unnamed ones. An
+  // unnamed starter whose club is not given could belong to either side.
+  const unplaced = unidentifiedStarters.filter(
+    (lineup) => !teamIds.has(lineup.team_id as number),
+  ).length;
+  for (const teamId of teamIds) {
+    const unnamed = unidentifiedStarters.filter((lineup) => lineup.team_id === teamId).length;
+    const named = normalized.rows.filter(
+      (player) => player.externalTeamId === String(teamId) && player.started,
+    ).length;
+    if (named > 11 - unnamed || named < 11 - unnamed - unplaced)
       fail("current_starters_incomplete");
+  }
   const rows: PerformanceRow[] = normalized.rows.map((player) => ({
     ...player,
     ...optionalValues.get(player.externalPlayerId)!,

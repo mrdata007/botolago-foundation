@@ -359,6 +359,54 @@ describe("fantasy season orchestrator", () => {
     const degraded = await orchestrateFantasySeason(failing.gateway, { now });
     expect(degraded.verdict).toBe("waiting");
     expect(degraded.performances.error).toBe("current_statistics_incomplete");
+    expect(degraded.performances).not.toHaveProperty("diagnostic");
+
+    // What the import says about its failure reaches the evidence, flat
+    // values only.
+    const explained = gateway(cal);
+    explained.gateway.ingestPerformances = async () => {
+      throw Object.assign(new Error("current_lineup_unidentified_players"), {
+        diagnostic: {
+          fixtureExternalId: "19874708",
+          unidentifiedStarters: 1,
+          unidentifiedOthers: 0,
+          payload: { name: "dropped" },
+          note: "dropped: has spaces",
+        },
+      });
+    };
+    const reported = await orchestrateFantasySeason(explained.gateway, { now });
+    expect(reported.performances.error).toBe("current_lineup_unidentified_players");
+    expect(reported.performances.diagnostic).toEqual({
+      fixtureExternalId: "19874708",
+      unidentifiedStarters: 1,
+      unidentifiedOthers: 0,
+    });
+
+    // Which statistics are missing, as the import lists them: short lists of
+    // flat records are kept (run #43 lost this list); anything deeper is not.
+    const missing = gateway(cal);
+    missing.gateway.ingestPerformances = async () => {
+      throw Object.assign(new Error("current_statistics_incomplete"), {
+        diagnostic: {
+          fixtureExternalId: "19874708",
+          missingDetailTypes: [
+            { typeId: 52, playerRows: 25 },
+            { typeId: 119, playerRows: 5 },
+          ],
+          nested: [{ typeId: 52, rows: [{ playerId: 1 }] }],
+          tooLong: Array.from({ length: 21 }, (_, typeId) => ({ typeId })),
+        },
+      });
+    };
+    const listed = await orchestrateFantasySeason(missing.gateway, { now });
+    expect(listed.performances.diagnostic).toEqual({
+      fixtureExternalId: "19874708",
+      missingDetailTypes: [
+        { typeId: 52, playerRows: 25 },
+        { typeId: 119, playerRows: 5 },
+      ],
+    });
   });
 
   test("provider refresh evidence: a squad-guard failure after the fixture phase still counts as refreshed", async () => {

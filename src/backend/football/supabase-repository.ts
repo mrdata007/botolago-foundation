@@ -7,7 +7,9 @@ import {
   availabilitySchema,
   competitionSummarySchema,
   lineupSchema,
+  matchAbsenceSchema,
   matchCardSchema,
+  matchPressurePointSchema,
   matchStatisticSchema,
   playerSummarySchema,
   seasonSummarySchema,
@@ -22,8 +24,10 @@ import {
   type FootballRepository,
   type MatchCardDto,
   type MatchDetailHeaderDto,
+  type MatchAbsenceDto,
   type MatchLineupDto,
   type MatchPageCursor,
+  type MatchPressurePointDto,
   type MatchPageDto,
   type MatchesByDateInput,
   type MatchStatisticComparisonDto,
@@ -212,6 +216,32 @@ export class SupabaseFootballRepository implements FootballRepository {
     });
     throwIfError(error);
     return parse(z.array(matchStatisticSchema), data);
+  }
+
+  async getPressure(
+    id: string,
+    language: FootballLanguage,
+    _context: RepositoryContext,
+  ): Promise<readonly MatchPressurePointDto[]> {
+    const { data, error } = await getFootballApi().rpc("football_match_pressure", {
+      p_fixture_id: requireUuid(id),
+      p_language: language,
+    });
+    throwIfError(error);
+    return parse(z.array(matchPressurePointSchema), data);
+  }
+
+  async getAbsences(
+    id: string,
+    language: FootballLanguage,
+    _context: RepositoryContext,
+  ): Promise<readonly MatchAbsenceDto[]> {
+    const { data, error } = await getFootballApi().rpc("football_match_absences", {
+      p_fixture_id: requireUuid(id),
+      p_language: language,
+    });
+    throwIfError(error);
+    return parse(z.array(matchAbsenceSchema), data);
   }
 
   async getHeadToHead(

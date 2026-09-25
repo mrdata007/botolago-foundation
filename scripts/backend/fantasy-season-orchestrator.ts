@@ -299,6 +299,7 @@ export async function orchestrateFantasySeason(
   let batches = 0;
   let fixturesProcessed = 0;
   let performanceError: string | undefined;
+  let performanceDiagnostic: Record<string, unknown> | undefined;
   try {
     do {
       const batch = await gateway.ingestPerformances(cursor);
@@ -311,6 +312,7 @@ export async function orchestrateFantasySeason(
     } while (batches < maxPerformanceBatches);
   } catch (error) {
     performanceError = safeCode(error, "performance_ingestion_failed");
+    performanceDiagnostic = safeDiagnostic(error);
     // Scoring waits for complete statistics by design; the worker below will
     // report `football_not_final` / coverage errors rather than guess.
   }
@@ -405,6 +407,7 @@ export async function orchestrateFantasySeason(
       batches,
       fixturesProcessed,
       ...(performanceError ? { error: performanceError } : {}),
+      ...(performanceDiagnostic ? { diagnostic: performanceDiagnostic } : {}),
     },
     workers,
     skipped,
@@ -456,7 +459,7 @@ export function renderHealthSummary(summary: OrchestratorSummary): string {
     ],
     [
       "Performances",
-      `${summary.performances.fixturesProcessed} fixtures in ${summary.performances.batches} batch(es)${summary.performances.error ? `, error \`${summary.performances.error}\`` : ""}`,
+      `${summary.performances.fixturesProcessed} fixtures in ${summary.performances.batches} batch(es)${summary.performances.error ? `, error \`${summary.performances.error}\`` : ""}${summary.performances.diagnostic ? ` \`${JSON.stringify(summary.performances.diagnostic)}\`` : ""}`,
     ],
     [
       "Deadline watch",
@@ -538,6 +541,38 @@ function safeCode(error: unknown, fallback: string) {
   return error instanceof Error && /^[a-z][a-z0-9_]{2,100}$/.test(error.message)
     ? error.message
     : fallback;
+}
+
+/**
+ * What the statistics import says about its failure, when it says something
+ * (`CurrentPerformanceError.diagnostic`): which provider field, which fixture,
+ * how many rows, which statistic types are missing. Only flat strings,
+ * numbers and booleans are kept, alone or in short lists of flat records
+ * (`missingDetailTypes: [{ typeId, playerRows }]`), so nothing from a payload
+ * can reach the evidence.
+ */
+export function safeDiagnostic(error: unknown): Record<string, unknown> | undefined {
+  const diagnostic =
+    error instanceof Error && "diagnostic" in error
+      ? (error as { diagnostic?: unknown }).diagnostic
+      : undefined;
+  if (!diagnostic || typeof diagnostic !== "object" || Array.isArray(diagnostic)) return undefined;
+  const safeKey = (key: string) => /^[a-zA-Z]{1,40}$/.test(key);
+  const flat = (value: unknown) =>
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    (typeof value === "string" && /^[a-zA-Z0-9_.]{1,40}$/.test(value));
+  const flatRecord = (value: unknown) =>
+    !!value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.entries(value).every(([key, item]) => safeKey(key) && flat(item));
+  const kept = Object.entries(diagnostic).filter(
+    ([key, value]) =>
+      safeKey(key) &&
+      (flat(value) || (Array.isArray(value) && value.length <= 20 && value.every(flatRecord))),
+  );
+  return kept.length ? Object.fromEntries(kept) : undefined;
 }
 
 function deadlineWatchHours(raw: string | undefined, fallback: number) {

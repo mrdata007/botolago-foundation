@@ -261,6 +261,12 @@ export class MockFootballRepository implements FootballRepository {
   async getStatistics() {
     return [];
   }
+  async getPressure() {
+    return [];
+  }
+  async getAbsences() {
+    return [];
+  }
   async getHeadToHead(
     id: string,
     language: FootballLanguage,

@@ -42,6 +42,37 @@ function fixture(id = 9001) {
     },
   };
 }
+/** Adds `count` named substitutes who did not come on (type 12), 11 per club at most. */
+function withBench(payload: ReturnType<typeof fixture>, count: number) {
+  for (let index = 0; index < count; index += 1) {
+    const playerId = 200 + index;
+    const teamId = index % 2 === 0 ? 10 : 20;
+    const lineupId = 50 + index;
+    payload.data.lineups.push({
+      id: lineupId,
+      fixture_id: payload.data.id,
+      player_id: playerId,
+      team_id: teamId,
+      type_id: 12,
+      details: CURRENT_PERFORMANCE_TYPES.map((typeId) => ({
+        id: typeId * 1000 + lineupId,
+        fixture_id: payload.data.id,
+        lineup_id: lineupId,
+        player_id: playerId,
+        team_id: teamId,
+        type_id: typeId,
+        data: { value: typeId === 118 ? 6 : 0 },
+      })),
+    });
+  }
+  return payload;
+}
+/** SportsMonks' shape for a player it has not identified: no player_id, no statistics. */
+function unnamedRow(payload: ReturnType<typeof fixture>, index: number) {
+  const lineup = payload.data.lineups[index] as { player_id: number | null; details: unknown[] };
+  lineup.player_id = null;
+  lineup.details = [];
+}
 const env = {
   EXPECTED_COMMIT: "a".repeat(40),
   GITHUB_SHA: "a".repeat(40),
@@ -132,6 +163,53 @@ describe("current finished fixture performance ingestion", () => {
     await expect(normalizeCurrentFinishedFixture(duplicate, 9001)).rejects.toThrow(
       "lineup_identity_mismatch",
     );
+  });
+  test("up to 4 unnamed starters: they are skipped and every named player is kept (BG-0011 option B)", async () => {
+    // Fixture 19874708 (2026-09-24): 3 unnamed starters and 4 other unnamed rows.
+    const unnamed = withBench(fixture(), 4);
+    for (const index of [3, 5, 14]) unnamedRow(unnamed, index); // two home starters, one away
+    unnamedRow(unnamed, 25); // one bench row
+    const normalized = await normalizeCurrentFinishedFixture(unnamed, 9001);
+    expect(normalized.rows).toHaveLength(26 - 4);
+    expect(normalized.rows.map((player) => player.externalPlayerId)).not.toContain("103");
+    expect(normalized.rows.filter((player) => player.started)).toHaveLength(19);
+    expect(normalized.coverage).toMatchObject({
+      lineupRowsSeen: 26,
+      validPlayerRows: 22,
+      excludedIncompleteRows: 4,
+      anonymousStarterRows: 3,
+      identifiedStarterRows: 19,
+      starterRows: 19,
+    });
+  });
+  test("more than 4 unnamed starters: the fixture waits, and says why with counts", async () => {
+    const tooMany = withBench(fixture(), 6);
+    for (const index of [0, 1, 2, 11, 12]) unnamedRow(tooMany, index);
+    unnamedRow(tooMany, 27);
+    await expect(normalizeCurrentFinishedFixture(tooMany, 9001)).rejects.toMatchObject({
+      code: "current_lineup_unidentified_starters_exceeded",
+      diagnostic: { fixtureExternalId: "9001", unidentifiedStarters: 5, unidentifiedOthers: 1 },
+    });
+  });
+  test("an unnamed starter must fit its club's 11", async () => {
+    // A home starter reported unnamed under the away club: the home side
+    // then fields 10 and the away side 12.
+    const misplaced = withBench(fixture(), 2);
+    unnamedRow(misplaced, 3);
+    misplaced.data.lineups[3]!.team_id = 20;
+    await expect(normalizeCurrentFinishedFixture(misplaced, 9001)).rejects.toThrow(
+      "current_starters_incomplete",
+    );
+  });
+  test("a bad provider id names its field", async () => {
+    // 2026-09-25: every run since the first finished match reported only
+    // `invalid_provider_id`, so nobody could tell which value was wrong.
+    const badDetail = fixture();
+    (badDetail.data.lineups[0].details[0] as { lineup_id: number | null }).lineup_id = null;
+    await expect(normalizeCurrentFinishedFixture(badDetail, 9001)).rejects.toMatchObject({
+      code: "invalid_provider_id",
+      diagnostic: { field: "detail.lineup_id" },
+    });
   });
   test("requires reviewed manual main execution and never enables a schedule", () => {
     expect(currentPerformanceGuard(env).expectedCommit).toBe(env.EXPECTED_COMMIT);

@@ -76,7 +76,7 @@ const MAX_REQUEST_BYTES = 4_096;
 const MAX_RESPONSE_BYTES = 2_000_000;
 const MAX_FIXTURE_WINDOW_DAYS = 100;
 
-class FixtureRuntimeError extends Error {
+export class FixtureRuntimeError extends Error {
   constructor(readonly code: string) {
     super(code);
     this.name = "FixtureRuntimeError";
@@ -261,11 +261,16 @@ async function responseJson(response: Response): Promise<JsonRecord> {
   }
 }
 
-async function providerRequest(
+/**
+ * One GET to the official SportsMonks origin, with the token in a header,
+ * bounded in time and size, retried on 429/5xx. Shared with the match-details
+ * refresh (`sportsmonks-match-details.ts`), which fetches single fixtures.
+ */
+export async function providerRequest(
   path: string,
   query: Readonly<Record<string, string>>,
-  config: FixtureConfiguration,
-  dependencies: FixtureRuntimeDependencies,
+  config: Pick<FixtureConfiguration, "token" | "timeoutMs" | "maxRetries">,
+  dependencies: Pick<FixtureRuntimeDependencies, "fetch" | "sleep">,
 ): Promise<JsonRecord> {
   if (!path.startsWith("/") || path.includes("?") || path.includes("#")) {
     throw new FixtureRuntimeError("invalid_provider_path");

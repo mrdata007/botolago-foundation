@@ -165,14 +165,28 @@ export const lineupPlayerSchema = z.object({
   order: z.number().int().positive(),
   captain: z.boolean(),
 });
-export const lineupSchema = z.object({
-  id: postgresUuidSchema,
-  team: teamSummarySchema,
-  formation: nullableText,
-  confirmed: z.boolean(),
-  publishedAt: z.string().datetime({ offset: true }).nullable(),
-  players: z.array(lineupPlayerSchema),
-});
+/** A lineup player the catalogue does not know, by the provider's name: no page, no slug. */
+export const unlistedLineupPlayerSchema = lineupPlayerSchema.omit({ slug: true });
+const SLOT_ORDER = { starting: 0, bench: 1 } as const;
+export const lineupSchema = z
+  .object({
+    id: postgresUuidSchema,
+    team: teamSummarySchema,
+    formation: nullableText,
+    confirmed: z.boolean(),
+    publishedAt: z.string().datetime({ offset: true }).nullable(),
+    players: z.array(lineupPlayerSchema),
+    unlistedPlayers: z.array(unlistedLineupPlayerSchema).default([]),
+  })
+  // One list for the page, in the provider's order, whether the catalogue
+  // knows the player or not.
+  .transform(({ unlistedPlayers, ...lineup }) => ({
+    ...lineup,
+    players: [
+      ...lineup.players,
+      ...unlistedPlayers.map((player) => ({ ...player, slug: null })),
+    ].sort((a, b) => SLOT_ORDER[a.slot] - SLOT_ORDER[b.slot] || a.order - b.order),
+  }));
 export type MatchLineupDto = z.infer<typeof lineupSchema>;
 
 export const matchStatisticSchema = z.object({
@@ -186,6 +200,35 @@ export const matchStatisticSchema = z.object({
   awayDisplayValue: nullableText,
 });
 export type MatchStatisticComparisonDto = z.infer<typeof matchStatisticSchema>;
+
+/**
+ * One minute of the provider's pressure index (`api.football_match_pressure`):
+ * how hard each club was pushing. Only one club a minute has a positive value;
+ * a club with no row that minute is `null`.
+ */
+export const matchPressurePointSchema = z.object({
+  minute: z.number().int().nonnegative(),
+  homeValue: z.number().nonnegative().nullable(),
+  awayValue: z.number().nonnegative().nullable(),
+});
+export type MatchPressurePointDto = z.infer<typeof matchPressurePointSchema>;
+
+/** A player the provider lists as out of the match (`api.football_match_absences`). */
+export const matchAbsenceSchema = z.object({
+  id: postgresUuidSchema,
+  teamId: postgresUuidSchema,
+  playerId: nullableUuid,
+  playerName: z.string().min(1),
+  position: z.enum(FOOTBALL_POSITIONS).nullable(),
+  category: z.enum(["injury", "suspension"]),
+  /** "2026-10-12"; `null` when the provider does not know. */
+  expectedReturnOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable(),
+  gamesMissed: z.number().int().nonnegative().nullable(),
+});
+export type MatchAbsenceDto = z.infer<typeof matchAbsenceSchema>;
 
 export const standingRowSchema = z.object({
   id: postgresUuidSchema,
@@ -342,6 +385,16 @@ export interface FootballRepository {
     language: FootballLanguage,
     context: RepositoryContext,
   ): Promise<readonly MatchStatisticComparisonDto[]>;
+  getPressure(
+    id: string,
+    language: FootballLanguage,
+    context: RepositoryContext,
+  ): Promise<readonly MatchPressurePointDto[]>;
+  getAbsences(
+    id: string,
+    language: FootballLanguage,
+    context: RepositoryContext,
+  ): Promise<readonly MatchAbsenceDto[]>;
   getHeadToHead(
     id: string,
     language: FootballLanguage,

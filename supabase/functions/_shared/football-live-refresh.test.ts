@@ -9,11 +9,11 @@ import {
 
 const TOKEN = "b".repeat(64);
 
-function request(token = TOKEN, method = "POST"): Request {
+function request(token = TOKEN, method = "POST", body = '{"job":"fixtures"}'): Request {
   return new Request("https://functions.example/football-live-refresh", {
     method,
     headers: { "content-type": "application/json", "x-botolago-scheduler-token": token },
-    body: method === "POST" ? '{"job":"fixtures"}' : undefined,
+    body: method === "POST" ? body : undefined,
   });
 }
 
@@ -113,5 +113,177 @@ describe("football live refresh", () => {
     });
     expect(response.status).toBe(502);
     expect(await response.json()).toEqual({ error: "invalid_runtime_configuration" });
+  });
+
+  it("refuses a job it does not know", async () => {
+    const accepted = client(true);
+    const response = await handleFootballLiveRefreshRequest(
+      request(TOKEN, "POST", '{"job":"everything"}'),
+      { environment: {}, client: accepted.client },
+    );
+    expect(response.status).toBe(400);
+    expect(accepted.calls).toEqual(["service_verify_scheduler_token"]);
+  });
+});
+
+/** The parts of a live refresh reply these tests read. */
+interface LiveBody {
+  readonly jobs: { readonly fixtures: { readonly updated: number } };
+  readonly matchDetails: Record<string, unknown>;
+}
+
+describe("football live refresh, match details", () => {
+  const environment = { SPORTSMONKS_API_TOKEN: "sportsmonks-test-token-0123456789" };
+  const now = () => new Date("2026-09-24T21:50:00Z");
+
+  /** Scores for one live fixture that the database already knows. */
+  const between = {
+    data: [
+      {
+        id: 7001,
+        league_id: 860,
+        season_id: 28647,
+        round_id: null,
+        starting_at: "2026-09-24 20:00:00",
+        last_processed_at: "2026-09-24 21:49:00",
+        state: { developer_name: "INPLAY_2ND_HALF" },
+        participants: [
+          { id: 1001, meta: { location: "home" } },
+          { id: 1002, meta: { location: "away" } },
+        ],
+        scores: [
+          { description: "CURRENT", score: { participant: "home", goals: 1 } },
+          { description: "CURRENT", score: { participant: "away", goals: 2 } },
+        ],
+      },
+    ],
+    pagination: { has_more: false },
+  };
+  const single = {
+    data: {
+      ...between.data[0],
+      events: [
+        {
+          id: 1,
+          type_id: 14,
+          participant_id: 1002,
+          player_id: 501,
+          player_name: "Away Scorer",
+          minute: 12,
+          result: "0-1",
+        },
+      ],
+    },
+  };
+
+  function database(order: string[], due: unknown[]): LiveRefreshRpcClient {
+    return {
+      schema() {
+        return {
+          rpc(name: string) {
+            order.push(name);
+            const data: Record<string, unknown> = {
+              service_verify_scheduler_token: true,
+              begin_football_ingestion: "50000000-0000-4000-8000-000000000001",
+              resolve_football_mapping: "60000000-0000-4000-8000-000000000001",
+              ingest_football_fixture: "60000000-0000-4000-8000-000000000001",
+              service_football_match_details_due: due,
+              ingest_football_match_details: {
+                outcome: "stored",
+                events: 1,
+                statistics: 0,
+                lineupPlayers: 0,
+                unmappedPlayers: 0,
+              },
+            };
+            return Promise.resolve({ data: data[name] ?? null, error: null });
+          },
+        };
+      },
+    } as unknown as LiveRefreshRpcClient;
+  }
+
+  it("stores the scores first, then the details of the matches that are due", async () => {
+    const order: string[] = [];
+    const paths: string[] = [];
+    const response = await handleFootballLiveRefreshRequest(request(), {
+      environment,
+      now,
+      client: database(order, [{ externalId: "7001", status: "live_second_half" }]),
+      fetch: async (input) => {
+        const url = new URL(String(input));
+        paths.push(url.pathname);
+        return Response.json(url.pathname.includes("/between/") ? between : single);
+      },
+    });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as LiveBody;
+    expect(body.jobs.fixtures.updated).toBe(1);
+    expect(body.matchDetails).toMatchObject({ scope: "live", due: 1, stored: 1, events: 1 });
+    expect(paths).toEqual([
+      "/v3/football/fixtures/between/2026-09-23/2026-09-25",
+      "/v3/football/fixtures/7001",
+    ]);
+    expect(order.indexOf("ingest_football_fixture")).toBeLessThan(
+      order.indexOf("service_football_match_details_due"),
+    );
+  });
+
+  it("keeps the scores when the details fail", async () => {
+    const order: string[] = [];
+    const response = await handleFootballLiveRefreshRequest(request(), {
+      environment,
+      now,
+      client: database(order, [{ externalId: "7001", status: "live_second_half" }]),
+      fetch: async (input) =>
+        String(input).includes("/between/")
+          ? Response.json(between)
+          : new Response("forbidden", { status: 403 }),
+    });
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as LiveBody;
+    expect(body.jobs.fixtures.updated).toBe(1);
+    expect(body.matchDetails).toMatchObject({
+      stored: 0,
+      rejected: 1,
+      errors: ["provider_unavailable"],
+    });
+  });
+
+  it("does not try the details when the provider failed the scores", async () => {
+    const order: string[] = [];
+    const response = await handleFootballLiveRefreshRequest(request(), {
+      environment,
+      now,
+      client: database(order, []),
+      fetch: async () => new Response("down", { status: 503 }),
+    });
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({ error: "provider_unavailable" });
+    expect(order).not.toContain("service_football_match_details_due");
+  });
+
+  it("runs the one-off backfill without touching the scores", async () => {
+    const order: string[] = [];
+    const paths: string[] = [];
+    const response = await handleFootballLiveRefreshRequest(
+      request(TOKEN, "POST", '{"job":"match_details_backfill"}'),
+      {
+        environment,
+        now,
+        client: database(order, [{ externalId: "7001", status: "finished" }]),
+        fetch: async (input) => {
+          paths.push(new URL(String(input)).pathname);
+          return Response.json(single);
+        },
+      },
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      provider: "sportsmonks",
+      jobs: { matchDetails: { scope: "backfill", due: 1, stored: 1 } },
+    });
+    expect(paths).toEqual(["/v3/football/fixtures/7001"]);
+    expect(order).not.toContain("ingest_football_fixture");
   });
 });

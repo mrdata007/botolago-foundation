@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { MatchLineupDto } from "@/backend/football/contracts";
+import type { MatchAbsenceDto, MatchLineupDto } from "@/backend/football/contracts";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { EmptyState } from "@/components/common/States";
@@ -9,6 +9,7 @@ import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
+import { Absences } from "./Absences";
 import { lineBlockStart, pitchLines, slotInlineStart, sortStartingXi } from "./lineup-pitch";
 import { noLineupsMessage, type MatchDataPhase } from "./match-empty-states";
 
@@ -61,6 +62,9 @@ const benchOf = (lineup: Lineup) =>
  * at all is an explicit empty state, never a probable XI, and its message
  * follows `phase` (see `match-empty-states`): a finished match's lineups are
  * not "not yet published".
+ *
+ * Under it all, the players the provider lists as injured or suspended
+ * (`Absences`), which are known before the lineups are.
  */
 export function LineupsView({
   lineups,
@@ -68,20 +72,28 @@ export function LineupsView({
   away,
   palettes,
   phase,
+  absences = [],
 }: {
   lineups: readonly Lineup[];
   home: Club;
   away: Club;
   palettes: { home: ClubPalette; away: ClubPalette };
   phase: MatchDataPhase;
+  absences?: readonly MatchAbsenceDto[];
 }) {
   const { t } = useI18n();
+  const absent = <Absences absences={absences} home={home} away={away} palettes={palettes} />;
 
   const homeLineup = lineups.find((lineup) => lineup.team.id === home.id);
   const awayLineup = lineups.find((lineup) => lineup.team.id === away.id);
 
   if (!homeLineup && !awayLineup) {
-    return <EmptyState>{noLineupsMessage(phase, t)}</EmptyState>;
+    return (
+      <div className="grid gap-4">
+        <EmptyState>{noLineupsMessage(phase, t)}</EmptyState>
+        {absent}
+      </div>
+    );
   }
 
   const homeLines = homeLineup ? pitchLines(starters(homeLineup), homeLineup.formation) : null;
@@ -98,6 +110,7 @@ export function LineupsView({
         {sides.map((side) => (
           <TeamList key={side.club.id} {...side} />
         ))}
+        {absent}
       </div>
     );
   }
@@ -150,6 +163,7 @@ export function LineupsView({
       </div>
 
       <Bench sides={sides} />
+      {absent}
     </div>
   );
 }

@@ -1,4 +1,5 @@
-// Live scores, end to end: provider -> ingestion -> database -> RPC -> screen.
+// Live scores and match details, end to end: provider -> ingestion ->
+// database -> RPC -> screen.
 //
 // Every other live-refresh test mocks one side: the Edge Function tests mock
 // the database, the pgTAP suites hand-write the rows. This file takes a
@@ -15,7 +16,14 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 
-import { matchCardSchema } from "../../src/backend/football/contracts";
+import {
+  lineupSchema,
+  matchAbsenceSchema,
+  matchCardSchema,
+  matchPressurePointSchema,
+  matchStatisticSchema,
+  timelineItemSchema,
+} from "../../src/backend/football/contracts";
 import { toMatch } from "../../src/services/football";
 import {
   handleFootballLiveRefreshRequest,
@@ -32,10 +40,24 @@ const IDS = {
   season: "f6200000-0000-4000-8000-000000000001",
   home: "f6400000-0000-4000-8000-000000000001",
   away: "f6400000-0000-4000-8000-000000000002",
+  homeStriker: "f6600000-0000-4000-8000-000000000001",
+  homeWinger: "f6600000-0000-4000-8000-000000000002",
+  awayStriker: "f6600000-0000-4000-8000-000000000003",
+  awayMaker: "f6600000-0000-4000-8000-000000000004",
 } as const;
 // SportsMonks ids: Botola Pro and its 2026/27 season (the handler's defaults),
 // and two club ids no real mapping uses.
-const PROVIDER = { league: 860, season: 28647, fixture: 990_000_001, home: 990_001, away: 990_002 };
+const PROVIDER = {
+  league: 860,
+  season: 28647,
+  fixture: 990_000_001,
+  home: 990_001,
+  away: 990_002,
+  homeStriker: 990_101,
+  homeWinger: 990_102,
+  awayStriker: 990_201,
+  awayMaker: 990_202,
+};
 
 let sql: Bun.SQL | null = null;
 
@@ -128,7 +150,108 @@ function providerFixture(state: string, home: number, away: number, kickoffUtc: 
   };
 }
 
-async function refresh(tx: Tx, token: string, row: Record<string, unknown>, now: Date) {
+/** One SportsMonks event as `/fixtures/{id}` returns it with `events.type`. */
+function providerEvent(
+  id: number,
+  developerName: string,
+  typeId: number,
+  team: number,
+  player: number,
+  minute: number,
+  extra: Record<string, unknown> = {},
+) {
+  return {
+    id,
+    type_id: typeId,
+    type: { id: typeId, developer_name: developerName },
+    participant_id: team,
+    player_id: player,
+    related_player_id: null,
+    player_name: `Provider ${player}`,
+    minute,
+    extra_minute: null,
+    ...extra,
+  };
+}
+
+/** The same fixture as `/fixtures/{id}` returns it with the match-details includes. */
+function providerDetails(row: Record<string, unknown>, events: unknown[]) {
+  const stat = (typeId: number, name: string, team: number, value: number) => ({
+    type_id: typeId,
+    type: { id: typeId, developer_name: name },
+    participant_id: team,
+    data: { value },
+  });
+  const lineup = (
+    team: number,
+    player: number,
+    typeId: number,
+    position: number,
+    order: number | null,
+    name: string | null = null,
+  ) => ({
+    team_id: team,
+    player_id: player,
+    player_name: name,
+    type_id: typeId,
+    position_id: position,
+    formation_position: order,
+    jersey_number: order,
+  });
+  return {
+    data: {
+      ...row,
+      events,
+      statistics: [
+        stat(45, "BALL_POSSESSION", PROVIDER.home, 55),
+        stat(45, "BALL_POSSESSION", PROVIDER.away, 45),
+        stat(42, "SHOTS_TOTAL", PROVIDER.home, 10),
+        stat(42, "SHOTS_TOTAL", PROVIDER.away, 7),
+      ],
+      lineups: [
+        lineup(PROVIDER.home, PROVIDER.homeStriker, 11, 27, 10),
+        lineup(PROVIDER.home, PROVIDER.homeWinger, 11, 27, 11),
+        lineup(PROVIDER.away, PROVIDER.awayStriker, 11, 27, 9),
+        lineup(PROVIDER.away, PROVIDER.awayMaker, 12, 26, null),
+        // A new signing BotolaGO's catalogue does not know yet.
+        lineup(PROVIDER.away, 990_299, 11, 25, 4, "Provider Newcomer"),
+      ],
+      formations: [
+        { participant_id: PROVIDER.home, formation: "4-4-2", location: "home" },
+        { participant_id: PROVIDER.away, formation: "4-3-3", location: "away" },
+      ],
+      // The xG add-on's rows, under the key SportsMonks gives them.
+      expected: [
+        { type_id: 5304, participant_id: PROVIDER.home, location: "home", data: { value: 1.8421 } },
+        { type_id: 5304, participant_id: PROVIDER.away, location: "away", data: { value: 0.731 } },
+      ],
+      // The Pressure Index add-on.
+      pressure: [
+        { participant_id: PROVIDER.home, minute: 1, pressure: 30 },
+        { participant_id: PROVIDER.away, minute: 2, pressure: 12.5 },
+        { participant_id: PROVIDER.home, minute: 46, pressure: 20 },
+      ],
+      // A home defender BotolaGO's catalogue does not know, out injured.
+      sidelined: [
+        {
+          id: 9001,
+          participant_id: PROVIDER.home,
+          player_id: 990_199,
+          sideline: { category: "injury", end_date: "2026-10-12", games_missed: 3 },
+          player: { display_name: "Provider Defender" },
+        },
+      ],
+    },
+  };
+}
+
+async function refresh(
+  tx: Tx,
+  token: string,
+  row: Record<string, unknown>,
+  now: Date,
+  details?: Record<string, unknown>,
+) {
   const response = await handleFootballLiveRefreshRequest(
     new Request("https://functions.local/football-live-refresh", {
       method: "POST",
@@ -142,8 +265,12 @@ async function refresh(tx: Tx, token: string, row: Record<string, unknown>, now:
       fetch: async (input) => {
         const url = new URL(String(input instanceof Request ? input.url : input));
         expect(url.origin).toBe("https://api.sportmonks.com");
-        expect(url.pathname).toContain("/fixtures/between/");
-        return Response.json({ data: [row], pagination: { has_more: false } });
+        if (url.pathname.includes("/fixtures/between/")) {
+          return Response.json({ data: [row], pagination: { has_more: false } });
+        }
+        // The details of a match that is on: asked for by id, after the scores.
+        expect(url.pathname).toBe(`/v3/football/fixtures/${PROVIDER.fixture}`);
+        return details ? Response.json(details) : new Response("unexpected", { status: 404 });
       },
     },
   );
@@ -187,6 +314,17 @@ describe("live scores, provider to screen", () => {
             ('sportsmonks', 'season', '${PROVIDER.season}', '${IDS.season}', now()),
             ('sportsmonks', 'team', '${PROVIDER.home}', '${IDS.home}', now()),
             ('sportsmonks', 'team', '${PROVIDER.away}', '${IDS.away}', now());
+          insert into app.players (id, slug, full_name, display_name, position) values
+            ('${IDS.homeStriker}', 'live-e2e-home-striker', 'Home Striker', 'H. Striker', 'forward'),
+            ('${IDS.homeWinger}', 'live-e2e-home-winger', 'Home Winger', 'H. Winger', 'forward'),
+            ('${IDS.awayStriker}', 'live-e2e-away-striker', 'Away Striker', 'A. Striker', 'forward'),
+            ('${IDS.awayMaker}', 'live-e2e-away-maker', 'Away Maker', 'A. Maker', 'midfielder');
+          insert into app_private.football_provider_mappings
+            (provider_name, entity_type, external_id, internal_entity_id, last_seen_at) values
+            ('sportsmonks', 'player', '${PROVIDER.homeStriker}', '${IDS.homeStriker}', now()),
+            ('sportsmonks', 'player', '${PROVIDER.homeWinger}', '${IDS.homeWinger}', now()),
+            ('sportsmonks', 'player', '${PROVIDER.awayStriker}', '${IDS.awayStriker}', now()),
+            ('sportsmonks', 'player', '${PROVIDER.awayMaker}', '${IDS.awayMaker}', now());
         `);
         const [{ token }] = (await tx.unsafe(
           "select app_private.scheduler_token() as token",
@@ -211,18 +349,44 @@ describe("live scores, provider to screen", () => {
         const providerTime = (date: Date) => date.toISOString().slice(0, 19).replace("T", " ");
         const kickoffProvider = providerTime(kickoff);
 
-        // 1. In play, 2-1 in the second half.
+        // 1. In play, 2-1 in the second half, with the goals so far.
+        const liveRow = {
+          ...providerFixture("INPLAY_2ND_HALF", 2, 1, kickoffProvider),
+          last_processed_at: providerTime(at(70)),
+        };
+        const goalsSoFar = [
+          providerEvent(1, "GOAL", 14, PROVIDER.away, PROVIDER.awayStriker, 12, {
+            related_player_id: PROVIDER.awayMaker,
+            result: "0-1",
+          }),
+          providerEvent(2, "GOAL", 14, PROVIDER.home, PROVIDER.homeStriker, 30, { result: "1-1" }),
+          providerEvent(3, "PENALTY", 16, PROVIDER.home, PROVIDER.homeWinger, 60, {
+            result: "2-1",
+          }),
+          providerEvent(4, "YELLOWCARD", 19, PROVIDER.away, PROVIDER.awayMaker, 65),
+        ];
         const live = await refresh(
           tx,
           token,
-          {
-            ...providerFixture("INPLAY_2ND_HALF", 2, 1, kickoffProvider),
-            last_processed_at: providerTime(at(70)),
-          },
+          liveRow,
           at(70),
+          providerDetails(liveRow, goalsSoFar),
         );
         expect(live).toMatchObject({ status: 200 });
         expect((live.body.jobs as { fixtures: { inserted: number } }).fixtures.inserted).toBe(1);
+        expect(live.body.matchDetails).toMatchObject({
+          scope: "live",
+          due: 1,
+          stored: 1,
+          rejected: 0,
+          events: 4,
+          statistics: 6,
+          lineupPlayers: 5,
+          unmappedPlayers: 1,
+          pressure: 3,
+          absences: 1,
+          addOnsUnavailable: 0,
+        });
 
         // The mapping the ingestion created (read as the owner: it is private).
         await tx.unsafe("reset role");
@@ -258,19 +422,111 @@ describe("live scores, provider to screen", () => {
           });
         expect(await liveStrip()).toContain(fixtureId);
 
+        // The three tabs, read as a visitor through the site's own RPCs and
+        // contracts: Résumé, Stats, Compos.
+        const readTab = <T>(rpcName: string, schema: { parse: (value: unknown) => T }) =>
+          asVisitor(tx, async () => {
+            const [{ result }] = (await tx.unsafe(
+              `select api.${rpcName}(${literal(fixtureId)}::uuid, 'fr') as result`,
+            )) as Array<{ result: unknown }>;
+            return schema.parse(result);
+          });
+        const timeline = () => readTab("football_match_timeline", timelineItemSchema.array());
+        const liveTimeline = await timeline();
+        expect(liveTimeline.map((event) => [event.type, event.teamId, event.minute])).toEqual([
+          ["goal", IDS.away, 12],
+          ["goal", IDS.home, 30],
+          ["penalty_goal", IDS.home, 60],
+          ["yellow_card", IDS.away, 65],
+        ]);
+        expect(liveTimeline[0]).toMatchObject({
+          playerId: IDS.awayStriker,
+          relatedPlayerId: IDS.awayMaker,
+          detail: "A. Striker",
+        });
+        const stats = await readTab("football_match_statistics", matchStatisticSchema.array());
+        expect(stats.map((stat) => [stat.code, stat.homeValue, stat.awayValue])).toEqual([
+          ["possession", 55, 45],
+          ["expected_goals", 1.8421, 0.731],
+          ["shots", 10, 7],
+        ]);
+        expect(await readTab("football_match_pressure", matchPressurePointSchema.array())).toEqual([
+          { minute: 1, homeValue: 30, awayValue: null },
+          { minute: 2, homeValue: null, awayValue: 12.5 },
+          { minute: 46, homeValue: 20, awayValue: null },
+        ]);
+        expect(await readTab("football_match_absences", matchAbsenceSchema.array())).toEqual([
+          expect.objectContaining({
+            teamId: IDS.home,
+            playerId: null,
+            playerName: "Provider Defender",
+            category: "injury",
+            expectedReturnOn: "2026-10-12",
+            gamesMissed: 3,
+          }),
+        ]);
+        const lineups = await readTab("football_match_lineups", lineupSchema.array());
+        expect(
+          lineups.map((lineup) => [
+            lineup.team.id,
+            lineup.formation,
+            lineup.players.map((player) => [player.displayName, player.slot, player.order]),
+          ]),
+        ).toEqual([
+          [
+            IDS.home,
+            "4-4-2",
+            [
+              ["H. Striker", "starting", 1],
+              ["H. Winger", "starting", 2],
+            ],
+          ],
+          [
+            IDS.away,
+            "4-3-3",
+            [
+              // Named by the provider, in the provider's order, without a page.
+              ["Provider Newcomer", "starting", 1],
+              ["A. Striker", "starting", 2],
+              ["A. Maker", "bench", 1],
+            ],
+          ],
+        ]);
+
         // 2. Full time, 3-1.
         const finalObserved = at(115);
+        const finalRow = {
+          ...providerFixture("FT", 3, 1, kickoffProvider),
+          last_processed_at: providerTime(finalObserved),
+        };
+        // A late goal, and the yellow card withdrawn.
+        const fullTime = [
+          ...goalsSoFar.slice(0, 3),
+          { ...goalsSoFar[3], rescinded: true },
+          providerEvent(5, "GOAL", 14, PROVIDER.home, PROVIDER.homeStriker, 88, { result: "3-1" }),
+        ];
         const final = await refresh(
           tx,
           token,
-          {
-            ...providerFixture("FT", 3, 1, kickoffProvider),
-            last_processed_at: providerTime(finalObserved),
-          },
+          finalRow,
           finalObserved,
+          providerDetails(finalRow, fullTime),
         );
         expect(final.status).toBe(200);
         expect((final.body.jobs as { fixtures: { updated: number } }).fixtures.updated).toBe(1);
+        expect(final.body.matchDetails).toMatchObject({ stored: 1, events: 4 });
+        const finalTimeline = await timeline();
+        expect(finalTimeline.map((event) => [event.type, event.minute])).toEqual([
+          ["goal", 12],
+          ["goal", 30],
+          ["penalty_goal", 60],
+          ["goal", 88],
+        ]);
+        // The same goals are the same rows: the page's goal takeover is keyed
+        // on the id, so a refresh must not make an old goal look new.
+        expect(finalTimeline.slice(0, 3).map((event) => event.id)).toEqual(
+          liveTimeline.slice(0, 3).map((event) => event.id),
+        );
 
         const finalCard = await readCard();
         expect(finalCard).toMatchObject({
@@ -291,17 +547,25 @@ describe("live scores, provider to screen", () => {
         expect(await liveStrip()).not.toContain(fixtureId);
 
         // 3. A late, older reply cannot put the finished match back in play.
+        const staleRow = {
+          ...providerFixture("INPLAY_2ND_HALF", 2, 1, kickoffProvider),
+          last_processed_at: providerTime(at(60)),
+        };
         const stale = await refresh(
           tx,
           token,
-          {
-            ...providerFixture("INPLAY_2ND_HALF", 2, 1, kickoffProvider),
-            last_processed_at: providerTime(at(60)),
-          },
+          staleRow,
           at(60),
+          providerDetails(staleRow, goalsSoFar),
         );
         expect(stale.status).not.toBe(200);
         expect(await readCard()).toMatchObject({ status: "finished", homeScore: 3, awayScore: 1 });
+        // Nor put its details back: the finished match is still due (it was
+        // finalized minutes ago), and the older read is refused as stale.
+        expect(stale.body.matchDetails).toMatchObject({ due: 1, stored: 0, stale: 1 });
+        expect((await timeline()).map((event) => event.id)).toEqual(
+          finalTimeline.map((event) => event.id),
+        );
 
         throw new Rollback("leave nothing behind");
       })

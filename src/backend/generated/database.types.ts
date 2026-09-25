@@ -890,11 +890,19 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      football_match_absences: {
+        Args: { p_fixture_id: string; p_language?: string }
+        Returns: Json
+      }
       football_match_detail: {
         Args: { p_fixture_id: string; p_language?: string }
         Returns: Json
       }
       football_match_lineups: {
+        Args: { p_fixture_id: string; p_language?: string }
+        Returns: Json
+      }
+      football_match_pressure: {
         Args: { p_fixture_id: string; p_language?: string }
         Returns: Json
       }
@@ -1024,6 +1032,14 @@ export type Database = {
           p_provider_name: string
         }
         Returns: string
+      }
+      ingest_football_match_details: {
+        Args: {
+          p_details: Json
+          p_fixture_external_id: string
+          p_provider_name: string
+        }
+        Returns: Json
       }
       ingest_football_squad: {
         Args: {
@@ -1515,6 +1531,15 @@ export type Database = {
           p_batch_size?: number
           p_calculation_version: number
           p_gameweek_id: string
+        }
+        Returns: Json
+      }
+      service_football_match_details_due: {
+        Args: {
+          p_limit?: number
+          p_provider_name: string
+          p_scope: string
+          p_season_external_id: string
         }
         Returns: Json
       }
@@ -4608,6 +4633,121 @@ export type Database = {
           },
         ]
       }
+      fixture_absences: {
+        Row: {
+          category: string
+          created_at: string
+          expected_return_on: string | null
+          fixture_id: string
+          games_missed: number | null
+          id: string
+          player_id: string | null
+          player_name: string | null
+          provider_key: string
+          provider_updated_at: string
+          source_sequence: number
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          expected_return_on?: string | null
+          fixture_id: string
+          games_missed?: number | null
+          id?: string
+          player_id?: string | null
+          player_name?: string | null
+          provider_key: string
+          provider_updated_at: string
+          source_sequence?: number
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          expected_return_on?: string | null
+          fixture_id?: string
+          games_missed?: number | null
+          id?: string
+          player_id?: string | null
+          player_name?: string | null
+          provider_key?: string
+          provider_updated_at?: string
+          source_sequence?: number
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixture_absences_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_absences_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_absences_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fixture_pressure: {
+        Row: {
+          created_at: string
+          fixture_id: string
+          minute: number
+          pressure: number
+          provider_updated_at: string
+          source_sequence: number
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          fixture_id: string
+          minute: number
+          pressure: number
+          provider_updated_at: string
+          source_sequence?: number
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          fixture_id?: string
+          minute?: number
+          pressure?: number
+          provider_updated_at?: string
+          source_sequence?: number
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixture_pressure_fixture_id_fkey"
+            columns: ["fixture_id"]
+            isOneToOne: false
+            referencedRelation: "fixtures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixture_pressure_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fixture_team_statistics: {
         Row: {
           created_at: string
@@ -4885,7 +5025,8 @@ export type Database = {
           display_order: number
           id: string
           lineup_id: string
-          player_id: string
+          player_id: string | null
+          player_name: string | null
           position: Database["app"]["Enums"]["football_position"] | null
           shirt_number: number | null
           slot: Database["app"]["Enums"]["lineup_slot"]
@@ -4897,7 +5038,8 @@ export type Database = {
           display_order: number
           id?: string
           lineup_id: string
-          player_id: string
+          player_id?: string | null
+          player_name?: string | null
           position?: Database["app"]["Enums"]["football_position"] | null
           shirt_number?: number | null
           slot: Database["app"]["Enums"]["lineup_slot"]
@@ -4909,7 +5051,8 @@ export type Database = {
           display_order?: number
           id?: string
           lineup_id?: string
-          player_id?: string
+          player_id?: string | null
+          player_name?: string | null
           position?: Database["app"]["Enums"]["football_position"] | null
           shirt_number?: number | null
           slot?: Database["app"]["Enums"]["lineup_slot"]
