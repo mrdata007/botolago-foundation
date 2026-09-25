@@ -94,12 +94,14 @@ Times are UTC.
   and stayed quiet: health `ok`, nothing sent, `last_sent_at` still null.
 - **Health:** `ok`.
 
+## Delivery to a person
+
+**Confirmed by the owner (about 17:50 UTC).** The email "[BotolaGO]
+Production alert TEST", sent at 17:39 UTC, arrived in the support@botolago.com
+inbox. This is the first alert channel proven to reach the owner.
+
 ## Still open
 
-- **The owner confirms receipt.** The email "[BotolaGO] Production alert
-  TEST", sent at 17:39 UTC to support@botolago.com, must be in that inbox
-  (check spam too). Until then delivery to a person is not proven: Resend
-  accepted it, which is all a machine can see.
 - **Slack:** the webhook posts to a channel the owner does not see. Either
   find it (Slack → Apps → Incoming Webhooks shows the channel) or remove it
   with `delete from vault.secrets where name = 'botolago_ops_alert_webhook';`.
