@@ -54,6 +54,13 @@ select app_private.predictions_configure('public');
 Arguments left null keep their current value, except the mode, which is always
 required.
 
+Each call writes the settings row and a line in
+`app_private.prediction_job_runs`, the run log the score job also writes (at
+every fifth minute, when it has work) and the nightly prune trims (03:53 UTC).
+So check what is running first (`AGENTS.md`, "One writer at a time") and switch
+between two runs of the score job. To stop a live problem, switching off comes
+first.
+
 ## Pause and resume scoring only
 
 The game stays open; nothing is scored until scoring resumes. Matches that
@@ -135,6 +142,13 @@ are finalized shortly after the whistle.
 
 Before Stage 4: the Arabic review, done on 2026-09-25 (the owner handed it
 over; 19 texts fixed). Audience measurement is already on (next section).
+
+**Stage 5 since 2026-09-25**, on the owner's go-ahead ("switch it on and
+publish it"), straight from Stage 1 without a testers stage: `mode = public`
+at 14:56 UTC (`docs/production/APPLIED_2026_09_25_PREDICTIONS.md`), then
+`PRONOSTICS_PROMOTED` on and the site published. To take it back, see
+"Rolling back": the switch hides the game at once, and the Matches tab and
+the sitemap entry go with the flag in the next deploy.
 
 ## Audience measurement (Seline)
 
