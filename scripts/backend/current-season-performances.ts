@@ -23,9 +23,10 @@ export const CURRENT_PERFORMANCE_TYPES = [
 // average about 2 statistic rows per player out of 13. So an absent statistic
 // counts as zero (owner delegated the decision, 2026-09-25), with checks that
 // absence cannot hide: every starter carries minutes played, and a substitute
-// without minutes never scored, assisted, missed a penalty or put through an
-// own goal (none did in last season's 238 matches; a late substitute can
-// carry goals conceded without minutes, as 23 did).
+// without minutes never scored, assisted, missed a penalty, put through an own
+// goal, made a save or saved a penalty (none did in last season's 238
+// matches; a late substitute can carry goals conceded without minutes, as 23
+// did).
 //
 // Goals conceded, which decide clean sheets, follow the final score instead:
 // SportsMonks' own figure is not reliable (last season 40 of the 327
@@ -39,8 +40,11 @@ export const CURRENT_PERFORMANCE_TYPES = [
 // score (20260925120000).
 const COUNTED_TYPES = [52, 79, 83, 84, 85, 88, 112, 119, 324] as const;
 const MINUTES = 119;
-/** Goals, assists, penalties missed, own goals: never without minutes played. */
-const ON_PITCH_TYPES = [52, 79, 112, 324] as const;
+/**
+ * Goals, saves, assists, penalties missed and saved, own goals: never without
+ * minutes played (the scorer awards saves without looking at minutes).
+ */
+const ON_PITCH_TYPES = [52, 57, 79, 112, 113, 324] as const;
 /** SportsMonks stops counting at 90: a starter with 90 minutes was on from kick-off to the 90th. */
 const WHOLE_MATCH_MINUTES = 90;
 const SEASON = 28647;

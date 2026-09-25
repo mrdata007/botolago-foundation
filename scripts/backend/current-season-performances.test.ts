@@ -295,7 +295,7 @@ describe("current finished fixture performance ingestion", () => {
       "current_starter_minutes_missing",
     );
   });
-  test("a substitute without minutes never scored, assisted, missed a penalty or put through an own goal", async () => {
+  test("a substitute without minutes never scored, assisted, saved, missed a penalty or put through an own goal", async () => {
     // Unused substitutes come with no statistics at all, or none but a card.
     const unused = withBench(fixture(), 3);
     unused.data.lineups[22]!.details = [];
@@ -322,7 +322,7 @@ describe("current finished fixture performance ingestion", () => {
 
     // A goal, an assist, an own goal or a missed penalty without minutes says
     // the statistics are wrong, not zero (none did last season).
-    for (const typeId of [52, 79, 324, 112]) {
+    for (const typeId of [52, 79, 324, 112, 57, 113]) {
       const scored = withBench(fixture(), 1);
       scored.data.lineups[22]!.details = scored.data.lineups[22]!.details.filter(
         (detail) => detail.type_id === typeId,

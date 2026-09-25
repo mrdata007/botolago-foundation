@@ -49,7 +49,8 @@ Absence cannot hide two things, and the importer checks both:
   statistics are not in yet (`current_starter_minutes_missing`). Minutes sent
   as 0 count as none, here and below.
 - A substitute without minutes never came on, so they cannot carry a goal, an
-  assist, an own goal or a missed penalty (`current_statistics_inconsistent`).
+  assist, an own goal, a missed penalty, a save or a saved penalty
+  (`current_statistics_inconsistent`).
   Goals conceded are exempt: a substitute who comes on late can carry them
   without minutes, as 23 did last season.
 
