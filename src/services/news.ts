@@ -340,6 +340,7 @@ export async function getNewsEdition(
   selection: NewsLanguageSelection,
   requestContext: RepositoryContext,
   now = Date.now(),
+  limit = 50,
 ): Promise<NewsEdition> {
   const languages: NewsLanguage[] =
     selection === "auto"
@@ -348,7 +349,7 @@ export async function getNewsEdition(
   const feeds = await Promise.all(
     languages.map(async (language) => ({
       language,
-      page: await repository.getFeed({ language, limit: 50 }, requestContext),
+      page: await repository.getFeed({ language, limit }, requestContext),
     })),
   );
   // `languages[0]` is the requested locale; later entries are fallbacks in order.
@@ -400,7 +401,8 @@ export async function getArticleWithLanguageFallback(
 
 export const newsService = {
   async getEdition(language: NewsLanguage, selection: NewsLanguageSelection = "auto") {
-    return getNewsEdition(getNewsRepository(), language, selection, context());
+    // The home preview renders three stories, not two full 50-story feeds.
+    return getNewsEdition(getNewsRepository(), language, selection, context(), Date.now(), 3);
   },
 
   async getHome(language: NewsLanguage) {
