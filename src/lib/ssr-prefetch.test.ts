@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { dehydrate, hydrate, QueryClient } from "@tanstack/react-query";
 
-import { prefetchFirstPageForSsr, prefetchForSsr, SSR_DEHYDRATE_OPTIONS } from "./ssr-prefetch";
+import {
+  prefetchFirstPageForSsr,
+  prefetchForSsr,
+  SSR_DEHYDRATE_OPTIONS,
+  SSR_PREFETCH_BUDGET_MS,
+} from "./ssr-prefetch";
 
 const clients: QueryClient[] = [];
 function client() {
@@ -60,6 +65,36 @@ describe("server-rendered page data", () => {
       },
     ]);
     expect(dehydrate(server, SSR_DEHYDRATE_OPTIONS).queries).toEqual([]);
+  });
+
+  // 2026-09-25: with production's database overloaded, reads neither answered
+  // nor failed for many seconds, and the server render waited for all of them.
+  test("a read slower than the budget does not hold the page, and is not handed over", async () => {
+    onServer();
+    const server = client();
+    const started = Date.now();
+    await prefetchForSsr(
+      server,
+      [{ queryKey: ["football", "seasons", "fr"], queryFn: () => new Promise(() => {}) }],
+      20,
+    );
+    await prefetchFirstPageForSsr(
+      server,
+      {
+        queryKey: ["news", "feed-v2", "fr", null, null],
+        queryFn: () => new Promise(() => {}),
+        initialPageParam: null,
+        getNextPageParam: () => null,
+      },
+      20,
+    );
+    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(dehydrate(server, SSR_DEHYDRATE_OPTIONS).queries).toEqual([]);
+  });
+
+  test("the budget is a few seconds, enough for a healthy database", () => {
+    expect(SSR_PREFETCH_BUDGET_MS).toBeGreaterThanOrEqual(1_000);
+    expect(SSR_PREFETCH_BUDGET_MS).toBeLessThanOrEqual(5_000);
   });
 
   test("in the browser nothing is prefetched, so navigation is not held up", async () => {
