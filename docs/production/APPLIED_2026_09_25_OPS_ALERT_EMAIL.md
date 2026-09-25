@@ -19,11 +19,17 @@ What changed:
 
 - **Migration `20260926001000_ops_alert_email`** (pull requests #220 and
   #221):
-  - the column `app_private.ops_alert_state.email_to`;
-  - the functions `ops_alert_email_ready`, `ops_alert_configure_email`,
-    `ops_alert_send`, `ops_alert_test` and `api.service_ops_alert_email_target`;
-  - a new `ops_alert_tick`, which sends through the webhook, the email, or
-    both.
+  - on `app_private.ops_alert_state`: the columns `email_to` and
+    `last_email_request_id`, and the check constraint
+    `ops_alert_state_email_check`;
+  - new functions (all in `app_private` unless marked): `ops_alert_webhook`,
+    `ops_alert_email_ready`, `ops_alert_configure_email`, `ops_alert_send`,
+    `ops_alert_test`, and `api.service_ops_alert_email_target` (executable
+    by `service_role` only);
+  - replaced functions: `ops_alert_configure(boolean)`, which now needs a
+    webhook or a usable email, and `ops_alert_tick()`, which sends through
+    the webhook, the email or both and returns `send_failed` when nothing
+    was queued. The tick's comment is updated.
 - **Edge Function `ops-alert-email`**, version 1, `verify_jwt = false`. It
   sends with the site's own Resend key and sender.
 - **The address**: `support@botolago.com`.
