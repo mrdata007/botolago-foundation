@@ -38,10 +38,20 @@ export function withSiteHeaders(
 ): Response {
   const values: Record<string, string> = { "x-botolago-release": release };
   let host = "";
+  let path = "";
   try {
-    host = new URL(requestUrl).hostname.toLowerCase();
+    const url = new URL(requestUrl);
+    host = url.hostname.toLowerCase();
+    path = url.pathname;
   } catch {
     // Not an absolute URL: no host-specific headers.
+  }
+  // Personalized responses and auth redirects must never enter a shared cache.
+  if (
+    /^\/(auth|admin|profile|notifications|settings)(\/|$)/.test(path) ||
+    (path.startsWith("/fantasy/") && !["/fantasy/rules", "/fantasy/prizes"].includes(path))
+  ) {
+    values["cache-control"] = "private, no-store";
   }
   if (PRODUCTION_HOSTS.has(host)) {
     values["content-security-policy"] = "frame-ancestors 'self'";
