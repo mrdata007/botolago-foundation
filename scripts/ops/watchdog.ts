@@ -235,19 +235,44 @@ export async function releaseDrift(
       detail: `comparison with main unavailable (${compare.status || "no answer"})`,
     };
   }
+  // `compare/<release>...main`: `status` is main relative to the live release.
+  // Only "identical" means the live site runs main. "behind" and "diverged"
+  // mean the live site runs commits main does not have (published from
+  // outside main), which `ahead_by: 0` alone does not reveal.
   const diff = JSON.parse(compare.body) as {
+    status?: string;
     ahead_by?: number;
+    behind_by?: number;
     commits?: Array<{ commit?: { committer?: { date?: string } } }>;
   };
-  const ahead = diff.ahead_by ?? 0;
-  if (ahead === 0) {
+  if (diff.status === "identical") {
     return { name: "release_drift", status: "ok", detail: `live site runs main (${short})` };
   }
+  if (diff.status !== "ahead" && diff.status !== "behind" && diff.status !== "diverged") {
+    return {
+      name: "release_drift",
+      status: "warn",
+      detail: `comparison of the live release (${short}) with main is unreadable (status ${diff.status ?? "missing"})`,
+    };
+  }
+  const ahead = diff.ahead_by ?? 0;
+  const liveOnly = diff.behind_by ?? 0;
   const oldest = Date.parse(diff.commits?.[0]?.commit?.committer?.date ?? "");
-  const hours = Number.isNaN(oldest) ? 0 : (now.getTime() - oldest) / 3_600_000;
+  const hours = ahead === 0 || Number.isNaN(oldest) ? 0 : (now.getTime() - oldest) / 3_600_000;
+  const lag: CheckStatus =
+    hours >= RELEASE_FAIL_HOURS ? "fail" : hours >= RELEASE_WARN_HOURS ? "warn" : "ok";
+  if (liveOnly > 0) {
+    return {
+      name: "release_drift",
+      status: lag === "fail" ? "fail" : "warn",
+      detail: `the live site (${short}) runs ${liveOnly} commit(s) that main does not have${
+        ahead > 0 ? `, and main is ${ahead} commit(s) ahead of it` : ""
+      }: publish main from Lovable (docs/operations/DEPLOYMENT.md)`,
+    };
+  }
   return {
     name: "release_drift",
-    status: hours >= RELEASE_FAIL_HOURS ? "fail" : hours >= RELEASE_WARN_HOURS ? "warn" : "ok",
+    status: lag,
     detail: `main is ${ahead} commit(s) ahead of the live site (${short}); oldest unpublished change ${Math.round(hours)} h old: publish from Lovable (docs/operations/DEPLOYMENT.md)`,
   };
 }

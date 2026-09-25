@@ -128,11 +128,18 @@ describe("production watchdog", () => {
       );
     const behind = (oldestCommit: string) =>
       Response.json({
+        status: "ahead",
         ahead_by: 4,
+        behind_by: 0,
         commits: [{ commit: { committer: { date: oldestCommit } } }],
       });
 
-    expect(await drift("d257de7d9b8387ea", Response.json({ ahead_by: 0, commits: [] }))).toEqual({
+    expect(
+      await drift(
+        "d257de7d9b8387ea",
+        Response.json({ status: "identical", ahead_by: 0, behind_by: 0, commits: [] }),
+      ),
+    ).toEqual({
       name: "release_drift",
       status: "ok",
       detail: "live site runs main (d257de7)",
@@ -147,6 +154,29 @@ describe("production watchdog", () => {
     expect((await drift("d257de7d9b8387ea", new Response("{}", { status: 404 }))).detail).toContain(
       "not a commit on GitHub",
     );
+
+    // PR #199 review: a live release ahead of main (published from outside
+    // main) also compares with ahead_by 0; it is not "runs main".
+    const liveAhead = await drift(
+      "d257de7d9b8387ea",
+      Response.json({ status: "behind", ahead_by: 0, behind_by: 2, commits: [] }),
+    );
+    expect(liveAhead.status).toBe("warn");
+    expect(liveAhead.detail).toContain("runs 2 commit(s) that main does not have");
+    const divergedAndStale = await drift(
+      "d257de7d9b8387ea",
+      Response.json({
+        status: "diverged",
+        ahead_by: 3,
+        behind_by: 1,
+        commits: [{ commit: { committer: { date: "2026-09-21T09:00:00Z" } } }],
+      }),
+    );
+    expect(divergedAndStale.status).toBe("fail");
+    expect(divergedAndStale.detail).toContain("and main is 3 commit(s) ahead of it");
+    const unreadable = await drift("d257de7d9b8387ea", Response.json({ ahead_by: 0, commits: [] }));
+    expect(unreadable.status).toBe("warn");
+    expect(unreadable.detail).toContain("unreadable");
   });
 
   test("the run page table escapes the table separator", () => {
