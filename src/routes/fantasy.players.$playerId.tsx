@@ -27,8 +27,8 @@ import {
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { clubStyle } from "@/lib/club-palette";
+import { fantasyPlayerHead } from "@/lib/fantasy-meta";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -67,28 +67,7 @@ export const Route = createFileRoute("/fantasy/players/$playerId")({
       return null;
     }
   },
-  head: ({ params, loaderData }) => {
-    const canonical = `${PUBLIC_SITE_ORIGIN}/fantasy/players/${encodeURIComponent(params.playerId)}`;
-    const playerName = loaderData?.player.name.fr;
-    const title = playerName ? `${playerName} — BotolaGO Fantasy` : "Joueur — BotolaGO Fantasy";
-    const description = playerName
-      ? `Statistiques, forme, prix et prochains matchs de ${playerName} pour votre équipe BotolaGO Fantasy.`
-      : "Statistiques, forme, prix et prochains matchs du joueur pour votre équipe BotolaGO Fantasy.";
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:type", content: "profile" },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:url", content: canonical },
-        { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: title },
-        { name: "twitter:description", content: description },
-      ],
-      links: [{ rel: "canonical", href: canonical }],
-    };
-  },
+  head: ({ params, loaderData }) => fantasyPlayerHead(params.playerId, loaderData?.player.name.fr),
   component: PlayerDetailFramed,
 });
 

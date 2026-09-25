@@ -8,10 +8,12 @@ import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { ui, UiCard, UiErrorState, UiHeader, UiStatePanel } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 
 export const Route = createFileRoute("/fantasy/rules")({
+  head: () => fantasyHead("rules"),
   component: RulesFramed,
 });
 

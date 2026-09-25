@@ -660,6 +660,57 @@ export const ar = {
   "error.title": "تعذّر تحميل هذه الصفحة",
   "error.description": "حدث خطأ ما. يمكنك إعادة المحاولة أو العودة إلى الرئيسية.",
 
+  "fantasy.meta.hub_title": "BotolaGO Fantasy — لعبة الفانتازي للبطولة الاحترافية",
+  "fantasy.meta.hub_description":
+    "كوّن فريقك من لاعبي البطولة الاحترافية، واختر قائدك، واجمع النقاط في كل جولة مع BotolaGO Fantasy.",
+  "fantasy.meta.players_title":
+    "لاعبو فانتازي البطولة الاحترافية: الأسعار والنقاط والفورمة — BotolaGO",
+  "fantasy.meta.players_description":
+    "جميع لاعبي BotolaGO Fantasy بأسعارهم ونقاطهم وفورمتهم، مع التصفية حسب المركز والنادي والمقارنة بينهم.",
+  "fantasy.meta.player_title": "{name}: السعر والنقاط والفورمة — BotolaGO Fantasy",
+  "fantasy.meta.player_description":
+    "{name}: الإحصائيات والفورمة والسعر والمباريات القادمة، لتقرّر إن كان يستحق مكانًا في فريقك على BotolaGO Fantasy.",
+  "fantasy.meta.player_unknown_title": "بطاقة اللاعب — BotolaGO Fantasy",
+  "fantasy.meta.player_unknown_description":
+    "إحصائيات لاعب من البطولة الاحترافية وفورمته وسعره ومبارياته القادمة، لفريقك على BotolaGO Fantasy.",
+  "fantasy.meta.top_players_title": "أفضل 5 لاعبين في الجولة — BotolaGO Fantasy",
+  "fantasy.meta.top_players_description":
+    "أفضل خمسة لاعبين في كل جولة من البطولة الاحترافية، حسب أدائهم ونقاطهم في الفانتازي.",
+  "fantasy.meta.fixtures_title": "صعوبة المباريات لكل نادٍ — BotolaGO Fantasy",
+  "fantasy.meta.fixtures_description":
+    "برنامج مباريات كل نادٍ في البطولة الاحترافية جولةً بجولة، مع تقييم صعوبة كل مباراة من 1 (سهلة) إلى 5 (صعبة) لتحضير انتقالاتك.",
+  "fantasy.meta.rankings_title": "الترتيب العام للفانتازي — BotolaGO",
+  "fantasy.meta.rankings_description":
+    "تابع الترتيب العام لمدربي فانتازي البطولة الاحترافية: نقاط الموسم ونقاط الجولة والتقدّم في الترتيب.",
+  "fantasy.meta.rules_title": "قواعد لعبة فانتازي البطولة الاحترافية — BotolaGO",
+  "fantasy.meta.rules_description":
+    "التشكيلة والميزانية والخطة والقائد والانتقالات والموعد النهائي وجدول النقاط وكسر التعادل: كل قواعد BotolaGO Fantasy.",
+  "fantasy.meta.help_title": "المساعدة والأسئلة الشائعة — BotolaGO Fantasy",
+  "fantasy.meta.help_description":
+    "أجوبة الأسئلة حول BotolaGO Fantasy: تسجيل الدخول، اختيار التشكيلة، الميزانية، الخطط، القائد، اسم الفريق والجوكرات.",
+  "fantasy.meta.leagues_title": "الدوريات والكؤوس — BotolaGO Fantasy",
+  "fantasy.meta.leagues_description":
+    "دورياتك الخاصة والعامة على BotolaGO Fantasy: الترتيب والكؤوس ودعوة أصدقائك.",
+  "fantasy.meta.league_title": "ترتيب الدوري — BotolaGO Fantasy",
+  "fantasy.meta.league_description":
+    "ترتيب دوري على BotolaGO Fantasy: نقاط كل مدرب في الجولة وعلى مدار الموسم.",
+  "fantasy.meta.join_league_title": "الانضمام إلى دوري — BotolaGO Fantasy",
+  "fantasy.meta.join_league_description":
+    "أدخل رمز الدعوة إلى دوري خاص لتنافس أصدقاءك على BotolaGO Fantasy.",
+  "fantasy.meta.create_title": "أنشئ فريقك — BotolaGO Fantasy",
+  "fantasy.meta.create_description":
+    "اختر تشكيلتك من لاعبي البطولة الاحترافية في حدود الميزانية، لتنشئ فريقك على BotolaGO Fantasy.",
+  "fantasy.meta.team_title": "فريقي — BotolaGO Fantasy",
+  "fantasy.meta.team_description":
+    "اختر لاعبيك الأساسيين والاحتياطيين وقائدك قبل الموعد النهائي للجولة.",
+  "fantasy.meta.transfers_title": "الانتقالات — BotolaGO Fantasy",
+  "fantasy.meta.transfers_description":
+    "بدّل لاعبين من تشكيلتك على BotolaGO Fantasy قبل الموعد النهائي للجولة المقبلة.",
+  "fantasy.meta.points_title": "نقاطي — BotolaGO Fantasy",
+  "fantasy.meta.points_description": "نقاط فريقك على BotolaGO Fantasy في كل جولة، لاعبًا بلاعب.",
+  "fantasy.meta.profile_title": "ملف فريقي — BotolaGO Fantasy",
+  "fantasy.meta.profile_description": "نظرة عامة على فريقك على BotolaGO Fantasy وسجلّ مواسمه.",
+
   "player.status.available": "متاح",
   "player.status.injured": "مصاب",
   "player.status.doubtful": "مشكوك",

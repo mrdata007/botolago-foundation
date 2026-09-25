@@ -38,6 +38,7 @@ import {
 } from "@/components/ui-kit";
 import { useAuth } from "@/auth/AuthProvider";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { pageForRank, type RankingsSort } from "@/services/fantasy-rankings";
@@ -48,23 +49,7 @@ import type { LeagueStanding } from "@/types/fantasy";
 const PAGE_SIZE = 25;
 
 export const Route = createFileRoute("/fantasy/rankings")({
-  head: () => ({
-    meta: [
-      { title: "Classement général Fantasy — BotolaGO" },
-      {
-        name: "description",
-        content:
-          "Suivez le classement général des managers Fantasy Botola Pro : points de la saison, points de la journée et progression.",
-      },
-      { property: "og:title", content: "Classement général Fantasy — BotolaGO" },
-      {
-        property: "og:description",
-        content: "Le classement de tous les managers Fantasy Botola Pro, saison et journée.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () => fantasyHead("rankings"),
   component: RankingsFramed,
 });
 

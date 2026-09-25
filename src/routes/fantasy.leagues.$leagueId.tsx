@@ -35,6 +35,7 @@ import {
   UiTR,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
 
 export const Route = createFileRoute("/fantasy/leagues/$leagueId")({
+  head: () => fantasyHead("league"),
   component: LeagueDetailPage,
 });
 

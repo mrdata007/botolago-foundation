@@ -30,11 +30,13 @@ import {
   pendingInviteCode,
 } from "@/components/predictions/leagues/invite-link";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
 
 export const Route = createFileRoute("/fantasy/leagues/join")({
+  head: () => fantasyHead("joinLeague"),
   component: JoinLeaguePage,
 });
 

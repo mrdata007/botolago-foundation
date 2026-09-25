@@ -24,6 +24,7 @@ import {
 } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { reportOperationalError } from "@/lib/operational-errors";
 import { cn } from "@/lib/utils";
 import {
@@ -51,6 +52,7 @@ import { fantasyStateStore } from "@/services/fantasy-state";
 import type { FantasyPlayer, SquadPlayer } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/create")({
+  head: () => fantasyHead("create"),
   component: CreateTeamPage,
 });
 

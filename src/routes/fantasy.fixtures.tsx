@@ -19,6 +19,7 @@ import {
   type UiDifficulty,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -26,6 +27,7 @@ import type { Club } from "@/types/domain";
 import type { FixtureDifficulty } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/fixtures")({
+  head: () => fantasyHead("fixtures"),
   component: FdrPage,
 });
 

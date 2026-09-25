@@ -690,6 +690,61 @@ export const fr = {
   "error.title": "Cette page ne s'est pas chargée",
   "error.description": "Un incident est survenu. Vous pouvez réessayer ou revenir à l'accueil.",
 
+  // The <title> and meta description of each Fantasy page (audit A17: most
+  // of them used to inherit "Fantasy — BotolaGO"). `head()` serves the
+  // French; see src/lib/fantasy-meta.ts.
+  "fantasy.meta.hub_title": "BotolaGO Fantasy — le jeu Fantasy de la Botola Pro",
+  "fantasy.meta.hub_description":
+    "Composez votre équipe de joueurs de la Botola Pro, choisissez votre capitaine et marquez des points à chaque journée avec BotolaGO Fantasy.",
+  "fantasy.meta.players_title": "Joueurs Fantasy Botola Pro : prix, points et forme — BotolaGO",
+  "fantasy.meta.players_description":
+    "Tous les joueurs de BotolaGO Fantasy avec leur prix, leurs points et leur forme, à filtrer par poste et par club et à comparer entre eux.",
+  "fantasy.meta.player_title": "{name} : prix, points et forme — BotolaGO Fantasy",
+  "fantasy.meta.player_description":
+    "{name} : statistiques, forme, prix et prochains matchs, pour décider de sa place dans votre équipe BotolaGO Fantasy.",
+  "fantasy.meta.player_unknown_title": "Fiche joueur — BotolaGO Fantasy",
+  "fantasy.meta.player_unknown_description":
+    "Statistiques, forme, prix et prochains matchs d'un joueur de la Botola Pro pour votre équipe BotolaGO Fantasy.",
+  "fantasy.meta.top_players_title": "Top 5 des joueurs de la journée — BotolaGO Fantasy",
+  "fantasy.meta.top_players_description":
+    "Les cinq meilleurs joueurs de chaque journée de Botola Pro, selon leurs performances et leurs points Fantasy.",
+  "fantasy.meta.fixtures_title": "Difficulté des matchs par club — BotolaGO Fantasy",
+  "fantasy.meta.fixtures_description":
+    "Le calendrier de chaque club de la Botola Pro, journée par journée, avec la difficulté de chaque match notée de 1 (facile) à 5 (difficile) pour préparer vos transferts.",
+  "fantasy.meta.rankings_title": "Classement général Fantasy — BotolaGO",
+  "fantasy.meta.rankings_description":
+    "Suivez le classement général des managers Fantasy Botola Pro : points de la saison, points de la journée et progression.",
+  "fantasy.meta.rules_title": "Règles du jeu Fantasy Botola Pro — BotolaGO",
+  "fantasy.meta.rules_description":
+    "Effectif, budget, formation, capitaine, transferts, date limite, barème des points et départage : toutes les règles de BotolaGO Fantasy.",
+  "fantasy.meta.help_title": "Aide et questions fréquentes — BotolaGO Fantasy",
+  "fantasy.meta.help_description":
+    "Les réponses aux questions sur BotolaGO Fantasy : connexion, choix de l'effectif, budget, formations, capitaine, nom d'équipe et jetons.",
+  "fantasy.meta.leagues_title": "Ligues et coupes — BotolaGO Fantasy",
+  "fantasy.meta.leagues_description":
+    "Vos ligues privées et générales sur BotolaGO Fantasy : classements, coupes et invitations pour vos amis.",
+  "fantasy.meta.league_title": "Classement de la ligue — BotolaGO Fantasy",
+  "fantasy.meta.league_description":
+    "Le classement d'une ligue BotolaGO Fantasy : les points de chaque manager à la journée et sur la saison.",
+  "fantasy.meta.join_league_title": "Rejoindre une ligue — BotolaGO Fantasy",
+  "fantasy.meta.join_league_description":
+    "Entrez le code d'invitation d'une ligue privée pour affronter vos amis sur BotolaGO Fantasy.",
+  "fantasy.meta.create_title": "Créer votre équipe — BotolaGO Fantasy",
+  "fantasy.meta.create_description":
+    "Choisissez votre effectif parmi les joueurs de la Botola Pro, dans les limites du budget, pour créer votre équipe BotolaGO Fantasy.",
+  "fantasy.meta.team_title": "Mon équipe — BotolaGO Fantasy",
+  "fantasy.meta.team_description":
+    "Choisissez vos titulaires, vos remplaçants et votre capitaine avant la date limite de la journée.",
+  "fantasy.meta.transfers_title": "Transferts — BotolaGO Fantasy",
+  "fantasy.meta.transfers_description":
+    "Remplacez des joueurs de votre effectif BotolaGO Fantasy avant la date limite de la prochaine journée.",
+  "fantasy.meta.points_title": "Mes points — BotolaGO Fantasy",
+  "fantasy.meta.points_description":
+    "Les points de votre équipe BotolaGO Fantasy à chaque journée, joueur par joueur.",
+  "fantasy.meta.profile_title": "Profil de mon équipe — BotolaGO Fantasy",
+  "fantasy.meta.profile_description":
+    "L'aperçu de votre équipe BotolaGO Fantasy et l'historique de ses saisons.",
+
   "player.status.available": "Disponible",
   "player.status.injured": "Blessé",
   "player.status.doubtful": "Incertain",

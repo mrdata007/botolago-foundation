@@ -21,6 +21,7 @@ import { useNextFixtures } from "@/components/fpl/useNextFixtures";
 import { ui, UiButton, UiHeader, UiIconButton, UiSegmented } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 import {
   activateChip,
@@ -41,6 +42,7 @@ import { fantasyStateStore } from "@/services/fantasy-state";
 import { FORMATIONS, type FormationKey, type SquadPlayer } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/team")({
+  head: () => fantasyHead("team"),
   component: PickTeamPage,
 });
 

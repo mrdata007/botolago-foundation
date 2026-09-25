@@ -41,6 +41,7 @@ import { nextDeadlineAfter } from "@/components/fantasy/gameweek-presentation";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { ui, UiCard, UiLinkButton, UiLivePill, UiPageTitle, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { NEWS_ENABLED, PRIZES_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
@@ -51,6 +52,7 @@ import { newsService } from "@/services/news";
 import type { Gameweek } from "@/types/domain";
 
 export const Route = createFileRoute("/fantasy/")({
+  head: () => fantasyHead("hub"),
   component: FantasyHub,
 });
 

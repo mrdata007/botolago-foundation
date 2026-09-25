@@ -22,6 +22,7 @@ import {
   type ChipKey,
   type ChipsState,
 } from "@/lib/fantasy-engine";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
@@ -31,6 +32,7 @@ import { applyConfirmedTransfers, previewTransfers } from "@/services/transfers-
 import type { FantasyPlayer } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/transfers")({
+  head: () => fantasyHead("transfers"),
   component: TransfersPage,
 });
 
