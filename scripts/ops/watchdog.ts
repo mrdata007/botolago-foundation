@@ -4,7 +4,8 @@
  * Run by .github/workflows/ops-watchdog.yml every 30 minutes and after every
  * season orchestrator run. It reads the database's own health
  * (`api.service_ops_health`: every check the database names, reported as it
- * states it), loads the public pages and one public API call the way a
+ * states it; a report that is partial, malformed or at odds with its own
+ * verdict fails), loads the public pages and one public API call the way a
  * visitor does -- the sitemap must also contain entries, not only answer 200
  * -- checks that the season orchestrator has actually run recently and that
  * its last run was not red (GitHub started its hourly schedule only every
@@ -29,6 +30,23 @@ export interface Check {
 type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 
 const SITE_PAGES = ["/", "/matches", "/news", "/sitemap.xml"] as const;
+// Checks `app_private.ops_health_checks()` emits on every call. The deadline
+// watch is left out: it only runs while a Fantasy season is planned or active.
+// So are the checks migrations 20260925210050 and 20260925210400 add
+// (news_sitemap, fantasy_fixture_coverage, fantasy_scoring) until production
+// has them: they are reported whenever the database names them, and join this
+// list once every database the watchdog reads does.
+export const REQUIRED_DATABASE_CHECKS = [
+  "fantasy_lifecycle_tick",
+  "fantasy_gameweek_lock",
+  "cron_jobs",
+  "news_publication",
+  "news_import",
+  "live_scores",
+  "provider_refresh",
+  "email_delivery",
+  "browser_errors",
+] as const;
 const SLOW_MS = 8_000;
 const ORCHESTRATOR_STALE_HOURS = 8;
 
@@ -54,7 +72,7 @@ async function timed(fetchImpl: Fetch, url: string, init?: RequestInit) {
   }
 }
 
-/** The database's checks, reported one by one. */
+/** The database's checks, reported one by one, and the report itself held to account. */
 export async function databaseHealth(
   fetchImpl: Fetch,
   supabaseUrl: string,
@@ -87,48 +105,97 @@ export async function databaseHealth(
       },
     ];
   }
-  let payload: { status?: unknown; checks?: unknown };
+  // A broken health endpoint must not silently become an empty green report.
+  let payload: unknown;
   try {
-    payload = JSON.parse(result.body) as typeof payload;
+    payload = JSON.parse(result.body);
   } catch {
     return [
       { name: "database_health", status: "fail", detail: "health RPC answered 200 without JSON" },
     ];
   }
-  // Every check the database names is reported, whatever it is called: new
-  // ones (statistics coverage, sitemap freshness, ...) page as soon as their
-  // migration lands, with no change here. A status this script does not know
-  // is treated as a failure rather than dropped.
-  const checks: Check[] = [];
-  for (const entry of Array.isArray(payload.checks) ? payload.checks : []) {
-    const check = (entry ?? {}) as Record<string, unknown>;
-    if (typeof check.name !== "string" || !/^[a-z][a-z0-9_]{1,60}$/.test(check.name)) continue;
-    const detail = String(check.detail ?? "").slice(0, 200);
-    checks.push(
-      check.status === "ok" || check.status === "warn" || check.status === "fail"
-        ? { name: check.name, status: check.status, detail }
-        : {
-            name: check.name,
-            status: "fail",
-            detail: `unrecognised status ${
-              typeof check.status === "string" && /^[a-z_]{1,20}$/.test(check.status)
-                ? `"${check.status}"`
-                : "(unreadable)"
-            }: ${detail}`.slice(0, 200),
-          },
-    );
-  }
-  if (checks.length === 0) {
+  const report = (typeof payload === "object" && payload !== null ? payload : {}) as {
+    status?: unknown;
+    checks?: unknown;
+  };
+  if (!Array.isArray(report.checks) || report.checks.length === 0) {
     return [{ name: "database_health", status: "fail", detail: "health RPC returned no checks" }];
   }
-  if (payload.status === "fail" && !checks.some((check) => check.status === "fail")) {
+  // Every check the database names is reported, whatever it is called: new
+  // ones (fixture coverage, scoring, sitemap freshness, ...) page as soon as
+  // their migration lands, with no change here. A malformed entry fails the
+  // report (below) without hiding the other checks.
+  const checks: Check[] = [];
+  let unnamed = 0;
+  let unrecognised = 0;
+  const withoutDetail: string[] = [];
+  for (const entry of report.checks) {
+    const fields = (typeof entry === "object" && entry !== null ? entry : {}) as Record<
+      string,
+      unknown
+    >;
+    const { name, status, detail } = fields;
+    // No name of ours: nothing the entry says can be trusted, not even for
+    // the alert's text, so it is only counted.
+    if (typeof name !== "string" || !/^[a-z][a-z0-9_]{1,60}$/.test(name)) {
+      unnamed += 1;
+      continue;
+    }
+    if (typeof detail !== "string") withoutDetail.push(name);
+    const stated = typeof detail === "string" ? detail.slice(0, 200) : "(no detail)";
+    if (isCheckStatus(status)) {
+      checks.push({ name, status, detail: stated });
+      continue;
+    }
+    // A status this script does not know fails under the check's own name
+    // rather than being dropped: it may well mean something worse than fail.
+    unrecognised += 1;
+    checks.push({
+      name,
+      status: "fail",
+      detail: `unrecognised status ${
+        typeof status === "string" && /^[a-z_]{1,20}$/.test(status) ? `"${status}"` : "(unreadable)"
+      }: ${stated}`.slice(0, 200),
+    });
+  }
+  // The report as a whole: malformed entries, a required check missing, no
+  // verdict, or a verdict that disagrees with the checks means the report
+  // itself is broken. Keep what it said and fail on top, once, naming why.
+  // The verdict is compared only with a complete list whose every entry was
+  // named and stated a status this script knows; any other report already
+  // fails here, and a comparison with it would only add noise.
+  const problems: string[] = [];
+  if (unnamed > 0) {
+    problems.push(`returned ${unnamed} entr${unnamed === 1 ? "y" : "ies"} without a check name`);
+  }
+  if (withoutDetail.length > 0) {
+    problems.push(`returned ${withoutDetail.join(", ")} without a detail`);
+  }
+  const missing = REQUIRED_DATABASE_CHECKS.filter(
+    (name) => !checks.some((check) => check.name === name),
+  );
+  if (missing.length > 0) problems.push(`omitted required check(s): ${missing.join(", ")}`);
+  if (!isCheckStatus(report.status)) problems.push("returned no overall status");
+  else if (
+    unnamed === 0 &&
+    unrecognised === 0 &&
+    missing.length === 0 &&
+    overall(checks) !== report.status
+  ) {
+    problems.push(`status ${report.status} disagrees with its checks (${overall(checks)})`);
+  }
+  if (problems.length > 0) {
     checks.push({
       name: "database_health",
       status: "fail",
-      detail: "the database reports fail, but none of the checks it named explains it",
+      detail: `health RPC ${problems.join("; ")}`,
     });
   }
   return checks;
+}
+
+function isCheckStatus(value: unknown): value is CheckStatus {
+  return value === "ok" || value === "warn" || value === "fail";
 }
 
 /**
@@ -195,14 +262,19 @@ export async function publicSurface(
 
 type WorkflowRun = { created_at: string; status: string; conclusion: string | null };
 
-/** A workflow's latest runs on main, newest first, or the status GitHub answered instead. */
+/**
+ * A workflow's latest runs on main, newest first. Instead: `unavailable`
+ * with the status GitHub answered, or `invalid` when it answered 200 with
+ * something that is not a list of runs -- which must not read as "no run
+ * found" or as a healthy history.
+ */
 async function workflowRuns(
   fetchImpl: Fetch,
   repository: string,
   token: string,
   workflowFile: string,
   query: string,
-): Promise<WorkflowRun[] | { unavailable: number }> {
+): Promise<WorkflowRun[] | { unavailable: number } | { invalid: true }> {
   const result = await timed(
     fetchImpl,
     `https://api.github.com/repos/${repository}/actions/workflows/${workflowFile}/runs?${query}&branch=main`,
@@ -215,11 +287,15 @@ async function workflowRuns(
     },
   );
   if (result.status !== 200) return { unavailable: result.status };
+  let runs: unknown;
   try {
-    return (JSON.parse(result.body) as { workflow_runs?: WorkflowRun[] }).workflow_runs ?? [];
+    runs = (JSON.parse(result.body) as { workflow_runs?: unknown } | null)?.workflow_runs;
   } catch {
-    return { unavailable: result.status };
+    return { invalid: true };
   }
+  return Array.isArray(runs) && runs.every((run) => typeof run === "object" && run !== null)
+    ? (runs as WorkflowRun[])
+    : { invalid: true };
 }
 
 /** Has the season orchestrator run recently, and did its last run pass? */
@@ -236,7 +312,14 @@ export async function orchestratorRecency(
     "fantasy-season-orchestrator.yml",
     "per_page=5",
   );
-  if (!Array.isArray(runs)) {
+  if ("invalid" in runs) {
+    return {
+      name: "season_orchestrator",
+      status: "fail",
+      detail: "run history returned invalid data",
+    };
+  }
+  if ("unavailable" in runs) {
     return {
       name: "season_orchestrator",
       status: "warn",
@@ -246,6 +329,13 @@ export async function orchestratorRecency(
   const latest = runs[0];
   if (!latest) return { name: "season_orchestrator", status: "fail", detail: "no run found" };
   const hours = (now.getTime() - Date.parse(latest.created_at)) / 3_600_000;
+  if (!Number.isFinite(hours) || hours < 0) {
+    return {
+      name: "season_orchestrator",
+      status: "fail",
+      detail: "latest run has an invalid timestamp",
+    };
+  }
   if (hours > ORCHESTRATOR_STALE_HOURS) {
     return {
       name: "season_orchestrator",
@@ -405,7 +495,15 @@ export async function watchdogSchedule(
     "ops-watchdog.yml",
     "event=schedule&per_page=1",
   );
-  if (!Array.isArray(runs)) {
+  // Unreadable history warns too: this row never pages (see above).
+  if ("invalid" in runs) {
+    return {
+      name: "watchdog_schedule",
+      status: "warn",
+      detail: "run history returned invalid data",
+    };
+  }
+  if ("unavailable" in runs) {
     return {
       name: "watchdog_schedule",
       status: "warn",
@@ -422,6 +520,13 @@ export async function watchdogSchedule(
     };
   }
   const hours = (now.getTime() - Date.parse(latest.created_at)) / 3_600_000;
+  if (!Number.isFinite(hours) || hours < 0) {
+    return {
+      name: "watchdog_schedule",
+      status: "warn",
+      detail: "latest scheduled run has an invalid timestamp",
+    };
+  }
   return hours > WATCHDOG_SCHEDULE_WARN_HOURS
     ? {
         name: "watchdog_schedule",
@@ -492,7 +597,13 @@ export async function releaseDrift(
   // Only "identical" means the live site runs main. "behind" and "diverged"
   // mean the live site runs commits main does not have (published from
   // outside main), which `ahead_by: 0` alone does not reveal.
-  const diff = JSON.parse(compare.body) as {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(compare.body);
+  } catch {
+    parsed = null;
+  }
+  const diff = (parsed ?? {}) as {
     status?: string;
     ahead_by?: number;
     behind_by?: number;
@@ -531,7 +642,7 @@ export async function releaseDrift(
 }
 
 export function overall(checks: Check[]): CheckStatus {
-  return checks.some((c) => c.status === "fail")
+  return checks.length === 0 || checks.some((c) => c.status === "fail")
     ? "fail"
     : checks.some((c) => c.status === "warn")
       ? "warn"

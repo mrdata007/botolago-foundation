@@ -1,3 +1,4 @@
+import { unavailableHeaders } from "@/lib/page-availability";
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,7 +28,7 @@ import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { clubStanding } from "@/lib/league-table";
 import { cn } from "@/lib/utils";
-import { prefetchForSsr } from "@/lib/ssr-prefetch";
+import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { footballService, type FootballSeason } from "@/services/football";
 
 const STANDINGS_TITLE = "Classement Botola Pro — points, forme et buts | BotolaGO";
@@ -58,7 +59,9 @@ export const Route = createFileRoute("/matches/standings")({
         },
       ]);
     }
+    return ssrAvailability(queryClient);
   },
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => ({
     meta: [
       { title: STANDINGS_TITLE },

@@ -1,3 +1,4 @@
+import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
@@ -10,7 +11,7 @@ import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCard";
 import { footballService, type FootballSeason } from "@/services/football";
-import { prefetchForSsr } from "@/lib/ssr-prefetch";
+import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { AppShell } from "@/components/shell/AppShell";
@@ -97,7 +98,9 @@ export const Route = createFileRoute("/")({
         },
       ]);
     }
+    return ssrAvailability(queryClient);
   },
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => ({
     meta: [
       { title: HOME_TITLE },

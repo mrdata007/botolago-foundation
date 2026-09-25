@@ -58,11 +58,13 @@ jobs:
       # Against the development server and the mock data it serves without a
       # `.env`: no secret, no shared backend. Each passed three runs in a row
       # before joining this gate; the signed-in staging suites stay on their
-      # own protected workflows.
+      # own protected workflows. `seo-rendering` reads the server's HTML
+      # without running any of the page's JavaScript, as a crawler does.
       - name: Browser suites on the development server
         run: >-
           bunx playwright test
           tests/e2e/anonymous.acceptance.e2e.ts
+          tests/e2e/seo-rendering.e2e.ts
           tests/e2e/dark-mode-flag.e2e.ts
           tests/e2e/legal-brackets.e2e.ts
           tests/e2e/news-hero-fallback.e2e.ts

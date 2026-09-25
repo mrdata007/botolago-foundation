@@ -33,7 +33,8 @@ describe("the day's fixtures in the server's HTML (A10)", () => {
 
   it("decides today once, in the loader, by the competition's calendar", () => {
     expect(page).toContain("const today = matchDayKey(new Date());");
-    expect(page).toContain("return { today };");
+    // With the render's availability (`ssrAvailability`): see the SSR test.
+    expect(page).toContain("return { ...ssrAvailability(queryClient), today };");
     expect(page).toContain("const { today } = Route.useLoaderData();");
     expect(page).toContain("openingMatchDay(selectedSeason, today)");
   });

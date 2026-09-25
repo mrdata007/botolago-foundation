@@ -1,3 +1,4 @@
+import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -8,7 +9,7 @@ import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { clubStyle } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
-import { prefetchForSsr } from "@/lib/ssr-prefetch";
+import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { footballService } from "@/services/football";
 import type { Club } from "@/types/domain";
 
@@ -19,13 +20,16 @@ const CLUBS_DESCRIPTION =
 export const Route = createFileRoute("/clubs/")({
   // Every club, with a link to its page, in the server's HTML (see
   // `@/lib/ssr-prefetch`): no other page linked to them in HTML before.
-  loader: ({ context }) =>
-    prefetchForSsr(context.queryClient, [
+  loader: async ({ context }) => {
+    await prefetchForSsr(context.queryClient, [
       {
         queryKey: ["football", "club-directory", "fr"],
         queryFn: () => footballService.getClubDirectory("fr"),
       },
-    ]),
+    ]);
+    return ssrAvailability(context.queryClient);
+  },
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => ({
     meta: [
       { title: CLUBS_TITLE },

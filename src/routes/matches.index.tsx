@@ -30,7 +30,8 @@ import { cn } from "@/lib/utils";
 import { isSameMatchDay, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { matchRounds } from "@/lib/match-days";
-import { prefetchForSsr } from "@/lib/ssr-prefetch";
+import { unavailableHeaders } from "@/lib/page-availability";
+import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Match } from "@/types/domain";
 
@@ -45,7 +46,9 @@ export const Route = createFileRoute("/matches/")({
   // the season the page opens on, then its opening day, within the render's
   // one deadline. The list used to wait for the browser to pick the season
   // in an effect before it even asked, so the HTML never held a match (audit
-  // 2026-09-25, A10). A read that fails or runs late is left to the browser.
+  // 2026-09-25, A10). A read that fails or runs late is left to the browser,
+  // and the response says so: 503 with Retry-After (`ssrAvailability`,
+  // `@/lib/page-availability`), never a 200 whose list is empty.
   loaderDeps: ({ search }) => ({ season: search.season }),
   loader: {
     // A reader coming back to the page runs the loader again before it
@@ -74,9 +77,13 @@ export const Route = createFileRoute("/matches/")({
           matchDayQuery(openingMatchDay(season, today), "fr", season?.id),
         ]);
       }
-      return { today };
+      // Both reads above count: every key `prefetchForSsr` was handed, the
+      // day's `matchDayQuery` key included, has to have loaded. A season
+      // list that failed never asks for the day, and counts as failed itself.
+      return { ...ssrAvailability(queryClient), today };
     },
   },
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => ({
     meta: [
       { title: MATCHES_TITLE },

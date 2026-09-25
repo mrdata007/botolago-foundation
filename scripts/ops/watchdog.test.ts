@@ -9,6 +9,7 @@ import {
   publicSurface,
   releaseDrift,
   renderTable,
+  REQUIRED_DATABASE_CHECKS,
   sitemapEntries,
   watchdogSchedule,
   type Check,
@@ -16,33 +17,114 @@ import {
 
 const url = "https://tkewgajrljbwgwedqsxn.supabase.co";
 
+/** Every check the database always reports, all healthy, then `changes` on top. */
+function healthyChecks(...changes: Check[]): Check[] {
+  return REQUIRED_DATABASE_CHECKS.map(
+    (name) =>
+      changes.find((check) => check.name === name) ?? { name, status: "ok", detail: "fine" },
+  );
+}
+
 describe("production watchdog", () => {
   test("reports each database check as the database states it", async () => {
-    const checks = await databaseHealth(
-      async () =>
-        Response.json({
-          status: "fail",
-          checks: [
-            {
-              name: "fantasy_gameweek_lock",
-              status: "fail",
-              detail: "GW1 deadline passed 390 min ago, still open",
-            },
-            { name: "cron_jobs", status: "ok", detail: "no failed run in the last hour" },
-            { name: "bad name!", status: "fail", detail: "ignored: not one of our names" },
-          ],
-        }),
-      url,
-      "secret",
-    );
-    expect(checks).toEqual([
+    const reported = healthyChecks(
       {
         name: "fantasy_gameweek_lock",
         status: "fail",
         detail: "GW1 deadline passed 390 min ago, still open",
       },
       { name: "cron_jobs", status: "ok", detail: "no failed run in the last hour" },
-    ]);
+    );
+    const checks = await databaseHealth(
+      async () => Response.json({ status: "fail", checks: reported }),
+      url,
+      "secret",
+    );
+    expect(checks).toEqual(reported);
+  });
+
+  test("a partial check list or a verdict that disagrees with its checks fails", async () => {
+    // Valid JSON, valid entries, but the core checks are gone.
+    const partial = await databaseHealth(
+      async () =>
+        Response.json({
+          status: "fail",
+          checks: [{ name: "cron_jobs", status: "ok", detail: "ok" }],
+        }),
+      url,
+      "secret",
+    );
+    expect(overall(partial)).toBe("fail");
+    expect(partial.at(-1)).toMatchObject({ name: "database_health", status: "fail" });
+    expect(partial.at(-1)?.detail).toContain("fantasy_gameweek_lock");
+
+    // Every check present and green, but the database itself says "fail".
+    const disagreeing = await databaseHealth(
+      async () => Response.json({ status: "fail", checks: healthyChecks() }),
+      url,
+      "secret",
+    );
+    expect(overall(disagreeing)).toBe("fail");
+    expect(disagreeing.at(-1)?.detail).toContain("disagrees");
+
+    // A missing top-level verdict is a malformed report.
+    const noVerdict = await databaseHealth(
+      async () => Response.json({ checks: healthyChecks() }),
+      url,
+      "secret",
+    );
+    expect(overall(noVerdict)).toBe("fail");
+
+    // The complete healthy report stays green; the optional deadline watch may be added.
+    const healthy = await databaseHealth(
+      async () =>
+        Response.json({
+          status: "ok",
+          checks: [
+            ...healthyChecks(),
+            { name: "fantasy_deadline_watch", status: "ok", detail: "no deadline at risk" },
+          ],
+        }),
+      url,
+      "secret",
+    );
+    expect(overall(healthy)).toBe("ok");
+    expect(healthy).toHaveLength(REQUIRED_DATABASE_CHECKS.length + 1);
+  });
+
+  test("malformed health responses fail closed without leaking response bodies", async () => {
+    for (const body of [
+      "upstream secret",
+      "null",
+      "{}",
+      '{"checks":[]}',
+      '{"checks":{}}',
+      '{"checks":[{"name":"bad name!","status":"ok","detail":"secret"}]}',
+      '{"checks":[{"name":"cron_jobs","status":"ok"}]}',
+    ]) {
+      const checks = await databaseHealth(async () => new Response(body), url, "secret");
+      expect(overall(checks)).toBe("fail");
+      expect(JSON.stringify(checks)).not.toContain("secret");
+    }
+    expect(overall([])).toBe("fail");
+  });
+
+  test("malformed run history cannot hide a stopped orchestrator", async () => {
+    for (const body of [
+      "not json",
+      "null",
+      "{}",
+      '{"workflow_runs":{}}',
+      '{"workflow_runs":[{"created_at":"invalid"}]}',
+    ]) {
+      const check = await orchestratorRecency(
+        async () => new Response(body),
+        "owner/repo",
+        "token",
+        new Date(),
+      );
+      expect(check.status).toBe("fail");
+    }
   });
 
   test("any check the database adds is reported by its own name, and nothing it says is dropped", async () => {
@@ -52,49 +134,79 @@ describe("production watchdog", () => {
         url,
         "secret",
       );
-    // Checks from a later migration need no change here.
+    // Checks from a later migration need no change here: these three come
+    // with 20260925210050 and 20260925210400.
+    const added: Check[] = [
+      {
+        name: "fantasy_fixture_coverage",
+        status: "fail",
+        detail: "1 counted match(es) final 12+ h ago without complete player statistics",
+      },
+      { name: "fantasy_scoring", status: "warn", detail: "GW1: every counted match final for 7 h" },
+      { name: "news_sitemap", status: "warn", detail: "last refresh 3 min ago" },
+    ];
+    expect(await health({ status: "fail", checks: [...healthyChecks(), ...added] })).toEqual([
+      ...healthyChecks(),
+      ...added,
+    ]);
+    // Nor are they required: production does not report them until those
+    // migrations are applied there, and a report without them is complete.
+    const required: readonly string[] = REQUIRED_DATABASE_CHECKS;
+    for (const { name } of added) expect(required).not.toContain(name);
+    // A status this script does not know fails under its own name instead of
+    // disappearing, and hides none of the other checks.
+    const lock: Check = {
+      name: "fantasy_gameweek_lock",
+      status: "fail",
+      detail: "GW1 deadline passed 390 min ago, still open",
+    };
     expect(
       await health({
         status: "fail",
         checks: [
-          {
-            name: "fantasy_statistics_coverage",
-            status: "fail",
-            detail: "fixture 19874708 finished 9.7 h ago without statistics",
-          },
-          { name: "sitemap_snapshot", status: "warn", detail: "last refresh 3 h ago" },
+          ...healthyChecks(lock),
+          { name: "scoring_age", status: "critical", detail: "GW1 unscored" },
         ],
       }),
     ).toEqual([
-      {
-        name: "fantasy_statistics_coverage",
-        status: "fail",
-        detail: "fixture 19874708 finished 9.7 h ago without statistics",
-      },
-      { name: "sitemap_snapshot", status: "warn", detail: "last refresh 3 h ago" },
-    ]);
-    // A status this script does not know fails instead of disappearing.
-    expect(
-      await health({
-        checks: [{ name: "scoring_age", status: "critical", detail: "GW1 unscored" }],
-      }),
-    ).toEqual([
+      ...healthyChecks(lock),
       {
         name: "scoring_age",
         status: "fail",
         detail: 'unrecognised status "critical": GW1 unscored',
       },
     ]);
-    // An overall failure no named check explains still fails.
-    const unexplained = await health({
+    // An entry with no name of ours fails the report, which still lists every
+    // other check, and nothing the entry said reaches the alert.
+    const unnamed = await health({
       status: "fail",
-      checks: [
-        { name: "cron_jobs", status: "ok", detail: "no failed run in the last hour" },
-        { name: "Bad Name", status: "fail", detail: "x" },
-      ],
+      checks: [...healthyChecks(), { name: "Bad Name", status: "fail", detail: "x marks" }],
     });
-    expect(unexplained.find((c) => c.name === "database_health")).toMatchObject({ status: "fail" });
-    expect(overall(unexplained)).toBe("fail");
+    expect(unnamed).toEqual([
+      ...healthyChecks(),
+      {
+        name: "database_health",
+        status: "fail",
+        detail: "health RPC returned 1 entry without a check name",
+      },
+    ]);
+    expect(JSON.stringify(unnamed)).not.toMatch(/Bad Name|x marks/);
+    // A check stated without a detail keeps its status; the report fails.
+    const [, ...rest] = healthyChecks();
+    expect(
+      await health({
+        status: "ok",
+        checks: [{ name: "fantasy_lifecycle_tick", status: "ok" }, ...rest],
+      }),
+    ).toEqual([
+      { name: "fantasy_lifecycle_tick", status: "ok", detail: "(no detail)" },
+      ...rest,
+      {
+        name: "database_health",
+        status: "fail",
+        detail: "health RPC returned fantasy_lifecycle_tick without a detail",
+      },
+    ]);
     // Blind is not healthy.
     expect(await health({ status: "ok", checks: [] })).toEqual([
       { name: "database_health", status: "fail", detail: "health RPC returned no checks" },
@@ -215,6 +327,22 @@ describe("production watchdog", () => {
       ).status,
     ).toBe("ok");
     expect((await schedule(new Response("{}", { status: 502 }))).status).toBe("warn");
+    // A history that cannot be read is not "never started", nor healthy; this
+    // row still only warns, whatever GitHub answered.
+    for (const body of ["not json", "{}", '{"workflow_runs":[null]}']) {
+      expect(await schedule(new Response(body))).toEqual({
+        name: "watchdog_schedule",
+        status: "warn",
+        detail: "run history returned invalid data",
+      });
+    }
+    expect(
+      await schedule(Response.json({ workflow_runs: [{ created_at: "soon", status: "queued" }] })),
+    ).toEqual({
+      name: "watchdog_schedule",
+      status: "warn",
+      detail: "latest scheduled run has an invalid timestamp",
+    });
   });
 
   test("an orchestrator GitHub has not started for hours is a failure", async () => {
