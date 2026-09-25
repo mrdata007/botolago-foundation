@@ -4,6 +4,8 @@
 --
 -- STATUS: names supplied (Olympic Safi, Olympique Dcheïra, Yacoub El Mansour)
 -- or confirmed (Chabab Mohammédia, JS Soualem) by the owner, 2026-09-25.
+-- APPLIED to production 2026-09-25 04:52 UTC:
+-- docs/production/APPLIED_2026_09_25_FORMER_CLUB_ARABIC_NAMES.md
 --
 -- WHY
 --   Matches -> Classement shows the 2024/25 and 2025/26 tables. BG-0068
