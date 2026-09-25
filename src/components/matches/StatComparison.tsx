@@ -9,6 +9,7 @@ import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
+import { noStatsMessage, type MatchDataPhase } from "./match-empty-states";
 import type { PressurePoint } from "./pressure-bins";
 import { PressureChart } from "./PressureChart";
 
@@ -72,6 +73,9 @@ function statLabel(t: (key: TranslationKey) => string, stat: Stat): string {
  * Colours are the page's resolved pair, so a clash-resolved away club is the
  * same colour here as in the header. Home is the first flex child
  * throughout, so Arabic puts it on the right like the header's home half.
+ *
+ * With no statistics, the message follows `phase` (see `match-empty-states`):
+ * a finished match's missing figures are not promised "at kick-off".
  */
 export function StatComparison({
   stats,
@@ -79,6 +83,7 @@ export function StatComparison({
   away,
   palettes,
   isLive,
+  phase,
   pressure = [],
 }: {
   stats: readonly Stat[];
@@ -86,6 +91,7 @@ export function StatComparison({
   away: Club;
   palettes: { home: ClubPalette; away: ClubPalette };
   isLive: boolean;
+  phase: MatchDataPhase;
   /** The provider's pressure index, minute by minute; empty draws no chart. */
   pressure?: readonly PressurePoint[];
 }) {
@@ -112,7 +118,7 @@ export function StatComparison({
       <section>
         {heading}
         {chart}
-        <EmptyState>{t("matches.detail.no_stats")}</EmptyState>
+        <EmptyState>{noStatsMessage(phase, t)}</EmptyState>
       </section>
     );
   }

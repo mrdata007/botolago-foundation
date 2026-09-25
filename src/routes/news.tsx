@@ -4,7 +4,7 @@ import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/rea
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { getNewsRepository } from "@/services/news";
-import { followService } from "@/services/follows";
+import { followedTeamIdsQuery } from "@/services/follows";
 import { useAuth } from "@/auth/AuthProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -113,7 +113,7 @@ function NewsRoute() {
 
 function NewsPage() {
   const { t, lang } = useI18n();
-  const { status } = useAuth();
+  const { user } = useAuth();
   const [categorySlug, setCategorySlug] = useState<string | null>(null);
   const [clubId, setClubId] = useState<string | null>(null);
 
@@ -132,11 +132,8 @@ function NewsPage() {
     queryFn: async () =>
       (await getNewsRepository().getTeamFilters(lang, publicNewsContext())).map(presentNewsTeam),
   });
-  const followedQ = useQuery({
-    queryKey: ["identity", "followed-team-ids", status],
-    queryFn: () =>
-      status === "authenticated" ? followService.getFollowedTeamIds() : Promise.resolve([]),
-  });
+  // Keyed by the account, not by "signed in": see `followedTeamIdsQuery`.
+  const followedQ = useQuery(followedTeamIdsQuery(user?.id ?? null));
   const followedIds = useMemo(() => new Set(followedQ.data ?? []), [followedQ.data]);
 
   const lead = homeQ.data?.lead ?? null;

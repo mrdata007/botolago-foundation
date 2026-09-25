@@ -4,11 +4,17 @@ import { clubLabel } from "@/components/fantasy/club-identity";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle } from "@/lib/club-palette";
-import { leagueZone, type LeagueTableRow, type LeagueZone } from "@/lib/league-table";
+import {
+  sharedPositions,
+  tableZones,
+  type LeagueTableRow,
+  type LeagueZone,
+} from "@/lib/league-table";
 import { cn } from "@/lib/utils";
-import type { Club } from "@/types/domain";
+import type { FootballSeason } from "@/services/football";
+import type { Club, TableRow } from "@/types/domain";
 import { formatGoalDifference } from "./head-to-head";
-import { zoneLabel } from "./standings-copy";
+import { listSeparator, zoneLabel } from "./standings-copy";
 
 /**
  * What the table shows: the season (`overall`), home or away matches only,
@@ -31,7 +37,9 @@ const ZONES: readonly LeagueZone[] = ["champions_league", "confederation_cup", "
  * tabular stat ramp — played, won, drawn, lost, goal difference, points.
  * The African places and the drop are a 4px bar on the row's start edge
  * (named for assistive tech inside the rank cell), keyed by `StandingsLegend`;
- * a home or away table qualifies for nothing, so it has no bars.
+ * a home or away table qualifies for nothing, so it has no bars. Clubs level
+ * on every figure print the same rank, and carry a bar only when their whole
+ * tie lies in the zone (`tableZones`); `StandingsNotes` says what that means.
  *
  * Built for 390px without a sideways scroll: the club column takes what the
  * figures leave and a long name wraps between words, onto two lines at most
@@ -57,12 +65,15 @@ export function StandingsTable({
   highlightClubId?: string;
   currentClubId?: string;
 }) {
-  const { t, tr } = useI18n();
+  const { t, tr, lang } = useI18n();
   const zoned = view === "overall" || view === "form";
   const figures = view !== "form";
   // The head row's type is `ui.text.label` on the `thead`: 12px, 800, uppercase.
   const head = "py-2";
   const narrow = "max-[359px]:hidden";
+  const zones = zoned ? tableZones(rows) : null;
+  const shared = sharedPositions(rows);
+  const comma = listSeparator(lang);
 
   const short = (abbr: string, full: string) => (
     <>
@@ -135,7 +146,7 @@ export function StandingsTable({
           {rows.map((row) => {
             const club = clubById(row.clubId);
             if (!club) return null;
-            const zone = zoned ? leagueZone(row.position, rows.length) : null;
+            const zone = zones?.get(row.clubId) ?? null;
             const mine = row.clubId === highlightClubId;
             const current = row.clubId === currentClubId;
             const tint = mine || current ? clubStyle(club) : undefined;
@@ -157,7 +168,11 @@ export function StandingsTable({
                     />
                   ) : null}
                   {row.position}
-                  {zone ? <span className="sr-only">, {zoneLabel(zone, t)}</span> : null}
+                  {/* Heard as "2, Ex æquo, Relégation": in Arabic with "،". */}
+                  {shared.has(row.position) ? (
+                    <span className="sr-only">{comma + t("standings.shared_rank")}</span>
+                  ) : null}
+                  {zone ? <span className="sr-only">{comma + zoneLabel(zone, t)}</span> : null}
                 </td>
                 <td className="py-0 pe-2 ps-1">
                   {/* The name is the link to the club page, at the 44px tap
@@ -225,6 +240,59 @@ export function StandingsLegend({ className }: { className?: string }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * What the table above cannot claim, in a line or two: that it is worked out
+ * from the results (`computed`, see `FootballStandings`), and — when clubs
+ * share a rank — that the order they are listed in decides nothing. Neither
+ * line names a tie-break rule: none is applied.
+ *
+ * A computed table is "provisional" while its season is played. Once the
+ * season is over it will not change, but it is still not the league's, so it
+ * is "unofficial" instead. Without the season's status (`undefined`: the
+ * match page reads it from a season list that can fail, or not reach back
+ * that far), the note says neither: it says only that the table is worked
+ * out from the results. Picking one would be a guess, and "provisional" was
+ * the guess a finished season's table used to get.
+ *
+ * `rows` is the whole table, which says which ranks are shared; `shown` is
+ * the part on screen when only part is (Home's top five, a club's
+ * neighbours). A tie that runs off the end of a snapshot is still a tie: the
+ * clubs shown on it were picked by the listing order.
+ */
+export function StandingsNotes({
+  rows,
+  shown = rows,
+  computed,
+  seasonStatus,
+  className,
+}: {
+  rows: readonly Pick<TableRow, "position">[];
+  shown?: readonly Pick<TableRow, "position">[];
+  computed: boolean;
+  seasonStatus: FootballSeason["status"] | undefined;
+  className?: string;
+}) {
+  const { t } = useI18n();
+  const sharedRanks = sharedPositions(rows);
+  const shared = shown.some((row) => sharedRanks.has(row.position));
+  if (!computed && !shared) return null;
+  const over = seasonStatus === "completed" || seasonStatus === "cancelled";
+  return (
+    <div className={cn("grid gap-1 px-1", ui.text.meta, ui.tone.muted, className)}>
+      {computed ? (
+        <p>
+          {seasonStatus === undefined
+            ? t("standings.computed")
+            : over
+              ? t("standings.unofficial")
+              : t("standings.provisional")}
+        </p>
+      ) : null}
+      {shared ? <p>{t("standings.shared_rank_note")}</p> : null}
+    </div>
   );
 }
 

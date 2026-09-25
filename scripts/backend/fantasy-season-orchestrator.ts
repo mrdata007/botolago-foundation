@@ -3,7 +3,12 @@ import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-import { runCurrentPerformanceBatch } from "./current-season-performances";
+import {
+  isProviderOutage,
+  runCurrentPerformanceBatch,
+  type IncompleteFixture,
+} from "./current-season-performances";
+import { requestSportsMonksJson } from "./sportsmonks-production-probe";
 import {
   evaluateFantasyPrizes,
   rpcFailure,
@@ -21,7 +26,17 @@ import {
  *      confirmed provider rounds; realign assignments, windows and deadlines of
  *      scheduled/open gameweeks; report placeholder kickoffs.
  *   2. finished-fixture performance ingestion (bounded batches, same code path
- *      as the manual workflow).
+ *      as the manual workflow). Each fixture is certified on its own; one the
+ *      pass cannot certify is reported with its reason and its age since the
+ *      final whistle. Recent ones leave the pass `waiting`; past
+ *      `COVERAGE_ESCALATE_HOURS` the pass escalates, because a finished match
+ *      without statistics is a missing-points incident, not a wait. Two
+ *      failures only wait, with their reason: a provider outage (the listing
+ *      does not say which fixtures are already certified, so the fixtures it
+ *      kept the pass from reading prove nothing) and a failed read of the
+ *      listing itself. The database's own `fantasy_fixture_coverage` check
+ *      (migration 20260926003400) reads real coverage and pages when
+ *      statistics are really missing.
  *   3. the trusted lifecycle worker (`runFantasyLifecycle`) for every gameweek
  *      that has work: an open gameweek past its deadline, a gameweek that is
  *      locked / live / provisional / finalizing, or a finalized gameweek whose
@@ -34,7 +49,14 @@ import {
  *      prize is never a reason to stop the game. Until the prize migration is
  *      promoted the function does not exist; that is reported as `skipped`
  *      and leaves the verdict alone.
- *   5. a second calendar pass so the summary reflects the progression.
+ *   5. a second calendar pass so the summary reflects the progression, then
+ *      the points check: a gameweek whose window (`endsAt`, read through
+ *      `api.fantasy_gameweeks`) ended more than `COVERAGE_ESCALATE_HOURS` ago
+ *      and is still not finalized escalates, whatever the worker said. A
+ *      gameweek can wait on `football_not_final` forever with every match
+ *      certified; the worker alone would call that `waiting` on every pass.
+ *      Windows that cannot be read leave the pass `waiting`; the watchdog's
+ *      `fantasy_points` row reads them on its own.
  *   6. `api.service_fantasy_deadline_watch` — a read-only guard that reports
  *      scheduled/open gameweeks whose deadline is approaching while a counting
  *      fixture still carries an unconfirmed placeholder kickoff. Inside the
@@ -171,12 +193,155 @@ export function summarizeDeadlineWatch(watch: DeadlineWatch) {
   };
 }
 
+/**
+ * Hours after the final whistle a finished fixture may go without certified
+ * statistics before the pass escalates. On 2026-09-24/25 the season's only
+ * finished fixture stayed without them for over ten hours behind green
+ * `waiting` runs. The same allowance applies to a gameweek's points, counted
+ * from the end of its window (see assessScoring). Override with the
+ * repository variable FANTASY_COVERAGE_ESCALATE_HOURS (1-168); any other
+ * value is reported and this default is used, as the watchdog does.
+ */
+export const COVERAGE_ESCALATE_HOURS = 6;
+/**
+ * 90 minutes, half-time and stoppage: the final whistle estimated from the
+ * kickoff, the only time the fixture listing gives.
+ */
+export const ESTIMATED_MATCH_HOURS = 2;
+
+export type CoverageGap = IncompleteFixture & {
+  finalWhistleSource: "kickoff_plus_estimate" | "unknown";
+  hoursSinceFinalWhistle: number | null;
+  /** Past the threshold, or of unknown age, and not a provider outage: escalates the pass. */
+  overdue: boolean;
+  /** The provider could not be read for it in this pass (`isProviderOutage`): it only waits. */
+  waitingOn?: "provider_outage";
+};
+
+/**
+ * Ages every fixture a pass could not certify. An age that cannot be computed
+ * cannot be shown to be recent, so it counts as overdue rather than waiting.
+ *
+ * Except after a provider outage. The listing names every finished fixture
+ * whose gameweek is not final, certified or not, and says neither which are
+ * certified nor when a match ended; no read-only API does per fixture
+ * (`api.service_ops_health` counts, and the scoring snapshot RPC writes). So
+ * an outage that stopped the pass from reading a fixture says nothing about
+ * that fixture, and aging it would page for certified matches. It waits,
+ * named by its code. Where migration 20260926003400 is applied,
+ * `fantasy_fixture_coverage` in `api.service_ops_health` reads real coverage
+ * and warns for a counted match still without certified statistics 6 h after
+ * its final whistle, paging at 12 h.
+ */
+export function assessCoverage(
+  incomplete: readonly IncompleteFixture[],
+  now: Date,
+  escalateHours: number = COVERAGE_ESCALATE_HOURS,
+): CoverageGap[] {
+  return [...incomplete]
+    .sort((a, b) => Number(a.fixtureExternalId) - Number(b.fixtureExternalId))
+    .map((fixture) => {
+      const whistle = fixture.kickoffAt
+        ? Date.parse(fixture.kickoffAt) + ESTIMATED_MATCH_HOURS * 3_600_000
+        : Number.NaN;
+      const hours = Number.isNaN(whistle)
+        ? null
+        : Math.round(((now.getTime() - whistle) / 3_600_000) * 10) / 10;
+      const outage = fixture.stage === "provider" && isProviderOutage(fixture.code);
+      return {
+        ...fixture,
+        finalWhistleSource: Number.isNaN(whistle) ? "unknown" : "kickoff_plus_estimate",
+        hoursSinceFinalWhistle: hours,
+        overdue: !outage && (hours === null || hours >= escalateHours),
+        ...(outage ? { waitingOn: "provider_outage" as const } : {}),
+      };
+    });
+}
+
+/**
+ * `api.fantasy_gameweeks`, the read-only contract the Fantasy pages use.
+ * `endsAt` is the gameweek's stored window end (`app.fantasy_gameweeks.ends_at`),
+ * used as it is. It is not recomputed here and is not a fixed offset from the
+ * last counted kickoff: production's GW1 ends 28 Sep 00:00 UTC, four hours
+ * after its last counted kickoff (27 Sep 20:00 UTC).
+ */
+export const gameweekWindowsSchema = z.object({
+  items: z.array(z.object({ id: uuid, sequence: z.number().int(), status, endsAt: z.string() })),
+});
+
+/** A gameweek in one of these still owes its points. */
+const POINTS_PENDING: readonly string[] = ["open", "locked", "live", "provisional", "finalizing"];
+
+export type ScoringSummary = { escalateHours: number; gameweeks: ScoringGap[] } | { error: string };
+
+export type ScoringGap = {
+  gameweekId: string;
+  sequence: number;
+  status: string;
+  windowEndsAt: string;
+  hoursSinceWindowEnd: number | null;
+  overdue: boolean;
+  /** Why the worker waited on it in this pass, when it ran for it. */
+  workerCode?: string;
+};
+
+/**
+ * Gameweeks whose window has ended but whose points are not final. Statistics
+ * can be certified for every match and the gameweek still not score: a
+ * fixture without `finalized_at` (20260922200000 found 480 of them), an
+ * unfrozen assignment or a match moved after the lock all keep it `live` on
+ * `football_not_final`, and the worker reports that as `waiting` on every
+ * pass. So the age is taken from the gameweek, not from the worker: past
+ * `escalateHours` after its window ends, it escalates. `endsAt` does not
+ * follow a match moved after the deadline, so such a gameweek escalates
+ * early, which is right: a counting match moved after the lock needs a
+ * decision. An unreadable end counts as overdue, as for coverage.
+ */
+export function assessScoring(
+  windows: z.infer<typeof gameweekWindowsSchema>,
+  workers: readonly WorkerRun[],
+  now: Date,
+  escalateHours: number = COVERAGE_ESCALATE_HOURS,
+): ScoringGap[] {
+  return windows.items
+    .filter((gw) => POINTS_PENDING.includes(gw.status))
+    .map((gw) => {
+      const end = Date.parse(gw.endsAt);
+      const hours = Number.isNaN(end)
+        ? null
+        : Math.round(((now.getTime() - end) / 3_600_000) * 10) / 10;
+      const workerCode = workers.find((run) => run.gameweekId === gw.id)?.code;
+      return {
+        gameweekId: gw.id,
+        sequence: gw.sequence,
+        status: gw.status,
+        windowEndsAt: gw.endsAt,
+        hoursSinceWindowEnd: hours,
+        overdue: hours === null || hours >= escalateHours,
+        ...(workerCode ? { workerCode } : {}),
+      };
+    })
+    .filter((gap) => gap.hoursSinceWindowEnd === null || gap.hoursSinceWindowEnd >= 0)
+    .sort((a, b) => a.sequence - b.sequence);
+}
+
 export interface OrchestratorGateway extends FantasyWorkerGateway {
-  /** One bounded finished-fixture performance batch; `null` cursor starts from the beginning. */
-  ingestPerformances(afterFixtureExternalId: string | null): Promise<{
+  /**
+   * One bounded finished-fixture performance batch; `null` cursor starts from
+   * the beginning. `providerOutage` is an outage an earlier page of this pass
+   * met: the page is then listed and reported without asking the provider.
+   */
+  ingestPerformances(
+    afterFixtureExternalId: string | null,
+    options?: { providerOutage?: string | null },
+  ): Promise<{
     fixturesProcessed: number;
     hasMore: boolean;
     nextCursor: string | null;
+    /** Finished fixtures of this page left without certified statistics. */
+    incomplete?: IncompleteFixture[];
+    /** The provider outage this page met or was handed, if any. */
+    providerOutage?: string | null;
   }>;
 }
 
@@ -188,6 +353,13 @@ export interface OrchestratorOptions {
   providerRefresh?: ProviderRefresh;
   /** Deadline watch window; defaults mirror the RPC defaults. */
   deadlineWatch?: { warnHours?: number; escalateHours?: number };
+  /** Coverage age after which a finished fixture escalates; see COVERAGE_ESCALATE_HOURS. */
+  coverage?: { escalateHours?: number };
+  /**
+   * Repository variables set to a value the pass could not use; it ran on
+   * their defaults instead. Reported, and the verdict is at least `waiting`.
+   */
+  invalidSettings?: readonly string[];
 }
 
 export type WorkerRun = {
@@ -288,8 +460,12 @@ export async function orchestrateFantasySeason(
   const maxPerformanceBatches = options.maxPerformanceBatches ?? 10;
   const warnHours = options.deadlineWatch?.warnHours ?? DEADLINE_WATCH_WARN_HOURS;
   const escalateHours = options.deadlineWatch?.escalateHours ?? DEADLINE_WATCH_ESCALATE_HOURS;
+  const coverageEscalateHours = options.coverage?.escalateHours ?? COVERAGE_ESCALATE_HOURS;
+  const invalidSettings = [...(options.invalidSettings ?? [])];
   const workers: WorkerRun[] = [];
-  let verdict: Verdict = "ok";
+  // A setting the pass could not use is a typo to fix, not an incident: the
+  // pass ran on the default and says so.
+  let verdict: Verdict = invalidSettings.length > 0 ? "waiting" : "ok";
 
   const before = calendarSyncSchema.parse(
     await gateway.rpc("service_sync_fantasy_calendar", { p_fantasy_season_id: null }),
@@ -299,23 +475,35 @@ export async function orchestrateFantasySeason(
   let batches = 0;
   let fixturesProcessed = 0;
   let performanceError: string | undefined;
+  let truncated = false;
+  const incomplete: IncompleteFixture[] = [];
   let performanceDiagnostic: Record<string, unknown> | undefined;
+  // Once one page meets a provider outage, the later pages are listed (so
+  // their fixtures are still reported) but the provider is not asked again:
+  // ten pages of three retries with up to 30 s of Retry-After each would
+  // outlast the job.
+  let providerOutage: string | null = null;
   try {
     do {
-      const batch = await gateway.ingestPerformances(cursor);
+      const batch = await gateway.ingestPerformances(cursor, { providerOutage });
       batches += 1;
       fixturesProcessed += batch.fixturesProcessed;
+      incomplete.push(...(batch.incomplete ?? []));
+      providerOutage = batch.providerOutage ?? providerOutage;
       if (!batch.hasMore) break;
       if (!batch.nextCursor || batch.nextCursor === cursor)
         throw new Error("performance_cursor_invalid");
       cursor = batch.nextCursor;
-    } while (batches < maxPerformanceBatches);
+      truncated = batches >= maxPerformanceBatches;
+    } while (!truncated);
   } catch (error) {
+    // Per-fixture problems come back in `incomplete`; what reaches here is the
+    // fixture listing itself (a database read, its contract, the cursor), with
+    // nothing to age.
     performanceError = safeCode(error, "performance_ingestion_failed");
     performanceDiagnostic = safeDiagnostic(error);
-    // Scoring waits for complete statistics by design; the worker below will
-    // report `football_not_final` / coverage errors rather than guess.
   }
+  const coverage = assessCoverage(incomplete, now, coverageEscalateHours);
 
   const selection = selectWorkerTargets(before, now);
   const skipped = selection.skipped;
@@ -352,7 +540,51 @@ export async function orchestrateFantasySeason(
   const after = calendarSyncSchema.parse(
     await gateway.rpc("service_sync_fantasy_calendar", { p_fantasy_season_id: null }),
   );
+  // A pass that could not list the finished fixtures knows nothing about their
+  // statistics, and one failed read is not an incident: it waits, named by
+  // `performances.error`. Until 2026-09-25 one bad payload failed the whole
+  // listing, and the pass waited, green, while a finished match went without
+  // statistics for about ten hours; payloads now fail alone, in `incomplete`,
+  // and age. If the listing keeps failing, the database's
+  // `fantasy_fixture_coverage` (where 20260926003400 is applied) and the
+  // watchdog's `fantasy_points` page once statistics or points go missing.
   if (performanceError) verdict = mergeVerdict(verdict, "waiting");
+  // Fixtures past the last page are never reached while the cursor restarts
+  // at null each pass, so a truncated listing cannot wait for itself.
+  if (truncated) verdict = mergeVerdict(verdict, "escalate");
+  if (coverage.some((gap) => gap.overdue)) verdict = mergeVerdict(verdict, "escalate");
+  else if (coverage.length > 0) verdict = mergeVerdict(verdict, "waiting");
+
+  // Points, aged the same way. Only read when a gameweek could have ended
+  // unscored: an open gameweek before its deadline cannot have.
+  let scoring: { gameweeks: ScoringGap[] } | { error: string } = { gameweeks: [] };
+  if (
+    after.gameweeks.some(
+      (gw) =>
+        POINTS_PENDING.includes(gw.status) &&
+        (gw.status !== "open" || Date.parse(gw.deadlineAt) <= now.getTime()),
+    )
+  ) {
+    try {
+      const windows = gameweekWindowsSchema.parse(
+        await gateway.rpc("fantasy_gameweeks", {
+          p_season_id: after.seasonId,
+          p_before_sequence: null,
+          p_limit: 100,
+        }),
+      );
+      scoring = { gameweeks: assessScoring(windows, workers, now, coverageEscalateHours) };
+    } catch (error) {
+      // Without the windows this pass cannot show a gameweek on time, nor
+      // late: it waits, named by `scoring.error`. The watchdog's
+      // `fantasy_points` row reads the same windows on its own schedule.
+      scoring = { error: safeCode(error, "fantasy_gameweek_windows_unreadable") };
+    }
+  }
+  if ("error" in scoring) verdict = mergeVerdict(verdict, "waiting");
+  else if (scoring.gameweeks.some((gap) => gap.overdue))
+    verdict = mergeVerdict(verdict, "escalate");
+  else if (scoring.gameweeks.length > 0) verdict = mergeVerdict(verdict, "waiting");
   const providerRefresh = options.providerRefresh;
   // Without a fixture refresh the pass can only work from data already in the
   // database; it is still safe, but never "ok" until the provider is read again.
@@ -385,6 +617,7 @@ export async function orchestrateFantasySeason(
     schemaVersion: 1,
     verdict,
     observedAt: now.toISOString(),
+    ...(invalidSettings.length > 0 ? { invalidSettings } : {}),
     ...(providerRefresh ? { providerRefresh } : {}),
     calendar: {
       seasonId: after.seasonId,
@@ -408,7 +641,16 @@ export async function orchestrateFantasySeason(
       fixturesProcessed,
       ...(performanceError ? { error: performanceError } : {}),
       ...(performanceDiagnostic ? { diagnostic: performanceDiagnostic } : {}),
+      ...(truncated ? { truncated: true } : {}),
+      ...(providerOutage ? { providerOutage } : {}),
+      ...(coverage.length > 0 ? { coverageEscalateHours, incomplete: coverage } : {}),
     },
+    // Absent (and so left out of the evidence) while no gameweek has ended unscored.
+    scoring: ("error" in scoring
+      ? scoring
+      : scoring.gameweeks.length > 0
+        ? { escalateHours: coverageEscalateHours, gameweeks: scoring.gameweeks }
+        : undefined) as ScoringSummary | undefined,
     workers,
     skipped,
     prizes,
@@ -417,6 +659,65 @@ export async function orchestrateFantasySeason(
 }
 
 type OrchestratorSummary = Awaited<ReturnType<typeof orchestrateFantasySeason>>;
+
+/**
+ * Where a gap stopped, in a few words: the field, the database's own code or
+ * the unnamed starters.
+ */
+function gapReason(gap: CoverageGap): string {
+  const diagnostic = gap.diagnostic ?? {};
+  if (typeof diagnostic.field === "string")
+    return ` at ${diagnostic.field}${typeof diagnostic.valueType === "string" ? ` (${diagnostic.valueType})` : ""}`;
+  if (typeof diagnostic.reason === "string") return ` ${diagnostic.reason}`;
+  if (typeof diagnostic.unidentifiedStarters === "number")
+    return ` (${diagnostic.unidentifiedStarters} unnamed starters)`;
+  return "";
+}
+
+function renderScoring(scoring: OrchestratorSummary["scoring"]): string {
+  if (!scoring) return "none";
+  if ("error" in scoring) return `windows unreadable: \`${scoring.error}\` (waiting)`;
+  const overdue = scoring.gameweeks.filter((gap) => gap.overdue).length;
+  const listed = scoring.gameweeks.map(
+    (gap) =>
+      `GW${gap.sequence} ${gap.status}${gap.workerCode ? ` \`${gap.workerCode}\`` : ""}, ${
+        gap.hoursSinceWindowEnd === null
+          ? "window end unreadable"
+          : `window ended ${gap.hoursSinceWindowEnd} h ago`
+      }`,
+  );
+  return `${scoring.gameweeks.length} gameweek(s), ${overdue} past ${scoring.escalateHours} h: ${listed.join("; ")}`;
+}
+
+function renderCoverage(performances: OrchestratorSummary["performances"]): string {
+  const all = performances.incomplete ?? [];
+  // Not read because of a provider outage: possibly certified, so not listed
+  // as missing statistics.
+  const unread = all.filter((gap) => gap.waitingOn === "provider_outage");
+  const gaps = all.filter((gap) => gap.waitingOn !== "provider_outage");
+  const parts: string[] = [];
+  if (gaps.length > 0) {
+    const overdue = gaps.filter((gap) => gap.overdue).length;
+    const listed = gaps
+      .slice(0, 5)
+      .map(
+        (gap) =>
+          `${gap.fixtureExternalId} \`${gap.code}\`${gapReason(gap)}, ${
+            gap.hoursSinceFinalWhistle === null
+              ? "age unknown"
+              : `${gap.hoursSinceFinalWhistle} h after the final whistle`
+          }`,
+      );
+    parts.push(
+      `${gaps.length} fixture(s), ${overdue} past ${performances.coverageEscalateHours} h: ${listed.join("; ")}${gaps.length > 5 ? "; …" : ""}`,
+    );
+  }
+  if (unread.length > 0)
+    parts.push(
+      `provider outage \`${performances.providerOutage ?? unread[0]!.code}\`: ${unread.length} listed fixture(s) not read, certified or not (waiting)`,
+    );
+  return parts.length > 0 ? parts.join("; ") : "none";
+}
 
 /**
  * The run's health in a few table rows, for the GitHub run page
@@ -459,12 +760,22 @@ export function renderHealthSummary(summary: OrchestratorSummary): string {
     ],
     [
       "Performances",
-      `${summary.performances.fixturesProcessed} fixtures in ${summary.performances.batches} batch(es)${summary.performances.error ? `, error \`${summary.performances.error}\`` : ""}${summary.performances.diagnostic ? ` \`${JSON.stringify(summary.performances.diagnostic)}\`` : ""}`,
+      `${summary.performances.fixturesProcessed} fixtures in ${summary.performances.batches} batch(es)${summary.performances.error ? `, error \`${summary.performances.error}\`` : ""}${summary.performances.diagnostic ? ` \`${JSON.stringify(summary.performances.diagnostic)}\`` : ""}${summary.performances.truncated ? ", listing truncated" : ""}`,
     ],
+    ["Finished without statistics", renderCoverage(summary.performances)],
+    ["Ended without final points", renderScoring(summary.scoring)],
     [
       "Deadline watch",
       watch.error ? `error \`${watch.error}\`` : `${watch.escalations?.length ?? 0} escalation(s)`,
     ],
+    ...(summary.invalidSettings
+      ? ([
+          [
+            "Settings",
+            `${summary.invalidSettings.map((name) => `\`${name}\``).join(", ")} not usable; the default was used (waiting)`,
+          ],
+        ] as Array<[string, string]>)
+      : []),
   ];
   return [
     `## Fantasy season orchestrator: ${summary.verdict.toUpperCase()}`,
@@ -521,6 +832,19 @@ export function summarizeProviderRefresh(
   }
   const evidence = raw as Record<string, unknown>;
   const windows = Array.isArray(evidence.fixtures) ? evidence.fixtures.length : 0;
+  // The workflow runs the refresh with `continue-on-error`, which lists the
+  // step as a success in the run's job summary whatever happened; its real
+  // outcome only arrives here. A step that failed after writing `pass` did not
+  // finish what that evidence claims, so it is never counted as a refresh.
+  if (stepOutcome === "failure" && evidence.verdict === "pass") {
+    return {
+      verdict: "fail",
+      errorCode: "current_season_recovery_step_failed",
+      fixturesRefreshed: false,
+      fixtureWindows: windows,
+      failed: true,
+    };
+  }
   const verdict = evidence.verdict === "pass" ? "pass" : "fail";
   const errorCode =
     typeof evidence.errorCode === "string" && /^[a-z][a-z0-9_]{2,100}$/.test(evidence.errorCode)
@@ -546,10 +870,10 @@ function safeCode(error: unknown, fallback: string) {
 /**
  * What the statistics import says about its failure, when it says something
  * (`CurrentPerformanceError.diagnostic`): which provider field, which fixture,
- * how many rows, which statistic types are missing. Only flat strings,
- * numbers and booleans are kept, alone or in short lists of flat records
- * (`missingDetailTypes: [{ typeId, playerRows }]`), so nothing from a payload
- * can reach the evidence.
+ * how many rows, which database code. Only flat strings, numbers and booleans
+ * are kept, alone or in short lists of flat records, so nothing from a payload
+ * can reach the evidence. A string may be a field path (`batch.items[2]`) or
+ * a database code (`CURRENT_SEASON_REQUIRED`), never free text.
  */
 export function safeDiagnostic(error: unknown): Record<string, unknown> | undefined {
   const diagnostic =
@@ -561,7 +885,7 @@ export function safeDiagnostic(error: unknown): Record<string, unknown> | undefi
   const flat = (value: unknown) =>
     typeof value === "number" ||
     typeof value === "boolean" ||
-    (typeof value === "string" && /^[a-zA-Z0-9_.]{1,40}$/.test(value));
+    (typeof value === "string" && /^[a-zA-Z0-9_.[\]]{1,80}$/.test(value));
   const flatRecord = (value: unknown) =>
     !!value &&
     typeof value === "object" &&
@@ -573,6 +897,17 @@ export function safeDiagnostic(error: unknown): Record<string, unknown> | undefi
       (flat(value) || (Array.isArray(value) && value.length <= 20 && value.every(flatRecord))),
   );
   return kept.length ? Object.fromEntries(kept) : undefined;
+}
+
+/**
+ * The repository variable FANTASY_COVERAGE_ESCALATE_HOURS (1-168); `null` when
+ * it is set to anything else. The watchdog reads it the same way
+ * (`pointsEscalateHours`).
+ */
+function coverageEscalateHours(raw: string | undefined): number | null {
+  if (raw === undefined || raw === "") return COVERAGE_ESCALATE_HOURS;
+  if (!/^\d{1,3}$/.test(raw) || Number(raw) < 1 || Number(raw) > 168) return null;
+  return Number(raw);
 }
 
 function deadlineWatchHours(raw: string | undefined, fallback: number) {
@@ -620,8 +955,13 @@ export function orchestratorEnvironment(env: Record<string, string | undefined>)
     DEADLINE_WATCH_ESCALATE_HOURS,
   );
   if (warnHours < escalateHours) throw new Error("fantasy_deadline_watch_window_invalid");
+  // A typo in this threshold used to stop the whole pass, the season with it.
+  // Like the watchdog, the pass now runs on the default and names the variable.
+  const coverageHours = coverageEscalateHours(env.FANTASY_COVERAGE_ESCALATE_HOURS);
   return {
     deadlineWatch: { warnHours, escalateHours },
+    coverage: { escalateHours: coverageHours ?? COVERAGE_ESCALATE_HOURS },
+    invalidSettings: coverageHours === null ? ["FANTASY_COVERAGE_ESCALATE_HOURS"] : [],
     url: env.SUPABASE_PRODUCTION_URL.replace(/\/$/, ""),
     key: env.SUPABASE_SECRET_KEY,
     token: env.SPORTSMONKS_API_TOKEN,
@@ -665,16 +1005,20 @@ if (import.meta.main) {
           );
         return data;
       },
-      async ingestPerformances(afterFixtureExternalId) {
+      async ingestPerformances(afterFixtureExternalId, options) {
         const result = await runCurrentPerformanceBatch(
           rawClient,
           config.token,
           afterFixtureExternalId,
+          requestSportsMonksJson,
+          { providerOutage: options?.providerOutage ?? null },
         );
         return {
           fixturesProcessed: Number(result.fixturesProcessed ?? 0),
           hasMore: Boolean(result.hasMore),
           nextCursor: typeof result.nextCursor === "string" ? result.nextCursor : null,
+          incomplete: result.incomplete,
+          providerOutage: result.providerOutage,
         };
       },
     };
@@ -687,6 +1031,8 @@ if (import.meta.main) {
       ...(await orchestrateFantasySeason(gateway, {
         providerRefresh,
         deadlineWatch: config.deadlineWatch,
+        coverage: config.coverage,
+        invalidSettings: config.invalidSettings,
       })),
     };
     const serialized = `${JSON.stringify(summary, null, 2)}\n`;

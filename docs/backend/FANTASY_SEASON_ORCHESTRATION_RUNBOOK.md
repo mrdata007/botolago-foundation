@@ -8,14 +8,14 @@ workflows, which remain available as fallbacks.
 
 ## Components
 
-| Piece                                                                            | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `supabase/migrations/20260918120000_fantasy_calendar_sync.sql`                   | `api.service_sync_fantasy_calendar(p_fantasy_season_id uuid default null)` (service role only) plus `app_private.fantasy_kickoff_confirmed()` and a relaxed `fantasy_guard_deadline_change` (a `scheduled` gameweek may be realigned; an `open` one only before its deadline; everything else raises `fantasy_gameweek_locked`; every change stays audited in `app_private.fantasy_deadline_change_audit`).                                                                      |
-| `supabase/migrations/20260918130000_fantasy_deadline_watch.sql`                  | `api.service_fantasy_deadline_watch(p_fantasy_season_id uuid default null, p_warn_hours integer default 72, p_escalate_hours integer default 24)` (service role only, `stable`, read-only). Lists scheduled/open gameweeks whose deadline is inside the warning window while an active counting fixture still carries an unconfirmed kickoff, with the affected fixture detail. Never writes, never derives a replacement deadline.                                              |
-| `supabase/migrations/20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql` | Replaces `api.service_sync_fantasy_calendar` so the window/deadline derivation ignores unconfirmed kickoffs and is skipped entirely (note `deadline_unconfirmed`) while any active counting assignment of that gameweek is still a placeholder. Everything else is unchanged.                                                                                                                                                                                                    |
-| `scripts/backend/fantasy-season-orchestrator.ts`                                 | One idempotent pass: calendar sync → finished-fixture performance ingestion (`runCurrentPerformanceBatch`, bounded) → the trusted lifecycle worker (`runFantasyLifecycle`) for every gameweek with work → calendar sync again → deadline watch. Writes sanitized `fantasy-season-orchestrator.json`; verdict `ok` / `waiting` / `escalate` / `failed`.                                                                                                                           |
-| `.github/workflows/fantasy-season-orchestrator.yml`                              | Hourly (`12 * * * *`) and owner dispatch (`RUN_FANTASY_ORCHESTRATOR`). Job runs only when the repository variable `FANTASY_AUTOMATION_ENABLED` is `true`, on `main`, in the `production-admin-activation` environment, in the shared production mutation concurrency group. Steps: guard → checkout exact SHA → unit tests + secrets check → provider refresh (`current-season-recovery.ts`, canary mode, `continue-on-error`) → orchestrator → evidence scan → artifact upload. |
-| `scripts/backend/current-season-recovery.ts`                                     | Unchanged provider ingestion. `validateRecoveryMode` additionally accepts `schedule` + `canary` when `FANTASY_AUTOMATION_ENABLED=true` (the same owner-reviewed canary that is dispatched by hand today).                                                                                                                                                                                                                                                                        |
+| Piece                                                                            | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `supabase/migrations/20260918120000_fantasy_calendar_sync.sql`                   | `api.service_sync_fantasy_calendar(p_fantasy_season_id uuid default null)` (service role only) plus `app_private.fantasy_kickoff_confirmed()` and a relaxed `fantasy_guard_deadline_change` (a `scheduled` gameweek may be realigned; an `open` one only before its deadline; everything else raises `fantasy_gameweek_locked`; every change stays audited in `app_private.fantasy_deadline_change_audit`).                                                                                                                                                                    |
+| `supabase/migrations/20260918130000_fantasy_deadline_watch.sql`                  | `api.service_fantasy_deadline_watch(p_fantasy_season_id uuid default null, p_warn_hours integer default 72, p_escalate_hours integer default 24)` (service role only, `stable`, read-only). Lists scheduled/open gameweeks whose deadline is inside the warning window while an active counting fixture still carries an unconfirmed kickoff, with the affected fixture detail. Never writes, never derives a replacement deadline.                                                                                                                                            |
+| `supabase/migrations/20260918140000_fantasy_calendar_sync_unconfirmed_guard.sql` | Replaces `api.service_sync_fantasy_calendar` so the window/deadline derivation ignores unconfirmed kickoffs and is skipped entirely (note `deadline_unconfirmed`) while any active counting assignment of that gameweek is still a placeholder. Everything else is unchanged.                                                                                                                                                                                                                                                                                                  |
+| `scripts/backend/fantasy-season-orchestrator.ts`                                 | One idempotent pass: calendar sync → finished-fixture performance ingestion (`runCurrentPerformanceBatch`, bounded) → the trusted lifecycle worker (`runFantasyLifecycle`) for every gameweek with work → calendar sync again → points check (read-only `api.fantasy_gameweeks`) → deadline watch. Writes sanitized `fantasy-season-orchestrator.json`; verdict `ok` / `waiting` / `escalate` / `failed`.                                                                                                                                                                      |
+| `.github/workflows/fantasy-season-orchestrator.yml`                              | Hourly (`12 * * * *`) and owner dispatch (`RUN_FANTASY_ORCHESTRATOR`). Job runs only when the repository variable `FANTASY_AUTOMATION_ENABLED` is `true`, on `main`, in the `production-admin-activation` environment, in the shared production mutation concurrency group. Steps: guard → checkout exact SHA → unit tests + secrets check → provider refresh (`current-season-recovery.ts`, canary mode, `continue-on-error`) → orchestrator → _Provider refresh failed_ (only when the refresh failed; fails the job) → evidence scan → artifact upload → `ops-alert` issue. |
+| `scripts/backend/current-season-recovery.ts`                                     | Unchanged provider ingestion. `validateRecoveryMode` additionally accepts `schedule` + `canary` when `FANTASY_AUTOMATION_ENABLED=true` (the same owner-reviewed canary that is dispatched by hand today).                                                                                                                                                                                                                                                                                                                                                                      |
 
 ## What the calendar sync does, per provider round
 
@@ -64,10 +64,12 @@ Each target runs through `runFantasyLifecycle` with the gameweek's own
 lock → live → provisional → scoring snapshot → persistence → finalization →
 free-hit restore → free-transfer roll → rankings → completion → prices →
 notifications → postwork → next-gameweek preparation, all through idempotent
-service RPCs. A `waiting` outcome (`football_not_started`, `football_not_final`,
-coverage incomplete) leaves the pass in `waiting`; a thrown error stops the
-pass with a stable code and exit status 1. At most two gameweeks are processed
-per pass (`maxWorkerRuns`).
+service RPCs. A `waiting` outcome (`football_not_started`, `football_not_final`)
+leaves the pass in `waiting`; a thrown error stops the pass with a stable code
+and exit status 1. Missing statistics for a finished fixture, and a gameweek
+past the end of its window without final points, wait only for a limited
+time (next section). At most two gameweeks are processed per pass
+(`maxWorkerRuns`).
 
 An `open` gameweek whose round note carries `deadlineUnconfirmed: true` (or
 `deadline_unconfirmed`) is **never** taken as a `deadline_passed` target, even
@@ -75,6 +77,221 @@ once its stored deadline has elapsed: locking it would freeze lineups on a
 deadline the provider never published, and nothing can undo that afterwards.
 The refusal is reported as `summary.skipped[] = {gameweekId, sequence, reason:
 "deadline_unconfirmed"}` and degrades the verdict to at least `waiting`.
+
+## Finished fixtures without statistics (since 2026-09-25)
+
+What went wrong: from the evening of 24 September the season's only finished
+fixture (SportsMonks 19874708) had no statistics, so GW1 could never score.
+Every pass recorded `performances.error: "invalid_provider_id"` and ended
+`waiting`, which exits 0. The runs were green, and the 07:44 UTC run closed
+the open `ops-alert` issue. Waiting was the right answer for the first hour
+and the wrong one for the tenth.
+
+Each finished fixture is now certified on its own
+(`CURRENT_FINISHED_FIXTURE_PERFORMANCES.md` has why that is safe). Every one
+the pass could not certify is listed in `performances.incomplete[]` with its
+stage, code, field path or database code, and its age:
+
+| Condition                                                                                                                          | Verdict                     |
+| ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| a fixture read and not certified, less than `FANTASY_COVERAGE_ESCALATE_HOURS` after its final whistle                              | `waiting` (exit 0)          |
+| a fixture read and not certified for longer, or of unknown age                                                                     | `escalate` (exit 1, alert)  |
+| a fixture a provider outage kept the pass from reading (`waitingOn: "provider_outage"`, the code in `performances.providerOutage`) | `waiting`, whatever its age |
+| a gameweek not finalized, less than `FANTASY_COVERAGE_ESCALATE_HOURS` after its window ended                                       | `waiting` (exit 0)          |
+| a gameweek not finalized for longer, or its window end unreadable                                                                  | `escalate` (exit 1, alert)  |
+| the gameweek windows could not be read at all (`scoring.error`)                                                                    | `waiting`                   |
+| the fixture listing cut off at `maxPerformanceBatches` (fixtures beyond it are never reached)                                      | `escalate`                  |
+| the fixture listing could not be read (`performances.error`, with `performances.diagnostic` when it names a field)                 | `waiting`                   |
+| `FANTASY_COVERAGE_ESCALATE_HOURS` set to anything but a whole number from 1 to 168 (`invalidSettings`, a _Settings_ row)           | `waiting`, on 6 h           |
+
+A provider outage, a failed read and an unusable setting are named on the run
+page but do not escalate. The listing does not say which fixtures are already
+certified, so a fixture an outage kept the pass from reading proves nothing,
+and one failed read is not an incident. Per-fixture problems no longer reach
+the listing's error, so this does not bring back the green hours of 24–25
+September. When statistics or points really go missing, the database's own
+checks (below) and the watchdog's `fantasy_points` page, whatever GitHub's
+runs say.
+
+The pass ages a fixture from kickoff + 2 h (its `finalWhistleSource` is
+`kickoff_plus_estimate`, or `unknown` without a kickoff): the listing gives no
+final whistle. The default threshold is 6 h; the repository variable
+`FANTASY_COVERAGE_ESCALATE_HOURS` (a whole number from 1 to 168) overrides it.
+Any other value is reported in `invalidSettings` and 6 h is used; it used to
+stop the pass with `fantasy_coverage_escalation_window_invalid`. The run page
+gains a _Finished without statistics_ row, and the alert issue's category
+becomes `performance_coverage_overdue` with the fixture ids and codes. An
+escalated fixture keeps its gameweek from finalizing, so it stays in the
+listing and escalates every pass that reads it; the issue closes on the next
+green run. A run that waited on a provider outage is green without having read
+the fixture, so a closed issue does not prove the statistics arrived: the
+database's `fantasy_fixture_coverage` keeps failing until they do. The
+recovery procedure is in `CURRENT_FINISHED_FIXTURE_PERFORMANCES.md`.
+
+**After a manual ingest, dispatch the orchestrator.** The recovery procedure
+certifies statistics with the manual workflow (its one-fixture canary), but
+only this orchestrator's worker scores and finalizes a gameweek, and GitHub
+has started the hourly schedule up to 6.3 h late. So once the manual run is
+green: Actions → _Fantasy season orchestrator_ → Run workflow on `main`, with
+`RUN_FANTASY_ORCHESTRATOR` typed as the confirmation. It shares the manual
+run's concurrency group, so it waits for it to finish. Otherwise the
+database's `fantasy_scoring` check warns an hour after the certification and
+fails, paging, 8 h after it.
+
+The database watches the same two things without GitHub (migration
+`20260926003400`, `docs/operations/ALERTS.md`), from real coverage and the
+recorded final whistle (`app.fixtures.finalized_at`, kickoff + 2 h without
+one): `fantasy_fixture_coverage` warns 6 h and fails 12 h after a counted
+match's final whistle without certified statistics, whatever the cause, a
+provider outage included, and `fantasy_scoring` ages the gameweek. Their
+thresholds are fixed in that migration; `FANTASY_COVERAGE_ESCALATE_HOURS` does
+not change them.
+
+### Points not final after the gameweek's window
+
+Certified statistics are not enough for points. A gameweek leaves `live` only
+when every counting fixture is `finished` **and** has `finalized_at`, and
+every counting assignment is frozen (`service_advance_fantasy_lifecycle`).
+Until then the worker answers `waiting` with `football_not_final`, pass after
+pass, and a fixture that never gets `finalized_at` (migration
+`20260922200000` found 480 such fixtures) or a match moved after the lock
+keeps it there with every statistic certified. Coverage aging cannot see
+that, so the pass also ages the gameweek:
+
+- after the second calendar sync, when any gameweek is `locked`, `live`,
+  `provisional` or `finalizing` (or `open` past its deadline), the pass reads
+  `api.fantasy_gameweeks` (read-only, the contract the Fantasy pages use) for
+  each gameweek's `endsAt`, the end of its window as stored
+  (`app.fantasy_gameweeks.ends_at`). The calendar sync sets it to the last
+  counting kickoff + 6 h, but only while the gameweek is `scheduled` or `open`
+  with no frozen assignment; after that it no longer moves. So it is not
+  always last kickoff + 6 h: production's GW1 ends at 00:00 UTC on 28 Sep, 4 h
+  after its last kickoff (read 2026-09-25);
+- a gameweek still in one of those states after its window ended is listed in
+  `scoring.gameweeks[]` with `hoursSinceWindowEnd`, `overdue`, and the
+  worker's `workerCode` when it ran for it; the run page gains an _Ended
+  without final points_ row;
+- past `FANTASY_COVERAGE_ESCALATE_HOURS` (the same allowance, counted from the
+  window end, 6 h by default) the pass escalates, and so does a gameweek whose
+  window end is unreadable. Windows that could not be read at all
+  (`scoring.error`) leave the pass `waiting`, named: the next pass reads them
+  again, and the watchdog's `fantasy_points` reads them on its own schedule.
+
+`endsAt` does not follow a counting match moved after the deadline, so such a
+gameweek escalates here `FANTASY_COVERAGE_ESCALATE_HOURS` (6 h) after its
+window, and so does one held by a match postponed, cancelled or abandoned
+after the lock. This side does not know the ruleset's 48 h: while the rules
+still keep that match in its gameweek, the answer to the escalation is to wait
+for it. The database's `fantasy_scoring` check knows the rule: it warns at
+once for a match called off, or moved too late to be completed within the
+48 h, saying until when the rules keep it, and it fails for any counted match
+still not finished 48 h after the kickoff it was frozen with, whatever holds
+it, when the owner's tool starts to accept it:
+[After the lock](#after-the-lock-since-migration-20260926003500) below.
+
+What to do: read `scoring.gameweeks[].workerCode`. `football_not_final` with
+every fixture certified means a fixture lacks `finalized_at` or an assignment
+is not frozen: check the provider refresh (it sets `finalized_at`) and the
+fixture's status, never set it by hand. With a fixture still in
+`performances.incomplete[]`, follow the statistics recovery first.
+
+### A failed provider refresh is red
+
+The refresh step runs with `continue-on-error` so that the pass can still work
+from the database, but GitHub then lists that step as a success in the run's
+job summary. Two changes keep a failure visible:
+
+- the orchestrator counts a refresh as done only when the evidence says
+  `pass` **and** the step did not fail. Evidence reading `pass` from a step
+  that failed is `current_season_recovery_step_failed`, and the run fails;
+- a step named **Provider refresh failed** runs whenever the refresh step's
+  real outcome is `failure`, prints an error annotation and fails the job.
+
+## Paging: what runs, and what the owner must set
+
+| Channel                                                  | Depends on                                         | State on 2026-09-25                                                                                                            |
+| -------------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Red orchestrator run → `ops-alert` issue                 | GitHub starting the hourly schedule                | works; GitHub started its scheduled runs 3.1–6.3 h apart in the 48 h to 13:43 UTC                                              |
+| Production watchdog (`ops-watchdog.yml`) → `ops-alert`   | GitHub schedule, **and now** each orchestrator run | on `main` since 05:24 UTC; GitHub had not started it once by 07:47                                                             |
+| Database webhook (`app_private.ops_alert_tick`, pg_cron) | nothing on GitHub                                  | on: `enabled = true` with a webhook in Vault at 10:02 and 14:53 UTC, repeating hourly; nothing sent yet (`last_sent_at` empty) |
+
+Why the watchdog had not run: nothing in its workflow gates it. There is no
+repository variable in its `if:` and its ref condition is `main`, which is
+where schedules run. Its secrets and variables are the ones the orchestrator
+reads successfully in the same environment. A skipped job still creates a
+run, and there were none at all, so GitHub never fired the schedule. That is
+the same best-effort scheduler that starts the hourly orchestrator every 3–6
+hours. The workflow now also runs on `workflow_run` after every orchestrator
+run, so it runs whenever the season job does. Its `watchdog_schedule` row
+warns when GitHub has not started its own 30-minute schedule for 2 h.
+
+The watchdog reports every check `api.service_ops_health` names by its own
+name, so a check a later migration adds needs no watchdog change. Only a
+check with status `fail` pages; `warn` shows on the run page and exits 0. A
+status other than `ok`/`warn`/`fail`, an overall `fail` that no named check
+explains, an empty check list or an unreadable answer all fail.
+`page_sitemapxml` fails unless the sitemap answers 200 **and** contains at
+least one `<loc>`.
+
+Statistics and points are watched from both sides. Migration `20260926003400`
+adds `fantasy_gameweek_clubs`, `fantasy_fixture_coverage` and
+`fantasy_scoring` to `service_ops_health`: the watchdog reports them under
+those names, and they page through the database webhook without GitHub. Their
+thresholds are fixed in the migration and allow for GitHub's late schedule:
+statistics warn 6 h and fail 12 h after the final whistle; points fail 6 h
+past the due end of a match stuck unfinished, 48 h after the frozen kickoff of
+any counted match still not finished (warning at once for one postponed,
+cancelled, abandoned or moved too late after the lock: the rules keep a match
+in its gameweek for 48 h), or 8 h after the last statistics were certified;
+and `fantasy_gameweek_clubs` warns when a gameweek not locked yet holds a club
+twice, failing within 24 h of its deadline (`docs/operations/ALERTS.md` has
+every threshold).
+The watchdog also keeps two rows of its own, which were the only check before
+that migration:
+
+- `fantasy_points` reads `api.fantasy_hub` and `api.fantasy_gameweeks` (both
+  read-only) and fails when a gameweek is still not finalized more than
+  `FANTASY_COVERAGE_ESCALATE_HOURS` after its window ended; inside that
+  allowance it warns. It does not depend on the orchestrator running. It does
+  not know the ruleset's 48 h for a match that has not finished after the
+  lock, so it can fail while the rules still keep that match in its gameweek:
+  `fantasy_scoring` then says until when, and the answer is to wait.
+- `season_orchestrator` fails when the last completed orchestrator run
+  concluded `failure` (or `timed_out`), which is how an overdue fixture
+  reaches it: that run's summary names the fixture. It used to warn. A
+  cancelled or skipped run warns; no run for 8 h fails, as before.
+
+Owner actions, none of which this repository can do for you:
+
+1. **The database webhook is already on.** Production read
+   `ops_alert_state.enabled = true`, with a webhook in Vault, at 10:02 and
+   again at 14:53 UTC on 2026-09-25, and no message sent yet. It is the only
+   channel that does not depend on GitHub's scheduler, so prove that its
+   messages arrive: step 2. Switching it on (a Vault secret
+   `botolago_ops_alert_webhook`, then `select app_private.ops_alert_configure(true);`)
+   is only for a new or replaced destination (`docs/operations/ALERTS.md`).
+2. **Test both paths once.** Actions → _Production watchdog_ → Run workflow
+   with `simulate_failure` ticked: an `ops-alert` issue must open and e-mail
+   you. Run it again unticked and it must close. That run proves the GitHub
+   path only. For the webhook and the email, run
+   `select app_private.ops_alert_test();` in the SQL editor: the alert-email
+   change (migration `20260926001000`) that adds it is applied on production
+   (read on 2026-09-25). A message marked TEST must reach every configured
+   channel, and each answer can be read back (`docs/operations/ALERTS.md`,
+   step 3 of switching the webhook on). It changes no alert state.
+3. **Make sure the mention reaches you.** GitHub → Settings → Notifications →
+   _Participating, @mentions and custom_: e-mail on. The issues mention
+   `@mrdata007`.
+4. **Optional.** Repository variable `FANTASY_COVERAGE_ESCALATE_HOURS`
+   (default 6); set it at repository level, like `FANTASY_AUTOMATION_ENABLED`.
+   It moves the GitHub side only: the orchestrator's statistics and points
+   escalation and the watchdog's `fantasy_points` row. The database checks
+   keep the fixed thresholds given above. A value that is not a whole number
+   from 1 to 168 is not used, and 6 h is: the orchestrator names it in
+   `invalidSettings` (a _Settings_ row; the run waits) and the watchdog in its
+   `watchdog_config` row (a warning). Environment secret
+   `SUPABASE_PRODUCTION_PUBLISHABLE_KEY` on `production-admin-activation`:
+   without it the watchdog's `public_api` row is skipped silently.
 
 ## Deadline watch
 
@@ -151,6 +368,9 @@ lock refused to run while it still counted. The rule now:
   kickoff) while its gameweek is still `scheduled`/`open` and unfrozen, the
   sync assigns it again. Once the gameweek has locked it stays out (no double
   gameweeks yet: the next-gameweek progression requires one round per week).
+  A match that has not finished after the lock, postponed or not, stays in
+  its gameweek for 48 h (`FANTASY_RULES_V1.md`), and after that the owner
+  takes it out: [After the lock](#after-the-lock-since-migration-20260926003500).
 - A round is staged when it is fully published; postponed fixtures are left
   out of the new gameweek instead of blocking it (`postponedFixtures` in the
   round's report). A round where every fixture is postponed is not staged
@@ -163,6 +383,130 @@ lock refused to run while it still counted. The rule now:
 
 The watch stays red for every hourly pass until the provider publishes; there
 is no auto-suppression by design.
+
+### After the lock (since migration 20260926003500)
+
+Everything above acts on gameweeks that have not locked. At the deadline the
+lock freezes every assignment of the gameweek, and nothing automatic touches a
+frozen one again. So a counted match that does not finish -- postponed,
+cancelled or abandoned after the lock, moved to a later kickoff, suspended,
+never started -- holds its gameweek: it goes to scoring only once every
+counted match is final, the next gameweek opens only after that, and every
+manager's team stays locked until then.
+
+**The rule** is the approved ruleset's, followed as written,
+[FANTASY_RULES_V1.md → Exceptional fixtures and corrections](FANTASY_RULES_V1.md#exceptional-fixtures-and-corrections):
+"Fixture assignment is frozen at the gameweek deadline. A fixture completed
+within 48 hours of its original assignment remains in that gameweek; later
+completion moves to a controlled future assignment." The 48 h is the season
+ruleset's `app.fantasy_fixture_rules.post_lock_completion_window_hours` (48 in
+v1.0 and in v1.1, production's), counted from the kickoff the gameweek locked
+with: the assignment's `assigned_kickoff_at`, which the sync keeps on the
+published kickoff until the lock freezes it. (`original_kickoff_at`, the
+kickoff when the match was first assigned, before any realignment, is not
+used.) The ops check and the tool read the same value. The rule does not ask
+why a match has not finished, so neither do they:
+
+- **For 48 h after that kickoff every counted match stays in its gameweek,**
+  whatever its state. Completed in that time, it counts there, and the
+  gameweek waits for it. The tool refuses every one of them until then,
+  saying when, for example
+  `fantasy_postponement_window_open: resolvable from 27 Sep 18:00 UTC`. The
+  ops check `fantasy_scoring` warns at once for a match postponed, cancelled
+  or abandoned after the lock, or moved to a kickoff too late for it to be
+  completed within the 48 h (its new kickoff + 2 h, the earliest it can end,
+  past them), naming the match, the time the rules stop keeping it and
+  `scripts/backend/resolve-fantasy-postponed-assignment.sql`. A match moved to
+  a time at which it can still be completed in the 48 h is simply still to be
+  played. One not started, live or suspended 3 h past its due end (kickoff +
+  2 h) warns, and fails 6 h past it, the earlier signal of a row that stopped
+  following the match: a provider refresh corrects that
+  (`docs/operations/ALERTS.md`). The GitHub side (the orchestrator's
+  escalation, the watchdog's `fantasy_points`) does not know the 48 h and can
+  page before they are over: the answer is still to wait.
+- **After that, any counted match still not finished was not completed within
+  the 48 h, and the owner takes it out,** whatever held it. From that moment
+  `fantasy_scoring` fails, paging every hour, saying so and naming the
+  procedure. The assignment is superseded with
+  `assignment_status = 'deferred'`, `resolution = 'operator_deferred'` and
+  `counts_points = false`, the row a deferral leaves, marked as the operator's
+  decision; what held the match is recorded with it (`called_off`, `moved` or
+  `unfinished`, the check's classes). Lineups stay exactly as they were at the
+  deadline. The match's players score nothing from it in that gameweek: for
+  the scoring worker they did not play (no statistics row, 0 minutes), so the
+  ruleset's rules for a player with zero minutes apply
+  ([Scoring](FANTASY_RULES_V1.md#scoring)): a starter is replaced from the
+  bench in bench order where the formation allows, the vice-captain is
+  promoted when the captain did not play, and Bench Boost counts the bench as
+  usual. The tool writes no points: the season orchestrator scores the
+  gameweek from the matches that still count.
+- **A gameweek the tool cannot free needs a developer.** The tool refuses a
+  gameweek's last counted match (`fantasy_gameweek_needs_a_fixture`: with none
+  left the lifecycle and the scoring refuse the gameweek for good), and
+  nothing cancels a gameweek yet. So when the held match is the gameweek's
+  last counted match, or every counted match of the gameweek is past its 48 h
+  (taking out all but one would leave the last), `fantasy_scoring` says a
+  developer is needed instead of naming the procedure: there is no tool yet
+  for a gameweek whose every match was called off.
+
+**The gap: no controlled future assignment yet.** The ruleset says a later
+completion "moves to a controlled future assignment". The game cannot do that,
+and the tool does not try: **once taken out, the match counts for no
+gameweek**, whenever it is played. The calendar sync assigns a match by its
+provider round and never changes a gameweek that has locked. If SportsMonks
+moves the match into a round whose gameweek is still `scheduled` or `open`,
+the sync assigns it there, and that gameweek then holds a club twice, which the
+next-gameweek opening refuses (`fantasy_next_calendar_incomplete`; a round not
+staged yet is not staged at all, `round_incomplete`): there are no double
+gameweeks. The ops check `fantasy_gameweek_clubs` says so as soon as it
+happens, naming the gameweek and the club, and fails within 24 h of that
+gameweek's deadline; no tool takes a match out of a gameweek that has not
+locked, so a developer is needed then too. So the game departs from the
+ruleset here until the owner decides how a late match should count and that is
+built: double gameweeks (the ruleset already says their points aggregate every
+assigned fixture), or a new ruleset version stating otherwise (the ruleset is
+immutable, see its _Status_). This needs an owner decision and future work.
+Players are not told either way: the site's Fantasy rules and help pages state
+no rule for a postponed match.
+
+**The tool.** `app_private.fantasy_resolve_frozen_assignment(p_assignment_id,
+p_resolution, p_reason)`, database owner only: no API role can call it, the
+service role included. It takes one assignment, the decision
+`operator_deferred` (the only one it accepts: `moved_to_actual_gameweek` would
+record a move that nothing makes) and a reason of 8 to 500 characters. The
+reason is kept with the state before and after in
+`app_private.admin_audit_events` (action
+`fantasy_fixture.resolve_frozen_assignment`). Called again for the same
+assignment, it answers the recorded outcome (`alreadyResolved: true`) and
+writes nothing; it answers that first, with no lock, whether or not the tick
+is paused. Otherwise it refuses, writing nothing: a match whose 48 h are not
+over, whatever its state (`fantasy_postponement_window_open`, with the time
+they end), a season whose ruleset has no post-lock completion window
+(`fantasy_fixture_rules_missing`), a gameweek that is not `locked` or `live`
+(`fantasy_gameweek_not_locked` before the lock, where the sync and the lock
+defer postponed matches themselves; `fantasy_gameweek_scoring_started`;
+`fantasy_gameweek_settled` once finalized or corrected), a finished match
+(`fantasy_fixture_finished`), the gameweek's last counted match
+(`fantasy_gameweek_needs_a_fixture`), a match with points already recorded, an
+unsupported resolution, a missing reason, and any call while the Fantasy tick
+is on or a scheduled job is mid-run. The migration's header lists every code.
+
+**The procedure** (owner, SQL editor):
+`scripts/backend/resolve-fantasy-postponed-assignment.sql`. Run the file as
+shipped, with nothing paused: it only reads, and lists the matches
+`fantasy_scoring` holds against a locked or live gameweek with their
+assignment ids and, for each, `resolvable from …` (the rules still keep it:
+wait) or `resolvable since …`, flagging a gameweek's last counted match, which
+the tool refuses. Check the match at the league and at SportsMonks: taking it
+out is final, nothing puts it back. Then, with no other database work and no
+orchestrator run going on, pause the Fantasy tick (from here the file refuses
+while it is on), set the assignment and the reason and run it again: that is
+a dry run, where the tool really runs and the block then raises on purpose, so
+everything rolls back. Run it once more to see that the rollback held, then
+set `dry_run` to `false` and run it to save. Switch the tick back on and
+dispatch the orchestrator: the tick takes the gameweek to scoring within 5
+minutes once its other counted matches are final, and only the orchestrator
+scores it.
 
 ## Rehearsal evidence (production database, rolled back)
 

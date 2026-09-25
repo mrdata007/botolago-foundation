@@ -51,13 +51,29 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
             "statement_hex": migration.sql.encode("utf-8").hex(),
         }
 
-    def test_batches_cover_the_exact_ordered_migration_chain(self) -> None:
-        expected = sorted(
+    def test_batches_are_the_fixed_historical_start_of_the_migration_chain(self) -> None:
+        # The promoter is a fixed historical release. Its manifest ends at
+        # historical_anonymous_starter_tolerance (2026-09-19); every migration
+        # after it reaches production through a guarded, owner-run apply
+        # script instead (docs/backend/MIGRATION_DRIFT.md). This used to
+        # expect the manifest to list every repository migration, which only
+        # held until the next one was merged, and "fixing" it by adding the
+        # newer files would widen a production runner nobody has reviewed for
+        # them (audit 2026-09-25, A15). So: the manifest is exactly the start
+        # of the repository's chain, in order, and the promoter still refuses
+        # the longer chain rather than promoting part of it.
+        repository = sorted(
             path.name
             for path in (Path(__file__).resolve().parents[3] / "supabase" / "migrations").glob("*.sql")
         )
         actual = [filename for files in PROMOTER.BATCHES.values() for filename in files]
-        self.assertEqual(expected, sorted(actual))
+        self.assertEqual(repository[: len(actual)], actual)
+        # Migrations are forward-only, so the repository only ever grows past it.
+        self.assertGreater(len(repository), len(actual))
+        with self.assertRaisesRegex(
+            PROMOTER.PromotionError, "differs from the reviewed migration chain"
+        ):
+            PROMOTER.load_migrations(Path(__file__).resolve().parents[3])
         versions = [filename.split("_", 1)[0] for filename in actual]
         self.assertEqual(versions, sorted(versions))
         self.assertEqual(63, len(actual))

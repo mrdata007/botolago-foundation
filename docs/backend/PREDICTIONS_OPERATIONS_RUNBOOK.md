@@ -111,6 +111,12 @@ one swipeable row with dots (`MatchPredictionCard`).
   the rest of the game.
 - A visitor's votes stay on the phone (`botolago.predictions.guest-votes.v1`)
   and are cast as the account's own at sign-in.
+- Once migration `20260926003100` is applied, an account that turned on
+  two-step sign-in votes and sees its own answers only after entering its
+  code (`aal2`). Before that, `api.cast_match_vote` refuses it with
+  `mfa_required` (so do the table's triggers) and `api.match_votes` answers
+  it as a visitor: every total, no answers of its own
+  ([IDENTITY_AUTH_RUNBOOK.md](IDENTITY_AUTH_RUNBOOK.md#mfa-step-up-for-ordinary-accounts)).
 
 ```sql
 -- The votes on one match.

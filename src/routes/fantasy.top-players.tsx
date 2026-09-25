@@ -25,6 +25,7 @@ import {
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { clubStyle } from "@/lib/club-palette";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { cn } from "@/lib/utils";
 import { plateName } from "@/components/fpl/plate-name";
@@ -34,20 +35,7 @@ import type { Club } from "@/types/domain";
 import type { FantasyPlayer, TopPlayerOfWeek } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/top-players")({
-  head: () => ({
-    meta: [
-      { title: "Top 5 joueurs de la semaine — BotolaGO" },
-      {
-        name: "description",
-        content: "Les cinq meilleurs joueurs de la journée Fantasy Botola Pro.",
-      },
-      { property: "og:title", content: "Top 5 joueurs de la semaine — BotolaGO" },
-      {
-        property: "og:description",
-        content: "Les cinq meilleurs joueurs de la journée Fantasy Botola Pro.",
-      },
-    ],
-  }),
+  head: () => fantasyHead("topPlayers"),
   component: TopPlayersFramed,
 });
 

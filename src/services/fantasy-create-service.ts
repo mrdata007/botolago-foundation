@@ -145,6 +145,12 @@ export function createTeamErrorKey(error: { code: string; domainCode?: string })
     case "permission_denied":
     case "unauthenticated":
       return "fantasy.error.permission";
+    // Not a refusal of the squad: the code is owed first, and the app is
+    // taking the manager to it. The same sentence as the auth layer's toast;
+    // the screen shows it in its alert and leaves the toast to that notice
+    // (`showStepUpNotice`), so it is not toasted twice.
+    case "mfa_required":
+      return "auth.step_up.toast";
     case "validation":
       switch (error.domainCode) {
         case "budget_exceeded":

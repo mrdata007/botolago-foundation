@@ -9,19 +9,31 @@ import type {
   PredictionFixtureDto,
   PredictionInput,
   PredictionsRoundDto,
+  SavePredictionsDto,
   SaveResultDto,
 } from "@/backend/predictions/contracts";
 import { MAX_STEPPER_GOALS } from "@/backend/predictions/contracts";
-import { mapPredictionsError, type PredictionsError } from "@/backend/predictions/errors";
+import {
+  mapPredictionsError,
+  type PredictionsError,
+  type PredictionsErrorCode,
+} from "@/backend/predictions/errors";
 import {
   emptyGuestStore,
   GUEST_STORE_EVENT_KEY,
   type GuestStoreState,
 } from "@/backend/predictions/guest-store";
-import { PredictionSaveQueue, type SaveQueueState } from "@/backend/predictions/save-queue";
+import {
+  PredictionSaveQueue,
+  type SaveQueueDrafts,
+  type SaveQueueOptions,
+  type SaveQueueState,
+} from "@/backend/predictions/save-queue";
 import { useAuth } from "@/auth/AuthProvider";
+import { sessionAccountId } from "@/auth/second-factor";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
+import { authService, type AuthSession } from "@/services/auth";
 import { predictionsService } from "@/services/predictions";
 import { guestRoundEvents } from "./guest-analytics";
 import { getGuestStore, noteServerTime, serverNow } from "./predictions-runtime";
@@ -167,7 +179,7 @@ export interface PredictionsRoundModel {
   readonly mine: ReadonlyMap<string, MyPredictionDto>;
   readonly mineQuery: ReturnType<typeof useQuery<MyPredictionsDto, PredictionsError>>;
   readonly now: number | null;
-  readonly saveState: SaveQueueState | "guest";
+  readonly saveState: PredictionsSaveState;
   readonly guestPersistent: boolean;
   /** What the page shows for a match: a change on its way wins. */
   pickFor(fixtureId: string): Pick | null;
@@ -214,6 +226,113 @@ export function scoringMoved(
   next: { readonly key: string; readonly version: number },
 ): boolean {
   return previous !== null && previous.key === next.key && previous.version !== next.version;
+}
+
+/**
+ * What the page says about saving: the queue's state, a visitor's picks kept
+ * on the phone, or `step_up` -- a save the server refused until the one-time
+ * code is in (`PT403 mfa_required`).
+ */
+export type PredictionsSaveState = SaveQueueState | "guest" | "step_up";
+
+/**
+ * The queue stops on any refusal that retrying as is cannot fix, and reports
+ * it as `error`, which the bar read as "Échec de l'enregistrement" -- untrue
+ * when the refusal was the server asking for the one-time code: the picks are
+ * fine, stay queued, and go once the code is in (the auth layer says so and
+ * takes the player to it). `failure` is the code of the last refusal, which
+ * the queue reports just before it stops.
+ */
+export function shownSaveState(
+  queue: SaveQueueState,
+  failure: PredictionsErrorCode | null,
+): SaveQueueState | "step_up" {
+  return queue === "error" && failure === "mfa_required" ? "step_up" : queue;
+}
+
+/** What the save bar holds: a queue's state and last refusal, and whose they are. */
+export interface SaveBar {
+  readonly uid: string;
+  readonly state: SaveQueueState;
+  readonly failure: PredictionsErrorCode | null;
+}
+
+/** `last`, moved on by account `uid`'s queue. Another account's is not carried over. */
+export function nextSaveBar(
+  last: SaveBar | null,
+  uid: string,
+  change: { readonly state?: SaveQueueState; readonly failure?: PredictionsErrorCode },
+): SaveBar {
+  const mine: SaveBar = last?.uid === uid ? last : { uid, state: "idle", failure: null };
+  return {
+    uid,
+    state: change.state ?? mine.state,
+    failure: change.failure ?? mine.failure,
+  };
+}
+
+/**
+ * What the bar says for account `uid`. What it holds may still be the last
+ * account's -- the render after a switch comes before the next account's queue
+ * exists -- and that says nothing yet ("idle") rather than someone else's
+ * "Échec" or "Code requis".
+ */
+export function barFor(bar: SaveBar | null, uid: string): SaveQueueState | "step_up" {
+  return bar?.uid === uid ? shownSaveState(bar.state, bar.failure) : "idle";
+}
+
+/** What an account's save queue takes from the app; the tests hand it stand-ins. */
+export interface SaveQueueServices {
+  /** The session as the auth service holds it at this moment. */
+  readonly session: () => AuthSession;
+  /** The save, for whoever's session is current when it runs. */
+  readonly save: (items: readonly PredictionInput[]) => Promise<SavePredictionsDto>;
+  /** An account's unsent picks on this device. */
+  readonly drafts: (uid: string) => SaveQueueDrafts;
+}
+
+const APP_SAVE_SERVICES: SaveQueueServices = {
+  session: () => authService.getSession(),
+  save: (items) => predictionsService.save(items),
+  drafts: draftsFor,
+};
+
+/**
+ * Account `uid`'s save queue: `uid`'s picks go to `uid`, or nowhere yet.
+ *
+ * The save takes its account from the session current when it runs (the
+ * database reads it from the token), not from the queue, and a queue can
+ * outlive its account by a moment. When B signed in straight after A (from
+ * another tab, say) with /pronostics open, the page replaced A's queue on its
+ * next render, and the replaced queue's last flush saved A's unsent picks into
+ * B's account. So a queue sends only while the session is still `uid`'s --
+ * owing its one-time code counts, that is still the account
+ * (`sessionAccountId`) -- and otherwise keeps the picks in `uid`'s draft,
+ * which `uid`'s next queue loads and sends. The draft stays on the device
+ * after `uid` leaves, as it always has.
+ *
+ * It asks the auth service's published session, not the Supabase client's
+ * token, because nothing can name that token ahead of time: supabase-js reads
+ * it when the request goes out, through an awaited `auth.getSession()` that
+ * reads storage (and may refresh first), so a check made now, even if one
+ * could be made synchronously, would not be about the token sent after it.
+ * The service publishes `loading` the moment a session for another account
+ * reaches this tab (auth-supabase.ts), which is what closes the window. What
+ * is left is the gap between another tab writing its session to storage and
+ * this tab hearing of it; only a save that carried the checked session's own
+ * token could close that.
+ */
+export function accountSaveQueue(
+  uid: string,
+  options: Omit<SaveQueueOptions, "send" | "canSend" | "drafts">,
+  services: SaveQueueServices = APP_SAVE_SERVICES,
+): PredictionSaveQueue {
+  return new PredictionSaveQueue({
+    ...options,
+    send: services.save,
+    canSend: () => sessionAccountId(services.session()) === uid,
+    drafts: services.drafts(uid),
+  });
 }
 
 export function usePredictionsRound(
@@ -289,17 +408,25 @@ export function usePredictionsRound(
   }, [uid, resolvedNumber, scoringVersion, queryClient]);
 
   // ---- saving (signed in) --------------------------------------------------
-  const [saveState, setSaveState] = useState<SaveQueueState>("idle");
+  // The queue's state and the code of its last refusal (so the bar can tell a
+  // code owed from a failure), with the account they are about. After a switch
+  // the next account's first render comes before the effect below makes its
+  // queue, and the last queue's final flush can answer after that: neither may
+  // put one account's "Échec" or "Code requis" on another's bar.
+  const [save, setSave] = useState<SaveBar | null>(null);
   const [pendingVersion, setPendingVersion] = useState(0);
   const queueRef = useRef<PredictionSaveQueue | null>(null);
   const tRef = useRef(t);
   tRef.current = t;
 
+  // A save's results, into the picks of `owner`: the account whose queue sent
+  // them. By the time an answer lands the page may hold another account, and
+  // the picks are not theirs.
   const applyResults = useCallback(
-    (results: readonly SaveResultDto[]) => {
-      if (!uid || resolvedNumber === null) return;
+    (owner: string, results: readonly SaveResultDto[]) => {
+      if (resolvedNumber === null) return;
       queryClient.setQueryData<MyPredictionsDto>(
-        predictionsKeys.mine(uid, resolvedNumber),
+        predictionsKeys.mine(owner, resolvedNumber),
         (current) => {
           if (!current) return current;
           const items = new Map(current.items.map((item) => [item.fixtureId, item]));
@@ -325,27 +452,32 @@ export function usePredictionsRound(
       );
       for (const result of results)
         void queryClient.invalidateQueries({
-          queryKey: predictionsKeys.fixture(uid, result.fixtureId),
+          queryKey: predictionsKeys.fixture(owner, result.fixtureId),
         });
     },
-    [queryClient, uid, resolvedNumber],
+    [queryClient, resolvedNumber],
   );
   const applyResultsRef = useRef(applyResults);
   applyResultsRef.current = applyResults;
 
   useEffect(() => {
     if (!uid) return;
-    const queue = new PredictionSaveQueue({
-      send: (items) => predictionsService.save(items),
+    // A new queue is another account, or this one back from its code: its bar
+    // starts clean, not on the last queue's refusal ("Code requis" included),
+    // and from here only this queue speaks for it, only while it is the page's.
+    setSave({ uid, state: "idle", failure: null });
+    let speaking = true;
+    // Sends to `uid` only, and keeps `uid`'s picks in `uid`'s draft otherwise:
+    // see `accountSaveQueue`.
+    const queue = accountSaveQueue(uid, {
       now: serverNow,
-      drafts: draftsFor(uid),
       onStateChange: (state) => {
-        setSaveState(state);
+        if (speaking) setSave((last) => nextSaveBar(last, uid, { state }));
         setPendingVersion((v) => v + 1);
       },
       onSaved: (results, serverTime) => {
         noteServerTime(serverTime);
-        applyResultsRef.current(results);
+        applyResultsRef.current(uid, results);
         setPendingVersion((v) => v + 1);
       },
       onLocked: () => {
@@ -353,6 +485,7 @@ export function usePredictionsRound(
         void queryClient.invalidateQueries({ queryKey: ["predictions", "round"] });
       },
       onError: (error) => {
+        if (speaking) setSave((last) => nextSaveBar(last, uid, { failure: error.code }));
         if (error.code === "account_banned" || error.code === "predictions_unavailable")
           void queryClient.invalidateQueries({ queryKey: ["predictions", "round"] });
       },
@@ -365,6 +498,7 @@ export function usePredictionsRound(
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", flush);
     return () => {
+      speaking = false;
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", flush);
       void queue.flush();
@@ -442,7 +576,7 @@ export function usePredictionsRound(
     mine,
     mineQuery,
     now,
-    saveState: uid ? saveState : "guest",
+    saveState: uid ? barFor(save, uid) : "guest",
     guestPersistent: guest.persistent,
     pickFor,
     setPick,

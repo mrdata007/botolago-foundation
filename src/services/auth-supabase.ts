@@ -7,9 +7,15 @@ import {
   SupabaseAccountSecurityRepository,
   SupabaseProfileRepository,
 } from "@/backend/identity/supabase-repositories";
-import type { ProfileDto } from "@/backend/identity/contracts";
+import type {
+  AccountSecurityRepository,
+  ProfileDto,
+  ProfileRepository,
+} from "@/backend/identity/contracts";
 import { IdentityError, mapIdentityError } from "@/backend/identity/errors";
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { sessionAssuranceOf, type SessionAssurance } from "@/backend/auth/mfa";
+import { isSecondFactorOwed, sessionAccountId, sessionForAssurance } from "@/auth/second-factor";
 import type {
   AuthErrorCode,
   AuthResult,
@@ -22,14 +28,52 @@ import type {
   UpdatePasswordInput,
 } from "./auth-types";
 import { defaultNotifications } from "./auth-types";
-import { deleteAvatar, signedAvatarUrl, uploadAvatarFromDataUrl } from "./profiles-repo";
-import type { AuthError, Session, User } from "@supabase/supabase-js";
+import {
+  deleteAvatar,
+  signedAvatarUrl,
+  uploadAvatarFromDataUrl,
+  type AvatarUploadError,
+} from "./profiles-repo";
+import type { AuthError, Session, SupabaseClient, User } from "@supabase/supabase-js";
 import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 
 const K_GUEST = "botolago.auth.guest";
 const K_LEGACY_PREFIX = "botolago.auth.";
-const profiles = new SupabaseProfileRepository();
-const accountSecurity = new SupabaseAccountSecurityRepository();
+const defaultProfiles = new SupabaseProfileRepository();
+const defaultAccountSecurity = new SupabaseAccountSecurityRepository();
+
+type SupabaseAuthClient = SupabaseClient["auth"];
+
+/** The avatar image in Storage, as the service uses it. */
+export interface AvatarStorage {
+  readonly signedUrl: (path: string) => Promise<string | null>;
+  readonly upload: typeof uploadAvatarFromDataUrl;
+  readonly remove: (path: string) => Promise<void>;
+}
+
+const defaultAvatars: AvatarStorage = {
+  signedUrl: signedAvatarUrl,
+  upload: uploadAvatarFromDataUrl,
+  remove: deleteAvatar,
+};
+
+/**
+ * What the service talks to, replaceable in tests. All default to the app's
+ * own. `auth` is a thunk because the shared client is built on first touch and
+ * throws there when the environment has no Supabase configuration.
+ */
+export interface SupabaseAuthDependencies {
+  readonly auth?: () => SupabaseAuthClient;
+  readonly profiles?: Pick<ProfileRepository, "getMe" | "completeOnboarding">;
+  readonly accountSecurity?: AccountSecurityRepository;
+  readonly avatars?: AvatarStorage;
+}
+
+/**
+ * The profile read's answer when the database refused it for want of the
+ * one-time code (`PT403 mfa_required`, 20260926003100).
+ */
+const CODE_OWED = Symbol("code owed");
 
 function hasWindow() {
   return typeof window !== "undefined";
@@ -114,6 +158,7 @@ function mapIdentityCode(error: unknown): AuthErrorCode {
     case "invalid_reset_token":
     case "rate_limited":
     case "network":
+    case "mfa_required":
       return code;
     case "email_unverified":
       return "email_unconfirmed";
@@ -124,14 +169,20 @@ function mapIdentityCode(error: unknown): AuthErrorCode {
 
 export { mapAuthError as __mapAuthErrorForTests };
 
-async function buildAuthUser(user: User, profile: ProfileDto | null): Promise<AuthUser> {
+async function buildAuthUser(
+  user: User,
+  profile: ProfileDto | null,
+  signAvatar: AvatarStorage["signedUrl"],
+): Promise<AuthUser> {
   const displayName =
     profile?.displayName.trim() ||
     String(user.user_metadata?.display_name ?? user.user_metadata?.full_name ?? "").trim();
   const username = profile?.username?.trim() || String(user.user_metadata?.username ?? "").trim();
   const avatarPath = profile?.avatarPath ?? undefined;
+  // No URL (refused, missing, offline) shows no picture, and is not asked
+  // again until the session is next resolved.
   const avatarDataUrl = avatarPath
-    ? ((await signedAvatarUrl(avatarPath).catch(() => null)) ?? undefined)
+    ? ((await signAvatar(avatarPath).catch(() => null)) ?? undefined)
     : undefined;
   const rawProvider = String(user.app_metadata?.provider ?? "email");
   const provider: AuthUser["provider"] =
@@ -158,8 +209,37 @@ export class SupabaseAuthService implements AuthService {
   private listeners = new Set<(session: AuthSession) => void>();
   private cachedSession: AuthSession = { user: null, status: "loading" };
   private initialized = false;
+  /**
+   * Moves on every published session and every resolution that starts. A
+   * resolution (profile read and avatar signing, both awaited) publishes
+   * only if nothing moved it in the meantime. Without this a slow resolution
+   * of account A -- its profile read retries for up to a second -- could land
+   * after A signed out, or after B signed in, and put A back on screen. The
+   * order resolutions start in is the order auth-js observed the sessions:
+   * it answers session reads and emits its events behind one lock.
+   */
+  private revision = 0;
+
+  constructor(private readonly deps: SupabaseAuthDependencies = {}) {}
+
+  private get auth(): SupabaseAuthClient {
+    return this.deps.auth ? this.deps.auth() : supabase.auth;
+  }
+
+  private get profiles(): Pick<ProfileRepository, "getMe" | "completeOnboarding"> {
+    return this.deps.profiles ?? defaultProfiles;
+  }
+
+  private get accountSecurity(): AccountSecurityRepository {
+    return this.deps.accountSecurity ?? defaultAccountSecurity;
+  }
+
+  private get avatars(): AvatarStorage {
+    return this.deps.avatars ?? defaultAvatars;
+  }
 
   private emit(session: AuthSession) {
+    this.revision++;
     this.cachedSession = session;
     for (const listener of this.listeners) listener(session);
   }
@@ -167,36 +247,116 @@ export class SupabaseAuthService implements AuthService {
   private init() {
     if (this.initialized || !hasWindow()) return;
     this.initialized = true;
-    void supabase.auth.getSession().then(({ data }) => this.applySession(data.session));
-    supabase.auth.onAuthStateChange((_event, session) => {
+    void this.auth.getSession().then(({ data }) => this.applySession(data.session));
+    this.auth.onAuthStateChange((_event, session) => {
       void this.applySession(session);
     });
   }
 
-  private async loadProfile(userId: string): Promise<ProfileDto | null> {
+  private async loadProfile(userId: string): Promise<ProfileDto | null | typeof CODE_OWED> {
     // The signup trigger commits before Auth returns. A small bounded retry also
     // handles the first OAuth callback racing the Data API replica.
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
-        const profile = await profiles.getMe(context(userId));
+        const profile = await this.profiles.getMe(context(userId));
         if (profile) return profile;
       } catch (error) {
-        if (attempt === 3 || mapIdentityError(error).code !== "not_found") return null;
+        const code = mapIdentityError(error).code;
+        // Not a failure to retry: the database knows of a factor this session
+        // has not presented.
+        if (code === "mfa_required") return CODE_OWED;
+        if (attempt === 3 || code !== "not_found") return null;
       }
       await new Promise((resolve) => setTimeout(resolve, 150 + attempt * 100));
     }
     return null;
   }
 
-  private async applySession(session: Session | null) {
+  /**
+   * Who a Supabase session's user is and how far that session has got with
+   * its second factor. Every path that publishes a signed-in session comes
+   * through here: the password form, the e-mail code, the callback's refresh,
+   * a token refresh, a restored session. The callback used to publish
+   * "authenticated" straight from its refresh.
+   *
+   * Everything is read from `session` itself. The level used to come from
+   * `mfa.getAuthenticatorAssuranceLevel()`, which judges whichever session
+   * storage holds when it runs: with another tab signing in meanwhile, the
+   * user of this session was published at the other session's level. The
+   * profile read goes out with whatever token the client holds at that moment
+   * too, so a profile that is not this user's is not used either.
+   *
+   * The profile and the avatar are read for a complete sign-in only. They are
+   * the account's own data, which the database and Storage refuse to a
+   * session that owes its code (20260926003100), and a session in the owing
+   * states is published without a user anyway. Until then it asked for both
+   * on every resolution, the owing ones included. When the token says
+   * "complete" and the profile read is refused all the same, the database
+   * knows of a factor this token's user record does not list yet (one
+   * enrolled on another device): the session owes its code.
+   */
+  private async resolveSignedIn(
+    session: Session,
+    knownProfile?: ProfileDto | null,
+  ): Promise<{ authUser: AuthUser; session: AuthSession }> {
+    const { user } = session;
+    let assurance: SessionAssurance = sessionAssuranceOf(session);
+    let profile: ProfileDto | null = null;
+    if (assurance === "complete") {
+      const read = knownProfile !== undefined ? knownProfile : await this.loadProfile(user.id);
+      if (read === CODE_OWED) assurance = "second_factor_pending";
+      else profile = read?.id === user.id ? read : null;
+    }
+    const authUser = await buildAuthUser(user, profile, this.avatars.signedUrl);
+    return { authUser, session: sessionForAssurance(authUser, assurance) };
+  }
+
+  /**
+   * Resolve, publish unless superseded, and return what this session resolved
+   * to.
+   *
+   * A session for another account than the one on screen takes that account
+   * off the screen at once, before anything is awaited: `loading`, with nobody
+   * in it. Until 2026-09-25 nothing was published until the new account had
+   * been resolved -- a profile read of up to four attempts of 10 s each, then
+   * an avatar signing with no deadline -- and all that time the app showed
+   * account A while every request already carried account B's token (another
+   * tab had signed B in). A's Pronostics queue, asking whether the session was
+   * still A's, heard yes and sent A's unsent picks as B's. Now the leave runs
+   * straight away (AuthProvider forgets A, the owned queues stop), and B
+   * follows once resolved. The same account's new token (a refresh, the code
+   * entered) keeps its screen while it resolves, as before.
+   */
+  private async publishSignedIn(session: Session, knownProfile?: ProfileDto | null) {
+    const shown = sessionAccountId(this.cachedSession);
+    if (shown && shown !== session.user.id) this.emit({ user: null, status: "loading" });
+    const revision = ++this.revision;
+    const resolved = await this.resolveSignedIn(session, knownProfile);
+    if (revision === this.revision) this.emit(resolved.session);
+    return resolved;
+  }
+
+  /**
+   * The session to resolve `userId` by, for a call that hands back a user and
+   * (usually) its session: that session, or else the stored one when it is
+   * the same account's. `null` when neither is: another account's session is
+   * not this user's to be judged by, and its own auth event publishes it.
+   */
+  private async sessionFor(userId: string, session?: Session | null): Promise<Session | null> {
+    if (session?.user?.id === userId) return session;
+    const { data } = await this.auth.getSession();
+    return data.session?.user?.id === userId ? data.session : null;
+  }
+
+  private async applySession(session: Session | null): Promise<AuthSession> {
     if (!session?.user) {
       const guest = readGuestFlag();
-      this.emit({ user: null, status: guest ? "guest" : "anonymous" });
-      return;
+      const signedOut: AuthSession = { user: null, status: guest ? "guest" : "anonymous" };
+      this.emit(signedOut);
+      return signedOut;
     }
     writeGuestFlag(false);
-    const profile = await this.loadProfile(session.user.id);
-    this.emit({ user: await buildAuthUser(session.user, profile), status: "authenticated" });
+    return (await this.publishSignedIn(session)).session;
   }
 
   getSession(): AuthSession {
@@ -215,18 +375,19 @@ export class SupabaseAuthService implements AuthService {
   }
 
   async signInWithEmail(email: string, password: string): Promise<AuthResult<AuthUser>> {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await this.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
     if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
-    const authUser = await buildAuthUser(data.user, await this.loadProfile(data.user.id));
-    this.emit({ user: authUser, status: "authenticated" });
-    return { ok: true, data: authUser };
+    const signedIn = await this.sessionFor(data.user.id, data.session);
+    if (!signedIn) return { ok: false, errorCode: "session_expired" };
+    const { authUser, session } = await this.publishSignedIn(signedIn);
+    return { ok: true, data: authUser, status: session.status };
   }
 
   async registerWithEmail(input: RegisterInput): Promise<AuthResult<{ email: string }>> {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await this.auth.signUp({
       email: input.email.trim(),
       password: input.password,
       options: {
@@ -246,7 +407,7 @@ export class SupabaseAuthService implements AuthService {
     const redirectTo = hasWindow()
       ? `${getRedirectBase()}/auth/callback?next=/auth/update-password`
       : undefined;
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    const { error } = await this.auth.resetPasswordForEmail(email.trim(), { redirectTo });
     // Prevent account enumeration while still surfacing transport failures.
     if (error && mapAuthError(error) === "network") return { ok: false, errorCode: "network" };
     if (error && mapAuthError(error) === "rate_limited")
@@ -255,20 +416,34 @@ export class SupabaseAuthService implements AuthService {
   }
 
   async reauthenticate(): Promise<AuthResult> {
-    const { error } = await supabase.auth.reauthenticate();
+    const { error } = await this.auth.reauthenticate();
     return error ? { ok: false, errorCode: mapAuthError(error) } : { ok: true };
   }
 
   async refreshSession(): Promise<AuthResult<AuthUser>> {
-    const { data, error } = await supabase.auth.refreshSession();
+    const { data, error } = await this.auth.refreshSession();
     if (error || !data.user) return { ok: false, errorCode: "session_expired" };
-    const user = await buildAuthUser(data.user, await this.loadProfile(data.user.id));
-    this.emit({ user, status: "authenticated" });
-    return { ok: true, data: user };
+    const refreshed = await this.sessionFor(data.user.id, data.session);
+    if (!refreshed) return { ok: false, errorCode: "session_expired" };
+    const { authUser, session } = await this.publishSignedIn(refreshed);
+    return { ok: true, data: authUser, status: session.status };
+  }
+
+  async recheckSession(options?: { refresh?: boolean }): Promise<AuthSession> {
+    if (!hasWindow()) return this.cachedSession;
+    this.init();
+    if (options?.refresh) {
+      // A new token brings the account's current factor list (one enrolled on
+      // another device included). If the refresh fails, the session in hand
+      // is still the one to judge.
+      await this.auth.refreshSession().catch(() => undefined);
+    }
+    const { data } = await this.auth.getSession();
+    return this.applySession(data.session);
   }
 
   async updatePassword(input: UpdatePasswordInput): Promise<AuthResult> {
-    const { error } = await supabase.auth.updateUser({
+    const { error } = await this.auth.updateUser({
       password: input.password,
       nonce: input.nonce,
       current_password: input.currentPassword,
@@ -277,19 +452,20 @@ export class SupabaseAuthService implements AuthService {
   }
 
   async verifyCode(email: string, code: string): Promise<AuthResult<AuthUser>> {
-    const { data, error } = await supabase.auth.verifyOtp({
+    const { data, error } = await this.auth.verifyOtp({
       email: email.trim(),
       token: code.trim(),
       type: "email",
     });
     if (error || !data.user) return { ok: false, errorCode: mapAuthError(error) };
-    const user = await buildAuthUser(data.user, await this.loadProfile(data.user.id));
-    this.emit({ user, status: "authenticated" });
-    return { ok: true, data: user };
+    const verified = await this.sessionFor(data.user.id, data.session);
+    if (!verified) return { ok: false, errorCode: "session_expired" };
+    const { authUser, session } = await this.publishSignedIn(verified);
+    return { ok: true, data: authUser, status: session.status };
   }
 
   async resendCode(email: string, next?: string): Promise<AuthResult> {
-    const { error } = await supabase.auth.resend({
+    const { error } = await this.auth.resend({
       type: "signup",
       email: email.trim(),
       options: { emailRedirectTo: hasWindow() ? getCallbackUrl(next) : undefined },
@@ -302,7 +478,7 @@ export class SupabaseAuthService implements AuthService {
     next?: string,
   ): Promise<AuthResult<AuthUser>> {
     if (!hasWindow()) return { ok: false, errorCode: "generic" };
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await this.auth.signInWithOAuth({
       provider,
       options: { redirectTo: getCallbackUrl(next) },
     });
@@ -334,14 +510,14 @@ export class SupabaseAuthService implements AuthService {
     let nextAvatarPath = input.removeAvatar ? null : (oldAvatarPath ?? null);
     let uploadedPath: string | null = null;
     if (!input.removeAvatar && input.avatarDataUrl?.startsWith("data:")) {
-      const uploaded = await uploadAvatarFromDataUrl(current.id, input.avatarDataUrl);
-      if (!uploaded.ok) return { ok: false, errorCode: "generic" };
+      const uploaded = await this.avatars.upload(current.id, input.avatarDataUrl);
+      if (!uploaded.ok) return { ok: false, errorCode: await this.avatarUploadFailure(uploaded) };
       uploadedPath = uploaded.path;
       nextAvatarPath = uploaded.path;
     }
 
     try {
-      const profile = await profiles.completeOnboarding(
+      const profile = await this.profiles.completeOnboarding(
         {
           displayName: input.displayName?.trim() || current.displayName,
           username,
@@ -352,24 +528,41 @@ export class SupabaseAuthService implements AuthService {
         },
         context(current.id),
       );
-      if (oldAvatarPath && oldAvatarPath !== nextAvatarPath) await deleteAvatar(oldAvatarPath);
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) return { ok: false, errorCode: "session_expired" };
-      const user = await buildAuthUser(data.user, profile);
-      this.emit({ user, status: "authenticated" });
-      return { ok: true, data: user };
+      if (oldAvatarPath && oldAvatarPath !== nextAvatarPath)
+        await this.avatars.remove(oldAvatarPath);
+      // The account that completed its profile, and only if it is still the
+      // one signed in: a session another tab switched in meanwhile is not
+      // this profile's to publish (its own event publishes it).
+      const stored = await this.sessionFor(current.id);
+      if (!stored) return { ok: false, errorCode: "session_expired" };
+      const { authUser, session } = await this.publishSignedIn(stored, profile);
+      return { ok: true, data: authUser, status: session.status };
     } catch (error) {
       // A newly-created path is safe to remove. If an existing deterministic
       // path was overwritten, retain it because the profile still references it.
-      if (uploadedPath && uploadedPath !== oldAvatarPath) await deleteAvatar(uploadedPath);
+      if (uploadedPath && uploadedPath !== oldAvatarPath) await this.avatars.remove(uploadedPath);
       return { ok: false, errorCode: mapIdentityCode(error) };
     }
+  }
+
+  /**
+   * Why an avatar upload failed, for the screen. Storage says only that its
+   * policy refused, which is what an account with a second factor meets while
+   * its session owes the code -- one enrolled on another device since this
+   * session's token was issued. So the session is asked again, with a fresh
+   * token: when the code is owed, that is the answer (the screen says so, and
+   * the gate takes the reader to it). Otherwise, the generic failure.
+   */
+  private async avatarUploadFailure(failure: { error: AvatarUploadError }): Promise<AuthErrorCode> {
+    if (failure.error !== "refused") return "generic";
+    const rechecked = await this.recheckSession({ refresh: true }).catch(() => null);
+    return rechecked && isSecondFactorOwed(rechecked.status) ? "mfa_required" : "generic";
   }
 
   async requestAccountDeletion(): Promise<AuthResult<{ requestId: string }>> {
     const actorId = this.cachedSession.user?.id ?? null;
     try {
-      const id = await accountSecurity.requestDeletion(context(actorId));
+      const id = await this.accountSecurity.requestDeletion(context(actorId));
       return { ok: true, data: { requestId: id } };
     } catch (error) {
       return { ok: false, errorCode: mapIdentityCode(error) };
@@ -379,7 +572,7 @@ export class SupabaseAuthService implements AuthService {
   async cancelAccountDeletion(): Promise<AuthResult> {
     const actorId = this.cachedSession.user?.id ?? null;
     try {
-      await accountSecurity.cancelDeletion(context(actorId));
+      await this.accountSecurity.cancelDeletion(context(actorId));
       return { ok: true };
     } catch (error) {
       return { ok: false, errorCode: mapIdentityCode(error) };
@@ -389,7 +582,7 @@ export class SupabaseAuthService implements AuthService {
   async getAccountDeletionStatus(): Promise<AuthResult<{ pending: boolean }>> {
     const actorId = this.cachedSession.user?.id ?? null;
     try {
-      const requests = await accountSecurity.listDeletionRequests(context(actorId));
+      const requests = await this.accountSecurity.listDeletionRequests(context(actorId));
       return {
         ok: true,
         data: { pending: requests.some((request) => request.status === "requested") },
@@ -401,11 +594,18 @@ export class SupabaseAuthService implements AuthService {
 
   async signOut(options?: SignOutOptions): Promise<void> {
     const scope = options?.scope ?? "local";
-    const actorId = this.cachedSession.user?.id ?? null;
+    // The account behind the session, owing its code or not. Leaving from the
+    // challenge ends a real session too, and the database takes this record
+    // at aal1 on purpose (the step-up migration leaves the security audit log
+    // unguarded for it); with `user` alone, which is null while the code is
+    // owed, that sign-out was never recorded.
+    const actorId = sessionAccountId(this.cachedSession);
     if (actorId) {
-      await accountSecurity.recordSessionRevocation(scope, context(actorId)).catch(() => undefined);
+      await this.accountSecurity
+        .recordSessionRevocation(scope, context(actorId))
+        .catch(() => undefined);
     }
-    await supabase.auth.signOut({ scope }).catch(() => undefined);
+    await this.auth.signOut({ scope }).catch(() => undefined);
     if (hasWindow()) {
       writeGuestFlag(false);
       try {

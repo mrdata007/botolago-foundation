@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { withSiteHeaders } from "./response-headers";
+import { SITEMAP_CACHE_CONTROL } from "./sitemap";
 
 describe("site response headers", () => {
   test("every response names the commit that served it", async () => {
@@ -49,6 +50,33 @@ describe("site response headers", () => {
       );
       expect(publicResponse.headers.get("cache-control")).toBe("public, max-age=60");
     }
+  });
+
+  // The second-factor screen, the account's security page and the league
+  // pages read the reader's own session; the sitemap's freshness rests on a
+  // shared cache keeping it for minutes (`SITEMAP_CACHE_CONTROL`), and past
+  // that serving its last good copy while the origin fails.
+  test("the second-factor screen stays private; the sitemap keeps its shared caching", () => {
+    for (const path of [
+      "/auth/mfa-challenge?next=%2Ffantasy%2Fteam",
+      "/profile/security",
+      "/fantasy/leagues/abc",
+      "/pronostics/ligues/rejoindre",
+    ]) {
+      const response = withSiteHeaders(
+        new Response("", { headers: { "Cache-Control": "public, max-age=60" } }),
+        `https://botolago.com${path}`,
+        "6a12a6b",
+      );
+      expect(response.headers.get("cache-control")).toBe("private, no-store");
+    }
+    const sitemap = withSiteHeaders(
+      new Response("<urlset/>", { headers: { "Cache-Control": SITEMAP_CACHE_CONTROL } }),
+      "https://botolago.com/sitemap.xml",
+      "6a12a6b",
+    );
+    expect(sitemap.headers.get("cache-control")).toBe(SITEMAP_CACHE_CONTROL);
+    expect(SITEMAP_CACHE_CONTROL).toMatch(/^public, .*\bs-maxage=\d+.*\bstale-if-error=\d+$/);
   });
 
   test("Lovable's editor preview keeps working: other hosts are not restricted", () => {

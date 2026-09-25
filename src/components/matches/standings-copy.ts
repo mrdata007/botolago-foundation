@@ -14,7 +14,12 @@ type Translate = (key: TranslationKey) => string;
 type Format = (value: number) => string;
 
 function plural(n: number, lang: Language): Intl.LDMLPluralRule {
-  return new Intl.PluralRules(lang === "ar" ? "ar" : "fr").select(n);
+  const rule = new Intl.PluralRules(lang === "ar" ? "ar" : "fr").select(n);
+  // The one and two keys spell their number out ("1 pt", "نقطة واحدة"), and
+  // French files 0 under "one" too: a club on 0 points — every club, on the
+  // first day of a season — read "1 pt". They are for exactly 1 and 2.
+  if ((rule === "one" && n !== 1) || (rule === "two" && n !== 2)) return "other";
+  return rule;
 }
 
 /** "après 5 journées" / "بعد 5 جولات". */
@@ -78,6 +83,15 @@ export function gapLabel(gap: ClubGap, lang: Language, t: Translate, format: For
             : t("standings.gap_behind_other");
   const place = placeLabel(gap.kind === "lead" ? gap.over : gap.to, lang, t, format);
   return template.replace("{n}", format(gap.points)).replace("{place}", place);
+}
+
+/**
+ * What joins the words a rank cell adds for assistive tech to its figure —
+ * "2, Ex æquo, Relégation" — in the reader's language: Arabic writes its own
+ * comma, "،". The table and the "Face à face" rows used a Latin ", " in both.
+ */
+export function listSeparator(lang: Language): string {
+  return lang === "ar" ? "، " : ", ";
 }
 
 export function zoneLabel(zone: LeagueZone, t: Translate): string {

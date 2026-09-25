@@ -1,6 +1,7 @@
 import type { Club, Match, MatchStatus, TableRow } from "@/types/domain";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
+  CompetitionSummaryDto,
   FootballLanguage,
   FootballRepository,
   MatchAbsenceDto,
@@ -107,6 +108,10 @@ export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string |
   // whitespace-only code as absent and derives the letters from `short_name`,
   // which is populated for all 21.
   const placeholder = clubShortCode(team.code, team.shortName);
+  // The API has already translated `name` and `shortName` into the language
+  // asked for, so both halves below hold that one language: `.fr` is Arabic
+  // in an Arabic response. Display only — anything that orders or keys clubs
+  // uses `id` or `slug` (see `buildStandings`).
   return {
     id: team.id,
     slug: team.slug,
@@ -198,6 +203,30 @@ function toSeason(season: SeasonSummaryDto): FootballSeason {
 /** The season a club page opens on: the current one, else the latest listed. */
 export function defaultSeason(seasons: readonly FootballSeason[]): FootballSeason | undefined {
   return seasons.find((season) => season.isCurrent) ?? seasons[0];
+}
+
+/**
+ * A match's season as the match names it (`getMatchDetailPage`): what its
+ * table is read by (`getStandings`), and the kind of competition it counts
+ * in, which says whether it has a table at all (`hasLeagueTable`).
+ *
+ * Not the season's status, which says whether a table worked out from the
+ * results is provisional or unofficial (`StandingsNotes`): the fixture DTO
+ * (`api.football_match_detail`, `matchCardSchema`) names its season by id and
+ * label only. The match page reads the status from the season list.
+ */
+export interface MatchSeason extends Pick<FootballSeason, "id" | "competitionId"> {
+  readonly competitionType: CompetitionSummaryDto["type"];
+}
+
+/**
+ * Only a league's season has a table. A cup, super cup, international or
+ * friendly fixture's season has results too, and `buildStandings` would work
+ * them into a points table no such competition keeps — merging its groups
+ * and rounds into one ranking — which the page would then call provisional.
+ */
+export function hasLeagueTable(season: Pick<MatchSeason, "competitionType">): boolean {
+  return season.competitionType === "league";
 }
 
 export function presentSquadMember(member: SquadMemberDto): SquadPlayer {
@@ -298,6 +327,14 @@ export interface FootballStandings {
   readonly away: readonly LeagueTableRow[];
   /** The rounds `overall` reflects: matches played by its busiest club. */
   readonly rounds: number;
+  /**
+   * `overall` is worked out from the results, not the provider's table: it
+   * cannot know a points deduction, and clubs level on every figure share a
+   * rank instead of being separated by the league's rule. Say so with it —
+   * provisional while the season is played, unofficial once it is over
+   * (`StandingsNotes`) — and never call it final.
+   */
+  readonly computed: boolean;
 }
 
 /**
@@ -311,6 +348,12 @@ export interface FootballStandings {
  * the stored rows only lack the form guide, which the results add. Home and
  * away are always the results'. Before the first result there is no table
  * at all, rather than sixteen rows of zeros.
+ *
+ * Every position is the same in French and Arabic: the stored rank is the
+ * provider's, and the computed table lists level clubs by slug. It used to
+ * list them by `shortName.fr`, which in an Arabic response is the Arabic name
+ * (see `presentFootballClub`), so switching language moved tied clubs, and
+ * their zone colours with them (audit A04).
  */
 export function buildStandings(
   fixtures: readonly MatchCardDto[],
@@ -318,14 +361,14 @@ export function buildStandings(
 ): FootballStandings {
   const clubs = uniqueClubs(fixtures, stored);
   const clubIds = clubs.map((club) => club.id);
-  const names = new Map(clubs.map((club) => [club.id, club.shortName.fr]));
-  const nameOf = (clubId: string) => names.get(clubId) ?? clubId;
+  const slugs = new Map(clubs.map((club) => [club.id, club.slug]));
+  const slugOf = (clubId: string) => slugs.get(clubId) ?? clubId;
   const results = fixtures.flatMap((fixture) => {
     const result = toTableResult(fixture);
     return result ? [result] : [];
   });
 
-  const computed = computeLeagueTable(clubIds, results, "overall", nameOf);
+  const computed = computeLeagueTable(clubIds, results, "overall", slugOf);
   const useStored = stored.length > 0 && totalPlayed(stored) >= totalPlayed(computed);
   const overall = useStored
     ? [...stored]
@@ -342,9 +385,10 @@ export function buildStandings(
   return {
     clubs,
     overall,
-    home: results.length > 0 ? computeLeagueTable(clubIds, results, "home", nameOf) : [],
-    away: results.length > 0 ? computeLeagueTable(clubIds, results, "away", nameOf) : [],
+    home: results.length > 0 ? computeLeagueTable(clubIds, results, "home", slugOf) : [],
+    away: results.length > 0 ? computeLeagueTable(clubIds, results, "away", slugOf) : [],
     rounds: roundsPlayed(overall),
+    computed: !useStored,
   };
 }
 
@@ -395,9 +439,16 @@ export const footballService = {
     return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
   },
 
-  /** The season's table: its fixtures and any stored table, read together (see `buildStandings`). */
+  /**
+   * The season's table: its fixtures and any stored table, read together (see
+   * `buildStandings`). Every surface that shows a rank reads it here, under
+   * `["football", "standings", seasonId, language]`: the Classement tab, Home,
+   * a club page and the match page's "Face à face" tab — for a league match
+   * only (`hasLeagueTable`). It needs only the season's identity, which is
+   * what a match carries (`getMatchDetailPage`).
+   */
   async getStandings(
-    season: FootballSeason,
+    season: Pick<FootballSeason, "id" | "competitionId">,
     language: FootballLanguage,
   ): Promise<FootballStandings> {
     const repository = getFootballRepository();
@@ -408,12 +459,28 @@ export const footballService = {
     return buildStandings(fixtures, stored);
   },
 
+  /**
+   * Everything the match page shows except the table. The page refetches this
+   * every 30 seconds through a live match (`matchRefetchInterval`), so it
+   * carries what belongs to the match and names its season (`season`); the
+   * "Face à face" tab reads that season's table through `getStandings`, as the
+   * Classement tab does, when the season is a league's (`hasLeagueTable`). It
+   * used to carry the provider's stored rows, read again on every refresh and
+   * shown as they came: the one table in the product that `buildStandings`
+   * did not make, which could order a tie, share a rank or colour a zone
+   * differently from every other, and never said it was provisional.
+   */
   async getMatchDetailPage(
     id: string,
     language: FootballLanguage,
   ): Promise<
-    FootballMatchCollection & {
+    Omit<FootballMatchCollection, "standings"> & {
       match: Match;
+      /**
+       * The match's season: what its table is read by (`getStandings`), and
+       * whether it has one (`hasLeagueTable`).
+       */
+      season: MatchSeason;
       headToHead: readonly Match[];
       live: MatchLiveDetail;
       /** Confirmed/provisional lineups, one entry per team. Empty when the
@@ -428,27 +495,29 @@ export const footballService = {
     const repository = getFootballRepository();
     const detail = await repository.getMatchDetail(id, language, requestContext());
     const match = toMatch(detail);
-    const [headToHead, standings, timeline, statistics, lineups, pressure, absences] =
-      await Promise.all([
-        repository.getHeadToHead(id, language, 5, requestContext()),
-        repository.getStandings(detail.seasonId, language, requestContext()),
-        repository.getTimeline(id, language, requestContext()),
-        repository.getStatistics(id, language, requestContext()),
-        repository.getLineups(id, language, requestContext()),
-        repository.getPressure(id, language, requestContext()),
-        repository.getAbsences(id, language, requestContext()),
-      ]);
+    const [headToHead, timeline, statistics, lineups, pressure, absences] = await Promise.all([
+      repository.getHeadToHead(id, language, 5, requestContext()),
+      repository.getTimeline(id, language, requestContext()),
+      repository.getStatistics(id, language, requestContext()),
+      repository.getLineups(id, language, requestContext()),
+      repository.getPressure(id, language, requestContext()),
+      repository.getAbsences(id, language, requestContext()),
+    ]);
     const allMatches = [detail, ...headToHead];
     return {
       match,
+      season: {
+        id: detail.seasonId,
+        competitionId: detail.competition.id,
+        competitionType: detail.competition.type,
+      },
       headToHead: headToHead.map(toMatch),
       live: presentMatchLiveDetail(match, timeline, statistics),
       lineups,
       pressure,
       absences,
       matches: allMatches.map(toMatch),
-      clubs: uniqueClubs(allMatches, standings),
-      standings: standings.map(toTableRow),
+      clubs: uniqueClubs(allMatches),
     };
   },
 

@@ -1,3 +1,5 @@
+import { reportMfaStepUp } from "@/backend/auth/step-up";
+
 export const IDENTITY_ERROR_CODES = [
   "invalid_username",
   "reserved_username",
@@ -11,6 +13,8 @@ export const IDENTITY_ERROR_CODES = [
   "not_found",
   "ownership_conflict",
   "feature_unavailable",
+  /** This session must present its second factor first (`PT403 mfa_required`). */
+  "mfa_required",
   "network",
   "internal",
 ] as const;
@@ -44,6 +48,15 @@ interface SupabaseLikeError {
 
 export function mapIdentityError(error: unknown): IdentityError {
   if (error instanceof IdentityError) return error;
+
+  // Before the other PT4xx checks: an enrolled account's password-only session
+  // may not write to the account. Reported so the auth layer can take the
+  // reader to the code, rather than this surfacing as "internal".
+  if (reportMfaStepUp(error)) {
+    return new IdentityError("mfa_required", "Confirm the second factor to continue.", {
+      cause: error,
+    });
+  }
 
   const source = (error ?? {}) as SupabaseLikeError;
   const code = source.code ?? "";

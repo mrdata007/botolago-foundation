@@ -19,15 +19,24 @@ import { FormChips } from "./StandingsTable";
  *
  * The gradient bar on the start edge is the kit's "your position" bar, as on
  * the Fantasy rankings.
+ *
+ * A rank the club shares with clubs level on every figure says so ("Ex
+ * æquo"), and names a zone only when the whole tie is in it (`clubStanding`).
  */
 export function YourClubCard({ club, standing }: { club: Club; standing: ClubStanding }) {
   const { t, tr, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const format = (value: number) => nf.format(value);
-  const { row, zone, gap } = standing;
+  const { row, zone, shared, gap } = standing;
   const summary = [
     pointsLabel(row.points, lang, t, format),
     gap ? gapLabel(gap, lang, t, format) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const standingLine = [
+    shared ? t("standings.shared_rank") : null,
+    zone ? zoneLabel(zone, t) : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -53,7 +62,9 @@ export function YourClubCard({ club, standing }: { club: Club; standing: ClubSta
           <ClubCrest club={club} size="md" />
           <div className="min-w-0 flex-1">
             <p className={ui.display.team}>{clubLabel(club, tr)}</p>
-            {zone ? <p className={cn(ui.text.meta, ui.tone.muted)}>{zoneLabel(zone, t)}</p> : null}
+            {standingLine ? (
+              <p className={cn(ui.text.meta, ui.tone.muted)}>{standingLine}</p>
+            ) : null}
           </div>
           <RankOrdinal
             parts={rankOrdinal(row.position, lang, t, format)}

@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import { clubStyle } from "@/lib/club-palette";
 import { useI18n } from "@/i18n/provider";
 import { useAuth } from "@/auth/AuthProvider";
+import { showStepUpNotice } from "@/auth/step-up-notice";
+import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { authService } from "@/services/auth";
 import { footballService } from "@/services/football";
 import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
@@ -123,6 +125,12 @@ function ProfileSetupPage() {
     });
     if (!res.ok) {
       setSubmitting(false);
+      // Refused until the one-time code is in: say that, once (the auth layer
+      // is saying it too, under the same toast), not "an error occurred".
+      if (res.errorCode === "mfa_required") {
+        showStepUpNotice(t);
+        return;
+      }
       const key =
         res.errorCode === "username_taken"
           ? "auth.error.username_taken"
@@ -135,12 +143,13 @@ function ProfileSetupPage() {
     if (emailChoice !== null && savedEmail !== undefined && emailChoice !== savedEmail) {
       try {
         await setEmailEnabled(emailChoice);
-      } catch {
+      } catch (error) {
         // The profile is saved; only the e-mail choice is not. Stay on the
         // step so "Terminer" can be pressed again.
         setSubmitting(false);
         refresh();
-        toast.error(t("auth.error.generic"));
+        if (isMfaStepUpError(error)) showStepUpNotice(t);
+        else toast.error(t("auth.error.generic"));
         return;
       }
     }
@@ -399,17 +408,20 @@ function ProfileSetupPage() {
           />
 
           <div>
-            <div className={cn("mb-1.5", ui.text.label, ui.tone.muted)}>
+            <div id="setupLanguage" className={cn("mb-1.5", ui.text.label, ui.tone.muted)}>
               {t("auth.setup.language_confirm")}
             </div>
             {/* Two `UiChip`s: a pair of pressed/unpressed toggles, which is
                 what this was already (`aria-pressed`), now drawn as the kit's
                 pill — sunken, or navy when chosen. Not `UiSegmented`, which
-                would announce a two-way choice as a `role="tablist"`. */}
-            <div className="grid grid-cols-2 gap-2">
+                would announce a two-way choice as a `role="tablist"`. The
+                pair is a group named by the label above, so the two toggles
+                are heard as the answer to it, each name in its own language. */}
+            <div role="group" aria-labelledby="setupLanguage" className="grid grid-cols-2 gap-2">
               {(["fr", "ar"] as const).map((l) => (
                 <UiChip
                   key={l}
+                  lang={l}
                   selected={chosenLang === l}
                   onClick={() => setChosenLang(l)}
                   className={cn("w-full justify-center", ui.text.bodyStrong)}

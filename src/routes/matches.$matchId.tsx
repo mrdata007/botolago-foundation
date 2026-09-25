@@ -5,9 +5,15 @@ import {
   UNAVAILABLE,
   unavailableHeaders,
 } from "@/lib/page-availability";
-import { useQuery } from "@tanstack/react-query";
-import { useId, useMemo, useState } from "react";
-import { footballService } from "@/services/football";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useId, useMemo, useState, type ComponentProps } from "react";
+import {
+  footballService,
+  hasLeagueTable,
+  type FootballSeason,
+  type FootballStandings,
+  type MatchSeason,
+} from "@/services/football";
 import { newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -27,6 +33,7 @@ import {
 } from "@/components/matches/MatchTabs";
 import { MatchTopBar } from "@/components/matches/MatchTopBar";
 import { StatComparison } from "@/components/matches/StatComparison";
+import { matchDataPhase } from "@/components/matches/match-empty-states";
 import {
   eventsWhenFresh,
   scoreCountsEveryGoal,
@@ -43,7 +50,7 @@ import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/structured-data";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
-import { matchRefetchInterval } from "@/lib/match-refresh";
+import { matchRefetchInterval, rereadTableOnFinish } from "@/lib/match-refresh";
 
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
 
@@ -201,6 +208,17 @@ function MatchDetailPage() {
   });
 
   const match = detailQ.data?.match;
+  const season = detailQ.data?.season;
+
+  // The final whistle moves the "Face à face" tab's table. This page shows no
+  // live strip, so it hears the whistle from its own reads of the match, in
+  // either language (`rereadTableOnFinish`).
+  const queryClient = useQueryClient();
+  useEffect(
+    () => rereadTableOnFinish(queryClient, ["football", "match-detail", matchId]),
+    [queryClient, matchId],
+  );
+
   const clubById = (id?: string) => detailQ.data?.clubs.find((club) => club.id === id);
   const home = clubById(match?.homeClubId);
   const away = clubById(match?.awayClubId);
@@ -271,6 +289,9 @@ function MatchDetailPage() {
   }
 
   const isLive = match.status === "live";
+  // What an empty panel says: a finished match's missing data is not promised.
+  // As of the query's own read, which the server and the first render share.
+  const phase = matchDataPhase(match, detailQ.dataUpdatedAt);
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   // Pinned to the competition zone so this names the same day the card, the
   // strip and the fixture list name (BG-0100).
@@ -397,6 +418,7 @@ function MatchDetailPage() {
               palettes={palettes}
               lineups={lineups}
               isLive={isLive}
+              phase={phase}
               halfTime={
                 match.halfTimeHomeScore !== undefined && match.halfTimeAwayScore !== undefined
                   ? { home: match.halfTimeHomeScore, away: match.halfTimeAwayScore }
@@ -413,6 +435,7 @@ function MatchDetailPage() {
             away={away}
             palettes={palettes}
             isLive={isLive}
+            phase={phase}
             pressure={pressure}
           />
         )}
@@ -423,16 +446,17 @@ function MatchDetailPage() {
             home={home}
             away={away}
             palettes={palettes}
+            phase={phase}
             absences={absences}
           />
         )}
 
-        {tab === "h2h" && (
-          <HeadToHead
+        {tab === "h2h" && season && (
+          <HeadToHeadTab
+            season={season}
             home={home}
             away={away}
             palettes={palettes}
-            standings={detailQ.data?.standings ?? []}
             meetings={h2h}
           />
         )}
@@ -479,5 +503,81 @@ function MatchDetailPage() {
         />
       ) : null}
     </AppShell>
+  );
+}
+
+type HeadToHeadTabProps = { season: MatchSeason } & Pick<
+  ComponentProps<typeof HeadToHead>,
+  "home" | "away" | "palettes" | "meetings"
+>;
+
+/**
+ * The "Face à face" tab, with the season's table where the two clubs stand.
+ *
+ * Only a league's match has one (`hasLeagueTable`). A cup, super cup,
+ * international or friendly fixture has results in its season too, and the
+ * tab used to draw them as a merged points table under a "provisoire" note:
+ * its tab is the meetings alone, and reads neither a table nor the seasons.
+ */
+function HeadToHeadTab({ season, ...rest }: HeadToHeadTabProps) {
+  if (!hasLeagueTable(season)) return <HeadToHead {...rest} standings={[]} />;
+  return <LeagueHeadToHeadTab season={season} {...rest} />;
+}
+
+/**
+ * A league match's "Face à face" tab. The table is the Classement tab's
+ * query, with its key and its function, so the two share one cache entry and
+ * one ranking: the same tie order, shared ranks and provisional note. Only
+ * this tab reads it, as it is mounted only while the tab is open; the detail
+ * query, refetched every 30 seconds through a live match, carries no table.
+ * Nothing reads it on the server either, so the server and the browser's
+ * first render both hold its place (`standingsPending`), and agree.
+ */
+function LeagueHeadToHeadTab({ season, home, away, palettes, meetings }: HeadToHeadTabProps) {
+  const { lang } = useI18n();
+  const queryClient = useQueryClient();
+  // A switch of language puts the whole page back to loading (the detail is
+  // read again), so this tab comes back new, with no previous read of its
+  // own to show. Until this language's table and season list are in, the
+  // other language's copies of the same ones stand in, from the cache: the
+  // ranks are the same in both (`buildStandings`), the clubs' names on the
+  // rows are the match's, and the key never names another season.
+  const other = lang === "ar" ? "fr" : "ar";
+  const standingsQ = useQuery({
+    queryKey: ["football", "standings", season.id, lang],
+    queryFn: () => footballService.getStandings(season, lang),
+    placeholderData: () =>
+      queryClient.getQueryData<FootballStandings>(["football", "standings", season.id, other]),
+  });
+  // The season's status says whether a table worked out from the results is
+  // provisional or, the season over, unofficial. The detail cannot say it
+  // (`MatchSeason`), so it comes from the season list; when that read fails,
+  // or the list does not reach back to the season, the note says neither and
+  // only that the table is worked out from the results (`StandingsNotes`).
+  const seasonsQ = useQuery({
+    queryKey: ["football", "seasons", lang],
+    queryFn: () => footballService.getSeasons(lang),
+    placeholderData: () =>
+      queryClient.getQueryData<FootballSeason[]>(["football", "seasons", other]),
+  });
+  const table = standingsQ.data;
+  return (
+    <HeadToHead
+      home={home}
+      away={away}
+      palettes={palettes}
+      standings={table?.overall ?? []}
+      standingsComputed={table?.computed ?? false}
+      seasonStatus={seasonsQ.data?.find((candidate) => candidate.id === season.id)?.status}
+      standingsPending={standingsQ.isPending || seasonsQ.isPending}
+      // A failed read with no table in hand is said as one, not taken for a
+      // season with no table yet.
+      standingsFailed={standingsQ.isError && !table}
+      onRetryStandings={() => {
+        void standingsQ.refetch();
+        if (seasonsQ.isError) void seasonsQ.refetch();
+      }}
+      meetings={meetings}
+    />
   );
 }

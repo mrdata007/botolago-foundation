@@ -10,6 +10,7 @@
 
 import type { Database, Json } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
+import { reportMfaStepUp } from "@/backend/auth/step-up";
 import type { ChipsState } from "@/lib/fantasy-engine";
 import type { PointsViewModel } from "@/services/points-service";
 import type { FantasyTeam, FormationKey, SquadPlayer } from "@/types/fantasy";
@@ -119,6 +120,8 @@ export function mapSupabaseError(err: unknown): FantasyCloudError {
       clubs: err.missingClubs,
     });
   }
+  // Refused because the second factor is still owed: see `@/backend/auth/step-up`.
+  reportMfaStepUp(err);
   const e = err as PgErrorLike | null;
   const msg = e?.message ?? "";
   const code = e?.code ?? "";

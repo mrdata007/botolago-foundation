@@ -170,7 +170,8 @@ export class LocalMockAuthService implements AuthService {
       return { ok: false, errorCode: "credentials" };
     }
     this.setSession({ kind: "user", userId: found.id, createdAt: new Date().toISOString() });
-    return { ok: true, data: stripPassword(found) };
+    // The demo accounts have no second factor: a sign-in is complete at once.
+    return { ok: true, data: stripPassword(found), status: "authenticated" };
   }
 
   async registerWithEmail(input: RegisterInput): Promise<AuthResult<{ email: string }>> {
@@ -227,8 +228,15 @@ export class LocalMockAuthService implements AuthService {
     await simulateLatency();
     const session = this.readSession();
     return session.status === "authenticated" && session.user
-      ? { ok: true, data: session.user }
+      ? { ok: true, data: session.user, status: session.status }
       : { ok: false, errorCode: "session_expired" };
+  }
+
+  /** No second factor in the demo, so a recheck only re-reads what is stored. */
+  async recheckSession(): Promise<AuthSession> {
+    this.init();
+    this.emit();
+    return this.cachedSession;
   }
 
   async updatePassword(input: UpdatePasswordInput): Promise<AuthResult> {
@@ -262,7 +270,7 @@ export class LocalMockAuthService implements AuthService {
     this.saveUser(user);
     safeRemove(K_PENDING);
     this.setSession({ kind: "user", userId: user.id, createdAt: new Date().toISOString() });
-    return { ok: true, data: stripPassword(user) };
+    return { ok: true, data: stripPassword(user), status: "authenticated" };
   }
 
   async resendCode(email: string, _next?: string): Promise<AuthResult> {
@@ -299,7 +307,7 @@ export class LocalMockAuthService implements AuthService {
       this.saveUser(user);
     }
     this.setSession({ kind: "user", userId: user.id, createdAt: new Date().toISOString() });
-    return { ok: true, data: stripPassword(user) };
+    return { ok: true, data: stripPassword(user), status: "authenticated" };
   }
 
   signInWithGoogle(_next?: string) {

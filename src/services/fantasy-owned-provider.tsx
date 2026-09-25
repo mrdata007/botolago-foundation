@@ -124,12 +124,15 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
     // or by the auth-change hook below.
     staleTime: 30_000,
     retry: (count, err) => {
-      // Version conflicts / permission errors are terminal — never retry.
+      // Version conflicts / permission errors are terminal — never retry. So
+      // is a read refused until the one-time code is in: the auth layer takes
+      // the manager to the code, and the snapshot is read again after it.
       if (
         err.code === "version_conflict" ||
         err.code === "permission_denied" ||
         err.code === "unauthenticated" ||
-        err.code === "mapping_incomplete"
+        err.code === "mapping_incomplete" ||
+        err.code === "mfa_required"
       ) {
         return false;
       }

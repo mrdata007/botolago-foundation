@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { showStepUpNotice } from "@/auth/step-up-notice";
+import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { CupInfo } from "@/components/fantasy-lists/CupInfo";
 import { LeaguePredictionsStandings } from "@/components/predictions/leagues/LeaguePredictionsStandings";
 import { roundQueryOptions } from "@/components/predictions/use-predictions-round";
@@ -35,6 +37,7 @@ import {
   UiTR,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
@@ -42,6 +45,7 @@ import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
 
 export const Route = createFileRoute("/fantasy/leagues/$leagueId")({
+  head: () => fantasyHead("league"),
   component: LeagueDetailPage,
 });
 
@@ -99,8 +103,12 @@ function LeagueDetailBody() {
       await qc.invalidateQueries({ queryKey: key("leagues", "private") });
       toast.success(t("fantasy.leagues.left"));
       window.history.back();
-    } catch {
-      toast.error(t("state.error"));
+    } catch (error) {
+      // Refused until the one-time code is in: said as such, once (the auth
+      // layer says it too, under the same toast id), not "Une erreur est
+      // survenue". The manager is still in the league until the code is in.
+      if (isMfaStepUpError(error)) showStepUpNotice(t);
+      else toast.error(t("state.error"));
     } finally {
       setBusy(false);
     }

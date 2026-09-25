@@ -1,5 +1,7 @@
 import { Toaster as Sonner } from "sonner";
 
+import { useI18n } from "@/i18n/provider";
+
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 /**
@@ -8,8 +10,13 @@ type ToasterProps = React.ComponentProps<typeof Sonner>;
  * Glass surface, semantic tokens, and type-specific accent stripes for
  * success / warning / error / info. Duration and animation timing are
  * standardized; prefers-reduced-motion is respected globally via styles.css.
+ *
+ * The landmark around the toasts and a toast's close button are named from
+ * the dictionaries: sonner's own names are English ("Notifications",
+ * "Close toast"), which is what an Arabic screen reader announced.
  */
 const Toaster = ({ ...props }: ToasterProps) => {
+  const { t } = useI18n();
   return (
     <Sonner
       className="toaster group"
@@ -17,7 +24,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
       offset={16}
       duration={3600}
       gap={8}
+      containerAriaLabel={t("toast.region")}
       toastOptions={{
+        closeButtonAriaLabel: t("toast.close"),
         classNames: {
           toast: [
             "group toast pointer-events-auto",

@@ -20,6 +20,7 @@ import type { ReactNode } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { Check, Loader2 } from "lucide-react";
+import { secondFactorGuard } from "@/auth/second-factor";
 import { authOutlineClass } from "@/components/auth/auth-classes";
 import { Logo } from "@/components/brand/Logo";
 import { ui, UiAlert, UiButton, UiCard } from "@/components/ui-kit";
@@ -64,6 +65,13 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
     if (!data.session) {
       throw redirect({ to: "/auth/login", search: { next } });
     }
+    // A session is not enough: a password-only session of an account with a
+    // second factor must not hand an app a token to act as the reader. The
+    // loader below can send the reader on to an already-approved client
+    // before anything renders, so `SecondFactorGate` would come too late.
+    // Back here with the code in, through the challenge's `next`.
+    const owed = await secondFactorGuard(supabase.auth.mfa, location);
+    if (owed) throw redirect(owed);
   },
   loader: async ({ location }) => {
     const authorizationId = new URLSearchParams(location.search).get("authorization_id")!;

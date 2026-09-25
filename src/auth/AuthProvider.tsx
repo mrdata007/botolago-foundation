@@ -9,15 +9,17 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "@tanstack/react-router";
 import { authService, type AuthSession, type AuthStatus, type AuthUser } from "@/services/auth";
 import { useI18n } from "@/i18n/provider";
-import { cleanupOwnedFantasyOnSignOut } from "@/services/fantasy-signout-cleanup";
 import { fetchAccountStanding, rememberSuspension } from "@/services/account-standing";
 import {
   claimGuestPredictionsOnSignIn,
   sendGuestVotesOnSignIn,
 } from "@/components/predictions/guest-claim";
-import { forgetAccountPredictions } from "@/components/predictions/predictions-runtime";
+import { forgetAccount, watchAccountSwitch } from "./account-queries";
+import { challengeSearch, MFA_CHALLENGE_PATH, requireAuthStep } from "./second-factor";
+import { SecondFactorGate } from "./SecondFactorGate";
 
 interface AuthPromptState {
   open: boolean;
@@ -63,7 +65,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const tRef = useRef(t);
   tRef.current = t;
   const qc = useQueryClient();
-  const prevUidRef = useRef<string | null>(session.user?.id ?? null);
 
   useEffect(() => {
     const unsub = authService.subscribeToSession(setSession);
@@ -73,16 +74,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Sign-out / account-switch cleanup: purge owned Fantasy cache + drafts for
-  // the outgoing UID. Public caches and guest local prototype data untouched.
+  // the outgoing UID, its Pronostics, and every other query keyed by it
+  // (followed clubs, notification preferences, saved articles), in flight or
+  // not. Public caches and guest local prototype data untouched. The same
+  // account moving into a state that owes its second factor is NOT a leave:
+  // see `watchAccountSwitch`.
+  const watchAccount = useMemo(() => watchAccountSwitch((uid) => forgetAccount(qc, uid)), [qc]);
   useEffect(() => {
-    const nextUid = session.user?.id ?? null;
-    const prev = prevUidRef.current;
-    if (prev && prev !== nextUid) {
-      cleanupOwnedFantasyOnSignOut({ qc, uid: prev });
-      forgetAccountPredictions(qc);
-    }
-    prevUidRef.current = nextUid;
-  }, [session.user?.id, qc]);
+    watchAccount(session);
+  }, [session, watchAccount]);
 
   // A banned account is signed out and sent to the sign-in page, which says
   // why. Asked on every sign-in and every load, then again whenever the tab
@@ -130,14 +130,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void sendGuestVotesOnSignIn(qc);
   }, [signedInUid, qc]);
 
-  const requireAuth = useCallback<AuthContextValue["requireAuth"]>((action, opts) => {
-    const s = authService.getSession();
-    if (s.status === "authenticated") {
-      action();
-      return;
-    }
-    setPrompt({ open: true, reason: opts?.reason, onCancel: opts?.onCancel });
-  }, []);
+  // A password-only session of an account with a second factor is not signed
+  // in for this purpose: it is sent to finish with its code, not offered the
+  // sign-in prompt (it already has a password session) and never let through.
+  const router = useRouter();
+  const requireAuth = useCallback<AuthContextValue["requireAuth"]>(
+    (action, opts) => {
+      switch (requireAuthStep(authService.getSession().status)) {
+        case "run":
+          action();
+          return;
+        case "challenge": {
+          const { pathname, searchStr } = router.state.location;
+          void router.navigate({
+            to: MFA_CHALLENGE_PATH,
+            search: challengeSearch(pathname, searchStr),
+          });
+          return;
+        }
+        default:
+          setPrompt({ open: true, reason: opts?.reason, onCancel: opts?.onCancel });
+      }
+    },
+    [router],
+  );
 
   const closePrompt = useCallback(() => setPrompt({ open: false }), []);
 
@@ -161,7 +177,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [session, prompt, requireAuth, closePrompt, signOut, refresh],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <SecondFactorGate status={session.status} />
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

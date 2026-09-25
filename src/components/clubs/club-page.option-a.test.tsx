@@ -198,6 +198,19 @@ describe("club page — the hero", () => {
     expect(html).toContain(dictionaries.fr["club.key.played"]);
   });
 
+  it("labels a rank it shares with clubs level on every figure", () => {
+    const html = inFrench(
+      <ClubHero club={WYDAD} headingId="h" kicker="" row={{ ...TABLE[2]!, position: 2 }} shared />,
+    );
+    expect(html).toMatch(/<bdi>2e<\/bdi>/);
+    expect(html).toContain(`>${dictionaries.fr["standings.shared_rank"]}</dt>`);
+    expect(html).not.toContain(`>${dictionaries.fr["matches.table.rank"]}</dt>`);
+    // Alone on its rank, it is the club's position.
+    const alone = inFrench(<ClubHero club={WYDAD} headingId="h" kicker="" row={TABLE[2]} />);
+    expect(alone).toContain(`>${dictionaries.fr["matches.table.rank"]}</dt>`);
+    expect(alone).not.toContain(dictionaries.fr["standings.shared_rank"]);
+  });
+
   it("draws no card of dashes before the club has a line in the table", () => {
     const html = inFrench(
       <ClubHero club={WYDAD} headingId="h" kicker="Botola Pro Inwi" row={undefined} />,
@@ -239,6 +252,8 @@ describe("club page — the figures", () => {
         clubs={[WYDAD]}
         clubById={clubById}
         standings={[]}
+        standingsComputed={false}
+        seasonStatus="active"
         stats={empty}
         record={officialRecord(undefined, empty.overall)}
         seasonLabel="2026/2027"
@@ -265,6 +280,8 @@ describe("club page — the figures", () => {
         clubs={[WYDAD]}
         clubById={clubById}
         standings={[]}
+        standingsComputed={false}
+        seasonStatus="active"
         stats={empty}
         record={officialRecord(undefined, empty.overall)}
         seasonLabel="2025/2026"
@@ -287,6 +304,8 @@ describe("club page — the figures", () => {
         clubs={[WYDAD, RAJA, FAR]}
         clubById={clubById}
         standings={TABLE}
+        standingsComputed={false}
+        seasonStatus="completed"
         stats={stats}
         record={officialRecord(TABLE[2], stats.overall)}
         seasonLabel="2025/2026"
@@ -300,6 +319,38 @@ describe("club page — the figures", () => {
     expect(html).toContain(`href="/clubs/${RAJA.id}"`);
     expect(html).toContain(`href="/clubs/${FAR.id}"`);
     expect(html).not.toContain(`href="/clubs/${WYDAD.id}"`);
+    // The provider's table, no club sharing a rank: nothing to add under it.
+    expect(html).not.toContain(escapeHtml(dictionaries.fr["standings.provisional"]));
+    expect(html).not.toContain(escapeHtml(dictionaries.fr["standings.shared_rank_note"]));
+  });
+
+  it("says under the table around the club that it is provisional and its shared rank decides nothing", async () => {
+    // A season's first day: FAR won, Raja and Wydad have yet to play.
+    const firstDay = [
+      { ...TABLE[0]!, played: 1, points: 3 },
+      { ...TABLE[1]!, played: 0, points: 0, goalDifference: 0, position: 2 },
+      { ...TABLE[2]!, played: 0, points: 0, goalDifference: 0, position: 2 },
+    ];
+    const html = await withRouter(
+      <ClubOverview
+        club={WYDAD}
+        matches={{ data: MATCHES, isPending: false, isError: false, refetch: () => undefined }}
+        news={{ data: [], isPending: false, isError: false, refetch: () => undefined }}
+        clubs={[WYDAD, RAJA, FAR]}
+        clubById={clubById}
+        standings={firstDay}
+        standingsComputed
+        seasonStatus="active"
+        stats={stats}
+        record={officialRecord(firstDay[2], stats.overall)}
+        seasonLabel="2026/2027"
+        seasonAbsent={false}
+        previousSeason={undefined}
+        standingsLink={{ to: "/", params: {}, search: {} }}
+      />,
+    );
+    expect(html).toContain(escapeHtml(dictionaries.fr["standings.provisional"]));
+    expect(html).toContain(escapeHtml(dictionaries.fr["standings.shared_rank_note"]));
   });
 });
 

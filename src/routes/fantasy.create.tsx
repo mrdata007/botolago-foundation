@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { showStepUpNotice } from "@/auth/step-up-notice";
 import { AddPlayerScreen } from "@/components/fpl/AddPlayerScreen";
 import { findClub } from "@/components/fpl/club-lookup";
 import { FantasyUnavailableState } from "@/components/fantasy/FantasyUnavailableState";
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { reportOperationalError } from "@/lib/operational-errors";
 import { cn } from "@/lib/utils";
 import {
@@ -45,12 +47,13 @@ import {
 } from "@/services/fantasy-create-service";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { importDecisionService } from "@/services/fantasy-import-decision";
-import { runOwnedMutation } from "@/services/fantasy-mutation-controller";
+import { classifyRepoError, runOwnedMutation } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import type { FantasyPlayer, SquadPlayer } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/create")({
+  head: () => fantasyHead("create"),
   component: CreateTeamPage,
 });
 
@@ -310,7 +313,11 @@ function CreateTeamBody() {
       }
       const key: TranslationKey = createTeamErrorKey(res.error);
       setSaveError(key);
-      toast.error(t(key));
+      // Refused until the one-time code is in: the alert says so, and the toast
+      // is the auth layer's (one, under its id) rather than the same sentence
+      // a second time in red. The squad waits in its draft.
+      if (classifyRepoError(res.error).isStepUp) showStepUpNotice(t);
+      else toast.error(t(key));
     } finally {
       setSaving(false);
     }

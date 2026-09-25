@@ -1,4 +1,5 @@
 import type { PostgrestError } from "@supabase/supabase-js";
+import { reportMfaStepUp } from "@/backend/auth/step-up";
 
 export const NEWS_ERROR_CODES = [
   "article_not_found",
@@ -68,6 +69,13 @@ const mappings: ReadonlyArray<readonly [string, NewsErrorCode]> = [
   ["news_invalid_list_scope", "invalid_list_scope"],
 ];
 
+/**
+ * Every News error, the CMS's included, as a `NewsError`. It does not report
+ * a step-up refusal to the auth layer: the admin News screens map their
+ * editorial errors through here, and staff MFA has its own server-enforced
+ * flow that the reader's challenge must not reroute (see step-up.ts). The
+ * reader's own list reports through `mapReaderListError`.
+ */
 export function mapNewsError(error: PostgrestError | Error): NewsError {
   // Already mapped (the repository maps every RPC error once, and the CMS
   // routes map again in their catch blocks). Re-mapping read only the generic
@@ -81,4 +89,17 @@ export function mapNewsError(error: PostgrestError | Error): NewsError {
   if ("code" in error && error.code === "42501")
     return new NewsError("unauthorized", "Authentication is required.", error);
   return new NewsError("data_unavailable", "News data is temporarily unavailable.", error);
+}
+
+/**
+ * An error from the reader's own saved list (`news_saved_articles`,
+ * `save_article`, `unsave_article`): the one part of News the step-up rule
+ * guards (`app.saved_articles`, 20260926003100). Refused while the second
+ * factor is owed, and reported so the auth layer can ask for it -- which
+ * `mapNewsError` did for every News error until 2026-09-25, the CMS's
+ * included, against step-up.ts's rule for staff screens.
+ */
+export function mapReaderListError(error: PostgrestError | Error): NewsError {
+  reportMfaStepUp(error);
+  return mapNewsError(error);
 }

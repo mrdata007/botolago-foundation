@@ -1,12 +1,24 @@
 import { describe, expect, it } from "vitest";
 import {
+  ARTICLE_BREADCRUMB_LABELS,
+  articleDescription,
   articleModifiedAt,
   buildArticleHead,
   buildArticleJsonLd,
   buildCanonicalArticleUrl,
+  SEARCH_DESCRIPTION_LENGTH,
   serializeJsonLd,
+  unclippedSeoText,
 } from "./article-meta";
 import type { ArticleDetailDto } from "@/backend/news/contracts";
+import { dictionaries } from "@/i18n/dictionaries";
+import {
+  articleText,
+  clip,
+  SEO_DESCRIPTION_LIMIT,
+  SEO_TITLE_LIMIT,
+  toEdition,
+} from "../../scripts/backend/elbotola-licensed-import";
 
 function detail(overrides: Partial<ArticleDetailDto> = {}): ArticleDetailDto {
   return {
@@ -375,5 +387,437 @@ describe("French ↔ Arabic alternates (hreflang)", () => {
     ]) {
       expect(head.meta).toContainEqual(expected);
     }
+  });
+});
+
+// Audit A11: the licensed-archive import stored `seo_title` as the headline cut
+// before 60 characters plus "…", and `seo_description` as the text cut before
+// 155. These are that import's real shapes (edition 2064690e…, 2026-09-25).
+describe("clipped SEO copies of the headline and summary", () => {
+  const TITLE =
+    "Officiel : Le Wydad AC annonce la signature de l'attaquant congolais Silvère Ganvoula M'boussy (30 ans) pour une saison";
+  const SUMMARY =
+    "Le Wydad Athletic Club a officialisé ce mercredi la signature de l'attaquant congolais Silvère Ganvoula M'boussy, dans le cadre du mercato estival actuel.";
+  const imported = () =>
+    detail({
+      title: TITLE,
+      summary: SUMMARY,
+      seo: {
+        title: "Officiel : Le Wydad AC annonce la signature de l'attaquant…",
+        description:
+          "Le Wydad Athletic Club a officialisé ce mercredi la signature de l'attaquant congolais Silvère Ganvoula M'boussy, dans le cadre du mercato estival…",
+      },
+    });
+
+  it("the NewsArticle headline is the whole headline, not the clipped copy", () => {
+    const jsonLd = buildArticleJsonLd(imported(), "https://botolago.com/news/x")!;
+    expect(jsonLd.headline).toBe(TITLE);
+    expect(jsonLd.description).toBe(SUMMARY);
+  });
+
+  it("the title tag, social titles and breadcrumb carry it whole too", () => {
+    const head = buildArticleHead(imported(), "article-1");
+    expect(head.meta).toContainEqual({ title: `${TITLE} — BotolaGO` });
+    expect(head.meta).toContainEqual({ property: "og:title", content: TITLE });
+    expect(head.meta).toContainEqual({ name: "twitter:title", content: TITLE });
+    expect(head.meta).toContainEqual({ name: "description", content: SUMMARY });
+    expect(head.meta).toContainEqual({ property: "og:description", content: SUMMARY });
+    const trail = JSON.parse(head.scripts![1].children) as {
+      itemListElement: { name: string }[];
+    };
+    expect(trail.itemListElement.at(-1)!.name).toBe(TITLE);
+    for (const tag of head.meta) {
+      if ("content" in tag) expect(tag.content).not.toMatch(/…$/);
+    }
+  });
+
+  it("an Arabic edition's clipped copies give way the same way", () => {
+    const title =
+      "الوداد الرياضي يعلن رسميا تعاقده مع المهاجم الكونغولي سيلفير غانفولا مبوسي لموسم واحد";
+    const arabic = detail({
+      language: "ar",
+      title,
+      seo: { title: "الوداد الرياضي يعلن رسميا تعاقده مع المهاجم الكونغولي…", description: null },
+    });
+    expect(buildArticleJsonLd(arabic, "https://botolago.com/news/x")!.headline).toBe(title);
+  });
+
+  it("keeps an editor's own SEO wording, and a clip of some other text", () => {
+    expect(unclippedSeoText("Wydad : Ganvoula signe", TITLE)).toBe("Wydad : Ganvoula signe");
+    // Ends in an ellipsis, but is not the start of the headline.
+    expect(unclippedSeoText("Le mercato du Wydad continue…", TITLE)).toBe(
+      "Le mercato du Wydad continue…",
+    );
+    // It compares with the one text it is given: a clip that runs past a
+    // short summary into the body is not a copy of that summary.
+    // `articleDescription` completes that one from the body (below).
+    expect(
+      unclippedSeoText("Court résumé. Et la suite du corps de l'article…", "Court résumé."),
+    ).toBe("Court résumé. Et la suite du corps de l'article…");
+  });
+
+  it("reads three dots as an ellipsis and ignores spacing differences", () => {
+    expect(unclippedSeoText("Officiel : Le  Wydad AC annonce...", TITLE)).toBe(TITLE);
+  });
+
+  it("falls back to the source text when no SEO value is stored", () => {
+    expect(unclippedSeoText(null, TITLE)).toBe(TITLE);
+    expect(unclippedSeoText("  ", TITLE)).toBe(TITLE);
+    expect(unclippedSeoText(null, null)).toBeNull();
+  });
+});
+
+/**
+ * An edition the importer itself builds from these paragraphs, so the stored
+ * shapes are the real ones: `now` as it stores one today (`toEdition`: no
+ * SEO copy of a text longer than a search result shows), `archived` as every
+ * published edition still carries it, with the copies it used to store (its
+ * `clip` and `articleText`).
+ */
+function importedEdition(language: "fr" | "ar", paragraphs: readonly string[]) {
+  const html = paragraphs.map((paragraph) => `<p>${paragraph}</p>`).join("");
+  const edition = toEdition({
+    id: "1",
+    language,
+    url: "https://www.elbotola.com/article/2026-09-22-23-19-974.html",
+    title: "Un titre d'article importé",
+    author: null,
+    publishedAt: "2026-09-22T22:48:00.000Z",
+    html,
+    translatedFrom: null,
+  })!;
+  const now = detail({
+    language,
+    title: edition.title,
+    summary: edition.summary,
+    bodyHtml: edition.bodyHtml,
+    seo: { title: edition.seoTitle, description: edition.seoDescription },
+  });
+  const archived = detail({
+    ...now,
+    seo: {
+      title: clip(edition.title, SEO_TITLE_LIMIT),
+      description: clip(articleText(html).join(" "), SEO_DESCRIPTION_LIMIT),
+    },
+  });
+  return { now, archived };
+}
+
+/** `text` is the article's description everywhere the head puts one. */
+function describedAs(article: ArticleDetailDto, text: string) {
+  expect(articleDescription(article)).toBe(text);
+  expect(buildArticleJsonLd(article, "https://botolago.com/news/x")!.description).toBe(text);
+  const head = buildArticleHead(article, article.id);
+  for (const tag of [
+    { name: "description", content: text },
+    { property: "og:description", content: text },
+    { name: "twitter:description", content: text },
+  ]) {
+    expect(head.meta).toContainEqual(tag);
+  }
+}
+
+// The import stored `seo_description` as the body's paragraphs joined end to
+// end and clipped before 155 characters. It leaves the column empty now, but
+// every published edition still carries such a copy.
+describe("a description clipped from the body is completed from it", () => {
+  const imported = (language: "fr" | "ar", paragraphs: readonly string[]) =>
+    importedEdition(language, paragraphs).archived;
+
+  it("a short first paragraph: the cut ran on into the next, which is kept whole", () => {
+    const kicker = "Mise à jour.";
+    const next =
+      "La troisième journée de la Botola Pro se conclura par un affrontement de haut vol, avec le Wydad de Casablanca recevant la Jeunesse Sportive Soualem au Complexe Sportif Mohammed V à 20h.";
+    const article = imported("fr", [
+      kicker,
+      next,
+      "Actuellement troisième, Soualem vise une troisième victoire.",
+    ]);
+    // What the import stored: the kicker is the whole summary, and the
+    // description stops in the middle of the next paragraph.
+    expect(article.summary).toBe(kicker);
+    expect(article.seo.description).toMatch(/^Mise à jour\. La troisième journée .*…$/);
+    describedAs(article, `${kicker} ${next}`);
+  });
+
+  it("the case the review reproduced, and an Arabic one of the same shape", () => {
+    const first = "Le Wydad a officialisé la signature de Silvère Ganvoula.";
+    const second =
+      "Le club casablancais a précisé que l'attaquant congolais s'est engagé pour une saison, avec une année supplémentaire en option.";
+    describedAs(imported("fr", [first, second]), `${first} ${second}`);
+
+    const arabicFirst =
+      "أعلن نادي الوداد الرياضي تعاقده مع المهاجم الكونغولي سيلفير غانفولا مبوسي.";
+    const arabicSecond =
+      "وأوضح النادي في بلاغ رسمي أن اللاعب وقع عقدا لموسم واحد قابل للتجديد، على أن يلتحق بالمجموعة خلال الأسبوع الجاري.";
+    const arabic = imported("ar", [
+      arabicFirst,
+      arabicSecond,
+      "ويستعد الفريق لمواجهة الجيش الملكي.",
+    ]);
+    expect(arabic.seo.description).toMatch(/…$/);
+    describedAs(arabic, `${arabicFirst} ${arabicSecond}`);
+  });
+
+  it("a cut that runs through several short paragraphs ends with the one it fell in", () => {
+    const paragraphs = [
+      "Saison 2023 - Acte 10.",
+      "La 10ème journée de la Botola Pro débutera ce mardi avec trois affiches : IRT-MCO, HUSA-DHJ et OCK-RCA.",
+      "L'Ittihad de Tanger recevra le Mouloudia Oujda au stade Ibn-Batouta à 16h, dans un match important pour les deux équipes.",
+      "Le Raja se déplacera à Khouribga en soirée.",
+    ];
+    describedAs(imported("fr", paragraphs), paragraphs.slice(0, 3).join(" "));
+  });
+
+  it("a first paragraph longer than the cut is the description, whole", () => {
+    const first =
+      "Le Wydad Athletic Club a officialisé ce mercredi la signature de l'attaquant congolais Silvère Ganvoula M'boussy, dans le cadre du mercato estival actuel.";
+    const article = imported("fr", [first, "Le joueur rejoint le groupe dès cette semaine."]);
+    expect(article.summary).toBe(first);
+    describedAs(article, first);
+  });
+
+  it("a first paragraph over 300 characters, whose summary is cut too, is described whole", () => {
+    const first =
+      "Le Raja Club Athletic a remporté le derby de Casablanca face au Wydad sur le score de deux buts à un, au terme d'une rencontre disputée devant un stade Mohammed V plein. Les Verts ont ouvert le score en première période sur un coup franc direct, avant que le Wydad n'égalise juste après la pause. Le but de la victoire est venu dans le temps additionnel.";
+    const article = imported("fr", [first, "Le Raja prend la tête du classement."]);
+    expect(first.length).toBeGreaterThan(300);
+    expect(article.summary).toMatch(/…$/);
+    describedAs(article, first);
+  });
+
+  it("text the body does not open with is not completed from it", () => {
+    const body = "<p>Le Wydad a officialisé la signature de Silvère Ganvoula.</p><p>Suite.</p>";
+    const described = (description: string, overrides: Partial<ArticleDetailDto> = {}) =>
+      articleDescription(
+        detail({ bodyHtml: body, seo: { title: null, description }, ...overrides }),
+      );
+    // An editor's own description.
+    expect(described("Un attaquant pour une saison.")).toBe("Un attaquant pour une saison.");
+    // An ellipsis on words the body does not open with.
+    expect(described("Le mercato du Wydad continue…")).toBe("Le mercato du Wydad continue…");
+    // A body that ends where the text before the ellipsis does: nothing was
+    // cut, the ellipsis is the writer's.
+    expect(
+      described("La suite au prochain épisode…", {
+        summary: "Et maintenant ?",
+        bodyHtml: "<p>La suite au prochain épisode</p>",
+      }),
+    ).toBe("La suite au prochain épisode…");
+  });
+
+  it("a description clipped from a summary written apart from the body gives way to it", () => {
+    const summary = "Un résumé écrit à part, qui ne reprend pas le corps de l'article.";
+    expect(
+      articleDescription(
+        detail({ summary, seo: { title: null, description: "Un résumé écrit à part…" } }),
+      ),
+    ).toBe(summary);
+  });
+
+  it("with no description stored, a summary cut from the body is completed too", () => {
+    const first =
+      "Le Raja Club Athletic a remporté le derby de Casablanca face au Wydad sur le score de deux buts à un.";
+    expect(
+      articleDescription(
+        detail({
+          summary: "Le Raja Club Athletic a remporté le derby…",
+          bodyHtml: `<p>${first}</p><p>Suite.</p>`,
+          seo: { title: null, description: null },
+        }),
+      ),
+    ).toBe(first);
+    expect(articleDescription(detail({ seo: { title: null, description: null } }))).toBe(
+      "Résumé officiel",
+    );
+  });
+});
+
+// The import leaves `seo_description` empty now where the text is longer than
+// a search result shows, and its summary is the first paragraph whole. On
+// 5,876 of the 15,690 published editions (2026-09-25) that paragraph is
+// shorter than the old cut, often a kicker, and an edition of that shape was
+// described by the kicker alone.
+describe("with no description stored, a summary that is the first paragraph runs on like the archive's copy", () => {
+  const KICKER = "Mise à jour.";
+  const NEXT =
+    "La troisième journée de la Botola Pro se conclura par un affrontement de haut vol, avec le Wydad de Casablanca recevant la Jeunesse Sportive Soualem au Complexe Sportif Mohammed V à 20h.";
+  const THIRD = "Actuellement troisième, Soualem vise une troisième victoire.";
+  const body = (paragraphs: readonly string[]) =>
+    paragraphs.map((paragraph) => `<p>${paragraph}</p>`).join("");
+  const unset = { title: null, description: null };
+
+  it("a kicker runs on to the end of the paragraph the import's cut falls in", () => {
+    const { now, archived } = importedEdition("fr", [KICKER, NEXT, THIRD]);
+    expect(now.seo.description).toBeNull();
+    expect(now.summary).toBe(KICKER);
+    describedAs(now, `${KICKER} ${NEXT}`);
+    // What the archive's clipped copy of the same text is completed to.
+    expect(articleDescription(archived)).toBe(`${KICKER} ${NEXT}`);
+  });
+
+  it("so does BotolaGO's own edition with no SEO description, on purpose", () => {
+    const own = detail({
+      source: null,
+      summary: KICKER,
+      bodyHtml: body([KICKER, NEXT, THIRD]),
+      seo: unset,
+    });
+    describedAs(own, `${KICKER} ${NEXT}`);
+  });
+
+  it("a first paragraph longer than the search length is the description alone, as before", () => {
+    const first =
+      "Le Raja Club Athletic a remporté le derby de Casablanca face au Wydad sur le score de deux buts à un, au terme d'une rencontre disputée devant un stade Mohammed V plein.";
+    expect(first.length).toBeGreaterThan(SEO_DESCRIPTION_LIMIT);
+    const { now, archived } = importedEdition("fr", [first, NEXT]);
+    expect(now.seo.description).toBeNull();
+    expect(now.summary).toBe(first);
+    describedAs(now, first);
+    expect(articleDescription(archived)).toBe(first);
+  });
+
+  it("a body shorter than the search length is described whole", () => {
+    const rest = "Le Wydad reçoit Soualem ce soir à 20h au Complexe Mohammed V.";
+    const whole = `${KICKER} ${rest}`;
+    expect(whole.length).toBeLessThan(SEO_DESCRIPTION_LIMIT);
+    // The import stores such a text whole, as it did before.
+    const { now } = importedEdition("fr", [KICKER, rest]);
+    expect(now.seo.description).toBe(whole);
+    describedAs(now, whole);
+    // With nothing stored, the same text, not the kicker alone.
+    describedAs(detail({ summary: KICKER, bodyHtml: body([KICKER, rest]), seo: unset }), whole);
+  });
+
+  it("an editor's own SEO description is kept", () => {
+    const own = "Le Wydad reçoit Soualem ce soir à 20h, pour la troisième journée.";
+    describedAs(
+      detail({
+        summary: KICKER,
+        bodyHtml: body([KICKER, NEXT, THIRD]),
+        seo: { title: null, description: own },
+      }),
+      own,
+    );
+  });
+
+  it("an Arabic edition runs on the same way", () => {
+    const kicker = "آخر المستجدات.";
+    const next =
+      "أعلن نادي الوداد الرياضي تعاقده مع المهاجم الكونغولي سيلفير غانفولا مبوسي لموسم واحد قابل للتجديد، على أن يلتحق بالمجموعة خلال الأسبوع الجاري استعدادا للمباراة المقبلة.";
+    const { now, archived } = importedEdition("ar", [
+      kicker,
+      next,
+      "ويستعد الفريق لمواجهة الجيش الملكي.",
+    ]);
+    expect(now.seo.description).toBeNull();
+    expect(now.summary).toBe(kicker);
+    describedAs(now, `${kicker} ${next}`);
+    expect(articleDescription(archived)).toBe(`${kicker} ${next}`);
+  });
+
+  it("says what the archive's copy is completed to, wherever the cut falls", () => {
+    // First paragraphs from ten characters to past the summary's 300, before
+    // a long paragraph, a run of short ones, or a word that crosses the cut,
+    // so that it falls at the end of the first paragraph.
+    const words = NEXT.split(" ");
+    const text = (length: number, from = 0) => {
+      let out = words[from % words.length]!;
+      for (let index = from + 1; out.length < length; index += 1) {
+        out += ` ${words[index % words.length]}`;
+      }
+      return out;
+    };
+    let ranOn = 0;
+    let firstAlone = 0;
+    for (let first = 10; first <= 320; first += 5) {
+      for (const rest of [
+        [text(60, 3), text(120, 7)],
+        [text(12, 1), text(15, 4), text(18, 9), text(140, 2)],
+        ["Anticonstitutionnellement, la rencontre est reportée.", text(90, 5)],
+      ]) {
+        const paragraphs = [text(first), ...rest];
+        const { now, archived } = importedEdition("fr", paragraphs);
+        const description = articleDescription(now);
+        expect([first, description]).toEqual([first, articleDescription(archived)]);
+        if (description === paragraphs[0]) firstAlone += 1;
+        else ranOn += 1;
+      }
+    }
+    expect(ranOn).toBeGreaterThan(0);
+    expect(firstAlone).toBeGreaterThan(0);
+  });
+
+  it("cuts at the import's search length", () => {
+    expect(SEARCH_DESCRIPTION_LENGTH).toBe(SEO_DESCRIPTION_LIMIT);
+  });
+});
+
+describe("the breadcrumb follows the edition's language", () => {
+  const trailOf = (article: ArticleDetailDto) =>
+    (
+      JSON.parse(buildArticleHead(article, article.id).scripts![1].children) as {
+        "@type": string;
+        itemListElement: { name: string; item: string }[];
+      }
+    ).itemListElement;
+
+  it("an Arabic edition's trail is Arabic, whatever language the UI is in", () => {
+    const trail = trailOf(detail({ language: "ar", title: "عنوان رسمي" }));
+    expect(trail.map((step) => step.name)).toEqual(["الرئيسية", "الأخبار", "عنوان رسمي"]);
+    expect(trail.map((step) => step.item)).toEqual([
+      "https://botolago.com/",
+      "https://botolago.com/news",
+      "https://botolago.com/news/article-1",
+    ]);
+  });
+
+  it("a French edition's trail is French", () => {
+    expect(trailOf(detail()).map((step) => step.name)).toEqual([
+      "Accueil",
+      "Actualités",
+      "Titre officiel",
+    ]);
+  });
+
+  it("uses the navigation's own words in both languages", () => {
+    for (const language of ["fr", "ar"] as const) {
+      expect(ARTICLE_BREADCRUMB_LABELS[language]).toEqual({
+        home: dictionaries[language]["nav.home"],
+        news: dictionaries[language]["nav.news"],
+      });
+    }
+  });
+});
+
+describe("the share picture", () => {
+  it("a hero replaces the root's picture with its own alt and, when known, size", () => {
+    const head = buildArticleHead(detail(), "article-1");
+    expect(head.meta).toContainEqual({ property: "og:image:alt", content: "Alt" });
+    expect(head.meta).toContainEqual({ property: "og:image:width", content: "1600" });
+    expect(head.meta).toContainEqual({ property: "og:image:height", content: "1000" });
+  });
+
+  it("a hero without alt text is described by the headline; the page gives no size of its own", () => {
+    // The route's own head only: merged with the root's, whose 1200×630 the
+    // page cannot drop, those still go out before the hero (see the comment
+    // in buildArticleHead).
+    const base = detail();
+    const head = buildArticleHead(
+      detail({ hero: { ...base.hero!, alt: null, width: null, height: null } }),
+      "article-1",
+    );
+    expect(head.meta).toContainEqual({ property: "og:image:alt", content: "Titre officiel" });
+    expect(head.meta).not.toContainEqual(expect.objectContaining({ property: "og:image:width" }));
+  });
+
+  it("no hero: no image of the article's own, in the tags or the NewsArticle", () => {
+    // The page shows a stock photograph for the topic; it is not this
+    // article's image, so structured data does not claim it.
+    const article = detail({ hero: null });
+    const head = buildArticleHead(article, "article-1");
+    expect(head.meta).not.toContainEqual(expect.objectContaining({ property: "og:image" }));
+    expect(head.meta).not.toContainEqual(expect.objectContaining({ property: "og:image:alt" }));
+    expect(JSON.parse(head.scripts![0].children)).not.toHaveProperty("image");
   });
 });

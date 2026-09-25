@@ -32,11 +32,20 @@ import {
   type UpdateArticleInput,
   type UpdateArticleResult,
 } from "./contracts";
-import { mapNewsError, NewsError } from "./errors";
+import { mapNewsError, mapReaderListError, NewsError } from "./errors";
 import type { SitemapNewsEntry } from "@/lib/sitemap";
 
 function throwIfError(error: PostgrestError | null): void {
   if (error) throw mapNewsError(error);
+}
+
+/**
+ * For the reader's saved list only (reading it, saving, unsaving): a refusal
+ * for want of the one-time code goes to the auth layer. The editorial RPCs
+ * below keep `throwIfError`.
+ */
+function throwIfReaderListError(error: PostgrestError | null): void {
+  if (error) throw mapReaderListError(error);
 }
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
@@ -189,7 +198,7 @@ export class SupabaseNewsRepository implements NewsRepository {
     const { data, error } = await getNewsApi().rpc("news_saved_articles", {
       p_limit: limit,
     });
-    throwIfError(error);
+    throwIfReaderListError(error);
     return parse(articlePageSchema, data);
   }
 
@@ -197,14 +206,14 @@ export class SupabaseNewsRepository implements NewsRepository {
     const { error } = await getNewsApi().rpc("save_article", {
       p_article_edition_id: requireUuid(articleId),
     });
-    throwIfError(error);
+    throwIfReaderListError(error);
   }
 
   async unsave(articleId: string, _context: RepositoryContext): Promise<void> {
     const { error } = await getNewsApi().rpc("unsave_article", {
       p_article_edition_id: requireUuid(articleId),
     });
-    throwIfError(error);
+    throwIfReaderListError(error);
   }
 
   // --- Editorial (CMS) surface ---------------------------------------

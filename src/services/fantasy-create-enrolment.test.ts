@@ -1,8 +1,12 @@
-import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterAll, beforeEach, describe, expect, it, spyOn } from "bun:test";
 
 import type { FantasyHubDto } from "@/backend/fantasy/contracts";
 import { FantasyError, mapFantasyError } from "@/backend/fantasy/errors";
+import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
 import { dictionaries } from "@/i18n/dictionaries";
+import { createTeamErrorKey } from "./fantasy-create-service";
+import { toRepoError } from "./fantasy-errors";
+import { V2CloudFantasyRepository } from "./fantasy-owned-repository";
 
 /**
  * The squad-submission path that failed in production on 2026-09-24: a new
@@ -20,22 +24,25 @@ let hub: FantasyHubDto;
 const createCalls: Array<{ gameweekId: string; teamName: string }> = [];
 let createFailure: unknown = null;
 
-mock.module("@/backend/fantasy/supabase-repository", () => ({
-  SupabaseFantasyRepository: class {
-    async getHub() {
-      return hub;
-    }
-    async createTeam(input: { gameweekId: string; teamName: string }) {
-      createCalls.push({ gameweekId: input.gameweekId, teamName: input.teamName });
-      if (createFailure) throw createFailure;
-      return {};
-    }
+// Spies on the real class rather than `mock.module`: a module mock is
+// process-wide in Bun and outlives this file, and fantasy-runtime and
+// fantasy-v2 each build their repository once, when they load -- a stand-in
+// class they received would stay theirs for every test file after this one.
+// A spy is undone below and leaves the module itself alone.
+const getHub = spyOn(SupabaseFantasyRepository.prototype, "getHub").mockImplementation(
+  async () => hub,
+);
+const createTeam = spyOn(SupabaseFantasyRepository.prototype, "createTeam").mockImplementation(
+  async (input) => {
+    createCalls.push({ gameweekId: input.gameweekId, teamName: input.teamName });
+    if (createFailure) throw createFailure;
+    return {} as Awaited<ReturnType<SupabaseFantasyRepository["createTeam"]>>;
   },
-}));
-
-const { V2CloudFantasyRepository } = await import("./fantasy-owned-repository");
-const { createTeamErrorKey } = await import("./fantasy-create-service");
-const { toRepoError } = await import("./fantasy-errors");
+);
+afterAll(() => {
+  getHub.mockRestore();
+  createTeam.mockRestore();
+});
 
 function closedGw1Hub(): FantasyHubDto {
   return {

@@ -24,26 +24,49 @@ const SAME_ORIGIN_PROBE = "https://auth-callback-next.invalid";
  * So: refuse the rewriting characters outright, then resolve against a
  * sentinel origin and require the result to still be on it. Anything else
  * collapses to `/`.
+ *
+ * The result is checked again after resolving, because resolving can itself
+ * produce the prefix the first check refused: dot segments are removed, so
+ * `/.//evil.example`, `/..//evil.example`, `/a/..//evil.example` and
+ * `/%2e//evil.example` all resolve to the path `//evil.example`, which is
+ * still on the probe's origin -- and was returned as is, a protocol-relative
+ * URL to another site. The pages that use `next` sanitised it a second time,
+ * which caught it; `challengeSearch` (second-factor.ts) sanitises once.
+ *
+ * Idempotent: a path is returned only if sanitising it again returns it
+ * unchanged, so one pass and two passes always agree.
  */
 export function sanitizeAuthCallbackNext(raw: string | null): string {
-  if (!raw) return "/";
+  const once = resolveSameOriginPath(raw);
+  if (once === null) return "/";
+  return resolveSameOriginPath(once) === once ? once : "/";
+}
+
+/** A path the browser can only resolve to this origin: one `/`, then no second. */
+function isPlainPath(value: string): boolean {
   // C0 controls and DEL: stripped or rejected by the URL parser, never
   // meaningful in a path we generated ourselves.
   // eslint-disable-next-line no-control-regex
-  if (/[\u0000-\u001f\u007f]/u.test(raw)) return "/";
+  if (/[\u0000-\u001f\u007f]/u.test(value)) return false;
   // Normalised to "/" for special schemes, so a backslash is a second way to
   // write a protocol-relative URL.
-  if (raw.includes("\\")) return "/";
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
+  if (value.includes("\\")) return false;
+  return value.startsWith("/") && !value.startsWith("//");
+}
 
+/** `raw` resolved the way a browser resolves it, or `null` when it may leave the site. */
+function resolveSameOriginPath(raw: string | null): string | null {
+  if (!raw || !isPlainPath(raw)) return null;
   let resolved: URL;
   try {
     resolved = new URL(raw, SAME_ORIGIN_PROBE);
   } catch {
-    return "/";
+    return null;
   }
-  if (resolved.origin !== SAME_ORIGIN_PROBE) return "/";
-  return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+  if (resolved.origin !== SAME_ORIGIN_PROBE) return null;
+  const path = `${resolved.pathname}${resolved.search}${resolved.hash}`;
+  // After dot segments are gone: `/.//evil.example` is `//evil.example` now.
+  return isPlainPath(path) ? path : null;
 }
 
 /**

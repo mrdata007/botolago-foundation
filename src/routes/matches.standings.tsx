@@ -1,7 +1,7 @@
 import { unavailableHeaders } from "@/lib/page-availability";
 import standingsSoonArt from "@/assets/illustrations/standings-soon.webp";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { SectionHeaderLink } from "@/components/common/SectionHeader";
@@ -12,8 +12,10 @@ import { LiveStrip } from "@/components/matches/LiveStrip";
 import { MatchesTabs } from "@/components/matches/MatchesTabs";
 import { validateMatchesSearch } from "@/components/matches/matches-search";
 import { SeasonPicker } from "@/components/matches/SeasonPicker";
+import { isSameStandingsQuery } from "@/components/matches/standings-query";
 import {
   StandingsLegend,
+  StandingsNotes,
   StandingsTable,
   type StandingsView,
 } from "@/components/matches/StandingsTable";
@@ -90,7 +92,9 @@ const EMPTY_SEASONS: readonly FootballSeason[] = [];
  *
  * The table is worked out from the season's results (`getStandings`), so it
  * fills in as the matches are played. Before the first result there is none:
- * the page says so and offers last season's final table instead.
+ * the page says so and offers last season's final table instead. A worked-out
+ * table says so under it, and is never called final: only the provider's
+ * table is (`FootballStandings.computed`).
  */
 function StandingsPage() {
   const { t, lang } = useI18n();
@@ -103,6 +107,10 @@ function StandingsPage() {
   const seasonsQ = useQuery({
     queryKey: ["football", "seasons", lang],
     queryFn: () => footballService.getSeasons(lang),
+    // The same seasons in the other language while it loads, as on the
+    // calendar: without them a switch of language drops the season, and the
+    // table with it, back to the skeleton.
+    placeholderData: keepPreviousData,
   });
   const seasons = seasonsQ.data ?? EMPTY_SEASONS;
   const season =
@@ -124,6 +132,16 @@ function StandingsPage() {
     queryKey: ["football", "standings", season?.id, lang],
     queryFn: () => footballService.getStandings(season!, lang),
     enabled: season != null,
+    // The same season's table in the language the page was just showing,
+    // while the new one loads (`isSameStandingsQuery`): the ranks do not
+    // depend on the language. Another season's never: picking one shows the
+    // skeleton until its own table is in. A new function each render, as on
+    // the calendar, so it is asked again for every key.
+    placeholderData: (previous, previousQuery) =>
+      previousQuery &&
+      isSameStandingsQuery(previousQuery.queryKey, ["football", "standings", season?.id, lang])
+        ? previous
+        : undefined,
   });
   const data = standingsQ.data;
   // A match that finishes while the page is open changes the table: the live
@@ -158,7 +176,9 @@ function StandingsPage() {
   const rounds = data ? roundsLabel(data.rounds, lang, t, (value) => nf.format(value)) : "";
   const status = [
     t("matches.competition.botola"),
-    season?.status === "completed" ? `${t("standings.final")} ${rounds}` : rounds,
+    season?.status === "completed" && !data?.computed
+      ? `${t("standings.final")} ${rounds}`
+      : rounds,
   ].join(" · ");
 
   return (
@@ -250,6 +270,12 @@ function StandingsPage() {
               highlightClubId={favourite?.id}
             />
             {shown === "overall" || shown === "form" ? <StandingsLegend /> : null}
+            {/* Home and away are always worked out from the results. */}
+            <StandingsNotes
+              rows={rows ?? []}
+              computed={shown === "home" || shown === "away" || data.computed}
+              seasonStatus={season?.status}
+            />
           </section>
         </div>
       )}

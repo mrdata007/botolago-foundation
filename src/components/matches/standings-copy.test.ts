@@ -2,7 +2,14 @@ import { describe, expect, test } from "bun:test";
 
 import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
-import { gapLabel, placeLabel, pointsLabel, roundsLabel, zoneLabel } from "./standings-copy";
+import {
+  gapLabel,
+  listSeparator,
+  placeLabel,
+  pointsLabel,
+  roundsLabel,
+  zoneLabel,
+} from "./standings-copy";
 
 const inLanguage = (lang: Language) => (key: TranslationKey) => dictionaries[lang][key];
 const format = (value: number) => String(value);
@@ -39,6 +46,11 @@ describe("the table page's counted phrases", () => {
     ]);
   });
 
+  test("a club on no points reads 0, not the one-point phrase French files 0 under", () => {
+    expect(pointsLabel(0, "fr", inLanguage("fr"), format)).toBe("0 pts");
+    expect(pointsLabel(0, "ar", inLanguage("ar"), format)).toBe("0 نقطة");
+  });
+
   test("a place is 1re, then 2e… in French, المركز in Arabic", () => {
     expect([1, 2, 14].map((n) => placeLabel(n, "fr", inLanguage("fr"), format))).toEqual([
       "1re place",
@@ -67,5 +79,19 @@ describe("the table page's counted phrases", () => {
     expect(zoneLabel("champions_league", inLanguage("fr"))).toBe("Ligue des champions CAF");
     expect(zoneLabel("confederation_cup", inLanguage("ar"))).toBe("كأس الكونفدرالية الإفريقية");
     expect(zoneLabel("relegation", inLanguage("ar"))).toBe("الهبوط");
+  });
+
+  test("a rank's words for assistive tech follow it after the reader's own comma", () => {
+    // "2، مركز مشترك، الهبوط": the Arabic comma, U+060C, not the Latin one.
+    expect(listSeparator("ar")).toBe("، ");
+    expect(listSeparator("fr")).toBe(", ");
+    const heard = (lang: Language) =>
+      [
+        "2",
+        dictionaries[lang]["standings.shared_rank"],
+        zoneLabel("relegation", inLanguage(lang)),
+      ].join(listSeparator(lang));
+    expect(heard("ar")).toBe("2، مركز مشترك، الهبوط");
+    expect(heard("fr")).toBe("2, Ex æquo, Relégation");
   });
 });

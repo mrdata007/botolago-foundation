@@ -1,7 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildSitemapXml, SITEMAP_NEWS_LIMIT, type SitemapNewsEntry } from "./sitemap";
+import {
+  buildSitemapXml,
+  SITEMAP_CACHE_CONTROL,
+  SITEMAP_FRESHNESS_SECONDS,
+  SITEMAP_NEWS_LIMIT,
+  SITEMAP_SNAPSHOT_MAX_AGE_SECONDS,
+  type SitemapNewsEntry,
+} from "./sitemap";
 
 const FR = "9b2f0c1e-0000-4000-8000-0000000000f1";
 const AR = "9b2f0c1e-0000-4000-8000-0000000000a1";
@@ -81,20 +88,48 @@ describe("sitemap.xml", () => {
     // renumbered after it, so it quietly put the per-edition helper calls
     // back: 8.4 s on production against the 3 s anon timeout, and a 503
     // sitemap. The migration that defines the function last is what runs.
+    // Since 20260926003050 the public function serves a snapshot and leaves
+    // the query to app_private.news_sitemap_compute, so the query's checks
+    // follow it there, and the public function must still call no helper.
+    const directory = join(import.meta.dir, "../../supabase/migrations");
+    const perRowHelper = /news_is_public\(|news_content_updated_at\(|news_story_is_publishable\(/;
+    const latestBody = (marker: string) => {
+      const latest = readdirSync(directory)
+        .filter((name) => name.endsWith(".sql"))
+        .sort()
+        .filter((name) => readFileSync(join(directory, name), "utf8").includes(marker))
+        .at(-1);
+      expect(latest).toBeDefined();
+      const source = readFileSync(join(directory, latest!), "utf8");
+      return source.slice(source.indexOf(marker)).split("\n$$;")[0]!;
+    };
+
+    const api = latestBody("create or replace function api.news_sitemap_entries(");
+    expect(api).not.toMatch(perRowHelper);
+    const query = api.includes("app_private.news_sitemap_compute(")
+      ? latestBody("create or replace function app_private.news_sitemap_compute(")
+      : api;
+    expect(query).not.toMatch(perRowHelper);
+    expect(query).toContain("'contentUpdatedAt'");
+  });
+
+  test("the database serves a snapshot only as old as the cache budget allows", () => {
+    // The live fallback in api.news_sitemap_entries is what keeps the
+    // five-minute promise while the refresh job is paused: its threshold must
+    // be the age SITEMAP_CACHE_CONTROL is computed from.
     const directory = join(import.meta.dir, "../../supabase/migrations");
     const marker = "create or replace function api.news_sitemap_entries(";
     const latest = readdirSync(directory)
       .filter((name) => name.endsWith(".sql"))
       .sort()
       .filter((name) => readFileSync(join(directory, name), "utf8").includes(marker))
-      .at(-1);
-    expect(latest).toBeDefined();
-    const source = readFileSync(join(directory, latest!), "utf8");
+      .at(-1)!;
+    const source = readFileSync(join(directory, latest), "utf8");
     const body = source.slice(source.indexOf(marker)).split("\n$$;")[0]!;
-    expect(body).not.toMatch(
-      /news_is_public\(|news_content_updated_at\(|news_story_is_publishable\(/,
+    expect(body).toContain(
+      `snapshot.computed_at < statement_timestamp() - interval '${SITEMAP_SNAPSHOT_MAX_AGE_SECONDS} seconds'`,
     );
-    expect(body).toContain("'contentUpdatedAt'");
+    expect(body).toContain("return app_private.news_sitemap_compute(wanted);");
   });
 
   test("lastmod is the last real change, else publication, never bookkeeping", () => {
@@ -138,6 +173,38 @@ describe("sitemap.xml", () => {
     expect(route).toContain("status: 503");
     expect(route).toContain('"retry-after": "300"');
     expect(route).not.toContain("news = [];\n          }");
+    // The failure itself is never cached anywhere.
+    expect(route).toContain('"cache-control": "no-store"');
+  });
+
+  test("a good sitemap is cacheable within the five-minute promise, and outlives an outage", () => {
+    const route = readFileSync(join(import.meta.dir, "../routes/sitemap[.]xml.ts"), "utf8");
+    expect(route).toContain('"cache-control": SITEMAP_CACHE_CONTROL');
+
+    const directives = new Map(
+      SITEMAP_CACHE_CONTROL.split(",").map((part) => {
+        const [name, value] = part.trim().split("=");
+        return [name, value === undefined ? true : Number(value)] as const;
+      }),
+    );
+    expect(directives.get("public")).toBe(true);
+    for (const forbidden of ["private", "no-store", "no-cache", "stale-while-revalidate"]) {
+      expect(`${forbidden}: ${directives.has(forbidden)}`).toBe(`${forbidden}: false`);
+    }
+    const shared = directives.get("s-maxage") as number;
+    const browser = directives.get("max-age") as number;
+    // The oldest snapshot the database serves plus the longest a cache may
+    // keep it: an unpublished article is gone within the promise.
+    expect(SITEMAP_FRESHNESS_SECONDS).toBe(300);
+    expect(SITEMAP_SNAPSHOT_MAX_AGE_SECONDS + shared).toBeLessThanOrEqual(
+      SITEMAP_FRESHNESS_SECONDS,
+    );
+    expect(SITEMAP_SNAPSHOT_MAX_AGE_SECONDS + browser).toBeLessThanOrEqual(
+      SITEMAP_FRESHNESS_SECONDS,
+    );
+    expect(shared).toBeGreaterThan(0);
+    // A shared cache may serve its last good copy while the route answers 503.
+    expect(directives.get("stale-if-error") as number).toBeGreaterThanOrEqual(3600);
   });
 
   test("a full sitemap never exceeds the protocol's 50,000 URLs", () => {

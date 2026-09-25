@@ -24,6 +24,9 @@ test-results/
 !.env.production
 __pycache__/
 *.py[cod]
+# Local virtual environments for the Python operational tests.
+.venv/
+.venv-*/
 
 # Wrangler / Cloudflare
 .wrangler/

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { showStepUpNotice } from "@/auth/step-up-notice";
 import { AddPlayerScreen } from "@/components/fpl/AddPlayerScreen";
 import { findClub } from "@/components/fpl/club-lookup";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
@@ -22,6 +23,7 @@ import {
   type ChipKey,
   type ChipsState,
 } from "@/lib/fantasy-engine";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
@@ -31,6 +33,7 @@ import { applyConfirmedTransfers, previewTransfers } from "@/services/transfers-
 import type { FantasyPlayer } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/transfers")({
+  head: () => fantasyHead("transfers"),
   component: TransfersPage,
 });
 
@@ -131,9 +134,17 @@ function TransfersBody() {
     .map((outId, index) => ({ outId, inId: inIds[index] ?? null }))
     .filter((pair): pair is { outId: string; inId: string } => !!pair.inId);
 
+  // The server's figures for these transfers, keyed by the account as well as
+  // the team: the auth layer forgets an outgoing account's answers by finding
+  // its id in their keys (`forgetAccountQueries`), and a team id alone left
+  // this one behind after a sign-out or a switch. Kept out of the
+  // `owned-fantasy` family on purpose: every owned save invalidates that
+  // family, which would ask again with the version the save had just replaced
+  // (a `version_conflict` on the server) before the screen moved to the new one.
   const serverPreview = useQuery({
     queryKey: [
       "fantasy-transfer-preview",
+      owned.userId,
       owned.snapshot?.teamId,
       owned.snapshot?.version,
       completePairs.map((p) => `${p.outId}:${p.inId}`).join("|"),
@@ -399,6 +410,9 @@ function TransfersBody() {
       );
       setBusy(false);
       if (res.ok) toast.success(t("fantasy.chip.activated"));
+      // Refused until the one-time code is in: the chip is not "Indisponible".
+      // The auth layer says what is owed under the same toast id, so it shows once.
+      else if (classifyRepoError(res.error).isStepUp) showStepUpNotice(t);
       else toast.error(t("fantasy.chip.state.unavailable"));
       return;
     }
@@ -496,17 +510,23 @@ function TransfersBody() {
             inIds: inIds.filter(Boolean) as string[],
           });
         const c = classifyRepoError(res.error);
-        toast.error(
-          t(
-            c.isConflict
-              ? "fantasy.error.version_conflict"
-              : c.isNetwork
-                ? "fantasy.error.network"
-                : c.isPermission
-                  ? "fantasy.error.permission"
-                  : "fantasy.error.transfer_failed",
-          ),
-        );
+        // Refused until the one-time code is in: say that, once (the auth
+        // layer says it too, under the same toast id), not "Accès refusé.
+        // Reconnectez-vous" -- signing in again is not what is owed. The
+        // transfers wait in the draft saved above.
+        if (c.isStepUp) showStepUpNotice(t);
+        else
+          toast.error(
+            t(
+              c.isConflict
+                ? "fantasy.error.version_conflict"
+                : c.isNetwork
+                  ? "fantasy.error.network"
+                  : c.isPermission
+                    ? "fantasy.error.permission"
+                    : "fantasy.error.transfer_failed",
+            ),
+          );
         if (c.isConflict) await owned.reload();
         return;
       }

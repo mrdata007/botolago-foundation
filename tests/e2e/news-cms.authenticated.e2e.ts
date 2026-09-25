@@ -1,4 +1,4 @@
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Browser, type Page } from "@playwright/test";
 import { createHmac } from "node:crypto";
 import { deflateSync } from "node:zlib";
 import { gotoHydrated, initializeLanguage } from "./support";
@@ -36,6 +36,33 @@ const note = (line: string) => {
 
 test.skip(!editor || !publisher || !reader, "News CMS QA accounts are not configured.");
 test.describe.configure({ mode: "serial", timeout: 420_000 });
+
+/**
+ * The sitemap is served from a snapshot the database recomputes every minute
+ * (migration 20260926003050), so a publication shows there within about a
+ * minute, not at once. Polls until `ready` holds or 150 s have passed (the
+ * minute, a late pg_cron start and the refresh itself, with room to spare),
+ * and returns the last body. The query string only keeps a cache in front of
+ * the site from answering: this measures the database side, and shared caches
+ * add at most the rest of the route's five minutes by their Cache-Control.
+ */
+async function sitemapWhen(
+  request: APIRequestContext,
+  ready: (sitemap: string) => boolean,
+): Promise<string> {
+  const started = Date.now();
+  let sitemap = "";
+  for (let attempt = 0; ; attempt += 1) {
+    const response = await request.get(`${publicBase}/sitemap.xml?e2e=${run}-${attempt}`);
+    sitemap = response.ok() ? await response.text() : "";
+    if (ready(sitemap)) {
+      note(`sitemap caught up after ${Math.round((Date.now() - started) / 1000)} s`);
+      return sitemap;
+    }
+    if (Date.now() - started > 150_000) return sitemap;
+    await new Promise((resolve) => setTimeout(resolve, 10_000));
+  }
+}
 
 function credentials(role: "EDITOR" | "PUBLISHER" | "READER") {
   const email = process.env[`E2E_NEWS_${role}_EMAIL`];
@@ -449,7 +476,12 @@ test("rendered SEO head (server HTML), sitemap and robots", async ({ request }) 
   );
   expect(has('name="robots" content="noindex')).toBe(false);
 
-  const sitemap = await (await request.get(`${publicBase}/sitemap.xml`)).text();
+  const sitemap = await sitemapWhen(
+    request,
+    (body) =>
+      body.includes(`<loc>https://botolago.com/news/${frId}</loc>`) &&
+      body.includes(`hreflang="ar" href="https://botolago.com/news/${arId}"`),
+  );
   expect(sitemap).toContain(`<loc>https://botolago.com/news/${frId}</loc>`);
   expect(sitemap).toContain(`hreflang="ar" href="https://botolago.com/news/${arId}"`);
   const robots = await (await request.get(`${publicBase}/robots.txt`)).text();
@@ -534,7 +566,11 @@ test("unpublishing removes the article from the public page and the sitemap", as
   if (!publicBase) return;
   const html = await (await request.get(`${publicBase}/news/${frId}`)).text();
   expect(html).toContain('name="robots" content="noindex"');
-  const sitemap = await (await request.get(`${publicBase}/sitemap.xml`)).text();
+  const sitemap = await sitemapWhen(
+    request,
+    (body) => body.includes("<urlset") && !body.includes(frId) && !body.includes(arId),
+  );
+  expect(sitemap).toContain("<urlset");
   expect(sitemap).not.toContain(frId);
   expect(sitemap).not.toContain(arId);
   note("public page now noindex/not found; sitemap no longer lists them");
