@@ -183,10 +183,11 @@ window, and so does one held by a match postponed, cancelled or abandoned
 after the lock. This side does not know the ruleset's 48 h: while the rules
 still keep that match in its gameweek, the answer to the escalation is to wait
 for it. The database's `fantasy_scoring` check knows the rule: it warns at
-once for such a match, saying until when the rules keep it, and fails 48 h
-after the kickoff the match was frozen with, when the owner's tool starts to
-accept it: [After the lock](#after-the-lock-since-migration-20260926003500)
-below.
+once for a match called off, or moved too late to be completed within the
+48 h, saying until when the rules keep it, and it fails for any counted match
+still not finished 48 h after the kickoff it was frozen with, whatever holds
+it, when the owner's tool starts to accept it:
+[After the lock](#after-the-lock-since-migration-20260926003500) below.
 
 What to do: read `scoring.gameweeks[].workerCode`. `football_not_final` with
 every fixture certified means a fixture lacks `finalized_at` or an assignment
@@ -233,15 +234,18 @@ explains, an empty check list or an unreadable answer all fail.
 least one `<loc>`.
 
 Statistics and points are watched from both sides. Migration `20260926003400`
-adds `fantasy_fixture_coverage` and `fantasy_scoring` to `service_ops_health`:
-the watchdog reports them under those names, and they page through the
-database webhook without GitHub. Their thresholds are fixed in the migration
-and allow for GitHub's late schedule: statistics warn 6 h and fail 12 h after
-the final whistle; points fail 6 h past the due end of a match stuck
-unfinished, 48 h after the frozen kickoff of a match postponed, cancelled,
-abandoned or moved after the lock (warning at once: the rules keep such a
-match in its gameweek for 48 h), or 8 h after the last statistics were
-certified (`docs/operations/ALERTS.md` has every threshold).
+adds `fantasy_gameweek_clubs`, `fantasy_fixture_coverage` and
+`fantasy_scoring` to `service_ops_health`: the watchdog reports them under
+those names, and they page through the database webhook without GitHub. Their
+thresholds are fixed in the migration and allow for GitHub's late schedule:
+statistics warn 6 h and fail 12 h after the final whistle; points fail 6 h
+past the due end of a match stuck unfinished, 48 h after the frozen kickoff of
+any counted match still not finished (warning at once for one postponed,
+cancelled, abandoned or moved too late after the lock: the rules keep a match
+in its gameweek for 48 h), or 8 h after the last statistics were certified;
+and `fantasy_gameweek_clubs` warns when a gameweek not locked yet holds a club
+twice, failing within 24 h of its deadline (`docs/operations/ALERTS.md` has
+every threshold).
 The watchdog also keeps two rows of its own, which were the only check before
 that migration:
 
@@ -249,9 +253,9 @@ that migration:
   read-only) and fails when a gameweek is still not finalized more than
   `FANTASY_COVERAGE_ESCALATE_HOURS` after its window ended; inside that
   allowance it warns. It does not depend on the orchestrator running. It does
-  not know the ruleset's 48 h for a match postponed or moved after the lock,
-  so it can fail while the rules still keep that match in its gameweek:
-  `fantasy_scoring` then warns and says until when, and the answer is to wait.
+  not know the ruleset's 48 h for a match that has not finished after the
+  lock, so it can fail while the rules still keep that match in its gameweek:
+  `fantasy_scoring` then says until when, and the answer is to wait.
 - `season_orchestrator` fails when the last completed orchestrator run
   concluded `failure` (or `timed_out`), which is how an overdue fixture
   reaches it: that run's summary names the fixture. It used to warn. A
@@ -269,12 +273,12 @@ Owner actions, none of which this repository can do for you:
 2. **Test both paths once.** Actions → _Production watchdog_ → Run workflow
    with `simulate_failure` ticked: an `ops-alert` issue must open and e-mail
    you. Run it again unticked and it must close. That run proves the GitHub
-   path only. For the webhook, once the alert-email change (migration
-   `20260926001000`) is applied, run `select app_private.ops_alert_test();`
-   in the SQL editor: a message marked TEST must reach the channel, and the
-   webhook's answer can be read back (`docs/operations/ALERTS.md`, step 3 of
-   switching it on). It changes no alert state. Until then there is no test
-   message, and the webhook is proven by its next real alert.
+   path only. For the webhook and the email, run
+   `select app_private.ops_alert_test();` in the SQL editor: the alert-email
+   change (migration `20260926001000`) that adds it is applied on production
+   (read on 2026-09-25). A message marked TEST must reach every configured
+   channel, and each answer can be read back (`docs/operations/ALERTS.md`,
+   step 3 of switching the webhook on). It changes no alert state.
 3. **Make sure the mention reaches you.** GitHub → Settings → Notifications →
    _Participating, @mentions and custom_: e-mail on. The issues mention
    `@mrdata007`.
@@ -364,9 +368,9 @@ lock refused to run while it still counted. The rule now:
   kickoff) while its gameweek is still `scheduled`/`open` and unfrozen, the
   sync assigns it again. Once the gameweek has locked it stays out (no double
   gameweeks yet: the next-gameweek progression requires one round per week).
-  A match postponed after the lock stays in its gameweek for 48 h
-  (`FANTASY_RULES_V1.md`), and after that the owner takes it out:
-  [After the lock](#after-the-lock-since-migration-20260926003500).
+  A match that has not finished after the lock, postponed or not, stays in
+  its gameweek for 48 h (`FANTASY_RULES_V1.md`), and after that the owner
+  takes it out: [After the lock](#after-the-lock-since-migration-20260926003500).
 - A round is staged when it is fully published; postponed fixtures are left
   out of the new gameweek instead of blocking it (`postponedFixtures` in the
   round's report). A round where every fixture is postponed is not staged
@@ -384,11 +388,11 @@ is no auto-suppression by design.
 
 Everything above acts on gameweeks that have not locked. At the deadline the
 lock freezes every assignment of the gameweek, and nothing automatic touches a
-frozen one again. So a counted match postponed, cancelled or abandoned after
-the lock, or moved to a kickoff past the gameweek's window, holds its
-gameweek: it goes to scoring only once every counted match is final, the next
-gameweek opens only after that, and every manager's team stays locked until
-then.
+frozen one again. So a counted match that does not finish -- postponed,
+cancelled or abandoned after the lock, moved to a later kickoff, suspended,
+never started -- holds its gameweek: it goes to scoring only once every
+counted match is final, the next gameweek opens only after that, and every
+manager's team stays locked until then.
 
 **The rule** is the approved ruleset's, followed as written,
 [FANTASY_RULES_V1.md → Exceptional fixtures and corrections](FANTASY_RULES_V1.md#exceptional-fixtures-and-corrections):
@@ -400,30 +404,50 @@ v1.0 and in v1.1, production's), counted from the kickoff the gameweek locked
 with: the assignment's `assigned_kickoff_at`, which the sync keeps on the
 published kickoff until the lock freezes it. (`original_kickoff_at`, the
 kickoff when the match was first assigned, before any realignment, is not
-used.) The ops check and the tool read the same value. So:
+used.) The ops check and the tool read the same value. The rule does not ask
+why a match has not finished, so neither do they:
 
-- **For 48 h after that kickoff the match stays in its gameweek.** Completed in
-  that time, it counts there, and the gameweek waits for it. The ops check
-  `fantasy_scoring` warns at once, naming the match, the time the rules stop
-  keeping it and `scripts/backend/resolve-fantasy-postponed-assignment.sql`.
-  The tool refuses the match until then, saying when, for example
-  `fantasy_postponement_window_open: resolvable from 27 Sep 18:00 UTC`.
-  The GitHub side (the orchestrator's escalation, the watchdog's
-  `fantasy_points`) does not know the 48 h and can page before they are over:
-  the answer is still to wait.
-- **After that the owner takes it out,** and until then `fantasy_scoring`
-  fails, paging every hour. The assignment is superseded with
+- **For 48 h after that kickoff every counted match stays in its gameweek,**
+  whatever its state. Completed in that time, it counts there, and the
+  gameweek waits for it. The tool refuses every one of them until then,
+  saying when, for example
+  `fantasy_postponement_window_open: resolvable from 27 Sep 18:00 UTC`. The
+  ops check `fantasy_scoring` warns at once for a match postponed, cancelled
+  or abandoned after the lock, or moved to a kickoff too late for it to be
+  completed within the 48 h (its new kickoff + 2 h, the earliest it can end,
+  past them), naming the match, the time the rules stop keeping it and
+  `scripts/backend/resolve-fantasy-postponed-assignment.sql`. A match moved to
+  a time at which it can still be completed in the 48 h is simply still to be
+  played. One not started, live or suspended 3 h past its due end (kickoff +
+  2 h) warns, and fails 6 h past it, the earlier signal of a row that stopped
+  following the match: a provider refresh corrects that
+  (`docs/operations/ALERTS.md`). The GitHub side (the orchestrator's
+  escalation, the watchdog's `fantasy_points`) does not know the 48 h and can
+  page before they are over: the answer is still to wait.
+- **After that, any counted match still not finished was not completed within
+  the 48 h, and the owner takes it out,** whatever held it. From that moment
+  `fantasy_scoring` fails, paging every hour, saying so and naming the
+  procedure. The assignment is superseded with
   `assignment_status = 'deferred'`, `resolution = 'operator_deferred'` and
   `counts_points = false`, the row a deferral leaves, marked as the operator's
-  decision. Lineups stay exactly as they were at the deadline. The match's
-  players score nothing from it in that gameweek: for the scoring worker they
-  did not play (no statistics row, 0 minutes), so the ruleset's rules for a
-  player with zero minutes apply
+  decision; what held the match is recorded with it (`called_off`, `moved` or
+  `unfinished`, the check's classes). Lineups stay exactly as they were at the
+  deadline. The match's players score nothing from it in that gameweek: for
+  the scoring worker they did not play (no statistics row, 0 minutes), so the
+  ruleset's rules for a player with zero minutes apply
   ([Scoring](FANTASY_RULES_V1.md#scoring)): a starter is replaced from the
   bench in bench order where the formation allows, the vice-captain is
   promoted when the captain did not play, and Bench Boost counts the bench as
   usual. The tool writes no points: the season orchestrator scores the
   gameweek from the matches that still count.
+- **A gameweek the tool cannot free needs a developer.** The tool refuses a
+  gameweek's last counted match (`fantasy_gameweek_needs_a_fixture`: with none
+  left the lifecycle and the scoring refuse the gameweek for good), and
+  nothing cancels a gameweek yet. So when the held match is the gameweek's
+  last counted match, or every counted match of the gameweek is past its 48 h
+  (taking out all but one would leave the last), `fantasy_scoring` says a
+  developer is needed instead of naming the procedure: there is no tool yet
+  for a gameweek whose every match was called off.
 
 **The gap: no controlled future assignment yet.** The ruleset says a later
 completion "moves to a controlled future assignment". The game cannot do that,
@@ -434,13 +458,16 @@ moves the match into a round whose gameweek is still `scheduled` or `open`,
 the sync assigns it there, and that gameweek then holds a club twice, which the
 next-gameweek opening refuses (`fantasy_next_calendar_incomplete`; a round not
 staged yet is not staged at all, `round_incomplete`): there are no double
-gameweeks. So the game departs from the ruleset here until the owner decides
-how a late match should count and that is built: double gameweeks (the
-ruleset already says their points aggregate every assigned fixture), or a new
-ruleset version stating otherwise (the ruleset is immutable, see its
-_Status_). This needs an owner decision and future work. Players are not told
-either way: the site's Fantasy rules and help pages state no rule for a
-postponed match.
+gameweeks. The ops check `fantasy_gameweek_clubs` says so as soon as it
+happens, naming the gameweek and the club, and fails within 24 h of that
+gameweek's deadline; no tool takes a match out of a gameweek that has not
+locked, so a developer is needed then too. So the game departs from the
+ruleset here until the owner decides how a late match should count and that is
+built: double gameweeks (the ruleset already says their points aggregate every
+assigned fixture), or a new ruleset version stating otherwise (the ruleset is
+immutable, see its _Status_). This needs an owner decision and future work.
+Players are not told either way: the site's Fantasy rules and help pages state
+no rule for a postponed match.
 
 **The tool.** `app_private.fantasy_resolve_frozen_assignment(p_assignment_id,
 p_resolution, p_reason)`, database owner only: no API role can call it, the
@@ -451,31 +478,35 @@ reason is kept with the state before and after in
 `app_private.admin_audit_events` (action
 `fantasy_fixture.resolve_frozen_assignment`). Called again for the same
 assignment, it answers the recorded outcome (`alreadyResolved: true`) and
-writes nothing. It refuses, writing nothing: a match whose 48 h are not over
-(`fantasy_postponement_window_open`, with the time they end), a season whose
-ruleset has no post-lock completion window (`fantasy_fixture_rules_missing`),
-a gameweek that is not `locked` or `live` (`fantasy_gameweek_not_locked`
-before the lock, where the sync and the lock defer postponed matches
-themselves; `fantasy_gameweek_scoring_started`; `fantasy_gameweek_settled`
-once finalized or corrected), a finished match (`fantasy_fixture_finished`), a
-match that can still finish inside the gameweek's window
-(`fantasy_fixture_can_still_finish`), the gameweek's last counted match
+writes nothing; it answers that first, with no lock, whether or not the tick
+is paused. Otherwise it refuses, writing nothing: a match whose 48 h are not
+over, whatever its state (`fantasy_postponement_window_open`, with the time
+they end), a season whose ruleset has no post-lock completion window
+(`fantasy_fixture_rules_missing`), a gameweek that is not `locked` or `live`
+(`fantasy_gameweek_not_locked` before the lock, where the sync and the lock
+defer postponed matches themselves; `fantasy_gameweek_scoring_started`;
+`fantasy_gameweek_settled` once finalized or corrected), a finished match
+(`fantasy_fixture_finished`), the gameweek's last counted match
 (`fantasy_gameweek_needs_a_fixture`), a match with points already recorded, an
 unsupported resolution, a missing reason, and any call while the Fantasy tick
 is on or a scheduled job is mid-run. The migration's header lists every code.
 
 **The procedure** (owner, SQL editor):
-`scripts/backend/resolve-fantasy-postponed-assignment.sql`. Pause the Fantasy
-tick and run the file as shipped: it lists the held matches with their
+`scripts/backend/resolve-fantasy-postponed-assignment.sql`. Run the file as
+shipped, with nothing paused: it only reads, and lists the matches
+`fantasy_scoring` holds against a locked or live gameweek with their
 assignment ids and, for each, `resolvable from …` (the rules still keep it:
-wait) or `resolvable since …`, and saves nothing. Check the match at the
-league and at SportsMonks: taking it out is final, nothing puts it back. Set
-the assignment and the reason and run it again: that is a dry run, where the
-tool really runs and the block then raises on purpose, so everything rolls
-back. Run it once more to see that the rollback held, then set `dry_run` to
-`false` and run it to save. Switch the tick back on and dispatch the
-orchestrator: the tick takes the gameweek to scoring within 5 minutes once its
-other counted matches are final, and only the orchestrator scores it.
+wait) or `resolvable since …`, flagging a gameweek's last counted match, which
+the tool refuses. Check the match at the league and at SportsMonks: taking it
+out is final, nothing puts it back. Then, with no other database work and no
+orchestrator run going on, pause the Fantasy tick (from here the file refuses
+while it is on), set the assignment and the reason and run it again: that is
+a dry run, where the tool really runs and the block then raises on purpose, so
+everything rolls back. Run it once more to see that the rollback held, then
+set `dry_run` to `false` and run it to save. Switch the tick back on and
+dispatch the orchestrator: the tick takes the gameweek to scoring within 5
+minutes once its other counted matches are final, and only the orchestrator
+scores it.
 
 ## Rehearsal evidence (production database, rolled back)
 

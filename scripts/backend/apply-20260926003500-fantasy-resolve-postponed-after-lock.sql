@@ -2,19 +2,21 @@
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
 -- Apply migration 20260926003500_fantasy_resolve_postponed_after_lock: the
 -- owner's tool that takes a counted match out of a Fantasy gameweek that has
--- already locked, when the match was postponed, cancelled or abandoned after
--- the lock, or moved to a kickoff past the gameweek's window, and the rules
--- no longer keep it there:
+-- already locked, once the rules no longer keep it there -- the match was not
+-- completed within 48 h of the kickoff the gameweek locked with, whatever held
+-- it (postponed, cancelled, abandoned, moved, suspended, never started, stuck
+-- live):
 --   app_private.fantasy_resolve_frozen_assignment(p_assignment_id uuid,
 --     p_resolution text, p_reason text)
 --   Database owner only; run through
 --   scripts/backend/resolve-fantasy-postponed-assignment.sql.
 --   docs/backend/FANTASY_RULES_V1.md keeps a match completed within 48 h of
---   its original assignment in that gameweek, so the tool refuses such a
---   match (fantasy_postponement_window_open) until 48 h -- the season's
---   ruleset, app.fantasy_fixture_rules.post_lock_completion_window_hours --
---   after the kickoff the gameweek locked with. The rule it applies, its
---   refusals and its locks are in the migration's header.
+--   its original assignment in that gameweek, so the tool refuses every
+--   counted match (fantasy_postponement_window_open) until 48 h -- the
+--   season's ruleset, app.fantasy_fixture_rules.post_lock_completion_window_hours
+--   -- after the kickoff the gameweek locked with, and takes out any that is
+--   still not finished after that. The rule it applies, its refusals and its
+--   locks are in the migration's header.
 --   It adds one function and nothing else: no table, grant, schedule or
 --   Fantasy row changes, and nothing is resolved by applying it.
 --
@@ -40,8 +42,8 @@
 --      "Rehearsal passed".
 --   4. Change the line `rollback;` near the bottom to `commit;` and press Run
 --      again. The result row should say "Applied", how many counted matches
---      are held after the lock right now, and how many of them are past
---      their 48 h (the tool refuses the others until then).
+--      the ops check holds after the lock right now, and how many of them are
+--      past their 48 h (the tool refuses the others until then).
 --   5. Whatever the result, switch the tick back on if it was on at step 2:
 --        select app_private.fantasy_automation_configure(true);
 --   If any check fails, the script stops with a message saying what, and
@@ -70,7 +72,9 @@
 --     missing reason and an unknown assignment with its stable codes (all
 --     before it reads or locks anything); what it builds on is unchanged; the
 --     history row is there. It never resolves anything. It reports how many
---     counted matches are held after the lock and how many of them are past
+--     counted matches the ops check holds after the lock (postponed,
+--     cancelled or abandoned; moved too late for the window; not finished 3 h
+--     past their due end; or past the window) and how many of them are past
 --     their 48 h, so resolvable now.
 -- ============================================================================
 
@@ -120,7 +124,6 @@ begin
       ('app.fantasy_fixture_assignments'::regclass, 'frozen_at'),
       ('app.fantasy_fixture_assignments'::regclass, 'superseded_at'),
       ('app.fantasy_gameweeks'::regclass, 'status'),
-      ('app.fantasy_gameweeks'::regclass, 'ends_at'),
       ('app.fantasy_seasons'::regclass, 'status'),
       ('app.fantasy_seasons'::regclass, 'ruleset_id'),
       ('app.fantasy_fixture_rules'::regclass, 'ruleset_id'),
@@ -132,7 +135,7 @@ begin
       ('app_private.fantasy_automation_settings'::regclass, 'lifecycle_tick_enabled'),
       ('app_private.admin_audit_events'::regclass, 'safe_before')
     )
-  ) <> 21 then
+  ) <> 20 then
     missing := missing || 'a column'::text;
   end if;
   if to_regprocedure('app_private.hold_scheduled_jobs()') is null
@@ -198,8 +201,10 @@ values (
   'fantasy_resolve_postponed_after_lock',
   array[$bg_20260926003500_file$-- BotolaGO Production V2
 -- Fantasy: the owner can take a counted match out of a gameweek that has
--- already locked, when that match was postponed, cancelled or abandoned after
--- the lock, or moved to a kickoff past the gameweek's window.
+-- already locked, once the rules no longer keep it there: 48 h after the
+-- kickoff the gameweek locked with, whatever kept it from finishing
+-- (postponed, cancelled, abandoned, moved, suspended, never started, stuck
+-- live).
 --
 -- WHY
 --   The lock freezes every assignment of the gameweek (frozen_at), and the
@@ -229,26 +234,38 @@ values (
 --   never realigns it afterwards). The tool and the ops check read that value
 --   from the season's ruleset, so they agree. So:
 --
---     For 48 h after that kickoff, a counted match of a locked or live
---     gameweek that was postponed, cancelled or abandoned after the lock, or
---     moved to a kickoff past the gameweek's window, stays in its gameweek:
---     completed in that time, it counts there, and the gameweek waits for it.
---     The tool refuses it (fantasy_postponement_window_open, which says when
---     it becomes resolvable).
+--     For 48 h after that kickoff, every counted match of a locked or live
+--     gameweek stays in its gameweek, whatever its state: completed in that
+--     time, it counts there, and the gameweek waits for it. The tool refuses
+--     every one of them (fantasy_postponement_window_open, which says when it
+--     becomes resolvable).
 --
---     After that the owner takes it out: its assignment is superseded with
---     assignment_status 'deferred', resolution 'operator_deferred' and
---     counts_points false -- the row an unfrozen deferral leaves
---     (provider_postponed), marked as the operator's decision. The lineups
---     frozen at the deadline stay exactly as they are. The match's players
---     score nothing from it in that gameweek: for the scoring worker they did
---     not play (no statistics row, 0 minutes), so a starter is replaced from
---     the bench in bench order where the formation allows, the vice-captain
---     takes the armband from a captain who did not play, and Bench Boost
---     counts the bench as usual -- what the site states for a player who does
---     not play ("Le vice-capitaine prend le relais si besoin",
---     fantasy.rules.captaincy_desc; fpl.help.a.captain; "Remplacement
+--     After that, a counted match that is still not finished was not
+--     completed within the 48 h, whatever held it -- postponed, cancelled,
+--     abandoned, moved, suspended, delayed, never started, or live long after
+--     it should have ended -- and the owner takes it out: its assignment is
+--     superseded with assignment_status 'deferred', resolution
+--     'operator_deferred' and counts_points false -- the row an unfrozen
+--     deferral leaves (provider_postponed), marked as the operator's
+--     decision. The lineups frozen at the deadline stay exactly as they are.
+--     The match's players score nothing from it in that gameweek: for the
+--     scoring worker they did not play (no statistics row, 0 minutes), so a
+--     starter is replaced from the bench in bench order where the formation
+--     allows, the vice-captain takes the armband from a captain who did not
+--     play, and Bench Boost counts the bench as usual -- what the site states
+--     for a player who does not play ("Le vice-capitaine prend le relais si
+--     besoin", fantasy.rules.captaincy_desc; fpl.help.a.captain; "Remplacement
 --     automatique"). The site itself states no rule for a postponed match.
+--
+--   What held the match is recorded as the ops check classes it
+--   (20260926003400, fantasy_scoring): 'called_off' (postponed, cancelled or
+--   abandoned), 'moved' (a kickoff later than the frozen one and too late for
+--   the match to be completed inside the 48 h: kickoff + 2 h, the earliest a
+--   match can end, past them), or 'unfinished' (anything else not finished:
+--   not started, live, suspended, delayed, or moved to a time at which it
+--   could still have been completed in the 48 h). The class describes; it
+--   does not decide: after the 48 h every class is resolvable, before them
+--   none is.
 --
 --   The gap. The ruleset says a later completion "moves to a controlled
 --   future assignment"; the game cannot do that yet. The calendar sync
@@ -259,8 +276,9 @@ values (
 --   does the sync assign it there, and that gameweek then holds a club twice,
 --   which the next-gameweek opening refuses (fantasy_next_calendar_incomplete;
 --   a round not staged yet is not staged at all, round_incomplete): no double
---   gameweeks yet. Moving a match into a later gameweek is an owner's
---   decision and future work, not this tool's.
+--   gameweeks yet. The ops check fantasy_gameweek_clubs (20260926003400)
+--   reports such a gameweek. Moving a match into a later gameweek is an
+--   owner's decision and future work, not this tool's.
 --
 --   'moved_to_actual_gameweek' is therefore not accepted: it would record
 --   that the match moved to the gameweek it is played in, and nothing moves
@@ -284,7 +302,8 @@ values (
 --   scripts use. It writes no points: the scoring worker computes them from
 --   the assignments that still count. Called again for an assignment it has
 --   resolved, it returns the recorded outcome with alreadyResolved true and
---   writes nothing.
+--   writes nothing. It answers that before its one-writer checks and without
+--   a lock: a replay needs no paused tick and waits for no scheduled job.
 --
 --   It refuses, with a stable code and nothing written:
 --     22023 fantasy_assignment_required      no assignment named
@@ -292,11 +311,11 @@ values (
 --     22023 fantasy_resolution_reason_required  a reason under 8 or over 500
 --                                            characters (trimmed)
 --     PT404 fantasy_assignment_not_found
+--     PT409 fantasy_assignment_not_current   superseded by something else (the
+--                                            sync, the lock's deferral, a void)
 --     PT409 fantasy_tick_must_be_paused      the Fantasy lifecycle tick is on
 --     PT409 scheduled_job_running            a pg_cron job is mid-run (from
 --                                            app_private.hold_scheduled_jobs)
---     PT409 fantasy_assignment_not_current   superseded by something else (the
---                                            sync, the lock's deferral, a void)
 --     PT409 fantasy_season_closed
 --     PT409 fantasy_gameweek_not_locked      scheduled or open: the calendar
 --                                            sync and the lock defer those
@@ -304,9 +323,6 @@ values (
 --     PT409 fantasy_gameweek_settled         finalized, corrected or cancelled
 --     PT409 fantasy_assignment_not_frozen / fantasy_assignment_not_counted
 --     PT409 fantasy_fixture_finished         the match counts: nothing to resolve
---     PT409 fantasy_fixture_can_still_finish not started, live, suspended or
---                                            delayed, with a kickoff inside the
---                                            window: it can still finish here
 --     PT409 fantasy_fixture_rules_missing    the season's ruleset has no
 --                                            post-lock completion window
 --     PT409 fantasy_postponement_window_open: resolvable from DD Mon HH24:MI UTC
@@ -322,11 +338,14 @@ values (
 --                                            match: with none left the
 --                                            lifecycle and the scoring refuse
 --                                            the gameweek for good
---   "Postponed, cancelled or abandoned" and "moved past the window" are the
---   ops check's own tests (20260926003400, fantasy_scoring): fixture status,
---   and a kickoff later than both the frozen one and the gameweek's ends_at.
---   That check fails for such a match exactly when its 48 h end, so the tool
---   accepts a match from the moment the check fails for it, and never before.
+--   The ops check fantasy_scoring fails for a counted unfinished match exactly
+--   when its 48 h end, whatever its class, and names this procedure: the tool
+--   accepts a match from that moment and never before. (The check fails
+--   earlier, 6 h past a match's due end, when the stored row has stopped
+--   following the match: that is the provider data's alarm, not the rules'.)
+--   For the gameweek's last counted match, or when every counted match of
+--   the gameweek is past its 48 h, the check says a developer is needed
+--   instead: this tool refuses the last one, and nothing cancels a gameweek.
 --
 --   Locks, in the order the other writers take them: the Fantasy tick must be
 --   paused (AGENTS.md, one writer at a time) and every pg_cron job is held
@@ -383,24 +402,51 @@ begin
     raise exception using errcode = 'PT404', message = 'fantasy_assignment_not_found';
   end if;
 
-  -- One writer at a time (AGENTS.md): the Fantasy tick paused, no scheduled
-  -- job mid-run, and none starts until this transaction ends.
-  if exists (select 1 from app_private.fantasy_automation_settings settings
-    where settings.lifecycle_tick_enabled) then
-    raise exception using errcode = 'PT409', message = 'fantasy_tick_must_be_paused';
+  if target.superseded_at is not null then
+    -- Already resolved by this tool: the recorded outcome, below. A replay
+    -- writes nothing, so it is answered before the one-writer checks and
+    -- takes no lock: it needs no paused tick and waits for no scheduled job.
+    select audit.id, audit.safe_before ->> 'hold' into audit_id, audit_hold
+    from app_private.admin_audit_events audit
+    where audit.target_domain = 'fantasy' and audit.target_entity_id = target.id
+      and audit.action = 'fantasy_fixture.resolve_frozen_assignment'
+      and audit.outcome = 'succeeded'
+    order by audit.id desc
+    limit 1;
+    if audit_id is null or target.frozen_at is null
+      or target.assignment_status is distinct from 'deferred'
+      or target.resolution is distinct from p_resolution or target.counts_points then
+      raise exception using errcode = 'PT409', message = 'fantasy_assignment_not_current';
+    end if;
+    select * into gameweek from app.fantasy_gameweeks resolved_gameweek
+    where resolved_gameweek.id = target.gameweek_id;
+    select * into fixture from app.fixtures resolved_fixture
+    where resolved_fixture.id = target.fixture_id;
+  else
+    -- One writer at a time (AGENTS.md): the Fantasy tick paused, no scheduled
+    -- job mid-run, and none starts until this transaction ends.
+    if exists (select 1 from app_private.fantasy_automation_settings settings
+      where settings.lifecycle_tick_enabled) then
+      raise exception using errcode = 'PT409', message = 'fantasy_tick_must_be_paused';
+    end if;
+    perform app_private.hold_scheduled_jobs();
+    -- The calendar sync's lock for the season, then the gameweek (the lifecycle
+    -- and the scoring worker lock it first), the assignment, and the fixture,
+    -- shared, so the provider cannot change the match under the checks below.
+    perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
+      'fantasy:calendar:' || target.fantasy_season_id::text, 0));
+    select * into gameweek from app.fantasy_gameweeks held_gameweek
+    where held_gameweek.id = target.gameweek_id for update;
+    select * into target from app.fantasy_fixture_assignments assignment
+    where assignment.id = p_assignment_id for update;
+    select * into fixture from app.fixtures held_fixture
+    where held_fixture.id = target.fixture_id for share;
+    -- Superseded between the first read and the lock (the calendar sync, the
+    -- lock's deferral, another run of this tool): a new call says by what.
+    if target.superseded_at is not null then
+      raise exception using errcode = 'PT409', message = 'fantasy_assignment_not_current';
+    end if;
   end if;
-  perform app_private.hold_scheduled_jobs();
-  -- The calendar sync's lock for the season, then the gameweek (the lifecycle
-  -- and the scoring worker lock it first), the assignment, and the fixture,
-  -- shared, so the provider cannot change the match under the checks below.
-  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(
-    'fantasy:calendar:' || target.fantasy_season_id::text, 0));
-  select * into gameweek from app.fantasy_gameweeks held_gameweek
-  where held_gameweek.id = target.gameweek_id for update;
-  select * into target from app.fantasy_fixture_assignments assignment
-  where assignment.id = p_assignment_id for update;
-  select * into fixture from app.fixtures held_fixture
-  where held_fixture.id = target.fixture_id for share;
   select * into season from app.fantasy_seasons fantasy_season
   where fantasy_season.id = gameweek.fantasy_season_id;
   -- FANTASY_RULES_V1.md: a match completed within the ruleset's post-lock
@@ -421,27 +467,13 @@ begin
   where other.gameweek_id = gameweek.id and other.superseded_at is null
     and other.counts_points and other.id <> target.id;
 
-  -- Already resolved by this tool: the recorded outcome, nothing written.
   if target.superseded_at is not null then
-    select audit.id, audit.safe_before ->> 'hold' into audit_id, audit_hold
-    from app_private.admin_audit_events audit
-    where audit.target_domain = 'fantasy' and audit.target_entity_id = target.id
-      and audit.action = 'fantasy_fixture.resolve_frozen_assignment'
-      and audit.outcome = 'succeeded'
-    order by audit.id desc
-    limit 1;
-    if audit_id is null or target.frozen_at is null
-      or target.assignment_status is distinct from 'deferred'
-      or target.resolution is distinct from p_resolution or target.counts_points then
-      raise exception using errcode = 'PT409', message = 'fantasy_assignment_not_current';
-    end if;
     return jsonb_build_object(
       'schemaVersion', 1, 'assignmentId', target.id, 'fixtureId', fixture.id,
       'gameweekId', gameweek.id, 'gameweekSequence', gameweek.sequence_number,
       'gameweekStatus', gameweek.status, 'fixtureStatus', fixture.status,
       'kickoffAt', fixture.kickoff_at, 'assignedKickoffAt', target.assigned_kickoff_at,
-      'windowEndsAt', gameweek.ends_at, 'hold', audit_hold,
-      'completionWindowHours', window_hours, 'resolvableFrom', resolvable_at,
+      'hold', audit_hold, 'completionWindowHours', window_hours, 'resolvableFrom', resolvable_at,
       'resolution', target.resolution, 'assignmentStatus', target.assignment_status,
       'countsPoints', target.counts_points, 'resolvedAt', target.superseded_at,
       'countedFixturesLeft', counted_left, 'unfinishedFixturesLeft', unfinished_left,
@@ -467,21 +499,20 @@ begin
     raise exception using errcode = 'PT409', message = 'fantasy_assignment_not_counted';
   end if;
 
-  -- The ops check's classes (20260926003400, fantasy_scoring), in its order.
+  -- What held it, as the ops check classes it (20260926003400,
+  -- fantasy_scoring): recorded, never decisive.
   hold := case
     when fixture.status = 'finished' then null
     when fixture.status in ('postponed', 'cancelled', 'abandoned') then 'called_off'
-    when fixture.kickoff_at > target.assigned_kickoff_at and fixture.kickoff_at > gameweek.ends_at
-      then 'moved'
+    when fixture.kickoff_at > target.assigned_kickoff_at
+      and fixture.kickoff_at + interval '2 hours' > resolvable_at then 'moved'
     else 'unfinished' end;
   if hold is null then
     raise exception using errcode = 'PT409', message = 'fantasy_fixture_finished';
   end if;
-  if hold = 'unfinished' then
-    raise exception using errcode = 'PT409', message = 'fantasy_fixture_can_still_finish';
-  end if;
-  -- Inside the window the rules keep the match in the gameweek, whichever
-  -- way it was called off or moved: the gameweek waits for it.
+  -- Inside the window the rules keep the match in the gameweek, whatever
+  -- holds it: the gameweek waits for it. After it, whatever holds it, the
+  -- match was not completed in time.
   if window_hours is null then
     raise exception using errcode = 'PT409', message = 'fantasy_fixture_rules_missing';
   end if;
@@ -526,7 +557,7 @@ begin
       'gameweekId', gameweek.id, 'gameweekSequence', gameweek.sequence_number,
       'gameweekStatus', gameweek.status, 'fixtureId', fixture.id,
       'fixtureStatus', fixture.status, 'kickoffAt', fixture.kickoff_at,
-      'assignedKickoffAt', target.assigned_kickoff_at, 'windowEndsAt', gameweek.ends_at,
+      'assignedKickoffAt', target.assigned_kickoff_at,
       'hold', hold, 'completionWindowHours', window_hours, 'resolvableFrom', resolvable_at,
       'assignmentStatus', target.assignment_status,
       'resolution', target.resolution, 'countsPoints', target.counts_points,
@@ -545,8 +576,7 @@ begin
     'gameweekId', gameweek.id, 'gameweekSequence', gameweek.sequence_number,
     'gameweekStatus', gameweek.status, 'fixtureStatus', fixture.status,
     'kickoffAt', fixture.kickoff_at, 'assignedKickoffAt', target.assigned_kickoff_at,
-    'windowEndsAt', gameweek.ends_at, 'hold', hold,
-    'completionWindowHours', window_hours, 'resolvableFrom', resolvable_at,
+    'hold', hold, 'completionWindowHours', window_hours, 'resolvableFrom', resolvable_at,
     'resolution', p_resolution, 'assignmentStatus', 'deferred', 'countsPoints', false,
     'resolvedAt', resolved_at,
     'countedFixturesLeft', counted_left, 'unfinishedFixturesLeft', unfinished_left,
@@ -556,7 +586,7 @@ $$;
 revoke all on function app_private.fantasy_resolve_frozen_assignment(uuid, text, text)
   from public, anon, authenticated, service_role;
 comment on function app_private.fantasy_resolve_frozen_assignment(uuid, text, text) is
-  'Owner only, from the SQL editor (scripts/backend/resolve-fantasy-postponed-assignment.sql): takes one counted, frozen assignment of a locked or live gameweek out of it when its match was postponed, cancelled or abandoned after the lock, or moved to a kickoff past the gameweek''s window (the fantasy_scoring check''s classes), once the ruleset''s post-lock completion window (48 h, FANTASY_RULES_V1.md) since the kickoff the gameweek locked with has passed; before that it refuses (fantasy_postponement_window_open). Supersedes it (assignment_status deferred, resolution operator_deferred, counts_points false) and records app_private.admin_audit_events (fantasy_fixture.resolve_frozen_assignment) with the reason. Writes no points and never moves the match to another gameweek. Idempotent: a repeat returns the recorded outcome with alreadyResolved true. Refuses while the Fantasy tick is on.';
+  'Owner only, from the SQL editor (scripts/backend/resolve-fantasy-postponed-assignment.sql): takes one counted, frozen assignment of a locked or live gameweek out of it once the ruleset''s post-lock completion window (48 h, FANTASY_RULES_V1.md) since the kickoff the gameweek locked with has passed and the match is still not finished, whatever held it (postponed, cancelled, abandoned, moved, suspended, never started, still live: the fantasy_scoring check''s classes, recorded as its hold); before that it refuses every match (fantasy_postponement_window_open). Supersedes it (assignment_status deferred, resolution operator_deferred, counts_points false) and records app_private.admin_audit_events (fantasy_fixture.resolve_frozen_assignment) with the reason. Writes no points and never moves the match to another gameweek. Idempotent: a repeat returns the recorded outcome with alreadyResolved true, before the one-writer checks and without a lock. Otherwise refuses while the Fantasy tick is on.';
 $bg_20260926003500_file$]
 );
 
@@ -570,7 +600,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260926003500, 'UTF8')), 'hex')
-    is distinct from '8062fe9a4050deb624a8c92e2e6a14ec780ff854e110444aee8d63db32ca3616' then
+    is distinct from 'f29a54619386d18c31769e88d5cf1f2b5bbbd14aca71ef82f9f1ff94a4e46259' then
     raise exception 'stop: 20260926003500 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -659,9 +689,11 @@ begin
     raise exception 'stop: the update did not check out: %', problems;
   end if;
 
-  -- For the owner: the counted matches held after the lock right now, and
-  -- how many of them are past the ruleset's completion window (48 h after
-  -- the kickoff the gameweek locked with), so the tool would take them out.
+  -- For the owner: the counted matches the ops check holds after the lock
+  -- right now (20260926003400, fantasy_scoring; the set
+  -- scripts/backend/resolve-fantasy-postponed-assignment.sql lists), and how
+  -- many of them are past the ruleset's completion window (48 h after the
+  -- kickoff the gameweek locked with), so the tool would take them out.
   select count(*),
     count(*) filter (where statement_timestamp() >= assignment.assigned_kickoff_at
       + make_interval(hours => fixture_rules.post_lock_completion_window_hours))
@@ -676,7 +708,13 @@ begin
   where assignment.superseded_at is null and assignment.counts_points
     and fixture.status <> 'finished'
     and (fixture.status in ('postponed', 'cancelled', 'abandoned')
-      or (fixture.kickoff_at > assignment.assigned_kickoff_at and fixture.kickoff_at > gameweek.ends_at));
+      or (fixture.kickoff_at > assignment.assigned_kickoff_at
+        and fixture.kickoff_at + interval '2 hours' > assignment.assigned_kickoff_at
+          + make_interval(hours => coalesce(fixture_rules.post_lock_completion_window_hours, 48)))
+      or fixture.kickoff_at + interval '2 hours' < statement_timestamp() - interval '3 hours'
+      or assignment.assigned_kickoff_at
+        + make_interval(hours => coalesce(fixture_rules.post_lock_completion_window_hours, 48))
+        <= statement_timestamp());
   raise notice 'counted matches held after the lock right now: %, past their completion window (resolvable now): %',
     held, resolvable;
 end
@@ -705,7 +743,13 @@ select case
       where assignment.superseded_at is null and assignment.counts_points
         and fixture.status <> 'finished'
         and (fixture.status in ('postponed', 'cancelled', 'abandoned')
-          or (fixture.kickoff_at > assignment.assigned_kickoff_at and fixture.kickoff_at > gameweek.ends_at)))
+          or (fixture.kickoff_at > assignment.assigned_kickoff_at
+            and fixture.kickoff_at + interval '2 hours' > assignment.assigned_kickoff_at
+              + make_interval(hours => coalesce(fixture_rules.post_lock_completion_window_hours, 48)))
+          or fixture.kickoff_at + interval '2 hours' < statement_timestamp() - interval '3 hours'
+          or assignment.assigned_kickoff_at
+            + make_interval(hours => coalesce(fixture_rules.post_lock_completion_window_hours, 48))
+            <= statement_timestamp()))
       || ' (scripts/backend/resolve-fantasy-postponed-assignment.sql lists them)'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;

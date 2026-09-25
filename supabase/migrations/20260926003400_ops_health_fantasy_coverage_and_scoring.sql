@@ -28,14 +28,29 @@
 --     22:21, 01:27, 07:43, 13:43), and a run may last up to its job's
 --     40-minute limit (those took about a minute each).
 --
--- Two checks join app_private.ops_health_checks(), in the same vocabulary as
--- the others (ok / warn / fail, one line of detail) and so through the same
--- paths: api.service_ops_health() for the GitHub watchdog, which takes every
--- check it is given by name, and app_private.ops_alert_tick() for the webhook,
--- which pages on `fail` only. Scope for both: the Fantasy season that is
--- `registration_open` or `active`, and the fixtures that count for points in
--- it (current assignment, not superseded, counts_points), because those are
--- the ones whose statistics become points.
+-- Three checks join app_private.ops_health_checks(), in the same vocabulary
+-- as the others (ok / warn / fail, one line of detail) and so through the
+-- same paths: api.service_ops_health() for the GitHub watchdog, which takes
+-- every check it is given by name, and app_private.ops_alert_tick() for the
+-- webhook, which pages on `fail` only. Scope for all three: the Fantasy
+-- season that is `registration_open` or `active`, and the fixtures that count
+-- for points in it (current assignment, not superseded, counts_points),
+-- because those are the ones whose statistics become points.
+--
+--   fantasy_gameweek_clubs -- a gameweek not locked yet (scheduled or open)
+--     whose counted matches hold a club twice. The next-gameweek opening
+--     takes one match per club and refuses such a gameweek
+--     (fantasy_next_calendar_incomplete, 20260924200000), and an open one
+--     would lock with that club playing twice, a double gameweek nobody
+--     decided (the game has none yet). It happens when the provider moves a
+--     match into a round whose gameweek is already staged: a match taken out
+--     of a locked gameweek (20260926003500) and rescheduled into a later
+--     round, or any match rescheduled across rounds. Nothing else said so:
+--     the gameweek would simply fail to open, on the day. Warns at once,
+--     naming the gameweek and the club; fails within 24 h of the gameweek's
+--     deadline, the horizon at which the deadline watch escalates. No tool
+--     takes a match out of a gameweek that has not locked, so the detail says
+--     a developer is needed.
 --
 --   fantasy_fixture_coverage -- a finished counted match whose player
 --     statistics are not certified complete: no coverage row, or one without
@@ -56,35 +71,48 @@
 --     While a counted match is unfinished the gameweek waits for it (the
 --     lifecycle moves live -> provisional only when every one is finished,
 --     20260924200000), and no scoring snapshot is not zero points, it is no
---     points yet. So the gameweek is `ok` while each unfinished match can still
---     finish on its own: its kickoff is ahead, or its due end (kickoff + 2 h)
---     is under 3 h ago. Past that the gameweek is held:
---       - by a match postponed, cancelled or abandoned after the lock, or
---         moved to a kickoff past the gameweek's window. Nothing in the
---         pipeline takes a frozen assignment out of a gameweek (the calendar
---         sync and the lock touch unfrozen ones only). The ruleset keeps it
---         in the gameweek if it is completed within 48 h of the kickoff the
---         gameweek locked with (docs/backend/FANTASY_RULES_V1.md; the
---         season's app.fantasy_fixture_rules.post_lock_completion_window_hours,
---         48 in v1.0 and v1.1), and the gameweek waits for it that long.
---         After that the owner takes it out with
---         app_private.fantasy_resolve_frozen_assignment (20260926003500),
---         run through scripts/backend/resolve-fantasy-postponed-assignment.sql,
---         which refuses before then. So this warns at once, naming the match
---         and saying until when the rules keep it, and fails when that window
---         ends, the moment the tool accepts it, naming the script: a failure
---         pages for something the owner can run. (The lateness reaches
---         GitHub earlier: the watchdog's fantasy_points and the orchestrator
---         escalate a gameweek not finalized FANTASY_COVERAGE_ESCALATE_HOURS
---         after its window ended, even while the rules still keep the match.)
+--     points yet. The ruleset keeps such a match in the gameweek if it is
+--     completed within 48 h of the kickoff the gameweek locked with
+--     (docs/backend/FANTASY_RULES_V1.md; the season's
+--     app.fantasy_fixture_rules.post_lock_completion_window_hours, 48 in v1.0
+--     and v1.1), and the gameweek waits for it that long. So the gameweek is
+--     `ok` while each unfinished match can still finish on its own: its
+--     kickoff is ahead, or its due end (kickoff + 2 h) is under 3 h ago, and
+--     its 48 h are not over. Otherwise the gameweek is held:
+--       - by a match postponed, cancelled or abandoned after the lock
+--         ('called_off'), or moved to a kickoff too late for it to be
+--         completed within the 48 h ('moved': its kickoff + 2 h past them; a
+--         match moved to a time it can still be completed in is simply
+--         unfinished, below). Warns at once, naming the match and saying
+--         until when the rules keep it.
 --       - by a match in any other state (not started, live, suspended,
---         delayed): warns 3 h past its due end, fails 6 h past it. Such a row
---         has stopped following the match (the live refresh gives up on a
---         match it has not seen start 3 h after its kickoff), or the provider
---         has: a fault to act on. A provider refresh corrects the first -- the
+--         delayed: 'unfinished') still not finished 3 h past its due end:
+--         warns, and fails 6 h past it. Such a row has stopped following the
+--         match (the live refresh gives up on a match it has not seen start
+--         3 h after its kickoff), or the provider has: a fault to act on, and
+--         the earlier signal. A provider refresh corrects the first -- the
 --         orchestrator's, at once when it is dispatched.
---       Held by several matches, it names the one that fails (the oldest,
---       when more than one does) and counts the others.
+--       - by any counted match still not finished once its 48 h are over,
+--         whatever its class: fails. Nothing in the pipeline takes a frozen
+--         assignment out of a gameweek (the calendar sync and the lock touch
+--         unfrozen ones only). The owner does, with
+--         app_private.fantasy_resolve_frozen_assignment (20260926003500), run
+--         through scripts/backend/resolve-fantasy-postponed-assignment.sql,
+--         which accepts such a match from that moment and never before. So the
+--         failure names the script: it pages for something the owner can run.
+--         Except when that tool cannot free the gameweek: when the match is
+--         the gameweek's last counted match, or every counted match of it is
+--         past its 48 h, the tool refuses the last one
+--         (fantasy_gameweek_needs_a_fixture) and nothing cancels a gameweek.
+--         Then the detail says a developer is needed instead (no tool yet for
+--         a gameweek whose every match was called off), and so does the
+--         warning before the 48 h for a gameweek's last counted match. (The
+--         lateness reaches GitHub earlier: the watchdog's fantasy_points and
+--         the orchestrator escalate a gameweek not finalized
+--         FANTASY_COVERAGE_ESCALATE_HOURS after its window ended, even while
+--         the rules still keep the match.)
+--       Held by several matches, it names the one that fails (past its 48 h
+--       first, then the oldest) and counts the others.
 --     Once every counted match is finished:
 --       - while a match still lacks certified statistics, warns from 6 h after
 --         the last final whistle and never fails: nothing can be scored yet,
@@ -111,9 +139,9 @@
 --         facts moves.
 --     A season has one gameweek past its lock at a time
 --     (fantasy_gameweeks_one_current_idx), so several at once means several
---     Fantasy competitions. Then both checks name a gameweek with its season,
---     and this one reports the most severe (then the earliest deadline) and
---     how many more fail.
+--     Fantasy competitions. Then all three checks name a gameweek with its
+--     season, and this one reports the most severe (then the earliest
+--     deadline) and how many more fail.
 --
 -- "Final whistle" is app.fixtures.finalized_at, the time BotolaGO first saw
 -- the terminal state (supabase/functions/_shared/sportsmonks-fixtures.ts). A
@@ -134,13 +162,13 @@
 -- Nothing here switches alerts on or off, touches Vault or changes where a
 -- message goes: ops_alert_state, ops_alert_configure(), ops_alert_tick(),
 -- ops_alert_message() and the schedule are unchanged. api.service_ops_health()
--- keeps its signature, grants and JSON shape; it gains two entries in
+-- keeps its signature, grants and JSON shape; it gains three entries in
 -- `checks` and a comment.
 --
--- Cost: two grouped reads over the current season's assignments (one row per
--- fixture, about 240 a season), joined by primary key to fixtures, gameweeks,
--- coverage and scoring snapshots, plus, for each certified match of the
--- gameweek past its lock, one read of player_fixture_performances_source_key
+-- Cost: three grouped reads over the current season's assignments (one row
+-- per fixture, about 240 a season), joined by primary key to fixtures, teams,
+-- gameweeks, coverage and scoring snapshots, plus, for each certified match of
+-- the gameweek past its lock, one read of player_fixture_performances_source_key
 -- (fixture, version) for its certification time. Production's plans (plain
 -- EXPLAIN): primary key and index lookups after a scan of the few assignment
 -- and gameweek rows; estimated total cost 15.3 for the scoring read. On a
@@ -151,11 +179,21 @@
 -- After the thresholds were revised, on one such seed (240 counted fixtures,
 -- 7,140 performance rows, GW30 held by a match stuck live), three runs each:
 -- 0.94-1.14 ms a call, against 0.98-1.05 ms for the first version of the
--- checks on the same data. It runs every 5 minutes (alert tick) and every 30
--- (watchdog).
+-- checks on the same data. With `fantasy_gameweek_clubs` and the scoring
+-- check's 48 h rule for every unfinished match, on a local seed of a whole
+-- 16-club season (30 gameweeks of 8 matches, 240 counted fixtures, tables
+-- analyzed), three runs of 200 calls each against the version before them:
+-- late in the season (GW1-29 finalized, GW30 live) 0.85-0.97 ms a call
+-- against 0.73-0.89 ms; early in it (GW1 live with 7 of 8 matches final and
+-- certified, GW2-30 scheduled, where the deadline watch reads every staged
+-- gameweek) 5.0-5.7 ms against 4.2-4.6 ms. The clubs check alone, which reads
+-- the scheduled and open gameweeks' assignments and builds the detail for one
+-- club only, took 0.55-0.61 ms a call early in the season and 0.07-0.14 ms
+-- late. It runs every 5 minutes (alert tick) and every 30 (watchdog).
 
--- Health: 20260926003050's checks, unchanged, plus `fantasy_fixture_coverage`
--- and `fantasy_scoring` after `fantasy_deadline_watch`.
+-- Health: 20260926003050's checks, unchanged, plus `fantasy_gameweek_clubs`,
+-- `fantasy_fixture_coverage` and `fantasy_scoring` after
+-- `fantasy_deadline_watch`.
 create or replace function app_private.ops_health_checks()
 returns jsonb
 language plpgsql
@@ -170,10 +208,14 @@ declare
   overdue record;
   watch jsonb;
   escalations integer;
+  doubled record;
+  doubled_label text;
+  doubled_status text;
   coverage record;
   watched_seasons integer;
   scoring record;
   held_label text;
+  held_remedy text;
   scoring_stage text;
   failed_jobs text;
   news_beat timestamptz;
@@ -238,11 +280,67 @@ begin
     perform set_config('request.jwt.claims', coalesce(caller_claims, ''), true);
   end if;
 
-  -- Fantasy seasons the two checks below watch. A season has one gameweek
+  -- Fantasy seasons the three checks below watch. A season has one gameweek
   -- past its lock at a time (fantasy_gameweeks_one_current_idx), so several
   -- gameweeks at once means several competitions: then a gameweek is named
   -- with its season.
   select count(*) into watched_seasons from app.fantasy_seasons where status in ('registration_open', 'active');
+
+  -- Fantasy: a club twice among the counted matches of a gameweek that has
+  -- not locked (20260926003400). The next-gameweek opening takes one match
+  -- per club (fantasy_next_calendar_incomplete), and an open gameweek locks
+  -- with the club playing twice, a double gameweek nobody decided. The
+  -- provider moving a match into a round whose gameweek is staged does it:
+  -- one taken out of a locked gameweek (20260926003500), or any other. Warn
+  -- at once, naming the gameweek and the club; fail within 24 h of its
+  -- deadline, the deadline watch's escalation horizon. The earliest deadline
+  -- first, then the club's name; its matches are read for that one alone.
+  select count(*) as clubs,
+    count(*) filter (where d.deadline_at <= now_at + interval '24 hours') as imminent,
+    (array_agg(d.gameweek_id order by d.deadline_at, d.sequence_number, d.club))[1] as gameweek_id,
+    (array_agg(d.team_id order by d.deadline_at, d.sequence_number, d.club))[1] as team_id
+  into doubled
+  from (
+    select g.id as gameweek_id, g.deadline_at, g.sequence_number, side.team_id, club.short_name as club
+    from app.fantasy_gameweeks g
+    join app.fantasy_seasons s on s.id = g.fantasy_season_id and s.status in ('registration_open', 'active')
+    join app.fantasy_fixture_assignments a on a.gameweek_id = g.id
+      and a.superseded_at is null and a.counts_points
+    join app.fixtures f on f.id = a.fixture_id
+    cross join lateral (values (f.home_team_id), (f.away_team_id)) side(team_id)
+    join app.teams club on club.id = side.team_id
+    where g.status in ('scheduled', 'open')
+    group by g.id, g.deadline_at, g.sequence_number, side.team_id, club.short_name
+    having count(distinct f.id) > 1
+  ) d;
+  if doubled.clubs > 0 then
+    select case when watched_seasons > 1 then s.name || ' ' else '' end || 'GW' || g.sequence_number
+        || ' (' || g.status || ', deadline ' || to_char(g.deadline_at at time zone 'UTC', 'DD Mon HH24:MI')
+        || ' UTC) holds ' || club.short_name || ' twice: '
+        || string_agg(home.short_name || ' v ' || away.short_name, ', ' order by f.kickoff_at, f.id),
+      g.status::text
+    into doubled_label, doubled_status
+    from app.fantasy_gameweeks g
+    join app.fantasy_seasons s on s.id = g.fantasy_season_id
+    join app.teams club on club.id = doubled.team_id
+    join app.fantasy_fixture_assignments a on a.gameweek_id = g.id
+      and a.superseded_at is null and a.counts_points
+    join app.fixtures f on f.id = a.fixture_id and club.id in (f.home_team_id, f.away_team_id)
+    join app.teams home on home.id = f.home_team_id
+    join app.teams away on away.id = f.away_team_id
+    where g.id = doubled.gameweek_id
+    group by g.id, s.name, club.id;
+  end if;
+  checks := checks || jsonb_build_object('name', 'fantasy_gameweek_clubs', 'status',
+    case when doubled.imminent > 0 then 'fail' when doubled.clubs > 0 then 'warn' else 'ok' end,
+    'detail',
+    case when doubled.clubs = 0 then 'no scheduled or open gameweek holds a club twice'
+      else doubled_label || '; '
+        || case doubled_status when 'scheduled' then 'it cannot open like this (fantasy_next_calendar_incomplete)'
+          else 'it would lock like this, a double gameweek nobody decided' end
+        || ', and no tool takes a match out of a gameweek before its lock: a developer is needed'
+        || case when doubled.clubs > 1 then ' (+' || (doubled.clubs - 1) || ' more club(s) twice)' else '' end
+    end);
 
   -- Fantasy: player statistics for every finished match that counts for
   -- points (20260926003400). Complete means what the scoring worker requires:
@@ -293,22 +391,25 @@ begin
   -- Fantasy: points for every gameweek past its lock (20260926003400).
   -- An unfinished counted match holds the gameweek; that is play, not a
   -- defect, while the match can still finish on its own (an empty scoring
-  -- table then means no points yet, never zero points). Past that it warns:
-  -- at once for a match postponed, cancelled or abandoned after the lock or
-  -- moved past the gameweek's window, which the rules keep in the gameweek
-  -- if it is completed within the ruleset's post-lock completion window of
-  -- its frozen kickoff (48 h, FANTASY_RULES_V1.md), and fails when that
-  -- window ends, the moment the owner's tool accepts it
-  -- (scripts/backend/resolve-fantasy-postponed-assignment.sql,
-  -- 20260926003500); and 3 h after its due end (kickoff + 2 h) for a match
-  -- still not started, live, suspended or delayed, which fails 6 h after it
-  -- (`stuck`). Once every
-  -- counted match is final: while statistics are missing, warn from 6 h after
-  -- the last whistle (fantasy_fixture_coverage fails for them); once all are
-  -- certified, warn an hour after the last certification (a run scores in the
-  -- pass that certifies, within its 40 minutes) and fail 8 h after it (a
-  -- manual ingest waits for the next run, and GitHub has left 6.3 h between
-  -- runs) while the gameweek is still not finalized.
+  -- table then means no points yet, never zero points). The rules keep it in
+  -- the gameweek if it is completed within the ruleset's post-lock completion
+  -- window of its frozen kickoff (48 h, FANTASY_RULES_V1.md). So it warns at
+  -- once for a match postponed, cancelled or abandoned after the lock, or
+  -- moved too late to be completed within that window; 3 h after its due end
+  -- (kickoff + 2 h) for any other match still not finished, and fails 6 h
+  -- after it (`stale`: the row stopped following the match); and it fails
+  -- for any match still not finished once that window is over
+  -- (`past_window`), whatever its class, the moment the owner's tool accepts
+  -- it (scripts/backend/resolve-fantasy-postponed-assignment.sql,
+  -- 20260926003500), or says a developer is needed where that tool cannot
+  -- free the gameweek (its last counted match; every counted match past its
+  -- window). Once every counted match is final: while statistics are
+  -- missing, warn from 6 h after the last whistle (fantasy_fixture_coverage
+  -- fails for them); once all are certified, warn an hour after the last
+  -- certification (a run scores in the pass that certifies, within its 40
+  -- minutes) and fail 8 h after it (a manual ingest waits for the next run,
+  -- and GitHub has left 6.3 h between runs) while the gameweek is still not
+  -- finalized.
   select w.*,
     count(*) filter (where w.verdict in ('stalled', 'fail')) over () as failing,
     exists (select 1 from app_private.fantasy_scoring_snapshots snapshot where snapshot.gameweek_id = w.id)
@@ -330,22 +431,22 @@ begin
         count(*) as matches,
         count(*) filter (where m.hold is null) as finished,
         count(*) filter (where m.held) as held,
-        count(*) filter (where m.stuck) as stuck,
+        count(*) filter (where m.past_window or m.stale) as stuck,
+        count(*) filter (where m.past_window) as past_window,
         max(m.final_at) filter (where m.hold is null) as last_final,
         count(*) filter (where not m.complete) as without_statistics,
         max(m.certified_at) as statistics_since,
         (array_agg(jsonb_build_object('fixture', m.fixture_id, 'hold', m.hold, 'status', m.fixture_status,
             'kickoff', m.kickoff_at, 'assigned', m.assigned_kickoff_at, 'window', m.completion_window,
-            'resolvable', m.resolvable_at) order by m.stuck desc, m.due_end, m.fixture_id)
+            'resolvable', m.resolvable_at, 'pastWindow', m.past_window)
+            order by m.past_window desc, m.stale desc, m.due_end, m.fixture_id)
           filter (where m.held))[1] as held_match
       from (
         select k.*,
-          k.hold in ('called_off', 'moved') or k.due_end < now_at - interval '3 hours' as held,
-          case k.hold
-            when 'unfinished' then k.due_end < now_at - interval '6 hours'
-            when 'called_off' then k.resolvable_at <= now_at
-            when 'moved' then k.resolvable_at <= now_at
-            else false end as stuck
+          k.hold is not null and (k.hold in ('called_off', 'moved')
+            or k.due_end < now_at - interval '3 hours' or k.resolvable_at <= now_at) as held,
+          k.hold = 'unfinished' and k.due_end < now_at - interval '6 hours' as stale,
+          k.hold is not null and k.resolvable_at <= now_at as past_window
         from (
           select g.id, case when watched_seasons > 1 then s.name || ' ' else '' end || 'GW' || g.sequence_number
               as gameweek, g.deadline_at, g.status::text as status,
@@ -361,14 +462,7 @@ begin
               when 'called_off' then a.assigned_kickoff_at + interval '2 hours'
               when 'moved' then a.assigned_kickoff_at + interval '2 hours'
               when 'unfinished' then f.kickoff_at + interval '2 hours' end as due_end,
-            -- The ruleset's post-lock completion window (48 h in v1.0 and
-            -- v1.1; 48 h too for a ruleset without one, which the tool then
-            -- refuses with fantasy_fixture_rules_missing), from the kickoff
-            -- the gameweek locked with. The tool reads the same value.
-            coalesce(fixture_rules.post_lock_completion_window_hours, 48) as completion_window,
-            a.assigned_kickoff_at
-              + make_interval(hours => coalesce(fixture_rules.post_lock_completion_window_hours, 48))
-              as resolvable_at
+            r.completion_window, r.resolvable_at
           from app.fantasy_gameweeks g
           join app.fantasy_seasons s on s.id = g.fantasy_season_id and s.status in ('registration_open', 'active')
           left join app.fantasy_fixture_rules fixture_rules on fixture_rules.ruleset_id = s.ruleset_id
@@ -376,10 +470,24 @@ begin
             and a.superseded_at is null and a.counts_points
           join app.fixtures f on f.id = a.fixture_id
           left join app_private.historical_performance_fixture_coverage c on c.fixture_id = f.id
+          -- The ruleset's post-lock completion window (48 h in v1.0 and
+          -- v1.1; 48 h too for a ruleset without one, which the tool then
+          -- refuses with fantasy_fixture_rules_missing), from the kickoff
+          -- the gameweek locked with. The tool reads the same value.
+          cross join lateral (select coalesce(fixture_rules.post_lock_completion_window_hours, 48)
+              as completion_window,
+            a.assigned_kickoff_at
+              + make_interval(hours => coalesce(fixture_rules.post_lock_completion_window_hours, 48))
+              as resolvable_at) r
+          -- What holds a match that is not finished, as the tool records it:
+          -- called off, moved too late to be completed within the window
+          -- (kickoff + 2 h, the earliest it can end, past it), or anything
+          -- else unfinished.
           cross join lateral (select case
               when f.status = 'finished' then null
               when f.status in ('postponed', 'cancelled', 'abandoned') then 'called_off'
-              when f.kickoff_at > a.assigned_kickoff_at and f.kickoff_at > g.ends_at then 'moved'
+              when f.kickoff_at > a.assigned_kickoff_at
+                and f.kickoff_at + interval '2 hours' > r.resolvable_at then 'moved'
               else 'unfinished' end as hold) o
           where g.status in ('locked', 'live', 'provisional', 'finalizing')
         ) k
@@ -396,6 +504,11 @@ begin
     join app.teams home on home.id = f.home_team_id
     join app.teams away on away.id = f.away_team_id
     where f.id = (scoring.held_match ->> 'fixture')::uuid;
+    -- What happens once the rules stop keeping it: the owner's tool takes it
+    -- out, but never a gameweek's last counted match.
+    held_remedy := case when scoring.matches = 1
+      then 'a developer is needed: it is the gameweek''s last counted match, which the tool cannot take out'
+      else 'scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out' end;
   end if;
   -- Where a gameweek whose statistics are all certified stopped.
   scoring_stage := case
@@ -415,21 +528,32 @@ begin
             || to_char((scoring.held_match ->> 'assigned')::timestamptz at time zone 'UTC', 'DD Mon HH24:MI') || ' UTC)'
           when 'moved' then 'moved to '
             || to_char((scoring.held_match ->> 'kickoff')::timestamptz at time zone 'UTC', 'DD Mon HH24:MI')
-            || ' UTC, past the gameweek''s window (due '
+            || ' UTC, too late to be completed within ' || (scoring.held_match ->> 'window') || ' h (due '
             || to_char((scoring.held_match ->> 'assigned')::timestamptz at time zone 'UTC', 'DD Mon HH24:MI') || ' UTC)'
           else 'still ' || (scoring.held_match ->> 'status') || ' '
             || floor(extract(epoch from now_at - (scoring.held_match ->> 'kickoff')::timestamptz) / 3600)
             || ' h after its kickoff' end
         || case
-          when scoring.held_match ->> 'hold' not in ('called_off', 'moved') then
-            '; points wait until it finishes or its Fantasy assignment is resolved'
-          when scoring.verdict = 'stalling' then
+          -- The rules no longer keep it: the owner takes it out, unless the
+          -- tool cannot free the gameweek (no counted match of it left that
+          -- is finished or still inside its window).
+          when (scoring.held_match ->> 'pastWindow')::boolean then
+            '; not completed within the ' || (scoring.held_match ->> 'window') || ' h the rules allow'
+            || case
+              when scoring.past_window < scoring.matches then
+                ': take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql'
+              else case when scoring.matches = 1 then ', and it is the gameweek''s last counted match'
+                  else ', nor was any other counted match of the gameweek' end
+                || ': a developer is needed (no tool yet for a gameweek whose every match was called off)'
+              end
+          when scoring.held_match ->> 'hold' in ('called_off', 'moved') then
             '; the rules keep it in the gameweek if it is completed within '
             || (scoring.held_match ->> 'window') || ' h, by '
             || to_char((scoring.held_match ->> 'resolvable')::timestamptz at time zone 'UTC', 'DD Mon HH24:MI')
-            || ' UTC; after that, this fails and scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out'
-          else '; not completed within the ' || (scoring.held_match ->> 'window')
-            || ' h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql'
+            || ' UTC; after that, this fails and ' || held_remedy
+          else '; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by '
+            || to_char((scoring.held_match ->> 'resolvable')::timestamptz at time zone 'UTC', 'DD Mon HH24:MI')
+            || ' UTC, ' || held_remedy
           end
         || case when scoring.held > 1 then ' (+' || (scoring.held - 1) || ' more match(es))' else '' end
         || case when scoring.verdict = 'stalled' and scoring.failing > 1
@@ -595,4 +719,4 @@ $$;
 revoke all on function app_private.ops_health_checks() from public, anon, authenticated, service_role;
 
 comment on function api.service_ops_health() is
-  'Read-only production health: ok/warn/fail per check (Fantasy tick and locks, deadline watch, player statistics of finished counted matches, points of finished gameweeks, cron jobs, news publication, sitemap snapshot and import, live scores, provider refresh, email delivery, browser errors) with a one-line reason. No user data.';
+  'Read-only production health: ok/warn/fail per check (Fantasy tick and locks, deadline watch, a club twice in a gameweek not locked yet, player statistics of finished counted matches, points of finished gameweeks, cron jobs, news publication, sitemap snapshot and import, live scores, provider refresh, email delivery, browser errors) with a one-line reason. No user data.';

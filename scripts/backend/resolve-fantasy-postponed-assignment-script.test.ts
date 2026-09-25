@@ -4,14 +4,16 @@ import { join } from "node:path";
 
 /**
  * The owner's procedure for a Fantasy gameweek held by a counted match that
- * was postponed, cancelled or abandoned after the lock, or moved past the
- * gameweek's window: scripts/backend/resolve-fantasy-postponed-assignment.sql.
- * It must do nothing useful by accident: run as shipped it lists the
- * candidates and saves nothing; with a target it is a dry run that exercises
- * the real tool and ends with a deliberate raise (CLAUDE.md); only an edit of
- * one line saves. It must refuse while the Fantasy tick is on (AGENTS.md),
- * list exactly the matches the ops check holds against a gameweek, and make
- * no write but the reviewed tool's.
+ * was not completed within the 48 h the rules keep it there, whatever held it
+ * (postponed, cancelled, abandoned, moved, suspended, never started, stuck
+ * live): scripts/backend/resolve-fantasy-postponed-assignment.sql. It must do
+ * nothing useful by accident: run as shipped it lists the candidates and
+ * saves nothing; with a target it is a dry run that exercises the real tool
+ * and ends with a deliberate raise (CLAUDE.md); only an edit of one line
+ * saves. The listing only reads and needs nothing paused; from the dry run on
+ * it must refuse while the Fantasy tick is on (AGENTS.md). It must list
+ * exactly the matches the ops check holds against a gameweek, and make no
+ * write but the reviewed tool's.
  */
 
 const root = join(import.meta.dir, "../..");
@@ -117,7 +119,7 @@ describe("resolve-fantasy-postponed-assignment.sql", () => {
     );
   });
 
-  test("refuses while the Fantasy tick is on, as the apply scripts do, and says how to pause and restore it", () => {
+  test("lists without the tick paused, refuses to go further while it is on, and says how to pause and restore it", () => {
     const guard =
       "  if exists (select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled) then\n";
     const leagueRaise = leaguePolicyScript.slice(
@@ -125,8 +127,24 @@ describe("resolve-fantasy-postponed-assignment.sql", () => {
       leaguePolicyScript.indexOf("\n", leaguePolicyScript.indexOf(guard) + guard.length),
     );
     expect(block).toContain(`${guard}${leagueRaise}\n  end if;`);
-    // Before anything is read or called.
-    expect(block.indexOf(guard)).toBeLessThan(block.indexOf("select string_agg("));
+    expect(occurrences(block, guard)).toBe(1);
+    // After the read-only STEP 1 listing has answered, before the target is
+    // read and long before the tool is called: the listing needs nothing
+    // paused, the dry run and the save do.
+    expect(block.indexOf(guard)).toBeGreaterThan(
+      block.indexOf("raise exception 'STEP 1, nothing saved."),
+    );
+    expect(block.indexOf(guard)).toBeLessThan(block.indexOf("into before_state"));
+    expect(block.indexOf(guard)).toBeLessThan(
+      block.indexOf("app_private.fantasy_resolve_frozen_assignment(target_assignment"),
+    );
+    // The tool refuses while the tick is on as well, a replay apart.
+    expect(tool).toContain("message = 'fantasy_tick_must_be_paused'");
+    // The instructions say to pause it after the listing, not before.
+    expect(prose.indexOf('It only reads: it stops with "STEP 1"')).toBeGreaterThan(0);
+    expect(prose.indexOf("This needs nothing paused.")).toBeLessThan(
+      prose.indexOf("select app_private.fantasy_automation_configure(false);"),
+    );
     for (const command of [
       "select app_private.fantasy_automation_configure(false);",
       "select app_private.fantasy_automation_configure(true);",
@@ -150,18 +168,40 @@ describe("resolve-fantasy-postponed-assignment.sql", () => {
         block.indexOf("if target_assignment is null then"),
       ),
     );
-    // The ops check's classes (20260926003400): called off, or moved past
-    // the window; finished matches never.
+    // The ops check's classes (20260926003400): called off; moved to a kickoff
+    // too late for the match to be completed within the rules' window (its
+    // kickoff + 2 h past it); anything else unfinished. Finished never.
     expect(folded(opsCheck)).toContain(
-      "when f.status in ('postponed', 'cancelled', 'abandoned') then 'called_off' when f.kickoff_at > a.assigned_kickoff_at and f.kickoff_at > g.ends_at then 'moved'",
+      "when f.status = 'finished' then null when f.status in ('postponed', 'cancelled', 'abandoned') then 'called_off' when f.kickoff_at > a.assigned_kickoff_at and f.kickoff_at + interval '2 hours' > r.resolvable_at then 'moved' else 'unfinished' end as hold",
     );
+    // What it holds against a gameweek: called off or moved at once, any
+    // other 3 h past its due end, and any once the window is over.
+    expect(folded(opsCheck)).toContain(
+      "k.hold is not null and (k.hold in ('called_off', 'moved') or k.due_end < now_at - interval '3 hours' or k.resolvable_at <= now_at) as held",
+    );
+    expect(folded(opsCheck)).toContain(
+      "when 'unfinished' then f.kickoff_at + interval '2 hours' end as due_end",
+    );
+    expect(folded(opsCheck)).toContain(
+      "a.assigned_kickoff_at + make_interval(hours => coalesce(fixture_rules.post_lock_completion_window_hours, 48)) as resolvable_at",
+    );
+    // The listing, the same set.
     expect(listing).toContain(
-      "and fixture.status <> 'finished' and (fixture.status in ('postponed', 'cancelled', 'abandoned') or (fixture.kickoff_at > assignment.assigned_kickoff_at and fixture.kickoff_at > gameweek.ends_at))",
+      "and fixture.status <> 'finished' and (fixture.status in ('postponed', 'cancelled', 'abandoned') or (fixture.kickoff_at > assignment.assigned_kickoff_at and fixture.kickoff_at + interval '2 hours' > assignment.assigned_kickoff_at + make_interval(hours => coalesce(fixture_rules.post_lock_completion_window_hours, 48))) or fixture.kickoff_at + interval '2 hours' < statement_timestamp() - interval '3 hours' or assignment.assigned_kickoff_at + make_interval(hours => coalesce(fixture_rules.post_lock_completion_window_hours, 48)) <= statement_timestamp());",
     );
-    // The same classes in the tool.
+    // The same classes in the tool, which records them and does not decide
+    // by them: every unfinished class is refused before the window's end and
+    // accepted after it.
     expect(folded(tool)).toContain(
-      "when fixture.status in ('postponed', 'cancelled', 'abandoned') then 'called_off' when fixture.kickoff_at > target.assigned_kickoff_at and fixture.kickoff_at > gameweek.ends_at then 'moved'",
+      "when fixture.status = 'finished' then null when fixture.status in ('postponed', 'cancelled', 'abandoned') then 'called_off' when fixture.kickoff_at > target.assigned_kickoff_at and fixture.kickoff_at + interval '2 hours' > resolvable_at then 'moved' else 'unfinished' end;",
     );
+    expect(tool).not.toContain("fantasy_fixture_can_still_finish");
+    expect(tool).not.toContain("ends_at");
+    // It flags a gameweek's last counted match, which the tool refuses.
+    expect(listing).toContain(
+      "then ', its gameweek''s last counted match: the tool refuses it, a developer is needed'",
+    );
+    expect(tool).toContain("message = 'fantasy_gameweek_needs_a_fixture'");
     // Counted, current assignments of locked or live gameweeks of a running season.
     for (const scope of [
       "gameweek.status in ('locked', 'live')",
@@ -206,10 +246,14 @@ describe("resolve-fantasy-postponed-assignment.sql", () => {
 
   test("the ops check and the docs name this file", () => {
     expect(opsCheck).toContain(
-      "' UTC; after that, this fails and scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out'",
+      "else 'scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out' end;",
     );
     expect(opsCheck).toContain(
-      "' h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql'",
+      "': take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql'",
+    );
+    // Not where the tool cannot free the gameweek: its last counted match.
+    expect(opsCheck).toContain(
+      "': a developer is needed (no tool yet for a gameweek whose every match was called off)'",
     );
     expect(read("docs/operations/ALERTS.md")).toContain(
       "scripts/backend/resolve-fantasy-postponed-assignment.sql",

@@ -1,16 +1,20 @@
 -- Regression suite for 20260926003400_ops_health_fantasy_coverage_and_scoring:
--- the `fantasy_fixture_coverage` and `fantasy_scoring` health checks at each
--- ok / warn / fail boundary (statistics: warn 6 h, fail 12 h after the final
--- whistle; a counted match stuck unfinished: warn 3 h, fail 6 h after its due
--- end; one called off or moved after the lock: warn at once, fail once the
--- 48 h the rules keep it in the gameweek have passed since the kickoff it was
--- frozen with, naming the procedure that then resolves it (20260926003500);
--- points: warn 1 h, fail 8 h after the last statistics were certified),
--- with several gameweeks at once, and their way through the alert tick.
--- Nothing is sent from a test: pg_net only queues the request, and the
--- rollback at the end discards the queue rows.
+-- the `fantasy_gameweek_clubs`, `fantasy_fixture_coverage` and
+-- `fantasy_scoring` health checks at each ok / warn / fail boundary
+-- (statistics: warn 6 h, fail 12 h after the final whistle; a counted match
+-- stuck unfinished: warn 3 h, fail 6 h after its due end; one called off, or
+-- moved too late to be completed in the rules' window: warn at once; any
+-- counted match not finished once the 48 h the rules keep it in the gameweek
+-- have passed since the kickoff it was frozen with: fail, naming the
+-- procedure that then resolves it (20260926003500), or saying a developer is
+-- needed where that procedure cannot free the gameweek; points: warn 1 h,
+-- fail 8 h after the last statistics were certified; a club twice in a
+-- gameweek not locked yet: warn, fail within 24 h of its deadline), with
+-- several gameweeks at once, and their way through the alert tick. Nothing
+-- is sent from a test: pg_net only queues the request, and the rollback at
+-- the end discards the queue rows.
 begin;
-select extensions.plan(83);
+select extensions.plan(126);
 
 create function pg_temp.check(p_name text) returns jsonb language sql as $$
   select c from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') c
@@ -24,18 +28,22 @@ create function pg_temp.detail(p_name text) returns text language sql as $$
 $$;
 
 -- ---------------------------------------------------------------------------
--- Shape: the two checks sit with the Fantasy checks; every earlier one stays.
+-- Shape: the three checks sit with the Fantasy checks; every earlier one stays.
 -- ---------------------------------------------------------------------------
 select extensions.is(
   (select array_agg(c ->> 'name' order by ordinality)
    from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') with ordinality as t(c, ordinality)),
-  array['fantasy_lifecycle_tick', 'fantasy_gameweek_lock', 'fantasy_fixture_coverage', 'fantasy_scoring',
-    'cron_jobs', 'news_publication', 'news_sitemap', 'news_import', 'live_scores', 'provider_refresh',
-    'email_delivery', 'browser_errors'],
-  'health lists the two new checks after the Fantasy ones, and every earlier check (no season yet, so no deadline watch)');
+  array['fantasy_lifecycle_tick', 'fantasy_gameweek_lock', 'fantasy_gameweek_clubs', 'fantasy_fixture_coverage',
+    'fantasy_scoring', 'cron_jobs', 'news_publication', 'news_sitemap', 'news_import', 'live_scores',
+    'provider_refresh', 'email_delivery', 'browser_errors'],
+  'health lists the three new checks after the Fantasy ones, and every earlier check (no season yet, so no deadline watch)');
 select extensions.ok(
-  'fantasy_fixture_coverage' ~ '^[a-z][a-z0-9_]{1,60}$' and 'fantasy_scoring' ~ '^[a-z][a-z0-9_]{1,60}$',
-  'both names pass the watchdog''s name filter (scripts/ops/watchdog.ts), which reports every such check');
+  'fantasy_gameweek_clubs' ~ '^[a-z][a-z0-9_]{1,60}$' and 'fantasy_fixture_coverage' ~ '^[a-z][a-z0-9_]{1,60}$'
+    and 'fantasy_scoring' ~ '^[a-z][a-z0-9_]{1,60}$',
+  'the three names pass the watchdog''s name filter (scripts/ops/watchdog.ts), which reports every such check');
+select extensions.is(pg_temp.check('fantasy_gameweek_clubs'),
+  '{"name": "fantasy_gameweek_clubs", "status": "ok", "detail": "no scheduled or open gameweek holds a club twice"}'::jsonb,
+  'clubs: nothing to check is ok');
 select extensions.is(pg_temp.check('fantasy_fixture_coverage'),
   '{"name": "fantasy_fixture_coverage", "status": "ok", "detail": "no finished match counts for Fantasy points yet"}'::jsonb,
   'coverage: nothing to check is ok');
@@ -188,45 +196,15 @@ select extensions.is(pg_temp.detail('fantasy_scoring'),
 
 -- ---------------------------------------------------------------------------
 -- fantasy_scoring: an unfinished counted match is play only while it can
--- still finish on its own. A match still not started, live or suspended long
--- after its due end is stuck, and fails; one called off or moved after the
--- lock warns at once and fails 48 h after its frozen kickoff, when the rules
--- stop keeping it and the owner can take it out
--- (scripts/backend/resolve-fantasy-postponed-assignment.sql).
+-- still finish on its own. The rules (FANTASY_RULES_V1.md) keep it in the
+-- gameweek if it is completed within 48 h of the kickoff it was frozen with.
+-- A match still not started, live or suspended long after its due end is a
+-- row that stopped following it: a warning 3 h after its due end, a failure
+-- 6 h after it, the earlier signal. One called off, or moved too late to be
+-- completed within the 48 h, warns at once. Whatever holds it, a match still
+-- not finished once the 48 h are over fails, naming what the owner can then
+-- run (scripts/backend/resolve-fantasy-postponed-assignment.sql).
 -- ---------------------------------------------------------------------------
-update app.fixtures set kickoff_at = statement_timestamp() - interval '4 hours 59 minutes'
-where id = 'e9000000-0000-4000-8000-000000000012';
-select extensions.is(pg_temp.detail('fantasy_scoring'),
-  'GW2 live: 1 of 3 counted matches final; points come after the last one',
-  'a match not started 4 h 59 min after its kickoff (due end 2 h 59 min ago) is still play');
-update app.fixtures set kickoff_at = statement_timestamp() - interval '5 hours 1 minute'
-where id = 'e9000000-0000-4000-8000-000000000012';
-select extensions.is(pg_temp.check('fantasy_scoring'),
-  '{"name": "fantasy_scoring", "status": "warn", "detail": "GW2: counted match CC3 v CC4 still not_started 5 h after its kickoff; points wait until it finishes or its Fantasy assignment is resolved"}'::jsonb,
-  '3 h past its due end (kickoff + 2 h) it warns, naming the match and its status');
-update app.fixtures set kickoff_at = statement_timestamp() - interval '7 hours 59 minutes'
-where id = 'e9000000-0000-4000-8000-000000000012';
-select extensions.is(pg_temp.status('fantasy_scoring'), 'warn', '5 h 59 min past its due end it still warns');
-update app.fixtures set kickoff_at = statement_timestamp() - interval '8 hours 1 minute'
-where id = 'e9000000-0000-4000-8000-000000000012';
-select extensions.is(pg_temp.check('fantasy_scoring'),
-  '{"name": "fantasy_scoring", "status": "fail", "detail": "GW2: counted match CC3 v CC4 still not_started 8 h after its kickoff; points wait until it finishes or its Fantasy assignment is resolved"}'::jsonb,
-  '6 h past its due end it fails: the row has stopped following the match, and a provider refresh can correct it');
-update app.fixtures set status = 'live_second_half', home_score = 1, away_score = 1
-where id = 'e9000000-0000-4000-8000-000000000012';
-select extensions.is(pg_temp.check('fantasy_scoring') ->> 'status' || ': ' || pg_temp.detail('fantasy_scoring'),
-  'fail: GW2: counted match CC3 v CC4 still live_second_half 8 h after its kickoff; points wait until it finishes or its Fantasy assignment is resolved',
-  'a match stuck live fails the same way');
-update app.fixtures set kickoff_at = statement_timestamp() - interval '1 hour'
-where id = 'e9000000-0000-4000-8000-000000000012';
-select extensions.is(pg_temp.detail('fantasy_scoring'),
-  'GW2 live: 1 of 3 counted matches final; points come after the last one',
-  'a match live an hour after its kickoff is play');
-
--- Postponed after the lock: it will not finish here, whatever its kickoff says.
--- The rules (FANTASY_RULES_V1.md) keep it in the gameweek if it is completed
--- within 48 h of the kickoff it was frozen with; the check warns until then,
--- and fails when the owner's tool starts accepting it.
 create function pg_temp.frozen(p_fixture uuid, p_format text) returns text language sql as $$
   select to_char(assigned_kickoff_at at time zone 'UTC', p_format) from app.fantasy_fixture_assignments
   where fixture_id = p_fixture and superseded_at is null
@@ -235,6 +213,46 @@ create function pg_temp.resolvable(p_fixture uuid) returns text language sql as 
   select to_char((assigned_kickoff_at + interval '48 hours') at time zone 'UTC', 'DD Mon HH24:MI')
   from app.fantasy_fixture_assignments where fixture_id = p_fixture and superseded_at is null
 $$;
+-- Fixture 12 (CC3 v CC4) kicked off p_ago ago, the kickoff GW2 locked with.
+create function pg_temp.kicked_off(p_ago interval) returns void language sql as $$
+  update app.fixtures set kickoff_at = statement_timestamp() - p_ago
+  where id = 'e9000000-0000-4000-8000-000000000012';
+  update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - p_ago
+  where fixture_id = 'e9000000-0000-4000-8000-000000000012' and superseded_at is null;
+$$;
+select pg_temp.kicked_off(interval '4 hours 59 minutes');
+select extensions.is(pg_temp.detail('fantasy_scoring'),
+  'GW2 live: 1 of 3 counted matches final; points come after the last one',
+  'a match not started 4 h 59 min after its kickoff (due end 2 h 59 min ago) is still play');
+select pg_temp.kicked_off(interval '5 hours 1 minute');
+select extensions.is(pg_temp.check('fantasy_scoring'),
+  jsonb_build_object('name', 'fantasy_scoring', 'status', 'warn', 'detail',
+    'GW2: counted match CC3 v CC4 still not_started 5 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by '
+    || pg_temp.resolvable('e9000000-0000-4000-8000-000000000012') || ' UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out'),
+  '3 h past its due end (kickoff + 2 h) it warns, naming the match, its status, and when the rules stop keeping it');
+select pg_temp.kicked_off(interval '7 hours 59 minutes');
+select extensions.is(pg_temp.status('fantasy_scoring'), 'warn', '5 h 59 min past its due end it still warns');
+select pg_temp.kicked_off(interval '8 hours 1 minute');
+select extensions.is(pg_temp.check('fantasy_scoring'),
+  jsonb_build_object('name', 'fantasy_scoring', 'status', 'fail', 'detail',
+    'GW2: counted match CC3 v CC4 still not_started 8 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by '
+    || pg_temp.resolvable('e9000000-0000-4000-8000-000000000012') || ' UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out'),
+  '6 h past its due end it fails, long before the rules'' 48 h: the row has stopped following the match, and a provider refresh can correct it');
+update app.fixtures set status = 'live_second_half', home_score = 1, away_score = 1
+where id = 'e9000000-0000-4000-8000-000000000012';
+select extensions.is(pg_temp.check('fantasy_scoring') ->> 'status' || ': ' || pg_temp.detail('fantasy_scoring'),
+  'fail: GW2: counted match CC3 v CC4 still live_second_half 8 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by '
+    || pg_temp.resolvable('e9000000-0000-4000-8000-000000000012') || ' UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'a match stuck live fails the same way');
+select pg_temp.kicked_off(interval '1 hour');
+select extensions.is(pg_temp.detail('fantasy_scoring'),
+  'GW2 live: 1 of 3 counted matches final; points come after the last one',
+  'a match live an hour after its kickoff is play');
+
+-- Postponed after the lock: it will not finish here, whatever its kickoff says.
+-- The rules keep it in the gameweek if it is completed within 48 h of the
+-- kickoff it was frozen with; the check warns until then, and fails when the
+-- owner's tool starts accepting it.
 update app.fixtures set status = 'postponed', home_score = null, away_score = null,
   kickoff_at = date_trunc('day', statement_timestamp()) + interval '20 days'
 where id = 'e9000000-0000-4000-8000-000000000012';
@@ -265,14 +283,15 @@ where fixture_id = 'e9000000-0000-4000-8000-000000000012' and superseded_at is n
 select extensions.is(pg_temp.status('fantasy_scoring'), 'fail',
   'and keeps failing until the match finishes or its assignment is resolved');
 
--- Moved past the gameweek's window (still not_started): the same hold.
+-- Moved (still not_started) to a kickoff too late to be completed within the
+-- 48 h: the same hold as a postponement.
 update app.fixtures set status = 'not_started', kickoff_at = statement_timestamp() + interval '1 day'
 where id = 'e9000000-0000-4000-8000-000000000012';
 update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() + interval '2 hours'
 where fixture_id = 'e9000000-0000-4000-8000-000000000012' and superseded_at is null;
 select extensions.is(pg_temp.detail('fantasy_scoring'),
   'GW2 live: 1 of 3 counted matches final; points come after the last one',
-  'a kickoff moved a day later but inside the gameweek''s window is play');
+  'a kickoff moved a day later, in time to be completed within the 48 h, is play');
 update app.fixtures set kickoff_at = statement_timestamp() + interval '5 days'
 where id = 'e9000000-0000-4000-8000-000000000012';
 select extensions.is(pg_temp.check('fantasy_scoring'),
@@ -280,12 +299,12 @@ select extensions.is(pg_temp.check('fantasy_scoring'),
     'GW2: counted match CC3 v CC4 moved to '
     || (select to_char(kickoff_at at time zone 'UTC', 'DD Mon HH24:MI') from app.fixtures
         where id = 'e9000000-0000-4000-8000-000000000012')
-    || ' UTC, past the gameweek''s window (due '
+    || ' UTC, too late to be completed within 48 h (due '
     || pg_temp.frozen('e9000000-0000-4000-8000-000000000012', 'DD Mon HH24:MI')
     || ' UTC); the rules keep it in the gameweek if it is completed within 48 h, by '
     || pg_temp.resolvable('e9000000-0000-4000-8000-000000000012')
     || ' UTC; after that, this fails and scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out'),
-  'moved past the window (ends_at) it warns at once');
+  'moved too late to be completed within the 48 h, it warns at once');
 update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - interval '47 hours 59 minutes'
 where fixture_id = 'e9000000-0000-4000-8000-000000000012' and superseded_at is null;
 select extensions.is(pg_temp.status('fantasy_scoring'), 'warn',
@@ -294,6 +313,132 @@ update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_times
 where fixture_id = 'e9000000-0000-4000-8000-000000000012' and superseded_at is null;
 select extensions.is(pg_temp.status('fantasy_scoring'), 'fail',
   'and fails 48 h after it, as a postponed match does');
+
+-- Moved to a time at which it can still be completed within the 48 h (its
+-- kickoff + 2 h, the earliest it can end, at most 48 h after the frozen
+-- kickoff): not a hold. The match is simply still to be played.
+-- (Set from the stored frozen kickoff: two statements read two clocks.)
+update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - interval '10 hours'
+where fixture_id = 'e9000000-0000-4000-8000-000000000012' and superseded_at is null;
+update app.fixtures f set kickoff_at = a.assigned_kickoff_at + interval '46 hours'
+from app.fantasy_fixture_assignments a
+where a.fixture_id = f.id and a.superseded_at is null and f.id = 'e9000000-0000-4000-8000-000000000012';
+select extensions.is(pg_temp.detail('fantasy_scoring'),
+  'GW2 live: 1 of 3 counted matches final; points come after the last one',
+  'moved to 46 h after its frozen kickoff, it can still be completed within the 48 h: play, not a hold');
+update app.fixtures f set kickoff_at = a.assigned_kickoff_at + interval '46 hours 1 minute'
+from app.fantasy_fixture_assignments a
+where a.fixture_id = f.id and a.superseded_at is null and f.id = 'e9000000-0000-4000-8000-000000000012';
+select extensions.alike(pg_temp.status('fantasy_scoring') || ': ' || pg_temp.detail('fantasy_scoring'),
+  'warn: GW2: counted match CC3 v CC4 moved to % UTC, too late to be completed within 48 h (due % UTC); the rules keep it in the gameweek if it is completed within 48 h, by % UTC; after that, this fails and scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'a minute later it cannot: moved, and a warning at once');
+-- Played at its new time, 43 h after the frozen kickoff, and not finished
+-- when the 48 h end: it fails then, like any other.
+update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - interval '47 hours 59 minutes'
+where fixture_id = 'e9000000-0000-4000-8000-000000000012' and superseded_at is null;
+update app.fixtures set kickoff_at = statement_timestamp() - interval '4 hours 59 minutes'
+where id = 'e9000000-0000-4000-8000-000000000012';
+select extensions.is(pg_temp.detail('fantasy_scoring'),
+  'GW2 live: 1 of 3 counted matches final; points come after the last one',
+  'kicked off 43 h after the frozen kickoff and not finished 4 h 59 min later, 47 h 59 min after the frozen one: play');
+update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - interval '48 hours'
+where fixture_id = 'e9000000-0000-4000-8000-000000000012' and superseded_at is null;
+update app.fixtures set kickoff_at = statement_timestamp() - interval '5 hours'
+where id = 'e9000000-0000-4000-8000-000000000012';
+select extensions.is(pg_temp.check('fantasy_scoring'),
+  '{"name": "fantasy_scoring", "status": "fail", "detail": "GW2: counted match CC3 v CC4 still not_started 5 h after its kickoff; not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql"}'::jsonb,
+  '48 h after the frozen kickoff it fails and names the procedure, its own due end only 3 h ago');
+
+-- Every way a counted match can fail to finish, 47 h 59 min and 48 h after
+-- the kickoff it was frozen with (and still has). Until the 48 h are over the
+-- rules keep it: a called-off match warns, and one whose row stopped
+-- following it already fails on that account. At 48 h every one fails naming
+-- the procedure, whose tool accepts it from that moment
+-- (fantasy_resolve_postponed_after_lock.test.sql).
+create function pg_temp.frozen_ago(p_status text, p_age interval) returns text language plpgsql as $$
+begin
+  update app.fixtures set status = p_status::app.fixture_status, home_score = null, away_score = null,
+    kickoff_at = statement_timestamp() - p_age
+  where id = 'e9000000-0000-4000-8000-000000000012';
+  update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - p_age
+  where fixture_id = 'e9000000-0000-4000-8000-000000000012' and superseded_at is null;
+  return pg_temp.status('fantasy_scoring') || ': ' || pg_temp.detail('fantasy_scoring');
+end;
+$$;
+select set_config('app.allow_fixture_correction', 'on', true);
+select extensions.alike(pg_temp.frozen_ago('postponed', interval '47 hours 59 minutes'),
+  'warn: GW2: counted match CC3 v CC4 postponed after the lock (due % UTC); the rules keep it in the gameweek if it is completed within 48 h, by % UTC; after that, this fails and scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'postponed, 47 h 59 min after its frozen kickoff: the rules keep it, a warning');
+select extensions.alike(pg_temp.frozen_ago('postponed', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 postponed after the lock (due % UTC); not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql',
+  'postponed, 48 h after it: a failure naming the procedure');
+select extensions.alike(pg_temp.frozen_ago('cancelled', interval '47 hours 59 minutes'),
+  'warn: GW2: counted match CC3 v CC4 cancelled after the lock (due % UTC); the rules keep it in the gameweek if it is completed within 48 h, by % UTC; after that, this fails and scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'cancelled, 47 h 59 min after its frozen kickoff: the rules keep it, a warning');
+select extensions.alike(pg_temp.frozen_ago('cancelled', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 cancelled after the lock (due % UTC); not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql',
+  'cancelled, 48 h after it: a failure naming the procedure');
+select extensions.alike(pg_temp.frozen_ago('abandoned', interval '47 hours 59 minutes'),
+  'warn: GW2: counted match CC3 v CC4 abandoned after the lock (due % UTC); the rules keep it in the gameweek if it is completed within 48 h, by % UTC; after that, this fails and scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'abandoned, 47 h 59 min after its frozen kickoff: the rules keep it, a warning');
+select extensions.alike(pg_temp.frozen_ago('abandoned', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 abandoned after the lock (due % UTC); not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql',
+  'abandoned, 48 h after it: a failure naming the procedure');
+select extensions.alike(pg_temp.frozen_ago('scheduled', interval '47 hours 59 minutes'),
+  'fail: GW2: counted match CC3 v CC4 still scheduled 47 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by % UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'scheduled, 47 h 59 min after its frozen kickoff: failing already, as a row that stopped following the match, not yet as the rules'' case');
+select extensions.alike(pg_temp.frozen_ago('scheduled', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 still scheduled 48 h after its kickoff; not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql',
+  'scheduled, 48 h after it: a failure naming the procedure');
+select extensions.alike(pg_temp.frozen_ago('not_started', interval '47 hours 59 minutes'),
+  'fail: GW2: counted match CC3 v CC4 still not_started 47 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by % UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'not_started, 47 h 59 min after its frozen kickoff: failing already, as a row that stopped following the match, not yet as the rules'' case');
+select extensions.alike(pg_temp.frozen_ago('not_started', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 still not_started 48 h after its kickoff; not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql',
+  'not_started, 48 h after it: a failure naming the procedure');
+select extensions.alike(pg_temp.frozen_ago('delayed', interval '47 hours 59 minutes'),
+  'fail: GW2: counted match CC3 v CC4 still delayed 47 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by % UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'delayed, 47 h 59 min after its frozen kickoff: failing already, as a row that stopped following the match, not yet as the rules'' case');
+select extensions.alike(pg_temp.frozen_ago('delayed', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 still delayed 48 h after its kickoff; not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql',
+  'delayed, 48 h after it: a failure naming the procedure');
+select extensions.alike(pg_temp.frozen_ago('suspended', interval '47 hours 59 minutes'),
+  'fail: GW2: counted match CC3 v CC4 still suspended 47 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by % UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'suspended, 47 h 59 min after its frozen kickoff: failing already, as a row that stopped following the match, not yet as the rules'' case');
+select extensions.alike(pg_temp.frozen_ago('suspended', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 still suspended 48 h after its kickoff; not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql',
+  'suspended, 48 h after it: a failure naming the procedure');
+select extensions.alike(pg_temp.frozen_ago('live_first_half', interval '47 hours 59 minutes'),
+  'fail: GW2: counted match CC3 v CC4 still live_first_half 47 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by % UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'live_first_half, 47 h 59 min after its frozen kickoff: failing already, as a row that stopped following the match, not yet as the rules'' case');
+select extensions.alike(pg_temp.frozen_ago('live_first_half', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 still live_first_half 48 h after its kickoff; not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql',
+  'live_first_half, 48 h after it: a failure naming the procedure');
+select extensions.alike(pg_temp.frozen_ago('half_time', interval '47 hours 59 minutes'),
+  'fail: GW2: counted match CC3 v CC4 still half_time 47 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by % UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'half_time, 47 h 59 min after its frozen kickoff: failing already, as a row that stopped following the match, not yet as the rules'' case');
+select extensions.alike(pg_temp.frozen_ago('half_time', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 still half_time 48 h after its kickoff; not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql',
+  'half_time, 48 h after it: a failure naming the procedure');
+select extensions.alike(pg_temp.frozen_ago('live_second_half', interval '47 hours 59 minutes'),
+  'fail: GW2: counted match CC3 v CC4 still live_second_half 47 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by % UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'live_second_half, 47 h 59 min after its frozen kickoff: failing already, as a row that stopped following the match, not yet as the rules'' case');
+select extensions.alike(pg_temp.frozen_ago('live_second_half', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 still live_second_half 48 h after its kickoff; not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql',
+  'live_second_half, 48 h after it: a failure naming the procedure');
+select extensions.alike(pg_temp.frozen_ago('extra_time', interval '47 hours 59 minutes'),
+  'fail: GW2: counted match CC3 v CC4 still extra_time 47 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by % UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'extra_time, 47 h 59 min after its frozen kickoff: failing already, as a row that stopped following the match, not yet as the rules'' case');
+select extensions.alike(pg_temp.frozen_ago('extra_time', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 still extra_time 48 h after its kickoff; not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql',
+  'extra_time, 48 h after it: a failure naming the procedure');
+select extensions.alike(pg_temp.frozen_ago('penalties', interval '47 hours 59 minutes'),
+  'fail: GW2: counted match CC3 v CC4 still penalties 47 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by % UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out',
+  'penalties, 47 h 59 min after its frozen kickoff: failing already, as a row that stopped following the match, not yet as the rules'' case');
+select extensions.alike(pg_temp.frozen_ago('penalties', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 still penalties 48 h after its kickoff; not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql',
+  'penalties, 48 h after it: a failure naming the procedure');
+select set_config('app.allow_fixture_correction', 'off', true);
 
 -- The review's case: one match final, one postponed 28 h ago, one cancelled
 -- 27 h ago. It used to read "1 of 3 counted matches final ... ok" for ever.
@@ -321,13 +466,15 @@ where fixture_id = 'e9000000-0000-4000-8000-000000000013' and superseded_at is n
 
 -- Held both ways: while the rules keep the cancelled match, the stuck one is
 -- the one that fails, and the one named; once they no longer do, both fail
--- and the older is named.
+-- and the one past its 48 h is named.
 update app.fixtures set status = 'not_started', kickoff_at = statement_timestamp() - interval '8 hours 1 minute'
 where id = 'e9000000-0000-4000-8000-000000000012';
 update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - interval '8 hours 1 minute'
 where fixture_id = 'e9000000-0000-4000-8000-000000000012' and superseded_at is null;
 select extensions.is(pg_temp.check('fantasy_scoring'),
-  '{"name": "fantasy_scoring", "status": "fail", "detail": "GW2: counted match CC3 v CC4 still not_started 8 h after its kickoff; points wait until it finishes or its Fantasy assignment is resolved (+1 more match(es))"}'::jsonb,
+  jsonb_build_object('name', 'fantasy_scoring', 'status', 'fail', 'detail',
+    'GW2: counted match CC3 v CC4 still not_started 8 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by '
+    || pg_temp.resolvable('e9000000-0000-4000-8000-000000000012') || ' UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out (+1 more match(es))'),
   'a match stuck unfinished fails the gameweek and is named before an older cancelled one the rules still keep, which is counted');
 update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - interval '49 hours'
 where fixture_id = 'e9000000-0000-4000-8000-000000000013' and superseded_at is null;
@@ -336,7 +483,35 @@ select extensions.is(pg_temp.check('fantasy_scoring'),
     'GW2: counted match CC5 v CC6 cancelled after the lock (due '
     || pg_temp.frozen('e9000000-0000-4000-8000-000000000013', 'DD Mon HH24:MI')
     || ' UTC); not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql (+1 more match(es))'),
-  'a cancelled match 49 h past its frozen kickoff and one stuck unfinished both fail the gameweek: the older is named');
+  'a cancelled match 49 h past its frozen kickoff and one stuck unfinished both fail the gameweek: the one past its 48 h is named');
+
+-- The gameweek's last counted match: the tool refuses it
+-- (fantasy_gameweek_needs_a_fixture) and nothing cancels a gameweek, so the
+-- detail says a developer is needed rather than naming the procedure.
+update app.fantasy_fixture_assignments set counts_points = false
+where fixture_id in ('e9000000-0000-4000-8000-000000000011', 'e9000000-0000-4000-8000-000000000013') and superseded_at is null;
+select extensions.alike(pg_temp.frozen_ago('postponed', interval '47 hours 59 minutes'),
+  'warn: GW2: counted match CC3 v CC4 postponed after the lock (due % UTC); the rules keep it in the gameweek if it is completed within 48 h, by % UTC; after that, this fails and a developer is needed: it is the gameweek''s last counted match, which the tool cannot take out',
+  'GW2''s last counted match, postponed: the warning already says a developer will be needed');
+select extensions.alike(pg_temp.frozen_ago('postponed', interval '48 hours'),
+  'fail: GW2: counted match CC3 v CC4 postponed after the lock (due % UTC); not completed within the 48 h the rules allow, and it is the gameweek''s last counted match: a developer is needed (no tool yet for a gameweek whose every match was called off)',
+  '48 h after its frozen kickoff it fails saying so, not naming a procedure that would refuse it');
+select extensions.alike(pg_temp.frozen_ago('not_started', interval '8 hours 1 minute'),
+  'fail: GW2: counted match CC3 v CC4 still not_started 8 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by % UTC, a developer is needed: it is the gameweek''s last counted match, which the tool cannot take out',
+  'and so does a last counted match whose row stopped following it');
+-- Every counted match past its 48 h: the tool would take out all but the
+-- last, which it refuses.
+update app.fantasy_fixture_assignments set counts_points = true
+where fixture_id = 'e9000000-0000-4000-8000-000000000013' and superseded_at is null;
+select extensions.alike(pg_temp.frozen_ago('postponed', interval '48 hours'),
+  'fail: GW2: counted match CC5 v CC6 cancelled after the lock (due % UTC); not completed within the 48 h the rules allow, nor was any other counted match of the gameweek: a developer is needed (no tool yet for a gameweek whose every match was called off) (+1 more match(es))',
+  'two counted matches, both past their 48 h: a developer is needed, and the older is named');
+-- With a finished match counting beside them, the tool can free it.
+update app.fantasy_fixture_assignments set counts_points = true
+where fixture_id = 'e9000000-0000-4000-8000-000000000011' and superseded_at is null;
+select extensions.alike(pg_temp.status('fantasy_scoring') || ': ' || pg_temp.detail('fantasy_scoring'),
+  'fail: GW2: counted match CC5 v CC6 cancelled after the lock (due % UTC); not completed within the 48 h the rules allow: take it out with scripts/backend/resolve-fantasy-postponed-assignment.sql (+1 more match(es))',
+  'with a finished match counting beside them, the procedure again');
 update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - interval '27 hours'
 where fixture_id = 'e9000000-0000-4000-8000-000000000013' and superseded_at is null;
 
@@ -557,7 +732,10 @@ select extensions.is(pg_temp.detail('fantasy_scoring'),
   'a cup gameweek stalled by an unplayed match counts among the failing ones');
 select pg_temp.certify('e9000000-0000-4000-8000-000000000013', interval '30 minutes');
 select extensions.is(pg_temp.check('fantasy_scoring'),
-  '{"name": "fantasy_scoring", "status": "fail", "detail": "Cup GW1: counted match CC5 v CC6 still not_started 8 h after its kickoff; points wait until it finishes or its Fantasy assignment is resolved"}'::jsonb,
+  jsonb_build_object('name', 'fantasy_scoring', 'status', 'fail', 'detail',
+    'Cup GW1: counted match CC5 v CC6 still not_started 8 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by '
+    || pg_temp.resolvable('e9000000-0000-4000-8000-000000000017')
+    || ' UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out'),
   'and is reported, stall first, once the league gameweek is only due');
 delete from app_private.historical_performance_fixture_coverage
 where fixture_id = 'e9000000-0000-4000-8000-000000000016';
@@ -697,6 +875,93 @@ where fixture_id = 'e9000000-0000-4000-8000-000000000015';
 select extensions.is(pg_temp.status('fantasy_fixture_coverage'), 'ok',
   'nor is a match that does not count for points');
 
+-- ---------------------------------------------------------------------------
+-- fantasy_gameweek_clubs: a club twice among the counted matches of a
+-- gameweek not locked yet. GW3 is staged with round 3's four matches; then
+-- the provider moves CC4 v CC1 into round 3 and the calendar sync assigns it
+-- there, as it does for any match of a staged round
+-- (fantasy_resolve_postponed_after_lock.test.sql shows it for a match taken
+-- out of a locked gameweek). GW3 then holds CC1 and CC4 twice, and the
+-- next-gameweek opening, which takes one match per club, would refuse it
+-- (fantasy_next_calendar_incomplete) on the day.
+-- ---------------------------------------------------------------------------
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+insert into app.fantasy_gameweeks (id, fantasy_season_id, football_round_id, sequence_number, name,
+  deadline_at, starts_at, ends_at, status, points_state)
+values ('e7000000-0000-4000-8000-000000000003', 'e6300000-0000-4000-8000-000000000001',
+  'e3000000-0000-4000-8000-000000000003', 3, 'Round 3',
+  date_trunc('hour', statement_timestamp()) + interval '3 days 17 minutes',
+  date_trunc('hour', statement_timestamp()) + interval '3 days 107 minutes',
+  date_trunc('hour', statement_timestamp()) + interval '3 days 13 hours 47 minutes', 'scheduled', 'provisional');
+insert into app.fixtures (id, competition_id, season_id, round_id, home_team_id, away_team_id,
+  kickoff_at, status, provider_updated_at, source_sequence)
+select ('e9000000-0000-4000-8000-0000000000' || (30 + n))::uuid, 'e1000000-0000-4000-8000-000000000001',
+  'e2000000-0000-4000-8000-000000000001', 'e3000000-0000-4000-8000-000000000003',
+  md5('cov-club-' || (2 * n - 1))::uuid, md5('cov-club-' || (2 * n))::uuid,
+  date_trunc('hour', statement_timestamp()) + interval '3 days 107 minutes' + (n - 1) * interval '2 hours',
+  'not_started', statement_timestamp(), 1
+from generate_series(1, 4) n;
+insert into app.fantasy_fixture_assignments (fantasy_season_id, fixture_id, gameweek_id,
+  original_gameweek_id, original_kickoff_at, assigned_kickoff_at, source_version)
+select 'e6300000-0000-4000-8000-000000000001', f.id, 'e7000000-0000-4000-8000-000000000003',
+  'e7000000-0000-4000-8000-000000000003', f.kickoff_at, f.kickoff_at, 1
+from app.fixtures f where f.round_id = 'e3000000-0000-4000-8000-000000000003';
+select extensions.is(pg_temp.check('fantasy_gameweek_clubs'),
+  '{"name": "fantasy_gameweek_clubs", "status": "ok", "detail": "no scheduled or open gameweek holds a club twice"}'::jsonb,
+  'GW3 staged with one match per club is ok');
+
+insert into app.fixtures (id, competition_id, season_id, round_id, home_team_id, away_team_id,
+  kickoff_at, status, provider_updated_at, source_sequence)
+values ('e9000000-0000-4000-8000-000000000035', 'e1000000-0000-4000-8000-000000000001',
+  'e2000000-0000-4000-8000-000000000001', 'e3000000-0000-4000-8000-000000000003',
+  md5('cov-club-4')::uuid, md5('cov-club-1')::uuid,
+  date_trunc('hour', statement_timestamp()) + interval '3 days 11 hours 47 minutes', 'not_started',
+  statement_timestamp(), 1);
+insert into app.fantasy_fixture_assignments (fantasy_season_id, fixture_id, gameweek_id,
+  original_gameweek_id, original_kickoff_at, assigned_kickoff_at, source_version)
+select 'e6300000-0000-4000-8000-000000000001', f.id, 'e7000000-0000-4000-8000-000000000003',
+  'e7000000-0000-4000-8000-000000000003', f.kickoff_at, f.kickoff_at, 1
+from app.fixtures f where f.id = 'e9000000-0000-4000-8000-000000000035';
+select extensions.is(pg_temp.check('fantasy_gameweek_clubs'),
+  jsonb_build_object('name', 'fantasy_gameweek_clubs', 'status', 'warn', 'detail',
+    'GW3 (scheduled, deadline '
+    || (select to_char(deadline_at at time zone 'UTC', 'DD Mon HH24:MI') from app.fantasy_gameweeks
+        where id = 'e7000000-0000-4000-8000-000000000003')
+    || ' UTC) holds CC1 twice: CC1 v CC2, CC4 v CC1; it cannot open like this (fantasy_next_calendar_incomplete), and no tool takes a match out of a gameweek before its lock: a developer is needed (+1 more club(s) twice)'),
+  'a match moved into GW3''s round puts CC1 and CC4 there twice: a warning at once, naming the gameweek, the first club and its matches, and counting the other club');
+update app.fantasy_gameweeks set deadline_at = statement_timestamp() + interval '24 hours 1 minute'
+where id = 'e7000000-0000-4000-8000-000000000003';
+select extensions.is(pg_temp.status('fantasy_gameweek_clubs'), 'warn',
+  '24 h 1 min before its deadline it still warns');
+update app.fantasy_gameweeks set deadline_at = statement_timestamp() + interval '24 hours'
+where id = 'e7000000-0000-4000-8000-000000000003';
+select extensions.is(pg_temp.status('fantasy_gameweek_clubs'), 'fail',
+  '24 h before its deadline it fails');
+select extensions.is(app_private.ops_alert_tick(), 'sent', 'and pages, as every failing check does');
+select extensions.ok((select convert_from(body, 'utf8')::jsonb ->> 'text' from net.http_request_queue
+    where url = 'https://alerts.example.invalid/ops' order by id desc limit 1)
+    like '%- fantasy_gameweek_clubs [fail]: GW3 (scheduled, deadline % UTC) holds CC1 twice: CC1 v CC2, CC4 v CC1;%',
+  'naming the gameweek and the club');
+
+-- An open gameweek would lock with the club playing twice: a double gameweek
+-- nobody decided.
+update app.fantasy_gameweeks set status = 'finalized', points_state = 'final', finalized_at = statement_timestamp()
+where id = 'e7000000-0000-4000-8000-000000000002';
+update app.fantasy_gameweeks set status = 'open' where id = 'e7000000-0000-4000-8000-000000000003';
+select extensions.alike(pg_temp.status('fantasy_gameweek_clubs') || ': ' || pg_temp.detail('fantasy_gameweek_clubs'),
+  'fail: GW3 (open, deadline % UTC) holds CC1 twice: CC1 v CC2, CC4 v CC1; it would lock like this, a double gameweek nobody decided, and no tool takes a match out of a gameweek before its lock: a developer is needed (+1 more club(s) twice)',
+  'open, the same, saying it would lock like that');
+-- Only counted matches of a gameweek that has not locked count.
+update app.fantasy_fixture_assignments set counts_points = false
+where fixture_id = 'e9000000-0000-4000-8000-000000000035' and superseded_at is null;
+select extensions.is(pg_temp.status('fantasy_gameweek_clubs'), 'ok',
+  'a match that does not count is not a second one');
+update app.fantasy_fixture_assignments set counts_points = true
+where fixture_id = 'e9000000-0000-4000-8000-000000000035' and superseded_at is null;
+update app.fantasy_gameweeks set status = 'locked' where id = 'e7000000-0000-4000-8000-000000000003';
+select extensions.is(pg_temp.status('fantasy_gameweek_clubs'), 'ok',
+  'and a gameweek that has locked is out of scope: it is played as it locked');
+select set_config('request.jwt.claims', '', true);
 
 select * from extensions.finish();
 rollback;

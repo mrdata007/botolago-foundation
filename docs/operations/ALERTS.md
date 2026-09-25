@@ -47,25 +47,26 @@ nine in `REQUIRED_DATABASE_CHECKS`; a check a migration adds joins them
 once production has it), each entry named and with a detail, and an
 overall verdict that agrees with the checks.
 
-| Check                      | Fails when                                                                                                                                                                                                                                                                                                                                                                                              | Warns when                                                                                                                                                                                                                                                                 |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fantasy_lifecycle_tick`   | the tick is on but has not run for 15 min, or failed 3 times in a row                                                                                                                                                                                                                                                                                                                                   | it is switched off, or failed once or twice                                                                                                                                                                                                                                |
-| `fantasy_gameweek_lock`    | an open gameweek is 30+ min past its deadline                                                                                                                                                                                                                                                                                                                                                           |                                                                                                                                                                                                                                                                            |
-| `fantasy_deadline_watch`   | a scheduled/open gameweek is within 24 h of its deadline while a counting fixture still has a placeholder kickoff, or it has no counting fixture left                                                                                                                                                                                                                                                   | the watch itself errors                                                                                                                                                                                                                                                    |
-| `fantasy_fixture_coverage` | a finished match that counts for Fantasy points still has no certified player statistics 12 h after the final whistle                                                                                                                                                                                                                                                                                   | the same, 6 h after the final whistle                                                                                                                                                                                                                                      |
-| `fantasy_scoring`          | a counted match of a locked gameweek still not started, live, suspended or delayed 6 h after its due end, or postponed, cancelled, abandoned or moved past the window after the lock and not completed 48 h after the kickoff it was frozen with, when the rules stop keeping it (below); or every counted match final and certified, the gameweek still not finalized 8 h after the last certification | such a match 3 h past its due end; one postponed, cancelled, abandoned or moved past the window after the lock, from the start, saying until when the rules keep it; every match final for 6 h but one lacks statistics; points not final 1 h after the last certification |
-| `cron_jobs`                | any pg_cron job failed in the last hour                                                                                                                                                                                                                                                                                                                                                                 |                                                                                                                                                                                                                                                                            |
-| `news_publication`         | the every-minute publication job has not run for 10 min                                                                                                                                                                                                                                                                                                                                                 |                                                                                                                                                                                                                                                                            |
-| `news_sitemap`             | the sitemap snapshot is missing or 10+ min old (refresh job paused or failing)                                                                                                                                                                                                                                                                                                                          | snapshot 2+ min old (sitemap computed live), or a refresh took 1.5 s+                                                                                                                                                                                                      |
-| `news_import`              |                                                                                                                                                                                                                                                                                                                                                                                                         | an import run failed in the last 24 h                                                                                                                                                                                                                                      |
-| `live_scores`              | live refresh is on but no fixture refresh for 10 min while a match is in play                                                                                                                                                                                                                                                                                                                           | live refresh is off while a match is in play or kicks off within 6 h                                                                                                                                                                                                       |
-| `provider_refresh`         | 3+ failed fixture refreshes in 6 h                                                                                                                                                                                                                                                                                                                                                                      | no successful fixture refresh for 12 h                                                                                                                                                                                                                                     |
-| `email_delivery`           | email is on but its tick stalled for 15 min                                                                                                                                                                                                                                                                                                                                                             | undelivered emails are waiting                                                                                                                                                                                                                                             |
-| `browser_errors`           | never (see below)                                                                                                                                                                                                                                                                                                                                                                                       | 25+ unhandled errors reported by visitors' browsers this hour and the last                                                                                                                                                                                                 |
+| Check                      | Fails when                                                                                                                                                                                                                                                                                                                                           | Warns when                                                                                                                                                                                                                                                                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fantasy_lifecycle_tick`   | the tick is on but has not run for 15 min, or failed 3 times in a row                                                                                                                                                                                                                                                                                | it is switched off, or failed once or twice                                                                                                                                                                                                                                                                                             |
+| `fantasy_gameweek_lock`    | an open gameweek is 30+ min past its deadline                                                                                                                                                                                                                                                                                                        |                                                                                                                                                                                                                                                                                                                                         |
+| `fantasy_deadline_watch`   | a scheduled/open gameweek is within 24 h of its deadline while a counting fixture still has a placeholder kickoff, or it has no counting fixture left                                                                                                                                                                                                | the watch itself errors                                                                                                                                                                                                                                                                                                                 |
+| `fantasy_gameweek_clubs`   | a scheduled or open gameweek within 24 h of its deadline holds a club twice among its counted matches (below)                                                                                                                                                                                                                                        | the same, further from its deadline                                                                                                                                                                                                                                                                                                     |
+| `fantasy_fixture_coverage` | a finished match that counts for Fantasy points still has no certified player statistics 12 h after the final whistle                                                                                                                                                                                                                                | the same, 6 h after the final whistle                                                                                                                                                                                                                                                                                                   |
+| `fantasy_scoring`          | a counted match of a locked gameweek still not finished 48 h after the kickoff it was frozen with, whatever holds it, when the rules stop keeping it (below); one still not started, live, suspended or delayed 6 h after its due end; or every counted match final and certified, the gameweek still not finalized 8 h after the last certification | one postponed, cancelled or abandoned after the lock, or moved too late to be completed within those 48 h, from the start, saying until when the rules keep it; one not started, live, suspended or delayed 3 h past its due end; every match final for 6 h but one lacks statistics; points not final 1 h after the last certification |
+| `cron_jobs`                | any pg_cron job failed in the last hour                                                                                                                                                                                                                                                                                                              |                                                                                                                                                                                                                                                                                                                                         |
+| `news_publication`         | the every-minute publication job has not run for 10 min                                                                                                                                                                                                                                                                                              |                                                                                                                                                                                                                                                                                                                                         |
+| `news_sitemap`             | the sitemap snapshot is missing or 10+ min old (refresh job paused or failing)                                                                                                                                                                                                                                                                       | snapshot 2+ min old (sitemap computed live), or a refresh took 1.5 s+                                                                                                                                                                                                                                                                   |
+| `news_import`              |                                                                                                                                                                                                                                                                                                                                                      | an import run failed in the last 24 h                                                                                                                                                                                                                                                                                                   |
+| `live_scores`              | live refresh is on but no fixture refresh for 10 min while a match is in play                                                                                                                                                                                                                                                                        | live refresh is off while a match is in play or kicks off within 6 h                                                                                                                                                                                                                                                                    |
+| `provider_refresh`         | 3+ failed fixture refreshes in 6 h                                                                                                                                                                                                                                                                                                                   | no successful fixture refresh for 12 h                                                                                                                                                                                                                                                                                                  |
+| `email_delivery`           | email is on but its tick stalled for 15 min                                                                                                                                                                                                                                                                                                          | undelivered emails are waiting                                                                                                                                                                                                                                                                                                          |
+| `browser_errors`           | never (see below)                                                                                                                                                                                                                                                                                                                                    | 25+ unhandled errors reported by visitors' browsers this hour and the last                                                                                                                                                                                                                                                              |
 
-`fantasy_fixture_coverage` and `fantasy_scoring` (migration 20260926003400)
-watch the current Fantasy season (`registration_open` or `active`) and the
-matches that count for its points. "Final whistle" is `app.fixtures.finalized_at`
+`fantasy_gameweek_clubs`, `fantasy_fixture_coverage` and `fantasy_scoring`
+(migration 20260926003400) watch the current Fantasy season
+(`registration_open` or `active`) and the matches that count for its points. "Final whistle" is `app.fixtures.finalized_at`
 (kickoff + 2 h when a finished row has none). Complete statistics means what
 the scoring worker requires: a row in
 `app_private.historical_performance_fixture_coverage` with
@@ -75,27 +76,50 @@ current statistics version was stored (the active
 row was created or last touched. No scoring rows means no points yet, never
 zero points. A gameweek with a match still to finish is in play, and not late,
 as long as that match can still finish on its own: its kickoff is ahead or its
-due end (kickoff + 2 h) is under 3 h ago. The lifecycle moves a gameweek to
-scoring only once every counted match is finished, and nothing automatic moves
-a match out of a locked gameweek, so a match that cannot finish holds the
-gameweek:
+due end (kickoff + 2 h) is under 3 h ago, and its 48 h are not over. The
+lifecycle moves a gameweek to scoring only once every counted match is
+finished, and nothing automatic moves a match out of a locked gameweek. The
+ruleset keeps every counted match in its gameweek for 48 h after the kickoff it
+was frozen with: "A fixture completed within 48 hours of its original
+assignment remains in that gameweek"
+([FANTASY_RULES_V1.md](../backend/FANTASY_RULES_V1.md#exceptional-fixtures-and-corrections);
+the season ruleset's `post_lock_completion_window_hours`), and the gameweek
+waits for it that long. So a match that cannot finish holds the gameweek:
 
+- one postponed, cancelled or abandoned after the lock, or moved to a kickoff
+  too late for it to be completed within those 48 h (its new kickoff + 2 h
+  past them; a match moved to a time it can still be completed in is simply
+  still to be played): the check warns at once, naming the match, the time
+  the rules stop keeping it and
+  `scripts/backend/resolve-fantasy-postponed-assignment.sql`;
 - one stuck unfinished (not started, live, suspended, delayed) is a row that
   stopped following the match, or a provider fault, and a provider refresh can
-  correct the first: the check warns 3 h and fails 6 h past its due end;
-- one postponed, cancelled or abandoned after the lock, or moved to a kickoff
-  past the gameweek's window, stays in its gameweek for 48 h after the kickoff
-  it was frozen with: the ruleset keeps a match completed within 48 h of its
-  original assignment in that gameweek
-  ([FANTASY_RULES_V1.md](../backend/FANTASY_RULES_V1.md#exceptional-fixtures-and-corrections);
-  the season ruleset's `post_lock_completion_window_hours`), and the gameweek
-  waits for it. The check warns at once, naming the match, the time the rules
-  stop keeping it and `scripts/backend/resolve-fantasy-postponed-assignment.sql`,
-  and fails when those 48 h are over, the moment that file can take the match
-  out (below). The gameweek's lateness also reaches GitHub, through the
-  watchdog's `fantasy_points` and the orchestrator's `fantasy_points_overdue`,
-  once its window has ended: they do not know the 48 h, so they can page while
-  the rules still keep the match, and the answer then is to wait.
+  correct the first: the check warns 3 h and fails 6 h past its due end, the
+  earlier signal, still naming the time the rules stop keeping it;
+- any of them still not finished once the 48 h are over, whatever holds it:
+  the check fails, saying it was not completed within the 48 h the rules
+  allow, and names that file, which can take the match out from that moment
+  (below). Where the file cannot free the gameweek, the check says a developer
+  is needed instead: the match is the gameweek's last counted match, or every
+  counted match of the gameweek is past its 48 h, and the tool refuses a
+  gameweek's last counted match (`fantasy_gameweek_needs_a_fixture`), while
+  nothing cancels a gameweek yet.
+
+The gameweek's lateness also reaches GitHub, through the watchdog's
+`fantasy_points` and the orchestrator's `fantasy_points_overdue`, once its
+window has ended: they do not know the 48 h, so they can page while the rules
+still keep the match, and the answer then is to wait.
+
+`fantasy_gameweek_clubs` looks ahead instead: a gameweek not locked yet
+(`scheduled` or `open`) whose counted matches hold a club twice. The
+next-gameweek opening takes one match per club and refuses such a gameweek
+(`fantasy_next_calendar_incomplete`), on the day, and an open one would lock
+with that club playing twice, a double gameweek nobody decided. It happens when
+SportsMonks moves a match into a round whose gameweek is already staged, for
+instance a match taken out of a locked gameweek with the file above and
+rescheduled. The check warns at once, naming the gameweek, the club and its
+matches, and fails within 24 h of the gameweek's deadline. No tool takes a
+match out of a gameweek that has not locked: tell the developers (below).
 
 Once every counted match is final, the points come from the Fantasy season
 orchestrator alone: the run that certifies the last statistics scores in the
@@ -119,7 +143,7 @@ allow for GitHub's schedule: it started the hourly orchestrator
 pages again every hour, so an ordinary night must not fail. They are fixed in
 the migration; `FANTASY_COVERAGE_ESCALATE_HOURS` does not change them. A
 season has one gameweek past its lock at a time; with several Fantasy
-competitions running, both checks name the gameweek with its season
+competitions running, the three checks name the gameweek with its season
 (`Cup GW1`) and the scoring check reports the most severe, then the earliest
 deadline, and counts the others.
 
@@ -233,10 +257,10 @@ where id = <emailRequestId from the test>;` answers `200` with `"sent":true`.
 `app_private.ops_alert_test()` works any time and leaves the alert state
 alone, so the next real incident is still announced.
 
-The checks migration 20260926003400 adds (`fantasy_fixture_coverage`,
-`fantasy_scoring`) reach the email as they reach the webhook: both are sent by
-the same `app_private.ops_alert_tick()`, which reads every check of
-`app_private.ops_health_checks()`.
+The checks migration 20260926003400 adds (`fantasy_gameweek_clubs`,
+`fantasy_fixture_coverage`, `fantasy_scoring`) reach the email as they reach
+the webhook: both are sent by the same `app_private.ops_alert_tick()`, which
+reads every check of `app_private.ops_health_checks()`.
 
 ## The webhook: switch it on, test it, pause it (owner)
 
@@ -248,10 +272,11 @@ On 2026-09-25 production read `enabled = true` with a webhook stored in Vault
 at 10:02 UTC, and again at 14:53, with `repeat_after` 1 h and nothing sent
 yet (`last_sent_at` empty). (When it was switched on is not recorded:
 `ops_alert_state.updated_at` is rewritten by every tick.) So on production
-there is nothing to switch on: step 3 alone confirms that messages arrive,
-once the alert-email change (migration `20260926001000`, which adds
-`ops_alert_test()`) is applied. Steps 1, 2 and 4 are for a new or replaced
-destination.
+there is nothing to switch on: step 3 alone confirms that messages arrive. The
+test message it sends is available there: the alert-email change (migration
+`20260926001000`, which adds `ops_alert_test()`) is applied on production,
+recorded in its migration history and the function present (read on
+2026-09-25). Steps 1, 2 and 4 are for a new or replaced destination.
 
 It ships switched off (migration `20260924200200`). It and the email are the
 channels that do not depend on GitHub's scheduler.
@@ -274,36 +299,38 @@ channels that do not depend on GitHub's scheduler.
      '<paste the new webhook URL>');
    ```
 
-3. Send a test message, once the alert-email change (migration
-   `20260926001000`) is applied: it adds `app_private.ops_alert_test()`, which
-   sends one message marked TEST through every configured channel, the
-   webhook included, whether alerts are on or off, and changes nothing else
-   (not the switch, not the current incident):
+3. Send a test message. `app_private.ops_alert_test()` (migration
+   `20260926001000`, applied on production) sends one message marked TEST
+   through every configured channel, the webhook and the email alike, whether
+   alerts are on or off, and changes nothing else (not the switch, not the
+   current incident). It refuses (`ops_alert_channel_missing`) when neither a
+   webhook nor an email address is set:
 
    ```sql
    select app_private.ops_alert_test();
    ```
 
-   Its result holds the pg_net request id of the webhook message; a few
-   seconds later, read the webhook's answer:
+   Its result holds the pg_net request id of each message it queued,
+   `webhookRequestId` and `emailRequestId`; a few seconds later, read the
+   webhook's answer:
 
    ```sql
-   select status_code, timed_out, error_msg from net._http_response where id = <request id>;
+   select status_code, timed_out, error_msg from net._http_response where id = <webhookRequestId>;
    ```
 
    Discord answers `204`, Slack `200`. No row yet means pg_net has not sent it
    (wait a few seconds). `error_msg` or a `4xx` means the URL is wrong or was
-   revoked: repeat step 2 with a fresh one.
+   revoked: repeat step 2 with a fresh one. The email's answer is read the
+   same way with `emailRequestId` ([Switching email alerts on](#switching-email-alerts-on-owner-once),
+   step 3).
 
-   Until that change is applied there is no test message. The webhook is
-   proven by the next real alert: its answer is the `net._http_response` row
-   whose id is `last_request_id` in `app_private.ops_alert_state`. The GitHub
-   path is proven at any time by a watchdog run with `simulate_failure`
-   (below), which never reaches the webhook.
+   A real alert's answer is the `net._http_response` row whose id is
+   `last_request_id` in `app_private.ops_alert_state`. The GitHub path is
+   proven at any time by a watchdog run with `simulate_failure` (below), which
+   never reaches the webhook.
 
 4. Switch alerts on. It refuses when there is nothing to send through: no
-   Vault secret (and, once `20260926001000` is applied, no email address
-   either):
+   Vault secret and no email address:
 
    ```sql
    select app_private.ops_alert_configure(true);
@@ -401,16 +428,16 @@ watchdog row, and the webhook and the email never see those.
     The dispatch waits for the manual run if it is still going (they share a
     concurrency group).
 
-  - `fantasy_scoring` saying a counted match's points wait until it finishes
-    or its Fantasy assignment is resolved: a counted match of the locked
-    gameweek will not finish on its own. Which ones, and what state they are
-    in:
+  - `fantasy_scoring` naming a counted match of a locked gameweek that has
+    not finished: the gameweek waits for it. Which ones, and what state they
+    are in:
 
     ```sql
     select s.name as season, g.sequence_number as gameweek, g.status as gameweek_status,
-      g.ends_at as window_ends, f.id as fixture_id, home.short_name || ' v ' || away.short_name as match,
-      f.status as fixture_status, f.kickoff_at, a.assigned_kickoff_at, f.provider_updated_at,
-      a.assignment_status, a.frozen_at
+      f.id as fixture_id, home.short_name || ' v ' || away.short_name as match,
+      f.status as fixture_status, f.kickoff_at, a.assigned_kickoff_at,
+      a.assigned_kickoff_at + interval '48 hours' as rules_keep_it_until,
+      f.provider_updated_at, a.assignment_status, a.frozen_at
     from app.fantasy_gameweeks g
     join app.fantasy_seasons s on s.id = g.fantasy_season_id and s.status in ('registration_open', 'active')
     join app.fantasy_fixture_assignments a on a.gameweek_id = g.id
@@ -422,43 +449,97 @@ watchdog row, and the webhook and the email never see those.
     order by f.kickoff_at;
     ```
 
-    `still not_started` / `still live_...` hours after kickoff (a warning
-    3 h past its due end, a failure 6 h past it): check the match at the
-    provider (SportsMonks). If it did finish there, the stored row is stale:
-    the live refresh stops asking about a match it has not seen start 3 h
-    after its kickoff, and the Fantasy season orchestrator's fixture refresh
-    (which reads the whole season) has not corrected it yet. Read that run's
-    "Provider refresh" line (and `provider_refresh` here), then dispatch the
-    orchestrator and watch the row change. If SportsMonks itself still shows
-    it unfinished, the fault is theirs to fix.
-    `postponed` / `cancelled` / `abandoned` after the lock, or moved past the
-    gameweek's window: the ruleset
+    The ruleset
     ([FANTASY_RULES_V1.md → Exceptional fixtures and corrections](../backend/FANTASY_RULES_V1.md#exceptional-fixtures-and-corrections))
     says "A fixture completed within 48 hours of its original assignment
     remains in that gameweek; later completion moves to a controlled future
-    assignment." So for 48 h after the kickoff the match was frozen with, the
-    check warns, saying until when the rules keep the match, and the answer
-    is to wait: completed by then, the match counts and the check clears.
-    Nothing automatic takes a frozen assignment out of a gameweek (the
-    calendar sync and the lock only defer unfrozen ones), so once the 48 h
-    are over the check fails, saying the match was not completed in time,
-    until the owner takes it out with
-    `scripts/backend/resolve-fantasy-postponed-assignment.sql`. With the
-    Fantasy tick paused, that file lists the held matches with their
-    assignment ids and, for each, from when it can be taken out; it dry-runs
-    `app_private.fantasy_resolve_frozen_assignment` on the one you name, and
-    saves only once you switch `dry_run` off. The tool refuses a match whose
-    48 h are not over (`fantasy_postponement_window_open`, with the time they
-    end). Never edit the rows by hand. Taken out, the match's players score
-    nothing from it (the bench and the vice-captain step in), and **the match
-    counts for no gameweek**: the ruleset's "controlled future assignment"
-    does not exist yet, because a later gameweek would then hold a club twice
-    and the game has no double gameweeks. That gap needs an owner decision
-    and future work; see
+    assignment." So for 48 h after the kickoff a match was frozen with, it
+    stays in its gameweek and the answer is to wait for it; after that, if it
+    has not finished, whatever held it, the owner takes it out. By what the
+    detail says:
+    - A match `still not_started`, `still live_...` or `still suspended`
+      hours after its kickoff, whose points "wait until it finishes" (a
+      warning 3 h past its due end, a failure 6 h past it, well before the
+      48 h): check the match at the provider (SportsMonks). If it did finish
+      there, the stored row is stale: the live refresh stops asking about a
+      match it has not seen start 3 h after its kickoff, and the Fantasy
+      season orchestrator's fixture refresh (which reads the whole season)
+      has not corrected it yet. Read that run's "Provider refresh" line (and
+      `provider_refresh` here), then dispatch the orchestrator and watch the
+      row change. If SportsMonks itself still shows it unfinished, the fault
+      is theirs to fix, and the detail says from when the rules let the owner
+      take the match out.
+    - A match `postponed`, `cancelled` or `abandoned` after the lock, or
+      moved to a kickoff "too late to be completed within 48 h": a warning
+      from the start, saying until when the rules keep the match. Wait:
+      completed by then, the match counts and the check clears. A match
+      moved to a time at which it can still be completed in the 48 h is not
+      reported as moved: it is still to be played, and is reported like any
+      other match if it has not finished 3 h after its new due end, or when
+      the 48 h end.
+    - "Not completed within the 48 h the rules allow: take it out with
+      `scripts/backend/resolve-fantasy-postponed-assignment.sql`": a
+      failure, paging hourly, whatever state the match was left in. Nothing
+      automatic takes a frozen assignment out of a gameweek (the calendar
+      sync and the lock only defer unfrozen ones), so the owner does, with
+      that file. It lists the held matches with their assignment ids and,
+      for each, from when it can be taken out, with nothing paused; then,
+      with the Fantasy tick paused, it dry-runs
+      `app_private.fantasy_resolve_frozen_assignment` on the one you name,
+      and saves only once you switch `dry_run` off. The tool refuses every
+      match whose 48 h are not over (`fantasy_postponement_window_open`, with
+      the time they end). Never edit the rows by hand. Taken out, the match's
+      players score nothing from it (the bench and the vice-captain step in),
+      and **the match counts for no gameweek**: the ruleset's "controlled
+      future assignment" does not exist yet, because a later gameweek would
+      then hold a club twice and the game has no double gameweeks. That gap
+      needs an owner decision and future work; see
+      [FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md → After the lock](../backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md#after-the-lock-since-migration-20260926003500).
+      Then switch the tick back on and dispatch the orchestrator, as after a
+      manual ingest: the gameweek goes to scoring once its other matches are
+      final.
+    - "It is the gameweek's last counted match", or "nor was any other
+      counted match of the gameweek", and "a developer is needed": the file
+      cannot help. The tool refuses a gameweek's last counted match
+      (`fantasy_gameweek_needs_a_fixture`: with none left the gameweek could
+      never be scored), and nothing cancels a gameweek yet, so taking out all
+      but one would change nothing. Tell the developers: there is no tool yet
+      for a gameweek whose every match was called off. For a gameweek's last
+      counted match the warning before the 48 h already says so.
+
+  - `fantasy_gameweek_clubs`: a gameweek not locked yet holds a club twice
+    among its counted matches, so it cannot open (a `scheduled` one: the
+    next-gameweek opening refuses it with `fantasy_next_calendar_incomplete`)
+    or would lock with that club playing twice (an `open` one). The detail
+    names the gameweek, the first club and its matches. Which ones:
+
+    ```sql
+    select g.sequence_number as gameweek, g.status, g.deadline_at, club.short_name as club,
+      string_agg(home.short_name || ' v ' || away.short_name || ' (' || f.id || ')', ', '
+        order by f.kickoff_at) as matches
+    from app.fantasy_gameweeks g
+    join app.fantasy_seasons s on s.id = g.fantasy_season_id and s.status in ('registration_open', 'active')
+    join app.fantasy_fixture_assignments a on a.gameweek_id = g.id
+      and a.superseded_at is null and a.counts_points
+    join app.fixtures f on f.id = a.fixture_id
+    join app.teams home on home.id = f.home_team_id
+    join app.teams away on away.id = f.away_team_id
+    cross join lateral (values (f.home_team_id), (f.away_team_id)) side(team_id)
+    join app.teams club on club.id = side.team_id
+    where g.status in ('scheduled', 'open')
+    group by g.id, g.sequence_number, g.status, g.deadline_at, club.id, club.short_name
+    having count(distinct f.id) > 1
+    order by g.deadline_at, club.short_name;
+    ```
+
+    It happens when SportsMonks moves a match into a round whose gameweek is
+    already staged: the calendar sync assigns it there, beside the club's own
+    match of that round. Check the round at SportsMonks first: when the
+    provider moves the match again, the next sync puts it right. Otherwise no
+    tool takes a match out of a gameweek that has not locked, and the game
+    has no double gameweeks: an owner's decision and a developer are needed,
+    before the deadline (the check fails within 24 h of it). See
     [FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md → After the lock](../backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md#after-the-lock-since-migration-20260926003500).
-    Then switch the tick back on and dispatch the orchestrator, as after a
-    manual ingest: the gameweek goes to scoring once its other matches are
-    final.
 
   - `fantasy_scoring`, every match final with its statistics: the detail
     names the stage. It warns an hour after the last statistics were

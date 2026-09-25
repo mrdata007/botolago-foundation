@@ -1,25 +1,33 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
 -- Take ONE counted match out of a Fantasy gameweek that has already locked,
--- when the match was postponed, cancelled or abandoned after the lock, or
--- moved to a kickoff past the gameweek's window.
+-- once the rules no longer keep it there: it was not completed within 48 h of
+-- the kickoff the gameweek locked with, whatever held it (postponed,
+-- cancelled, abandoned, moved, suspended, never started, stuck live).
 --
 -- WHEN
---   When the ops check `fantasy_scoring` says "counted match ... postponed
---   (cancelled, abandoned) after the lock" or "moved to ..., past the
---   gameweek's window", and names this file. Such a match holds its gameweek:
---   the gameweek is scored only once every counted match is final, the next
---   one opens only after that, and every manager's team stays locked until
---   then. The check warns at once and fails (and pages every hour) 48 h after
---   the kickoff the match was frozen with, when the rules stop keeping it.
+--   When the ops check `fantasy_scoring` fails saying a counted match was
+--   "not completed within the 48 h the rules allow", and names this file.
+--   Such a match holds its gameweek: the gameweek is scored only once every
+--   counted match is final, the next one opens only after that, and every
+--   manager's team stays locked until then. Before that the check warns: at
+--   once for a match postponed, cancelled or abandoned after the lock, or
+--   moved too late to be completed within the 48 h, saying until when the
+--   rules keep it; and 3 h past its due end for any other match not finished
+--   (6 h: it fails, but for the provider's data -- see ALERTS.md -- not for
+--   this file).
+--   When the check says "a developer is needed" instead, this file cannot
+--   help: the match is its gameweek's last counted match, or every counted
+--   match of the gameweek is past its 48 h, and the tool refuses a
+--   gameweek's last counted match (fantasy_gameweek_needs_a_fixture).
 --
 -- THE RULE (docs/backend/FANTASY_RULES_V1.md, "Exceptional fixtures and
 -- corrections"; docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md, "After
 -- the lock")
 --   "A fixture completed within 48 hours of its original assignment remains
 --   in that gameweek." For 48 h after the kickoff the gameweek locked with,
---   the match stays in: if it is completed in that time it counts there, and
---   the gameweek waits for it. The tool refuses it until then
+--   every counted match stays in: if it is completed in that time it counts
+--   there, and the gameweek waits for it. The tool refuses it until then
 --   (fantasy_postponement_window_open: resolvable from ...); STEP 1 below
 --   says, for each held match, from when it can be taken out.
 --
@@ -37,23 +45,26 @@
 --   future assignment", and the game cannot do that yet (no double
 --   gameweeks). Taken out, the match counts for no gameweek, unless
 --   SportsMonks moves it into a round whose gameweek has not locked yet,
---   which then holds a club twice and cannot open: tell the developers. Left
---   in and completed later, it counts where it is. Check the match at the
---   league and at SportsMonks before you decide.
+--   which then holds a club twice and cannot open (the ops check
+--   `fantasy_gameweek_clubs` says so): tell the developers. Left in and
+--   completed later, it counts where it is. Check the match at the league and
+--   at SportsMonks before you decide.
 --
 -- HOW TO RUN
 --   Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor ->
---   New query. Make sure no other database work is running, and no Fantasy
---   season orchestrator run either (GitHub -> Actions: it is scheduled at
---   minute 12, and GitHub starts it late, at any minute).
---   1. Pause the Fantasy lifecycle tick, as AGENTS.md asks before a write that
---      touches Fantasy (this file refuses while it is on). Note first whether
---      it is on, to put it back:
+--   New query.
+--   1. Paste this WHOLE file and press Run, as it is. It only reads: it stops
+--      with "STEP 1" and lists every counted match the ops check holds against
+--      a locked or live gameweek, each with its assignment id and from when it
+--      can be taken out. This needs nothing paused.
+--   2. Before anything else: make sure no other database work is running, and
+--      no Fantasy season orchestrator run either (GitHub -> Actions: it is
+--      scheduled at minute 12, and GitHub starts it late, at any minute).
+--      Then pause the Fantasy lifecycle tick, as AGENTS.md asks before a write
+--      that touches Fantasy (from here on this file refuses while it is on).
+--      Note first whether it is on, to put it back:
 --        select lifecycle_tick_enabled from app_private.fantasy_automation_settings;
 --        select app_private.fantasy_automation_configure(false);
---   2. Paste this WHOLE file and press Run, as it is. It saves nothing: it
---      stops with "STEP 1" and lists every match held after the lock, each
---      with its assignment id.
 --   3. In the block below, set `target_assignment` to the assignment id of
 --      the one match you decided to take out, and `reason` to why (8 to 500
 --      characters, an apostrophe written twice as SQL wants it: 'l''équipe';
@@ -71,7 +82,7 @@
 --      file again. The result row lists the decisions recorded, this one
 --      first. Running it again changes nothing: the tool answers
 --      alreadyResolved.
---   5. Whatever the result, switch the tick back on if it was on at step 1:
+--   5. Whatever the result, switch the tick back on if it was on at step 2:
 --        select app_private.fantasy_automation_configure(true);
 --      Within 5 minutes the tick takes the gameweek to scoring once its other
 --      counted matches are final. Then dispatch the orchestrator rather than
@@ -110,23 +121,20 @@ begin
   if to_regprocedure('app_private.fantasy_resolve_frozen_assignment(uuid,text,text)') is null then
     raise exception 'stop: app_private.fantasy_resolve_frozen_assignment is not installed -- apply scripts/backend/apply-20260926003500-fantasy-resolve-postponed-after-lock.sql first';
   end if;
-  -- AGENTS.md: a write that touches Fantasy runs with the Fantasy lifecycle
-  -- tick paused.
-  if exists (select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled) then
-    raise exception 'stop: the Fantasy lifecycle tick is on -- pause it first with select app_private.fantasy_automation_configure(false); and switch it back on afterwards';
-  end if;
 
   -- STEP 1 (reads only): every counted match of a locked or live gameweek
-  -- that the ops check holds against it: postponed, cancelled or abandoned,
-  -- or moved past the gameweek's window (20260926003400, fantasy_scoring).
-  -- Each says from when the tool accepts it: the kickoff the gameweek locked
-  -- with plus the ruleset's post-lock completion window (48 h), as the tool
-  -- computes it.
-  select string_agg(format('%s GW%s (%s): %s v %s, %s, frozen kickoff %s UTC, now %s UTC, window ends %s UTC, %s -- assignment %s',
+  -- that the ops check holds against it (20260926003400, fantasy_scoring):
+  -- postponed, cancelled or abandoned; moved too late to be completed within
+  -- the rules' window (its kickoff + 2 h past it); not finished 3 h past its
+  -- due end (kickoff + 2 h); or not finished once the window is over. Each
+  -- says from when the tool accepts it: the kickoff the gameweek locked with
+  -- plus the ruleset's post-lock completion window (48 h), as the tool
+  -- computes it, and whether it is its gameweek's last counted match, which
+  -- the tool refuses.
+  select string_agg(format('%s GW%s (%s): %s v %s, %s, frozen kickoff %s UTC, now %s UTC, %s%s -- assignment %s',
       season.name, gameweek.sequence_number, gameweek.status, home.short_name, away.short_name,
       fixture.status, to_char(assignment.assigned_kickoff_at at time zone 'UTC', 'DD Mon HH24:MI'),
       to_char(fixture.kickoff_at at time zone 'UTC', 'DD Mon HH24:MI'),
-      to_char(gameweek.ends_at at time zone 'UTC', 'DD Mon HH24:MI'),
       case
         when fixture_rules.post_lock_completion_window_hours is null
           then 'not resolvable: the season''s ruleset has no post-lock completion window'
@@ -140,6 +148,10 @@ begin
             + make_interval(hours => fixture_rules.post_lock_completion_window_hours)) at time zone 'UTC',
             'DD Mon HH24:MI') || ' UTC'
       end,
+      case when not exists (select 1 from app.fantasy_fixture_assignments other
+          where other.gameweek_id = gameweek.id and other.superseded_at is null and other.counts_points
+            and other.id <> assignment.id)
+        then ', its gameweek''s last counted match: the tool refuses it, a developer is needed' else '' end,
       assignment.id),
     E'\n' order by assignment.assigned_kickoff_at, assignment.id)
   into held
@@ -155,11 +167,23 @@ begin
   where assignment.superseded_at is null and assignment.counts_points
     and fixture.status <> 'finished'
     and (fixture.status in ('postponed', 'cancelled', 'abandoned')
-      or (fixture.kickoff_at > assignment.assigned_kickoff_at and fixture.kickoff_at > gameweek.ends_at));
+      or (fixture.kickoff_at > assignment.assigned_kickoff_at
+        and fixture.kickoff_at + interval '2 hours' > assignment.assigned_kickoff_at
+          + make_interval(hours => coalesce(fixture_rules.post_lock_completion_window_hours, 48)))
+      or fixture.kickoff_at + interval '2 hours' < statement_timestamp() - interval '3 hours'
+      or assignment.assigned_kickoff_at
+        + make_interval(hours => coalesce(fixture_rules.post_lock_completion_window_hours, 48))
+        <= statement_timestamp());
 
   if target_assignment is null then
     raise exception 'STEP 1, nothing saved. Matches held after the lock:%', coalesce(E'\n' || held,
-      ' none: no counted match of a locked or live gameweek is postponed, cancelled, abandoned or moved past its window.');
+      ' none: no counted match of a locked or live gameweek is called off, moved too late for the rules'' window, overdue or past it.');
+  end if;
+
+  -- AGENTS.md: a write that touches Fantasy runs with the Fantasy lifecycle
+  -- tick paused. Only the listing above runs without.
+  if exists (select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled) then
+    raise exception 'stop: the Fantasy lifecycle tick is on -- pause it first with select app_private.fantasy_automation_configure(false); and switch it back on afterwards';
   end if;
 
   -- The match as it stands now. After a dry run it must still read

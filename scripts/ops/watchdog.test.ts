@@ -180,9 +180,15 @@ describe("production watchdog", () => {
         url,
         "secret",
       );
-    // Checks from a later migration need no change here: these three come
+    // Checks from a later migration need no change here: these four come
     // with 20260926003050 and 20260926003400.
     const added: Check[] = [
+      {
+        name: "fantasy_gameweek_clubs",
+        status: "fail",
+        detail:
+          "GW3 (scheduled, deadline 03 Oct 14:30 UTC) holds Raja Casablanca twice: Raja Casablanca v FAR Rabat, WAC v Raja Casablanca",
+      },
       {
         name: "fantasy_fixture_coverage",
         status: "fail",

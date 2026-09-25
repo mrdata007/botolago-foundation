@@ -33,9 +33,10 @@ const SITE_PAGES = ["/", "/matches", "/news", "/sitemap.xml"] as const;
 // Checks `app_private.ops_health_checks()` emits on every call. The deadline
 // watch is left out: it only runs while a Fantasy season is planned or active.
 // So are the checks migrations 20260926003050 and 20260926003400 add
-// (news_sitemap, fantasy_fixture_coverage, fantasy_scoring) until production
-// has them: they are reported whenever the database names them, and join this
-// list once every database the watchdog reads does.
+// (news_sitemap, fantasy_gameweek_clubs, fantasy_fixture_coverage,
+// fantasy_scoring) until production has them: they are reported whenever the
+// database names them, and join this list once every database the watchdog
+// reads does.
 export const REQUIRED_DATABASE_CHECKS = [
   "fantasy_lifecycle_tick",
   "fantasy_gameweek_lock",

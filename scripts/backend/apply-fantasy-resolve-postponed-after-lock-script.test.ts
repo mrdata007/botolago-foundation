@@ -175,7 +175,7 @@ describe(`apply-${VERSION}-fantasy-resolve-postponed-after-lock.sql`, () => {
     // The column count it expects is the number of columns it names.
     const columns = between("(attrelid, attname) in (", "  ) <> ");
     const named = columns.match(/\('[a-z_.]+'::regclass, '[a-z_]+'\)/g) ?? [];
-    expect(named.length).toBe(21);
+    expect(named.length).toBe(20);
     expect(preflight).toContain(`  ) <> ${named.length} then`);
     // The tool reads that window from the season's ruleset and refuses inside it
     // (docs/backend/FANTASY_RULES_V1.md), and the header says so.
@@ -215,6 +215,49 @@ describe(`apply-${VERSION}-fantasy-resolve-postponed-after-lock.sql`, () => {
       expect(migration).toContain(`message = '${code}'`);
     }
     expect(postflight).toContain(TOOL);
+  });
+
+  test("reports the matches the ops check holds, as the owner's procedure lists them", () => {
+    // The postflight and the result row count the set that
+    // scripts/backend/resolve-fantasy-postponed-assignment.sql lists and the
+    // ops check (20260926003400) holds against a gameweek: the same predicate.
+    const folded = (sql: string) => sql.replace(/\s+/g, " ");
+    const procedure = read("scripts/backend/resolve-fantasy-postponed-assignment.sql");
+    const predicate = folded(
+      procedure.slice(
+        procedure.indexOf(
+          "  where assignment.superseded_at is null and assignment.counts_points\n    and fixture.status <> 'finished'",
+        ),
+        procedure.indexOf(
+          "<= statement_timestamp());",
+          procedure.indexOf("and fixture.status <> 'finished'"),
+        ) + "<= statement_timestamp())".length,
+      ),
+    ).trim();
+    expect(predicate).toContain(
+      "fixture.kickoff_at + interval '2 hours' < statement_timestamp() - interval '3 hours'",
+    );
+    expect(occurrences(folded(between("do $postflight$", "$postflight$;")), predicate)).toBe(1);
+    expect(occurrences(folded(script.slice(script.indexOf("\nrollback;\n"))), predicate)).toBe(1);
+    // Nothing reads the gameweek's own window any more: moved means too late
+    // to be completed within the rules' window.
+    expect(script.replace(migration, "")).not.toContain("ends_at");
+    expect(migration).not.toContain("ends_at");
+  });
+
+  test("a replay is answered before the one-writer checks, and writes nothing", () => {
+    const replay = migration.indexOf(
+      "  if target.superseded_at is not null then\n    -- Already resolved by this tool",
+    );
+    const tick = migration.indexOf("message = 'fantasy_tick_must_be_paused'");
+    const jobs = migration.indexOf("perform app_private.hold_scheduled_jobs();");
+    expect(replay).toBeGreaterThan(0);
+    expect(replay).toBeLessThan(tick);
+    expect(replay).toBeLessThan(jobs);
+    // Every refusal of a match inside the window is the window's own, whatever
+    // holds it: no class is refused by kind.
+    expect(migration).not.toContain("fantasy_fixture_can_still_finish");
+    expect(migration).toContain("if statement_timestamp() < resolvable_at then");
   });
 
   test("the postflight writes nothing and never resolves a real assignment", () => {

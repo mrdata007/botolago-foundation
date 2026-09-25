@@ -1,8 +1,8 @@
 -- Regression suite for 20260926003500_fantasy_resolve_postponed_after_lock:
 -- app_private.fantasy_resolve_frozen_assignment, the owner's tool that takes a
--- counted match out of a gameweek that has locked, when the match was
--- postponed, cancelled or abandoned after the lock or moved past the
--- gameweek's window.
+-- counted match out of a gameweek that has locked once the rules no longer
+-- keep it there: 48 h after the kickoff it was frozen with, whatever kept it
+-- from finishing.
 --
 -- A six-club league plays GW1. Its middle match (clubs 3 v 4) is postponed
 -- after the lock; the other two are played. The gameweek is held. For 48 h
@@ -14,12 +14,14 @@
 -- defines. Rescheduled, the match does not come back to GW1 and goes nowhere
 -- else unless the provider moves it into a later round, which the
 -- next-gameweek opening then refuses (no double gameweeks yet: the rules'
--- "controlled future assignment" is not built). Also: every refusal, the
--- 48 h window for every kind of hold and from the season's ruleset,
--- idempotency, the lock order, and that no client role can call it. Every
--- kickoff sits at hh:17 so none reads as a 00:00 placeholder.
+-- "controlled future assignment" is not built) and the ops check
+-- fantasy_gameweek_clubs reports. Also: every refusal, the 48 h window for
+-- every state a counted match can be left in (47 h 59 min: refused; 48 h:
+-- taken out) and from the season's ruleset, idempotency (answered before the
+-- one-writer checks), the lock order, and that no client role can call it.
+-- Every kickoff sits at hh:17 so none reads as a 00:00 placeholder.
 begin;
-select extensions.plan(83);
+select extensions.plan(116);
 
 create function pg_temp.player(n integer) returns uuid language sql immutable as $$
   select ('d5' || lpad(n::text, 6, '0') || '-0000-4000-8000-000000000001')::uuid
@@ -163,6 +165,13 @@ begin
 end;
 $$;
 select pg_temp.hold_jobs();
+-- The refusal inside the rules' window names when the match becomes
+-- resolvable: its frozen kickoff + 48 h.
+create function pg_temp.window_open(p_assignment uuid) returns text language sql stable as $$
+  select 'fantasy_postponement_window_open: resolvable from '
+    || to_char((assigned_kickoff_at + interval '48 hours') at time zone 'UTC', 'DD Mon HH24:MI') || ' UTC'
+  from app.fantasy_fixture_assignments where id = p_assignment
+$$;
 
 -- ---------------------------------------------------------------------------
 -- No client can call it.
@@ -290,13 +299,15 @@ select extensions.is(
 update app.fixtures set status = 'postponed' where id = pg_temp.fixture(1, 2);
 select extensions.throws_ok(
   format($$select pg_temp.resolve(%L)$$, pg_temp.assignment(pg_temp.fixture(1, 1))),
-  'PT409', 'fantasy_fixture_can_still_finish', 'a match not started, its kickoff inside the window, is refused: it can still finish here');
+  'PT409', pg_temp.window_open(pg_temp.assignment(pg_temp.fixture(1, 1))),
+  'a match not started 7 h after its frozen kickoff is refused: the rules keep every counted match 48 h');
 update app.fixtures set status = 'live_first_half', period = 'first_half', home_score = 0, away_score = 0
 where id = pg_temp.fixture(1, 1);
 select extensions.is(pg_temp.advance(pg_temp.gw(1)) ->> 'status', 'live', 'the first kickoff takes GW1 live');
 select extensions.throws_ok(
   format($$select pg_temp.resolve(%L)$$, pg_temp.assignment(pg_temp.fixture(1, 1))),
-  'PT409', 'fantasy_fixture_can_still_finish', 'so is a match being played');
+  'PT409', pg_temp.window_open(pg_temp.assignment(pg_temp.fixture(1, 1))),
+  'so is a match being played');
 update app.fixtures set status = 'finished', period = 'post_match', home_score = 1, away_score = 0
 where id in (pg_temp.fixture(1, 1), pg_temp.fixture(1, 3));
 select extensions.throws_ok(
@@ -316,12 +327,6 @@ select extensions.ok(
   'fantasy_scoring warns at once, naming the match, until when the rules keep it, and what to run after: '
     || (pg_temp.scoring_check() ->> 'detail'));
 select set_config('test.assignment', pg_temp.assignment(pg_temp.fixture(1, 2))::text, true);
--- The refusal names when the match becomes resolvable: its frozen kickoff + 48 h.
-create function pg_temp.window_open(p_assignment uuid) returns text language sql stable as $$
-  select 'fantasy_postponement_window_open: resolvable from '
-    || to_char((assigned_kickoff_at + interval '48 hours') at time zone 'UTC', 'DD Mon HH24:MI') || ' UTC'
-  from app.fantasy_fixture_assignments where id = p_assignment
-$$;
 select extensions.throws_ok(
   format($$select pg_temp.resolve(%L)$$, current_setting('test.assignment')),
   'PT409', pg_temp.window_open(current_setting('test.assignment')::uuid),
@@ -352,7 +357,7 @@ select set_config('test.result', pg_temp.resolve(current_setting('test.assignmen
   '  Postponed by the league after the deadline, not replayed within 48 hours.  ')::text, true);
 select extensions.is(
   current_setting('test.result')::jsonb - 'resolvedAt' - 'auditEventId' - 'kickoffAt' - 'assignedKickoffAt'
-    - 'windowEndsAt' - 'resolvableFrom',
+    - 'resolvableFrom',
   jsonb_build_object('schemaVersion', 1, 'assignmentId', current_setting('test.assignment'),
     'fixtureId', pg_temp.fixture(1, 2), 'gameweekId', pg_temp.gw(1), 'gameweekSequence', 1,
     'gameweekStatus', 'live', 'fixtureStatus', 'postponed', 'hold', 'called_off',
@@ -417,6 +422,28 @@ select extensions.ok(
   and (select updated_at::text from app.fantasy_fixture_assignments
        where id = current_setting('test.assignment')::uuid) = current_setting('test.updated_at'),
   'and writes nothing: no second audit event, the first reason kept, the row not touched');
+-- A replay writes nothing, so it is answered before the one-writer checks:
+-- with the tick on and a scheduled job mid-run, it still answers.
+select app_private.fantasy_automation_configure(true);
+insert into cron.job_run_details (jobid, runid, job_pid, database, username, command, status, start_time)
+select jobid, 987654330, 0, current_database(), 'postgres', 'select 1', 'running', statement_timestamp()
+from cron.job order by jobid limit 1;
+select extensions.is(
+  (pg_temp.resolve(current_setting('test.assignment')::uuid, 'Run again while the tick is on.') - 'alreadyResolved'
+    - 'unfinishedFixturesLeft' - 'countedFixturesLeft')
+  || jsonb_build_object('audits', (select count(*) from app_private.admin_audit_events
+    where action = 'fantasy_fixture.resolve_frozen_assignment')),
+  (current_setting('test.result')::jsonb - 'alreadyResolved' - 'unfinishedFixturesLeft' - 'countedFixturesLeft')
+  || jsonb_build_object('audits', 1),
+  'a replay with the tick on and a scheduled job mid-run answers the recorded outcome, and writes nothing');
+select extensions.throws_ok(
+  format($$select pg_temp.resolve(%L)$$, pg_temp.assignment(pg_temp.fixture(1, 1))),
+  'PT409', 'fantasy_tick_must_be_paused', 'while an assignment not resolved yet is still refused with the tick on');
+select app_private.fantasy_automation_configure(false);
+select extensions.throws_ok(
+  format($$select pg_temp.resolve(%L)$$, pg_temp.assignment(pg_temp.fixture(1, 1))),
+  'PT409', 'scheduled_job_running', 'and with a scheduled job mid-run');
+delete from cron.job_run_details where runid = 987654330;
 
 -- ---------------------------------------------------------------------------
 -- The lifecycle moves on, and the ops check stops naming the match.
@@ -594,9 +621,20 @@ select extensions.is(
    where fixture_id = pg_temp.fixture(1, 2)),
   array['operator_deferred', null],
   'its history keeps the GW1 decision beside the new assignment');
--- But GW3 now holds clubs 3 and 4 twice, and the next-gameweek opening takes
--- one match per club per round: no double gameweeks yet. (GW1 and GW2 are
--- marked final by hand: only the opening's calendar check is under test.)
+-- But GW3 now holds clubs 3 and 4 twice. The ops check says so at once
+-- (fantasy_gameweek_clubs, 20260926003400), days before the next-gameweek
+-- opening, which takes one match per club per round, refuses GW3: no double
+-- gameweeks yet. (GW1 and GW2 are marked final by hand below: only the
+-- opening's calendar check is under test.)
+select extensions.is(
+  (select c from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') c
+   where c ->> 'name' = 'fantasy_gameweek_clubs'),
+  jsonb_build_object('name', 'fantasy_gameweek_clubs', 'status', 'warn', 'detail',
+    'GW3 (scheduled, deadline '
+    || (select to_char(deadline_at at time zone 'UTC', 'DD Mon HH24:MI') from app.fantasy_gameweeks
+        where id = pg_temp.gw(3))
+    || ' UTC) holds RC3 twice: RC3 v RC4, RC3 v RC4; it cannot open like this (fantasy_next_calendar_incomplete), and no tool takes a match out of a gameweek before its lock: a developer is needed (+1 more club(s) twice)'),
+  'the ops check warns at once, naming GW3 and the club twice in it');
 update app.fantasy_gameweeks set status = 'finalized', points_state = 'final', finalized_at = statement_timestamp(),
   scoring_input_version = 1
 where id in (pg_temp.gw(1), pg_temp.gw(2));
@@ -629,8 +667,9 @@ update app.fantasy_seasons set status = 'active' where id = 'd6300000-0000-4000-
 
 -- ---------------------------------------------------------------------------
 -- A cup whose GW1 is live, locked three days ago: matches cancelled,
--- abandoned, postponed and moved past the window, and the states the lock
--- never leaves behind.
+-- abandoned, postponed, moved too late for the window, and every other state
+-- a counted match can be left in; and the states the lock never leaves
+-- behind.
 -- ---------------------------------------------------------------------------
 insert into app.competitions (id, slug, name, short_name, competition_type, country_id)
 values ('d1000000-0000-4000-8000-000000000002', 'resolve-cup', 'Resolve Cup', 'RCU', 'cup',
@@ -657,9 +696,10 @@ values ('dc000000-0000-4000-8000-000000000001', 'd6300000-0000-4000-8000-0000000
   'd3000000-0000-4000-8000-000000000011', 1, 'Cup round 1', statement_timestamp() - interval '3 days',
   statement_timestamp() - interval '3 days', statement_timestamp() + interval '1 day', 'live', 'provisional');
 -- C1 cancelled, frozen 50 h ago; C2 finished; C3 frozen 47 h 59 min ago and
--- now at +3 days, past the window; C4 counted but never frozen; C5 frozen
--- but not counted; C6 suspended inside the window; C7 abandoned 10 h ago; C8
--- postponed, frozen 60 h ago.
+-- now at +3 days, too late to be completed in the window; C4 counted but
+-- never frozen; C5 frozen but not counted; C6 suspended an hour after its
+-- kickoff; C7 abandoned 10 h ago; C8 postponed, frozen 60 h ago; C9 put in
+-- every state below.
 insert into app.fixtures (id, competition_id, season_id, round_id, home_team_id, away_team_id,
   kickoff_at, status, home_score, away_score, finalized_at, provider_updated_at, source_sequence)
 select ('de000000-0000-4000-8000-00000000000' || c.n)::uuid, 'd1000000-0000-4000-8000-000000000002',
@@ -675,7 +715,8 @@ from (values
   (5, 2, 4, interval '4 hours', 'not_started', null),
   (6, 5, 1, interval '-1 hour', 'suspended', 0),
   (7, 2, 6, interval '-10 hours', 'abandoned', null),
-  (8, 3, 5, interval '-60 hours', 'postponed', null)
+  (8, 3, 5, interval '-60 hours', 'postponed', null),
+  (9, 4, 6, interval '-47 hours', 'not_started', null)
 ) as c(n, home, away, kickoff, status, score);
 create function pg_temp.cup(n integer) returns uuid language sql immutable as $$
   select ('de000000-0000-4000-8000-00000000000' || n)::uuid
@@ -699,7 +740,7 @@ select 'd6300000-0000-4000-8000-000000000002', f.id, 'dc000000-0000-4000-8000-00
   f.id <> pg_temp.cup(5)
 from app.fixtures f
 where f.id in (pg_temp.cup(2), pg_temp.cup(3), pg_temp.cup(4), pg_temp.cup(5), pg_temp.cup(6),
-  pg_temp.cup(7), pg_temp.cup(8));
+  pg_temp.cup(7), pg_temp.cup(8), pg_temp.cup(9));
 select extensions.throws_ok(
   format($$select pg_temp.resolve(%L)$$, pg_temp.assignment(pg_temp.cup(4))),
   'PT409', 'fantasy_assignment_not_frozen', 'an assignment the lock never froze is refused');
@@ -708,10 +749,101 @@ select extensions.throws_ok(
   'PT409', 'fantasy_assignment_not_counted', 'so is one that does not count');
 select extensions.throws_ok(
   format($$select pg_temp.resolve(%L)$$, pg_temp.assignment(pg_temp.cup(6))),
-  'PT409', 'fantasy_fixture_can_still_finish', 'and a match suspended inside the window, which can resume');
+  'PT409', pg_temp.window_open(pg_temp.assignment(pg_temp.cup(6))),
+  'a match suspended an hour after its frozen kickoff is refused until 48 h have passed');
+
+-- Every state a counted match can be left in, 47 h 59 min and 48 h after the
+-- kickoff it was frozen with: refused, then taken out, with the hold the ops
+-- check gives it (fantasy_scoring, 20260926003400). C9 is put in each state,
+-- frozen p_age ago with its kickoff moved p_moved on; each call is undone.
+create function pg_temp.resolved_as(p_status text, p_age interval, p_moved interval default interval '0')
+returns text language plpgsql as $$
+declare
+  answer text;
+begin
+  update app.fixtures set status = p_status::app.fixture_status, home_score = null, away_score = null,
+    kickoff_at = statement_timestamp() - p_age + p_moved
+  where id = pg_temp.cup(9);
+  update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - p_age
+  where id = pg_temp.assignment(pg_temp.cup(9));
+  begin
+    answer := 'taken out: ' || (pg_temp.resolve(pg_temp.assignment(pg_temp.cup(9)),
+      'Not completed within the window the rules allow.') ->> 'hold');
+    raise exception using errcode = 'P0001', message = 'undo';
+  exception
+    when raise_exception then null;
+    when others then
+      answer := sqlstate || ' ' || regexp_replace(sqlerrm, 'resolvable from .*$', 'resolvable from ...');
+  end;
+  return answer;
+end;
+$$;
+select set_config('app.allow_fixture_correction', 'on', true);
+select extensions.is(pg_temp.resolved_as('postponed', interval '47 hours 59 minutes'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...', 'postponed, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('postponed', interval '48 hours'), 'taken out: called_off',
+  'postponed, 48 h after it: taken out, recorded as called_off');
+select extensions.is(pg_temp.resolved_as('cancelled', interval '47 hours 59 minutes'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...', 'cancelled, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('cancelled', interval '48 hours'), 'taken out: called_off',
+  'cancelled, 48 h after it: taken out, recorded as called_off');
+select extensions.is(pg_temp.resolved_as('abandoned', interval '47 hours 59 minutes'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...', 'abandoned, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('abandoned', interval '48 hours'), 'taken out: called_off',
+  'abandoned, 48 h after it: taken out, recorded as called_off');
+select extensions.is(pg_temp.resolved_as('scheduled', interval '47 hours 59 minutes'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...', 'scheduled, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('scheduled', interval '48 hours'), 'taken out: unfinished',
+  'scheduled, 48 h after it: taken out, recorded as unfinished');
+select extensions.is(pg_temp.resolved_as('not_started', interval '47 hours 59 minutes'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...', 'not_started, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('not_started', interval '48 hours'), 'taken out: unfinished',
+  'not_started, 48 h after it: taken out, recorded as unfinished');
+select extensions.is(pg_temp.resolved_as('delayed', interval '47 hours 59 minutes'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...', 'delayed, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('delayed', interval '48 hours'), 'taken out: unfinished',
+  'delayed, 48 h after it: taken out, recorded as unfinished');
+select extensions.is(pg_temp.resolved_as('suspended', interval '47 hours 59 minutes'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...', 'suspended, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('suspended', interval '48 hours'), 'taken out: unfinished',
+  'suspended, 48 h after it: taken out, recorded as unfinished');
+select extensions.is(pg_temp.resolved_as('live_first_half', interval '47 hours 59 minutes'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...', 'live_first_half, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('live_first_half', interval '48 hours'), 'taken out: unfinished',
+  'live_first_half, 48 h after it: taken out, recorded as unfinished');
+select extensions.is(pg_temp.resolved_as('half_time', interval '47 hours 59 minutes'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...', 'half_time, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('half_time', interval '48 hours'), 'taken out: unfinished',
+  'half_time, 48 h after it: taken out, recorded as unfinished');
+select extensions.is(pg_temp.resolved_as('live_second_half', interval '47 hours 59 minutes'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...', 'live_second_half, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('live_second_half', interval '48 hours'), 'taken out: unfinished',
+  'live_second_half, 48 h after it: taken out, recorded as unfinished');
+select extensions.is(pg_temp.resolved_as('extra_time', interval '47 hours 59 minutes'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...', 'extra_time, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('extra_time', interval '48 hours'), 'taken out: unfinished',
+  'extra_time, 48 h after it: taken out, recorded as unfinished');
+select extensions.is(pg_temp.resolved_as('penalties', interval '47 hours 59 minutes'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...', 'penalties, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('penalties', interval '48 hours'), 'taken out: unfinished',
+  'penalties, 48 h after it: taken out, recorded as unfinished');
+select extensions.is(pg_temp.resolved_as('not_started', interval '47 hours 59 minutes', interval '3 days'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...',
+  'moved 3 days on, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('not_started', interval '48 hours', interval '3 days'), 'taken out: moved',
+  'moved 3 days on, 48 h after it: taken out, recorded as moved');
+select extensions.is(pg_temp.resolved_as('not_started', interval '47 hours 59 minutes', interval '43 hours'),
+  'PT409 fantasy_postponement_window_open: resolvable from ...',
+  'moved 43 h on, still in time to be completed in the window, 47 h 59 min after its frozen kickoff: refused');
+select extensions.is(pg_temp.resolved_as('not_started', interval '48 hours', interval '43 hours'),
+  'taken out: unfinished', 'and 48 h after it, not finished: taken out as unfinished, not as moved');
+select set_config('app.allow_fixture_correction', 'off', true);
+select extensions.is(
+  (select count(*)::integer from app_private.admin_audit_events where action = 'fantasy_fixture.resolve_frozen_assignment'),
+  1, 'each of those was undone: the league''s one resolution is still the only one');
 
 -- The rules keep every kind of hold for 48 h: abandoned, moved and cancelled
--- as well as postponed.
+-- as well as postponed, and every other, above.
 select extensions.throws_ok(
   format($$select pg_temp.resolve(%L)$$, pg_temp.assignment(pg_temp.cup(7))),
   'PT409', pg_temp.window_open(pg_temp.assignment(pg_temp.cup(7))),
@@ -719,7 +851,7 @@ select extensions.throws_ok(
 select extensions.throws_ok(
   format($$select pg_temp.resolve(%L)$$, pg_temp.assignment(pg_temp.cup(3))),
   'PT409', pg_temp.window_open(pg_temp.assignment(pg_temp.cup(3))),
-  'so is a match moved past the window, 47 h 59 min after the kickoff it was frozen with');
+  'so is a match moved too late for the window, 47 h 59 min after the kickoff it was frozen with');
 update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - interval '47 hours 59 minutes'
 where id = pg_temp.assignment(pg_temp.cup(1));
 select extensions.throws_ok(
@@ -744,8 +876,8 @@ select extensions.is(
 update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - interval '48 hours'
 where id = pg_temp.assignment(pg_temp.cup(3));
 select extensions.is(
-  pg_temp.resolve(pg_temp.assignment(pg_temp.cup(3)), 'Moved by the league to after the gameweek''s window.') ->> 'hold',
-  'moved', 'so is one moved past the window, once 48 h have passed');
+  pg_temp.resolve(pg_temp.assignment(pg_temp.cup(3)), 'Moved by the league to after the window the rules allow.') ->> 'hold',
+  'moved', 'so is one moved too late for the window, once 48 h have passed');
 
 -- The window is the ruleset's own (app.fantasy_fixture_rules), read where the
 -- ops check reads it.

@@ -4,9 +4,9 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * The guarded script that puts 20260926003400 (the `fantasy_fixture_coverage`
- * and `fantasy_scoring` health checks, audit A08 / DB-03) on production,
- * after 20260926003050. Like the other apply
+ * The guarded script that puts 20260926003400 (the `fantasy_gameweek_clubs`,
+ * `fantasy_fixture_coverage` and `fantasy_scoring` health checks, audit A08 /
+ * DB-03) on production, after 20260926003050. Like the other apply
  * scripts, it records the migration file whole in the history and runs that
  * record only after its sha256 matches the repository file, so the file must
  * be carried byte for byte, once, and the hash it checks must be the file's.
@@ -204,14 +204,14 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
     expect(script).not.toContain("ops_alert_test");
   });
 
-  test("afterwards: grants, the untouched alert path and switch, both new checks", () => {
+  test("afterwards: grants, the untouched alert path and switch, the three new checks", () => {
     for (const check of [
       " can run an owner-only health function",
       "api.service_ops_health() is executable by the wrong roles",
       "the alert path changed",
       "the alert switch moved",
       "the health answer is not what the migration defines",
-      "added constant text[] := array['fantasy_fixture_coverage', 'fantasy_scoring'];",
+      "added constant text[] := array['fantasy_gameweek_clubs', 'fantasy_fixture_coverage', 'fantasy_scoring'];",
       "history row missing",
     ]) {
       expect({ check, found: script.includes(check) }).toEqual({ check, found: true });
@@ -229,19 +229,39 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
     }
   });
 
-  test("a match called off or moved after the lock fails the scoring check once the rules stop keeping it", () => {
-    // FANTASY_RULES_V1.md keeps such a match in its gameweek for the ruleset's
-    // post-lock completion window (48 h) after its frozen kickoff. The check
-    // fails when that window ends, the moment 20260926003500's tool accepts
-    // the match, and names the owner's procedure, which must exist.
+  test("any counted match not finished once the rules stop keeping it fails the scoring check", () => {
+    // FANTASY_RULES_V1.md keeps a counted match in its gameweek for the
+    // ruleset's post-lock completion window (48 h) after its frozen kickoff,
+    // whatever holds it. The check fails when that window ends for any match
+    // still not finished, the moment 20260926003500's tool accepts it, and
+    // names the owner's procedure, which must exist; a row that stopped
+    // following its match fails earlier, 6 h past its due end.
     const procedure = "scripts/backend/resolve-fantasy-postponed-assignment.sql";
-    expect(migration).toContain(`this fails and ${procedure} takes it out'`);
-    expect(migration).toContain(`the rules allow: take it out with ${procedure}'`);
+    const folded = migration.replace(/\s+/g, " ");
+    expect(migration).toContain(`else '${procedure} takes it out' end;`);
+    expect(migration).toContain(`': take it out with ${procedure}'`);
     expect(existsSync(join(root, procedure))).toBe(true);
-    expect(migration).toContain("when 'called_off' then k.resolvable_at <= now_at");
-    expect(migration).toContain("when 'moved' then k.resolvable_at <= now_at");
-    expect(migration).toContain("when 'unfinished' then k.due_end < now_at - interval '6 hours'");
+    expect(folded).toContain(
+      "k.hold is not null and (k.hold in ('called_off', 'moved') or k.due_end < now_at - interval '3 hours' or k.resolvable_at <= now_at) as held",
+    );
+    expect(folded).toContain(
+      "k.hold = 'unfinished' and k.due_end < now_at - interval '6 hours' as stale",
+    );
+    expect(folded).toContain("k.hold is not null and k.resolvable_at <= now_at as past_window");
+    expect(folded).toContain("count(*) filter (where m.past_window or m.stale) as stuck");
+    // Moved means too late to be completed inside the window, not past the
+    // gameweek's own window, which the check no longer reads.
+    expect(folded).toContain(
+      "when f.kickoff_at > a.assigned_kickoff_at and f.kickoff_at + interval '2 hours' > r.resolvable_at then 'moved'",
+    );
+    expect(migration).not.toContain("ends_at");
     expect(migration).toContain("coalesce(fixture_rules.post_lock_completion_window_hours, 48)");
+    // Where the tool cannot free the gameweek (it refuses the last counted
+    // match), the check says a developer is needed instead of naming it.
+    expect(folded).toContain("when scoring.past_window < scoring.matches then");
+    expect(migration).toContain(
+      "': a developer is needed (no tool yet for a gameweek whose every match was called off)'",
+    );
     expect(migration).not.toMatch(/no tool (?:does it|applies one|can free)/);
     // The ruleset table the check now reads is checked for before any write.
     expect(script.indexOf("to_regclass('app.fantasy_fixture_rules') is null")).toBeGreaterThan(0);
@@ -252,6 +272,31 @@ describe(`apply-${VERSION}-ops-health-fantasy-coverage.sql`, () => {
     expect(script).toContain(
       "scripts/backend/apply-20260926003500-fantasy-resolve-postponed-after-lock.sql:\n--   apply that one right after this one.",
     );
+  });
+
+  test("a club twice in a gameweek not locked yet warns, and fails within 24 h of its deadline", () => {
+    const folded = migration.replace(/\s+/g, " ");
+    expect(folded).toContain("'name', 'fantasy_gameweek_clubs'");
+    expect(folded).toContain("where g.status in ('scheduled', 'open')");
+    expect(folded).toContain("having count(distinct f.id) > 1");
+    expect(folded).toContain(
+      "case when doubled.imminent > 0 then 'fail' when doubled.clubs > 0 then 'warn' else 'ok' end",
+    );
+    expect(folded).toContain(
+      "count(*) filter (where d.deadline_at <= now_at + interval '24 hours') as imminent",
+    );
+    expect(folded).toContain("(fantasy_next_calendar_incomplete)");
+    // The watchdog reports it by its own name without requiring it.
+    const watchdog = read("scripts/ops/watchdog.ts");
+    const required = watchdog.slice(
+      watchdog.indexOf("export const REQUIRED_DATABASE_CHECKS = ["),
+      watchdog.indexOf(
+        "] as const;",
+        watchdog.indexOf("export const REQUIRED_DATABASE_CHECKS = ["),
+      ),
+    );
+    expect(required.length).toBeGreaterThan(0);
+    expect(required).not.toContain("fantasy_gameweek_clubs");
   });
 
   test("the postflight writes nothing and nothing in the script sends an alert", () => {
