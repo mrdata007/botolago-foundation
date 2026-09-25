@@ -298,6 +298,26 @@ async function workflowRuns(
     : { invalid: true };
 }
 
+/**
+ * How far past the watchdog's `now` a run's creation may lie. `now` is read
+ * once, at start-up, and a run GitHub creates while this job is still
+ * running (for up to its `timeout-minutes: 10`, .github/workflows/ops-watchdog.yml)
+ * is newer than it: the orchestrator's schedule (12 past) falls five minutes
+ * after this one's (7 past), and GitHub starts both late.
+ */
+const RUN_CREATED_AFTER_NOW_MS = 10 * 60_000;
+
+/**
+ * Hours since GitHub created the run: 0 for one created since this job
+ * started, `null` for a time that cannot be read or lies further ahead than
+ * that, which must not make a stopped workflow look fresh.
+ */
+function runAgeHours(run: WorkflowRun, now: Date): number | null {
+  const age = now.getTime() - Date.parse(run.created_at);
+  if (!Number.isFinite(age) || age < -RUN_CREATED_AFTER_NOW_MS) return null;
+  return Math.max(0, age) / 3_600_000;
+}
+
 /** Has the season orchestrator run recently, and did its last run pass? */
 export async function orchestratorRecency(
   fetchImpl: Fetch,
@@ -328,8 +348,8 @@ export async function orchestratorRecency(
   }
   const latest = runs[0];
   if (!latest) return { name: "season_orchestrator", status: "fail", detail: "no run found" };
-  const hours = (now.getTime() - Date.parse(latest.created_at)) / 3_600_000;
-  if (!Number.isFinite(hours) || hours < 0) {
+  const hours = runAgeHours(latest, now);
+  if (hours === null) {
     return {
       name: "season_orchestrator",
       status: "fail",
@@ -519,8 +539,8 @@ export async function watchdogSchedule(
         "GitHub has never started this watchdog on its schedule; it runs only after the orchestrator and by hand",
     };
   }
-  const hours = (now.getTime() - Date.parse(latest.created_at)) / 3_600_000;
-  if (!Number.isFinite(hours) || hours < 0) {
+  const hours = runAgeHours(latest, now);
+  if (hours === null) {
     return {
       name: "watchdog_schedule",
       status: "warn",

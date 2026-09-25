@@ -127,6 +127,52 @@ describe("production watchdog", () => {
     }
   });
 
+  // `now` is read when the watchdog starts; the checks before this one take
+  // seconds, and GitHub may create a run in them.
+  test("a run GitHub creates while the watchdog runs is current, not an invalid timestamp", async () => {
+    const now = new Date("2026-09-25T12:12:00Z");
+    const orchestrator = (createdAt: string) =>
+      orchestratorRecency(
+        async () =>
+          Response.json({
+            workflow_runs: [
+              { created_at: createdAt, status: "queued", conclusion: null },
+              { created_at: "2026-09-25T11:12:30Z", status: "completed", conclusion: "success" },
+            ],
+          }),
+        "mrdata007/botolago-foundation",
+        "token",
+        now,
+      );
+    expect(await orchestrator("2026-09-25T12:12:40Z")).toEqual({
+      name: "season_orchestrator",
+      status: "ok",
+      detail: "last run 0 h ago, last completed: success",
+    });
+    // A day ahead is no clock this job can explain, and would hide a stopped
+    // orchestrator for that day.
+    expect(await orchestrator("2026-09-26T12:12:40Z")).toEqual({
+      name: "season_orchestrator",
+      status: "fail",
+      detail: "latest run has an invalid timestamp",
+    });
+    const schedule = (createdAt: string) =>
+      watchdogSchedule(
+        async () =>
+          Response.json({
+            workflow_runs: [{ created_at: createdAt, status: "queued", conclusion: null }],
+          }),
+        "mrdata007/botolago-foundation",
+        "token",
+        now,
+      );
+    expect((await schedule("2026-09-25T12:13:00Z")).status).toBe("ok");
+    expect(await schedule("2026-09-26T12:13:00Z")).toMatchObject({
+      status: "warn",
+      detail: "latest scheduled run has an invalid timestamp",
+    });
+  });
+
   test("any check the database adds is reported by its own name, and nothing it says is dropped", async () => {
     const health = (payload: unknown) =>
       databaseHealth(
