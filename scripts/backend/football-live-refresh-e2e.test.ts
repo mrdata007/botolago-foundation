@@ -188,9 +188,11 @@ function providerDetails(row: Record<string, unknown>, events: unknown[]) {
     typeId: number,
     position: number,
     order: number | null,
+    name: string | null = null,
   ) => ({
     team_id: team,
     player_id: player,
+    player_name: name,
     type_id: typeId,
     position_id: position,
     formation_position: order,
@@ -211,6 +213,8 @@ function providerDetails(row: Record<string, unknown>, events: unknown[]) {
         lineup(PROVIDER.home, PROVIDER.homeWinger, 11, 27, 11),
         lineup(PROVIDER.away, PROVIDER.awayStriker, 11, 27, 9),
         lineup(PROVIDER.away, PROVIDER.awayMaker, 12, 26, null),
+        // A new signing BotolaGO's catalogue does not know yet.
+        lineup(PROVIDER.away, 990_299, 11, 25, 4, "Provider Newcomer"),
       ],
       formations: [
         { participant_id: PROVIDER.home, formation: "4-4-2", location: "home" },
@@ -377,8 +381,8 @@ describe("live scores, provider to screen", () => {
           rejected: 0,
           events: 4,
           statistics: 6,
-          lineupPlayers: 4,
-          unmappedPlayers: 0,
+          lineupPlayers: 5,
+          unmappedPlayers: 1,
           pressure: 3,
           absences: 1,
           addOnsUnavailable: 0,
@@ -481,7 +485,9 @@ describe("live scores, provider to screen", () => {
             IDS.away,
             "4-3-3",
             [
-              ["A. Striker", "starting", 1],
+              // Named by the provider, in the provider's order, without a page.
+              ["Provider Newcomer", "starting", 1],
+              ["A. Striker", "starting", 2],
               ["A. Maker", "bench", 1],
             ],
           ],

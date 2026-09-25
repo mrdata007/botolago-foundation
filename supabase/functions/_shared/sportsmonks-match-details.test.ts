@@ -173,7 +173,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
       lineups: [
         lineupRow(1, HOME, 401, 11, { position_id: 24, formation_position: 1, jersey_number: 1 }),
         lineupRow(2, HOME, 402, 11, { position_id: 27, formation_position: 11, jersey_number: 9 }),
-        lineupRow(3, HOME, null, 11, { formation_position: 6 }),
+        lineupRow(3, HOME, null, 11, { formation_position: 6, player_name: "Home Unnamed" }),
         lineupRow(4, HOME, 405, 12, { position_id: null, jersey_number: 0 }),
         lineupRow(5, AWAY, 501, 11, { position_id: 27, formation_position: 10 }),
         lineupRow(6, 4242, 999, 11),
@@ -342,6 +342,7 @@ describe("normalizeMatchDetails", () => {
         players: [
           {
             playerExternalId: "401",
+            playerName: "Player 401",
             slot: "starting",
             position: "goalkeeper",
             shirtNumber: 1,
@@ -349,20 +350,29 @@ describe("normalizeMatchDetails", () => {
           },
           {
             playerExternalId: "402",
+            playerName: "Player 402",
             slot: "starting",
             position: "forward",
             shirtNumber: 9,
             order: 11,
           },
-          // The provider's anonymous starter: sent, so the database counts it.
+          // The provider's starter with no id: sent with the name it has.
           {
             playerExternalId: null,
+            playerName: "Home Unnamed",
             slot: "starting",
             position: "midfielder",
             shirtNumber: 8,
             order: 6,
           },
-          { playerExternalId: "405", slot: "bench", position: null, shirtNumber: null, order: 103 },
+          {
+            playerExternalId: "405",
+            playerName: "Player 405",
+            slot: "bench",
+            position: null,
+            shirtNumber: null,
+            order: 103,
+          },
         ],
       },
       {
@@ -372,6 +382,7 @@ describe("normalizeMatchDetails", () => {
         players: [
           {
             playerExternalId: "501",
+            playerName: "Player 501",
             slot: "starting",
             position: "forward",
             shirtNumber: 8,
