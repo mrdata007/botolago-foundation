@@ -23,6 +23,8 @@ export const PREDICTIONS_ERROR_CODES = [
   "league_access_denied",
   "league_create_limit_reached",
   "predictions_leagues_unavailable",
+  "match_vote_unavailable",
+  "match_vote_closed",
   "network",
   "data_unavailable",
 ] as const;

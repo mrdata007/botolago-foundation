@@ -11,6 +11,8 @@ import type {
   LeaderboardScope,
   LeagueStandingsDto,
   LeaveLeagueDto,
+  MatchVoteInput,
+  MatchVotesDto,
   MyLeaguesDto,
   MyPredictionsDto,
   PredictionInput,
@@ -125,5 +127,11 @@ export const predictionsService = {
   },
   resetInviteCode(leagueId: string): Promise<ResetInviteCodeDto> {
     return getPredictionsRepository().resetLeagueInviteCode(leagueId, context());
+  },
+  matchVotes(fixtureId: string, signal?: AbortSignal): Promise<MatchVotesDto> {
+    return getPredictionsRepository().getMatchVotes(fixtureId, context(signal));
+  },
+  castMatchVote(input: MatchVoteInput): Promise<MatchVotesDto> {
+    return getPredictionsRepository().castMatchVote(input, context());
   },
 };

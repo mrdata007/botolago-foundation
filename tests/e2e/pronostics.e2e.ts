@@ -5,6 +5,7 @@ import { PRONOSTICS_PROMOTED } from "../../src/lib/feature-flags";
 import {
   expectNoHorizontalOverflow,
   expectNothingOffScreen,
+  expectSwipeSlidesFit,
   gotoHydrated,
   initializeLanguage,
   observePage,
@@ -31,6 +32,7 @@ const INVITE_CODE = "A1B2C3D4E5F60718293A4B5C6D7E8F90";
 /** `MOCK_DEMO_EMAIL` / `MOCK_DEMO_PASSWORD` in auth-mock.ts. */
 const DEMO = { email: "demo@botolago.ma", password: "demo1234" };
 const GUEST_STORE = "botolago.predictions.guest.v1";
+const GUEST_VOTES = "botolago.predictions.guest-votes.v1";
 
 type Language = "fr" | "ar";
 type Key = keyof typeof dictionaries.fr;
@@ -361,6 +363,118 @@ test.describe("entry points, once promoted", () => {
       await expectNothingOffScreen(page);
       await gotoHydrated(page, "/pronostics?journee=14", lang);
       await expect(valueOf(page, NEXT, "home")).toHaveText("1");
+
+      await diagnostics.verify(testInfo);
+    });
+  }
+});
+
+test.describe("match votes, Sofascore style", () => {
+  test.skip(!PRONOSTICS_PROMOTED, "PRONOSTICS_PROMOTED is off: the match card is hidden");
+
+  const dot = (page: Page, lang: Language, n: number) =>
+    page.getByTestId("match-prediction-deck").getByRole("button", {
+      name: copy(lang, "predictions.votes.slide").replace("{n}", String(n)).replace("{total}", "4"),
+      exact: true,
+    });
+  const pill = (page: Page, question: string, choice: string) =>
+    page.getByTestId(`match-vote-${question}`).locator(`[data-choice="${choice}"]`);
+  // After a vote the answers are results; the pencil brings the choice back.
+  const edit = (page: Page, lang: Language, question: string) =>
+    page
+      .getByTestId(`match-vote-${question}`)
+      .getByRole("button", { name: copy(lang, "predictions.votes.edit"), exact: true });
+
+  for (const lang of ["fr", "ar"] as const) {
+    test(`${lang}: a visitor swipes to the votes, votes, and sees the fans' shares`, async ({
+      page,
+    }, testInfo) => {
+      const diagnostics = observePage(page);
+      await page.setViewportSize({ width: 360, height: 800 });
+      await initializeLanguage(page, lang);
+      await gotoHydrated(page, `/matches/${NEXT}`, lang);
+
+      // Four cards: the score, then who wins, both score, who scores first.
+      await expect(dot(page, lang, 1)).toHaveAttribute("aria-current", "true");
+      await expect(page.getByTestId(`prediction-${NEXT}`)).toBeInViewport();
+      await expectNothingOffScreen(page);
+      await expectSwipeSlidesFit(page);
+
+      await dot(page, lang, 2).click();
+      const winner = page.getByTestId("match-vote-winner");
+      await expect(winner).toBeInViewport({ ratio: 0.9 });
+      await expect(dot(page, lang, 2)).toHaveAttribute("aria-current", "true");
+      await expect(winner).toContainText(copy(lang, "predictions.votes.cta"));
+      await expect(winner).not.toContainText(/[%٪]/);
+
+      await pill(page, "winner", "away").click();
+      await expect(pill(page, "winner", "away")).toHaveAttribute("data-mine", "true");
+      await expect(pill(page, "winner", "home")).toHaveAttribute("data-mine", "false");
+      for (const choice of ["home", "draw", "away"])
+        await expect(pill(page, "winner", choice)).toContainText(/\d[\s\u200e\u200f]*[%٪]/);
+      await expect(winner).toContainText(
+        copy(lang, "predictions.votes.total").split("{n}")[0]!.trim(),
+      );
+      await expect(page.getByTestId("match-votes-phone")).toBeVisible();
+      await expectNothingOffScreen(page);
+      await expectSwipeSlidesFit(page);
+
+      // Changed with the pencil, as on Sofascore: the choice comes back,
+      // the current answer marked, and the new one is kept.
+      await edit(page, lang, "winner").click();
+      await expect(winner).toContainText(copy(lang, "predictions.votes.cta"));
+      await expect(pill(page, "winner", "away")).toHaveAttribute("aria-pressed", "true");
+      await pill(page, "winner", "home").click();
+      await expect(pill(page, "winner", "home")).toHaveAttribute("data-mine", "true");
+      await expect(pill(page, "winner", "away")).toHaveAttribute("data-mine", "false");
+
+      // Kept on the phone across a reload.
+      await reloadHydrated(page, lang);
+      await expect(pill(page, "winner", "home")).toHaveAttribute("data-mine", "true");
+
+      // A swipe to the last card moves the dots with it.
+      await page.getByTestId("match-vote-first_goal").scrollIntoViewIfNeeded();
+      await page
+        .getByTestId("match-prediction-deck")
+        .locator("[data-swipe-row] > *")
+        .last()
+        .evaluate((slide) => slide.scrollIntoView({ inline: "start", block: "nearest" }));
+      await expect(dot(page, lang, 4)).toHaveAttribute("aria-current", "true");
+      await pill(page, "first_goal", "none").click();
+      await expect(pill(page, "first_goal", "none")).toHaveAttribute("data-mine", "true");
+      await expectNothingOffScreen(page);
+
+      await diagnostics.verify(testInfo);
+    });
+
+    test(`${lang}: a visitor's vote becomes the account's at sign-in`, async ({
+      page,
+    }, testInfo) => {
+      const diagnostics = observePage(page);
+      await page.setViewportSize({ width: 390, height: 860 });
+      await initializeLanguage(page, lang);
+      await gotoHydrated(page, `/matches/${NEXT}`, lang);
+
+      await dot(page, lang, 3).click();
+      await pill(page, "both_score", "yes").click();
+      await expect(pill(page, "both_score", "yes")).toHaveAttribute("data-mine", "true");
+
+      await signIn(page, lang, `/matches/${NEXT}`);
+      await dot(page, lang, 3).click();
+      await expect(pill(page, "both_score", "yes")).toHaveAttribute("data-mine", "true");
+      await expect(page.getByTestId("match-votes-phone")).toHaveCount(0);
+      await expect
+        .poll(() => page.evaluate((key) => window.localStorage.getItem(key), GUEST_VOTES))
+        .toBeNull();
+
+      // Changed on the account with the pencil, and still there after a reload.
+      await edit(page, lang, "both_score").click();
+      await pill(page, "both_score", "no").click();
+      await expect(pill(page, "both_score", "no")).toHaveAttribute("data-mine", "true");
+      await reloadHydrated(page, lang);
+      await dot(page, lang, 3).click();
+      await expect(pill(page, "both_score", "no")).toHaveAttribute("data-mine", "true");
+      await expect(pill(page, "both_score", "yes")).toHaveAttribute("data-mine", "false");
 
       await diagnostics.verify(testInfo);
     });

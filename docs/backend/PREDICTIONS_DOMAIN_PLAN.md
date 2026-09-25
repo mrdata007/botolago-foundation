@@ -33,8 +33,10 @@ Tests: `supabase/tests/database/predictions_{rules,play,claim,scoring,leaderboar
 
 **Built since** (#200, #202): the app (data layer, screens, entry points, FR/AR
 text, the Arabic reviewed), audience measurement (Seline) and the
-privacy-policy update, the production apply scripts. **Still to do:** part 6 on
-production, then the rollout stages in the runbook.
+privacy-policy update, the production apply scripts. Then, on the owner's
+decision of 25 Sept, the fan votes on match pages (who wins, both teams score,
+who scores first; for fun, no points; runbook, "Match votes"). **Still to do:**
+part 6 on production.
 
 **Decisions** (24 Sept 2026):
 
