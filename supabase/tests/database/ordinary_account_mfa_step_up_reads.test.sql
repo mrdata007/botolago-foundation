@@ -13,7 +13,7 @@
 -- saved mark, the match votes' own choices) answer E at aal1 as they answer a
 -- visitor.
 begin;
-select extensions.plan(42);
+select extensions.plan(53);
 
 create function pg_temp.id(n integer) returns uuid language sql immutable as $$
   select ('a3b30000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid
@@ -287,52 +287,111 @@ select extensions.ok(
   'and no API role has USAGE on app_private: a stored view or policy reaches them by OID alone'
 );
 
--- Every api function a browser can call that reads the caller -- auth.uid()
--- or auth.jwt() in its own body, or in an app_private helper it calls, at any
--- depth -- runs the step-up, or is a staff RPC behind its own stricter check,
--- or is on the list below. A helper that applies the step-up itself (the News
--- card) does not count as reading the caller. A new owner read that skips the
--- step-up fails here.
-select extensions.is(
-  (with recursive fn as (
-     select p.oid, n.nspname, p.proname, p.prosrc
+-- The completeness checks. A new owner read that skips the step-up fails
+-- here, and scripts/backend/apply-20260926003100-ordinary-account-mfa-step-up.sql
+-- runs the two queries below, word for word, on production's catalog.
+--
+-- Functions: every api function a browser can call that reads the caller
+-- runs the step-up, or is one of the staff RPCs named below (each behind its
+-- own stricter staff check, which it must still call), or is one of the three
+-- exceptions. A function reads the caller when auth.uid(), auth.jwt(),
+-- auth.email() or the request.jwt settings are in its code, or in an api or
+-- app_private function it calls, at any depth, or when it is SECURITY INVOKER:
+-- then everything it reads is filtered by the caller's row-level security.
+-- "Its code" is pg_get_functiondef with the comments taken out: a SQL-standard
+-- (BEGIN ATOMIC) body is read as well as a quoted one, and a comment neither
+-- applies the step-up nor reads the caller. Applying the step-up, or a staff
+-- check, means calling it: a string that only names one does not count (its
+-- statements are read with their string literals blanked too). A helper that
+-- applies the step-up itself (the News card) does not count as reading the
+-- caller.
+create function pg_temp.unguarded_api_functions() returns text[] language sql stable as $check$
+  with recursive source as (
+     select p.oid, n.nspname, p.proname, p.prosecdef,
+       regexp_replace(pg_get_functiondef(p.oid),
+         $re$('(?:[^']|'')*')|--[^\n]*|/\*(?:[^*]|\*+[^*/])*\*+/$re$, '\1', 'g') as code
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-     where n.nspname in ('api', 'app_private')
+     where n.nspname in ('api', 'app_private') and p.prokind in ('f', 'p')
+   ),
+   fn as (
+     select source.*, regexp_replace(code, $re$'(?:[^']|'')*'$re$, '''''', 'g') as statements
+     from source
    ),
    applies_step_up as (
      select oid from fn
-     where prosrc ~ 'app_private\.(assert_mfa_step_up|require_mfa_step_up|mfa_step_up_satisfied)\('
+     where statements ~ 'app_private\.(assert_mfa_step_up|require_mfa_step_up|mfa_step_up_satisfied)\('
    ),
    calls as (
      select distinct f.oid as caller, g.oid as callee
      from fn f
-     cross join lateral regexp_matches(f.prosrc, 'app_private\.([a-z_0-9]+)\s*\(', 'g') as m(name)
-     join fn g on g.nspname = 'app_private' and g.proname = m.name[1]
+     cross join lateral regexp_matches(f.code, '(api|app_private)\.([a-z_0-9]+)\s*\(', 'g') as m(name)
+     join fn g on g.nspname = m.name[1] and g.proname = m.name[2] and g.oid <> f.oid
    ),
    reads_caller(oid) as (
      select f.oid from fn f
-     where f.prosrc ~ 'auth\.(uid|jwt)\(\)' and f.oid not in (select oid from applies_step_up)
+     where f.code ~ 'auth\.(uid|jwt|email)\(\)|request\.jwt' and f.oid not in (select oid from applies_step_up)
      union
      select c.caller from calls c join reads_caller r on r.oid = c.callee
      where c.caller not in (select oid from applies_step_up)
    )
-   select array_agg(f.proname::text order by f.proname)
-   from reads_caller r join fn f on f.oid = r.oid
+   select coalesce(array_agg(f.proname::text order by f.proname), '{}')
+   from fn f
    where f.nspname = 'api'
      and has_function_privilege('authenticated', f.oid, 'execute')
-     and f.prosrc !~ 'app_private\.(admin_assert_permission|admin_assert_principal|has_editorial_role)\('),
-  array[
-    -- The staff console reads it at aal1 to show its own step-up; an ordinary
-    -- account gets staff_access_denied (20260926003100, "Not guarded").
-    'get_my_staff_context',
-    -- The round and its matches, the same for everyone: auth.uid() only
-    -- decides whether a tester may see Pronostics while it is testers-only.
-    'predictions_round',
-    -- Sign-out: someone who abandons the challenge must still be able to leave.
-    'record_session_revocation'
-  ]::text[],
-  'every api function that reads the caller runs the step-up, is a staff RPC, or is one of the three named exceptions'
-);
+     and (f.oid in (select oid from reads_caller)
+       or (not f.prosecdef and f.oid not in (select oid from applies_step_up)))
+     -- The staff console's and the newsroom's RPCs, by name: each calls the
+     -- staff check that already demands a verified factor and aal2
+     -- (20260926003100, "Not guarded"). One that stops calling it is caught.
+     and not (f.statements ~ 'app_private\.(admin_assert_permission|admin_assert_principal|has_editorial_role)\('
+       and f.proname = any (array[
+         'admin_add_fantasy_prize_winner_note', 'admin_approve_request', 'admin_assign_role',
+         'admin_ban_user', 'admin_cancel_request', 'admin_create_staff_principal',
+         'admin_emergency_revoke_staff', 'admin_execute_approved_platform_admin',
+         'admin_get_analytics_overview', 'admin_get_approval', 'admin_get_fantasy_prize_settings',
+         'admin_get_revocation_worker_health', 'admin_get_session_revocation_status',
+         'admin_get_staff_principal', 'admin_get_user', 'admin_list_active_assignments',
+         'admin_list_approval_queue', 'admin_list_assignment_history', 'admin_list_audit_events',
+         'admin_list_audit_events_v2', 'admin_list_fantasy_prize_flags',
+         'admin_list_fantasy_prize_winners', 'admin_list_fantasy_prizes',
+         'admin_list_role_catalog', 'admin_list_staff_assignments', 'admin_list_users',
+         'admin_override_fantasy_prize_winner', 'admin_reject_request', 'admin_renew_role',
+         'admin_request_approval', 'admin_resolve_staff_user_exact', 'admin_restore_staff',
+         'admin_revoke_role', 'admin_save_fantasy_prize', 'admin_save_fantasy_prize_settings',
+         'admin_set_fantasy_prize_flag', 'admin_set_fantasy_prize_winner_status',
+         'admin_shorten_role_expiry', 'admin_suspend_staff', 'admin_unban_user',
+         'editorial_convert_imported_story', 'editorial_create_draft', 'editorial_get_article',
+         'editorial_list_revisions', 'editorial_list_stories', 'editorial_register_media',
+         'editorial_schedule_health', 'editorial_set_placement', 'editorial_soft_delete_story',
+         'editorial_transition_article', 'editorial_update_article'
+       ]))
+     and f.proname not in (
+       -- The staff console reads it at aal1 to show its own step-up; an
+       -- ordinary account gets staff_access_denied (20260926003100, "Not guarded").
+       'get_my_staff_context',
+       -- The round and its matches, the same for everyone: auth.uid() only
+       -- decides whether a tester may see Pronostics while it is testers-only.
+       'predictions_round',
+       -- Sign-out: someone who abandons the challenge must still be able to leave.
+       'record_session_revocation')
+$check$;
+-- Views and tables: every api view a signed-in session can read carries the
+-- step-up, whether or not its text names the caller (a security_invoker view
+-- is scoped by the row-level security of the tables it reads, with no
+-- auth.uid() of its own), and no other api relation, a table, is readable by
+-- such a session but the one named below.
+create function pg_temp.unguarded_api_relations() returns text[] language sql stable as $check$
+  select coalesce(array_agg(n.nspname || '.' || c.relname order by c.relname), '{}')
+  from pg_class c join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'api' and c.relkind in ('r', 'p', 'v', 'm', 'f')
+    and has_any_column_privilege('authenticated', c.oid, 'select')
+    and (c.relkind not in ('v', 'm') or pg_get_viewdef(c.oid) !~ 'app_private\.require_mfa_step_up\(\)')
+    -- Live scores: a Realtime table, not a view. Every reader, visitors
+    -- included, gets the same rows; nothing in it is the caller's.
+    and c.relname not in ('live_fixture_updates')
+$check$;
+select extensions.is(pg_temp.unguarded_api_functions(), '{}'::text[],
+  'every api function that reads the caller runs the step-up, is a named staff RPC, or is one of the three named exceptions');
 select extensions.is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'api'
@@ -341,16 +400,108 @@ select extensions.is(
   52,
   'the 50 functions of point 5 and the two account-deletion functions run it'
 );
-select extensions.is(
-  (select array_agg(c.oid::regclass::text order by c.oid::regclass::text)
-   from pg_class c join pg_namespace n on n.oid = c.relnamespace
-   where n.nspname = 'api' and c.relkind in ('v', 'm')
-     and has_table_privilege('authenticated', c.oid, 'select')
-     and pg_get_viewdef(c.oid) ~ 'auth\.(uid|jwt)\(\)'
-     and pg_get_viewdef(c.oid) !~ 'app_private\.require_mfa_step_up\(\)'),
-  null,
-  'every api view that reads the caller refuses without the step-up'
-);
+select extensions.is(pg_temp.unguarded_api_relations(), '{}'::text[],
+  'every api view a signed-in session can read refuses without the step-up, and no other api relation but live scores is readable');
+
+-- The checks catch the readers they exist for. Each case is created inside a
+-- subtransaction, checked and undone. The first version of these checks read
+-- prosrc and a view's text for auth.uid() and let through any function that
+-- named a staff check: it missed every reader below but the staff RPC that
+-- lost its check.
+create function pg_temp.caught(p_ddl text) returns text language plpgsql as $$
+declare
+  found text;
+begin
+  begin
+    execute p_ddl;
+    found := array_to_string(pg_temp.unguarded_api_functions() || pg_temp.unguarded_api_relations(), ', ');
+    raise exception using errcode = 'P0001', message = 'undo';
+  exception when raise_exception then null;
+  end;
+  return found;
+end;
+$$;
+select extensions.is(pg_temp.caught($ddl$
+  create view api.probe_followed with (security_invoker = true) as
+    select user_id, team_id, created_at from app.followed_teams;
+  grant select on api.probe_followed to authenticated;
+$ddl$), 'api.probe_followed',
+  'a security_invoker view scoped only by the row-level security of what it reads, no auth.uid() in its text');
+select extensions.is(pg_temp.caught($ddl$
+  create function api.probe_atomic() returns bigint language sql stable security definer set search_path = ''
+  begin atomic
+    select count(*) from app.followed_teams where user_id = auth.uid();
+  end;
+$ddl$), 'probe_atomic', 'a BEGIN ATOMIC function, whose prosrc is empty');
+select extensions.is(pg_temp.caught($ddl$
+  create function api.probe_claims() returns text language plpgsql stable security definer set search_path = ''
+  as $body$
+  begin
+    return current_setting('request.jwt.claims', true)::jsonb ->> 'sub';
+  end;
+  $body$;
+$ddl$), 'probe_claims', 'a function reading current_setting(''request.jwt.claims'') directly');
+select extensions.is(pg_temp.caught($ddl$
+  create function api.probe_commented() returns uuid language plpgsql stable security definer set search_path = ''
+  as $body$
+  begin
+    -- app_private.assert_mfa_step_up(); is only named in this comment
+    return auth.uid();
+  end;
+  $body$;
+$ddl$), 'probe_commented', 'a function that names the step-up in a comment only');
+select extensions.is(pg_temp.caught($ddl$
+  create function api.probe_quoted() returns uuid language plpgsql stable security definer set search_path = ''
+  as $body$
+  begin
+    raise notice 'app_private.assert_mfa_step_up() is only quoted here';
+    return auth.uid();
+  end;
+  $body$;
+$ddl$), 'probe_quoted', 'or in a string only');
+select extensions.is(pg_temp.caught($ddl$
+  create function api.probe_badge() returns jsonb language plpgsql stable security definer set search_path = ''
+  as $body$
+  begin
+    return jsonb_build_object('editor', app_private.has_editorial_role('editor'), 'me', auth.uid());
+  end;
+  $body$;
+$ddl$), 'probe_badge', 'a function that calls a staff check but is not one of the named staff RPCs');
+select extensions.is(pg_temp.caught($ddl$
+  create or replace function api.admin_get_user(p_user_id uuid) returns jsonb language plpgsql
+  security definer set search_path = '' as $body$
+  begin
+    return jsonb_build_object('user', p_user_id, 'me', auth.uid());
+  end;
+  $body$;
+$ddl$), 'admin_get_user', 'a named staff RPC that no longer calls its staff check');
+select extensions.is(pg_temp.caught($ddl$
+  create function api.probe_invoker() returns bigint language sql stable security invoker set search_path = ''
+  as $body$ select count(*) from app.followed_teams $body$;
+$ddl$), 'probe_invoker', 'a SECURITY INVOKER function, scoped by the caller''s row-level security');
+select extensions.is(pg_temp.caught($ddl$
+  create function api.probe_inner() returns uuid language sql stable security definer set search_path = ''
+  as $body$ select auth.uid() $body$;
+  revoke all on function api.probe_inner() from public, anon, authenticated;
+  create function api.probe_outer() returns uuid language sql stable security definer set search_path = ''
+  as $body$ select api.probe_inner() $body$;
+$ddl$), 'probe_outer', 'a function that reads the caller through another api function');
+select extensions.is(pg_temp.caught($ddl$
+  create table api.probe_table (id integer);
+  grant select (id) on api.probe_table to authenticated;
+$ddl$), 'api.probe_table', 'an api table a signed-in session can read, even one column of it');
+select extensions.is(pg_temp.caught($ddl$
+  create view api.probe_guarded with (security_invoker = true) as
+    select user_id, team_id from app.followed_teams where app_private.require_mfa_step_up();
+  grant select on api.probe_guarded to authenticated;
+  create function api.probe_asserted() returns uuid language plpgsql stable security definer set search_path = ''
+  as $body$
+  begin
+    perform app_private.assert_mfa_step_up();
+    return auth.uid();
+  end;
+  $body$;
+$ddl$), '', 'and a view and a function that carry the step-up are not');
 select extensions.is(
   (select array_agg(policyname::text || ' ' || cmd order by policyname)
    from pg_policies

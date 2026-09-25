@@ -104,11 +104,14 @@
 --     the caller's own choices and nothing else, the News card, the views and
 --     the avatar policies their checked version plus the step-up and nothing
 --     else, the views still security_invoker and readable by authenticated
---     alone; no api function or view a browser can call reads the caller
---     without the step-up, apart from the three exceptions the migration names
---     (the completeness check of ordinary_account_mfa_step_up_reads.test.sql,
---     run on this database's own catalog, so a reader this database has and
---     the repository does not stops the update); an account with no factor
+--     alone; no api function a browser can call reads the caller without the
+--     step-up, apart from the staff RPCs, by name, and the three exceptions
+--     the migration names, and every api view a signed-in session can read
+--     carries it, with no other api relation readable but the public live
+--     scores (the completeness checks of
+--     ordinary_account_mfa_step_up_reads.test.sql, word for word, run on this
+--     database's own catalog, so a reader this database has and the
+--     repository does not stops the update); an account with no factor
 --     passes; and, where an account has a verified factor, its aal1 session is
 --     refused by the helper, a table trigger (an UPDATE that matches no row),
 --     a read (api.get_my_notification_preferences), a view (api.my_profile)
@@ -4680,58 +4683,109 @@ begin
           ' AND ( SELECT app_private.mfa_step_up_satisfied() AS mfa_step_up_satisfied)', ''))
         = p.expression_md5);
 
-  -- No api function or view a browser can call reads the caller without the
-  -- step-up: the completeness checks of
-  -- supabase/tests/database/ordinary_account_mfa_step_up_reads.test.sql, word
-  -- for word, on this database's own catalog. A function reads the caller when
-  -- auth.uid() or auth.jwt() is in its own body, or in an app_private helper
-  -- it calls, at any depth; a helper that applies the step-up itself (the
-  -- News card) does not count. Staff RPCs keep their own stricter check, and
-  -- the migration names three exceptions ("Not guarded"). A reader this
-  -- database has and the repository does not stops the update here.
-  with recursive fn as (
-     select p.oid, n.nspname, p.proname, p.prosrc
-     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-     where n.nspname in ('api', 'app_private')
-   ),
-   applies_step_up as (
-     select oid from fn
-     where prosrc ~ 'app_private\.(assert_mfa_step_up|require_mfa_step_up|mfa_step_up_satisfied)\('
-   ),
-   calls as (
-     select distinct f.oid as caller, g.oid as callee
+  -- No api function, view or table a browser can call or read reaches the
+  -- caller without the step-up: the completeness checks of
+  -- supabase/tests/database/ordinary_account_mfa_step_up_reads.test.sql
+  -- (pg_temp.unguarded_api_functions and pg_temp.unguarded_api_relations),
+  -- word for word, on this database's own catalog. A function reads the
+  -- caller when auth.uid(), auth.jwt(), auth.email() or the request.jwt
+  -- settings are in its code (pg_get_functiondef without its comments, so a
+  -- BEGIN ATOMIC body counts and a comment does not), or in an api or
+  -- app_private function it calls, at any depth, or when it is SECURITY
+  -- INVOKER; a helper that applies the step-up itself (the News card) does
+  -- not count, and applying it means calling it, not naming it in a string.
+  -- The staff RPCs are excused by name, each only while it calls its staff
+  -- check, and the migration names three exceptions ("Not guarded"). Every api view a signed-in session can read must carry the
+  -- step-up, and no other api relation may be readable but the public live
+  -- scores. A reader this database has and the repository does not stops the
+  -- update here.
+  unguarded := (
+    with recursive source as (
+       select p.oid, n.nspname, p.proname, p.prosecdef,
+         regexp_replace(pg_get_functiondef(p.oid),
+           $re$('(?:[^']|'')*')|--[^\n]*|/\*(?:[^*]|\*+[^*/])*\*+/$re$, '\1', 'g') as code
+       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname in ('api', 'app_private') and p.prokind in ('f', 'p')
+     ),
+     fn as (
+       select source.*, regexp_replace(code, $re$'(?:[^']|'')*'$re$, '''''', 'g') as statements
+       from source
+     ),
+     applies_step_up as (
+       select oid from fn
+       where statements ~ 'app_private\.(assert_mfa_step_up|require_mfa_step_up|mfa_step_up_satisfied)\('
+     ),
+     calls as (
+       select distinct f.oid as caller, g.oid as callee
+       from fn f
+       cross join lateral regexp_matches(f.code, '(api|app_private)\.([a-z_0-9]+)\s*\(', 'g') as m(name)
+       join fn g on g.nspname = m.name[1] and g.proname = m.name[2] and g.oid <> f.oid
+     ),
+     reads_caller(oid) as (
+       select f.oid from fn f
+       where f.code ~ 'auth\.(uid|jwt|email)\(\)|request\.jwt' and f.oid not in (select oid from applies_step_up)
+       union
+       select c.caller from calls c join reads_caller r on r.oid = c.callee
+       where c.caller not in (select oid from applies_step_up)
+     )
+     select coalesce(array_agg(f.proname::text order by f.proname), '{}')
      from fn f
-     cross join lateral regexp_matches(f.prosrc, 'app_private\.([a-z_0-9]+)\s*\(', 'g') as m(name)
-     join fn g on g.nspname = 'app_private' and g.proname = m.name[1]
-   ),
-   reads_caller(oid) as (
-     select f.oid from fn f
-     where f.prosrc ~ 'auth\.(uid|jwt)\(\)' and f.oid not in (select oid from applies_step_up)
-     union
-     select c.caller from calls c join reads_caller r on r.oid = c.callee
-     where c.caller not in (select oid from applies_step_up)
-   )
-   select coalesce(array_agg(f.proname::text order by f.proname), '{}')
-   into unguarded
-   from reads_caller r join fn f on f.oid = r.oid
-   where f.nspname = 'api'
-     and has_function_privilege('authenticated', f.oid, 'execute')
-     and f.prosrc !~ 'app_private\.(admin_assert_permission|admin_assert_principal|has_editorial_role)\('
-     and f.proname not in ('get_my_staff_context', 'predictions_round', 'record_session_revocation');
+     where f.nspname = 'api'
+       and has_function_privilege('authenticated', f.oid, 'execute')
+       and (f.oid in (select oid from reads_caller)
+         or (not f.prosecdef and f.oid not in (select oid from applies_step_up)))
+       -- The staff console's and the newsroom's RPCs, by name: each calls the
+       -- staff check that already demands a verified factor and aal2
+       -- (20260926003100, "Not guarded"). One that stops calling it is caught.
+       and not (f.statements ~ 'app_private\.(admin_assert_permission|admin_assert_principal|has_editorial_role)\('
+         and f.proname = any (array[
+           'admin_add_fantasy_prize_winner_note', 'admin_approve_request', 'admin_assign_role',
+           'admin_ban_user', 'admin_cancel_request', 'admin_create_staff_principal',
+           'admin_emergency_revoke_staff', 'admin_execute_approved_platform_admin',
+           'admin_get_analytics_overview', 'admin_get_approval', 'admin_get_fantasy_prize_settings',
+           'admin_get_revocation_worker_health', 'admin_get_session_revocation_status',
+           'admin_get_staff_principal', 'admin_get_user', 'admin_list_active_assignments',
+           'admin_list_approval_queue', 'admin_list_assignment_history', 'admin_list_audit_events',
+           'admin_list_audit_events_v2', 'admin_list_fantasy_prize_flags',
+           'admin_list_fantasy_prize_winners', 'admin_list_fantasy_prizes',
+           'admin_list_role_catalog', 'admin_list_staff_assignments', 'admin_list_users',
+           'admin_override_fantasy_prize_winner', 'admin_reject_request', 'admin_renew_role',
+           'admin_request_approval', 'admin_resolve_staff_user_exact', 'admin_restore_staff',
+           'admin_revoke_role', 'admin_save_fantasy_prize', 'admin_save_fantasy_prize_settings',
+           'admin_set_fantasy_prize_flag', 'admin_set_fantasy_prize_winner_status',
+           'admin_shorten_role_expiry', 'admin_suspend_staff', 'admin_unban_user',
+           'editorial_convert_imported_story', 'editorial_create_draft', 'editorial_get_article',
+           'editorial_list_revisions', 'editorial_list_stories', 'editorial_register_media',
+           'editorial_schedule_health', 'editorial_set_placement', 'editorial_soft_delete_story',
+           'editorial_transition_article', 'editorial_update_article'
+         ]))
+       and f.proname not in (
+         -- The staff console reads it at aal1 to show its own step-up; an
+         -- ordinary account gets staff_access_denied (20260926003100, "Not guarded").
+         'get_my_staff_context',
+         -- The round and its matches, the same for everyone: auth.uid() only
+         -- decides whether a tester may see Pronostics while it is testers-only.
+         'predictions_round',
+         -- Sign-out: someone who abandons the challenge must still be able to leave.
+         'record_session_revocation')
+  );
   if cardinality(unguarded) > 0 then
     problems := problems
       || ('an api function reads the caller without the step-up: ' || array_to_string(unguarded, ', '));
   end if;
-  select coalesce(array_agg(c.oid::regclass::text order by c.oid::regclass::text), '{}')
-  into unguarded
-  from pg_class c join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'api' and c.relkind in ('v', 'm')
-    and has_table_privilege('authenticated', c.oid, 'select')
-    and pg_get_viewdef(c.oid) ~ 'auth\.(uid|jwt)\(\)'
-    and pg_get_viewdef(c.oid) !~ 'app_private\.require_mfa_step_up\(\)';
+  unguarded := (
+    select coalesce(array_agg(n.nspname || '.' || c.relname order by c.relname), '{}')
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'api' and c.relkind in ('r', 'p', 'v', 'm', 'f')
+      and has_any_column_privilege('authenticated', c.oid, 'select')
+      and (c.relkind not in ('v', 'm') or pg_get_viewdef(c.oid) !~ 'app_private\.require_mfa_step_up\(\)')
+      -- Live scores: a Realtime table, not a view. Every reader, visitors
+      -- included, gets the same rows; nothing in it is the caller's.
+      and c.relname not in ('live_fixture_updates')
+  );
   if cardinality(unguarded) > 0 then
     problems := problems
-      || ('an api view reads the caller without the step-up: ' || array_to_string(unguarded, ', '));
+      || ('an api view or table a signed-in session reads lacks the step-up: ' || array_to_string(unguarded, ', '));
   end if;
 
   if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260926003100') then

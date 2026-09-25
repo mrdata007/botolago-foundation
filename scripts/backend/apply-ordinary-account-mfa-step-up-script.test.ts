@@ -212,7 +212,7 @@ describe(`apply-${VERSION}-ordinary-account-mfa-step-up.sql`, () => {
       "'not its checked version plus the step-up: ' || v.name",
       "'not its checked version plus the step-up: ' || p.name",
       "an api function reads the caller without the step-up: ",
-      "an api view reads the caller without the step-up: ",
+      "an api view or table a signed-in session reads lacks the step-up: ",
       "history row missing",
       "an account with no factor was not let through",
       "an account with no factor was refused: ",
@@ -258,36 +258,66 @@ describe(`apply-${VERSION}-ordinary-account-mfa-step-up.sql`, () => {
 
   test("the postflight runs the pgTAP completeness checks on the live catalog, word for word", () => {
     const postflight = squash(postflightOf(script));
-    const functionsCheck = readsTest.slice(
-      readsTest.indexOf("(with recursive fn as (") + 1,
-      readsTest.indexOf("   select array_agg(f.proname::text order by f.proname)"),
-    );
-    const functionsFilter = readsTest.slice(
-      readsTest.indexOf("   where f.nspname = 'api'\n     and has_function_privilege"),
-      readsTest.indexOf("has_editorial_role)\\('),") + "has_editorial_role)\\('".length,
-    );
-    const viewsCheck = readsTest.slice(
-      readsTest.indexOf("   from pg_class c join pg_namespace n on n.oid = c.relnamespace"),
-      readsTest.indexOf("require_mfa_step_up\\(\\)'),") + "require_mfa_step_up\\(\\)'".length,
-    );
-    for (const [name, part] of Object.entries({ functionsCheck, functionsFilter, viewsCheck })) {
-      expect({ name, length: part.length > 80 }).toEqual({ name, length: true });
-      expect({ name, inPostflight: postflight.includes(squash(part)) }).toEqual({
+    /** The body of one of the pgTAP's completeness checks. */
+    const check = (name: string) => {
+      const start = `create function pg_temp.${name}() returns text[] language sql stable as $check$\n`;
+      const at = readsTest.indexOf(start);
+      return at === -1
+        ? ""
+        : readsTest.slice(at + start.length, readsTest.indexOf("\n$check$;", at));
+    };
+    for (const name of ["unguarded_api_functions", "unguarded_api_relations"]) {
+      const body = check(name);
+      expect({ name, length: body.length > 300 }).toEqual({ name, length: true });
+      // Assigned whole, and so answered in full, on production's catalog.
+      expect({
         name,
-        inPostflight: true,
-      });
+        inPostflight: postflight.includes(`unguarded := ( ${squash(body)} );`),
+      }).toEqual({ name, inPostflight: true });
+      // The pgTAP holds the live catalog to an empty answer.
+      expect(readsTest).toContain(`select extensions.is(pg_temp.${name}(), '{}'::text[],`);
     }
-    // Only the three exceptions the pgTAP names are let through.
-    expect(postflight).toContain(
-      "and f.proname not in ('get_my_staff_context', 'predictions_round', 'record_session_revocation');",
+    const functions = check("unguarded_api_functions");
+    // Code, not source: pg_get_functiondef (BEGIN ATOMIC bodies included) with
+    // its comments taken out, the caller read through auth.uid(), auth.jwt(),
+    // auth.email() or the request.jwt settings, through api and app_private
+    // calls, or through the caller's row-level security (SECURITY INVOKER).
+    expect(functions).toContain("regexp_replace(pg_get_functiondef(p.oid),");
+    expect(functions).not.toContain("prosrc");
+    expect(functions).toContain("f.code ~ 'auth\\.(uid|jwt|email)\\(\\)|request\\.jwt'");
+    // Applying the step-up, or a staff check, means calling it: read in the
+    // statements with their string literals blanked too.
+    expect(functions).toContain(
+      "regexp_replace(code, $re$'(?:[^']|'')*'$re$, '''''', 'g') as statements",
     );
-    for (const exception of [
+    expect(functions).toContain(
+      "where statements ~ 'app_private\\.(assert_mfa_step_up|require_mfa_step_up|mfa_step_up_satisfied)\\('",
+    );
+    expect(functions).toContain("'(api|app_private)\\.([a-z_0-9]+)\\s*\\('");
+    expect(functions).toContain(
+      "or (not f.prosecdef and f.oid not in (select oid from applies_step_up)))",
+    );
+    // Staff RPCs are excused by name, and only while they call a staff check.
+    const staff = [...functions.matchAll(/'((?:admin|editorial)_[a-z_0-9]+)'/g)].map((m) => m[1]);
+    expect(staff).toHaveLength(51);
+    expect(new Set(staff).size).toBe(51);
+    expect(functions).toContain(
+      "and not (f.statements ~ 'app_private\\.(admin_assert_permission|admin_assert_principal|has_editorial_role)\\('\n       and f.proname = any (array[",
+    );
+    // Only the three exceptions the migration names are let through.
+    const exceptions = functions.slice(functions.indexOf("and f.proname not in ("));
+    expect([...exceptions.matchAll(/^ {7}'([a-z_]+)',?\)?$/gm)].map((m) => m[1])).toEqual([
       "get_my_staff_context",
       "predictions_round",
       "record_session_revocation",
-    ]) {
-      expect(readsTest).toContain(`    '${exception}'`);
-    }
+    ]);
+    // Every api view a signed-in session can read, whatever its text says,
+    // and no other api relation but the public live scores.
+    const relations = check("unguarded_api_relations");
+    expect(relations).toContain("c.relkind in ('r', 'p', 'v', 'm', 'f')");
+    expect(relations).toContain("has_any_column_privilege('authenticated', c.oid, 'select')");
+    expect(relations).not.toMatch(/auth\\\.\(uid/);
+    expect(relations).toContain("and c.relname not in ('live_fixture_updates')");
   });
 
   test("checks everything the migration replaces, and only that, against production's version", () => {
