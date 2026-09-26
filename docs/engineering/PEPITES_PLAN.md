@@ -190,3 +190,28 @@ Recorded 2026-09-26.
    production change.
 
 Next: Gate A, owner review of [`PEPITES_ARCHITECTURE.md`](PEPITES_ARCHITECTURE.md).
+
+## 9. UI status (Gate U)
+
+Figma file: <https://www.figma.com/design/DEQTspI8A04pjmLcAYTYw4>. Ready for
+owner sign-off. 26 frames:
+
+- Mobile FR: 7 screens and 4 states (loading, before first edition, error,
+  guest follow).
+- Mobile AR: the same 7 screens, mirrored right-to-left.
+- Desktop FR: ranking and player page (1440 px).
+- Share images: story 1080×1920 and feed post 1080×1350, FR and AR.
+- Admin: Monday selection and data desk.
+
+Every figure comes from real 2025-26 Botola Pro data. The player photos are
+SportsMonks images for internal use only.
+
+Not drawn yet:
+
+- Desktop AR.
+- Desktop home, compare, edition and method pages. They reuse the mobile and
+  player-page blocks.
+
+Arabic rule found while drawing: a space inside a number ("1 159") can flip
+the digit order in an Arabic layout. Use a narrow no-break space (U+202F) or
+no separator.
