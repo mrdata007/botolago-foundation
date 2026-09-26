@@ -1072,7 +1072,14 @@ with its pgTAP file.
 2. `player_photo_releases`: private buckets, release table, approval trigger,
    revocation, read helper. **Built** locally as
    `20260926070000_player_photo_releases.sql`.
-3. `data_desk_issues`
+3. `data_desk_issues`. **Built** locally as
+   `20260926080000_data_desk_issues.sql`: the sweep opens issues for
+   attribute conflicts, current-season players without a date of birth,
+   unlinked lineup entries and published photos whose rights no longer hold,
+   and closes the ones whose cause is gone; a conflict a person closed is
+   not raised again until the disagreeing values change. Fan reports are
+   limited to 5 a day per account and one open report per field. Issues are
+   never edited back or deleted. API wrappers come with `pepites_api`.
 4. `pepites_engine`: methodologies, runs, snapshot tables, scores, sealing
    triggers, gather, score, replay, and the 2025-26 `season_final` run.
 5. `pepites_editions`: editions, entries, state and column triggers, week
