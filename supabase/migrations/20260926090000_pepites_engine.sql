@@ -515,9 +515,15 @@ as $$
     order by appeared.player_id, appeared.minutes desc, appeared.last_kickoff desc, appeared.team_id
   ),
   membership as (
+    -- Valid on the cutoff's day in Morocco, as the membership read path
+    -- counts validity: a future-dated squad place, or one that ended, does
+    -- not put the player in this run's pool under that team.
     select distinct on (member.player_id) member.player_id, member.team_id, member.id
     from app.team_memberships member
     where p_kind = 'weekly' and member.season_id = p_season_id and member.active
+      and member.valid_from <= (p_cutoff at time zone 'Africa/Casablanca')::date
+      and (member.valid_to is null
+        or member.valid_to >= (p_cutoff at time zone 'Africa/Casablanca')::date)
     order by member.player_id, member.valid_from desc, member.id
   ),
   candidates as (
