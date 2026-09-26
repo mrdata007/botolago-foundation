@@ -5650,6 +5650,204 @@ export type Database = {
           },
         ]
       }
+      pepites_methodologies: {
+        Row: {
+          created_at: string
+          description_ar: string
+          description_fr: string
+          engine_function: string
+          frozen_at: string | null
+          params: Json
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          description_ar: string
+          description_fr: string
+          engine_function: string
+          frozen_at?: string | null
+          params: Json
+          version: string
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string
+          description_fr?: string
+          engine_function?: string
+          frozen_at?: string | null
+          params?: Json
+          version?: string
+        }
+        Relationships: []
+      }
+      pepites_player_scores: {
+        Row: {
+          age_years: number | null
+          apps: number
+          assists: number
+          clean_sheets: number | null
+          components: Json
+          eligible: boolean
+          flags: string[]
+          form_avg: number | null
+          goals: number
+          minutes: number
+          per90: Json
+          percentiles: Json
+          player_id: string
+          position_group: string
+          rank: number | null
+          rank_in_position: number | null
+          rating_avg: number | null
+          rating_n: number
+          run_id: string
+          saves: number | null
+          score: number | null
+          score_exact: number | null
+          starts: number
+          team_id: string | null
+        }
+        Insert: {
+          age_years?: number | null
+          apps: number
+          assists: number
+          clean_sheets?: number | null
+          components: Json
+          eligible: boolean
+          flags: string[]
+          form_avg?: number | null
+          goals: number
+          minutes: number
+          per90: Json
+          percentiles: Json
+          player_id: string
+          position_group: string
+          rank?: number | null
+          rank_in_position?: number | null
+          rating_avg?: number | null
+          rating_n: number
+          run_id: string
+          saves?: number | null
+          score?: number | null
+          score_exact?: number | null
+          starts: number
+          team_id?: string | null
+        }
+        Update: {
+          age_years?: number | null
+          apps?: number
+          assists?: number
+          clean_sheets?: number | null
+          components?: Json
+          eligible?: boolean
+          flags?: string[]
+          form_avg?: number | null
+          goals?: number
+          minutes?: number
+          per90?: Json
+          percentiles?: Json
+          player_id?: string
+          position_group?: string
+          rank?: number | null
+          rank_in_position?: number | null
+          rating_avg?: number | null
+          rating_n?: number
+          run_id?: string
+          saves?: number | null
+          score?: number | null
+          score_exact?: number | null
+          starts?: number
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pepites_player_scores_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pepites_player_scores_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pepites_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pepites_runs: {
+        Row: {
+          activated_at: string | null
+          as_of_round_number: number
+          attempt: number
+          eligible_count: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          input_cutoff_at: string
+          input_fingerprint: string | null
+          kind: string
+          methodology_version: string
+          ranked_count: number | null
+          revision: number
+          season_id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          activated_at?: string | null
+          as_of_round_number: number
+          attempt?: number
+          eligible_count?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          input_cutoff_at: string
+          input_fingerprint?: string | null
+          kind: string
+          methodology_version: string
+          ranked_count?: number | null
+          revision: number
+          season_id: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          activated_at?: string | null
+          as_of_round_number?: number
+          attempt?: number
+          eligible_count?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          input_cutoff_at?: string
+          input_fingerprint?: string | null
+          kind?: string
+          methodology_version?: string
+          ranked_count?: number | null
+          revision?: number
+          season_id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pepites_runs_methodology_version_fkey"
+            columns: ["methodology_version"]
+            isOneToOne: false
+            referencedRelation: "pepites_methodologies"
+            referencedColumns: ["version"]
+          },
+          {
+            foreignKeyName: "pepites_runs_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_availability: {
         Row: {
           active: boolean
