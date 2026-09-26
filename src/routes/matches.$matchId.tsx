@@ -196,6 +196,9 @@ function MatchDetailPage() {
     // the tab is hidden.
     refetchInterval: (query) => matchRefetchInterval(query.state.data?.match, Date.now()),
     refetchIntervalInBackground: false,
+    // Back on the tab, a match that is moving is asked for at once.
+    refetchOnWindowFocus: (query) =>
+      matchRefetchInterval(query.state.data?.match, Date.now()) !== false,
   });
   // Related news is a News surface, so it is gated on the same flag as every
   // other one. `enabled` rather than a conditional hook: the query still has to
