@@ -159,8 +159,8 @@ export function MonoLine({
     <p
       data-testid={testId}
       className={cn(
-        "text-[9px] leading-[1.35] ltr:tracking-[0.12em]",
-        tone === "sub" ? cn(pp.mono, "text-[10px] ltr:tracking-[0.06em]") : pp.monoStrong,
+        "text-[11px] leading-[1.4] ltr:tracking-[0.06em]",
+        tone === "sub" ? cn(pp.mono, "ltr:tracking-[0.04em]") : pp.monoStrong,
         tone === "meta" && pp.onNightMeta,
         tone === "sub" && pp.onNightSub,
         tone === "spring" && pp.spring,
@@ -419,7 +419,7 @@ export function FactsStrip({
           <dt
             className={cn(
               pp.mono,
-              "order-2 text-[8px] leading-tight text-white/70 ltr:tracking-[0.1em]",
+              "order-2 text-[10px] leading-[1.4] text-white/70 ltr:tracking-[0.04em]",
             )}
           >
             {fact.label}
@@ -491,7 +491,12 @@ export function ScoreRing({
         <bdi className={cn(pp.display, "text-white")} style={{ fontSize: size * 0.33 }}>
           {typeof score === "number" ? formatNumber(Math.round(score), lang) : "–"}
         </bdi>
-        <span className={cn(pp.monoStrong, "text-[7px] text-white/70 ltr:tracking-[0.12em]")}>
+        <span
+          className={cn(
+            pp.monoStrong,
+            "text-[10px] leading-[1.4] text-white/70 ltr:tracking-[0.04em]",
+          )}
+        >
           {label}
         </span>
       </span>

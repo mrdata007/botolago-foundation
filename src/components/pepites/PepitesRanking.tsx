@@ -270,7 +270,7 @@ export function PepitesRanking({
                 className="relative mx-auto h-[130px] w-[132px]"
               />
               <span className={cn(pp.display, "mt-2 truncate text-[17px]")}>{row.name}</span>
-              <span className={cn(pp.mono, pp.onNightSub, "truncate text-[9px]")}>
+              <span className={cn(pp.mono, pp.onNightSub, "truncate text-[11px] leading-[1.4]")}>
                 {row.team ? tr(row.team.shortName) : ""} ·{" "}
                 {row.positionGroup ? positionShort(row.positionGroup, t) : ""}
               </span>
@@ -519,7 +519,7 @@ function SortHeading({
       aria-pressed={on}
       data-testid={`pepites-sort-${sort}`}
       className={cn(
-        "min-h-[28px] text-end text-[8px] leading-none ltr:tracking-[0.08em]",
+        "min-h-[28px] text-end text-[10px] leading-[1.4] ltr:tracking-[0.04em]",
         pp.monoStrong,
         on ? pp.ink : pp.muted,
         ui.focus,
@@ -544,10 +544,12 @@ function RankingTable({
   return (
     <div className={cn("rounded-[14px] px-2.5 py-1 md:hidden", pp.table)}>
       <div className={cn(COLUMNS, "border-b py-1", pp.divider)}>
-        <span className={cn(pp.monoStrong, pp.muted, "text-[8px]")} aria-hidden>
+        <span className={cn(pp.monoStrong, pp.muted, "text-[10px]")} aria-hidden>
           #
         </span>
-        <span className={cn(pp.monoStrong, pp.muted, "text-[8px] ltr:tracking-[0.08em]")}>
+        <span
+          className={cn(pp.monoStrong, pp.muted, "text-[10px] leading-[1.4] ltr:tracking-[0.04em]")}
+        >
           {t("pepites.table.player")}
         </span>
         <SortHeading sort="minutes" active={sort} onSort={onSort}>
@@ -587,11 +589,11 @@ function RankingTable({
                   <span className="sr-only">{positionLabel(row.positionGroup, t)}</span>
                 ) : null}
               </span>
-              <bdi className={cn(pp.bold, pp.text, "text-end text-[11px]")}>
+              <bdi className={cn(pp.bold, pp.text, "text-end text-[12px]")}>
                 <span className="sr-only">{t("pepites.sort.minutes")} </span>
                 {formatCount(row.minutes, lang)}
               </bdi>
-              <bdi dir="ltr" className={cn(pp.bold, pp.text, "text-end text-[11px]")}>
+              <bdi dir="ltr" className={cn(pp.bold, pp.text, "text-end text-[12px]")}>
                 <span className="sr-only">{t("pepites.table.goals_assists_long")} </span>
                 {`${formatNumber(row.goals, lang)}/${formatNumber(row.assists, lang)}`}
               </bdi>
@@ -635,7 +637,7 @@ function DesktopRankingTable({
             pp.divider,
             pp.monoStrong,
             pp.muted,
-            "text-[10px]",
+            "text-[11px]",
           )}
         >
           <span>#</span>

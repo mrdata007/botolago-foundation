@@ -160,7 +160,7 @@ export function PepitesHome() {
       <WeeklyEmailCard />
       <div className="flex flex-col gap-1">
         {edition ? <UpdatedLine iso={edition.publishedAt} /> : null}
-        <p className={cn("text-[12px] leading-[1.45]", pp.muted)}>{t("pepites.home.about")}</p>
+        <p className={cn("text-[13px] leading-[1.5]", pp.muted)}>{t("pepites.home.about")}</p>
         <Link
           to="/pepites/methode"
           className={cn(

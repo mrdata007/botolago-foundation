@@ -204,7 +204,7 @@ export function PepitesComparePage({
               {t("pepites.compare.back")}
             </Link>
           )}
-          <span className={cn(pp.monoStrong, pp.onNightMeta, "text-[10px]")}>
+          <span className={cn(pp.monoStrong, pp.onNightMeta, "text-[11px] leading-[1.4]")}>
             {t("pepites.compare.title")}
           </span>
           <span className="w-12" aria-hidden />
@@ -238,7 +238,9 @@ export function PepitesComparePage({
               <h1 className={cn(pp.heavy, pp.text, "text-[12px]")}>
                 {t("pepites.compare.season")}
               </h1>
-              <p className={cn(pp.mono, pp.muted, "text-[10px]")}>{t("pepites.compare.scope")}</p>
+              <p className={cn(pp.mono, pp.muted, "text-[11px] leading-[1.4]")}>
+                {t("pepites.compare.scope")}
+              </p>
             </div>
             <div className="flex flex-col gap-3">
               {compareValues(first, second, leftStats, rightStats).map((row) => {
@@ -267,7 +269,7 @@ export function PepitesComparePage({
                   >
                     <bdi
                       className={cn(
-                        "text-end text-[10px] tabular-nums",
+                        "text-end text-[12px] tabular-nums",
                         leftWins ? "text-[#1b8f55]" : pp.muted,
                       )}
                     >
@@ -282,7 +284,7 @@ export function PepitesComparePage({
                         style={{ width: `${((row.left ?? 0) / max) * 100}%` }}
                       />
                     </div>
-                    <span className={cn(pp.heavy, pp.text, "text-center text-[9px]")}>
+                    <span className={cn(pp.bold, pp.text, "text-center text-[11px] leading-[1.4]")}>
                       {compareRowLabel(row.key, t)}
                     </span>
                     <div
@@ -294,7 +296,7 @@ export function PepitesComparePage({
                     />
                     <bdi
                       className={cn(
-                        "text-start text-[10px] tabular-nums",
+                        "text-start text-[12px] tabular-nums",
                         rightWins ? "text-[#1b8f55]" : pp.muted,
                       )}
                     >
@@ -400,7 +402,7 @@ function ComparePortrait({
           (side === "a" ? t("pepites.compare.choose_first") : t("pepites.compare.choose_second"))}
       </span>
       {player ? (
-        <span className={cn(pp.mono, pp.onNightMeta, "text-[9px]")}>
+        <span className={cn(pp.mono, pp.onNightMeta, "text-[11px] leading-[1.4]")}>
           {[
             player.team ? tr(player.team.shortName) : null,
             player.age

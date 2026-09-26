@@ -378,7 +378,10 @@ function PlayerHero({
           </div>
         </div>
         {photoUrl && (player.photo?.credit || player.photo?.copyrightOwner) ? (
-          <p className="mt-1 text-[10px] text-white/55" data-testid="pepites-photo-credit">
+          <p
+            className="mt-1 text-[11px] leading-[1.4] text-white/55"
+            data-testid="pepites-photo-credit"
+          >
             {t("pepites.player.photo_credit").replace(
               "{credit}",
               player.photo.credit ?? player.photo.copyrightOwner ?? "",
@@ -611,9 +614,13 @@ function PlayerTabs({
 function CardHeading({ title, aside }: { title: string; aside?: ReactNode }) {
   return (
     <div className="mb-3 flex items-baseline justify-between gap-3">
-      <h2 className={cn(pp.monoStrong, pp.text, "text-[10px] ltr:tracking-[0.12em]")}>{title}</h2>
+      <h2 className={cn(pp.monoStrong, pp.text, "text-[12px] leading-[1.4] ltr:tracking-[0.06em]")}>
+        {title}
+      </h2>
       {aside ? (
-        <span className={cn(pp.mono, pp.muted, "text-[9px] normal-case")}>{aside}</span>
+        <span className={cn(pp.mono, pp.muted, "text-[11px] leading-[1.4] normal-case")}>
+          {aside}
+        </span>
       ) : null}
     </div>
   );
@@ -670,7 +677,7 @@ function PlayerOverview({
                   );
                 })}
               </ul>
-              <p className={cn(pp.muted, "mt-3 text-[11px] leading-[1.4]")}>
+              <p className={cn(pp.muted, "mt-3 text-[13px] leading-[1.5]")}>
                 {t("pepites.player.components_hint")}
               </p>
             </div>
@@ -865,7 +872,7 @@ function DesktopMatchesCard({ matches }: { matches: readonly PlayerMatch[] }) {
         title={t("pepites.player.tab_matches")}
         aside={t("pepites.matches.trend_title")}
       />
-      <div className="grid grid-cols-[60px_minmax(0,1fr)_80px_55px_55px_55px_50px] gap-2 border-b pb-2 text-[9px] text-[color:var(--pepites-muted)]">
+      <div className="grid grid-cols-[60px_minmax(0,1fr)_80px_55px_55px_55px_50px] gap-2 border-b pb-2 text-[11px] text-[color:var(--pepites-muted)]">
         <span>{t("pepites.matches.date")}</span>
         <span>{t("pepites.matches.opponent")}</span>
         <span>{t("pepites.matches.location")}</span>
@@ -877,7 +884,7 @@ function DesktopMatchesCard({ matches }: { matches: readonly PlayerMatch[] }) {
       {matches.map((match) => (
         <div
           key={match.fixtureId}
-          className="grid min-h-10 grid-cols-[60px_minmax(0,1fr)_80px_55px_55px_55px_50px] items-center gap-2 border-b text-[11px] last:border-0"
+          className="grid min-h-10 grid-cols-[60px_minmax(0,1fr)_80px_55px_55px_55px_50px] items-center gap-2 border-b text-[12px] last:border-0"
         >
           <bdi className={pp.muted}>
             {new Date(match.kickoffAt).toLocaleDateString(
@@ -963,7 +970,7 @@ function BreakthroughCard({
             <bdi className={cn(pp.display, pp.energyText, "text-[30px]")}>
               ×{formatNumber(split.secondMinutes / split.firstMinutes, lang, 1)}
             </bdi>
-            <p className={cn(pp.monoStrong, pp.muted, "text-[9px]")}>
+            <p className={cn(pp.monoStrong, pp.muted, "text-[10px] leading-[1.4]")}>
               {t("pepites.player.breakthrough_playing_time")}
             </p>
           </div>
@@ -1040,7 +1047,9 @@ function PlayerStats({
 function ProfileItem({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <dt className={cn(pp.mono, pp.muted, "text-[9px] ltr:tracking-[0.08em]")}>{label}</dt>
+      <dt className={cn(pp.mono, pp.muted, "text-[11px] leading-[1.4] ltr:tracking-[0.04em]")}>
+        {label}
+      </dt>
       <dd className={cn(pp.bold, pp.text, "text-[13px]")}>{children}</dd>
     </div>
   );
@@ -1077,12 +1086,17 @@ function RatingTrend({
       data-testid="pepites-rating-trend"
     >
       <div className="mb-2 flex items-baseline justify-between">
-        <p className={cn(pp.monoStrong, "text-[9px] text-white ltr:tracking-[0.1em]")}>
+        <p
+          className={cn(
+            pp.monoStrong,
+            "text-[12px] leading-[1.4] text-white ltr:tracking-[0.06em]",
+          )}
+        >
           {t("pepites.matches.trend_title")}
         </p>
       </div>
       {rated.length === 0 ? (
-        <p className="text-[12px] text-white/60">{t("pepites.matches.no_ratings")}</p>
+        <p className="text-[13px] leading-[1.5] text-white/60">{t("pepites.matches.no_ratings")}</p>
       ) : (
         <svg
           viewBox={`0 0 ${width} ${height}`}
@@ -1130,7 +1144,7 @@ function RatingTrend({
         </svg>
       )}
       {average !== null ? (
-        <p className={cn(pp.mono, "mt-1 text-end text-[8px] text-white/60")}>
+        <p className={cn(pp.mono, "mt-1 text-end text-[12px] leading-[1.4] text-white/60")}>
           {t("pepites.matches.season_average").replace("{n}", formatNumber(average, lang, 2))}
         </p>
       ) : null}
@@ -1170,7 +1184,7 @@ function PlayerMatches({
       <p className="py-6 text-center text-[13px] text-white/70">{t("pepites.player.no_matches")}</p>
     );
   }
-  const head = cn(pp.monoStrong, "text-[8px] text-white/45 ltr:tracking-[0.08em]");
+  const head = cn(pp.monoStrong, "text-[10px] leading-[1.4] text-white/45 ltr:tracking-[0.04em]");
   return (
     <div className="flex flex-col gap-4">
       <RatingTrend matches={matches} average={seasonAverage} />
@@ -1207,7 +1221,7 @@ function PlayerMatches({
                 key={match.fixtureId}
                 className={cn(MATCH_COLUMNS, "border-b border-white/10 py-2.5")}
               >
-                <bdi className={cn(pp.mono, "text-[10px] text-white/55")}>
+                <bdi className={cn(pp.mono, "text-[11px] leading-[1.4] text-white/55")}>
                   {matchDate(match.kickoffAt)}
                 </bdi>
                 <span className={cn(pp.bold, "truncate text-[12px] text-white")}>
@@ -1227,7 +1241,7 @@ function PlayerMatches({
                 <span
                   className={cn(
                     pp.heavy,
-                    "text-end text-[11px]",
+                    "text-end text-[12px]",
                     involvement ? pp.spring : "text-white/45",
                   )}
                 >
