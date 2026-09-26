@@ -48,3 +48,17 @@ export const loadAdminUsersRouteAccess = createServerFn({ method: "POST" }).hand
   const { loadAdminRouteAccessForPermission } = await import("./route-access.server");
   return adminRouteStateSchema.parse(await loadAdminRouteAccessForPermission("users.read_support"));
 });
+
+export const loadAdminPepitesRouteAccess = createServerFn({ method: "POST" }).handler(async () => {
+  const { loadAdminRouteAccessForPermission } = await import("./route-access.server");
+  return adminRouteStateSchema.parse(await loadAdminRouteAccessForPermission("pepites.edit"));
+});
+
+export const loadAdminPepitesDataRouteAccess = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const { loadAdminRouteAccessForPermission } = await import("./route-access.server");
+    return adminRouteStateSchema.parse(
+      await loadAdminRouteAccessForPermission("football.read_operations"),
+    );
+  },
+);

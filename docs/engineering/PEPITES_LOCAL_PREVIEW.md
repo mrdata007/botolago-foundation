@@ -72,3 +72,23 @@ Two local limits, neither of them in production:
 - **The second factor.** `supabase/config.toml` has TOTP verification off
   locally. To sign in as the staff account, turn `[auth.mfa.totp]` on in
   your working copy, restart the stack, and put the file back.
+
+## 3. The staff screens
+
+With the local database and the second factor on (above), sign in as
+`staff@pepites.local` at `/auth/login?next=/admin/pepites`, and enter the
+code your authenticator app shows for the secret `JBSWY3DPEHPK3PXP`. The
+editor opens the week 7 draft; `/admin/pepites/donnees` holds the data desk,
+the player search and corrections, and the photo releases. Photo upload
+needs the Edge Functions running (`supabase functions serve`); the rest
+does not.
+
+The browser test of these screens runs against that server:
+
+```sh
+E2E_PEPITES_LOCAL_STACK=1 E2E_BASE_URL=http://127.0.0.1:4174 \
+  bunx playwright test tests/e2e/pepites.local-stack.e2e.ts
+```
+
+It writes to the local database (it publishes week 7), so reseed before
+running it again.

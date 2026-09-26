@@ -447,6 +447,7 @@ export type Database = {
         Returns: Json
       }
       admin_pepites_overview: { Args: never; Returns: Json }
+      admin_pepites_player_search: { Args: { p_query: string }; Returns: Json }
       admin_player_attribute_correct: {
         Args: {
           p_attribute: string
@@ -462,6 +463,10 @@ export type Database = {
       }
       admin_player_photo_reject: {
         Args: { p_reason: string; p_release_id: string }
+        Returns: Json
+      }
+      admin_player_photo_releases: {
+        Args: { p_status?: string }
         Returns: Json
       }
       admin_player_photo_revoke: {

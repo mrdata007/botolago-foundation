@@ -1267,6 +1267,52 @@ with its pgTAP file.
      published without a reload, and the reader journeys, in both languages
      at 390 px.
 
+10. `pepites_admin_lists`: the two lists the staff screens need.
+    **Built** locally as `20260926140000_pepites_admin_lists.sql` (15 pgTAP
+    assertions in `pepites_admin_lists.test.sql`):
+    `api.admin_player_photo_releases(p_status)` (`football.correct`), with
+    the rights problems an approval would find today, and
+    `api.admin_pepites_player_search(p_query)` (`football.read_operations`),
+    a literal name match (the reader's `%` and `_` are text). Both run the
+    step-up first; the step-up count in
+    `ordinary_account_mfa_step_up_reads.test.sql` goes from 72 to 74 and its
+    checked lists are unchanged.
+11. **The staff screens** (no migration). **Built** on `claude/pepites-admin`,
+    behind the same `PEPITES_ENABLED` switch as the pages:
+    - `/admin/pepites` (`pepites.edit`; publishing actions need
+      `pepites.publish`): mode, publication, the tick and what readers see
+      now; ops notices; the season's editions and runs; the editor of the
+      week in progress: order (up, down, remove, add from the top-20
+      shortlist), a line in French and in Arabic per player, save, schedule
+      in Morocco time, back to draft, publish now (a second press),
+      correction, withdrawal (a motive, in the console's confirm step), the
+      email report, and the edition's history. The mode itself is not
+      changed here: it goes through the reviewed migration path.
+    - `/admin/pepites/donnees` (`football.read_operations`; changes need
+      `football.correct`): the data desk (filters, close with a note, correct
+      the field an issue names), player search with the attributes the desk
+      corrects, the manual correction (a source note of 8 characters or
+      more), and the photo releases (upload, approve, refuse, revoke).
+    - **Photo upload** goes through a new Edge Function,
+      `player-photo-upload`: the buckets are private with no browser write
+      policy, so it stores the original and the signed release with the
+      service role, like `news-media-upload`. It asks
+      `api.admin_player_photo_upload_paths` for the paths **as the caller**
+      before any byte is stored (the database's permission and step-up
+      decide), checks the files by their bytes, then records the release
+      with `api.admin_player_photo_submit`, again as the caller, and removes
+      both files if that is refused. A release starts `pending`; approval is
+      a separate step, and the photo job publishes.
+    - Tests: `supabase/functions/_shared/player-photo-upload.test.ts`, the
+      admin helpers (Morocco time, including the Ramadan offset; the
+      editor's list; the refusals in words), and
+      `tests/e2e/pepites.local-stack.e2e.ts` against the seeded local stack
+      (skipped elsewhere): staff sign in with the second factor, reorder
+      week 7, write a line, schedule it late; a visitor arriving sees last
+      week and the "coming" band, and the new Top 10 without a reload once
+      staff publish; a fan turns the email on and reports an error that the
+      data desk then lists.
+
 Local proof for each: `bun run backend:migrations:check`, `backend:db:reset`,
 `backend:db:test`, `backend:db:lint` and `backend:types:check`. CI
 `database-quality` is the authority.

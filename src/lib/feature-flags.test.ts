@@ -352,9 +352,12 @@ describe("PEPITES_ENABLED / PEPITES_PROMOTED", () => {
     expect((SITEMAP_STATIC_PATHS as readonly string[]).includes("/pepites")).toBe(false);
   });
 
-  test("the /pepites routes redirect Home while Pépites is off", () => {
+  test("the /pepites routes redirect while Pépites is off, the admin ones too", () => {
     expect(stripComments(read("src/routes/pepites.tsx"))).toContain(
       'if (!PEPITES_ENABLED) throw redirect({ to: "/", replace: true });',
+    );
+    expect(stripComments(read("src/routes/admin.pepites.tsx"))).toContain(
+      'if (!PEPITES_ENABLED) throw redirect({ to: "/admin", replace: true });',
     );
   });
 
