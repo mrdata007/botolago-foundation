@@ -177,9 +177,16 @@ Soft launch behind the flag, then public from the first edition after round 3.
 
 ## 8. Owner decisions
 
-1. Provider tests: the SportsMonks probe, the API-Football trial and the
-   Wyscout quote.
-2. Photo programme owner and budget.
-3. Nav change.
-4. The Monday editor.
-5. Who builds each lane.
+Recorded 2026-09-26.
+
+1. Provider: the owner asked Claude to search for a suitable second provider
+   (in progress). A trial key is created by the owner when chosen.
+2. Photo programme: explained to the owner; who contacts the clubs and the
+   photographer budget are still open.
+3. Nav change: **approved.** Pépites takes the Profil slot and Profile moves
+   to the header avatar.
+4. Monday editor: **the owner.**
+5. Build: Claude designs and builds; the owner approves each gate and every
+   production change.
+
+Next: Gate A, owner review of [`PEPITES_ARCHITECTURE.md`](PEPITES_ARCHITECTURE.md).
