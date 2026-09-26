@@ -330,6 +330,43 @@ reason)` deletes the public derivative, sets the asset to `rejected` and
   unexpired release. Otherwise `null`, and the UI draws the silhouette
   (`PlayerPhoto`).
 
+**Built** (`20260926070000_player_photo_releases.sql`, tested by
+`player_photo_releases.test.sql`, 70 assertions). As specified above, with
+these details settled while building:
+
+- Release lifecycle: `pending → approved → published`, ending in
+  `rejected`, `revoked`, `expired` or `replaced`. A trigger keeps the facts
+  (files, dates, signer, scope, licence, credit, expiry) unchanged after
+  submission, allows only those moves, and rejects delete and truncate.
+- Prerequisites are checked on approval and again on publication by
+  `app_private.player_photo_release_problems`, which names each problem:
+  `intake_missing`, `document_missing`, `date_of_birth_unknown`,
+  `captured_before_birth`, `captured_in_future`, `signed_in_future`,
+  `guardian_required` (under 18 on the capture date; the 18th birthday
+  counts as adult), `expired`.
+- Staff actions are `app_private.submit_`, `approve_`, `reject_` and
+  `revoke_player_photo_release`, each recording who acted. Their API
+  wrappers with permissions come with `pepites_api` (§6.2, migration 8).
+- The storage job publishes through
+  `app_private.publish_player_photo_release`: a square WebP between 128 and
+  1024 px at `football/players/<player_id>/<release_id>.webp`, present in
+  `football-media`. It creates the validated `media_assets` row, points the
+  player at it, and replaces the player's previous published photo (one
+  published photo per player).
+- The read helper is `app_private.player_photo_for(player, use, on)`, with
+  `use` `app` or `share`. It re-checks the rights on the given day with the
+  current date of birth, so a correction that makes the player a minor on
+  the capture date hides a player-signed photo at once.
+- Revocation, expiry (the daily `app_private.expire_player_photo_releases`)
+  and replacement set the asset `rejected` or `expired`, clear
+  `players.photo_asset_id` and queue the public derivative and the original
+  in `app_private.player_photo_storage_deletions`. The signed document is
+  kept. Deleting rows from `storage.objects` in SQL would orphan the files,
+  so the storage job removes them through the Storage API.
+- Until that job runs, a revoked or expired derivative is still a file in
+  the public bucket at an unguessable path (it contains the release id), but
+  nothing in the app links to it any more.
+
 ### 3.4 Methodologies
 
 `app.pepites_methodologies`:
@@ -1033,7 +1070,8 @@ with its pgTAP file.
    else. Its production apply script is written when production is
    authorised, not before.
 2. `player_photo_releases`: private buckets, release table, approval trigger,
-   revocation, read helper.
+   revocation, read helper. **Built** locally as
+   `20260926070000_player_photo_releases.sql`.
 3. `data_desk_issues`
 4. `pepites_engine`: methodologies, runs, snapshot tables, scores, sealing
    triggers, gather, score, replay, and the 2025-26 `season_final` run.
@@ -1185,3 +1223,17 @@ weekly email in §5.4. Still open:
   §10: good for player attributes; detailed stats for 2026-27 not yet seen.
 - The CNDP coverage of photo releases.
 - The email opt-in wording.
+
+## 13. Follow-ups (non-blocking)
+
+- **Declared key from confirmations to observations** (recorded
+  2026-09-26, owner review of PR #225). The attribute migration checks
+  `player_attribute_observation_confirmations.observation_id` with an
+  insert trigger instead of a declared foreign key, only so that the
+  existing "observations cannot be truncated" test keeps its own error
+  message. Prefer the declared key. With it, a plain `TRUNCATE` of the
+  observations is refused by PostgreSQL (`0A000`) before the append-only
+  trigger runs; changing that test's expected error is acceptable as long
+  as it still proves truncation is refused and no row was removed. Do this
+  in a forward migration, or in place only while
+  `20260926060000` is still unapplied everywhere.
