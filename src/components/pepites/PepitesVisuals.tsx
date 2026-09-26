@@ -35,12 +35,16 @@ export function GoMark() {
     >
       <span
         aria-hidden
-        className={cn(
-          "inline-flex h-[22px] items-center justify-center rounded-[6px] bg-white px-[5px] text-[9px] text-[color:var(--pepites-ink)]",
-          pp.heavy,
-        )}
+        className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-[6px] bg-white"
       >
-        GO
+        <img
+          src="/favicon.png?v=2"
+          alt=""
+          width={20}
+          height={20}
+          draggable={false}
+          className="size-5 object-contain"
+        />
       </span>
       <span
         aria-hidden
@@ -74,6 +78,7 @@ export function NightBand({
   className,
   children,
   testId,
+  wide = false,
 }: {
   /** The club colour behind the leader; none on pages without one. */
   glow?: string | null;
@@ -83,6 +88,7 @@ export function NightBand({
   className?: string;
   children: ReactNode;
   testId?: string;
+  wide?: boolean;
 }) {
   return (
     <section
@@ -115,7 +121,14 @@ export function NightBand({
           {ghost}
         </span>
       ) : null}
-      <div className="mx-auto w-full px-4 md:max-w-[var(--ui-content-max)]">{children}</div>
+      <div
+        className={cn(
+          "mx-auto w-full px-4",
+          wide ? "md:max-w-[1232px] md:px-4" : "md:max-w-[var(--ui-content-max)]",
+        )}
+      >
+        {children}
+      </div>
     </section>
   );
 }
@@ -146,8 +159,8 @@ export function MonoLine({
     <p
       data-testid={testId}
       className={cn(
-        "text-[9px] leading-[1.35] ltr:tracking-[0.12em]",
-        tone === "sub" ? cn(pp.mono, "text-[10px] ltr:tracking-[0.06em]") : pp.monoStrong,
+        "text-[11px] leading-[1.4] ltr:tracking-[0.06em]",
+        tone === "sub" ? cn(pp.mono, "ltr:tracking-[0.04em]") : pp.monoStrong,
         tone === "meta" && pp.onNightMeta,
         tone === "sub" && pp.onNightSub,
         tone === "spring" && pp.spring,
@@ -406,7 +419,7 @@ export function FactsStrip({
           <dt
             className={cn(
               pp.mono,
-              "order-2 text-[8px] leading-tight text-white/70 ltr:tracking-[0.1em]",
+              "order-2 text-[10px] leading-[1.4] text-white/70 ltr:tracking-[0.04em]",
             )}
           >
             {fact.label}
@@ -478,7 +491,12 @@ export function ScoreRing({
         <bdi className={cn(pp.display, "text-white")} style={{ fontSize: size * 0.33 }}>
           {typeof score === "number" ? formatNumber(Math.round(score), lang) : "–"}
         </bdi>
-        <span className={cn(pp.monoStrong, "text-[7px] text-white/70 ltr:tracking-[0.12em]")}>
+        <span
+          className={cn(
+            pp.monoStrong,
+            "text-[10px] leading-[1.4] text-white/70 ltr:tracking-[0.04em]",
+          )}
+        >
           {label}
         </span>
       </span>

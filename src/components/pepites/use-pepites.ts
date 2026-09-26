@@ -36,6 +36,10 @@ export const pepitesKeys = {
     ["pepites", viewer, "edition", seasonId ?? "current", week] as const,
   methodology: (viewer: PepitesViewer) => ["pepites", viewer, "methodology"] as const,
   weeklyEmail: (uid: string) => ["pepites", uid, "weekly-email"] as const,
+  playerStats: (viewer: PepitesViewer, version: string | null, playerId: string) =>
+    ["pepites", viewer, "player-stats", version ?? "current", playerId] as const,
+  follow: (viewer: PepitesViewer, playerId: string) =>
+    ["pepites", viewer, "follow", playerId] as const,
 };
 
 /** The reader the current session reads as; "anon" until the session is known. */
@@ -163,6 +167,30 @@ export function editionQueryOptions(viewer: PepitesViewer, seasonId: string | nu
     queryFn: async ({ signal }: { signal?: AbortSignal }) =>
       forViewer(viewer, await pepitesService.edition(seasonId, week, signal)),
     staleTime: 5 * 60_000,
+  };
+}
+
+export function playerStatsQueryOptions(
+  viewer: PepitesViewer,
+  version: string | null,
+  playerId: string,
+) {
+  return {
+    queryKey: pepitesKeys.playerStats(viewer, version, playerId),
+    queryFn: async ({ signal }: { signal?: AbortSignal }) =>
+      forViewer(viewer, await pepitesService.playerStats(version, playerId, signal)),
+    staleTime: 5 * 60_000,
+  };
+}
+
+/** The follow state: refetched on the player page's own timer only (it is
+ * not cached across versions, since the follower count moves on its own). */
+export function followStateQueryOptions(viewer: PepitesViewer, playerId: string) {
+  return {
+    queryKey: pepitesKeys.follow(viewer, playerId),
+    queryFn: async ({ signal }: { signal?: AbortSignal }) =>
+      forViewer(viewer, await pepitesService.followState(playerId, signal)),
+    staleTime: 30_000,
   };
 }
 

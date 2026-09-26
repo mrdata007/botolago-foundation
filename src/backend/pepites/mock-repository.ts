@@ -1,4 +1,5 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import type { FantasyPlayer } from "@/types/fantasy";
 
 import type {
   EditionEntry,
@@ -106,6 +107,38 @@ const players: MockPlayer[] = Array.from({ length: 30 }, (_, index) => {
     preferredFoot: index % 3 === 0 ? null : index % 2 === 0 ? "right" : "left",
     heightCm: index % 4 === 0 ? null : 170 + (index % 15),
   };
+});
+
+// The Pépites preview sends these ids to the Fantasy transfer screen. Keep
+// matching fictional players in the mock Fantasy pool so selecting a Pépites
+// player actually starts a transfer for that same player.
+const FANTASY_CLUB_IDS: Record<string, string> = {
+  raja: "rca",
+  wydad: "war",
+  far: "asfar",
+  berkane: "rsb",
+  fus: "fus",
+  mas: "mat",
+  husa: "hus",
+};
+
+export const pepitesMockFantasyPlayers: FantasyPlayer[] = players.flatMap((player, index) => {
+  if (index % 3 === 2 || !player.team?.slug || !player.positionGroup) return [];
+  const clubId = FANTASY_CLUB_IDS[player.team.slug];
+  if (!clubId) return [];
+  return [
+    {
+      id: uuid("7e600000", index + 1),
+      name: { fr: player.name, ar: player.name },
+      clubId,
+      position: player.positionGroup,
+      price: 4,
+      totalPoints: 0,
+      form: null,
+      ownership: 0,
+      status: "available" as const,
+    },
+  ];
 });
 
 function card(player: MockPlayer): PepitesPlayerCard {
@@ -426,7 +459,9 @@ export class MockPepitesRepository implements PepitesRepository {
         ownGoals: 0,
       },
       split: { ...SPLIT, firstMinutes: first, secondMinutes: player.minutes - first },
-      fantasyPlayerId: index % 3 === 2 ? null : uuid("7e600000", index + 1),
+      fantasyPlayerId:
+        pepitesMockFantasyPlayers.find((candidate) => candidate.id === uuid("7e600000", index + 1))
+          ?.id ?? null,
     });
   }
 

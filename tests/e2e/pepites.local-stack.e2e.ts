@@ -78,6 +78,7 @@ async function staffPage(browser: Browser): Promise<Page> {
   await page.locator("#mfa-challenge-code").fill(totp(TOTP_SECRET));
   await page.getByRole("button", { name: fr["auth.mfa_challenge.cta"] }).click();
   await page.waitForURL(/\/admin\/pepites/);
+  await gotoHydrated(page, "/admin/pepites", "fr");
   return page;
 }
 
@@ -187,6 +188,7 @@ test("a fan turns the weekly email on and reports an error the data desk then li
   page,
 }, testInfo) => {
   test.setTimeout(120_000);
+  await page.setViewportSize({ width: 390, height: 860 });
   // A signed-in session also reads the Fantasy hub, and the local catalog has
   // no Fantasy season: that one 404 is expected here and nothing else is.
   const diagnostics = observePage(page, {
@@ -202,9 +204,24 @@ test("a fan turns the weekly email on and reports an error the data desk then li
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-checked", "true");
 
-  await page.getByTestId("pepites-top-entry").first().click();
+  const playerPath = await page.getByTestId("pepites-top-entry").first().getAttribute("href");
+  expect(playerPath).toMatch(/^\/pepites\/joueur\//);
+  await gotoHydrated(page, playerPath!, "fr");
   await expect(page.getByTestId("pepites-player-name")).toBeVisible();
   const name = (await page.getByTestId("pepites-player-name").innerText()).trim();
+  const follow = page.getByTestId("pepites-follow");
+  await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  await gotoHydrated(page, "/pepites/classement?suivis=1", "fr");
+  await expect(page.getByTestId("pepites-ranking-row")).toHaveCount(1);
+  await gotoHydrated(page, playerPath!, "fr");
+  await page.getByRole("tab", { name: fr["pepites.player.tab_stats"] }).click();
+  await expect(page.getByTestId("pepites-player-stats")).toContainText(fr["pepites.stats.minutes"]);
+  await page.getByTestId("pepites-player-compare").click();
+  await page.getByTestId("pepites-compare-pick-b").click();
+  await page.getByTestId("pepites-compare-option").first().click();
+  await expect(page.getByTestId("pepites-compare-card")).toBeVisible();
+  await gotoHydrated(page, playerPath!, "fr");
   await page.getByTestId("pepites-report").click();
   await page.getByLabel(fr["pepites.report.field_label"]).selectOption("height_cm");
   await page.getByTestId("pepites-report-message").fill("Il mesure 1,84 m selon le club.");

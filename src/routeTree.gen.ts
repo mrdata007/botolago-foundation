@@ -32,6 +32,7 @@ import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
 import { Route as PrizesTermsRouteImport } from './routes/prizes.terms'
 import { Route as PepitesRevelationRouteImport } from './routes/pepites.revelation'
 import { Route as PepitesMethodeRouteImport } from './routes/pepites.methode'
+import { Route as PepitesComparerRouteImport } from './routes/pepites.comparer'
 import { Route as PepitesClassementRouteImport } from './routes/pepites.classement'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
 import { Route as MatchesStandingsRouteImport } from './routes/matches.standings'
@@ -197,6 +198,11 @@ const PepitesRevelationRoute = PepitesRevelationRouteImport.update({
 const PepitesMethodeRoute = PepitesMethodeRouteImport.update({
   id: '/methode',
   path: '/methode',
+  getParentRoute: () => PepitesRoute,
+} as any)
+const PepitesComparerRoute = PepitesComparerRouteImport.update({
+  id: '/comparer',
+  path: '/comparer',
   getParentRoute: () => PepitesRoute,
 } as any)
 const PepitesClassementRoute = PepitesClassementRouteImport.update({
@@ -510,6 +516,7 @@ export interface FileRoutesByFullPath {
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/pepites/classement': typeof PepitesClassementRoute
+  '/pepites/comparer': typeof PepitesComparerRoute
   '/pepites/methode': typeof PepitesMethodeRoute
   '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
@@ -582,6 +589,7 @@ export interface FileRoutesByTo {
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/pepites/classement': typeof PepitesClassementRoute
+  '/pepites/comparer': typeof PepitesComparerRoute
   '/pepites/methode': typeof PepitesMethodeRoute
   '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
@@ -659,6 +667,7 @@ export interface FileRoutesById {
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/pepites/classement': typeof PepitesClassementRoute
+  '/pepites/comparer': typeof PepitesComparerRoute
   '/pepites/methode': typeof PepitesMethodeRoute
   '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
@@ -737,6 +746,7 @@ export interface FileRouteTypes {
     | '/matches/standings'
     | '/news/$articleId'
     | '/pepites/classement'
+    | '/pepites/comparer'
     | '/pepites/methode'
     | '/pepites/revelation'
     | '/prizes/terms'
@@ -809,6 +819,7 @@ export interface FileRouteTypes {
     | '/matches/standings'
     | '/news/$articleId'
     | '/pepites/classement'
+    | '/pepites/comparer'
     | '/pepites/methode'
     | '/pepites/revelation'
     | '/prizes/terms'
@@ -885,6 +896,7 @@ export interface FileRouteTypes {
     | '/matches/standings'
     | '/news/$articleId'
     | '/pepites/classement'
+    | '/pepites/comparer'
     | '/pepites/methode'
     | '/pepites/revelation'
     | '/prizes/terms'
@@ -1101,6 +1113,13 @@ declare module '@tanstack/react-router' {
       path: '/methode'
       fullPath: '/pepites/methode'
       preLoaderRoute: typeof PepitesMethodeRouteImport
+      parentRoute: typeof PepitesRoute
+    }
+    '/pepites/comparer': {
+      id: '/pepites/comparer'
+      path: '/comparer'
+      fullPath: '/pepites/comparer'
+      preLoaderRoute: typeof PepitesComparerRouteImport
       parentRoute: typeof PepitesRoute
     }
     '/pepites/classement': {
@@ -1636,6 +1655,7 @@ const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 
 interface PepitesRouteChildren {
   PepitesClassementRoute: typeof PepitesClassementRoute
+  PepitesComparerRoute: typeof PepitesComparerRoute
   PepitesMethodeRoute: typeof PepitesMethodeRoute
   PepitesRevelationRoute: typeof PepitesRevelationRoute
   PepitesIndexRoute: typeof PepitesIndexRoute
@@ -1645,6 +1665,7 @@ interface PepitesRouteChildren {
 
 const PepitesRouteChildren: PepitesRouteChildren = {
   PepitesClassementRoute: PepitesClassementRoute,
+  PepitesComparerRoute: PepitesComparerRoute,
   PepitesMethodeRoute: PepitesMethodeRoute,
   PepitesRevelationRoute: PepitesRevelationRoute,
   PepitesIndexRoute: PepitesIndexRoute,

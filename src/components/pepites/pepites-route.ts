@@ -110,6 +110,9 @@ export interface RankingSearch {
   poste?: "gk" | "def" | "mid" | "fwd";
   age?: 19 | 20 | 21;
   tri?: Exclude<RankingSort, "score">;
+  club?: string;
+  min?: 600 | 900 | 1200;
+  suivis?: "1";
 }
 
 const POSTES = { gk: "GK", def: "DEF", mid: "MID", fwd: "FWD" } as const;
@@ -118,12 +121,16 @@ export function validateRankingSearch(search: Record<string, unknown>): RankingS
   const poste = typeof search.poste === "string" ? search.poste.toLowerCase() : "";
   const age = Number(search.age);
   const tri = typeof search.tri === "string" ? search.tri : "";
+  const min = Number(search.min);
   return {
     ...(poste in POSTES ? { poste: poste as RankingSearch["poste"] } : {}),
     ...(age === 19 || age === 20 || age === 21 ? { age } : {}),
     ...(tri !== "score" && (RANKING_SORTS as readonly string[]).includes(tri)
       ? { tri: tri as RankingSearch["tri"] }
       : {}),
+    ...(typeof search.club === "string" && isPlayerId(search.club) ? { club: search.club } : {}),
+    ...(min === 600 || min === 900 || min === 1200 ? { min } : {}),
+    ...(String(search.suivis) === "1" ? { suivis: "1" as const } : {}),
   };
 }
 
@@ -131,11 +138,17 @@ export function rankingFiltersFromSearch(search: RankingSearch): {
   position: PositionGroup | null;
   maxAge: number | null;
   sort: RankingSort;
+  teamId: string | null;
+  minMinutes: number | null;
+  followed: boolean;
 } {
   return {
     position: search.poste ? POSTES[search.poste] : null,
     maxAge: search.age ?? null,
     sort: search.tri ?? "score",
+    teamId: search.club ?? null,
+    minMinutes: search.min ?? null,
+    followed: search.suivis === "1",
   };
 }
 
@@ -143,6 +156,9 @@ export function rankingSearchFromFilters(filters: {
   position: PositionGroup | null;
   maxAge: number | null;
   sort: RankingSort;
+  teamId: string | null;
+  minMinutes: number | null;
+  followed: boolean;
 }): RankingSearch {
   const poste = filters.position
     ? (Object.keys(POSTES) as Array<keyof typeof POSTES>).find(
@@ -155,6 +171,11 @@ export function rankingSearchFromFilters(filters: {
       ? { age: filters.maxAge }
       : {}),
     ...(filters.sort !== "score" ? { tri: filters.sort } : {}),
+    ...(filters.teamId ? { club: filters.teamId } : {}),
+    ...(filters.minMinutes === 600 || filters.minMinutes === 900 || filters.minMinutes === 1200
+      ? { min: filters.minMinutes }
+      : {}),
+    ...(filters.followed ? { suivis: "1" as const } : {}),
   };
 }
 
@@ -169,11 +190,11 @@ export function validateRevealSearch(search: Record<string, unknown>): RevealSea
 }
 
 export interface PlayerSearch {
-  onglet?: "matchs";
+  onglet?: "matchs" | "stats";
 }
 
 export function validatePlayerSearch(search: Record<string, unknown>): PlayerSearch {
-  return search.onglet === "matchs" ? { onglet: "matchs" } : {};
+  return search.onglet === "matchs" || search.onglet === "stats" ? { onglet: search.onglet } : {};
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

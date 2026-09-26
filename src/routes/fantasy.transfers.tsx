@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -34,6 +34,11 @@ import type { FantasyPlayer } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/transfers")({
   head: () => fantasyHead("transfers"),
+  // `?player=<fantasyPlayerId>` — "＋ Fantasy" on a Pépites player page lands
+  // here with that player already picked as the incoming one. Optional, and
+  // read once (below): a reload or a shared link is the plain screen.
+  validateSearch: (search: Record<string, unknown>): { player?: string } =>
+    typeof search.player === "string" && search.player ? { player: search.player } : {},
   component: TransfersPage,
 });
 
@@ -69,8 +74,10 @@ function TransfersPage() {
 }
 
 function TransfersBody() {
-  const { t, lang } = useI18n();
+  const { t, tr, lang } = useI18n();
   const qc = useQueryClient();
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: "/fantasy/transfers" });
   const screen = useFantasyScreen();
   const owned = useFantasyOwned();
   const isCloud = owned.source === "cloud";
@@ -177,6 +184,22 @@ function TransfersBody() {
       completePairs.length === outIds.length,
     retry: false,
   });
+
+  // Kept before the loading guard so React sees these hooks on every render.
+  const incomingFromRef = useRef(false);
+  useEffect(() => {
+    if (!search.player) {
+      incomingFromRef.current = false;
+      return;
+    }
+    if (incomingFromRef.current || screen.phase !== "ready" || !team || !gameweek) return;
+    incomingFromRef.current = true;
+    void navigate({ to: "/fantasy/transfers", search: {}, replace: true });
+    const incomingPlayer = players.find((candidate) => candidate.id === search.player);
+    if (incomingPlayer) onPickIncoming(incomingPlayer);
+    // `onPickIncoming` changes identity on render; the URL/ref make this one-shot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.player, screen.phase, players, team, gameweek]);
 
   if (screen.phase !== "ready" || !team || !gameweek) {
     return (
@@ -623,6 +646,11 @@ function TransfersBody() {
         title={t("fpl.transfers")}
         kicker={t("fantasy.title")}
         backTo="/fantasy"
+        banner={
+          incoming
+            ? `${t("fpl.incoming_player")}: ${tr(incoming.name)}. ${t("fpl.select_replacement")}`
+            : undefined
+        }
         gameweek={gameweek.number}
         deadlineIso={gameweek.deadline}
         stats={[

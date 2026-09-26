@@ -177,6 +177,52 @@ for (const lang of ["fr", "ar"] as const) {
     await diagnostics.verify(testInfo);
   });
 
+  test(`${lang}: Top 10 chips filter in place and both detail routes return to Pépites`, async ({
+    page,
+  }, testInfo) => {
+    const diagnostics = observePage(page);
+    await page.setViewportSize({ width: 390, height: 860 });
+    await initializeLanguage(page, lang);
+    await gotoHydrated(page, "/pepites", lang);
+
+    const entries = page.getByTestId("pepites-top-entry");
+    const playerNumbers = async () =>
+      entries.evaluateAll((links) =>
+        links.map((link) => Number(link.getAttribute("href")?.slice(-12))),
+      );
+    await expect(entries).toHaveCount(10);
+    for (const [filter, expected] of [
+      ["FWD", [1, 5, 9]],
+      ["MID", [2, 6]],
+      ["DEF", [3, 7, 11]],
+      ["GK", [4, 8]],
+      ["age", [2, 1, 3, 6, 7, 11, 8]],
+    ] as const) {
+      const chip = page.getByTestId(`pepites-home-filter-${filter}`);
+      await chip.click();
+      await expect(page).toHaveURL(/\/pepites$/);
+      await expect(chip).toHaveAttribute("aria-pressed", "true");
+      expect(await playerNumbers()).toEqual(expected);
+    }
+
+    await page.getByTestId("pepites-home-filter-all").click();
+    await expect(page.getByTestId("pepites-home-filter-all")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(entries).toHaveCount(10);
+    await entries.first().click();
+    await expect(page).toHaveURL(/\/pepites\/joueur\//);
+    await page.getByTestId("pepites-back").first().click();
+    await expect(page).toHaveURL(/\/pepites$/);
+
+    await page.getByTestId("pepites-full-ranking").click();
+    await expect(page).toHaveURL(/\/pepites\/classement$/);
+    await page.getByTestId("pepites-ranking-back").first().click();
+    await expect(page).toHaveURL(/\/pepites$/);
+    await diagnostics.verify(testInfo);
+  });
+
   test(`${lang}: the share image is drawn on the phone for the published week`, async ({
     page,
   }, testInfo) => {
@@ -265,7 +311,106 @@ for (const lang of ["fr", "ar"] as const) {
     await expect(toggle).toHaveAttribute("aria-checked", "true");
     await diagnostics.verify(testInfo);
   });
+
+  test(`${lang}: Follow, Stats, Percée and Compare work on the player page`, async ({
+    page,
+  }, testInfo) => {
+    const diagnostics = observePage(page);
+    await page.setViewportSize({ width: 390, height: 860 });
+    await initializeLanguage(page, lang);
+    await gotoHydrated(page, "/pepites", lang);
+    await page.getByTestId("pepites-top-entry").first().click();
+    await expect(page.getByTestId("pepites-breakthrough")).toBeVisible();
+    await page.getByTestId("pepites-follow").click();
+    await expect(page.getByRole("dialog")).toContainText(
+      copy(lang, "pepites.follow.create_account"),
+    );
+    await page.getByRole("dialog").press("Escape");
+    await page.getByRole("tab", { name: copy(lang, "pepites.player.tab_stats") }).click();
+    await expect(page).toHaveURL(/onglet=stats/);
+    await expect(page.getByTestId("pepites-player-stats")).toContainText(
+      copy(lang, "pepites.stats.minutes"),
+    );
+    await page.getByTestId("pepites-player-compare").click();
+    await expect(page).toHaveURL(/\/pepites\/comparer\?a=/);
+    await page.getByTestId("pepites-compare-pick-b").click();
+    await page.getByTestId("pepites-compare-option").first().click();
+    await expect(page.getByTestId("pepites-compare-card")).toBeVisible();
+    await expect(page.getByTestId("pepites-compare-cards")).toBeVisible();
+    await diagnostics.verify(testInfo);
+  });
+
+  test(`${lang}: desktop ranking and player use the wide layout`, async ({ page }, testInfo) => {
+    const diagnostics = observePage(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await initializeLanguage(page, lang);
+    await gotoHydrated(page, "/pepites/classement", lang);
+    await expect(page.getByTestId("pepites-desktop-podium")).toBeVisible();
+    await expect(page.getByTestId("pepites-desktop-table")).toBeVisible();
+    await expect(page.getByTestId("pepites-desktop-filters")).toBeVisible();
+    await page.getByTestId("pepites-desktop-table").getByRole("link").first().click();
+    await expect(page.getByTestId("pepites-desktop-player-hero")).toBeVisible();
+    await expect(page.getByTestId("pepites-desktop-player-body")).toBeVisible();
+    await expect(page.getByTestId("pepites-desktop-rating-trend")).toBeVisible();
+    await expect(page.getByTestId("pepites-desktop-face-to-face")).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    await page.getByTestId("pepites-desktop-player-hero").getByTestId("pepites-back").click();
+    await expect(page).toHaveURL(/\/pepites$/);
+    await page.getByTestId("pepites-full-ranking").click();
+    await page.getByTestId("pepites-ranking-back").last().click();
+    await expect(page).toHaveURL(/\/pepites$/);
+    await diagnostics.verify(testInfo);
+  });
 }
+
+test("signed-in Follow can toggle, and +Fantasy carries the mapped player", async ({
+  page,
+}, testInfo) => {
+  const diagnostics = observePage(page);
+  await page.setViewportSize({ width: 390, height: 860 });
+  await initializeLanguage(page, "fr");
+  await gotoHydrated(page, `/auth/login?next=${encodeURIComponent("/pepites")}`, "fr");
+  await page.locator('input[type="email"]').fill(DEMO.email);
+  await page.locator('input[autocomplete="current-password"]').fill(DEMO.password);
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL((url) => url.pathname === "/pepites");
+  const playerPath = await page.getByTestId("pepites-top-entry").first().getAttribute("href");
+  expect(playerPath).toMatch(/^\/pepites\/joueur\//);
+  await gotoHydrated(page, playerPath!, "fr");
+  const follow = page.getByTestId("pepites-follow");
+  await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId("pepites-back").first().click();
+  await expect(page).toHaveURL(/\/pepites$/);
+  await page.getByTestId("pepites-full-ranking").click();
+  await page.getByTestId("pepites-ranking-followed").click();
+  await expect(page.getByTestId("pepites-ranking-row")).toHaveCount(1);
+  await expect(page.getByTestId("pepites-ranking-followed")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.getByTestId("pepites-ranking-row").first().click();
+  const followAgain = page.getByTestId("pepites-follow");
+  await expect(followAgain).toHaveAttribute("aria-pressed", "true");
+  await followAgain.click();
+  await expect(followAgain).toHaveAttribute("aria-pressed", "false");
+  const fantasy = page.getByTestId("pepites-fantasy-link");
+  await expect(fantasy).toHaveAttribute("href", /\/fantasy\/transfers\?player=/);
+  await fantasy.click();
+  await expect(page).toHaveURL(/\/fantasy\/transfers/);
+  await expect(page.getByRole("status").filter({ hasText: "Joueur exemple 2" })).toBeVisible();
+  await expect(page.getByText(/Joueur entrant: Joueur exemple 2/)).toBeVisible();
+  await expect(
+    page.getByText("Touchez le joueur du même poste à remplacer.", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Reda Jaadi/ }).click();
+  await expect(page.getByRole("button", { name: /Suivant/ })).toBeEnabled();
+  await page.getByRole("button", { name: /Suivant/ }).click();
+  await expect(page.getByText("Joueur exemple 2", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Confirmer" }).click();
+  await expect(page.getByRole("button", { name: /Joueur exemple 2/ })).toBeVisible();
+  await diagnostics.verify(testInfo);
+});
 
 test("with Pépites switched off, every page says it is coming and shows no player", async ({
   page,
