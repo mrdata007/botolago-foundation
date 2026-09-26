@@ -375,15 +375,17 @@ function EditionEditor({
     onError: (error) => setMessage({ text: describeAdminError(error, rtl), alert: true }),
   });
 
-  if (query.isPending || !draft)
-    return <AdminSkeletonList rows={3} testId="admin-pepites-editor-loading" />;
-  if (query.isError || !data) {
+  // A failed read first: without data there is no draft, and waiting for
+  // one would leave a stale `?edition=` link on a skeleton for good.
+  if (query.isError && !data) {
     return (
-      <AdminNotice tone="alert" role="alert">
+      <AdminNotice tone="alert" role="alert" testId="admin-pepites-editor-error">
         {describeAdminError(query.error, rtl)}
       </AdminNotice>
     );
   }
+  if (query.isPending || !draft || !data)
+    return <AdminSkeletonList rows={3} testId="admin-pepites-editor-loading" />;
 
   const { edition, problems, shortlist, moves } = data;
   const isDraft = edition.status === "draft";

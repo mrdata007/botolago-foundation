@@ -212,6 +212,9 @@ test("a fan turns the weekly email on and reports an error the data desk then li
   await expect(page.getByText(fr["pepites.report.sent"])).toBeVisible();
 
   const staff = await staffPage(browser);
+  // A stale edition link says why it cannot open, rather than loading forever.
+  await staff.goto("/admin/pepites?edition=00000000-0000-4000-8000-000000000000");
+  await expect(staff.getByTestId("admin-pepites-editor-error")).toBeVisible();
   await staff.goto("/admin/pepites/donnees");
   const issue = staff.getByTestId("admin-pepites-issue").filter({ hasText: name });
   await expect(issue.first()).toContainText("Il mesure 1,84 m selon le club.");
