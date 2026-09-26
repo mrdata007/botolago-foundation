@@ -71,11 +71,14 @@ one edit away from not rolling back.
    Inside the database, pg_cron runs `news-publish-due-editions` every minute,
    `notification-email-tick` every 5 minutes, `fantasy-lifecycle-tick`
    every 5 minutes and `football-live-refresh` every 15 minutes
-   (`select jobname, schedule, active from cron.job`). The two email/results
-   jobs write only when switched on in
+   (`select jobname, schedule, active from cron.job`). Where migration
+   20260926113100 is applied, `football-season-refresh` runs every 10
+   minutes and has SportsMonks refresh the season's fixtures (yesterday to
+   six weeks ahead) once an hour, under the live refresh's switch. The
+   email/results jobs and the season refresh write only when switched on in
    `app_private.notification_email_settings`
    ([EMAIL_NOTIFICATIONS.md](docs/backend/EMAIL_NOTIFICATIONS.md)); pause
-   both with `select app_private.notification_email_configure('off', null,
+   all three with `select app_private.notification_email_configure('off', null,
 null, false);` before a write that touches fixtures or notifications, and
    restore the previous settings afterwards. The Fantasy tick (calendar sync
    and gameweek transitions) writes only when switched on in

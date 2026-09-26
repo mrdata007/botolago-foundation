@@ -3,6 +3,7 @@ import {
   DEFAULT_LEAGUE_ID,
   DEFAULT_SEASON_ID,
   handleFootballLiveRefreshRequest,
+  SEASON_REFRESH_DAYS_AHEAD,
   liveRefreshEnvironment,
   type LiveRefreshRpcClient,
 } from "./football-live-refresh.ts";
@@ -260,6 +261,31 @@ describe("football live refresh, match details", () => {
     });
     expect(response.status).toBe(502);
     expect(await response.json()).toEqual({ error: "provider_unavailable" });
+    expect(order).not.toContain("service_football_match_details_due");
+  });
+
+  it("reads six weeks ahead for the season refresh, and stops after the scores", async () => {
+    const order: string[] = [];
+    const paths: string[] = [];
+    const response = await handleFootballLiveRefreshRequest(
+      request(TOKEN, "POST", '{"job":"season_fixtures"}'),
+      {
+        environment,
+        now,
+        client: database(order, [{ externalId: "7001", status: "live_second_half" }]),
+        fetch: async (input) => {
+          paths.push(new URL(String(input)).pathname);
+          return Response.json(between);
+        },
+      },
+    );
+    expect(SEASON_REFRESH_DAYS_AHEAD).toBe(42);
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as LiveBody;
+    expect(body.jobs.fixtures.updated).toBe(1);
+    expect(body.matchDetails).toBeUndefined();
+    expect(paths).toEqual(["/v3/football/fixtures/between/2026-09-23/2026-11-05"]);
+    expect(order).toContain("ingest_football_fixture");
     expect(order).not.toContain("service_football_match_details_due");
   });
 
