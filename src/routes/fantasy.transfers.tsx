@@ -74,7 +74,7 @@ function TransfersPage() {
 }
 
 function TransfersBody() {
-  const { t, lang } = useI18n();
+  const { t, tr, lang } = useI18n();
   const qc = useQueryClient();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/fantasy/transfers" });
@@ -646,6 +646,11 @@ function TransfersBody() {
         title={t("fpl.transfers")}
         kicker={t("fantasy.title")}
         backTo="/fantasy"
+        banner={
+          incoming
+            ? `${t("fpl.incoming_player")}: ${tr(incoming.name)}. ${t("fpl.select_replacement")}`
+            : undefined
+        }
         gameweek={gameweek.number}
         deadlineIso={gameweek.deadline}
         stats={[

@@ -8,6 +8,7 @@ import type {
   PlayerPointsBreakdown,
 } from "@/types/fantasy";
 import { clubs } from "@/mocks/data";
+import { pepitesMockFantasyPlayers } from "@/backend/pepites/mock-repository";
 
 // Build a broad player pool: for each club, generate 3 players per position
 // so squad-building is realistic. Prices/points/form vary.
@@ -393,18 +394,23 @@ const pickIds = (clubId: string, pos: string, n: number) =>
 const squadIds: string[] = [
   // GK (2)
   ...pickIds("asfar", "GK", 1),
-  ...pickIds("war", "GK", 1),
+  ...pickIds("moas", "GK", 1),
   // DEF (5)
-  ...pickIds("war", "DEF", 2),
-  ...pickIds("asfar", "DEF", 2),
+  ...pickIds("war", "DEF", 1),
+  ...pickIds("asfar", "DEF", 1),
   ...pickIds("rsb", "DEF", 1),
+  ...pickIds("rca", "DEF", 1),
+  ...pickIds("fus", "DEF", 1),
   // MID (5)
-  ...pickIds("rca", "MID", 2),
-  ...pickIds("war", "MID", 2),
+  ...pickIds("rca", "MID", 1),
+  ...pickIds("war", "MID", 1),
   ...pickIds("fus", "MID", 1),
+  ...pickIds("rsb", "MID", 1),
+  ...pickIds("mat", "MID", 1),
   // FWD (3)
-  ...pickIds("rca", "FWD", 2),
+  ...pickIds("rca", "FWD", 1),
   ...pickIds("war", "FWD", 1),
+  ...pickIds("moas", "FWD", 1),
 ];
 
 // Ensure exactly 15 (fallback fill)
@@ -441,6 +447,12 @@ export const fantasyTeam: FantasyTeam = {
     { playerId: squadIds[14], slot: 15 }, // sub FWD
   ],
 };
+
+// These preview-only Pépites players use the ids carried by “＋ Fantasy”.
+// Append after the starter squad is assembled so existing mock teams stay stable.
+if (import.meta.env?.DEV === true && import.meta.env?.VITE_PEPITES_PREVIEW === "1") {
+  fantasyPlayers.push(...pepitesMockFantasyPlayers);
+}
 
 // League data
 export const leagues: League[] = [

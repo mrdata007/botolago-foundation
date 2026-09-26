@@ -398,6 +398,17 @@ test("signed-in Follow can toggle, and +Fantasy carries the mapped player", asyn
   await expect(fantasy).toHaveAttribute("href", /\/fantasy\/transfers\?player=/);
   await fantasy.click();
   await expect(page).toHaveURL(/\/fantasy\/transfers/);
+  await expect(page.getByRole("status").filter({ hasText: "Joueur exemple 2" })).toBeVisible();
+  await expect(page.getByText(/Joueur entrant: Joueur exemple 2/)).toBeVisible();
+  await expect(
+    page.getByText("Touchez le joueur du même poste à remplacer.", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Reda Jaadi/ }).click();
+  await expect(page.getByRole("button", { name: /Suivant/ })).toBeEnabled();
+  await page.getByRole("button", { name: /Suivant/ }).click();
+  await expect(page.getByText("Joueur exemple 2", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Confirmer" }).click();
+  await expect(page.getByRole("button", { name: /Joueur exemple 2/ })).toBeVisible();
   await diagnostics.verify(testInfo);
 });
 
