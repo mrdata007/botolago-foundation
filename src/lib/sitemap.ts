@@ -21,7 +21,12 @@ export const SITEMAP_STATIC_PATHS = [
   "/matches/standings",
   "/clubs",
   "/fantasy",
+  "/fantasy/players",
+  "/fantasy/top-players",
+  "/fantasy/fixtures",
+  "/fantasy/rankings",
   "/fantasy/rules",
+  "/fantasy/help",
   "/privacy",
   "/terms",
   // Redirected to the hub while prizes are off, so listed only when they are on.

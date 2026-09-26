@@ -148,12 +148,12 @@ describe("structured data on the detail pages", () => {
       return (JSON.parse(script.children) as { "@type": string })["@type"];
     });
 
-  test("a club page carries its breadcrumb only when the club loaded", () => {
+  test("a club page carries its team identity and breadcrumb only when the club loaded", () => {
     const head = (ClubRoute.options as unknown as { head: (ctx: unknown) => Scripts }).head({
       params: { clubId: ID },
       loaderData: { club: { name: { fr: "Wydad AC", ar: "الوداد" } }, fetchedAt: 0 },
     });
-    expect(types(head)).toEqual(["BreadcrumbList"]);
+    expect(types(head)).toEqual(["SportsTeam", "BreadcrumbList"]);
     const failed = (ClubRoute.options as unknown as { head: (ctx: unknown) => Scripts }).head({
       params: { clubId: ID },
       loaderData: UNAVAILABLE,
