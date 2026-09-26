@@ -55,6 +55,12 @@ select extensions.ok(not has_table_privilege('service_role','app_private.fantasy
 select set_config('request.jwt.claims','{"role":"authenticated"}',true);
 select extensions.throws_ok($$select api.service_get_fantasy_scoring_snapshot(pg_temp.scoring_id(6),1,null,1)$$,'PT403','forbidden','runtime service-role guard rejects a forged browser call');
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select set_config('test.pre_transfer_digest', encode(extensions.digest(
+  app_private.fantasy_scoring_input_document(pg_temp.scoring_id(6))::text, 'sha256'), 'hex'), true);
+select extensions.ok(not exists(select 1 from jsonb_array_elements(
+  app_private.fantasy_scoring_input_document(pg_temp.scoring_id(6))->'playerFixtures') pf
+  where pf ? 'fixtureTeamId'),
+  'an unchanged fixture does not alter legacy scoring snapshot digests');
 -- A later transfer to a third club cannot drop the player's earlier match
 -- from the scoring document. Use the match performance's team for attribution.
 update app.fantasy_players set football_team_id=pg_temp.scoring_id(105)
@@ -69,6 +75,10 @@ select extensions.is(
 );
 update app.fantasy_players set football_team_id=pg_temp.scoring_id(101)
 where id=pg_temp.scoring_id(2001);
+select extensions.is(encode(extensions.digest(
+  app_private.fantasy_scoring_input_document(pg_temp.scoring_id(6))::text, 'sha256'), 'hex'),
+  current_setting('test.pre_transfer_digest'),
+  'returning the player to his fixture club preserves a prior snapshot digest');
 select set_config('test.scoring_snapshot',api.service_get_fantasy_scoring_snapshot(pg_temp.scoring_id(6),1,null,1)::text,true);
 select extensions.is(jsonb_array_length(current_setting('test.scoring_snapshot')::jsonb->'playerFixtures'),66,'coherent snapshot contains all reconciled player/fixture inputs');
 select extensions.is(jsonb_array_length(current_setting('test.scoring_snapshot')::jsonb->'teams'),1,'team page contains frozen lineup without profile PII');
