@@ -25,7 +25,13 @@ fails its `season_orchestrator` row and opens `Production health`. Each closes
 on its own job's next green run.
 
 The webhook and the email send one message per incident, repeat hourly while
-it lasts, and say `RECOVERED` once. Warnings never send. They see the
+it lasts, and say `RECOVERED` once. A message counts as sent only once its
+channel answers with success (2xx); one that gets any other answer, times out
+or gets no answer is sent again at the next tick, 5 minutes later, until the
+channel takes it. Each channel is tracked on its own, so a broken webhook
+does not hold back the email, nor the reverse (since migration
+`20260926113000`; before it, a failed message still counted as sent and the
+alerts stayed quiet for an hour). Warnings never send. They see the
 database's checks only: the watchdog's own rows (`fantasy_points`,
 `season_orchestrator`, the pages, `release_drift`) reach you through GitHub
 alone.
@@ -350,11 +356,35 @@ failing checks changes, every `repeat_after` (1 h) while it keeps failing,
 and once on recovery. Warnings never page. A new check needs no setting: every
 check in `api.service_ops_health` takes part.
 
-What it last did:
+Each tick first reads the answer to every message still waiting for one
+(`net._http_response`). A 2xx answer confirms it. Anything else (an error
+code, a timeout, no answer 3 minutes after it left) means it did not arrive:
+the tick forgets it and sends again to that channel alone, so a failure or a
+recovery is never lost to one bad answer. A channel that keeps failing is
+tried every 5 minutes for as long as the incident lasts.
+
+What it last did (`last_sent_at` is when the last message a channel
+confirmed was sent):
 
 ```sql
 select enabled, last_status, last_sent_at from app_private.ops_alert_state;
 ```
+
+What each channel last confirmed, and why its last message failed if it did
+(`http_404`, `http_503`, `timed_out`, `unreachable`, `no_answer`):
+
+```sql
+select channel, delivered_status, delivered_at, pending_request_id,
+  last_outcome, last_outcome_at, failures_in_a_row
+from app_private.ops_alert_channels;
+```
+
+`failures_in_a_row` above 0 means the owner has not heard the latest news
+on that channel. For the email, `http_503` is usually
+`email_provider_not_configured` (the Resend key is missing from the Edge
+Function secrets). The failed answer itself is the `net._http_response` row
+whose id is `last_email_request_id` (or `last_request_id` for the webhook)
+in `app_private.ops_alert_state`, read as in step 3 above.
 
 Testing the GitHub and webhook channels once, making sure the `@mrdata007`
 mention reaches you, and the optional settings are the owner's checklist in
