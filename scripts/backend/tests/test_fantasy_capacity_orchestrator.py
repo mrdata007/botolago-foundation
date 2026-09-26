@@ -199,5 +199,17 @@ class PreparationAndObserverHardeningTests(unittest.TestCase):
         self.assertTrue(all(" as count" in query.lower() for query in queries))
 
 
+class RunnerBootstrapTests(unittest.TestCase):
+    def test_runners_build_the_venv_with_python_3_11(self) -> None:
+        # Amazon Linux 2023's python3 is 3.9, where the load runner's
+        # `from datetime import UTC` fails at import (run 36231686454).
+        user_data = MODULE.runner_user_data()
+
+        self.assertIn("dnf install -y python3.11 python3.11-pip\n", user_data)
+        self.assertIn("python3.11 -m venv /opt/botolago-venv\n", user_data)
+        self.assertNotIn("\npython3 -m venv", user_data)
+        self.assertIn(f"shutdown -h +{MODULE.RUNNER_SELF_TERMINATION_MINUTES}\n", user_data)
+
+
 if __name__ == "__main__":
     unittest.main()

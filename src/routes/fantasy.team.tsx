@@ -36,6 +36,7 @@ import {
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
 import { validateTeam } from "@/lib/team-validation";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
+import { useIntentKey } from "@/services/fantasy-intent-key";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -125,6 +126,10 @@ function PickTeamBody() {
   const [sheetFor, setSheetFor] = useState<string | null>(null);
   const [pendingChip, setPendingChip] = useState<ChipKey | null>(null);
   const [saving, setSaving] = useState(false);
+  // One idempotency key per lineup and per chip asked for, reused by a retry
+  // of the same one (see `fantasy-intent-key.ts`).
+  const lineupKey = useIntentKey();
+  const chipKey = useIntentKey();
 
   const chipsState: ChipsState = isCloud
     ? (owned.snapshot?.lifecycle.chips ?? { active: null, used: [] })
@@ -248,6 +253,10 @@ function PickTeamBody() {
     setSaving(true);
     try {
       if (isCloud && draftKey) {
+        const teamId = owned.snapshot?.teamId ?? null;
+        const expectedVersion = owned.snapshot?.version ?? 0;
+        const currentGameweekId = owned.snapshot?.currentGameweekId ?? null;
+        const idempotencyKey = lineupKey.for([teamId, expectedVersion, currentGameweekId, squad]);
         const res = await runOwnedMutation(
           {
             qc,
@@ -261,6 +270,8 @@ function PickTeamBody() {
           {
             action: () =>
               owned.repo.saveTeam({
+                teamId,
+                idempotencyKey,
                 teamName: team.teamName,
                 managerName: user?.displayName?.trim() || team.managerName || null,
                 formation,
@@ -269,8 +280,8 @@ function PickTeamBody() {
                 pendingTransfers: team.pendingTransfers,
                 squad,
                 purchasePrices: owned.snapshot?.purchasePrices ?? {},
-                expectedVersion: owned.snapshot?.version ?? 0,
-                currentGameweekId: owned.snapshot?.currentGameweekId ?? null,
+                expectedVersion,
+                currentGameweekId,
                 lifecycle: owned.snapshot?.lifecycle ?? fantasyStateStore.read(),
               }),
             args: undefined,
@@ -279,6 +290,7 @@ function PickTeamBody() {
           },
         );
         if (res.ok) {
+          lineupKey.clear();
           setLocalSquad(null);
           setSelectedId(null);
           toast.success(t("fpl.team_saved"));
@@ -328,7 +340,7 @@ function PickTeamBody() {
     setPendingChip(key);
   };
   const confirmChip = async () => {
-    if (!pendingChip) return;
+    if (!pendingChip || saving) return;
     setSaving(true);
     try {
       if (isCloud) {
@@ -337,6 +349,8 @@ function PickTeamBody() {
           return;
         }
         const chip = pendingChip;
+        const { teamId, version, currentGameweekId } = owned.snapshot;
+        const idempotencyKey = chipKey.for([teamId, version, currentGameweekId, chip]);
         const res = await runOwnedMutation(
           {
             qc,
@@ -350,16 +364,20 @@ function PickTeamBody() {
           {
             action: () =>
               owned.repo.activateChip({
-                gameweekId: owned.snapshot!.currentGameweekId!,
+                teamId,
+                gameweekId: currentGameweekId,
                 chip,
-                expectedVersion: owned.snapshot!.version,
+                expectedVersion: version,
+                idempotencyKey,
               }),
             args: undefined,
             savedIdleAfterMs: 2400,
           },
         );
-        if (res.ok) toast.success(t("fantasy.chip.activated"));
-        else {
+        if (res.ok) {
+          chipKey.clear();
+          toast.success(t("fantasy.chip.activated"));
+        } else {
           const c = classifyRepoError(res.error);
           // Refused until the one-time code is in: the chip is not
           // "Indisponible". The auth layer's notice says what is owed, once.
@@ -382,34 +400,43 @@ function PickTeamBody() {
     }
   };
   const cancelActiveChip = async () => {
+    // A second tap while the first is on its way would be refused as stale.
+    if (saving) return;
     if (isCloud) {
       if (!owned.snapshot?.currentGameweekId || !owned.snapshot.activeChipCancellable) {
         toast.error(t("fantasy.chip.state.unavailable"));
         return;
       }
-      const res = await runOwnedMutation(
-        {
-          qc,
-          scope: owned.scope,
-          setMutationStatus: owned.setMutationStatus,
-          nextMutationSeq: owned.nextMutationSeq,
-          setMutationStatusIfCurrent: owned.setMutationStatusIfCurrent,
-          replaceSnapshot: owned.replaceSnapshot,
-          invalidateOwned: owned.invalidateOwned,
-        },
-        {
-          action: () =>
-            owned.repo.cancelChip({
-              gameweekId: owned.snapshot!.currentGameweekId!,
-              expectedVersion: owned.snapshot!.version,
-            }),
-          args: undefined,
-        },
-      );
-      if (res.ok) toast.success(t("fantasy.chip.cancelled"));
-      // As for activating it: a code owed is said as such, once.
-      else if (classifyRepoError(res.error).isStepUp) showStepUpNotice(t);
-      else toast.error(t("fantasy.chip.state.unavailable"));
+      const { teamId, version, currentGameweekId } = owned.snapshot;
+      setSaving(true);
+      try {
+        const res = await runOwnedMutation(
+          {
+            qc,
+            scope: owned.scope,
+            setMutationStatus: owned.setMutationStatus,
+            nextMutationSeq: owned.nextMutationSeq,
+            setMutationStatusIfCurrent: owned.setMutationStatusIfCurrent,
+            replaceSnapshot: owned.replaceSnapshot,
+            invalidateOwned: owned.invalidateOwned,
+          },
+          {
+            action: () =>
+              owned.repo.cancelChip({
+                teamId,
+                gameweekId: currentGameweekId,
+                expectedVersion: version,
+              }),
+            args: undefined,
+          },
+        );
+        if (res.ok) toast.success(t("fantasy.chip.cancelled"));
+        // As for activating it: a code owed is said as such, once.
+        else if (classifyRepoError(res.error).isStepUp) showStepUpNotice(t);
+        else toast.error(t("fantasy.chip.state.unavailable"));
+      } finally {
+        setSaving(false);
+      }
       return;
     }
     fantasyStateStore.write({ chips: deactivateChip(chipsState) });
@@ -537,6 +564,7 @@ function PickTeamBody() {
             variant="soft"
             size="sm"
             onClick={() => void cancelActiveChip()}
+            disabled={saving}
             className="mt-2"
           >
             <X className="h-4 w-4" aria-hidden />

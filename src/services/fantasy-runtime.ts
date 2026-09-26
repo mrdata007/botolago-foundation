@@ -1,8 +1,7 @@
 import { fantasyService as mockFantasyService, type FantasyTeamPatch } from "./fantasy-mock";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
-import { supabaseV2 } from "@/integrations/supabase/v2-client";
 import { selectFantasyDataMode } from "./fantasy-v2";
-import { forgetSharedFantasyHub, shareFantasyHub } from "./fantasy-hub-share";
+import { forgetSharedFantasyHub, readSharedFantasyHub } from "./fantasy-hub-share";
 import {
   enrolmentGameweekOf,
   readFantasyAvailability,
@@ -181,23 +180,9 @@ function overallStandingDto(dto: FantasyOverallStandingDto): LeagueStanding {
   };
 }
 
-/**
- * Whose hub a read returns: the account whose session the request will carry.
- * An unreadable session never shares (a fresh identity per call).
- */
-async function hubIdentity(): Promise<string> {
-  try {
-    const { data } = await supabaseV2.auth.getSession();
-    return data.session?.user.id ?? "anonymous";
-  } catch {
-    return `unknown:${crypto.randomUUID()}`;
-  }
-}
-
 /** One hub read per screen and account: see `fantasy-hub-share.ts`. */
-async function hub(): Promise<FantasyHubDto> {
-  const identity = await hubIdentity();
-  return shareFantasyHub(() => cloud.getHub("fr", context()), { identity });
+function hub(): Promise<FantasyHubDto> {
+  return readSharedFantasyHub(() => cloud.getHub("fr", context()));
 }
 
 /** The hub's enrolment gameweek in the screens' `Gameweek` vocabulary. */
@@ -353,7 +338,14 @@ export const fantasyService = {
     return [];
   },
 
-  async getTrendingPlayers(): Promise<Player[]> {
+  /**
+   * `loadPlayers` is the pool the caller already holds (the shared
+   * `["fantasy-players"]` query, see `fantasy-queries.ts`); without it the
+   * whole pool is downloaded again.
+   */
+  async getTrendingPlayers(
+    loadPlayers: () => Promise<FantasyPlayer[]> = allPlayers,
+  ): Promise<Player[]> {
     if (mode() === "mock") {
       const [{ trendingPlayers }, players] = await Promise.all([
         import("@/mocks/data"),
@@ -367,7 +359,7 @@ export const fantasyService = {
     if (!current.gameweek) return [];
     const [top, players] = await Promise.all([
       cloud.getTopPlayers(current.gameweek.id, context()),
-      allPlayers(),
+      loadPlayers(),
     ]);
     const byId = new Map(players.map((player) => [player.id, player]));
     return top
@@ -563,7 +555,11 @@ export const fantasyService = {
     const current = await hub();
     return cloud.getRules(current.season.id, context());
   },
-  async getTopPlayersOfWeek(gameweek: number): Promise<TopPlayerOfWeek[]> {
+  /** `loadPlayers`: as for `getTrendingPlayers`. */
+  async getTopPlayersOfWeek(
+    gameweek: number,
+    loadPlayers: () => Promise<FantasyPlayer[]> = allPlayers,
+  ): Promise<TopPlayerOfWeek[]> {
     if (mode() === "mock") return mockFantasyService.getTopPlayersOfWeek(gameweek);
     const current = await hub();
     const gameweeks = await cloud.getGameweeks(current.season.id, null, context());
@@ -575,7 +571,7 @@ export const fantasyService = {
     // price/ownership 0 and form `null` ("unknown"), never a fabricated 0.0.
     const [top, players] = await Promise.all([
       cloud.getTopPlayers(target.id, context()),
-      allPlayers(),
+      loadPlayers(),
     ]);
     const byId = new Map(players.map((player) => [player.id, player]));
     return top.map((player, index) => {

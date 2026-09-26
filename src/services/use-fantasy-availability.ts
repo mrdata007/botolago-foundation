@@ -51,10 +51,18 @@ export function toAvailabilityView(input: {
 }
 
 /**
+ * A season opening or a gameweek becoming playable is noticed within this
+ * long on a screen left open. It used to be asked every minute on every open
+ * tab, one hub read each time.
+ */
+export const FANTASY_AVAILABILITY_REFRESH_MS = 5 * 60_000;
+
+/**
  * Shared by the home widgets and every Fantasy route.
  *
- * Guarantees a finite outcome: the probe is bounded by a timeout, retried once
- * on failure, and never blocks child routes — every consumer decides how to
+ * Guarantees a finite outcome: the probe is bounded by a timeout, retried
+ * under the app's policy (once, jittered, never for a refusal a retry cannot
+ * change), and never blocks child routes — every consumer decides how to
  * render loading / closed / error states for its own screen.
  */
 export function useFantasyAvailability() {
@@ -62,9 +70,7 @@ export function useFantasyAvailability() {
     queryKey: ["fantasy", "availability"],
     queryFn: () => withTimeout(fantasyService.getAvailability(), FANTASY_AVAILABILITY_TIMEOUT_MS),
     staleTime: 30_000,
-    refetchInterval: 60_000,
-    retry: 1,
-    retryDelay: 1_500,
+    refetchInterval: FANTASY_AVAILABILITY_REFRESH_MS,
   });
   const view = toAvailabilityView({
     isPending: query.isPending,

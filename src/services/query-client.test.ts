@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, setSystemTime, test } from "bun:test";
+import { focusManager, QueryObserver } from "@tanstack/react-query";
 import { onMfaStepUpRequired } from "@/backend/auth/step-up";
 import { BackendError } from "@/backend/errors";
 import { FootballError } from "@/backend/football/errors";
@@ -71,6 +72,39 @@ describe("retries", () => {
     expect(queryRetryDelay(0, () => 0)).toBe(500);
     expect(queryRetryDelay(0, () => 0.999)).toBe(1_499);
     expect(queryRetryDelay(10, () => 0.5)).toBe(8_000);
+  });
+});
+
+describe("a return to the tab", () => {
+  test("does not ask again for what the page holds, unless the query opts in", async () => {
+    const client = createAppQueryClient();
+    client.mount();
+    const calls = { hub: 0, live: 0 };
+    const stop = [
+      new QueryObserver(client, {
+        queryKey: ["fantasy", "availability"],
+        queryFn: async () => ++calls.hub,
+        staleTime: 0,
+      }).subscribe(() => {}),
+      new QueryObserver(client, {
+        queryKey: ["football", "live-matches", "fr"],
+        queryFn: async () => ++calls.live,
+        staleTime: 0,
+        refetchOnWindowFocus: true,
+      }).subscribe(() => {}),
+    ];
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(calls).toEqual({ hub: 1, live: 1 });
+
+    focusManager.setFocused(false);
+    focusManager.setFocused(true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(calls).toEqual({ hub: 1, live: 2 });
+
+    focusManager.setFocused(undefined);
+    for (const unsubscribe of stop) unsubscribe();
+    client.unmount();
+    client.clear();
   });
 });
 

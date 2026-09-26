@@ -29,7 +29,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { cn } from "@/lib/utils";
-import { fantasyService } from "@/services/fantasy-runtime";
+import { fantasyPlayersQuery } from "@/services/fantasy-queries";
 import { footballService } from "@/services/football";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
@@ -122,10 +122,7 @@ function PlayersPage() {
     maximumFractionDigits: 1,
   });
   const pctNf = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
-  const playersQ = useQuery({
-    queryKey: ["fantasy-players"],
-    queryFn: () => fantasyService.getPlayers(),
-  });
+  const playersQ = useQuery(fantasyPlayersQuery());
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),

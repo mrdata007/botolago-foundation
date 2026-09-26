@@ -115,6 +115,17 @@ null, false);` before a write that touches fixtures or notifications, and
    two minutes and then computes the whole archive on every request (as it
    did before the snapshot); the ops health check `news_sitemap` warns after
    two minutes and fails, paging, after ten, so resume it promptly.
+   Where migration 20260926140000 is applied, pg_cron also runs
+   `fantasy-ownership-refresh` every 5 minutes: it reads the Fantasy teams and
+   squads and writes only `app_private.fantasy_ownership_snapshot` ("selected
+   by"); `fantasy-ownership-refresh-history-prune` deletes that job's
+   `cron.job_run_details` rows older than 7 days at 03:37 UTC. A Fantasy write
+   does not need either paused. Pause both by name for a write that touches
+   the snapshot table or `cron.job_run_details`, and set both back to `true`
+   afterwards (while paused, "selected by" is counted live on every call once
+   the snapshot is 10 minutes old):
+   `select cron.alter_job((select jobid from cron.job where jobname = 'fantasy-ownership-refresh'), active := false);`
+   `select cron.alter_job((select jobid from cron.job where jobname = 'fantasy-ownership-refresh-history-prune'), active := false);`
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 

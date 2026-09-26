@@ -13,6 +13,7 @@ import { SquadBuilderScreen, type BuilderSlot } from "@/components/fpl/SquadBuil
 import { TransferConfirmScreen } from "@/components/fpl/TransferConfirmScreen";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { UiHeader } from "@/components/ui-kit";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import {
@@ -25,6 +26,7 @@ import {
 } from "@/lib/fantasy-engine";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
+import { useIntentKey } from "@/services/fantasy-intent-key";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -36,6 +38,13 @@ export const Route = createFileRoute("/fantasy/transfers")({
   head: () => fantasyHead("transfers"),
   component: TransfersPage,
 });
+
+/**
+ * How long the picks must rest before the server is asked for their figures.
+ * Each pick used to send a preview of its own, most of them for a squad the
+ * manager was still changing.
+ */
+const PREVIEW_SETTLE_MS = 400;
 
 interface TransfersDraftPayload {
   outIds: string[];
@@ -97,6 +106,10 @@ function TransfersBody() {
   const [view, setView] = useState<"squad" | "list">("squad");
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  // One idempotency key per confirmation and per chip asked for, reused by a
+  // retry of the same one (see `fantasy-intent-key.ts`).
+  const confirmKey = useIntentKey();
+  const chipKey = useIntentKey();
 
   const draftKey = useMemo<FantasyDraftKey | null>(() => {
     if (!isCloud || !owned.userId) return null;
@@ -141,20 +154,29 @@ function TransfersBody() {
   // `owned-fantasy` family on purpose: every owned save invalidates that
   // family, which would ask again with the version the save had just replaced
   // (a `version_conflict` on the server) before the screen moved to the new one.
+  //
+  // Asked once the picks have rested (PREVIEW_SETTLE_MS), and never again for
+  // the same key: the key holds the version, so a new version is a new key,
+  // and the answer for a version does not change.
+  const pairsKey = JSON.stringify(completePairs);
+  const settledPairsKey = useDebouncedValue(pairsKey, PREVIEW_SETTLE_MS);
+  const previewSettled = settledPairsKey === pairsKey;
+  const previewPairs = JSON.parse(settledPairsKey) as typeof completePairs;
   const serverPreview = useQuery({
     queryKey: [
       "fantasy-transfer-preview",
       owned.userId,
       owned.snapshot?.teamId,
       owned.snapshot?.version,
-      completePairs.map((p) => `${p.outId}:${p.inId}`).join("|"),
+      previewPairs.map((p) => `${p.outId}:${p.inId}`).join("|"),
       chipsState.active,
     ],
     queryFn: () =>
       owned.repo.previewTransfers({
+        teamId: owned.snapshot!.teamId,
         expectedVersion: owned.snapshot!.version,
         currentGameweekId: owned.snapshot!.currentGameweekId!,
-        transfers: completePairs.map((pair) => {
+        transfers: previewPairs.map((pair) => {
           const outP = players.find((p) => p.id === pair.outId)!;
           const inP = players.find((p) => p.id === pair.inId)!;
           return {
@@ -171,12 +193,17 @@ function TransfersBody() {
       }),
     enabled:
       isCloud &&
+      previewSettled &&
       !!owned.snapshot?.teamId &&
       !!owned.snapshot.currentGameweekId &&
       completePairs.length > 0 &&
       completePairs.length === outIds.length,
     retry: false,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
   });
+  // Figures for the picks on screen only, never for the ones before them.
+  const serverPreviewData = previewSettled ? serverPreview.data : undefined;
 
   if (screen.phase !== "ready" || !team || !gameweek) {
     return (
@@ -235,15 +262,15 @@ function TransfersBody() {
     netCost,
   });
   const preview =
-    isCloud && serverPreview.data
+    isCloud && serverPreviewData
       ? {
-          totalTransfers: serverPreview.data.transferCount,
-          free: serverPreview.data.freeTransfersUsed,
-          paid: serverPreview.data.transferCount - serverPreview.data.freeTransfersUsed,
-          hitPoints: serverPreview.data.pointHit,
-          bankAfter: serverPreview.data.bankAfter,
+          totalTransfers: serverPreviewData.transferCount,
+          free: serverPreviewData.freeTransfersUsed,
+          paid: serverPreviewData.transferCount - serverPreviewData.freeTransfersUsed,
+          hitPoints: serverPreviewData.pointHit,
+          bankAfter: serverPreviewData.bankAfter,
           freeTransfersAfter:
-            serverPreview.data.freeTransfersBefore - serverPreview.data.freeTransfersUsed,
+            serverPreviewData.freeTransfersBefore - serverPreviewData.freeTransfersUsed,
           overBudget: false,
         }
       : localPreview;
@@ -254,7 +281,7 @@ function TransfersBody() {
     !pendingOutWithoutIn &&
     !locked &&
     !preview.overBudget &&
-    (!isCloud || (!!serverPreview.data && !serverPreview.isError));
+    (!isCloud || (!!serverPreviewData && !serverPreview.isError));
 
   // ---- Interactions ----
   const startReplace = (playerId: string) => {
@@ -380,6 +407,8 @@ function TransfersBody() {
   };
 
   const activateTransferChip = async (key: ChipKey) => {
+    // A second tap while the first is on its way would be refused as stale.
+    if (busy) return;
     const check = canActivateChip(chipsState, key, { deadlinePassed: locked });
     if (!check.ok) {
       toast.error(t((check.reasonKey ?? "fantasy.engine.chip_conflict") as TranslationKey));
@@ -387,6 +416,8 @@ function TransfersBody() {
     }
     if (isCloud) {
       if (!owned.snapshot?.currentGameweekId) return;
+      const { teamId, version, currentGameweekId } = owned.snapshot;
+      const idempotencyKey = chipKey.for([teamId, version, currentGameweekId, key]);
       setBusy(true);
       const res = await runOwnedMutation(
         {
@@ -401,15 +432,20 @@ function TransfersBody() {
         {
           action: () =>
             owned.repo.activateChip({
-              gameweekId: owned.snapshot!.currentGameweekId!,
+              teamId,
+              gameweekId: currentGameweekId,
               chip: key,
-              expectedVersion: owned.snapshot!.version,
+              expectedVersion: version,
+              idempotencyKey,
             }),
           args: undefined,
         },
       );
       setBusy(false);
-      if (res.ok) toast.success(t("fantasy.chip.activated"));
+      if (res.ok) {
+        chipKey.clear();
+        toast.success(t("fantasy.chip.activated"));
+      }
       // Refused until the one-time code is in: the chip is not "Indisponible".
       // The auth layer says what is owed under the same toast id, so it shows once.
       else if (classifyRepoError(res.error).isStepUp) showStepUpNotice(t);
@@ -423,6 +459,7 @@ function TransfersBody() {
   };
 
   const confirm = async () => {
+    if (busy) return;
     const applied = applyConfirmedTransfers({
       team,
       chips: chipsState,
@@ -464,6 +501,14 @@ function TransfersBody() {
           };
         });
         const lifecycle = owned.snapshot.lifecycle;
+        const { teamId, version, currentGameweekId } = owned.snapshot;
+        const idempotencyKey = confirmKey.for([
+          teamId,
+          version,
+          currentGameweekId,
+          completePairs,
+          v.chips.active ?? null,
+        ]);
         const res = await runOwnedMutation(
           {
             qc,
@@ -477,14 +522,16 @@ function TransfersBody() {
           {
             action: () =>
               owned.repo.confirmTransfers({
-                expectedVersion: owned.snapshot!.version,
+                teamId,
+                idempotencyKey,
+                expectedVersion: version,
                 formation: team.formation,
                 bank: v.nextBank,
                 freeTransfers: v.nextFreeTransfers,
                 pendingTransfers: v.pendingTransfers,
                 squad: v.nextSquad,
                 purchasePrices,
-                currentGameweekId: owned.snapshot!.currentGameweekId!,
+                currentGameweekId,
                 lifecycle: {
                   ...lifecycle,
                   chips: v.chips,
@@ -498,6 +545,7 @@ function TransfersBody() {
           },
         );
         if (res.ok) {
+          confirmKey.clear();
           toast.success(t("fpl.transfers_confirmed"));
           setOutIds([]);
           setInIds([]);
@@ -565,7 +613,7 @@ function TransfersBody() {
           key,
           state: chipDisplayState(chipsState, key),
         }))}
-        onChip={(key) => void activateTransferChip(key)}
+        onChip={busy ? undefined : (key) => void activateTransferChip(key)}
         onEdit={() => setConfirming(false)}
         onConfirm={() => void confirm()}
         busy={busy}
