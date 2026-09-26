@@ -258,6 +258,11 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_data_desk_close: {
+        Args: { p_issue_id: string; p_note: string; p_status: string }
+        Returns: Json
+      }
+      admin_data_desk_list: { Args: { p_filters?: Json }; Returns: Json }
       admin_emergency_revoke_staff: {
         Args: {
           p_idempotency_key: string
@@ -407,6 +412,64 @@ export type Database = {
           p_username: string
           p_winner_id: string
         }
+        Returns: Json
+      }
+      admin_pepites_edition_correct: {
+        Args: { p_edition_id: string }
+        Returns: Json
+      }
+      admin_pepites_edition_get: {
+        Args: { p_edition_id: string }
+        Returns: Json
+      }
+      admin_pepites_edition_publish_now: {
+        Args: { p_edition_id: string }
+        Returns: Json
+      }
+      admin_pepites_edition_schedule: {
+        Args: { p_at: string; p_edition_id: string }
+        Returns: Json
+      }
+      admin_pepites_edition_unschedule: {
+        Args: { p_edition_id: string }
+        Returns: Json
+      }
+      admin_pepites_edition_update: {
+        Args: { p_edition_id: string; p_entries: Json }
+        Returns: Json
+      }
+      admin_pepites_edition_withdraw: {
+        Args: { p_edition_id: string; p_reason: string }
+        Returns: Json
+      }
+      admin_pepites_email_report: {
+        Args: { p_edition_id: string }
+        Returns: Json
+      }
+      admin_pepites_overview: { Args: never; Returns: Json }
+      admin_player_attribute_correct: {
+        Args: {
+          p_attribute: string
+          p_player_id: string
+          p_source_note: string
+          p_value: string
+        }
+        Returns: Json
+      }
+      admin_player_photo_approve: {
+        Args: { p_release_id: string }
+        Returns: Json
+      }
+      admin_player_photo_reject: {
+        Args: { p_reason: string; p_release_id: string }
+        Returns: Json
+      }
+      admin_player_photo_revoke: {
+        Args: { p_reason: string; p_release_id: string }
+        Returns: Json
+      }
+      admin_player_photo_submit: {
+        Args: { p_intake_path: string; p_player_id: string; p_release: Json }
         Returns: Json
       }
       admin_reject_request: {
@@ -1292,6 +1355,33 @@ export type Database = {
         Returns: Json
       }
       news_team_filters: { Args: { p_language: string }; Returns: Json }
+      pepites_edition: {
+        Args: { p_season_id: string; p_week: number }
+        Returns: Json
+      }
+      pepites_home: { Args: { p_version?: string }; Returns: Json }
+      pepites_methodology: { Args: never; Returns: Json }
+      pepites_player: {
+        Args: { p_player_id: string; p_version: string }
+        Returns: Json
+      }
+      pepites_player_matches: {
+        Args: { p_limit?: number; p_player_id: string }
+        Returns: Json
+      }
+      pepites_ranking: {
+        Args: {
+          p_limit?: number
+          p_max_age?: number
+          p_offset?: number
+          p_position?: string
+          p_sort?: string
+          p_team_id?: string
+          p_version?: string
+        }
+        Returns: Json
+      }
+      pepites_version: { Args: never; Returns: Json }
       predictions_leaderboard: {
         Args: {
           p_after_id?: string
@@ -1368,6 +1458,15 @@ export type Database = {
         Returns: Json
       }
       report_client_errors: { Args: { p_events: Json }; Returns: Json }
+      report_pepites_data_issue: {
+        Args: {
+          p_entity_id: string
+          p_entity_type: string
+          p_field: string
+          p_message: string
+        }
+        Returns: Json
+      }
       request_account_deletion: { Args: never; Returns: string }
       reset_prediction_league_invite_code: {
         Args: { p_league_id: string }
