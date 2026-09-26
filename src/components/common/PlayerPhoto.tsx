@@ -42,7 +42,7 @@ const PHOTO_SIZES: Record<PlayerPhotoSize, string> = {
  * Most Botola players have no photo we may show: provider images are for
  * internal use, and a licensed photo exists only once the club and the player
  * (or a guardian, under 18) have signed a release (`PEPITES_ARCHITECTURE.md`
- * §3.4). The read RPCs return `null` for everyone else, so the silhouette is
+ * §3.3). The read RPCs return `null` for everyone else, so the silhouette is
  * the common case, not an error state. It is also what shows when a photo URL
  * fails to load; `FailureAwareImage` removes the broken image and reports it.
  *

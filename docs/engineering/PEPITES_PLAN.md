@@ -10,6 +10,13 @@ share images, and its own bottom-bar tab (Profile moves to a header avatar).
 It is the first "BotolaGO Data" product and the base for a later scout and
 academy layer.
 
+**Where the architecture differs.** Revision 2 of
+[`PEPITES_ARCHITECTURE.md`](PEPITES_ARCHITECTURE.md) (2026-09-26, after
+review) wins over this plan where they disagree. In short: compare, player
+follows and detailed-stat modules move to v1.1; public view counts are
+dropped; the provider-neutral refactor is no longer a first step; clean
+sheets use one whole-match rule; unapproved photos stay in private storage.
+
 ## 0. Data audit (production, read-only, 2026-09-25)
 
 | Data                                                                | Status  | Measured                                                                                                                                  |
@@ -165,14 +172,14 @@ through the reviewed migration path. No public photo without a licence row in
 
 The data work is the critical path and starts first.
 
-| Gate       | What it requires                                                                                                                                                                                                                                         |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D          | Provider decision; first club photo licences.                                                                                                                                                                                                            |
-| A          | Schema and engine reviewed.                                                                                                                                                                                                                              |
-| U          | Frames signed off.                                                                                                                                                                                                                                       |
-| X          | Prototype test passed.                                                                                                                                                                                                                                   |
-| F          | Journeys pass FR/AR.                                                                                                                                                                                                                                     |
-| B (launch) | Every eligible player has a DOB. All finished-match lineup players linked. Clean sheets computed. Nationality ≥95%. Licensed photos for the top 30 (silhouette otherwise). Foot and height ≥80% or hidden. Monday peak served from cache in a load test. |
+| Gate       | What it requires                                                                                                                                                                                                                                                                                                                                                              |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D          | Provider decision; first club photo licences.                                                                                                                                                                                                                                                                                                                                 |
+| A          | Schema and engine reviewed.                                                                                                                                                                                                                                                                                                                                                   |
+| U          | Frames signed off.                                                                                                                                                                                                                                                                                                                                                            |
+| X          | Prototype test passed.                                                                                                                                                                                                                                                                                                                                                        |
+| F          | Journeys pass FR/AR.                                                                                                                                                                                                                                                                                                                                                          |
+| B (launch) | DOB known for every player above the minutes floor and for ≥98% of squad players and anyone with league minutes; the rest counted on the method page. All finished-match lineup players linked. Clean sheets computed. Nationality ≥95%. Licensed photos for the top 30 (silhouette otherwise). Foot and height ≥80% or hidden. Monday peak served from cache in a load test. |
 
 Soft launch behind the flag, then public from the first edition after round 3.
 
@@ -190,7 +197,9 @@ Recorded 2026-09-26.
 5. Build: Claude designs and builds; the owner approves each gate and every
    production change.
 
-Next: Gate A, owner review of [`PEPITES_ARCHITECTURE.md`](PEPITES_ARCHITECTURE.md).
+Next: Gate A. Revision 1 was reviewed and sent back with changes; revision 2
+of [`PEPITES_ARCHITECTURE.md`](PEPITES_ARCHITECTURE.md) answers every
+finding and is ready for the owner's review.
 
 ## 9. UI status (Gate U)
 
