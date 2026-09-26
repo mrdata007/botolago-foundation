@@ -19,8 +19,9 @@ SCRIPT = (
     / "fantasy-capacity-orchestrator-diagnostic.py"
 )
 PRODUCTION_ORCHESTRATOR = SCRIPT.with_name("fantasy-capacity-orchestrator.py")
+# Re-pinned when the runners moved to Python 3.11 (run 36231686454).
 PRODUCTION_ORCHESTRATOR_SHA256 = (
-    "4c7e836ac01beb5891fef6323cf3ff28ada7e356688bbfd1bc51265d703a797f"
+    "b2939917609d81e2db924839e4884f89ecfe48bd72688ce92742dee4343bb475"
 )
 SPEC = importlib.util.spec_from_file_location("fantasy_capacity_diagnostic", SCRIPT)
 assert SPEC and SPEC.loader

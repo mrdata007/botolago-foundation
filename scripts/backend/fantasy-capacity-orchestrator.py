@@ -80,6 +80,9 @@ EXPECTED_RUNTIME_KEYS = {
 }
 REQUIRED_RUNTIME_KEYS = EXPECTED_RUNTIME_KEYS - {"AWS_SESSION_TOKEN"}
 RUNNER_INSTANCE_TYPE = "t3.small"
+# The load runner needs Python 3.11 or newer (datetime.UTC). Amazon Linux
+# 2023's default python3 is 3.9, where it fails at import.
+RUNNER_PYTHON = "python3.11"
 RUNNER_SELF_TERMINATION_MINUTES = 105
 MAX_LIFETIME_MINUTES = 120
 MAX_ALLOWED_BUDGET_USD = 50.0
@@ -98,6 +101,19 @@ CONSERVATIVE_ESTIMATED_COST_USD = (
 
 def event(message: str) -> None:
     print(f"[{datetime.now(UTC).isoformat()}] {message}", flush=True)
+
+
+def runner_user_data() -> str:
+    return f"""#!/bin/bash
+set -euo pipefail
+dnf install -y {RUNNER_PYTHON} {RUNNER_PYTHON}-pip
+{RUNNER_PYTHON} -m venv /opt/botolago-venv
+/opt/botolago-venv/bin/pip install --disable-pip-version-check aiohttp==3.12.15 certifi==2026.7.22
+mkdir -p /opt/botolago
+chown -R ec2-user:ec2-user /opt/botolago /opt/botolago-venv
+touch /opt/botolago/ready
+shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
+"""
 
 
 def private_write(path: Path, value: str) -> None:
@@ -855,16 +871,7 @@ commit;
             Name="/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
         )["Parameter"]["Value"]
         expires = (datetime.now(UTC) + timedelta(hours=2)).isoformat()
-        user_data = f"""#!/bin/bash
-set -euo pipefail
-dnf install -y python3 python3-pip
-python3 -m venv /opt/botolago-venv
-/opt/botolago-venv/bin/pip install --disable-pip-version-check aiohttp==3.12.15 certifi==2026.7.22
-mkdir -p /opt/botolago
-chown -R ec2-user:ec2-user /opt/botolago /opt/botolago-venv
-touch /opt/botolago/ready
-shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
-"""
+        user_data = runner_user_data()
         result = self.ec2.run_instances(
             ImageId=ami,
             InstanceType=RUNNER_INSTANCE_TYPE,

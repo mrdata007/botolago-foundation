@@ -157,7 +157,10 @@ previous size (Micro on 2026-09-25).
   (`phase6-capacity-gate.yml`, retired in #26) running from `main`, with the
   staging readiness check added and the verdict written to the run page
   instead of PR #6. The harness (`fantasy-capacity-orchestrator.py`,
-  `fantasy-load-test.py`) is unchanged.
+  `fantasy-load-test.py`) is unchanged except that the rented computers build
+  their Python environment with `python3.11`: Amazon Linux 2023's `python3` is
+  3.9, where the load script fails at import (the first rehearsal on
+  2026-09-26 stopped there).
 - Checked on 2026-09-25 against a local database with every repository
   migration: 125 temporary users, every load operation answered 200 (75
   lineup saves, 50 transfer previews, 50 confirmations, 25 chips, 25 reads),

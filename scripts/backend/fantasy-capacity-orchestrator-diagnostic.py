@@ -1289,10 +1289,11 @@ commit;
             Name="/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
         )["Parameter"]["Value"]
         expires = (datetime.now(UTC) + timedelta(hours=2)).isoformat()
+        # python3 is 3.9 on Amazon Linux 2023; the load runner needs 3.11.
         user_data = f"""#!/bin/bash
 set -euo pipefail
-dnf install -y python3 python3-pip
-python3 -m venv /opt/botolago-venv
+dnf install -y python3.11 python3.11-pip
+python3.11 -m venv /opt/botolago-venv
 /opt/botolago-venv/bin/pip install --disable-pip-version-check aiohttp==3.12.15 certifi==2026.7.22
 mkdir -p /opt/botolago
 chown -R ec2-user:ec2-user /opt/botolago /opt/botolago-venv
