@@ -26,7 +26,7 @@ insert into app.fantasy_gameweeks(id,fantasy_season_id,football_round_id,sequenc
 values(pg_temp.scoring_id(6),pg_temp.scoring_id(5),pg_temp.scoring_id(7),1,'GW1','2026-08-10 10:30Z','2026-08-10 12:00Z','2026-08-12 12:00Z','provisional');
 insert into app.fixtures(id,competition_id,season_id,round_id,home_team_id,away_team_id,kickoff_at,status,home_score,away_score,provider_updated_at,source_sequence,finalized_at)
 select pg_temp.scoring_id(3000+i),pg_temp.scoring_id(2),pg_temp.scoring_id(3),pg_temp.scoring_id(7),pg_temp.scoring_id(100+i*2-1),pg_temp.scoring_id(100+i*2),
-'2026-08-10 12:00Z','finished',1,1,'2026-08-10 14:00Z',10,'2026-08-10 14:00Z' from generate_series(1,3)i;
+'2026-08-10 12:00Z','finished',0,0,'2026-08-10 14:00Z',10,'2026-08-10 14:00Z' from generate_series(1,3)i;
 insert into app.fantasy_fixture_assignments(fantasy_season_id,fixture_id,gameweek_id,original_gameweek_id,original_kickoff_at,assigned_kickoff_at,frozen_at,source_version)
 select pg_temp.scoring_id(5),pg_temp.scoring_id(3000+i),pg_temp.scoring_id(6),pg_temp.scoring_id(6),'2026-08-10 12:00Z','2026-08-10 12:00Z','2026-08-10 10:30Z',1 from generate_series(1,3)i;
 insert into app.fantasy_players(id,fantasy_season_id,football_player_id,football_team_id,position_id,price)
@@ -55,10 +55,46 @@ select extensions.ok(not has_table_privilege('service_role','app_private.fantasy
 select set_config('request.jwt.claims','{"role":"authenticated"}',true);
 select extensions.throws_ok($$select api.service_get_fantasy_scoring_snapshot(pg_temp.scoring_id(6),1,null,1)$$,'PT403','forbidden','runtime service-role guard rejects a forged browser call');
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select set_config('test.pre_transfer_digest', encode(extensions.digest(
+  app_private.fantasy_scoring_input_document(pg_temp.scoring_id(6))::text, 'sha256'), 'hex'), true);
+select extensions.ok(not exists(select 1 from jsonb_array_elements(
+  app_private.fantasy_scoring_input_document(pg_temp.scoring_id(6))->'playerFixtures') pf
+  where pf ? 'fixtureTeamId'),
+  'an unchanged fixture does not alter legacy scoring snapshot digests');
+-- A later transfer to a third club cannot drop the player's earlier match
+-- from the scoring document. Use the match performance's team for attribution.
+update app.fantasy_players set football_team_id=pg_temp.scoring_id(105)
+where id=pg_temp.scoring_id(2001);
+select extensions.is(
+  (select pf->>'fixtureTeamId' from jsonb_array_elements(
+    app_private.fantasy_scoring_input_document(pg_temp.scoring_id(6))->'playerFixtures') pf
+   where pf->>'fantasyPlayerId'=pg_temp.scoring_id(2001)::text
+     and pf->>'fixtureId'=pg_temp.scoring_id(3001)::text),
+  pg_temp.scoring_id(101)::text,
+  'a transferred player keeps his earlier match and fixture-time club'
+);
+update app.fantasy_players set football_team_id=pg_temp.scoring_id(101)
+where id=pg_temp.scoring_id(2001);
+select extensions.is(encode(extensions.digest(
+  app_private.fantasy_scoring_input_document(pg_temp.scoring_id(6))::text, 'sha256'), 'hex'),
+  current_setting('test.pre_transfer_digest'),
+  'returning the player to his fixture club preserves a prior snapshot digest');
 select set_config('test.scoring_snapshot',api.service_get_fantasy_scoring_snapshot(pg_temp.scoring_id(6),1,null,1)::text,true);
 select extensions.is(jsonb_array_length(current_setting('test.scoring_snapshot')::jsonb->'playerFixtures'),66,'coherent snapshot contains all reconciled player/fixture inputs');
 select extensions.is(jsonb_array_length(current_setting('test.scoring_snapshot')::jsonb->'teams'),1,'team page contains frozen lineup without profile PII');
 select extensions.is(api.service_get_fantasy_scoring_snapshot(pg_temp.scoring_id(6),1,null,1)->>'inputDigest',current_setting('test.scoring_snapshot')::jsonb->>'inputDigest','same input version has stable digest');
+-- Even a snapshot created earlier cannot award points if a score changes or
+-- if it lacked a scorer: the existing-snapshot assertion rechecks totals.
+update app.fixtures set home_score=1 where id=pg_temp.scoring_id(3001);
+select extensions.throws_ok(
+  $$select api.service_get_fantasy_scoring_snapshot(pg_temp.scoring_id(6),1,null,1)$$,
+  'PT409', 'fantasy_goal_totals_mismatch', 'a previously created snapshot cannot bypass reconciliation'
+);
+select extensions.is(
+  (select count(*)::integer from app.fantasy_player_point_events where gameweek_id=pg_temp.scoring_id(6)),
+  0, 'a mismatched fixture awarded no points'
+);
+update app.fixtures set home_score=0 where id=pg_temp.scoring_id(3001);
 select extensions.throws_ok($$select api.service_begin_fantasy_finalization(pg_temp.scoring_id(6),1,current_setting('test.scoring_snapshot')::jsonb->>'inputDigest')$$,'PT409','fantasy_scoring_results_incomplete','cannot finalize before calculating actual points and teams');
 select set_config('test.scoring_players',(select jsonb_agg(jsonb_build_object('fantasyPlayerId',p->>'fantasyPlayerId','fixtureId',p->>'fixtureId','events',(
  select jsonb_agg(jsonb_build_object('category',category,'points',case when category='appearance' then 2 else 0 end,'sourceKey','fixture-stats:'||(p->>'fixtureId')||':'||(p->>'playerId')||':'||category) order by category)

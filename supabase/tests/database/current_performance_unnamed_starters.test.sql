@@ -167,10 +167,20 @@ create function pg_temp.scoring_document(p_coverage jsonb) returns jsonb languag
   select jsonb_build_object(
     'footballSeasonId', '43890000-0000-4000-8000-000000000001',
     'features', jsonb_build_object('bonus_points_enabled', false, 'player_of_match_enabled', false),
-    'players', jsonb_build_array(jsonb_build_object('fantasyPlayerId', gen_random_uuid())),
-    'playerFixtures', jsonb_build_array(jsonb_build_object('statisticsComplete', true)),
+    'players', jsonb_build_array(jsonb_build_object(
+      'fantasyPlayerId', md5('unnamed-scoring-player')::uuid,
+      'teamId', '63890000-0000-4000-8000-000000000001')),
+    'playerFixtures', jsonb_build_array(jsonb_build_object(
+      'fantasyPlayerId', md5('unnamed-scoring-player')::uuid,
+      'fixtureId', md5('synthetic-unnamed-scoring-fixture')::uuid,
+      'fixtureTeamId', '63890000-0000-4000-8000-000000000001',
+      'statisticsComplete', true, 'stats', jsonb_build_object('goals', 0, 'ownGoals', 0))),
     'fixtures', jsonb_build_array(jsonb_build_object(
-      'fixtureId', gen_random_uuid(), 'status', 'finished', 'finalizedAt', statement_timestamp(),
+      'fixtureId', md5('synthetic-unnamed-scoring-fixture')::uuid,
+      'homeTeamId', '63890000-0000-4000-8000-000000000001',
+      'awayTeamId', '63890000-0000-4000-8000-000000000002',
+      'homeScore', 0, 'awayScore', 0,
+      'status', 'finished', 'finalizedAt', statement_timestamp(),
       'seasonId', '43890000-0000-4000-8000-000000000001', 'activePerformanceCount', 22,
       'assignment', jsonb_build_object('frozen_at', statement_timestamp(), 'counts_points', true,
         'assignment_status', 'assigned'),
@@ -208,6 +218,35 @@ select extensions.throws_ok(
   $$select app_private.fantasy_validate_scoring_document(pg_temp.scoring_document(
     '{"coverage_outcome":"quarantined"}'))$$,
   'PT409', 'fantasy_scoring_coverage_incomplete', 'a quarantined match is never scored'
+);
+select extensions.is(
+  app_private.fantasy_goal_reconciliation(pg_temp.scoring_document('{}')),
+  '[]'::jsonb, 'a 0-0 result with no credited goals reconciles'
+);
+select extensions.throws_ok(
+  $$select app_private.fantasy_validate_scoring_document(
+    jsonb_set(pg_temp.scoring_document('{}'), '{fixtures,0,homeScore}', '1'))$$,
+  'PT409', 'fantasy_goal_totals_mismatch',
+  'an unattributed goal prevents a scoring snapshot even with certified coverage'
+);
+select extensions.lives_ok(
+  $$select app_private.fantasy_validate_scoring_document(
+    jsonb_set(jsonb_set(pg_temp.scoring_document('{}'), '{fixtures,0,homeScore}', '1'),
+      '{playerFixtures,0,stats,goals}', '1'))$$,
+  'a goal credited to the scoring team reconciles'
+);
+select extensions.lives_ok(
+  $$select app_private.fantasy_validate_scoring_document(
+    jsonb_set(jsonb_set(jsonb_set(pg_temp.scoring_document('{}'),
+      '{fixtures,0,homeScore}', '1'), '{playerFixtures,0,stats,goals}', '1'),
+      '{players,0,teamId}', '"63890000-0000-4000-8000-000000000002"'))$$,
+  'a later club transfer does not move the credited goal away from its fixture team'
+);
+select extensions.lives_ok(
+  $$select app_private.fantasy_validate_scoring_document(
+    jsonb_set(jsonb_set(pg_temp.scoring_document('{}'), '{fixtures,0,awayScore}', '1'),
+      '{playerFixtures,0,stats,ownGoals}', '1'))$$,
+  'an own goal is credited to the opposing team'
 );
 
 select * from extensions.finish();

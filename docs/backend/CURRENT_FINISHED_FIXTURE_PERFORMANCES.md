@@ -168,8 +168,10 @@ Owner decision 2026-09-25 (migration `20260925110000`, applied to production
 that day, `docs/production/APPLIED_2026_09_25_CURRENT_PERFORMANCE_UNNAMED_STARTERS.md`):
 this season follows last season's rule, BG-0011 option B. Up to 4 of the 22
 starters may be unnamed. Unnamed rows are left out, credited to no one and
-never counted as zero; every named player is scored as usual. More than 4
-and the fixture waits with `current_lineup_unidentified_starters_exceeded`.
+never counted as zero. Named players are scored once the goals attributed to
+both sides reconcile with the final score; an unnamed scorer therefore holds
+the fixture for repair. More than 4 unnamed starters waits with
+`current_lineup_unidentified_starters_exceeded`.
 
 Either way every unnamed row is reported, never silently dropped: on an
 accepted fixture as `unnamedRows[]` next to it in `fixtures[]` (evidence only;
@@ -326,6 +328,19 @@ time; pg_cron jobs and other lanes are not covered by that and must be checked.
    - `CURRENT_GOALS_CONCEDED_MISMATCH` (`reason`, database stage):
      SportsMonks' final score and the one BotolaGO holds disagree, so one of
      them is not final yet. The fixture waits and the next run tries again.
+   - `current_goal_totals_mismatch` (validation stage): the sum of named
+     players' goals plus opponents' own goals differs from a side's final
+     score. The diagnostic gives the fixture and team provider ids, final
+     goals, and attributed goals. Check the provider's goal event and lineup
+     statistics, including unnamed players; wait for corrected statistics or
+     resolve the missing player mapping through the reviewed roster process.
+     Do not mark the fixture complete by inventing a scorer. For Tangier–Tiznit
+     (1–3), the stored player facts account for 0–3 as of 2026-09-26.
+     Existing certified fixtures are independently checked at scoring: the
+     snapshot RPC refuses `fantasy_goal_totals_mismatch` until reconciled.
+     The scoring input uses the club recorded on the fixture performance,
+     including for a player who later transfers to another club. A later
+     transfer never changes which side receives an earlier goal.
    - `current_statistics_incomplete` at `data.lineups[i].details`: that row's
      statistics were neither a list nor absent (`valueType` says what they
      were), a broken contract as for `invalid_provider_object`.
