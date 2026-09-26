@@ -250,6 +250,8 @@ export const ANALYTICS_ENABLED = true;
  *
  * Gated surfaces (keep this list current):
  *   - `src/routes/pepites.tsx` — every /pepites route (redirect Home when off)
+ *   - `src/routes/admin.pepites.tsx` — the two staff screens (redirect to
+ *     /admin when off), and their entries in `ADMIN_CONSOLE_NAV_ITEMS`
  */
 export const PEPITES_ENABLED: boolean =
   import.meta.env?.DEV === true && import.meta.env?.VITE_PEPITES_PREVIEW === "1";
