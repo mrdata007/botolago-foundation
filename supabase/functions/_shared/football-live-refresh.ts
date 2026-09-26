@@ -10,7 +10,9 @@
 // rejects a stale write if both ever overlap.
 //
 // `{"job":"season_fixtures"}` reads the weeks ahead instead
-// (SEASON_REFRESH_DAYS_AHEAD) and stops after the scores: pg_cron calls it
+// (SEASON_REFRESH_DAYS_AHEAD), leaves a match whose round or club is not
+// catalogued yet for the orchestrator (`skipUncatalogued`), and stops after
+// the scores: pg_cron calls it
 // hourly (app_private.football_season_refresh_tick), so a kickoff moved or a
 // match postponed at the provider reaches the app, and the Fantasy calendar
 // sync after it, within the hour. Until 2026-09-26 only the GitHub
@@ -160,7 +162,15 @@ export async function handleFootballLiveRefreshRequest(
   const inner = new Request("https://localhost/football-live-refresh", {
     method: "POST",
     headers: { "content-type": "application/json", "x-botolago-ingestion-key": trigger },
-    body: JSON.stringify({ job: "fixtures", pageSize: 50, maxPages: 3 }),
+    body: JSON.stringify({
+      job: "fixtures",
+      pageSize: 50,
+      maxPages: 3,
+      // Six weeks ahead reaches rounds SportsMonks has just published and the
+      // orchestrator's catalog has not registered yet: those matches wait for
+      // it, the rest of the season still refreshes.
+      ...(job === "season_fixtures" ? { skipUncatalogued: true } : {}),
+    }),
   });
   const scores = await handleSportsMonksFixtureRequest(inner, {
     environment,
