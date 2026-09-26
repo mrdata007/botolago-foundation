@@ -40,7 +40,7 @@ import { forgetSharedFantasyHub } from "@/services/fantasy-hub-share";
 import {
   scopedFantasyKey,
   clearOtherOwnersFantasyCache,
-  isOwnedFantasyKey,
+  invalidateOwnedQueries,
   type FantasyKeyScope,
 } from "@/services/fantasy-data-source";
 
@@ -77,7 +77,8 @@ export interface FantasyOwnedContextValue {
    */
   replaceSnapshot: (next: FantasySnapshot) => void;
   reload: () => Promise<void>;
-  invalidateOwned: () => void;
+  /** `keepSnapshot` leaves out the snapshot a write has just replaced. */
+  invalidateOwned: (options?: { keepSnapshot?: boolean }) => void;
 }
 
 const Ctx = createContext<FantasyOwnedContextValue | null>(null);
@@ -166,10 +167,13 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const invalidateOwned = useCallback(() => {
-    forgetSharedFantasyHub();
-    qc.invalidateQueries({ predicate: (q) => isOwnedFantasyKey(q.queryKey) });
-  }, [qc]);
+  const invalidateOwned = useCallback(
+    (options?: { keepSnapshot?: boolean }) => {
+      forgetSharedFantasyHub();
+      void invalidateOwnedQueries(qc, queryKey, options);
+    },
+    [qc, queryKey],
+  );
 
   const replaceSnapshot = useCallback(
     (next: FantasySnapshot) => {
@@ -178,11 +182,12 @@ export function FantasyOwnedProvider({ children }: { children: ReactNode }) {
     [qc, queryKey],
   );
 
+  // Invalidating refetches the snapshot (its observer is always mounted here)
+  // and waits for it; a second `refetch()` after it read the hub again.
   const reload = useCallback(async () => {
     forgetSharedFantasyHub();
     await qc.invalidateQueries({ queryKey });
-    await query.refetch();
-  }, [qc, queryKey, query]);
+  }, [qc, queryKey]);
 
   // On owner-identity change (sign-in/out, account switch): drop every other
   // owner's cache entries so the next authenticated user cannot see stale
