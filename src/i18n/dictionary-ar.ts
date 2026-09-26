@@ -807,6 +807,8 @@ export const ar = {
   "fpl.squad": "التشكيلة",
   "fpl.list": "القائمة",
   "fpl.pick_team": "اختيار الفريق",
+  "fantasy.transfers.incoming_owned": "هذا اللاعب موجود بالفعل في فريقك.",
+  "fantasy.transfers.incoming_unavailable": "هذا اللاعب لم يعد متاحًا في موسم فانتازي الحالي.",
   "fpl.transfers": "الانتقالات",
   "fpl.fixtures": "المباريات",
   "fpl.fdr": "صعوبة المباريات",

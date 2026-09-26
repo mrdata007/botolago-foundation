@@ -9,10 +9,11 @@ import { gotoHydrated, initializeLanguage, observePage } from "./support";
  * Pépites against a LOCAL Supabase stack with real data: the ranking engine's
  * own runs, published through the editions functions
  * (scripts/backend/pepites-local-preview-seed.sql, then
+ * scripts/backend/pepites-local-fantasy-seed.sql, optionally
  * scripts/backend/pepites-local-preview-photos.ts). Skipped unless
  * E2E_PEPITES_LOCAL_STACK=1, and run against a development server started
  * with the local stack's URL and keys, the preview switch on and every
- * Pépites and sign-in read in `supabase` mode:
+ * Pépites, Fantasy, football and sign-in read in `supabase` mode:
  *
  *   E2E_PEPITES_LOCAL_STACK=1 E2E_BASE_URL=http://127.0.0.1:4174 \
  *     bunx playwright test tests/e2e/pepites.local-stack.e2e.ts
@@ -189,12 +190,7 @@ test("a fan turns the weekly email on and reports an error the data desk then li
 }, testInfo) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 390, height: 860 });
-  // A signed-in session also reads the Fantasy hub, and the local catalog has
-  // no Fantasy season: that one 404 is expected here and nothing else is.
-  const diagnostics = observePage(page, {
-    allowResponse: (status, url) => status === 404 && url.pathname.endsWith("/rpc/fantasy_hub"),
-    allowExpectedResourceConsoleError: true,
-  });
+  const diagnostics = observePage(page);
   await withoutLocalResizing(page);
   await initializeLanguage(page, "fr");
   await signIn(page, FAN, "/pepites");
@@ -237,4 +233,58 @@ test("a fan turns the weekly email on and reports an error the data desk then li
   await expect(issue.first()).toContainText("Il mesure 1,84 m selon le club.");
   await staff.context().close();
   await diagnostics.verify(testInfo);
+});
+
+test("+Fantasy replaces the mapped player in the real squad and survives reload", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const diagnostics = observePage(page);
+  await initializeLanguage(page, "fr");
+  await withoutLocalResizing(page);
+  const playerPath = "/pepites/joueur/7e030000-0000-4000-8000-000000000186";
+  await signIn(page, FAN, playerPath);
+  await page.waitForURL((url) => url.pathname === playerPath);
+  const fantasy = page.getByTestId("pepites-fantasy-link");
+  await expect(fantasy).toHaveAttribute(
+    "href",
+    "/fantasy/transfers?player=7e600000-0000-4000-8000-000000000186",
+  );
+  await fantasy.click();
+  await expect(page.getByRole("status").filter({ hasText: "Achraf V." })).toBeVisible();
+  await page.getByRole("button", { name: /Othmane F\./ }).click();
+  await page.getByRole("button", { name: /Suivant/ }).click();
+  await expect(page.getByText("Achraf V.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Confirmer" }).click();
+  await expect(page.getByRole("button", { name: /Achraf V\./ })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: /Achraf V\./ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Othmane F\./ })).toHaveCount(0);
+  await gotoHydrated(page, playerPath, "fr");
+  await page.getByTestId("pepites-fantasy-link").click();
+  await expect(page.getByText(fr["fantasy.transfers.incoming_owned"])).toBeVisible();
+  await gotoHydrated(page, "/fantasy/transfers?player=00000000-0000-4000-8000-000000000000", "fr");
+  await expect(page.getByText(fr["fantasy.transfers.incoming_unavailable"])).toBeVisible();
+  await gotoHydrated(page, "/fantasy/transfers?player=7e600000-0000-4000-8000-000000000004", "fr");
+  await page.getByRole("button", { name: /Walid I\./ }).click();
+  await expect(page.getByText(fr["fpl.club_limit"], { exact: true })).toBeVisible();
+  await gotoHydrated(page, "/fantasy/transfers?player=7e600000-0000-4000-8000-000000000188", "fr");
+  await page.getByRole("button", { name: /Ismail X\./ }).click();
+  await expect(page.getByText(fr["fpl.budget_exceeded"], { exact: true })).toBeVisible();
+  await diagnostics.verify(testInfo);
+});
+
+test("Fantasy sign-in preserves the incoming player deep link", async ({ page }) => {
+  await initializeLanguage(page, "fr");
+  const next = "/fantasy/transfers?player=7e600000-0000-4000-8000-000000000186";
+  await gotoHydrated(page, next, "fr");
+  const login = page.locator('a[href*="/auth/login"]').first();
+  await expect(login).toBeVisible();
+  const href = await login.getAttribute("href");
+  expect(new URL(href!, "http://localhost").searchParams.get("next")).toBe(next);
+  await login.click();
+  await page.locator('input[type="email"]').fill(FAN.email);
+  await page.locator('input[autocomplete="current-password"]').fill(FAN.password);
+  await page.locator('button[type="submit"]').click();
+  await expect(page.getByText(fr["fantasy.transfers.incoming_owned"])).toBeVisible();
 });

@@ -210,8 +210,8 @@ export function PepitesRanking({
           </FilterChip>
         </div>
       </div>
-      <div className="hidden min-h-[360px] items-start justify-between gap-8 py-9 md:flex">
-        <div className="max-w-[540px] pt-1">
+      <div className="hidden min-h-[360px] flex-col items-start justify-between gap-8 py-9 md:flex xl:flex-row">
+        <div className="min-w-0 max-w-[540px] pt-1">
           <Link
             to="/pepites"
             data-testid="pepites-ranking-back"
@@ -247,7 +247,10 @@ export function PepitesRanking({
             {t("pepites.home.method_link")} →
           </Link>
         </div>
-        <div className="flex gap-4" data-testid="pepites-desktop-podium">
+        <div
+          className="flex w-full justify-center gap-4 xl:w-auto"
+          data-testid="pepites-desktop-podium"
+        >
           {rows.slice(0, 3).map((row) => (
             <Link
               key={row.id}

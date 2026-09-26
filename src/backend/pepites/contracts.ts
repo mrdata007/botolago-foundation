@@ -254,10 +254,10 @@ export const seasonStatsSchema = z.object({
   cleanSheets: z.number().int().nullable(),
   goalsConceded: z.number().int().nullable(),
   penaltiesSaved: z.number().int().nullable(),
-  penaltiesMissed: z.number().int(),
-  yellowCards: z.number().int(),
-  redCards: z.number().int(),
-  ownGoals: z.number().int(),
+  penaltiesMissed: z.number().int().nullable(),
+  yellowCards: z.number().int().nullable(),
+  redCards: z.number().int().nullable(),
+  ownGoals: z.number().int().nullable(),
 });
 
 export const playerStatsResponseSchema = z.discriminatedUnion("available", [

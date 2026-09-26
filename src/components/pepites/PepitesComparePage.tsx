@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState, type MouseEvent, type Ref } from "react";
 import { toast } from "sonner";
 
 import type { PlayerResponse, PlayerStatsResponse, RankingRow } from "@/backend/pepites/contracts";
@@ -81,8 +81,14 @@ function compareValues(
     },
     {
       key: "cards",
-      left: firstStats?.stats ? firstStats.stats.yellowCards + firstStats.stats.redCards : null,
-      right: secondStats?.stats ? secondStats.stats.yellowCards + secondStats.stats.redCards : null,
+      left:
+        firstStats?.stats?.yellowCards != null && firstStats.stats.redCards != null
+          ? firstStats.stats.yellowCards + firstStats.stats.redCards
+          : null,
+      right:
+        secondStats?.stats?.yellowCards != null && secondStats.stats.redCards != null
+          ? secondStats.stats.yellowCards + secondStats.stats.redCards
+          : null,
       lowerWins: true,
     },
     {
@@ -109,6 +115,14 @@ export function PepitesComparePage({
   const pointer = pointerQuery.data;
   const version = pointerVersion(pointer);
   const [picker, setPicker] = useState<Side | null>(null);
+  const pickerOpener = useRef<HTMLButtonElement | null>(null);
+  const portraitButtons = useRef<Partial<Record<Side, HTMLButtonElement | null>>>({});
+  const pickerSide = useRef<Side>("a");
+  const openPicker = (side: Side, opener: HTMLButtonElement) => {
+    pickerOpener.current = opener;
+    pickerSide.current = side;
+    setPicker(side);
+  };
   const firstQuery = useQuery({
     ...playerQueryOptions(viewer, version, firstId ?? ""),
     enabled: pointer?.available === true && version !== null && !!firstId,
@@ -210,9 +224,23 @@ export function PepitesComparePage({
           <span className="w-12" aria-hidden />
         </div>
         <div className="mt-6 grid grid-cols-[1fr_44px_1fr] items-center gap-1 text-center">
-          <ComparePortrait data={first} side="a" onPick={() => setPicker("a")} />
+          <ComparePortrait
+            data={first}
+            side="a"
+            buttonRef={(button) => {
+              portraitButtons.current.a = button;
+            }}
+            onPick={(event) => openPicker("a", event.currentTarget)}
+          />
           <span className={cn(pp.display, pp.energyText, "text-[30px]")}>VS</span>
-          <ComparePortrait data={second} side="b" onPick={() => setPicker("b")} />
+          <ComparePortrait
+            data={second}
+            side="b"
+            buttonRef={(button) => {
+              portraitButtons.current.b = button;
+            }}
+            onPick={(event) => openPicker("b", event.currentTarget)}
+          />
         </div>
       </div>
     </NightBand>
@@ -328,7 +356,7 @@ export function PepitesComparePage({
             </p>
             <button
               type="button"
-              onClick={() => setPicker(first ? "b" : "a")}
+              onClick={(event) => openPicker(first ? "b" : "a", event.currentTarget)}
               className={cn(
                 "mt-3 min-h-10 rounded-full px-5",
                 pp.energyFill,
@@ -347,10 +375,21 @@ export function PepitesComparePage({
         onOpenChange={(open) => {
           if (!open) setPicker(null);
         }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          const target = pickerOpener.current?.isConnected
+            ? pickerOpener.current
+            : portraitButtons.current[pickerSide.current];
+          target?.focus();
+        }}
         players={players}
         excludeId={picker === "a" ? secondId : firstId}
         onChoose={(id) => {
-          if (picker) choose(picker, id);
+          if (picker) {
+            // Selection can remove the empty-state button after the query resolves.
+            pickerOpener.current = portraitButtons.current[picker] ?? null;
+            choose(picker, id);
+          }
         }}
         loadMore={() => void ranking.fetchNextPage()}
         hasMore={Boolean(ranking.hasNextPage)}
@@ -363,11 +402,13 @@ export function PepitesComparePage({
 function ComparePortrait({
   data,
   side,
+  buttonRef,
   onPick,
 }: {
   data: LoadedPlayer | null;
   side: Side;
-  onPick: () => void;
+  buttonRef: Ref<HTMLButtonElement>;
+  onPick: (event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   const { t, tr, lang } = useI18n();
   const player = data?.player;
@@ -376,6 +417,7 @@ function ComparePortrait({
     <button
       type="button"
       onClick={onPick}
+      ref={buttonRef}
       className={cn(
         "flex min-w-0 flex-col items-center gap-2 rounded-lg p-1 text-white",
         ui.focusOnMesh,
@@ -421,6 +463,7 @@ function ComparePortrait({
 function PlayerPicker({
   open,
   onOpenChange,
+  onCloseAutoFocus,
   players,
   excludeId,
   onChoose,
@@ -430,6 +473,7 @@ function PlayerPicker({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCloseAutoFocus: (event: Event) => void;
   players: readonly RankingRow[];
   excludeId: string | null;
   onChoose: (id: string) => void;
@@ -448,6 +492,7 @@ function PlayerPicker({
     <UiSheet
       open={open}
       onOpenChange={onOpenChange}
+      onCloseAutoFocus={onCloseAutoFocus}
       title={t("pepites.compare.picker_title")}
       description={t("pepites.compare.picker_description")}
     >

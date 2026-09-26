@@ -100,6 +100,9 @@ function TransfersBody() {
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [pickerAny, setPickerAny] = useState(false);
   const [incoming, setIncoming] = useState<FantasyPlayer | null>(null);
+  const [incomingNotice, setIncomingNotice] = useState<"owned" | "unavailable" | "deadline" | null>(
+    null,
+  );
   const [sheetFor, setSheetFor] = useState<string | null>(null);
   const [view, setView] = useState<"squad" | "list">("squad");
   const [confirming, setConfirming] = useState(false);
@@ -194,9 +197,15 @@ function TransfersBody() {
     }
     if (incomingFromRef.current || screen.phase !== "ready" || !team || !gameweek) return;
     incomingFromRef.current = true;
-    void navigate({ to: "/fantasy/transfers", search: {}, replace: true });
     const incomingPlayer = players.find((candidate) => candidate.id === search.player);
-    if (incomingPlayer) onPickIncoming(incomingPlayer);
+    if (!incomingPlayer) setIncomingNotice("unavailable");
+    else if (squadIdsAfter.includes(incomingPlayer.id)) setIncomingNotice("owned");
+    else if (evaluateDeadline(gameweek.deadline).isLocked) setIncomingNotice("deadline");
+    else {
+      setIncomingNotice(null);
+      onPickIncoming(incomingPlayer);
+    }
+    void navigate({ to: "/fantasy/transfers", search: {}, replace: true });
     // `onPickIncoming` changes identity on render; the URL/ref make this one-shot.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.player, screen.phase, players, team, gameweek]);
@@ -205,7 +214,14 @@ function TransfersBody() {
     return (
       <>
         <UiHeader kicker={t("fantasy.title")} title={t("fpl.transfers")} backTo="/fantasy" />
-        <FantasyScreenGate state={screen} next="/fantasy/transfers">
+        <FantasyScreenGate
+          state={screen}
+          next={
+            search.player
+              ? `/fantasy/transfers?player=${encodeURIComponent(search.player)}`
+              : "/fantasy/transfers"
+          }
+        >
           <div />
         </FantasyScreenGate>
       </>
@@ -346,6 +362,7 @@ function TransfersBody() {
   };
   /** Add Player (incoming first): fill a pending same-position slot, otherwise ask which player leaves. */
   const onPickIncoming = (player: FantasyPlayer) => {
+    setIncomingNotice(null);
     setPickerAny(false);
     if (squadIdsAfter.includes(player.id)) return;
     const pendingIndex = outIds.findIndex(
@@ -649,7 +666,13 @@ function TransfersBody() {
         banner={
           incoming
             ? `${t("fpl.incoming_player")}: ${tr(incoming.name)}. ${t("fpl.select_replacement")}`
-            : undefined
+            : incomingNotice
+              ? incomingNotice === "owned"
+                ? t("fantasy.transfers.incoming_owned")
+                : incomingNotice === "unavailable"
+                  ? t("fantasy.transfers.incoming_unavailable")
+                  : t("fpl.deadline_passed")
+              : undefined
         }
         gameweek={gameweek.number}
         deadlineIso={gameweek.deadline}

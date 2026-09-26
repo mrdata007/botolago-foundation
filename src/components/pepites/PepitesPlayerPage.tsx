@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 import type {
   MinutesSplit,
@@ -11,6 +11,7 @@ import type {
 } from "@/backend/pepites/contracts";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { ui } from "@/components/ui-kit";
+import { rovingTarget } from "@/components/ui-kit/tabs-keyboard";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
@@ -219,15 +220,17 @@ export function PepitesPlayerPage({
       <PepitesShell tone="night" hero={<MatchesHeader data={data} />}>
         {data.preview ? <PepitesPreviewBanner /> : null}
         {tabs}
-        <PlayerMatches
-          loading={matches.isPending}
-          failed={matches.isError}
-          onRetry={() => void matches.refetch()}
-          matches={
-            matches.data?.available && matches.data.found ? (matches.data.matches ?? []) : []
-          }
-          seasonAverage={data.score?.ratingAvg ?? null}
-        />
+        <div role="tabpanel" id="pepites-player-panel" aria-labelledby="pepites-player-tab-matches">
+          <PlayerMatches
+            loading={matches.isPending}
+            failed={matches.isError}
+            onRetry={() => void matches.refetch()}
+            matches={
+              matches.data?.available && matches.data.found ? (matches.data.matches ?? []) : []
+            }
+            seasonAverage={data.score?.ratingAvg ?? null}
+          />
+        </div>
       </PepitesShell>
     );
   }
@@ -236,26 +239,28 @@ export function PepitesPlayerPage({
     <PepitesShell hero={<PlayerHero data={data} fantasyPlayerId={fantasyPlayerId} />} wide>
       {data.preview ? <PepitesPreviewBanner /> : null}
       {tabs}
-      {tab === "stats" ? (
-        playerStats.isError ? (
-          <PepitesErrorState inline onRetry={() => void playerStats.refetch()} />
+      <div role="tabpanel" id="pepites-player-panel" aria-labelledby={`pepites-player-tab-${tab}`}>
+        {tab === "stats" ? (
+          playerStats.isError ? (
+            <PepitesErrorState inline onRetry={() => void playerStats.refetch()} />
+          ) : (
+            <PlayerStats
+              stats={stats}
+              position={data.player.positionGroup}
+              loading={playerStats.isPending}
+            />
+          )
         ) : (
-          <PlayerStats
-            stats={stats}
-            position={data.player.positionGroup}
-            loading={playerStats.isPending}
+          <PlayerOverview
+            data={data}
+            split={split}
+            splitLoading={playerStats.isPending}
+            matches={
+              matches.data?.available && matches.data.found ? (matches.data.matches ?? []) : []
+            }
           />
-        )
-      ) : (
-        <PlayerOverview
-          data={data}
-          split={split}
-          splitLoading={playerStats.isPending}
-          matches={
-            matches.data?.available && matches.data.found ? (matches.data.matches ?? []) : []
-          }
-        />
-      )}
+        )}
+      </div>
       <ReportIssueButton playerId={playerId} />
     </PepitesShell>
   );
@@ -561,6 +566,7 @@ function PlayerTabs({
   dark: boolean;
 }) {
   const { t } = useI18n();
+  const buttons = useRef(new Map<PlayerTab, HTMLButtonElement>());
   const options: Array<{ value: PlayerTab; label: string }> = [
     { value: "overview", label: t("pepites.player.tab_overview") },
     { value: "matches", label: t("pepites.player.tab_matches") },
@@ -569,6 +575,22 @@ function PlayerTabs({
   return (
     <div
       role="tablist"
+      onKeyDown={(event) => {
+        const focused = options.find(
+          (option) => buttons.current.get(option.value) === event.target,
+        );
+        const target = rovingTarget(
+          options,
+          event,
+          focused?.value,
+          tab,
+          getComputedStyle(event.currentTarget).direction === "rtl",
+        );
+        if (target === null) return;
+        event.preventDefault();
+        buttons.current.get(target)?.focus();
+        onTabChange(target);
+      }}
       aria-label={t("pepites.player.tabs")}
       className={cn("flex gap-5 border-b", dark ? "border-white/10" : pp.line)}
     >
@@ -579,6 +601,13 @@ function PlayerTabs({
             key={option.value}
             type="button"
             role="tab"
+            id={`pepites-player-tab-${option.value}`}
+            aria-controls="pepites-player-panel"
+            tabIndex={active ? 0 : -1}
+            ref={(node) => {
+              if (node) buttons.current.set(option.value, node);
+              else buttons.current.delete(option.value);
+            }}
             aria-selected={active}
             onClick={() => onTabChange(option.value)}
             className={cn(

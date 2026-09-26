@@ -96,13 +96,17 @@ join app.rounds round on round.id = fixture.round_id
 cross join lateral (values (fixture.home_team_id), (fixture.away_team_id)) side(team_id)
 where fixture.season_id = 'd1100000-0000-4000-8000-000000000001';
 insert into app_private.pepites_run_appearances (run_id, player_id, fixture_id, team_id,
-  round_number, kickoff_at, minutes, started, goals, assists, saves, rating, team_conceded)
+  round_number, kickoff_at, minutes, started, goals, assists, saves, rating, team_conceded,
+  clean_sheets, goals_conceded, penalties_saved, penalties_missed, yellow_cards, red_cards, own_goals)
 select 'd1600000-0000-4000-8000-000000000001', pg_temp.uid('d1500000-0000-4000-8000-', a.player),
   pg_temp.uid('d1400000-0000-4000-8000-', a.round),
   case when a.player = 2 then 'd1200000-0000-4000-8000-000000000002'::uuid
     else 'd1200000-0000-4000-8000-000000000001'::uuid end,
   a.round, timestamptz '2026-08-21 19:00:00+00' + ((a.round - 1) * 7 || ' days')::interval,
-  a.minutes, a.started, a.goals, 0, null, 6.8, 0
+  a.minutes, a.started, a.goals, 0, null, 6.8, 0,
+  0, case when a.player = 2 then 1 else 0 end, null, 0,
+  case when a.player <> 3 then a.yellow end, case when a.player <> 3 then a.red end,
+  case when a.player <> 3 then a.own end
 from appearances a;
 insert into app.pepites_player_scores (run_id, player_id, team_id, position_group, age_years, apps,
   starts, minutes, goals, assists, saves, clean_sheets, rating_avg, rating_n, form_avg, eligible,
@@ -209,6 +213,29 @@ select extensions.is(
     'penaltiesMissed', 0, 'yellowCards', 1, 'redCards', 1, 'ownGoals', 1),
   'the figures add up the run''s appearances, with the provider''s cards and own goals beside them'
 );
+select extensions.ok(
+  api.pepites_player_stats(null, pg_temp.p(3)) #> '{stats,yellowCards}' = 'null'::jsonb
+  and api.pepites_player_stats(null, pg_temp.p(3)) #> '{stats,redCards}' = 'null'::jsonb,
+  'legacy snapshots without saved details report unknown, not live provider totals or zero');
+
+-- Provider corrections must change future inputs, never an existing version.
+savepoint provider_correction;
+create temporary table frozen_before as
+select api.pepites_player_stats(null, pg_temp.p(1)) as stats,
+  app_private.pepites_snapshot_fingerprint('d1600000-0000-4000-8000-000000000001') as snapshot,
+  app_private.pepites_input_fingerprint('d1100000-0000-4000-8000-000000000001',
+    'season_final', 6, now(), 23) as inputs;
+update app.player_fixture_performances set yellow_cards = yellow_cards + 1,
+  clean_sheets = clean_sheets + 1, own_goals = own_goals + 1
+where player_id = pg_temp.p(1);
+select extensions.is(api.pepites_player_stats(null, pg_temp.p(1)),
+  (select stats from frozen_before), 'provider corrections leave the published Stats unchanged');
+select extensions.is(app_private.pepites_snapshot_fingerprint('d1600000-0000-4000-8000-000000000001'),
+  (select snapshot from frozen_before), 'the sealed snapshot fingerprint stays unchanged');
+select extensions.isnt(app_private.pepites_input_fingerprint('d1100000-0000-4000-8000-000000000001',
+  'season_final', 6, now(), 23), (select inputs from frozen_before),
+  'detailed provider corrections invalidate the next input fingerprint');
+rollback to provider_correction;
 select extensions.is(
   api.pepites_player_stats(null, pg_temp.p(1)) -> 'split',
   '{"firstTo": 3, "lastRound": 6, "firstMinutes": 30, "secondMinutes": 270, "firstMatches": 3, "secondMatches": 3}'::jsonb,
@@ -234,6 +261,25 @@ select extensions.ok(
   and api.pepites_player_stats(null, pg_temp.p(2)) -> 'fantasyPlayerId' = 'null'::jsonb,
   'the open Fantasy game''s player, for "＋ Fantasy"; none for a player it does not list'
 );
+savepoint another_fantasy_game;
+insert into app.competitions (id, slug, name, competition_type)
+values ('d1000000-0000-4000-8000-000000000002', 'pepites-other-game', 'Other game', 'league');
+insert into app.seasons (id, competition_id, label, starts_on, ends_on, is_current, status)
+values ('d1100000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000002',
+  '2026/2027', '2026-07-01', '2027-06-30', true, 'active');
+insert into app.fantasy_competitions (id, football_competition_id, slug, name, active)
+values ('d1700000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000002',
+  'pepites-other-fantasy', 'Other Fantasy', true);
+insert into app.fantasy_seasons (id, fantasy_competition_id, football_season_id, ruleset_id, name,
+  status, starts_at, ends_at)
+values ('d1710000-0000-4000-8000-000000000002', 'd1700000-0000-4000-8000-000000000002',
+  'd1100000-0000-4000-8000-000000000002', 'f6100000-0000-4000-8000-000000000101', '2026/2027',
+  'active', current_date - 1, current_date + 200);
+select extensions.is(
+  api.pepites_player_stats(null, pg_temp.p(1)) -> 'fantasyPlayerId', 'null'::jsonb,
+  'mapping uses the same newest open game as the Fantasy hub, never an older game fallback'
+);
+rollback to savepoint another_fantasy_game;
 update app.fantasy_seasons set status = 'completed' where id = 'd1710000-0000-4000-8000-000000000001';
 select extensions.is(
   api.pepites_player_stats(null, pg_temp.p(1)) -> 'fantasyPlayerId', 'null'::jsonb,

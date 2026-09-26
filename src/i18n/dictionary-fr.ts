@@ -850,6 +850,9 @@ export const fr = {
   "fpl.squad": "Effectif",
   "fpl.list": "Liste",
   "fpl.pick_team": "Composer l’équipe",
+  "fantasy.transfers.incoming_owned": "Ce joueur est déjà dans votre équipe.",
+  "fantasy.transfers.incoming_unavailable":
+    "Ce joueur n’est plus disponible dans la saison Fantasy en cours.",
   "fpl.transfers": "Transferts",
   "fpl.fixtures": "Calendrier",
   "fpl.fdr": "Difficulté des matchs",
