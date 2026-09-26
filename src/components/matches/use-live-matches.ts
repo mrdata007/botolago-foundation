@@ -20,6 +20,8 @@ export function useLiveMatches() {
     // a slow watch, so a match that kicks off brings the strip up.
     refetchInterval: (query) => liveStripRefetchInterval(query.state.data?.matches.length ?? 0),
     refetchIntervalInBackground: false,
+    // Back on the tab while a match is on, the score is asked for at once.
+    refetchOnWindowFocus: (query) => (query.state.data?.matches.length ?? 0) > 0,
   });
 }
 

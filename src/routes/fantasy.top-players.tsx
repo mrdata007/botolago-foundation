@@ -1,6 +1,6 @@
 import podiumSoonArt from "@/assets/illustrations/podium-soon.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Award, Bookmark, ChevronRight, Crown, Medal, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -30,6 +30,7 @@ import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { cn } from "@/lib/utils";
 import { plateName } from "@/components/fpl/plate-name";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { fantasyPlayersQuery, loadFantasyPlayers } from "@/services/fantasy-queries";
 import { footballService } from "@/services/football";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, TopPlayerOfWeek } from "@/types/fantasy";
@@ -77,6 +78,7 @@ function TopPlayersFramed() {
 function TopPlayersPage() {
   const { t, tr, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
+  const qc = useQueryClient();
   const gwQ = useQuery({
     queryKey: ["gameweek"],
     queryFn: () => fantasyService.getCurrentGameweek(),
@@ -96,13 +98,10 @@ function TopPlayersPage() {
 
   const topQ = useQuery({
     queryKey: ["top-players", currentGw],
-    queryFn: () => fantasyService.getTopPlayersOfWeek(currentGw),
+    queryFn: () => fantasyService.getTopPlayersOfWeek(currentGw, () => loadFantasyPlayers(qc)),
     enabled: currentGw > 0,
   });
-  const playersQ = useQuery({
-    queryKey: ["fantasy-players"],
-    queryFn: () => fantasyService.getPlayers(),
-  });
+  const playersQ = useQuery(fantasyPlayersQuery());
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),

@@ -13,6 +13,7 @@ import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCar
 import { footballService, type FootballSeason } from "@/services/football";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { loadFantasyPlayers } from "@/services/fantasy-queries";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { AppShell } from "@/components/shell/AppShell";
 import {
@@ -209,6 +210,7 @@ function HomeContent() {
   const availability = useFantasyAvailability();
   const fantasyReady = !availability.isError && availability.data?.status === "ready";
   const canCreate = availability.data?.status === "ready" && availability.data.canCreate;
+  const queryClient = useQueryClient();
 
   const summaryQ = useQuery({
     queryKey: key("summary"),
@@ -229,6 +231,9 @@ function HomeContent() {
     // one about to kick off is watched so it becomes the live card on time.
     refetchInterval: (query) => matchesRefetchInterval(query.state.data?.matches, Date.now()),
     refetchIntervalInBackground: false,
+    // Back on the tab, a moving score is asked for at once, not at the next tick.
+    refetchOnWindowFocus: (query) =>
+      matchesRefetchInterval(query.state.data?.matches, Date.now()) !== false,
   });
   const alertsQ = useQuery({
     queryKey: ["alerts"],
@@ -237,7 +242,8 @@ function HomeContent() {
   });
   const playersQ = useQuery({
     queryKey: ["all-players-for-alerts"],
-    queryFn: () => fantasyService.getTrendingPlayers(),
+    // The pool from the shared `["fantasy-players"]` entry, not downloaded again.
+    queryFn: () => fantasyService.getTrendingPlayers(() => loadFantasyPlayers(queryClient)),
     enabled: fantasyReady,
   });
   // News is hidden at launch (owner decision — see `@/lib/feature-flags`), so
@@ -271,7 +277,6 @@ function HomeContent() {
     enabled: currentSeason != null,
   });
   // A match ending changes the table (see /matches/standings).
-  const queryClient = useQueryClient();
   useOnLiveMatchEnd(() => {
     void queryClient.invalidateQueries({ queryKey: ["football", "standings"] });
   });
