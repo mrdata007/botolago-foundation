@@ -146,7 +146,7 @@ signed_on, signer_role player|guardian, document_path)`.
   - A trigger enforces this before `validation_status` can become
     `validated`.
 - Read RPCs return a photo URL only when these checks pass. Otherwise they
-  return `null`, and the UI draws the shirt fallback.
+  return `null`, and the UI draws the silhouette (`PlayerPhoto`).
 
 ### 3.5 Fans
 
@@ -403,6 +403,7 @@ writer at a time. Mode stays `off` until launch.
 
 ## 12. Open items (need owner input later, not blocking Gate A)
 
-- The provider B choice (search in progress).
+- The provider B choice. BSD is measured in `PEPITES_PLAN.md` §10: good for
+  player attributes, detailed stats for 2026-27 not yet seen.
 - The CNDP coverage of photo releases.
 - The email opt-in wording for the weekly edition.

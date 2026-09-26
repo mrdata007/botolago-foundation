@@ -45,6 +45,7 @@ progression and minutes. Detailed-stat modules wait for a second provider.
 - Ask Hudl Wyscout for a quote (event data, xG/xA, public display rights).
 - Skip Sportradar (no Botola lineups or player stats), Football-Data.org (no
   Morocco); do not scrape SofaScore or Transfermarkt.
+- BSD (sports.bzzoiro.com) measured 2026-09-26: see §10.
 - Photos: our own programme (club media officers, match-day photographer,
   signed releases, guardian consent under 18). Provider images are internal
   placeholders only.
@@ -77,7 +78,7 @@ through the reviewed migration path. No public photo without a licence row in
 - Tokens: night navy, BotolaGO ink, brand gradient as accent only, rating
   scale (<6, 6–6.5, 6.5–7, 7–7.5, ≥7.5).
 - Fonts: Changa slanted for numbers, Manrope, IBM Plex Mono self-hosted.
-- Components: night band, ghost rank number, player cut-out, shirt fallback,
+- Components: night band, ghost rank number, player cut-out, silhouette,
   10-segment bar, score ring, rating chip, percentile row, pizza chart, trend
   line, sortable table, facts strip, compare row, "N.R." value, share
   templates, skeletons.
@@ -164,14 +165,14 @@ through the reviewed migration path. No public photo without a licence row in
 
 The data work is the critical path and starts first.
 
-| Gate       | What it requires                                                                                                                                                                                                                                             |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| D          | Provider decision; first club photo licences.                                                                                                                                                                                                                |
-| A          | Schema and engine reviewed.                                                                                                                                                                                                                                  |
-| U          | Frames signed off.                                                                                                                                                                                                                                           |
-| X          | Prototype test passed.                                                                                                                                                                                                                                       |
-| F          | Journeys pass FR/AR.                                                                                                                                                                                                                                         |
-| B (launch) | Every eligible player has a DOB. All finished-match lineup players linked. Clean sheets computed. Nationality ≥95%. Licensed photos for the top 30 (shirt fallback otherwise). Foot and height ≥80% or hidden. Monday peak served from cache in a load test. |
+| Gate       | What it requires                                                                                                                                                                                                                                         |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D          | Provider decision; first club photo licences.                                                                                                                                                                                                            |
+| A          | Schema and engine reviewed.                                                                                                                                                                                                                              |
+| U          | Frames signed off.                                                                                                                                                                                                                                       |
+| X          | Prototype test passed.                                                                                                                                                                                                                                   |
+| F          | Journeys pass FR/AR.                                                                                                                                                                                                                                     |
+| B (launch) | Every eligible player has a DOB. All finished-match lineup players linked. Clean sheets computed. Nationality ≥95%. Licensed photos for the top 30 (silhouette otherwise). Foot and height ≥80% or hidden. Monday peak served from cache in a load test. |
 
 Soft launch behind the flag, then public from the first edition after round 3.
 
@@ -179,8 +180,8 @@ Soft launch behind the flag, then public from the first edition after round 3.
 
 Recorded 2026-09-26.
 
-1. Provider: the owner asked Claude to search for a suitable second provider
-   (in progress). A trial key is created by the owner when chosen.
+1. Provider: the owner asked Claude to search for a suitable second provider.
+   First candidate, BSD, measured on the owner's key: §10.
 2. Photo programme: explained to the owner; who contacts the clubs and the
    photographer budget are still open.
 3. Nav change: **approved.** Pépites takes the Profil slot and Profile moves
@@ -215,3 +216,70 @@ Not drawn yet:
 Arabic rule found while drawing: a space inside a number ("1 159") can flip
 the digit order in an Arabic layout. Use a narrow no-break space (U+202F) or
 no separator.
+
+No photo: a head-and-shoulders silhouette in the club's shirt colour replaces
+the shirt fallback (owner decision, 2026-09-26). Built as
+`src/components/common/PlayerPhoto.tsx` with tests; it shows when the read RPC
+returns no photo or the photo fails to load. Not yet drawn in the Figma file.
+
+## 10. Second provider check: BSD (2026-09-26)
+
+BSD is Bzzoiro's sports data API (sports.bzzoiro.com). Measured read-only with
+the owner's key, stored as an environment API credential sent as
+`Authorization: Token <key>`. Botola Pro is league 53; 2025-26 is season 1085
+(244 finished matches), 2026-27 is season 1962. About 1 000 requests used.
+
+Player attributes, from the 16 current squads (510 players; 89 under 23, born
+after 1 July 2003):
+
+| Data                    | BSD                                                          | Today     |
+| ----------------------- | ------------------------------------------------------------ | --------- |
+| Date of birth           | 470 of 510 (92%)                                             | partial   |
+| Nationality             | 492 of 510 (96%); U23 88 of 89                               | 0         |
+| Shirt number            | 390 of 510 (76%)                                             | partial   |
+| Height (U23)            | 62 of 89 (69%)                                               | no column |
+| Preferred foot (U23)    | 69 of 89 (77%)                                               | 0         |
+| Detailed position (U23) | 89 of 89                                                     | none      |
+| Market value (U23)      | 48 of 89                                                     | none      |
+| Photo (U23)             | 61 of 89, 150 px at most; the rest are 1×1 blanks (HTTP 200) | 10 of 81  |
+
+Match data:
+
+- Lineups with formation and substitutes: 244 of 244 (2025-26), 1 of 1
+  (2026-27).
+- Team match stats: 237 of 245.
+- Detailed player stats (touches, passes, duels, shots, rating, xG): 141 of
+  the 144 matches in rounds 1–18 of 2025-26, then 4 of the last 100. The
+  one finished 2026-27 match (24 Sep) has none yet.
+- Goals, assists, cards and goals conceded are present in every match.
+
+Against SportsMonks (production, 2025-26, read-only): 347 of 481 players
+matched by exact name. Goals equal for 327 (94%), assists for 292 (84%),
+appearances within one for 319 (92%), season minutes within 45 for 270
+(78%), yellow cards for 200 (58%). The display bar in
+`PEPITES_ARCHITECTURE.md` §8 (98% on minutes and goals over 3 rounds) is not
+met on this comparison; it needs the fixture-level report once identities are
+mapped.
+
+Licence (v4.0, effective 1 October 2026): showing the data in our app is
+allowed, and the Pépites score and ranking are ours to publish. Raw data may
+not be redistributed. Photos and logos belong to third parties, are for
+identifying players inside the app only, and may not be used for promotion,
+so not on share images. Data may not be presented as official.
+
+Cost: free for 7 500 requests a day; $5 a month removes the limit.
+
+Risks: a small operator; Botola coverage is listed as funded by an anonymous
+sponsor; the detailed feed stopped mid-season without notice; the terms are
+versioned and change on 1 October.
+
+Recommendation:
+
+1. Use BSD now for player attributes (date of birth, nationality, height,
+   foot, detailed position) through the attribute observations, with
+   provenance.
+2. Keep SportsMonks for fixtures, lineups, events and basic stats.
+3. Build no detailed-stat module on BSD until 2026-27 matches carry detailed
+   stats. Re-check after rounds 2 and 3.
+4. Photos: our own programme, unchanged. An importer must treat a 1×1 image
+   as no photo.
