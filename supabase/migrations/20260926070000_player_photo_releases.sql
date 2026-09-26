@@ -169,7 +169,7 @@ create table app_private.player_photo_storage_deletions (
     bucket_id in ('football-media', 'player-photo-intake')
   ),
   constraint player_photo_storage_deletions_reason_check check (
-    reason in ('revoked', 'expired', 'replaced')
+    reason in ('revoked', 'expired', 'replaced', 'rejected')
   )
 );
 
@@ -371,6 +371,19 @@ begin
 end;
 $$;
 
+-- The one path in football-media a release's derivative may take. The storage
+-- job writes there and publication checks it; ending a release that was
+-- approved but not yet published queues it for deletion, since the job may
+-- have written the file before it could publish (a stopped run).
+create function app_private.player_photo_public_path(p_player_id uuid, p_release_id uuid)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select 'football/players/' || p_player_id || '/' || p_release_id || '.webp';
+$$;
+
 create function app_private.reject_player_photo_release(
   p_release_id uuid,
   p_reason text,
@@ -381,16 +394,27 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  v_release app_private.player_photo_releases%rowtype;
 begin
   if p_actor is null then
     raise exception using errcode = '23514', message = 'PHOTO_RELEASE_ACTOR_REQUIRED';
+  end if;
+  select * into v_release from app_private.player_photo_releases
+  where id = p_release_id for update;
+  if not found then
+    raise exception using errcode = 'P0002', message = 'PHOTO_RELEASE_NOT_FOUND';
   end if;
   update app_private.player_photo_releases
   set status = 'rejected', ended_at = statement_timestamp(), ended_by = p_actor,
     end_reason = p_reason
   where id = p_release_id;
-  if not found then
-    raise exception using errcode = 'P0002', message = 'PHOTO_RELEASE_NOT_FOUND';
+  -- Approved, so the storage job may already have written the derivative.
+  if v_release.status = 'approved' then
+    insert into app_private.player_photo_storage_deletions (release_id, bucket_id, object_path, reason)
+    values (v_release.id, 'football-media',
+      app_private.player_photo_public_path(v_release.player_id, v_release.id), 'rejected')
+    on conflict do nothing;
   end if;
 end;
 $$;
@@ -427,8 +451,16 @@ begin
     update app.players
     set photo_asset_id = null
     where id = p_release.player_id and photo_asset_id = p_release.public_asset_id;
+  end if;
+
+  -- The public derivative: the published one, or, for a release approved
+  -- but not yet published, the file the storage job may already have
+  -- written at the release's one path.
+  if p_release.public_asset_id is not null or p_release.status = 'approved' then
     insert into app_private.player_photo_storage_deletions (release_id, bucket_id, object_path, reason)
-    values (p_release.id, 'football-media', p_release.public_path, p_status)
+    values (p_release.id, 'football-media',
+      coalesce(p_release.public_path,
+        app_private.player_photo_public_path(p_release.player_id, p_release.id)), p_status)
     on conflict do nothing;
   end if;
 
@@ -525,7 +557,7 @@ begin
   end if;
   -- The derivative: square WebP at the one path this release may use.
   if p_public_path is distinct from
-      'football/players/' || v_release.player_id || '/' || v_release.id || '.webp'
+      app_private.player_photo_public_path(v_release.player_id, v_release.id)
     or p_mime_type is distinct from 'image/webp'
     or p_width is null or p_width <> p_height or p_width not between 128 and 1024
   then
@@ -640,6 +672,8 @@ revoke all on function app_private.submit_player_photo_release(
   uuid, text, text, date, date, text, text, text, text, text, date, uuid
 ) from public, anon, authenticated, service_role;
 revoke all on function app_private.approve_player_photo_release(uuid, uuid)
+  from public, anon, authenticated, service_role;
+revoke all on function app_private.player_photo_public_path(uuid, uuid)
   from public, anon, authenticated, service_role;
 revoke all on function app_private.reject_player_photo_release(uuid, text, uuid)
   from public, anon, authenticated, service_role;
