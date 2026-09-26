@@ -36,7 +36,6 @@ returns jsonb language sql stable security definer set search_path = '' set time
       order by fp.id), '[]'::jsonb) from app.fantasy_players fp join app.fantasy_positions pos on pos.id=fp.position_id where fp.fantasy_season_id=fs.id),
     'playerFixtures', (select coalesce(jsonb_agg(jsonb_build_object(
       'fantasyPlayerId', fp.id, 'playerId', fp.football_player_id, 'fixtureId', f.id,
-      'fixtureTeamId', coalesce(p.team_id, fp.football_team_id),
       'position', pos.code, 'sourceSequence', f.source_sequence,
       'statisticsComplete',p.id is null or pos.code<>'GK' or (p.saves is not null and p.penalties_saved is not null),
       'stats', jsonb_build_object('minutes',coalesce(p.minutes,0), 'goals',coalesce(p.goals,0),
@@ -46,6 +45,11 @@ returns jsonb language sql stable security definer set search_path = '' set time
         'yellowCards',coalesce(p.yellow_cards,0),'redCards',coalesce(p.red_cards,0),
         'secondYellowDismissals',coalesce(p.second_yellow_dismissals,0),'ownGoals',coalesce(p.own_goals,0),
         'bonus',0,'playerOfMatchPoints',0)
+      -- Keep unchanged scoring documents (and in-flight snapshot digests)
+      -- byte-for-byte compatible. Record the fixture club only when a later
+      -- transfer made the fantasy player's current club misleading.
+      || case when p.id is not null and p.team_id is distinct from fp.football_team_id
+        then jsonb_build_object('fixtureTeamId', p.team_id) else '{}'::jsonb end
     ) order by fp.id,f.id), '[]'::jsonb)
       from app.fantasy_players fp join app.fantasy_positions pos on pos.id=fp.position_id
       join app.fantasy_fixture_assignments a on a.gameweek_id=gw.id and a.superseded_at is null and a.counts_points
@@ -69,6 +73,7 @@ create or replace function app_private.fantasy_goal_reconciliation(p_document js
 returns jsonb language plpgsql stable set search_path = '' as $$
 declare
   fixture jsonb;
+  player_teams jsonb;
   attributed_home bigint;
   attributed_away bigint;
   result jsonb := '[]'::jsonb;
@@ -78,6 +83,8 @@ begin
     or jsonb_typeof(p_document->'playerFixtures') is distinct from 'array' then
     return jsonb_build_array(jsonb_build_object('reason', 'scoring_document_incomplete'));
   end if;
+  select coalesce(jsonb_object_agg(player->>'fantasyPlayerId', player->>'teamId'), '{}'::jsonb)
+    into player_teams from jsonb_array_elements(p_document->'players') player;
   for fixture in select value from jsonb_array_elements(p_document->'fixtures') loop
     if fixture->>'status' is distinct from 'finished'
       or (fixture#>>'{assignment,counts_points}')::boolean is distinct from true then
@@ -91,7 +98,8 @@ begin
     if exists (
       select 1 from jsonb_array_elements(p_document->'playerFixtures') performance
       where performance->>'fixtureId' = fixture->>'fixtureId'
-        and (performance->>'fixtureTeamId' is null
+        and (coalesce(performance->>'fixtureTeamId',
+          player_teams->>(performance->>'fantasyPlayerId')) is null
           or jsonb_typeof(performance#>'{stats,goals}') is distinct from 'number'
           or jsonb_typeof(performance#>'{stats,ownGoals}') is distinct from 'number')
     ) then
@@ -100,13 +108,17 @@ begin
       continue;
     end if;
     select
-      coalesce(sum(case when performance->>'fixtureTeamId' = fixture->>'homeTeamId'
+      coalesce(sum(case when coalesce(performance->>'fixtureTeamId',
+        player_teams->>(performance->>'fantasyPlayerId')) = fixture->>'homeTeamId'
         then (performance#>>'{stats,goals}')::bigint else 0 end), 0)
-      + coalesce(sum(case when performance->>'fixtureTeamId' = fixture->>'awayTeamId'
+      + coalesce(sum(case when coalesce(performance->>'fixtureTeamId',
+        player_teams->>(performance->>'fantasyPlayerId')) = fixture->>'awayTeamId'
         then (performance#>>'{stats,ownGoals}')::bigint else 0 end), 0),
-      coalesce(sum(case when performance->>'fixtureTeamId' = fixture->>'awayTeamId'
+      coalesce(sum(case when coalesce(performance->>'fixtureTeamId',
+        player_teams->>(performance->>'fantasyPlayerId')) = fixture->>'awayTeamId'
         then (performance#>>'{stats,goals}')::bigint else 0 end), 0)
-      + coalesce(sum(case when performance->>'fixtureTeamId' = fixture->>'homeTeamId'
+      + coalesce(sum(case when coalesce(performance->>'fixtureTeamId',
+        player_teams->>(performance->>'fantasyPlayerId')) = fixture->>'homeTeamId'
         then (performance#>>'{stats,ownGoals}')::bigint else 0 end), 0)
       into attributed_home, attributed_away
       from jsonb_array_elements(p_document->'playerFixtures') performance
@@ -124,3 +136,25 @@ end;
 $$;
 revoke all on function app_private.fantasy_goal_reconciliation(jsonb)
   from public, anon, authenticated, service_role;
+
+-- A pre-existing provisional/finalizing snapshot must remain usable. If
+-- fixture-time attribution really changes its input, abort the whole migration
+-- instead of stranding finalization behind a changed digest. The operator can
+-- complete/recover that gameweek first and then retry this migration.
+do $$
+declare affected record;
+begin
+  select s.gameweek_id, s.calculation_version into affected
+  from app_private.fantasy_scoring_snapshots s
+  join app.fantasy_gameweeks gw on gw.id=s.gameweek_id
+  where gw.status in ('provisional','finalizing')
+    and encode(extensions.digest(
+      app_private.fantasy_scoring_input_document(s.gameweek_id)::text,'sha256'),'hex')
+      is distinct from s.input_digest
+  limit 1;
+  if found then
+    raise exception 'fantasy_scoring_snapshot_migration_blocked: gameweek %, version %',
+      affected.gameweek_id, affected.calculation_version;
+  end if;
+end;
+$$;
