@@ -22,7 +22,7 @@ Actions (the only argument):
             history row, in order; stops at the first failure
   seed      the deterministic Fantasy capacity seed
             (scripts/backend/fantasy-staging-seed.sql), only once nothing is
-            pending
+            pending and the disk has SEED_MIN_FREE_DISK_GB free
   check     read only: fails unless nothing is pending, the seed is loaded
             and, when BOTOLAGO_EXPECTED_STAGING_COMPUTE is set (e.g. Large),
             staging runs on that compute size (the load test's precondition)
@@ -39,6 +39,7 @@ import base64
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -91,6 +92,11 @@ SEED_PROFILE_QUERY = """select
   (select count(*) from app.fantasy_team_gameweek_results where state = 'final')::integer as "finalResults",
   (select count(*) from app.fantasy_team_gameweek_results where state = 'provisional')::integer as "provisionalResults"
 """
+# On 2026-09-26 the seed filled Staging V2's disk: Postgres could not restart
+# until Supabase grew the disk, which used the day's four disk changes. On a
+# local database the seed writes about 1.3 GB of write-ahead log and grows the
+# database by about 0.6 GB, so refuse to start with less than twice that free.
+SEED_MIN_FREE_DISK_GB = 5
 SEED_WAIT_SECONDS = 20 * 60
 SEED_ATTEMPTS = 3
 
@@ -132,6 +138,8 @@ class Target(Protocol):
     def execute(self, sql: str, timeout: int) -> list[dict[str, Any]]: ...
 
     def compute(self) -> str: ...
+
+    def free_disk_gb(self) -> float | None: ...
 
 
 class ManagementTarget:
@@ -225,6 +233,21 @@ class ManagementTarget:
                     return str(variant["id"])
         return compute_from_connections(self)
 
+    def free_disk_gb(self) -> float | None:
+        """Free space on the database disk, from Supabase's disk metrics."""
+
+        try:
+            util = self._request(
+                "GET", f"/v1/projects/{self._project_ref}/config/disk/util", None, 60
+            )
+        except UpdateError:
+            return None
+        for key in ("fs_avail_bytes", "avail_bytes", "available_bytes"):
+            available = find_number(util, key)
+            if available is not None:
+                return available / 1024**3
+        return None
+
 
 class LocalTarget:
     """A local database on this machine, for rehearsing this script."""
@@ -260,6 +283,9 @@ class LocalTarget:
     def compute(self) -> str:
         return "local"
 
+    def free_disk_gb(self) -> float | None:
+        return shutil.disk_usage("/").free / 1024**3
+
 
 # max_connections Supabase configures for each compute size.
 COMPUTE_BY_MAX_CONNECTIONS = {
@@ -271,6 +297,25 @@ COMPUTE_BY_MAX_CONNECTIONS = {
     380: "ci_2xlarge",
     480: "ci_4xlarge",
 }
+
+
+def find_number(value: Any, key: str) -> float | None:
+    """The first numeric ``key`` anywhere in a JSON document."""
+
+    if isinstance(value, dict):
+        found = value.get(key)
+        if isinstance(found, (int, float)) and not isinstance(found, bool):
+            return float(found)
+        children = list(value.values())
+    elif isinstance(value, list):
+        children = value
+    else:
+        return None
+    for child in children:
+        found = find_number(child, key)
+        if found is not None:
+            return found
+    return None
 
 
 def compute_from_connections(target: Target) -> str:
@@ -443,6 +488,26 @@ def assert_fantasy_tick_off(target: Target) -> None:
         )
 
 
+def rounded(value: float | None) -> float | None:
+    return None if value is None else round(value, 1)
+
+
+def assert_room_for_seed(target: Target) -> float:
+    free = target.free_disk_gb()
+    if free is None:
+        raise UpdateError(
+            "staging's free disk space could not be read, so the seed cannot be "
+            f"shown to fit; it needs {SEED_MIN_FREE_DISK_GB} GB free"
+        )
+    if free < SEED_MIN_FREE_DISK_GB:
+        raise UpdateError(
+            f"staging has {free:.1f} GB of disk free and the seed needs "
+            f"{SEED_MIN_FREE_DISK_GB} GB; make the disk bigger first (Supabase → "
+            "BotolaGO Staging V2 → Settings → Compute and Disk)"
+        )
+    return free
+
+
 def run_plan(target: Target, migrations: list[Migration]) -> dict[str, Any]:
     history = read_history(target)
     pending = pending_migrations(migrations, history)
@@ -455,6 +520,7 @@ def run_plan(target: Target, migrations: list[Migration]) -> dict[str, Any]:
         "deferred": DEFERRED,
         "stagingOnly": staging_only,
         "compute": target.compute(),
+        "freeDiskGb": rounded(target.free_disk_gb()),
     }
     if not pending:
         report["seed"] = seed_profile(target)
@@ -536,6 +602,8 @@ def run_seed(target: Target, migrations: list[Migration]) -> dict[str, Any]:
         + SEED_FILE.read_text("utf-8")
     )
     for attempt in range(1, SEED_ATTEMPTS + 1):
+        free = assert_room_for_seed(target)
+        print(f"seed attempt {attempt}: {free:.1f} GB of disk free", flush=True)
         try:
             target.execute(script, SEED_WAIT_SECONDS)
         except UpdateError as error:
