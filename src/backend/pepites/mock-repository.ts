@@ -3,6 +3,7 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   EditionEntry,
   EditionResponse,
+  FollowState,
   HomeResponse,
   MethodologyResponse,
   PepitesEdition,
@@ -11,6 +12,7 @@ import type {
   PepitesTeam,
   PlayerMatchesResponse,
   PlayerResponse,
+  PlayerStatsResponse,
   PositionGroup,
   RankingQuery,
   RankingResponse,
@@ -65,6 +67,14 @@ interface MockPlayer extends RankingRow {
   readonly heightCm: number | null;
 }
 
+/** Rounds 1-7 then 8-15; some players break through in the second half. */
+const SPLIT = { firstTo: 7, lastRound: 15, firstMatches: 7, secondMatches: 8 };
+const FIRST_HALF_SHARE = [0.12, 0.3, 0.45, 0.5, 0.55];
+
+function firstHalfMinutes(index: number, minutes: number): number {
+  return Math.round(minutes * FIRST_HALF_SHARE[index % FIRST_HALF_SHARE.length]!);
+}
+
 const players: MockPlayer[] = Array.from({ length: 30 }, (_, index) => {
   const n = index + 1;
   const score = Math.round(92 - index * 1.9);
@@ -90,6 +100,7 @@ const players: MockPlayer[] = Array.from({ length: 30 }, (_, index) => {
     ratingAvg: Math.round((7.6 - index * 0.03) * 100) / 100,
     formAvg: Math.round((7.4 - index * 0.02) * 100) / 100,
     ga90: Math.round(((9 - index * 0.2) / (minutes / 90)) * 100) / 100,
+    secondHalfMinutes: minutes - firstHalfMinutes(index, minutes),
     flags: [],
     movement: null,
     preferredFoot: index % 3 === 0 ? null : index % 2 === 0 ? "right" : "left",
@@ -202,6 +213,16 @@ function resolve(version: string | null): PepitesEdition | null {
   return found;
 }
 
+/** Follows, per account (the sample data keeps them for the page's life). */
+const follows = new Map<string, Set<string>>();
+
+function followers(player: MockPlayer): number {
+  const base = ((player.rank ?? 1) * 437) % 1500;
+  let count = base;
+  for (const set of follows.values()) if (set.has(player.id)) count += 1;
+  return count;
+}
+
 let weeklyEmail: WeeklyEmailDto = {
   enabled: false,
   changedAt: null,
@@ -238,7 +259,7 @@ export class MockPepitesRepository implements PepitesRepository {
     return open({ found: true, version: found.id, source: "edition" as const, edition: found });
   }
 
-  async ranking(query: RankingQuery, _context: RepositoryContext): Promise<RankingResponse> {
+  async ranking(query: RankingQuery, context: RepositoryContext): Promise<RankingResponse> {
     if (control().closed) return { available: false };
     const current = resolve(query.version);
     if (!current) return open({ found: false });
@@ -251,10 +272,13 @@ export class MockPepitesRepository implements PepitesRepository {
       form: (row) => -(row.formAvg ?? -1),
       ga90: (row) => -(row.ga90 ?? -1),
     };
+    const mine = context.actorId ? (follows.get(context.actorId) ?? new Set()) : new Set();
     const rows = players
       .filter((row) => !query.position || row.positionGroup === query.position)
       .filter((row) => query.maxAge === null || (row.age ?? 99) <= query.maxAge)
       .filter((row) => !query.teamId || row.team?.id === query.teamId)
+      .filter((row) => !query.minMinutes || row.minutes >= query.minMinutes)
+      .filter((row) => !query.followed || mine.has(row.id))
       .sort((a, b) => key[query.sort](a) - key[query.sort](b) || (a.rank ?? 0) - (b.rank ?? 0));
     return open({
       found: true,
@@ -264,6 +288,11 @@ export class MockPepitesRepository implements PepitesRepository {
       rows: rows
         .slice(query.offset, query.offset + query.limit)
         .map(({ preferredFoot: _foot, heightCm: _height, ...row }) => row),
+      ...(query.offset === 0
+        ? {
+            teams: [...teams].sort((a, b) => a.name.fr.localeCompare(b.name.fr, "fr")),
+          }
+        : {}),
     });
   }
 
@@ -362,6 +391,70 @@ export class MockPepitesRepository implements PepitesRepository {
         rating: Math.round((7.8 - index * 0.2) * 10) / 10,
       })),
     });
+  }
+
+  async playerStats(
+    version: string | null,
+    playerId: string,
+    _context: RepositoryContext,
+  ): Promise<PlayerStatsResponse> {
+    if (control().closed) return { available: false };
+    const current = resolve(version);
+    const index = players.findIndex((row) => row.id === playerId);
+    const player = players[index];
+    if (!current || !player) return open({ found: false });
+    const first = firstHalfMinutes(index, player.minutes);
+    const keeper = player.positionGroup === "GK";
+    const back = keeper || player.positionGroup === "DEF";
+    return open({
+      found: true,
+      version: current.id,
+      source: "edition" as const,
+      stats: {
+        apps: player.apps,
+        starts: player.starts,
+        minutes: player.minutes,
+        goals: player.goals,
+        assists: player.assists,
+        saves: keeper ? 31 : null,
+        cleanSheets: back ? 5 : 0,
+        goalsConceded: back ? 12 : 0,
+        penaltiesSaved: keeper ? 1 : null,
+        penaltiesMissed: index % 7 === 0 ? 1 : 0,
+        yellowCards: index % 4,
+        redCards: index % 9 === 4 ? 1 : 0,
+        ownGoals: 0,
+      },
+      split: { ...SPLIT, firstMinutes: first, secondMinutes: player.minutes - first },
+      fantasyPlayerId: index % 3 === 2 ? null : uuid("7e600000", index + 1),
+    });
+  }
+
+  async followState(playerId: string, context: RepositoryContext): Promise<FollowState> {
+    if (control().closed) return { available: false };
+    const player = players.find((row) => row.id === playerId);
+    if (!player) return open({ found: false });
+    return open({
+      found: true,
+      followers: followers(player),
+      following: context.actorId ? (follows.get(context.actorId)?.has(playerId) ?? false) : null,
+    });
+  }
+
+  async setFollow(
+    playerId: string,
+    follow: boolean,
+    context: RepositoryContext,
+  ): Promise<FollowState> {
+    if (!context.actorId) throw new PepitesError("unauthenticated", "Sign in to continue.");
+    if (control().closed) throw new PepitesError("unavailable", "PEPITES_UNAVAILABLE");
+    const player = players.find((row) => row.id === playerId);
+    if (!player) throw new PepitesError("not_found", "No such player in Pépites.");
+    const mine = follows.get(context.actorId) ?? new Set<string>();
+    if (follow) mine.add(playerId);
+    else mine.delete(playerId);
+    follows.set(context.actorId, mine);
+    return this.followState(playerId, context);
   }
 
   async edition(

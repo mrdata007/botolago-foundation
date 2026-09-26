@@ -5,19 +5,23 @@ import { getPepitesApi } from "@/integrations/supabase/v2-client";
 
 import {
   editionResponseSchema,
+  followStateSchema,
   homeResponseSchema,
   methodologyResponseSchema,
   playerMatchesResponseSchema,
   playerResponseSchema,
+  playerStatsResponseSchema,
   rankingResponseSchema,
   versionResponseSchema,
   weeklyEmailSchema,
   type EditionResponse,
+  type FollowState,
   type HomeResponse,
   type MethodologyResponse,
   type PepitesRepository,
   type PlayerMatchesResponse,
   type PlayerResponse,
+  type PlayerStatsResponse,
   type RankingQuery,
   type RankingResponse,
   type ReportableField,
@@ -102,6 +106,8 @@ export class SupabasePepitesRepository implements PepitesRepository {
         p_sort: query.sort,
         p_limit: query.limit,
         p_offset: query.offset,
+        p_min_minutes: query.minMinutes ?? undefined,
+        p_followed: query.followed === true ? true : undefined,
       }),
       rankingResponseSchema,
       context,
@@ -132,6 +138,37 @@ export class SupabasePepitesRepository implements PepitesRepository {
     return read(
       this.client().rpc("pepites_player_matches", { p_player_id: playerId, p_limit: limit }),
       playerMatchesResponseSchema,
+      context,
+    );
+  }
+
+  playerStats(
+    version: string | null,
+    playerId: string,
+    context: RepositoryContext,
+  ): Promise<PlayerStatsResponse> {
+    return read(
+      this.client().rpc("pepites_player_stats", {
+        p_version: version ?? "current",
+        p_player_id: playerId,
+      }),
+      playerStatsResponseSchema,
+      context,
+    );
+  }
+
+  followState(playerId: string, context: RepositoryContext): Promise<FollowState> {
+    return read(
+      this.client().rpc("pepites_follow_state", { p_player_id: playerId }),
+      followStateSchema,
+      context,
+    );
+  }
+
+  setFollow(playerId: string, follow: boolean, context: RepositoryContext): Promise<FollowState> {
+    return call(
+      this.client().rpc("pepites_set_follow", { p_player_id: playerId, p_follow: follow }),
+      followStateSchema,
       context,
     );
   }

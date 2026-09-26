@@ -1372,6 +1372,7 @@ export type Database = {
         Args: { p_season_id: string; p_week: number }
         Returns: Json
       }
+      pepites_follow_state: { Args: { p_player_id: string }; Returns: Json }
       pepites_home: { Args: { p_version?: string }; Returns: Json }
       pepites_methodology: { Args: never; Returns: Json }
       pepites_player: {
@@ -1382,16 +1383,26 @@ export type Database = {
         Args: { p_limit?: number; p_player_id: string }
         Returns: Json
       }
+      pepites_player_stats: {
+        Args: { p_player_id: string; p_version: string }
+        Returns: Json
+      }
       pepites_ranking: {
         Args: {
+          p_followed?: boolean
           p_limit?: number
           p_max_age?: number
+          p_min_minutes?: number
           p_offset?: number
           p_position?: string
           p_sort?: string
           p_team_id?: string
           p_version?: string
         }
+        Returns: Json
+      }
+      pepites_set_follow: {
+        Args: { p_follow: boolean; p_player_id: string }
         Returns: Json
       }
       pepites_version: { Args: never; Returns: Json }
@@ -5926,6 +5937,39 @@ export type Database = {
             columns: ["superseded_by"]
             isOneToOne: false
             referencedRelation: "pepites_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pepites_follows: {
+        Row: {
+          created_at: string
+          player_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          player_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          player_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pepites_follows_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pepites_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

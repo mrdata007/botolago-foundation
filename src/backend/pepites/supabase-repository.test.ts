@@ -57,6 +57,60 @@ describe("SupabasePepitesRepository", () => {
     await expect(repository.version(context)).rejects.toMatchObject({ code: "data_unavailable" });
   });
 
+  it("sends the ranking's new filters only when they are set", async () => {
+    const { repository, calls } = fakeApi(() => ({ data: { available: false }, error: null }));
+    const base = {
+      version: null,
+      position: null,
+      maxAge: null,
+      teamId: null,
+      sort: "score" as const,
+      limit: 20,
+      offset: 0,
+    };
+    await repository.ranking(base, context);
+    await repository.ranking({ ...base, minMinutes: 450, followed: true }, context);
+    expect(calls[0]!.args).toMatchObject({ p_min_minutes: undefined, p_followed: undefined });
+    expect(calls[1]!.args).toMatchObject({ p_min_minutes: 450, p_followed: true });
+  });
+
+  it("reads the season figures under a version, and the follow state by player", async () => {
+    const player = "7e500000-0000-4000-8000-000000000001";
+    const { repository, calls } = fakeApi((name) => ({
+      data:
+        name === "pepites_follow_state"
+          ? { available: true, preview: false, found: true, followers: 3, following: null }
+          : { available: false },
+      error: null,
+    }));
+    await repository.playerStats(null, player, context);
+    expect(await repository.followState(player, context)).toEqual({
+      available: true,
+      preview: false,
+      found: true,
+      followers: 3,
+      following: null,
+    });
+    expect(calls).toEqual([
+      { name: "pepites_player_stats", args: { p_version: "current", p_player_id: player } },
+      { name: "pepites_follow_state", args: { p_player_id: player } },
+    ]);
+  });
+
+  it("maps the follow refusals: a guest, the cap, a player it never assessed", async () => {
+    for (const [message, code] of [
+      ["PEPITES_ACCOUNT_REQUIRED", "account_required"],
+      ["PEPITES_FOLLOW_LIMIT", "follow_limit"],
+      ["PEPITES_PLAYER_NOT_FOUND", "not_found"],
+      ["PEPITES_SIGN_IN_REQUIRED", "unauthenticated"],
+    ] as const) {
+      const { repository } = fakeApi(() => ({ data: null, error: { code: "PT403", message } }));
+      await expect(
+        repository.setFollow("7e500000-0000-4000-8000-000000000001", true, context),
+      ).rejects.toMatchObject({ code });
+    }
+  });
+
   it("maps a report refused for the day's limit", async () => {
     const { repository } = fakeApi(() => ({
       data: null,

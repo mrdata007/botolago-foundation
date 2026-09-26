@@ -469,7 +469,7 @@ select extensions.ok(
 -- ===========================================================================
 select extensions.ok(
   has_function_privilege('anon', 'api.pepites_home(text)', 'execute')
-  and has_function_privilege('anon', 'api.pepites_ranking(text, text, integer, uuid, text, integer, integer)', 'execute')
+  and has_function_privilege('anon', 'api.pepites_ranking(text, text, integer, uuid, text, integer, integer, integer, boolean)', 'execute')
   and not has_function_privilege('anon', 'api.report_pepites_data_issue(text, uuid, text, text)', 'execute')
   and not has_function_privilege('anon', 'api.admin_pepites_edition_publish_now(uuid)', 'execute')
   and has_function_privilege('authenticated', 'api.admin_pepites_edition_publish_now(uuid)', 'execute')

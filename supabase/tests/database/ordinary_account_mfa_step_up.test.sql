@@ -147,7 +147,8 @@ select extensions.is(
     'app.fantasy_lineups', 'app.fantasy_squad_memberships', 'app.fantasy_teams',
     'app.fantasy_transfer_batches', 'app.fantasy_transfers', 'app.followed_competitions',
     'app.followed_teams', 'app.match_votes', 'app.notification_subscriptions', 'app.notifications',
-    'app.prediction_league_members', 'app.predictions', 'app.profiles', 'app.saved_articles',
+    'app.pepites_follows', 'app.prediction_league_members', 'app.predictions', 'app.profiles',
+    'app.saved_articles',
     'app.user_preferences', 'app_private.prediction_guest_claims', 'app_private.push_destinations'
   ],
   'every table ordinary RPCs write for the caller carries the statement-level step-up trigger'
@@ -155,7 +156,7 @@ select extensions.is(
 select extensions.is(
   (select count(*)::integer from pg_trigger
    where tgfoid = 'app_private.refuse_unverified_mfa_actor()'::regprocedure),
-  25, 'and no other trigger uses it (none per row, none on auth or storage)'
+  26, 'and no other trigger uses it (none per row, none on auth or storage)'
 );
 
 -- ---------------------------------------------------------------------------

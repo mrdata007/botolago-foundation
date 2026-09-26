@@ -136,6 +136,8 @@ export const rankingRowSchema = pepitesPlayerCardSchema.extend({
   ratingAvg: z.number().nullable(),
   formAvg: z.number().nullable(),
   ga90: z.number().nullable(),
+  /** Minutes in the second half of the run's rounds; null under two rounds. */
+  secondHalfMinutes: z.number().int().nullable().optional(),
   flags: z.array(z.string()),
   movement: movementSchema,
 });
@@ -149,6 +151,8 @@ export const rankingResponseSchema = z.discriminatedUnion("available", [
     source: z.enum(["edition", "previous_season"]).optional(),
     total: z.number().int().optional(),
     rows: z.array(rankingRowSchema).optional(),
+    /** The ranked players' clubs, on the first page only (the club filter). */
+    teams: z.array(pepitesTeamSchema).optional(),
   }),
 ]);
 
@@ -227,6 +231,60 @@ export const playerMatchesResponseSchema = z.discriminatedUnion("available", [
   }),
 ]);
 
+/**
+ * The run's rounds cut in two halves (1 to `firstTo`, then to `lastRound`):
+ * the player's minutes and the club's matches in each.
+ */
+export const minutesSplitSchema = z.object({
+  firstTo: z.number().int(),
+  lastRound: z.number().int(),
+  firstMinutes: z.number().int(),
+  secondMinutes: z.number().int(),
+  firstMatches: z.number().int(),
+  secondMatches: z.number().int(),
+});
+
+export const seasonStatsSchema = z.object({
+  apps: z.number().int(),
+  starts: z.number().int(),
+  minutes: z.number().int(),
+  goals: z.number().int(),
+  assists: z.number().int(),
+  saves: z.number().int().nullable(),
+  cleanSheets: z.number().int().nullable(),
+  goalsConceded: z.number().int().nullable(),
+  penaltiesSaved: z.number().int().nullable(),
+  penaltiesMissed: z.number().int(),
+  yellowCards: z.number().int(),
+  redCards: z.number().int(),
+  ownGoals: z.number().int(),
+});
+
+export const playerStatsResponseSchema = z.discriminatedUnion("available", [
+  closed,
+  z.object({
+    ...openBase,
+    found: z.boolean(),
+    version: z.string().optional(),
+    source: z.enum(["edition", "previous_season"]).optional(),
+    stats: seasonStatsSchema.optional(),
+    split: minutesSplitSchema.nullable().optional(),
+    /** The same player in the open Fantasy game; null when the game does not list them. */
+    fantasyPlayerId: z.string().uuid().nullable().optional(),
+  }),
+]);
+
+/** `following` is null for a reader who cannot follow (signed out, a guest). */
+export const followStateSchema = z.discriminatedUnion("available", [
+  closed,
+  z.object({
+    ...openBase,
+    found: z.boolean(),
+    followers: z.number().int().optional(),
+    following: z.boolean().nullable().optional(),
+  }),
+]);
+
 export const editionResponseSchema = z.discriminatedUnion("available", [
   closed,
   z.object({ ...openBase, found: z.boolean(), edition: editionSchema.optional() }),
@@ -284,6 +342,10 @@ export type PlayerMatch = z.infer<typeof playerMatchSchema>;
 export type PlayerMatchesResponse = z.infer<typeof playerMatchesResponseSchema>;
 export type EditionResponse = z.infer<typeof editionResponseSchema>;
 export type MethodologyResponse = z.infer<typeof methodologyResponseSchema>;
+export type MinutesSplit = z.infer<typeof minutesSplitSchema>;
+export type SeasonStats = z.infer<typeof seasonStatsSchema>;
+export type PlayerStatsResponse = z.infer<typeof playerStatsResponseSchema>;
+export type FollowState = z.infer<typeof followStateSchema>;
 export type WeeklyEmailDto = z.infer<typeof weeklyEmailSchema>;
 
 export const RANKING_SORTS = [
@@ -305,7 +367,14 @@ export interface RankingQuery {
   readonly sort: RankingSort;
   readonly limit: number;
   readonly offset: number;
+  /** Players with at least these minutes; null for no floor. */
+  readonly minMinutes?: number | null;
+  /** Only the players the reader follows. */
+  readonly followed?: boolean;
 }
+
+/** An account follows at most this many players (the database says so too). */
+export const PEPITES_FOLLOW_LIMIT = 100;
 
 /** What a data-error report may point at on a player page. */
 export const REPORTABLE_FIELDS = [
@@ -335,6 +404,13 @@ export interface PepitesRepository {
     limit: number,
     context: RepositoryContext,
   ): Promise<PlayerMatchesResponse>;
+  playerStats(
+    version: string | null,
+    playerId: string,
+    context: RepositoryContext,
+  ): Promise<PlayerStatsResponse>;
+  followState(playerId: string, context: RepositoryContext): Promise<FollowState>;
+  setFollow(playerId: string, follow: boolean, context: RepositoryContext): Promise<FollowState>;
   edition(
     seasonId: string | null,
     week: number,
