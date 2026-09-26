@@ -55,6 +55,7 @@ import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { siteJsonLd } from "@/lib/structured-data";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { greetingPart } from "@/lib/greeting";
 import { capitalizeFirst, groupByMatchDay } from "@/lib/match-days";
 import type { Match } from "@/types/domain";
 import stadiumBand from "@/assets/brand/home-band-stadium.webp";
@@ -98,7 +99,11 @@ export const Route = createFileRoute("/")({
         },
       ]);
     }
-    return ssrAvailability(queryClient);
+    // The moment the greeting and its date are read at, decided here once:
+    // the browser's first render reads it back from the loader data rather
+    // than its own clock, so both render the same words (as /matches does
+    // with its day).
+    return { ...ssrAvailability(queryClient), renderedAt: Date.now() };
   },
   headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => ({
@@ -120,11 +125,11 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-function useGreeting() {
+function useGreeting(now: Date) {
   const { t } = useI18n();
-  const h = new Date().getHours();
-  if (h < 12) return t("home.greeting_morning");
-  if (h < 18) return t("home.greeting_afternoon");
+  const part = greetingPart(now);
+  if (part === "morning") return t("home.greeting_morning");
+  if (part === "afternoon") return t("home.greeting_afternoon");
   return t("home.greeting_evening");
 }
 
@@ -205,7 +210,9 @@ function HomeContent() {
   const { t, tr, lang } = useI18n();
   const { status } = useAuth();
   const { source, key } = useFantasyDataSource();
-  const greeting = useGreeting();
+  const { renderedAt } = Route.useLoaderData();
+  const now = useMemo(() => new Date(renderedAt), [renderedAt]);
+  const greeting = useGreeting(now);
   const availability = useFantasyAvailability();
   const fantasyReady = !availability.isError && availability.data?.status === "ready";
   const canCreate = availability.data?.status === "ready" && availability.data.canCreate;
@@ -291,8 +298,8 @@ function HomeContent() {
       day: "numeric",
       month: "long",
     });
-    return fmt.format(new Date());
-  }, [lang]);
+    return fmt.format(now);
+  }, [lang, now]);
 
   const homeMatches = useMemo(() => matchesQ.data?.matches ?? [], [matchesQ.data]);
   const liveMatches = useMemo(() => homeMatches.filter(isInPlay), [homeMatches]);
