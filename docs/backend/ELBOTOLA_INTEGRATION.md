@@ -1,5 +1,13 @@
 # ElBotola metadata and hero-image integration
 
+> **Superseded for ElBotola.** The news engine
+> (`docs/production/NEWS_ENGINE_GO_LIVE.md`) now owns the ElBotola source. It
+> extracts facts and composes original BotolaGO articles instead of publishing
+> link stubs, and `news-elbotola-recovery.yml` has lost its schedule. Do not
+> run the stub path and the engine against ElBotola at the same time: both
+> write `app_private.news_source_articles` on the same
+> `(publisher, external_id)` key.
+
 ## Decision
 
 BotolaGO may use ElBotola as an attributed link-metadata and remote hero-image

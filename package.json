@@ -37,6 +37,7 @@
     "backend:db:lint": "supabase db lint --local --schema app,api,app_private --level warning --fail-on error"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.127.0",
     "@hookform/resolvers": "^5.2.2",
     "@lovable.dev/mcp-js": "^0.23.0",
     "@radix-ui/react-accordion": "^1.2.12",

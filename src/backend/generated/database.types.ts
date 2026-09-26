@@ -1191,6 +1191,346 @@ export type Database = {
         }
         Returns: undefined
       }
+      news_engine_assign_cluster: {
+        Args: {
+          p_claim_status?:
+            | "official"
+            | "confirmed"
+            | "reported"
+            | "rumour"
+            | "disputed"
+          p_cluster_key: string
+          p_competition_id: string
+          p_event_date: string
+          p_event_type: string
+          p_item_id: string
+          p_match_signal?: string
+          p_player_ids: string[]
+          p_similarity?: number
+          p_team_ids: string[]
+        }
+        Returns: Json
+      }
+      news_engine_begin_run: {
+        Args: {
+          p_dry_run?: boolean
+          p_job_type: string
+          p_source_slug: string
+          p_target_scope?: string
+          p_trigger_kind?: string
+        }
+        Returns: string
+      }
+      news_engine_claim_source: {
+        Args: { p_force?: boolean; p_source_slug: string }
+        Returns: Json
+      }
+      news_engine_cluster_bundle: {
+        Args: { p_cluster_id: string }
+        Returns: Json
+      }
+      news_engine_complete_run: {
+        Args: {
+          p_counts?: Json
+          p_error_code?: string
+          p_error_summary?: string
+          p_run_id: string
+          p_status:
+            | "pending"
+            | "running"
+            | "succeeded"
+            | "partially_succeeded"
+            | "failed"
+            | "cancelled"
+        }
+        Returns: undefined
+      }
+      news_engine_flag_cluster_conflict: {
+        Args: { p_cluster_id: string; p_summary: string }
+        Returns: undefined
+      }
+      news_engine_match_clusters: {
+        Args: {
+          p_event_date: string
+          p_event_type: string
+          p_limit?: number
+          p_player_ids: string[]
+          p_team_ids: string[]
+          p_window_days?: number
+        }
+        Returns: Json
+      }
+      news_engine_open_failures: {
+        Args: {
+          p_failure_code?:
+            | "DISCOVERY_FAILED"
+            | "FETCH_FAILED"
+            | "PARSE_FAILED"
+            | "IRRELEVANT"
+            | "ENTITY_UNRESOLVED"
+            | "FACT_CONFLICT"
+            | "GENERATION_FAILED"
+            | "SIMILARITY_TOO_HIGH"
+            | "MEDIA_FAILED"
+            | "PUBLICATION_FAILED"
+            | "VALIDATION_FAILED"
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      news_engine_pending_items: {
+        Args: {
+          p_include_text?: boolean
+          p_limit?: number
+          p_since?: string
+          p_source_slug?: string
+          p_status:
+            | "discovered"
+            | "fetched"
+            | "parsed"
+            | "irrelevant"
+            | "extracted"
+            | "clustered"
+            | "generated"
+            | "validated"
+            | "ready"
+            | "published"
+            | "rejected"
+            | "failed"
+          p_until?: string
+        }
+        Returns: Json
+      }
+      news_engine_publish_article: {
+        Args: {
+          p_body_html: string
+          p_category_slug: string
+          p_cluster_id: string
+          p_competition_ids: string[]
+          p_generation_attempt_id: string
+          p_hero_asset_id: string
+          p_language: string
+          p_player_ids: string[]
+          p_publish: boolean
+          p_reading_time_minutes: number
+          p_sanitizer_version: string
+          p_seo_description: string
+          p_seo_title: string
+          p_slug: string
+          p_subtitle: string
+          p_summary: string
+          p_tag_slugs: string[]
+          p_team_ids: string[]
+          p_title: string
+        }
+        Returns: Json
+      }
+      news_engine_record_discovery: {
+        Args: {
+          p_etag?: string
+          p_items: Json
+          p_last_modified?: string
+          p_last_seen_item_key?: string
+          p_last_seen_published_at?: string
+          p_source_slug: string
+        }
+        Returns: Json
+      }
+      news_engine_record_discovery_failure: {
+        Args: { p_error_code: string; p_source_slug: string }
+        Returns: undefined
+      }
+      news_engine_record_facts: {
+        Args: {
+          p_best_claim_status:
+            | "official"
+            | "confirmed"
+            | "reported"
+            | "rumour"
+            | "disputed"
+          p_claims: Json
+          p_competition_id: string
+          p_confidence?: number
+          p_event_date: string
+          p_event_type: string
+          p_extractor_version: string
+          p_fixture_id: string
+          p_item_id: string
+          p_model?: string
+          p_player_ids: string[]
+          p_quotes: Json
+          p_score: Json
+          p_team_ids: string[]
+          p_unresolved: Json
+        }
+        Returns: string
+      }
+      news_engine_record_failure: {
+        Args: {
+          p_cluster_id?: string
+          p_detail?: Json
+          p_failure_code:
+            | "DISCOVERY_FAILED"
+            | "FETCH_FAILED"
+            | "PARSE_FAILED"
+            | "IRRELEVANT"
+            | "ENTITY_UNRESOLVED"
+            | "FACT_CONFLICT"
+            | "GENERATION_FAILED"
+            | "SIMILARITY_TOO_HIGH"
+            | "MEDIA_FAILED"
+            | "PUBLICATION_FAILED"
+            | "VALIDATION_FAILED"
+          p_item_id?: string
+          p_message: string
+          p_retry_after_seconds?: number
+          p_run_id?: string
+          p_source_slug?: string
+          p_stage:
+            | "discovery"
+            | "fetch"
+            | "parse"
+            | "relevance"
+            | "extraction"
+            | "entities"
+            | "clustering"
+            | "generation"
+            | "validation"
+            | "publication"
+        }
+        Returns: string
+      }
+      news_engine_record_fetch: {
+        Args: {
+          p_content_hash: string
+          p_etag?: string
+          p_item_id: string
+          p_last_modified?: string
+          p_metadata?: Json
+          p_normalized_text: string
+          p_parser_version?: string
+          p_source_published_at?: string
+          p_source_title?: string
+          p_source_updated_at?: string
+        }
+        Returns: Json
+      }
+      news_engine_record_generation: {
+        Args: {
+          p_cluster_id: string
+          p_draft: Json
+          p_factual_verdict:
+            | "passed"
+            | "needs_review"
+            | "needs_regeneration"
+            | "rejected"
+          p_language: string
+          p_model: string
+          p_originality_verdict:
+            | "passed"
+            | "needs_review"
+            | "needs_regeneration"
+            | "rejected"
+          p_prompt_version: string
+          p_similarity_detail: Json
+          p_similarity_score: number
+          p_verdict:
+            | "passed"
+            | "needs_review"
+            | "needs_regeneration"
+            | "rejected"
+          p_verdict_reason?: string
+        }
+        Returns: Json
+      }
+      news_engine_record_relevance: {
+        Args: {
+          p_item_id: string
+          p_reason: string
+          p_relevant: boolean
+          p_score: number
+        }
+        Returns: undefined
+      }
+      news_engine_record_stage: {
+        Args: {
+          p_duration_ms?: number
+          p_error_code?: string
+          p_error_summary?: string
+          p_failed_count?: number
+          p_input_count?: number
+          p_output_count?: number
+          p_run_id: string
+          p_stage:
+            | "discovery"
+            | "fetch"
+            | "parse"
+            | "relevance"
+            | "extraction"
+            | "entities"
+            | "clustering"
+            | "generation"
+            | "validation"
+            | "publication"
+          p_status:
+            | "pending"
+            | "running"
+            | "succeeded"
+            | "partially_succeeded"
+            | "failed"
+            | "cancelled"
+        }
+        Returns: undefined
+      }
+      news_engine_reseed_aliases: { Args: never; Returns: Json }
+      news_engine_resolve_entities: {
+        Args: {
+          p_entity_kind: "team" | "player" | "competition" | "coach"
+          p_language?: string
+          p_mentions: string[]
+        }
+        Returns: Json
+      }
+      news_engine_resolve_failure: {
+        Args: { p_failure_id: string; p_resolution: string }
+        Returns: undefined
+      }
+      news_engine_resolve_hero_asset: {
+        Args: {
+          p_competition_id?: string
+          p_player_ids?: string[]
+          p_team_ids?: string[]
+        }
+        Returns: Json
+      }
+      news_engine_retry_failure: {
+        Args: { p_failure_id: string }
+        Returns: Json
+      }
+      news_engine_set_source_article_fetch: {
+        Args: { p_approved: boolean; p_source_slug: string }
+        Returns: Json
+      }
+      news_engine_set_source_enabled: {
+        Args: { p_enabled: boolean; p_source_slug: string }
+        Returns: Json
+      }
+      news_engine_status: { Args: { p_window_hours?: number }; Returns: Json }
+      news_engine_unpublish_article: {
+        Args: { p_article_edition_id: string; p_reason: string }
+        Returns: Json
+      }
+      news_engine_upsert_alias: {
+        Args: {
+          p_alias: string
+          p_confidence?: number
+          p_entity_id: string
+          p_entity_kind: "team" | "player" | "competition" | "coach"
+          p_language?: string
+          p_origin?: string
+        }
+        Returns: string
+      }
       news_feed: {
         Args: {
           p_after_id?: string
