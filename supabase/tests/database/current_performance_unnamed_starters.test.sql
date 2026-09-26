@@ -173,6 +173,7 @@ create function pg_temp.scoring_document(p_coverage jsonb) returns jsonb languag
     'playerFixtures', jsonb_build_array(jsonb_build_object(
       'fantasyPlayerId', md5('unnamed-scoring-player')::uuid,
       'fixtureId', md5('synthetic-unnamed-scoring-fixture')::uuid,
+      'fixtureTeamId', '63890000-0000-4000-8000-000000000001',
       'statisticsComplete', true, 'stats', jsonb_build_object('goals', 0, 'ownGoals', 0))),
     'fixtures', jsonb_build_array(jsonb_build_object(
       'fixtureId', md5('synthetic-unnamed-scoring-fixture')::uuid,
@@ -233,6 +234,13 @@ select extensions.lives_ok(
     jsonb_set(jsonb_set(pg_temp.scoring_document('{}'), '{fixtures,0,homeScore}', '1'),
       '{playerFixtures,0,stats,goals}', '1'))$$,
   'a goal credited to the scoring team reconciles'
+);
+select extensions.lives_ok(
+  $$select app_private.fantasy_validate_scoring_document(
+    jsonb_set(jsonb_set(jsonb_set(pg_temp.scoring_document('{}'),
+      '{fixtures,0,homeScore}', '1'), '{playerFixtures,0,stats,goals}', '1'),
+      '{players,0,teamId}', '"63890000-0000-4000-8000-000000000002"'))$$,
+  'a later club transfer does not move the credited goal away from its fixture team'
 );
 select extensions.lives_ok(
   $$select app_private.fantasy_validate_scoring_document(

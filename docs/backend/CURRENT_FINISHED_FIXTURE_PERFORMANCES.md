@@ -338,6 +338,9 @@ time; pg_cron jobs and other lanes are not covered by that and must be checked.
      (1–3), the stored player facts account for 0–3 as of 2026-09-26.
      Existing certified fixtures are independently checked at scoring: the
      snapshot RPC refuses `fantasy_goal_totals_mismatch` until reconciled.
+     The scoring input uses the club recorded on the fixture performance,
+     including for a player who later transfers to another club. A later
+     transfer never changes which side receives an earlier goal.
    - `current_statistics_incomplete` at `data.lineups[i].details`: that row's
      statistics were neither a list nor absent (`valueType` says what they
      were), a broken contract as for `invalid_provider_object`.
