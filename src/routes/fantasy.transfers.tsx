@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -34,6 +34,11 @@ import type { FantasyPlayer } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/transfers")({
   head: () => fantasyHead("transfers"),
+  // `?player=<fantasyPlayerId>` — "＋ Fantasy" on a Pépites player page lands
+  // here with that player already picked as the incoming one. Optional, and
+  // read once (below): a reload or a shared link is the plain screen.
+  validateSearch: (search: Record<string, unknown>): { player?: string } =>
+    typeof search.player === "string" && search.player ? { player: search.player } : {},
   component: TransfersPage,
 });
 
@@ -71,6 +76,8 @@ function TransfersPage() {
 function TransfersBody() {
   const { t, lang } = useI18n();
   const qc = useQueryClient();
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: "/fantasy/transfers" });
   const screen = useFantasyScreen();
   const owned = useFantasyOwned();
   const isCloud = owned.source === "cloud";
@@ -378,6 +385,19 @@ function TransfersBody() {
     persistDraft(nextOut, nextIn);
     setIncoming(null);
   };
+
+  // "＋ Fantasy" on a Pépites player page: pick that player as incoming,
+  // the same first step as tapping his card in "Add Player". Dropped from
+  // the URL at once, as with `?compare=` on the players list.
+  const incomingFromRef = useRef(false);
+  useEffect(() => {
+    if (!search.player || incomingFromRef.current || screen.phase !== "ready") return;
+    incomingFromRef.current = true;
+    void navigate({ to: "/fantasy/transfers", search: {}, replace: true });
+    const incomingPlayer = players.find((candidate) => candidate.id === search.player);
+    if (incomingPlayer) onPickIncoming(incomingPlayer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.player, screen.phase, players]);
 
   const activateTransferChip = async (key: ChipKey) => {
     const check = canActivateChip(chipsState, key, { deadlinePassed: locked });
