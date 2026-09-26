@@ -148,27 +148,26 @@ declare
   v_opened integer := 0;
   v_closed integer := 0;
 begin
-  create temporary table pg_temp.data_desk_found (
-    entity_type text, entity_id uuid, field text, kind text, details jsonb
-  ) on commit drop;
-
-  -- Attribute disagreements: which source says what. Only the values, so a
-  -- source seeing its value again does not count as a change.
-  insert into pg_temp.data_desk_found
-  select 'player', conflict.player_id, conflict.attribute, 'conflict',
-    pg_catalog.jsonb_build_object('values', (
-      select pg_catalog.jsonb_object_agg(observation ->> 'source', observation ->> 'value')
-      from pg_catalog.jsonb_array_elements(conflict.observations) observation
-    ))
-  from app_private.player_attribute_conflicts conflict;
-
-  -- Current-season players with no date of birth.
-  if v_season_id is not null then
-    insert into pg_temp.data_desk_found
+  -- One statement: find, open, close. The two writes touch different rows
+  -- (found issues are upserted, open sweep issues not found are closed).
+  with found as (
+    -- Attribute disagreements: which source says what. Only the values, so a
+    -- source seeing its value again does not count as a change.
+    select 'player'::text as entity_type, conflict.player_id as entity_id,
+      conflict.attribute as field, 'conflict'::text as kind,
+      pg_catalog.jsonb_build_object('values', (
+        select pg_catalog.jsonb_object_agg(observation ->> 'source', observation ->> 'value')
+        from pg_catalog.jsonb_array_elements(conflict.observations) observation
+      )) as details
+    from app_private.player_attribute_conflicts conflict
+    union all
+    -- Current-season players with no date of birth: in a squad, or with
+    -- league minutes.
     select 'player', player.id, 'date_of_birth', 'missing',
       pg_catalog.jsonb_build_object('seasonId', v_season_id)
     from app.players player
-    where player.date_of_birth is null
+    where v_season_id is not null
+      and player.date_of_birth is null
       and (
         exists (
           select 1 from app.team_memberships membership
@@ -181,35 +180,32 @@ begin
             and performance.football_season_id = v_season_id
             and performance.active and performance.minutes > 0
         )
-      );
-
+      )
+    union all
     -- Lineup entries with only a name.
-    insert into pg_temp.data_desk_found
     select 'lineup_player', lineup_player.id, 'player_id', 'unlinked',
       pg_catalog.jsonb_build_object('playerName', lineup_player.player_name,
         'fixtureId', lineup.fixture_id, 'teamId', lineup.team_id)
     from app.lineup_players lineup_player
     join app.lineups lineup on lineup.id = lineup_player.lineup_id
     join app.fixtures fixture on fixture.id = lineup.fixture_id
-    where lineup_player.player_id is null
-      and fixture.season_id = v_season_id;
-  end if;
-
-  -- Published photos whose rights no longer hold.
-  insert into pg_temp.data_desk_found
-  select 'photo', release.id, 'rights', 'conflict',
-    pg_catalog.jsonb_build_object('playerId', release.player_id, 'problems', problems.list)
-  from app_private.player_photo_releases release
-  cross join lateral (
-    select array_remove(app_private.player_photo_release_problems(release), 'intake_missing') as list
-  ) problems
-  where release.status = 'published' and cardinality(problems.list) > 0;
-
-  -- Open what is new; refresh the details of what is still there.
-  with upserted as (
+    where v_season_id is not null
+      and lineup_player.player_id is null
+      and fixture.season_id = v_season_id
+    union all
+    -- Published photos whose rights no longer hold.
+    select 'photo', release.id, 'rights', 'conflict',
+      pg_catalog.jsonb_build_object('playerId', release.player_id, 'problems', problems.list)
+    from app_private.player_photo_releases release
+    cross join lateral (
+      select array_remove(app_private.player_photo_release_problems(release), 'intake_missing') as list
+    ) problems
+    where release.status = 'published' and cardinality(problems.list) > 0
+  ),
+  upserted as (
     insert into app_private.data_desk_issues (entity_type, entity_id, field, kind, source, details)
     select found.entity_type, found.entity_id, found.field, found.kind, 'sweep', found.details
-    from pg_temp.data_desk_found found
+    from found
     -- A person already closed this exact problem: not raised again until
     -- what is found changes.
     where not exists (
@@ -223,22 +219,23 @@ begin
     do update set details = excluded.details
     where data_desk_issues.details is distinct from excluded.details
     returning (xmax = 0) as inserted
+  ),
+  closed as (
+    -- Close what the sweep opened and no longer finds.
+    update app_private.data_desk_issues issue
+    set status = 'resolved', resolved_at = statement_timestamp(),
+      resolution_note = 'Cause gone (sweep)'
+    where issue.status = 'open' and issue.source = 'sweep'
+      and not exists (
+        select 1 from found
+        where found.entity_type = issue.entity_type and found.entity_id = issue.entity_id
+          and found.field = issue.field and found.kind = issue.kind
+      )
+    returning 1
   )
-  select count(*) filter (where inserted) into v_opened from upserted;
+  select (select count(*) from upserted where inserted), (select count(*) from closed)
+  into v_opened, v_closed;
 
-  -- Close what the sweep opened and no longer finds.
-  update app_private.data_desk_issues issue
-  set status = 'resolved', resolved_at = statement_timestamp(),
-    resolution_note = 'Cause gone (sweep)'
-  where issue.status = 'open' and issue.source = 'sweep'
-    and not exists (
-      select 1 from pg_temp.data_desk_found found
-      where found.entity_type = issue.entity_type and found.entity_id = issue.entity_id
-        and found.field = issue.field and found.kind = issue.kind
-    );
-  get diagnostics v_closed = row_count;
-
-  drop table pg_temp.data_desk_found;
   return pg_catalog.jsonb_build_object('opened', v_opened, 'closed', v_closed,
     'open', (select count(*) from app_private.data_desk_issues where status = 'open'));
 end;
