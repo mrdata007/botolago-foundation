@@ -37,7 +37,7 @@ supabase db reset --local
 psql postgresql://postgres:postgres@127.0.0.1:55322/postgres \
   -v ON_ERROR_STOP=1 -f scripts/backend/pepites-local-preview-seed.sql
 SUPABASE_URL=http://127.0.0.1:55321 SUPABASE_SERVICE_ROLE_KEY=<local service key> \
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55322/postgres \
+DATABASE_URL=<local database URL from supabase status> \
   bun scripts/backend/pepites-local-preview-photos.ts
 ```
 
