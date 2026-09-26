@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import type { MatchCardDto, StandingRowDto } from "@/backend/football/contracts";
+import type { MatchCardDto, StandingRowDto, TeamSummaryDto } from "@/backend/football/contracts";
 import { mapFootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
+import { tableZones } from "@/lib/league-table";
 import {
   buildStandings,
   footballService,
+  hasLeagueTable,
   inPlayFixtures,
   presentFootballClub,
   selectFootballDataMode,
@@ -90,6 +92,63 @@ describe("Football frontend repository cutover", () => {
     expect(Array.isArray(detail.lineups)).toBe(true);
     expect(detail.lineups).toHaveLength(0);
     expect(detail.match.id).toBe(matches[0]!.id);
+  });
+
+  test("the match page's payload names its season and reads no table: the tab reads the Classement's", async () => {
+    const repository = new MockFootballRepository();
+    const [fixture] = await repository.getHomeMatches("fr", 1, context);
+    const stored = MockFootballRepository.prototype.getStandings;
+    let tableReads = 0;
+    MockFootballRepository.prototype.getStandings = function (...args) {
+      tableReads += 1;
+      return stored.apply(this, args);
+    };
+    try {
+      // Refetched every 30 seconds through a live match: no table in it.
+      const detail = await footballService.getMatchDetailPage(fixture!.id, "fr");
+      expect(tableReads).toBe(0);
+      expect("standings" in detail).toBe(false);
+      expect(detail.season).toEqual({
+        id: fixture!.seasonId,
+        competitionId: fixture!.competition.id,
+        competitionType: "league",
+      });
+      expect(hasLeagueTable(detail.season)).toBe(true);
+      // Its season asks for the table the Classement tab shows for that season.
+      const season = (await footballService.getSeasons("fr")).find(
+        (candidate) => candidate.id === detail.season.id,
+      )!;
+      expect(await footballService.getStandings(detail.season, "fr")).toEqual(
+        await footballService.getStandings(season, "fr"),
+      );
+    } finally {
+      MockFootballRepository.prototype.getStandings = stored;
+    }
+  });
+
+  test("a match names the kind of competition it is in: only a league's season has a table", async () => {
+    const repository = new MockFootballRepository();
+    const [fixture] = await repository.getHomeMatches("fr", 1, context);
+    const stored = MockFootballRepository.prototype.getMatchDetail;
+    for (const type of ["cup", "super_cup", "international", "friendly"] as const) {
+      // The same fixture, played in a competition of that kind.
+      MockFootballRepository.prototype.getMatchDetail = async function (...args) {
+        const detail = await stored.apply(this, args);
+        return { ...detail, competition: { ...detail.competition, type } };
+      };
+      try {
+        const detail = await footballService.getMatchDetailPage(fixture!.id, "fr");
+        expect(detail.season).toEqual({
+          id: fixture!.seasonId,
+          competitionId: fixture!.competition.id,
+          competitionType: type,
+        });
+        expect([type, hasLeagueTable(detail.season)]).toEqual([type, false]);
+      } finally {
+        MockFootballRepository.prototype.getMatchDetail = stored;
+      }
+    }
+    expect(hasLeagueTable({ competitionType: "league" })).toBe(true);
   });
 
   test("standings rows expose full W/D/L/form so the table never needs invented stats", async () => {
@@ -380,5 +439,120 @@ describe("the season table", () => {
     // The mock provider's table covers more matches than the mock results.
     expect(standings.overall.length).toBeGreaterThan(0);
     expect(standings.rounds).toBe(Math.max(...standings.overall.map((row) => row.played)));
+    expect(standings.computed).toBe(false);
+  });
+
+  test("a table worked out from the results says so; the provider's does not", async () => {
+    const { fixtures } = await completedSeason();
+    const fromResults = buildStandings(fixtures, []);
+    expect(fromResults.computed).toBe(true);
+    expect(buildStandings(fixtures, storedFrom(fixtures, fromResults.overall)).computed).toBe(
+      false,
+    );
+  });
+});
+
+/**
+ * Audit A04: the same results, read in French and in Arabic, must put the
+ * same club at the same position in the same zone. The API translates team
+ * names, and the table used to separate level clubs by that translated name.
+ */
+describe("the season table in both languages", () => {
+  const repository = new MockFootballRepository();
+
+  /** Club id → position and zone, in table order: what a reader sees. */
+  const reading = (rows: ReturnType<typeof buildStandings>["overall"]) => {
+    const zones = tableZones(rows);
+    return rows.map((row) => [row.clubId, row.position, zones.get(row.clubId) ?? null]);
+  };
+
+  test("the mock season in progress ranks its level clubs the same in French and Arabic", async () => {
+    const seasons = await repository.getSeasons("fr", 12, context);
+    const current = seasons.find((season) => season.isCurrent)!;
+    const [french, arabic] = await Promise.all(
+      (["fr", "ar"] as const).map((language) =>
+        repository.getSeasonFixtures(current.competition.id, current.id, language, context),
+      ),
+    );
+    // The two responses really do name the clubs differently…
+    expect(french![0]!.homeTeam.shortName).not.toBe(arabic![0]!.homeTeam.shortName);
+    const fr = buildStandings(french!, []);
+    const ar = buildStandings(arabic!, []);
+    // …and this season really has clubs level on every figure.
+    expect(new Set(fr.overall.map((row) => row.position)).size).toBeLessThan(fr.overall.length);
+    expect(reading(ar.overall)).toEqual(reading(fr.overall));
+    expect(reading(ar.home)).toEqual(reading(fr.home));
+    expect(reading(ar.away)).toEqual(reading(fr.away));
+  });
+
+  test("production after the first match: fourteen clubs share 2nd, in both languages, in no zone", async () => {
+    // The clubs and names production served on 2026-09-25, when the only
+    // result of 2026/27 was Amal Tiznit 1–3 Ittihad Tanger. Sorted by the
+    // Arabic name, UTS Rabat (اتحاد تواركة) came 2nd with a Champions League
+    // bar; by the French one, CODM Meknès did.
+    const names: [slug: string, fr: string, ar: string][] = [
+      ["amal-tiznit-1ebd788b9f71", "Amal Tiznit", "أمل تيزنيت"],
+      ["codm-mekn-s-8059c0cf8b7b", "CODM Meknès", "المكناسي"],
+      ["cr-khemis-zemamra-dc6fb8196f3e", "CR Khemis Zemamra", "نهضة الزمامرة"],
+      ["difa-el-jadida-d5d8c59bf7ab", "Difaâ El Jadida", "الدفاع الجديدي"],
+      ["far-rabat-fd6ff8ea898c", "FAR Rabat", "الجيش"],
+      ["fus-rabat-c499006b2af3", "FUS Rabat", "الفتح"],
+      ["hassania-agadir-9f8c170d24ed", "Hassania Agadir", "حسنية أكادير"],
+      ["ittihad-tanger-353e19d70a4b", "Ittihad Tanger", "اتحاد طنجة"],
+      ["kawkab-marrakech-d60d9d72cb7a", "Kawkab Marrakech", "الكوكب المراكشي"],
+      ["maghreb-f-s-0257feb34c16", "Maghreb Fès", "المغرب الفاسي"],
+      ["moghreb-t-touan-e3beb52dfbfb", "Moghreb Tétouan", "المغرب التطواني"],
+      ["raja-casablanca-3b0f1fc95b29", "Raja Casablanca", "الرجاء"],
+      ["rsb-berkane-7b2e23bc450f", "RSB Berkane", "نهضة بركان"],
+      ["uts-rabat-b78eaee893af", "UTS Rabat", "اتحاد تواركة"],
+      ["widad-t-mara-7d508334d7a9", "Widad Témara", "وداد تمارة"],
+      ["wydad-casablanca-80a3fb8202ae", "WCA", "الوداد"],
+    ];
+    // Any mock fixture, for the fields the table does not read.
+    const [template] = await repository.getHomeMatches("fr", 1, context);
+    const idOf = (index: number) =>
+      `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
+    const teamsIn = (language: "fr" | "ar"): TeamSummaryDto[] =>
+      names.map(([slug, fr, ar], index) => ({
+        ...template!.homeTeam,
+        id: idOf(index),
+        slug,
+        name: language === "fr" ? fr : ar,
+        shortName: language === "fr" ? fr : ar,
+      }));
+    // Opening round: Amal Tiznit v Ittihad Tanger played, the rest to come.
+    const others = names.map((_, index) => index).filter((index) => index !== 0 && index !== 7);
+    const pairs: [number, number][] = [
+      [0, 7],
+      ...Array.from({ length: 7 }, (_, i): [number, number] => [
+        others[2 * i]!,
+        others[2 * i + 1]!,
+      ]),
+    ];
+    const seasonIn = (language: "fr" | "ar"): MatchCardDto[] => {
+      const teams = teamsIn(language);
+      return pairs.map(([home, away], index) => ({
+        ...template!,
+        id: `00000000-0000-4000-9000-${String(index + 1).padStart(12, "0")}`,
+        homeTeam: teams[home]!,
+        awayTeam: teams[away]!,
+        status: index === 0 ? "finished" : "not_started",
+        homeScore: index === 0 ? 1 : null,
+        awayScore: index === 0 ? 3 : null,
+      }));
+    };
+
+    const fr = buildStandings(seasonIn("fr"), []);
+    const ar = buildStandings(seasonIn("ar"), []);
+    expect(fr.overall).toHaveLength(16);
+    expect(reading(ar.overall)).toEqual(reading(fr.overall));
+
+    const [first, ...rest] = reading(fr.overall);
+    const last = rest.pop()!;
+    expect(first).toEqual([idOf(7), 1, "champions_league"]); // Ittihad Tanger
+    expect(last).toEqual([idOf(0), 16, "relegation"]); // Amal Tiznit
+    expect(rest).toHaveLength(14);
+    for (const [, position, zone] of rest) expect([position, zone]).toEqual([2, null]);
+    expect(fr.computed).toBe(true);
   });
 });

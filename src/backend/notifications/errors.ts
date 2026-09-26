@@ -1,3 +1,4 @@
+import { reportMfaStepUp } from "@/backend/auth/step-up";
 import { BackendError } from "@/backend/errors";
 
 export const NOTIFICATION_ERROR_CODES = [
@@ -37,6 +38,9 @@ export class NotificationError extends Error {
 
 export function mapNotificationError(error: unknown): NotificationError {
   if (error instanceof NotificationError) return error;
+  // A preference change refused because the second factor is still owed: the
+  // auth layer takes the reader to the code (see `@/backend/auth/step-up`).
+  reportMfaStepUp(error);
   const value = error as { message?: string; code?: string } | null;
   const message = `${value?.message ?? ""} ${value?.code ?? ""}`.toLowerCase();
   const code = NOTIFICATION_ERROR_CODES.find((candidate) => message.includes(candidate));

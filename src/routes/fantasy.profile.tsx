@@ -27,6 +27,7 @@ import {
 } from "@/components/ui-kit";
 import { chipDisplayState, type ChipKey } from "@/lib/fantasy-engine";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
@@ -34,6 +35,7 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
 
 export const Route = createFileRoute("/fantasy/profile")({
+  head: () => fantasyHead("profile"),
   component: TeamProfilePage,
 });
 

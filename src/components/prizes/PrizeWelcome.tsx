@@ -35,7 +35,13 @@ function markSeen(): void {
 /**
  * The first-visit announcement on the Fantasy hub: "play free, win prizes".
  *
- * Shown once per device, to signed-in and signed-out visitors alike, and only
+ * Shown once per device, over a team owner's dashboard only: the hub mounts it
+ * where `fantasyHubLayout` says `prizeWelcome`, which it never says for a
+ * visitor without a team -- signed out, or signed in before creating one --
+ * whose first-time proposition names the prizes inline instead (audit
+ * 2026-09-25, A16). So its way on is "C'est parti", back to that dashboard;
+ * the "Créer une équipe" it offered a visitor without a team could no longer
+ * be reached, and is gone. It opens only
  *   - once the launch sequence has let go of the screen (splash finished,
  *     language chosen), so it never sits under the splash or over the chooser;
  *   - when at least one prize is switched on -- there is nothing to announce
@@ -43,7 +49,7 @@ function markSeen(): void {
  * Closing it by any means -- either button, the close control, Escape or a
  * tap outside -- counts as seen.
  */
-export function PrizeWelcome({ hasTeam }: { hasTeam: boolean }) {
+export function PrizeWelcome() {
   const { t, tr, isHydrated, hasChosen } = useI18n();
   const splashDone = useSplashDone();
   const ready = splashDone && isHydrated && hasChosen;
@@ -76,20 +82,9 @@ export function PrizeWelcome({ hasTeam }: { hasTeam: boolean }) {
       description={t("prizes.welcome.body")}
       footer={
         <div className="flex flex-col gap-2">
-          {hasTeam ? (
-            <UiButton variant="gradient" onClick={close} data-testid="prize-welcome-go">
-              {t("prizes.welcome.go")}
-            </UiButton>
-          ) : (
-            <UiLinkButton
-              to="/fantasy/create"
-              variant="gradient"
-              onClick={close}
-              data-testid="prize-welcome-create"
-            >
-              {t("fpl.create_team")}
-            </UiLinkButton>
-          )}
+          <UiButton variant="gradient" onClick={close} data-testid="prize-welcome-go">
+            {t("prizes.welcome.go")}
+          </UiButton>
           <UiLinkButton
             to="/prizes"
             variant="ghost"

@@ -11,6 +11,7 @@ import type { MatchEvent } from "@/services/match-live";
 import type { Club } from "@/types/domain";
 import { BallIcon } from "./BallIcon";
 import { GOAL_EVENT_TYPES, trackArrivals } from "./goal-moment";
+import { noEventsMessage, type MatchDataPhase } from "./match-empty-states";
 
 const CARD_TYPES: ReadonlySet<MatchEvent["type"]> = new Set([
   "yellow_card",
@@ -35,6 +36,9 @@ const PERIOD_TYPES: ReadonlySet<MatchEvent["type"]> = new Set(["period_start", "
  * match data (`toMatch` does not map it), and counting goals out of a
  * timeline that can lag the score would be inventing one. Any other event
  * with no team is a quiet centred line.
+ *
+ * With no events, the message follows `phase` (see `match-empty-states`): "no
+ * key events for now" under a finished 1–3 would deny the four goals.
  */
 export function EventTimeline({
   events,
@@ -43,6 +47,7 @@ export function EventTimeline({
   palettes,
   lineups = [],
   isLive,
+  phase,
   halfTime,
 }: {
   events: readonly MatchEvent[];
@@ -52,6 +57,7 @@ export function EventTimeline({
   /** Published lineups, only to put names on the events. */
   lineups?: readonly MatchLineupDto[];
   isLive: boolean;
+  phase: MatchDataPhase;
   /** The half-time score, when the provider has recorded one: "MI-TEMPS · 1 – 1". */
   halfTime?: { home: number; away: number };
 }) {
@@ -92,7 +98,7 @@ export function EventTimeline({
   const shown = events.filter((event) => !PERIOD_TYPES.has(event.type) || event.id === halfTimeEnd);
 
   if (shown.length === 0) {
-    return <EmptyState>{t("matches.detail.no_events")}</EmptyState>;
+    return <EmptyState>{noEventsMessage(phase, t)}</EmptyState>;
   }
 
   const names = new Map(

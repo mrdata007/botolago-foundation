@@ -2,15 +2,32 @@ name: Production watchdog
 
 # Read-only production health check every 30 minutes (docs/operations/ALERTS.md):
 # the database's own checks (api.service_ops_health), the public pages and
-# one public API call as a visitor meets them, and whether the Fantasy season
-# orchestrator has actually run. A failing check opens (or updates) one GitHub
-# issue labelled `ops-alert` that mentions the owner; the next healthy run
-# closes it. Dispatch it by hand with "simulate_failure" to test the alert
-# path end to end.
+# one public API call as a visitor meets them (the sitemap must list URLs),
+# whether the Fantasy season orchestrator has actually run and whether its
+# last run was red, and every Fantasy gameweek whose window has ended without
+# final points, read from the database (fantasy_points; the allowance is the
+# orchestrator's FANTASY_COVERAGE_ESCALATE_HOURS). A failing check opens (or
+# updates) one GitHub issue labelled `ops-alert` that mentions the owner; the
+# next healthy run closes it. Dispatch it by hand with "simulate_failure" to
+# test the alert path end to end.
+#
+# Why it also runs after the orchestrator: GitHub's schedule is best effort.
+# This workflow reached main at 05:24 UTC on 2026-09-25 and GitHub had not
+# started it once by 07:47, while it started the hourly orchestrator only
+# every three to six hours. Nothing in this file gates the schedule (no
+# repository variable, no ref other than main), so there was nothing to
+# switch on; running after every orchestrator run means the watchdog runs
+# whenever the season job does, and its `watchdog_schedule` row shows when
+# GitHub last honoured its own schedule. The channel that does not depend on
+# GitHub at all is the database webhook (docs/operations/ALERTS.md).
 
 on:
   schedule:
     - cron: "7,37 * * * *"
+  workflow_run:
+    workflows: ["Fantasy season orchestrator"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
       simulate_failure:
@@ -29,6 +46,8 @@ permissions:
 
 jobs:
   watch:
+    # A workflow_run event carries the default branch as its ref, and runs this
+    # file as it is on main, never code from the run that triggered it.
     if: github.repository == 'mrdata007/botolago-foundation' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -38,6 +57,7 @@ jobs:
       SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
       WATCHDOG_SIMULATE_FAILURE: ${{ github.event_name == 'workflow_dispatch' && inputs.simulate_failure && 'true' || 'false' }}
       WATCHDOG_EVIDENCE: ${{ github.workspace }}/watchdog.json
+      FANTASY_COVERAGE_ESCALATE_HOURS: ${{ vars.FANTASY_COVERAGE_ESCALATE_HOURS }}
     steps:
       - name: Guard the production target
         shell: bash

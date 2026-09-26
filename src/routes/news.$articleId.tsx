@@ -40,7 +40,12 @@ import {
   presentNewsTeam,
   publicNewsContext,
 } from "@/components/news/news-data";
-import { articleBodyClass, PULL_QUOTE_CSS } from "@/components/news/article-reading";
+import {
+  articleBodyClass,
+  LEAD_IN_BODY_CLASS,
+  PULL_QUOTE_CSS,
+} from "@/components/news/article-reading";
+import { articleLeadPlacement } from "@/components/news/article-lead";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import {
   isMissingContent,
@@ -231,6 +236,9 @@ function ArticlePage() {
   const heroUrl = resolveMediaUrl(article.hero);
   const caption = [article.hero?.caption, article.hero?.credit].filter(Boolean).join(" — ");
   const deck = article.subtitle ?? article.summary;
+  // Most imported editions' first paragraph is the summary, whole or cut
+  // short: the lead is shown once, and the stored body is never trimmed.
+  const leadPlacement = articleLeadPlacement(deck, article.bodyHtml);
   const modifiedAt = articleModifiedAt(article);
 
   const canonicalUrl = buildCanonicalArticleUrl(article.id);
@@ -457,8 +465,11 @@ function ArticlePage() {
             </div>
           </div>
 
-          {/* Deck / subtitle — the lead paragraph */}
-          {deck && <p className={cn("mt-5", ui.text.bodyStrong, ui.tone.default)}>{deck}</p>}
+          {/* Deck / subtitle — the lead paragraph, unless it is the body's
+              first paragraph (see `article-lead.ts`) */}
+          {leadPlacement === "deck" && (
+            <p className={cn("mt-5", ui.text.bodyStrong, ui.tone.default)}>{deck}</p>
+          )}
 
           {/* The same story in the other language, when that edition is public
               (the API lists no other kind). Its label is written in the target
@@ -487,7 +498,11 @@ function ArticlePage() {
               reading type and the pull quote come from `article-reading.ts`.
               No spacing utility here: the blob is this wrapper's only child. */}
           <div
-            className={cn("editorial-body mt-4 max-w-[68ch]", articleBodyClass(contentLanguage))}
+            className={cn(
+              "editorial-body mt-4 max-w-[68ch]",
+              articleBodyClass(contentLanguage),
+              leadPlacement === "body" && LEAD_IN_BODY_CLASS,
+            )}
             dangerouslySetInnerHTML={{ __html: article.bodyHtml }}
           />
 

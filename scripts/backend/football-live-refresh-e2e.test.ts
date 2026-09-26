@@ -10,9 +10,18 @@
 // it with the site's own contract and maps it with the site's own `toMatch`.
 //
 // Like historical-performance-e2e-wire-format.test.ts it needs the local stack
-// (`supabase db start` or `db reset --local`) and skips with a message when it
-// cannot reach it. Everything runs in one transaction that is rolled back, so
-// it leaves nothing behind, even when it fails.
+// (`supabase db start` or `db reset --local`), and it is opt-in: it runs only
+// when LIVE_REFRESH_E2E_DB_URL names the database explicitly,
+//
+//   LIVE_REFRESH_E2E_DB_URL=postgres://postgres:postgres@127.0.0.1:55322/postgres \
+//     bun test scripts/backend/football-live-refresh-e2e.test.ts
+//
+// and otherwise skips without connecting to anything. It used to default to
+// that port, so any `bun test` wrote into whatever Postgres was listening
+// there, another lane's database included. Set but unreachable, it fails
+// rather than skipping. Everything runs in one transaction that is rolled
+// back, so it leaves nothing behind, even when it fails -- but a rolled-back
+// write still takes locks, and still counts as a write to that database.
 
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 
@@ -30,8 +39,8 @@ import {
   type LiveRefreshRpcClient,
 } from "../../supabase/functions/_shared/football-live-refresh";
 
-const DB_URL =
-  process.env.LIVE_REFRESH_E2E_DB_URL ?? "postgres://postgres:postgres@127.0.0.1:55322/postgres";
+/** The database this file writes to: named explicitly, or none (see above). */
+const DB_URL = process.env.LIVE_REFRESH_E2E_DB_URL || undefined;
 const CONNECT_TIMEOUT_MS = 3_000;
 
 const IDS = {
@@ -61,7 +70,15 @@ const PROVIDER = {
 
 let sql: Bun.SQL | null = null;
 
+if (!DB_URL) {
+  console.info(
+    "[football-live-refresh-e2e] Skipped: it writes to a database, so it runs only when " +
+      "LIVE_REFRESH_E2E_DB_URL names one (a local stack started with `supabase db start`).",
+  );
+}
+
 beforeAll(async () => {
+  if (!DB_URL) return;
   const candidate = new Bun.SQL({ url: DB_URL });
   try {
     await Promise.race([
@@ -70,14 +87,15 @@ beforeAll(async () => {
         setTimeout(() => reject(new Error("timeout")), CONNECT_TIMEOUT_MS),
       ),
     ]);
-    sql = candidate;
   } catch (error) {
-    console.warn(
-      `[football-live-refresh-e2e] Skipping: no local Postgres at ${DB_URL} (${(error as Error).message}). ` +
-        "Run `supabase db start` (or `db reset --local`) to exercise this file.",
-    );
     await candidate.end().catch(() => undefined);
+    throw new Error(
+      "[football-live-refresh-e2e] LIVE_REFRESH_E2E_DB_URL is set, but its database did not " +
+        `answer within ${CONNECT_TIMEOUT_MS}ms (${(error as Error).message}). Start it with ` +
+        "`supabase db start`, or unset the variable to skip this file.",
+    );
   }
+  sql = candidate;
 });
 
 afterAll(async () => {
@@ -290,9 +308,10 @@ async function asVisitor<T>(tx: Tx, read: () => Promise<T>): Promise<T> {
 
 class Rollback extends Error {}
 
-describe("live scores, provider to screen", () => {
+describe.skipIf(!DB_URL)("live scores, provider to screen", () => {
   it("a goal and the final whistle reach the site's match card", async () => {
-    if (!sql) return;
+    // `beforeAll` connected, or failed the file: the test only runs after it.
+    if (!sql) throw new Error("[football-live-refresh-e2e] Not connected.");
     await sql
       .begin(async (tx) => {
         // Catalogue and provider mappings, as the season import leaves them.

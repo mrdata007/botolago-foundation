@@ -17,8 +17,11 @@ import { initializeLanguage } from "./support";
  *      `html, body { overflow-x: clip }` hides an overflow from scrollWidth
  *      entirely, also no element box reaching past the viewport (deliberate
  *      `overflow-x-auto` rails excluded);
- *   4. Arabic genuinely mirrors — the side-by-side card puts its media on the
- *      right edge under `dir="rtl"`, not in the middle.
+ *   4. Arabic genuinely mirrors — the side-by-side card puts its media at the
+ *      inline end, the left edge under `dir="rtl"`, not in the middle.
+ *
+ * The pull-request gate runs it against the mock data of a server without a
+ * `.env`; pass B's aborted images make every hero fall back there too.
  */
 
 const VIEWPORTS = [
@@ -246,7 +249,7 @@ test.describe("BG-0076: Arabic mirrors rather than centring", () => {
         await page.goto("/news");
         await settle(page);
         return page.evaluate(() => {
-          const rows: { atStart: boolean; atEnd: boolean; rtl: boolean }[] = [];
+          const rows: { atLeft: boolean; atRight: boolean; rtl: boolean }[] = [];
           for (const node of document.querySelectorAll("main [data-media-state]")) {
             const card = node.closest('a[href^="/news/"]');
             if (!card) continue;
@@ -257,8 +260,8 @@ test.describe("BG-0076: Arabic mirrors rather than centring", () => {
             if (media.width > box.width * 0.6) continue;
             const rtl = getComputedStyle(document.documentElement).direction === "rtl";
             rows.push({
-              atStart: Math.abs(media.left - box.left) < box.width * 0.2,
-              atEnd: Math.abs(media.right - box.right) < box.width * 0.2,
+              atLeft: Math.abs(media.left - box.left) < box.width * 0.2,
+              atRight: Math.abs(media.right - box.right) < box.width * 0.2,
               rtl,
             });
           }
@@ -266,15 +269,18 @@ test.describe("BG-0076: Arabic mirrors rather than centring", () => {
         });
       };
 
+      // The Option A row (ArticleCard, 2026-09-24) puts the thumbnail at the
+      // inline end in both directions; this still expected it at the start,
+      // the earlier card's side, and failed on every run since.
       const fr = await sideBySide("fr");
       expect(fr.length, "no side-by-side card found in French").toBeGreaterThan(0);
-      expect(fr.every((row) => row.atStart && !row.atEnd)).toBe(true);
+      expect(fr.every((row) => row.atRight && !row.atLeft)).toBe(true);
 
       const ar = await sideBySide("ar");
       expect(ar.length, "no side-by-side card found in Arabic").toBeGreaterThan(0);
       expect(ar.every((row) => row.rtl)).toBe(true);
-      // Mirrored, not centred: the media sits against the right edge.
-      expect(ar.every((row) => row.atEnd && !row.atStart)).toBe(true);
+      // Mirrored, not centred: the media sits against the left edge.
+      expect(ar.every((row) => row.atLeft && !row.atRight)).toBe(true);
     });
   }
 });

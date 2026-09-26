@@ -141,4 +141,31 @@ describe("runOwnedMutation — H1 foundation", () => {
     expect(fantasyDraftsStore.read(draftKey)).not.toBeNull();
     fantasyDraftsStore.remove(draftKey);
   });
+
+  it("an untyped error is typed as the repository's own, with what was thrown as its cause", async () => {
+    // Anything untyped used to become `unknown` without its cause, so a stale
+    // version never reached the conflict branch and a lost connection read as
+    // the screens' catch-all.
+    const stale = { code: "40001", message: "version conflict", details: null, hint: null };
+    const offline = new TypeError("Failed to fetch");
+    const odd = new Error("something nobody named");
+    const outcomes: Array<[string, string]> = [];
+    for (const thrown of [stale, offline, odd]) {
+      const res = await runOwnedMutation(makeCtx() as any, {
+        action: async () => {
+          throw thrown;
+        },
+        args: undefined,
+      });
+      if (res.ok) throw new Error("the failed action went through");
+      expect(res.error).toBeInstanceOf(FantasyRepoError);
+      expect(res.error.cause).toBe(thrown);
+      outcomes.push([res.error.code, res.kind]);
+    }
+    expect(outcomes).toEqual([
+      ["version_conflict", "conflict"],
+      ["network", "error"],
+      ["unknown", "error"],
+    ]);
+  });
 });

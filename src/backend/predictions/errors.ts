@@ -1,3 +1,5 @@
+import { reportMfaStepUp } from "@/backend/auth/step-up";
+
 /**
  * Pronostics error codes: the `message` of every exception the Pronostics
  * functions raise, plus the two the app adds (a network failure, anything
@@ -25,14 +27,22 @@ export const PREDICTIONS_ERROR_CODES = [
   "predictions_leagues_unavailable",
   "match_vote_unavailable",
   "match_vote_closed",
+  /**
+   * This session has not presented the account's second factor yet. Raised
+   * by the database's shared account guard (`PT403 mfa_required`), and
+   * recognised by that exact pair (`isMfaStepUpError`), not by the message.
+   */
+  "mfa_required",
   "network",
   "data_unavailable",
 ] as const;
 export type PredictionsErrorCode = (typeof PREDICTIONS_ERROR_CODES)[number];
 
-/** Codes a database function can raise (the last two are the app's own). */
+/** Codes a Pronostics function raises itself, matched by message. */
 const RAISED_CODES: ReadonlySet<string> = new Set(
-  PREDICTIONS_ERROR_CODES.filter((code) => code !== "network" && code !== "data_unavailable"),
+  PREDICTIONS_ERROR_CODES.filter(
+    (code) => code !== "network" && code !== "data_unavailable" && code !== "mfa_required",
+  ),
 );
 
 export class PredictionsError extends Error {
@@ -70,6 +80,11 @@ function isNetworkFailure(error: unknown): boolean {
 
 export function mapPredictionsError(error: unknown): PredictionsError {
   if (error instanceof PredictionsError) return error;
+  // A pick refused because the second factor is still owed: the auth layer
+  // takes the reader to the code (see `@/backend/auth/step-up`), and the
+  // screens say so instead of "Pronostics indisponibles".
+  if (reportMfaStepUp(error))
+    return new PredictionsError("mfa_required", "Confirm the second factor to continue.", error);
   const raw = error as { message?: unknown; code?: unknown } | null;
   const message = typeof raw?.message === "string" ? raw.message.trim() : "";
   // PostgREST's "function not found": a database the Pronostics migrations

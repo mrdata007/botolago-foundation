@@ -31,9 +31,11 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import { buildPointsViewModel, type PointsViewModel } from "@/services/points-service";
 import { FORMATIONS, type FormationKey, type SquadPlayer } from "@/types/fantasy";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/fantasy/points")({
+  head: () => fantasyHead("points"),
   component: PointsPage,
 });
 

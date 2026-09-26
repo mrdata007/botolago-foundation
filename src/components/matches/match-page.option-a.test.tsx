@@ -91,6 +91,19 @@ describe("match page — design-system rules in source", () => {
     expect(route).not.toContain("history.back()");
   });
 
+  it("the rank cells join their words for assistive tech with the reader's comma", () => {
+    // "2, Ex æquo" in French, "2، مركز مشترك" in Arabic (`listSeparator`):
+    // the Classement table and the Face-à-face rows put a Latin ", " in both.
+    for (const file of [
+      "src/components/matches/StandingsTable.tsx",
+      "src/components/matches/HeadToHead.tsx",
+    ]) {
+      const source = code(file);
+      expect([file, /sr-only">\s*,/.test(source)]).toEqual([file, false]);
+      expect([file, source.includes("listSeparator(lang)")]).toEqual([file, true]);
+    }
+  });
+
   it("seeds the detail query with the loader's payload, so the server and the first render agree", () => {
     const route = code("src/routes/matches.$matchId.tsx");
     expect(route).toMatch(/return \{ detail, fetchedAt \};/);
@@ -98,6 +111,37 @@ describe("match page — design-system rules in source", () => {
     // With its age, so a copy the router kept from an earlier visit is
     // refetched rather than trusted as fresh.
     expect(route).toMatch(/initialDataUpdatedAt: serverDetail \? loaderData\?\.fetchedAt/);
+  });
+});
+
+describe("match page — the Face-à-face table", () => {
+  const route = code("src/routes/matches.$matchId.tsx");
+  const classement = code("src/routes/matches.standings.tsx");
+
+  it("is the Classement tab's query, in the tab's own component", () => {
+    // Same key, same function: one cache entry, one ranking. Rendered for
+    // real, and asked for by that tab alone, in
+    // src/routes/match-detail-h2h.ssr.test.tsx.
+    const key = /queryKey: \["football", "standings", season\??\.id, lang\]/;
+    expect(classement).toMatch(key);
+    expect(route).toMatch(key);
+    expect(route).toContain("queryFn: () => footballService.getStandings(season, lang)");
+    expect(route).toMatch(/\{tab === "h2h" && season && \(\s*<HeadToHeadTab\b/);
+    // The detail query, refetched through a live match, carries no table.
+    expect(route).not.toContain("detailQ.data?.standings");
+  });
+
+  it("hears the final whistle from its own reads of the match, whichever tab is open", () => {
+    // The rule is `rereadTableOnFinish`, run on a real query cache in
+    // src/lib/match-refresh.test.ts; the page starts it for its match, with
+    // its detail query's key less the language.
+    const start = route.search(
+      /useEffect\(\s*\(\) => rereadTableOnFinish\(queryClient, \["football", "match-detail", matchId\]\),\s*\[queryClient, matchId\],?\s*\);/,
+    );
+    expect(start).toBeGreaterThan(-1);
+    expect(route).toContain('queryKey: ["football", "match-detail", matchId, lang]');
+    // In the page, not in the tab: a whistle heard on the Résumé tab counts.
+    expect(start).toBeLessThan(route.indexOf("function HeadToHeadTab("));
   });
 });
 
@@ -236,6 +280,7 @@ describe("match page — the Résumé timeline", () => {
       away={far}
       palettes={palettes}
       isLive
+      phase="live"
     />,
   );
 
@@ -269,6 +314,7 @@ describe("match page — the Résumé timeline", () => {
         away={far}
         palettes={palettes}
         isLive
+        phase="live"
         halfTime={{ home: 1, away: 0 }}
       />,
     );
@@ -308,6 +354,7 @@ describe("match page — the Stats tab", () => {
       away={far}
       palettes={palettes}
       isLive
+      phase="live"
     />,
   );
 
@@ -376,6 +423,7 @@ describe("match page — expected goals and the pressure chart", () => {
         away={far}
         palettes={palettes}
         isLive={false}
+        phase="finished"
         pressure={points}
       />,
     );
@@ -453,6 +501,7 @@ describe("match page — absent players", () => {
       home={wydad}
       away={far}
       palettes={palettes}
+      phase="upcoming"
       absences={[
         absence("a1", "war", "Yahya Jabrane", "injury", "2026-10-12"),
         absence("a2", "asfar", "Mohamed Hrimat", "suspension", null),
@@ -461,7 +510,7 @@ describe("match page — absent players", () => {
   );
 
   it("lists who is out even before the lineups are published", () => {
-    expect(html).toContain("Les compositions ne sont pas encore publiées");
+    expect(html).toContain("pas de compositions à afficher.");
     expect(html).toContain("Absents");
     expect(html.indexOf("Yahya Jabrane")).toBeLessThan(html.indexOf("Mohamed Hrimat"));
   });
@@ -473,7 +522,14 @@ describe("match page — absent players", () => {
 
   it("renders nothing for a match with nobody out", () => {
     const none = inFrench(
-      <LineupsView lineups={[]} home={wydad} away={far} palettes={palettes} absences={[]} />,
+      <LineupsView
+        lineups={[]}
+        home={wydad}
+        away={far}
+        palettes={palettes}
+        phase="upcoming"
+        absences={[]}
+      />,
     );
     expect(none).not.toContain("Absents");
   });
@@ -510,6 +566,7 @@ describe("match page — players the catalogue does not know", () => {
       home={wydad}
       away={far}
       palettes={palettes}
+      phase="live"
       absences={[]}
     />,
   );

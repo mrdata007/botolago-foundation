@@ -1,15 +1,16 @@
-import { AlertTriangle, Check, CloudOff, Loader2, Smartphone } from "lucide-react";
+import { AlertTriangle, Check, CloudOff, Loader2, ShieldAlert, Smartphone } from "lucide-react";
 
-import type { SaveQueueState } from "@/backend/predictions/save-queue";
 import { ui, UiButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "./predictions-copy";
+import type { PredictionsSaveState } from "./use-predictions-round";
 
 /**
  * The bar over the bottom navigation: progress on the journée, and whether
  * the last change is saved — "Enregistré", "Hors connexion", "Échec,
- * réessayer" — or, for a visitor, kept on this phone with a way to sign up.
+ * réessayer", "Code requis" — or, for a visitor, kept on this phone with a way
+ * to sign up.
  */
 export function PredictionsStickyBar({
   done,
@@ -20,7 +21,7 @@ export function PredictionsStickyBar({
 }: {
   done: number;
   total: number;
-  state: SaveQueueState | "guest";
+  state: PredictionsSaveState;
   onRetry: () => void;
   onSignUp: () => void;
 }) {
@@ -63,7 +64,7 @@ function SaveIndicator({
   onRetry,
   onSignUp,
 }: {
-  state: SaveQueueState | "guest";
+  state: PredictionsSaveState;
   onRetry: () => void;
   onSignUp: () => void;
 }) {
@@ -103,6 +104,22 @@ function SaveIndicator({
           <span className={line}>
             <AlertTriangle className="h-4 w-4" aria-hidden />
             {t("predictions.save.failed")}
+          </span>
+          <UiButton size="sm" variant="soft" onClick={onRetry}>
+            {t("state.retry")}
+          </UiButton>
+        </span>
+      );
+    // Refused until the one-time code is in: not a failed save. The picks stay
+    // queued (and kept as the account's draft, sent on the next visit), the
+    // auth layer's notice says where the code comes from, and "Réessayer"
+    // sends them again.
+    case "step_up":
+      return (
+        <span className="flex items-center gap-2">
+          <span className={line}>
+            <ShieldAlert className="h-4 w-4" aria-hidden />
+            {t("predictions.save.step_up")}
           </span>
           <UiButton size="sm" variant="soft" onClick={onRetry}>
             {t("state.retry")}

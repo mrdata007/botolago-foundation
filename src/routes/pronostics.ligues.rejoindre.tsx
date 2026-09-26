@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { InviteLandingPage } from "@/components/predictions/leagues/InviteLandingPage";
-import { dictionaries } from "@/i18n/dictionaries";
+import { fr } from "@/i18n/dictionary-fr";
 
 /**
  * `/pronostics/ligues/rejoindre#code=…`: an invite link's landing page. Never
@@ -10,7 +10,7 @@ import { dictionaries } from "@/i18n/dictionaries";
 export const Route = createFileRoute("/pronostics/ligues/rejoindre")({
   head: () => ({
     meta: [
-      { title: dictionaries.fr["predictions.leagues.invite_generic"] },
+      { title: fr["predictions.leagues.invite_generic"] },
       { name: "robots", content: "noindex" },
     ],
   }),

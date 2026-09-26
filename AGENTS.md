@@ -97,6 +97,21 @@ null, false);` before a write that touches fixtures or notifications, and
    than 90 days. The switch above does not stop it; pause it by name for the
    length of a write that touches those tables, then set it back to `true`:
    `select cron.alter_job((select jobid from cron.job where jobname = 'predictions-history-prune'), active := false);`
+   Where migration 20260926003050 is applied, pg_cron also runs
+   `news-sitemap-refresh` every minute, whatever the mode: it reads the News
+   tables and writes only `app_private.news_sitemap_snapshot` (the entries
+   `/sitemap.xml` serves), rewriting the entries only when they changed. Its
+   companion `news-sitemap-refresh-history-prune` deletes that job's
+   `cron.job_run_details` rows older than 7 days at 03:27 UTC. A write to the
+   News tables does not need either paused (the sitemap shows the result
+   within a minute). Pause both by name for a write that touches the snapshot
+   table or `cron.job_run_details`, and set both back to `true` afterwards:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'news-sitemap-refresh'), active := false);`
+   `select cron.alter_job((select jobid from cron.job where jobname = 'news-sitemap-refresh-history-prune'), active := false);`
+   While the refresh is paused, `/sitemap.xml` serves the last snapshot for
+   two minutes and then computes the whole archive on every request (as it
+   did before the snapshot); the ops health check `news_sitemap` warns after
+   two minutes and fails, paging, after ten, so resume it promptly.
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 

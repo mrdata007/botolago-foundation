@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { showStepUpNotice } from "@/auth/step-up-notice";
 import { LEAGUE_NAME_MAX, LEAGUE_NAME_MIN } from "@/backend/predictions/contracts";
 import type { CreateLeagueDto } from "@/backend/predictions/contracts";
 import { mapPredictionsError } from "@/backend/predictions/errors";
@@ -30,7 +31,14 @@ export function CreateLeagueForm() {
       setName("");
       void queryClient.invalidateQueries({ queryKey: ["predictions", "leagues"] });
     },
-    onError: (failure) => setError(leagueErrorMessage(mapPredictionsError(failure).code, t)),
+    onError: (failure) => {
+      // Refused until the one-time code is in: the auth layer says so, once
+      // (one toast under its id). Nothing is wrong with the name typed, so the
+      // field is not marked invalid with that sentence; other refusals are.
+      const refusal = mapPredictionsError(failure).code;
+      if (refusal === "mfa_required") showStepUpNotice(t);
+      else setError(leagueErrorMessage(refusal, t));
+    },
   });
 
   if (created) {

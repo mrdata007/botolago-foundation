@@ -1,7 +1,8 @@
 import { Languages } from "lucide-react";
 import { useI18n } from "@/i18n/provider";
-import { ui, UiIconButton, UiMenu, UiMenuItem } from "@/components/ui-kit";
+import { ui, UiIconButton, UiMenu } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+import { LanguageMenuChoices } from "./LanguageMenuChoices";
 
 /**
  * `tone` says which surface the trigger is sitting on.
@@ -19,14 +20,20 @@ import { cn } from "@/lib/utils";
  * The glyph is gone from it; the button's name still says what it does. On
  * the mesh it keeps the glyph and the glass plate, rounded like every other
  * control.
+ *
+ * `data-language-switcher` is where the Arabic-failure notice hands keyboard
+ * focus when it leaves with it (`@/i18n/language-notice-focus`). An attribute
+ * rather than an `id`: the menu gives its trigger an id of its own, which
+ * names the menu, and there can be more than one switcher on a page.
  */
 export function LanguageSwitcher({ tone = "onSurface" }: { tone?: "onSurface" | "onMesh" } = {}) {
-  const { lang, setLanguage, t } = useI18n();
+  const { lang, t } = useI18n();
   const current = lang === "fr" ? "FR" : "ع";
   const trigger =
     tone === "onMesh" ? (
       <button
         type="button"
+        data-language-switcher=""
         className={cn(
           "inline-flex items-center justify-center gap-1.5 px-3 transition-colors",
           ui.space.tap,
@@ -44,6 +51,7 @@ export function LanguageSwitcher({ tone = "onSurface" }: { tone?: "onSurface" | 
     ) : (
       <UiIconButton
         aria-label={t("language.switch")}
+        data-language-switcher=""
         className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}
       >
         {current}
@@ -52,12 +60,7 @@ export function LanguageSwitcher({ tone = "onSurface" }: { tone?: "onSurface" | 
 
   return (
     <UiMenu label={t("language.switch")} trigger={trigger}>
-      <UiMenuItem onSelect={() => setLanguage("fr")} selected={lang === "fr"}>
-        Français
-      </UiMenuItem>
-      <UiMenuItem onSelect={() => setLanguage("ar")} selected={lang === "ar"}>
-        العربية
-      </UiMenuItem>
+      <LanguageMenuChoices />
     </UiMenu>
   );
 }

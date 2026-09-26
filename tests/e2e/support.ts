@@ -108,31 +108,51 @@ export async function expectNoHorizontalOverflow(page: Page) {
 /**
  * The same measure for every visible box under `scope`: what the document's
  * scroll width cannot see behind `overflow-x: clip`, a box can.
- */
-/**
+ *
+ * `scrollRails: true` lets through what sits inside a horizontal rail -- an
+ * `overflow-x: auto | scroll` box under `scope` -- since a reader reaches it by
+ * swiping the rail. The rail itself must still fit, and a scroller around the
+ * whole scope excuses nothing.
+ *
  * A row marked `data-swipe-row` (the match page's prediction deck) holds cards
  * a reader swipes to: the ones waiting beside the viewport are reachable, not
  * clipped. The row itself is still measured; what each card holds is measured
  * against the card instead (`expectSwipeSlidesFit`).
  */
-export async function expectNothingOffScreen(page: Page, scope = "main") {
-  const offscreen = await page.evaluate((selector) => {
-    const viewport = document.documentElement.clientWidth;
-    const found: string[] = [];
-    for (const root of document.querySelectorAll(selector)) {
-      for (const node of [root, ...root.querySelectorAll("*")]) {
-        if (node.parentElement?.closest("[data-swipe-row]")) continue;
-        const box = node.getBoundingClientRect();
-        if (box.width === 0 || box.height === 0) continue;
-        if (box.left >= -1 && box.right <= viewport + 1) continue;
-        const label = (node.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 24);
-        found.push(
-          `${node.tagName.toLowerCase()} "${label}" spans ${Math.round(box.left)}..${Math.round(box.right)} in a ${viewport}px viewport`,
-        );
+export async function expectNothingOffScreen(
+  page: Page,
+  scope = "main",
+  { scrollRails = false }: { scrollRails?: boolean } = {},
+) {
+  const offscreen = await page.evaluate(
+    ([selector, skipRails]) => {
+      const viewport = document.documentElement.clientWidth;
+      const found: string[] = [];
+      const inRail = (node: Element, root: Element) => {
+        for (let parent = node.parentElement; parent && parent !== root; ) {
+          const overflowX = getComputedStyle(parent).overflowX;
+          if (overflowX === "auto" || overflowX === "scroll") return true;
+          parent = parent.parentElement;
+        }
+        return false;
+      };
+      for (const root of document.querySelectorAll(selector)) {
+        for (const node of [root, ...root.querySelectorAll("*")]) {
+          if (node.parentElement?.closest("[data-swipe-row]")) continue;
+          const box = node.getBoundingClientRect();
+          if (box.width === 0 || box.height === 0) continue;
+          if (box.left >= -1 && box.right <= viewport + 1) continue;
+          if (skipRails && inRail(node, root)) continue;
+          const label = (node.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 24);
+          found.push(
+            `${node.tagName.toLowerCase()} "${label}" spans ${Math.round(box.left)}..${Math.round(box.right)} in a ${viewport}px viewport`,
+          );
+        }
       }
-    }
-    return found;
-  }, scope);
+      return found;
+    },
+    [scope, scrollRails] as const,
+  );
   expect(offscreen, `content outside the viewport under ${scope}`).toEqual([]);
 }
 

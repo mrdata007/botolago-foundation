@@ -31,6 +31,18 @@ export function articleBodyClass(contentLanguage: "fr" | "ar"): string {
 }
 
 /**
+ * The body's first paragraph as the lead. When that paragraph is the deck's
+ * own text (`articleLeadPlacement` in `article-lead.ts` says "body"), the page
+ * draws no deck and gives that paragraph the deck's heavy weight instead, so
+ * the lead still reads as the lead, once. A utility on the wrapper reaches it:
+ * `.editorial-body p` sets margins only, so no unlayered rule competes for the
+ * weight. Size and leading stay the body's, which keeps an Arabic edition's
+ * looser line too. `first-of-type`, not `first-child`: a heading or a figure
+ * may come before it, and `articleLeadPlacement` compares that same paragraph.
+ */
+export const LEAD_IN_BODY_CLASS = "[&>p:first-of-type]:[font-weight:var(--ui-weight-heavy)]";
+
+/**
  * The pull quote (A-Article): a `blockquote` in the body becomes a tinted card
  * — the article's club tint, a 4px club edge on the inline start (logical, so
  * it mirrors), the card radius — set in the display face, upright.

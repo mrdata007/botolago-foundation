@@ -61,7 +61,10 @@ export function LatestCarousel({
   return (
     <div
       role="region"
-      aria-roledescription="carousel"
+      // A role description is read out as it is written, in place of the
+      // role's own name, so it is copy like any other: in English it was
+      // "carousel" to a French or Arabic reader.
+      aria-roledescription={t("news.carousel.role")}
       aria-label={t("news.section.lead")}
       className="grid gap-2.5"
     >
@@ -77,7 +80,7 @@ export function LatestCarousel({
           <li
             key={dto.id}
             role="group"
-            aria-roledescription="slide"
+            aria-roledescription={t("news.carousel.slide_role")}
             aria-label={t("news.carousel.slide")
               .replace("{n}", String(index + 1))
               .replace("{total}", String(count))}

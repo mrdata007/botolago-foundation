@@ -1,9 +1,13 @@
 import { describe, expect, test } from "bun:test";
+import { articleDescription, articleHeadline } from "../../src/lib/article-meta";
 import {
   articleText,
   batchSql,
   buildStories,
+  clip,
   readRuntime,
+  SEO_DESCRIPTION_LIMIT,
+  SEO_TITLE_LIMIT,
   selectFeed,
   toEdition,
   withoutUnreadOriginals,
@@ -25,6 +29,11 @@ function article(overrides: Partial<ElbotolaArticle> = {}): ElbotolaArticle {
     ...overrides,
   };
 }
+
+/** Longer than a search result shows: 114 characters, and a first paragraph of 409. */
+const longTitle =
+  "Le Wydad annonce le début de la distribution des cartes d'abonnement pour la nouvelle saison sportive dès ce mardi";
+const longText = `<p>${"Le Wydad Athletic Club a annoncé le lancement de la distribution des abonnements. ".repeat(5)}</p>`;
 
 describe("article text", () => {
   test("keeps the words of ElBotola's tag links but not the links", () => {
@@ -52,23 +61,79 @@ describe("article text", () => {
     expect(edition.summary).toBe("أعلن نادي أمل تزنيت، في بلاغ رسمي، عن منع الجماهير.");
   });
 
-  test("every edition carries an SEO title and description within search lengths", () => {
-    const long = toEdition(
-      article({
-        title:
-          "Le Wydad annonce le début de la distribution des cartes d'abonnement pour la nouvelle saison sportive dès ce mardi",
-        html: `<p>${"Le Wydad Athletic Club a annoncé le lancement de la distribution des abonnements. ".repeat(5)}</p>`,
-      }),
-    )!;
-    expect(long.seoTitle.length).toBeLessThanOrEqual(60);
-    expect(long.seoTitle.endsWith("…")).toBe(true);
-    expect(long.seoTitle.startsWith("Le Wydad annonce le début")).toBe(true);
-    expect(long.seoDescription.length).toBeLessThanOrEqual(155);
-    expect(long.seoDescription.length).toBeGreaterThan(100);
+  test("a headline or text too long for a search result is left empty, never stored cut", () => {
+    // It used to store the headline cut before 60 characters and the text
+    // before 155, each closed with "…": copies that only lose words.
+    const long = toEdition(article({ title: longTitle, html: longText }))!;
+    expect(long.title).toBe(longTitle);
+    expect(long.seoTitle).toBeNull();
+    expect(long.seoDescription).toBeNull();
+  });
 
+  test("a headline and text that fit a search result are stored whole", () => {
     const short = toEdition(article())!;
     expect(short.seoTitle).toBe(short.title);
-    expect(short.seoDescription.length).toBeGreaterThan(10);
+    expect(short.seoDescription).toBe(articleText(article().html).join(" "));
+    expect(`${short.seoTitle} ${short.seoDescription}`).not.toContain("…");
+  });
+
+  test("at the search length it is whole; one character over, empty", () => {
+    const sized = (length: number) => `Botola ${"x".repeat(length - 7)}`;
+    const edition = (title: string, text: string) =>
+      toEdition(article({ title, html: `<p>${text}</p>` }))!;
+    const fits = edition(sized(SEO_TITLE_LIMIT), sized(SEO_DESCRIPTION_LIMIT));
+    expect(fits.seoTitle).toBe(sized(SEO_TITLE_LIMIT));
+    expect(fits.seoDescription).toBe(sized(SEO_DESCRIPTION_LIMIT));
+    const over = edition(sized(SEO_TITLE_LIMIT + 1), sized(SEO_DESCRIPTION_LIMIT + 1));
+    expect(over.seoTitle).toBeNull();
+    expect(over.seoDescription).toBeNull();
+  });
+
+  test("the page presents an edition without SEO copies under its whole headline and lead", () => {
+    // What the site does with the empty columns (src/lib/article-meta.ts).
+    const long = toEdition(article({ title: longTitle, html: longText }))!;
+    const presented = {
+      title: long.title,
+      summary: long.summary,
+      bodyHtml: long.bodyHtml,
+      seo: { title: long.seoTitle, description: long.seoDescription },
+    };
+    expect(articleHeadline(presented)).toBe(longTitle);
+    // A first paragraph over 300 characters: the summary is cut, and the
+    // page completes it from the body, as it does the archive's clipped
+    // descriptions.
+    expect(long.summary).toMatch(/…$/);
+    expect(articleDescription(presented)).toBe(articleText(longText)[0]);
+  });
+
+  test("a text opening with a short kicker is described by the kicker and the text after it", () => {
+    // An edition imported now has no description stored and the kicker for
+    // its summary. The page runs that summary on to the end of the paragraph
+    // the old import's cut would have fallen in (src/lib/article-meta.ts):
+    // the kicker and the whole next paragraph, as it completes the archive's
+    // clipped copy of the same text (below). It used to describe this
+    // edition by the kicker alone.
+    const kicker = "Mise à jour.";
+    const next =
+      "La troisième journée de la Botola Pro se conclura par un affrontement de haut vol, avec le Wydad de Casablanca recevant la Jeunesse Sportive Soualem au Complexe Sportif Mohammed V à 20h.";
+    const html = [kicker, next, "Actuellement troisième, Soualem vise une troisième victoire."]
+      .map((paragraph) => `<p>${paragraph}</p>`)
+      .join("");
+    const edition = toEdition(article({ language: "fr", html }))!;
+    const describedWith = (description: string | null) =>
+      articleDescription({
+        summary: edition.summary,
+        bodyHtml: edition.bodyHtml,
+        seo: { title: null, description },
+      });
+    expect(edition.seoDescription).toBeNull();
+    expect(edition.summary).toBe(kicker);
+    expect(describedWith(edition.seoDescription)).toBe(`${kicker} ${next}`);
+    // The archive's copy of the same text: cut by the old import, completed
+    // by the page.
+    expect(describedWith(clip(articleText(html).join(" "), SEO_DESCRIPTION_LIMIT))).toBe(
+      `${kicker} ${next}`,
+    );
   });
 
   test("markup injected into the text is escaped, not rendered", () => {
@@ -219,5 +284,19 @@ describe("batch SQL", () => {
   test("a dry run always ends by rolling back", () => {
     expect(batchSql(stories, true)).toContain("raise exception 'DRY_RUN_ROLLBACK");
     expect(batchSql(stories, false)).not.toContain("DRY_RUN_ROLLBACK");
+  });
+
+  test("an SEO title or description left empty is written as SQL null", () => {
+    const [long] = buildStories(
+      [article({ title: longTitle, html: longText })],
+      [],
+      new Set(),
+    ).stories;
+    // The row's last three values: author, seo_title, seo_description.
+    expect(batchSql([long!], false)).toContain("'ف.ز (البطولة)', null, null)");
+    // Stored whole when they fit.
+    expect(batchSql(stories, false)).toContain(
+      "'ف.ز (البطولة)', 'L''Ittihad de Tanger en stage fermé', 'أعلن نادي أمل تزنيت، في بلاغ رسمي، عن منع الجماهير. ويستقبل أمل تزنيت ضيفه اتحاد طنجة يوم الخميس.')",
+    );
   });
 });

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import { Absences } from "./Absences";
 import { lineBlockStart, pitchLines, slotInlineStart, sortStartingXi } from "./lineup-pitch";
+import { noLineupsMessage, type MatchDataPhase } from "./match-empty-states";
 
 // Pinned by `LineupsView.test.ts`; the helper itself lives in `lineup-pitch.ts`.
 export { sortStartingXi };
@@ -58,7 +59,9 @@ const benchOf = (lineup: Lineup) =>
  *
  * Otherwise — one side missing, no formation, a player with no position — a
  * list per team, as before, rather than a guessed shape. Nothing published
- * at all is an explicit empty state, never a probable XI.
+ * at all is an explicit empty state, never a probable XI, and its message
+ * follows `phase` (see `match-empty-states`): a finished match's lineups are
+ * not "not yet published".
  *
  * Under it all, the players the provider lists as injured or suspended
  * (`Absences`), which are known before the lineups are.
@@ -68,12 +71,14 @@ export function LineupsView({
   home,
   away,
   palettes,
+  phase,
   absences = [],
 }: {
   lineups: readonly Lineup[];
   home: Club;
   away: Club;
   palettes: { home: ClubPalette; away: ClubPalette };
+  phase: MatchDataPhase;
   absences?: readonly MatchAbsenceDto[];
 }) {
   const { t } = useI18n();
@@ -85,7 +90,7 @@ export function LineupsView({
   if (!homeLineup && !awayLineup) {
     return (
       <div className="grid gap-4">
-        <EmptyState>{t("matches.detail.no_lineups")}</EmptyState>
+        <EmptyState>{noLineupsMessage(phase, t)}</EmptyState>
         {absent}
       </div>
     );

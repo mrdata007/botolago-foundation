@@ -1,12 +1,14 @@
 import { describe, it, expect } from "bun:test";
-import { QueryClient, QueryObserver } from "@tanstack/react-query";
+import { keepPreviousData, QueryClient, QueryObserver } from "@tanstack/react-query";
 import {
   belongsToFantasyScope,
   clearOtherOwnersFantasyCache,
   clearOwnedFantasyCache,
   isOwnedFantasyKey,
+  keepSameOwnerData,
   scopedFantasyKey,
   selectFantasyDataSource,
+  type FantasyKeyScope,
 } from "./fantasy-data-source";
 
 describe("selectFantasyDataSource", () => {
@@ -113,5 +115,71 @@ describe("clearOtherOwnersFantasyCache (identity change)", () => {
     expect((await firstReadAfterCleanup((qc) => clearOwnedFantasyCache(qc))).status).toBe(
       "pending",
     );
+  });
+});
+
+// Security review of 2026-09-25: the rankings kept the previous page on screen
+// while the next loaded (`keepPreviousData`), whoever it belonged to. After a
+// switch from A to B that was A's board -- A's team, rank and points, marked
+// as "me" -- until B's arrived. Driven here as `useQuery` drives it: one
+// observer moving from key to key.
+describe("keepSameOwnerData (the rankings' placeholder)", () => {
+  const A: FantasyKeyScope = { source: "cloud", owner: "u1" };
+  const B: FantasyKeyScope = { source: "cloud", owner: "u2" };
+  const visitor: FantasyKeyScope = { source: "guest", owner: "__local__" };
+  const boardOfA = { rows: ["…"], myRank: { managerId: "team-of-A", rank: 7 } };
+
+  /** A's first page on screen, then the observer handed `next`'s options. */
+  function after(
+    next: { scope: FantasyKeyScope; page: number },
+    placeholder: (scope: FantasyKeyScope) => unknown,
+  ) {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    qc.setQueryData(scopedFantasyKey(A, "rankings", "overall", 1), boardOfA);
+    const options = (scope: FantasyKeyScope, page: number) => ({
+      queryKey: scopedFantasyKey(scope, "rankings", "overall", page),
+      queryFn: () => new Promise<never>(() => {}),
+      placeholderData: placeholder(scope) as never,
+    });
+    const observer = new QueryObserver(qc, options(A, 1));
+    const stop = observer.subscribe(() => {});
+    expect(observer.getCurrentResult().data).toEqual(boardOfA);
+    observer.setOptions(options(next.scope, next.page));
+    const { data, isPlaceholderData } = observer.getCurrentResult();
+    stop();
+    return { data, isPlaceholderData };
+  }
+
+  it("keeps the same owner's page up while the next one loads", () => {
+    expect(after({ scope: A, page: 2 }, keepSameOwnerData)).toEqual({
+      data: boardOfA,
+      isPlaceholderData: true,
+    });
+  });
+
+  it("shows nothing of A's once the page is B's, or a visitor's", () => {
+    for (const scope of [B, visitor]) {
+      expect(after({ scope, page: 1 }, keepSameOwnerData)).toEqual({
+        data: undefined,
+        isPlaceholderData: false,
+      });
+    }
+  });
+
+  it("(keepPreviousData, as before, put A's board on B's screen)", () => {
+    expect(after({ scope: B, page: 1 }, () => keepPreviousData).data).toEqual(boardOfA);
+  });
+
+  it("owns the check: only the root, source and owner of the previous key count", () => {
+    const placeholder = keepSameOwnerData(A);
+    expect(placeholder("kept", { queryKey: scopedFantasyKey(A, "rankings", "gameweek", 3) })).toBe(
+      "kept",
+    );
+    expect(placeholder("kept", { queryKey: scopedFantasyKey(B, "rankings") })).toBeUndefined();
+    expect(
+      placeholder("kept", { queryKey: scopedFantasyKey({ source: "guest", owner: "u1" }, "x") }),
+    ).toBeUndefined();
+    expect(placeholder("kept", { queryKey: ["rankings", "u1"] })).toBeUndefined();
+    expect(placeholder("kept", undefined)).toBeUndefined();
   });
 });

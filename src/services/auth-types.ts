@@ -4,7 +4,27 @@
 
 import type { Language } from "@/types/domain";
 
-export type AuthStatus = "loading" | "authenticated" | "guest" | "anonymous";
+/**
+ * Where the visitor stands.
+ *
+ * `authenticated` means fully signed in: for an account with a second factor,
+ * that includes the one-time code. The two `mfa_*` states hold a real Supabase
+ * session that has NOT got that far, and everything that reads private data or
+ * writes on the account's behalf treats them exactly like signed out -- the
+ * session's `user` is null in both:
+ *
+ * - `mfa_required`: the password (or link) was accepted, the account has a
+ *   verified factor, and the code has not been entered yet.
+ * - `mfa_unconfirmed`: the assurance lookup failed, so it is not known whether
+ *   a code is owed. Fail closed, offer a retry (`recheckSession`).
+ */
+export type AuthStatus =
+  | "loading"
+  | "authenticated"
+  | "mfa_required"
+  | "mfa_unconfirmed"
+  | "guest"
+  | "anonymous";
 
 export interface NotificationPreferences {
   matchAlerts: boolean;
@@ -33,6 +53,15 @@ export interface AuthUser {
 export interface AuthSession {
   user: AuthUser | null;
   status: AuthStatus;
+  /**
+   * In the two `mfa_*` states only: the Supabase account behind the session.
+   * It is NOT a signed-in user -- nothing reads or writes on its behalf. It is
+   * there so the app can tell "the same account now owes its code" from "a
+   * different account, or nobody". The first must keep that account's Fantasy
+   * drafts and cached answers for when the code is in (a save refused with
+   * `PT403 mfa_required` leads straight here); only the second forgets them.
+   */
+  pendingAccountId?: string;
 }
 
 export type AuthErrorCode =
@@ -51,12 +80,21 @@ export type AuthErrorCode =
   | "network"
   | "provider_unavailable"
   | "weak_password"
+  /** The server wants this session's second factor first (`PT403 mfa_required`). */
+  | "mfa_required"
   | "generic";
 
 export interface AuthResult<T = void> {
   ok: boolean;
   data?: T;
   errorCode?: AuthErrorCode;
+  /**
+   * Set by the calls that establish a session (sign-in, code verification,
+   * refresh): how far THAT session got. A successful password sign-in of an
+   * account with a second factor is `ok` with status `mfa_required`, and the
+   * caller must send it to the challenge rather than into the app.
+   */
+  status?: AuthStatus;
 }
 
 export interface RegisterInput {
@@ -104,6 +142,13 @@ export interface AuthService {
   requestPasswordReset(email: string): Promise<AuthResult>;
   reauthenticate(): Promise<AuthResult>;
   refreshSession(): Promise<AuthResult<AuthUser>>;
+  /**
+   * Re-read the current session and its second-factor assurance, publish the
+   * result to subscribers, and return it. The retry behind `mfa_unconfirmed`,
+   * and the step after a challenge is passed. `refresh` first asks the server
+   * for a new token, whose user record lists factors enrolled elsewhere.
+   */
+  recheckSession(options?: { refresh?: boolean }): Promise<AuthSession>;
   updatePassword(input: UpdatePasswordInput): Promise<AuthResult>;
   verifyCode(email: string, code: string): Promise<AuthResult<AuthUser>>;
   resendCode(email: string, next?: string): Promise<AuthResult>;

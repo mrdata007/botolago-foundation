@@ -6,6 +6,8 @@ import {
   computeLeagueTable,
   leagueZone,
   roundsPlayed,
+  sharedPositions,
+  tableZones,
   type LeagueTableRow,
   type TableResult,
 } from "./league-table";
@@ -106,15 +108,46 @@ describe("computeLeagueTable — rules", () => {
     expect(idle.position).toBe(2); // above the loser: level on points, better difference
   });
 
-  test("orders clubs level on every figure by name", () => {
-    const names: Record<string, string> = { x: "Wydad", y: "Raja" };
+  test("lists clubs level on every figure by their canonical key, sharing one rank", () => {
+    const slugs: Record<string, string> = { x: "wydad-casablanca", y: "raja-casablanca" };
     const table = computeLeagueTable(
       ["x", "y", "p", "q"],
       [result("x", "p", 1, 0), result("y", "q", 1, 0)],
       "overall",
-      (id) => names[id] ?? id,
+      (id) => slugs[id] ?? id,
     );
-    expect(table.slice(0, 2).map((row) => row.clubId)).toEqual(["y", "x"]);
+    expect(table.map((row) => [row.clubId, row.position])).toEqual([
+      ["y", 1],
+      ["x", 1],
+      ["p", 3],
+      ["q", 3],
+    ]);
+  });
+
+  test("ranks 1, 2, 2, 4: a tie shares its position and the next club takes its place", () => {
+    const table = computeLeagueTable(
+      ["a", "b", "c", "d"],
+      // a wins; b and c draw 1–1 with each other, so nothing separates them.
+      [result("a", "d", 2, 0), result("b", "c", 1, 1)],
+      "overall",
+    );
+    expect(table.map((row) => [row.clubId, row.position])).toEqual([
+      ["a", 1],
+      ["b", 2],
+      ["c", 2],
+      ["d", 4],
+    ]);
+    expect([...sharedPositions(table)]).toEqual([2]);
+  });
+
+  test("orders a tie by code unit, so every runtime lists it the same way", () => {
+    // `localeCompare` would put "é" beside "e"; the order must not depend on
+    // the locale data of the server or the reader's browser.
+    const table = computeLeagueTable(["x", "y", "z"], [], "overall", (id) =>
+      id === "x" ? "é-club" : id === "y" ? "f-club" : "e-club",
+    );
+    expect(table.map((row) => row.clubId)).toEqual(["z", "y", "x"]);
+    expect(table.every((row) => row.position === 1)).toBe(true);
   });
 
   test("orders the form guide by kickoff, whatever order the results arrive in", () => {
@@ -165,6 +198,65 @@ describe("leagueZone", () => {
   });
 });
 
+describe("tableZones", () => {
+  const ids = Array.from(
+    { length: 16 },
+    (_, index) => `club-${String(index + 1).padStart(2, "0")}`,
+  );
+
+  test("marks a table with one club a position exactly as leagueZone does", () => {
+    const rows = ids.map((clubId, index) => ({ clubId, position: index + 1 }));
+    const zones = tableZones(rows);
+    expect(rows.map((row) => zones.get(row.clubId))).toEqual(
+      rows.map((row) => leagueZone(row.position, 16)),
+    );
+  });
+
+  test("after the season's first match, marks no club the alphabet put in a zone", () => {
+    // Production on 2026-09-25: Ittihad Tanger won 3–1 at Amal Tiznit, and
+    // the other fourteen clubs had not played. They share 2nd, spanning 2nd
+    // (African place) to 15th (the drop).
+    const winner = "ittihad-tanger";
+    const loser = "amal-tiznit";
+    const idle = ids.slice(0, 14);
+    const table = computeLeagueTable(
+      [winner, loser, ...idle],
+      [result(loser, winner, 1, 3)],
+      "overall",
+    );
+    expect(table.map((row) => row.position)).toEqual([1, ...idle.map(() => 2), 16]);
+    const zones = tableZones(table);
+    expect(zones.get(winner)).toBe("champions_league");
+    expect(zones.get(loser)).toBe("relegation");
+    for (const clubId of idle) expect(zones.get(clubId)).toBeNull();
+  });
+
+  test("keeps the zone of a tie that lies wholly inside it", () => {
+    // Two clubs share 1st: both places go to the Champions League.
+    const rows = [
+      { clubId: "a", position: 1 },
+      { clubId: "b", position: 1 },
+      { clubId: "c", position: 3 },
+      { clubId: "d", position: 4 },
+    ];
+    const zones = tableZones(rows);
+    expect([zones.get("a"), zones.get("b"), zones.get("c"), zones.get("d")]).toEqual([
+      "champions_league",
+      "champions_league",
+      "confederation_cup",
+      "relegation",
+    ]);
+    // Sharing 2nd would span the Champions League place and the Confederation one.
+    const straddling = tableZones([
+      { clubId: "a", position: 1 },
+      { clubId: "b", position: 2 },
+      { clubId: "c", position: 2 },
+      { clubId: "d", position: 4 },
+    ]);
+    expect([straddling.get("b"), straddling.get("c")]).toEqual([null, null]);
+  });
+});
+
 describe("clubStanding", () => {
   const row = (clubId: string, position: number, points: number): LeagueTableRow => ({
     position,
@@ -185,6 +277,7 @@ describe("clubStanding", () => {
     expect(clubStanding(rows, "a")).toEqual({
       row: rows[0],
       zone: "champions_league",
+      shared: false,
       gap: { kind: "lead", points: 2, over: 2 },
     });
   });
@@ -205,5 +298,39 @@ describe("clubStanding", () => {
   test("has no gap for a club alone, and nothing for a club not in the table", () => {
     expect(clubStanding([row("a", 1, 0)], "a")?.gap).toBeNull();
     expect(clubStanding(rows, "zz")).toBeNull();
+  });
+
+  describe("with shared ranks", () => {
+    // 3 points for the leader; three clubs level on everything share 2nd.
+    const tied = [row("a", 1, 3), row("b", 2, 0), row("c", 2, 0), row("d", 2, 0)];
+
+    test("measures a club sharing a rank against the nearest other position", () => {
+      // Not "level with the 2nd place" for the club listed third of three 2nds.
+      for (const club of ["b", "c", "d"]) {
+        expect(clubStanding(tied, club)?.gap).toEqual({ kind: "behind", points: 3, to: 1 });
+        expect(clubStanding(tied, club)?.shared).toBe(true);
+      }
+      expect(clubStanding(tied, "a")?.gap).toEqual({ kind: "lead", points: 3, over: 2 });
+      expect(clubStanding(tied, "a")?.shared).toBe(false);
+    });
+
+    test("names a zone only when the whole tie is in it", () => {
+      // Sharing 2nd of four spans 2nd to 4th: African places and the drop.
+      expect(clubStanding(tied, "c")?.zone).toBeNull();
+      const coLeaders = [row("a", 1, 3), row("b", 1, 3), row("c", 3, 0), row("d", 4, 0)];
+      expect(clubStanding(coLeaders, "b")?.zone).toBe("champions_league");
+      // A co-leader is ahead of the next other position, not level with its partner.
+      expect(clubStanding(coLeaders, "b")?.gap).toEqual({ kind: "lead", points: 3, over: 3 });
+    });
+
+    test("has no gap when every club shares the one position", () => {
+      const all = [row("a", 1, 1), row("b", 1, 1)];
+      expect(clubStanding(all, "b")).toEqual({
+        row: all[1],
+        zone: "champions_league",
+        shared: true,
+        gap: null,
+      });
+    });
   });
 });

@@ -34,6 +34,41 @@ export const SITEMAP_STATIC_PATHS = [
 export const SITEMAP_MAX_URLS = 50_000;
 
 /**
+ * What /sitemap.xml promises: an article that stops being public is gone from
+ * it within five minutes, and a newly published one appears within five.
+ */
+export const SITEMAP_FRESHNESS_SECONDS = 300;
+
+/**
+ * How old the News entries can be when the route reads them.
+ * `api.news_sitemap_entries` serves a snapshot that the pg_cron job
+ * `news-sitemap-refresh` recomputes every minute, but only while it is at most
+ * this old; past that (the job paused, failing or gone) it computes the entries
+ * live instead (migration 20260926003050, `interval '120 seconds'`, kept equal
+ * to this by src/lib/sitemap.test.ts). Two minutes rather than one, so a single
+ * late or skipped run does not send every request to the live computation.
+ */
+export const SITEMAP_SNAPSHOT_MAX_AGE_SECONDS = 120;
+
+/**
+ * Cache-Control for a good sitemap. A shared cache (the host's edge) may keep
+ * it for what is left of the freshness budget once the snapshot's own age is
+ * counted (three minutes); a browser for a minute (browsers count the Age a
+ * shared cache reports, so they never extend it). `stale-if-error` (RFC 5861)
+ * lets a shared cache that honours it keep serving this good copy for a day
+ * while the route answers 503: the same last good copy a crawler keeps after a
+ * 503 (past the five minutes: during an outage, availability wins). Browsers
+ * and crawlers ignore `s-maxage` and `stale-if-error`, so where nothing honours
+ * them they change nothing.
+ */
+export const SITEMAP_CACHE_CONTROL = [
+  "public",
+  "max-age=60",
+  `s-maxage=${SITEMAP_FRESHNESS_SECONDS - SITEMAP_SNAPSHOT_MAX_AGE_SECONDS}`,
+  "stale-if-error=86400",
+].join(", ");
+
+/**
  * How many News editions fit alongside the static pages and the /news hub
  * without exceeding `SITEMAP_MAX_URLS`.
  */

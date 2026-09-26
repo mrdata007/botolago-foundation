@@ -198,6 +198,36 @@ describe("trusted Fantasy snapshot calculation", () => {
     expect(result.provisionalScore).toBe(20);
   });
 
+  it("scores the players of a match taken out of the gameweek as players who did not play", () => {
+    // app_private.fantasy_resolve_frozen_assignment (20260926003500) supersedes
+    // the match's assignment, so the scoring input has no statistics row at
+    // all for its players: not a row of 0 minutes, none.
+    const input = snapshot();
+    const out = new Set([id(102), id(107)]); // a starting defender, and the captain
+    input.playerFixtures = input.playerFixtures.filter(
+      (player) => !out.has(player.fantasyPlayerId),
+    );
+    const result = calculateSnapshotResults(input);
+    expect(result.playerResults.some((player) => out.has(player.fantasyPlayerId))).toBeFalse();
+    const team = result.teamResults[0]!;
+    // Bench in order: the goalkeeper cannot replace a defender, the defender
+    // can; the midfielder then replaces the captain. The vice-captain takes
+    // the armband.
+    expect(team.substitutions).toEqual([
+      { playerOutId: id(102), playerInId: id(106), reason: "outfield_did_not_play" },
+      { playerOutId: id(107), playerInId: id(111), reason: "outfield_did_not_play" },
+    ]);
+    expect(team.effectiveCaptainId).toBe(id(112));
+    expect(team.players.find((player) => player.fantasyPlayerId === id(107))?.multiplier).toBe(0);
+    expect(team.players.find((player) => player.fantasyPlayerId === id(112))?.multiplier).toBe(2);
+    expect(team).toMatchObject({
+      startingPoints: 22,
+      benchPoints: 4,
+      captainPoints: 2,
+      provisionalScore: 20,
+    });
+  });
+
   it("applies Bench Boost and Triple Captain according to the snapshot ruleset", () => {
     const boosted = snapshot();
     boosted.teams[0]!.chipType = "bench_boost";

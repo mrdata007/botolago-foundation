@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/auth/AuthProvider";
-import { followService } from "@/services/follows";
+import { FOLLOWED_TEAM_IDS_QUERY_KEY, followService } from "@/services/follows";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { UiButton, UiChip } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -37,7 +37,7 @@ export function ClubFilterRow({
     mutationFn: ({ teamId, follow }: { teamId: string; follow: boolean }) =>
       follow ? followService.followTeam(teamId) : followService.unfollowTeam(teamId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["identity", "followed-team-ids"] });
+      await queryClient.invalidateQueries({ queryKey: FOLLOWED_TEAM_IDS_QUERY_KEY });
       await queryClient.invalidateQueries({ queryKey: ["identity", "followed-teams"] });
     },
   });

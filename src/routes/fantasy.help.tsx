@@ -8,9 +8,11 @@ import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { ui, UiHeader } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/fantasy/help")({
+  head: () => fantasyHead("help"),
   component: HelpPage,
 });
 

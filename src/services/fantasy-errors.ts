@@ -5,6 +5,7 @@
 // in aggregate so the UI (Pass 3 import prompt / conflict banner) can list
 // every gap at once.
 
+import { reportMfaStepUp } from "@/backend/auth/step-up";
 import { FantasyError, type FantasyErrorCode } from "@/backend/fantasy/errors";
 import { FantasyCloudError } from "@/services/fantasy-cloud-repo";
 import { MissingIdMappingError } from "@/services/fantasy-id-map";
@@ -26,6 +27,12 @@ export type FantasyRepoErrorCode =
   | "season_closed"
   /** The server refused: this manager already has a team this season. */
   | "already_exists"
+  /**
+   * The server refused: this session has not presented the account's second
+   * factor yet (`PT403 mfa_required`). Not a Fantasy failure -- the save goes
+   * through once the code is in.
+   */
+  | "mfa_required"
   | "unknown";
 
 export interface MissingIds {
@@ -108,6 +115,21 @@ function isNetworkFailure(cause: unknown): boolean {
 /** Convert a legacy cloud error / id-mapping error to the unified model. */
 export function toRepoError(err: unknown): FantasyRepoError {
   if (err instanceof FantasyRepoError) return err;
+  // The owned repository hands raw RPC errors straight here: a save refused
+  // because the second factor is still owed is reported to the auth layer,
+  // which takes the manager to the code (see `@/backend/auth/step-up`), and
+  // keeps its own code rather than reading as "the transfers failed". Checked
+  // first: wrapped by the domain or cloud mapper, it would otherwise take
+  // their catch-all.
+  if (reportMfaStepUp(err)) {
+    return new FantasyRepoError(
+      "mfa_required",
+      "Confirm the second factor to continue.",
+      err,
+      undefined,
+      err instanceof FantasyError ? err.code : undefined,
+    );
+  }
   if (err instanceof FantasyError) return fromDomainError(err);
   if (err instanceof MissingIdMappingError) {
     return new FantasyRepoError("mapping_incomplete", err.message, err, {

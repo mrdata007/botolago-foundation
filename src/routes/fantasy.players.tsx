@@ -26,6 +26,7 @@ import {
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -41,6 +42,9 @@ export const Route = createFileRoute("/fantasy/players")({
    */
   validateSearch: (search: Record<string, unknown>): { compare?: string } =>
     typeof search.compare === "string" && search.compare ? { compare: search.compare } : {},
+  // The player pages render beneath this one: its canonical only while the
+  // list itself is shown (a `?compare=` view included).
+  head: (context) => fantasyHead("players", context),
   component: PlayersRoute,
 });
 

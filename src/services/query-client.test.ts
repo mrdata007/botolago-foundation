@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, setSystemTime, test } from "bun:test";
+import { onMfaStepUpRequired } from "@/backend/auth/step-up";
 import { BackendError } from "@/backend/errors";
 import { FootballError } from "@/backend/football/errors";
 import { NewsError } from "@/backend/news/errors";
@@ -103,5 +104,79 @@ describe("the season list", () => {
     expect(calls.seasons).toBe(2);
     expect(SEASON_CATALOG_STALE_MS).toBe(600_000);
     client.clear();
+  });
+});
+
+// Since 20260926003100 the database refuses an enrolled account's reads, not
+// only its writes, to a session that has not entered its one-time code. A page
+// read refused that way showed its generic error, and nothing sent the reader
+// to the code unless the domain's mapper happened to report it.
+describe("a read refused for want of the one-time code", () => {
+  const stepUp = { code: "PT403", message: "mfa_required", details: null, hint: null };
+
+  function countReports() {
+    const reports = { count: 0 };
+    const off = onMfaStepUpRequired(() => reports.count++);
+    return { reports, off };
+  }
+
+  test("is not retried: a second attempt is refused the same way", () => {
+    expect(shouldRetryQuery(0, stepUp)).toBe(false);
+    // The same, wrapped by a mapper that does not report it.
+    expect(shouldRetryQuery(0, new NewsError("data_unavailable", "News down", stepUp))).toBe(false);
+    // Another 403 keeps its own rule.
+    expect(shouldRetryQuery(0, { code: "PT403", message: "account_banned" })).toBe(true);
+  });
+
+  test("goes to the auth layer, as a refused write does, from any domain", async () => {
+    const { reports, off } = countReports();
+    const client = createAppQueryClient();
+    try {
+      let calls = 0;
+      const refused = client.fetchQuery({
+        queryKey: ["news", "saved", "someone"],
+        queryFn: async () => {
+          calls += 1;
+          throw new NewsError("data_unavailable", "News data is temporarily unavailable.", stepUp);
+        },
+        retryDelay: 0,
+      });
+      await expect(refused).rejects.toBeInstanceOf(NewsError);
+      expect(calls).toBe(1);
+      expect(reports.count).toBe(1);
+    } finally {
+      off();
+      client.clear();
+    }
+  });
+
+  test("other failures are not reported", async () => {
+    const { reports, off } = countReports();
+    const client = createAppQueryClient();
+    try {
+      await expect(
+        client.fetchQuery({
+          queryKey: ["football", "matches", "down"],
+          queryFn: async () => {
+            throw new Error("upstream 500");
+          },
+          retryDelay: 0,
+        }),
+      ).rejects.toThrow("upstream 500");
+      // Another 403 is its own screen's to explain.
+      await expect(
+        client.fetchQuery({
+          queryKey: ["account", "standing"],
+          queryFn: async () => {
+            throw { code: "PT403", message: "account_banned" };
+          },
+          retry: false,
+        }),
+      ).rejects.toEqual({ code: "PT403", message: "account_banned" });
+      expect(reports.count).toBe(0);
+    } finally {
+      off();
+      client.clear();
+    }
   });
 });

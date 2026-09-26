@@ -11,6 +11,8 @@ export const ar = {
   "language.arabic": "العربية",
   "language.continue": "متابعة",
   "language.switch": "اللغة",
+  "language.arabic_loading": "جارٍ تحميل العربية…",
+  "language.arabic_failed": "تعذّر تحميل العربية. تحقّق من اتصالك ثم أعد المحاولة.",
 
   /* BG-0081 — appearance (Light / Dark / System). */
   "theme.switch": "المظهر",
@@ -42,6 +44,7 @@ export const ar = {
   "home.explore": "استكشف {accent}بوتولاجو{/accent}",
   "home.view_all": "عرض الكل",
   "home.view_fantasy_team": "عرض فريقي",
+  "home.sr_title": "BotolaGO — أخبار ومباريات وفانتازي كرة القدم المغربية",
 
   "news.title": "الأخبار",
   "news.tab.for_you": "مقترح لك",
@@ -70,6 +73,8 @@ export const ar = {
   "news.carousel.previous": "المقال السابق",
   "news.carousel.next": "المقال التالي",
   "news.carousel.slide": "المقال {n} من {total}",
+  "news.carousel.role": "عرض دوّار",
+  "news.carousel.slide_role": "شريحة",
   "news.saved.empty": "لم تحفظ أي مقال بعد. المس أيقونة الحفظ في أي مقال لتجده هنا.",
   "news.empty_category": "لا توجد مقالات في هذا القسم حاليًا.",
   "news.view_all": "عرض الكل",
@@ -147,6 +152,12 @@ export const ar = {
   "standings.gap_lead_other": "بفارق {n} نقطة عن {place}",
   "standings.gap_level": "بالتساوي في النقاط مع {place}",
   "standings.previous_season": "عرض ترتيب موسم {season}",
+  "standings.provisional": "ترتيب مؤقت، محسوب من نتائج المباريات.",
+  "standings.unofficial": "ترتيب غير رسمي، محسوب من نتائج المباريات.",
+  "standings.computed": "ترتيب محسوب من نتائج المباريات.",
+  "standings.shared_rank": "مركز مشترك",
+  "standings.shared_rank_note":
+    "تكرار المركز يعني تساوي الفرق في النقاط وفارق الأهداف والأهداف المسجلة، وترتيب ظهورها في الجدول لا يفصل بينها.",
   "matches.season.label": "الموسم",
   "matches.season.current": "الحالي",
   "matches.season.loading": "جارٍ التحميل",
@@ -245,11 +256,19 @@ export const ar = {
   "matches.detail.tab.stats_short": "إحصائيات",
   "matches.detail.tab.lineups_short": "التشكيلة",
   "matches.detail.tabs_label": "أقسام المباراة",
-  "matches.detail.no_events": "لا توجد أحداث بارزة حتى الآن.",
-  "matches.detail.no_stats": "ستتوفر الإحصائيات عند انطلاق المباراة.",
+  "matches.detail.no_events": "لم تنطلق المباراة بعد: لا توجد أحداث بارزة لعرضها.",
+  "matches.detail.no_events_updating": "لم تصل أي أحداث حتى الآن. يتم تحديث هذه الصفحة تلقائيًا.",
+  "matches.detail.no_events_unavailable": "أبرز أحداث هذه المباراة غير متوفرة.",
+  "matches.detail.no_stats": "لم تنطلق المباراة بعد: لا توجد إحصائيات لعرضها.",
+  "matches.detail.no_stats_updating": "لم تصل أي إحصائيات حتى الآن. يتم تحديث هذه الصفحة تلقائيًا.",
+  "matches.detail.no_stats_unavailable": "إحصائيات هذه المباراة غير متوفرة.",
+  "matches.detail.no_data_postponed": "المباراة مؤجلة: لا توجد بيانات لعرضها.",
+  "matches.detail.no_data_called_off": "المباراة ملغاة أو متوقفة: لا توجد بيانات لعرضها.",
   "matches.detail.stats_title": "إحصائيات الفريقين",
   "matches.detail.lineups_title": "التشكيلات المتوقعة",
-  "matches.detail.no_lineups": "لم يتم نشر التشكيلات بعد من المصدر الرسمي.",
+  "matches.detail.no_lineups": "لم تنطلق المباراة بعد: لا توجد تشكيلات لعرضها.",
+  "matches.detail.no_lineups_updating": "لم تصل التشكيلات بعد. يتم تحديث هذه الصفحة تلقائيًا.",
+  "matches.detail.no_lineups_unavailable": "تشكيلات هذه المباراة غير متوفرة.",
   "matches.detail.lineup_provisional": "مؤقتة",
   "matches.detail.starting_xi": "التشكيلة الأساسية",
   "matches.detail.substitutes": "الاحتياط",
@@ -598,6 +617,29 @@ export const ar = {
   "fantasy.onboarding.skip": "تخطي",
   "fantasy.onboarding.next": "التالي",
   "fantasy.onboarding.start": "ابدأ",
+  // Audit 2026-09-25 (A16): the Fantasy hub's first-time proposition, shown
+  // in place of the team card to a visitor without a team. {size}, {budget}
+  // and {max} are filled from the squad rules the builder enforces.
+  "fantasy.intro.title": "كن مدرّباً في البطولة الاحترافية",
+  "fantasy.intro.lede":
+    "فانتازي BotolaGO لعبة مجانية: يجمع لك لاعبوك من البطولة الاحترافية النقاط حسب أدائهم في مبارياتهم الحقيقية جولةً بعد جولة، وتتحدى أصدقاءك في دوريات خاصة.",
+  "fantasy.intro.prizes": "جوائز بانتظار أفضل المدربين.",
+  "fantasy.intro.how_title": "طريقة اللعب",
+  "fantasy.intro.squad_title": "تشكيلة من {size} لاعباً",
+  "fantasy.intro.squad_body":
+    "حارسان و5 مدافعين و5 لاعبي وسط و3 مهاجمين، تختار منهم 11 أساسياً في كل جولة.",
+  "fantasy.intro.budget_title": "ميزانية {budget} م",
+  "fantasy.intro.budget_body":
+    "لكل لاعب سعره، وبحد أقصى {max} لاعبين من النادي نفسه: عليك أن تجد التوازن المناسب.",
+  "fantasy.intro.captain_title": "قائد بنقاط مضاعفة",
+  "fantasy.intro.captain_body":
+    "اختر قائدك في كل جولة لتُضاعَف نقاطه، وإذا لم يلعب يحلّ نائبه محله.",
+  "fantasy.intro.deadline_title": "موعد نهائي لكل جولة",
+  "fantasy.intro.deadline_body":
+    "أجرِ انتقالاتك واختر أساسييك وقائدك قبل الموعد النهائي، وبعده يُقفَل فريقك حتى نهاية الجولة.",
+  "fantasy.intro.join_by": "الموعد النهائي للمشاركة ابتداءً من الجولة {n}:",
+  "fantasy.intro.sign_in_note":
+    "سجّل الدخول أو أنشئ حساباً مجانياً أولاً، ثم تنتقل مباشرةً إلى إنشاء فريقك.",
   "fantasy.validation.squad_size": "يجب أن يضم الفريق 15 لاعباً.",
   "fantasy.validation.position_count": "تشكيلة المراكز غير صحيحة.",
   "fantasy.validation.club_limit": "عدد لاعبي النادي الواحد أكثر من المسموح (3).",
@@ -626,6 +668,8 @@ export const ar = {
   "state.offline": "أنت غير متصل. قد تكون البيانات قديمة.",
   "state.retry": "إعادة المحاولة",
   "state.go_home": "العودة إلى الرئيسية",
+  "toast.region": "الإشعارات",
+  "toast.close": "إغلاق الإشعار",
   "notfound.code": "404",
   "notfound.title": "الصفحة غير موجودة",
   "notfound.description": "هذه الصفحة غير موجودة أو تم نقلها.",
@@ -639,6 +683,57 @@ export const ar = {
   "legal.table_scroll_hint": "جدول — مرّره أفقيًا لعرض كامل محتواه",
   "error.title": "تعذّر تحميل هذه الصفحة",
   "error.description": "حدث خطأ ما. يمكنك إعادة المحاولة أو العودة إلى الرئيسية.",
+
+  "fantasy.meta.hub_title": "BotolaGO Fantasy — لعبة الفانتازي للبطولة الاحترافية",
+  "fantasy.meta.hub_description":
+    "كوّن فريقك من لاعبي البطولة الاحترافية، واختر قائدك، واجمع النقاط في كل جولة مع BotolaGO Fantasy.",
+  "fantasy.meta.players_title":
+    "لاعبو فانتازي البطولة الاحترافية: الأسعار والنقاط والفورمة — BotolaGO",
+  "fantasy.meta.players_description":
+    "جميع لاعبي BotolaGO Fantasy بأسعارهم ونقاطهم وفورمتهم، مع التصفية حسب المركز والنادي والمقارنة بينهم.",
+  "fantasy.meta.player_title": "{name}: السعر والنقاط والفورمة — BotolaGO Fantasy",
+  "fantasy.meta.player_description":
+    "{name}: الإحصائيات والفورمة والسعر والمباريات القادمة، لتقرّر إن كان يستحق مكانًا في فريقك على BotolaGO Fantasy.",
+  "fantasy.meta.player_unknown_title": "بطاقة اللاعب — BotolaGO Fantasy",
+  "fantasy.meta.player_unknown_description":
+    "إحصائيات لاعب من البطولة الاحترافية وفورمته وسعره ومبارياته القادمة، لفريقك على BotolaGO Fantasy.",
+  "fantasy.meta.top_players_title": "أفضل 5 لاعبين في الجولة — BotolaGO Fantasy",
+  "fantasy.meta.top_players_description":
+    "أفضل خمسة لاعبين في كل جولة من البطولة الاحترافية، حسب أدائهم ونقاطهم في الفانتازي.",
+  "fantasy.meta.fixtures_title": "صعوبة المباريات لكل نادٍ — BotolaGO Fantasy",
+  "fantasy.meta.fixtures_description":
+    "برنامج مباريات كل نادٍ في البطولة الاحترافية جولةً بجولة، مع تقييم صعوبة كل مباراة من 1 (سهلة) إلى 5 (صعبة) لتحضير انتقالاتك.",
+  "fantasy.meta.rankings_title": "الترتيب العام للفانتازي — BotolaGO",
+  "fantasy.meta.rankings_description":
+    "تابع الترتيب العام لمدربي فانتازي البطولة الاحترافية: نقاط الموسم ونقاط الجولة والتقدّم في الترتيب.",
+  "fantasy.meta.rules_title": "قواعد لعبة فانتازي البطولة الاحترافية — BotolaGO",
+  "fantasy.meta.rules_description":
+    "التشكيلة والميزانية والخطة والقائد والانتقالات والموعد النهائي وجدول النقاط وكسر التعادل: كل قواعد BotolaGO Fantasy.",
+  "fantasy.meta.help_title": "المساعدة والأسئلة الشائعة — BotolaGO Fantasy",
+  "fantasy.meta.help_description":
+    "أجوبة الأسئلة حول BotolaGO Fantasy: تسجيل الدخول، اختيار التشكيلة، الميزانية، الخطط، القائد، اسم الفريق والجوكرات.",
+  "fantasy.meta.leagues_title": "الدوريات والكؤوس — BotolaGO Fantasy",
+  "fantasy.meta.leagues_description":
+    "دورياتك الخاصة والعامة على BotolaGO Fantasy: الترتيب والكؤوس ودعوة أصدقائك.",
+  "fantasy.meta.league_title": "ترتيب الدوري — BotolaGO Fantasy",
+  "fantasy.meta.league_description":
+    "ترتيب دوري على BotolaGO Fantasy: نقاط كل مدرب في الجولة وعلى مدار الموسم.",
+  "fantasy.meta.join_league_title": "الانضمام إلى دوري — BotolaGO Fantasy",
+  "fantasy.meta.join_league_description":
+    "أدخل رمز الدعوة إلى دوري خاص لتنافس أصدقاءك على BotolaGO Fantasy.",
+  "fantasy.meta.create_title": "أنشئ فريقك — BotolaGO Fantasy",
+  "fantasy.meta.create_description":
+    "اختر تشكيلتك من لاعبي البطولة الاحترافية في حدود الميزانية، لتنشئ فريقك على BotolaGO Fantasy.",
+  "fantasy.meta.team_title": "فريقي — BotolaGO Fantasy",
+  "fantasy.meta.team_description":
+    "اختر لاعبيك الأساسيين والاحتياطيين وقائدك قبل الموعد النهائي للجولة.",
+  "fantasy.meta.transfers_title": "الانتقالات — BotolaGO Fantasy",
+  "fantasy.meta.transfers_description":
+    "بدّل لاعبين من تشكيلتك على BotolaGO Fantasy قبل الموعد النهائي للجولة المقبلة.",
+  "fantasy.meta.points_title": "نقاطي — BotolaGO Fantasy",
+  "fantasy.meta.points_description": "نقاط فريقك على BotolaGO Fantasy في كل جولة، لاعبًا بلاعب.",
+  "fantasy.meta.profile_title": "ملف فريقي — BotolaGO Fantasy",
+  "fantasy.meta.profile_description": "نظرة عامة على فريقك على BotolaGO Fantasy وسجلّ مواسمه.",
 
   "player.status.available": "متاح",
   "player.status.injured": "مصاب",
@@ -739,7 +834,6 @@ export const ar = {
   "fpl.more_about": "المزيد عن BotolaGO Fantasy",
   "fpl.rules": "قواعد اللعبة",
   "fpl.help_rules": "المساعدة والقواعد",
-  "fpl.create_team": "إنشاء فريق",
   "fpl.free_transfers": "انتقالات مجانية",
   "fpl.wildcard": "الورقة الحرة",
   "fpl.cost": "التكلفة",
@@ -1112,7 +1206,15 @@ export const ar = {
   "auth.mfa_challenge.error_expired": "انتهت صلاحية الرمز. حاول مجدداً.",
   "auth.mfa_challenge.error_generic": "حدث خطأ. حاول مجدداً.",
   "auth.mfa_challenge.error_no_factor": "لا يوجد تطبيق مصادقة مرتبط بهذا الحساب.",
-  "auth.mfa_challenge.continue_without": "المتابعة بدون تحقق",
+  "auth.mfa_challenge.recheck": "إعادة التحقق",
+  "auth.mfa_challenge.error_still_owed":
+    "لا يزال هذا الحساب يطلب رمز تحقق، لكن لا يوجد تطبيق مصادقة مرتبط به. سجّل الخروج، ثم تواصل مع فريق الدعم.",
+
+  "auth.assurance.error_title": "لم يتم تأكيد تسجيل الدخول",
+  "auth.assurance.error_body":
+    "تعذّر علينا التحقق مما إذا كان حسابك يتطلب رمز تحقق. أعد المحاولة أو سجّل الخروج.",
+  "auth.assurance.still_unconfirmed": "ما زال التحقق متعذّرًا. انتظر قليلًا، ثم أعد المحاولة.",
+  "auth.step_up.toast": "للمتابعة، أكّد تسجيل دخولك بالرمز الذي يعرضه تطبيق المصادقة.",
 
   "auth.forgot.title": "استعادة كلمة المرور",
   "auth.forgot.subtitle": "أدخل بريدك. إن كان لديك حساب، ستصلك رسالة لإعادة التعيين.",
@@ -1592,6 +1694,7 @@ export const ar = {
   "predictions.save.saved": "تم الحفظ",
   "predictions.save.offline": "لا يوجد اتصال · ستُعاد المحاولة تلقائيًا",
   "predictions.save.failed": "تعذّر الحفظ",
+  "predictions.save.step_up": "رمز التحقق مطلوب للحفظ",
   "predictions.save.locked": "انطلقت المباراة: أُغلق التوقع",
   "predictions.guest.saved_local": "محفوظ على هذا الهاتف",
   "predictions.guest.cta_title": "نافِس في الترتيب",

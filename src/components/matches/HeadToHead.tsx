@@ -2,12 +2,15 @@ import { Link } from "@tanstack/react-router";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
-import { EmptyState } from "@/components/common/States";
+import { SkeletonList, StandingsRowSkeleton } from "@/components/common/Skeletons";
+import { EmptyState, ErrorState } from "@/components/common/States";
 import { ui, UiCard, UiTable, UiTBody, UiTD, UiTH, UiTHead, UiTR } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
+import { sharedPositions } from "@/lib/league-table";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
+import type { FootballSeason } from "@/services/football";
 import type { Club, Match, TableRow } from "@/types/domain";
 import {
   formatGoalDifference,
@@ -15,12 +18,16 @@ import {
   newestFirst,
   summariseHeadToHead,
 } from "./head-to-head";
-import { FormChips } from "./StandingsTable";
+import { listSeparator } from "./standings-copy";
+import { FormChips, StandingsNotes } from "./StandingsTable";
 
 /**
  * The "Face à face" tab (A-H2H): where the two clubs stand, then how their
- * last meetings went — both from the detail payload (`standings`,
- * `headToHead`), nothing derived beyond who won each meeting.
+ * last meetings went. Where they stand is the season's table as the
+ * Classement tab shows it (`getStandings`, read only while this tab is open),
+ * with what that table cannot claim under it (`StandingsNotes`); the
+ * meetings are the detail payload's (`headToHead`), nothing derived beyond
+ * who won each one.
  *
  * Colours are the page's resolved pair by CLUB, not by side: the meetings
  * alternate venues, and Wydad must be Wydad's colour in every row whether it
@@ -31,24 +38,64 @@ export function HeadToHead({
   away,
   palettes,
   standings,
+  standingsComputed = false,
+  seasonStatus,
+  standingsPending = false,
+  standingsFailed = false,
+  onRetryStandings,
   meetings,
 }: {
   home: Club;
   away: Club;
   palettes: { home: ClubPalette; away: ClubPalette };
+  /** The season's whole table (`FootballStandings.overall`); empty before its first result. */
   standings: readonly TableRow[];
+  /** `FootballStandings.computed`: the table is worked out from the results. */
+  standingsComputed?: boolean;
+  /**
+   * The season's status, when it is known. Without it, a computed table is
+   * called neither provisional nor unofficial (`StandingsNotes`).
+   */
+  seasonStatus?: FootballSeason["status"];
+  /** The table is still being read: its place is held, so the meetings do not jump. */
+  standingsPending?: boolean;
+  /**
+   * The table could not be read. Said in its place, with a retry, as the
+   * Classement tab says it: without a table the tab would look like a season
+   * that has none yet.
+   */
+  standingsFailed?: boolean;
+  onRetryStandings?: () => void;
   meetings: readonly Match[];
 }) {
-  const { t, tr } = useI18n();
+  const { t, tr, lang } = useI18n();
   const clubOf = (id: string) => (id === home.id ? home : id === away.id ? away : undefined);
   const paletteOf = (id: string) => (id === home.id ? palettes.home : palettes.away);
 
-  const rows = standings
-    .filter((row) => row.clubId === home.id || row.clubId === away.id)
-    .sort((a, b) => a.position - b.position);
+  const rows =
+    standingsPending || standingsFailed
+      ? []
+      : standings
+          .filter((row) => row.clubId === home.id || row.clubId === away.id)
+          .sort((a, b) => a.position - b.position);
+  // Read from the whole table: a club can share its rank with clubs not shown.
+  const shared = sharedPositions(standings);
+  // Without a table section, the meetings open the tab, flush to its top.
+  const tableSection = standingsPending || standingsFailed || rows.length > 0;
 
   return (
     <div>
+      {standingsPending ? (
+        <section aria-busy="true">
+          <SectionHeader title={t("matches.detail.table_context")} />
+          <SkeletonList count={2}>{() => <StandingsRowSkeleton />}</SkeletonList>
+        </section>
+      ) : standingsFailed ? (
+        <section>
+          <SectionHeader title={t("matches.detail.table_context")} />
+          <ErrorState onRetry={onRetryStandings} />
+        </section>
+      ) : null}
       {rows.length > 0 && (
         <section>
           <SectionHeader title={t("matches.detail.table_context")} />
@@ -90,6 +137,12 @@ export function HeadToHead({
                         className={cn(FIRST_CELL, ui.edge.start, ui.stat.md, ui.tone.default)}
                       >
                         {row.position}
+                        {/* "2, Ex æquo"; in Arabic with "،". */}
+                        {shared.has(row.position) ? (
+                          <span className="sr-only">
+                            {listSeparator(lang) + t("standings.shared_rank")}
+                          </span>
+                        ) : null}
                       </UiTD>
                       <UiTD className={cn(CELL, "w-full max-w-0")}>
                         <span className="flex min-w-0 items-center gap-2">
@@ -121,10 +174,19 @@ export function HeadToHead({
               </UiTBody>
             </UiTable>
           </UiCard>
+          {/* A table worked out from the results, or a rank either club
+              shares: said here as the Classement tab says it. */}
+          <StandingsNotes
+            rows={standings}
+            shown={rows}
+            computed={standingsComputed}
+            seasonStatus={seasonStatus}
+            className="mt-2"
+          />
         </section>
       )}
 
-      <Section className={cn(rows.length === 0 && "mt-0 sm:mt-0")}>
+      <Section className={cn(!tableSection && "mt-0 sm:mt-0")}>
         <SectionHeader title={t("matches.detail.head_to_head")} />
         {meetings.length === 0 ? (
           <EmptyState compact>{t("matches.detail.no_h2h")}</EmptyState>

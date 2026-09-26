@@ -1,7 +1,7 @@
 import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import rankingEmptyArt from "@/assets/illustrations/ranking-empty.webp";
 import { createFileRoute } from "@tanstack/react-router";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { LogIn, UserPlus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -37,9 +37,11 @@ import {
   UiTR,
 } from "@/components/ui-kit";
 import { useAuth } from "@/auth/AuthProvider";
+import { isSessionSettled } from "@/auth/second-factor";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
-import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import { keepSameOwnerData, useFantasyDataSource } from "@/services/fantasy-data-source";
 import { pageForRank, type RankingsSort } from "@/services/fantasy-rankings";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useOwnedTeam } from "@/services/use-owned-team";
@@ -48,23 +50,7 @@ import type { LeagueStanding } from "@/types/fantasy";
 const PAGE_SIZE = 25;
 
 export const Route = createFileRoute("/fantasy/rankings")({
-  head: () => ({
-    meta: [
-      { title: "Classement général Fantasy — BotolaGO" },
-      {
-        name: "description",
-        content:
-          "Suivez le classement général des managers Fantasy Botola Pro : points de la saison, points de la journée et progression.",
-      },
-      { property: "og:title", content: "Classement général Fantasy — BotolaGO" },
-      {
-        property: "og:description",
-        content: "Le classement de tous les managers Fantasy Botola Pro, saison et journée.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: () => fantasyHead("rankings"),
   component: RankingsFramed,
 });
 
@@ -100,8 +86,8 @@ function RankingsFramed() {
 
 function RankingsPage() {
   const { t, lang } = useI18n();
-  const { user } = useAuth();
-  const { source, key } = useFantasyDataSource();
+  const { user, status } = useAuth();
+  const { source, scope, key } = useFantasyDataSource();
   const owned = useOwnedTeam();
   const nf = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"), [lang]);
   // On the overall board a manager can climb thousands of places in a week;
@@ -149,6 +135,9 @@ function RankingsPage() {
     errored: !!owned.error,
   });
 
+  // The last page stays up while the next one loads, but only this owner's:
+  // after a switch it was the last account's board, their row marked as "me".
+  const sameOwnerData = useMemo(() => keepSameOwnerData(scope), [scope]);
   const rankingsQ = useQuery({
     queryKey: key("rankings", sort, page, search, me?.totalScore ?? null),
     queryFn: () =>
@@ -159,7 +148,12 @@ function RankingsPage() {
         query: search,
         me,
       }),
-    placeholderData: keepPreviousData,
+    // The board's `myRank` is whoever's token the request carries. While the
+    // session is still being read, or owes its one-time code, that is an
+    // account this page does not count as signed in: its rank would show
+    // under the visitor's key before the second-factor gate moved on.
+    enabled: isSessionSettled(status),
+    placeholderData: sameOwnerData,
   });
 
   // Keep the page in range whenever the filter or sort shrinks the board.

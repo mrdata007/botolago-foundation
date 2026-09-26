@@ -19,13 +19,13 @@ import { noticeConsentSegments } from "@/components/legal/consent-segments";
 import { ui, UiAlert, UiButton, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
-import { authService, IS_MOCK_AUTH, type AuthErrorCode } from "@/services/auth";
+import { authService, IS_MOCK_AUTH, type AuthStatus } from "@/services/auth";
 import { takeSuspensionNotice, type SuspensionNotice } from "@/services/account-standing";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { supabase } from "@/integrations/supabase/client";
-import { getAssuranceLevels, requiresLoginChallenge } from "@/backend/auth/mfa";
+import { AssuranceRetry } from "@/auth/AssuranceRetry";
+import { secondFactorStep } from "@/auth/second-factor";
 import { authNextSearch, sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 
 export const Route = createFileRoute("/auth/login")({
@@ -100,27 +100,62 @@ function LoginPage() {
     navigate({ to: "/auth/profile-setup", search: { next: next ?? "/" } });
   };
 
-  // A password (or OAuth) sign-in only ever reaches AAL1. If this account
-  // already has a verified TOTP factor enrolled, Supabase's own
-  // getAuthenticatorAssuranceLevel() reports nextLevel: "aal2" -- route
-  // through the login MFA challenge instead of straight into the app. If the
-  // AAL check itself fails (e.g. offline), fail open rather than block sign-in.
-  const continueAfterAuth = async (profileComplete: boolean | undefined) => {
-    try {
-      // The demo/mock backend has no Supabase project behind it, so skip the
-      // round-trip entirely rather than relying on the catch below.
-      if (IS_MOCK_AUTH) throw new Error("mock_auth_no_mfa");
-      const levels = await getAssuranceLevels(supabase.auth.mfa);
-      if (requiresLoginChallenge(levels)) {
+  // A password (or OAuth) sign-in only ever reaches AAL1. The auth service
+  // reports how far the new session got: an account with a verified TOTP
+  // factor is `mfa_required` and goes through the login MFA challenge instead
+  // of straight into the app. If the assurance lookup itself failed the
+  // session is `mfa_unconfirmed`, and the page stops on a retry. It used to
+  // fail open here, which let a password-only session of an enrolled account
+  // into the app whenever the lookup broke.
+  const [unconfirmed, setUnconfirmed] = useState(false);
+  const [rechecking, setRechecking] = useState(false);
+  const [failedRetries, setFailedRetries] = useState(0);
+
+  const continueAfterAuth = (
+    status: AuthStatus | undefined,
+    profileComplete: boolean | undefined,
+  ) => {
+    switch (secondFactorStep(status)) {
+      case "challenge":
         navigate({ to: "/auth/mfa-challenge", search: { next: next ?? "/" } });
         return;
-      }
-    } catch {
-      // Fall through to normal post-login routing.
+      case "retry":
+        setUnconfirmed(true);
+        return;
+      case "proceed":
+        setUnconfirmed(false);
+        markWelcomeDone();
+        toast.success(t("auth.success.login"));
+        goAfterLogin(profileComplete);
+        return;
+      default:
+        // No session in hand: an OAuth sign-in is on its way to the provider
+        // and comes back through /auth/callback, or the session has gone.
+        setUnconfirmed(false);
     }
-    markWelcomeDone();
-    toast.success(t("auth.success.login"));
-    goAfterLogin(profileComplete);
+  };
+
+  const recheck = async () => {
+    setRechecking(true);
+    let still = true;
+    try {
+      const session = await authService.recheckSession();
+      still = secondFactorStep(session.status) === "retry";
+      continueAfterAuth(session.status, session.user?.profileComplete);
+    } catch {
+      // Still unknown: the panel stays, and so does the way out.
+    } finally {
+      setRechecking(false);
+      if (still) setFailedRetries((n) => n + 1);
+    }
+  };
+
+  const signOutUnconfirmed = async () => {
+    setRechecking(true);
+    await authService.signOut();
+    setRechecking(false);
+    setUnconfirmed(false);
+    setFailedRetries(0);
   };
 
   const [email, setEmail] = useState("");
@@ -156,7 +191,7 @@ function LoginPage() {
       });
       return;
     }
-    await continueAfterAuth(res.data?.profileComplete);
+    continueAfterAuth(res.status, res.data?.profileComplete);
   };
 
   const onSocial = async (provider: "google" | "apple") => {
@@ -170,7 +205,7 @@ function LoginPage() {
       setErrors({ form: "auth.error.generic" });
       return;
     }
-    await continueAfterAuth(res.data?.profileComplete);
+    continueAfterAuth(res.status, res.data?.profileComplete);
   };
 
   return (
@@ -217,99 +252,110 @@ function LoginPage() {
       }
     >
       <SuspendedAccountNotice />
-      <form onSubmit={onSubmit} noValidate className="grid gap-3">
-        <UiInput
-          id={emailId}
-          label={t("auth.email")}
-          type="email"
-          autoComplete="email"
-          inputMode="email"
-          placeholder={t("auth.email_placeholder")}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          error={errors.email ? t(errors.email) : undefined}
-          reserveError
-          fieldClassName={authFieldClass(!!errors.email)}
-          leading={<Mail className={authFieldIconClass} aria-hidden />}
+      {unconfirmed ? (
+        <AssuranceRetry
+          busy={rechecking}
+          failedRetries={failedRetries}
+          onRetry={() => void recheck()}
+          onSignOut={() => void signOutUnconfirmed()}
         />
+      ) : (
+        <form onSubmit={onSubmit} noValidate className="grid gap-3">
+          <UiInput
+            id={emailId}
+            label={t("auth.email")}
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            placeholder={t("auth.email_placeholder")}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            error={errors.email ? t(errors.email) : undefined}
+            reserveError
+            fieldClassName={authFieldClass(!!errors.email)}
+            leading={<Mail className={authFieldIconClass} aria-hidden />}
+          />
 
-        {/* The field renders its own label again. "Mot de passe oublié ?"
+          {/* The field renders its own label again. "Mot de passe oublié ?"
             used to share the label row, which is why this one field wired its
             label by hand; the board puts the link UNDER the field, at the
             inline end, so the frame can own label, box and error like every
             other field here. The link sits after the reserved error line: the
             error is the one thing that must not move. */}
-        <div>
-          <UiInput
-            id={passwordId}
-            label={t("auth.password")}
-            type={showPw ? "text" : "password"}
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            error={errors.password ? t(errors.password) : undefined}
-            reserveError
-            fieldClassName={authFieldClass(!!errors.password)}
-            leading={<Lock className={authFieldIconClass} aria-hidden />}
-            trailing={<AuthPasswordToggle shown={showPw} onToggle={() => setShowPw((s) => !s)} />}
-          />
-          <div className="-mt-1 flex justify-end">
-            <Link
-              to="/auth/forgot-password"
-              className={cn(
-                "-me-2 inline-flex items-center px-2",
-                ui.space.tap,
-                ui.radius.full,
-                ui.text.meta,
-                "[font-weight:var(--ui-weight-heavy)]",
-                ui.tone.ink,
-                "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
-                ui.focus,
-              )}
-            >
-              {t("auth.login.forgot")}
-            </Link>
+          <div>
+            <UiInput
+              id={passwordId}
+              label={t("auth.password")}
+              type={showPw ? "text" : "password"}
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              error={errors.password ? t(errors.password) : undefined}
+              reserveError
+              fieldClassName={authFieldClass(!!errors.password)}
+              leading={<Lock className={authFieldIconClass} aria-hidden />}
+              trailing={<AuthPasswordToggle shown={showPw} onToggle={() => setShowPw((s) => !s)} />}
+            />
+            <div className="-mt-1 flex justify-end">
+              <Link
+                to="/auth/forgot-password"
+                className={cn(
+                  "-me-2 inline-flex items-center px-2",
+                  ui.space.tap,
+                  ui.radius.full,
+                  ui.text.meta,
+                  "[font-weight:var(--ui-weight-heavy)]",
+                  ui.tone.ink,
+                  "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                  ui.focus,
+                )}
+              >
+                {t("auth.login.forgot")}
+              </Link>
+            </div>
           </div>
-        </div>
 
-        {errors.form && <AuthFormError>{t(errors.form)}</AuthFormError>}
+          {errors.form && <AuthFormError>{t(errors.form)}</AuthFormError>}
 
-        {IS_MOCK_AUTH && <p className={cn(ui.text.micro, ui.tone.muted)}>{t("auth.demo_hint")}</p>}
+          {IS_MOCK_AUTH && (
+            <p className={cn(ui.text.micro, ui.tone.muted)}>{t("auth.demo_hint")}</p>
+          )}
 
-        <AuthPrimaryButton type="submit" disabled={submitting}>
-          {submitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-          {submitting ? t("auth.submitting") : t("auth.login.cta")}
-        </AuthPrimaryButton>
+          <AuthPrimaryButton type="submit" disabled={submitting}>
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+            {submitting ? t("auth.submitting") : t("auth.login.cta")}
+          </AuthPrimaryButton>
 
-        {/* BG-0111 — no OAuth provider is enabled on this project, so the
+          {/* BG-0111 — no OAuth provider is enabled on this project, so the
             divider goes with the buttons: an "ou continuer avec" rule with
             nothing under it reads as a broken screen. See
             `OAUTH_PROVIDERS_ENABLED`. Google is the white outline pill, Apple
             its own navy one (`ink`), as the board draws them. */}
-        {OAUTH_PROVIDERS_ENABLED && (
-          <>
-            <AuthDivider label={t("auth.or_continue_with")} />
+          {OAUTH_PROVIDERS_ENABLED && (
+            <>
+              <AuthDivider label={t("auth.or_continue_with")} />
 
-            <div className="grid gap-2.5">
-              <AuthSecondaryButton
-                type="button"
-                onClick={() => onSocial("google")}
-                disabled={submitting}
-              >
-                <GoogleGlyph /> {t("auth.google")}
-              </AuthSecondaryButton>
-              <UiButton
-                variant="ink"
-                type="button"
-                onClick={() => onSocial("apple")}
-                disabled={submitting}
-              >
-                <AppleGlyph /> {t("auth.apple")}
-              </UiButton>
-            </div>
-          </>
-        )}
-      </form>
+              <div className="grid gap-2.5">
+                <AuthSecondaryButton
+                  type="button"
+                  onClick={() => onSocial("google")}
+                  disabled={submitting}
+                >
+                  <GoogleGlyph /> {t("auth.google")}
+                </AuthSecondaryButton>
+                <UiButton
+                  variant="ink"
+                  type="button"
+                  onClick={() => onSocial("apple")}
+                  disabled={submitting}
+                >
+                  <AppleGlyph /> {t("auth.apple")}
+                </UiButton>
+              </div>
+            </>
+          )}
+        </form>
+      )}
     </AuthShell>
   );
 }

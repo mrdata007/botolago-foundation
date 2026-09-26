@@ -66,6 +66,44 @@ export function categorize(evidence: unknown): AlertCategory {
     const watch = record.deadlineWatch as { escalations?: unknown[] } | undefined;
     return Array.isArray(watch?.escalations) ? watch.escalations.length : 0;
   })();
+  // The orchestrator's finished fixtures still without certified statistics
+  // past its threshold: fixture ids and codes only.
+  const performances = (record.performances ?? {}) as { error?: unknown; incomplete?: unknown };
+  const performanceError =
+    typeof performances.error === "string" && SAFE_CODE.test(performances.error)
+      ? performances.error
+      : null;
+  const overdue = Array.isArray(performances.incomplete)
+    ? (performances.incomplete as Array<Record<string, unknown>>)
+        .filter(
+          (gap) =>
+            gap.overdue === true &&
+            typeof gap.fixtureExternalId === "string" &&
+            /^[1-9]\d{0,14}$/.test(gap.fixtureExternalId) &&
+            typeof gap.code === "string" &&
+            SAFE_CODE.test(gap.code),
+        )
+        .map((gap) => `${gap.fixtureExternalId as string} ${gap.code as string}`)
+    : [];
+  // Gameweeks past their window without final points: sequence, status and
+  // the worker's code only; or the code of windows that could not be read.
+  const scoring = (record.scoring ?? {}) as { error?: unknown; gameweeks?: unknown };
+  const scoringError =
+    typeof scoring.error === "string" && SAFE_CODE.test(scoring.error) ? scoring.error : null;
+  const pointsOverdue = Array.isArray(scoring.gameweeks)
+    ? (scoring.gameweeks as Array<Record<string, unknown>>)
+        .filter((gap) => gap.overdue === true && Number.isSafeInteger(gap.sequence))
+        .map(
+          (gap) =>
+            `GW${gap.sequence as number}${
+              typeof gap.status === "string" && SAFE_CODE.test(gap.status) ? ` ${gap.status}` : ""
+            }${
+              typeof gap.workerCode === "string" && SAFE_CODE.test(gap.workerCode)
+                ? ` ${gap.workerCode}`
+                : ""
+            }`,
+        )
+    : [];
   // The watchdog's failing checks: our own names and one-line reasons.
   const failingChecks = Array.isArray(record.failingChecks)
     ? (record.failingChecks as Array<Record<string, unknown>>)
@@ -78,11 +116,27 @@ export function categorize(evidence: unknown): AlertCategory {
     code ? `code ${code}` : null,
     workers.length ? `lifecycle ${workers.join(", ")}` : null,
     escalations ? `${escalations} deadline escalation(s)` : null,
+    performanceError ? `performance listing ${performanceError}` : null,
+    overdue.length
+      ? `${overdue.length} finished fixture(s) without statistics past the threshold: ${overdue.slice(0, 5).join(", ")}`
+      : null,
+    scoringError ? `gameweek windows ${scoringError}` : null,
+    pointsOverdue.length
+      ? `${pointsOverdue.length} gameweek(s) without final points past the threshold: ${pointsOverdue.slice(0, 5).join(", ")}`
+      : null,
     failingChecks.length ? `failing: ${failingChecks.join("; ")}` : null,
   ].filter(Boolean);
   return {
     category:
-      code ?? (workers.length ? "fantasy_lifecycle_refused" : (verdict ?? "workflow_failed")),
+      code ??
+      (workers.length
+        ? "fantasy_lifecycle_refused"
+        : (performanceError ??
+          (overdue.length
+            ? "performance_coverage_overdue"
+            : pointsOverdue.length
+              ? "fantasy_points_overdue"
+              : (scoringError ?? verdict ?? "workflow_failed")))),
     detail: parts.length ? parts.join("; ") : "see the run log",
   };
 }

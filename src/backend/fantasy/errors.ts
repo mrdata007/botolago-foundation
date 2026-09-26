@@ -1,3 +1,4 @@
+import { reportMfaStepUp } from "@/backend/auth/step-up";
 import { BackendError } from "@/backend/errors";
 
 export const FANTASY_ERROR_CODES = [
@@ -47,6 +48,9 @@ export class FantasyError extends Error {
 
 export function mapFantasyError(error: unknown): FantasyError {
   if (error instanceof FantasyError) return error;
+  // A save refused because the second factor is still owed: the auth layer
+  // takes the manager to the code (see `@/backend/auth/step-up`).
+  reportMfaStepUp(error);
   const raw = error as { message?: string; details?: string; code?: string } | null;
   const text = `${raw?.message ?? ""} ${raw?.details ?? ""} ${raw?.code ?? ""}`.toLowerCase();
   const code = FANTASY_ERROR_CODES.find((candidate) => text.includes(candidate));

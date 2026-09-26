@@ -1,56 +1,48 @@
 import fantasyHeroPhoto from "@/assets/photos/fantasy-hero.webp";
-import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import { BrandedText } from "@/components/brand/BrandedText";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowDownUp,
-  Bell,
   BookOpen,
   CalendarDays,
   ChevronRight,
   CircleHelp,
-  Mail,
-  Plus,
-  Settings2,
-  Shirt,
   SlidersHorizontal,
   Star,
   TrendingUp,
   Trophy,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { toast } from "sonner";
+import type { ReactNode } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { MediaImage } from "@/components/common/FailureAwareImage";
-import {
-  SectionGroupHeader,
-  SectionHeader,
-  SectionHeaderLink,
-} from "@/components/common/SectionHeader";
+import { SectionHeader, SectionHeaderLink } from "@/components/common/SectionHeader";
 import { useDeadlineCountdown, formatDeadline } from "@/components/fpl/deadline";
 import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
-import { LeagueList } from "@/components/fantasy-lists/LeagueList";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
-import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
 import { PrizeWelcome } from "@/components/prizes/PrizeWelcome";
-import { FantasyUnavailableState } from "@/components/fantasy/FantasyUnavailableState";
+import {
+  FantasyHubLeagues,
+  FantasyHubReminders,
+  FantasyHubTeamArea,
+} from "@/components/fantasy/FantasyHubPersonal";
+import { fantasyHubLayout } from "@/components/fantasy/fantasy-hub-layout";
 import { GameweekStatusText } from "@/components/fpl/GameweekStatusText";
 import { nextDeadlineAfter } from "@/components/fantasy/gameweek-presentation";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
-import { ui, UiCard, UiLinkButton, UiLivePill, UiPageTitle, UiSkeleton } from "@/components/ui-kit";
+import { ui, UiCard, UiPageTitle, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { fantasyHead } from "@/lib/fantasy-meta";
 import { NEWS_ENABLED, PRIZES_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
-import { authService } from "@/services/auth";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
-import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { newsService } from "@/services/news";
+import { prizesService } from "@/services/prizes";
 import type { Gameweek } from "@/types/domain";
 
 export const Route = createFileRoute("/fantasy/")({
+  head: () => fantasyHead("hub"),
   component: FantasyHub,
 });
 
@@ -79,6 +71,15 @@ export const Route = createFileRoute("/fantasy/")({
  *
  * The caption "Journée 14 · Date limite" stays ONE element: the e2e journey
  * finds the hub by that exact text.
+ *
+ * All of the above is the OWNER's hub. A visitor without a team — signed out,
+ * or signed in before creating one — gets the first-time proposition
+ * (`FantasyGuestIntro`) where the team card would be, and neither "Mes
+ * ligues", the cup nor the reminder switches, which cannot apply to them yet
+ * (audit 2026-09-25, A16). `fantasyHubLayout` makes that call, and the
+ * personal parts it decides — the team card's place, the leagues, the
+ * reminders — are `FantasyHubPersonal`'s; the band, the shortcuts, the News
+ * rail and the "more about" links are public and stay here.
  */
 function FantasyHub() {
   const { t, lang } = useI18n();
@@ -87,8 +88,8 @@ function FantasyHub() {
   const { source, key } = useFantasyDataSource();
   const team = screen.team;
   const gameweek = screen.gameweek;
-  const isGuestView = authStatus !== "authenticated" || source === "guest";
-  const hasTeam = screen.phase === "ready" && !!team && !isGuestView;
+  const layout = fantasyHubLayout({ authStatus, source, phase: screen.phase, hasTeam: !!team });
+  const hasTeam = layout.audience === "owner";
 
   // News is hidden at launch (owner decision — see `@/lib/feature-flags`), so
   // the hub's "News & Video" rail is not rendered and its feed is not fetched.
@@ -118,82 +119,15 @@ function FantasyHub() {
     queryFn: () => fantasyService.getLeagues("private"),
     enabled: hasTeam,
   });
-
-  const teamArea = (() => {
-    if (screen.phase === "loading" || authStatus === "loading") {
-      return (
-        <div role="status" aria-label={t("state.loading")} className="space-y-3">
-          <UiSkeleton className={cn("h-44", ui.radius.sheet)} />
-          <UiSkeleton className={cn("h-12", ui.radius.full)} />
-        </div>
-      );
-    }
-    if (screen.phase !== "ready") {
-      return (
-        <FantasyPhaseBody phase={screen.phase} next="/fantasy" retry={screen.retry} className="" />
-      );
-    }
-    if (isGuestView) {
-      return <FantasyPhaseBody phase="guest" next="/fantasy" retry={screen.retry} className="" />;
-    }
-    if (!team) {
-      // Which gameweek a new team joins: after the current deadline it is the
-      // next one, and with none to join the create button would only lead to
-      // a refusal. Mock mode carries no enrolment and keeps the button.
-      const enrolment = gameweek?.enrolment;
-      if (enrolment === null) {
-        return <FantasyUnavailableState reason="registration_closed" />;
-      }
-      return (
-        <>
-          <div
-            className={cn(
-              "px-4 py-4",
-              ui.radius.sheet,
-              ui.shadow.lifted,
-              "text-[color:var(--ui-ink-deep)]",
-            )}
-            style={{ backgroundImage: "var(--ui-grad-action)" }}
-          >
-            <p className={ui.display.section}>{t("fpl.your_team")}</p>
-            <p className={cn("mt-1", ui.text.secondary, "[font-weight:var(--ui-weight-strong)]")}>
-              {t("fpl.no_team_yet")}
-            </p>
-            {enrolment && gameweek && enrolment.number !== gameweek.number ? (
-              <p className={cn("mt-1", ui.text.meta)}>
-                {t("fantasy.create.enrolment_next")
-                  .replace("{current}", String(gameweek.number))
-                  .replace("{n}", String(enrolment.number))}
-              </p>
-            ) : null}
-          </div>
-          <UiLinkButton to="/fantasy/create" variant="ink" className="mt-3">
-            <Plus className="h-5 w-5" aria-hidden />
-            {t("fpl.create_team")}
-          </UiLinkButton>
-        </>
-      );
-    }
-    const manager = user?.displayName?.trim() || summary.data?.managerName || team.managerName;
-    return (
-      <>
-        <TeamCard
-          teamName={team.teamName}
-          manager={manager && manager !== team.teamName ? manager : null}
-          gameweek={gameweek}
-          points={summary.data?.gameweekPoints ?? null}
-          total={summary.data?.totalPoints ?? null}
-          overallRank={summary.data?.overallRank ?? null}
-          pending={summary.isPending}
-        />
-        <UiLinkButton to="/fantasy/team" variant="gradient" className="mt-3.5">
-          <Shirt className="h-5 w-5" aria-hidden />
-          {t("fpl.pick_team")}
-        </UiLinkButton>
-        <TransfersRow freeTransfers={team.freeTransfers} bank={team.bank} />
-      </>
-    );
-  })();
+  // The prize welcome's catalog, same key: the proposition says prizes are
+  // there to be won only when the catalog lists one, and says it inline —
+  // the dialog itself waits until there is a team to go with it.
+  const introPrizes = useQuery({
+    queryKey: ["prizes", "catalog"],
+    queryFn: () => prizesService.listPrizes(),
+    enabled: PRIZES_ENABLED && layout.intro !== null,
+    staleTime: 5 * 60_000,
+  });
 
   return (
     <FantasyFrame bottomNav topBar="always">
@@ -205,13 +139,26 @@ function FantasyHub() {
         <UiSkeleton className="h-24 rounded-none" />
       ) : null}
 
-      <div className={cn("pt-3.5", ui.space.gutter)}>{teamArea}</div>
+      <div className={cn("pt-3.5", ui.space.gutter)}>
+        <FantasyHubTeamArea
+          layout={layout}
+          phase={screen.phase}
+          retry={screen.retry}
+          gameweek={gameweek}
+          team={team}
+          displayName={user?.displayName ?? null}
+          summary={summary.data ?? null}
+          summaryPending={summary.isPending}
+          prizes={(introPrizes.data?.length ?? 0) > 0}
+        />
+      </div>
 
       <ShortcutTiles />
 
-      <LeaguesSection
-        phase={screen.phase}
-        hasTeam={hasTeam}
+      {/* Personal: an overall rank, private leagues, a cup to qualify for.
+          None of it can apply before there is a team. */}
+      <FantasyHubLeagues
+        layout={layout}
         gameweek={gameweek?.number ?? null}
         overallRank={summary.data?.overallRank ?? null}
         leagues={leagues.data ?? []}
@@ -277,13 +224,15 @@ function FantasyHub() {
         </section>
       )}
 
-      <NotificationsSection />
+      <FantasyHubReminders layout={layout} />
 
       <MoreAboutSection />
 
       {/* The hub's one arrival dialog, shown once per device while prizes are
-          on. It waits for the splash and the language chooser to let go. */}
-      {PRIZES_ENABLED && <PrizeWelcome hasTeam={hasTeam} />}
+          on. It waits for the splash and the language chooser to let go, and
+          opens over the owner's dashboard only: a visitor without a team has
+          the proposition, which names the prizes inline. */}
+      {PRIZES_ENABLED && layout.prizeWelcome && <PrizeWelcome />}
     </FantasyFrame>
   );
 }
@@ -367,166 +316,6 @@ function GameweekBand({ gameweek }: { gameweek: Gameweek }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* The team card                                                        */
-/* ------------------------------------------------------------------ */
-
-/**
- * The manager's card, on the action gradient (a feature surface: sheet
- * radius, the lifted shadow). Everything on it is ink-deep, the gradient's own
- * foreground in both themes; the strip at its foot is a 55% veil of the
- * on-ink white, which stays light in dark too, so the ink-deep figures keep
- * their contrast there.
- *
- * The points figure stands alone, so it is Changa (`ui.score.hero`); the
- * three under it are a row read as a set, so they stay on the stat ramp.
- * Every figure is real or an en dash — no invented movement, no zero for
- * "not known yet". The whole card opens the team profile, as the old team
- * link did.
- */
-function TeamCard({
-  teamName,
-  manager,
-  gameweek,
-  points,
-  total,
-  overallRank,
-  pending,
-}: {
-  teamName: string;
-  manager: string | null;
-  gameweek: Gameweek | null;
-  points: number | null;
-  total: number | null;
-  overallRank: number | null;
-  pending: boolean;
-}) {
-  const { t, lang } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
-  const none = t("fantasy.stat.none");
-  const live = gameweek?.status === "live";
-  const figure = (value: number | null) =>
-    pending ? (
-      <UiSkeleton className="mx-auto h-6 w-10" />
-    ) : value === null ? (
-      none
-    ) : (
-      nf.format(value)
-    );
-  const veil = "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_55%,transparent)]";
-  const seam = "border-s border-[color:color-mix(in_oklab,var(--ui-ink-deep)_14%,transparent)]";
-  return (
-    <Link
-      to="/fantasy/profile"
-      className={cn(
-        "block overflow-hidden",
-        ui.radius.sheet,
-        ui.shadow.lifted,
-        "text-[color:var(--ui-ink-deep)]",
-        ui.focus,
-      )}
-      style={{ backgroundImage: "var(--ui-grad-action)" }}
-    >
-      <div className="flex items-start justify-between gap-3 px-4 pb-3.5 pt-4">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <p className={cn("line-clamp-2 break-words", ui.display.section)}>{teamName}</p>
-          {manager ? (
-            <p className={cn("truncate", ui.text.meta, "[font-weight:var(--ui-weight-strong)]")}>
-              {manager}
-            </p>
-          ) : null}
-          {overallRank !== null ? (
-            <p className={cn("mt-2", ui.text.meta, "[font-weight:var(--ui-weight-strong)]")}>
-              {t("fpl.rank")} <span className={ui.text.tabular}>{nf.format(overallRank)}</span>
-            </p>
-          ) : null}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <div className="flex items-baseline gap-1">
-            {pending ? (
-              <UiSkeleton className="h-12 w-16" />
-            ) : (
-              <bdi className={ui.score.hero}>{points === null ? none : nf.format(points)}</bdi>
-            )}
-            <span className={cn(ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}>
-              {t("fantasy.points.abbr")}
-            </span>
-          </div>
-          {live && gameweek ? (
-            <UiLivePill
-              label={`${t("fantasy.leagues.gw")}${gameweek.number} · ${t("matches.status.live")}`}
-            />
-          ) : (
-            <span className={cn("max-w-[9.5rem] text-balance text-end", ui.text.label)}>
-              {t("fantasy.gw_points")}
-            </span>
-          )}
-        </div>
-      </div>
-      <dl className={cn("grid grid-cols-3 text-center", veil)}>
-        <div className="flex flex-col items-center gap-0.5 px-1 py-2.5">
-          <dt className={ui.text.label}>{t("fpl.average")}</dt>
-          <dd className={ui.stat.lg}>{figure(gameweek?.averagePoints ?? null)}</dd>
-        </div>
-        <div className={cn("flex flex-col items-center gap-0.5 px-1 py-2.5", seam)}>
-          <dt className={ui.text.label}>{t("fpl.highest")}</dt>
-          <dd className={ui.stat.lg}>{figure(gameweek?.highestPoints ?? null)}</dd>
-        </div>
-        <div className={cn("flex flex-col items-center gap-0.5 px-1 py-2.5", seam)}>
-          <dt className={ui.text.label}>{t("fpl.total")}</dt>
-          <dd className={ui.stat.lg}>{figure(total)}</dd>
-        </div>
-      </dl>
-    </Link>
-  );
-}
-
-/** "Transferts — Transferts gratuits 1 · Banque 1,4 ›" */
-function TransfersRow({ freeTransfers, bank }: { freeTransfers: number; bank: number }) {
-  const { t, lang } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
-  return (
-    <Link
-      to="/fantasy/transfers"
-      className={cn(
-        "mt-2 flex items-center gap-3 px-3 py-2.5",
-        ui.surface.card,
-        ui.space.row,
-        "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
-        ui.focus,
-      )}
-    >
-      <span
-        className={cn(
-          "grid h-10 w-10 shrink-0 place-items-center",
-          ui.radius.full,
-          ui.surface.sunken,
-          ui.tone.ink,
-        )}
-      >
-        <ArrowDownUp className="h-5 w-5" aria-hidden />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className={cn(ui.text.bodyStrong, ui.tone.default)}>{t("fpl.transfers")}</span>
-        {/* Each figure stays with its label; under 390px the line breaks
-            between the two pairs instead of cutting the bank off. */}
-        <span className={cn(ui.text.meta, ui.tone.muted)}>
-          <span className="whitespace-nowrap">
-            {t("fpl.free_transfers")} <span className={ui.text.tabular}>{freeTransfers}</span> ·
-          </span>{" "}
-          <span className="whitespace-nowrap">
-            {t("fpl.bank")} <span className={ui.text.tabular}>{nf.format(bank)}</span>
-          </span>
-        </span>
-      </span>
-      <ChevronRight className={cn("h-5 w-5 shrink-0", ui.tone.muted)} aria-hidden />
-    </Link>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* Shortcuts                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -573,261 +362,6 @@ function ShortcutTiles() {
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Leagues                                                              */
-/* ------------------------------------------------------------------ */
-
-function LeaguesSection({
-  phase,
-  hasTeam,
-  gameweek,
-  overallRank,
-  leagues,
-  leaguesLoading,
-}: {
-  phase: string;
-  hasTeam: boolean;
-  gameweek: number | null;
-  overallRank: number | null;
-  leagues: Array<{ id: string; name: string; rank: number | null; members: number }>;
-  leaguesLoading: boolean;
-}) {
-  const { t } = useI18n();
-  return (
-    <section className={cn("mt-6", ui.space.gutter)}>
-      <SectionHeader title={t("fantasy.hub.my_leagues")} />
-
-      {/* The same rows as Leagues & Cups (`LeagueList`): one look for a
-          league wherever it is listed, and its focus ring drawn inside the
-          clipped card. */}
-      <SectionGroupHeader title={t("fpl.general_leagues")} />
-      <LeagueList
-        label={t("fpl.general_leagues")}
-        rows={[
-          { key: "overall", name: t("fpl.overall"), to: "/fantasy/rankings", rank: overallRank },
-          ...(gameweek
-            ? [
-                {
-                  key: "gameweek",
-                  name: t("fpl.gameweek_league").replace("{n}", String(gameweek)),
-                  to: "/fantasy/rankings",
-                  rank: null,
-                },
-              ]
-            : []),
-        ]}
-      />
-
-      <SectionGroupHeader title={t("fpl.private_leagues")} className="mt-4" />
-      {phase !== "ready" || !hasTeam ? (
-        <NoLeaguesNote text={t("fpl.no_leagues")} />
-      ) : leaguesLoading ? (
-        <UiSkeleton className={cn("h-14", ui.radius.card)} />
-      ) : leagues.length === 0 ? (
-        <NoLeaguesNote text={t("fpl.no_leagues")} />
-      ) : (
-        <LeagueList
-          label={t("fpl.private_leagues")}
-          rows={leagues.map((league) => ({
-            key: league.id,
-            name: league.name,
-            to: `/fantasy/leagues/${league.id}`,
-            rank: league.rank,
-            members: league.members,
-          }))}
-        />
-      )}
-      <div className="mt-3 flex flex-wrap gap-2">
-        <UiLinkButton to="/fantasy/leagues/join" variant="soft" size="sm" className="flex-auto">
-          <Plus className="h-4 w-4" aria-hidden />
-          {t("fpl.join_leagues")}
-        </UiLinkButton>
-        <UiLinkButton to="/fantasy/leagues" variant="soft" size="sm" className="flex-auto">
-          <Settings2 className="h-4 w-4" aria-hidden />
-          {t("fpl.configure_leagues")}
-        </UiLinkButton>
-      </div>
-
-      <SectionGroupHeader title={t("fpl.cups")} className="mt-5" />
-      <UiCard padding="md">
-        <p className={cn(ui.text.bodyStrong, ui.tone.default)}>{t("fpl.cup_not_qualified")}</p>
-        <h3 className={cn("mt-3", ui.text.label, ui.tone.muted)}>{t("fpl.cup_how_title")}</h3>
-        <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fpl.cup_how_body")}</p>
-      </UiCard>
-    </section>
-  );
-}
-
-/** "No private leagues yet", with the same spot art as the leagues page. */
-function NoLeaguesNote({ text }: { text: string }) {
-  return (
-    <div className={cn("flex items-center gap-3 px-3 py-2.5", ui.surface.card)}>
-      <img
-        src={emptyLeaguesArt}
-        alt=""
-        aria-hidden
-        loading="lazy"
-        decoding="async"
-        className="h-12 w-auto shrink-0 object-contain"
-      />
-      <p className={cn(ui.text.meta, ui.tone.muted)}>{text}</p>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Notifications                                                        */
-/* ------------------------------------------------------------------ */
-
-function NotificationsSection() {
-  const { t } = useI18n();
-  const { user, status, refresh } = useAuth();
-  const { preferences, setEmailEnabled } = useMyNotificationPreferences();
-  const [busy, setBusy] = useState(false);
-  const enabled = status === "authenticated" && !!user;
-  const reminders = !!user?.notifications.fantasyDeadlines;
-  const email = !!preferences?.channels.email;
-
-  // Both switches write the same preferences row, so one waits for the other.
-  const toggleReminders = async () => {
-    if (!enabled || busy) return;
-    setBusy(true);
-    try {
-      const result = await authService.completeProfile({
-        notifications: { fantasyDeadlines: !reminders },
-      });
-      if (!result.ok) toast.error(t("state.error"));
-      refresh();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const toggleEmail = async () => {
-    if (!enabled || busy || !preferences) return;
-    setBusy(true);
-    try {
-      await setEmailEnabled(!email);
-    } catch {
-      toast.error(t("state.error"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <section className={cn("mt-6", ui.space.gutter)}>
-      <SectionHeader title={t("fpl.notifications")} />
-      <p className={cn("-mt-1 mb-2.5", ui.text.secondary, ui.tone.muted)}>
-        {t("fpl.notifications_body")}
-      </p>
-      <UiCard padding="none">
-        {/* The Fantasy reminder preference. It used to be labelled "push",
-            and there are no push notifications. */}
-        <ToggleRow
-          icon={<Bell className="h-[18px] w-[18px]" aria-hidden />}
-          label={t("auth.setup.notif_deadline")}
-          checked={reminders}
-          disabled={!enabled || busy}
-          onChange={toggleReminders}
-        />
-        <ToggleRow
-          icon={<Mail className="h-[18px] w-[18px]" aria-hidden />}
-          label={t("fpl.emails")}
-          checked={email}
-          disabled={!enabled || busy || !preferences}
-          onChange={toggleEmail}
-          hint={enabled && user.email ? <bdi dir="ltr">{user.email}</bdi> : undefined}
-          last
-        />
-      </UiCard>
-    </section>
-  );
-}
-
-function ToggleRow({
-  icon,
-  label,
-  checked,
-  disabled,
-  onChange,
-  hint,
-  last = false,
-}: {
-  icon: ReactNode;
-  label: string;
-  checked: boolean;
-  disabled?: boolean;
-  onChange: () => void;
-  hint?: ReactNode;
-  last?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-between gap-3 py-1.5 pe-2 ps-3",
-        ui.space.row,
-        !last && ui.rule.block,
-      )}
-    >
-      <span className="flex min-w-0 items-center gap-3">
-        <span
-          className={cn(
-            "grid h-9 w-9 shrink-0 place-items-center",
-            ui.radius.full,
-            ui.surface.sunken,
-            ui.tone.ink,
-          )}
-        >
-          {icon}
-        </span>
-        <span className={cn("min-w-0", ui.text.bodyStrong, ui.tone.default)}>
-          {label}
-          {hint ? (
-            <span className={cn("block [overflow-wrap:anywhere]", ui.text.micro, ui.tone.muted)}>
-              {hint}
-            </span>
-          ) : null}
-        </span>
-      </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        disabled={disabled}
-        onClick={onChange}
-        className={cn(
-          // The 32px track is the visual; the control itself clears the 44px
-          // tap floor, which the bare track did not.
-          "grid shrink-0 place-items-center disabled:opacity-50",
-          ui.space.tap,
-          ui.radius.full,
-          ui.focus,
-        )}
-      >
-        <span
-          aria-hidden
-          className={cn("relative block h-8 w-14 transition-colors", ui.radius.full)}
-          style={{
-            backgroundColor: checked ? "var(--ui-positive)" : "var(--ui-surface-sunken)",
-          }}
-        >
-          <span
-            className={cn(
-              "absolute top-1 h-6 w-6 transition-[inset-inline-start]",
-              ui.radius.full,
-              ui.shadow.card,
-              checked ? "start-7" : "start-1",
-            )}
-            style={{ backgroundColor: "var(--ui-surface)" }}
-          />
-        </span>
-      </button>
     </div>
   );
 }

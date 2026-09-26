@@ -12,7 +12,7 @@ export default defineMcp({
   title: "BotolaGO",
   version: "0.1.0",
   instructions:
-    "Tools for BotolaGO — the Moroccan football + fantasy app. Use `get_profile` for the signed-in user's profile, `get_fantasy_team` for their fantasy squad summary, and `list_fixtures` for upcoming Botola Pro matches.",
+    "Tools for BotolaGO — the Moroccan football + fantasy app. Use `get_profile` for the signed-in user's profile, `get_fantasy_team` for their fantasy squad summary, and `list_fixtures` for upcoming Botola Pro matches. An account that uses two-step sign-in does not share its own data with connected apps: for it, `get_profile` and `get_fantasy_team` answer with an error that says so, and `list_fixtures` works as usual.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",

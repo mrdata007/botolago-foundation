@@ -2,6 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { ar } from "@/i18n/dictionary-ar";
+import { fr } from "@/i18n/dictionary-fr";
+
 /**
  * BG-0012 — Accueil (Home) redesign structural contract.
  *
@@ -43,6 +46,16 @@ describe("Accueil (Home) structural contract", () => {
     expect(source).toContain("showStandings &&");
   });
 
+  test("the standings snapshot says what the Classement tab says under its table", () => {
+    // Audit A04: the top five listed four of the fourteen clubs sharing 2nd,
+    // with nothing to say their order decides nothing. The notes read the
+    // whole table and the five rows shown.
+    expect(source).toContain("{standingsTop.map((row) => {");
+    expect(source.slice(indexOfOrThrow("<StandingsNotes"))).toMatch(
+      /^<StandingsNotes\s+rows=\{standingsRows\}\s+shown=\{standingsTop\}\s+computed=\{standingsQ\.data\.computed\}\s+seasonStatus=\{currentSeason\?\.status\}/,
+    );
+  });
+
   test("the news preview links into /news instead of duplicating it", () => {
     expect(source).toContain('<ViewAllLink to="/news"');
     // No per-language article fetch control on Home — that belongs to /news.
@@ -55,6 +68,17 @@ describe("Accueil (Home) structural contract", () => {
     expect(source).toContain('to="/fantasy"');
     expect(source).toContain('to="/news"');
     expect(source).toContain('to="/profile"');
+  });
+
+  // Audit 2026-09-25 review: the sr-only H1 was the French `HOME_TITLE`
+  // for every reader, so an Arabic screen reader heard French.
+  test("the page's only H1 is read in the reader's language, and is the <title> in French", () => {
+    expect(source).toContain('<h1 className="sr-only">{t("home.sr_title")}</h1>');
+    // What the server renders, and a crawler reads, is unchanged.
+    const title = /const HOME_TITLE =\s*"([^"]+)";/.exec(source)?.[1];
+    expect(title).toBeTruthy();
+    expect(fr["home.sr_title"]).toBe(title as string);
+    expect(ar["home.sr_title"]).toMatch(/[؀-ۿ]/);
   });
 
   /**

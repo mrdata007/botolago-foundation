@@ -1,5 +1,17 @@
 name: Ingest current finished Football performances
 
+# Two modes, chosen by the typed confirmation:
+#   DIAGNOSE_CURRENT_FINISHED_PERFORMANCES -- read-only. Lists the finished
+#     fixtures, reads and validates each provider payload exactly as ingestion
+#     would, and writes nothing: the evidence names every fixture that cannot
+#     be certified, with the field path and value type or the unidentified
+#     lineup rows. The first step of every recovery.
+#   INGEST_CURRENT_FINISHED_PERFORMANCES -- publishes each fixture that
+#     validates, one database transaction per fixture, and reports the rest.
+# Either mode reads a page of up to five fixtures, or only the one named in
+# only_fixture_external_id (the canary of a recovery; leave the cursor empty).
+# docs/backend/CURRENT_FINISHED_FIXTURE_PERFORMANCES.md has the procedure.
+
 on:
   workflow_dispatch:
     inputs:
@@ -8,11 +20,15 @@ on:
         required: true
         type: string
       confirmation:
-        description: Type INGEST_CURRENT_FINISHED_PERFORMANCES
+        description: Type DIAGNOSE_CURRENT_FINISHED_PERFORMANCES (read-only) or INGEST_CURRENT_FINISHED_PERFORMANCES
         required: true
         type: string
       after_fixture_external_id:
         description: Prior verified batch cursor, empty for the first batch
+        required: false
+        type: string
+      only_fixture_external_id:
+        description: One SportsMonks fixture id to read (and ingest) alone, the canary; empty for a page
         required: false
         type: string
 
@@ -36,6 +52,7 @@ jobs:
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       CONFIRMATION: ${{ inputs.confirmation }}
       AFTER_FIXTURE_EXTERNAL_ID: ${{ inputs.after_fixture_external_id }}
+      ONLY_FIXTURE_EXTERNAL_ID: ${{ inputs.only_fixture_external_id }}
       SUPABASE_PRODUCTION_PROJECT_NAME: ${{ vars.SUPABASE_PRODUCTION_PROJECT_NAME }}
       SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
       SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
@@ -47,7 +64,10 @@ jobs:
           test "$GITHUB_RUN_ATTEMPT" = "1"
           test "$GITHUB_TRIGGERING_ACTOR" = "mrdata007"
           test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
-          test "$CONFIRMATION" = "INGEST_CURRENT_FINISHED_PERFORMANCES"
+          case "$CONFIRMATION" in
+            INGEST_CURRENT_FINISHED_PERFORMANCES | DIAGNOSE_CURRENT_FINISHED_PERFORMANCES) ;;
+            *) exit 1 ;;
+          esac
           test "$SUPABASE_PRODUCTION_PROJECT_REF" = "tkewgajrljbwgwedqsxn"
           test "$SUPABASE_PRODUCTION_PROJECT_NAME" = "BotolaGO Production V2"
           test "${SUPABASE_PRODUCTION_URL%/}" = "https://tkewgajrljbwgwedqsxn.supabase.co"
@@ -72,7 +92,7 @@ jobs:
           bun test scripts/backend/current-season-performances.test.ts scripts/backend/sportsmonks-production-probe.test.ts supabase/functions/_shared/sportsmonks-historical-player-performance.test.ts
           bun run backend:secrets:check
 
-      - name: Ingest at most five finished current fixtures
+      - name: Diagnose or ingest at most five finished current fixtures, or the one canary
         env:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}

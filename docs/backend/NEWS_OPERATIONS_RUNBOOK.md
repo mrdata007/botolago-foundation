@@ -84,6 +84,52 @@ Provider outage procedure:
 
 No production schedule is active in Phase 4.
 
+## Sitemap
+
+`/sitemap.xml` lists the public editions from `api.news_sitemap_entries`,
+which serves a snapshot rather than computing the archive on each request
+(migration `20260926003050`). Computing it per request timed out in
+production on 2026-09-25 and turned the whole sitemap into a 503; the
+set-based hotfix (`20260925100000`) made the computation fast again, and the
+snapshot keeps one slow minute from reaching visitors.
+
+- The pg_cron job `news-sitemap-refresh` recomputes the entries every minute
+  (set-based, ~0.2 s for ~16,000 editions) and swaps
+  `app_private.news_sitemap_snapshot` in one transaction. The payload is
+  rewritten only when it changed. A failed refresh raises: the previous
+  snapshot stays, the failure is in `cron.job_run_details`, and the ops
+  health `cron_jobs` check reports it.
+- Freshness: the database serves the snapshot while it is at most 120 seconds
+  old. After that (job paused, failing or gone) it computes the entries live
+  on every request, as before the snapshot, so an unpublished article never
+  stays listed because the job stopped. The route lets shared caches keep the
+  XML for three more minutes. So an unpublished article is gone, and a new
+  one listed, within five minutes. If the live computation itself fails, the
+  route answers 503 and a cache honouring `stale-if-error` serves its last
+  good copy.
+- Health: the ops check `news_sitemap` warns when the snapshot is more than
+  120 seconds old or a refresh took 1.5 s or more (the live fallback has 3 s),
+  and fails, which pages, when it is missing or more than 10 minutes old
+  ([ALERTS.md](../operations/ALERTS.md)).
+- State: `select entry_count, computed_at, changed_at, compute_ms from app_private.news_sitemap_snapshot;`
+  Why the job is not refreshing:
+  `select status, return_message, start_time from cron.job_run_details where jobid = (select jobid from cron.job where jobname = 'news-sitemap-refresh') order by start_time desc limit 5;`
+  and `select jobname, active from cron.job where jobname like 'news-sitemap%';`
+- Refresh now (waits for a running refresh): `select app_private.news_sitemap_refresh(true);`
+- Pause both jobs for a write that touches the snapshot table or
+  `cron.job_run_details` ([AGENTS.md](../../AGENTS.md)):
+  `select cron.alter_job((select jobid from cron.job where jobname = 'news-sitemap-refresh'), active := false);`
+  `select cron.alter_job((select jobid from cron.job where jobname = 'news-sitemap-refresh-history-prune'), active := false);`
+  Resume both with `active := true`. From two minutes into a pause the
+  sitemap is computed on every request; the health check pages after ten.
+- Production: apply it with the guarded script
+  [`apply-20260926003050-news-sitemap-snapshot.sql`](../../scripts/backend/apply-20260926003050-news-sitemap-snapshot.sql)
+  (rehearsal first, then `commit;`). Until then production runs
+  `20260925100000` alone and computes the sitemap on every request.
+- One sitemap file holds at most 50,000 URLs. The snapshot keeps the newest
+  50,000 editions. Past about 49,990 public editions the sitemap needs to
+  become a sitemap index.
+
 ## Media and licensing
 
 The `news-media` bucket is public-read and trusted-server/editorial-write only. There are no browser upload policies. Canonical media records support source or storage location, dimensions, MIME type, alt text, caption, credit, copyright owner, license, and attribution URL.

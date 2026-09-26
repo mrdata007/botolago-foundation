@@ -1,10 +1,8 @@
-import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
-import { unavailableHeaders } from "@/lib/page-availability";
 import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
-import { footballService, type FootballSeason } from "@/services/football";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
 import { MatchCard } from "@/components/common/MatchCard";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -12,16 +10,28 @@ import { Section } from "@/components/common/Section";
 import { DateStrip } from "@/components/matches/DateStrip";
 import { LiveStrip } from "@/components/matches/LiveStrip";
 import { MatchesTabs } from "@/components/matches/MatchesTabs";
+import {
+  clampMatchDay,
+  isSameMatchDayQuery,
+  matchDayQuery,
+  matchDayRefetchInterval,
+  openingMatchDay,
+  settleEndedMatches,
+  withLiveReadings,
+} from "@/components/matches/match-day-query";
 import { validateMatchesSearch } from "@/components/matches/matches-search";
 import { SeasonPicker } from "@/components/matches/SeasonPicker";
+import { useLiveMatches, useOnLiveMatchEnd } from "@/components/matches/use-live-matches";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { MatchCardSkeleton } from "@/components/common/Skeletons";
 import { ui, UiCard, UiChip, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import { isSameMatchDay, matchDayFromKey, matchDayKey, startOfMatchDay } from "@/lib/match-kickoff";
+import { isSameMatchDay, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { matchRounds } from "@/lib/match-days";
+import { unavailableHeaders } from "@/lib/page-availability";
+import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Match } from "@/types/domain";
 
@@ -32,34 +42,46 @@ const MATCHES_DESCRIPTION =
 export const Route = createFileRoute("/matches/")({
   // `?season=<id>`: the season the Classement tab was showing (matches-search.ts).
   validateSearch: validateMatchesSearch,
+  // The day's fixtures are in the server's HTML (see `@/lib/ssr-prefetch`):
+  // the season the page opens on, then its opening day, within the render's
+  // one deadline. The list used to wait for the browser to pick the season
+  // in an effect before it even asked, so the HTML never held a match (audit
+  // 2026-09-25, A10). A read that fails or runs late is left to the browser,
+  // and the response says so: 503 with Retry-After (`ssrAvailability`,
+  // `@/lib/page-availability`), never a 200 whose list is empty.
   loaderDeps: ({ search }) => ({ season: search.season }),
-  loader: async ({ context, deps }) => {
-    const { queryClient } = context;
-    await prefetchForSsr(queryClient, [
-      {
-        queryKey: ["football", "seasons", "fr"],
-        queryFn: () => footballService.getSeasons("fr"),
-      },
-    ]);
-    const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
-    const season =
-      seasons?.find((item) => item.id === deps.season) ??
-      seasons?.find((item) => item.isCurrent) ??
-      seasons?.[0];
-    const date = season ? dateForSeason(season) : new Date();
-    if (seasons) {
+  loader: {
+    // A reader coming back to the page runs the loader again before it
+    // shows, not behind a render of its last visit: that render would open
+    // on yesterday after midnight, then jump. In the browser the loader
+    // fetches nothing (`prefetchForSsr` is server-only), so waiting on it
+    // costs a navigation nothing.
+    staleReloadMode: "blocking",
+    handler: async ({ context, deps }) => {
+      // Today by the competition's calendar, whatever the server's zone
+      // (UTC), decided here once: the browser's first render reads this day
+      // back from the loader data rather than its own clock, so it opens on
+      // the day the server rendered even when midnight falls between the two.
+      const today = matchDayKey(new Date());
+      const { queryClient } = context;
       await prefetchForSsr(queryClient, [
         {
-          queryKey: ["football", "matches", matchDayKey(date), season?.id ?? "default", "fr"],
-          queryFn: () => footballService.getMatchDay(date, "fr", season?.id),
+          queryKey: ["football", "seasons", "fr"],
+          queryFn: () => footballService.getSeasons("fr"),
         },
       ]);
-    }
-    return {
-      ...ssrAvailability(queryClient),
-      initialDate: date.toISOString(),
-      initialSeasonId: season?.id ?? null,
-    };
+      const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
+      if (seasons) {
+        const season = openingSeason(seasons, deps.season);
+        await prefetchForSsr(queryClient, [
+          matchDayQuery(openingMatchDay(season, today), "fr", season?.id),
+        ]);
+      }
+      // Both reads above count: every key `prefetchForSsr` was handed, the
+      // day's `matchDayQuery` key included, has to have loaded. A season
+      // list that failed never asks for the day, and counts as failed itself.
+      return { ...ssrAvailability(queryClient), today };
+    },
   },
   headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => ({
@@ -107,25 +129,17 @@ function bucketOf(m: Match): "live" | "upcoming" | "finished" | "other" {
  */
 const sameDay = isSameMatchDay;
 const dateFromKey = matchDayFromKey;
-const startOfDay = startOfMatchDay;
 
-function dateForSeason(season: FootballSeason): Date {
-  const today = startOfDay(new Date());
-  const startsOn = dateFromKey(season.startsOn);
-  const endsOn = dateFromKey(season.endsOn);
-  if (today >= startsOn && today <= endsOn) return today;
-  if (today < startsOn) return dateFromKey(season.firstMatchDate ?? season.startsOn);
-  return dateFromKey(season.lastMatchDate ?? season.endsOn);
-}
-
-function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
-  if (!season) return date;
-  const day = startOfDay(date);
-  const startsOn = dateFromKey(season.startsOn);
-  const endsOn = dateFromKey(season.endsOn);
-  if (day < startsOn) return startsOn;
-  if (day > endsOn) return endsOn;
-  return day;
+/**
+ * The season the page opens on: the one the other tab was on, else the
+ * current one. The loader and the page both ask this, so the season the
+ * server rendered is the one the browser's first render shows.
+ */
+function openingSeason(
+  seasons: readonly FootballSeason[],
+  requestedSeasonId: string | undefined,
+): FootballSeason | undefined {
+  return seasons.find((season) => season.id === requestedSeasonId) ?? defaultSeason(seasons);
 }
 
 /**
@@ -153,43 +167,71 @@ function clampToSeason(date: Date, season: FootballSeason | undefined): Date {
 function MatchesPage() {
   const { t, lang } = useI18n();
   const { season: requestedSeasonId } = Route.useSearch();
-  const initial = Route.useLoaderData();
-  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date(initial.initialDate));
-  const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(initial.initialSeasonId);
+  const { today } = Route.useLoaderData();
+  // What the reader picked; `null` until they pick, which is the season and
+  // the day the page opens on. Worked out during render, not set by an
+  // effect after it, so the server's render already has them.
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [filter, setFilter] = useState<StatusFilter>("all");
 
   const seasonsQ = useQuery({
     queryKey: ["football", "seasons", lang],
     queryFn: () => footballService.getSeasons(lang),
+    // The same seasons in the other language while it loads: an Arabic
+    // reader's page switches language right after hydration, and without
+    // them the opening day would jump to today and back.
+    placeholderData: keepPreviousData,
   });
 
   const seasons = seasonsQ.data ?? EMPTY_SEASONS;
-  const selectedSeason = seasons.find((season) => season.id === selectedSeasonId);
+  const selectedSeason =
+    seasons.find((season) => season.id === selectedSeasonId) ??
+    openingSeason(seasons, requestedSeasonId);
+  const matchDay = selectedDay ?? openingMatchDay(selectedSeason, today);
+  const selectedDate = useMemo(() => dateFromKey(matchDay), [matchDay]);
+  // The date band's "today" is the loader's too, not this device's clock, so
+  // the band names the day the server rendered as the server named it.
+  const todayDate = useMemo(() => dateFromKey(today), [today]);
 
-  useEffect(() => {
-    if (seasons.length === 0 || selectedSeason) return;
-    // The season the other tab was on, else the current one.
-    const initialSeason =
-      seasons.find((season) => season.id === requestedSeasonId) ??
-      seasons.find((season) => season.isCurrent) ??
-      seasons[0]!;
-    setSelectedSeasonId(initialSeason.id);
-    setSelectedDate(dateForSeason(initialSeason));
-  }, [seasons, selectedSeason, requestedSeasonId]);
-
-  const canLoadMatches = seasonsQ.isSuccess && (seasons.length === 0 || selectedSeason != null);
-
+  const dayQuery = matchDayQuery(matchDay, lang, selectedSeason?.id);
   const matchesQ = useQuery({
-    queryKey: [
-      "football",
-      "matches",
-      matchDayKey(selectedDate),
-      selectedSeason?.id ?? "default",
-      lang,
-    ],
-    queryFn: () => footballService.getMatchDay(selectedDate, lang, selectedSeason?.id),
-    enabled: canLoadMatches,
+    ...dayQuery,
+    enabled: seasonsQ.isSuccess,
+    // The same day in the language the page was just showing, while the new
+    // one loads (`isSameMatchDayQuery`): the rows the server rendered stay
+    // up through an Arabic reader's switch instead of flashing a skeleton.
+    // A new function each render, so it is asked again for every key rather
+    // than handing on the placeholder it gave the last one.
+    placeholderData: (previous, previousQuery) =>
+      previousQuery && isSameMatchDayQuery(previousQuery.queryKey, dayQuery.queryKey)
+        ? previous
+        : undefined,
+    // While something on the day is moving (a match about to start, in play,
+    // just finished), the list follows it; a past or later day never polls,
+    // and nor does a hidden tab. See `matchDayRefetchInterval`.
+    refetchInterval: (query) => matchDayRefetchInterval(query.state.data?.matches, Date.now()),
+    refetchIntervalInBackground: false,
   });
+
+  // The live strip above the list reads the matches in play on its own
+  // query. Its newer reading of a match is the one the row shows, so the two
+  // never disagree about a score; and when a match leaves the strip, the day
+  // it was on reads its final state at once instead of at its next refresh
+  // (`settleEndedMatches`).
+  const liveQ = useLiveMatches();
+  const queryClient = useQueryClient();
+  useOnLiveMatchEnd((ended, lastReading) => {
+    settleEndedMatches(queryClient, dayQuery.queryKey, ended, lastReading);
+  });
+  const matches = useMemo(
+    () =>
+      withLiveReadings(
+        { matches: matchesQ.data?.matches ?? [], updatedAt: matchesQ.dataUpdatedAt },
+        liveQ.data ? { matches: liveQ.data.matches, updatedAt: liveQ.dataUpdatedAt } : undefined,
+      ),
+    [matchesQ.data, matchesQ.dataUpdatedAt, liveQ.data, liveQ.dataUpdatedAt],
+  );
 
   const seasonBounds = useMemo(
     () =>
@@ -206,21 +248,22 @@ function MatchesPage() {
     const season = seasons.find((item) => item.id === seasonId);
     if (!season) return;
     setSelectedSeasonId(season.id);
-    setSelectedDate(dateForSeason(season));
+    // The new season's opening day.
+    setSelectedDay(null);
     setFilter("all");
   };
 
   const handleDateChange = (date: Date) => {
-    setSelectedDate(clampToSeason(date, selectedSeason));
+    setSelectedDay(clampMatchDay(matchDayKey(date), selectedSeason));
   };
 
   const clubById = (id: string) => matchesQ.data?.clubs.find((club) => club.id === id);
 
   // Matches happening on the selected day (all statuses).
-  const dayMatches = useMemo(() => {
-    const list = matchesQ.data?.matches ?? [];
-    return list.filter((m) => sameDay(new Date(m.kickoff), selectedDate));
-  }, [matchesQ.data, selectedDate]);
+  const dayMatches = useMemo(
+    () => matches.filter((m) => sameDay(new Date(m.kickoff), selectedDate)),
+    [matches, selectedDate],
+  );
 
   // Overall counts for the currently selected day, used by the filter chips.
   const dayCounts = useMemo(() => {
@@ -270,7 +313,14 @@ function MatchesPage() {
   ];
   const results = filter === "all" || filter === "finished" ? visibleByBucket.finished : [];
 
-  const loading = seasonsQ.isLoading || !canLoadMatches || matchesQ.isLoading;
+  // `isPending`, not `isLoading`: the day's query waits for the seasons, and
+  // a query that is waiting has no data but is not loading either.
+  const loading = seasonsQ.isPending || matchesQ.isPending;
+  // A read that failed with nothing to show for it. A refresh that fails (a
+  // poll during a live match, a return to the tab) keeps the rows it had and
+  // the next one tries again: an error card over rows that still stand would
+  // say they are wrong.
+  const failed = seasonsQ.isLoadingError || matchesQ.isLoadingError;
 
   const rows = (list: readonly Match[]) =>
     list.map((m) => {
@@ -317,6 +367,7 @@ function MatchesPage() {
       <DateStrip
         selected={selectedDate}
         onSelect={handleDateChange}
+        today={todayDate}
         minDate={seasonBounds?.minDate}
         maxDate={seasonBounds?.maxDate}
         gameweeks={dayGameweeks}
@@ -334,7 +385,7 @@ function MatchesPage() {
           <MatchCardSkeleton flat />
         </UiCard>
       )}
-      {(seasonsQ.isError || matchesQ.isError) && (
+      {failed && (
         <div className="mt-4">
           <ErrorState
             onRetry={() => {
@@ -344,7 +395,7 @@ function MatchesPage() {
           />
         </div>
       )}
-      {!loading && !seasonsQ.isError && !matchesQ.isError && totalDay === 0 && (
+      {!loading && !failed && totalDay === 0 && (
         <div className="mt-4">
           <EmptyState illustration={noMatchesArt}>
             {t("matches.section.no_matches_today")}

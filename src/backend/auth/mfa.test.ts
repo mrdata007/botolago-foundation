@@ -5,6 +5,7 @@ import {
   isAal2,
   listVerifiedTotpFactors,
   requiresLoginChallenge,
+  sessionAssuranceOf,
   toQrDataUrl,
   unenrollFactor,
   verifyTotpFactor,
@@ -228,5 +229,66 @@ describe("assurance level upgrade", () => {
     const levels = await getAssuranceLevels(client);
     expect(levels.currentLevel).toBeNull();
     expect(levels.nextLevel).toBeNull();
+  });
+});
+
+describe("sessionAssuranceOf: a session's level, from that session alone", () => {
+  // As Supabase Auth issues them, as far as the app reads one: the claims.
+  // The signature is not checked here, as auth-js does not check it either.
+  const part = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const token = (claims: Record<string, unknown>) =>
+    `${part({ alg: "HS256", typ: "JWT" })}.${part(claims)}.c2lnbmF0dXJl`;
+  const verified = { id: FACTOR_ID, factor_type: "totp", status: "verified" };
+  const unverified = { id: CHALLENGE_ID, factor_type: "totp", status: "unverified" };
+  const session = (claims: Record<string, unknown>, factors?: unknown[] | null) => ({
+    access_token: token(claims),
+    user: { factors: factors as never },
+  });
+
+  it("aal1 with a verified factor owes the second factor", () => {
+    expect(sessionAssuranceOf(session({ aal: "aal1" }, [verified]))).toBe("second_factor_pending");
+  });
+
+  it("aal2 is complete", () => {
+    expect(sessionAssuranceOf(session({ aal: "aal2" }, [verified]))).toBe("complete");
+  });
+
+  it("an account with no factor, or only an abandoned enrolment, is complete at aal1", () => {
+    expect(sessionAssuranceOf(session({ aal: "aal1" }))).toBe("complete");
+    expect(sessionAssuranceOf(session({ aal: "aal1" }, null))).toBe("complete");
+    expect(sessionAssuranceOf(session({ aal: "aal1" }, []))).toBe("complete");
+    expect(sessionAssuranceOf(session({ aal: "aal1" }, [unverified]))).toBe("complete");
+  });
+
+  it("a token whose own level is missing or unknown has not presented the factor", () => {
+    expect(sessionAssuranceOf(session({}, [verified]))).toBe("second_factor_pending");
+    expect(sessionAssuranceOf(session({ aal: "aal3" }, [verified]))).toBe("second_factor_pending");
+    expect(sessionAssuranceOf(session({ aal: 2 }, [verified]))).toBe("second_factor_pending");
+  });
+
+  it("a token that cannot be read is unknown, never complete", () => {
+    const user = { factors: [] };
+    for (const access_token of [
+      "",
+      "not-a-jwt",
+      "a.b",
+      `${part({})}.***.x`,
+      `${part({})}.${Buffer.from("not json").toString("base64url")}.x`,
+      `${part({})}.${part("a string, not claims")}.x`,
+      `${part({})}.${part(null)}.x`,
+    ]) {
+      expect({ access_token, assurance: sessionAssuranceOf({ access_token, user }) }).toEqual({
+        access_token,
+        assurance: "unknown",
+      });
+    }
+  });
+
+  it("reads a token whose other claims are not ASCII (an Arabic display name)", () => {
+    const claims = { aal: "aal2", user_metadata: { display_name: "ياسين" } };
+    expect(sessionAssuranceOf(session(claims, [verified]))).toBe("complete");
+    expect(sessionAssuranceOf(session({ ...claims, aal: "aal1" }, [verified]))).toBe(
+      "second_factor_pending",
+    );
   });
 });

@@ -13,6 +13,9 @@ export const fr = {
   "language.arabic": "العربية",
   "language.continue": "Continuer",
   "language.switch": "Langue",
+  "language.arabic_loading": "Chargement de l'arabe…",
+  "language.arabic_failed":
+    "L'arabe n'a pas pu être chargé. Vérifiez votre connexion, puis réessayez.",
 
   /* BG-0081 — appearance (Light / Dark / System). */
   "theme.switch": "Apparence",
@@ -25,7 +28,7 @@ export const fr = {
   "nav.news": "Actualités",
   "nav.fantasy": "Fantasy",
   "nav.matches": "Matches",
-  "nav.profile": "Profile",
+  "nav.profile": "Profil",
 
   "home.greeting_morning": "Bonjour",
   "home.greeting_afternoon": "Bon après-midi",
@@ -44,6 +47,9 @@ export const fr = {
   "home.explore": "Explorer {accent}BotolaGO{/accent}",
   "home.view_all": "Tout voir",
   "home.view_fantasy_team": "Voir mon équipe",
+  // The home page's sr-only <h1>. The French is the page's <title>, which is
+  // what the server renders and a crawler reads.
+  "home.sr_title": "BotolaGO — Actualité, matchs et Fantasy du football marocain",
 
   "news.title": "Actualités",
   "news.tab.for_you": "Pour vous",
@@ -72,6 +78,10 @@ export const fr = {
   "news.carousel.previous": "Article précédent",
   "news.carousel.next": "Article suivant",
   "news.carousel.slide": "Article {n} sur {total}",
+  // What a screen reader calls the carousel and each of its slides
+  // (`aria-roledescription`), in place of the role's own name.
+  "news.carousel.role": "carrousel",
+  "news.carousel.slide_role": "diapositive",
   "news.saved.empty":
     "Vous n'avez encore rien enregistré. Touchez le signet sur un article pour le retrouver ici.",
   "news.empty_category": "Aucun article dans cette catégorie pour le moment.",
@@ -150,6 +160,12 @@ export const fr = {
   "standings.gap_lead_other": "{n} points d'avance sur la {place}",
   "standings.gap_level": "à égalité de points avec la {place}",
   "standings.previous_season": "Voir le classement {season}",
+  "standings.provisional": "Classement provisoire, calculé à partir des résultats des matchs.",
+  "standings.unofficial": "Classement non officiel, calculé à partir des résultats des matchs.",
+  "standings.computed": "Classement calculé à partir des résultats des matchs.",
+  "standings.shared_rank": "Ex æquo",
+  "standings.shared_rank_note":
+    "Un même rang signale des clubs à égalité de points, de différence de buts et de buts marqués : l'ordre dans lequel ils sont listés ne les départage pas.",
   "matches.season.label": "Saison",
   "matches.season.current": "Actuelle",
   "matches.season.loading": "Chargement",
@@ -249,12 +265,24 @@ export const fr = {
   "matches.detail.tab.stats_short": "Stats",
   "matches.detail.tab.lineups_short": "Compos",
   "matches.detail.tabs_label": "Sections du match",
-  "matches.detail.no_events": "Aucun fait marquant pour le moment.",
-  "matches.detail.no_stats": "Les statistiques seront disponibles au coup d'envoi.",
+  "matches.detail.no_events":
+    "Le match n'a pas encore commencé : pas de faits marquants à afficher.",
+  "matches.detail.no_events_updating":
+    "Aucun fait de jeu reçu pour l'instant. Cette page se met à jour automatiquement.",
+  "matches.detail.no_events_unavailable":
+    "Les faits marquants de ce match ne sont pas disponibles.",
+  "matches.detail.no_stats": "Le match n'a pas encore commencé : pas de statistiques à afficher.",
+  "matches.detail.no_stats_updating":
+    "Aucune statistique reçue pour l'instant. Cette page se met à jour automatiquement.",
+  "matches.detail.no_stats_unavailable": "Les statistiques de ce match ne sont pas disponibles.",
+  "matches.detail.no_data_postponed": "Match reporté : pas de données à afficher.",
+  "matches.detail.no_data_called_off": "Match annulé ou arrêté : pas de données à afficher.",
   "matches.detail.stats_title": "Statistiques de l'équipe",
   "matches.detail.lineups_title": "Compositions probables",
-  "matches.detail.no_lineups":
-    "Les compositions ne sont pas encore publiées par la source officielle.",
+  "matches.detail.no_lineups": "Le match n'a pas encore commencé : pas de compositions à afficher.",
+  "matches.detail.no_lineups_updating":
+    "Compositions pas encore reçues. Cette page se met à jour automatiquement.",
+  "matches.detail.no_lineups_unavailable": "Les compositions de ce match ne sont pas disponibles.",
   "matches.detail.lineup_provisional": "Provisoire",
   "matches.detail.starting_xi": "Onze de départ",
   "matches.detail.substitutes": "Remplaçants",
@@ -614,6 +642,29 @@ export const fr = {
   "fantasy.onboarding.skip": "Passer",
   "fantasy.onboarding.next": "Suivant",
   "fantasy.onboarding.start": "Commencer",
+  // Audit 2026-09-25 (A16): the Fantasy hub's first-time proposition, shown
+  // in place of the team card to a visitor without a team. {size}, {budget}
+  // and {max} are filled from the squad rules the builder enforces.
+  "fantasy.intro.title": "Devenez manager en Botola Pro",
+  "fantasy.intro.lede":
+    "BotolaGO Fantasy est un jeu gratuit : vos joueurs de Botola Pro vous rapportent des points selon leurs vrais matchs, journée après journée, et vous défiez vos amis dans des ligues privées.",
+  "fantasy.intro.prizes": "Des lots récompensent les meilleurs managers.",
+  "fantasy.intro.how_title": "Comment ça marche",
+  "fantasy.intro.squad_title": "Un effectif de {size} joueurs",
+  "fantasy.intro.squad_body":
+    "2 gardiens, 5 défenseurs, 5 milieux et 3 attaquants, dont 11 titulaires à aligner à chaque journée.",
+  "fantasy.intro.budget_title": "Un budget de {budget} M",
+  "fantasy.intro.budget_body":
+    "Chaque joueur a son prix, et {max} joueurs au maximum par club : à vous de trouver le bon équilibre.",
+  "fantasy.intro.captain_title": "Un capitaine qui compte double",
+  "fantasy.intro.captain_body":
+    "Choisissez-le à chaque journée : ses points sont doublés. S’il ne joue pas, le vice-capitaine prend le relais.",
+  "fantasy.intro.deadline_title": "Une date limite par journée",
+  "fantasy.intro.deadline_body":
+    "Transferts, titulaires et capitaine se règlent avant la date limite. Ensuite, votre équipe est verrouillée jusqu’à la fin de la journée.",
+  "fantasy.intro.join_by": "Date limite pour jouer dès la Journée {n} :",
+  "fantasy.intro.sign_in_note":
+    "Connectez-vous ou créez un compte gratuit d’abord : vous passerez ensuite directement à la création de votre équipe.",
   "fantasy.validation.squad_size": "L'équipe doit compter 15 joueurs.",
   "fantasy.validation.position_count": "Composition invalide par poste.",
   "fantasy.validation.club_limit": "Trop de joueurs d'un même club (max 3).",
@@ -631,7 +682,7 @@ export const fr = {
   "common.away": "Extérieur",
   "common.vs": "vs",
 
-  "profile.title": "Profile",
+  "profile.title": "Profil",
   "profile.coming_soon": "Votre profil personnalisé arrive bientôt.",
   "profile.language": "Langue de l'application",
   "profile.followed_clubs": "Clubs suivis",
@@ -642,6 +693,10 @@ export const fr = {
   "state.offline": "Vous êtes hors ligne. Les données peuvent être obsolètes.",
   "state.retry": "Réessayer",
   "state.go_home": "Retour à l'accueil",
+  // The toaster's landmark and its close button: sonner names them in English.
+  // `toast.close` also names the close control of the Arabic-download notice.
+  "toast.region": "Notifications",
+  "toast.close": "Fermer la notification",
   "notfound.code": "404",
   "notfound.title": "Page introuvable",
   "notfound.description": "Cette page n'existe pas ou a été déplacée.",
@@ -658,6 +713,61 @@ export const fr = {
   "legal.table_scroll_hint": "Tableau — faites défiler horizontalement pour tout voir",
   "error.title": "Cette page ne s'est pas chargée",
   "error.description": "Un incident est survenu. Vous pouvez réessayer ou revenir à l'accueil.",
+
+  // The <title> and meta description of each Fantasy page (audit A17: most
+  // of them used to inherit "Fantasy — BotolaGO"). `head()` serves the
+  // French; see src/lib/fantasy-meta.ts.
+  "fantasy.meta.hub_title": "BotolaGO Fantasy — le jeu Fantasy de la Botola Pro",
+  "fantasy.meta.hub_description":
+    "Composez votre équipe de joueurs de la Botola Pro, choisissez votre capitaine et marquez des points à chaque journée avec BotolaGO Fantasy.",
+  "fantasy.meta.players_title": "Joueurs Fantasy Botola Pro : prix, points et forme — BotolaGO",
+  "fantasy.meta.players_description":
+    "Tous les joueurs de BotolaGO Fantasy avec leur prix, leurs points et leur forme, à filtrer par poste et par club et à comparer entre eux.",
+  "fantasy.meta.player_title": "{name} : prix, points et forme — BotolaGO Fantasy",
+  "fantasy.meta.player_description":
+    "{name} : statistiques, forme, prix et prochains matchs, pour décider de sa place dans votre équipe BotolaGO Fantasy.",
+  "fantasy.meta.player_unknown_title": "Fiche joueur — BotolaGO Fantasy",
+  "fantasy.meta.player_unknown_description":
+    "Statistiques, forme, prix et prochains matchs d'un joueur de la Botola Pro pour votre équipe BotolaGO Fantasy.",
+  "fantasy.meta.top_players_title": "Top 5 des joueurs de la journée — BotolaGO Fantasy",
+  "fantasy.meta.top_players_description":
+    "Les cinq meilleurs joueurs de chaque journée de Botola Pro, selon leurs performances et leurs points Fantasy.",
+  "fantasy.meta.fixtures_title": "Difficulté des matchs par club — BotolaGO Fantasy",
+  "fantasy.meta.fixtures_description":
+    "Le calendrier de chaque club de la Botola Pro, journée par journée, avec la difficulté de chaque match notée de 1 (facile) à 5 (difficile) pour préparer vos transferts.",
+  "fantasy.meta.rankings_title": "Classement général Fantasy — BotolaGO",
+  "fantasy.meta.rankings_description":
+    "Suivez le classement général des managers Fantasy Botola Pro : points de la saison, points de la journée et progression.",
+  "fantasy.meta.rules_title": "Règles du jeu Fantasy Botola Pro — BotolaGO",
+  "fantasy.meta.rules_description":
+    "Effectif, budget, formation, capitaine, transferts, date limite, barème des points et départage : toutes les règles de BotolaGO Fantasy.",
+  "fantasy.meta.help_title": "Aide et questions fréquentes — BotolaGO Fantasy",
+  "fantasy.meta.help_description":
+    "Les réponses aux questions sur BotolaGO Fantasy : connexion, choix de l'effectif, budget, formations, capitaine, nom d'équipe et jetons.",
+  "fantasy.meta.leagues_title": "Ligues et coupes — BotolaGO Fantasy",
+  "fantasy.meta.leagues_description":
+    "Vos ligues privées et générales sur BotolaGO Fantasy : classements, coupes et invitations pour vos amis.",
+  "fantasy.meta.league_title": "Classement de la ligue — BotolaGO Fantasy",
+  "fantasy.meta.league_description":
+    "Le classement d'une ligue BotolaGO Fantasy : les points de chaque manager à la journée et sur la saison.",
+  "fantasy.meta.join_league_title": "Rejoindre une ligue — BotolaGO Fantasy",
+  "fantasy.meta.join_league_description":
+    "Entrez le code d'invitation d'une ligue privée pour affronter vos amis sur BotolaGO Fantasy.",
+  "fantasy.meta.create_title": "Créer votre équipe — BotolaGO Fantasy",
+  "fantasy.meta.create_description":
+    "Choisissez votre effectif parmi les joueurs de la Botola Pro, dans les limites du budget, pour créer votre équipe BotolaGO Fantasy.",
+  "fantasy.meta.team_title": "Mon équipe — BotolaGO Fantasy",
+  "fantasy.meta.team_description":
+    "Choisissez vos titulaires, vos remplaçants et votre capitaine avant la date limite de la journée.",
+  "fantasy.meta.transfers_title": "Transferts — BotolaGO Fantasy",
+  "fantasy.meta.transfers_description":
+    "Remplacez des joueurs de votre effectif BotolaGO Fantasy avant la date limite de la prochaine journée.",
+  "fantasy.meta.points_title": "Mes points — BotolaGO Fantasy",
+  "fantasy.meta.points_description":
+    "Les points de votre équipe BotolaGO Fantasy à chaque journée, joueur par joueur.",
+  "fantasy.meta.profile_title": "Profil de mon équipe — BotolaGO Fantasy",
+  "fantasy.meta.profile_description":
+    "L'aperçu de votre équipe BotolaGO Fantasy et l'historique de ses saisons.",
 
   "player.status.available": "Disponible",
   "player.status.injured": "Blessé",
@@ -769,7 +879,6 @@ export const fr = {
   "fpl.more_about": "En savoir plus sur BotolaGO Fantasy",
   "fpl.rules": "Règles du jeu",
   "fpl.help_rules": "Aide & Règles",
-  "fpl.create_team": "Créer une équipe",
   "fpl.free_transfers": "Transferts gratuits",
   "fpl.wildcard": "Joker",
   "fpl.cost": "Coût",
@@ -1171,7 +1280,22 @@ export const fr = {
   "auth.mfa_challenge.error_generic": "Une erreur est survenue. Réessayez.",
   "auth.mfa_challenge.error_no_factor":
     "Aucune application d'authentification n'est associée à ce compte.",
-  "auth.mfa_challenge.continue_without": "Continuer sans vérification",
+  // With no factor to ask for, the challenge's way on asks the server again;
+  // it never walks past the code. Was "Continuer sans vérification".
+  "auth.mfa_challenge.recheck": "Vérifier à nouveau",
+  "auth.mfa_challenge.error_still_owed":
+    "Ce compte demande toujours un code, mais aucune application d'authentification n'y est associée. Déconnectez-vous, puis contactez l'assistance.",
+
+  // The assurance lookup failed: whether this account owes its one-time code
+  // is unknown, so the sign-in is not treated as done (login, callback,
+  // challenge). And the toast when the server refuses a write for want of it.
+  "auth.assurance.error_title": "Connexion non confirmée",
+  "auth.assurance.error_body":
+    "Nous n'avons pas pu vérifier si votre compte demande un code de vérification. Réessayez ou déconnectez-vous.",
+  "auth.assurance.still_unconfirmed":
+    "Toujours impossible de vérifier. Patientez un instant, puis réessayez.",
+  "auth.step_up.toast":
+    "Pour continuer, confirmez votre connexion avec le code de votre application d'authentification.",
 
   "auth.forgot.title": "Mot de passe oublié",
   "auth.forgot.subtitle":
@@ -1675,6 +1799,10 @@ export const fr = {
   "predictions.save.saved": "Enregistré",
   "predictions.save.offline": "Hors connexion · nouvel essai automatique",
   "predictions.save.failed": "Échec de l'enregistrement",
+  // The save was refused until the one-time code is in (`PT403
+  // mfa_required`): not a failure, the picks wait. Short, for the bar; the
+  // toast (`auth.step_up.toast`) says where the code comes from.
+  "predictions.save.step_up": "Code requis pour enregistrer",
   "predictions.save.locked": "Match commencé : pronostic verrouillé",
   "predictions.guest.saved_local": "Enregistré sur ce téléphone",
   "predictions.guest.cta_title": "Entrez au classement",
