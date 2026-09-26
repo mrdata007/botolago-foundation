@@ -215,10 +215,12 @@ Recorded 2026-09-26.
    off by default, with a one-click unsubscribe; no existing user is
    subscribed automatically.
 
-Next: Gate A. Revisions 1 and 2 were reviewed and sent back with changes;
-revision 3 of [`PEPITES_ARCHITECTURE.md`](PEPITES_ARCHITECTURE.md) answers
-the remaining findings and is ready for the owner's review. The two
-decisions above do not approve Gate A or any production change.
+Next: Gate A was approved for local implementation on 2026-09-26
+(architecture revision 3, `fd9de3f`), with five conditions listed at the top
+of [`PEPITES_ARCHITECTURE.md`](PEPITES_ARCHITECTURE.md). It authorises no
+production change, deployment, public activation or paid-plan change.
+Building follows architecture §10; the first migration (player attributes
+with provenance) is built and tested locally. Pépites mode stays `off`.
 
 ## 9. UI status (Gate U)
 

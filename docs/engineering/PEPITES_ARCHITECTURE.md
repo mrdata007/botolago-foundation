@@ -1,16 +1,28 @@
 # Pépites: architecture (Gate A)
 
-Status: **design for review, revision 3. Nothing here is built or applied.**
-Written 2026-09-26. Companion to [`PEPITES_PLAN.md`](PEPITES_PLAN.md) (plan
-and data audit). Owner decisions so far: Pépites takes the Profile slot in
-the bottom bar (Profile moves to the header avatar). The owner is the Monday
-editor. Claude builds and the owner approves every stage and every
-production change. The v1 scope in §1 and the explicit, off-by-default
-weekly email (§5.4) were approved on 2026-09-26; that approval is not Gate A
-and covers no production change.
+Status: **revision 3, Gate A approved for local implementation
+(2026-09-26, on `fd9de3f`).** Being built locally in the §10 order; nothing
+is applied to production, deployed or activated, and Pépites mode stays
+`off`. Companion to [`PEPITES_PLAN.md`](PEPITES_PLAN.md) (plan and data
+audit). Owner decisions so far: Pépites takes the Profile slot in the bottom
+bar (Profile moves to the header avatar). The owner is the Monday editor.
+Claude builds and the owner approves every stage and every production
+change. The v1 scope in §1 and the explicit, off-by-default weekly email
+(§5.4) were approved on 2026-09-26.
 
-Gate A passes when the owner approves this document. No migration is written
-before that.
+### Gate A conditions (2026-09-26)
+
+Gate A covers local implementation only: no production change, deployment,
+public activation or paid-plan change. It came with five requirements, each
+carried into the first implementation PR it concerns:
+
+| Requirement                                                                                                                                              | Where     | Status                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------------------ |
+| Delayed reveal: keep checking after `delayed`; e2e test with publication after that transition                                                           | §7, §11   | specified; `pepites_api` and the routes          |
+| Complete email integration: type allowlist, typed payload, FR/AR renderer, links, topic unsubscribe wording, SQL; tested through the existing dispatcher | §5.4, §11 | specified; `pepites_weekly_email`                |
+| Retry safety within Resend's 24-hour idempotency window                                                                                                  | §5.4, §11 | specified; `pepites_weekly_email`                |
+| Attribute protection: flag restored after use, later direct write rejected, uncertain sources seeded as legacy, zero values changed                      | §3.1, §11 | **built** in `20260926060000`, tested            |
+| Email capacity: priorities and account headroom kept, Pépites deliveries reported, live quota and demand checked before public email                     | §5.4      | specified; `pepites_weekly_email` and activation |
 
 ### Revision 3 (2026-09-26): targeted fixes before Gate A
 
@@ -152,13 +164,29 @@ All tables follow `docs/backend/MIGRATIONS.md`:
   membership period, so a transfer never rewrites history. v1 imports no
   shirt numbers from BSD.
 - `app_private.player_attribute_source_priority(attribute, provider_name,
-priority)`: manual first, then SportsMonks, then BSD, then legacy.
+priority)`: lower wins. Manual 10, SportsMonks 20, BSD 30, derived 40,
+  legacy 90; a provider without its own row ranks 50.
 - `app_private.resolve_player_attributes(p_player_ids uuid[])` is the single
   writer of `date_of_birth`, `nationality_country_id`, `preferred_foot`,
   `height_cm` and `detailed_position` on `app.players`. It picks the winning
-  observation per attribute.
-  - Two providers disagreeing on a date of birth or a nationality raise a
-    data-desk issue. It is not silently resolved.
+  current observation per attribute (ties: the newest), or null (foot
+  `'unknown'`) when there is none, and returns how many players changed.
+  - Sources that disagree are not silently resolved: the view
+    `app_private.player_attribute_conflicts` lists every player and attribute
+    whose current observations differ, best source first. The data-desk sweep
+    (migration 3) turns them into issues.
+- Observations are recorded by
+  `app_private.record_player_attribute_observation`: values are validated
+  against what the column can hold, the same value from the same source adds
+  no row, an older observation never replaces a newer one from the same
+  source, and a newer one supersedes it. Rows are never updated otherwise,
+  deleted or truncated.
+- Unknown is not evidence: a provider payload with no date of birth, or foot
+  `'unknown'`, records nothing and so erases nothing. Before this migration
+  the squad import overwrote a known value with null or `'unknown'`.
+
+**Built:** `supabase/migrations/20260926060000_player_attributes_provenance.sql`,
+tested by `supabase/tests/database/player_attributes_provenance.test.sql`.
 
 **Writers today.** Every migration was searched for writes to those columns
 (2026-09-26):
@@ -187,21 +215,36 @@ next run.
    five columns (other than foot `'unknown'`) and an update that changes
    them, unless the transaction-local setting
    `botolago.player_attribute_writer` is `resolver`. Only the resolver sets
-   it. This catches an accidental future writer; it is not a defence against
-   a definer function that sets the flag on purpose, which review must
-   catch.
-4. The existing pgTAP files for both functions must pass unchanged.
+   it, for its own update, and restores the previous value straight after
+   (also on error), so a later direct write in the same transaction is still
+   rejected. This catches an accidental future writer; it is not a defence
+   against a definer function that sets the flag on purpose, which review
+   must catch.
+4. The existing pgTAP files for both functions pass unchanged. Two other
+   test files inserted players with a date of birth directly as fixture
+   setup (`football_domain`, `fantasy_deactivate_duplicate_player`); their
+   fixtures now record the same values through the observation path, and
+   none of their assertions changed.
 
 **Seeding existing values.** In the same migration, before the guard
-exists: for every player with a date of birth, and every foot other than
-`'unknown'`, one observation per value. It is `provider` / `sportsmonks`
-when the player has an active SportsMonks mapping, otherwise `legacy` (typed
-before provenance existed, such as the promoted clubs' hand-typed squads).
-`observed_at` is the player's `updated_at`; `source_ref` names the
-migration. A provider value later replaces a legacy one, and a differing
-value opens a data-desk conflict carrying the legacy value, so a hand-typed
-date is checked rather than lost. Seeding changes no value: the resolver's
-first run must change zero rows, and a test asserts it.
+exists, `app_private.seed_legacy_player_attributes()` records one
+observation for every existing date of birth, nationality and foot other
+than `'unknown'`. Every one is `legacy`, provider null, noted "Unverified:
+present before provenance was recorded". A SportsMonks mapping on a player
+is not taken as the source of a value: it shows the player was linked, not
+where a particular date came from (the promoted clubs' squads were typed by
+hand, then linked). `observed_at` is the player's `updated_at`; `source_ref`
+names the migration. The function skips values that already have a current
+legacy observation, so it can be re-run. A provider value later replaces a
+legacy one, and the differing legacy value stays in the conflicts view, so a
+hand-typed date is checked rather than lost.
+
+Seeding changes no value. The migration itself resolves every player after
+seeding and aborts unless zero change. Rehearsed locally on a database
+stopped at `20260926003500` and filled with 400 players (320 dates of
+birth, 267 nationalities, 300 feet): 887 legacy observations, zero players
+changed (values and `updated_at`), and a second resolve and a second seed
+both did nothing.
 
 ### 3.2 Clean sheets
 
@@ -674,7 +717,9 @@ false`, plus `pepites_weekly_email_changed_at timestamptz null`.
   unique keys, the Resend idempotency key (the delivery id), the bounded
   retries and the dead-letter queue of
   `api.service_record_notification_delivery_attempt` all apply as they are.
-  One edition can never mail one person twice.
+  One edition creates at most one delivery per person. Whether that delivery
+  is sent at most once depends on the provider's idempotency window; see
+  retry safety below.
 - **Eligibility**, checked at fan-out in `notification_email_fanout` and
   again at claim in `api.service_claim_email_deliveries`, on top of the
   pipeline's existing checks (notifications and email on, confirmed
@@ -704,6 +749,74 @@ null`. Null keeps today's meaning, all email. Pépites emails carry a token
   other email stays on. No sign-in needed. The footer also links to the full
   notification settings.
 - A token without a topic behaves exactly as today.
+- Since `20260926003100` (two-step login), writes to `app.user_preferences`
+  pass the MFA step-up trigger, and the existing unsubscribe sets the
+  transaction-local waiver `app.mfa_step_up_waiver = email_unsubscribe_token`
+  around its one write. The Pépites branch uses the same waiver in the same
+  way. `api.set_my_pepites_weekly_email` takes no waiver: it is a signed-in
+  preference write like any other.
+
+**The whole integration, not only the SQL.** The email is not done until
+each of these exists and is tested:
+
+- `pepites_weekly` in `EMAIL_NOTIFICATION_TYPES`
+  (`supabase/functions/_shared/notification-email-types.ts`), with a typed
+  `PepitesWeeklyPayload`: edition id, week, round, the ten entries (name,
+  club, editorial rank, score), `publishedAt`.
+- The renderer (`notification-email-render.ts`): subject, HTML and text in
+  French and Arabic (right-to-left, numbers left-to-right, no space inside a
+  number, per `PEPITES_PLAN.md` §9).
+- Links: the edition page, the Pépites home, the topic unsubscribe
+  link, and all notification settings.
+- Unsubscribe wording that names the topic: "Se désabonner de Pépites" /
+  "إلغاء الاشتراك في Pépites" and a line saying other emails are unaffected;
+  the `List-Unsubscribe` header and the `notification-email-unsubscribe`
+  function's confirmation page carry the same scope.
+- The SQL of this section.
+- A test through the existing dispatcher (`notification-email-dispatch`,
+  with its fake Resend), from a claimed `pepites_weekly` delivery to the
+  recorded attempt, in both languages.
+
+**Retry safety.** Resend keeps an idempotency key for 24 hours. A retry
+under the same key inside that window returns the first result instead of
+sending again; after it, the same key sends a new email. So:
+
+- The key stays the delivery id, and the request body is fixed at the first
+  attempt: rendered only from the stored payload, never from live data, with
+  its hash stored on that attempt. A retry whose body hash differs is not
+  sent.
+- The delivery's first attempt time is recorded (from its attempt log).
+- A delivery whose outcome is unknown (timeout, network error, 5xx after
+  the request left) is retried only while its first attempt is less than 23
+  hours old. After that it is not sent again: it is closed as
+  `possibly_sent` and counted as such.
+- The claim already takes attempted mail first; the 23-hour rule goes in
+  the same shared claim, so it covers every email type (the risk is the
+  same for all). The dispatcher's comment that a retry "can never produce a
+  second email" is corrected to say "within the provider's 24-hour window".
+- Test: Resend accepts the email but the response is lost; a retry an hour
+  later sends the same key and body and the fake returns the first result
+  (one email); a retry after 24 hours is refused and closed as
+  `possibly_sent` (no second email).
+- Promise: at most one email per person per edition inside the 24-hour
+  window, and no automatic resend after it. Not exactly-once in all cases.
+
+**Capacity.** On Resend's free plan (100 a day, 3 000 a month, shared with
+every other email):
+
+- Priorities stay as they are; `pepites_weekly` is added last (8, after the
+  round preview). The account-email reserve (`daily_email_reserve`) stays
+  untouched: the claim never spends it on Pépites.
+- `api.admin_pepites_email_report(p_edition_id)` (protected by
+  `pepites.publish`) counts that edition's deliveries: queued (pending,
+  retry scheduled or claimed), sent, deferred (waiting for the next day's
+  allowance), expired (cancelled as stale), cancelled by reason, and
+  possibly sent.
+- Before the email is switched on for the public: read the live quota and
+  plan from Resend (not from these defaults), count opt-ins, and compare
+  them with what the day leaves after the existing emails. If demand does
+  not fit, the owner decides; a paid plan is a separate decision this design
+  does not make.
 
 ### 5.5 Locks
 
@@ -828,10 +941,13 @@ public (entries and runs are frozen), so it can be cached longer.
 | Anything not `public` (§6.1)          | `private, no-store`                                                                                                           |
 
 - **The reveal.** In `countdown`, the page re-reads the pointer at
-  `next_reveal_at` and then every 5 seconds with jitter, until the version
-  changes or the state becomes `delayed`. After a publication commits, a
-  reader sees the new edition within about 10 seconds, whatever the time.
-  An open page also re-reads the pointer when it regains focus.
+  `next_reveal_at` and then every 5 seconds with jitter. In `delayed` it
+  keeps checking, every 30 seconds with jitter, until the version changes or
+  the state returns to `current`. A publication that lands after the delay
+  began is therefore picked up without a reload. After a publication
+  commits, a reader who is checking sees the new edition within about 10
+  seconds in `countdown` and within about 40 seconds in `delayed`. An open
+  page also re-reads the pointer when it regains focus.
 - **Load test.** A target, not a measured capacity: a Monday 20:00 peak of
   200 page requests per second with fewer than 20 reaching the database.
   It includes the moment of publication, when every reader moves to a new,
@@ -889,7 +1005,10 @@ with its pgTAP file.
 1. `player_attributes_provenance`: columns, observations, priority,
    resolver, detailed position, seeding of existing values, the guard
    trigger, and the attribute changes to `api.ingest_football_squad` and
-   `api.service_apply_current_player_list` (§3.1).
+   `api.service_apply_current_player_list` (§3.1). **Built** locally as
+   `20260926060000_player_attributes_provenance.sql`; not applied anywhere
+   else. Its production apply script is written when production is
+   authorised, not before.
 2. `player_photo_releases`: private buckets, release table, approval trigger,
    revocation, read helper.
 3. `data_desk_issues`
@@ -953,15 +1072,29 @@ writer at a time. Mode stays `off` until launch.
 - Postponed match: played after its round, it creates a revision; a draft is
   re-pointed; a scheduled edition steps back to draft and is rescheduled when
   all 10 players are still ranked.
-- Player attributes:
-  - the resolver's first run after seeding changes zero rows;
+- Player attributes (**built**, `player_attributes_provenance.test.sql`, 51
+  assertions):
+  - seeding records every existing value as legacy and unverified, also for
+    a player with a SportsMonks mapping; resolving afterwards changes zero
+    players (values and `updated_at`); seeding again records nothing;
+  - the guard rejects inserts and updates of the five columns and allows
+    everything else;
+  - the flag is back to its previous value after the resolver (empty, or
+    whatever it was), and a direct write later in the same transaction is
+    rejected;
   - a manual date of birth survives a later `api.ingest_football_squad` run
-    with a different SportsMonks value, which opens a conflict;
+    with a different SportsMonks value, which shows as a conflict; the
+    earlier SportsMonks value is kept as superseded history;
   - a legacy value is replaced by a provider value and the conflict keeps
     the legacy one;
-  - a direct `update app.players set date_of_birth = …` outside the
-    resolver is rejected;
-  - the existing squad-ingest and player-list pgTAP files pass unchanged.
+  - a payload without a date of birth and with foot `'unknown'` erases
+    nothing; an impossible date is still `INVALID_PROVIDER_PAYLOAD`;
+  - recording: same value adds nothing, older never replaces newer, newer
+    supersedes; update, delete and truncate of observations rejected;
+    invalid values rejected;
+  - no client role can execute the functions or read the table;
+  - the existing squad-ingest, player-list and squad-recovery pgTAP files
+    pass unchanged.
 - Weekly email:
   - a new user and every existing user start with `pepites_weekly_email`
     false; `update_my_preferences` and `update_my_notification_preferences`
@@ -974,7 +1107,17 @@ writer at a time. Mode stays `off` until launch.
   - a Pépites unsubscribe token turns off only Pépites and leaves other
     email on; a token without a topic still turns off all email; a used
     token answers `already_unsubscribed`;
-  - an event older than 36 hours is not sent.
+  - an event older than 36 hours is not sent;
+  - an unknown outcome is retried under the same key and body within 23
+    hours of the first attempt, and closed as `possibly_sent` after it;
+  - the report counts queued, sent, deferred, expired, cancelled and
+    possibly sent for an edition; Pépites never spends the account-email
+    reserve and never goes before an existing email type.
+- Email dispatch (Bun, with the dispatcher's fake Resend): a
+  `pepites_weekly` delivery renders in French and Arabic with the topic
+  unsubscribe link and header; Resend accepts but the response is lost, and
+  the retry an hour later sends the same key and body and produces one
+  email; a retry after 24 hours is refused.
 - Access matrix: every public function × `off`, `staff`, `public` × anon,
   signed-in fan, staff. Staff-only data never reaches a fan.
 - Photos: unlicensed, revoked, expired, minor without guardian and unknown
@@ -996,7 +1139,10 @@ writer at a time. Mode stays `off` until launch.
   minutes past `scheduled_for` without publication, and for a draft with
   `auto_publish` off; `current` after publication and after 24 hours.
 - The page leaves the countdown when the pointer changes or turns
-  `delayed` (fake clock).
+  `delayed`, and keeps checking in `delayed` (fake clock).
+- e2e: a scheduled edition passes its time without publishing; the page
+  shows the "coming soon" state; the edition is then published; the page
+  shows it without a reload.
 - e2e on the journeys in French and Arabic; visual checks at 390 px on real
   data.
 
