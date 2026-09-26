@@ -359,6 +359,22 @@ describe("the day's query", () => {
     expect(asked).toEqual([["2026-09-26", "ar", "season-1"]]);
   });
 
+  test("hands the query's abort signal to the backend read", async () => {
+    const original = footballService.getMatchDay;
+    const signals: (AbortSignal | undefined)[] = [];
+    footballService.getMatchDay = async (_date, _language, _seasonId, signal) => {
+      signals.push(signal);
+      return { matches: [], clubs: [], standings: [] };
+    };
+    const controller = new AbortController();
+    try {
+      await matchDayQuery("2026-09-26", "fr", "season-1").queryFn({ signal: controller.signal });
+    } finally {
+      footballService.getMatchDay = original;
+    }
+    expect(signals).toEqual([controller.signal]);
+  });
+
   test("names the same day of the same season in either language, and nothing else", () => {
     const french = matchDayQuery("2026-09-26", "fr", "season-1").queryKey;
     expect(
