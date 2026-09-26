@@ -222,6 +222,19 @@ select extensions.is(
   1,
   'it is raised again when a source changes its value'
 );
+do $$
+begin
+  perform app_private.record_player_attribute_observation('c2000000-0000-4000-8000-000000000003',
+    'date_of_birth', '2004-01-02', null, 'provider', 'bsd', 'bsd:3', '2026-09-27T00:00:00Z');
+end;
+$$;
+select app_private.data_desk_sweep();
+select extensions.is(
+  (select count(*)::integer from app_private.data_desk_issues
+   where kind = 'conflict' and entity_type = 'player' and status = 'open'),
+  0,
+  'back to the values a person already closed: the newer issue closes instead of staying open with stale values'
+);
 select extensions.throws_ok(
   format('select app_private.close_data_desk_issue(%L, %L, %L, %L)',
     (select id from app_private.data_desk_issues where status = 'resolved' limit 1),
