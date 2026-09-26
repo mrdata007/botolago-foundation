@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Check, Plus } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -37,9 +37,11 @@ export function PepitesFollowButton({
   const { status, requireAuth } = useAuth();
   const viewer = usePepitesViewer();
   const queryClient = useQueryClient();
+  const opener = useRef<HTMLButtonElement>(null);
   const [guestOpen, setGuestOpen] = useState(false);
   const query = useQuery(followStateQueryOptions(viewer, playerId));
   const state = query.data;
+  const known = state?.available === true && state.found === true;
   const following = state?.available && state.found ? (state.following ?? false) : false;
   const followers = state?.available && state.found ? (state.followers ?? 0) : null;
 
@@ -72,26 +74,46 @@ export function PepitesFollowButton({
   });
 
   const onPress = () => {
+    if (status === "loading") return;
     if (status === "authenticated") {
+      if (!known || query.isError || query.isFetching) return;
       mutation.mutate(!following);
       return;
     }
     if (requireAuthStep(status) === "challenge") {
-      requireAuth(() => mutation.mutate(!following));
+      requireAuth(() => {
+        // The account's state was unknown before its second factor completed.
+        void pepitesService
+          .followState(playerId)
+          .then((latest) => {
+            if (latest.available && latest.found) mutation.mutate(!latest.following);
+            else toast.error(t("pepites.follow.read_failed"));
+          })
+          .catch(() => toast.error(t("pepites.follow.read_failed")));
+      });
       return;
     }
     setGuestOpen(true);
   };
 
   const label = following ? t("pepites.follow.button_active") : t("pepites.follow.button");
-  const withCount = followers !== null ? label.replace("{n}", formatCount(followers, lang)) : label;
+  const withCount =
+    followers !== null
+      ? label.replace("{n}", formatCount(followers, lang))
+      : t("pepites.follow.button_unknown");
 
   return (
     <>
       <button
         type="button"
-        aria-pressed={following}
-        disabled={mutation.isPending}
+        ref={opener}
+        aria-pressed={known ? following : undefined}
+        aria-busy={status === "loading" || query.isFetching || mutation.isPending}
+        disabled={
+          mutation.isPending ||
+          status === "loading" ||
+          (status === "authenticated" && (!known || query.isError || query.isFetching))
+        }
         onClick={onPress}
         data-testid={testId}
         className={cn(
@@ -109,7 +131,29 @@ export function PepitesFollowButton({
         )}
         <bdi>{withCount}</bdi>
       </button>
-      <FollowGuestSheet open={guestOpen} onOpenChange={setGuestOpen} playerName={playerName} />
+      {query.isError ? (
+        <span role="status" className="text-[12px] text-white">
+          {t("pepites.follow.read_failed")}{" "}
+          <button
+            type="button"
+            data-testid={`${testId}-retry`}
+            disabled={query.isFetching}
+            onClick={() => void query.refetch()}
+            className="underline focus-visible:outline focus-visible:outline-2"
+          >
+            {t("state.retry")}
+          </button>
+        </span>
+      ) : null}
+      <FollowGuestSheet
+        open={guestOpen}
+        onOpenChange={setGuestOpen}
+        playerName={playerName}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          if (opener.current?.isConnected) opener.current.focus();
+        }}
+      />
     </>
   );
 }
@@ -119,15 +163,19 @@ function FollowGuestSheet({
   open,
   onOpenChange,
   playerName,
+  onCloseAutoFocus,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   playerName: string;
+  onCloseAutoFocus: (event: Event) => void;
 }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const navigating = useRef(false);
   const go = (to: "/auth/login" | "/auth/register") => {
+    navigating.current = true;
     onOpenChange(false);
     void navigate({ to, search: { next: pathname } });
   };
@@ -135,6 +183,12 @@ function FollowGuestSheet({
     <UiSheet
       open={open}
       onOpenChange={onOpenChange}
+      onCloseAutoFocus={(event) => {
+        if (navigating.current) {
+          event.preventDefault();
+          navigating.current = false;
+        } else onCloseAutoFocus(event);
+      }}
       title={t("pepites.follow.sheet_title").replace("{name}", playerName)}
       description={t("pepites.follow.sheet_body")}
     >

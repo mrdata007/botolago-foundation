@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useRef, useState, type MouseEvent, type Ref } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type Ref } from "react";
 import { toast } from "sonner";
 
 import type { PlayerResponse, PlayerStatsResponse, RankingRow } from "@/backend/pepites/contracts";
@@ -391,9 +391,14 @@ export function PepitesComparePage({
             choose(picker, id);
           }
         }}
-        loadMore={() => void ranking.fetchNextPage()}
+        loadMore={() => void ranking.fetchNextPage({ cancelRefetch: false })}
+        failed={ranking.isError}
+        onRetry={() => {
+          if (ranking.isFetchNextPageError) void ranking.fetchNextPage({ cancelRefetch: false });
+          else void ranking.refetch();
+        }}
         hasMore={Boolean(ranking.hasNextPage)}
-        loading={ranking.isPending || ranking.isFetchingNextPage}
+        loading={ranking.isPending || ranking.isFetching}
       />
     </PepitesShell>
   );
@@ -470,6 +475,8 @@ function PlayerPicker({
   loadMore,
   hasMore,
   loading,
+  failed,
+  onRetry,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -480,13 +487,19 @@ function PlayerPicker({
   loadMore: () => void;
   hasMore: boolean;
   loading: boolean;
+  failed: boolean;
+  onRetry: () => void;
 }) {
   const { t, tr, lang } = useI18n();
   const [search, setSearch] = useState("");
+  const term = search.trim().toLocaleLowerCase();
+  // Search the complete version, not just the pages manually opened so far.
+  // Stop on errors so a failed page cannot cause an automatic retry loop.
+  useEffect(() => {
+    if (open && term && hasMore && !loading && !failed) loadMore();
+  }, [open, term, hasMore, loading, failed, loadMore]);
   const filtered = players.filter(
-    (player) =>
-      player.id !== excludeId &&
-      player.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+    (player) => player.id !== excludeId && player.name.toLocaleLowerCase().includes(term),
   );
   return (
     <UiSheet
@@ -534,7 +547,7 @@ function PlayerPicker({
             </li>
           ))}
         </ul>
-        {hasMore ? (
+        {hasMore && !term && !failed ? (
           <button
             type="button"
             onClick={loadMore}
@@ -544,8 +557,15 @@ function PlayerPicker({
             {t("pepites.ranking.load_more")}
           </button>
         ) : null}
-        {loading && players.length === 0 ? (
-          <p className={cn(pp.muted, "text-center text-[13px]")}>…</p>
+        {failed ? <PepitesErrorState inline onRetry={onRetry} /> : null}
+        {!failed && (loading || (term && hasMore)) ? (
+          <p role="status" className={cn(pp.muted, "text-center text-[13px]")}>
+            {t("state.loading")}
+          </p>
+        ) : !failed && !hasMore && filtered.length === 0 ? (
+          <p role="status" className={cn(pp.muted, "text-center text-[13px]")}>
+            {t("pepites.compare.no_results")}
+          </p>
         ) : null}
       </div>
     </UiSheet>

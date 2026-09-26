@@ -490,3 +490,37 @@ for (const lang of ["fr", "ar"] as const) {
     await expect(picker).toBeFocused();
   });
 }
+
+for (const lang of ["fr", "ar"] as const) {
+  test(`${lang}: Compare searches unloaded pages and guest Follow restores focus`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 860 });
+    await initializeLanguage(page, lang);
+    await gotoHydrated(page, "/pepites/comparer", lang);
+    await page.getByTestId("pepites-compare-pick-a").click();
+    await expect(page.getByTestId("pepites-compare-option")).toHaveCount(25);
+    await page.getByRole("searchbox").fill("  Joueur exemple 30  ");
+    await expect(page.getByTestId("pepites-compare-option")).toHaveCount(1);
+    await expect(page.getByTestId("pepites-compare-option")).toContainText("Joueur exemple 30");
+    await page.getByRole("searchbox").fill("NoSuchPlayer");
+    await expect(page.getByText(copy(lang, "pepites.compare.no_results"))).toBeVisible();
+    await gotoHydrated(page, "/pepites/joueur/7e300000-0000-4000-8000-000000000001", lang);
+    const follow = page.getByTestId("pepites-follow");
+    await expect(follow).toBeEnabled();
+    await follow.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(follow).toBeFocused();
+    await follow.click();
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: copy(lang, "common.close") })
+      .click();
+    await expect(follow).toBeFocused();
+    await follow.click();
+    await page.getByRole("button", { name: copy(lang, "pepites.follow.have_account") }).click();
+    await expect(page).toHaveURL(/\/auth\/login\?next=/);
+  });
+}

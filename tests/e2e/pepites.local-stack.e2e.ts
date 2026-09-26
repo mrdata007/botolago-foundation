@@ -288,3 +288,73 @@ test("Fantasy sign-in preserves the incoming player deep link", async ({ page })
   await page.locator('button[type="submit"]').click();
   await expect(page.getByText(fr["fantasy.transfers.incoming_owned"])).toBeVisible();
 });
+
+test("Compare retries initial and later-page outages without losing its options", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await initializeLanguage(page, "fr");
+  let failInitial = true;
+  let failLater = true;
+  await page.route("**/rest/v1/rpc/pepites_ranking", async (route) => {
+    const offset = route.request().postDataJSON().p_offset ?? 0;
+    if ((offset === 0 && failInitial) || (offset > 0 && failLater)) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ code: "XX000", message: "test outage" }),
+      });
+    } else await route.continue();
+  });
+  await gotoHydrated(page, "/pepites/comparer", "fr");
+  await page.getByTestId("pepites-compare-pick-a").click();
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByTestId("pepites-error")).toBeVisible();
+  failInitial = false;
+  await sheet.getByRole("button", { name: fr["pepites.state.retry"] }).click();
+  await expect(page.getByTestId("pepites-compare-option")).toHaveCount(25);
+  await sheet.getByRole("button", { name: fr["pepites.ranking.load_more"] }).click();
+  await expect(sheet.getByTestId("pepites-error")).toBeVisible();
+  await expect(page.getByTestId("pepites-compare-option")).toHaveCount(25);
+  failLater = false;
+  await sheet.getByRole("button", { name: fr["pepites.state.retry"] }).click();
+  await expect(page.getByTestId("pepites-compare-option")).toHaveCount(50);
+  await expect(sheet.getByTestId("pepites-error")).toHaveCount(0);
+});
+
+test("Follow read failure shows no placeholder and recovers the existing followed state", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 390, height: 860 });
+  await initializeLanguage(page, "fr");
+  const path = "/pepites/joueur/7e030000-0000-4000-8000-000000000186";
+  await signIn(page, FAN, path);
+  await page.waitForURL((url) => url.pathname === path);
+  const follow = page.getByTestId("pepites-follow");
+  await expect(follow).toBeEnabled();
+  if ((await follow.getAttribute("aria-pressed")) !== "true") await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  let fail = true;
+  await page.route("**/rest/v1/rpc/pepites_follow_state", async (route) => {
+    if (fail)
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ code: "XX000", message: "test outage" }),
+      });
+    else await route.continue();
+  });
+  await page.reload();
+  await expect(page.getByTestId("pepites-follow-retry")).toBeVisible();
+  await expect(follow).not.toContainText("{n}");
+  await expect(follow).toBeDisabled();
+  await expect(follow).not.toHaveAttribute("aria-pressed", "false");
+  fail = false;
+  await page.getByTestId("pepites-follow-retry").click();
+  await expect(follow).toBeEnabled();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("pepites-follow-retry")).toHaveCount(0);
+  await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "false");
+});
