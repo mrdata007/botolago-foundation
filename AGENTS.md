@@ -112,6 +112,21 @@ null, false);` before a write that touches fixtures or notifications, and
    two minutes and then computes the whole archive on every request (as it
    did before the snapshot); the ops health check `news_sitemap` warns after
    two minutes and fails, paging, after ten, so resume it promptly.
+   Where migration 20260926100000 is applied, pg_cron also runs
+   `pepites-tick` every 15 minutes. It writes only while
+   `app_private.pepites_settings` has a mode other than `off` (the default):
+   Pépites runs and their snapshots and scores, weekly editions, data desk
+   issues and photo-release expiry
+   ([PEPITES_ARCHITECTURE.md](docs/engineering/PEPITES_ARCHITECTURE.md) §5.1).
+   Pause it before a write that touches fixtures, player performances,
+   players, team memberships or the Pépites tables, and restore the previous
+   mode afterwards: `select app_private.pepites_configure('off', null);`
+   Its companion `pepites-history-prune` runs daily at 03:41 UTC whatever the
+   mode: it deletes `pepites-tick` rows older than 7 days from
+   `cron.job_run_details` and tick rows older than 180 days from
+   `app_private.pepites_job_log`. Pause it by name for a write that touches
+   those tables, then set it back to `true`:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'pepites-history-prune'), active := false);`
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 

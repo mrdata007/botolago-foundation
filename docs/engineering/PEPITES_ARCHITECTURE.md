@@ -1100,7 +1100,42 @@ with its pgTAP file.
    - A run that errors is kept as `failed` with its error; its partial
      snapshot is rolled back with it.
 5. `pepites_editions`: editions, entries, state and column triggers, week
-   lock, settings, tick, publish, cron schedule (mode `off`).
+   lock, settings, tick, publish, cron schedule (mode `off`). **Built**
+   locally as `20260926100000_pepites_editions.sql` (88 pgTAP assertions in
+   `pepites_editions.test.sql`, and 6 two-connection scenarios in
+   `scripts/backend/pepites-editions-concurrency.test.ts`, run by CI's
+   `database-quality` job after the pgTAP suite). Settled while building:
+   - **Week number.** Week 1 is the Monday-to-Sunday week holding the
+     season's first day; 28 September 2026 is week 14 of 2026-27. The
+     edition page `/pepites/semaine/$n` uses it.
+   - **Writers.** Every edition and entry write needs the actor the edition
+     functions set for their own statements (a staff id, or `system`);
+     anything else is refused with `PEPITES_EDITION_WRITER_REQUIRED`.
+     Publication and supersession further need the flag only
+     `pepites_publish_edition` sets. Every creation, move and re-point is
+     recorded with its actor in `app_private.pepites_edition_moves`.
+   - **Entries.** The trigger copies `computed_rank` and `computed_score`
+     from the edition's run on every write, so nobody supplies them.
+   - **Drafts carry their due time.** A draft made by the tick has its
+     week's default time in `scheduled_for`; that is what "delayed" (§7) and
+     auto-publish measure against. A correction draft has none until the
+     editor schedules it.
+   - **Editor messages.** "Email the editor" goes through the existing ops
+     alert channel (`ops_alert_send`), once per key
+     (`app_private.pepites_notices`).
+   - **Latest completed round.** The highest round whose fixtures are all
+     final, postponed or cancelled, with at least one final. A later round
+     can complete while an earlier one waits; the earlier match then enters
+     the next run as a new revision.
+   - **A publish meets a re-point.** If the editor publishes while the tick
+     waits for the week to re-point it, the tick leaves the published
+     edition alone and keeps its new run for next week.
+   - **Retries.** At most 3 failed runs per round and input fingerprint
+     (`app_private.pepites_run_attempts`), then one alert; new inputs are
+     tried again.
+   - **Without the week lock** the two-drafts scenario still ends with one
+     draft (the one-open-edition index), but as a bare unique violation; the
+     test fails, which shows the lock is what it measures.
 6. `pepites_weekly_email_type`: the `pepites_weekly` notification type alone,
    because a new enum value cannot be used in the transaction that adds it.
 7. `pepites_weekly_email`: the preference columns, opt-in and opt-out
