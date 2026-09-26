@@ -27,7 +27,7 @@ import { PepitesError } from "./errors";
  * here reaches production (`src/services/pepites.ts` refuses the mock there).
  *
  * The browser tests drive the reveal through `globalThis.__pepitesMock`
- * (development builds only): `{ state, nextRevealAt, publishNext }`.
+ * (development builds only): `{ state, nextRevealAt, publishNext, offline }`.
  */
 
 const SEASON_ID = "7e000000-0000-4000-8000-000000000001";
@@ -181,6 +181,8 @@ interface MockControl {
   publishNext?: boolean;
   /** Pépites switched off. */
   closed?: boolean;
+  /** The version read fails, as during an outage. */
+  offline?: boolean;
 }
 
 function control(): MockControl {
@@ -214,6 +216,7 @@ function open<T extends object>(value: T): T & { available: true; preview: false
 export class MockPepitesRepository implements PepitesRepository {
   async version(_context: RepositoryContext): Promise<VersionResponse> {
     const settings = control();
+    if (settings.offline) throw new Error("pepites_mock_offline");
     if (settings.closed) return { available: false };
     const current = editions[currentEditionId()]!;
     return open({

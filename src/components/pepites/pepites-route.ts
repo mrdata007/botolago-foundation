@@ -45,11 +45,26 @@ export function pepitesPageHeaders(loaderData: unknown): Record<string, string> 
   return { "Cache-Control": PEPITES_CACHE_CONTROL[cache] };
 }
 
-/** Indexed only once Pépites is promoted and the page is public. */
-export function pepitesRobots(loaderData: unknown): "index,follow" | "noindex" {
-  if (!PEPITES_PROMOTED || isUnavailable(loaderData)) return "noindex";
+/**
+ * Indexed only once Pépites is promoted and the page is public. A transient
+ * 503 (a read that failed on the server) says nothing: its `Retry-After`
+ * asks crawlers to come back, and a `noindex` would drop a good address
+ * during an outage. Before promotion every page stays `noindex`.
+ */
+export function pepitesRobots(
+  loaderData: unknown,
+  promoted: boolean = PEPITES_PROMOTED,
+): "index,follow" | "noindex" | null {
+  if (!promoted) return "noindex";
+  if (isUnavailable(loaderData)) return null;
   const cache = (loaderData as PepitesPageLoad | null | undefined)?.cache;
   return cache === "current" || cache === "edition" ? "index,follow" : "noindex";
+}
+
+/** The robots meta tag for a Pépites page, or none (see `pepitesRobots`). */
+export function pepitesRobotsMeta(loaderData: unknown): Array<{ name: "robots"; content: string }> {
+  const content = pepitesRobots(loaderData);
+  return content ? [{ name: "robots", content }] : [];
 }
 
 /** True when the anonymous reader sees Pépites open, not a staff preview. */

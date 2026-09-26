@@ -5,6 +5,7 @@ import {
   isPublicAnswer,
   parseWeek,
   pepitesPageHeaders,
+  pepitesRobots,
   pointerCache,
   rankingFiltersFromSearch,
   rankingSearchFromFilters,
@@ -105,5 +106,19 @@ describe("validateRevealSearch", () => {
     expect(validateRevealSearch({ n: "11" })).toEqual({});
     expect(validateRevealSearch({ n: "2.5" })).toEqual({});
     expect(validateRevealSearch({})).toEqual({});
+  });
+});
+
+describe("pepitesRobots", () => {
+  it("keeps every page out of the index until Pépites is promoted", () => {
+    expect(pepitesRobots({ cache: "current" }, false)).toBe("noindex");
+    expect(pepitesRobots({ unavailable: true }, false)).toBe("noindex");
+  });
+
+  it("indexes public pages once promoted, and says nothing on a transient 503", () => {
+    expect(pepitesRobots({ cache: "current" }, true)).toBe("index,follow");
+    expect(pepitesRobots({ cache: "edition" }, true)).toBe("index,follow");
+    expect(pepitesRobots({ cache: "private" }, true)).toBe("noindex");
+    expect(pepitesRobots({ unavailable: true }, true)).toBeNull();
   });
 });

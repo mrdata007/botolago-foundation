@@ -7,7 +7,7 @@ import {
   isPlayerId,
   isPublicAnswer,
   pepitesPageHeaders,
-  pepitesRobots,
+  pepitesRobotsMeta,
   prefetchPointer,
   validatePlayerSearch,
 } from "@/components/pepites/pepites-route";
@@ -53,7 +53,7 @@ export const Route = createFileRoute("/pepites/joueur/$playerId")({
       meta: [
         { title },
         { name: "description", content: fr["pepites.meta_description"] },
-        { name: "robots", content: pepitesRobots(loaderData) },
+        ...pepitesRobotsMeta(loaderData),
         { property: "og:type", content: "profile" },
         { property: "og:title", content: title },
         { property: "og:url", content: `${PUBLIC_SITE_ORIGIN}/pepites/joueur/${params.playerId}` },

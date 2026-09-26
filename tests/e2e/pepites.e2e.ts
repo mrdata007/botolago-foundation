@@ -86,6 +86,40 @@ for (const lang of ["fr", "ar"] as const) {
     await diagnostics.verify(testInfo);
   });
 
+  test(`${lang}: the reveal keeps checking through an outage and shows the new Top 10 after it`, async ({
+    page,
+  }, testInfo) => {
+    const diagnostics = observePage(page);
+    await page.setViewportSize({ width: 390, height: 860 });
+    await initializeLanguage(page, lang);
+    await page.addInitScript(() => {
+      const holder = window as unknown as Record<string, unknown>;
+      holder.__pepitesMock = { state: "delayed", nextRevealAt: null };
+      holder.__pepitesPoll = { countdownMs: 500, delayedMs: 1_000, jitter: 0 };
+    });
+    await gotoHydrated(page, "/pepites", lang);
+    await expect(page.getByTestId("pepites-reveal-delayed")).toBeVisible();
+    await page.evaluate(() => {
+      (window as unknown as { __sameDocument?: boolean }).__sameDocument = true;
+    });
+
+    // The version read fails for several checks (each with its one retry):
+    // the page keeps last week's list and keeps checking.
+    await setMock(page, { offline: true });
+    await page.waitForTimeout(5_000);
+    await expect(page.getByTestId("pepites-edition-title")).toHaveText(weekTitle(lang, 15));
+
+    // Back online, and published: shown without a reload or a focus event.
+    await setMock(page, { offline: false, publishNext: true });
+    await expect(page.getByTestId("pepites-edition-title")).toHaveText(weekTitle(lang, 16), {
+      timeout: 8_000,
+    });
+    expect(
+      await page.evaluate(() => (window as unknown as { __sameDocument?: boolean }).__sameDocument),
+    ).toBe(true);
+    await diagnostics.verify(testInfo);
+  });
+
   test(`${lang}: a visitor reads the Top 10, the ranking, a player and the method at 390px`, async ({
     page,
   }, testInfo) => {

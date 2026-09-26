@@ -7,7 +7,7 @@ import {
   isPublicAnswer,
   parseWeek,
   pepitesPageHeaders,
-  pepitesRobots,
+  pepitesRobotsMeta,
 } from "@/components/pepites/pepites-route";
 import { editionQueryOptions } from "@/components/pepites/use-pepites";
 import { fr } from "@/i18n/dictionary-fr";
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/pepites/semaine/$n")({
       meta: [
         { title },
         { name: "description", content: fr["pepites.meta_description"] },
-        { name: "robots", content: pepitesRobots(loaderData) },
+        ...pepitesRobotsMeta(loaderData),
         { property: "og:type", content: "website" },
         { property: "og:title", content: title },
         { property: "og:url", content: url },
