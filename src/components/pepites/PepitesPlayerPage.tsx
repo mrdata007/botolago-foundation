@@ -176,7 +176,7 @@ export function PepitesPlayerPage({
         <PepitesCard testId="pepites-player-missing" className="mt-6 text-center">
           <p className={cn(pp.heavy, pp.ink, "text-[16px]")}>{t("pepites.player.not_found")}</p>
           <Link
-            to="/pepites/classement"
+            to="/pepites"
             className={cn("mt-2 inline-block text-[13px] underline", pp.ink, ui.focus)}
           >
             {t("pepites.player.back")}
@@ -261,11 +261,11 @@ export function PepitesPlayerPage({
   );
 }
 
-function BackToRanking({ className }: { className?: string }) {
+function BackToPepites({ className }: { className?: string }) {
   const { t } = useI18n();
   return (
     <Link
-      to="/pepites/classement"
+      to="/pepites"
       className={cn(
         "inline-flex min-h-[var(--ui-tap-min)] items-center gap-0.5 text-[13px] text-white",
         pp.heavy,
@@ -333,7 +333,7 @@ function PlayerHero({
     >
       <div className="flex flex-col pb-9 md:hidden">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <BackToRanking className="-ms-1" />
+          <BackToPepites className="-ms-1" />
           <div className="flex flex-wrap items-center justify-end gap-2">
             <PepitesFollowButton playerId={player.id} playerName={player.name} />
             <Link
@@ -418,7 +418,7 @@ function PlayerHero({
         data-testid="pepites-desktop-player-hero"
       >
         <div className="self-stretch">
-          <BackToRanking className="mb-3" />
+          <BackToPepites className="mb-3" />
           {photoUrl ? (
             <img src={photoUrl} alt="" className="h-[290px] w-[280px] rounded-2xl object-cover" />
           ) : (
@@ -527,7 +527,7 @@ function MatchesHeader({ data }: { data: LoadedPlayer }) {
   return (
     <div className={cn(pp.night)}>
       <div className="mx-auto flex w-full flex-col gap-2 px-4 pt-1 md:max-w-[var(--ui-content-max)]">
-        <BackToRanking className="-ms-1 self-start" />
+        <BackToPepites className="-ms-1 self-start" />
         <div className="flex items-center gap-3">
           <Headshot player={player} size={44} missingDot={false} />
           <div className="min-w-0">

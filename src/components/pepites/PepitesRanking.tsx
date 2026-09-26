@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { ChevronLeft } from "lucide-react";
 
 import {
   type PositionGroup,
@@ -139,6 +140,18 @@ export function PepitesRanking({
   const hero = (
     <NightBand cut={26} ghost={counted ? String(total) : null} testId="pepites-ranking-hero" wide>
       <div className="flex flex-col gap-2 pb-12 pt-3 md:hidden">
+        <Link
+          to="/pepites"
+          data-testid="pepites-ranking-back"
+          className={cn(
+            "-ms-1 inline-flex min-h-[var(--ui-tap-min)] items-center gap-0.5 self-start text-[13px] text-white",
+            pp.heavy,
+            ui.focusOnMesh,
+          )}
+        >
+          <ChevronLeft className="size-4 rtl:-scale-x-100" aria-hidden />
+          {t("pepites.title")}
+        </Link>
         <h1 className={cn(pp.display, pp.lean, "text-[30px] leading-[1.1] text-white")}>
           {t("pepites.ranking.title")}
         </h1>
@@ -199,7 +212,21 @@ export function PepitesRanking({
       </div>
       <div className="hidden min-h-[360px] items-start justify-between gap-8 py-9 md:flex">
         <div className="max-w-[540px] pt-1">
-          <GoMark />
+          <Link
+            to="/pepites"
+            data-testid="pepites-ranking-back"
+            className={cn(
+              "-ms-1 mb-3 inline-flex min-h-[var(--ui-tap-min)] items-center gap-0.5 text-[13px] text-white",
+              pp.heavy,
+              ui.focusOnMesh,
+            )}
+          >
+            <ChevronLeft className="size-4 rtl:-scale-x-100" aria-hidden />
+            {t("pepites.title")}
+          </Link>
+          <div>
+            <GoMark />
+          </div>
           <h1 className={cn(pp.display, pp.lean, "mt-8 text-[clamp(42px,4vw,56px)] text-white")}>
             {t("pepites.ranking.desktop_title")}
           </h1>

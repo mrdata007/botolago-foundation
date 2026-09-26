@@ -1892,7 +1892,7 @@ export const ar = {
     "نحتاج إلى {round} جولات على الأقل لترتيب اللاعبين بإنصاف. في الانتظار، هذا هو الترتيب النهائي لموسم {season}.",
   "pepites.state.season_started": "انطلق موسم {season}",
   "pepites.method.title": "المنهجية",
-  "pepites.player.back": "الترتيب",
+  "pepites.player.back": "جواهر",
   "pepites.player.foot_short": "القدم:",
   "pepites.player.not_set_short": "غير محددة",
   "pepites.player.rank_line": "رقم {n} · أقل من 23",
@@ -1951,6 +1951,7 @@ export const ar = {
   "pepites.home.week_meta": "بعد الجولة {round} · موسم {season}",
   "pepites.home.previous_title": "الترتيب النهائي لموسم {season}",
   "pepites.home.full_ranking": "عرض الترتيب الكامل",
+  "pepites.home.no_match": "لا يوجد لاعب في أفضل 10 يطابق هذا الاختيار.",
   "pepites.home.about":
     "يرتّب جواهر لاعبي البطولة الاحترافية دون 23 سنة انطلاقًا من مبارياتهم. تختار هيئة التحرير أفضل 10 كل أسبوع.",
   "pepites.email.title": "توب 10 عبر البريد الإلكتروني",

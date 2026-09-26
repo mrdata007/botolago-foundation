@@ -2009,7 +2009,7 @@ export const fr = {
     "Il faut au moins {round} journées pour classer les joueurs de façon juste. En attendant, voici le classement final {season}.",
   "pepites.state.season_started": "La saison {season} a commencé",
   "pepites.method.title": "Méthode",
-  "pepites.player.back": "Classement",
+  "pepites.player.back": "Pépites",
   "pepites.player.foot_short": "Pied :",
   "pepites.player.not_set_short": "N.R.",
   "pepites.player.rank_line": "#{n} · U23 BOTOLA",
@@ -2071,6 +2071,7 @@ export const fr = {
   "pepites.home.week_meta": "Après la journée {round} · Saison {season}",
   "pepites.home.previous_title": "Classement final {season}",
   "pepites.home.full_ranking": "Voir le classement complet",
+  "pepites.home.no_match": "Aucun joueur du Top 10 ne correspond à ce filtre.",
   "pepites.home.about":
     "Pépites classe les joueurs de Botola Pro de moins de 23 ans à partir de leurs matchs. Le Top 10 est choisi chaque semaine par la rédaction.",
   "pepites.email.title": "Le Top 10 par e-mail",

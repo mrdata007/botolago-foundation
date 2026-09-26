@@ -177,6 +177,52 @@ for (const lang of ["fr", "ar"] as const) {
     await diagnostics.verify(testInfo);
   });
 
+  test(`${lang}: Top 10 chips filter in place and both detail routes return to Pépites`, async ({
+    page,
+  }, testInfo) => {
+    const diagnostics = observePage(page);
+    await page.setViewportSize({ width: 390, height: 860 });
+    await initializeLanguage(page, lang);
+    await gotoHydrated(page, "/pepites", lang);
+
+    const entries = page.getByTestId("pepites-top-entry");
+    const playerNumbers = async () =>
+      entries.evaluateAll((links) =>
+        links.map((link) => Number(link.getAttribute("href")?.slice(-12))),
+      );
+    await expect(entries).toHaveCount(10);
+    for (const [filter, expected] of [
+      ["FWD", [1, 5, 9]],
+      ["MID", [2, 6]],
+      ["DEF", [3, 7, 11]],
+      ["GK", [4, 8]],
+      ["age", [2, 1, 3, 6, 7, 11, 8]],
+    ] as const) {
+      const chip = page.getByTestId(`pepites-home-filter-${filter}`);
+      await chip.click();
+      await expect(page).toHaveURL(/\/pepites$/);
+      await expect(chip).toHaveAttribute("aria-pressed", "true");
+      expect(await playerNumbers()).toEqual(expected);
+    }
+
+    await page.getByTestId("pepites-home-filter-all").click();
+    await expect(page.getByTestId("pepites-home-filter-all")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(entries).toHaveCount(10);
+    await entries.first().click();
+    await expect(page).toHaveURL(/\/pepites\/joueur\//);
+    await page.getByTestId("pepites-back").first().click();
+    await expect(page).toHaveURL(/\/pepites$/);
+
+    await page.getByTestId("pepites-full-ranking").click();
+    await expect(page).toHaveURL(/\/pepites\/classement$/);
+    await page.getByTestId("pepites-ranking-back").first().click();
+    await expect(page).toHaveURL(/\/pepites$/);
+    await diagnostics.verify(testInfo);
+  });
+
   test(`${lang}: the share image is drawn on the phone for the published week`, async ({
     page,
   }, testInfo) => {
@@ -308,6 +354,11 @@ for (const lang of ["fr", "ar"] as const) {
     await expect(page.getByTestId("pepites-desktop-rating-trend")).toBeVisible();
     await expect(page.getByTestId("pepites-desktop-face-to-face")).toBeVisible();
     await expectNoHorizontalOverflow(page);
+    await page.getByTestId("pepites-desktop-player-hero").getByTestId("pepites-back").click();
+    await expect(page).toHaveURL(/\/pepites$/);
+    await page.getByTestId("pepites-full-ranking").click();
+    await page.getByTestId("pepites-ranking-back").last().click();
+    await expect(page).toHaveURL(/\/pepites$/);
     await diagnostics.verify(testInfo);
   });
 }
@@ -330,6 +381,8 @@ test("signed-in Follow can toggle, and +Fantasy carries the mapped player", asyn
   await follow.click();
   await expect(follow).toHaveAttribute("aria-pressed", "true");
   await page.getByTestId("pepites-back").first().click();
+  await expect(page).toHaveURL(/\/pepites$/);
+  await page.getByTestId("pepites-full-ranking").click();
   await page.getByTestId("pepites-ranking-followed").click();
   await expect(page.getByTestId("pepites-ranking-row")).toHaveCount(1);
   await expect(page.getByTestId("pepites-ranking-followed")).toHaveAttribute(
