@@ -106,8 +106,9 @@ Same button, scope **browsing**, and a number of **browsing_visitors**
 (default 2,000). It repeats the rehearsal, then has that many visitors read
 home, live match pages, news, fixtures, the league table and the Fantasy
 rankings for 10 minutes, the way the web app reads them today, and cleans up.
-It needs the fake football and news content first:
-`scripts/backend/browsing-staging-seed.sql`, loaded like the Fantasy seed.
+It needs the fake football and news content first: **Staging database
+update**, action **seed-browsing**, confirmation `UPDATE_STAGING_DATABASE`,
+shortly before the run (its match times are anchored on its first run).
 Without it the run stops with "content_missing" instead of measuring empty
 tables. The deadline test itself does not change.
 
@@ -133,7 +134,7 @@ previous size (Micro on 2026-09-25).
 | Load test stops at "Verify staging is ready"               | an update is missing, the fake data is not loaded, the Fantasy tick is switched on on staging, or staging is not (or cannot be shown to be) the size you typed | the run page says which; redo that step                                                                                                      |
 | seed stops with "GB of disk free" or "could not be read"   | staging's disk is too full for the fake data, or its free space could not be checked                                                                           | make the disk bigger (step 2); if Supabase says "Disk modification limit reached", wait until its timer ends                                 |
 | Staging is down with "No space left on device" in its logs | the disk filled up                                                                                                                                             | make the disk bigger; Postgres restarts by itself once it has room                                                                           |
-| browsing stops with "content_missing"                      | staging has no (or too little) football and news content                                                                                                       | load `browsing-staging-seed.sql` on staging first                                                                                            |
+| browsing stops with "content_missing"                      | staging has no (or too little) football and news content                                                                                                       | run **Staging database update**, action **seed-browsing**, first                                                                             |
 | Load test stops at "Configure delegated AWS credentials"   | the Amazon connection from July (variable `AWS_LOAD_TEST_ROLE_ARN`, and the matching role in AWS) is gone or changed                                           | nothing was rented; the developer needs the AWS account to recreate the role                                                                 |
 | A run was cancelled halfway                                | fake accounts or computers may be left over                                                                                                                    | **Actions → Phase 6 staging cleanup**, confirmation `RUN_PHASE6_STAGING_CLEANUP`; the computers also switch themselves off after 105 minutes |
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import importlib.util
 import sys
 import tempfile
@@ -35,6 +36,7 @@ class FakeTarget:
         self.compute_variant = "ci_large"
         self.tick_on = False
         self.free_gb: float | None = 50.0
+        self.browsing = {key: 0 for key in UPDATE.BROWSING_SEED_PROFILE}
 
     def compute(self) -> str:
         return self.compute_variant
@@ -49,6 +51,8 @@ class FakeTarget:
             return [{"count": 0}]
         if "fantasy_automation_settings" in sql:
             return [{"enabled": self.tick_on}]
+        if "capacity-browsing-article" in sql:
+            return [dict(self.browsing)]
         return [dict(self.profile)]
 
     def execute(self, sql: str, timeout: int) -> list[dict[str, Any]]:
@@ -61,7 +65,9 @@ class FakeTarget:
                     values = line.split("values ('", 1)[1]
                     version, rest = values.split("', '", 1)
                     self.history.append({"version": version, "name": rest.split("'", 1)[0]})
-        if "fantasy-staging-seed" in sql or "capacity_environment" in sql:
+        if "capacity-browsing-article" in sql:
+            self.browsing = dict(UPDATE.BROWSING_SEED_PROFILE)
+        elif "fantasy-staging-seed" in sql or "capacity_environment" in sql:
             self.profile = dict(UPDATE.SEED_PROFILE)
         return []
 
@@ -198,6 +204,42 @@ class SeedTests(unittest.TestCase):
         self.assertEqual(target.executed, [])
         target.free_gb = UPDATE.SEED_MIN_FREE_DISK_GB + 0.5
         self.assertTrue(UPDATE.run_seed(target, [migration("1" * 14, "a")])["ran"])
+
+    def test_browsing_seed_runs_under_its_staging_guard_once(self) -> None:
+        target = FakeTarget([{"version": "1" * 14, "name": "a"}])
+        report = UPDATE.run_seed_browsing(target, [migration("1" * 14, "a")])
+        self.assertTrue(report["ran"])
+        self.assertEqual(report["browsingSeed"], UPDATE.BROWSING_SEED_PROFILE)
+        self.assertIn("'botolago.capacity_environment', 'staging-v2'", target.executed[0])
+        self.assertIn("capacity-browsing-article", target.executed[0])
+        self.assertFalse(UPDATE.run_seed_browsing(target, [migration("1" * 14, "a")])["ran"])
+        self.assertEqual(len(target.executed), 1)
+
+    def test_browsing_seed_refuses_pending_migrations_tick_or_full_disk(self) -> None:
+        target = FakeTarget([])
+        with self.assertRaisesRegex(UPDATE.UpdateError, "apply the pending migrations first"):
+            UPDATE.run_seed_browsing(target, [migration("1" * 14, "a")])
+        target = FakeTarget([{"version": "1" * 14, "name": "a"}])
+        target.tick_on = True
+        with self.assertRaisesRegex(UPDATE.UpdateError, "Fantasy lifecycle tick"):
+            UPDATE.run_seed_browsing(target, [migration("1" * 14, "a")])
+        target.tick_on = False
+        target.free_gb = 0.4
+        with self.assertRaisesRegex(UPDATE.UpdateError, "below the 1 GB"):
+            UPDATE.run_seed_browsing(target, [migration("1" * 14, "a")])
+        self.assertEqual(target.executed, [])
+
+    def test_browsing_seed_file_is_guarded_and_matches_the_profile(self) -> None:
+        text = UPDATE.BROWSING_SEED_FILE.read_text("utf-8")
+        self.assertIn("botolago.capacity_environment", text)
+        # The seed derives its ids as pg_temp.cap_uuid(key): md5 of
+        # 'capacity-browsing:' || key, shaped as a v4 uuid.
+        self.assertIn("md5('capacity-browsing:' || key)", text)
+        digest = hashlib.md5(b"capacity-browsing:season").hexdigest()
+        season = (
+            f"{digest[0:8]}-{digest[8:12]}-4{digest[13:16]}-8{digest[17:20]}-{digest[20:32]}"
+        )
+        self.assertEqual(UPDATE.BROWSING_SEED_SEASON_ID, season)
 
     def test_plan_reports_free_disk(self) -> None:
         target = FakeTarget([{"version": "1" * 14, "name": "a"}])
