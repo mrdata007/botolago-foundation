@@ -34,7 +34,10 @@
     "backend:db:stop": "supabase stop --no-backup",
     "backend:db:reset": "supabase db reset --local",
     "backend:db:test": "supabase test db --local supabase/tests/database",
-    "backend:db:lint": "supabase db lint --local --schema app,api,app_private --level warning --fail-on error"
+    "backend:db:lint": "supabase db lint --local --schema app,api,app_private --level warning --fail-on error",
+    "demo:dev": "vite --config demo/vite.config.ts",
+    "demo:build": "bun demo/scripts/build.ts",
+    "demo:typecheck": "tsc --noEmit -p demo/tsconfig.json"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
