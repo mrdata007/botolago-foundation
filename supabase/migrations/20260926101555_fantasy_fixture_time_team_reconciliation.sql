@@ -44,13 +44,13 @@ returns jsonb language sql stable security definer set search_path = '' set time
         'penaltiesSaved',coalesce(p.penalties_saved,0),'penaltiesMissed',coalesce(p.penalties_missed,0),
         'yellowCards',coalesce(p.yellow_cards,0),'redCards',coalesce(p.red_cards,0),
         'secondYellowDismissals',coalesce(p.second_yellow_dismissals,0),'ownGoals',coalesce(p.own_goals,0),
-        'bonus',0,'playerOfMatchPoints',0)
+        'bonus',0,'playerOfMatchPoints',0))
       -- Keep unchanged scoring documents (and in-flight snapshot digests)
       -- byte-for-byte compatible. Record the fixture club only when a later
       -- transfer made the fantasy player's current club misleading.
       || case when p.id is not null and p.team_id is distinct from fp.football_team_id
         then jsonb_build_object('fixtureTeamId', p.team_id) else '{}'::jsonb end
-    ) order by fp.id,f.id), '[]'::jsonb)
+    order by fp.id,f.id), '[]'::jsonb)
       from app.fantasy_players fp join app.fantasy_positions pos on pos.id=fp.position_id
       join app.fantasy_fixture_assignments a on a.gameweek_id=gw.id and a.superseded_at is null and a.counts_points
       join app.fixtures f on f.id=a.fixture_id
