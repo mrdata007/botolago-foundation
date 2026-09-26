@@ -34,9 +34,13 @@ class FakeTarget:
         self.profile = {key: 0 for key in UPDATE.SEED_PROFILE}
         self.compute_variant = "ci_large"
         self.tick_on = False
+        self.free_gb: float | None = 50.0
 
     def compute(self) -> str:
         return self.compute_variant
+
+    def free_disk_gb(self) -> float | None:
+        return self.free_gb
 
     def rows(self, sql: str) -> list[dict[str, Any]]:
         if "schema_migrations" in sql:
@@ -182,6 +186,29 @@ class SeedTests(unittest.TestCase):
         self.assertIn("'botolago.capacity_environment', 'staging-v2'", target.executed[0])
         again = UPDATE.run_seed(target, [migration("1" * 14, "a")])
         self.assertFalse(again["ran"])
+
+    def test_seed_refuses_without_room_on_the_disk(self) -> None:
+        target = FakeTarget([{"version": "1" * 14, "name": "a"}])
+        target.free_gb = 4.2
+        with self.assertRaisesRegex(UPDATE.UpdateError, "4.2 GB of disk free"):
+            UPDATE.run_seed(target, [migration("1" * 14, "a")])
+        target.free_gb = None
+        with self.assertRaisesRegex(UPDATE.UpdateError, "could not be read"):
+            UPDATE.run_seed(target, [migration("1" * 14, "a")])
+        self.assertEqual(target.executed, [])
+        target.free_gb = UPDATE.SEED_MIN_FREE_DISK_GB + 0.5
+        self.assertTrue(UPDATE.run_seed(target, [migration("1" * 14, "a")])["ran"])
+
+    def test_plan_reports_free_disk(self) -> None:
+        target = FakeTarget([{"version": "1" * 14, "name": "a"}])
+        target.free_gb = 12.345
+        self.assertEqual(UPDATE.run_plan(target, [migration("1" * 14, "a")])["freeDiskGb"], 12.3)
+
+    def test_disk_metrics_are_found_wherever_they_sit(self) -> None:
+        document = {"timestamp": "t", "metrics": {"fs_size_bytes": 8, "fs_avail_bytes": 3}}
+        self.assertEqual(UPDATE.find_number(document, "fs_avail_bytes"), 3.0)
+        self.assertIsNone(UPDATE.find_number({"metrics": {"fs_avail_bytes": "3"}}, "fs_avail_bytes"))
+        self.assertIsNone(UPDATE.find_number([], "fs_avail_bytes"))
 
     def test_seed_and_check_refuse_while_the_fantasy_tick_is_on(self) -> None:
         target = FakeTarget([{"version": "1" * 14, "name": "a"}])

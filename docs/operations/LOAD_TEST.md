@@ -60,18 +60,27 @@ On 2026-09-25 staging was 45 database updates behind production.
    The updates go in one at a time. If one fails, it is undone, the ones
    before it stay, and the run stops and names it.
 
-### 2. Make staging the same size as production (2 minutes, you only)
+### 2. Make staging the same size as production, with room on its disk (2 minutes, you only)
 
 Supabase dashboard → **BotolaGO Production V2** → Settings → **Compute and
 Disk**: note the size (on 2026-09-25 the database settings pointed to
 **Large**). Then **BotolaGO Staging V2** → Settings → Compute and Disk → pick
-the same size → confirm. Staging restarts for a minute or two.
+the same size, and set **Disk size** to at least **20 GB** → confirm. Staging
+restarts for a minute or two.
+
+The disk matters. On 2026-09-26 the fake data filled staging's disk, the
+database stopped and could not restart until Supabase grew the disk by itself.
+Supabase allows four disk changes a day, that automatic one included, and a
+disk can grow but never shrink (each GB above 8 costs a little every month).
+Step 3 now refuses to start without 5 GB free.
 
 ### 3. Load the fake Fantasy data (a few minutes)
 
 **Staging database update**, action **seed**, confirmation
 `UPDATE_STAGING_DATABASE`. It creates the fake season and 50,000 fake teams the
-test plays against. Running it again does nothing.
+test plays against. Running it again does nothing. It first checks that the
+Fantasy tick is off on staging and that the disk has 5 GB free (the seed
+writes about 2 GB).
 
 ### 4. Rehearse the load test (about 20 minutes, cents)
 
@@ -103,14 +112,16 @@ previous size (Micro on 2026-09-25).
 
 ## If something fails
 
-| Where                                                    | What it means                                                                                                                                                  | What to do                                                                                                                                   |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Staging database update fails at once                    | the `SUPABASE_ACCESS_TOKEN` stored in GitHub (Settings → Environments → `staging-load-test`) no longer works                                                   | create a new access token in Supabase (Account → Access Tokens) and replace the secret                                                       |
-| rehearse or apply names an update                        | that update does not fit staging's current state                                                                                                               | send the run link to the developer; nothing else changed                                                                                     |
-| A run stops at "No other staging writer is running"      | another job is writing to staging right now (the run page names it); two writers at once is how data gets damaged (`AGENTS.md`)                                | wait for that job to finish, then run again                                                                                                  |
-| Load test stops at "Verify staging is ready"             | an update is missing, the fake data is not loaded, the Fantasy tick is switched on on staging, or staging is not (or cannot be shown to be) the size you typed | the run page says which; redo that step                                                                                                      |
-| Load test stops at "Configure delegated AWS credentials" | the Amazon connection from July (variable `AWS_LOAD_TEST_ROLE_ARN`, and the matching role in AWS) is gone or changed                                           | nothing was rented; the developer needs the AWS account to recreate the role                                                                 |
-| A run was cancelled halfway                              | fake accounts or computers may be left over                                                                                                                    | **Actions → Phase 6 staging cleanup**, confirmation `RUN_PHASE6_STAGING_CLEANUP`; the computers also switch themselves off after 105 minutes |
+| Where                                                      | What it means                                                                                                                                                  | What to do                                                                                                                                   |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Staging database update fails at once                      | the `SUPABASE_ACCESS_TOKEN` stored in GitHub (Settings → Environments → `staging-load-test`) no longer works                                                   | create a new access token in Supabase (Account → Access Tokens) and replace the secret                                                       |
+| rehearse or apply names an update                          | that update does not fit staging's current state                                                                                                               | send the run link to the developer; nothing else changed                                                                                     |
+| A run stops at "No other staging writer is running"        | another job is writing to staging right now (the run page names it); two writers at once is how data gets damaged (`AGENTS.md`)                                | wait for that job to finish, then run again                                                                                                  |
+| Load test stops at "Verify staging is ready"               | an update is missing, the fake data is not loaded, the Fantasy tick is switched on on staging, or staging is not (or cannot be shown to be) the size you typed | the run page says which; redo that step                                                                                                      |
+| seed stops with "GB of disk free" or "could not be read"   | staging's disk is too full for the fake data, or its free space could not be checked                                                                           | make the disk bigger (step 2); if Supabase says "Disk modification limit reached", wait until its timer ends                                 |
+| Staging is down with "No space left on device" in its logs | the disk filled up                                                                                                                                             | make the disk bigger; Postgres restarts by itself once it has room                                                                           |
+| Load test stops at "Configure delegated AWS credentials"   | the Amazon connection from July (variable `AWS_LOAD_TEST_ROLE_ARN`, and the matching role in AWS) is gone or changed                                           | nothing was rented; the developer needs the AWS account to recreate the role                                                                 |
+| A run was cancelled halfway                                | fake accounts or computers may be left over                                                                                                                    | **Actions → Phase 6 staging cleanup**, confirmation `RUN_PHASE6_STAGING_CLEANUP`; the computers also switch themselves off after 105 minutes |
 
 ## What this test does not cover
 
