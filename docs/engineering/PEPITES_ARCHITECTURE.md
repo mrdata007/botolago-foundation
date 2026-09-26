@@ -1082,6 +1082,23 @@ with its pgTAP file.
    never edited back or deleted. API wrappers come with `pepites_api`.
 4. `pepites_engine`: methodologies, runs, snapshot tables, scores, sealing
    triggers, gather, score, replay, and the 2025-26 `season_final` run.
+   **Built** locally as `20260926090000_pepites_engine.sql` (70 pgTAP
+   assertions). Settled while building:
+   - **Which matches count.** Weekly runs take finished fixtures finalised
+     before the cutoff, as §4.1 says. A `season_final` run takes the
+     finished fixtures of the completed season: the 2024-25 and 2025-26
+     fixtures were backfilled and none carries `finalized_at` (240 each,
+     read on production 2026-09-26), so requiring it would rank nobody.
+   - **Unknown final score.** `fixtures_finished_score_check` already
+     requires a score on every finished fixture, so it cannot happen with
+     real data; the engine still treats it as unknown (tested on a
+     hand-built snapshot).
+   - **Session independence.** The fingerprint renders dates and times
+     without the session's `DateStyle` or `TimeZone`, and ages are taken on
+     the cutoff day in Africa/Casablanca, so a replay from any session
+     matches exactly (tested under `Pacific/Auckland` and `SQL, DMY`).
+   - A run that errors is kept as `failed` with its error; its partial
+     snapshot is rolled back with it.
 5. `pepites_editions`: editions, entries, state and column triggers, week
    lock, settings, tick, publish, cron schedule (mode `off`).
 6. `pepites_weekly_email_type`: the `pepites_weekly` notification type alone,
