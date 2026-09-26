@@ -1482,6 +1482,81 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-font-body: "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
 }
 
+/* ---- Pépites (Figma "BotolaGO — Pépites (UI)", 2026-09-26) ----------------
+   The data sub-brand's register: a night band, the energy gradient (spring →
+   sky → violet) and mono meta lines. Light values first; `.dark` moves the
+   page, cards and text onto the app's own dark tokens. The night band and
+   what sits on it are night in both themes. Every gradient runs a keyword
+   direction and `[dir="rtl"]` turns it to start at the inline start, as the
+   Arabic frames draw it. Only `src/components/pepites/` reads these. */
+:root {
+  --pepites-night: #070d24;
+  --pepites-page: #f3f5fa;
+  --pepites-card: #ffffff;
+  --pepites-ink: #1b2a6b;
+  --pepites-text: #0b1330;
+  --pepites-muted: #5d6789;
+  --pepites-line: #e3e7f0;
+  --pepites-divider: #eef1f6;
+  --pepites-on-night: #ffffff;
+  --pepites-on-night-meta: #9aa4c7;
+  --pepites-on-night-sub: #c9d2ea;
+  --pepites-on-night-rule: rgb(255 255 255 / 0.12);
+  --pepites-spring: #5de39b;
+  --pepites-sky: #7fd6f0;
+  --pepites-violet: #7c6cf0;
+  --pepites-missing: #ffb020;
+  /* RatingChip's fixed scale (never colour alone: the chip prints the number). */
+  --pepites-rating-1: #e5484d;
+  --pepites-rating-2: #f0a020;
+  --pepites-rating-3: #9bc53d;
+  --pepites-rating-4: #27b36b;
+  --pepites-rating-5: #1597b8;
+  --pepites-seg-empty: #e3e7f0;
+  --pepites-card-shadow: 0 6px 16px 0 rgb(11 19 48 / 0.07);
+  --pepites-row-shadow: 0 4px 12px 0 rgb(11 19 48 / 0.06);
+  --pepites-table-shadow: 0 6px 16px 0 rgb(11 19 48 / 0.08);
+  --pepites-energy: linear-gradient(
+    to right,
+    var(--pepites-spring) 0%,
+    var(--pepites-sky) 45%,
+    var(--pepites-violet) 100%
+  );
+  /* Plex carries Latin only: Arabic in a meta line falls to the Arabic face
+     (the Figma sets those lines in Noto Sans Arabic), never to a monospace. */
+  --pepites-font-mono: "IBM Plex Mono", "Noto Sans Arabic", ui-monospace, monospace;
+  /* Gradient text is not mirrored in the Arabic frames; bars and rules are. */
+  --pepites-energy-text: linear-gradient(
+    to right,
+    var(--pepites-spring) 0%,
+    var(--pepites-sky) 45%,
+    var(--pepites-violet) 100%
+  );
+}
+
+[dir="rtl"] {
+  --pepites-energy: linear-gradient(
+    to left,
+    var(--pepites-spring) 0%,
+    var(--pepites-sky) 45%,
+    var(--pepites-violet) 100%
+  );
+}
+
+.dark {
+  --pepites-page: var(--ui-page);
+  --pepites-card: var(--ui-surface);
+  --pepites-ink: var(--ui-ink-fg);
+  --pepites-text: var(--ui-on-surface);
+  --pepites-muted: var(--ui-on-surface-muted);
+  --pepites-line: var(--ui-rule);
+  --pepites-divider: var(--ui-rule);
+  --pepites-seg-empty: var(--ui-surface-sunken);
+  --pepites-card-shadow: none;
+  --pepites-row-shadow: none;
+  --pepites-table-shadow: none;
+}
+
 .dark {
   --ui-page: oklch(0.15 0.03 260);
   --ui-surface: oklch(0.22 0.03 260);
@@ -1817,4 +1892,12 @@ html[dir="rtl"] .lucide-arrow-left {
   line-height: 1.5;
   color: var(--editorial-muted);
   text-align: start;
+}
+
+/* The night band's slanted bottom edge: it rises toward the inline end. */
+.pepites-night-band {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--pepites-cut, 32px)), 0 100%);
+}
+[dir="rtl"] .pepites-night-band {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 calc(100% - var(--pepites-cut, 32px)));
 }

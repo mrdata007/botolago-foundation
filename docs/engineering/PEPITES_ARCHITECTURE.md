@@ -1222,6 +1222,51 @@ with its pgTAP file.
      fans' error reports go through `api.report_pepites_data_issue`
      (signed in, step-up, Pépites visible).
 
+9. **The app** (no migration). **Built** on `claude/pepites-frontend`:
+   `/pepites` (the weekly Top 10), `/pepites/classement`,
+   `/pepites/joueur/$playerId`, `/pepites/semaine/$n` and `/pepites/methode`,
+   in French and Arabic, with the weekly email switch, the error report and
+   the share image. Settled while building:
+   - **Off everywhere but a local preview.** `PEPITES_ENABLED` is true only
+     in a development server started with `VITE_PEPITES_PREVIEW=1`
+     (docs/engineering/PEPITES_LOCAL_PREVIEW.md); every build redirects the
+     routes Home. `PEPITES_PROMOTED` (the same switch for now) gives Pépites
+     Profil's slot in the bar and on the home page, moves Profile to an icon
+     in the top bar, lists the three main pages in the sitemap, and lets a
+     public page be indexed.
+   - **Readers.** The server renders every page as an anonymous reader, so a
+     staff preview never enters a cached page; staff see it once their own
+     session reads it. Every query key names its reader, and an anonymous
+     key never keeps a preview (`forViewer`), so signing out forgets it.
+   - **Cache headers (§7).** `public, s-maxage=10` for the current pages and
+     `s-maxage=300` for a week's page, only when the anonymous answer is
+     public; `private, no-store` otherwise; a failed read is the 503 of
+     `page-availability.ts`.
+   - **The reveal.** Every page reads the pointer again as it opens (a page
+     cached for 10 seconds may hold an older one) and on focus; during
+     `countdown` and `delayed` it polls on §7's timers, and the lists keep
+     the current version on screen until the new one has loaded.
+   - **Data comes through the RPCs**, not yet through the versioned JSON
+     routes of §7: the pages call `api.pepites_*` from the server render and
+     the browser. The versioned routes (or the static JSON fallback) are
+     part of the load test in the launch list.
+   - **Share images are drawn in the browser** (`share-image.ts`, 1080 ×
+     1350 PNG): the browser has the page's fonts and shapes Arabic, and the
+     server has no image library. They use a photo only when its release
+     allows social use (the same test as `player_photo_for(…, 'share')`),
+     else the silhouette; a withdrawn edition has none. A server-rendered
+     `og:image` for link previews is a follow-up.
+   - **Photos** load from the release's public path through the site's
+     media resolver; any photo that fails to load shows the silhouette.
+   - **Numbers and names in Arabic.** Latin digits, no space inside a
+     number, a score reads "90 /100" left to right, and Latin player names
+     are isolated so "Achraf V." keeps its dot on the right side.
+   - Tests: unit tests for the helpers, the repository, the search params,
+     the headers and the flags; `tests/e2e/pepites.e2e.ts` (sample data, in
+     CI with the preview switch): the reveal from countdown to delayed to
+     published without a reload, and the reader journeys, in both languages
+     at 390 px.
+
 Local proof for each: `bun run backend:migrations:check`, `backend:db:reset`,
 `backend:db:test`, `backend:db:lint` and `backend:types:check`. CI
 `database-quality` is the authority.

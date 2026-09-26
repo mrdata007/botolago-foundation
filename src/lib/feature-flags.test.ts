@@ -10,6 +10,8 @@ import {
   PRONOSTICS_ENABLED,
   PRONOSTICS_PROMOTED,
   ANALYTICS_ENABLED,
+  PEPITES_ENABLED,
+  PEPITES_PROMOTED,
 } from "@/lib/feature-flags";
 import { SITEMAP_STATIC_PATHS } from "@/lib/sitemap";
 import { primaryNavItems } from "@/components/shell/primary-nav";
@@ -324,6 +326,49 @@ describe("PRONOSTICS_ENABLED / PRONOSTICS_PROMOTED", () => {
     ]);
     const strays = sourceFiles().filter(
       (file) => !allowed.has(file) && stripComments(read(file)).includes("PRONOSTICS_PROMOTED"),
+    );
+    expect(strays).toEqual([]);
+  });
+});
+
+/**
+ * Pépites stays off in every build: only `vite dev` with VITE_PEPITES_PREVIEW=1
+ * (the local preview and its browser tests) opens it. Unlike the flags above,
+ * this one IS asserted off for a build, because the owner has not authorised
+ * a public launch; flipping it is the launch decision.
+ */
+describe("PEPITES_ENABLED / PEPITES_PROMOTED", () => {
+  test("are off in any build: on only in a development server asked for the preview", () => {
+    const source = read("src/lib/feature-flags.ts");
+    expect(source).toContain(
+      'import.meta.env?.DEV === true && import.meta.env?.VITE_PEPITES_PREVIEW === "1"',
+    );
+    expect(source.match(/export const PEPITES_ENABLED/g)).toHaveLength(1);
+    expect(source.match(/export const PEPITES_PROMOTED/g)).toHaveLength(1);
+    // The unit tests run outside a development server.
+    expect(PEPITES_ENABLED).toBe(false);
+    expect(PEPITES_PROMOTED).toBe(false);
+    expect(primaryNavItems.some((item) => item.to === "/pepites")).toBe(false);
+    expect((SITEMAP_STATIC_PATHS as readonly string[]).includes("/pepites")).toBe(false);
+  });
+
+  test("the /pepites routes redirect Home while Pépites is off", () => {
+    expect(stripComments(read("src/routes/pepites.tsx"))).toContain(
+      'if (!PEPITES_ENABLED) throw redirect({ to: "/", replace: true });',
+    );
+  });
+
+  test("no other source file mentions the promoted flag", () => {
+    const allowed = new Set([
+      "src/lib/feature-flags.ts",
+      "src/components/shell/primary-nav.ts",
+      "src/components/shell/TopBar.tsx",
+      "src/routes/index.tsx",
+      "src/lib/sitemap.ts",
+      "src/components/pepites/pepites-route.ts",
+    ]);
+    const strays = sourceFiles().filter(
+      (file) => !allowed.has(file) && stripComments(read(file)).includes("PEPITES_PROMOTED"),
     );
     expect(strays).toEqual([]);
   });

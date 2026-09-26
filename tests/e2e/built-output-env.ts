@@ -41,6 +41,7 @@ export const BUILT_OUTPUT_ENV: Readonly<Record<string, string>> = {
   VITE_FANTASY_DATA_MODE: "supabase",
   VITE_PRIZES_DATA_MODE: "supabase",
   VITE_PREDICTIONS_DATA_MODE: "supabase",
+  VITE_PEPITES_DATA_MODE: "supabase",
   VITE_APP_URL: BUILT_OUTPUT_ORIGIN,
   VITE_SUPABASE_PROJECT_ID: "built-output-smoke",
   VITE_SUPABASE_URL: STUB_SUPABASE_ORIGIN,

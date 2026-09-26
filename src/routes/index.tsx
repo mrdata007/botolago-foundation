@@ -4,11 +4,11 @@ import { BrandedText } from "@/components/brand/BrandedText";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CircleDot, Bell, Newspaper, Shield, Target, Trophy, UserRound } from "lucide-react";
+import { CircleDot, Bell, Gem, Newspaper, Shield, Target, Trophy, UserRound } from "lucide-react";
 
 import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
-import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
+import { PEPITES_PROMOTED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCard";
 import { footballService, type FootballSeason } from "@/services/football";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
@@ -612,7 +612,12 @@ function HomeContent() {
           <DiscoveryLink to="/fantasy" icon={Trophy} label={t("nav.fantasy")} />
           {/* News discovery tile — hidden at launch (NEWS_ENABLED). */}
           {NEWS_ENABLED && <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />}
-          <DiscoveryLink to="/profile" icon={UserRound} label={t("nav.profile")} />
+          {/* Pépites, once promoted, takes Profil's tile as it takes its slot in the bar. */}
+          {PEPITES_PROMOTED ? (
+            <DiscoveryLink to="/pepites" icon={Gem} label={t("nav.pepites")} />
+          ) : (
+            <DiscoveryLink to="/profile" icon={UserRound} label={t("nav.profile")} />
+          )}
           {/* A sixth tile makes two rows of three (BG-0146): shown once promoted. */}
           {PRONOSTICS_PROMOTED && (
             <DiscoveryLink to="/pronostics" icon={Target} label={t("home.discover.predictions")} />
@@ -633,7 +638,7 @@ function DiscoveryLink({
   icon: Icon,
   label,
 }: {
-  to: "/matches" | "/clubs" | "/fantasy" | "/news" | "/profile" | "/pronostics";
+  to: "/matches" | "/clubs" | "/fantasy" | "/news" | "/profile" | "/pronostics" | "/pepites";
   icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   label: string;
 }) {
