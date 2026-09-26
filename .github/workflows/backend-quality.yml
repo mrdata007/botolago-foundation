@@ -69,6 +69,13 @@ jobs:
           tests/e2e/legal-brackets.e2e.ts
           tests/e2e/news-hero-fallback.e2e.ts
           tests/e2e/pronostics.e2e.ts
+      # Pépites is off in every build: its pages open only on a development
+      # server started with the local preview switch, so it has its own step
+      # (and its own server). Sample data only, like the step above.
+      - name: Pépites browser suite (local preview switch on)
+        env:
+          VITE_PEPITES_PREVIEW: "1"
+        run: bunx playwright test tests/e2e/pepites.e2e.ts
       # The same pages from the production bundle: the Worker module in
       # `.output` with the ASSETS binding Cloudflare gives it, run under Bun
       # rather than workerd (tests/e2e/built-output-serve.ts says what that

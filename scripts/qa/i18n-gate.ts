@@ -138,8 +138,14 @@ export const BASELINES: Baselines = {
   // annotated in `src/i18n/i18n-allowlist.ts`, and — as the header above
   // says — an allow-list entry annotates a count, it never removes it, so
   // the two baselines move with it. W1 6 -> 7, W2 6 -> 7.
-  W1: 7,
-  W2: 7,
+  //
+  // Pépites: the feature's name is a brand, "Pépites" in Latin script in
+  // both languages, as its weekly email already writes it. It is the page
+  // title (`pepites.title`) and the navigation label (`nav.pepites`): two
+  // W1 and two W2 findings, annotated in the allow-list, which never removes
+  // a count. Every other Pépites string is translated. W1 7 -> 9, W2 7 -> 9.
+  W1: 9,
+  W2: 9,
   // BG-0012: the /news redesign replaced the hardcoded tab UI
   // (news.tab.*, and its category-name-keyed news.section.transfers/
   // analysis/interviews) with real taxonomy-driven category chips, and

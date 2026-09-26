@@ -13,9 +13,12 @@
 
 import { Link, useRouterState } from "@tanstack/react-router";
 
+import { UserRound } from "lucide-react";
+
 import { Logo } from "@/components/brand/Logo";
-import { ui } from "@/components/ui-kit";
+import { ui, UiIconLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { PEPITES_PROMOTED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { isPrimaryRouteActive, primaryNavItems } from "./primary-nav";
@@ -79,6 +82,13 @@ export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
         <div className="ms-auto flex items-center gap-2 md:ms-0">
           {trailing}
           <LanguageSwitcher />
+          {/* Pépites takes Profil's slot in the bar once promoted, so the
+              profile moves here. */}
+          {PEPITES_PROMOTED ? (
+            <UiIconLinkButton to="/profile" aria-label={t("nav.profile")}>
+              <UserRound aria-hidden />
+            </UiIconLinkButton>
+          ) : null}
         </div>
       </div>
     </header>

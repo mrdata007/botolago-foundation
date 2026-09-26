@@ -42,3 +42,8 @@ export function getFantasyApi() {
 export function getAdminApi() {
   return supabaseV2.schema("api");
 }
+
+/** Pépites exposes mode-checked reads and permissioned admin RPCs in the api schema. */
+export function getPepitesApi() {
+  return supabaseV2.schema("api");
+}

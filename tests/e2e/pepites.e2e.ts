@@ -1,0 +1,212 @@
+import { expect, test, type Page } from "@playwright/test";
+
+import { dictionaries } from "../../src/i18n/dictionaries";
+import {
+  expectNoHorizontalOverflow,
+  expectNothingOffScreen,
+  gotoHydrated,
+  initializeLanguage,
+  observePage,
+} from "./support";
+
+/**
+ * Pépites against the sample data a development server serves without a
+ * `.env` (src/backend/pepites/mock-repository.ts), with the local preview
+ * switch on: `VITE_PEPITES_PREVIEW=1 bun run dev`. Week 15 is current; week
+ * 16 exists but is published only when a test says so, through
+ * `window.__pepitesMock` (development builds only).
+ *
+ * The reveal (architecture §7, Gate A condition 1): a scheduled edition
+ * counts down, runs late without publishing, keeps being checked, and shows
+ * the moment it is published, without a reload.
+ */
+
+type Language = "fr" | "ar";
+type Key = keyof typeof dictionaries.fr;
+const copy = (lang: Language, key: Key) => dictionaries[lang][key];
+const weekTitle = (lang: Language, week: number) =>
+  copy(lang, "pepites.home.week_title").replace("{n}", String(week));
+/** `DEMO` in auth-mock.ts, as the Pronostics journeys use it. */
+const DEMO = { email: "demo@botolago.ma", password: "demo1234" };
+
+async function setMock(page: Page, value: Record<string, unknown>) {
+  await page.evaluate((next) => {
+    const holder = window as unknown as { __pepitesMock?: Record<string, unknown> };
+    holder.__pepitesMock = { ...(holder.__pepitesMock ?? {}), ...next };
+  }, value);
+}
+
+for (const lang of ["fr", "ar"] as const) {
+  test(`${lang}: the delayed reveal keeps checking and shows the new Top 10 without a reload`, async ({
+    page,
+  }, testInfo) => {
+    const diagnostics = observePage(page);
+    await page.setViewportSize({ width: 390, height: 860 });
+    await initializeLanguage(page, lang);
+    // A countdown ending in four seconds, and short timers for the test.
+    await page.addInitScript(() => {
+      const holder = window as unknown as Record<string, unknown>;
+      holder.__pepitesMock = {
+        state: "countdown",
+        nextRevealAt: new Date(Date.now() + 4_000).toISOString(),
+      };
+      holder.__pepitesPoll = { countdownMs: 500, delayedMs: 1_000, jitter: 0 };
+    });
+    await gotoHydrated(page, "/pepites", lang);
+
+    await expect(page.getByTestId("pepites-reveal-countdown")).toBeVisible();
+    await expect(page.getByTestId("pepites-edition-title")).toHaveText(weekTitle(lang, 15));
+    await expect(page.getByTestId("pepites-top-entry")).toHaveCount(10);
+    // Marks this document: a reload would lose it.
+    await page.evaluate(() => {
+      (window as unknown as { __sameDocument?: boolean }).__sameDocument = true;
+    });
+
+    // The time passes and nothing is published: the server says "delayed".
+    await page.waitForTimeout(4_500);
+    await setMock(page, { state: "delayed", nextRevealAt: null });
+    await expect(page.getByTestId("pepites-reveal-delayed")).toBeVisible();
+    await expect(page.getByTestId("pepites-reveal-countdown")).toHaveCount(0);
+    await expect(page.getByText(copy(lang, "pepites.reveal.delayed_title"))).toBeVisible();
+    // Still last week's list while it is late.
+    await expect(page.getByTestId("pepites-edition-title")).toHaveText(weekTitle(lang, 15));
+
+    // Stays delayed across several checks, then the edition is published.
+    await page.waitForTimeout(2_500);
+    await expect(page.getByTestId("pepites-reveal-delayed")).toBeVisible();
+    await setMock(page, { publishNext: true });
+    await expect(page.getByTestId("pepites-edition-title")).toHaveText(weekTitle(lang, 16), {
+      timeout: 5_000,
+    });
+    await expect(page.getByTestId("pepites-reveal-delayed")).toHaveCount(0);
+    await expect(page.getByTestId("pepites-top-entry")).toHaveCount(10);
+    expect(
+      await page.evaluate(() => (window as unknown as { __sameDocument?: boolean }).__sameDocument),
+    ).toBe(true);
+    await diagnostics.verify(testInfo);
+  });
+
+  test(`${lang}: a visitor reads the Top 10, the ranking, a player and the method at 390px`, async ({
+    page,
+  }, testInfo) => {
+    const diagnostics = observePage(page);
+    await page.setViewportSize({ width: 390, height: 860 });
+    await initializeLanguage(page, lang);
+    await gotoHydrated(page, "/pepites", lang);
+
+    // The Top 10: ten players, lines in the reader's language, arrows.
+    await expect(page.getByTestId("pepites-edition-title")).toHaveText(weekTitle(lang, 15));
+    const entries = page.getByTestId("pepites-top-entry");
+    await expect(entries).toHaveCount(10);
+    await expect(page.getByTestId("pepites-reveal-countdown")).toHaveCount(0);
+    await expectNoHorizontalOverflow(page);
+    await expectNothingOffScreen(page);
+
+    // The full ranking: twenty, then more, then filtered by position.
+    await page.getByTestId("pepites-full-ranking").click();
+    await expect(page).toHaveURL(/\/pepites\/classement$/);
+    const rows = page.getByTestId("pepites-ranking-row");
+    await expect(rows).toHaveCount(20);
+    await page.getByTestId("pepites-load-more").click();
+    await expect(rows).toHaveCount(30);
+    await page.getByTestId("pepites-filter-MID").click();
+    await expect(page).toHaveURL(/poste=mid/);
+    await expect(rows.first()).toContainText(copy(lang, "pepites.position.mid"));
+    await expectNoHorizontalOverflow(page);
+    await expectNothingOffScreen(page, "main", { scrollRails: true });
+
+    // A player: overview, then the match log, then back.
+    await rows.first().click();
+    await expect(page).toHaveURL(/\/pepites\/joueur\//);
+    await expect(page.getByTestId("pepites-player-name")).toBeVisible();
+    await expect(page.getByTestId("pepites-player-components")).toBeVisible();
+    await expect(page.getByText(copy(lang, "pepites.player.not_set")).first()).toBeVisible();
+    await expectNothingOffScreen(page);
+    await page.getByRole("tab", { name: copy(lang, "pepites.player.tab_matches") }).click();
+    await expect(page).toHaveURL(/onglet=matchs/);
+    await expect(page.getByTestId("pepites-player-matches").locator("li").first()).toBeVisible();
+    await expectNothingOffScreen(page);
+
+    // The method, with the data coverage.
+    await gotoHydrated(page, "/pepites/methode", lang);
+    await expect(page.getByTestId("pepites-method")).toContainText(
+      copy(lang, "pepites.method.who_title"),
+    );
+    await expect(page.getByTestId("pepites-coverage")).toBeVisible();
+    await expectNothingOffScreen(page);
+
+    // An earlier week, from its own address.
+    await gotoHydrated(page, "/pepites/semaine/14", lang);
+    await expect(page.getByTestId("pepites-edition-title")).toHaveText(weekTitle(lang, 14));
+    await expect(page.getByTestId("pepites-top-entry")).toHaveCount(10);
+    await diagnostics.verify(testInfo);
+  });
+
+  test(`${lang}: the share image is drawn on the phone for the published week`, async ({
+    page,
+  }, testInfo) => {
+    const diagnostics = observePage(page);
+    await page.setViewportSize({ width: 390, height: 860 });
+    await initializeLanguage(page, lang);
+    await gotoHydrated(page, "/pepites", lang);
+    await page.getByTestId("pepites-share").click();
+    const image = page.getByTestId("pepites-share-image");
+    await expect(image).toBeVisible();
+    const size = await image.evaluate(async (node) => {
+      const img = node as HTMLImageElement;
+      await img.decode();
+      return [img.naturalWidth, img.naturalHeight];
+    });
+    expect(size).toEqual([1080, 1350]);
+    await expect(page.getByTestId("pepites-share-download")).toHaveAttribute(
+      "download",
+      "pepites-semaine-15.png",
+    );
+    await diagnostics.verify(testInfo);
+  });
+
+  test(`${lang}: the weekly email is off until a signed-in reader turns it on`, async ({
+    page,
+  }, testInfo) => {
+    const diagnostics = observePage(page);
+    await page.setViewportSize({ width: 390, height: 860 });
+    await initializeLanguage(page, lang);
+    await gotoHydrated(page, "/pepites", lang);
+    const card = page.getByTestId("pepites-email-card");
+    await expect(card).toContainText(copy(lang, "pepites.email.sign_in"));
+    await expect(card.getByRole("switch")).toHaveCount(0);
+
+    await gotoHydrated(page, `/auth/login?next=${encodeURIComponent("/pepites")}`, lang);
+    await page.locator('input[type="email"]').fill(DEMO.email);
+    await page.locator('input[autocomplete="current-password"]').fill(DEMO.password);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL((url) => url.pathname === "/pepites");
+    const toggle = page.getByTestId("pepites-email-switch");
+    await expect(toggle).toHaveAttribute("aria-checked", "false");
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-checked", "true");
+    await diagnostics.verify(testInfo);
+  });
+}
+
+test("with Pépites switched off, every page says it is coming and shows no player", async ({
+  page,
+}, testInfo) => {
+  const diagnostics = observePage(page);
+  await initializeLanguage(page, "fr");
+  await page.addInitScript(() => {
+    (window as unknown as Record<string, unknown>).__pepitesMock = { closed: true };
+  });
+  for (const path of [
+    "/pepites",
+    "/pepites/classement",
+    "/pepites/methode",
+    "/pepites/semaine/14",
+  ]) {
+    await gotoHydrated(page, path, "fr");
+    await expect(page.getByTestId("pepites-coming-soon")).toBeVisible();
+    await expect(page.getByTestId("pepites-top-entry")).toHaveCount(0);
+    await expect(page.getByTestId("pepites-ranking-row")).toHaveCount(0);
+  }
+  await diagnostics.verify(testInfo);
+});

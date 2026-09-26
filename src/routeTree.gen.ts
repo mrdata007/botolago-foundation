@@ -15,6 +15,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PronosticsRouteImport } from './routes/pronostics'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as PepitesRouteImport } from './routes/pepites'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as FantasyRouteImport } from './routes/fantasy'
@@ -23,11 +24,14 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PronosticsIndexRouteImport } from './routes/pronostics.index'
 import { Route as PrizesIndexRouteImport } from './routes/prizes.index'
+import { Route as PepitesIndexRouteImport } from './routes/pepites.index'
 import { Route as MatchesIndexRouteImport } from './routes/matches.index'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as ClubsIndexRouteImport } from './routes/clubs.index'
 import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
 import { Route as PrizesTermsRouteImport } from './routes/prizes.terms'
+import { Route as PepitesMethodeRouteImport } from './routes/pepites.methode'
+import { Route as PepitesClassementRouteImport } from './routes/pepites.classement'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
 import { Route as MatchesStandingsRouteImport } from './routes/matches.standings'
 import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
@@ -64,6 +68,8 @@ import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]
 import { Route as PronosticsLiguesIndexRouteImport } from './routes/pronostics.ligues.index'
 import { Route as PronosticsLiguesRejoindreRouteImport } from './routes/pronostics.ligues.rejoindre'
 import { Route as PronosticsLiguesLeagueIdRouteImport } from './routes/pronostics.ligues.$leagueId'
+import { Route as PepitesSemaineNRouteImport } from './routes/pepites.semaine.$n'
+import { Route as PepitesJoueurPlayerIdRouteImport } from './routes/pepites.joueur.$playerId'
 import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.players.$playerId'
 import { Route as FantasyLeaguesJoinRouteImport } from './routes/fantasy.leagues.join'
 import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
@@ -102,6 +108,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PepitesRoute = PepitesRouteImport.update({
+  id: '/pepites',
+  path: '/pepites',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsRoute = NewsRouteImport.update({
@@ -144,6 +155,11 @@ const PrizesIndexRoute = PrizesIndexRouteImport.update({
   path: '/prizes/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PepitesIndexRoute = PepitesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PepitesRoute,
+} as any)
 const MatchesIndexRoute = MatchesIndexRouteImport.update({
   id: '/matches/',
   path: '/matches/',
@@ -168,6 +184,16 @@ const PrizesTermsRoute = PrizesTermsRouteImport.update({
   id: '/prizes/terms',
   path: '/prizes/terms',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PepitesMethodeRoute = PepitesMethodeRouteImport.update({
+  id: '/methode',
+  path: '/methode',
+  getParentRoute: () => PepitesRoute,
+} as any)
+const PepitesClassementRoute = PepitesClassementRouteImport.update({
+  id: '/classement',
+  path: '/classement',
+  getParentRoute: () => PepitesRoute,
 } as any)
 const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
   id: '/$articleId',
@@ -353,6 +379,16 @@ const PronosticsLiguesLeagueIdRoute =
     path: '/ligues/$leagueId',
     getParentRoute: () => PronosticsRoute,
   } as any)
+const PepitesSemaineNRoute = PepitesSemaineNRouteImport.update({
+  id: '/semaine/$n',
+  path: '/semaine/$n',
+  getParentRoute: () => PepitesRoute,
+} as any)
+const PepitesJoueurPlayerIdRoute = PepitesJoueurPlayerIdRouteImport.update({
+  id: '/joueur/$playerId',
+  path: '/joueur/$playerId',
+  getParentRoute: () => PepitesRoute,
+} as any)
 const FantasyPlayersPlayerIdRoute = FantasyPlayersPlayerIdRouteImport.update({
   id: '/$playerId',
   path: '/$playerId',
@@ -408,6 +444,7 @@ export interface FileRoutesByFullPath {
   '/fantasy': typeof FantasyRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
+  '/pepites': typeof PepitesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
@@ -447,11 +484,14 @@ export interface FileRoutesByFullPath {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/pepites/classement': typeof PepitesClassementRoute
+  '/pepites/methode': typeof PepitesMethodeRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs/': typeof ClubsIndexRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
+  '/pepites/': typeof PepitesIndexRoute
   '/prizes/': typeof PrizesIndexRoute
   '/pronostics/': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -463,6 +503,8 @@ export interface FileRoutesByFullPath {
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/pepites/joueur/$playerId': typeof PepitesJoueurPlayerIdRoute
+  '/pepites/semaine/$n': typeof PepitesSemaineNRoute
   '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
   '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
   '/pronostics/ligues/': typeof PronosticsLiguesIndexRoute
@@ -511,11 +553,14 @@ export interface FileRoutesByTo {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/pepites/classement': typeof PepitesClassementRoute
+  '/pepites/methode': typeof PepitesMethodeRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs': typeof ClubsIndexRoute
   '/fantasy': typeof FantasyIndexRoute
   '/matches': typeof MatchesIndexRoute
+  '/pepites': typeof PepitesIndexRoute
   '/prizes': typeof PrizesIndexRoute
   '/pronostics': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -527,6 +572,8 @@ export interface FileRoutesByTo {
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/pepites/joueur/$playerId': typeof PepitesJoueurPlayerIdRoute
+  '/pepites/semaine/$n': typeof PepitesSemaineNRoute
   '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
   '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
   '/pronostics/ligues': typeof PronosticsLiguesIndexRoute
@@ -539,6 +586,7 @@ export interface FileRoutesById {
   '/fantasy': typeof FantasyRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
+  '/pepites': typeof PepitesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
@@ -578,11 +626,14 @@ export interface FileRoutesById {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/pepites/classement': typeof PepitesClassementRoute
+  '/pepites/methode': typeof PepitesMethodeRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs/': typeof ClubsIndexRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
+  '/pepites/': typeof PepitesIndexRoute
   '/prizes/': typeof PrizesIndexRoute
   '/pronostics/': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
@@ -594,6 +645,8 @@ export interface FileRoutesById {
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/pepites/joueur/$playerId': typeof PepitesJoueurPlayerIdRoute
+  '/pepites/semaine/$n': typeof PepitesSemaineNRoute
   '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
   '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
   '/pronostics/ligues/': typeof PronosticsLiguesIndexRoute
@@ -607,6 +660,7 @@ export interface FileRouteTypes {
     | '/fantasy'
     | '/mcp'
     | '/news'
+    | '/pepites'
     | '/privacy'
     | '/profile'
     | '/pronostics'
@@ -646,11 +700,14 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
+    | '/pepites/classement'
+    | '/pepites/methode'
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs/'
     | '/fantasy/'
     | '/matches/'
+    | '/pepites/'
     | '/prizes/'
     | '/pronostics/'
     | '/.lovable/oauth/consent'
@@ -662,6 +719,8 @@ export interface FileRouteTypes {
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
+    | '/pepites/joueur/$playerId'
+    | '/pepites/semaine/$n'
     | '/pronostics/ligues/$leagueId'
     | '/pronostics/ligues/rejoindre'
     | '/pronostics/ligues/'
@@ -710,11 +769,14 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
+    | '/pepites/classement'
+    | '/pepites/methode'
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs'
     | '/fantasy'
     | '/matches'
+    | '/pepites'
     | '/prizes'
     | '/pronostics'
     | '/.lovable/oauth/consent'
@@ -726,6 +788,8 @@ export interface FileRouteTypes {
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
+    | '/pepites/joueur/$playerId'
+    | '/pepites/semaine/$n'
     | '/pronostics/ligues/$leagueId'
     | '/pronostics/ligues/rejoindre'
     | '/pronostics/ligues'
@@ -737,6 +801,7 @@ export interface FileRouteTypes {
     | '/fantasy'
     | '/mcp'
     | '/news'
+    | '/pepites'
     | '/privacy'
     | '/profile'
     | '/pronostics'
@@ -776,11 +841,14 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
+    | '/pepites/classement'
+    | '/pepites/methode'
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs/'
     | '/fantasy/'
     | '/matches/'
+    | '/pepites/'
     | '/prizes/'
     | '/pronostics/'
     | '/.lovable/oauth/consent'
@@ -792,6 +860,8 @@ export interface FileRouteTypes {
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
+    | '/pepites/joueur/$playerId'
+    | '/pepites/semaine/$n'
     | '/pronostics/ligues/$leagueId'
     | '/pronostics/ligues/rejoindre'
     | '/pronostics/ligues/'
@@ -804,6 +874,7 @@ export interface RootRouteChildren {
   FantasyRoute: typeof FantasyRouteWithChildren
   McpRoute: typeof McpRoute
   NewsRoute: typeof NewsRouteWithChildren
+  PepitesRoute: typeof PepitesRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRouteWithChildren
   PronosticsRoute: typeof PronosticsRouteWithChildren
@@ -867,6 +938,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pepites': {
+      id: '/pepites'
+      path: '/pepites'
+      fullPath: '/pepites'
+      preLoaderRoute: typeof PepitesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/news': {
       id: '/news'
       path: '/news'
@@ -923,6 +1001,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrizesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pepites/': {
+      id: '/pepites/'
+      path: '/'
+      fullPath: '/pepites/'
+      preLoaderRoute: typeof PepitesIndexRouteImport
+      parentRoute: typeof PepitesRoute
+    }
     '/matches/': {
       id: '/matches/'
       path: '/matches'
@@ -957,6 +1042,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/prizes/terms'
       preLoaderRoute: typeof PrizesTermsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/pepites/methode': {
+      id: '/pepites/methode'
+      path: '/methode'
+      fullPath: '/pepites/methode'
+      preLoaderRoute: typeof PepitesMethodeRouteImport
+      parentRoute: typeof PepitesRoute
+    }
+    '/pepites/classement': {
+      id: '/pepites/classement'
+      path: '/classement'
+      fullPath: '/pepites/classement'
+      preLoaderRoute: typeof PepitesClassementRouteImport
+      parentRoute: typeof PepitesRoute
     }
     '/news/$articleId': {
       id: '/news/$articleId'
@@ -1210,6 +1309,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PronosticsLiguesLeagueIdRouteImport
       parentRoute: typeof PronosticsRoute
     }
+    '/pepites/semaine/$n': {
+      id: '/pepites/semaine/$n'
+      path: '/semaine/$n'
+      fullPath: '/pepites/semaine/$n'
+      preLoaderRoute: typeof PepitesSemaineNRouteImport
+      parentRoute: typeof PepitesRoute
+    }
+    '/pepites/joueur/$playerId': {
+      id: '/pepites/joueur/$playerId'
+      path: '/joueur/$playerId'
+      fullPath: '/pepites/joueur/$playerId'
+      preLoaderRoute: typeof PepitesJoueurPlayerIdRouteImport
+      parentRoute: typeof PepitesRoute
+    }
     '/fantasy/players/$playerId': {
       id: '/fantasy/players/$playerId'
       path: '/$playerId'
@@ -1431,6 +1544,25 @@ const NewsRouteChildren: NewsRouteChildren = {
 
 const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 
+interface PepitesRouteChildren {
+  PepitesClassementRoute: typeof PepitesClassementRoute
+  PepitesMethodeRoute: typeof PepitesMethodeRoute
+  PepitesIndexRoute: typeof PepitesIndexRoute
+  PepitesJoueurPlayerIdRoute: typeof PepitesJoueurPlayerIdRoute
+  PepitesSemaineNRoute: typeof PepitesSemaineNRoute
+}
+
+const PepitesRouteChildren: PepitesRouteChildren = {
+  PepitesClassementRoute: PepitesClassementRoute,
+  PepitesMethodeRoute: PepitesMethodeRoute,
+  PepitesIndexRoute: PepitesIndexRoute,
+  PepitesJoueurPlayerIdRoute: PepitesJoueurPlayerIdRoute,
+  PepitesSemaineNRoute: PepitesSemaineNRoute,
+}
+
+const PepitesRouteWithChildren =
+  PepitesRoute._addFileChildren(PepitesRouteChildren)
+
 interface ProfileRouteChildren {
   ProfileSecurityRoute: typeof ProfileSecurityRoute
 }
@@ -1467,6 +1599,7 @@ const rootRouteChildren: RootRouteChildren = {
   FantasyRoute: FantasyRouteWithChildren,
   McpRoute: McpRoute,
   NewsRoute: NewsRouteWithChildren,
+  PepitesRoute: PepitesRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRouteWithChildren,
   PronosticsRoute: PronosticsRouteWithChildren,
