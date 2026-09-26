@@ -76,10 +76,16 @@ export const Route = createFileRoute("/")({
     await prefetchForSsr(queryClient, [
       {
         queryKey: ["football", "home-matches", "fr"],
-        queryFn: () => footballService.getHomeMatches("fr"),
+        queryFn: ({ signal }) => footballService.getHomeMatches("fr", signal),
       },
-      { queryKey: ["football", "clubs", "fr"], queryFn: () => footballService.getClubs("fr") },
-      { queryKey: ["football", "seasons", "fr"], queryFn: () => footballService.getSeasons("fr") },
+      {
+        queryKey: ["football", "clubs", "fr"],
+        queryFn: ({ signal }) => footballService.getClubs("fr", signal),
+      },
+      {
+        queryKey: ["football", "seasons", "fr"],
+        queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
+      },
       ...(NEWS_ENABLED
         ? [
             {
@@ -95,7 +101,7 @@ export const Route = createFileRoute("/")({
       await prefetchForSsr(queryClient, [
         {
           queryKey: ["football", "standings", current.id, "fr"],
-          queryFn: () => footballService.getStandings(current, "fr"),
+          queryFn: ({ signal }) => footballService.getStandings(current, "fr", signal),
         },
       ]);
     }
