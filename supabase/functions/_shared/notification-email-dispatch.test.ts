@@ -4,8 +4,13 @@ import {
   EmailDispatchError,
   handleEmailDispatchRequest,
   readClaimedDeliveries,
+  sha256Hex,
   type EmailRpcClient,
 } from "./notification-email-dispatch.ts";
+import {
+  renderNotificationEmail,
+  unsubscribeUrl as renderUnsubscribeUrl,
+} from "./notification-email-render.ts";
 import type { ClaimedEmailDelivery } from "./notification-email-types.ts";
 
 const TOKEN = "a".repeat(64);
@@ -464,5 +469,198 @@ describe("email dispatch request", () => {
     );
     expect(await response.json()).toEqual({ claimed: 2, sent: 2, retrying: 0, failed: 0 });
     expect(calls.filter((call) => call.name === "service_claim_email_deliveries")).toHaveLength(3);
+  });
+});
+
+describe("pepites_weekly through the dispatcher", () => {
+  const PEPITES_ID = "44444444-4444-4444-8444-444444444444";
+
+  function pepitesDelivery(
+    language: "fr" | "ar",
+    extra: Partial<Record<"bodySha256" | "email", string>> = {},
+  ): ClaimedEmailDelivery {
+    return {
+      id: PEPITES_ID,
+      notificationId: "00000000-0000-4000-8000-0000000000cc",
+      attemptNumber: 1,
+      type: "pepites_weekly",
+      language,
+      timezone: "Africa/Casablanca",
+      recipient: { email: extra.email ?? "fan@example.test", displayName: "Sara" },
+      favoriteTeamId: null,
+      unsubscribeToken: "P".repeat(32),
+      unsubscribeTopic: "pepites_weekly",
+      firstAttemptAt: "2026-10-12T19:05:00Z",
+      bodySha256: extra.bodySha256 ?? null,
+      payload: {
+        editionId: "00000000-0000-4000-8000-0000000000dd",
+        seasonId: "00000000-0000-4000-8000-0000000000ee",
+        week: 16,
+        round: 5,
+        publishedAt: "2026-10-12T19:00:00Z",
+        correctsEditionId: null,
+        entries: Array.from({ length: 10 }, (_, index) => ({
+          rank: index + 1,
+          playerId: `00000000-0000-4000-8000-0000000001${String(index).padStart(2, "0")}`,
+          name: `Joueur ${index + 1}`,
+          club: {
+            id: "club",
+            name: { fr: "Raja Casablanca", ar: "الرجاء الرياضي" },
+            shortName: { fr: "Raja", ar: "الرجاء" },
+          },
+          score: 90 - index * 2,
+        })),
+      },
+    };
+  }
+
+  const realDependencies = (
+    client: EmailRpcClient,
+    fetchImpl: (input: string | URL | Request, init?: RequestInit) => Promise<Response>,
+  ) => ({
+    environment: { RESEND_API_KEY: API_KEY, SUPABASE_URL: "https://project.supabase.co" },
+    client,
+    render: renderNotificationEmail,
+    unsubscribeUrl: renderUnsubscribeUrl,
+    fetch: fetchImpl,
+    sleep: async () => {},
+  });
+
+  /**
+   * Resend's idempotency, as documented: a key is remembered for 24 hours; the
+   * same key and body inside them returns the first result without sending;
+   * the same key with another body is refused; after them, it sends again.
+   */
+  function fakeResend(clock: { now: number }) {
+    const sent: Array<{ key: string; body: Record<string, unknown> }> = [];
+    const seen = new Map<string, { at: number; body: string; id: string }>();
+    let loseNextResponse = false;
+    const fetchImpl = async (_input: string | URL | Request, init?: RequestInit) => {
+      const key = new Headers(init?.headers).get("idempotency-key") ?? "";
+      const body = String(init?.body);
+      const earlier = seen.get(key);
+      if (earlier && clock.now - earlier.at < 24 * 3600 * 1000) {
+        if (earlier.body !== body) {
+          return new Response('{"name":"invalid_idempotent_request"}', { status: 409 });
+        }
+        return Response.json({ id: earlier.id });
+      }
+      const id = `resend-${sent.length + 1}`;
+      sent.push({ key, body: JSON.parse(body) as Record<string, unknown> });
+      seen.set(key, { at: clock.now, body, id });
+      if (loseNextResponse) {
+        loseNextResponse = false;
+        throw new TypeError("connection reset after the provider accepted");
+      }
+      return Response.json({ id });
+    };
+    return {
+      fetchImpl,
+      sent,
+      loseNext: () => {
+        loseNextResponse = true;
+      },
+    };
+  }
+
+  for (const [language, subject, unsubscribeLabel] of [
+    ["fr", "Pépites · Semaine 16 : le Top 10 des jeunes", "Se désabonner de Pépites"],
+    ["ar", "Pépites · الأسبوع 16: توب 10 للشباب", "إلغاء الاشتراك في Pépites"],
+  ] as const) {
+    it(`sends a claimed Pépites email in ${language} and records it with its body hash`, async () => {
+      const { client, calls } = fakeClient([[pepitesDelivery(language)]]);
+      const clock = { now: Date.parse("2026-10-12T19:05:00Z") };
+      const resend = fakeResend(clock);
+      const response = await handleEmailDispatchRequest(request(), {
+        ...realDependencies(client, resend.fetchImpl),
+        now: () => clock.now,
+      });
+      expect(await response.json()).toEqual({ claimed: 1, sent: 1, retrying: 0, failed: 0 });
+      expect(resend.sent).toHaveLength(1);
+      const body = resend.sent[0]!.body;
+      expect(body.subject).toBe(subject);
+      expect(String(body.html)).toContain(unsubscribeLabel);
+      expect(String(body.text)).toContain(
+        `https://botolago.com/unsubscribe?token=${"P".repeat(32)}&topic=pepites_weekly`,
+      );
+      expect(body.headers).toEqual({
+        "List-Unsubscribe": `<https://project.supabase.co/functions/v1/notification-email-unsubscribe?token=${"P".repeat(32)}&topic=pepites_weekly>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      });
+      expect(body.tags).toEqual([
+        { name: "category", value: "notification" },
+        { name: "type", value: "pepites_weekly" },
+      ]);
+      const [record] = recorded(calls);
+      expect(record).toMatchObject({ p_delivery_id: PEPITES_ID, p_outcome: "sent" });
+      // The hash is of the exact bytes sent (the body round-trips unchanged).
+      expect(record!.p_body_sha256).toBe(await sha256Hex(JSON.stringify(body)));
+    });
+  }
+
+  it("accepted but the answer lost: the retry an hour later sends the same key and body, and there is one email", async () => {
+    const clock = { now: Date.parse("2026-10-12T19:05:00Z") };
+    const resend = fakeResend(clock);
+    resend.loseNext();
+
+    const first = fakeClient([[pepitesDelivery("fr")]]);
+    await handleEmailDispatchRequest(request(), {
+      ...realDependencies(first.client, resend.fetchImpl),
+      now: () => clock.now,
+    });
+    const [firstRecord] = recorded(first.calls);
+    expect(firstRecord).toMatchObject({
+      p_outcome: "retryable_failure",
+      p_stable_error_code: "delivery_network_error",
+    });
+    const firstHash = firstRecord!.p_body_sha256 as string;
+    expect(firstHash).toMatch(/^[0-9a-f]{64}$/);
+
+    // The claim hands it back an hour later with the first attempt's hash.
+    clock.now += 3600 * 1000;
+    const second = fakeClient([
+      [{ ...pepitesDelivery("fr", { bodySha256: firstHash }), attemptNumber: 2 }],
+    ]);
+    const response = await handleEmailDispatchRequest(request(), {
+      ...realDependencies(second.client, resend.fetchImpl),
+      now: () => clock.now,
+    });
+    expect(await response.json()).toEqual({ claimed: 1, sent: 1, retrying: 0, failed: 0 });
+    expect(recorded(second.calls)[0]).toMatchObject({
+      p_outcome: "sent",
+      p_provider_message_id: "resend-1",
+      p_body_sha256: firstHash,
+    });
+    expect(resend.sent).toHaveLength(1);
+  });
+
+  it("refuses to send a retry whose body would differ from the first attempt's", async () => {
+    const clock = { now: Date.parse("2026-10-12T20:05:00Z") };
+    const resend = fakeResend(clock);
+    // The first attempt went to another address, so its body hash differs.
+    const { client, calls } = fakeClient([
+      [pepitesDelivery("fr", { bodySha256: "0".repeat(64), email: "new@example.test" })],
+    ]);
+    const response = await handleEmailDispatchRequest(request(), {
+      ...realDependencies(client, resend.fetchImpl),
+      now: () => clock.now,
+    });
+    expect(await response.json()).toEqual({ claimed: 1, sent: 0, retrying: 0, failed: 1 });
+    expect(resend.sent).toHaveLength(0);
+    expect(recorded(calls)[0]).toMatchObject({
+      p_outcome: "cancelled",
+      p_retryable: false,
+      p_stable_error_code: "delivery_body_changed",
+    });
+  });
+
+  it("rejects a claimed row with a malformed body hash or an unknown topic", () => {
+    const result = readClaimedDeliveries([
+      { ...pepitesDelivery("fr"), bodySha256: "nope" },
+      { ...pepitesDelivery("fr"), id: ID1, unsubscribeTopic: "everything" },
+      { ...pepitesDelivery("fr"), id: ID2 },
+    ]);
+    expect(result.valid.map((item) => item.id)).toEqual([ID2]);
+    expect(result.invalidIds).toEqual([PEPITES_ID, ID1]);
   });
 });

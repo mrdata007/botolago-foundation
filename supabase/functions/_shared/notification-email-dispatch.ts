@@ -10,7 +10,12 @@
 //      anything no longer wanted or no longer timely;
 //   3. renders each email and sends it through Resend's HTTP API with the
 //      delivery id as the idempotency key, so a retry after an ambiguous
-//      failure can never produce a second email;
+//      failure does not produce a second email within the provider's 24-hour
+//      window. Resend forgets a key after 24 hours, so the claim stops
+//      retrying an ambiguous send 23 hours after its first attempt (closed as
+//      possibly_sent), and a retry must send the very body the first attempt
+//      sent: its SHA-256 is recorded with each attempt and a retry whose body
+//      would differ is not sent;
 //   4. records the outcome with api.service_record_notification_delivery_attempt,
 //      which schedules bounded retries and dead-letters permanent failures.
 //
@@ -234,6 +239,7 @@ async function rpc(
 
 const TYPES = new Set<string>(EMAIL_NOTIFICATION_TYPES);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SHA256 = /^[0-9a-f]{64}$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -268,6 +274,12 @@ export function readClaimedDeliveries(value: unknown): {
       typeof recipient.email === "string" &&
       recipient.email.length <= 320 &&
       /^[^\s@<>]+@[^\s@<>]+$/.test(recipient.email) &&
+      (item.bodySha256 === undefined ||
+        item.bodySha256 === null ||
+        (typeof item.bodySha256 === "string" && SHA256.test(item.bodySha256))) &&
+      (item.unsubscribeTopic === undefined ||
+        item.unsubscribeTopic === null ||
+        item.unsubscribeTopic === "pepites_weekly") &&
       isRecord(item.payload);
     if (ok) valid.push(item as unknown as ClaimedEmailDelivery);
     else invalidIds.push(item.id);
@@ -322,27 +334,64 @@ function secondsUntil(target: Date, nowMs: number): number {
   return Math.max(60, Math.ceil((target.getTime() - nowMs) / 1000));
 }
 
-/** Where the List-Unsubscribe header points, and whether it is one-click. */
+/**
+ * Where the List-Unsubscribe header points, and whether it is one-click. A
+ * topic token (Pépites) carries its topic, so the page it redirects to can
+ * say what it turns off; the token alone decides.
+ */
 export function listUnsubscribeHeaders(
   delivery: ClaimedEmailDelivery,
   pageUrl: string,
   config: EmailDispatchConfiguration,
 ): Record<string, string> {
   if (!config.oneClickUnsubscribeEndpoint) return { "List-Unsubscribe": `<${pageUrl}>` };
+  const topic = delivery.unsubscribeTopic === "pepites_weekly" ? "&topic=pepites_weekly" : "";
   const endpoint = `${config.oneClickUnsubscribeEndpoint}?token=${encodeURIComponent(
     delivery.unsubscribeToken,
-  )}`;
+  )}${topic}`;
   return {
     "List-Unsubscribe": `<${endpoint}>`,
     "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
   };
 }
 
-/** Sends one email through Resend and classifies the result. */
-export async function sendThroughResend(
+/**
+ * The exact request body for one email. Built only from the claimed delivery
+ * (its stored payload) and the configuration, so a retry of the same delivery
+ * builds the same bytes.
+ */
+export function resendRequestBody(
   delivery: ClaimedEmailDelivery,
   email: RenderedEmail,
   unsubscribePageUrl: string,
+  config: EmailDispatchConfiguration,
+): string {
+  const tag = (value: string) => value.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 256);
+  return JSON.stringify({
+    from: config.from,
+    to: [delivery.recipient.email],
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+    ...(config.replyTo ? { reply_to: config.replyTo } : {}),
+    headers: listUnsubscribeHeaders(delivery, unsubscribePageUrl, config),
+    tags: [
+      { name: "category", value: "notification" },
+      { name: "type", value: tag(delivery.type) },
+    ],
+  });
+}
+
+/** Lower-case hex SHA-256 of a request body. */
+export async function sha256Hex(body: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(body));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/** Sends one email body through Resend and classifies the result. */
+export async function sendThroughResend(
+  delivery: ClaimedEmailDelivery,
+  body: string,
   config: EmailDispatchConfiguration,
   fetchImpl: FetchLike,
   now: () => number,
@@ -350,7 +399,6 @@ export async function sendThroughResend(
   const started = now();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), config.timeoutMs);
-  const tag = (value: string) => value.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 256);
   const base = { providerMessageId: null, retryAfterSeconds: null, rateLimitRemaining: null };
   let response: Response;
   try {
@@ -361,22 +409,10 @@ export async function sendThroughResend(
         authorization: `Bearer ${config.apiKey}`,
         "content-type": "application/json",
         // Resend remembers a key for 24 hours; a retried attempt is the
-        // same email (same token, same content) and is recognised.
+        // same email (same token, same body) and is recognised within them.
         "idempotency-key": `botolago-email-${delivery.id}`,
       },
-      body: JSON.stringify({
-        from: config.from,
-        to: [delivery.recipient.email],
-        subject: email.subject,
-        html: email.html,
-        text: email.text,
-        ...(config.replyTo ? { reply_to: config.replyTo } : {}),
-        headers: listUnsubscribeHeaders(delivery, unsubscribePageUrl, config),
-        tags: [
-          { name: "category", value: "notification" },
-          { name: "type", value: tag(delivery.type) },
-        ],
-      }),
+      body,
     });
   } catch {
     clearTimeout(timer);
@@ -493,7 +529,8 @@ export async function sendThroughResend(
 async function record(
   client: EmailRpcClient,
   deliveryId: string,
-  outcome: SendOutcome,
+  outcome: SendOutcome | WithheldOutcome,
+  bodySha256: string | null = null,
 ): Promise<void> {
   await rpc(client, "service_record_notification_delivery_attempt", {
     p_delivery_id: deliveryId,
@@ -506,8 +543,28 @@ async function record(
     p_rate_limit_remaining: outcome.rateLimitRemaining,
     p_max_attempts: MAX_ATTEMPTS,
     p_retry_after_seconds: outcome.retryAfterSeconds,
+    p_body_sha256: bodySha256,
   });
 }
+
+/** Not sent at all: the retry's body differs from the first attempt's. */
+interface WithheldOutcome {
+  readonly outcome: "cancelled";
+  readonly providerMessageId: null;
+  readonly stableErrorCode: "delivery_body_changed";
+  readonly retryAfterSeconds: null;
+  readonly rateLimitRemaining: null;
+  readonly latencyMs: 0;
+}
+
+const WITHHELD: WithheldOutcome = {
+  outcome: "cancelled",
+  providerMessageId: null,
+  stableErrorCode: "delivery_body_changed",
+  retryAfterSeconds: null,
+  rateLimitRemaining: null,
+  latencyMs: 0,
+};
 
 const permanent = (code: string): SendOutcome => ({
   outcome: "permanent_failure",
@@ -562,17 +619,26 @@ export async function runEmailDispatch(
       if (!first && config.sendIntervalMs > 0) await sleep(config.sendIntervalMs);
       first = false;
 
-      let email: RenderedEmail;
-      let pageUrl: string;
+      let body: string;
       try {
-        email = dependencies.render(delivery, links);
-        pageUrl = dependencies.unsubscribeUrl(delivery, links);
+        const email = dependencies.render(delivery, links);
+        const pageUrl = dependencies.unsubscribeUrl(delivery, links);
+        body = resendRequestBody(delivery, email, pageUrl, config);
       } catch {
         await record(dependencies.client, delivery.id, permanent("template_render_failed"));
         counts.failed += 1;
         continue;
       }
-      const outcome = await sendThroughResend(delivery, email, pageUrl, config, fetchImpl, now);
+      const bodySha256 = await sha256Hex(body);
+      if (delivery.bodySha256 && delivery.bodySha256 !== bodySha256) {
+        // Under the same key, a different body is either refused by the
+        // provider (inside its window) or sent as a second, different email
+        // (after it). Neither is acceptable: close it unsent.
+        await record(dependencies.client, delivery.id, WITHHELD, bodySha256);
+        counts.failed += 1;
+        continue;
+      }
+      const outcome = await sendThroughResend(delivery, body, config, fetchImpl, now);
       if (outcome.pause) {
         // The refusal was about the account, not this email: it goes back
         // with the rest, and sending pauses until the provider will accept.
@@ -584,7 +650,7 @@ export async function runEmailDispatch(
         });
         continue;
       }
-      await record(dependencies.client, delivery.id, outcome);
+      await record(dependencies.client, delivery.id, outcome, bodySha256);
       if (outcome.outcome === "sent") counts.sent += 1;
       else if (outcome.outcome === "retryable_failure") counts.retrying += 1;
       else counts.failed += 1;

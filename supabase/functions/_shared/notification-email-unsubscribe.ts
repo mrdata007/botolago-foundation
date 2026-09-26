@@ -13,6 +13,11 @@
 //                  first: link scanners and previews only ever GET, so they
 //                  can never unsubscribe anyone.
 //
+// A Pépites email's token turns off only Pépites (the database knows each
+// token's topic). Its links also carry `topic=pepites_weekly`, passed on to
+// the page so it can say so before the reader confirms. The parameter only
+// changes wording; the token alone decides what is turned off.
+//
 // The token is never logged or echoed back.
 //
 // Dependency-free so it runs under Bun (tests) and Deno (the Edge Function).
@@ -72,10 +77,17 @@ export async function handleEmailUnsubscribeRequest(
     token = "";
   }
   const valid = TOKEN.test(token);
+  let topic = "";
+  try {
+    topic =
+      new URL(request.url).searchParams.get("topic") === "pepites_weekly" ? "pepites_weekly" : "";
+  } catch {
+    topic = "";
+  }
 
   if (request.method === "GET" || request.method === "HEAD") {
     const page = `${appOrigin(dependencies.environment)}/unsubscribe${
-      valid ? `?token=${encodeURIComponent(token)}` : ""
+      valid ? `?token=${encodeURIComponent(token)}${topic ? `&topic=${topic}` : ""}` : ""
     }`;
     return text(303, "", { location: page });
   }

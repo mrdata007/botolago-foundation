@@ -17,6 +17,7 @@ export const EMAIL_NOTIFICATION_TYPES = [
   "match_starting",
   "deadline_24h",
   "gameweek_finalized",
+  "pepites_weekly",
 ] as const;
 
 export type EmailNotificationType = (typeof EMAIL_NOTIFICATION_TYPES)[number];
@@ -81,6 +82,33 @@ export interface GameweekFinalizedPayload {
   readonly totalPoints: number | null;
 }
 
+/** One line of a Pépites Top 10, fixed when the edition was published. */
+export interface PepitesWeeklyEntry {
+  readonly rank: number;
+  readonly playerId: string;
+  readonly name: string;
+  /** Null when the player's club is not known. */
+  readonly club: EmailTeam | null;
+  /** 0-100, rounded. */
+  readonly score: number;
+}
+
+/**
+ * The weekly Pépites email (app_private.pepites_weekly_email_payload). Written
+ * once at publication; the email is rendered from it and nothing else.
+ */
+export interface PepitesWeeklyPayload {
+  readonly editionId: string;
+  readonly seasonId: string;
+  /** The season's week number: the edition page is /pepites/semaine/{week}. */
+  readonly week: number;
+  readonly round: number;
+  readonly publishedAt: string;
+  /** Set when this edition corrects an earlier one of the same week. */
+  readonly correctsEditionId: string | null;
+  readonly entries: readonly PepitesWeeklyEntry[];
+}
+
 export type EmailPayloadByType = {
   readonly matchday_preview: MatchdayPreviewPayload;
   readonly matchday_results: MatchdayResultsPayload;
@@ -88,7 +116,11 @@ export type EmailPayloadByType = {
   readonly match_starting: MatchStartingPayload;
   readonly deadline_24h: DeadlinePayload;
   readonly gameweek_finalized: GameweekFinalizedPayload;
+  readonly pepites_weekly: PepitesWeeklyPayload;
 };
+
+/** What an unsubscribe token turns off: all product email, or one topic. */
+export type EmailUnsubscribeTopic = "pepites_weekly";
 
 interface ClaimedEmailDeliveryBase {
   /** Delivery id. Also the provider idempotency key. */
@@ -103,6 +135,15 @@ interface ClaimedEmailDeliveryBase {
   readonly favoriteTeamId: string | null;
   /** Single-use-per-link token for the one-click unsubscribe page. */
   readonly unsubscribeToken: string;
+  /** Null: the token turns off all product email. Else only that topic. */
+  readonly unsubscribeTopic?: EmailUnsubscribeTopic | null;
+  /** When the delivery was first claimed for sending (ISO). */
+  readonly firstAttemptAt?: string | null;
+  /**
+   * SHA-256 of the request body its first attempt sent, when one was
+   * recorded. A retry must send exactly that body under the same key.
+   */
+  readonly bodySha256?: string | null;
 }
 
 export type ClaimedEmailDelivery = {

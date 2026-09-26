@@ -1138,9 +1138,40 @@ with its pgTAP file.
      test fails, which shows the lock is what it measures.
 6. `pepites_weekly_email_type`: the `pepites_weekly` notification type alone,
    because a new enum value cannot be used in the transaction that adds it.
+   **Built** locally as `20260926110000_pepites_weekly_email_type.sql`.
 7. `pepites_weekly_email`: the preference columns, opt-in and opt-out
    functions, unsubscribe topic, and the eligibility, staleness and priority
-   lines in the pipeline functions (§5.4).
+   lines in the pipeline functions (§5.4). **Built** locally as
+   `20260926110100_pepites_weekly_email.sql`, with the dispatcher, renderer,
+   unsubscribe function and `/unsubscribe` page changes. Tests: 46 pgTAP
+   assertions (`pepites_weekly_email.test.sql`); dispatcher, renderer and
+   unsubscribe unit tests in both languages; and
+   `scripts/backend/pepites-weekly-email-e2e.test.ts`, which runs the real
+   fan-out, claim, renderer, dispatcher and attempt recorder against a local
+   database and a fake Resend with Resend's 24-hour idempotency (CI
+   `database-quality`, after the pgTAP suite). Settled while building:
+   - **Publication in staff mode writes no event**, so a preview can never
+     email anyone, even if Pépites turns public within the 36 hours.
+   - **First attempt time** is a column, `notification_deliveries.first_claimed_at`,
+     set at the first claim, rather than read from the attempt log: a pass
+     that claimed an email and died before recording anything leaves no
+     attempt row, yet may have sent it. Rows from before the migration fall
+     back to their earliest attempt.
+   - **What counts as unsure**: an attempt recorded as timeout, network
+     error, provider error or "still in progress", or a claim whose lease ran
+     out unrecorded. A refusal (rate limit, validation) is certainly unsent
+     and is retried as before.
+   - **A changed body** is closed as `cancelled` with
+     `delivery_body_changed`, not dead-lettered; the attempt recorder now
+     accepts `cancelled` as a closing outcome and a `p_body_sha256`
+     argument (its old signature is replaced, not overloaded).
+   - **A correction** is sent to opted-in readers who have no Pépites email
+     for that week already sent or possibly sent.
+   - **The unsubscribe reply** keeps its old shape for an all-email token and
+     adds `"topic": "pepites_weekly"` for a Pépites token; the page shows
+     what the server reports, not what the link claims.
+   - **The admin report** is `app_private.pepites_email_report`; its
+     `pepites.publish` wrapper comes with migration 8.
 8. `pepites_api`: access check, version pointer, read and admin functions,
    permissions, grants.
 
