@@ -434,6 +434,27 @@ select extensions.ok(
       and target_entity_id = 'c0300000-0000-4000-8000-000000000003'),
   'and is audited'
 );
+reset role;
+insert into app.countries (iso_alpha2, iso_alpha3)
+select 'MA', 'MAR' where not exists (select 1 from app.countries where iso_alpha2 = 'MA');
+select pg_temp.act('staff');
+select extensions.lives_ok(
+  $$select api.admin_player_attribute_correct('c0300000-0000-4000-8000-000000000003', 'nationality', 'MA',
+    'Fiche officielle du club, saison 2026-27.')$$,
+  'staff correct the nationality with its ISO code, the attribute name the observations use'
+);
+select extensions.is(
+  (select country.iso_alpha2 from app.players player
+     join app.countries country on country.id = player.nationality_country_id
+   where player.id = 'c0300000-0000-4000-8000-000000000003'),
+  'MA',
+  'the nationality reaches the player'
+);
+select extensions.throws_ok(
+  $$select api.admin_player_attribute_correct('c0300000-0000-4000-8000-000000000003', 'nationality_country_id',
+    'MA', 'Fiche officielle du club, saison 2026-27.')$$,
+  '22023', 'ATTRIBUTE_INVALID', 'a column name is not an attribute'
+);
 select extensions.is(
   pg_temp.reads('staff'), '-------',
   'with Pépites off again, even staff get no public data (the admin screens still work)'
