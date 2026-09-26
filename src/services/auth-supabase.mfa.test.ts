@@ -104,8 +104,11 @@ function fakeSupabaseAuth() {
 
   const auth = {
     getSession: async () => ({ data: { session: current }, error: null }),
+    // As auth-js does: a new subscriber hears the stored session once
+    // (`INITIAL_SESSION`), which is the service's start-up resolution.
     onAuthStateChange: (listener: (event: string, session: Session | null) => void) => {
       listeners.push(listener);
+      void Promise.resolve().then(() => listener("INITIAL_SESSION", current));
       return { data: { subscription: { unsubscribe() {} } } };
     },
     signInWithPassword: async () => {
@@ -874,5 +877,122 @@ describe("the account's own data while the code is owed", () => {
       errorCode: "generic",
     });
     expect(fake.calls.refresh).toBe(refreshesBefore);
+  });
+});
+
+// auth-js announces the account on screen again on every return to the tab
+// (`SIGNED_IN`) and every hourly token refresh. Each announcement used to read
+// the profile and sign the avatar again; the session is still judged and
+// published afresh, but the same account keeps what it resolved to.
+describe("the same account announced again", () => {
+  const complete = { currentLevel: "aal1", nextLevel: "aal1" };
+  const withAvatar = (id: string): ProfileDto => ({
+    ...profileOf(id),
+    avatarPath: `${id}/avatar.jpg`,
+  });
+
+  function counted() {
+    const reads: string[] = [];
+    const signed: string[] = [];
+    const avatars: AvatarStorage = {
+      signedUrl: async (path) => {
+        signed.push(path);
+        return `https://storage.test/${path}?token=${signed.length}`;
+      },
+      upload: async (userId) => ({ ok: true, path: `${userId}/avatar.png` }),
+      remove: async () => {},
+    };
+    const profile = async (id: string) => {
+      reads.push(id);
+      return withAvatar(id);
+    };
+    return { reads, signed, avatars, profile };
+  }
+
+  it("starts from one resolution: the stored session's INITIAL_SESSION", async () => {
+    const { reads, signed, avatars, profile } = counted();
+    const fake = fakeSupabaseAuth();
+    fake.hold(ACCOUNT_A, complete);
+    const service = new SupabaseAuthService({
+      auth: () => fake.auth,
+      profiles: {
+        getMe: (context) => profile(context.actorId ?? ""),
+        completeOnboarding: async () => profileOf(ACCOUNT_A),
+      },
+      avatars,
+    });
+    service.subscribeToSession(() => {});
+    await settle();
+    await settle();
+    expect(service.getSession().user?.id).toBe(ACCOUNT_A);
+    expect(reads).toEqual([ACCOUNT_A]);
+    expect(signed).toEqual([`${ACCOUNT_A}/avatar.jpg`]);
+  });
+
+  it("a return to the tab or a token refresh republishes without reading the profile", async () => {
+    const { reads, signed, avatars, profile } = counted();
+    const { fake, service, statuses } = await start(profile, avatars);
+    fake.restore(ACCOUNT_A);
+    await settle();
+    expect(reads).toEqual([ACCOUNT_A]);
+    const published = statuses.length;
+    const avatarUrl = service.getSession().user?.avatarDataUrl;
+
+    fake.restore(ACCOUNT_A); // SIGNED_IN, as on every return to the tab
+    await settle();
+    fake.deliver("TOKEN_REFRESHED", sessionOf(ACCOUNT_A, complete));
+    await settle();
+
+    expect(statuses.length).toBe(published + 2);
+    expect(service.getSession()).toMatchObject({ status: "authenticated" });
+    expect(service.getSession().user?.avatarDataUrl).toBe(avatarUrl);
+    expect(reads).toEqual([ACCOUNT_A]);
+    expect(signed).toEqual([`${ACCOUNT_A}/avatar.jpg`]);
+
+    // An explicit re-check still reads the account.
+    await service.recheckSession();
+    expect(reads).toEqual([ACCOUNT_A, ACCOUNT_A]);
+  });
+
+  it("a change to the user, another account, or a sign-out in between reads again", async () => {
+    const { reads, avatars, profile } = counted();
+    const { fake, service } = await start(profile, avatars);
+    fake.restore(ACCOUNT_A);
+    await settle();
+    expect(reads).toEqual([ACCOUNT_A]);
+
+    fake.deliver("USER_UPDATED", sessionOf(ACCOUNT_A, complete));
+    await settle();
+    expect(reads).toEqual([ACCOUNT_A, ACCOUNT_A]);
+
+    fake.restore(ACCOUNT_B);
+    await settle();
+    expect(service.getSession().user?.id).toBe(ACCOUNT_B);
+    expect(reads).toEqual([ACCOUNT_A, ACCOUNT_A, ACCOUNT_B]);
+
+    await service.signOut();
+    fake.restore(ACCOUNT_B);
+    await settle();
+    expect(reads).toEqual([ACCOUNT_A, ACCOUNT_A, ACCOUNT_B, ACCOUNT_B]);
+  });
+
+  it("a refreshed token that now owes the code is still judged by itself", async () => {
+    const { avatars, profile } = counted();
+    const { fake, service } = await start(profile, avatars);
+    fake.restore(ACCOUNT_A);
+    await settle();
+    expect(service.getSession().status).toBe("authenticated");
+
+    // A factor enrolled on another device: the refreshed token lists it.
+    fake.deliver(
+      "TOKEN_REFRESHED",
+      sessionOf(ACCOUNT_A, { currentLevel: "aal1", nextLevel: "aal2" }),
+    );
+    await settle();
+    expect(service.getSession()).toEqual({
+      user: null,
+      status: "mfa_required",
+      pendingAccountId: ACCOUNT_A,
+    });
   });
 });
