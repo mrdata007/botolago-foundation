@@ -148,14 +148,17 @@ went, before and after the fix:
 - The change is migration `20260926130000_news_team_filters_first_public.sql`.
   It is not yet applied anywhere.
 
-**Proposed, not done:**
+**Also fixed on this branch (owner accepted a 5-minute delay, 2026-09-26):**
 
-- `fantasy_player_season_stats` counts ownership ("selected by") over every
-  active squad slot, 787,500 rows on the seeded staging data, on every call.
-- A 5-minute ownership snapshot, refreshed by pg_cron like the sitemap, would
-  remove most of it.
-- Ownership would then show up to 5 minutes late, which is a product choice
-  (proposal P7).
+- `fantasy_player_season_stats` counted ownership ("selected by") over every
+  active squad slot, 750,000 rows with 50,000 teams, on every call.
+- Migration `20260926140000_fantasy_ownership_snapshot.sql` recounts it every
+  5 minutes into a snapshot, which the read uses while it is at most 10
+  minutes old. Otherwise it counts live as before, so the answer is never
+  wrong, only slower.
+- Measured locally with 50,000 teams: 233-238 ms a call becomes 2-5 ms, and
+  the answer is identical. The recount takes about 0.3 s every 5 minutes.
+- Pinned by 10 new pgTAP checks. It is not yet applied anywhere.
 
 **Projected on Supabase**, using the same 1.55 factor. An anonymous browsing
 request costs about 13.3 ms locally after the fix, so about 21 ms on the
@@ -279,12 +282,10 @@ production Auth change).
   100 times cheaper even without the cache.
 - Supabase recommends asymmetric keys, so this is a last resort.
 
-**P7. A 5-minute ownership snapshot for `fantasy_player_season_stats`**
-(no cost; a migration and a product choice).
-
-- Today the call counts ownership over every squad slot on every call.
-- With the snapshot, "selected by %" would show up to 5 minutes late.
-- It is 40% of the browsing database time after the news fix.
+**P7. A 5-minute ownership snapshot for `fantasy_player_season_stats`:**
+approved on 2026-09-26 and built (migration 20260926140000, production script
+`scripts/backend/apply-20260926140000-fantasy-ownership-snapshot.sql`). The
+owner runs it outside the hour before a Fantasy deadline.
 
 **P6. Production compute before launch.**
 
