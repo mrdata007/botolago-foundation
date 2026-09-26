@@ -396,6 +396,41 @@ select extensions.ok(
       and player_id = 'e2100000-0000-4000-8000-000000000004' and not in_pool),
   'a player who left the league (no membership) is not in a weekly pool'
 );
+
+-- Squad places count only inside their dates, on the cutoff's day: one that
+-- starts later, one that ended (still flagged active), one that holds. In a
+-- season of their own, so the runs above and below are untouched.
+insert into app.seasons (id, competition_id, label, starts_on, ends_on, is_current, status) values
+  ('e0100000-0000-4000-8000-000000000003', 'e0000000-0000-4000-8000-000000000001',
+    '2024/2025', '2024-07-01', '2025-06-30', false, 'completed');
+insert into app.players (id, slug, full_name, display_name, position) values
+  ('e2100000-0000-4000-8000-000000000006', 'dated-future', 'Dated Future', 'D. Future', 'midfielder'),
+  ('e2100000-0000-4000-8000-000000000007', 'dated-ended', 'Dated Ended', 'D. Ended', 'midfielder'),
+  ('e2100000-0000-4000-8000-000000000008', 'dated-holds', 'Dated Holds', 'D. Holds', 'midfielder');
+do $$
+begin
+  perform app_private.record_player_attribute_observation(player_id::uuid, 'date_of_birth',
+    '2006-05-05', null, 'provider', 'sportsmonks', 'dated', '2026-08-01T00:00:00Z')
+  from unnest(array['e2100000-0000-4000-8000-000000000006', 'e2100000-0000-4000-8000-000000000007',
+    'e2100000-0000-4000-8000-000000000008']) player_id;
+  perform app_private.resolve_player_attributes(array['e2100000-0000-4000-8000-000000000006'::uuid,
+    'e2100000-0000-4000-8000-000000000007'::uuid, 'e2100000-0000-4000-8000-000000000008'::uuid]);
+end;
+$$;
+insert into app.team_memberships (player_id, team_id, season_id, valid_from, valid_to, active) values
+  ('e2100000-0000-4000-8000-000000000006', pg_temp.uid('e1000000-0000-4000-8000-', 2),
+    'e0100000-0000-4000-8000-000000000003', '2025-02-01', null, true),
+  ('e2100000-0000-4000-8000-000000000007', pg_temp.uid('e1000000-0000-4000-8000-', 2),
+    'e0100000-0000-4000-8000-000000000003', '2024-07-01', '2024-12-31', true),
+  ('e2100000-0000-4000-8000-000000000008', pg_temp.uid('e1000000-0000-4000-8000-', 2),
+    'e0100000-0000-4000-8000-000000000003', '2024-07-01', '2025-06-30', true);
+select extensions.is(
+  (select pg_catalog.string_agg(pool.player_id::text || ':' || pool.in_pool, ',' order by pool.player_id)
+   from app_private.pepites_source_players('e0100000-0000-4000-8000-000000000003', 'weekly', 6,
+     '2025-01-10T00:00:00Z', 23) pool),
+  'e2100000-0000-4000-8000-000000000008:true',
+  'a squad place counts only between its dates on the cutoff''s day: not one that starts later or ended'
+);
 select extensions.ok(
   (select bool_and(eligible = (minutes >= 180)) from app.pepites_player_scores
    where run_id = (select id from runs where name = 'r6')),
