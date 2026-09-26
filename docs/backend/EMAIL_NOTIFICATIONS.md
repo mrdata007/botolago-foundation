@@ -121,7 +121,10 @@ refresh does not: kickoffs confirmed or moved and matches postponed in the
 weeks ahead, which the Fantasy calendar sync picks up within 5 minutes. Until
 then only the GitHub orchestrator read beyond tomorrow, and GitHub started it
 3 to 6 hours apart. It costs one to three SportsMonks requests an hour.
-`app_private.football_season_refresh_heartbeat` holds its last call. With the
+`app_private.football_season_refresh_heartbeat` holds its last call. The two
+jobs never call at once (`app_private.football_refresh_dispatch` records the
+last call): each waits, answering `busy`, while the other's last call has no
+answer yet, for 150 s at most, and tries again at its next tick. With the
 switch on, the ops health check `provider_refresh` fails, and pages, when no
 successful refresh of a week or more reaching today has run for 4 hours
 (warns at 2), counted from when the refresh started or was switched back on.

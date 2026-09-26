@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { greetingPart } from "./greeting";
+import { advanceGreetingClock, greetingPart } from "./greeting";
 
 /**
  * The home greeting follows the competition's clock (Africa/Casablanca, UTC+1
@@ -42,5 +42,25 @@ describe("greetingPart", () => {
     for (const zone of ["UTC", "Africa/Casablanca", "America/Los_Angeles", "Asia/Tokyo"]) {
       expect({ zone, parts: inZone(zone, INSTANTS) }).toEqual({ zone, parts: EXPECTED });
     }
+  });
+});
+
+describe("advanceGreetingClock", () => {
+  const morning = new Date("2026-09-26T09:00:00Z"); // 10:00 in Casablanca
+
+  it("keeps the moment while the greeting and the date read the same", () => {
+    expect(advanceGreetingClock(morning, new Date("2026-09-26T10:59:00Z"))).toBe(morning);
+  });
+
+  it("moves on at noon, at 18:00 and at midnight in Casablanca", () => {
+    for (const at of ["2026-09-26T11:00:00Z", "2026-09-26T17:00:00Z", "2026-09-26T23:00:00Z"]) {
+      const now = new Date(at);
+      expect(advanceGreetingClock(morning, now)).toBe(now);
+    }
+  });
+
+  it("moves on to a new day even at the same part of it", () => {
+    const nextMorning = new Date("2026-09-27T09:00:00Z");
+    expect(advanceGreetingClock(morning, nextMorning)).toBe(nextMorning);
   });
 });

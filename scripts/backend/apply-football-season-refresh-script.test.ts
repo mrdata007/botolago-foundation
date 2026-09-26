@@ -53,6 +53,7 @@ describe("apply-20260926113100-football-season-refresh.sql", () => {
       "migration 20260926003400 (ops health, Fantasy coverage and scoring)",
       "pg_cron job football-live-refresh",
       "a function this update replaces or calls is not the text it was written against",
+      "pg_get_functiondef('app_private.football_live_refresh_tick()'::regprocedure))",
     ]) {
       const at = script.indexOf(guard);
       expect({ guard, found: at !== -1 }).toEqual({ guard, found: true });
@@ -73,6 +74,8 @@ describe("apply-20260926113100-football-season-refresh.sql", () => {
 
   test("checks the result without calling anything", () => {
     expect(script).toContain("the football-season-refresh job is not every 10 minutes and active");
+    expect(script).toContain("the live refresh tick was not replaced");
+    expect(script).toContain("the dispatch record is not private");
     expect(script).toContain("the health checks are not the same set as before");
     expect(script).toContain("a health check has no valid status or no detail");
     expect(script).toContain("the live refresh was switched on or off by the update");

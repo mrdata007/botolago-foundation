@@ -74,6 +74,78 @@ select extensions.is(app_private.football_season_refresh_tick(), 'invoked',
 select extensions.is(pg_temp.season_calls(), 2, 'a second call');
 
 -- ---------------------------------------------------------------------------
+-- One refresh from the database at a time: live and season calls take turns.
+-- ---------------------------------------------------------------------------
+create function pg_temp.live_calls() returns integer language sql as $$
+  select count(*)::integer from net.http_request_queue
+  where url = 'https://functions.example.invalid/functions/v1/football-live-refresh'
+    and convert_from(body, 'utf8')::jsonb ->> 'job' = 'fixtures';
+$$;
+-- pg_net's answer to the last call the database dispatched.
+create function pg_temp.answer_last_call(p_status integer, p_error text default null) returns void
+language sql as $$
+  insert into net._http_response (id, status_code, error_msg)
+  select request_id, p_status, p_error from app_private.football_refresh_dispatch where id;
+$$;
+select extensions.ok(
+  not has_function_privilege('service_role', 'app_private.football_refresh_invoke(text, text)', 'execute')
+  and not has_table_privilege('service_role', 'app_private.football_refresh_dispatch', 'select'),
+  'only the database dispatches refreshes, or reads the dispatch record');
+
+-- A match in play, so the live refresh calls every 2 minutes.
+insert into app.countries (id, iso_alpha2, iso_alpha3)
+values ('f6000000-0000-4000-8000-000000000001', 'ZQ', 'ZQZ');
+insert into app.competitions (id, slug, name, short_name, competition_type, country_id)
+values ('f6100000-0000-4000-8000-000000000001', 'season-refresh', 'Season Refresh', 'SR', 'league',
+  'f6000000-0000-4000-8000-000000000001');
+insert into app.seasons (id, competition_id, label, starts_on, ends_on, status, is_current)
+values ('f6200000-0000-4000-8000-000000000001', 'f6100000-0000-4000-8000-000000000001',
+  'Season refresh', current_date - 30, current_date + 200, 'active', true);
+insert into app.rounds (id, season_id, round_number, name)
+values ('f6300000-0000-4000-8000-000000000001', 'f6200000-0000-4000-8000-000000000001', 1, 'Round 1');
+insert into app.teams (id, slug, name, short_name, code, country_id)
+select ('f6400000-0000-4000-8000-00000000000' || n)::uuid, 'season-club-' || n, 'Season Club ' || n,
+  'SC' || n, 'SC' || n, 'f6000000-0000-4000-8000-000000000001'
+from generate_series(1, 2) n;
+insert into app.fixtures (id, competition_id, season_id, round_id, home_team_id, away_team_id,
+  kickoff_at, status, provider_updated_at, source_sequence)
+values ('f6500000-0000-4000-8000-000000000001', 'f6100000-0000-4000-8000-000000000001',
+  'f6200000-0000-4000-8000-000000000001', 'f6300000-0000-4000-8000-000000000001',
+  'f6400000-0000-4000-8000-000000000001', 'f6400000-0000-4000-8000-000000000002',
+  statement_timestamp() - interval '70 minutes', 'live_second_half', statement_timestamp() - interval '1 day', 1);
+update app_private.football_live_refresh_heartbeat set last_invoked_at = null;
+
+-- The season call from above is still running: the live refresh waits.
+select extensions.is((select job from app_private.football_refresh_dispatch), 'season_fixtures',
+  'the season call is the last one dispatched');
+select extensions.is(app_private.football_live_refresh_tick(), 'busy',
+  'the live refresh waits while a season call is running');
+select extensions.is(pg_temp.live_calls(), 0, 'and calls nothing');
+select extensions.is((select last_invoked_at from app_private.football_live_refresh_heartbeat), null,
+  'nor counts a call, so it tries again at the next minute');
+select pg_temp.answer_last_call(null, 'Timeout of 60000 ms reached');
+select extensions.is(app_private.football_live_refresh_tick(), 'busy',
+  'pg_net giving up after 60 s does not end the call');
+select pg_temp.answer_last_call(200);
+select extensions.is(app_private.football_live_refresh_tick(), 'invoked', 'once the season call has answered, it goes');
+select extensions.is(pg_temp.live_calls(), 1, 'one live call');
+
+-- And the other way round.
+update app_private.football_season_refresh_heartbeat set last_invoked_at = statement_timestamp() - interval '2 hours';
+select extensions.is(app_private.football_season_refresh_tick(), 'busy',
+  'the season refresh waits while a live call is running');
+select extensions.is(pg_temp.season_calls(), 2, 'and calls nothing');
+update app_private.football_live_refresh_heartbeat set last_invoked_at = statement_timestamp() - interval '3 minutes';
+select extensions.is(app_private.football_live_refresh_tick(), 'invoked',
+  'the live refresh keeps its own pace meanwhile');
+update app_private.football_refresh_dispatch set dispatched_at = statement_timestamp() - interval '151 seconds';
+select extensions.is(app_private.football_season_refresh_tick(), 'invoked',
+  'a call is taken as over 150 s after it left, answer or not');
+select extensions.is(pg_temp.season_calls(), 3, 'the season call goes');
+delete from app.fixtures where id = 'f6500000-0000-4000-8000-000000000001';
+update app_private.football_refresh_dispatch set dispatched_at = statement_timestamp() - interval '151 seconds';
+
+-- ---------------------------------------------------------------------------
 -- provider_refresh with the hourly refresh on.
 -- ---------------------------------------------------------------------------
 delete from app_private.football_ingestion_runs;

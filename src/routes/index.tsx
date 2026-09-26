@@ -55,7 +55,7 @@ import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { siteJsonLd } from "@/lib/structured-data";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
-import { greetingPart } from "@/lib/greeting";
+import { advanceGreetingClock, greetingPart } from "@/lib/greeting";
 import { capitalizeFirst, groupByMatchDay } from "@/lib/match-days";
 import type { Match } from "@/types/domain";
 import stadiumBand from "@/assets/brand/home-band-stadium.webp";
@@ -130,6 +130,23 @@ export const Route = createFileRoute("/")({
   }),
   component: HomePage,
 });
+
+/**
+ * The moment the greeting and its date read: the loader's for the first
+ * render, so the server and the hydrating browser agree, then the browser's
+ * own clock, checked every minute, so a page left open greets the afternoon
+ * after noon. It changes only when the words would.
+ */
+function useGreetingClock(renderedAt: number): Date {
+  const [now, setNow] = useState(() => new Date(renderedAt));
+  useEffect(() => {
+    const follow = () => setNow((current) => advanceGreetingClock(current, new Date()));
+    follow();
+    const timer = setInterval(follow, 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  return now;
+}
 
 function useGreeting(now: Date) {
   const { t } = useI18n();
@@ -217,7 +234,7 @@ function HomeContent() {
   const { status } = useAuth();
   const { source, key } = useFantasyDataSource();
   const { renderedAt } = Route.useLoaderData();
-  const now = useMemo(() => new Date(renderedAt), [renderedAt]);
+  const now = useGreetingClock(renderedAt);
   const greeting = useGreeting(now);
   const availability = useFantasyAvailability();
   const fantasyReady = !availability.isError && availability.data?.status === "ready";

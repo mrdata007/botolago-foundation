@@ -15,8 +15,9 @@
 --   1. Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor ->
 --      New query. Make sure no other database work is running right now, and
 --      no Fantasy season orchestrator run (GitHub -> Actions).
---      The update itself writes no fixture: it adds a heartbeat table, one
---      pg_cron job and replaces the health checks. Once saved, the new job
+--      The update itself writes no fixture: it adds two small tables, one
+--      pg_cron job, and replaces the health checks and the live refresh tick
+--      (which now waits while a season call is running). Once saved, the new job
 --      calls the Edge Function within 10 minutes if the live refresh is on,
 --      and that call writes fixtures, as the live refresh already does.
 --   2. Paste this WHOLE file and press Run.
@@ -39,7 +40,8 @@
 -- WHAT IT DOES
 --   * refuses to run twice, before the health checks of 20260926003400, or
 --     where what it replaces or calls is not the text production held on
---     2026-09-26 (md5 read there): app_private.ops_health_checks() and
+--     2026-09-26 (md5 read there): app_private.ops_health_checks(),
+--     app_private.football_live_refresh_tick() and
 --     app_private.invoke_scheduled_function();
 --   * records the migration file in supabase_migrations.schema_migrations,
 --     whole as statements[1], and runs it from that record once its sha256
@@ -69,6 +71,7 @@ begin
     raise exception 'stop: migration 20260926113100 is already recorded as applied';
   end if;
   if to_regclass('app_private.football_season_refresh_heartbeat') is not null
+    or to_regclass('app_private.football_refresh_dispatch') is not null
     or exists (select 1 from cron.job where jobname = 'football-season-refresh') then
     raise exception 'stop: the season refresh already exists, but the migration is not recorded -- find out why before going on';
   end if;
@@ -103,6 +106,8 @@ begin
   -- read there).
   if md5(pg_get_functiondef('app_private.ops_health_checks()'::regprocedure))
       is distinct from 'af20f9ff8b6c13aeaeebae960b968ec1'
+    or md5(pg_get_functiondef('app_private.football_live_refresh_tick()'::regprocedure))
+      is distinct from 'a3e3be95000bb6fd4514506f950b3123'
     or md5(pg_get_functiondef('app_private.invoke_scheduled_function(text,text,jsonb)'::regprocedure))
       is distinct from 'cfd1e158ff83c9f27bb8a0d0c8092f78' then
     raise exception 'stop: a function this update replaces or calls is not the text it was written against -- find out what changed it before going on';
@@ -145,6 +150,18 @@ values (
 --     refresh's switch (app_private.notification_email_settings
 --     .football_live_refresh_enabled), so what pauses the live refresh before
 --     a write to fixtures pauses it too (AGENTS.md).
+--   * One fixture refresh from the database at a time
+--     (app_private.football_refresh_invoke): the season call waits while a
+--     live call is still running, and the live refresh waits while a season
+--     call is (`busy`, tried again at its next tick). A call is running until
+--     pg_net holds its answer, other than a timeout (pg_net stops waiting
+--     after 60 s, the function may not), or for 150 s at most. Each job keeps
+--     its own cadence; app_private.football_live_refresh_tick() is
+--     20260925141500's but for that. Every fixture write already takes a lock
+--     per fixture and keeps the newest provider version, so an overlap never
+--     corrupted a row; this keeps the two jobs from working the same fixtures
+--     at once. The GitHub orchestrator's refresh is not dispatched from the
+--     database and overlaps as it did before, under the same per-fixture lock.
 --   * `provider_refresh`, with that switch on, fails once the season's
 --     fixtures (a successful run over a week or more reaching today or later)
 --     are 4 h old, and warns at 2 h. It counts from when the hourly refresh
@@ -171,6 +188,65 @@ alter table app_private.football_season_refresh_heartbeat force row level securi
 revoke all on app_private.football_season_refresh_heartbeat from public, anon, authenticated, service_role;
 insert into app_private.football_season_refresh_heartbeat (id) values (true);
 
+-- The last fixture refresh the database dispatched, whichever job.
+create table app_private.football_refresh_dispatch (
+  id boolean primary key default true check (id),
+  job text check (job in ('fixtures', 'season_fixtures')),
+  request_id bigint,
+  dispatched_at timestamptz,
+  updated_at timestamptz not null default statement_timestamp()
+);
+comment on table app_private.football_refresh_dispatch is
+  'The last call the database made to the football-live-refresh Edge Function (live or season job), so the two never run at once. Written by app_private.football_refresh_invoke only.';
+alter table app_private.football_refresh_dispatch enable row level security;
+alter table app_private.football_refresh_dispatch force row level security;
+revoke all on app_private.football_refresh_dispatch from public, anon, authenticated, service_role;
+insert into app_private.football_refresh_dispatch (id) values (true);
+
+-- Calls football-live-refresh for `p_job` unless the other job's last call
+-- is still running: 'invoked', 'busy' or 'not_configured'. A job's calls to
+-- itself are paced by its own tick, as before.
+create or replace function app_private.football_refresh_invoke(p_functions_base_url text, p_job text)
+returns text
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  last_call app_private.football_refresh_dispatch%rowtype;
+  new_request bigint;
+begin
+  if p_job is null or p_job not in ('fixtures', 'season_fixtures') then
+    raise exception using errcode = '22023', message = 'football_refresh_job_unknown';
+  end if;
+  select * into last_call from app_private.football_refresh_dispatch where id for update;
+  if last_call.job is distinct from p_job
+    and last_call.request_id is not null
+    and last_call.dispatched_at > statement_timestamp() - interval '150 seconds'
+    and not exists (
+      select 1 from net._http_response r
+      where r.id = last_call.request_id
+        and not coalesce(r.timed_out, false)
+        and coalesce(r.error_msg, '') not ilike '%timeout%'
+    ) then
+    return 'busy';
+  end if;
+  new_request := app_private.invoke_scheduled_function(
+    p_functions_base_url, 'football-live-refresh', jsonb_build_object('job', p_job)
+  );
+  if new_request is null then
+    return 'not_configured';
+  end if;
+  update app_private.football_refresh_dispatch
+  set job = p_job, request_id = new_request, dispatched_at = statement_timestamp(),
+      updated_at = statement_timestamp()
+  where id;
+  return 'invoked';
+end;
+$$;
+revoke all on function app_private.football_refresh_invoke(text, text) from public, anon, authenticated, service_role;
+
 create or replace function app_private.football_season_refresh_tick()
 returns text
 language plpgsql
@@ -182,6 +258,7 @@ declare
   settings app_private.notification_email_settings%rowtype;
   beat app_private.football_season_refresh_heartbeat%rowtype;
   now_at timestamptz := statement_timestamp();
+  outcome text;
 begin
   select * into settings from app_private.notification_email_settings where id;
   select * into beat from app_private.football_season_refresh_heartbeat where id for update;
@@ -201,10 +278,10 @@ begin
     return 'waiting';
   end if;
 
-  if app_private.invoke_scheduled_function(
-    settings.functions_base_url, 'football-live-refresh', '{"job":"season_fixtures"}'::jsonb
-  ) is null then
-    return 'not_configured';
+  -- A live call still running: try again at the next tick, 10 minutes on.
+  outcome := app_private.football_refresh_invoke(settings.functions_base_url, 'season_fixtures');
+  if outcome <> 'invoked' then
+    return outcome;
   end if;
   update app_private.football_season_refresh_heartbeat
   set last_invoked_at = now_at, last_outcome = 'invoked',
@@ -217,13 +294,100 @@ end;
 $$;
 revoke all on function app_private.football_season_refresh_tick() from public, anon, authenticated, service_role;
 comment on function app_private.football_season_refresh_tick() is
-  'pg_cron entry point (every 10 minutes): once an hour, while the live refresh switch is on, calls the Edge Function football-live-refresh with {"job":"season_fixtures"} (yesterday to six weeks ahead). Never writes fixtures itself.';
+  'pg_cron entry point (every 10 minutes): once an hour, while the live refresh switch is on, calls the Edge Function football-live-refresh with {"job":"season_fixtures"} (yesterday to six weeks ahead), never while a live call is running (app_private.football_refresh_invoke). Never writes fixtures itself.';
 
 select cron.schedule(
   'football-season-refresh',
   '*/10 * * * *',
   'select app_private.football_season_refresh_tick();'
 );
+
+-- The live refresh tick: 20260925141500's, but for dispatching through
+-- app_private.football_refresh_invoke, which answers 'busy' while a season
+-- call is running (the tick then tries again a minute later).
+create or replace function app_private.football_live_refresh_tick()
+returns text
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  settings app_private.notification_email_settings%rowtype;
+  beat app_private.football_live_refresh_heartbeat%rowtype;
+  now_at timestamptz := statement_timestamp();
+  cadence interval;
+  outcome text;
+begin
+  select * into settings from app_private.notification_email_settings where id;
+  if not settings.football_live_refresh_enabled or settings.functions_base_url is null then
+    return 'disabled';
+  end if;
+
+  select case
+    when exists (
+      select 1 from app.fixtures fixture
+      join app.seasons season on season.id = fixture.season_id and season.is_current
+      where app_private.fantasy_kickoff_confirmed(fixture.kickoff_at)
+        and (
+          -- still being played, delayed or interrupted, however long it takes
+          -- (bounded, so a fixture the provider never closes cannot keep the
+          -- refresh running for ever)
+          (fixture.status in ('delayed', 'live_first_half', 'half_time', 'live_second_half',
+              'extra_time', 'penalties', 'suspended')
+            and fixture.kickoff_at between now_at - interval '24 hours' and now_at + interval '10 minutes')
+          -- started without the provider saying so yet
+          or (fixture.status in ('scheduled', 'not_started')
+            and fixture.kickoff_at between now_at - interval '3 hours' and now_at)
+        )
+    ) then interval '2 minutes'
+    when exists (
+      select 1 from app.fixtures fixture
+      join app.seasons season on season.id = fixture.season_id and season.is_current
+      where app_private.fantasy_kickoff_confirmed(fixture.kickoff_at)
+        and fixture.status in ('scheduled', 'not_started')
+        and fixture.kickoff_at > now_at and fixture.kickoff_at <= now_at + interval '10 minutes'
+    ) then interval '5 minutes'
+    -- just finalized: the match details settle after the whistle
+    when exists (
+      select 1 from app.fixtures fixture
+      join app.seasons season on season.id = fixture.season_id and season.is_current
+      where fixture.status = 'finished'
+        and fixture.finalized_at >= now_at - interval '2 hours'
+    ) then interval '15 minutes'
+  end into cadence;
+
+  select * into beat from app_private.football_live_refresh_heartbeat where id for update;
+
+  if cadence is null then
+    -- Nothing on: forget the last call, so the next match is refreshed at once.
+    if beat.last_invoked_at is not null then
+      update app_private.football_live_refresh_heartbeat
+      set last_invoked_at = null, last_outcome = 'idle', updated_at = now_at
+      where id;
+    end if;
+    return 'idle';
+  end if;
+
+  -- pg_cron can start a tick a few seconds late; 20 seconds of slack keeps a
+  -- two-minute cadence from slipping to three.
+  if beat.last_invoked_at is not null
+    and beat.last_invoked_at > now_at - cadence + interval '20 seconds' then
+    return 'waiting';
+  end if;
+
+  -- A season call still running: try again at the next minute.
+  outcome := app_private.football_refresh_invoke(settings.functions_base_url, 'fixtures');
+  if outcome <> 'invoked' then
+    return outcome;
+  end if;
+  update app_private.football_live_refresh_heartbeat
+  set last_invoked_at = now_at, last_outcome = 'invoked', updated_at = now_at
+  where id;
+  return 'invoked';
+end;
+$$;
+revoke all on function app_private.football_live_refresh_tick() from public, anon, authenticated, service_role;
 
 -- Health: 20260926003400's checks, unchanged but for `provider_refresh`.
 create or replace function app_private.ops_health_checks()
@@ -801,7 +965,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20260926113100, 'UTF8')), 'hex')
-    is distinct from '28e309ad2db1044f71bd1529b993a4fcaae17167ed9e47d4c26f10b8efbfc548' then
+    is distinct from '41619006f551f566d6f412f38cc78531f4684694bf67ad1a73b51a5a857a3aeb' then
     raise exception 'stop: 20260926113100 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -819,8 +983,20 @@ declare
   health jsonb := app_private.ops_health_checks();
   provider jsonb;
 begin
-  if (select count(*) from app_private.football_season_refresh_heartbeat) <> 1 then
-    problems := problems || 'the season refresh heartbeat is not one row'::text;
+  if (select count(*) from app_private.football_season_refresh_heartbeat) <> 1
+    or (select count(*) from app_private.football_refresh_dispatch) <> 1 then
+    problems := problems || 'the season refresh heartbeat or the dispatch record is not one row'::text;
+  end if;
+  if not exists (
+    select 1 from pg_catalog.pg_class
+    where oid = 'app_private.football_refresh_dispatch'::regclass and relrowsecurity and relforcerowsecurity
+  ) or has_table_privilege('service_role', 'app_private.football_refresh_dispatch', 'select')
+    or has_table_privilege('authenticated', 'app_private.football_refresh_dispatch', 'select') then
+    problems := problems || 'the dispatch record is not private'::text;
+  end if;
+  if pg_get_functiondef('app_private.football_live_refresh_tick()'::regprocedure)
+    not like '%app_private.football_refresh_invoke(settings.functions_base_url, ''fixtures'')%' then
+    problems := problems || 'the live refresh tick was not replaced'::text;
   end if;
   if not exists (
     select 1 from pg_catalog.pg_class
@@ -836,6 +1012,9 @@ begin
   if has_function_privilege('service_role', 'app_private.football_season_refresh_tick()', 'execute')
     or has_function_privilege('authenticated', 'app_private.football_season_refresh_tick()', 'execute')
     or has_function_privilege('anon', 'app_private.football_season_refresh_tick()', 'execute')
+    or has_function_privilege('service_role', 'app_private.football_refresh_invoke(text,text)', 'execute')
+    or has_function_privilege('authenticated', 'app_private.football_refresh_invoke(text,text)', 'execute')
+    or has_function_privilege('service_role', 'app_private.football_live_refresh_tick()', 'execute')
     or has_function_privilege('service_role', 'app_private.ops_health_checks()', 'execute') then
     problems := problems || 'an owner-only function is callable by an API role'::text;
   end if;
