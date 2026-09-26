@@ -10,6 +10,7 @@ import {
   rankingSearchFromFilters,
   validatePlayerSearch,
   validateRankingSearch,
+  validateRevealSearch,
 } from "./pepites-route";
 
 describe("pepitesPageHeaders (architecture §7)", () => {
@@ -67,7 +68,7 @@ describe("the ranking address", () => {
       age: 21,
       tri: "goals",
     });
-    expect(validateRankingSearch({ poste: "striker", age: "20", tri: "score" })).toEqual({});
+    expect(validateRankingSearch({ poste: "striker", age: "18", tri: "score" })).toEqual({});
     expect(validateRankingSearch({ tri: "drop table" })).toEqual({});
   });
 
@@ -93,5 +94,16 @@ describe("the player and week addresses", () => {
     expect(parseWeek("61")).toBeNull();
     expect(parseWeek("1e1")).toBeNull();
     expect(parseWeek("-3")).toBeNull();
+  });
+});
+
+describe("validateRevealSearch", () => {
+  it("keeps a rank from 1 to 10 and drops anything else", () => {
+    expect(validateRevealSearch({ n: "4" })).toEqual({ n: 4 });
+    expect(validateRevealSearch({ n: 10 })).toEqual({ n: 10 });
+    expect(validateRevealSearch({ n: "0" })).toEqual({});
+    expect(validateRevealSearch({ n: "11" })).toEqual({});
+    expect(validateRevealSearch({ n: "2.5" })).toEqual({});
+    expect(validateRevealSearch({})).toEqual({});
   });
 });

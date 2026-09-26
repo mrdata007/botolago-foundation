@@ -100,7 +100,8 @@ for (const lang of ["fr", "ar"] as const) {
     await expect(entries).toHaveCount(10);
     await expect(page.getByTestId("pepites-reveal-countdown")).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
-    await expectNothingOffScreen(page);
+    // The chips under the band scroll sideways, as the Figma draws them.
+    await expectNothingOffScreen(page, "main", { scrollRails: true });
 
     // The full ranking: twenty, then more, then filtered by position.
     await page.getByTestId("pepites-full-ranking").click();
@@ -162,6 +163,49 @@ for (const lang of ["fr", "ar"] as const) {
       "download",
       "pepites-semaine-15.png",
     );
+    await diagnostics.verify(testInfo);
+  });
+
+  test(`${lang}: the reveal walks the Top 10 from N°10 to N°1, then back to the list`, async ({
+    page,
+  }, testInfo) => {
+    const diagnostics = observePage(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await initializeLanguage(page, lang);
+    await gotoHydrated(page, "/pepites", lang);
+    const leader = (await page.getByTestId("pepites-top-entry").first().innerText()).trim();
+    await page.getByTestId("pepites-reveal-play").click();
+    await expect(page).toHaveURL(/\/pepites\/revelation$/);
+    await expect(page.getByTestId("pepites-reveal-name")).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+    for (let rank = 9; rank >= 1; rank -= 1) {
+      await page.getByTestId("pepites-reveal-next").click();
+      await expect(page).toHaveURL(new RegExp(`n=${rank}$`));
+    }
+    // N°1 is the leader of the Top 10 page, and the story ends there.
+    expect(leader).toContain((await page.getByTestId("pepites-reveal-name").innerText()).trim());
+    await expect(page.getByTestId("pepites-reveal-next")).toHaveCount(0);
+    await page.getByTestId("pepites-reveal-done").click();
+    await expect(page).toHaveURL(/\/pepites$/);
+    await diagnostics.verify(testInfo);
+  });
+
+  test(`${lang}: a player's story card is drawn at 1080×1920`, async ({ page }, testInfo) => {
+    const diagnostics = observePage(page);
+    await page.setViewportSize({ width: 390, height: 860 });
+    await initializeLanguage(page, lang);
+    await gotoHydrated(page, "/pepites", lang);
+    await page.getByTestId("pepites-top-entry").first().click();
+    await expect(page.getByTestId("pepites-player-name")).toBeVisible();
+    await page.getByTestId("pepites-player-share").click();
+    const image = page.getByTestId("pepites-share-image");
+    await expect(image).toBeVisible();
+    const size = await image.evaluate(async (node) => {
+      const img = node as HTMLImageElement;
+      await img.decode();
+      return [img.naturalWidth, img.naturalHeight];
+    });
+    expect(size).toEqual([1080, 1920]);
     await diagnostics.verify(testInfo);
   });
 

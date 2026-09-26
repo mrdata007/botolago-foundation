@@ -2,7 +2,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
-import type { RankingQuery, RankingResponse, VersionResponse } from "@/backend/pepites/contracts";
+import type {
+  RankingQuery,
+  RankingResponse,
+  RankingRow,
+  VersionResponse,
+} from "@/backend/pepites/contracts";
 import { pepitesService } from "@/services/pepites";
 
 import { nextPollDelay, REVEAL_POLL } from "./reveal";
@@ -99,6 +104,35 @@ export function rankingPagesOptions(viewer: PepitesViewer, base: Omit<RankingQue
     },
     staleTime: 5 * 60_000,
   };
+}
+
+/**
+ * The first fifty rows of the current version's ranking, for the figures an
+ * edition does not carry (minutes, goals, assists, rating): the Top 10's
+ * rows and the leader's strip read them by player.
+ */
+export function rankingStatsQueryOptions(viewer: PepitesViewer, version: string | null) {
+  const query: RankingQuery = {
+    version,
+    position: null,
+    maxAge: null,
+    teamId: null,
+    sort: "score",
+    limit: 50,
+    offset: 0,
+  };
+  return {
+    queryKey: pepitesKeys.ranking(viewer, query),
+    queryFn: async ({ signal }: { signal?: AbortSignal }) =>
+      forViewer(viewer, await pepitesService.ranking(query, signal)) as RankingResponse,
+    staleTime: 5 * 60_000,
+  };
+}
+
+/** Ranking rows by player id. */
+export function statsByPlayer(response: RankingResponse | undefined): Map<string, RankingRow> {
+  const rows = response?.available && response.rows ? response.rows : [];
+  return new Map(rows.map((row) => [row.id, row]));
 }
 
 export function playerQueryOptions(

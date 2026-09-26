@@ -24,6 +24,16 @@ export function formatNumber(value: number, lang: Language, fractionDigits = 0):
   }).format(value);
 }
 
+/**
+ * A count as the Figma sets it: "2 087" in French (a narrow no-break space
+ * groups the thousands), no grouping in Arabic, where a space inside a
+ * number can flip its digits in the line (plan §9).
+ */
+export function formatCount(value: number, lang: Language): string {
+  if (lang === "ar") return formatNumber(value, lang);
+  return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
+}
+
 /** A team as `PlayerPhoto` and `ClubCrest` want it: the palette keys on the slug. */
 export function teamAsClub(team: PepitesTeam | null | undefined): Club | undefined {
   if (!team) return undefined;
@@ -63,6 +73,63 @@ export function positionLabel(group: PositionGroup, t: (key: TranslationKey) => 
     case "FWD":
       return t("pepites.position.fwd");
   }
+}
+
+/** A position group's short name ("ATT", "MIL", "DEF", "GB"). */
+export function positionShort(group: PositionGroup, t: (key: TranslationKey) => string): string {
+  switch (group) {
+    case "GK":
+      return t("pepites.position_short.gk");
+    case "DEF":
+      return t("pepites.position_short.def");
+    case "MID":
+      return t("pepites.position_short.mid");
+    case "FWD":
+      return t("pepites.position_short.fwd");
+  }
+}
+
+/**
+ * The mono meta line under a name. Short (a row): "IRT · ATT · 20A · 1 275’ ·
+ * 0B 8PD". Long (the hero): "HASSANIA AGADIR · ATT · 21 ANS". Figures are
+ * isolated so an Arabic line keeps their order.
+ */
+export function playerMetaLine(
+  player: Pick<PepitesPlayerCard, "team" | "positionGroup" | "age">,
+  stats: { minutes: number; goals: number; assists: number } | null | undefined,
+  {
+    t,
+    tr,
+    lang,
+    long = false,
+  }: {
+    t: (key: TranslationKey) => string;
+    tr: (value: { fr: string; ar: string }) => string;
+    lang: Language;
+    long?: boolean;
+  },
+): string {
+  const iso = (text: string) => `\u2068${text}\u2069`;
+  const parts: string[] = [];
+  if (player.team) parts.push(tr(long ? player.team.name : player.team.shortName));
+  if (player.positionGroup) parts.push(positionShort(player.positionGroup, t));
+  if (typeof player.age === "number") {
+    parts.push(
+      (long ? t("pepites.meta.age_long") : t("pepites.meta.age_short")).replace(
+        "{n}",
+        iso(formatNumber(player.age, lang)),
+      ),
+    );
+  }
+  if (stats && !long) {
+    parts.push(iso(`${formatCount(stats.minutes, lang)}’`));
+    parts.push(
+      t("pepites.meta.goals_assists")
+        .replace("{g}", iso(formatNumber(stats.goals, lang)))
+        .replace("{a}", iso(formatNumber(stats.assists, lang))),
+    );
+  }
+  return parts.join(" · ");
 }
 
 /** "↑ 2", "↓ 1", "=", "Nouveau": the arrow a reader saw last week (§4.5). */
@@ -136,4 +203,31 @@ export function editionItems(entries: readonly EditionEntry[]): TopTenItem[] {
     reasonFr: entry.reasonFr,
     reasonAr: entry.reasonAr,
   }));
+}
+
+/** The score's five parts, in the order the percentiles and the wheel show them. */
+export const COMPONENTS = ["rating", "form", "contribution", "progression", "minutes"] as const;
+export type ComponentKey = (typeof COMPONENTS)[number];
+
+export function componentLabel(key: ComponentKey, t: (key: TranslationKey) => string): string {
+  switch (key) {
+    case "rating":
+      return t("pepites.component.rating");
+    case "form":
+      return t("pepites.component.form");
+    case "contribution":
+      return t("pepites.component.contribution");
+    case "progression":
+      return t("pepites.component.progression");
+    case "minutes":
+      return t("pepites.component.minutes");
+  }
+}
+
+/** "2026-27" after "2025-26". A label it cannot read stays as it is. */
+export function nextSeasonLabel(label: string): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(label.trim());
+  if (!match) return label;
+  const start = Number(match[1]) + 1;
+  return `${start}-${String((start + 1) % 100).padStart(2, "0")}`;
 }

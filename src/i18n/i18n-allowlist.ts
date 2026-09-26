@@ -26,9 +26,6 @@ export const IDENTICAL_ALLOWED = {
     "Sentence-final full stop of the consent notice, split out so the two document names can be links; a full stop is '.' in both languages.",
   "fantasy.stat.none":
     "BG-0071 — an en dash standing for 'no value yet' in a numeric stat cell. Punctuation, not copy; an Arabic-script substitute would read as a character rather than as an absent number.",
-  "pepites.title":
-    "Brand name of the under-23 ranking, in Latin script in both languages, as in its weekly email (notification-email-render.ts).",
-  "nav.pepites": "The Pépites brand name in the navigation; same reason as pepites.title.",
 } as const satisfies Partial<Record<TranslationKey, string>>;
 
 /** W2 — ar values that legitimately contain no Arabic script. */
@@ -41,6 +38,4 @@ export const NO_ARABIC_SCRIPT_ALLOWED = {
   "auth.register.accept_terms.tail": "A full stop carries no script.",
   "auth.terms_notice.tail": "A full stop carries no script.",
   "fantasy.stat.none": "An en dash carries no script.",
-  "pepites.title": "Brand name in Latin script by design, as in the weekly email.",
-  "nav.pepites": "Brand name in Latin script by design, as in the weekly email.",
 } as const satisfies Partial<Record<TranslationKey, string>>;

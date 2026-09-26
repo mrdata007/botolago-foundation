@@ -1,11 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { ui, UiErrorState, UiKeyValueRow, UiStatePanel } from "@/components/ui-kit";
+import { ui, UiBackButton, UiKeyValueRow } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 import { formatNumber } from "./pepites-format";
-import { PepitesCard, PepitesComingSoon, PepitesPreviewBanner } from "./PepitesParts";
+import { pp } from "./pepites-design";
+import {
+  PepitesCard,
+  PepitesComingSoon,
+  PepitesErrorState,
+  PepitesLoadingState,
+  PepitesPreviewBanner,
+} from "./PepitesParts";
+import { MonoLine, NightBand } from "./PepitesVisuals";
 import { PepitesShell } from "./PepitesShell";
 import { methodologyQueryOptions, usePepitesViewer, useVersionPointer } from "./use-pepites";
 
@@ -38,23 +46,11 @@ export function PepitesMethodPage() {
   const query = useQuery(methodologyQueryOptions(viewer));
   const data = query.data;
 
-  if (query.isPending) {
-    return (
-      <PepitesShell view="method">
-        <UiStatePanel kind="loading" />
-      </PepitesShell>
-    );
-  }
-  if (query.isError && !data) {
-    return (
-      <PepitesShell view="method">
-        <UiErrorState title={t("pepites.state.error")} onRetry={() => void query.refetch()} />
-      </PepitesShell>
-    );
-  }
+  if (query.isPending) return <PepitesLoadingState onRetry={() => void query.refetch()} />;
+  if (query.isError && !data) return <PepitesErrorState onRetry={() => void query.refetch()} />;
   if (!data?.available || pointer.data?.available === false) {
     return (
-      <PepitesShell view="method">
+      <PepitesShell>
         <PepitesComingSoon />
       </PepitesShell>
     );
@@ -109,8 +105,19 @@ export function PepitesMethodPage() {
     },
   ];
 
+  const hero = (
+    <NightBand cut={26}>
+      <div className="flex flex-col gap-2 pb-12 pt-3">
+        <MonoLine>{t("pepites.hero.kicker_short")}</MonoLine>
+        <h1 className={cn(pp.display, pp.lean, "text-[30px] leading-[1.1] text-white")}>
+          {t("pepites.method.title")}
+        </h1>
+      </div>
+    </NightBand>
+  );
   return (
-    <PepitesShell view="method">
+    <PepitesShell hero={hero}>
+      <UiBackButton to="/pepites" />
       {data.preview ? <PepitesPreviewBanner /> : null}
       <PepitesCard testId="pepites-method">
         <div className="flex flex-col gap-4">

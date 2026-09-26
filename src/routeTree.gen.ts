@@ -30,6 +30,7 @@ import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as ClubsIndexRouteImport } from './routes/clubs.index'
 import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
 import { Route as PrizesTermsRouteImport } from './routes/prizes.terms'
+import { Route as PepitesRevelationRouteImport } from './routes/pepites.revelation'
 import { Route as PepitesMethodeRouteImport } from './routes/pepites.methode'
 import { Route as PepitesClassementRouteImport } from './routes/pepites.classement'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
@@ -184,6 +185,11 @@ const PrizesTermsRoute = PrizesTermsRouteImport.update({
   id: '/prizes/terms',
   path: '/prizes/terms',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PepitesRevelationRoute = PepitesRevelationRouteImport.update({
+  id: '/revelation',
+  path: '/revelation',
+  getParentRoute: () => PepitesRoute,
 } as any)
 const PepitesMethodeRoute = PepitesMethodeRouteImport.update({
   id: '/methode',
@@ -486,6 +492,7 @@ export interface FileRoutesByFullPath {
   '/news/$articleId': typeof NewsArticleIdRoute
   '/pepites/classement': typeof PepitesClassementRoute
   '/pepites/methode': typeof PepitesMethodeRoute
+  '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs/': typeof ClubsIndexRoute
@@ -555,6 +562,7 @@ export interface FileRoutesByTo {
   '/news/$articleId': typeof NewsArticleIdRoute
   '/pepites/classement': typeof PepitesClassementRoute
   '/pepites/methode': typeof PepitesMethodeRoute
+  '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs': typeof ClubsIndexRoute
@@ -628,6 +636,7 @@ export interface FileRoutesById {
   '/news/$articleId': typeof NewsArticleIdRoute
   '/pepites/classement': typeof PepitesClassementRoute
   '/pepites/methode': typeof PepitesMethodeRoute
+  '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs/': typeof ClubsIndexRoute
@@ -702,6 +711,7 @@ export interface FileRouteTypes {
     | '/news/$articleId'
     | '/pepites/classement'
     | '/pepites/methode'
+    | '/pepites/revelation'
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs/'
@@ -771,6 +781,7 @@ export interface FileRouteTypes {
     | '/news/$articleId'
     | '/pepites/classement'
     | '/pepites/methode'
+    | '/pepites/revelation'
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs'
@@ -843,6 +854,7 @@ export interface FileRouteTypes {
     | '/news/$articleId'
     | '/pepites/classement'
     | '/pepites/methode'
+    | '/pepites/revelation'
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs/'
@@ -1042,6 +1054,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/prizes/terms'
       preLoaderRoute: typeof PrizesTermsRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/pepites/revelation': {
+      id: '/pepites/revelation'
+      path: '/revelation'
+      fullPath: '/pepites/revelation'
+      preLoaderRoute: typeof PepitesRevelationRouteImport
+      parentRoute: typeof PepitesRoute
     }
     '/pepites/methode': {
       id: '/pepites/methode'
@@ -1547,6 +1566,7 @@ const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 interface PepitesRouteChildren {
   PepitesClassementRoute: typeof PepitesClassementRoute
   PepitesMethodeRoute: typeof PepitesMethodeRoute
+  PepitesRevelationRoute: typeof PepitesRevelationRoute
   PepitesIndexRoute: typeof PepitesIndexRoute
   PepitesJoueurPlayerIdRoute: typeof PepitesJoueurPlayerIdRoute
   PepitesSemaineNRoute: typeof PepitesSemaineNRoute
@@ -1555,6 +1575,7 @@ interface PepitesRouteChildren {
 const PepitesRouteChildren: PepitesRouteChildren = {
   PepitesClassementRoute: PepitesClassementRoute,
   PepitesMethodeRoute: PepitesMethodeRoute,
+  PepitesRevelationRoute: PepitesRevelationRoute,
   PepitesIndexRoute: PepitesIndexRoute,
   PepitesJoueurPlayerIdRoute: PepitesJoueurPlayerIdRoute,
   PepitesSemaineNRoute: PepitesSemaineNRoute,

@@ -1,22 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 
-import {
-  ui,
-  UiAlert,
-  UiBackButton,
-  UiEmptyState,
-  UiErrorState,
-  UiLinkButton,
-  UiStatePanel,
-} from "@/components/ui-kit";
+import { UiAlert, UiBackButton, UiEmptyState, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 import { editionItems, formatNumber } from "./pepites-format";
-import { PepitesComingSoon, PepitesPreviewBanner, UpdatedLine } from "./PepitesParts";
+import { pp } from "./pepites-design";
+import {
+  PepitesComingSoon,
+  PepitesErrorState,
+  PepitesLoadingState,
+  PepitesPreviewBanner,
+  UpdatedLine,
+} from "./PepitesParts";
 import { PepitesShareButton } from "./PepitesShareButton";
 import { PepitesShell } from "./PepitesShell";
-import { TopTenList } from "./TopTenList";
+import { MonoLine, NightBand } from "./PepitesVisuals";
+import { TopTenHero, TopTenList, type PlayerStats } from "./TopTenList";
 import { editionQueryOptions, usePepitesViewer, useVersionPointer } from "./use-pepites";
 
 /**
@@ -33,25 +33,11 @@ export function PepitesEditionPage({ week }: { week: number }) {
   const data = query.data;
   const back = <UiBackButton to="/pepites" />;
 
-  if (query.isPending) {
-    return (
-      <PepitesShell view={null}>
-        {back}
-        <UiStatePanel kind="loading" />
-      </PepitesShell>
-    );
-  }
-  if (query.isError && !data) {
-    return (
-      <PepitesShell view={null}>
-        {back}
-        <UiErrorState title={t("pepites.state.error")} onRetry={() => void query.refetch()} />
-      </PepitesShell>
-    );
-  }
+  if (query.isPending) return <PepitesLoadingState onRetry={() => void query.refetch()} />;
+  if (query.isError && !data) return <PepitesErrorState onRetry={() => void query.refetch()} />;
   if (!data?.available || pointer.data?.available === false) {
     return (
-      <PepitesShell view={null}>
+      <PepitesShell>
         <PepitesComingSoon />
       </PepitesShell>
     );
@@ -59,7 +45,7 @@ export function PepitesEditionPage({ week }: { week: number }) {
   const edition = data.found ? (data.edition ?? null) : null;
   if (!edition) {
     return (
-      <PepitesShell view={null}>
+      <PepitesShell>
         {back}
         <UiEmptyState testId="pepites-edition-missing" title={t("pepites.edition.not_found")} />
       </PepitesShell>
@@ -67,24 +53,44 @@ export function PepitesEditionPage({ week }: { week: number }) {
   }
 
   const title = t("pepites.home.week_title").replace("{n}", formatNumber(edition.week, lang));
+  const kicker = t("pepites.home.week_meta")
+    .replace("{round}", formatNumber(edition.round, lang))
+    .replace("{season}", edition.seasonLabel);
+  const items = edition.status !== "withdrawn" ? editionItems(edition.entries) : [];
+  const [leader, ...rest] = items;
+  const share =
+    edition.status === "published" ? <PepitesShareButton edition={edition} onNight /> : null;
+  const hero = leader ? (
+    <TopTenHero
+      item={leader}
+      stats={undefined}
+      kicker={kicker}
+      titleId="pepites-edition-title"
+      title={title}
+      action={share}
+    />
+  ) : (
+    <NightBand cut={26}>
+      <div className="flex items-start justify-between gap-3 pb-10 pt-3">
+        <div className="flex flex-col gap-1.5">
+          <MonoLine>{kicker}</MonoLine>
+          <h2
+            id="pepites-edition-title"
+            data-testid="pepites-edition-title"
+            className={cn(pp.display, pp.lean, "text-[26px] text-white")}
+          >
+            {title}
+          </h2>
+        </div>
+        {share}
+      </div>
+    </NightBand>
+  );
   return (
-    <PepitesShell
-      view={null}
-      trailing={edition.status === "published" ? <PepitesShareButton edition={edition} /> : null}
-    >
+    <PepitesShell hero={hero}>
       {back}
       {data.preview ? <PepitesPreviewBanner /> : null}
-      <div className="flex flex-col gap-1">
-        <h2 className={ui.text.section} data-testid="pepites-edition-title">
-          {title}
-        </h2>
-        <p className={cn(ui.text.meta, ui.tone.muted)}>
-          {t("pepites.home.week_meta")
-            .replace("{round}", formatNumber(edition.round, lang))
-            .replace("{season}", edition.seasonLabel)}
-        </p>
-        <UpdatedLine iso={edition.publishedAt} />
-      </div>
+      <UpdatedLine iso={edition.publishedAt} />
       {edition.status === "withdrawn" ? (
         <UiAlert
           tone="caution"
@@ -116,13 +122,18 @@ export function PepitesEditionPage({ week }: { week: number }) {
         </UiAlert>
       ) : null}
       {edition.correctsEditionId ? (
-        <p className={cn(ui.text.meta, ui.tone.muted)} data-testid="pepites-edition-is-correction">
+        <p className={cn("text-[12px]", pp.muted)} data-testid="pepites-edition-is-correction">
           {t("pepites.edition.is_correction")}
         </p>
       ) : null}
-      {edition.status !== "withdrawn" ? (
-        <TopTenList items={editionItems(edition.entries)} testId="pepites-top10" />
+      {rest.length > 0 ? (
+        <section aria-labelledby="pepites-edition-title">
+          <TopTenList items={rest} stats={NO_STATS} testId="pepites-top10" />
+        </section>
       ) : null}
     </PepitesShell>
   );
 }
+
+/** A past week's figures are not the current ranking's: its rows print none. */
+const NO_STATS: ReadonlyMap<string, PlayerStats> = new Map();

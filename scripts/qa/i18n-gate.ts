@@ -144,8 +144,13 @@ export const BASELINES: Baselines = {
   // title (`pepites.title`) and the navigation label (`nav.pepites`): two
   // W1 and two W2 findings, annotated in the allow-list, which never removes
   // a count. Every other Pépites string is translated. W1 7 -> 9, W2 7 -> 9.
-  W1: 9,
-  W2: 9,
+  //
+  // Pépites, again: the Figma file ("BotolaGO — Pépites (UI)", Mobile · AR)
+  // names the feature "جواهر" in Arabic, so the title and the navigation
+  // label are translated after all and both findings are gone. W1 9 -> 7,
+  // W2 9 -> 7.
+  W1: 7,
+  W2: 7,
   // BG-0012: the /news redesign replaced the hardcoded tab UI
   // (news.tab.*, and its category-name-keyed news.section.transfers/
   // analysis/interviews) with real taxonomy-driven category chips, and

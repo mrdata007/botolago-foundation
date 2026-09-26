@@ -93,7 +93,7 @@ export async function loadPepitesHome(
 
 export interface RankingSearch {
   poste?: "gk" | "def" | "mid" | "fwd";
-  age?: 19 | 21;
+  age?: 19 | 20 | 21;
   tri?: Exclude<RankingSort, "score">;
 }
 
@@ -105,7 +105,7 @@ export function validateRankingSearch(search: Record<string, unknown>): RankingS
   const tri = typeof search.tri === "string" ? search.tri : "";
   return {
     ...(poste in POSTES ? { poste: poste as RankingSearch["poste"] } : {}),
-    ...(age === 19 || age === 21 ? { age } : {}),
+    ...(age === 19 || age === 20 || age === 21 ? { age } : {}),
     ...(tri !== "score" && (RANKING_SORTS as readonly string[]).includes(tri)
       ? { tri: tri as RankingSearch["tri"] }
       : {}),
@@ -136,9 +136,21 @@ export function rankingSearchFromFilters(filters: {
     : undefined;
   return {
     ...(poste ? { poste } : {}),
-    ...(filters.maxAge === 19 || filters.maxAge === 21 ? { age: filters.maxAge } : {}),
+    ...(filters.maxAge === 19 || filters.maxAge === 20 || filters.maxAge === 21
+      ? { age: filters.maxAge }
+      : {}),
     ...(filters.sort !== "score" ? { tri: filters.sort } : {}),
   };
+}
+
+export interface RevealSearch {
+  n?: number;
+}
+
+/** The rank the reveal shows, 10 (its first screen) down to 1. */
+export function validateRevealSearch(search: Record<string, unknown>): RevealSearch {
+  const n = Number(search.n);
+  return Number.isInteger(n) && n >= 1 && n <= 10 ? { n } : {};
 }
 
 export interface PlayerSearch {
