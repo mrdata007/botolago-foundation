@@ -34,12 +34,21 @@
 -- conflict carrying the legacy value. Seeding changes no player value; the
 -- migration asserts it by resolving every player and requiring zero changes.
 --
+-- Seeing the same value again later is kept as a confirmation (its own
+-- append-only row), so an observation's freshness is when its value was last
+-- seen; a different value seen before that is stale and does not replace it.
+--
 -- A guard trigger rejects any other write to the five columns. The resolver
 -- sets the transaction-local flag botolago.player_attribute_writer for its own
 -- write and restores the previous value straight after, so a later direct write
 -- in the same transaction is still rejected. The guard stops an accidental
 -- writer; a definer function that sets the flag on purpose is for review to
 -- catch.
+--
+-- Deleting a country keeps working: players.nationality_country_id is
+-- ON DELETE SET NULL, and the guard lets exactly that through (nationality to
+-- null, nothing else changed, the country gone). The nationality observation
+-- stays as evidence and resolves to null as well.
 
 -- ---------------------------------------------------------------------------
 -- New columns
@@ -146,6 +155,99 @@ before truncate on app_private.player_attribute_observations
 for each statement execute function app_private.player_attribute_observations_append_only();
 
 -- ---------------------------------------------------------------------------
+-- Confirmations: the same value seen again, later
+-- ---------------------------------------------------------------------------
+-- An observation's freshness is the latest time its value was seen: its own
+-- observed_at, or a later confirmation. Without this, seeing 188 on the 20th
+-- and again on the 22nd kept the 20th, and 170 seen on the 21st then won.
+-- Each later sighting is its own append-only row, with its reference, so the
+-- observation row itself never changes.
+-- observation_id is checked on insert by a trigger rather than declared as a
+-- foreign key. The guarantee is the same, because observations can never be
+-- deleted or truncated, and a declared key would make PostgreSQL refuse a
+-- TRUNCATE of the observations with its own error before their append-only
+-- trigger could.
+create table app_private.player_attribute_observation_confirmations (
+  id uuid primary key default gen_random_uuid(),
+  observation_id uuid not null,
+  observed_at timestamptz not null,
+  source_ref text,
+  recorded_by uuid,
+  note text,
+  created_at timestamptz not null default statement_timestamp(),
+  constraint player_attribute_observation_confirmations_text_check check (
+    (source_ref is null or char_length(source_ref) between 1 and 200)
+    and (note is null or char_length(note) between 1 and 500)
+  )
+);
+
+comment on table app_private.player_attribute_observation_confirmations is
+  'Append-only later sightings of an unchanged observation value. An observation''s freshness is the greatest of its observed_at and its confirmations.';
+
+create index player_attribute_observation_confirmations_observation_idx
+  on app_private.player_attribute_observation_confirmations (observation_id, observed_at desc);
+
+alter table app_private.player_attribute_observation_confirmations enable row level security;
+alter table app_private.player_attribute_observation_confirmations force row level security;
+revoke all on table app_private.player_attribute_observation_confirmations
+  from public, anon, authenticated, service_role;
+
+create function app_private.player_attribute_observation_confirmations_append_only()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  raise exception using errcode = '55000', message = 'PLAYER_ATTRIBUTE_OBSERVATIONS_APPEND_ONLY';
+end;
+$$;
+
+create trigger player_attribute_observation_confirmations_append_only
+before update or delete on app_private.player_attribute_observation_confirmations
+for each row execute function app_private.player_attribute_observation_confirmations_append_only();
+
+create function app_private.player_attribute_observation_confirmations_reference()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if not exists (
+    select 1 from app_private.player_attribute_observations observation
+    where observation.id = new.observation_id
+  ) then
+    raise exception using errcode = '23503', message = 'PLAYER_ATTRIBUTE_OBSERVATION_NOT_FOUND';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger player_attribute_observation_confirmations_reference
+before insert on app_private.player_attribute_observation_confirmations
+for each row execute function app_private.player_attribute_observation_confirmations_reference();
+create trigger player_attribute_observation_confirmations_no_truncate
+before truncate on app_private.player_attribute_observation_confirmations
+for each statement execute function app_private.player_attribute_observation_confirmations_append_only();
+
+-- When an observation's value was last seen.
+create function app_private.player_attribute_observation_freshness(p_observation_id uuid)
+returns timestamptz
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select greatest(
+    observation.observed_at,
+    (select max(confirmation.observed_at)
+     from app_private.player_attribute_observation_confirmations confirmation
+     where confirmation.observation_id = observation.id)
+  )
+  from app_private.player_attribute_observations observation
+  where observation.id = p_observation_id;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Source priority: lower wins
 -- ---------------------------------------------------------------------------
 create table app_private.player_attribute_source_priority (
@@ -196,6 +298,7 @@ as $$
 declare
   v_source_key text := coalesce(p_provider_name, p_source_kind);
   v_current app_private.player_attribute_observations%rowtype;
+  v_freshness timestamptz;
   v_date date;
   v_new_id uuid;
 begin
@@ -264,14 +367,24 @@ begin
     and observation.superseded_at is null;
 
   if found then
-    -- The same value again adds nothing; an older observation never replaces
-    -- a newer one from the same source.
+    v_freshness := app_private.player_attribute_observation_freshness(v_current.id);
+    -- The same value again: nothing new unless it was seen later than before,
+    -- in which case that sighting is kept as a confirmation, moving the
+    -- observation's freshness forward.
     if v_current.value_text is not distinct from p_value_text
       and v_current.value_numeric is not distinct from p_value_numeric
     then
+      if p_observed_at > v_freshness then
+        insert into app_private.player_attribute_observation_confirmations (
+          observation_id, observed_at, source_ref, recorded_by, note
+        ) values (
+          v_current.id, p_observed_at, p_source_ref, p_recorded_by, p_note
+        );
+      end if;
       return v_current.id;
     end if;
-    if p_observed_at < v_current.observed_at then
+    -- A different value seen before the current one was last seen is stale.
+    if p_observed_at < v_freshness then
       return v_current.id;
     end if;
     update app_private.player_attribute_observations
@@ -294,7 +407,7 @@ $$;
 comment on function app_private.record_player_attribute_observation(
   uuid, text, text, numeric, text, text, text, timestamptz, uuid, text
 ) is
-  'Records one attribute observation (validated, deduplicated, newest per source wins). Does not write app.players: call resolve_player_attributes after.';
+  'Records one attribute observation: validated; the same value seen later is kept as a confirmation (freshness); a different value supersedes only if seen at or after the current value was last seen. Does not write app.players: call resolve_player_attributes after.';
 
 -- ---------------------------------------------------------------------------
 -- The single writer
@@ -331,7 +444,8 @@ begin
     where observation.player_id = any(p_player_ids)
       and observation.superseded_at is null
     order by observation.player_id, observation.attribute,
-      coalesce(priority.priority, 50), observation.observed_at desc,
+      coalesce(priority.priority, 50),
+      app_private.player_attribute_observation_freshness(observation.id) desc,
       observation.created_at desc, observation.id
   ),
   resolved as (
@@ -376,7 +490,7 @@ end;
 $$;
 
 comment on function app_private.resolve_player_attributes(uuid[]) is
-  'The only writer of app.players date_of_birth, nationality_country_id, preferred_foot, height_cm and detailed_position: the winning current observation per attribute, or null (foot: unknown) when there is none. Returns the number of players changed.';
+  'The only writer of app.players date_of_birth, nationality_country_id, preferred_foot, height_cm and detailed_position: per attribute the current observation of the best-ranked source (ties: the latest sighting, confirmations included), or null (foot: unknown) when there is none. Returns the number of players changed.';
 
 -- Recording what a provider says about a player, then resolving. The two
 -- provider importers call this instead of assigning the columns.
@@ -423,9 +537,11 @@ select observation.player_id,
       'source', observation.source_key,
       'value', coalesce(observation.value_text, observation.value_numeric::text),
       'observedAt', observation.observed_at,
+      'lastSeenAt', app_private.player_attribute_observation_freshness(observation.id),
       'observationId', observation.id
     )
-    order by coalesce(priority.priority, 50), observation.observed_at desc
+    order by coalesce(priority.priority, 50),
+      app_private.player_attribute_observation_freshness(observation.id) desc
   ) as observations
 from app_private.player_attribute_observations observation
 left join app_private.player_attribute_source_priority priority
@@ -1007,6 +1123,18 @@ $$;
 -- ---------------------------------------------------------------------------
 -- The guard: nothing but the resolver writes the five columns
 -- ---------------------------------------------------------------------------
+-- Whether a country row exists, read as the owner so the answer does not
+-- depend on the row-level security of whoever caused the update.
+create function app_private.country_exists(p_country_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from app.countries country where country.id = p_country_id);
+$$;
+
 create function app_private.players_attribute_writer_guard()
 returns trigger
 language plpgsql
@@ -1030,6 +1158,20 @@ begin
     is distinct from (old.date_of_birth, old.nationality_country_id, old.preferred_foot,
       old.height_cm, old.detailed_position)
   then
+    -- The one change allowed without the resolver: the foreign key's
+    -- ON DELETE SET NULL after the player's country was deleted. Only the
+    -- nationality changes, only to null, and only when its country is gone.
+    -- The resolver agrees afterwards: the observation's ISO code no longer
+    -- matches a country, so it resolves to null too.
+    if new.nationality_country_id is null
+      and old.nationality_country_id is not null
+      and (new.date_of_birth, new.preferred_foot, new.height_cm, new.detailed_position)
+        is not distinct from (old.date_of_birth, old.preferred_foot, old.height_cm,
+          old.detailed_position)
+      and not app_private.country_exists(old.nationality_country_id)
+    then
+      return new;
+    end if;
     raise exception using errcode = '55000', message = 'PLAYER_ATTRIBUTES_RESOLVER_ONLY';
   end if;
   return new;
@@ -1056,4 +1198,12 @@ revoke all on function app_private.record_provider_player_attributes(
 revoke all on function app_private.players_attribute_writer_guard()
   from public, anon, authenticated, service_role;
 revoke all on function app_private.seed_legacy_player_attributes()
+  from public, anon, authenticated, service_role;
+revoke all on function app_private.player_attribute_observation_confirmations_append_only()
+  from public, anon, authenticated, service_role;
+revoke all on function app_private.player_attribute_observation_confirmations_reference()
+  from public, anon, authenticated, service_role;
+revoke all on function app_private.player_attribute_observation_freshness(uuid)
+  from public, anon, authenticated, service_role;
+revoke all on function app_private.country_exists(uuid)
   from public, anon, authenticated, service_role;

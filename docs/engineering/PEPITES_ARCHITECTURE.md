@@ -177,13 +177,36 @@ priority)`: lower wins. Manual 10, SportsMonks 20, BSD 30, derived 40,
     (migration 3) turns them into issues.
 - Observations are recorded by
   `app_private.record_player_attribute_observation`: values are validated
-  against what the column can hold, the same value from the same source adds
-  no row, an older observation never replaces a newer one from the same
-  source, and a newer one supersedes it. Rows are never updated otherwise,
+  against what the column can hold; a different value supersedes the
+  current one only if it was seen at or after the current value was last
+  seen. Observation rows are never updated (except `superseded_at`, once),
   deleted or truncated.
+- **Freshness** (fix after PR #225 review). An observation's freshness is
+  when its value was last seen: its own `observed_at`, or a later sighting
+  of the same value, kept as its own row in the append-only
+  `app_private.player_attribute_observation_confirmations` with its
+  reference and time. The observation row itself does not change. So 188
+  seen on 20 September and again on the 22nd is not replaced by 170 seen on
+  the 21st and arriving last. The same value seen at an older time adds
+  nothing. Between sources of equal rank, the resolver and the conflicts
+  view order by freshness too. Confirmations reference their observation
+  through an insert check rather than a declared foreign key, because
+  observations can never be removed and a declared key would pre-empt their
+  truncate guard with PostgreSQL's own error.
 - Unknown is not evidence: a provider payload with no date of birth, or foot
   `'unknown'`, records nothing and so erases nothing. Before this migration
   the squad import overwrote a known value with null or `'unknown'`.
+- **Deleting a country** (fix after PR #225 review). Deletion stays
+  supported. `app.players.nationality_country_id` keeps `ON DELETE SET
+NULL`, and the guard lets exactly that referential update through: the
+  nationality set to null, no other resolved column changed, and the
+  country gone (checked as the owner, `app_private.country_exists`). Any
+  other clearing of a nationality is still rejected. The nationality
+  observation stays as evidence of the ISO code; it no longer matches a
+  country, so the resolver also gives null, and resolving afterwards
+  changes nothing. If a country with that code is added again, the next
+  resolve links the player to it. Rehearsed: deleting a country used by 133
+  of 400 players cleared all 133, and a resolve afterwards changed nothing.
 
 **Built:** `supabase/migrations/20260926060000_player_attributes_provenance.sql`,
 tested by `supabase/tests/database/player_attributes_provenance.test.sql`.
@@ -1072,7 +1095,7 @@ writer at a time. Mode stays `off` until launch.
 - Postponed match: played after its round, it creates a revision; a draft is
   re-pointed; a scheduled edition steps back to draft and is rescheduled when
   all 10 players are still ranked.
-- Player attributes (**built**, `player_attributes_provenance.test.sql`, 51
+- Player attributes (**built**, `player_attributes_provenance.test.sql`, 72
   assertions):
   - seeding records every existing value as legacy and unverified, also for
     a player with a SportsMonks mapping; resolving afterwards changes zero
@@ -1092,7 +1115,14 @@ writer at a time. Mode stays `off` until launch.
   - recording: same value adds nothing, older never replaces newer, newer
     supersedes; update, delete and truncate of observations rejected;
     invalid values rejected;
-  - no client role can execute the functions or read the table;
+  - freshness: 188 on 20 Sept, 188 again on the 22nd, then 170 dated the
+    21st arriving last: the height stays 188; the second sighting is kept
+    with its reference; confirmations are append-only and must point at an
+    existing observation; equal-rank sources are ordered by latest sighting;
+  - a country referenced only by a player's nationality can be deleted; the
+    nationality is cleared, resolving changes nothing, the observation is
+    kept; clearing a nationality whose country exists is still rejected;
+  - no client role can execute the functions or read the tables;
   - the existing squad-ingest, player-list and squad-recovery pgTAP files
     pass unchanged.
 - Weekly email:

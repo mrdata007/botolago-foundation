@@ -30,6 +30,11 @@ select extensions.ok(
   'source priority: RLS enabled and forced'
 );
 select extensions.ok(
+  (select relrowsecurity and relforcerowsecurity from pg_catalog.pg_class
+   where oid = 'app_private.player_attribute_observation_confirmations'::regclass),
+  'confirmations: RLS enabled and forced'
+);
+select extensions.ok(
   not exists (
     select 1
     from unnest(array['anon', 'authenticated', 'service_role']) role_name
@@ -37,7 +42,9 @@ select extensions.ok(
       'app_private.resolve_player_attributes(uuid[])',
       'app_private.record_player_attribute_observation(uuid,text,text,numeric,text,text,text,timestamptz,uuid,text)',
       'app_private.record_provider_player_attributes(uuid,text,text,date,app.preferred_foot,timestamptz)',
-      'app_private.seed_legacy_player_attributes()'
+      'app_private.seed_legacy_player_attributes()',
+      'app_private.player_attribute_observation_freshness(uuid)',
+      'app_private.country_exists(uuid)'
     ]) function_signature
     where pg_catalog.has_function_privilege(role_name, function_signature, 'execute')
   ),
@@ -50,6 +57,14 @@ select extensions.ok(
       or pg_catalog.has_table_privilege(role_name, 'app_private.player_attribute_observations', 'insert')
   ),
   'no client role can read or write observations'
+);
+select extensions.ok(
+  not exists (
+    select 1 from unnest(array['anon', 'authenticated', 'service_role']) role_name
+    where pg_catalog.has_table_privilege(role_name, 'app_private.player_attribute_observation_confirmations', 'select')
+      or pg_catalog.has_table_privilege(role_name, 'app_private.player_attribute_observation_confirmations', 'insert')
+  ),
+  'no client role can read or write confirmations'
 );
 
 -- ---------------------------------------------------------------------------
@@ -463,6 +478,186 @@ select extensions.ok(
   'the squad import assigns neither date_of_birth nor preferred_foot'
 );
 
+-- ---------------------------------------------------------------------------
+-- Freshness: seeing the same value again moves its freshness forward
+-- ---------------------------------------------------------------------------
+-- Regression (PR #225 review): the same-value path returned without keeping
+-- the newer time, so a stale value observed in between could then win.
+insert into app.players (id, slug, full_name, display_name, position)
+values ('a2000000-0000-4000-8000-000000000005', 'fresh-player', 'Fresh Player',
+  'F. Player', 'defender');
+select app_private.record_player_attribute_observation(
+  'a2000000-0000-4000-8000-000000000005', 'height_cm', null, 188,
+  'provider', 'bsd', 'bsd:player:5:a', '2026-09-20T10:00:00Z'
+);
+select app_private.record_player_attribute_observation(
+  'a2000000-0000-4000-8000-000000000005', 'height_cm', null, 188,
+  'provider', 'bsd', 'bsd:player:5:b', '2026-09-22T10:00:00Z'
+);
+select app_private.record_player_attribute_observation(
+  'a2000000-0000-4000-8000-000000000005', 'height_cm', null, 170,
+  'provider', 'bsd', 'bsd:player:5:c', '2026-09-21T10:00:00Z'
+);
+select app_private.resolve_player_attributes(array['a2000000-0000-4000-8000-000000000005'::uuid]);
+select extensions.is(
+  (select height_cm::integer from app.players where id = 'a2000000-0000-4000-8000-000000000005'),
+  188,
+  'a value seen again on 22 September is not replaced by one observed on 21 September'
+);
+select extensions.is(
+  (select pg_catalog.string_agg(value_numeric::integer::text, ',')
+   from app_private.player_attribute_observations
+   where player_id = 'a2000000-0000-4000-8000-000000000005' and attribute = 'height_cm'
+     and superseded_at is null),
+  '188',
+  'the current observation is still the single 188 row'
+);
+select extensions.is(
+  (select pg_catalog.string_agg(confirmation.source_ref || '@' || confirmation.observed_at::date, ',')
+   from app_private.player_attribute_observation_confirmations confirmation
+   join app_private.player_attribute_observations observation
+     on observation.id = confirmation.observation_id
+   where observation.player_id = 'a2000000-0000-4000-8000-000000000005'),
+  'bsd:player:5:b@2026-09-22',
+  'the second sighting is kept as its own evidence, with its reference and time'
+);
+select extensions.is(
+  (select observed_at from app_private.player_attribute_observations
+   where player_id = 'a2000000-0000-4000-8000-000000000005' and attribute = 'height_cm'
+     and superseded_at is null),
+  '2026-09-20T10:00:00Z'::timestamptz,
+  'the original observation row is left exactly as recorded'
+);
+select app_private.record_player_attribute_observation(
+  'a2000000-0000-4000-8000-000000000005', 'height_cm', null, 188,
+  'provider', 'bsd', 'bsd:player:5:d', '2026-09-19T10:00:00Z'
+);
+select extensions.is(
+  (select count(*)::integer
+   from app_private.player_attribute_observation_confirmations confirmation
+   join app_private.player_attribute_observations observation
+     on observation.id = confirmation.observation_id
+   where observation.player_id = 'a2000000-0000-4000-8000-000000000005'),
+  1,
+  'seeing the same value at an older time adds nothing'
+);
+select extensions.throws_ok(
+  $$update app_private.player_attribute_observation_confirmations
+    set observed_at = '2030-01-01T00:00:00Z'$$,
+  '55000', 'PLAYER_ATTRIBUTE_OBSERVATIONS_APPEND_ONLY',
+  'confirmations cannot be updated'
+);
+select extensions.throws_ok(
+  $$delete from app_private.player_attribute_observation_confirmations$$,
+  '55000', 'PLAYER_ATTRIBUTE_OBSERVATIONS_APPEND_ONLY',
+  'confirmations cannot be deleted'
+);
+select extensions.throws_ok(
+  $$truncate app_private.player_attribute_observation_confirmations$$,
+  '55000', 'PLAYER_ATTRIBUTE_OBSERVATIONS_APPEND_ONLY',
+  'confirmations cannot be truncated'
+);
+select extensions.throws_ok(
+  $$insert into app_private.player_attribute_observation_confirmations (observation_id, observed_at)
+    values ('a9000000-0000-4000-8000-00000000dead', now())$$,
+  '23503', 'PLAYER_ATTRIBUTE_OBSERVATION_NOT_FOUND',
+  'a confirmation must point at an existing observation'
+);
+
+-- Between two sources of equal rank, the one seen most recently wins, counting
+-- confirmations.
+select app_private.record_player_attribute_observation(
+  'a2000000-0000-4000-8000-000000000005', 'detailed_position', 'cb', null,
+  'provider', 'alpha-feed', 'alpha:5', '2026-09-20T10:00:00Z'
+);
+select app_private.record_player_attribute_observation(
+  'a2000000-0000-4000-8000-000000000005', 'detailed_position', 'lb', null,
+  'provider', 'beta-feed', 'beta:5', '2026-09-21T10:00:00Z'
+);
+select app_private.record_player_attribute_observation(
+  'a2000000-0000-4000-8000-000000000005', 'detailed_position', 'cb', null,
+  'provider', 'alpha-feed', 'alpha:5', '2026-09-25T10:00:00Z'
+);
+select app_private.resolve_player_attributes(array['a2000000-0000-4000-8000-000000000005'::uuid]);
+select extensions.is(
+  (select detailed_position::text from app.players where id = 'a2000000-0000-4000-8000-000000000005'),
+  'cb',
+  'among equal-rank sources the latest sighting wins, including a confirmation'
+);
+select extensions.ok(
+  exists (
+    select 1 from app_private.player_attribute_conflicts conflict
+    where conflict.player_id = 'a2000000-0000-4000-8000-000000000005'
+      and conflict.attribute = 'detailed_position'
+      and conflict.observations -> 0 ->> 'source' = 'alpha-feed'
+  ),
+  'the conflicts view orders equal-rank sources by their latest sighting too'
+);
+
+-- ---------------------------------------------------------------------------
+-- Deleting a country still clears the nationality that referenced it
+-- ---------------------------------------------------------------------------
+-- Regression (PR #225 review): players.nationality_country_id is
+-- ON DELETE SET NULL, and the guard rejected that referential update.
+insert into app.countries (id, iso_alpha2, iso_alpha3)
+values ('a1000000-0000-4000-8000-000000000009', 'QZ', 'QZZ');
+insert into app.players (id, slug, full_name, display_name, position)
+values ('a2000000-0000-4000-8000-000000000006', 'country-player', 'Country Player',
+  'C. Player', 'forward');
+select app_private.record_player_attribute_observation(
+  'a2000000-0000-4000-8000-000000000006', 'nationality', 'QZ', null,
+  'provider', 'sportsmonks', 'sportsmonks:player:6', '2026-09-20T10:00:00Z'
+);
+select app_private.resolve_player_attributes(array['a2000000-0000-4000-8000-000000000006'::uuid]);
+select extensions.is(
+  (select nationality_country_id from app.players where id = 'a2000000-0000-4000-8000-000000000006'),
+  'a1000000-0000-4000-8000-000000000009'::uuid,
+  'the player''s nationality references the country'
+);
+select extensions.is(
+  (select count(*)::integer from (
+    select 1 from app.country_translations where country_id = 'a1000000-0000-4000-8000-000000000009'
+    union all select 1 from app.venues where country_id = 'a1000000-0000-4000-8000-000000000009'
+    union all select 1 from app.competitions where country_id = 'a1000000-0000-4000-8000-000000000009'
+    union all select 1 from app.teams where country_id = 'a1000000-0000-4000-8000-000000000009'
+    union all select 1 from app.story_countries where country_id = 'a1000000-0000-4000-8000-000000000009'
+    union all select 1 from app.players where nationality_country_id = 'a1000000-0000-4000-8000-000000000009'
+      and id <> 'a2000000-0000-4000-8000-000000000006'
+  ) other_references),
+  0,
+  'nothing else references the country, so the result is the nationality alone'
+);
+select extensions.lives_ok(
+  $$delete from app.countries where id = 'a1000000-0000-4000-8000-000000000009'$$,
+  'a country referenced by a player''s nationality can be deleted'
+);
+select extensions.ok(
+  not exists (select 1 from app.countries where id = 'a1000000-0000-4000-8000-000000000009'),
+  'the country is gone'
+);
+select extensions.is(
+  (select nationality_country_id from app.players where id = 'a2000000-0000-4000-8000-000000000006'),
+  null::uuid,
+  'ON DELETE SET NULL still clears the nationality'
+);
+select extensions.is(
+  app_private.resolve_player_attributes(array['a2000000-0000-4000-8000-000000000006'::uuid]),
+  0,
+  'the cleared column agrees with provenance: resolving changes nothing'
+);
+select extensions.is(
+  (select value_text from app_private.player_attribute_observations
+   where player_id = 'a2000000-0000-4000-8000-000000000006' and attribute = 'nationality'
+     and superseded_at is null),
+  'QZ',
+  'the nationality observation is kept as evidence'
+);
+select extensions.throws_ok(
+  $$update app.players set nationality_country_id = null
+    where id = 'a2000000-0000-4000-8000-000000000001'$$,
+  '55000', 'PLAYER_ATTRIBUTES_RESOLVER_ONLY',
+  'clearing a nationality whose country still exists is still rejected'
+);
 select * from extensions.finish();
 
 rollback;
