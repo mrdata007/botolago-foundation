@@ -397,8 +397,8 @@ select extensions.is(
    where n.nspname = 'api'
      and p.prosrc ~ 'perform app_private\.assert_mfa_step_up\(\);'
      and has_function_privilege('authenticated', p.oid, 'execute')),
-  71,
-  'the 50 functions of point 5, the two account-deletion functions, the two Pépites weekly email functions (20260926110100), and the Pépites error report and 16 staff functions (20260926120000) run it'
+  72,
+  'the 50 functions of point 5, the two account-deletion functions, the two Pépites weekly email functions (20260926110100), the Pépites error report and 16 staff functions (20260926120000), and the photo upload paths (20260926130000) run it'
 );
 select extensions.is(pg_temp.unguarded_api_relations(), '{}'::text[],
   'every api view a signed-in session can read refuses without the step-up, and no other api relation but live scores is readable');

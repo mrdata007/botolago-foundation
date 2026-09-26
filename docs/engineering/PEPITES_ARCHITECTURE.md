@@ -367,6 +367,21 @@ these details settled while building:
   the public bucket at an unguessable path (it contains the release id), but
   nothing in the app links to it any more.
 
+**The storage job** (built: `20260926130000_pepites_photo_job.sql`,
+`scripts/backend/pepites-photo-job.ts`). An operator runs it after approving
+photos; it has no schedule. It reads `api.service_player_photo_work`, makes
+each derivative with `sharp` (turned upright, cropped to a 512 px square
+around the subject, re-encoded as WebP: no EXIF, XMP or IPTC block survives,
+so no camera, date or GPS data), uploads it to its one path, and publishes
+through `api.service_publish_player_photo`, which checks the rights again on
+the day; when they no longer hold, publication refuses and the job deletes
+its file. It then deletes each queued object through the Storage API and
+marks it done. Staff get private upload paths from
+`api.admin_player_photo_upload_paths` (`football.correct`); the admin
+screen's server route signs the uploads. Tests: 12 pgTAP assertions
+(`pepites_photo_job.test.sql`) and `scripts/backend/pepites-photo-job.test.ts`
+(a phone JPEG with camera and GPS data comes out a clean 512 px WebP).
+
 ### 3.4 Methodologies
 
 `app.pepites_methodologies`:
