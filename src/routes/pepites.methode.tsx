@@ -6,7 +6,7 @@ import { PepitesMethodPage } from "@/components/pepites/PepitesMethodPage";
 import {
   isPublicAnswer,
   pepitesPageHeaders,
-  pepitesRobots,
+  pepitesRobotsMeta,
 } from "@/components/pepites/pepites-route";
 import { methodologyQueryOptions } from "@/components/pepites/use-pepites";
 import { fr } from "@/i18n/dictionary-fr";
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/pepites/methode")({
     meta: [
       { title: fr["pepites.method.meta_title"] },
       { name: "description", content: fr["pepites.method.meta_description"] },
-      { name: "robots", content: pepitesRobots(loaderData) },
+      ...pepitesRobotsMeta(loaderData),
       { property: "og:type", content: "website" },
       { property: "og:title", content: fr["pepites.method.meta_title"] },
       { property: "og:url", content: CANONICAL },

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { PepitesRanking } from "@/components/pepites/PepitesRanking";
 import {
   pepitesPageHeaders,
-  pepitesRobots,
+  pepitesRobotsMeta,
   pointerCache,
   prefetchPointer,
   rankingFiltersFromSearch,
@@ -49,7 +49,7 @@ export const Route = createFileRoute("/pepites/classement")({
     meta: [
       { title: fr["pepites.ranking.meta_title"] },
       { name: "description", content: fr["pepites.ranking.meta_description"] },
-      { name: "robots", content: pepitesRobots(loaderData) },
+      ...pepitesRobotsMeta(loaderData),
       { property: "og:type", content: "website" },
       { property: "og:title", content: fr["pepites.ranking.meta_title"] },
       { property: "og:description", content: fr["pepites.ranking.meta_description"] },

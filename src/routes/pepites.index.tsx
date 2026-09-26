@@ -5,7 +5,7 @@ import { PepitesHome } from "@/components/pepites/PepitesHome";
 import {
   loadPepitesHome,
   pepitesPageHeaders,
-  pepitesRobots,
+  pepitesRobotsMeta,
 } from "@/components/pepites/pepites-route";
 import { fr } from "@/i18n/dictionary-fr";
 import { useI18n } from "@/i18n/provider";
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/pepites/")({
     meta: [
       { title: fr["pepites.meta_title"] },
       { name: "description", content: fr["pepites.meta_description"] },
-      { name: "robots", content: pepitesRobots(loaderData) },
+      ...pepitesRobotsMeta(loaderData),
       { property: "og:type", content: "website" },
       { property: "og:title", content: OG_TITLE },
       { property: "og:description", content: fr["pepites.meta_description"] },

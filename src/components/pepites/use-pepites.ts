@@ -198,7 +198,10 @@ export function useVersionPointer(viewer: PepitesViewer) {
       void queryClient.invalidateQueries({ queryKey: pepitesKeys.version(viewer), exact: true });
     }, delay);
     return () => clearTimeout(timer);
-  }, [pointer, queryClient, query.dataUpdatedAt, viewer]);
+    // A failed check (its retries spent) moves `errorUpdatedAt` and not the
+    // data: it schedules the next check too, so an outage during the reveal
+    // does not stop the polling for good.
+  }, [pointer, queryClient, query.dataUpdatedAt, query.errorUpdatedAt, viewer]);
   return query;
 }
 
