@@ -479,6 +479,64 @@ select extensions.is(
   'revoked',
   'a release can be revoked before it is ever published'
 );
+select extensions.ok(
+  not exists (select 1 from app_private.player_photo_storage_deletions
+    where release_id = (select no_files from r) and bucket_id = 'football-media'),
+  'a release revoked before approval has no public file to delete'
+);
+
+-- ---------------------------------------------------------------------------
+-- Ending an approved release before it is published
+-- ---------------------------------------------------------------------------
+-- The storage job writes the derivative, then publishes. If a run stops in
+-- between, or staff end the release first, the file must still go.
+alter table r add column approved_revoked uuid, add column approved_rejected uuid,
+  add column pending_rejected uuid;
+update r set
+  approved_revoked = pg_temp.submit('b2000000-0000-4000-8000-000000000001', 30),
+  approved_rejected = pg_temp.submit('b2000000-0000-4000-8000-000000000001', 31),
+  pending_rejected = pg_temp.submit('b2000000-0000-4000-8000-000000000001', 32);
+select pg_temp.files('b2000000-0000-4000-8000-000000000001', n) from generate_series(30, 32) n;
+select app_private.approve_player_photo_release((select approved_revoked from r), 'b9000000-0000-4000-8000-000000000002');
+select app_private.approve_player_photo_release((select approved_rejected from r), 'b9000000-0000-4000-8000-000000000002');
+select pg_temp.derivative((select approved_revoked from r));
+select pg_temp.derivative((select approved_rejected from r));
+
+select app_private.revoke_player_photo_release((select approved_revoked from r),
+  'Consent withdrawn before publication', 'b9000000-0000-4000-8000-000000000002');
+select extensions.is(
+  (select object_path || ' ' || reason from app_private.player_photo_storage_deletions
+   where release_id = (select approved_revoked from r) and bucket_id = 'football-media'),
+  app_private.player_photo_public_path('b2000000-0000-4000-8000-000000000001',
+    (select approved_revoked from r)) || ' revoked',
+  'revoking an approved release queues its derivative, at its one path, though it was never published'
+);
+select extensions.throws_ok(
+  format('select app_private.publish_player_photo_release(%L, %L, 512, 512, %L)',
+    (select approved_revoked from r),
+    app_private.player_photo_public_path('b2000000-0000-4000-8000-000000000001', (select approved_revoked from r)),
+    'image/webp'),
+  '55000', 'PHOTO_RELEASE_TRANSITION_NOT_ALLOWED',
+  'and a late publication of it is refused'
+);
+
+select app_private.reject_player_photo_release((select approved_rejected from r),
+  'Wrong crop', 'b9000000-0000-4000-8000-000000000002');
+select extensions.is(
+  (select object_path || ' ' || reason from app_private.player_photo_storage_deletions
+   where release_id = (select approved_rejected from r) and bucket_id = 'football-media'),
+  app_private.player_photo_public_path('b2000000-0000-4000-8000-000000000001',
+    (select approved_rejected from r)) || ' rejected',
+  'rejecting an approved release queues its derivative too'
+);
+
+select app_private.reject_player_photo_release((select pending_rejected from r),
+  'Blurred', 'b9000000-0000-4000-8000-000000000002');
+select extensions.ok(
+  not exists (select 1 from app_private.player_photo_storage_deletions
+    where release_id = (select pending_rejected from r)),
+  'rejecting a release still pending queues nothing: no derivative was ever made'
+);
 
 -- ---------------------------------------------------------------------------
 -- Expiry
@@ -579,6 +637,7 @@ select extensions.ok(
       'app_private.submit_player_photo_release(uuid,text,text,date,date,text,text,text,text,text,date,uuid)',
       'app_private.approve_player_photo_release(uuid,uuid)',
       'app_private.reject_player_photo_release(uuid,text,uuid)',
+      'app_private.player_photo_public_path(uuid,uuid)',
       'app_private.revoke_player_photo_release(uuid,text,uuid)',
       'app_private.expire_player_photo_releases(date)',
       'app_private.publish_player_photo_release(uuid,text,integer,integer,text)',
