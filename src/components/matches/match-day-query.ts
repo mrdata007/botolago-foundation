@@ -26,7 +26,10 @@ export function matchDayQuery(
 ) {
   return {
     queryKey: ["football", "matches", day, seasonId ?? "default", language] as const,
-    queryFn: () => footballService.getMatchDay(matchDayFromKey(day), language, seasonId),
+    // The query's signal, so a cancelled read (a server render past its
+    // budget, `@/lib/ssr-prefetch`) ends its request too.
+    queryFn: (context?: { signal?: AbortSignal }) =>
+      footballService.getMatchDay(matchDayFromKey(day), language, seasonId, context?.signal),
   };
 }
 

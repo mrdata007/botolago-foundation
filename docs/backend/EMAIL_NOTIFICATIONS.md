@@ -100,6 +100,11 @@ pg_cron  football-live-refresh      every minute
          kick-off, never otherwise → Edge Function football-live-refresh → the
          same SportsMonks fixture handler the orchestrator uses, for
          yesterday–tomorrow.
+
+pg_cron  football-season-refresh    every 10 minutes (migration 20260926113100)
+         app_private.football_season_refresh_tick() — once an hour, under the
+         same switch → Edge Function football-live-refresh {"job":"season_fixtures"}
+         → the same handler, for yesterday to six weeks ahead, scores only.
 ```
 
 The live refresh exists because the GitHub orchestrator, scheduled hourly, ran
@@ -110,6 +115,22 @@ kick-off, nothing otherwise) is migration
 about 60 SportsMonks requests. `app_private.football_live_refresh_heartbeat`
 holds the last call, and the ops health check `live_scores` fails when a
 match is in play and no fixture refresh ran for 10 minutes.
+
+The season refresh (since migration `20260926113100`) covers what the live
+refresh does not: kickoffs confirmed or moved and matches postponed in the
+weeks ahead, which the Fantasy calendar sync picks up within 5 minutes. Until
+then only the GitHub orchestrator read beyond tomorrow, and GitHub started it
+3 to 6 hours apart. It costs one to three SportsMonks requests an hour.
+`app_private.football_season_refresh_heartbeat` holds its last call. The two
+jobs never call at once (`app_private.football_refresh_dispatch` records the
+last call): each waits, answering `busy`, while the other's last call has no
+answer yet, for 150 s at most, and tries again at its next tick. With the
+switch on, the ops health check `provider_refresh` fails, and pages, when no
+successful refresh of a week or more reaching today has run for 4 hours
+(warns at 2), counted from when the refresh started or was switched back on.
+It needs the Edge Function deployed with the `season_fixtures` job
+(`scripts/backend/apply-20260926113100-football-season-refresh.sql` says so
+first); an older one answers 400 and the check fails 4 hours later.
 
 Code: migrations `20260924140000_notification_email_types.sql` and
 `20260924140100_notification_email_delivery.sql`; Edge Functions

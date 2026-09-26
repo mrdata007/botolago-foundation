@@ -24,7 +24,7 @@ export const Route = createFileRoute("/clubs/")({
     await prefetchForSsr(context.queryClient, [
       {
         queryKey: ["football", "club-directory", "fr"],
-        queryFn: () => footballService.getClubDirectory("fr"),
+        queryFn: ({ signal }) => footballService.getClubDirectory("fr", signal),
       },
     ]);
     return ssrAvailability(context.queryClient);
