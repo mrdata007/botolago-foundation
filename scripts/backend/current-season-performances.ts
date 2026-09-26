@@ -400,6 +400,28 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
       cleanSheets: player.minutes >= 60 && goalsConceded === 0 ? 1 : 0,
     };
   });
+  // A scorer's goal (or an opponent's own goal) must account for every goal
+  // in the final result. Do not certify a fixture with an unattributed goal:
+  // an otherwise green coverage row would let the gameweek award wrong points.
+  // The database's scoring snapshot checks this independently, including for
+  // fixtures imported before this validation was deployed.
+  for (const teamId of teamIds) {
+    const opponentId = [...teamIds].find((candidate) => candidate !== teamId)!;
+    const attributed = rows.reduce(
+      (sum, player) =>
+        sum +
+        (player.externalTeamId === String(teamId) ? player.goals : 0) +
+        (player.externalTeamId === String(opponentId) ? player.ownGoals : 0),
+      0,
+    );
+    if (attributed !== goalsFor.get(teamId))
+      fail("current_goal_totals_mismatch", {
+        fixtureExternalId: String(expectedFixtureId),
+        teamExternalId: String(teamId),
+        finalGoals: goalsFor.get(teamId)!,
+        attributedGoals: attributed,
+      });
+  }
   return {
     fixtureExternalId: String(expectedFixtureId),
     rows,

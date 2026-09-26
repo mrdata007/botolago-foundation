@@ -220,6 +220,7 @@ describe("current finished fixture performance ingestion", () => {
     });
     // Went off after 70 minutes: SportsMonks' own goals conceded decide.
     withScore(payload, 0, 1);
+    setDetail(payload, 11, 52, 1);
     setDetail(payload, 1, 119, 70);
     expect((await normalizeCurrentFinishedFixture(payload, 9001)).rows[1]).toMatchObject({
       goalsConceded: 0,
@@ -236,6 +237,7 @@ describe("current finished fixture performance ingestion", () => {
     // Lost 0-2. As 37 goalkeepers did last season, SportsMonks gives the
     // home goalkeeper none, and a defender one: both started and played 90.
     const payload = withBench(withScore(fixture(), 0, 2), 1);
+    setDetail(payload, 11, 52, 2);
     setDetail(payload, 3, 88, 1);
     setDetail(payload, 5, 119, 65); // off after 65 minutes with 3: capped at 2
     setDetail(payload, 5, 88, 3);
@@ -285,6 +287,38 @@ describe("current finished fixture performance ingestion", () => {
     await expect(normalizeCurrentFinishedFixture(twice, 9001)).rejects.toThrow(
       "current_final_score_missing",
     );
+  });
+  test("holds an unattributed goal and accepts a documented own goal", async () => {
+    const missing = withScore(fixture(), 1, 3);
+    setDetail(missing, 11, 52, 1);
+    setDetail(missing, 12, 52, 1);
+    setDetail(missing, 13, 52, 1);
+    await expect(normalizeCurrentFinishedFixture(missing, 9001)).rejects.toMatchObject({
+      code: "current_goal_totals_mismatch",
+      diagnostic: {
+        fixtureExternalId: "9001",
+        teamExternalId: "10",
+        finalGoals: 1,
+        attributedGoals: 0,
+      },
+    });
+    // An own goal by an away player belongs to the home side's score.
+    setDetail(missing, 14, 324, 1);
+    const accepted = await normalizeCurrentFinishedFixture(missing, 9001);
+    expect(accepted.rows.find((player) => player.externalPlayerId === "114")?.ownGoals).toBe(1);
+    setDetail(missing, 14, 324, 0);
+    setDetail(missing, 0, 52, 1);
+    expect((await normalizeCurrentFinishedFixture(missing, 9001)).rows).toHaveLength(22);
+    setDetail(missing, 0, 52, 2);
+    await expect(normalizeCurrentFinishedFixture(missing, 9001)).rejects.toMatchObject({
+      code: "current_goal_totals_mismatch",
+      diagnostic: {
+        fixtureExternalId: "9001",
+        teamExternalId: "10",
+        finalGoals: 1,
+        attributedGoals: 2,
+      },
+    });
   });
   test("an absent statistic counts as zero: SportsMonks sends only the ones that are not", async () => {
     // Fixture 19874708's shape: minutes and a rating for the players who
@@ -388,6 +422,7 @@ describe("current finished fixture performance ingestion", () => {
     // A late substitute can carry goals conceded without minutes played (23
     // did last season): kept, with no appearance and no clean sheet.
     const late = withBench(withScore(fixture(), 0, 1), 1);
+    setDetail(late, 11, 52, 1);
     late.data.lineups[22]!.details = late.data.lineups[22]!.details.filter(
       (detail) => detail.type_id === 88,
     ).map((detail) => ({ ...detail, data: { value: 1 } }));
