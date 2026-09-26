@@ -50,6 +50,11 @@ security definer
 set search_path = ''
 as $$
 begin
+  -- The ordinary-account step-up first (a verified factor at aal2 for an
+  -- enrolled account), without raising; then the staff check.
+  if not app_private.mfa_step_up_satisfied() then
+    return false;
+  end if;
   perform app_private.admin_assert_permission('pepites.edit', false);
   return true;
 exception when others then
@@ -740,6 +745,7 @@ as $$
 declare
   v_season_id uuid;
 begin
+  perform app_private.assert_mfa_step_up();
   perform app_private.admin_assert_permission('pepites.edit', false);
   v_season_id := app_private.pepites_current_season();
   return pg_catalog.jsonb_build_object(
@@ -789,6 +795,7 @@ as $$
 declare
   v_edition app.pepites_editions%rowtype;
 begin
+  perform app_private.assert_mfa_step_up();
   perform app_private.admin_assert_permission('pepites.edit', false);
   select * into v_edition from app.pepites_editions where id = p_edition_id;
   if v_edition.id is null then
@@ -839,6 +846,7 @@ declare
   v_actor uuid := app_private.admin_assert_permission('pepites.edit', false);
   v_result jsonb;
 begin
+  perform app_private.assert_mfa_step_up();
   v_result := app_private.pepites_set_entries(p_edition_id, p_entries, v_actor);
   perform app_private.pepites_admin_audit(v_actor, 'pepites.edition_update', p_edition_id,
     'Pépites draft order and reasons saved.', pg_catalog.jsonb_build_object('entries', v_result -> 'entries'));
@@ -857,6 +865,7 @@ declare
   v_actor uuid := app_private.admin_assert_permission('pepites.publish', true);
   v_result jsonb;
 begin
+  perform app_private.assert_mfa_step_up();
   if p_at is null or p_at < statement_timestamp() - interval '5 minutes'
     or p_at > statement_timestamp() + interval '14 days'
   then
@@ -880,6 +889,7 @@ declare
   v_actor uuid := app_private.admin_assert_permission('pepites.publish', true);
   v_result jsonb;
 begin
+  perform app_private.assert_mfa_step_up();
   v_result := app_private.pepites_unschedule(p_edition_id, v_actor);
   perform app_private.pepites_admin_audit(v_actor, 'pepites.edition_unschedule', p_edition_id,
     'Pépites edition taken back to draft.', '{}'::jsonb);
@@ -898,6 +908,7 @@ declare
   v_actor uuid := app_private.admin_assert_permission('pepites.publish', true);
   v_result jsonb;
 begin
+  perform app_private.assert_mfa_step_up();
   v_result := app_private.pepites_publish_edition(p_edition_id, v_actor);
   if not (v_result ->> 'alreadyPublished')::boolean then
     perform app_private.pepites_admin_audit(v_actor, 'pepites.edition_publish', p_edition_id,
@@ -918,6 +929,7 @@ declare
   v_actor uuid := app_private.admin_assert_permission('pepites.publish', true);
   v_correction_id uuid;
 begin
+  perform app_private.assert_mfa_step_up();
   v_correction_id := app_private.pepites_create_correction(p_edition_id, v_actor);
   perform app_private.pepites_admin_audit(v_actor, 'pepites.edition_correct', p_edition_id,
     'Pépites correction draft created.', pg_catalog.jsonb_build_object('correctionId', v_correction_id));
@@ -936,6 +948,7 @@ declare
   v_actor uuid := app_private.admin_assert_permission('pepites.publish', true);
   v_result jsonb;
 begin
+  perform app_private.assert_mfa_step_up();
   v_result := app_private.pepites_withdraw(p_edition_id, p_reason, v_actor);
   perform app_private.pepites_admin_audit(v_actor, 'pepites.edition_withdraw', p_edition_id,
     btrim(p_reason), '{}'::jsonb);
@@ -951,6 +964,7 @@ security definer
 set search_path = ''
 as $$
 begin
+  perform app_private.assert_mfa_step_up();
   perform app_private.admin_assert_permission('pepites.publish', false);
   return app_private.pepites_email_report(p_edition_id);
 end;
@@ -970,6 +984,7 @@ declare
   v_limit integer := coalesce((p_filters ->> 'limit')::integer, 50);
   v_offset integer := coalesce((p_filters ->> 'offset')::integer, 0);
 begin
+  perform app_private.assert_mfa_step_up();
   perform app_private.admin_assert_permission('football.read_operations', false);
   if v_status not in ('open', 'resolved', 'dismissed', 'all') or v_limit not between 1 and 200
     or v_offset not between 0 and 100000
@@ -1005,6 +1020,7 @@ as $$
 declare
   v_actor uuid := app_private.admin_assert_permission('football.correct', false);
 begin
+  perform app_private.assert_mfa_step_up();
   perform app_private.close_data_desk_issue(p_issue_id, p_status, p_note, v_actor);
   perform app_private.write_admin_audit(v_actor, 'football.data_desk_close', 'football', p_issue_id,
     coalesce(nullif(btrim(p_note), ''), 'Data desk issue closed.'), gen_random_uuid(),
@@ -1031,6 +1047,7 @@ declare
   v_note text := btrim(p_source_note);
   v_observation_id uuid;
 begin
+  perform app_private.assert_mfa_step_up();
   if v_note is null or char_length(v_note) not between 8 and 500 then
     raise exception using errcode = '22023', message = 'ATTRIBUTE_SOURCE_NOTE_REQUIRED';
   end if;
@@ -1061,6 +1078,7 @@ declare
   v_actor uuid := app_private.admin_assert_permission('football.correct', false);
   v_release_id uuid;
 begin
+  perform app_private.assert_mfa_step_up();
   if p_release is null or jsonb_typeof(p_release) <> 'object' then
     raise exception using errcode = '22023', message = 'PHOTO_RELEASE_INVALID';
   end if;
@@ -1085,6 +1103,7 @@ as $$
 declare
   v_actor uuid := app_private.admin_assert_permission('football.correct', true);
 begin
+  perform app_private.assert_mfa_step_up();
   perform app_private.approve_player_photo_release(p_release_id, v_actor);
   perform app_private.write_admin_audit(v_actor, 'football.player_photo_approve', 'football',
     p_release_id, 'Player photo release approved.', gen_random_uuid(), gen_random_uuid());
@@ -1102,6 +1121,7 @@ as $$
 declare
   v_actor uuid := app_private.admin_assert_permission('football.correct', false);
 begin
+  perform app_private.assert_mfa_step_up();
   perform app_private.reject_player_photo_release(p_release_id, p_reason, v_actor);
   perform app_private.write_admin_audit(v_actor, 'football.player_photo_reject', 'football',
     p_release_id, btrim(p_reason), gen_random_uuid(), gen_random_uuid());
@@ -1119,6 +1139,7 @@ as $$
 declare
   v_actor uuid := app_private.admin_assert_permission('football.correct', true);
 begin
+  perform app_private.assert_mfa_step_up();
   perform app_private.revoke_player_photo_release(p_release_id, p_reason, v_actor);
   perform app_private.write_admin_audit(v_actor, 'football.player_photo_revoke', 'football',
     p_release_id, btrim(p_reason), gen_random_uuid(), gen_random_uuid());

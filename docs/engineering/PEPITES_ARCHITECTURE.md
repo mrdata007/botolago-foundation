@@ -1192,12 +1192,14 @@ with its pgTAP file.
    (45 pgTAP assertions in `pepites_api.test.sql`, including the access
    matrix: 7 public reads × `off`, `staff`, `public` × visitor, signed-in
    fan, staff). Settled while building:
-   - **Staff preview** is decided by the full staff check
+   - **Staff preview** is decided by the ordinary-account step-up
+     (`mfa_step_up_satisfied()`) and then the full staff check
      (`admin_assert_permission('pepites.edit')`: principal, role, verified
-     factor, aal2), run without raising. The public reads are listed in the
-     ordinary-account step-up test as named exceptions, like
-     `predictions_round`: they return the same published data to everyone,
-     and the caller only decides whether staff may preview.
+     factor, aal2), both without raising. So the public reads satisfy the
+     step-up completeness check with no exception, and every admin function
+     runs `assert_mfa_step_up()` first, like the account functions: the
+     production-checked lists in `ordinary_account_mfa_step_up_reads.test.sql`
+     and its apply script stay word for word as they are.
    - **Versions.** An edition id, or `season_final:<run>`. A version resolves
      only to a published, superseded or withdrawn edition, or an activated
      season_final run; a draft's id answers "not found". The 2025-26 final

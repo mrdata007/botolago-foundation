@@ -135,6 +135,7 @@ declare
   v_photo text := lower(p_photo_extension);
   v_document text := lower(p_document_extension);
 begin
+  perform app_private.assert_mfa_step_up();
   perform app_private.admin_assert_permission('football.correct', false);
   if not exists (select 1 from app.players player where player.id = p_player_id) then
     raise exception using errcode = 'PT404', message = 'PLAYER_NOT_FOUND';
