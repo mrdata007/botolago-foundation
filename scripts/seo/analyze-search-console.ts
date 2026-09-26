@@ -22,7 +22,7 @@ interface Options {
 
 const HEADER_ALIASES = {
   query: ["query", "queries", "requete", "requetes", "top queries"],
-  page: ["page", "pages", "landing page", "url"],
+  page: ["page", "pages", "top pages", "landing page", "pages principales", "url"],
   clicks: ["clicks", "clics"],
   impressions: ["impressions"],
   ctr: ["ctr", "click through rate", "taux de clics"],
@@ -85,18 +85,42 @@ function field(record: CsvRecord, aliases: readonly string[]): string {
   return "";
 }
 
-function numberValue(value: string): number {
-  const cleaned = value.replace(/[\s\u00a0]/g, "").replace(/,(?=\d+$)/, ".");
-  const parsed = Number.parseFloat(cleaned);
-  return Number.isFinite(parsed) ? parsed : 0;
+function numberValue(value: string, column: string): number {
+  const cleaned = value.replace(/[\s\u00a0\u202f]/g, "").replace(/,(?=\d+$)/, ".");
+  const parsed = Number(cleaned);
+  if (!cleaned || !Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`Invalid ${column} value in Search Console export: ${JSON.stringify(value)}`);
+  }
+  return parsed;
 }
 
 function ctrValue(value: string): number {
-  const parsed = numberValue(value.replace("%", ""));
+  const parsed = numberValue(value.replace("%", ""), "CTR");
   return value.includes("%") || parsed > 1 ? parsed / 100 : parsed;
 }
 
-function gscRows(records: readonly CsvRecord[], dimension: "query" | "page"): GscRow[] {
+export function gscRows(
+  records: readonly CsvRecord[],
+  dimension: "query" | "page",
+  requirePage = false,
+): GscRow[] {
+  if (records.length === 0) return [];
+  const columns = Object.keys(records[0]!);
+  const required = [
+    dimension,
+    "clicks",
+    "impressions",
+    "ctr",
+    "position",
+    ...(requirePage ? ["page"] : []),
+  ] as const;
+  for (const column of required) {
+    if (!HEADER_ALIASES[column].some((alias) => columns.includes(normalizeHeader(alias)))) {
+      throw new Error(
+        `Missing ${column} column in Search Console export. Found: ${columns.join(", ")}`,
+      );
+    }
+  }
   const aliases = HEADER_ALIASES[dimension];
   return records.flatMap((record) => {
     const key = field(record, aliases).trim();
@@ -104,10 +128,10 @@ function gscRows(records: readonly CsvRecord[], dimension: "query" | "page"): Gs
     return [
       {
         key,
-        clicks: numberValue(field(record, HEADER_ALIASES.clicks)),
-        impressions: numberValue(field(record, HEADER_ALIASES.impressions)),
+        clicks: numberValue(field(record, HEADER_ALIASES.clicks), "clicks"),
+        impressions: numberValue(field(record, HEADER_ALIASES.impressions), "impressions"),
         ctr: ctrValue(field(record, HEADER_ALIASES.ctr)),
-        position: numberValue(field(record, HEADER_ALIASES.position)),
+        position: numberValue(field(record, HEADER_ALIASES.position), "position"),
         ...(dimension === "query"
           ? { page: field(record, HEADER_ALIASES.page).trim() || undefined }
           : {}),
@@ -116,10 +140,40 @@ function gscRows(records: readonly CsvRecord[], dimension: "query" | "page"): Gs
   });
 }
 
-async function readRows(path: string, dimension: "query" | "page"): Promise<GscRow[]> {
+async function readRows(
+  path: string,
+  dimension: "query" | "page",
+  requirePage = false,
+): Promise<GscRow[]> {
   const file = Bun.file(resolve(path));
   if (!(await file.exists())) throw new Error(`File not found: ${path}`);
-  return gscRows(parseCsv(await file.text()), dimension);
+  return gscRows(parseCsv(await file.text()), dimension, requirePage);
+}
+
+export function contentDecayRows(current: readonly GscRow[], previous: readonly GscRow[]) {
+  const currentByPage = new Map(current.map((row) => [row.key, row]));
+  return previous
+    .flatMap((before) => {
+      if (before.clicks <= 0) return [];
+      const row = currentByPage.get(before.key);
+      const loss = (before.clicks - (row?.clicks ?? 0)) / before.clicks;
+      return loss > 0.3 ? [{ row, before, loss }] : [];
+    })
+    .sort((a, b) => b.loss - a.loss)
+    .map(({ row, before, loss }) => ({
+      page: before.key,
+      current_clicks: row?.clicks ?? 0,
+      previous_clicks: before.clicks,
+      click_loss: Number(loss.toFixed(4)),
+      current_impressions: row?.impressions ?? 0,
+      previous_impressions: before.impressions,
+      current_position: row ? Number(row.position.toFixed(2)) : "",
+      previous_position: Number(before.position.toFixed(2)),
+      current_export_status: row ? "present" : "missing",
+      checks: row
+        ? "Freshness; stronger competitor; intent shift; cannibalization; AI answer visibility."
+        : "First verify matching filters, complete exports, and date ranges; then check indexing, demand, and redirects.",
+    }));
 }
 
 function median(values: readonly number[]): number {
@@ -193,7 +247,7 @@ async function main() {
 
   if (options.queries) {
     const queries = await readRows(options.queries, "query");
-    const queryPages = options.queryPages ? await readRows(options.queryPages, "query") : [];
+    const queryPages = options.queryPages ? await readRows(options.queryPages, "query", true) : [];
     const bestPage = new Map<string, GscRow>();
     for (const row of queryPages) {
       const current = bestPage.get(row.key);
@@ -253,29 +307,7 @@ async function main() {
     counts.lowCtrPages = lowCtr.length;
 
     if (options.previousPages) {
-      const previous = new Map(
-        (await readRows(options.previousPages, "page")).map((row) => [row.key, row]),
-      );
-      const decay = pages
-        .flatMap((row) => {
-          const before = previous.get(row.key);
-          if (!before || before.clicks <= 0) return [];
-          const loss = (before.clicks - row.clicks) / before.clicks;
-          return loss > 0.3 ? [{ row, before, loss }] : [];
-        })
-        .sort((a, b) => b.loss - a.loss)
-        .map(({ row, before, loss }) => ({
-          page: row.key,
-          current_clicks: row.clicks,
-          previous_clicks: before.clicks,
-          click_loss: Number(loss.toFixed(4)),
-          current_impressions: row.impressions,
-          previous_impressions: before.impressions,
-          current_position: Number(row.position.toFixed(2)),
-          previous_position: Number(before.position.toFixed(2)),
-          checks:
-            "Freshness; stronger competitor; intent shift; cannibalization; AI answer visibility.",
-        }));
+      const decay = contentDecayRows(pages, await readRows(options.previousPages, "page"));
       const decayPath = `${outputDir}/content-decay.csv`;
       await Bun.write(decayPath, tableCsv(decay));
       generated.push(decayPath);

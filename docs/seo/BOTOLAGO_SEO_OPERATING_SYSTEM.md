@@ -249,7 +249,7 @@ Outputs:
 
 - `striking-distance.csv`: positions 8–20 with at least 100 impressions;
 - `low-ctr-pages.csv`: pages in positions 1–5 materially below peers at a similar position;
-- `content-decay.csv`: pages whose clicks fell by more than 30% versus the comparison export;
+- `content-decay.csv`: pages whose clicks fell by more than 30% versus the comparison export, including URLs missing from the current export (`current_export_status=missing`). Verify that both exports use matching filters and complete date ranges before treating a missing row as a true 100% loss;
 - `summary.json`.
 
 Run this monthly. The script never guesses which page ranks for a query: supply the combined query + page export to map it.
