@@ -1,14 +1,29 @@
 # Pépites: architecture (Gate A)
 
-Status: **design for review, revision 2. Nothing here is built or applied.**
+Status: **design for review, revision 3. Nothing here is built or applied.**
 Written 2026-09-26. Companion to [`PEPITES_PLAN.md`](PEPITES_PLAN.md) (plan
 and data audit). Owner decisions so far: Pépites takes the Profile slot in
 the bottom bar (Profile moves to the header avatar). The owner is the Monday
 editor. Claude builds and the owner approves every stage and every
-production change.
+production change. The v1 scope in §1 and the explicit, off-by-default
+weekly email (§5.4) were approved on 2026-09-26; that approval is not Gate A
+and covers no production change.
 
 Gate A passes when the owner approves this document. No migration is written
 before that.
+
+### Revision 3 (2026-09-26): targeted fixes before Gate A
+
+Revision 2 was reviewed again. Five issues remained; the rest of the design
+is unchanged.
+
+| Issue                                                                                                                                                                           | Resolution                                                                                                                                                                                                                                                                                               | Where           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| Edition rules contradicted the jobs: a scheduled edition re-pointed its run, publication wrote entries, auto-publish skipped a state, a correction published before superseding | Re-pointing only in `draft` (a scheduled edition steps back first); publication writes no entries (computed values are set in draft, movement read from the frozen previous edition); auto-publish goes `draft → scheduled → published`; supersede-then-publish in one transaction under a per-week lock | §3.6, §4.5, §5  |
+| The resolver was not the only writer: `api.ingest_football_squad` overwrites date of birth and foot                                                                             | Inventory of writers; those two functions record observations instead of assigning; a guard trigger stops any other writer; existing values seeded with provenance                                                                                                                                       | §3.1            |
+| Snapshots and scores were only protected from update and delete                                                                                                                 | Sealed once the run leaves `running`: INSERT, UPDATE, DELETE and TRUNCATE rejected; successful scores immutable                                                                                                                                                                                          | §3.5, §3.6, §11 |
+| "Every cached copy expires at 20:00" was unconditional                                                                                                                          | A version pointer switches on the publication commit; versioned data; a `delayed` state; tests during the publication transaction                                                                                                                                                                        | §7, §11         |
+| The weekly email had no defined preference or unsubscribe                                                                                                                       | `pepites_weekly_email` off by default, dedicated opt-in and opt-out, send-time checks, topic-only one-click unsubscribe, on the existing pipeline                                                                                                                                                        | §5.4, §6.2, §11 |
 
 ### Revision 2 (2026-09-26): what changed after review
 
@@ -16,27 +31,27 @@ Revision 1 was reviewed and sent back with changes requested. Each finding
 was checked against the repository before it was accepted; all were
 confirmed.
 
-| Finding                                                                       | Where it is fixed |
-| ----------------------------------------------------------------------------- | ----------------- |
-| Score formula used two scales (percentile 0–100 × 100)                        | §4.4              |
-| "`percent_rank()` with ties at their average" is not what `percent_rank` does | §4.3              |
-| Small position groups fell back to comparing unlike measures                  | §4.2              |
-| A round number cannot reproduce a run after data is corrected                 | §3.5, §4.6        |
-| The 2025-26 ranking used current-season memberships                           | §4.7              |
-| Unapproved photos would sit in `football-media`, a public bucket              | §3.3              |
-| No split between in-app and social use; no capture date; no revocation        | §3.3              |
-| `off` / `staff` / `public` not enforced in the API                            | §6.1              |
-| "Latest run" could expose an unpublished run                                  | §6.1              |
-| Shortlist of 20 against ranks 1–10; entries only protected from update        | §3.6, §5          |
-| Computed and editorial rank mixed; movement undefined                         | §3.6, §4.5        |
-| No rule for a postponed match played after its round was ranked               | §5.3              |
-| Clean sheets changed definition with the data available                       | §4.1              |
-| Provider-neutral refactor was the first dependency                            | §8, §10           |
-| `shirt_number` is a membership field, not a player attribute                  | §3.1              |
-| A 270-minute floor after three rounds needs every minute played               | §4.2              |
-| Anonymous view counts could be inflated                                       | removed from v1   |
-| Monday cache could show last week's edition after publication                 | §7                |
-| "Every eligible player has a DOB" is circular                                 | §4.2, plan gate B |
+| Finding                                                                       | Where it is fixed         |
+| ----------------------------------------------------------------------------- | ------------------------- |
+| Score formula used two scales (percentile 0–100 × 100)                        | §4.4                      |
+| "`percent_rank()` with ties at their average" is not what `percent_rank` does | §4.3                      |
+| Small position groups fell back to comparing unlike measures                  | §4.2                      |
+| A round number cannot reproduce a run after data is corrected                 | §3.5, §4.6                |
+| The 2025-26 ranking used current-season memberships                           | §4.7                      |
+| Unapproved photos would sit in `football-media`, a public bucket              | §3.3                      |
+| No split between in-app and social use; no capture date; no revocation        | §3.3                      |
+| `off` / `staff` / `public` not enforced in the API                            | §6.1                      |
+| "Latest run" could expose an unpublished run                                  | §6.1                      |
+| Shortlist of 20 against ranks 1–10; entries only protected from update        | §3.6, §5                  |
+| Computed and editorial rank mixed; movement undefined                         | §3.6, §4.5                |
+| No rule for a postponed match played after its round was ranked               | §5.3                      |
+| Clean sheets changed definition with the data available                       | §4.1                      |
+| Provider-neutral refactor was the first dependency                            | §8, §10                   |
+| `shirt_number` is a membership field, not a player attribute                  | §3.1                      |
+| A 270-minute floor after three rounds needs every minute played               | §4.2                      |
+| Anonymous view counts could be inflated                                       | removed from v1           |
+| Monday cache could show last week's edition after publication                 | §7 (redone in revision 3) |
+| "Every eligible player has a DOB" is circular                                 | §4.2, plan gate B         |
 
 ## 1. Scope
 
@@ -52,7 +67,7 @@ confirmed.
 - Player attributes from SportsMonks and BSD, with provenance.
 - Licensed photos, or the silhouette.
 - Share images of published editions.
-- The weekly email to accounts that opt in.
+- The weekly email, only to accounts that opt in explicitly (§5.4).
 
 **Moved to v1.1, once v1 ranks correctly and repeatably:**
 
@@ -122,7 +137,7 @@ All tables follow `docs/backend/MIGRATIONS.md`:
   | `attribute`     | `date_of_birth`, `nationality`, `preferred_foot`, `height_cm`, `detailed_position` |
   | `value_text`    |                                                                                    |
   | `value_numeric` |                                                                                    |
-  | `source_kind`   | `provider`, `manual` or `derived`                                                  |
+  | `source_kind`   | `provider`, `manual`, `derived` or `legacy`                                        |
   | `provider_name` |                                                                                    |
   | `source_ref`    |                                                                                    |
   | `observed_at`   |                                                                                    |
@@ -137,12 +152,56 @@ All tables follow `docs/backend/MIGRATIONS.md`:
   membership period, so a transfer never rewrites history. v1 imports no
   shirt numbers from BSD.
 - `app_private.player_attribute_source_priority(attribute, provider_name,
-priority)`: manual first, then SportsMonks, then BSD.
+priority)`: manual first, then SportsMonks, then BSD, then legacy.
 - `app_private.resolve_player_attributes(p_player_ids uuid[])` is the single
-  writer of those `app.players` columns. It picks the winning observation per
-  attribute.
+  writer of `date_of_birth`, `nationality_country_id`, `preferred_foot`,
+  `height_cm` and `detailed_position` on `app.players`. It picks the winning
+  observation per attribute.
   - Two providers disagreeing on a date of birth or a nationality raise a
     data-desk issue. It is not silently resolved.
+
+**Writers today.** Every migration was searched for writes to those columns
+(2026-09-26):
+
+| Writer                                                     | What it writes                                                                                             | Callers                                                                                              |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `api.ingest_football_squad` (`20260731203317`)             | `date_of_birth` and `preferred_foot` on insert, and overwrites both on every update of a known player      | the SportsMonks historical importer; `api.service_ingest_current_football_squads` (`20260914184657`) |
+| `api.service_apply_current_player_list` (`20260925200000`) | `date_of_birth` on insert of a new player (`preferred_foot` `'unknown'`); never updates an existing player | the owner-run current player list update                                                             |
+| none                                                       | `nationality_country_id` (never set: 0 of 977); `height_cm` and `detailed_position` are new                |                                                                                                      |
+
+Left as it is, the squad import would overwrite a manual correction on its
+next run.
+
+**The narrow integration.** Nothing else in these functions changes.
+
+1. `api.ingest_football_squad` keeps its signature, locks, stale check and
+   skip logic. It inserts a new player with no date of birth and foot
+   `'unknown'`, and no longer assigns either on update. Instead it records a
+   provider observation for each (`provider_name = p_provider_name`,
+   `source_ref` = the external player id, `observed_at` = the player's
+   provider timestamp; no new row when the value equals that provider's
+   current observation) and calls the resolver for the player.
+2. `api.service_apply_current_player_list` inserts new players without a date
+   of birth, records a SportsMonks observation and calls the resolver.
+3. A guard trigger on `app.players` rejects an insert that sets any of the
+   five columns (other than foot `'unknown'`) and an update that changes
+   them, unless the transaction-local setting
+   `botolago.player_attribute_writer` is `resolver`. Only the resolver sets
+   it. This catches an accidental future writer; it is not a defence against
+   a definer function that sets the flag on purpose, which review must
+   catch.
+4. The existing pgTAP files for both functions must pass unchanged.
+
+**Seeding existing values.** In the same migration, before the guard
+exists: for every player with a date of birth, and every foot other than
+`'unknown'`, one observation per value. It is `provider` / `sportsmonks`
+when the player has an active SportsMonks mapping, otherwise `legacy` (typed
+before provenance existed, such as the promoted clubs' hand-typed squads).
+`observed_at` is the player's `updated_at`; `source_ref` names the
+migration. A provider value later replaces a legacy one, and a differing
+value opens a data-desk conflict carrying the legacy value, so a hand-typed
+date is checked rather than lost. Seeding changes no value: the resolver's
+first run must change zero rows, and a test asserts it.
 
 ### 3.2 Clean sheets
 
@@ -244,8 +303,8 @@ never a past one.
 Unique: `(season_id, kind, as_of_round_number, methodology_version,
 revision)`.
 
-Snapshot tables, in `app_private`, written once by the gather step. A
-trigger rejects update and delete.
+Snapshot tables, in `app_private`, written only by the gather step of their
+own run:
 
 - `pepites_run_players(run_id, player_id, date_of_birth, position_group,
 team_id, membership_id, in_pool)`: every player considered, with the
@@ -261,13 +320,24 @@ team_conceded)`: every Botola appearance this season up to the cutoff, all
 Up to about 10 000 appearance rows per run by the end of a season; weekly
 runs and their revisions come to a few hundred thousand rows a season.
 
+**Sealing.**
+
+- A run's `status` moves only `running → succeeded` or `running → failed`.
+  After that, the only change allowed on the run row is `activated_at`, once,
+  from null.
+- Snapshot rows may be inserted only while their run is `running`. Once it
+  is not, triggers on all three snapshot tables reject INSERT, UPDATE and
+  DELETE for that run, and a statement trigger rejects TRUNCATE on them.
+  Failed runs are sealed too, for diagnosis.
+- No client role holds any privilege on the snapshot tables.
+
 ### 3.6 Scores and editions
 
 | Table                         | Columns                                                                                                                                                                                                                                                                                                                              |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `app.pepites_player_scores`   | `run_id`, `player_id`, `team_id`, `position_group`, `age_years`; `apps`, `starts`, `minutes`, `goals`, `assists`, `saves`, `clean_sheets`; `rating_avg`, `rating_n`, `form_avg`; `per90 jsonb`, `percentiles jsonb`, `components jsonb`, `flags text[]`; `score_exact numeric`, `score smallint`, `rank int`, `rank_in_position int` |
-| `app.pepites_editions`        | `id`, `season_id`, `week_number`, `round_number`, `run_id`, `status`, `corrects_edition_id`, `scheduled_for`, `published_at`, `published_by`, `withdrawn_at`, `withdrawn_reason`, `created_at`                                                                                                                                       |
-| `app.pepites_edition_entries` | `edition_id`, `editorial_rank 1..10`, `player_id`, `computed_rank`, `computed_score`, `movement smallint null`, `is_new boolean`, `reason_fr`, `reason_ar`                                                                                                                                                                           |
+| `app.pepites_editions`        | `id`, `season_id`, `week_number`, `round_number`, `run_id`, `status`, `corrects_edition_id`, `previous_edition_id`, `superseded_by`, `scheduled_for`, `published_at`, `published_by`, `withdrawn_at`, `withdrawn_reason`, `created_at`                                                                                               |
+| `app.pepites_edition_entries` | `edition_id`, `editorial_rank 1..10`, `player_id`, `computed_rank`, `computed_score`, `reason_fr`, `reason_ar`                                                                                                                                                                                                                       |
 
 Three things are kept apart:
 
@@ -280,22 +350,44 @@ Three things are kept apart:
 Constraints:
 
 - Player scores: primary key `(run_id, player_id)`; `score` between 0 and
-  100; `rank` null for an unranked player (§4.4).
+  100; `rank` null for an unranked player (§4.4). Rows may be inserted only
+  while their run is `running`. Once the run has left `running`, INSERT,
+  UPDATE and DELETE are rejected and TRUNCATE is rejected on the table, so a
+  succeeded run's scores never change.
 - Editions:
   - `status` is `draft`, `scheduled`, `published`, `withdrawn` or
     `superseded`.
-  - A partial unique index allows one `published` edition per
-    `(season_id, week_number)`.
-  - Once an edition leaves `draft`, `season_id`, `week_number`,
-    `round_number` and `run_id` cannot change.
-  - Allowed moves: `draft → scheduled → published`, `scheduled → draft`,
-    `published → withdrawn`, `published → superseded`. A trigger rejects the
-    rest.
+  - Partial unique indexes: one `published` edition per
+    `(season_id, week_number)`, and one open (`draft` or `scheduled`)
+    edition per `(season_id, week_number)`.
+  - `season_id`, `week_number`, `round_number`, `run_id` and
+    `corrects_edition_id` can change only while the edition is `draft`.
+  - Allowed moves, each made by one named function (§5), all under the
+    week lock (§5.5). A trigger rejects every other move, and every column
+    change not listed:
+
+    | Move                     | Made by                                                       | Columns it may set                                              |
+    | ------------------------ | ------------------------------------------------------------- | --------------------------------------------------------------- |
+    | `draft → scheduled`      | the editor scheduling, or the tick under `auto_publish`       | `status`, `scheduled_for`                                       |
+    | `scheduled → draft`      | the editor unscheduling, or the tick on a new run revision    | `status`                                                        |
+    | `scheduled → published`  | `pepites_publish_edition` only                                | `status`, `published_at`, `published_by`, `previous_edition_id` |
+    | `published → superseded` | `pepites_publish_edition` of the correction, same transaction | `status`, `superseded_by`                                       |
+    | `published → withdrawn`  | the editor withdrawing                                        | `status`, `withdrawn_at`, `withdrawn_reason`                    |
+
+    There is no `draft → published` move.
+
 - Edition entries:
   - Primary key `(edition_id, editorial_rank)`; `(edition_id, player_id)`
     unique.
   - Insert, update and delete are rejected unless the edition is `draft`.
+    Publication writes no entries.
+  - `computed_rank` and `computed_score` are copied from the run whenever an
+    entry is written or the run is re-pointed, both in `draft`. Publication
+    only checks they still match.
   - Every entry's player must have a ranked score in the edition's run.
+  - Movement is not stored: it is read from `previous_edition_id`, which is
+    fixed at publication and points at an edition whose entries are
+    themselves frozen (§4.5).
 - `app_private.pepites_settings`, a single row: `mode off|staff|public`,
   `auto_publish boolean`, `publish_local_time` (default 20:00
   Africa/Casablanca), `draft_local_time` (default 12:00). Changed only
@@ -412,10 +504,14 @@ ranking is deterministic.
 - `rank`: the computed rank in the run. `rank_in_position`: within the
   position group.
 - On the ranking page, the arrow compares the computed rank with the run of
-  the previous published edition.
-- In the Top 10, the arrow compares the editorial rank with the previous
-  published edition's editorial rank, which is what readers saw. `is_new`
-  when the player was not in it.
+  the edition's `previous_edition_id`.
+- In the Top 10, the arrow compares the editorial rank with the editorial
+  rank in `previous_edition_id`, which is what readers saw. "New" when the
+  player was not in it. `previous_edition_id` is set once, at publication:
+  the current published edition of the latest earlier week of the season
+  (for a correction, the corrected edition's own `previous_edition_id`).
+  Both entry sets are frozen, so an arrow never changes after publication,
+  and reading it needs no write.
 
 ### 4.6 Reproducibility
 
@@ -462,15 +558,24 @@ enter the score without a new methodology version.
   2. **Runs.** For the latest completed round, gather the snapshot and
      compute its fingerprint. If no succeeded run of that round has the same
      fingerprint, start a new revision and score it.
-  3. **Draft.** At Monday `draft_local_time`: if a succeeded run exists for a
+  3. **Re-point.** If step 2 made a new revision, apply §5.3 to that
+     round's open edition.
+  4. **Draft.** At Monday `draft_local_time`: if a succeeded run exists for a
      round newer than the last published edition, and §4.2 allows an
      edition, create a `draft` edition prefilled with the computed top 10,
      and email the editor.
-  4. **Publish.** At `publish_local_time` and on every later tick for 24
-     hours: publish a `scheduled` edition; publish a still-`draft` edition
-     only if `auto_publish` is true (it goes out without editor lines).
-     After 24 hours it stays unpublished and ops is alerted.
-  5. Weeks without a completed round (international breaks) have no
+  5. **Publish.** From `scheduled_for` (by default Monday
+     `publish_local_time`) and on every later tick for 24 hours:
+     - a `scheduled` edition: call `pepites_publish_edition`;
+     - a `draft` edition with `auto_publish` true: move it
+       `draft → scheduled` (actor `system`), then publish it, in the same
+       transaction. It goes out without editor lines;
+     - a `draft` edition with `auto_publish` false: nothing; the edition is
+       `delayed` (§7) and ops is alerted once.
+       After 24 hours nothing more is attempted automatically; the edition
+       stays as it is, ops is alerted again, and the editor can still publish
+       by hand.
+  6. Weeks without a completed round (international breaks) have no
      edition.
 - **Failed runs** are marked `failed` with the error, retried on the next
   tick up to 3 attempts per fingerprint, then alert ops. A draft is only ever
@@ -482,35 +587,134 @@ enter the score without a new methodology version.
 ### 5.2 Publishing
 
 `app_private.pepites_publish_edition(edition_id, actor)`, in one
-transaction:
+transaction. Any failure rolls the whole of it back.
 
-1. Lock the edition row (`for update`). If it is already `published`,
-   return it unchanged: publishing is idempotent.
-2. Validate: status `scheduled` (or `draft` under `auto_publish`); 10
-   entries with distinct players; each player ranked in the edition's run;
-   the run `succeeded`; reasons within length limits.
-3. Freeze: copy `computed_rank` and `computed_score` from the run; compute
-   `movement` and `is_new` (§4.5).
-4. Set `published`, `published_at`, `published_by`; set the run's
-   `activated_at` if empty; mark the edition it corrects `superseded`.
-5. Enqueue the weekly email with deduplication key
-   `pepites-edition:<edition_id>:<user_id>`. The pipeline's unique key
-   makes a second email for the same edition impossible.
+1. **Lock.** Take the week lock (§5.5). Lock the edition row `for update`
+   and, for a correction, the edition it corrects, in `id` order.
+2. **Idempotence.** If the edition is already `published`, return it
+   unchanged.
+3. **Validate.** Status is `scheduled`. Exactly 10 entries with distinct
+   players; each player ranked in the edition's run; each entry's
+   `computed_rank` and `computed_score` equal the run's; the run
+   `succeeded`; reasons within length limits. For a correction, the
+   corrected edition is `published`.
+4. **Supersede first.** For a correction, move the corrected edition
+   `published → superseded` with `superseded_by` set. This comes before the
+   next step, so the one-published-per-week index never sees two.
+5. **Publish.** Move the edition `scheduled → published`, setting
+   `published_at`, `published_by` and `previous_edition_id` (§4.5). No entry
+   is written.
+6. **Activate.** Set the run's `activated_at` if it is null.
+7. **Email.** Enqueue the weekly email event (§5.4).
+
+Readers see either the state before the commit or the state after it, never
+a mix (§7).
 
 ### 5.3 Revisions, corrections and withdrawal
 
 - **New inputs.** A postponed match played later, or a corrected score,
   changes the fingerprint of the latest round, so the next tick makes a new
-  run revision. A `draft` or `scheduled` edition is re-pointed to it; a
-  `scheduled` one goes back to `draft` if its top 10 changed, and the editor
-  is emailed. A published edition never changes.
-- **Correction edition.** To fix a published edition, the editor creates a
-  new edition for the same week with `corrects_edition_id`, from the newest
-  run. Publishing it supersedes the old one, whose page then says
+  run revision. Under the week lock, the round's open edition is handled so:
+  - `draft`: `run_id` is re-pointed to the new revision, and every entry's
+    `computed_rank` and `computed_score` rewritten from it. An entry whose
+    player is no longer ranked is removed, and the editor is emailed.
+  - `scheduled`: first `scheduled → draft`, then re-pointed as above. If all
+    10 entries are still ranked, `draft → scheduled` again with the same
+    `scheduled_for` (actor `system`), and the editor is told what moved.
+    Otherwise it stays `draft` and the editor is emailed.
+  - `published`: never changes. The new revision feeds next week's edition,
+    or a correction.
+- **Correction edition.** `api.admin_pepites_edition_correct` creates a
+  `draft` for the same week with `corrects_edition_id`, from the newest
+  succeeded run. It is allowed only while the corrected edition is
+  `published` and the week has no other open edition. Publishing it follows
+  §5.2: supersede, then publish, atomically. The old edition's page then says
   "corrigée" and links to the correction.
-- **Withdrawal.** `published → withdrawn` with a reason. Its page and share
-  images then say it was withdrawn and show no entries; the home page falls
-  back to the previous published edition.
+- **Withdrawal.** Under the week lock, `published → withdrawn` with a
+  reason. Its page and share images then say it was withdrawn and show no
+  entries; the version pointer (§7) falls back to the previous published
+  edition; unsent emails for it are cancelled (§5.4).
+
+### 5.4 The weekly email
+
+Owner decision, 2026-09-26: explicit opt-in, off by default, easy to leave,
+and nobody subscribed automatically.
+
+**Preference.**
+
+- `app.user_preferences.pepites_weekly_email boolean not null default
+false`, plus `pepites_weekly_email_changed_at timestamptz null`.
+- The migration adds the column as `false` for every existing row. No
+  existing user is subscribed. The global switch `email_notifications_enabled`
+  (on by default since 2026-09-24) does not subscribe anyone to Pépites.
+- `api.update_my_preferences` and `api.update_my_notification_preferences`
+  list their columns explicitly and do not touch it. The only ways to change
+  it are the three below.
+
+**Opt in and out.**
+
+- `api.set_my_pepites_weekly_email(p_enabled boolean)`: signed-in only.
+  Idempotent. Sets the value and `changed_at`, and writes a notification
+  audit entry `pepites_weekly_email_opt_in` or `_opt_out` with source `app`.
+  Opting out also cancels this user's unsent Pépites deliveries.
+- `api.my_pepites_weekly_email()`: the current value, and whether the
+  account can receive email at all (confirmed address, email switched on),
+  so the page can say why nothing arrives.
+- The unsubscribe link (below).
+- In the app: an unticked switch on the Pépites home and in the notification
+  settings. Nothing is pre-ticked. A guest is asked to sign in first.
+
+**Sending.** Through the existing pipeline, unchanged in its mechanics:
+
+- New `app.notification_type` value `pepites_weekly`, source domain
+  `football`. Publication (§5.2 step 7) writes one event with
+  `app_private.notification_email_enqueue`, deduplication key
+  `pepites-weekly:<edition_id>`.
+- The pipeline's fan-out, its `(event, user)` and `(notification, channel)`
+  unique keys, the Resend idempotency key (the delivery id), the bounded
+  retries and the dead-letter queue of
+  `api.service_record_notification_delivery_attempt` all apply as they are.
+  One edition can never mail one person twice.
+- **Eligibility**, checked at fan-out in `notification_email_fanout` and
+  again at claim in `api.service_claim_email_deliveries`, on top of the
+  pipeline's existing checks (notifications and email on, confirmed
+  non-anonymous address, profile not deleted, the email mode):
+  - `pepites_weekly_email` is true (else cancelled, `pepites_opted_out`);
+  - Pépites mode is `public` (else `pepites_unavailable`);
+  - the edition is still `published`, not withdrawn or superseded (else
+    `pepites_edition_not_current`).
+    A delivery that fails at claim is cancelled with that code, never sent.
+- A correction's own event fans out only to users who have no delivered
+  Pépites email for that week.
+- **Staleness and quota.** Stale 36 hours after publication (a line in
+  `notification_email_event_is_stale`). Lowest priority in the free-plan
+  allowance (100 a day), after the round preview. Opt-ins beyond the day's
+  remainder go out the next day, within the 36 hours, or not at all.
+
+**Unsubscribe.**
+
+- `app_private.notification_email_unsubscribe_tokens` gains `topic text
+null`. Null keeps today's meaning, all email. Pépites emails carry a token
+  with `topic = 'pepites_weekly'`, in the footer link and in the
+  `List-Unsubscribe` one-click header the dispatcher already sets.
+- `api.unsubscribe_notification_email(p_token)` with a Pépites token: sets
+  only `pepites_weekly_email = false`, cancels only unsent Pépites
+  deliveries, writes `pepites_weekly_email_opt_out` with source
+  `email_link`, and returns `unsubscribed` or `already_unsubscribed`. Every
+  other email stays on. No sign-in needed. The footer also links to the full
+  notification settings.
+- A token without a topic behaves exactly as today.
+
+### 5.5 Locks
+
+- The tick: `pg_try_advisory_xact_lock` on a fixed key; a second tick exits.
+- Every edition change (create, update entries, schedule, unschedule,
+  re-point, publish, correct, withdraw) first takes
+  `pg_advisory_xact_lock` on `pepites_edition:<season_id>:<week_number>`,
+  then locks the affected edition rows `for update` in `id` order. The
+  editor's functions and the tick use the same key, so a publish, a
+  re-point and a withdrawal of the same week run one after another, never
+  together.
 
 ## 6. API contracts
 
@@ -534,9 +738,10 @@ One check decides access for every public function and route:
 - It applies to home, ranking, player, player matches, edition, method and
   share images, not only the home page. Hiding the tab is not access
   control.
-- **Which run is public.** The run of the current published edition (latest
-  `published`, not withdrawn or superseded). Before any edition, the
-  activated `season_final` run. A run nobody published is never public.
+- **Which run is public.** The run of the current version (§7): the current
+  published edition (latest week with a `published` edition), or, before
+  any edition, the activated `season_final` run. A run nobody published is
+  never public.
 - Functions are `security definer` with `set search_path = ''`. `revoke all
 … from public` first, then explicit grants: reads to `anon` and
   `authenticated`, admin functions to `authenticated` plus the permission
@@ -549,23 +754,28 @@ One check decides access for every public function and route:
 Every function returns `jsonb`. Localised text comes back in both languages
 and the client picks one.
 
-| Function                                                                                                           | Returns                                                                                                                                                                            |
-| ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `api.pepites_home()`                                                                                               | The current published edition (entries with player card fields), its week and round, and `source`: `edition` or `previous_season`.                                                 |
-| `api.pepites_ranking(p_position text, p_max_age int, p_team_id uuid, p_sort text, p_limit int ≤ 50, p_offset int)` | Rows from the public run (§6.1) plus total count. `p_sort` is one of `score`, `minutes`, `goals`, `assists`, `rating`, `form`, `ga90`.                                             |
-| `api.pepites_player(p_player_id uuid)`                                                                             | Identity and attributes, with a `missing` list; `photo` (null unless approved, §3.3); the public run's row (score, rank, components, percentiles, per90, flags); editions entered. |
-| `api.pepites_player_matches(p_player_id uuid, p_limit int ≤ 20)`                                                   | Date, home/away, opponent, score, minutes, started, goals, assists, cards, rating.                                                                                                 |
-| `api.pepites_edition(p_season_id uuid, p_week int)`                                                                | A published, withdrawn or superseded edition, with its status and, when corrected, the correction's link.                                                                          |
-| `api.pepites_methodology()`                                                                                        | The public methodology and coverage: pool size, players excluded for no date of birth, rating coverage, foot and height coverage.                                                  |
-| `api.admin_pepites_edition_get(p_edition_id)`                                                                      | Edition, entries and the run's top 20 shortlist. Protected by `pepites.edit`.                                                                                                      |
-| `api.admin_pepites_edition_update(p_edition_id, p_entries jsonb)`                                                  | Order and reasons, `draft` only. Protected by `pepites.edit`.                                                                                                                      |
-| `api.admin_pepites_edition_schedule(p_edition_id, p_at)`                                                           | Protected by `pepites.publish` (recent auth).                                                                                                                                      |
-| `api.admin_pepites_edition_correct(p_edition_id)`                                                                  | Creates the correction draft. Protected by `pepites.publish` (recent auth).                                                                                                        |
-| `api.admin_pepites_edition_withdraw(p_edition_id, p_reason)`                                                       | Protected by `pepites.publish` (recent auth).                                                                                                                                      |
-| `api.admin_data_desk_list(p_filters)`                                                                              | Protected by `football.read_operations`.                                                                                                                                           |
-| `api.admin_player_attribute_correct(p_player_id, p_attribute, p_value, p_source_note)`                             | Protected by `football.correct`.                                                                                                                                                   |
-| `api.admin_player_photo_submit(p_player_id, p_intake_path, p_release jsonb)`                                       | Records the release; approval runs the checks in §3.3. Protected by `football.correct`.                                                                                            |
-| `api.admin_player_photo_revoke(p_release_id, p_reason)`                                                            | Protected by `football.correct` (recent auth).                                                                                                                                     |
+| Function                                                                                                                           | Returns                                                                                                                                                                             |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api.pepites_version()`                                                                                                            | The version pointer (§7): `version`, `state` (`current`, `countdown` or `delayed`), `next_reveal_at`. Reads two rows; cheap.                                                        |
+| `api.pepites_home(p_version text)`                                                                                                 | For that version: the edition (entries with player card fields, movement from `previous_edition_id`), its week and round, and `source`: `edition` or `previous_season`.             |
+| `api.pepites_ranking(p_version text, p_position text, p_max_age int, p_team_id uuid, p_sort text, p_limit int ≤ 50, p_offset int)` | Rows from the version's run plus total count. `p_sort` is one of `score`, `minutes`, `goals`, `assists`, `rating`, `form`, `ga90`.                                                  |
+| `api.pepites_player(p_version text, p_player_id uuid)`                                                                             | Identity and attributes, with a `missing` list; `photo` (null unless approved, §3.3); the version run's row (score, rank, components, percentiles, per90, flags); editions entered. |
+| `api.pepites_player_matches(p_player_id uuid, p_limit int ≤ 20)`                                                                   | Date, home/away, opponent, score, minutes, started, goals, assists, cards, rating.                                                                                                  |
+| `api.pepites_edition(p_season_id uuid, p_week int)`                                                                                | A published, withdrawn or superseded edition, with its status and, when corrected, the correction's link.                                                                           |
+| `api.pepites_methodology()`                                                                                                        | The public methodology and coverage: pool size, players excluded for no date of birth, rating coverage, foot and height coverage.                                                   |
+| `api.admin_pepites_edition_get(p_edition_id)`                                                                                      | Edition, entries and the run's top 20 shortlist. Protected by `pepites.edit`.                                                                                                       |
+| `api.admin_pepites_edition_update(p_edition_id, p_entries jsonb)`                                                                  | Order and reasons, `draft` only. Protected by `pepites.edit`.                                                                                                                       |
+| `api.admin_pepites_edition_schedule(p_edition_id, p_at)`                                                                           | `draft → scheduled`. Protected by `pepites.publish` (recent auth).                                                                                                                  |
+| `api.admin_pepites_edition_unschedule(p_edition_id)`                                                                               | `scheduled → draft`. Protected by `pepites.publish` (recent auth).                                                                                                                  |
+| `api.admin_pepites_edition_publish_now(p_edition_id)`                                                                              | Calls `pepites_publish_edition` on a `scheduled` edition. Protected by `pepites.publish` (recent auth).                                                                             |
+| `api.set_my_pepites_weekly_email(p_enabled boolean)`                                                                               | Signed-in only. Opt in or out (§5.4).                                                                                                                                               |
+| `api.my_pepites_weekly_email()`                                                                                                    | Signed-in only. The preference and whether email can reach the account (§5.4).                                                                                                      |
+| `api.admin_pepites_edition_correct(p_edition_id)`                                                                                  | Creates the correction draft. Protected by `pepites.publish` (recent auth).                                                                                                         |
+| `api.admin_pepites_edition_withdraw(p_edition_id, p_reason)`                                                                       | Protected by `pepites.publish` (recent auth).                                                                                                                                       |
+| `api.admin_data_desk_list(p_filters)`                                                                                              | Protected by `football.read_operations`.                                                                                                                                            |
+| `api.admin_player_attribute_correct(p_player_id, p_attribute, p_value, p_source_note)`                                             | Protected by `football.correct`.                                                                                                                                                    |
+| `api.admin_player_photo_submit(p_player_id, p_intake_path, p_release jsonb)`                                                       | Records the release; approval runs the checks in §3.3. Protected by `football.correct`.                                                                                             |
+| `api.admin_player_photo_revoke(p_release_id, p_reason)`                                                                            | Protected by `football.correct` (recent auth).                                                                                                                                      |
 
 New permissions:
 
@@ -580,26 +790,60 @@ Both are granted to `publisher`, `content_admin` and `platform_admin`.
   time.
 - Cache headers are sent only when the response is `public` (§6.1). Anything
   else is `private, no-store`.
-- **Pages showing "the current edition"** (home, ranking, player): `s-maxage`
-  is the smaller of 300 seconds and the time left until the next scheduled
-  publication, with no `stale-while-revalidate` across that moment. At 20:00
-  every cached copy has expired, so nobody sees last week's edition after the
-  reveal. A publication outside the schedule can take up to 5 minutes to
-  show; the admin screen says so.
-- **Edition pages** (`/pepites/semaine/$n`): `s-maxage=300`, because an
-  edition can still be withdrawn or corrected.
-- **Share images** at `/og/pepites/<edition_id>/<player_id>.png`: rendered
-  with the rights of the moment (§3.3), `s-maxage=3600`.
+  The reveal follows the publication, not the clock. Revision 2 promised that
+  every cached copy expires at 20:00; that holds only if publication happens
+  at 20:00, and a late tick or an editor who has not finished breaks it.
+
+**Version pointer.**
+
+- The version is the current published edition's id, or
+  `season_final:<run_id>` before the first edition. It changes only when a
+  publication, correction or withdrawal commits.
+- `api.pepites_version()` returns it with a `state`:
+  - `current`: nothing is due;
+  - `countdown`: a `scheduled` edition exists; `next_reveal_at` is its
+    `scheduled_for`. The version is still the previous one;
+  - `delayed`: more than 2 minutes past `scheduled_for`, or past the draft's
+    default publish time, and still not published (tick late, editor not
+    done, validation failed). The version is still the previous one. The
+    page stops the countdown and says the ranking is coming. It ends when
+    the edition publishes, is unscheduled, or 24 hours pass (§5.1), after
+    which the state is `current` again.
+- Readers see the pointer before or after the publication commit, never
+  between: publication is one transaction and writes no entries, so there is
+  no half-published state to read.
+
+**Versioned data.** Pages fetch their data under the version:
+`/pepites/data/<version>/home.json`, `…/ranking.json?…`,
+`…/player/<id>.json`. Content for a version never changes while it is
+public (entries and runs are frozen), so it can be cached longer.
+
+| Response                              | Cache                                                                                                                         |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `api.pepites_version()` route         | `s-maxage=10`, no `stale-while-revalidate`                                                                                    |
+| Versioned data                        | `s-maxage=300`. A withdrawn edition's data then answers "withdrawn" within 5 minutes; nobody is pointed to it anymore anyway. |
+| "Current" HTML pages                  | `s-maxage=10`; the HTML embeds the version it was rendered with                                                               |
+| Edition pages (`/pepites/semaine/$n`) | `s-maxage=300`                                                                                                                |
+| Share images                          | `s-maxage=3600`, rendered with the rights of the moment (§3.3)                                                                |
+| Anything not `public` (§6.1)          | `private, no-store`                                                                                                           |
+
+- **The reveal.** In `countdown`, the page re-reads the pointer at
+  `next_reveal_at` and then every 5 seconds with jitter, until the version
+  changes or the state becomes `delayed`. After a publication commits, a
+  reader sees the new edition within about 10 seconds, whatever the time.
+  An open page also re-reads the pointer when it regains focus.
 - **Load test.** A target, not a measured capacity: a Monday 20:00 peak of
-  200 page requests per second with fewer than 20 reaching the database,
-  including the cold-cache moment right after publication, when every
-  "current edition" copy expires together. If it fails, publication also
-  writes the public payloads once as static JSON that the pages read, so the
-  peak never reaches the database.
+  200 page requests per second with fewer than 20 reaching the database.
+  It includes the moment of publication, when every reader moves to a new,
+  not yet cached version, and a publication that runs late. If it fails,
+  publication also writes the version's payloads once as static JSON, so
+  the peak never reaches the database.
 
 ## 8. Second provider
 
-Additive in v1. No existing SportsMonks function changes.
+Additive in v1. No existing SportsMonks function is generalised. The only
+changes to existing functions are the two attribute assignments of §3.1 and
+the email additions of §5.4.
 
 1. **Attributes only.** A BSD importer (`supabase/functions/bsd-players`)
    writes attribute observations through a new service-role function,
@@ -642,17 +886,24 @@ provider_name, …)` arrive with the first module that shows them. Before
 Timestamps are picked at write time after `origin/main`. Each migration comes
 with its pgTAP file.
 
-1. `player_attributes_provenance`: columns, observations, priority, resolver,
-   detailed position.
+1. `player_attributes_provenance`: columns, observations, priority,
+   resolver, detailed position, seeding of existing values, the guard
+   trigger, and the attribute changes to `api.ingest_football_squad` and
+   `api.service_apply_current_player_list` (§3.1).
 2. `player_photo_releases`: private buckets, release table, approval trigger,
    revocation, read helper.
 3. `data_desk_issues`
-4. `pepites_engine`: methodologies, runs, snapshot tables, scores, gather,
-   score, replay, and the 2025-26 `season_final` run.
-5. `pepites_editions`: editions, entries, state triggers, settings, tick,
-   publish, cron schedule (mode `off`).
-6. `pepites_api`: access check, read and admin functions, permissions,
-   grants.
+4. `pepites_engine`: methodologies, runs, snapshot tables, scores, sealing
+   triggers, gather, score, replay, and the 2025-26 `season_final` run.
+5. `pepites_editions`: editions, entries, state and column triggers, week
+   lock, settings, tick, publish, cron schedule (mode `off`).
+6. `pepites_weekly_email_type`: the `pepites_weekly` notification type alone,
+   because a new enum value cannot be used in the transaction that adds it.
+7. `pepites_weekly_email`: the preference columns, opt-in and opt-out
+   functions, unsubscribe topic, and the eligibility, staleness and priority
+   lines in the pipeline functions (§5.4).
+8. `pepites_api`: access check, version pointer, read and admin functions,
+   permissions, grants.
 
 Local proof for each: `bun run backend:migrations:check`, `backend:db:reset`,
 `backend:db:test`, `backend:db:lint` and `backend:types:check`. CI
@@ -677,12 +928,53 @@ writer at a time. Mode stays `off` until launch.
 - Reproducibility: a replay of a stored run matches exactly; a corrected
   appearance creates a new revision and leaves the published edition and its
   run untouched.
-- Snapshot and methodology immutability: update and delete rejected.
-- Editions: every disallowed state move rejected; entries rejected outside
-  `draft`; two concurrent publishes of one edition give one publication and
-  one email per recipient; two concurrent ticks give one run.
-- Postponed match: played after its round, it creates a revision; a
-  scheduled edition returns to draft.
+- Sealing: for a succeeded and for a failed run, INSERT, UPDATE and DELETE
+  on each snapshot table and on `pepites_player_scores` are rejected, and
+  TRUNCATE is rejected; a run cannot leave `succeeded` or `failed`;
+  `activated_at` can be set once and never changed. Methodology update and
+  delete rejected once frozen.
+- Editions:
+  - every move not in the §3.6 table rejected, including
+    `draft → published`; every column change not listed for a move
+    rejected;
+  - entries: insert, update and delete rejected outside `draft`; publishing
+    writes no entry row (row count and `xmin` unchanged);
+  - `run_id` cannot change on a `scheduled` edition; the re-point path goes
+    `scheduled → draft → scheduled` and keeps `scheduled_for`;
+  - auto-publish records `draft → scheduled → published`, both moves by
+    `system`;
+  - a correction: the old edition is `superseded` and the new one
+    `published` in the same transaction; a failure after step 4 leaves both
+    as they were; at no point are two editions of one week `published`;
+  - concurrency, with two database connections: two publishes of one
+    edition give one publication and one email event; a publish racing a
+    re-point or a withdrawal of the same week run one after the other; two
+    concurrent ticks give one run.
+- Postponed match: played after its round, it creates a revision; a draft is
+  re-pointed; a scheduled edition steps back to draft and is rescheduled when
+  all 10 players are still ranked.
+- Player attributes:
+  - the resolver's first run after seeding changes zero rows;
+  - a manual date of birth survives a later `api.ingest_football_squad` run
+    with a different SportsMonks value, which opens a conflict;
+  - a legacy value is replaced by a provider value and the conflict keeps
+    the legacy one;
+  - a direct `update app.players set date_of_birth = …` outside the
+    resolver is rejected;
+  - the existing squad-ingest and player-list pgTAP files pass unchanged.
+- Weekly email:
+  - a new user and every existing user start with `pepites_weekly_email`
+    false; `update_my_preferences` and `update_my_notification_preferences`
+    leave it unchanged;
+  - opt in and out are idempotent and audited; opting out cancels unsent
+    Pépites deliveries;
+  - fan-out and claim skip or cancel: opted out, mode not `public`, edition
+    withdrawn or superseded, email switched off, unconfirmed address;
+  - publishing twice or retrying the dispatch gives one delivery per user;
+  - a Pépites unsubscribe token turns off only Pépites and leaves other
+    email on; a token without a topic still turns off all email; a used
+    token answers `already_unsubscribed`;
+  - an event older than 36 hours is not sent.
 - Access matrix: every public function × `off`, `staff`, `public` × anon,
   signed-in fan, staff. Staff-only data never reaches a fan.
 - Photos: unlicensed, revoked, expired, minor without guardian and unknown
@@ -693,17 +985,26 @@ writer at a time. Mode stays `off` until launch.
 **App:**
 
 - Unit tests on formatters and fallbacks (`PlayerPhoto` done).
-- Route headers: `no-store` in `staff`; public cache headers only in
-  `public`; `s-maxage` ends at the next publication.
+- Route headers: `no-store` in `staff` and `off`; public cache headers only
+  in `public`; each response type carries the §7 value.
+- Reveal, against a local stack with two connections: connection A begins a
+  publication and holds it before commit; requests on B for the pointer,
+  home, ranking, player and share image all return the previous version;
+  after A commits, B gets the new version; after A rolls back, B still gets
+  the old one.
+- Pointer states: `countdown` with a scheduled edition; `delayed` two
+  minutes past `scheduled_for` without publication, and for a draft with
+  `auto_publish` off; `current` after publication and after 24 hours.
+- The page leaves the countdown when the pointer changes or turns
+  `delayed` (fake clock).
 - e2e on the journeys in French and Arabic; visual checks at 390 px on real
   data.
 
 ## 12. Open items (owner)
 
-- The scope change: compare and follows move to v1.1; public view counts are
-  dropped. Share images stay in v1.
-- The email audience: accounts that opt in to the weekly Pépites email
-  (follows are v1.1).
+Decided 2026-09-26: the v1 scope in §1, and the explicit, off-by-default
+weekly email in §5.4. Still open:
+
 - The provider B choice for attributes. BSD is measured in `PEPITES_PLAN.md`
   §10: good for player attributes; detailed stats for 2026-27 not yet seen.
 - The CNDP coverage of photo releases.

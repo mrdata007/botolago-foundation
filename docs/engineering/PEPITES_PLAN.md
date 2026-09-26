@@ -5,17 +5,19 @@ Status: **plan, not built.** Written 2026-09-25. Owner-facing version:
 <https://claude.ai/artifact/LSKuLdfCfnxocnZU1FsCJc>.
 
 Pépites is a Botola Pro under-23 ranking: a weekly Top 10 (Monday 20:00),
-player pages with per-90 figures, percentiles and match logs, a compare view,
-share images, and its own bottom-bar tab (Profile moves to a header avatar).
+player pages with per-90 figures, percentiles and match logs, share images,
+and its own bottom-bar tab (Profile moves to a header avatar). Compare and
+player follows come in v1.1.
 It is the first "BotolaGO Data" product and the base for a later scout and
 academy layer.
 
-**Where the architecture differs.** Revision 2 of
-[`PEPITES_ARCHITECTURE.md`](PEPITES_ARCHITECTURE.md) (2026-09-26, after
-review) wins over this plan where they disagree. In short: compare, player
-follows and detailed-stat modules move to v1.1; public view counts are
-dropped; the provider-neutral refactor is no longer a first step; clean
-sheets use one whole-match rule; unapproved photos stay in private storage.
+**The architecture wins.** [`PEPITES_ARCHITECTURE.md`](PEPITES_ARCHITECTURE.md)
+(revision 3, 2026-09-26) is the specification; where this plan disagrees,
+the architecture is right. §§2–6 below were brought in line with it on
+2026-09-26 (owner decisions: the smaller v1, and an explicit, off-by-default
+weekly email). In v1.1, not v1: compare, player follows, detailed-stat
+modules. Dropped: public view counts. Not done: the provider-neutral
+refactor.
 
 ## 0. Data audit (production, read-only, 2026-09-25)
 
@@ -59,19 +61,16 @@ progression and minutes. Detailed-stat modules wait for a second provider.
 
 ## 2. Architecture
 
-Sources (SportsMonks, second provider, photo programme, data desk) → Supabase
-edge importers (`supabase/functions/football-ingest`, `_shared/sportsmonks-*`,
-new player-details sync and second-provider adapter) → `app.*` tables with
-provenance → Pépites engine (SQL in `app_private`, versioned) → `api.pepites_*`
-read RPCs → TanStack routes with SSR prefetch, cached public pages, share-image
-route, admin console.
+Sources (SportsMonks, BSD attributes, photo programme, data desk) → Supabase
+edge importers → `app.*` tables with provenance → Pépites engine (SQL in
+`app_private`, versioned, scoring from a sealed per-run snapshot) →
+`api.pepites_*` read functions behind the mode check → TanStack routes with
+SSR prefetch, versioned cached data, share-image route, admin console.
 
-Before a second provider writes anything, remove the hardcoded `'sportsmonks'`
-from: `20260914184657_current_season_squad_recovery.sql`,
-`20260925110000_current_performance_unnamed_starters.sql` (also season
-`'28647'`), `20260925200000_current_player_list_update.sql`, and
-`attach_football_team_crest`. `app_private.football_provider_mappings` already
-supports several providers.
+Do not generalise the existing SportsMonks functions. The second provider is
+additive (architecture §8); the only changes to existing functions are the
+attribute assignments in the squad import and player-list update
+(architecture §3.1) and the email additions (architecture §5.4).
 
 Principles: every attribute value carries its source and date, and manual
 corrections win and are audited. The method is versioned. Published editions
@@ -87,8 +86,9 @@ through the reviewed migration path. No public photo without a licence row in
 - Fonts: Changa slanted for numbers, Manrope, IBM Plex Mono self-hosted.
 - Components: night band, ghost rank number, player cut-out, silhouette,
   10-segment bar, score ring, rating chip, percentile row, pizza chart, trend
-  line, sortable table, facts strip, compare row, "N.R." value, share
-  templates, skeletons.
+  line, sortable table, facts strip, "N.R." value, share templates,
+  countdown and "coming soon" reveal states, weekly-email switch, skeletons.
+  The compare row is v1.1.
 - 24 frames (6 pages × FR/AR × phone/desktop), plus share images, 2 admin
   screens, and loading, empty, missing, error and guest states.
 - Arabic: never skew Arabic script; numbers stay LTR.
@@ -97,15 +97,20 @@ through the reviewed migration path. No public photo without a licence row in
 ## 4. UX
 
 - Journeys to cover:
-  - Monday email → reveal → player → follow, Fantasy or share.
-  - Tab → filter → player → compare → share.
-  - Guest shared link → follow → sign-in → back to the player, followed.
+  - Monday email → reveal → player → Fantasy or share.
+  - Tab → filter → player → share.
+  - Guest shared link → player → sign-in to switch on the weekly email →
+    back to the player.
   - Fantasy list Pépite badge → player → add to team.
+  - Weekly email: switch on from the Pépites home; leave with one click from
+    the email, which turns off Pépites only.
 - Timing: before round 3, show the labelled 2025-26 final ranking.
 - Trust: "Mis à jour" time, minimum-minutes note, method page, report-error
   link to the data desk.
 - Editor: shortlist of 20 at 12:00, pick and order 10, lines in FR/AR,
-  publish at 20:00. If nobody acts, the computed list publishes without lines.
+  schedule for 20:00. If nobody acts and auto-publish is on, the computed
+  list publishes without lines; if it is off, the page shows the ranking is
+  coming (architecture §7).
 - Prototype test with 6–8 users (FR/AR) before building.
 
 ## 5. Frontend
@@ -116,7 +121,6 @@ through the reviewed migration path. No public photo without a licence row in
   - `/pepites`
   - `/pepites/classement`
   - `/pepites/joueur/$playerId` (tabs as a search param)
-  - `/pepites/comparer`
   - `/pepites/semaine/$n`
   - `/pepites/methode`
   - `/admin/pepites`
@@ -124,42 +128,50 @@ through the reviewed migration path. No public photo without a licence row in
 - `src/services/pepites.ts` over `api.pepites_*`, typed from
   `src/backend/generated/database.types.ts`. `meta.ssr` on public queries.
   Per-player `head()` og tags.
+- Data is fetched under the version from `api.pepites_version()`; cache
+  headers per architecture §7; `private, no-store` whenever the response is
+  not public.
 - Components in `src/components/pepites/`. Charts are hand-drawn SVG (recharts
   is installed but unused).
 - Share images from a server route; confirm the image library works on the
   Vercel/nitro build.
-- Extend follows from teams to players; guests go through `requireAuth`.
+- The weekly-email switch calls `api.set_my_pepites_weekly_email`; off by
+  default; guests go through `requireAuth`. Player follows are v1.1.
 - Bottom nav: Pépites replaces Profil in `primary-nav.ts`; the avatar menu
   holds Profile. Update the nav tests.
 - i18n: FR/AR keys and gate baselines.
-- `AnalyticsEvent` additions: view, follow, share, compare, fantasy add,
+- `AnalyticsEvent` additions: share, fantasy add, weekly email on and off,
   reveal complete.
-- Tests: unit, e2e for the four journeys in both languages, 390 px visual
-  checks on real data.
+- Tests: unit, e2e for the journeys in both languages, 390 px visual checks
+  on real data, and the reveal and header tests in architecture §11.
 
 ## 6. Backend
 
+The migrations, in order, are architecture §10. In short:
+
 1. Migrations:
    - players: `height_cm`, detailed position
-   - an attribute-observation table with a resolver
-   - a detailed-stat table (player × fixture × stat code × provider)
-   - player follows
-   - daily view counts, written in batches
-   - `pepites_methodologies`, `pepites_scores`, `pepites_editions` and entries
+   - attribute observations, the resolver, seeding of existing values, the
+     guard trigger, and the narrow attribute change to the squad import and
+     player-list update (architecture §3.1)
+   - photo releases and private buckets
    - data-desk issues and corrections, audited
+   - methodologies, runs, sealed snapshots, scores, editions and entries
+   - the weekly-email preference, type and unsubscribe topic
 2. Data fixes:
-   - SportsMonks player-details sync
-   - compute clean sheets from score and minutes
+   - SportsMonks player-details sync, through attribute observations
    - link unlinked lineup players
-   - provider-neutral RPCs
-3. Second-provider importer after the go decision: own mapping rows, player
-   matching with manual review, a comparison report before display.
-4. Engine: eligibility (U23 on 1 July, minimum minutes), per-90, percentiles
-   by position group, Rising score v1. It runs on round finalisation; a
-   pg_cron draft at Monday 12:00 and publish at 20:00, like news editions.
-5. Read RPCs: home, ranking (filters/sort/page), player, player matches,
-   compare, edition, method. Stable, definer, granted to anon.
-6. Write RPCs: follow/unfollow player; batched, rate-limited view counts.
+   - clean sheets are computed by the engine (architecture §4.1), never
+     written into provider rows
+3. BSD attribute importer after the go decision: its own mapping rows,
+   player matching with manual review. Detailed match stats are v1.1.
+4. Engine: architecture §4. It runs on round completion; a pg_cron draft at
+   Monday 12:00 and a scheduled publication at 20:00.
+5. Read functions: version pointer, home, ranking (filters/sort/page),
+   player, player matches, edition, method. Mode-checked, definer, granted
+   to anon.
+6. Write functions: the weekly-email opt-in and opt-out. No follows, no view
+   counts.
 7. Admin: selection and data desk.
    - New permissions `pepites.edit` and `pepites.publish`.
    - Data fixes reuse `football.correct`.
@@ -196,10 +208,17 @@ Recorded 2026-09-26.
 4. Monday editor: **the owner.**
 5. Build: Claude designs and builds; the owner approves each gate and every
    production change.
+6. v1 scope (2026-09-26): **approved.** Compare, player follows and
+   detailed stats move to v1.1; public view counts are dropped; share images
+   stay.
+7. Weekly email (2026-09-26): **approved** as a separate, explicit opt-in,
+   off by default, with a one-click unsubscribe; no existing user is
+   subscribed automatically.
 
-Next: Gate A. Revision 1 was reviewed and sent back with changes; revision 2
-of [`PEPITES_ARCHITECTURE.md`](PEPITES_ARCHITECTURE.md) answers every
-finding and is ready for the owner's review.
+Next: Gate A. Revisions 1 and 2 were reviewed and sent back with changes;
+revision 3 of [`PEPITES_ARCHITECTURE.md`](PEPITES_ARCHITECTURE.md) answers
+the remaining findings and is ready for the owner's review. The two
+decisions above do not approve Gate A or any production change.
 
 ## 9. UI status (Gate U)
 
@@ -207,7 +226,8 @@ Figma file: <https://www.figma.com/design/DEQTspI8A04pjmLcAYTYw4>. Ready for
 owner sign-off. 26 frames:
 
 - Mobile FR: 7 screens and 4 states (loading, before first edition, error,
-  guest follow).
+  guest follow). The compare screen and the guest-follow state are v1.1; the
+  guest state becomes "sign in to get the weekly email".
 - Mobile AR: the same 7 screens, mirrored right-to-left.
 - Desktop FR: ranking and player page (1440 px).
 - Share images: story 1080×1920 and feed post 1080×1350, FR and AR.
@@ -219,8 +239,9 @@ SportsMonks images for internal use only.
 Not drawn yet:
 
 - Desktop AR.
-- Desktop home, compare, edition and method pages. They reuse the mobile and
-  player-page blocks.
+- Desktop home, edition and method pages. They reuse the mobile and
+  player-page blocks. (Compare is v1.1.)
+- The reveal states (countdown, "coming soon") and the weekly-email switch.
 
 Arabic rule found while drawing: a space inside a number ("1 159") can flip
 the digit order in an Arabic layout. Use a narrow no-break space (U+202F) or
