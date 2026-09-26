@@ -202,12 +202,10 @@ begin
     ) problems
     where release.status = 'published' and cardinality(problems.list) > 0
   ),
-  upserted as (
-    insert into app_private.data_desk_issues (entity_type, entity_id, field, kind, source, details)
-    select found.entity_type, found.entity_id, found.field, found.kind, 'sweep', found.details
-    from found
-    -- A person already closed this exact problem: not raised again until
-    -- what is found changes.
+  actionable as (
+    -- What is still to do: a problem a person already closed, with these
+    -- exact details, is not raised again until what is found changes.
+    select found.* from found
     where not exists (
       select 1 from app_private.data_desk_issues closed
       where closed.status <> 'open' and closed.resolved_by is not null
@@ -215,21 +213,29 @@ begin
         and closed.field = found.field and closed.kind = found.kind
         and closed.details = found.details
     )
+  ),
+  upserted as (
+    insert into app_private.data_desk_issues (entity_type, entity_id, field, kind, source, details)
+    select actionable.entity_type, actionable.entity_id, actionable.field, actionable.kind,
+      'sweep', actionable.details
+    from actionable
     on conflict (entity_type, entity_id, field, kind) where status = 'open' and source <> 'report'
     do update set details = excluded.details
     where data_desk_issues.details is distinct from excluded.details
     returning (xmax = 0) as inserted
   ),
   closed as (
-    -- Close what the sweep opened and no longer finds.
+    -- Close what the sweep opened and no longer has to do: its cause is
+    -- gone, or it went back to details a person already closed (the open
+    -- issue's own details are then stale).
     update app_private.data_desk_issues issue
     set status = 'resolved', resolved_at = statement_timestamp(),
       resolution_note = 'Cause gone (sweep)'
     where issue.status = 'open' and issue.source = 'sweep'
       and not exists (
-        select 1 from found
-        where found.entity_type = issue.entity_type and found.entity_id = issue.entity_id
-          and found.field = issue.field and found.kind = issue.kind
+        select 1 from actionable
+        where actionable.entity_type = issue.entity_type and actionable.entity_id = issue.entity_id
+          and actionable.field = issue.field and actionable.kind = issue.kind
       )
     returning 1
   )
