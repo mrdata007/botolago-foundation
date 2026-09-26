@@ -5954,9 +5954,13 @@ export type Database = {
           active: boolean
           created_at: string
           date_of_birth: string | null
+          detailed_position:
+            | Database["app"]["Enums"]["detailed_position"]
+            | null
           display_name: string
           first_name: string | null
           full_name: string
+          height_cm: number | null
           id: string
           last_name: string | null
           nationality_country_id: string | null
@@ -5970,9 +5974,13 @@ export type Database = {
           active?: boolean
           created_at?: string
           date_of_birth?: string | null
+          detailed_position?:
+            | Database["app"]["Enums"]["detailed_position"]
+            | null
           display_name: string
           first_name?: string | null
           full_name: string
+          height_cm?: number | null
           id?: string
           last_name?: string | null
           nationality_country_id?: string | null
@@ -5986,9 +5994,13 @@ export type Database = {
           active?: boolean
           created_at?: string
           date_of_birth?: string | null
+          detailed_position?:
+            | Database["app"]["Enums"]["detailed_position"]
+            | null
           display_name?: string
           first_name?: string | null
           full_name?: string
+          height_cm?: number | null
           id?: string
           last_name?: string | null
           nationality_country_id?: string | null
@@ -7236,6 +7248,17 @@ export type Database = {
         | "international"
         | "friendly"
       content_origin: "manual" | "provider" | "partner"
+      detailed_position:
+        | "gk"
+        | "cb"
+        | "lb"
+        | "rb"
+        | "dm"
+        | "cm"
+        | "am"
+        | "lw"
+        | "rw"
+        | "cf"
       fantasy_chip_type:
         | "wildcard"
         | "free_hit"
@@ -7627,6 +7650,18 @@ export const Constants = {
         "friendly",
       ],
       content_origin: ["manual", "provider", "partner"],
+      detailed_position: [
+        "gk",
+        "cb",
+        "lb",
+        "rb",
+        "dm",
+        "cm",
+        "am",
+        "lw",
+        "rw",
+        "cf",
+      ],
       fantasy_chip_type: [
         "wildcard",
         "free_hit",
