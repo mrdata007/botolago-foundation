@@ -121,6 +121,11 @@ refresh does not: kickoffs confirmed or moved and matches postponed in the
 weeks ahead, which the Fantasy calendar sync picks up within 5 minutes. Until
 then only the GitHub orchestrator read beyond tomorrow, and GitHub started it
 3 to 6 hours apart. It costs one to three SportsMonks requests an hour.
+Six weeks ahead reaches rounds SportsMonks has just published: a match in a
+round (or of a club) the catalog has not registered yet is skipped, not
+rejected, and arrives with the Fantasy season orchestrator's next catalog
+step, as it did before. A run that could place no match at all still fails
+(`fixtures_not_catalogued`).
 `app_private.football_season_refresh_heartbeat` holds its last call. The two
 jobs never call at once (`app_private.football_refresh_dispatch` records the
 last call): each waits, answering `busy`, while the other's last call has no
