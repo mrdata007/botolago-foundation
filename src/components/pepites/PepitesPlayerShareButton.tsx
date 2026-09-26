@@ -12,7 +12,13 @@ type LoadedPlayer = Extract<PlayerResponse, { available: true }>;
  * percentile wheel, and a link to the player's page. A player without a
  * score has no card.
  */
-export function PepitesPlayerShareButton({ data }: { data: LoadedPlayer }) {
+export function PepitesPlayerShareButton({
+  data,
+  testId = "pepites-player-share",
+}: {
+  data: LoadedPlayer;
+  testId?: string;
+}) {
   const { t, tr, lang } = useI18n();
   const player = data.player;
   const score = data.score;
@@ -52,7 +58,7 @@ export function PepitesPlayerShareButton({ data }: { data: LoadedPlayer }) {
       message={t("pepites.share.player_message").replace("{name}", `⁨${player.name}⁩`)}
       path={`/pepites/joueur/${player.id}`}
       onNight
-      testId="pepites-player-share"
+      testId={testId}
     />
   );
 }

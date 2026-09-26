@@ -3,7 +3,12 @@ import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import type { ReactNode } from "react";
 
-import type { PlayerMatch, PlayerResponse } from "@/backend/pepites/contracts";
+import type {
+  MinutesSplit,
+  PlayerMatch,
+  PlayerResponse,
+  SeasonStats,
+} from "@/backend/pepites/contracts";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -28,9 +33,11 @@ import {
   PepitesPreviewBanner,
 } from "./PepitesParts";
 import { PepitesPlayerShareButton } from "./PepitesPlayerShareButton";
+import { PepitesFollowButton } from "./PepitesFollowButton";
 import { PepitesShell } from "./PepitesShell";
 import {
   FactsStrip,
+  GoMark,
   Headshot,
   MonoLine,
   NightBand,
@@ -43,12 +50,13 @@ import { ReportIssueButton } from "./ReportIssueSheet";
 import {
   playerMatchesQueryOptions,
   playerQueryOptions,
+  playerStatsQueryOptions,
   pointerVersion,
   usePepitesViewer,
   useVersionPointer,
 } from "./use-pepites";
 
-export type PlayerTab = "overview" | "matches";
+export type PlayerTab = "overview" | "matches" | "stats";
 
 type LoadedPlayer = Extract<PlayerResponse, { available: true }>;
 type Player = NonNullable<LoadedPlayer["player"]>;
@@ -135,9 +143,13 @@ export function PepitesPlayerPage({
     enabled: pointer?.available === true && version !== null,
     placeholderData: (previous) => previous,
   });
+  const playerStats = useQuery({
+    ...playerStatsQueryOptions(viewer, version, playerId),
+    enabled: pointer?.available === true && version !== null,
+  });
   const matches = useQuery({
     ...playerMatchesQueryOptions(viewer, playerId),
-    enabled: pointer?.available === true && tab === "matches",
+    enabled: pointer?.available === true && (tab === "matches" || tab === "overview"),
   });
 
   if (pointerQuery.isPending || (player.isPending && pointer?.available && version !== null)) {
@@ -174,7 +186,33 @@ export function PepitesPlayerPage({
     );
   }
 
-  const tabs = <PlayerTabs tab={tab} onTabChange={onTabChange} dark={tab === "matches"} />;
+  const fantasyPlayerId =
+    playerStats.data?.available && playerStats.data.found ? playerStats.data.fantasyPlayerId : null;
+  const stats =
+    playerStats.data?.available && playerStats.data.found ? playerStats.data.stats : undefined;
+  const split =
+    playerStats.data?.available && playerStats.data.found ? playerStats.data.split : undefined;
+  const tabs = (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <PlayerTabs tab={tab} onTabChange={onTabChange} dark={tab === "matches"} />
+      {tab !== "matches" && fantasyPlayerId ? (
+        <Link
+          to="/fantasy/transfers"
+          search={{ player: fantasyPlayerId }}
+          data-testid="pepites-fantasy-link"
+          className={cn(
+            "inline-flex min-h-[38px] items-center rounded-full px-4 text-[12px]",
+            pp.energyFill,
+            pp.heavy,
+            pp.ink,
+            ui.focus,
+          )}
+        >
+          {t("pepites.player.fantasy_button")}
+        </Link>
+      ) : null}
+    </div>
+  );
 
   if (tab === "matches") {
     return (
@@ -195,10 +233,29 @@ export function PepitesPlayerPage({
   }
 
   return (
-    <PepitesShell hero={<PlayerHero data={data} />}>
+    <PepitesShell hero={<PlayerHero data={data} fantasyPlayerId={fantasyPlayerId} />} wide>
       {data.preview ? <PepitesPreviewBanner /> : null}
       {tabs}
-      <PlayerOverview data={data} />
+      {tab === "stats" ? (
+        playerStats.isError ? (
+          <PepitesErrorState inline onRetry={() => void playerStats.refetch()} />
+        ) : (
+          <PlayerStats
+            stats={stats}
+            position={data.player.positionGroup}
+            loading={playerStats.isPending}
+          />
+        )
+      ) : (
+        <PlayerOverview
+          data={data}
+          split={split}
+          splitLoading={playerStats.isPending}
+          matches={
+            matches.data?.available && matches.data.found ? (matches.data.matches ?? []) : []
+          }
+        />
+      )}
       <ReportIssueButton playerId={playerId} />
     </PepitesShell>
   );
@@ -252,7 +309,13 @@ function HeroMeta({ player }: { player: Player }) {
   );
 }
 
-function PlayerHero({ data }: { data: LoadedPlayer }) {
+function PlayerHero({
+  data,
+  fantasyPlayerId,
+}: {
+  data: LoadedPlayer;
+  fantasyPlayerId: string | null | undefined;
+}) {
   const { t, lang } = useI18n();
   const player = data.player!;
   const score = data.score ?? null;
@@ -266,11 +329,27 @@ function PlayerHero({ data }: { data: LoadedPlayer }) {
       ghost={rank !== null ? String(rank).padStart(2, "0") : null}
       cut={24}
       testId="pepites-player-header"
+      wide
     >
-      <div className="flex flex-col pb-9">
-        <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col pb-9 md:hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <BackToRanking className="-ms-1" />
-          <PepitesPlayerShareButton data={data} />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <PepitesFollowButton playerId={player.id} playerName={player.name} />
+            <Link
+              to="/pepites/comparer"
+              search={{ a: player.id }}
+              className={cn(
+                "inline-flex min-h-[38px] items-center rounded-full border border-white/20 bg-white/[0.08] px-3 text-[12px] text-white",
+                pp.heavy,
+                ui.focusOnMesh,
+              )}
+              data-testid="pepites-player-compare"
+            >
+              {t("pepites.compare.action")}
+            </Link>
+            <PepitesPlayerShareButton data={data} />
+          </div>
         </div>
         <div className="mt-2 flex items-end justify-between gap-3">
           {photoUrl ? (
@@ -334,6 +413,96 @@ function PlayerHero({ data }: { data: LoadedPlayer }) {
           </div>
         ) : null}
       </div>
+      <div
+        className="hidden min-h-[365px] grid-cols-[290px_minmax(0,1fr)_165px] items-center gap-8 pb-12 pt-6 md:grid"
+        data-testid="pepites-desktop-player-hero"
+      >
+        <div className="self-stretch">
+          <BackToRanking className="mb-3" />
+          {photoUrl ? (
+            <img src={photoUrl} alt="" className="h-[290px] w-[280px] rounded-2xl object-cover" />
+          ) : (
+            <PepitesShirt player={player} number={rank} className="h-[290px] w-[280px]" />
+          )}
+          <div className={cn("mt-1 h-1.5 w-[250px] skew-x-[-8deg]", pp.energyFill)} />
+        </div>
+        <div className="min-w-0 self-center">
+          <GoMark />
+          <MonoLine tone="spring" className="mt-5">
+            #{rank ?? "–"} · {t("pepites.score_name")} · U23
+          </MonoLine>
+          <h1
+            className={cn(
+              pp.display,
+              pp.lean,
+              "mt-3 text-[clamp(38px,4.5vw,66px)] leading-[1.05] text-white",
+            )}
+            data-testid="pepites-desktop-player-name"
+          >
+            <bdi>{player.name}</bdi>
+          </h1>
+          <HeroMeta player={player} />
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <PepitesFollowButton
+              playerId={player.id}
+              playerName={player.name}
+              testId="pepites-desktop-follow"
+            />
+            <Link
+              to="/pepites/comparer"
+              search={{ a: player.id }}
+              className={cn(
+                "inline-flex min-h-10 items-center rounded-full border border-white/20 px-4 text-[12px] text-white",
+                pp.heavy,
+                ui.focusOnMesh,
+              )}
+            >
+              {t("pepites.compare.action")}
+            </Link>
+            {fantasyPlayerId ? (
+              <Link
+                to="/fantasy/transfers"
+                search={{ player: fantasyPlayerId }}
+                className={cn(
+                  "inline-flex min-h-10 items-center rounded-full border border-white/20 px-4 text-[12px] text-white",
+                  pp.heavy,
+                  ui.focusOnMesh,
+                )}
+              >
+                {t("pepites.player.fantasy_button")}
+              </Link>
+            ) : null}
+            <PepitesPlayerShareButton data={data} testId="pepites-desktop-player-share" />
+          </div>
+          {score ? (
+            <div className="mt-5">
+              <FactsStrip
+                facts={[
+                  {
+                    label: t("pepites.fact.rating"),
+                    value: score.ratingAvg === null ? dash : formatNumber(score.ratingAvg, lang, 2),
+                  },
+                  { label: t("pepites.fact.minutes"), value: formatCount(score.minutes, lang) },
+                  { label: t("pepites.fact.apps"), value: formatNumber(score.apps, lang) },
+                  { label: t("pepites.fact.starts"), value: formatNumber(score.starts, lang) },
+                  {
+                    label: t("pepites.table.goals_assists"),
+                    value: `${formatNumber(score.goals, lang)} + ${formatNumber(score.assists, lang)}`,
+                  },
+                ]}
+              />
+            </div>
+          ) : null}
+        </div>
+        <div className="self-start pt-6 text-center">
+          <ScoreRing score={score?.score ?? null} label={t("pepites.score_name")} />
+          <p className={cn(pp.heavy, "mt-5 text-[15px] text-white")}>
+            {rank !== null
+              ? t("pepites.player.rank_line").replace("{n}", formatNumber(rank, lang))
+              : "–"}
+          </p>
+        </div>
+      </div>
     </NightBand>
   );
 }
@@ -392,6 +561,7 @@ function PlayerTabs({
   const options: Array<{ value: PlayerTab; label: string }> = [
     { value: "overview", label: t("pepites.player.tab_overview") },
     { value: "matches", label: t("pepites.player.tab_matches") },
+    { value: "stats", label: t("pepites.player.tab_stats") },
   ];
   return (
     <div
@@ -449,122 +619,421 @@ function CardHeading({ title, aside }: { title: string; aside?: ReactNode }) {
   );
 }
 
-function PlayerOverview({ data }: { data: LoadedPlayer }) {
+function PlayerOverview({
+  data,
+  split,
+  splitLoading,
+  matches,
+}: {
+  data: LoadedPlayer;
+  split: MinutesSplit | null | undefined;
+  splitLoading: boolean;
+  matches: readonly PlayerMatch[];
+}) {
   const { t, lang } = useI18n();
   const score = data.score ?? null;
   const player = data.player!;
   const missing = new Set(player.missing);
   const foot = footLabel(player.preferredFoot, t);
   return (
-    <>
-      <PepitesCard testId="pepites-player-score">
-        {score && score.score !== null ? (
-          <div data-testid="pepites-player-components">
-            <CardHeading
-              title={t("pepites.player.percentiles")}
-              aside={t("pepites.player.percentiles_scope")}
-            />
-            <ul className="flex flex-col gap-2.5">
-              {COMPONENTS.map((key) => {
-                const value = score.percentiles[key];
-                return (
-                  <li
-                    key={key}
-                    className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_28px] items-center gap-3"
-                  >
-                    <span className={cn(pp.bold, pp.text, "truncate text-[12px]")}>
-                      {componentLabel(key, t)}
-                    </span>
-                    <Seg10Bar value={typeof value === "number" ? value : null} />
-                    <bdi className={cn(pp.heavy, pp.text, "text-end text-[12px] tabular-nums")}>
-                      {typeof value === "number" ? formatNumber(Math.round(value), lang) : "–"}
-                    </bdi>
-                  </li>
-                );
-              })}
-            </ul>
-            <p className={cn(pp.muted, "mt-3 text-[11px] leading-[1.4]")}>
-              {t("pepites.player.components_hint")}
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1" data-testid="pepites-player-unranked">
-            <p className={cn(pp.heavy, pp.ink, "text-[15px]")}>
-              {t("pepites.player.unranked_title")}
-            </p>
-            <p className={cn(pp.muted, "text-[13px]")}>
-              {score ? unrankedReason(score.flags, t) : t("pepites.player.unranked_other")}
-            </p>
-          </div>
-        )}
-      </PepitesCard>
-
-      <PepitesCard testId="pepites-player-profile">
-        <CardHeading title={t("pepites.player.profile")} />
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-          <ProfileItem label={t("pepites.player.age")}>
-            {typeof player.age === "number" ? (
-              <bdi>{t("pepites.meta.age_long").replace("{n}", formatNumber(player.age, lang))}</bdi>
-            ) : (
-              <NotSet />
-            )}
-          </ProfileItem>
-          <ProfileItem label={t("pepites.player.nationality")}>
-            {player.nationality && !missing.has("nationality") ? player.nationality : <NotSet />}
-          </ProfileItem>
-          <ProfileItem label={t("pepites.player.position")}>
-            {player.detailedPosition && !missing.has("detailed_position") ? (
-              detailedPositionLabel(player.detailedPosition, t)
-            ) : (
-              <NotSet />
-            )}
-          </ProfileItem>
-          <ProfileItem label={t("pepites.player.foot")}>
-            {foot && !missing.has("preferred_foot") ? foot : <NotSet />}
-          </ProfileItem>
-          <ProfileItem label={t("pepites.player.height")}>
-            {player.heightCm && !missing.has("height_cm") ? (
-              <bdi>{`${formatNumber(player.heightCm, lang)} cm`}</bdi>
-            ) : (
-              <NotSet />
-            )}
-          </ProfileItem>
-          {score ? (
-            <ProfileItem label={t("pepites.player.goals_assists")}>
-              <bdi>{`${formatNumber(score.goals, lang)} / ${formatNumber(score.assists, lang)}`}</bdi>
-            </ProfileItem>
-          ) : null}
-        </dl>
-      </PepitesCard>
-
-      {data.editions && data.editions.length > 0 ? (
-        <PepitesCard testId="pepites-player-editions">
-          <CardHeading title={t("pepites.player.editions")} />
-          <ul className="flex flex-wrap gap-2">
-            {data.editions.map((entry) => (
-              <li key={entry.editionId}>
-                <Link
-                  to="/pepites/semaine/$n"
-                  params={{ n: String(entry.week) }}
-                  className={cn(
-                    "inline-flex min-h-[32px] items-center gap-1.5 rounded-full border px-3 text-[12px]",
-                    pp.line,
-                    pp.text,
-                    pp.bold,
-                    ui.focus,
-                  )}
-                >
-                  {t("pepites.player.edition_week").replace("{n}", formatNumber(entry.week, lang))}
-                  <bdi className={cn(pp.display, pp.ink, "text-[14px]")}>
-                    #{formatNumber(entry.rank, lang)}
-                  </bdi>
-                </Link>
-              </li>
-            ))}
-          </ul>
+    <div
+      className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:items-start md:gap-6"
+      data-testid="pepites-desktop-player-body"
+    >
+      <div className="contents md:flex md:flex-col md:gap-5">
+        <PepitesCard testId="pepites-player-score">
+          {score && score.score !== null ? (
+            <div data-testid="pepites-player-components">
+              <CardHeading
+                title={t("pepites.player.percentiles")}
+                aside={t("pepites.player.percentiles_scope")}
+              />
+              <ul className="flex flex-col gap-2.5">
+                {COMPONENTS.map((key) => {
+                  const value = score.percentiles[key];
+                  return (
+                    <li
+                      key={key}
+                      className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_28px] items-center gap-3 md:grid-cols-[230px_minmax(0,1fr)_50px] md:py-2"
+                    >
+                      <span className={cn(pp.bold, pp.text, "truncate text-[12px]")}>
+                        {componentLabel(key, t)}
+                      </span>
+                      <Seg10Bar
+                        value={typeof value === "number" ? value : null}
+                        className="md:h-3 md:gap-1"
+                      />
+                      <bdi className={cn(pp.heavy, pp.text, "text-end text-[12px] tabular-nums")}>
+                        {typeof value === "number" ? formatNumber(Math.round(value), lang) : "–"}
+                      </bdi>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className={cn(pp.muted, "mt-3 text-[11px] leading-[1.4]")}>
+                {t("pepites.player.components_hint")}
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1" data-testid="pepites-player-unranked">
+              <p className={cn(pp.heavy, pp.ink, "text-[15px]")}>
+                {t("pepites.player.unranked_title")}
+              </p>
+              <p className={cn(pp.muted, "text-[13px]")}>
+                {score ? unrankedReason(score.flags, t) : t("pepites.player.unranked_other")}
+              </p>
+            </div>
+          )}
         </PepitesCard>
-      ) : null}
-    </>
+
+        <DesktopRatingCard matches={matches} average={score?.ratingAvg ?? null} />
+        <DesktopMatchesCard matches={matches} />
+
+        {data.editions && data.editions.length > 0 ? (
+          <PepitesCard testId="pepites-player-editions" className="order-4 md:order-none">
+            <CardHeading title={t("pepites.player.editions")} />
+            <ul className="flex flex-wrap gap-2">
+              {data.editions.map((entry) => (
+                <li key={entry.editionId}>
+                  <Link
+                    to="/pepites/semaine/$n"
+                    params={{ n: String(entry.week) }}
+                    className={cn(
+                      "inline-flex min-h-[32px] items-center gap-1.5 rounded-full border px-3 text-[12px]",
+                      pp.line,
+                      pp.text,
+                      pp.bold,
+                      ui.focus,
+                    )}
+                  >
+                    {t("pepites.player.edition_week").replace(
+                      "{n}",
+                      formatNumber(entry.week, lang),
+                    )}
+                    <bdi className={cn(pp.display, pp.ink, "text-[14px]")}>
+                      #{formatNumber(entry.rank, lang)}
+                    </bdi>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </PepitesCard>
+        ) : null}
+      </div>
+
+      <div className="contents md:flex md:flex-col md:gap-5">
+        <BreakthroughCard split={split} loading={splitLoading} />
+
+        <PepitesCard testId="pepites-player-profile">
+          <CardHeading title={t("pepites.player.profile")} />
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <ProfileItem label={t("pepites.player.age")}>
+              {typeof player.age === "number" ? (
+                <bdi>
+                  {t("pepites.meta.age_long").replace("{n}", formatNumber(player.age, lang))}
+                </bdi>
+              ) : (
+                <NotSet />
+              )}
+            </ProfileItem>
+            <ProfileItem label={t("pepites.player.nationality")}>
+              {player.nationality && !missing.has("nationality") ? player.nationality : <NotSet />}
+            </ProfileItem>
+            <ProfileItem label={t("pepites.player.position")}>
+              {player.detailedPosition && !missing.has("detailed_position") ? (
+                detailedPositionLabel(player.detailedPosition, t)
+              ) : (
+                <NotSet />
+              )}
+            </ProfileItem>
+            <ProfileItem label={t("pepites.player.foot")}>
+              {foot && !missing.has("preferred_foot") ? foot : <NotSet />}
+            </ProfileItem>
+            <ProfileItem label={t("pepites.player.height")}>
+              {player.heightCm && !missing.has("height_cm") ? (
+                <bdi>{`${formatNumber(player.heightCm, lang)} cm`}</bdi>
+              ) : (
+                <NotSet />
+              )}
+            </ProfileItem>
+            {score ? (
+              <ProfileItem label={t("pepites.player.goals_assists")}>
+                <bdi>{`${formatNumber(score.goals, lang)} / ${formatNumber(score.assists, lang)}`}</bdi>
+              </ProfileItem>
+            ) : null}
+          </dl>
+        </PepitesCard>
+        <PepitesCard className="hidden md:block" testId="pepites-desktop-face-to-face">
+          <CardHeading title={t("pepites.compare.title")} aside={t("pepites.compare.scope")} />
+          <p className={cn(pp.muted, "text-[13px]")}>{t("pepites.compare.choose_prompt")}</p>
+          <Link
+            to="/pepites/comparer"
+            search={{ a: player.id }}
+            className={cn(
+              "mt-4 flex min-h-10 items-center justify-center rounded-full",
+              pp.ink,
+              pp.heavy,
+              ui.focus,
+              "bg-[#1b2a6b] text-white",
+            )}
+          >
+            {t("pepites.compare.action")} →
+          </Link>
+        </PepitesCard>
+      </div>
+    </div>
+  );
+}
+
+function DesktopRatingCard({
+  matches,
+  average,
+}: {
+  matches: readonly PlayerMatch[];
+  average: number | null;
+}) {
+  const { t, lang } = useI18n();
+  const rated = [...matches].reverse().filter((match) => match.rating !== null);
+  const values = rated.map((match) => match.rating as number);
+  const low = Math.min(5.5, ...values);
+  const high = Math.max(8.2, ...values);
+  const y = (value: number) => 118 - ((value - low) / (high - low || 1)) * 100;
+  const x = (index: number) => 16 + index * (668 / Math.max(1, values.length - 1));
+  return (
+    <PepitesCard className="hidden md:block" testId="pepites-desktop-rating-trend">
+      <CardHeading
+        title={t("pepites.matches.trend_title")}
+        aside={
+          average === null
+            ? undefined
+            : t("pepites.matches.season_average").replace("{n}", formatNumber(average, lang, 2))
+        }
+      />
+      {values.length ? (
+        <svg
+          viewBox="0 0 700 150"
+          className="h-[200px] w-full"
+          role="img"
+          aria-label={t("pepites.matches.trend_title")}
+          preserveAspectRatio="none"
+        >
+          {[6, 7, 8].map((mark) => (
+            <g key={mark}>
+              <line x1="16" x2="684" y1={y(mark)} y2={y(mark)} stroke="#eef0f6" />
+              <text x="0" y={y(mark) + 4} fill="#8b96b4" fontSize="9">
+                {formatNumber(mark, lang, 1)}
+              </text>
+            </g>
+          ))}
+          {average !== null ? (
+            <line
+              x1="16"
+              x2="684"
+              y1={y(average)}
+              y2={y(average)}
+              stroke="#7c6cf0"
+              strokeDasharray="4 4"
+            />
+          ) : null}
+          <polyline
+            points={values.map((value, index) => `${x(index)},${y(value)}`).join(" ")}
+            fill="none"
+            stroke="#65d6d4"
+            strokeWidth="2"
+          />
+          {values.map((value, index) => (
+            <g key={rated[index]!.fixtureId}>
+              <circle cx={x(index)} cy={y(value)} r="5" fill="#27b36b" />
+              <text x={x(index)} y={y(value) - 10} textAnchor="middle" fill="#0b1330" fontSize="10">
+                {formatNumber(value, lang, 1)}
+              </text>
+            </g>
+          ))}
+        </svg>
+      ) : (
+        <p className={cn(pp.muted, "text-[13px]")}>{t("pepites.matches.no_ratings")}</p>
+      )}
+    </PepitesCard>
+  );
+}
+
+function DesktopMatchesCard({ matches }: { matches: readonly PlayerMatch[] }) {
+  const { t, tr, lang } = useI18n();
+  return (
+    <PepitesCard className="hidden md:block" testId="pepites-desktop-matches">
+      <CardHeading
+        title={t("pepites.player.tab_matches")}
+        aside={t("pepites.matches.trend_title")}
+      />
+      <div className="grid grid-cols-[60px_minmax(0,1fr)_80px_55px_55px_55px_50px] gap-2 border-b pb-2 text-[9px] text-[color:var(--pepites-muted)]">
+        <span>{t("pepites.matches.date")}</span>
+        <span>{t("pepites.matches.opponent")}</span>
+        <span>{t("pepites.matches.location")}</span>
+        <span>{t("pepites.matches.score")}</span>
+        <span>{t("pepites.table.minutes")}</span>
+        <span>{t("pepites.table.goals_assists")}</span>
+        <span>{t("pepites.table.rating")}</span>
+      </div>
+      {matches.map((match) => (
+        <div
+          key={match.fixtureId}
+          className="grid min-h-10 grid-cols-[60px_minmax(0,1fr)_80px_55px_55px_55px_50px] items-center gap-2 border-b text-[11px] last:border-0"
+        >
+          <bdi className={pp.muted}>
+            {new Date(match.kickoffAt).toLocaleDateString(
+              lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR",
+              { day: "2-digit", month: "2-digit" },
+            )}
+          </bdi>
+          <span className={cn(pp.bold, pp.text, "truncate")}>
+            {match.opponent ? tr(match.opponent.shortName) : "–"}
+          </span>
+          <span className={pp.muted}>
+            {match.home ? t("pepites.matches.home_long") : t("pepites.matches.away_long")}
+          </span>
+          <bdi>
+            {match.teamScore === null || match.opponentScore === null
+              ? "–"
+              : `${match.teamScore}-${match.opponentScore}`}
+          </bdi>
+          <bdi>{formatNumber(match.minutes, lang)}′</bdi>
+          <bdi>
+            {match.goals || match.assists
+              ? `${formatNumber(match.goals, lang)}/${formatNumber(match.assists, lang)}`
+              : "–"}
+          </bdi>
+          <RatingChip rating={match.rating} />
+        </div>
+      ))}
+    </PepitesCard>
+  );
+}
+
+/** The run's defined halfway point, with a safe empty state before two rounds. */
+function BreakthroughCard({
+  split,
+  loading,
+}: {
+  split: MinutesSplit | null | undefined;
+  loading: boolean;
+}) {
+  const { t, lang } = useI18n();
+  const usable = split && split.firstMinutes > 0;
+  const maximum = usable ? Math.max(split.firstMinutes, split.secondMinutes, 1) : 1;
+  return (
+    <PepitesCard testId="pepites-breakthrough">
+      <CardHeading
+        title={t("pepites.player.breakthrough_title")}
+        aside={t("pepites.player.breakthrough_subtitle")}
+      />
+      {loading ? (
+        <div
+          className="h-16 animate-pulse rounded-lg bg-[color:var(--pepites-seg-empty)]"
+          aria-busy="true"
+        />
+      ) : usable ? (
+        <div className="flex items-end gap-4">
+          <div className="min-w-0 flex-1 space-y-2">
+            {(
+              [
+                [t("pepites.player.breakthrough_half1"), split.firstMinutes, false],
+                [t("pepites.player.breakthrough_half2"), split.secondMinutes, true],
+              ] as const
+            ).map(([label, minutes, energy]) => (
+              <div key={label}>
+                <div className={cn("mb-1 flex justify-between text-[11px]", pp.bold, pp.muted)}>
+                  <span>{label}</span>
+                  <bdi>
+                    {formatCount(minutes, lang)} {lang === "ar" ? "د" : "′"}
+                  </bdi>
+                </div>
+                <div className="h-2.5 rounded bg-[color:var(--pepites-seg-empty)]">
+                  <div
+                    className={cn(
+                      "h-full rounded",
+                      energy ? pp.energyFill : "bg-[color:var(--pepites-muted)]",
+                    )}
+                    style={{ width: `${(minutes / maximum) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="text-center">
+            <bdi className={cn(pp.display, pp.energyText, "text-[30px]")}>
+              ×{formatNumber(split.secondMinutes / split.firstMinutes, lang, 1)}
+            </bdi>
+            <p className={cn(pp.monoStrong, pp.muted, "text-[9px]")}>
+              {t("pepites.player.breakthrough_playing_time")}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <p className={cn(pp.muted, "text-[13px]")}>
+          {t("pepites.player.breakthrough_unavailable")}
+        </p>
+      )}
+    </PepitesCard>
+  );
+}
+
+function PlayerStats({
+  stats,
+  position,
+  loading,
+}: {
+  stats: SeasonStats | undefined;
+  position: Player["positionGroup"];
+  loading: boolean;
+}) {
+  const { t, lang } = useI18n();
+  const fields: Array<{ key: keyof SeasonStats; label: string }> = [
+    { key: "apps", label: t("pepites.stats.apps") },
+    { key: "starts", label: t("pepites.stats.starts") },
+    { key: "minutes", label: t("pepites.stats.minutes") },
+    { key: "goals", label: t("pepites.stats.goals") },
+    { key: "assists", label: t("pepites.stats.assists") },
+    { key: "penaltiesMissed", label: t("pepites.stats.penalties_missed") },
+    { key: "yellowCards", label: t("pepites.stats.yellow_cards") },
+    { key: "redCards", label: t("pepites.stats.red_cards") },
+    { key: "ownGoals", label: t("pepites.stats.own_goals") },
+  ];
+  if (position === "GK" || position === "DEF") {
+    fields.push(
+      { key: "cleanSheets", label: t("pepites.stats.clean_sheets") },
+      { key: "goalsConceded", label: t("pepites.stats.goals_conceded") },
+    );
+  }
+  if (position === "GK") {
+    fields.push(
+      { key: "saves", label: t("pepites.stats.saves") },
+      { key: "penaltiesSaved", label: t("pepites.stats.penalties_saved") },
+    );
+  }
+  return (
+    <PepitesCard testId="pepites-player-stats">
+      <CardHeading title={t("pepites.stats.title")} aside={t("pepites.stats.subtitle")} />
+      {loading ? (
+        <div
+          className="h-28 animate-pulse rounded-lg bg-[color:var(--pepites-seg-empty)]"
+          aria-busy="true"
+        />
+      ) : stats ? (
+        <dl className="grid grid-cols-2 gap-x-5 gap-y-4 md:grid-cols-3">
+          {fields.map(({ key, label }) => (
+            <ProfileItem key={key} label={label}>
+              <bdi>
+                {stats[key] === null
+                  ? t("pepites.stats.not_applicable")
+                  : formatCount(stats[key], lang)}
+              </bdi>
+            </ProfileItem>
+          ))}
+        </dl>
+      ) : (
+        <p className={cn(pp.muted, "text-[13px]")}>{t("pepites.stats.not_applicable")}</p>
+      )}
+    </PepitesCard>
   );
 }
 

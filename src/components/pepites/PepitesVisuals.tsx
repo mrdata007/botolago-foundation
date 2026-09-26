@@ -74,6 +74,7 @@ export function NightBand({
   className,
   children,
   testId,
+  wide = false,
 }: {
   /** The club colour behind the leader; none on pages without one. */
   glow?: string | null;
@@ -83,6 +84,7 @@ export function NightBand({
   className?: string;
   children: ReactNode;
   testId?: string;
+  wide?: boolean;
 }) {
   return (
     <section
@@ -115,7 +117,14 @@ export function NightBand({
           {ghost}
         </span>
       ) : null}
-      <div className="mx-auto w-full px-4 md:max-w-[var(--ui-content-max)]">{children}</div>
+      <div
+        className={cn(
+          "mx-auto w-full px-4",
+          wide ? "md:max-w-[1232px] md:px-4" : "md:max-w-[var(--ui-content-max)]",
+        )}
+      >
+        {children}
+      </div>
     </section>
   );
 }

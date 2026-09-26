@@ -78,9 +78,15 @@ function PepitesPlayerRoute() {
   return (
     <PepitesPlayerPage
       playerId={playerId}
-      tab={search.onglet === "matchs" ? "matches" : "overview"}
+      tab={
+        search.onglet === "matchs" ? "matches" : search.onglet === "stats" ? "stats" : "overview"
+      }
       onTabChange={(tab) =>
-        void navigate({ search: tab === "matches" ? { onglet: "matchs" } : {}, replace: true })
+        void navigate({
+          search:
+            tab === "matches" ? { onglet: "matchs" } : tab === "stats" ? { onglet: "stats" } : {},
+          replace: true,
+        })
       }
     />
   );

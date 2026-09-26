@@ -185,6 +185,22 @@ function TransfersBody() {
     retry: false,
   });
 
+  // Kept before the loading guard so React sees these hooks on every render.
+  const incomingFromRef = useRef(false);
+  useEffect(() => {
+    if (!search.player) {
+      incomingFromRef.current = false;
+      return;
+    }
+    if (incomingFromRef.current || screen.phase !== "ready" || !team || !gameweek) return;
+    incomingFromRef.current = true;
+    void navigate({ to: "/fantasy/transfers", search: {}, replace: true });
+    const incomingPlayer = players.find((candidate) => candidate.id === search.player);
+    if (incomingPlayer) onPickIncoming(incomingPlayer);
+    // `onPickIncoming` changes identity on render; the URL/ref make this one-shot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.player, screen.phase, players, team, gameweek]);
+
   if (screen.phase !== "ready" || !team || !gameweek) {
     return (
       <>
@@ -385,19 +401,6 @@ function TransfersBody() {
     persistDraft(nextOut, nextIn);
     setIncoming(null);
   };
-
-  // "＋ Fantasy" on a Pépites player page: pick that player as incoming,
-  // the same first step as tapping his card in "Add Player". Dropped from
-  // the URL at once, as with `?compare=` on the players list.
-  const incomingFromRef = useRef(false);
-  useEffect(() => {
-    if (!search.player || incomingFromRef.current || screen.phase !== "ready") return;
-    incomingFromRef.current = true;
-    void navigate({ to: "/fantasy/transfers", search: {}, replace: true });
-    const incomingPlayer = players.find((candidate) => candidate.id === search.player);
-    if (incomingPlayer) onPickIncoming(incomingPlayer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search.player, screen.phase, players]);
 
   const activateTransferChip = async (key: ChipKey) => {
     const check = canActivateChip(chipsState, key, { deadlinePassed: locked });

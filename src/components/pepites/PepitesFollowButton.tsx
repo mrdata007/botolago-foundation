@@ -27,9 +27,11 @@ import { followStateQueryOptions, pepitesKeys, usePepitesViewer } from "./use-pe
 export function PepitesFollowButton({
   playerId,
   playerName,
+  testId = "pepites-follow",
 }: {
   playerId: string;
   playerName: string;
+  testId?: string;
 }) {
   const { t, lang } = useI18n();
   const { status, requireAuth } = useAuth();
@@ -45,6 +47,7 @@ export function PepitesFollowButton({
     mutationFn: (follow: boolean) => pepitesService.setFollow(playerId, follow),
     onSuccess: (result) => {
       queryClient.setQueryData(pepitesKeys.follow(viewer, playerId), result);
+      void queryClient.invalidateQueries({ queryKey: ["pepites", viewer, "ranking"] });
       toast.success(
         result.available && result.found && result.following
           ? t("pepites.follow.followed").replace("{name}", playerName)
@@ -80,11 +83,8 @@ export function PepitesFollowButton({
     setGuestOpen(true);
   };
 
-  const label = following
-    ? t("pepites.follow.button_active")
-    : t("pepites.follow.button");
-  const withCount =
-    followers !== null ? label.replace("{n}", formatCount(followers, lang)) : label;
+  const label = following ? t("pepites.follow.button_active") : t("pepites.follow.button");
+  const withCount = followers !== null ? label.replace("{n}", formatCount(followers, lang)) : label;
 
   return (
     <>
@@ -93,7 +93,7 @@ export function PepitesFollowButton({
         aria-pressed={following}
         disabled={mutation.isPending}
         onClick={onPress}
-        data-testid="pepites-follow"
+        data-testid={testId}
         className={cn(
           "inline-flex h-[38px] min-h-[var(--ui-tap-min)] items-center justify-center gap-1.5 rounded-full border px-[18px] text-[13px] text-white",
           "[font-weight:var(--ui-weight-heavy)]",
@@ -109,11 +109,7 @@ export function PepitesFollowButton({
         )}
         <bdi>{withCount}</bdi>
       </button>
-      <FollowGuestSheet
-        open={guestOpen}
-        onOpenChange={setGuestOpen}
-        playerName={playerName}
-      />
+      <FollowGuestSheet open={guestOpen} onOpenChange={setGuestOpen} playerName={playerName} />
     </>
   );
 }

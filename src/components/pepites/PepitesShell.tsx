@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/shell/AppShell";
+import { TopBar } from "@/components/shell/TopBar";
 import { cn } from "@/lib/utils";
 
 import { pp } from "./pepites-design";
@@ -18,17 +19,29 @@ export function PepitesShell({
   tone = "page",
   children,
   className,
+  wide = false,
 }: {
   hero?: ReactNode;
   /** `night`: the whole page is night (the player's matches, Figma 04). */
   tone?: "page" | "night";
   children: ReactNode;
   className?: string;
+  wide?: boolean;
 }) {
   return (
     <AppShell
       className={tone === "night" ? pp.night : pp.page}
-      topBar={<PepitesTopBar />}
+      contentWidth={wide ? "wide" : "compact"}
+      topBar={
+        <>
+          <div className="md:hidden">
+            <PepitesTopBar />
+          </div>
+          <div className="hidden md:block">
+            <TopBar />
+          </div>
+        </>
+      }
       pageHeader={
         hero ?? (
           <NightBand cut={20}>
