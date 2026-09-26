@@ -6,7 +6,10 @@ import {
   UnsubscribeView,
   type UnsubscribeViewState,
 } from "@/components/notifications/UnsubscribeView";
-import { isNotificationEmailUnsubscribeToken } from "@/backend/notifications/contracts";
+import {
+  isNotificationEmailUnsubscribeToken,
+  type NotificationEmailUnsubscribeTopic,
+} from "@/backend/notifications/contracts";
 import { AppShell } from "@/components/shell/AppShell";
 import { UiPageTitle } from "@/components/ui-kit";
 import { fr } from "@/i18n/dictionary-fr";
@@ -16,6 +19,10 @@ import { NOTIFICATION_PREFERENCES_QUERY_KEY } from "@/services/use-notification-
 
 /**
  * `/unsubscribe?token=…` — the link at the foot of every notification e-mail.
+ * A Pépites email's link adds `&topic=pepites_weekly`: its token turns off
+ * only the Pépites weekly email, and the page says so before the tap. After
+ * it, the page says what the server reports it turned off, whatever the link
+ * claimed.
  *
  * Public: the token names the account, so a signed-out reader can turn
  * e-mails off with one confirmed tap and nothing else. The page is kept out of
@@ -29,19 +36,23 @@ export const Route = createFileRoute("/unsubscribe")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { token?: string } =>
-    typeof search.token === "string" && search.token ? { token: search.token } : {},
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { token?: string; topic?: NotificationEmailUnsubscribeTopic } => ({
+    ...(typeof search.token === "string" && search.token ? { token: search.token } : {}),
+    ...(search.topic === "pepites_weekly" ? { topic: "pepites_weekly" as const } : {}),
+  }),
   component: UnsubscribePage,
 });
 
 function UnsubscribePage() {
   const { t } = useI18n();
-  const { token = "" } = Route.useSearch();
+  const { token = "", topic = null } = Route.useSearch();
   return (
     <AppShell pageHeader={<UiPageTitle title={t("unsubscribe.title")} />}>
       {/* A different token is a different question: start over rather than
           carry the last answer across. */}
-      <UnsubscribeFlow key={token} token={token} />
+      <UnsubscribeFlow key={token} token={token} linkTopic={topic} />
     </AppShell>
   );
 }
@@ -51,11 +62,18 @@ function UnsubscribePage() {
  * for why). A link whose token is not even the right shape has nothing to
  * confirm and opens on the invalid screen.
  */
-function UnsubscribeFlow({ token }: { token: string }) {
+function UnsubscribeFlow({
+  token,
+  linkTopic,
+}: {
+  token: string;
+  linkTopic: NotificationEmailUnsubscribeTopic | null;
+}) {
   const queryClient = useQueryClient();
   const [state, setState] = useState<UnsubscribeViewState>(() =>
     isNotificationEmailUnsubscribeToken(token) ? "confirm" : "invalid",
   );
+  const [topic, setTopic] = useState<NotificationEmailUnsubscribeTopic | null>(linkTopic);
   // The button is disabled while a request runs, but a double click delivers
   // both clicks before React re-renders; the ref is what stops the second.
   const inFlight = useRef(false);
@@ -65,7 +83,9 @@ function UnsubscribeFlow({ token }: { token: string }) {
     inFlight.current = true;
     setState("submitting");
     try {
-      const status = await unsubscribeFromNotificationEmails(token);
+      const outcome = await unsubscribeFromNotificationEmails(token);
+      const status = outcome.status;
+      setTopic(outcome.topic);
       setState(status);
       // A signed-in reader's cached switch is now stale.
       if (status !== "invalid")
@@ -77,5 +97,5 @@ function UnsubscribeFlow({ token }: { token: string }) {
     }
   };
 
-  return <UnsubscribeView state={state} onUnsubscribe={() => void unsubscribe()} />;
+  return <UnsubscribeView state={state} topic={topic} onUnsubscribe={() => void unsubscribe()} />;
 }

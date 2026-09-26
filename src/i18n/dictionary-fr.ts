@@ -1748,6 +1748,13 @@ export const fr = {
   "unsubscribe.error_title": "Impossible de traiter votre demande",
   "unsubscribe.error_body": "Vérifiez votre connexion, puis réessayez.",
   "unsubscribe.manage": "Gérer mes notifications",
+  "unsubscribe.pepites_confirm_title": "Ne plus recevoir l'e-mail Pépites ?",
+  "unsubscribe.pepites_confirm_body":
+    "Cela arrête seulement l'e-mail hebdomadaire Pépites. Vos autres e-mails BotolaGO ne changent pas.",
+  "unsubscribe.pepites_done_title": "Vous ne recevrez plus l'e-mail Pépites.",
+  "unsubscribe.pepites_already_title": "L'e-mail Pépites était déjà désactivé.",
+  "unsubscribe.pepites_reenable_hint":
+    "Vos autres e-mails BotolaGO ne changent pas. Vous pouvez vous réabonner à Pépites à tout moment.",
 
   /* Pronostics (BG-0146): the page, results, rankings, guest import */
   "predictions.title": "Pronostics",

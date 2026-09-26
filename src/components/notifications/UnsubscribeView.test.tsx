@@ -144,3 +144,24 @@ describe("/unsubscribe route", () => {
     expect(route).not.toMatch(/console\./);
   });
 });
+
+describe("UnsubscribeView for a Pépites link", () => {
+  const pepitesView = (state: UnsubscribeViewState) =>
+    render(<UnsubscribeView state={state} topic="pepites_weekly" onUnsubscribe={() => {}} />);
+
+  it("asks about Pépites only, and says the other e-mails stay on", async () => {
+    const html = await pepitesView("confirm");
+    expect(html).toContain(escapeHtml(fr["unsubscribe.pepites_confirm_title"]));
+    expect(html).toContain(escapeHtml(fr["unsubscribe.pepites_confirm_body"]));
+    expect(html).not.toContain(escapeHtml(fr["unsubscribe.confirm_body"]));
+  });
+
+  it("confirms Pépites is off and nothing else", async () => {
+    const done = await pepitesView("unsubscribed");
+    expect(done).toContain(escapeHtml(fr["unsubscribe.pepites_done_title"]));
+    expect(done).toContain(escapeHtml(fr["unsubscribe.pepites_reenable_hint"]));
+    expect(done).not.toContain(escapeHtml(fr["unsubscribe.done_title"]));
+    const already = await pepitesView("already_unsubscribed");
+    expect(already).toContain(escapeHtml(fr["unsubscribe.pepites_already_title"]));
+  });
+});

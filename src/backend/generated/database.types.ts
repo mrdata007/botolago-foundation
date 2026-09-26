@@ -1135,6 +1135,7 @@ export type Database = {
         Args: { p_category?: Database["app"]["Enums"]["notification_category"] }
         Returns: number
       }
+      my_pepites_weekly_email: { Args: never; Returns: Json }
       my_prediction_leagues: { Args: never; Returns: Json }
       my_predictions: {
         Args: { p_fixture_id?: string; p_round_number?: number }
@@ -1650,6 +1651,7 @@ export type Database = {
       }
       service_record_notification_delivery_attempt: {
         Args: {
+          p_body_sha256?: string
           p_delivery_id: string
           p_max_attempts?: number
           p_outcome: string
@@ -1755,6 +1757,10 @@ export type Database = {
           p_target_id: string
         }
         Returns: boolean
+      }
+      set_my_pepites_weekly_email: {
+        Args: { p_enabled: boolean }
+        Returns: Json
       }
       unfollow_competition: {
         Args: { p_competition_id: string }
@@ -5354,6 +5360,7 @@ export type Database = {
           delivered_at: string | null
           device_registration_id: string | null
           failed_at: string | null
+          first_claimed_at: string | null
           id: string
           next_retry_at: string | null
           notification_id: string
@@ -5374,6 +5381,7 @@ export type Database = {
           delivered_at?: string | null
           device_registration_id?: string | null
           failed_at?: string | null
+          first_claimed_at?: string | null
           id?: string
           next_retry_at?: string | null
           notification_id: string
@@ -5394,6 +5402,7 @@ export type Database = {
           delivered_at?: string | null
           device_registration_id?: string | null
           failed_at?: string | null
+          first_claimed_at?: string | null
           id?: string
           next_retry_at?: string | null
           notification_id?: string
@@ -7401,6 +7410,8 @@ export type Database = {
           notification_digest_mode: Database["app"]["Enums"]["notification_digest_mode"]
           notification_timezone: string
           notifications_enabled: boolean
+          pepites_weekly_email: boolean
+          pepites_weekly_email_changed_at: string | null
           push_notifications_enabled: boolean
           quiet_hours_enabled: boolean
           quiet_hours_end: string | null
@@ -7421,6 +7432,8 @@ export type Database = {
           notification_digest_mode?: Database["app"]["Enums"]["notification_digest_mode"]
           notification_timezone?: string
           notifications_enabled?: boolean
+          pepites_weekly_email?: boolean
+          pepites_weekly_email_changed_at?: string | null
           push_notifications_enabled?: boolean
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string | null
@@ -7441,6 +7454,8 @@ export type Database = {
           notification_digest_mode?: Database["app"]["Enums"]["notification_digest_mode"]
           notification_timezone?: string
           notifications_enabled?: boolean
+          pepites_weekly_email?: boolean
+          pepites_weekly_email_changed_at?: string | null
           push_notifications_enabled?: boolean
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string | null
@@ -7795,6 +7810,7 @@ export type Database = {
         | "matchday_preview"
         | "matchday_results"
         | "round_preview"
+        | "pepites_weekly"
       placement_scope: "global" | "competition" | "team" | "country"
       placement_type:
         | "home_lead"
@@ -8217,6 +8233,7 @@ export const Constants = {
         "matchday_preview",
         "matchday_results",
         "round_preview",
+        "pepites_weekly",
       ],
       placement_scope: ["global", "competition", "team", "country"],
       placement_type: [

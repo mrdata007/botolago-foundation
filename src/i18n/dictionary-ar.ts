@@ -1643,6 +1643,13 @@ export const ar = {
   "unsubscribe.error_title": "تعذّر تنفيذ طلبك",
   "unsubscribe.error_body": "تحقّق من اتصالك ثم أعد المحاولة.",
   "unsubscribe.manage": "إدارة إشعاراتي",
+  "unsubscribe.pepites_confirm_title": "هل تريد التوقف عن تلقي رسالة Pépites؟",
+  "unsubscribe.pepites_confirm_body":
+    "سيوقف ذلك رسالة Pépites الأسبوعية فقط. باقي رسائل BotolaGO الإلكترونية لن تتغير.",
+  "unsubscribe.pepites_done_title": "لن تصلك بعد الآن رسالة Pépites.",
+  "unsubscribe.pepites_already_title": "رسالة Pépites كانت معطّلة من قبل.",
+  "unsubscribe.pepites_reenable_hint":
+    "باقي رسائل BotolaGO الإلكترونية لن تتغير. يمكنك إعادة الاشتراك في Pépites في أي وقت.",
 
   /* Pronostics (BG-0146): the page, results, rankings, guest import */
   "predictions.title": "التوقعات",

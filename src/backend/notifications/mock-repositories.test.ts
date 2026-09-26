@@ -39,9 +39,12 @@ describe("notification mock repository contracts", () => {
     const preferences = new MockNotificationPreferenceRepository();
     const unsubscribe = new MockNotificationEmailUnsubscribeRepository();
     expect((await preferences.get(context)).channels.email).toBe(true);
-    expect(await unsubscribe.unsubscribe("   ")).toBe("invalid");
+    expect(await unsubscribe.unsubscribe("   ")).toEqual({ status: "invalid", topic: null });
     expect((await preferences.get(context)).channels.email).toBe(true);
-    expect(await unsubscribe.unsubscribe("mock-token")).toBe("unsubscribed");
+    expect(await unsubscribe.unsubscribe("mock-token")).toEqual({
+      status: "unsubscribed",
+      topic: null,
+    });
     expect((await preferences.get(context)).channels.email).toBe(false);
   });
 

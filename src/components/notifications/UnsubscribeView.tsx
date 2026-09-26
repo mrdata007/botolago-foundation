@@ -36,13 +36,20 @@ export type UnsubscribeViewState =
  */
 export function UnsubscribeView({
   state,
+  topic = null,
   onUnsubscribe,
 }: {
   state: UnsubscribeViewState;
+  /**
+   * `pepites_weekly`: the link turns off only the Pépites weekly email, and
+   * every line says so. Null: all product email.
+   */
+  topic?: "pepites_weekly" | null;
   /** Confirm, and retry after a network failure. */
   onUnsubscribe: () => void;
 }) {
   const { t } = useI18n();
+  const pepites = topic === "pepites_weekly";
 
   const home = (
     <UiLinkButton to="/" variant="ghost">
@@ -63,8 +70,8 @@ export function UnsubscribeView({
       <StateCard
         testId="unsubscribe-confirm"
         icon={<MailX className={cn("h-7 w-7", ui.tone.muted)} aria-hidden />}
-        title={t("unsubscribe.confirm_title")}
-        body={t("unsubscribe.confirm_body")}
+        title={pepites ? t("unsubscribe.pepites_confirm_title") : t("unsubscribe.confirm_title")}
+        body={pepites ? t("unsubscribe.pepites_confirm_body") : t("unsubscribe.confirm_body")}
       >
         <UiButton onClick={onUnsubscribe} disabled={submitting} aria-busy={submitting || undefined}>
           {submitting ? (
@@ -123,9 +130,15 @@ export function UnsubscribeView({
       live
       icon={<CheckCircle2 className={cn("h-7 w-7", ui.tone.positive)} aria-hidden />}
       title={
-        state === "unsubscribed" ? t("unsubscribe.done_title") : t("unsubscribe.already_title")
+        pepites
+          ? state === "unsubscribed"
+            ? t("unsubscribe.pepites_done_title")
+            : t("unsubscribe.pepites_already_title")
+          : state === "unsubscribed"
+            ? t("unsubscribe.done_title")
+            : t("unsubscribe.already_title")
       }
-      body={t("unsubscribe.reenable_hint")}
+      body={pepites ? t("unsubscribe.pepites_reenable_hint") : t("unsubscribe.reenable_hint")}
     >
       {manage}
       {home}

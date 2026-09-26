@@ -2,7 +2,7 @@
 //
 // Turns one claimed delivery (the contract is notification-email-types.ts)
 // into the subject, preheader, HTML body and plain-text body the dispatcher
-// hands the provider. Six types x two languages (French, Arabic RTL).
+// hands the provider. Seven types x two languages (French, Arabic RTL).
 //
 // Pure and dependency-free on purpose: it runs under Bun (its tests and
 // scripts/backend/notification-email-previews.ts) and under Deno (the Edge
@@ -30,6 +30,7 @@ import type {
   MatchStartingPayload,
   MatchdayPreviewPayload,
   MatchdayResultsPayload,
+  PepitesWeeklyPayload,
   RenderedEmail,
   RoundPreviewPayload,
 } from "./notification-email-types.ts";
@@ -137,10 +138,13 @@ function appOrigin(links: EmailLinkContext): string {
 /**
  * The one-click unsubscribe page for this delivery. The dispatcher also puts
  * it in the List-Unsubscribe header, so it is exported and built exactly as
- * the footer builds it.
+ * the footer builds it. A topic token (Pépites) names its topic, so the page
+ * can say what it turns off before the reader confirms; the token alone
+ * decides what is actually turned off.
  */
 export function unsubscribeUrl(delivery: ClaimedEmailDelivery, links: EmailLinkContext): string {
-  return `${appOrigin(links)}/unsubscribe?token=${encodeURIComponent(delivery.unsubscribeToken)}`;
+  const topic = delivery.unsubscribeTopic === "pepites_weekly" ? "&topic=pepites_weekly" : "";
+  return `${appOrigin(links)}/unsubscribe?token=${encodeURIComponent(delivery.unsubscribeToken)}${topic}`;
 }
 
 /** Every route an e-mail may link to. Nothing else is ever built. */
@@ -151,6 +155,8 @@ function linksFor(app: string) {
     fantasyTransfers: `${app}/fantasy/transfers`,
     fantasyPoints: `${app}/fantasy/points`,
     profile: `${app}/profile`,
+    pepites: `${app}/pepites`,
+    pepitesWeek: (week: number) => `${app}/pepites/semaine/${encodeURIComponent(String(week))}`,
   };
 }
 
@@ -518,7 +524,16 @@ type Block =
       readonly items: readonly { readonly label: string; readonly value: readonly Run[] }[];
     }
   | { readonly kind: "stat"; readonly value: string; readonly label: string }
-  | { readonly kind: "callout"; readonly label: string; readonly runs: readonly Run[] };
+  | { readonly kind: "callout"; readonly label: string; readonly runs: readonly Run[] }
+  | { readonly kind: "ranking"; readonly rows: readonly RankingRow[] };
+
+/** One line of a Top 10: rank, player, club, score out of 100. */
+interface RankingRow {
+  readonly rank: string;
+  readonly name: string;
+  readonly club: string | null;
+  readonly score: string;
+}
 
 interface EmailContent {
   readonly subject: string;
@@ -534,7 +549,7 @@ interface EmailContent {
 type Links = ReturnType<typeof linksFor>;
 
 /* ------------------------------------------------------------------ */
-/* The six emails                                                      */
+/* The seven emails                                                    */
 /* ------------------------------------------------------------------ */
 
 function isPlayable(row: FixtureRow): boolean {
@@ -925,6 +940,96 @@ function gameweekFinalized(
   };
 }
 
+function isCount(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
+function pepitesWeekly(
+  payload: PepitesWeeklyPayload,
+  ctx: RenderContext,
+  links: Links,
+): EmailContent {
+  if (!isCount(payload.week) || payload.week < 1) {
+    throw new Error("notification email: pepites_weekly has no valid week");
+  }
+  const entries = (Array.isArray(payload.entries) ? payload.entries : [])
+    .filter((entry) => isCount(entry?.rank) && entry.rank >= 1)
+    .slice()
+    .sort((a, b) => a.rank - b.rank);
+  if (entries.length === 0) throw new Error("notification email: pepites_weekly has no entries");
+  const rows: RankingRow[] = entries.map((entry) => ({
+    rank: formatNumber(entry.rank, ctx.lang),
+    name: cleanText(entry.name, 80) || "?",
+    club: entry.club ? teamName(entry.club, ctx) : null,
+    score: isScore(entry.score) ? formatNumber(Math.round(entry.score), ctx.lang) : "–",
+  }));
+  const week = formatNumber(payload.week, ctx.lang);
+  const round = isCount(payload.round) ? formatNumber(payload.round, ctx.lang) : null;
+  const correction =
+    typeof payload.correctsEditionId === "string" && payload.correctsEditionId.length > 0;
+  const leader = rows[0];
+  const weekLabel = t(ctx, `Semaine ${week}`, `الأسبوع ${week}`);
+
+  const blocks: Block[] = [];
+  if (correction) {
+    blocks.push({
+      kind: "callout",
+      label: t(ctx, "Correction", "تصحيح"),
+      runs: [
+        plain(
+          t(
+            ctx,
+            "Cette édition remplace le Top 10 publié plus tôt pour cette semaine.",
+            "هذا العدد يعوّض توب 10 المنشور سابقًا لهذا الأسبوع.",
+          ),
+        ),
+      ],
+    });
+  }
+  blocks.push(
+    {
+      kind: "paragraph",
+      runs: [
+        plain(
+          t(
+            ctx,
+            "Les dix meilleurs joueurs de moins de 23 ans de Botola Pro cette semaine, choisis par la rédaction à partir du classement Pépites. Le score va de 0 à 100.",
+            "أفضل عشرة لاعبين دون 23 سنة في البطولة الاحترافية هذا الأسبوع، اختارتهم هيئة التحرير انطلاقًا من ترتيب Pépites. التنقيط من 0 إلى 100.",
+          ),
+        ),
+      ],
+    },
+    { kind: "ranking", rows },
+  );
+
+  const leaderLine = `${leader.name}${leader.club ? ` (${leader.club})` : ""}`;
+  return {
+    subject: correction
+      ? t(
+          ctx,
+          `Pépites · ${weekLabel} : le Top 10 corrigé`,
+          `Pépites · ${weekLabel}: توب 10 بعد التصحيح`,
+        )
+      : t(
+          ctx,
+          `Pépites · ${weekLabel} : le Top 10 des jeunes`,
+          `Pépites · ${weekLabel}: توب 10 للشباب`,
+        ),
+    preheader: t(
+      ctx,
+      `N° 1 : ${leaderLine} · ${leader.score}/100`,
+      `الأول: ${leaderLine} · ${leader.score}/100`,
+    ),
+    kicker: "Pépites",
+    title: t(ctx, `Le Top 10 de la semaine ${week}`, `توب 10 للأسبوع ${week}`),
+    dateline: round
+      ? `${t(ctx, `Journée ${round}`, `الجولة ${round}`)} · ${copy(ctx, "botolaPro")}`
+      : copy(ctx, "botolaPro"),
+    blocks,
+    cta: { label: t(ctx, "Voir le Top 10", "عرض توب 10"), url: links.pepitesWeek(payload.week) },
+  };
+}
+
 function buildContent(
   delivery: ClaimedEmailDelivery,
   ctx: RenderContext,
@@ -943,6 +1048,8 @@ function buildContent(
       return deadline24h(delivery.payload, ctx, links);
     case "gameweek_finalized":
       return gameweekFinalized(delivery.payload, ctx, links);
+    case "pepites_weekly":
+      return pepitesWeekly(delivery.payload, ctx, links);
     default: {
       const unknown: never = delivery;
       throw new Error(
@@ -963,6 +1070,10 @@ function runsText(runs: readonly Run[]): string {
 interface Chrome {
   readonly greeting: string;
   readonly why: string;
+  /** For a topic unsubscribe: what stays on ("your other emails do not change"). */
+  readonly scope: string | null;
+  /** The topic's own page, when the email belongs to one (Pépites). */
+  readonly home: { readonly label: string; readonly url: string } | null;
   readonly manage: { readonly label: string; readonly url: string };
   readonly unsubscribe: { readonly label: string; readonly url: string };
 }
@@ -997,11 +1108,21 @@ function renderText(content: EmailContent, chrome: Chrome, ctx: RenderContext): 
       case "callout":
         out.push(labelled(ctx, block.label, runsText(block.runs)), "");
         break;
+      case "ranking":
+        for (const row of block.rows) {
+          out.push(
+            `${row.rank}. ${row.name}${row.club ? ` · ${row.club}` : ""} · ${row.score}/100`,
+          );
+        }
+        out.push("");
+        break;
     }
   }
   out.push(labelled(ctx, content.cta.label, content.cta.url), "", "--", chrome.why);
+  if (chrome.home) out.push(labelled(ctx, chrome.home.label, chrome.home.url));
   out.push(labelled(ctx, chrome.manage.label, chrome.manage.url));
   out.push(labelled(ctx, chrome.unsubscribe.label, chrome.unsubscribe.url));
+  if (chrome.scope) out.push(chrome.scope);
   out.push(BRAND_LINE);
   return `${out
     .join("\n")
@@ -1128,7 +1249,33 @@ function blockHtml(block: Block, ctx: RenderContext): string {
         `<div style="margin-top:8px;">${runsHtml(block.runs, ctx)}</div>`,
         "</td></tr></table>",
       ].join("");
+    case "ranking":
+      return [
+        tableOpen(ctx, "margin:16px 0 0;"),
+        ...block.rows.map(
+          (row) => `<tr><td style="padding:0 0 8px;">${rankingRowHtml(row, ctx)}</td></tr>`,
+        ),
+        "</table>",
+      ].join("");
   }
+}
+
+function rankingRowHtml(row: RankingRow, ctx: RenderContext): string {
+  const club = row.club
+    ? `<div style="margin-top:2px;font-size:13px;line-height:1.35;color:${C.muted};">${escapeHtml(row.club)}</div>`
+    : "";
+  return [
+    tableOpen(
+      ctx,
+      `border-collapse:separate;border-spacing:0;background-color:${C.surface};border:1px solid ${C.rule};border-radius:10px;`,
+    ),
+    "<tr>",
+    `<td width="40" align="center" style="width:40px;padding:12px 0;padding-${ctx.start}:12px;text-align:center;${cellFont(ctx)}font-size:18px;line-height:1.2;font-weight:800;color:${C.ink};">${isoHtml(row.rank, ctx)}</td>`,
+    `<td align="${ctx.start}" style="padding:12px 8px;text-align:${ctx.start};${cellFont(ctx)}font-size:15px;line-height:1.35;color:${C.text};"><div style="font-weight:700;">${escapeHtml(row.name)}</div>${club}</td>`,
+    `<td width="64" align="${ctx.end}" style="width:64px;padding:12px 0;padding-${ctx.end}:12px;text-align:${ctx.end};${cellFont(ctx)}white-space:nowrap;"><span style="font-size:18px;line-height:1.2;font-weight:800;color:${C.ink};">${isoHtml(row.score, ctx)}</span></td>`,
+    "</tr>",
+    "</table>",
+  ].join("");
 }
 
 function ctaHtml(cta: EmailContent["cta"], ctx: RenderContext): string {
@@ -1192,7 +1339,12 @@ function renderHtml(
     // Footer.
     `<tr><td dir="${ctx.dir}" align="${ctx.start}" style="padding:20px 24px 8px;text-align:${ctx.start};${cellFont(ctx)}font-size:12px;line-height:1.6;color:${C.muted};">`,
     `<p style="margin:0;">${escapeHtml(chrome.why)}</p>`,
-    `<p style="margin:8px 0 0;"><a href="${escapeHtml(chrome.manage.url)}" target="_blank" rel="noopener" style="${linkStyle}">${escapeHtml(chrome.manage.label)}</a> · <a href="${escapeHtml(chrome.unsubscribe.url)}" target="_blank" rel="noopener" style="${linkStyle}">${escapeHtml(chrome.unsubscribe.label)}</a></p>`,
+    `<p style="margin:8px 0 0;">${
+      chrome.home
+        ? `<a href="${escapeHtml(chrome.home.url)}" target="_blank" rel="noopener" style="${linkStyle}">${escapeHtml(chrome.home.label)}</a> · `
+        : ""
+    }<a href="${escapeHtml(chrome.manage.url)}" target="_blank" rel="noopener" style="${linkStyle}">${escapeHtml(chrome.manage.label)}</a> · <a href="${escapeHtml(chrome.unsubscribe.url)}" target="_blank" rel="noopener" style="${linkStyle}">${escapeHtml(chrome.unsubscribe.label)}</a></p>`,
+    chrome.scope ? `<p style="margin:8px 0 0;">${escapeHtml(chrome.scope)}</p>` : "",
     `<p style="margin:8px 0 0;"><span dir="ltr">${escapeHtml(BRAND_LINE)}</span></p>`,
     "</td></tr>",
     "</table>",
@@ -1230,22 +1382,42 @@ export function renderNotificationEmail(
         : null,
   };
   const app = appOrigin(links);
-  const content = buildContent(delivery, ctx, linksFor(app));
+  const routes = linksFor(app);
+  const content = buildContent(delivery, ctx, routes);
 
   const name = cleanText(delivery.recipient?.displayName, 60);
+  const pepites = delivery.type === "pepites_weekly";
   const chrome: Chrome = {
     greeting: name ? t(ctx, `Bonjour ${name},`, `مرحبًا ${name}،`) : t(ctx, "Bonjour,", "مرحبًا،"),
-    why: t(
-      ctx,
-      "Vous recevez cet e-mail car les notifications par e-mail sont activées sur votre compte BotolaGO.",
-      "تتلقى هذه الرسالة لأن إشعارات البريد الإلكتروني مفعّلة في حسابك على BotolaGO.",
-    ),
+    why: pepites
+      ? t(
+          ctx,
+          "Vous recevez cet e-mail car vous vous êtes abonné à Pépites, le Top 10 hebdomadaire des jeunes de Botola Pro.",
+          "تتلقى هذه الرسالة لأنك اشتركت في Pépites، توب 10 الأسبوعي لشباب البطولة الاحترافية.",
+        )
+      : t(
+          ctx,
+          "Vous recevez cet e-mail car les notifications par e-mail sont activées sur votre compte BotolaGO.",
+          "تتلقى هذه الرسالة لأن إشعارات البريد الإلكتروني مفعّلة في حسابك على BotolaGO.",
+        ),
+    scope: pepites
+      ? t(
+          ctx,
+          "Vous désabonner de Pépites ne change pas vos autres e-mails BotolaGO.",
+          "إلغاء الاشتراك في Pépites لا يغيّر باقي رسائل BotolaGO الإلكترونية.",
+        )
+      : null,
+    home: pepites ? { label: t(ctx, "Pépites", "Pépites"), url: routes.pepites } : null,
     manage: {
-      label: t(ctx, "Gérer mes notifications", "إدارة الإشعارات"),
-      url: linksFor(app).profile,
+      label: pepites
+        ? t(ctx, "Tous mes réglages de notifications", "كل إعدادات الإشعارات")
+        : t(ctx, "Gérer mes notifications", "إدارة الإشعارات"),
+      url: routes.profile,
     },
     unsubscribe: {
-      label: t(ctx, "Se désabonner", "إلغاء الاشتراك"),
+      label: pepites
+        ? t(ctx, "Se désabonner de Pépites", "إلغاء الاشتراك في Pépites")
+        : t(ctx, "Se désabonner", "إلغاء الاشتراك"),
       url: unsubscribeUrl(delivery, links),
     },
   };

@@ -86,8 +86,32 @@ function defaultPayload<K extends EmailNotificationType>(type: K): EmailPayloadB
       deadlineAt: "2026-09-25T17:30:00Z",
     },
     gameweek_finalized: { gameweek: 5, points: 64, overallRank: 12, totalPoints: 312 },
+    pepites_weekly: pepitesPayload(),
   };
   return payloads[type];
+}
+
+const PEPITES_CLUBS = [RAJA, WYDAD, FAR, BERKANE, FUS, MAS, HUSA, IRT];
+
+function pepitesPayload(
+  extra: Partial<EmailPayloadByType["pepites_weekly"]> = {},
+): EmailPayloadByType["pepites_weekly"] {
+  return {
+    editionId: "edition-16",
+    seasonId: "season-2026",
+    week: 16,
+    round: 5,
+    publishedAt: "2026-10-12T19:00:00Z",
+    correctsEditionId: null,
+    entries: Array.from({ length: 10 }, (_, index) => ({
+      rank: index + 1,
+      playerId: `player-${index + 1}`,
+      name: index === 0 ? "Ilias Akhomach" : `Joueur ${index + 1}`,
+      club: index === 9 ? null : PEPITES_CLUBS[index % PEPITES_CLUBS.length]!,
+      score: 88 - index * 3,
+    })),
+    ...extra,
+  };
 }
 
 function delivery<K extends EmailNotificationType>(
@@ -113,6 +137,7 @@ function delivery<K extends EmailNotificationType>(
     },
     favoriteTeamId: "favoriteTeamId" in overrides ? (overrides.favoriteTeamId ?? null) : null,
     unsubscribeToken: overrides.unsubscribeToken ?? "tok-123",
+    unsubscribeTopic: type === "pepites_weekly" ? "pepites_weekly" : null,
     type,
     payload: overrides.payload ?? defaultPayload(type),
   } as ClaimedEmailDelivery;
@@ -160,19 +185,41 @@ describe("renderNotificationEmail: every type in both languages", () => {
         expect(email.html).toMatch(/<div style="display:none;max-height:0;[^"]*overflow:hidden;/);
         expect(email.html).toContain(escapeHtml(email.preheader));
 
-        // The footer, in both bodies.
-        const why =
-          language === "fr"
+        // The footer, in both bodies. Pépites is its own opt-in topic: its
+        // footer says so, and its link turns off Pépites only.
+        const pepites = type === "pepites_weekly";
+        const why = pepites
+          ? language === "fr"
+            ? "Vous recevez cet e-mail car vous vous êtes abonné à Pépites, le Top 10 hebdomadaire des jeunes de Botola Pro."
+            : "تتلقى هذه الرسالة لأنك اشتركت في Pépites، توب 10 الأسبوعي لشباب البطولة الاحترافية."
+          : language === "fr"
             ? "Vous recevez cet e-mail car les notifications par e-mail sont activées sur votre compte BotolaGO."
             : "تتلقى هذه الرسالة لأن إشعارات البريد الإلكتروني مفعّلة في حسابك على BotolaGO.";
-        const manage = language === "fr" ? "Gérer mes notifications" : "إدارة الإشعارات";
-        const unsubscribe = language === "fr" ? "Se désabonner" : "إلغاء الاشتراك";
+        const manage = pepites
+          ? language === "fr"
+            ? "Tous mes réglages de notifications"
+            : "كل إعدادات الإشعارات"
+          : language === "fr"
+            ? "Gérer mes notifications"
+            : "إدارة الإشعارات";
+        const unsubscribe = pepites
+          ? language === "fr"
+            ? "Se désabonner de Pépites"
+            : "إلغاء الاشتراك في Pépites"
+          : language === "fr"
+            ? "Se désabonner"
+            : "إلغاء الاشتراك";
+        const unsubscribeLink = pepites
+          ? `${APP}/unsubscribe?token=tok-123&topic=pepites_weekly`
+          : `${APP}/unsubscribe?token=tok-123`;
         for (const body of [email.html, email.text]) {
           expect(body).toContain(why);
           expect(body).toContain(manage);
           expect(body).toContain(unsubscribe);
           expect(body).toContain("BotolaGO · botolago.com");
-          expect(body).toContain(`${APP}/unsubscribe?token=tok-123`);
+          expect(body).toContain(
+            body === email.html ? escapeHtml(unsubscribeLink) : unsubscribeLink,
+          );
           expect(body).toContain(`${APP}/profile`);
         }
       });
@@ -609,6 +656,9 @@ describe("links", () => {
     /^https:\/\/botolago\.com\/fantasy\/points$/,
     /^https:\/\/botolago\.com\/profile$/,
     /^https:\/\/botolago\.com\/unsubscribe\?token=[A-Za-z0-9%._~-]+$/,
+    /^https:\/\/botolago\.com\/unsubscribe\?token=[A-Za-z0-9%._~-]+(&|&amp;)topic=pepites_weekly$/,
+    /^https:\/\/botolago\.com\/pepites$/,
+    /^https:\/\/botolago\.com\/pepites\/semaine\/[0-9]+$/,
   ];
   const expectedCta: Record<EmailNotificationType, string> = {
     matchday_preview: `${APP}/matches`,
@@ -617,6 +667,7 @@ describe("links", () => {
     match_starting: `${APP}/matches/fx-`,
     deadline_24h: `${APP}/fantasy/transfers`,
     gameweek_finalized: `${APP}/fantasy/points`,
+    pepites_weekly: `${APP}/pepites/semaine/16`,
   };
 
   for (const type of EMAIL_NOTIFICATION_TYPES) {
@@ -625,7 +676,8 @@ describe("links", () => {
         const email = render(delivery(type, { language, favoriteTeamId: "raja" }));
         const hrefs = [...email.html.matchAll(/href="([^"]*)"/g)].map((m) => m[1]!);
         const textUrls = email.text.match(/https?:\/\/\S+/g) ?? [];
-        expect(hrefs.length).toBe(3); // the button, manage, unsubscribe
+        // The button, manage, unsubscribe; Pépites adds its home page.
+        expect(hrefs.length).toBe(type === "pepites_weekly" ? 4 : 3);
         for (const url of [...hrefs, ...textUrls]) {
           expect(allowed.some((pattern) => pattern.test(url))).toBe(true);
         }
@@ -634,4 +686,74 @@ describe("links", () => {
       });
     }
   }
+});
+
+describe("pepites_weekly", () => {
+  it("lists the ten in order, in French, with the week, the round and the scores", () => {
+    const email = render(delivery("pepites_weekly", { language: "fr" }));
+    expect(email.subject).toBe("Pépites · Semaine 16 : le Top 10 des jeunes");
+    expect(email.preheader).toBe("N° 1 : Ilias Akhomach (Raja Casablanca) · 88/100");
+    const lines = email.text.split("\n").filter((line) => /^[0-9]+\. /.test(line));
+    expect(lines).toHaveLength(10);
+    expect(lines[0]).toBe("1. Ilias Akhomach · Raja Casablanca · 88/100");
+    expect(lines[9]).toBe("10. Joueur 10 · 61/100");
+    expect(email.text).toContain("Journée 5 · Botola Pro");
+    expect(email.text).toContain(
+      "Vous désabonner de Pépites ne change pas vos autres e-mails BotolaGO.",
+    );
+    expect(email.html).toContain(`href="${APP}/pepites"`);
+  });
+
+  it("reads right to left in Arabic, with each number kept whole", () => {
+    const email = render(delivery("pepites_weekly", { language: "ar" }));
+    expect(email.subject).toBe("Pépites · الأسبوع 16: توب 10 للشباب");
+    expect(email.html).toContain('<html lang="ar" dir="rtl">');
+    // Ranks and scores are isolated left-to-right runs, never split.
+    expect(email.html).toContain('<span dir="ltr">88</span>');
+    expect(email.html).toContain('<span dir="ltr">10</span>');
+    // No space inside a number anywhere a reader sees one.
+    expect(email.text).not.toMatch(/[0-9][ \u00a0\u202f][0-9]/);
+    expect(email.text).toContain("1. Ilias Akhomach · الرجاء الرياضي · 88/100");
+    expect(email.text).toContain(
+      "إلغاء الاشتراك في Pépites لا يغيّر باقي رسائل BotolaGO الإلكترونية.",
+    );
+  });
+
+  it("says when an edition corrects an earlier one", () => {
+    const payload = pepitesPayload({ correctsEditionId: "edition-15" });
+    for (const [language, subject, note] of [
+      ["fr", "Pépites · Semaine 16 : le Top 10 corrigé", "Cette édition remplace le Top 10"],
+      ["ar", "Pépites · الأسبوع 16: توب 10 بعد التصحيح", "هذا العدد يعوّض توب 10"],
+    ] as const) {
+      const email = render(delivery("pepites_weekly", { language, payload }));
+      expect(email.subject).toBe(subject);
+      expect(email.text).toContain(note);
+    }
+  });
+
+  it("escapes a name and refuses an edition without entries or week", () => {
+    const payload = pepitesPayload();
+    const hostile = {
+      ...payload,
+      entries: [{ ...payload.entries[0]!, name: '<b onclick="x">Joueur</b>' }],
+    };
+    const email = render(delivery("pepites_weekly", { payload: hostile }));
+    expect(email.html).not.toContain("<b onclick");
+    expect(email.html).toContain("&lt;b onclick=&quot;x&quot;&gt;Joueur&lt;/b&gt;");
+    expect(() =>
+      render(delivery("pepites_weekly", { payload: { ...payload, entries: [] } })),
+    ).toThrow();
+    expect(() =>
+      render(delivery("pepites_weekly", { payload: { ...payload, week: 0 } })),
+    ).toThrow();
+  });
+
+  it("builds a topic unsubscribe link only for a topic token", () => {
+    expect(unsubscribeUrl(delivery("pepites_weekly"), LINKS)).toBe(
+      `${APP}/unsubscribe?token=tok-123&topic=pepites_weekly`,
+    );
+    expect(unsubscribeUrl(delivery("round_preview"), LINKS)).toBe(
+      `${APP}/unsubscribe?token=tok-123`,
+    );
+  });
 });
