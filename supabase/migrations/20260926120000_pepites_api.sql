@@ -433,7 +433,7 @@ begin
 
   select coalesce(pg_catalog.jsonb_agg(row_json order by ordinal), '[]'::jsonb) into v_rows
   from (
-    select row_number() over () as ordinal,
+    select ranked.ordinal,
       app_private.pepites_player_card(ranked.player_id, v_run_id) || pg_catalog.jsonb_build_object(
         'minutes', ranked.minutes, 'apps', ranked.apps, 'starts', ranked.starts,
         'goals', ranked.goals, 'assists', ranked.assists,
@@ -449,24 +449,27 @@ begin
         end
       ) as row_json
     from (
-      select score.*
-      from app.pepites_player_scores score
-      where score.run_id = v_run_id and score.rank is not null
-        and (p_position is null or score.position_group = p_position)
-        and (p_max_age is null or score.age_years <= p_max_age)
-        and (p_team_id is null or score.team_id = p_team_id)
-      order by
-        case coalesce(p_sort, 'score')
-          when 'minutes' then -score.minutes
-          when 'goals' then -score.goals
-          when 'assists' then -score.assists
-          when 'rating' then -coalesce(score.rating_avg, -1)
-          when 'form' then -coalesce(score.form_avg, -1)
-          when 'ga90' then -coalesce((score.per90 ->> 'goalsAssists')::numeric, -1)
-          else score.rank
-        end,
-        score.rank
-      limit coalesce(p_limit, 20) offset coalesce(p_offset, 0)
+      -- The page, numbered in its own order: the join below may reorder rows.
+      select sorted.*, row_number() over (order by sorted.sort_key, sorted.rank) as ordinal
+      from (
+        select score.*,
+          case coalesce(p_sort, 'score')
+            when 'minutes' then -score.minutes
+            when 'goals' then -score.goals
+            when 'assists' then -score.assists
+            when 'rating' then -coalesce(score.rating_avg, -1)
+            when 'form' then -coalesce(score.form_avg, -1)
+            when 'ga90' then -coalesce((score.per90 ->> 'goalsAssists')::numeric, -1)
+            else score.rank
+          end as sort_key
+        from app.pepites_player_scores score
+        where score.run_id = v_run_id and score.rank is not null
+          and (p_position is null or score.position_group = p_position)
+          and (p_max_age is null or score.age_years <= p_max_age)
+          and (p_team_id is null or score.team_id = p_team_id)
+        order by sort_key, score.rank
+        limit coalesce(p_limit, 20) offset coalesce(p_offset, 0)
+      ) sorted
     ) ranked
     left join app.pepites_player_scores previous
       on previous.run_id = v_previous_run_id and previous.player_id = ranked.player_id
