@@ -35,12 +35,16 @@ export function GoMark() {
     >
       <span
         aria-hidden
-        className={cn(
-          "inline-flex h-[22px] items-center justify-center rounded-[6px] bg-white px-[5px] text-[9px] text-[color:var(--pepites-ink)]",
-          pp.heavy,
-        )}
+        className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-[6px] bg-white"
       >
-        GO
+        <img
+          src="/favicon.png?v=2"
+          alt=""
+          width={20}
+          height={20}
+          draggable={false}
+          className="size-5 object-contain"
+        />
       </span>
       <span
         aria-hidden
