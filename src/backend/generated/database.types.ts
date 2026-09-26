@@ -5650,6 +5650,150 @@ export type Database = {
           },
         ]
       }
+      pepites_edition_entries: {
+        Row: {
+          computed_rank: number
+          computed_score: number
+          edition_id: string
+          editorial_rank: number
+          player_id: string
+          reason_ar: string | null
+          reason_fr: string | null
+          updated_at: string
+        }
+        Insert: {
+          computed_rank: number
+          computed_score: number
+          edition_id: string
+          editorial_rank: number
+          player_id: string
+          reason_ar?: string | null
+          reason_fr?: string | null
+          updated_at?: string
+        }
+        Update: {
+          computed_rank?: number
+          computed_score?: number
+          edition_id?: string
+          editorial_rank?: number
+          player_id?: string
+          reason_ar?: string | null
+          reason_fr?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pepites_edition_entries_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "pepites_editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pepites_edition_entries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pepites_editions: {
+        Row: {
+          corrects_edition_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          previous_edition_id: string | null
+          published_at: string | null
+          published_by: string | null
+          round_number: number
+          run_id: string
+          scheduled_for: string | null
+          season_id: string
+          status: string
+          superseded_by: string | null
+          updated_at: string
+          week_number: number
+          withdrawn_at: string | null
+          withdrawn_reason: string | null
+        }
+        Insert: {
+          corrects_edition_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          previous_edition_id?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          round_number: number
+          run_id: string
+          scheduled_for?: string | null
+          season_id: string
+          status?: string
+          superseded_by?: string | null
+          updated_at?: string
+          week_number: number
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
+        }
+        Update: {
+          corrects_edition_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          previous_edition_id?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          round_number?: number
+          run_id?: string
+          scheduled_for?: string | null
+          season_id?: string
+          status?: string
+          superseded_by?: string | null
+          updated_at?: string
+          week_number?: number
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pepites_editions_corrects_edition_id_fkey"
+            columns: ["corrects_edition_id"]
+            isOneToOne: false
+            referencedRelation: "pepites_editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pepites_editions_previous_edition_id_fkey"
+            columns: ["previous_edition_id"]
+            isOneToOne: false
+            referencedRelation: "pepites_editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pepites_editions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "pepites_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pepites_editions_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pepites_editions_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "pepites_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pepites_methodologies: {
         Row: {
           created_at: string

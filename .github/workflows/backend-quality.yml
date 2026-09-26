@@ -125,6 +125,12 @@ jobs:
       # has not been shown to pass on this one. Add it like the step above
       # once it has.
       - run: bun run backend:db:test
+      # After the pgTAP suite: it leaves append-only rows (editions, runs) and
+      # a current season behind, which the pgTAP files do not expect to find.
+      - name: Pépites editions concurrency (two connections)
+        run: bun test scripts/backend/pepites-editions-concurrency.test.ts
+        env:
+          PEPITES_E2E_DB_URL: postgres://postgres:postgres@127.0.0.1:55322/postgres
       - run: bun run backend:db:lint
       - name: Verify generated database types
         id: generated_types
