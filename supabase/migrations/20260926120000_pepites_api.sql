@@ -1051,7 +1051,9 @@ begin
   if v_note is null or char_length(v_note) not between 8 and 500 then
     raise exception using errcode = '22023', message = 'ATTRIBUTE_SOURCE_NOTE_REQUIRED';
   end if;
-  if p_attribute not in ('date_of_birth', 'nationality_country_id', 'preferred_foot', 'height_cm', 'detailed_position') then
+  -- The attribute names of the observations (20260926060000): nationality is
+  -- an ISO alpha-2 code, as the providers send it.
+  if p_attribute not in ('date_of_birth', 'nationality', 'preferred_foot', 'height_cm', 'detailed_position') then
     raise exception using errcode = '22023', message = 'ATTRIBUTE_INVALID';
   end if;
   v_observation_id := app_private.record_player_attribute_observation(p_player_id, p_attribute,
