@@ -8,7 +8,10 @@ import { PRIZE_TERMS } from "@/content/legal/prize-terms";
 import { fr } from "@/i18n/dictionary-fr";
 import { useI18n } from "@/i18n/provider";
 import { PRIZES_ENABLED } from "@/lib/feature-flags";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
 import { cn } from "@/lib/utils";
+
+const CANONICAL = `${PUBLIC_SITE_ORIGIN}/prizes/terms`;
 
 /**
  * `/prizes/terms`: the prize rules (`src/content/legal/prize-terms.ts`). The
@@ -24,7 +27,15 @@ export const Route = createFileRoute("/prizes/terms")({
     meta: [
       { title: fr["prizes.terms.meta_title"] },
       { name: "description", content: fr["prizes.terms.meta_description"] },
+      { property: "og:type", content: "website" },
+      { property: "og:title", content: fr["prizes.terms.meta_title"] },
+      { property: "og:description", content: fr["prizes.terms.meta_description"] },
+      { property: "og:url", content: CANONICAL },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: fr["prizes.terms.meta_title"] },
+      { name: "twitter:description", content: fr["prizes.terms.meta_description"] },
     ],
+    links: [{ rel: "canonical", href: CANONICAL }],
   }),
   component: PrizeTermsRoute,
 });
@@ -37,7 +48,9 @@ function PrizeTermsRoute() {
   }, [title]);
   return (
     <FantasyFrame bottomNav>
-      <UiHeader kicker={t("prizes.title")} title={t("prizes.terms_link")} backTo="/prizes" />
+      {/* The document below owns the page's h1. Keeping only the section
+          kicker here prevents two h1s on the same URL. */}
+      <UiHeader kicker={t("prizes.title")} backTo="/prizes" />
       <div className={cn("grid gap-4 pt-4", ui.space.gutter)}>
         <LegalDocumentView doc={PRIZE_TERMS[lang]} tableScrollHint={t("legal.table_scroll_hint")} />
       </div>

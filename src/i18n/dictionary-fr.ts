@@ -609,7 +609,8 @@ export const fr = {
   "fantasy.fixtures.double": "Journée double",
   "fantasy.fixtures.blank": "Journée blanche",
   "fantasy.rules.title": "Règles",
-  "fantasy.rules.intro": "Voici comment fonctionne le fantasy BotolaGO.",
+  "fantasy.rules.intro":
+    "BotolaGO Fantasy se joue avec 15 joueurs de Botola Pro et un budget de 100 M. Alignez 11 titulaires, choisissez un capitaine dont les points comptent double, puis ajustez votre équipe avant la date limite de chaque journée. Les actions réalisées dans les vrais matchs déterminent votre score.",
   "fantasy.rules.squad": "Composition d'équipe",
   "fantasy.rules.squad_desc": "15 joueurs : 2 gardiens, 5 défenseurs, 5 milieux, 3 attaquants.",
   "fantasy.rules.budget": "Budget",

@@ -225,6 +225,19 @@ export function buildArticleJsonLd(
   if (authorName) jsonLd.author = { "@type": "Person", name: authorName };
   // "BotolaGO" is the product's own real publisher identity, not fabricated data.
   jsonLd.publisher = { "@type": "Organization", name: article.publisher?.name ?? "BotolaGO" };
+  const about = [
+    ...article.teams.map((team) => ({
+      "@type": "SportsTeam",
+      name: team.name,
+      url: `${PUBLIC_SITE_ORIGIN}/clubs/${encodeURIComponent(team.id)}`,
+    })),
+    ...article.players.map((player) => ({ "@type": "Person", name: player.name })),
+    ...article.competitions.map((competition) => ({
+      "@type": "SportsOrganization",
+      name: competition.name,
+    })),
+  ];
+  if (about.length > 0) jsonLd.about = about;
   // Licensed content: say what it is a copy of.
   if (article.source?.url) jsonLd.isBasedOn = article.source.url;
 

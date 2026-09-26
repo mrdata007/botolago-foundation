@@ -65,6 +65,29 @@ export function breadcrumbJsonLd(
 }
 
 /**
+ * A club as a SportsTeam. Only identity the public club page actually knows
+ * is emitted: name, canonical page, sport, optional city and optional crest.
+ */
+export function sportsTeamJsonLd(input: {
+  readonly canonicalUrl: string;
+  readonly name: string;
+  readonly city?: string | null;
+  readonly logoUrl?: string | null;
+}): JsonLd {
+  const city = input.city?.trim();
+  const logo = input.logoUrl?.trim();
+  return {
+    "@context": "https://schema.org",
+    "@type": "SportsTeam",
+    name: input.name,
+    url: input.canonicalUrl,
+    sport: "Football",
+    ...(city ? { location: { "@type": "City", name: city } } : {}),
+    ...(logo ? { logo } : {}),
+  };
+}
+
+/**
  * A match as a SportsEvent. The start is given only when the provider has
  * confirmed it: a postponed match's date and the 00:00 UTC placeholder of an
  * unscheduled kick-off are not facts. The venue only when the match has one.

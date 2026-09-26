@@ -48,12 +48,6 @@ function RulesPage() {
     queryFn: () => fantasyService.getRules(),
   });
 
-  if (rulesQ.isLoading) return <UiStatePanel kind="loading" />;
-  if (rulesQ.isError || !rulesQ.data) {
-    return <UiErrorState onRetry={() => void rulesQ.refetch()} />;
-  }
-  const rules = rulesQ.data;
-
   const sections: {
     icon: ComponentType<{ className?: string }>;
     titleKey: TranslationKey;
@@ -90,29 +84,36 @@ function RulesPage() {
       <h2 className={cn(ui.display.section, ui.tone.default)}>{t("fantasy.rules.title")}</h2>
       <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fantasy.rules.intro")}</p>
 
-      <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <RuleValue label={t("fantasy.rules.squad")} value={nf.format(rules.squadSize)} />
-        <RuleValue label={t("fantasy.rules.budget")} value={nf.format(rules.budget)} />
-        <RuleValue
-          label={t("fantasy.rules.transfers_r")}
-          value={
-            // "1 / -4" is a figure pair, not prose: isolated left-to-right so
-            // the minus stays in front of its number in Arabic.
-            <bdi dir="ltr">
-              {nf.format(rules.initialFreeTransfers)} / -{nf.format(rules.transferHitCost)}
-            </bdi>
-          }
-        />
-        <RuleValue
-          label={t("fantasy.rules.deadlines")}
-          value={
-            <>
-              <bdi>{nf.format(rules.deadline.minutesBeforeFirstFixture)}</bdi>{" "}
-              <span className={cn(ui.text.meta, ui.tone.muted)}>{t("home.minutes")}</span>
-            </>
-          }
-        />
-      </dl>
+      {rulesQ.isLoading ? (
+        <UiStatePanel kind="loading" />
+      ) : rulesQ.isError || !rulesQ.data ? (
+        <UiErrorState onRetry={() => void rulesQ.refetch()} />
+      ) : (
+        <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <RuleValue label={t("fantasy.rules.squad")} value={nf.format(rulesQ.data.squadSize)} />
+          <RuleValue label={t("fantasy.rules.budget")} value={nf.format(rulesQ.data.budget)} />
+          <RuleValue
+            label={t("fantasy.rules.transfers_r")}
+            value={
+              // "1 / -4" is a figure pair, not prose: isolated left-to-right so
+              // the minus stays in front of its number in Arabic.
+              <bdi dir="ltr">
+                {nf.format(rulesQ.data.initialFreeTransfers)} / -
+                {nf.format(rulesQ.data.transferHitCost)}
+              </bdi>
+            }
+          />
+          <RuleValue
+            label={t("fantasy.rules.deadlines")}
+            value={
+              <>
+                <bdi>{nf.format(rulesQ.data.deadline.minutesBeforeFirstFixture)}</bdi>{" "}
+                <span className={cn(ui.text.meta, ui.tone.muted)}>{t("home.minutes")}</span>
+              </>
+            }
+          />
+        </dl>
+      )}
 
       <div className="mt-4 grid gap-2">
         {sections.map((s) => (

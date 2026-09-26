@@ -1,4 +1,4 @@
-import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Share2 } from "lucide-react";
@@ -540,22 +540,27 @@ function ArticlePage() {
                 <>
                   {/* `ui.text.label` letter-spaces Latin only (BG-0069). */}
                   <h2 className={cn(ui.text.label, ui.tone.muted)}>{t("article.clubs")}</h2>
-                  {/* Static: there is no club page to link to yet. */}
                   <ul className="mt-2.5 flex flex-wrap gap-2">
                     {articleClubs.map(({ team, club }) => (
-                      <li
-                        key={team.id}
-                        className={cn(
-                          "inline-flex max-w-full items-center gap-2 py-1.5 pe-4",
-                          club ? "ps-1.5" : "ps-4",
-                          ui.radius.full,
-                          ui.surface.sunken,
-                          ui.text.meta,
-                          "[font-weight:var(--ui-weight-heavy)]",
-                        )}
-                      >
-                        {club && <ClubCrest club={club} size="xs" />}
-                        <span className="min-w-0 truncate">{club ? tr(club.name) : team.name}</span>
+                      <li key={team.id} className="max-w-full">
+                        <Link
+                          to="/clubs/$clubId"
+                          params={{ clubId: team.id }}
+                          className={cn(
+                            "inline-flex max-w-full items-center gap-2 py-1.5 pe-4",
+                            club ? "ps-1.5" : "ps-4",
+                            ui.radius.full,
+                            ui.surface.sunken,
+                            ui.text.meta,
+                            ui.focus,
+                            "[font-weight:var(--ui-weight-heavy)] transition-colors hover:bg-[color:var(--ui-surface-raised)]",
+                          )}
+                        >
+                          {club && <ClubCrest club={club} size="xs" />}
+                          <span className="min-w-0 truncate">
+                            {club ? tr(club.name) : team.name}
+                          </span>
+                        </Link>
                       </li>
                     ))}
                   </ul>

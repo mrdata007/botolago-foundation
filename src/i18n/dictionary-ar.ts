@@ -587,7 +587,8 @@ export const ar = {
   "fantasy.fixtures.double": "جولة مزدوجة",
   "fantasy.fixtures.blank": "جولة فارغة",
   "fantasy.rules.title": "القواعد",
-  "fantasy.rules.intro": "إليك كيف تعمل لعبة فانتازي BotolaGO.",
+  "fantasy.rules.intro":
+    "تلعب فانتازي BotolaGO بتشكيلة من 15 لاعباً من البطولة الاحترافية وميزانية 100 م. اختر 11 أساسياً وقائداً تُضاعف نقاطه، ثم عدّل فريقك قبل الموعد النهائي لكل جولة. ما يقدمه اللاعبون في المباريات الحقيقية هو ما يحدد رصيدك من النقاط.",
   "fantasy.rules.squad": "تشكيلة الفريق",
   "fantasy.rules.squad_desc": "15 لاعباً: حارسان، 5 مدافعين، 5 لاعبي وسط، 3 مهاجمين.",
   "fantasy.rules.budget": "الميزانية",
