@@ -1,36 +1,43 @@
 import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/shell/AppShell";
-import { UiPageTitle } from "@/components/ui-kit";
-import { useI18n } from "@/i18n/provider";
+import { cn } from "@/lib/utils";
 
-import { PepitesTabs, type PepitesView } from "./PepitesParts";
+import { pp } from "./pepites-design";
+import { PepitesTopBar } from "./PepitesTopBar";
+import { NightBand } from "./PepitesVisuals";
 
 /**
- * The frame every Pépites page shares: the title, the three tabs (Top 10,
- * ranking, method) and, on the right, the page's own action (share).
- * The player and week pages pass no tab: they sit under one of the three.
+ * The frame every Pépites page shares (Figma 01–04): the night top bar, the
+ * page's night band under it (`hero`), and the light page with the bottom
+ * bar. A page without a band of its own gets a short one, so the night bar
+ * always ends on the slant; a night page runs on under the bar instead.
  */
 export function PepitesShell({
-  view,
-  trailing,
+  hero,
+  tone = "page",
   children,
+  className,
 }: {
-  view: PepitesView | null;
-  trailing?: ReactNode;
+  hero?: ReactNode;
+  /** `night`: the whole page is night (the player's matches, Figma 04). */
+  tone?: "page" | "night";
   children: ReactNode;
+  className?: string;
 }) {
-  const { t } = useI18n();
   return (
     <AppShell
-      backgroundVariant="matches"
+      className={tone === "night" ? pp.night : pp.page}
+      topBar={<PepitesTopBar />}
       pageHeader={
-        <UiPageTitle title={t("pepites.title")} trailing={trailing} className="border-b-0">
-          {view ? <PepitesTabs active={view} /> : null}
-        </UiPageTitle>
+        hero ?? (
+          <NightBand cut={20}>
+            <div className="h-6" />
+          </NightBand>
+        )
       }
     >
-      <div className="flex flex-col gap-4 pt-2" data-testid="pepites-page">
+      <div className={cn("flex flex-col gap-4 pt-3", className)} data-testid="pepites-page">
         {children}
       </div>
     </AppShell>

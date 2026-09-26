@@ -276,6 +276,7 @@ export type EditionEntry = z.infer<typeof editionEntrySchema>;
 export type PepitesEdition = z.infer<typeof editionSchema>;
 export type VersionResponse = z.infer<typeof versionResponseSchema>;
 export type HomeResponse = z.infer<typeof homeResponseSchema>;
+export type PreviousSeason = z.infer<typeof previousSeasonSchema>;
 export type RankingRow = z.infer<typeof rankingRowSchema>;
 export type RankingResponse = z.infer<typeof rankingResponseSchema>;
 export type PlayerResponse = z.infer<typeof playerResponseSchema>;

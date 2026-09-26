@@ -1,34 +1,32 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 
 import {
-  RANKING_SORTS,
   type PositionGroup,
   type RankingQuery,
   type RankingRow,
   type RankingSort,
 } from "@/backend/pepites/contracts";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import {
-  ui,
-  UiButton,
-  UiChip,
-  UiEmptyState,
-  UiErrorState,
-  UiSelect,
-  UiStatePanel,
-} from "@/components/ui-kit";
+import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
-import { formatNumber, POSITION_GROUPS, positionLabel } from "./pepites-format";
+import { pp } from "./pepites-design";
 import {
-  MovementBadge,
+  formatCount,
+  formatNumber,
+  POSITION_GROUPS,
+  positionLabel,
+  positionShort,
+  scoreText,
+} from "./pepites-format";
+import {
   PepitesComingSoon,
-  PepitesPlayerLine,
+  PepitesErrorState,
+  PepitesLoadingState,
   PepitesPreviewBanner,
   PepitesRevealBanner,
-  PlayerLink,
-  ScoreFigure,
 } from "./PepitesParts";
 import { PepitesShell } from "./PepitesShell";
 import {
@@ -37,9 +35,11 @@ import {
   usePepitesViewer,
   useVersionPointer,
 } from "./use-pepites";
+import { FilterChip, Headshot, MonoLine, NightBand, RatingChip } from "./PepitesVisuals";
 
 export const RANKING_PAGE_SIZE = 20;
-export const RANKING_AGES = [23, 21, 19] as const;
+/** The age chip: 20 and under (Figma 01, "≤ 20 ans"). */
+export const RANKING_YOUNG_AGE = 20;
 
 export interface RankingFilters {
   readonly position: PositionGroup | null;
@@ -51,7 +51,7 @@ export interface RankingFilters {
 function sortLabel(sort: RankingSort, t: (key: TranslationKey) => string): string {
   switch (sort) {
     case "score":
-      return t("pepites.sort.score");
+      return t("pepites.sort.score_short");
     case "minutes":
       return t("pepites.sort.minutes");
     case "goals":
@@ -67,30 +67,13 @@ function sortLabel(sort: RankingSort, t: (key: TranslationKey) => string): strin
   }
 }
 
-/** The figure a row shows beside the score when sorted by something else. */
-function sortValue(row: RankingRow, sort: RankingSort, lang: "fr" | "ar"): string | null {
-  switch (sort) {
-    case "score":
-      return null;
-    case "minutes":
-      return `${formatNumber(row.minutes, lang)}′`;
-    case "goals":
-      return formatNumber(row.goals, lang);
-    case "assists":
-      return formatNumber(row.assists, lang);
-    case "rating":
-      return row.ratingAvg === null ? "–" : formatNumber(row.ratingAvg, lang, 2);
-    case "form":
-      return row.formAvg === null ? "–" : formatNumber(row.formAvg, lang, 2);
-    case "ga90":
-      return row.ga90 === null ? "–" : formatNumber(row.ga90, lang, 2);
-  }
-}
+/** Figma 02's columns: # · player · MIN · B/PD · NOTE · SCORE. */
+const COLUMNS = "grid grid-cols-[18px_minmax(0,1fr)_44px_36px_36px_34px] items-center gap-1";
 
 /**
- * `/pepites/classement`: every ranked player of the current version, by
- * position and age, sorted by score or one of the ranking's inputs. Twenty
- * at a time.
+ * `/pepites/classement` (Figma 02): every ranked player of the current
+ * version on one table card, by position and age, sorted by score or by a
+ * column. Twenty at a time.
  */
 export function PepitesRanking({
   filters,
@@ -117,80 +100,15 @@ export function PepitesRanking({
     enabled: pointer?.available === true && version !== null,
   });
 
-  const filtersBar = (
-    <div className="flex flex-col gap-3" data-testid="pepites-filters">
-      <div
-        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
-        role="group"
-        aria-label={t("pepites.filter.position")}
-      >
-        <UiChip
-          selected={filters.position === null}
-          onClick={() => onFiltersChange({ ...filters, position: null })}
-        >
-          {t("pepites.filter.all_positions")}
-        </UiChip>
-        {POSITION_GROUPS.map((group) => (
-          <UiChip
-            key={group}
-            selected={filters.position === group}
-            onClick={() => onFiltersChange({ ...filters, position: group })}
-            data-testid={`pepites-filter-${group}`}
-          >
-            {positionLabel(group, t)}
-          </UiChip>
-        ))}
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <UiSelect
-          label={t("pepites.filter.age")}
-          value={String(filters.maxAge ?? 23)}
-          onChange={(event) => {
-            const age = Number(event.target.value);
-            onFiltersChange({ ...filters, maxAge: age >= 23 ? null : age });
-          }}
-          options={RANKING_AGES.map((age) => ({
-            value: String(age),
-            label:
-              age === 23
-                ? t("pepites.filter.all_ages")
-                : t("pepites.filter.max_age").replace("{n}", formatNumber(age, lang)),
-          }))}
-          data-testid="pepites-filter-age"
-        />
-        <UiSelect
-          label={t("pepites.filter.sort")}
-          value={filters.sort}
-          onChange={(event) =>
-            onFiltersChange({ ...filters, sort: event.target.value as RankingSort })
-          }
-          options={RANKING_SORTS.map((sort) => ({ value: sort, label: sortLabel(sort, t) }))}
-          data-testid="pepites-filter-sort"
-        />
-      </div>
-    </div>
-  );
-
   if (pointerQuery.isPending) {
-    return (
-      <PepitesShell view="ranking">
-        <UiStatePanel kind="loading" />
-      </PepitesShell>
-    );
+    return <PepitesLoadingState onRetry={() => void pointerQuery.refetch()} />;
   }
   if (pointerQuery.isError && !pointer) {
-    return (
-      <PepitesShell view="ranking">
-        <UiErrorState
-          title={t("pepites.state.error")}
-          onRetry={() => void pointerQuery.refetch()}
-        />
-      </PepitesShell>
-    );
+    return <PepitesErrorState onRetry={() => void pointerQuery.refetch()} />;
   }
   if (!pointer?.available) {
     return (
-      <PepitesShell view="ranking">
+      <PepitesShell>
         <PepitesComingSoon />
       </PepitesShell>
     );
@@ -201,88 +119,273 @@ export function PepitesRanking({
   );
   const first = pages.data?.pages[0];
   const total = first?.available ? (first.total ?? 0) : 0;
+  const counted = first?.available && first.found;
 
-  const list = (() => {
+  const hero = (
+    <NightBand cut={26} ghost={counted ? String(total) : null} testId="pepites-ranking-hero">
+      <div className="flex flex-col gap-2 pb-12 pt-3">
+        <h1 className={cn(pp.display, pp.lean, "text-[30px] leading-[1.1] text-white")}>
+          {t("pepites.ranking.title")}
+        </h1>
+        <MonoLine testId="pepites-ranking-count">
+          {[
+            counted
+              ? t("pepites.ranking.count_short").replace("{n}", `⁨${formatNumber(total, lang)}⁩`)
+              : null,
+            t("pepites.ranking.scope"),
+            `${t("pepites.ranking.sorted_by")} ${sortLabel(filters.sort, t)} ▼`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </MonoLine>
+        <div
+          className="-mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4 pb-1"
+          role="group"
+          aria-label={t("pepites.filter.position")}
+          data-testid="pepites-filters"
+        >
+          <FilterChip
+            tone="dark"
+            selected={filters.position === null}
+            onClick={() => onFiltersChange({ ...filters, position: null })}
+          >
+            {t("pepites.filter.all_positions")}
+          </FilterChip>
+          {[...POSITION_GROUPS].reverse().map((group) => (
+            <FilterChip
+              key={group}
+              tone="dark"
+              selected={filters.position === group}
+              onClick={() =>
+                onFiltersChange({
+                  ...filters,
+                  position: filters.position === group ? null : group,
+                })
+              }
+              testId={`pepites-filter-${group}`}
+            >
+              {positionShort(group, t)}
+            </FilterChip>
+          ))}
+          <FilterChip
+            tone="dark"
+            selected={filters.maxAge === RANKING_YOUNG_AGE}
+            onClick={() =>
+              onFiltersChange({
+                ...filters,
+                maxAge: filters.maxAge === RANKING_YOUNG_AGE ? null : RANKING_YOUNG_AGE,
+              })
+            }
+            testId="pepites-filter-age"
+          >
+            {t("pepites.chip.max_age_20")}
+          </FilterChip>
+        </div>
+      </div>
+    </NightBand>
+  );
+
+  const body = (() => {
     if (version === null || (first?.available && !first.found)) {
       return (
-        <UiEmptyState
+        <RankingMessage
+          testId="pepites-ranking-none"
           title={t("pepites.state.no_ranking")}
           body={t("pepites.state.no_ranking_body")}
         />
       );
     }
-    if (pages.isPending) return <UiStatePanel kind="loading" />;
+    if (pages.isPending) return <TableSkeleton />;
     if (pages.isError && rows.length === 0) {
-      return <UiErrorState title={t("pepites.state.error")} onRetry={() => void pages.refetch()} />;
+      return <PepitesErrorState inline onRetry={() => void pages.refetch()} />;
     }
     if (rows.length === 0) {
-      return <UiEmptyState testId="pepites-ranking-empty" title={t("pepites.ranking.no_match")} />;
+      return (
+        <RankingMessage testId="pepites-ranking-empty" title={t("pepites.ranking.no_match")} />
+      );
     }
     return (
       <>
-        <p className={cn(ui.text.meta, ui.tone.muted)} data-testid="pepites-ranking-count">
-          {t("pepites.ranking.count").replace("{n}", formatNumber(total, lang))}
-        </p>
-        <ol className="flex flex-col gap-2" data-testid="pepites-ranking">
-          {rows.map((row) => {
-            const extra = sortValue(row, filters.sort, lang);
-            return (
-              <li key={row.id} data-testid="pepites-ranking-row">
-                <PlayerLink playerId={row.id}>
-                  <div className={cn("flex items-center gap-3 p-3", ui.surface.card)}>
-                    <bdi
-                      className={cn(
-                        ui.score.row,
-                        "w-8 shrink-0 text-center tabular-nums",
-                        ui.tone.muted,
-                      )}
-                    >
-                      {row.rank === null ? "–" : formatNumber(row.rank, lang)}
-                    </bdi>
-                    <div className="min-w-0 flex-1">
-                      <PepitesPlayerLine
-                        player={row}
-                        size="sm"
-                        trailing={
-                          <div className="flex shrink-0 flex-col items-end gap-1">
-                            <ScoreFigure score={row.score} />
-                            {extra ? (
-                              <span className={cn(ui.text.micro, ui.tone.muted)}>
-                                {sortLabel(filters.sort, t)} <bdi>{extra}</bdi>
-                              </span>
-                            ) : (
-                              <MovementBadge movement={row.movement} />
-                            )}
-                          </div>
-                        }
-                      />
-                    </div>
-                  </div>
-                </PlayerLink>
-              </li>
-            );
-          })}
-        </ol>
+        <RankingTable
+          rows={rows}
+          sort={filters.sort}
+          onSort={(sort) => onFiltersChange({ ...filters, sort })}
+        />
         {pages.hasNextPage ? (
-          <UiButton
-            variant="soft"
+          <button
+            type="button"
             disabled={pages.isFetchingNextPage}
             onClick={() => void pages.fetchNextPage()}
             data-testid="pepites-load-more"
+            className={cn(
+              "min-h-[var(--ui-tap-min)] rounded-full border px-5 text-[13px] disabled:opacity-50",
+              pp.line,
+              pp.ink,
+              pp.heavy,
+              "bg-[color:var(--pepites-card)]",
+              ui.focus,
+            )}
           >
             {t("pepites.ranking.load_more")}
-          </UiButton>
+          </button>
         ) : null}
+        <Link
+          to="/pepites/methode"
+          className={cn(
+            "self-center text-[12px] underline underline-offset-2",
+            pp.ink,
+            pp.bold,
+            ui.focus,
+          )}
+        >
+          {t("pepites.home.method_link")}
+        </Link>
       </>
     );
   })();
 
   return (
-    <PepitesShell view="ranking">
+    <PepitesShell hero={hero} className="gap-3">
       {pointer.preview ? <PepitesPreviewBanner /> : null}
       <PepitesRevealBanner pointer={pointer} />
-      {filtersBar}
-      {list}
+      <div className="-mt-12 flex flex-col gap-3">{body}</div>
     </PepitesShell>
+  );
+}
+
+function RankingMessage({ title, body, testId }: { title: string; body?: string; testId: string }) {
+  return (
+    <div data-testid={testId} className={cn("flex flex-col gap-1 rounded-[14px] p-4", pp.table)}>
+      <p className={cn(pp.heavy, pp.text, "text-[15px]")}>{title}</p>
+      {body ? <p className={cn(pp.muted, "text-[13px]")}>{body}</p> : null}
+    </div>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <div
+      className={cn("flex flex-col gap-3 rounded-[14px] px-2.5 py-3", pp.table)}
+      aria-busy="true"
+      data-testid="pepites-ranking-loading"
+    >
+      {Array.from({ length: 8 }, (_, index) => (
+        <div key={index} className="flex items-center gap-2">
+          <span className="size-5 rounded-full bg-[color:var(--pepites-seg-empty)]" />
+          <span className="h-2.5 flex-1 rounded-full bg-[color:var(--pepites-seg-empty)]" />
+          <span className="h-2.5 w-10 rounded-full bg-[color:var(--pepites-seg-empty)]" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** A column heading that sorts: the active one is ink, with ▼. */
+function SortHeading({
+  sort,
+  active,
+  onSort,
+  children,
+}: {
+  sort: RankingSort;
+  active: RankingSort;
+  onSort: (sort: RankingSort) => void;
+  children: string;
+}) {
+  const on = sort === active;
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(sort)}
+      aria-pressed={on}
+      data-testid={`pepites-sort-${sort}`}
+      className={cn(
+        "min-h-[28px] text-end text-[8px] leading-none ltr:tracking-[0.08em]",
+        pp.monoStrong,
+        on ? pp.ink : pp.muted,
+        ui.focus,
+      )}
+    >
+      {children}
+      {on ? <span aria-hidden> ▼</span> : null}
+    </button>
+  );
+}
+
+function RankingTable({
+  rows,
+  sort,
+  onSort,
+}: {
+  rows: readonly RankingRow[];
+  sort: RankingSort;
+  onSort: (sort: RankingSort) => void;
+}) {
+  const { t, lang } = useI18n();
+  return (
+    <div className={cn("rounded-[14px] px-2.5 py-1", pp.table)}>
+      <div className={cn(COLUMNS, "border-b py-1", pp.divider)}>
+        <span className={cn(pp.monoStrong, pp.muted, "text-[8px]")} aria-hidden>
+          #
+        </span>
+        <span className={cn(pp.monoStrong, pp.muted, "text-[8px] ltr:tracking-[0.08em]")}>
+          {t("pepites.table.player")}
+        </span>
+        <SortHeading sort="minutes" active={sort} onSort={onSort}>
+          {t("pepites.table.minutes")}
+        </SortHeading>
+        <SortHeading sort="goals" active={sort} onSort={onSort}>
+          {t("pepites.table.goals_assists")}
+        </SortHeading>
+        <SortHeading sort="rating" active={sort} onSort={onSort}>
+          {t("pepites.table.rating")}
+        </SortHeading>
+        <SortHeading sort="score" active={sort} onSort={onSort}>
+          {t("pepites.table.score")}
+        </SortHeading>
+      </div>
+      <ol data-testid="pepites-ranking">
+        {rows.map((row) => (
+          <li
+            key={row.id}
+            data-testid="pepites-ranking-row"
+            className={cn("border-b last:border-b-0", pp.divider)}
+          >
+            <Link
+              to="/pepites/joueur/$playerId"
+              params={{ playerId: row.id }}
+              className={cn(COLUMNS, "py-1.5", ui.focus)}
+            >
+              <bdi className={cn(pp.mono, pp.muted, "text-[10px]")}>
+                {row.rank === null ? "–" : formatNumber(row.rank, lang)}
+              </bdi>
+              <span className="flex min-w-0 items-center gap-1.5">
+                <Headshot player={row} size={20} />
+                <span className={cn(pp.bold, pp.text, "truncate text-[11px]")}>
+                  <bdi>{row.name}</bdi>
+                </span>
+                {row.positionGroup ? (
+                  <span className="sr-only">{positionLabel(row.positionGroup, t)}</span>
+                ) : null}
+              </span>
+              <bdi className={cn(pp.bold, pp.text, "text-end text-[11px]")}>
+                <span className="sr-only">{t("pepites.sort.minutes")} </span>
+                {formatCount(row.minutes, lang)}
+              </bdi>
+              <bdi dir="ltr" className={cn(pp.bold, pp.text, "text-end text-[11px]")}>
+                <span className="sr-only">{t("pepites.table.goals_assists_long")} </span>
+                {`${formatNumber(row.goals, lang)}/${formatNumber(row.assists, lang)}`}
+              </bdi>
+              <span className="flex justify-end">
+                <RatingChip rating={row.ratingAvg} />
+              </span>
+              <bdi className={cn(pp.display, pp.ink, "text-end text-[14px]")}>
+                {scoreText(row.score, lang, t("pepites.unranked"))}
+              </bdi>
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
