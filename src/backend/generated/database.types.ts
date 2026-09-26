@@ -472,6 +472,14 @@ export type Database = {
         Args: { p_intake_path: string; p_player_id: string; p_release: Json }
         Returns: Json
       }
+      admin_player_photo_upload_paths: {
+        Args: {
+          p_document_extension: string
+          p_photo_extension: string
+          p_player_id: string
+        }
+        Returns: Json
+      }
       admin_reject_request: {
         Args: {
           p_approval_id: string
@@ -1586,6 +1594,10 @@ export type Database = {
         Args: { p_calculation_version: number; p_gameweek_id: string }
         Returns: Json
       }
+      service_complete_photo_deletion: {
+        Args: { p_deletion_id: string }
+        Returns: Json
+      }
       service_create_user_notification: {
         Args: {
           p_deep_link_entity_id?: string
@@ -1726,12 +1738,23 @@ export type Database = {
         Args: { p_observation_id: string }
         Returns: Json
       }
+      service_player_photo_work: { Args: { p_limit?: number }; Returns: Json }
       service_prepare_next_fantasy_gameweek: {
         Args: {
           p_batch_size?: number
           p_calculation_version: number
           p_next_gameweek_id: string
           p_previous_gameweek_id: string
+        }
+        Returns: Json
+      }
+      service_publish_player_photo: {
+        Args: {
+          p_height: number
+          p_mime_type: string
+          p_public_path: string
+          p_release_id: string
+          p_width: number
         }
         Returns: Json
       }

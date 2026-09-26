@@ -367,7 +367,7 @@ create function pg_temp.unguarded_api_functions() returns text[] language sql st
          'admin_pepites_edition_update', 'admin_pepites_edition_withdraw',
          'admin_pepites_email_report', 'admin_pepites_overview', 'admin_player_attribute_correct',
          'admin_player_photo_approve', 'admin_player_photo_reject', 'admin_player_photo_revoke',
-         'admin_player_photo_submit',
+         'admin_player_photo_submit', 'admin_player_photo_upload_paths',
          'editorial_convert_imported_story', 'editorial_create_draft', 'editorial_get_article',
          'editorial_list_revisions', 'editorial_list_stories', 'editorial_register_media',
          'editorial_schedule_health', 'editorial_set_placement', 'editorial_soft_delete_story',

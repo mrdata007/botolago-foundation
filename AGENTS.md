@@ -127,6 +127,10 @@ null, false);` before a write that touches fixtures or notifications, and
    `app_private.pepites_job_log`. Pause it by name for a write that touches
    those tables, then set it back to `true`:
    `select cron.alter_job((select jobid from cron.job where jobname = 'pepites-history-prune'), active := false);`
+   The Pépites photo job (`scripts/backend/pepites-photo-job.ts`) has no
+   schedule; it runs only when someone runs it, and it writes to the
+   database (published photos, deletions) and to storage. Treat a run as a
+   write.
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 
