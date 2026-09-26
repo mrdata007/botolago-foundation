@@ -1173,7 +1173,37 @@ with its pgTAP file.
    - **The admin report** is `app_private.pepites_email_report`; its
      `pepites.publish` wrapper comes with migration 8.
 8. `pepites_api`: access check, version pointer, read and admin functions,
-   permissions, grants.
+   permissions, grants. **Built** locally as `20260926120000_pepites_api.sql`
+   (45 pgTAP assertions in `pepites_api.test.sql`, including the access
+   matrix: 7 public reads × `off`, `staff`, `public` × visitor, signed-in
+   fan, staff). Settled while building:
+   - **Staff preview** is decided by the full staff check
+     (`admin_assert_permission('pepites.edit')`: principal, role, verified
+     factor, aal2), run without raising. The public reads are listed in the
+     ordinary-account step-up test as named exceptions, like
+     `predictions_round`: they return the same published data to everyone,
+     and the caller only decides whether staff may preview.
+   - **Versions.** An edition id, or `season_final:<run>`. A version resolves
+     only to a published, superseded or withdrawn edition, or an activated
+     season_final run; a draft's id answers "not found". The 2025-26 final
+     ranking is activated once by the operator:
+     `select app_private.pepites_activate_season_final('<run id>');`
+   - **Pointer states.** `delayed` when the season's newest open edition is
+     between 2 minutes and 24 hours past its time; `countdown` when it is
+     scheduled and not yet due; `current` otherwise.
+   - **Withdrawn.** The home and edition reads return the edition with its
+     status and reason and no entries; the ranking of a withdrawn version
+     answers "not found"; the pointer falls back to the previous published
+     edition.
+   - **Player pages** exist only for players in the version's pool. Dates of
+     birth are not returned (age only); a stored "unknown" foot counts as
+     missing.
+   - **Admin actions** use the staff principal as the actor and write the
+     admin audit trail (`pepites.edition_*`, `football.player_attribute_correct`,
+     `football.player_photo_*`, `football.data_desk_close`). Photo approval and
+     rejection, and closing a data-desk issue, were added to the §6.2 list;
+     fans' error reports go through `api.report_pepites_data_issue`
+     (signed in, step-up, Pépites visible).
 
 Local proof for each: `bun run backend:migrations:check`, `backend:db:reset`,
 `backend:db:test`, `backend:db:lint` and `backend:types:check`. CI

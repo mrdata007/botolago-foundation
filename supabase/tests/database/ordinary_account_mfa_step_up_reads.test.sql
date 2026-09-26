@@ -360,6 +360,14 @@ create function pg_temp.unguarded_api_functions() returns text[] language sql st
          'admin_revoke_role', 'admin_save_fantasy_prize', 'admin_save_fantasy_prize_settings',
          'admin_set_fantasy_prize_flag', 'admin_set_fantasy_prize_winner_status',
          'admin_shorten_role_expiry', 'admin_suspend_staff', 'admin_unban_user',
+         -- Pépites and its data desk (20260926120000).
+         'admin_data_desk_close', 'admin_data_desk_list', 'admin_pepites_edition_correct',
+         'admin_pepites_edition_get', 'admin_pepites_edition_publish_now',
+         'admin_pepites_edition_schedule', 'admin_pepites_edition_unschedule',
+         'admin_pepites_edition_update', 'admin_pepites_edition_withdraw',
+         'admin_pepites_email_report', 'admin_pepites_overview', 'admin_player_attribute_correct',
+         'admin_player_photo_approve', 'admin_player_photo_reject', 'admin_player_photo_revoke',
+         'admin_player_photo_submit',
          'editorial_convert_imported_story', 'editorial_create_draft', 'editorial_get_article',
          'editorial_list_revisions', 'editorial_list_stories', 'editorial_register_media',
          'editorial_schedule_health', 'editorial_set_placement', 'editorial_soft_delete_story',
@@ -373,7 +381,13 @@ create function pg_temp.unguarded_api_functions() returns text[] language sql st
        -- decides whether a tester may see Pronostics while it is testers-only.
        'predictions_round',
        -- Sign-out: someone who abandons the challenge must still be able to leave.
-       'record_session_revocation')
+       'record_session_revocation',
+       -- Pépites reads (20260926120000): the same published data for everyone.
+       -- The caller only decides whether staff may preview while Pépites is
+       -- staff-only, through the staff check, which itself demands a verified
+       -- factor and aal2; nothing returned is the caller's.
+       'pepites_edition', 'pepites_home', 'pepites_methodology', 'pepites_player',
+       'pepites_player_matches', 'pepites_ranking', 'pepites_version')
 $check$;
 -- Views and tables: every api view a signed-in session can read carries the
 -- step-up, whether or not its text names the caller (a security_invoker view
@@ -391,14 +405,14 @@ create function pg_temp.unguarded_api_relations() returns text[] language sql st
     and c.relname not in ('live_fixture_updates')
 $check$;
 select extensions.is(pg_temp.unguarded_api_functions(), '{}'::text[],
-  'every api function that reads the caller runs the step-up, is a named staff RPC, or is one of the three named exceptions');
+  'every api function that reads the caller runs the step-up, is a named staff RPC, or is one of the named exceptions');
 select extensions.is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'api'
      and p.prosrc ~ 'perform app_private\.assert_mfa_step_up\(\);'
      and has_function_privilege('authenticated', p.oid, 'execute')),
-  54,
-  'the 50 functions of point 5, the two account-deletion functions and the two Pépites weekly email functions (20260926110100) run it'
+  55,
+  'the 50 functions of point 5, the two account-deletion functions, the two Pépites weekly email functions (20260926110100) and the Pépites error report (20260926120000) run it'
 );
 select extensions.is(pg_temp.unguarded_api_relations(), '{}'::text[],
   'every api view a signed-in session can read refuses without the step-up, and no other api relation but live scores is readable');
