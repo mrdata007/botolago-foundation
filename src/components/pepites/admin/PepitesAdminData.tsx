@@ -34,6 +34,9 @@ import {
   UiTextarea,
 } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+import { pepitesService } from "@/services/pepites";
+
+import { pp } from "../pepites-design";
 
 import { adminDateTime, describeAdminError, problemLabel } from "./admin-format";
 
@@ -81,6 +84,9 @@ export function PepitesAdminData({
   const [player, setPlayer] = useState<{ id: string; name: string; field?: string } | null>(null);
   return (
     <div className="grid gap-4">
+      <p className={cn(pp.monoStrong, pp.muted, "text-[10px] ltr:tracking-[0.1em]")}>
+        {rtl ? "جواهر / مكتب البيانات" : "Pépites / Data desk"}
+      </p>
       <UiSegmented<DataTab>
         value={tab}
         onChange={onTabChange}
@@ -115,6 +121,107 @@ export function PepitesAdminData({
 
 /* --------------------------------------------------------------- the desk */
 
+/** Figma A2's tiles: how complete the data is, from the current run's coverage. */
+function DeskCoverage({ rtl }: { rtl: boolean }) {
+  const query = useQuery({
+    queryKey: ["pepites-admin", "coverage"],
+    queryFn: ({ signal }) => pepitesService.methodology(signal),
+  });
+  const data = query.data;
+  const coverage = data?.available ? data.coverage : null;
+  if (!coverage) return null;
+  const known = coverage.poolSize - coverage.noDateOfBirth;
+  const tiles: Array<{ label: string; value: string; share: number | null }> = [
+    {
+      label: rtl ? "تواريخ الميلاد" : "Dates de naissance",
+      value: `${known} / ${coverage.poolSize}`,
+      share: coverage.poolSize > 0 ? known / coverage.poolSize : null,
+    },
+    {
+      label: rtl ? "المصنَّفون" : "Classés",
+      value: `${coverage.ranked} / ${coverage.eligible}`,
+      share: coverage.eligible > 0 ? coverage.ranked / coverage.eligible : null,
+    },
+    {
+      label: rtl ? "التنقيط" : "Notes de match",
+      value: shareText(coverage.ratingCoverage),
+      share: coverage.ratingCoverage,
+    },
+    {
+      label: rtl ? "القدم المفضلة" : "Pied fort",
+      value: shareText(coverage.footCoverage),
+      share: coverage.footCoverage,
+    },
+    {
+      label: rtl ? "الطول" : "Taille",
+      value: shareText(coverage.heightCoverage),
+      share: coverage.heightCoverage,
+    },
+  ];
+  return (
+    <ul
+      className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+      data-testid="admin-pepites-coverage"
+    >
+      {tiles.map((tile) => {
+        const pct = tile.share === null ? null : Math.round(tile.share * 100);
+        return (
+          <li key={tile.label} className={cn("grid gap-2 rounded-[12px] p-3", pp.card)}>
+            <span className={cn(pp.monoStrong, pp.muted, "text-[8px] ltr:tracking-[0.1em]")}>
+              {tile.label}
+            </span>
+            <bdi className={cn(pp.display, pp.ink, "text-[22px]")}>{tile.value}</bdi>
+            <span className="h-1 overflow-hidden rounded-full bg-[color:var(--pepites-seg-empty)]">
+              <span
+                className="block h-full rounded-full"
+                style={{
+                  width: `${Math.max(2, pct ?? 0)}%`,
+                  backgroundColor:
+                    pct === null
+                      ? "#dfe3ee"
+                      : pct >= 80
+                        ? "#27b36b"
+                        : pct >= 40
+                          ? "#f0a020"
+                          : "#e5484d",
+                }}
+              />
+            </span>
+            <span className={cn(pp.mono, pp.muted, "text-end text-[8px]")}>
+              {pct === null ? "—" : `${pct} %`}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function shareText(share: number | null): string {
+  return share === null ? "—" : `${Math.round(share * 100)} %`;
+}
+
+function kindLabel(kind: DataDeskIssue["kind"], rtl: boolean): string {
+  const labels: Record<DataDeskIssue["kind"], [string, string]> = {
+    missing: ["Manquant", "ناقص"],
+    conflict: ["Conflit entre sources", "تعارض بين المصادر"],
+    reported: ["Signalé par un fan", "بلاغ من قارئ"],
+    unlinked: ["Non relié", "غير مربوط"],
+  };
+  return labels[kind][rtl ? 1 : 0];
+}
+
+function issueMessage(issue: DataDeskIssue): string | null {
+  return issue.details &&
+    typeof issue.details === "object" &&
+    "message" in (issue.details as object)
+    ? String((issue.details as { message?: unknown }).message ?? "") || null
+    : null;
+}
+
+const DESK_COLUMNS =
+  "grid grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1.6fr)_minmax(0,0.8fr)_auto] items-center gap-3";
+
 function DeskList({
   rtl,
   canCorrect,
@@ -126,83 +233,159 @@ function DeskList({
 }) {
   const [status, setStatus] = useState<"open" | "resolved" | "dismissed" | "all">("open");
   const [kind, setKind] = useState<"" | "missing" | "conflict" | "reported" | "unlinked">("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const query = useQuery({
     queryKey: KEYS.desk(status, kind),
     queryFn: () => pepitesAdmin.dataDesk({ status, kind: kind || null, offset: 0 }),
   });
+  const issues = query.data?.issues ?? [];
+  const selected = issues.find((issue) => issue.id === selectedId) ?? null;
+  const head = cn(pp.monoStrong, pp.muted, "text-[8px] ltr:tracking-[0.1em]");
   return (
-    <section className="grid gap-3" aria-labelledby="admin-pepites-desk">
-      <AdminSectionHeading id="admin-pepites-desk">
-        {rtl ? "مكتب البيانات" : "Bureau des données"}
-      </AdminSectionHeading>
-      <AdminFilterChips
-        label={rtl ? "الحالة" : "État"}
-        value={status}
-        onSelect={setStatus}
-        data-testid="admin-pepites-desk-status"
-        options={[
-          { value: "open", label: rtl ? "مفتوحة" : "Ouverts" },
-          { value: "resolved", label: rtl ? "محلولة" : "Résolus" },
-          { value: "dismissed", label: rtl ? "مستبعدة" : "Écartés" },
-          { value: "all", label: rtl ? "الكل" : "Tous" },
-        ]}
-      />
-      <AdminFilterChips
-        label={rtl ? "النوع" : "Type"}
-        value={kind}
-        onSelect={setKind}
-        data-testid="admin-pepites-desk-kind"
-        options={[
-          { value: "", label: rtl ? "الكل" : "Tous" },
-          { value: "reported", label: rtl ? "بلاغات القراء" : "Signalés par les fans" },
-          { value: "missing", label: rtl ? "ناقص" : "Manquants" },
-          { value: "conflict", label: rtl ? "تعارض" : "Conflits" },
-          { value: "unlinked", label: rtl ? "غير مربوط" : "Non reliés" },
-        ]}
-      />
+    <section className="grid gap-4" aria-labelledby="admin-pepites-desk">
+      <DeskCoverage rtl={rtl} />
+      <div className="flex flex-wrap gap-4">
+        <AdminFilterChips
+          label={rtl ? "الحالة" : "État"}
+          value={status}
+          onSelect={setStatus}
+          data-testid="admin-pepites-desk-status"
+          options={[
+            { value: "open", label: rtl ? "مفتوحة" : "Ouverts" },
+            { value: "resolved", label: rtl ? "محلولة" : "Résolus" },
+            { value: "dismissed", label: rtl ? "مستبعدة" : "Écartés" },
+            { value: "all", label: rtl ? "الكل" : "Tous" },
+          ]}
+        />
+        <AdminFilterChips
+          label={rtl ? "النوع" : "Type"}
+          value={kind}
+          onSelect={setKind}
+          data-testid="admin-pepites-desk-kind"
+          options={[
+            { value: "", label: rtl ? "الكل" : "Tous" },
+            { value: "reported", label: rtl ? "بلاغات القراء" : "Signalés par les fans" },
+            { value: "missing", label: rtl ? "ناقص" : "Manquants" },
+            { value: "conflict", label: rtl ? "تعارض" : "Conflits" },
+            { value: "unlinked", label: rtl ? "غير مربوط" : "Non reliés" },
+          ]}
+        />
+      </div>
       {query.isPending ? <AdminSkeletonList rows={3} /> : null}
       {query.isError ? (
         <AdminNotice tone="alert" role="alert">
           {describeAdminError(query.error, rtl)}
         </AdminNotice>
       ) : null}
-      {query.data && query.data.issues.length === 0 ? (
-        <AdminEmptyState testId="admin-pepites-desk-empty">
-          {rtl ? "لا شيء هنا." : "Rien ici."}
-        </AdminEmptyState>
-      ) : null}
-      {query.data && query.data.issues.length > 0 ? (
-        <>
-          <p className={cn(ui.text.meta, ui.tone.muted)}>
-            {rtl ? `المجموع: ${query.data.total}` : `Total : ${query.data.total}`}
-          </p>
-          <ul className="grid gap-2" data-testid="admin-pepites-desk-list">
-            {query.data.issues.map((issue) => (
-              <DeskIssue
-                key={issue.id}
-                issue={issue}
-                rtl={rtl}
-                canCorrect={canCorrect}
-                onCorrect={onCorrect}
-              />
-            ))}
-          </ul>
-        </>
+      {query.data ? (
+        <div className={cn("grid gap-4", selected && "lg:grid-cols-[minmax(0,1fr)_320px]")}>
+          <div className={cn("grid content-start gap-2 rounded-[14px] p-4", pp.card)}>
+            <h3
+              id="admin-pepites-desk"
+              className={cn(pp.monoStrong, pp.muted, "text-[9px] ltr:tracking-[0.1em]")}
+            >
+              {rtl ? "للتصحيح" : "À corriger"} ·{" "}
+              {rtl ? `المجموع ${query.data.total}` : `${query.data.total} au total`}
+            </h3>
+            {issues.length === 0 ? (
+              <AdminEmptyState testId="admin-pepites-desk-empty">
+                {rtl ? "لا شيء هنا." : "Rien ici."}
+              </AdminEmptyState>
+            ) : (
+              <>
+                <div
+                  className={cn(DESK_COLUMNS, "border-b pb-2 max-md:hidden", pp.divider)}
+                  aria-hidden
+                >
+                  <span className={head}>{rtl ? "اللاعب" : "Joueur"}</span>
+                  <span className={head}>{rtl ? "الحقل" : "Champ"}</span>
+                  <span className={head}>{rtl ? "المشكلة" : "Problème"}</span>
+                  <span className={head}>{rtl ? "المصدر" : "Source"}</span>
+                  <span className="w-[84px]" />
+                </div>
+                <ul className="grid" data-testid="admin-pepites-desk-list">
+                  {issues.map((issue) => (
+                    <li
+                      key={issue.id}
+                      data-testid="admin-pepites-issue"
+                      className={cn(
+                        DESK_COLUMNS,
+                        "border-b py-2.5 last:border-b-0 max-md:grid-cols-1 max-md:gap-1",
+                        pp.divider,
+                      )}
+                    >
+                      <span className={cn(pp.bold, pp.text, "truncate text-[13px]")}>
+                        {issue.playerName ?? issue.entityId}
+                      </span>
+                      <span className={cn(pp.text, "text-[12px]")}>
+                        {attributeLabel(issue.field, rtl)}
+                      </span>
+                      <span className="grid text-[12px] text-[#b86e00]">
+                        <span>{kindLabel(issue.kind, rtl)}</span>
+                        {issueMessage(issue) ? (
+                          <span className={pp.text}>{issueMessage(issue)}</span>
+                        ) : null}
+                      </span>
+                      <span className={cn(pp.mono, pp.muted, "text-[10px]")}>
+                        {issue.source} · {adminDateTime(issue.createdAt, rtl)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(issue.id === selectedId ? null : issue.id)}
+                        aria-pressed={issue.id === selectedId}
+                        className={cn(
+                          "inline-flex min-h-[34px] w-[84px] items-center justify-center rounded-full border text-[12px]",
+                          pp.line,
+                          pp.ink,
+                          pp.heavy,
+                          issue.id === selectedId && "bg-[color:var(--pepites-ink)] text-white",
+                          ui.focus,
+                        )}
+                        data-testid="admin-pepites-issue-open"
+                      >
+                        {issue.status === "open"
+                          ? rtl
+                            ? "تصحيح"
+                            : "Corriger"
+                          : rtl
+                            ? "عرض"
+                            : "Voir"}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+          {selected ? (
+            <DeskIssuePanel
+              key={selected.id}
+              issue={selected}
+              rtl={rtl}
+              canCorrect={canCorrect}
+              onCorrect={onCorrect}
+              onClosed={() => setSelectedId(null)}
+            />
+          ) : null}
+        </div>
       ) : null}
     </section>
   );
 }
 
-function DeskIssue({
+/** The side panel of Figma A2: the issue, then correct the field or close it with a note. */
+function DeskIssuePanel({
   issue,
   rtl,
   canCorrect,
   onCorrect,
+  onClosed,
 }: {
   issue: DataDeskIssue;
   rtl: boolean;
   canCorrect: boolean;
   onCorrect: (issue: DataDeskIssue) => void;
+  onClosed: () => void;
 }) {
   const queryClient = useQueryClient();
   const [note, setNote] = useState("");
@@ -210,46 +393,49 @@ function DeskIssue({
   const close = useMutation({
     mutationFn: (status: "resolved" | "dismissed") =>
       pepitesAdmin.closeIssue(issue.id, status, note.trim()),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pepites-admin", "desk"] }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["pepites-admin", "desk"] });
+      onClosed();
+    },
     onError: (failure) => setError(describeAdminError(failure, rtl)),
   });
-  const message =
-    issue.details && typeof issue.details === "object" && "message" in (issue.details as object)
-      ? String((issue.details as { message?: unknown }).message ?? "")
-      : null;
+  const message = issueMessage(issue);
   return (
-    <li className={cn("grid gap-2 p-3", ADMIN_PANEL_CLASS)} data-testid="admin-pepites-issue">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={ui.text.bodyStrong}>{issue.playerName ?? issue.entityId}</span>
-        <UiBadge tone="outline">{attributeLabel(issue.field, rtl)}</UiBadge>
-        <UiBadge
-          tone={
-            issue.kind === "reported" ? "action" : issue.kind === "conflict" ? "caution" : "neutral"
-          }
-        >
-          <AdminDatum mono={false}>{issue.kind}</AdminDatum>
-        </UiBadge>
-        <span className={cn("ms-auto", ui.text.meta, ui.tone.muted)}>
-          {adminDateTime(issue.createdAt, rtl)}
-        </span>
-      </div>
-      {message ? <p className={ui.text.secondary}>{message}</p> : null}
+    <aside
+      className={cn("grid content-start gap-3 rounded-[14px] p-4", pp.card)}
+      data-testid="admin-pepites-issue-panel"
+    >
+      <p className={cn(pp.monoStrong, pp.muted, "text-[9px] ltr:tracking-[0.1em]")}>
+        {rtl ? "تصحيح" : "Corriger"}
+      </p>
+      <h4 className={cn(pp.heavy, pp.text, "text-[16px]")}>
+        {issue.playerName ?? issue.entityId} · {attributeLabel(issue.field, rtl)}
+      </h4>
+      <p className="text-[12px] text-[#b86e00]">{kindLabel(issue.kind, rtl)}</p>
+      {message ? <p className={cn(pp.text, "text-[13px]")}>{message}</p> : null}
       {issue.resolutionNote ? (
-        <p className={cn(ui.text.meta, ui.tone.muted)}>
+        <p className={cn(pp.muted, "text-[12px]")}>
           {rtl ? "ملاحظة: " : "Note : "}
           {issue.resolutionNote}
         </p>
       ) : null}
       {issue.status === "open" && canCorrect ? (
-        <div className="grid gap-2">
-          {(CORRECTABLE_ATTRIBUTES as readonly string[]).includes(issue.field) ? (
+        <>
+          {(CORRECTABLE_ATTRIBUTES as readonly string[]).includes(issue.field) ||
+          issue.field === "photo" ? (
             <UiButton
               size="sm"
               variant="ink"
               className="justify-self-start"
               onClick={() => onCorrect(issue)}
             >
-              {rtl ? "تصحيح هذا الحقل" : "Corriger ce champ"}
+              {issue.field === "photo"
+                ? rtl
+                  ? "رفع صورة مرخّصة"
+                  : "Déposer une photo licenciée"
+                : rtl
+                  ? "تصحيح هذا الحقل"
+                  : "Corriger ce champ"}
             </UiButton>
           ) : null}
           <UiInput
@@ -277,9 +463,9 @@ function DeskIssue({
             </UiButton>
           </div>
           {error ? <AdminNotice tone="alert">{error}</AdminNotice> : null}
-        </div>
+        </>
       ) : null}
-    </li>
+    </aside>
   );
 }
 

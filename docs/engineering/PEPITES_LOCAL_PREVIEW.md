@@ -10,7 +10,11 @@ server started with the preview switch. Two ways to look at it:
 VITE_PEPITES_PREVIEW=1 bun run dev -- --host 127.0.0.1 --port 4173
 ```
 
-Then open `http://127.0.0.1:4173/pepites`. The data is the sample set in
+Then open `http://127.0.0.1:4173/pepites`. The screens follow the Figma
+file "BotolaGO — Pépites (UI)": the Top 10 (`/pepites`), the full ranking
+(`/pepites/classement`), a player (`/pepites/joueur/…`, and `?onglet=matchs`),
+the Monday reveal as a story (`/pepites/revelation`, N°10 to N°1), the method
+(`/pepites/methode`) and a past week (`/pepites/semaine/14`). The data is the sample set in
 `src/backend/pepites/mock-repository.ts`: fictional players ("Joueur
 exemple"), real club names, weeks 14 to 16. The browser tests use it
 (`tests/e2e/pepites.e2e.ts`, also in CI) and drive the reveal from the

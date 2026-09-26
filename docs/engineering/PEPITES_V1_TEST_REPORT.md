@@ -12,10 +12,43 @@ was deployed, no email was sent, and no paid plan was touched.
 | `claude/pepites-weekly-email`  | Opt-in weekly email, unsubscribe topic, 24 h retry safety, quota |
 | `claude/pepites-api`           | Access by mode, version pointer, public reads, admin functions   |
 | `claude/pepites-photo-job`     | Photo derivatives and deletions (storage job)                    |
-| `claude/pepites-frontend`      | The pages in French and Arabic, reveal, email switch, share      |
-| `claude/pepites-admin`         | Staff screens, admin lists migration, photo upload function      |
+| `claude/pepites-frontend`      | The pages in French and Arabic after the Figma, reveal, share    |
+| `claude/pepites-admin`         | Staff screens (Figma A1/A2), admin lists, photo upload function  |
 
 Out of v1, as agreed: compare, player follows, detailed match statistics.
+
+## Design: the Figma file "BotolaGO — Pépites (UI)"
+
+The screens follow the Figma file (pages Mobile · FR, Mobile · AR,
+Components, Share images, Admin), in French and Arabic:
+
+| Figma frame                                       | Where                                      |
+| ------------------------------------------------- | ------------------------------------------ |
+| 01 Accueil                                        | `/pepites`                                 |
+| 02 Classement complet                             | `/pepites/classement`                      |
+| 03 Joueur — Aperçu, 04 — Matchs                   | `/pepites/joueur/…`, `?onglet=matchs`      |
+| 06 Révélation du lundi                            | `/pepites/revelation` (new)                |
+| 07 Story 9:16, feed Top 10 1080×1350              | the share buttons (player page, Top 10)    |
+| S1 chargement, S2 avant la 1re édition, S3 erreur | every page                                 |
+| A1 Sélection hebdo, A2 Data desk                  | `/admin/pepites`, `/admin/pepites/donnees` |
+
+Not built, on purpose: 05 Comparer, S4 (sign-in sheet to follow a player),
+the "Suivre" and "+ Fantasy" buttons and the "Stats" tab (all out of v1),
+and the "Percée" card on the player page: the data has no minutes by half
+season. The desktop frames (D1, D2) are not drawn separately: on a wide
+screen the pages keep the mobile column, centred.
+
+Two things the Figma decided that the owner should confirm:
+
+- **The Arabic name is "جواهر"** (and "أفضل 10"), as the Arabic frames write
+  it; the pages, the share images and the navigation use it. The weekly
+  email (`claude/pepites-weekly-email`) still says "Pépites" and "توب 10" in
+  Arabic: change it too, or keep the Latin name in the email.
+- **Both editor's lines are required.** The staff screen now refuses to
+  schedule a Top 10 until each player has a French and an Arabic line (A1
+  marks them "obligatoire"). The database does not check it yet; a
+  `reasons_missing` problem in the editions functions would make it the
+  database's rule too.
 
 ## Gate A conditions
 
@@ -35,18 +68,19 @@ Out of v1, as agreed: compare, player follows, detailed match statistics.
 
 ## Results
 
-| Check                                                                                                                                                                     | Result                                                                                                                                                               |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| pgTAP, whole suite on a fresh database                                                                                                                                    | 103 files, 3 247 assertions, all pass                                                                                                                                |
-| `supabase db lint` (app, api, app_private)                                                                                                                                | no errors                                                                                                                                                            |
-| Real-database scripts (editions concurrency, weekly email end to end)                                                                                                     | 9 pass                                                                                                                                                               |
-| Unit tests (`bun run test`)                                                                                                                                               | 0 failures (3 791 pass, 12 skipped, measured on the combined tree)                                                                                                   |
-| Typecheck, lint, i18n gate, generated types, migrations check, build                                                                                                      | pass                                                                                                                                                                 |
-| `tests/e2e/pepites.e2e.ts` (sample data, 9 tests)                                                                                                                         | pass, 4 runs (3 on a reused server, 1 as CI runs it)                                                                                                                 |
-| `tests/e2e/pepites.local-stack.e2e.ts` (real local database, 2 tests)                                                                                                     | pass, 3 runs in a row, reseeded before each                                                                                                                          |
-| Existing CI browser suites with Pépites off                                                                                                                               | 58 pass, 1 skipped                                                                                                                                                   |
-| Upload function unit tests                                                                                                                                                | 5 pass                                                                                                                                                               |
-| Visual check at 390 px, French and Arabic (home, ranking, player with photo and with silhouette, matches, method, share sheet and image, admin editor, data desk, photos) | nothing off screen, no browser errors; fixed on the way: Latin names in Arabic lines ("Achraf V."), the score direction ("90 /100"), the detailed position as a word |
+| Check                                                                                                                                                                                           | Result                                                                                                                                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| pgTAP, whole suite on a fresh database                                                                                                                                                          | 103 files, 3 247 assertions, all pass                                                                                                                                                                                                                          |
+| `supabase db lint` (app, api, app_private)                                                                                                                                                      | no errors                                                                                                                                                                                                                                                      |
+| Real-database scripts (editions concurrency, weekly email end to end)                                                                                                                           | 9 pass                                                                                                                                                                                                                                                         |
+| Unit tests (`bun run test`)                                                                                                                                                                     | 0 failures (3 813 pass, 12 skipped, on the combined tree after the redesign)                                                                                                                                                                                   |
+| Typecheck, lint, i18n gate, generated types, migrations check, secrets check, build                                                                                                             | pass                                                                                                                                                                                                                                                           |
+| `tests/e2e/pepites.e2e.ts` (sample data, 13 tests, including the reveal story and the 1080×1920 story card)                                                                                     | pass in 3 full runs, each on a freshly started server; in a fourth, the first test timed out waiting for the server's very first page, before any Pépites check                                                                                                |
+| `tests/e2e/pepites.local-stack.e2e.ts` (real local database, 2 tests)                                                                                                                           | pass in 9 of 10 runs, reseeded before each, the last on the redesigned staff screens; the failed run's log was not kept, and the 7 runs after it passed                                                                                                        |
+| Existing CI browser suites with Pépites off                                                                                                                                                     | 58 pass, 1 skipped                                                                                                                                                                                                                                             |
+| Production bundle smoke test                                                                                                                                                                    | 3 pass                                                                                                                                                                                                                                                         |
+| Upload function unit tests                                                                                                                                                                      | 5 pass                                                                                                                                                                                                                                                         |
+| Visual check at 390 px, French and Arabic, against the Figma frames (home, ranking, player with photo and with the club shirt, matches, reveal, method, share images, staff screens at 1440 px) | nothing off screen, no browser errors; fixed on the way: Arabic labels falling back to a monospace face, the score on the wrong side in Arabic, the ring mirrored, gradients drawn flat in the share images, Arabic text in the pictures not set right to left |
 
 The local preview runs the real ranking engine on a fictional season: 128
 players ranked as of round 6, the same counts on every reseed.
@@ -96,8 +130,11 @@ whether Pépites is open.
 8. Launch: `PEPITES_ENABLED` and `PEPITES_PROMOTED` to `true` in code, then
    mode `public`.
 9. The load test, and the versioned JSON routes if it fails.
-10. A native review of the Arabic copy, and the brand name in Arabic
-    ("Pépites" is kept in Latin script, as in the email).
+10. A native review of the Arabic copy, and the Arabic name: "جواهر" in
+    the pages (the Figma's), "Pépites" in the weekly email; one of the two
+    should change.
+11. Confirm that both editor's lines are required (the staff screen
+    enforces it; the database does not yet).
 
 Follow-ups (not blocking): a server-rendered `og:image` for link previews;
 the declared foreign key from confirmations to observations (§13).

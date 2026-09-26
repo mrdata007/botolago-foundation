@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Plus, X } from "lucide-react";
+import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { useEffect, useReducer, useState, type ReactNode } from "react";
 
 import {
@@ -24,8 +24,10 @@ import {
   destructiveActionReducer,
   IDLE_DESTRUCTIVE_ACTION,
 } from "@/components/admin/destructive-action";
-import { ui, UiBadge, UiButton, UiIconButton, UiInput, UiTextarea } from "@/components/ui-kit";
+import { ui, UiBadge, UiButton, UiIconButton, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+
+import { pp } from "../pepites-design";
 
 import {
   addEntry,
@@ -113,6 +115,19 @@ export function PepitesAdminEditions({
 
   return (
     <div className="grid gap-6">
+      <p className={cn(pp.monoStrong, pp.muted, "text-[10px] ltr:tracking-[0.1em]")}>
+        {rtl ? "جواهر / الاختيار الأسبوعي" : "Pépites / Sélection hebdo"}
+      </p>
+      {selected ? (
+        <EditionEditor
+          key={selected}
+          editionId={selected}
+          rtl={rtl}
+          canPublish={canPublish}
+          publishLocalTime={data.settings?.publishLocalTime ?? "20:00"}
+          onOpen={onSelect}
+        />
+      ) : null}
       <OverviewCards data={data} rtl={rtl} />
       {data.notices.length > 0 ? (
         <section className="grid gap-2" aria-labelledby="admin-pepites-notices">
@@ -182,17 +197,6 @@ export function PepitesAdminEditions({
           </ul>
         )}
       </section>
-
-      {selected ? (
-        <EditionEditor
-          key={selected}
-          editionId={selected}
-          rtl={rtl}
-          canPublish={canPublish}
-          publishLocalTime={data.settings?.publishLocalTime ?? "20:00"}
-          onOpen={onSelect}
-        />
-      ) : null}
 
       <section className="grid gap-2" aria-labelledby="admin-pepites-runs">
         <AdminSectionHeading id="admin-pepites-runs">
@@ -390,25 +394,90 @@ function EditionEditor({
   };
   const setReason = (index: number, field: "reasonFr" | "reasonAr", value: string) =>
     update(draft.map((entry, i) => (i === index ? { ...entry, [field]: value } : entry)));
-  const chosen = new Set(draft.map((entry) => entry.playerId));
+  const missingLines = draft.reduce(
+    (count, entry) => count + (entry.reasonFr.trim() ? 0 : 1) + (entry.reasonAr.trim() ? 0 : 1),
+    0,
+  );
+  const scheduleTime = edition.scheduledFor ? adminDateTime(edition.scheduledFor, rtl) : null;
+  const inTop = new Set(draft.map((entry) => entry.playerId));
+  const toggle = (player: (typeof shortlist)[number]) => {
+    if (inTop.has(player.id)) {
+      update(draft.filter((entry) => entry.playerId !== player.id));
+      return;
+    }
+    update(
+      addEntry(draft, {
+        playerId: player.id,
+        name: player.name,
+        team: player.team ? player.team.shortName[rtl ? "ar" : "fr"] : null,
+        computedRank: player.rank,
+        reasonFr: "",
+        reasonAr: "",
+      }),
+    );
+  };
 
   return (
     <section
-      className={cn("grid gap-4 p-4", ui.surface.card)}
+      className="grid gap-4"
       aria-labelledby="admin-pepites-editor-title"
       data-testid="admin-pepites-editor"
     >
-      <header className="flex flex-wrap items-center gap-2">
-        <h3 id="admin-pepites-editor-title" className={ui.display.section}>
-          {rtl ? `الأسبوع ${edition.week}` : `Semaine ${edition.week}`}
-        </h3>
-        <UiBadge tone={statusTone(edition.status)}>{statusLabel(edition.status, rtl)}</UiBadge>
-        {edition.scheduledFor ? (
-          <span className={cn(ui.text.meta, ui.tone.muted)}>
-            {isDraftLabel(edition.status, rtl)}
-            {adminDateTime(edition.scheduledFor, rtl)}
-          </span>
-        ) : null}
+      {/* Figma A1: title, state and the week's facts; the actions at the end. */}
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="grid gap-2">
+          <h3
+            id="admin-pepites-editor-title"
+            className={cn(pp.display, pp.ink, "text-[28px] leading-[1.15]")}
+          >
+            {rtl ? `اختيار الأسبوع ${edition.week}` : `Sélection de la semaine ${edition.week}`}
+          </h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[11px]",
+                pp.heavy,
+                edition.status === "draft" && "bg-[#fff3d6] text-[#8a5a00]",
+                edition.status === "scheduled" && "bg-[#e3ecff] text-[color:var(--pepites-ink)]",
+                edition.status === "published" && "bg-[#dcf5e8] text-[#17663f]",
+                (edition.status === "superseded" || edition.status === "withdrawn") &&
+                  "bg-[color:var(--pepites-seg-empty)] text-[color:var(--pepites-muted)]",
+              )}
+            >
+              {statusLabel(edition.status, rtl)}
+            </span>
+            <span className={cn(pp.mono, pp.muted, "text-[10px] ltr:tracking-[0.04em]")}>
+              {[
+                rtl
+                  ? `الأسبوع ${edition.week} · الجولة ${edition.round}`
+                  : `Semaine ${edition.week} · journée ${edition.round}`,
+                scheduleTime ? `${isDraftLabel(edition.status, rtl)}${scheduleTime}` : null,
+                edition.publishedAt
+                  ? `${rtl ? "نُشرت: " : "publiée : "}${adminDateTime(edition.publishedAt, rtl)}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href="/pepites"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "inline-flex min-h-[40px] items-center rounded-full border px-5 text-[13px]",
+              pp.line,
+              pp.ink,
+              pp.heavy,
+              "bg-[color:var(--pepites-card)]",
+              ui.focus,
+            )}
+          >
+            {rtl ? "معاينة" : "Aperçu"}
+          </a>
+        </div>
       </header>
 
       {message ? (
@@ -437,178 +506,253 @@ function EditionEditor({
         </AdminField>
       ) : null}
 
-      <ol className="grid gap-2" data-testid="admin-pepites-entries">
-        {draft.map((entry, index) => (
-          <li
-            key={entry.playerId}
-            className={cn("grid gap-2 p-3", ADMIN_PANEL_CLASS)}
-            data-testid="admin-pepites-entry"
+      <div className={cn("grid gap-4", isDraft && "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]")}>
+        {isDraft ? (
+          <section
+            className={cn("grid content-start gap-3 rounded-[14px] p-4", pp.card)}
+            aria-labelledby="admin-pepites-shortlist-title"
           >
-            <div className="flex items-center gap-2">
-              <span className={cn(ui.score.row, "w-7 text-center tabular-nums")}>{index + 1}</span>
-              <div className="min-w-0 flex-1">
-                <p className={cn(ui.text.bodyStrong, "truncate")}>{entry.name}</p>
-                <p className={cn(ui.text.meta, ui.tone.muted)}>
-                  {[
-                    entry.team,
-                    entry.computedRank
-                      ? rtl
-                        ? `المحسوب #${entry.computedRank}`
-                        : `calculé #${entry.computedRank}`
-                      : null,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              </div>
-              {isDraft ? (
-                <span className="flex gap-1">
-                  <UiIconButton
-                    aria-label={rtl ? "إلى الأعلى" : "Monter"}
-                    disabled={index === 0 || busy}
-                    onClick={() => update(moveEntry(draft, index, -1))}
-                  >
-                    <ArrowUp aria-hidden />
-                  </UiIconButton>
-                  <UiIconButton
-                    aria-label={rtl ? "إلى الأسفل" : "Descendre"}
-                    disabled={index === draft.length - 1 || busy}
-                    onClick={() => update(moveEntry(draft, index, 1))}
-                  >
-                    <ArrowDown aria-hidden />
-                  </UiIconButton>
-                  <UiIconButton
-                    aria-label={rtl ? "إزالة" : "Retirer de la liste"}
-                    disabled={busy}
-                    onClick={() => update(draft.filter((_, i) => i !== index))}
-                  >
-                    <X aria-hidden />
-                  </UiIconButton>
-                </span>
-              ) : null}
+            <div>
+              <h4
+                id="admin-pepites-shortlist-title"
+                className={cn(pp.monoStrong, pp.muted, "text-[9px] ltr:tracking-[0.1em]")}
+              >
+                {rtl ? "مقترحات الحساب" : "Proposés par le calcul"}
+              </h4>
+              <p className={cn(pp.muted, "text-[12px]")}>
+                {rtl ? "حدّد للإضافة إلى أفضل 10" : "Cochez pour ajouter au Top 10"}
+              </p>
             </div>
+            <ul className="grid gap-1" data-testid="admin-pepites-shortlist">
+              {shortlist.map((player) => {
+                const checked = inTop.has(player.id);
+                const dropped = !checked && player.rank !== null && player.rank <= TOP_SIZE;
+                return (
+                  <li key={player.id}>
+                    <label
+                      className={cn(
+                        "grid cursor-pointer grid-cols-[20px_22px_minmax(0,1fr)_auto] items-center gap-2 rounded-[8px] px-1 py-1",
+                        "hover:bg-[color:var(--pepites-page)]",
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={busy || (!checked && draft.length >= TOP_SIZE)}
+                        onChange={() => toggle(player)}
+                        className="size-4 accent-[color:var(--pepites-ink)]"
+                      />
+                      <span className={cn(pp.mono, pp.muted, "text-[10px]")}>
+                        {player.rank ?? "—"}
+                      </span>
+                      <span className="min-w-0">
+                        <span className={cn(pp.bold, pp.text, "block truncate text-[13px]")}>
+                          {player.name}
+                        </span>
+                        <span className={cn(pp.mono, pp.muted, "block text-[9px]")}>
+                          {[
+                            player.team ? player.team.shortName[rtl ? "ar" : "fr"] : null,
+                            `${player.minutes}′`,
+                            `${player.goals}+${player.assists}`,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                          {dropped ? (
+                            <span className="ms-2 text-[#b86e00] normal-case">
+                              {rtl ? "↓ سحبه المحرر" : "↓ retiré par l'éditeur"}
+                            </span>
+                          ) : null}
+                        </span>
+                      </span>
+                      <span className={cn(pp.display, pp.ink, "text-[16px]")}>
+                        {player.score === null ? "—" : Math.round(player.score)}
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ) : null}
+
+        <section
+          className={cn("grid content-start gap-3 rounded-[14px] p-4", pp.card)}
+          aria-labelledby="admin-pepites-top-title"
+        >
+          <div>
+            <h4
+              id="admin-pepites-top-title"
+              className={cn(pp.monoStrong, pp.muted, "text-[9px] ltr:tracking-[0.1em]")}
+            >
+              {rtl ? "أفضل 10" : "Top 10"}
+              {scheduleTime ? ` · ${scheduleTime}` : ""}
+            </h4>
             {isDraft ? (
-              <div className="grid gap-2 sm:grid-cols-2">
-                <UiTextarea
-                  label={rtl ? "السطر بالفرنسية" : "Ligne en français"}
-                  value={entry.reasonFr}
-                  maxLength={280}
-                  rows={2}
-                  dir="ltr"
-                  onChange={(event) => setReason(index, "reasonFr", event.target.value)}
-                />
-                <UiTextarea
-                  label={rtl ? "السطر بالعربية" : "Ligne en arabe"}
-                  value={entry.reasonAr}
-                  maxLength={280}
-                  rows={2}
-                  dir="rtl"
-                  onChange={(event) => setReason(index, "reasonAr", event.target.value)}
-                />
-              </div>
-            ) : entry.reasonFr || entry.reasonAr ? (
-              <p className={cn(ui.text.meta, ui.tone.muted)}>
-                {rtl ? entry.reasonAr : entry.reasonFr}
+              <p className={cn(pp.muted, "text-[12px]")}>
+                {rtl
+                  ? "رتّب بالسهمين · جملة بالفرنسية وأخرى بالعربية لكل لاعب"
+                  : "Réordonnez avec les flèches · une phrase en français et en arabe par joueur"}
               </p>
             ) : null}
-          </li>
-        ))}
-      </ol>
-
-      {isDraft ? (
-        <>
-          <div className="flex flex-wrap gap-2">
-            <UiButton
-              variant="ink"
-              size="sm"
-              disabled={!dirty || busy}
-              onClick={() =>
-                run.mutate(() => pepitesAdmin.saveEntries(editionId, entriesPayload(draft)))
-              }
-              data-testid="admin-pepites-save"
-            >
-              {rtl ? "حفظ الترتيب والأسطر" : "Enregistrer l'ordre et les lignes"}
-            </UiButton>
-            {dirty ? (
-              <UiButton variant="soft" size="sm" disabled={busy} onClick={() => void refresh()}>
-                {rtl ? "إلغاء التغييرات" : "Annuler les changements"}
-              </UiButton>
-            ) : null}
           </div>
-
-          <details className={cn("p-3", ADMIN_PANEL_CLASS)}>
-            <summary className={cn(ui.text.bodyStrong, "cursor-pointer")}>
-              {rtl
-                ? "القائمة المختصرة (أفضل 20 محسوبين)"
-                : "Présélection (les 20 premiers du calcul)"}
-            </summary>
-            <ul className="mt-2 grid gap-1" data-testid="admin-pepites-shortlist">
-              {shortlist.map((player) => (
-                <li key={player.id} className="flex items-center gap-2">
-                  <span className={cn(ui.text.meta, "w-8 tabular-nums")}>
-                    #{player.rank ?? "—"}
-                  </span>
-                  <span className={cn(ui.text.meta, "min-w-0 flex-1 truncate")}>
-                    {player.name}
-                    <span className={ui.tone.muted}>
-                      {" "}
-                      · {player.score ?? "—"} · {player.minutes}′ · {player.goals}+{player.assists}
-                    </span>
-                  </span>
-                  <UiButton
-                    size="sm"
-                    variant="soft"
-                    disabled={chosen.has(player.id) || draft.length >= TOP_SIZE || busy}
-                    onClick={() =>
-                      update(
-                        addEntry(draft, {
-                          playerId: player.id,
-                          name: player.name,
-                          team: player.team ? player.team.shortName[rtl ? "ar" : "fr"] : null,
-                          computedRank: player.rank,
-                          reasonFr: "",
-                          reasonAr: "",
-                        }),
-                      )
-                    }
-                  >
-                    <Plus className="h-4 w-4" aria-hidden />
-                    {rtl ? "إضافة" : "Ajouter"}
-                  </UiButton>
-                </li>
-              ))}
-            </ul>
-          </details>
-
-          {canPublish ? (
-            <div className="grid gap-2 sm:max-w-sm">
-              <UiInput
-                type="datetime-local"
-                label={rtl ? "النشر (بتوقيت المغرب)" : "Publication (heure du Maroc)"}
-                value={scheduleAt}
-                onChange={(event) => setScheduleAt(event.target.value)}
-                data-testid="admin-pepites-schedule-at"
-              />
-              <UiButton
-                variant="gradient"
-                size="sm"
-                disabled={busy || dirty || problems.length > 0 || !casablancaLocalToIso(scheduleAt)}
-                onClick={() => {
-                  const at = casablancaLocalToIso(scheduleAt);
-                  if (at) run.mutate(() => pepitesAdmin.schedule(editionId, at));
-                }}
-                data-testid="admin-pepites-schedule"
+          <ol className="grid gap-2" data-testid="admin-pepites-entries">
+            {draft.map((entry, index) => (
+              <li
+                key={entry.playerId}
+                className="grid gap-2 rounded-[12px] border border-[color:var(--pepites-line)] bg-[color:var(--pepites-page)] p-3"
+                data-testid="admin-pepites-entry"
               >
-                {rtl ? "برمجة النشر" : "Programmer la publication"}
+                <div className="flex items-center gap-3">
+                  <span className={cn(pp.display, pp.ink, "w-6 text-center text-[20px]")}>
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className={cn(pp.heavy, pp.text, "truncate text-[14px]")}>{entry.name}</p>
+                    <p className={cn(pp.mono, pp.muted, "text-[9px]")}>
+                      {[
+                        entry.team,
+                        entry.computedRank
+                          ? rtl
+                            ? `المحسوب #${entry.computedRank}`
+                            : `calculé #${entry.computedRank}`
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  </div>
+                  {isDraft ? (
+                    <span className="flex gap-1">
+                      <UiIconButton
+                        variant="ghost"
+                        aria-label={rtl ? "إلى الأعلى" : "Monter"}
+                        disabled={index === 0 || busy}
+                        onClick={() => update(moveEntry(draft, index, -1))}
+                      >
+                        <ArrowUp aria-hidden />
+                      </UiIconButton>
+                      <UiIconButton
+                        variant="ghost"
+                        aria-label={rtl ? "إلى الأسفل" : "Descendre"}
+                        disabled={index === draft.length - 1 || busy}
+                        onClick={() => update(moveEntry(draft, index, 1))}
+                      >
+                        <ArrowDown aria-hidden />
+                      </UiIconButton>
+                      <UiIconButton
+                        variant="ghost"
+                        aria-label={rtl ? "إزالة" : "Retirer de la liste"}
+                        disabled={busy}
+                        onClick={() => update(draft.filter((_, i) => i !== index))}
+                      >
+                        <X aria-hidden />
+                      </UiIconButton>
+                    </span>
+                  ) : null}
+                </div>
+                {isDraft ? (
+                  <div className="grid gap-2">
+                    <ReasonField
+                      tag="FR"
+                      label={rtl ? "السطر بالفرنسية" : "Ligne en français"}
+                      placeholder={
+                        rtl ? "جملة بالفرنسية (إلزامية)" : "Phrase en français (obligatoire)"
+                      }
+                      value={entry.reasonFr}
+                      dir="ltr"
+                      onChange={(value) => setReason(index, "reasonFr", value)}
+                    />
+                    <ReasonField
+                      tag="AR"
+                      label={rtl ? "السطر بالعربية" : "Ligne en arabe"}
+                      placeholder="الجملة بالعربية (إلزامية)"
+                      value={entry.reasonAr}
+                      dir="rtl"
+                      onChange={(value) => setReason(index, "reasonAr", value)}
+                    />
+                  </div>
+                ) : entry.reasonFr || entry.reasonAr ? (
+                  <p className={cn(pp.muted, "text-[12px]")}>
+                    {rtl ? entry.reasonAr : entry.reasonFr}
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+          {isDraft ? (
+            <div className="flex flex-wrap gap-2">
+              <UiButton
+                variant="ink"
+                size="sm"
+                disabled={!dirty || busy}
+                onClick={() =>
+                  run.mutate(() => pepitesAdmin.saveEntries(editionId, entriesPayload(draft)))
+                }
+                data-testid="admin-pepites-save"
+              >
+                {rtl ? "حفظ الترتيب والأسطر" : "Enregistrer l'ordre et les lignes"}
               </UiButton>
               {dirty ? (
-                <p className={cn(ui.text.meta, ui.tone.muted)}>
-                  {rtl ? "احفظ التغييرات أولًا." : "Enregistrez d'abord vos changements."}
-                </p>
+                <UiButton variant="soft" size="sm" disabled={busy} onClick={() => void refresh()}>
+                  {rtl ? "إلغاء التغييرات" : "Annuler les changements"}
+                </UiButton>
               ) : null}
             </div>
           ) : null}
-        </>
+        </section>
+      </div>
+
+      {isDraft && canPublish ? (
+        <div
+          className={cn("flex flex-wrap items-end gap-3 rounded-[14px] p-4", pp.card)}
+          data-testid="admin-pepites-schedule-panel"
+        >
+          <UiInput
+            type="datetime-local"
+            label={rtl ? "النشر (بتوقيت المغرب)" : "Publication (heure du Maroc)"}
+            value={scheduleAt}
+            onChange={(event) => setScheduleAt(event.target.value)}
+            data-testid="admin-pepites-schedule-at"
+            className="min-w-[14rem]"
+          />
+          <button
+            type="button"
+            disabled={
+              busy ||
+              dirty ||
+              problems.length > 0 ||
+              missingLines > 0 ||
+              !casablancaLocalToIso(scheduleAt)
+            }
+            onClick={() => {
+              const at = casablancaLocalToIso(scheduleAt);
+              if (at) run.mutate(() => pepitesAdmin.schedule(editionId, at));
+            }}
+            data-testid="admin-pepites-schedule"
+            className={cn(
+              "inline-flex min-h-[40px] items-center rounded-full px-5 text-[13px] text-[#0d1f4a] disabled:opacity-45",
+              "bg-[linear-gradient(to_right,#5de39b,#7fd6f0_45%,#7c6cf0)]",
+              pp.heavy,
+              ui.focus,
+            )}
+          >
+            {rtl ? "برمجة النشر" : "Programmer la publication"}
+          </button>
+          <p
+            className={cn(pp.muted, "basis-full text-[12px]")}
+            data-testid="admin-pepites-schedule-hint"
+          >
+            {dirty
+              ? rtl
+                ? "احفظ التغييرات أولًا."
+                : "Enregistrez d'abord vos changements."
+              : missingLines > 0
+                ? rtl
+                  ? `ينقص ${missingLines} سطرًا: جملة بالفرنسية وأخرى بالعربية لكل لاعب.`
+                  : `Il manque ${missingLines} phrase(s) : une en français et une en arabe par joueur.`
+                : null}
+          </p>
+        </div>
       ) : null}
 
       {edition.status === "scheduled" && canPublish ? (
@@ -710,6 +854,52 @@ function EditionEditor({
         </details>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * One of an entry's two lines (Figma A1): a small FR/AR tag and the field,
+ * outlined in orange while it is empty, since both lines are required.
+ */
+function ReasonField({
+  tag,
+  label,
+  placeholder,
+  value,
+  dir,
+  onChange,
+}: {
+  tag: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  dir: "ltr" | "rtl";
+  onChange: (value: string) => void;
+}) {
+  const empty = !value.trim();
+  return (
+    <div className="grid grid-cols-[22px_minmax(0,1fr)] items-center gap-2">
+      <span className={cn(pp.monoStrong, pp.muted, "text-[8px]")} aria-hidden>
+        {tag}
+      </span>
+      <textarea
+        aria-label={label}
+        placeholder={placeholder}
+        value={value}
+        maxLength={280}
+        rows={1}
+        dir={dir}
+        onChange={(event) => onChange(event.target.value)}
+        className={cn(
+          "min-h-[38px] w-full resize-y rounded-[10px] border bg-[color:var(--pepites-card)] px-3 py-2 text-[13px]",
+          pp.text,
+          empty
+            ? "border-[#f0a020] placeholder:text-[#b86e00]"
+            : "border-[color:var(--pepites-line)]",
+          ui.focus,
+        )}
+      />
+    </div>
   );
 }
 

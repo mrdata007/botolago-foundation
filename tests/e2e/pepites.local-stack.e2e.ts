@@ -119,6 +119,22 @@ test("the week 7 draft: edited, late, published; an open page shows it without a
   await entries.nth(0).getByLabel("Ligne en arabe").fill("قائد الدفاع هذا الأسبوع.");
   await staff.getByTestId("admin-pepites-save").click();
   await expect(staff.getByText("C'est fait.")).toBeVisible();
+  // Both lines are required for every player (Figma A1): scheduling waits
+  // until all twenty are written.
+  await expect(staff.getByTestId("admin-pepites-schedule")).toBeDisabled();
+  await expect(staff.getByTestId("admin-pepites-schedule-hint")).toContainText("Il manque 18");
+  for (let index = 1; index < 10; index += 1) {
+    await entries
+      .nth(index)
+      .getByLabel("Ligne en français")
+      .fill(`Ligne ${index + 1}.`);
+    await entries
+      .nth(index)
+      .getByLabel("Ligne en arabe")
+      .fill(`السطر ${index + 1}.`);
+  }
+  await staff.getByTestId("admin-pepites-save").click();
+  await expect(staff.getByText("C'est fait.")).toBeVisible();
 
   // Scheduled three minutes in the past: the edition is late at once.
   await staff.getByTestId("admin-pepites-schedule-at").fill(casablancaLocal(-3));
