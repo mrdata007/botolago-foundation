@@ -80,12 +80,18 @@ confirmed.
 - Licensed photos, or the silhouette.
 - Share images of published editions.
 - The weekly email, only to accounts that opt in explicitly (§5.4).
+- Added at the owner's request (2026-09-26), as the Figma draws them: the
+  compare page ("face à face"); player follows (signed-in accounts, with the
+  follower count and a "Suivis" filter on the ranking); the Stats tab and the
+  Percée card, from the match data SportsMonks already gives (minutes,
+  starts, goals, assists, cards, clean sheets, saves, goals conceded, own
+  goals, penalties); "＋ Fantasy", which opens the Fantasy transfer screen
+  with the player chosen; and the desktop layouts D1 and D2.
 
 **Moved to v1.1, once v1 ranks correctly and repeatably:**
 
-- Compare.
-- Player follows, and "Choix des fans" on the home page.
-- Detailed match stats from a second provider (§8).
+- "Choix des fans" on the home page.
+- Detailed match stats from a second provider (§8): shots, passes, duels.
 
 **Not planned:**
 
@@ -942,28 +948,31 @@ One check decides access for every public function and route:
 Every function returns `jsonb`. Localised text comes back in both languages
 and the client picks one.
 
-| Function                                                                                                                           | Returns                                                                                                                                                                             |
-| ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `api.pepites_version()`                                                                                                            | The version pointer (§7): `version`, `state` (`current`, `countdown` or `delayed`), `next_reveal_at`. Reads two rows; cheap.                                                        |
-| `api.pepites_home(p_version text)`                                                                                                 | For that version: the edition (entries with player card fields, movement from `previous_edition_id`), its week and round, and `source`: `edition` or `previous_season`.             |
-| `api.pepites_ranking(p_version text, p_position text, p_max_age int, p_team_id uuid, p_sort text, p_limit int ≤ 50, p_offset int)` | Rows from the version's run plus total count. `p_sort` is one of `score`, `minutes`, `goals`, `assists`, `rating`, `form`, `ga90`.                                                  |
-| `api.pepites_player(p_version text, p_player_id uuid)`                                                                             | Identity and attributes, with a `missing` list; `photo` (null unless approved, §3.3); the version run's row (score, rank, components, percentiles, per90, flags); editions entered. |
-| `api.pepites_player_matches(p_player_id uuid, p_limit int ≤ 20)`                                                                   | Date, home/away, opponent, score, minutes, started, goals, assists, cards, rating.                                                                                                  |
-| `api.pepites_edition(p_season_id uuid, p_week int)`                                                                                | A published, withdrawn or superseded edition, with its status and, when corrected, the correction's link.                                                                           |
-| `api.pepites_methodology()`                                                                                                        | The public methodology and coverage: pool size, players excluded for no date of birth, rating coverage, foot and height coverage.                                                   |
-| `api.admin_pepites_edition_get(p_edition_id)`                                                                                      | Edition, entries and the run's top 20 shortlist. Protected by `pepites.edit`.                                                                                                       |
-| `api.admin_pepites_edition_update(p_edition_id, p_entries jsonb)`                                                                  | Order and reasons, `draft` only. Protected by `pepites.edit`.                                                                                                                       |
-| `api.admin_pepites_edition_schedule(p_edition_id, p_at)`                                                                           | `draft → scheduled`. Protected by `pepites.publish` (recent auth).                                                                                                                  |
-| `api.admin_pepites_edition_unschedule(p_edition_id)`                                                                               | `scheduled → draft`. Protected by `pepites.publish` (recent auth).                                                                                                                  |
-| `api.admin_pepites_edition_publish_now(p_edition_id)`                                                                              | Calls `pepites_publish_edition` on a `scheduled` edition. Protected by `pepites.publish` (recent auth).                                                                             |
-| `api.set_my_pepites_weekly_email(p_enabled boolean)`                                                                               | Signed-in only. Opt in or out (§5.4).                                                                                                                                               |
-| `api.my_pepites_weekly_email()`                                                                                                    | Signed-in only. The preference and whether email can reach the account (§5.4).                                                                                                      |
-| `api.admin_pepites_edition_correct(p_edition_id)`                                                                                  | Creates the correction draft. Protected by `pepites.publish` (recent auth).                                                                                                         |
-| `api.admin_pepites_edition_withdraw(p_edition_id, p_reason)`                                                                       | Protected by `pepites.publish` (recent auth).                                                                                                                                       |
-| `api.admin_data_desk_list(p_filters)`                                                                                              | Protected by `football.read_operations`.                                                                                                                                            |
-| `api.admin_player_attribute_correct(p_player_id, p_attribute, p_value, p_source_note)`                                             | Protected by `football.correct`.                                                                                                                                                    |
-| `api.admin_player_photo_submit(p_player_id, p_intake_path, p_release jsonb)`                                                       | Records the release; approval runs the checks in §3.3. Protected by `football.correct`.                                                                                             |
-| `api.admin_player_photo_revoke(p_release_id, p_reason)`                                                                            | Protected by `football.correct` (recent auth).                                                                                                                                      |
+| Function                                                                                                                                                                  | Returns                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api.pepites_version()`                                                                                                                                                   | The version pointer (§7): `version`, `state` (`current`, `countdown` or `delayed`), `next_reveal_at`. Reads two rows; cheap.                                                                                                                                                                                        |
+| `api.pepites_home(p_version text)`                                                                                                                                        | For that version: the edition (entries with player card fields, movement from `previous_edition_id`), its week and round, and `source`: `edition` or `previous_season`.                                                                                                                                             |
+| `api.pepites_ranking(p_version text, p_position text, p_max_age int, p_team_id uuid, p_sort text, p_limit int ≤ 50, p_offset int, p_min_minutes int, p_followed boolean)` | Rows from the version's run plus total count. `p_sort` is one of `score`, `minutes`, `goals`, `assists`, `rating`, `form`, `ga90`. `p_min_minutes` keeps players at or above it; `p_followed` keeps the reader's follows. Each row carries its second-half minutes; the first page lists the ranked players' clubs. |
+| `api.pepites_player_stats(p_version text, p_player_id uuid)`                                                                                                              | For that version's run: the season figures (the run's appearances with the provider's cards, clean sheets, saves, goals conceded, own goals and penalties), the minutes split (the run's rounds in two halves, with the club's matches in each) and the player's id in the open Fantasy game, if it lists them.     |
+| `api.pepites_follow_state(p_player_id uuid)`                                                                                                                              | The follower count, and `following` for a signed-in account (null for a visitor or a guest).                                                                                                                                                                                                                        |
+| `api.pepites_set_follow(p_player_id uuid, p_follow boolean)`                                                                                                              | Signed-in accounts only, not guests; 100 follows at most. Idempotent.                                                                                                                                                                                                                                               |
+| `api.pepites_player(p_version text, p_player_id uuid)`                                                                                                                    | Identity and attributes, with a `missing` list; `photo` (null unless approved, §3.3); the version run's row (score, rank, components, percentiles, per90, flags); editions entered.                                                                                                                                 |
+| `api.pepites_player_matches(p_player_id uuid, p_limit int ≤ 20)`                                                                                                          | Date, home/away, opponent, score, minutes, started, goals, assists, cards, rating.                                                                                                                                                                                                                                  |
+| `api.pepites_edition(p_season_id uuid, p_week int)`                                                                                                                       | A published, withdrawn or superseded edition, with its status and, when corrected, the correction's link.                                                                                                                                                                                                           |
+| `api.pepites_methodology()`                                                                                                                                               | The public methodology and coverage: pool size, players excluded for no date of birth, rating coverage, foot and height coverage.                                                                                                                                                                                   |
+| `api.admin_pepites_edition_get(p_edition_id)`                                                                                                                             | Edition, entries and the run's top 20 shortlist. Protected by `pepites.edit`.                                                                                                                                                                                                                                       |
+| `api.admin_pepites_edition_update(p_edition_id, p_entries jsonb)`                                                                                                         | Order and reasons, `draft` only. Protected by `pepites.edit`.                                                                                                                                                                                                                                                       |
+| `api.admin_pepites_edition_schedule(p_edition_id, p_at)`                                                                                                                  | `draft → scheduled`. Protected by `pepites.publish` (recent auth).                                                                                                                                                                                                                                                  |
+| `api.admin_pepites_edition_unschedule(p_edition_id)`                                                                                                                      | `scheduled → draft`. Protected by `pepites.publish` (recent auth).                                                                                                                                                                                                                                                  |
+| `api.admin_pepites_edition_publish_now(p_edition_id)`                                                                                                                     | Calls `pepites_publish_edition` on a `scheduled` edition. Protected by `pepites.publish` (recent auth).                                                                                                                                                                                                             |
+| `api.set_my_pepites_weekly_email(p_enabled boolean)`                                                                                                                      | Signed-in only. Opt in or out (§5.4).                                                                                                                                                                                                                                                                               |
+| `api.my_pepites_weekly_email()`                                                                                                                                           | Signed-in only. The preference and whether email can reach the account (§5.4).                                                                                                                                                                                                                                      |
+| `api.admin_pepites_edition_correct(p_edition_id)`                                                                                                                         | Creates the correction draft. Protected by `pepites.publish` (recent auth).                                                                                                                                                                                                                                         |
+| `api.admin_pepites_edition_withdraw(p_edition_id, p_reason)`                                                                                                              | Protected by `pepites.publish` (recent auth).                                                                                                                                                                                                                                                                       |
+| `api.admin_data_desk_list(p_filters)`                                                                                                                                     | Protected by `football.read_operations`.                                                                                                                                                                                                                                                                            |
+| `api.admin_player_attribute_correct(p_player_id, p_attribute, p_value, p_source_note)`                                                                                    | Protected by `football.correct`.                                                                                                                                                                                                                                                                                    |
+| `api.admin_player_photo_submit(p_player_id, p_intake_path, p_release jsonb)`                                                                                              | Records the release; approval runs the checks in §3.3. Protected by `football.correct`.                                                                                                                                                                                                                             |
+| `api.admin_player_photo_revoke(p_release_id, p_reason)`                                                                                                                   | Protected by `football.correct` (recent auth).                                                                                                                                                                                                                                                                      |
 
 New permissions:
 
@@ -1221,6 +1230,97 @@ with its pgTAP file.
      rejection, and closing a data-desk issue, were added to the §6.2 list;
      fans' error reports go through `api.report_pepites_data_issue`
      (signed in, step-up, Pépites visible).
+
+9. **The app** (no migration). **Built** on `claude/pepites-frontend`:
+   `/pepites` (the weekly Top 10), `/pepites/classement`,
+   `/pepites/joueur/$playerId`, `/pepites/semaine/$n` and `/pepites/methode`,
+   in French and Arabic, with the weekly email switch, the error report and
+   the share image. Settled while building:
+   - **Off everywhere but a local preview.** `PEPITES_ENABLED` is true only
+     in a development server started with `VITE_PEPITES_PREVIEW=1`
+     (docs/engineering/PEPITES_LOCAL_PREVIEW.md); every build redirects the
+     routes Home. `PEPITES_PROMOTED` (the same switch for now) gives Pépites
+     Profil's slot in the bar and on the home page, moves Profile to an icon
+     in the top bar, lists the three main pages in the sitemap, and lets a
+     public page be indexed.
+   - **Readers.** The server renders every page as an anonymous reader, so a
+     staff preview never enters a cached page; staff see it once their own
+     session reads it. Every query key names its reader, and an anonymous
+     key never keeps a preview (`forViewer`), so signing out forgets it.
+   - **Cache headers (§7).** `public, s-maxage=10` for the current pages and
+     `s-maxage=300` for a week's page, only when the anonymous answer is
+     public; `private, no-store` otherwise; a failed read is the 503 of
+     `page-availability.ts`.
+   - **The reveal.** Every page reads the pointer again as it opens (a page
+     cached for 10 seconds may hold an older one) and on focus; during
+     `countdown` and `delayed` it polls on §7's timers, and the lists keep
+     the current version on screen until the new one has loaded.
+   - **Data comes through the RPCs**, not yet through the versioned JSON
+     routes of §7: the pages call `api.pepites_*` from the server render and
+     the browser. The versioned routes (or the static JSON fallback) are
+     part of the load test in the launch list.
+   - **Share images are drawn in the browser** (`share-image.ts`, 1080 ×
+     1350 PNG): the browser has the page's fonts and shapes Arabic, and the
+     server has no image library. They use a photo only when its release
+     allows social use (the same test as `player_photo_for(…, 'share')`),
+     else the silhouette; a withdrawn edition has none. A server-rendered
+     `og:image` for link previews is a follow-up.
+   - **Photos** load from the release's public path through the site's
+     media resolver; any photo that fails to load shows the silhouette.
+   - **Numbers and names in Arabic.** Latin digits, no space inside a
+     number, a score reads "90 /100" left to right, and Latin player names
+     are isolated so "Achraf V." keeps its dot on the right side.
+   - Tests: unit tests for the helpers, the repository, the search params,
+     the headers and the flags; `tests/e2e/pepites.e2e.ts` (sample data, in
+     CI with the preview switch): the reveal from countdown to delayed to
+     published without a reload, and the reader journeys, in both languages
+     at 390 px.
+
+10. `pepites_admin_lists`: the two lists the staff screens need.
+    **Built** locally as `20260926140000_pepites_admin_lists.sql` (15 pgTAP
+    assertions in `pepites_admin_lists.test.sql`):
+    `api.admin_player_photo_releases(p_status)` (`football.correct`), with
+    the rights problems an approval would find today, and
+    `api.admin_pepites_player_search(p_query)` (`football.read_operations`),
+    a literal name match (the reader's `%` and `_` are text). Both run the
+    step-up first; the step-up count in
+    `ordinary_account_mfa_step_up_reads.test.sql` goes from 72 to 74 and its
+    checked lists are unchanged.
+11. **The staff screens** (no migration). **Built** on `claude/pepites-admin`,
+    behind the same `PEPITES_ENABLED` switch as the pages:
+    - `/admin/pepites` (`pepites.edit`; publishing actions need
+      `pepites.publish`): mode, publication, the tick and what readers see
+      now; ops notices; the season's editions and runs; the editor of the
+      week in progress: order (up, down, remove, add from the top-20
+      shortlist), a line in French and in Arabic per player, save, schedule
+      in Morocco time, back to draft, publish now (a second press),
+      correction, withdrawal (a motive, in the console's confirm step), the
+      email report, and the edition's history. The mode itself is not
+      changed here: it goes through the reviewed migration path.
+    - `/admin/pepites/donnees` (`football.read_operations`; changes need
+      `football.correct`): the data desk (filters, close with a note, correct
+      the field an issue names), player search with the attributes the desk
+      corrects, the manual correction (a source note of 8 characters or
+      more), and the photo releases (upload, approve, refuse, revoke).
+    - **Photo upload** goes through a new Edge Function,
+      `player-photo-upload`: the buckets are private with no browser write
+      policy, so it stores the original and the signed release with the
+      service role, like `news-media-upload`. It asks
+      `api.admin_player_photo_upload_paths` for the paths **as the caller**
+      before any byte is stored (the database's permission and step-up
+      decide), checks the files by their bytes, then records the release
+      with `api.admin_player_photo_submit`, again as the caller, and removes
+      both files if that is refused. A release starts `pending`; approval is
+      a separate step, and the photo job publishes.
+    - Tests: `supabase/functions/_shared/player-photo-upload.test.ts`, the
+      admin helpers (Morocco time, including the Ramadan offset; the
+      editor's list; the refusals in words), and
+      `tests/e2e/pepites.local-stack.e2e.ts` against the seeded local stack
+      (skipped elsewhere): staff sign in with the second factor, reorder
+      week 7, write a line, schedule it late; a visitor arriving sees last
+      week and the "coming" band, and the new Top 10 without a reload once
+      staff publish; a fan turns the email on and reports an error that the
+      data desk then lists.
 
 Local proof for each: `bun run backend:migrations:check`, `backend:db:reset`,
 `backend:db:test`, `backend:db:lint` and `backend:types:check`. CI

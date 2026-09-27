@@ -4,11 +4,11 @@ import { BrandedText } from "@/components/brand/BrandedText";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CircleDot, Bell, Newspaper, Shield, Target, Trophy, UserRound } from "lucide-react";
+import { CircleDot, Bell, Gem, Newspaper, Shield, Target, Trophy, UserRound } from "lucide-react";
 
 import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
-import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
+import { PEPITES_PROMOTED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCard";
 import { footballService, type FootballSeason } from "@/services/football";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
@@ -55,6 +55,7 @@ import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { siteJsonLd } from "@/lib/structured-data";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { advanceGreetingClock, greetingPart } from "@/lib/greeting";
 import { capitalizeFirst, groupByMatchDay } from "@/lib/match-days";
 import type { Match } from "@/types/domain";
 import stadiumBand from "@/assets/brand/home-band-stadium.webp";
@@ -75,10 +76,16 @@ export const Route = createFileRoute("/")({
     await prefetchForSsr(queryClient, [
       {
         queryKey: ["football", "home-matches", "fr"],
-        queryFn: () => footballService.getHomeMatches("fr"),
+        queryFn: ({ signal }) => footballService.getHomeMatches("fr", signal),
       },
-      { queryKey: ["football", "clubs", "fr"], queryFn: () => footballService.getClubs("fr") },
-      { queryKey: ["football", "seasons", "fr"], queryFn: () => footballService.getSeasons("fr") },
+      {
+        queryKey: ["football", "clubs", "fr"],
+        queryFn: ({ signal }) => footballService.getClubs("fr", signal),
+      },
+      {
+        queryKey: ["football", "seasons", "fr"],
+        queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
+      },
       ...(NEWS_ENABLED
         ? [
             {
@@ -94,11 +101,15 @@ export const Route = createFileRoute("/")({
       await prefetchForSsr(queryClient, [
         {
           queryKey: ["football", "standings", current.id, "fr"],
-          queryFn: () => footballService.getStandings(current, "fr"),
+          queryFn: ({ signal }) => footballService.getStandings(current, "fr", signal),
         },
       ]);
     }
-    return ssrAvailability(queryClient);
+    // The moment the greeting and its date are read at, decided here once:
+    // the browser's first render reads it back from the loader data rather
+    // than its own clock, so both render the same words (as /matches does
+    // with its day).
+    return { ...ssrAvailability(queryClient), renderedAt: Date.now() };
   },
   headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => ({
@@ -120,11 +131,28 @@ export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-function useGreeting() {
+/**
+ * The moment the greeting and its date read: the loader's for the first
+ * render, so the server and the hydrating browser agree, then the browser's
+ * own clock, checked every minute, so a page left open greets the afternoon
+ * after noon. It changes only when the words would.
+ */
+function useGreetingClock(renderedAt: number): Date {
+  const [now, setNow] = useState(() => new Date(renderedAt));
+  useEffect(() => {
+    const follow = () => setNow((current) => advanceGreetingClock(current, new Date()));
+    follow();
+    const timer = setInterval(follow, 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  return now;
+}
+
+function useGreeting(now: Date) {
   const { t } = useI18n();
-  const h = new Date().getHours();
-  if (h < 12) return t("home.greeting_morning");
-  if (h < 18) return t("home.greeting_afternoon");
+  const part = greetingPart(now);
+  if (part === "morning") return t("home.greeting_morning");
+  if (part === "afternoon") return t("home.greeting_afternoon");
   return t("home.greeting_evening");
 }
 
@@ -205,7 +233,9 @@ function HomeContent() {
   const { t, tr, lang } = useI18n();
   const { status } = useAuth();
   const { source, key } = useFantasyDataSource();
-  const greeting = useGreeting();
+  const { renderedAt } = Route.useLoaderData();
+  const now = useGreetingClock(renderedAt);
+  const greeting = useGreeting(now);
   const availability = useFantasyAvailability();
   const fantasyReady = !availability.isError && availability.data?.status === "ready";
   const canCreate = availability.data?.status === "ready" && availability.data.canCreate;
@@ -291,8 +321,8 @@ function HomeContent() {
       day: "numeric",
       month: "long",
     });
-    return fmt.format(new Date());
-  }, [lang]);
+    return fmt.format(now);
+  }, [lang, now]);
 
   const homeMatches = useMemo(() => matchesQ.data?.matches ?? [], [matchesQ.data]);
   const liveMatches = useMemo(() => homeMatches.filter(isInPlay), [homeMatches]);
@@ -612,7 +642,12 @@ function HomeContent() {
           <DiscoveryLink to="/fantasy" icon={Trophy} label={t("nav.fantasy")} />
           {/* News discovery tile — hidden at launch (NEWS_ENABLED). */}
           {NEWS_ENABLED && <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />}
-          <DiscoveryLink to="/profile" icon={UserRound} label={t("nav.profile")} />
+          {/* Pépites, once promoted, takes Profil's tile as it takes its slot in the bar. */}
+          {PEPITES_PROMOTED ? (
+            <DiscoveryLink to="/pepites" icon={Gem} label={t("nav.pepites")} />
+          ) : (
+            <DiscoveryLink to="/profile" icon={UserRound} label={t("nav.profile")} />
+          )}
           {/* A sixth tile makes two rows of three (BG-0146): shown once promoted. */}
           {PRONOSTICS_PROMOTED && (
             <DiscoveryLink to="/pronostics" icon={Target} label={t("home.discover.predictions")} />
@@ -633,7 +668,7 @@ function DiscoveryLink({
   icon: Icon,
   label,
 }: {
-  to: "/matches" | "/clubs" | "/fantasy" | "/news" | "/profile" | "/pronostics";
+  to: "/matches" | "/clubs" | "/fantasy" | "/news" | "/profile" | "/pronostics" | "/pepites";
   icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   label: string;
 }) {
