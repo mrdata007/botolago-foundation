@@ -785,6 +785,29 @@ describe("adaptive fixture integration", () => {
     expect(captainEvents[1]!.events.some((e) => e.category === "assist")).toBeFalse();
     expect(results.teamResults[0]!.captainPoints).toBe(10);
   });
+  it("preserves promotion, substitutions and chips across mixed fixtures", () => {
+    for (const [chipType, expectedScore, expectedCaptain] of [
+      [null, 36, 10],
+      ["triple_captain", 46, 20],
+      ["bench_boost", 42, 10],
+    ] as const) {
+      const doc = adaptive();
+      doc.teams[0]!.chipType = chipType;
+      doc.playerFixtures[7]!.stats.minutes = 0;
+      doc.playerFixtures[7]!.scoringMode = "simple";
+      doc.playerFixtures[12]!.scoringMode = "simple";
+      doc.playerFixtures.push({
+        ...doc.playerFixtures[12]!,
+        fixtureId: id(999),
+        scoringMode: "full",
+        stats: { ...doc.playerFixtures[12]!.stats, assists: 2 },
+      });
+      const result = calculateSnapshotResults(doc).teamResults[0]!;
+      expect(result.captainPoints).toBe(expectedCaptain);
+      expect(result.provisionalScore).toBe(expectedScore);
+      expect(result.substitutions.length).toBe(chipType === "bench_boost" ? 0 : 1);
+    }
+  });
   it("saves provisional player facts while unknown participation blocks lineup finalization", async () => {
     const calls: Call[] = [];
     const doc = adaptive();
