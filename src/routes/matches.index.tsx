@@ -67,7 +67,7 @@ export const Route = createFileRoute("/matches/")({
       await prefetchForSsr(queryClient, [
         {
           queryKey: ["football", "seasons", "fr"],
-          queryFn: () => footballService.getSeasons("fr"),
+          queryFn: ({ signal }) => footballService.getSeasons("fr", signal),
         },
       ]);
       const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);

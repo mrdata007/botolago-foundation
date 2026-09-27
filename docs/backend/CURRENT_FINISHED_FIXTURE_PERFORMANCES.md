@@ -21,7 +21,7 @@ ingestion would, and never calls the ingestion RPC.
 accepted by the manual runner.
 
 The provider request is `GET /v3/football/fixtures/{id}` with
-`include=lineups.details;state;participants;scores` and the following
+`include=lineups.details;state;participants;scores;events` and the following
 detail-type filter:
 
 | ID  | Normalized statistic                             | When SportsMonks leaves it out                       |
@@ -32,7 +32,7 @@ detail-type filter:
 | 83  | Direct red cards                                 | Zero                                                 |
 | 84  | Yellow cards                                     | Zero                                                 |
 | 85  | Second-yellow dismissals                         | Zero                                                 |
-| 88  | Goals conceded while the player was on the pitch | Zero, then bounded by the final score (below)        |
+| 88  | Goals conceded while the player was on the pitch | Final score/timeline or explicit value (see below)   |
 | 112 | Penalties missed                                 | Zero                                                 |
 | 113 | Penalties saved                                  | Zero; an explicit null stays null                    |
 | 118 | Provider rating                                  | Null; optional, unused by Fantasy v1 scoring         |
@@ -75,21 +75,32 @@ players carrying more. So the final score decides:
 - A starter with 90 minutes (where SportsMonks stops counting) was on from
   kick-off to at least the 90th minute, and conceded exactly what the side
   did.
-- Anyone else keeps SportsMonks' figure, capped at the side's. Only
-  SportsMonks knows when they were on the pitch. That includes a substitute
-  who reached 90 minutes after an early goal; 16 did last season.
+- For a shortened starter, use the final conceded count when a reconciled
+  normal-time goal timeline proves every conceded goal preceded both the team's
+  first recorded substitution/dismissal and that player's official minutes.
+  This overrides even a contradictory explicit provider zero. Own goals, VAR,
+  stoppage-time conceded goals, extra time, malformed/incomplete timelines and
+  equal-minute boundaries cannot supply this proof.
+- Otherwise a starter with 60–89 minutes whose team conceded requires an explicit
+  type-88 value, capped at the final conceded count. Missing type 88 stops with
+  `current_defensive_statistics_incomplete`; repair the provider facts or obtain
+  a usable timeline before re-importing. Omission cannot grant a clean sheet.
+- Other players retain SportsMonks' figure, capped at the side's. This includes
+  a substitute who reached 90 minutes after an early goal; 16 did last season.
 - One case counts against the player: a starter substituted in stoppage time
   just before a stoppage-time goal is credited that goal. Minutes cannot tell
   that exit apart. Last season at most 11 of the 2,243 such starters on sides
   that conceded looked like it, against 53 who carried no goals conceded at
-  all (37 of them goalkeepers). Substitution events would settle it exactly.
+  all (37 of them goalkeepers). The narrow timeline proof above does not
+  reconstruct this stoppage-time case; the existing full-match rule remains.
 - A fixture without exactly one CURRENT score per side stops with
   `current_final_score_missing`.
 
 The database (migration 20260925120000) checks the same against its own final
 score. A mismatch is refused with `CURRENT_GOALS_CONCEDED_MISMATCH`: one of the
 two scores is not final yet, so the fixture waits for the next run. Coverage
-reports `absentStatisticsCountedAsZero` and `goalsConcededFromFinalScore`. Its
+reports `absentStatisticsCountedAsZero`, `goalsConcededFromFinalScore`, and
+`goalsConcededFromTimeline` when that proof was used. Its
 `detailRows` must be at least one per player who appeared, each of whom
 carries minutes. It no longer needs one per player, since a substitute who
 never came on may carry none.
@@ -168,8 +179,10 @@ Owner decision 2026-09-25 (migration `20260925110000`, applied to production
 that day, `docs/production/APPLIED_2026_09_25_CURRENT_PERFORMANCE_UNNAMED_STARTERS.md`):
 this season follows last season's rule, BG-0011 option B. Up to 4 of the 22
 starters may be unnamed. Unnamed rows are left out, credited to no one and
-never counted as zero; every named player is scored as usual. More than 4
-and the fixture waits with `current_lineup_unidentified_starters_exceeded`.
+never counted as zero. Named players are scored once the goals attributed to
+both sides reconcile with the final score; an unnamed scorer therefore holds
+the fixture for repair. More than 4 unnamed starters waits with
+`current_lineup_unidentified_starters_exceeded`.
 
 Either way every unnamed row is reported, never silently dropped: on an
 accepted fixture as `unnamedRows[]` next to it in `fixtures[]` (evidence only;
@@ -326,6 +339,19 @@ time; pg_cron jobs and other lanes are not covered by that and must be checked.
    - `CURRENT_GOALS_CONCEDED_MISMATCH` (`reason`, database stage):
      SportsMonks' final score and the one BotolaGO holds disagree, so one of
      them is not final yet. The fixture waits and the next run tries again.
+   - `current_goal_totals_mismatch` (validation stage): the sum of named
+     players' goals plus opponents' own goals differs from a side's final
+     score. The diagnostic gives the fixture and team provider ids, final
+     goals, and attributed goals. Check the provider's goal event and lineup
+     statistics, including unnamed players; wait for corrected statistics or
+     resolve the missing player mapping through the reviewed roster process.
+     Do not mark the fixture complete by inventing a scorer. For Tangier–Tiznit
+     (1–3), the stored player facts account for 0–3 as of 2026-09-26.
+     Existing certified fixtures are independently checked at scoring: the
+     snapshot RPC refuses `fantasy_goal_totals_mismatch` until reconciled.
+     The scoring input uses the club recorded on the fixture performance,
+     including for a player who later transfers to another club. A later
+     transfer never changes which side receives an earlier goal.
    - `current_statistics_incomplete` at `data.lineups[i].details`: that row's
      statistics were neither a list nor absent (`valueType` says what they
      were), a broken contract as for `invalid_provider_object`.
@@ -373,3 +399,11 @@ time; pg_cron jobs and other lanes are not covered by that and must be checked.
    pass run. The fixture must come back with the same `sourceVersion` and the
    query in step 4 must return the same row counts: identical facts only
    advance the observation watermark.
+
+### Shortened starter clean-sheet correction (2026-09-27)
+
+Regression: Tiznit–Tanger (19874708), Soufiane El Azhari played 84 minutes and
+scored once. Tanger scored at 9, 47 and 55, before Tiznit's first substitution at 60. His conceded count is 3, clean sheets 0, and midfielder fantasy preview 7
+(2 appearance + 5 goal), before captain/chip effects. Re-importing creates a new
+performance source version and retains the prior version as inactive history.
+This does not finalize a gameweek or create points by itself.

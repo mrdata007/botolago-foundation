@@ -107,6 +107,30 @@ describe("protected SportsMonks fixture function", () => {
     expect(fetched).toBe(false);
   });
 
+  test("refuses a skipUncatalogued that is not true or false, before any access", async () => {
+    const calls: RpcCall[] = [];
+    let fetched = false;
+    const response = await handleSportsMonksFixtureRequest(
+      new Request("https://example.test/football-ingest", {
+        method: "POST",
+        headers: { "x-botolago-ingestion-key": environment.FOOTBALL_INGESTION_TRIGGER_SECRET },
+        body: JSON.stringify({ job: "fixtures", skipUncatalogued: "yes" }),
+      }),
+      {
+        environment,
+        client: rpcClient(calls),
+        fetch: async () => {
+          fetched = true;
+          return new Response(null, { status: 500 });
+        },
+      },
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "invalid_request" });
+    expect(calls).toHaveLength(0);
+    expect(fetched).toBe(false);
+  });
+
   test("normalizes and persists a bounded historical fixture page", async () => {
     const calls: RpcCall[] = [];
     const urls: string[] = [];

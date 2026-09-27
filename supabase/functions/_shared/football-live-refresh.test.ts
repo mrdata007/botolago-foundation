@@ -3,6 +3,7 @@ import {
   DEFAULT_LEAGUE_ID,
   DEFAULT_SEASON_ID,
   handleFootballLiveRefreshRequest,
+  SEASON_REFRESH_DAYS_AHEAD,
   liveRefreshEnvironment,
   type LiveRefreshRpcClient,
 } from "./football-live-refresh.ts";
@@ -261,6 +262,119 @@ describe("football live refresh, match details", () => {
     expect(response.status).toBe(502);
     expect(await response.json()).toEqual({ error: "provider_unavailable" });
     expect(order).not.toContain("service_football_match_details_due");
+  });
+
+  it("reads six weeks ahead for the season refresh, and stops after the scores", async () => {
+    const order: string[] = [];
+    const paths: string[] = [];
+    const response = await handleFootballLiveRefreshRequest(
+      request(TOKEN, "POST", '{"job":"season_fixtures"}'),
+      {
+        environment,
+        now,
+        client: database(order, [{ externalId: "7001", status: "live_second_half" }]),
+        fetch: async (input) => {
+          paths.push(new URL(String(input)).pathname);
+          return Response.json(between);
+        },
+      },
+    );
+    expect(SEASON_REFRESH_DAYS_AHEAD).toBe(42);
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as LiveBody;
+    expect(body.jobs.fixtures.updated).toBe(1);
+    expect(body.matchDetails).toBeUndefined();
+    expect(paths).toEqual(["/v3/football/fixtures/between/2026-09-23/2026-11-05"]);
+    expect(order).toContain("ingest_football_fixture");
+    expect(order).not.toContain("service_football_match_details_due");
+  });
+
+  describe("a round SportsMonks has published but the catalog has not registered", () => {
+    /** Two fixtures ahead: one in a known round, one in round 9002, not catalogued. */
+    const ahead = {
+      data: [
+        {
+          ...between.data[0],
+          id: 7101,
+          round_id: 9001,
+          state: { developer_name: "NS" },
+          scores: [],
+        },
+        {
+          ...between.data[0],
+          id: 7102,
+          round_id: 9002,
+          state: { developer_name: "NS" },
+          scores: [],
+        },
+      ],
+      pagination: { has_more: false },
+    };
+
+    function catalogue(
+      calls: string[],
+      catalogued: (round: string) => boolean,
+    ): LiveRefreshRpcClient {
+      return {
+        schema() {
+          return {
+            rpc(name: string, args: Record<string, unknown> = {}) {
+              calls.push(name);
+              if (
+                name === "resolve_football_mapping" &&
+                args.p_entity_type === "round" &&
+                !catalogued(String(args.p_external_id))
+              ) {
+                return Promise.resolve({
+                  data: null,
+                  error: { code: "P0002", message: "MAPPING_NOT_FOUND" },
+                });
+              }
+              const data: Record<string, unknown> = {
+                service_verify_scheduler_token: true,
+                begin_football_ingestion: "50000000-0000-4000-8000-000000000001",
+                resolve_football_mapping: "60000000-0000-4000-8000-000000000001",
+                ingest_football_fixture: "60000000-0000-4000-8000-000000000001",
+              };
+              return Promise.resolve({ data: data[name] ?? null, error: null });
+            },
+          };
+        },
+      } as unknown as LiveRefreshRpcClient;
+    }
+    const season = (client: LiveRefreshRpcClient, body = '{"job":"season_fixtures"}') =>
+      handleFootballLiveRefreshRequest(request(TOKEN, "POST", body), {
+        environment,
+        now,
+        client,
+        fetch: async () => Response.json(ahead),
+      });
+
+    it("the season refresh leaves its match for the catalog and refreshes the rest", async () => {
+      const calls: string[] = [];
+      const response = await season(catalogue(calls, (round) => round === "9001"));
+      expect(response.status).toBe(200);
+      const body = (await response.json()) as { jobs: { fixtures: Record<string, number> } };
+      expect(body.jobs.fixtures).toMatchObject({ fetched: 2, updated: 1, skipped: 1, rejected: 0 });
+      expect(calls.filter((name) => name === "ingest_football_fixture")).toHaveLength(1);
+      expect(calls).not.toContain("record_football_ingestion_rejection");
+    });
+
+    it("but a run that could place nothing is not a fresh season", async () => {
+      const response = await season(catalogue([], () => false));
+      expect(response.status).toBe(502);
+      expect(await response.json()).toEqual({ error: "fixtures_not_catalogued" });
+    });
+
+    it("the live refresh still rejects it, as before", async () => {
+      const calls: string[] = [];
+      const response = await season(
+        catalogue(calls, (round) => round === "9001"),
+        '{"job":"fixtures"}',
+      );
+      expect(response.status).toBe(502);
+      expect(calls).toContain("record_football_ingestion_rejection");
+    });
   });
 
   it("runs the one-off backfill without touching the scores", async () => {

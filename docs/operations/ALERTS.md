@@ -25,7 +25,13 @@ fails its `season_orchestrator` row and opens `Production health`. Each closes
 on its own job's next green run.
 
 The webhook and the email send one message per incident, repeat hourly while
-it lasts, and say `RECOVERED` once. Warnings never send. They see the
+it lasts, and say `RECOVERED` once. A message counts as sent only once its
+channel answers with success (2xx); one that gets any other answer, times out
+or gets no answer is sent again at the next tick, 5 minutes later, until the
+channel takes it. Each channel is tracked on its own, so a broken webhook
+does not hold back the email, nor the reverse (since migration
+`20260926113000`; before it, a failed message still counted as sent and the
+alerts stayed quiet for an hour). Warnings never send. They see the
 database's checks only: the watchdog's own rows (`fantasy_points`,
 `season_orchestrator`, the pages, `release_drift`) reach you through GitHub
 alone.
@@ -60,7 +66,7 @@ overall verdict that agrees with the checks.
 | `news_sitemap`             | the sitemap snapshot is missing or 10+ min old (refresh job paused or failing)                                                                                                                                                                                                                                                                       | snapshot 2+ min old (sitemap computed live), or a refresh took 1.5 s+                                                                                                                                                                                                                                                                   |
 | `news_import`              |                                                                                                                                                                                                                                                                                                                                                      | an import run failed in the last 24 h                                                                                                                                                                                                                                                                                                   |
 | `live_scores`              | live refresh is on but no fixture refresh for 10 min while a match is in play                                                                                                                                                                                                                                                                        | live refresh is off while a match is in play or kicks off within 6 h                                                                                                                                                                                                                                                                    |
-| `provider_refresh`         | 3+ failed fixture refreshes in 6 h                                                                                                                                                                                                                                                                                                                   | no successful fixture refresh for 12 h                                                                                                                                                                                                                                                                                                  |
+| `provider_refresh`         | 3+ failed fixture refreshes in 6 h; with the live refresh switched on, no successful season-wide fixture refresh (a week or more, reaching today: the hourly season refresh of migration `20260926113100`, or the orchestrator's) for 4 h, counted from when the hourly refresh started or was switched back on                                      | the same after 2 h; with the live refresh switched off, no successful fixture refresh for 12 h                                                                                                                                                                                                                                          |
 | `email_delivery`           | email is on but its tick stalled for 15 min                                                                                                                                                                                                                                                                                                          | undelivered emails are waiting                                                                                                                                                                                                                                                                                                          |
 | `browser_errors`           | never (see below)                                                                                                                                                                                                                                                                                                                                    | 25+ unhandled errors reported by visitors' browsers this hour and the last                                                                                                                                                                                                                                                              |
 
@@ -350,11 +356,35 @@ failing checks changes, every `repeat_after` (1 h) while it keeps failing,
 and once on recovery. Warnings never page. A new check needs no setting: every
 check in `api.service_ops_health` takes part.
 
-What it last did:
+Each tick first reads the answer to every message still waiting for one
+(`net._http_response`). A 2xx answer confirms it. Anything else (an error
+code, a timeout, no answer 3 minutes after it left) means it did not arrive:
+the tick forgets it and sends again to that channel alone, so a failure or a
+recovery is never lost to one bad answer. A channel that keeps failing is
+tried every 5 minutes for as long as the incident lasts.
+
+What it last did (`last_sent_at` is when the last message a channel
+confirmed was sent):
 
 ```sql
 select enabled, last_status, last_sent_at from app_private.ops_alert_state;
 ```
+
+What each channel last confirmed, and why its last message failed if it did
+(`http_404`, `http_503`, `timed_out`, `unreachable`, `no_answer`):
+
+```sql
+select channel, delivered_status, delivered_at, pending_request_id,
+  last_outcome, last_outcome_at, failures_in_a_row
+from app_private.ops_alert_channels;
+```
+
+`failures_in_a_row` above 0 means the owner has not heard the latest news
+on that channel. For the email, `http_503` is usually
+`email_provider_not_configured` (the Resend key is missing from the Edge
+Function secrets). The failed answer itself is the `net._http_response` row
+whose id is `last_email_request_id` (or `last_request_id` for the webhook)
+in `app_private.ops_alert_state`, read as in step 3 above.
 
 Testing the GitHub and webhook channels once, making sure the `@mrdata007`
 mention reaches you, and the optional settings are the owner's checklist in
@@ -560,6 +590,15 @@ finished` after an orchestrator run: its worker stopped; the run's evidence
 cron.job_run_details join cron.job using (jobid) where status = 'failed'
 order by start_time desc limit 20;`
   - `live_scores`: `docs/backend/EMAIL_NOTIFICATIONS.md` (live refresh).
+  - `provider_refresh` "no season-wide fixture refresh for N h": the hourly
+    season refresh is not landing, so kickoff changes and postponements are
+    not reaching the app or the Fantasy calendar. "last called" in the detail
+    says whether the database is calling: `never` or hours ago means the
+    `football-season-refresh` job or its switch; a recent call means the Edge
+    Function refused or failed it (Supabase dashboard → Edge Functions →
+    football-live-refresh → Logs; a 400 is a function deployed before the
+    `season_fixtures` job, so deploy it again). Dispatch the Fantasy season
+    orchestrator meanwhile: its refresh reads the whole season.
   - `page_*` / `public_api`: Supabase dashboard → Reports → API and Database
     (CPU).
   - `release_drift`: publish `main` from Lovable
