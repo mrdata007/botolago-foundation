@@ -303,19 +303,29 @@ describe("fantasy season orchestrator", () => {
     });
   });
 
-  test("a failing worker stops the pass with a stable code and does not run later gameweeks", async () => {
+  test("a failing worker is reported without preventing later gameweeks from running", async () => {
     const cal = calendar([
       { sequence: 1, status: "provisional", scoringInputVersion: 1 },
       { sequence: 2, status: "provisional", scoringInputVersion: 1 },
     ]);
     const { gateway: g } = gateway(cal, {
-      lifecycle: () => {
-        throw new Error("fantasy_scoring_coverage_incomplete");
+      lifecycle: (_name, args) => {
+        if (args.p_gameweek_id === id(101)) throw new Error("fantasy_scoring_coverage_incomplete");
+        return {
+          gameweekId: id(102),
+          seasonId: id(1),
+          status: "finalized",
+          lockVersion: 4,
+          sequenceNumber: 2,
+          scoringInputVersion: 1,
+          advancedToGameweekId: id(103),
+        };
       },
     });
     const summary = await orchestrateFantasySeason(g, { now });
     expect(summary.verdict).toBe("failed");
-    expect(summary.workers).toHaveLength(1);
+    expect(summary.workers).toHaveLength(2);
+    expect(summary.workers[1]?.outcome).toBe("already_advanced");
     expect(summary.workers[0]).toMatchObject({
       outcome: "failed",
       code: "fantasy_scoring_coverage_incomplete",
@@ -1384,5 +1394,26 @@ describe("fantasy deadline watch", () => {
       { gameweekId: id(101), sequence: 1, reason: "deadline_unconfirmed" },
     ]);
     expect(calls.some((c) => c.name === "service_fantasy_lifecycle_state")).toBe(false);
+  });
+});
+
+describe("season backlog reliability", () => {
+  test("visits each successive active round in a 30-gameweek season", async () => {
+    for (let sequence = 1; sequence <= 30; sequence++) {
+      const cal = calendar([{ sequence, status: "live" }]);
+      const { gateway: g } = gateway(cal);
+      const summary = await orchestrateFantasySeason(g, { now });
+      expect(summary.workers.map((w) => w.sequence)).toEqual([sequence]);
+      expect(summary.deferredGameweeks).toEqual([]);
+    }
+  });
+  test("reports a configured worker cap instead of silently dropping later rounds", async () => {
+    const cal = calendar([1, 2, 3].map((sequence) => ({ sequence, status: "live" as const })));
+    const { gateway: g } = gateway(cal);
+    const summary = await orchestrateFantasySeason(g, { now, maxWorkerRuns: 2 });
+    expect(summary.workers).toHaveLength(2);
+    expect(summary.deferredGameweeks).toEqual([id(103)]);
+    expect(summary.verdict).toBe("escalate");
+    expect(renderHealthSummary(summary)).toContain("| Deferred gameweeks | 1 |");
   });
 });

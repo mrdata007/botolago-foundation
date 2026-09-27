@@ -905,3 +905,46 @@ describe("fixture-ready publication", () => {
     expect(calculateSnapshotResults(live).teamResults[0]!.provisionalScore).toBe(32);
   });
 });
+
+describe("season transition reliability", () => {
+  for (const nextStatus of ["live", "provisional"] as const) {
+    it(`refreshes scoring capability when an open week becomes ${nextStatus}`, async () => {
+      const base = harness("open");
+      let current = "open";
+      let prepared = false;
+      const gateway: FantasyWorkerGateway = {
+        async rpc(name, args) {
+          if (name === "service_fantasy_lifecycle_state")
+            return {
+              ...base.state,
+              status: current,
+              incrementalScoringEnabled: current !== "open",
+            };
+          if (name === "service_advance_fantasy_lifecycle") {
+            const changed = current === "open";
+            current = nextStatus;
+            return { ...base.state, status: current, changed, hasMore: false };
+          }
+          if (name === "service_prepare_fantasy_live_scoring") {
+            prepared = true;
+            return { calculationVersion: 7 };
+          }
+          if (name === "service_get_fantasy_scoring_snapshot") {
+            expect(args.p_calculation_version).toBe(7);
+            return {
+              ...snapshot(),
+              incremental: true,
+              calculationVersion: 7,
+              pendingFixtures: nextStatus === "live" ? [{}] : [],
+              pendingPlayerIds: [],
+            };
+          }
+          return base.gateway.rpc(name, args);
+        },
+      };
+      const result = await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 });
+      expect(prepared).toBeTrue();
+      expect(result.outcome).toBe(nextStatus === "live" ? "points_published" : "finalized");
+    });
+  }
+});
