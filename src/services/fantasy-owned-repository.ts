@@ -36,6 +36,7 @@ import {
   type GameweekIndex,
 } from "@/services/fantasy-gameweek-resolver";
 import { FantasyRepoError, toRepoError } from "@/services/fantasy-errors";
+import { forgetSharedFantasyHub, readSharedFantasyHub } from "@/services/fantasy-hub-share";
 import {
   buildConfirmTransfersPayload,
   buildFinalizeGameweekPayload,
@@ -45,6 +46,7 @@ import {
   type SaveTeamPayloadInput,
 } from "@/services/fantasy-payloads";
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
+import { fantasyTeamSchema } from "@/backend/fantasy/contracts";
 import type {
   FantasyChip,
   FantasyTeamDto,
@@ -71,7 +73,17 @@ export interface FantasySnapshot {
   emptyCloudSquad?: boolean;
 }
 
+/**
+ * The key a write is sent under (`p_idempotency_key`). One per thing the
+ * manager asked for, not per attempt: a retry after a timeout sends the same
+ * key, so a write the server committed but whose answer was lost is answered
+ * again instead of refused as stale. Omitted, the write gets a fresh one.
+ */
+export type OwnedIdempotencyKey = string | undefined;
+
 export interface PreviewOwnedTransfersInput {
+  /** The team on screen (the owned snapshot's `teamId`). */
+  teamId: string | null;
   expectedVersion: number;
   currentGameweekId: string;
   transfers: ConfirmTransfersPayloadInput["transfers"];
@@ -79,6 +91,13 @@ export interface PreviewOwnedTransfersInput {
 }
 
 export interface SaveOwnedTeamInput {
+  /**
+   * The team on screen, when there is one. With it and `currentGameweekId`
+   * the lineup is saved without reading the hub first; without it (a new
+   * team, the import) the hub names the season and the gameweek to join.
+   */
+  teamId?: string | null;
+  idempotencyKey?: OwnedIdempotencyKey;
   teamName: string;
   managerName: string | null;
   formation: FormationKey;
@@ -93,6 +112,8 @@ export interface SaveOwnedTeamInput {
 }
 
 export interface ConfirmOwnedTransfersInput {
+  teamId: string | null;
+  idempotencyKey?: OwnedIdempotencyKey;
   expectedVersion: number;
   formation: FormationKey;
   bank: number;
@@ -103,6 +124,20 @@ export interface ConfirmOwnedTransfersInput {
   currentGameweekId: string;
   lifecycle: FantasyPersistedState;
   transfers: ConfirmTransfersPayloadInput["transfers"];
+}
+
+export interface ActivateOwnedChipInput {
+  teamId: string | null;
+  gameweekId: string;
+  chip: FantasyChip;
+  expectedVersion: number;
+  idempotencyKey?: OwnedIdempotencyKey;
+}
+
+export interface CancelOwnedChipInput {
+  teamId: string | null;
+  gameweekId: string;
+  expectedVersion: number;
 }
 
 export interface FinalizeOwnedGameweekInput {
@@ -123,12 +158,8 @@ export interface FantasyOwnedRepository {
   saveTeam(input: SaveOwnedTeamInput): Promise<FantasySnapshot>;
   previewTransfers(input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto>;
   confirmTransfers(input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot>;
-  activateChip(input: {
-    gameweekId: string;
-    chip: FantasyChip;
-    expectedVersion: number;
-  }): Promise<FantasySnapshot>;
-  cancelChip(input: { gameweekId: string; expectedVersion: number }): Promise<FantasySnapshot>;
+  activateChip(input: ActivateOwnedChipInput): Promise<FantasySnapshot>;
+  cancelChip(input: CancelOwnedChipInput): Promise<FantasySnapshot>;
   finalizeGameweek(input: FinalizeOwnedGameweekInput): Promise<FantasySnapshot>;
   reload(): Promise<FantasySnapshot>;
 }
@@ -193,18 +224,11 @@ export class GuestFantasyRepository implements FantasyOwnedRepository {
     return this.unauthorized();
   }
 
-  async activateChip(_input: {
-    gameweekId: string;
-    chip: FantasyChip;
-    expectedVersion: number;
-  }): Promise<FantasySnapshot> {
+  async activateChip(_input: ActivateOwnedChipInput): Promise<FantasySnapshot> {
     return this.unauthorized();
   }
 
-  async cancelChip(_input: {
-    gameweekId: string;
-    expectedVersion: number;
-  }): Promise<FantasySnapshot> {
+  async cancelChip(_input: CancelOwnedChipInput): Promise<FantasySnapshot> {
     return this.unauthorized();
   }
 
@@ -308,18 +332,11 @@ export class LocalFantasyRepository implements FantasyOwnedRepository {
     return this.loadSnapshot();
   }
 
-  async activateChip(_input: {
-    gameweekId: string;
-    chip: FantasyChip;
-    expectedVersion: number;
-  }): Promise<FantasySnapshot> {
+  async activateChip(_input: ActivateOwnedChipInput): Promise<FantasySnapshot> {
     throw new FantasyRepoError("validation", "Cloud chip activation is unavailable in local mode.");
   }
 
-  async cancelChip(_input: {
-    gameweekId: string;
-    expectedVersion: number;
-  }): Promise<FantasySnapshot> {
+  async cancelChip(_input: CancelOwnedChipInput): Promise<FantasySnapshot> {
     throw new FantasyRepoError(
       "validation",
       "Cloud chip cancellation is unavailable in local mode.",
@@ -580,21 +597,14 @@ export class CloudFantasyRepository implements FantasyOwnedRepository {
     }
   }
 
-  async activateChip(_input: {
-    gameweekId: string;
-    chip: FantasyChip;
-    expectedVersion: number;
-  }): Promise<FantasySnapshot> {
+  async activateChip(_input: ActivateOwnedChipInput): Promise<FantasySnapshot> {
     throw new FantasyRepoError(
       "validation",
       "The archived compatibility adapter does not expose V2 chip operations.",
     );
   }
 
-  async cancelChip(_input: {
-    gameweekId: string;
-    expectedVersion: number;
-  }): Promise<FantasySnapshot> {
+  async cancelChip(_input: CancelOwnedChipInput): Promise<FantasySnapshot> {
     throw new FantasyRepoError(
       "validation",
       "The archived compatibility adapter does not expose V2 chip operations.",
@@ -744,18 +754,69 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
     };
   }
 
+  /**
+   * The hub, shared with the Fantasy runtime's reads for this same account
+   * (`fantasy-hub-share.ts`): the snapshot and the screen's availability,
+   * gameweek and player reads cost one request. A session that is no longer
+   * this repository's user reads on its own.
+   */
+  private hub() {
+    return readSharedFantasyHub(() => this.repository.getHub("fr", this.context()), {
+      owner: this.userId,
+    });
+  }
+
+  /**
+   * The snapshot a write answered with. The shared hub read is from before
+   * the write, so it is dropped: the next read goes to the server.
+   */
+  private written(team: FantasyTeamDto): FantasySnapshot {
+    forgetSharedFantasyHub();
+    return this.snapshot(team, team.currentGameweekId);
+  }
+
+  /** One fresh hub read, for a write whose answer does not carry the team. */
+  private reread(): Promise<FantasySnapshot> {
+    forgetSharedFantasyHub();
+    return this.loadSnapshot();
+  }
+
+  private requireTeam(teamId: string | null): string {
+    if (!teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
+    return teamId;
+  }
+
   async loadSnapshot(): Promise<FantasySnapshot> {
     try {
-      const hub = await this.repository.getHub("fr", this.context());
+      const hub = await this.hub();
       return this.snapshot(hub.team, hub.gameweek?.id ?? null);
     } catch (error) {
       throw toRepoError(error);
     }
   }
 
+  /**
+   * One request for a lineup: `save_fantasy_lineup` answers with the team
+   * DTO the hub would carry, which becomes the snapshot. The hub is read
+   * first only when the screen has no team to name (a new team, the import):
+   * it names the season, and the gameweek a new team joins.
+   */
   async saveTeam(input: SaveOwnedTeamInput): Promise<FantasySnapshot> {
     try {
-      const hub = await this.repository.getHub("fr", this.context());
+      const idempotencyKey = input.idempotencyKey ?? crypto.randomUUID();
+      if (input.teamId && input.currentGameweekId) {
+        return this.written(
+          await this.repository.saveLineup(
+            input.teamId,
+            input.currentGameweekId,
+            this.selection(input),
+            input.expectedVersion,
+            idempotencyKey,
+            this.context(),
+          ),
+        );
+      }
+      const hub = await this.hub();
       // A new team names the gameweek it joins -- the one the create screen
       // showed, else the one the server says a new team joins now (the next
       // gameweek once the current deadline has passed). The server re-checks
@@ -766,27 +827,29 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
       if (!gameweekId)
         throw new FantasyRepoError("gameweek_unresolved", "No mutable gameweek exists");
       if (!hub.team) {
-        await this.repository.createTeam(
-          {
-            seasonId: hub.season.id,
-            gameweekId,
-            teamName: input.teamName,
-            selection: this.selection(input),
-            idempotencyKey: crypto.randomUUID(),
-          },
-          this.context(),
+        return this.written(
+          await this.repository.createTeam(
+            {
+              seasonId: hub.season.id,
+              gameweekId,
+              teamName: input.teamName,
+              selection: this.selection(input),
+              idempotencyKey,
+            },
+            this.context(),
+          ),
         );
-      } else {
+      }
+      return this.written(
         await this.repository.saveLineup(
           hub.team.id,
           gameweekId,
           this.selection(input),
           input.expectedVersion,
-          crypto.randomUUID(),
+          idempotencyKey,
           this.context(),
-        );
-      }
-      return this.loadSnapshot();
+        ),
+      );
     } catch (error) {
       throw toRepoError(error);
     }
@@ -794,10 +857,8 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
 
   async previewTransfers(input: PreviewOwnedTransfersInput): Promise<FantasyTransferPreviewDto> {
     try {
-      const current = await this.loadSnapshot();
-      if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
       return await this.repository.previewTransfers(
-        current.teamId,
+        this.requireTeam(input.teamId),
         input.currentGameweekId,
         input.transfers.map((transfer) => ({
           player_out_id: transfer.outSourceId,
@@ -812,64 +873,61 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
     }
   }
 
+  /**
+   * One request: `confirm_fantasy_transfers` answers `{ transferBatchId,
+   * preview, team }`, and its team is the snapshot. An answer without a
+   * readable team (it has always carried one) costs one hub read instead of
+   * failing a write the server has already committed.
+   */
   async confirmTransfers(input: ConfirmOwnedTransfersInput): Promise<FantasySnapshot> {
     try {
-      const current = await this.loadSnapshot();
-      if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
-      await this.repository.confirmTransfers(
-        current.teamId,
+      const answer = await this.repository.confirmTransfers(
+        this.requireTeam(input.teamId),
         input.currentGameweekId,
         input.transfers.map((transfer) => ({
           player_out_id: transfer.outSourceId,
           player_in_id: transfer.inSourceId,
         })),
         input.expectedVersion,
-        crypto.randomUUID(),
+        input.idempotencyKey ?? crypto.randomUUID(),
         input.lifecycle.chips.active,
         this.context(),
       );
-      return await this.loadSnapshot();
+      const team = fantasyTeamSchema.safeParse((answer as { team?: unknown } | null)?.team);
+      return team.success ? this.written(team.data) : await this.reread();
     } catch (error) {
       throw toRepoError(error);
     }
   }
 
-  async activateChip(input: {
-    gameweekId: string;
-    chip: FantasyChip;
-    expectedVersion: number;
-  }): Promise<FantasySnapshot> {
+  // The chip RPCs answer with the chip and the team's new version only;
+  // whether the chip can still be cancelled is the ruleset's, so the snapshot
+  // is read once after them rather than guessed.
+  async activateChip(input: ActivateOwnedChipInput): Promise<FantasySnapshot> {
     try {
-      const current = await this.loadSnapshot();
-      if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
       await this.repository.activateChip(
-        current.teamId,
+        this.requireTeam(input.teamId),
         input.gameweekId,
         input.chip,
         input.expectedVersion,
-        crypto.randomUUID(),
+        input.idempotencyKey ?? crypto.randomUUID(),
         this.context(),
       );
-      return await this.loadSnapshot();
+      return await this.reread();
     } catch (error) {
       throw toRepoError(error);
     }
   }
 
-  async cancelChip(input: {
-    gameweekId: string;
-    expectedVersion: number;
-  }): Promise<FantasySnapshot> {
+  async cancelChip(input: CancelOwnedChipInput): Promise<FantasySnapshot> {
     try {
-      const current = await this.loadSnapshot();
-      if (!current.teamId) throw new FantasyRepoError("not_found", "No Fantasy team exists");
       await this.repository.cancelChip(
-        current.teamId,
+        this.requireTeam(input.teamId),
         input.gameweekId,
         input.expectedVersion,
         this.context(),
       );
-      return await this.loadSnapshot();
+      return await this.reread();
     } catch (error) {
       throw toRepoError(error);
     }
@@ -883,7 +941,7 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
   }
 
   reload(): Promise<FantasySnapshot> {
-    return this.loadSnapshot();
+    return this.reread();
   }
 }
 

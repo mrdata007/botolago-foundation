@@ -33,7 +33,11 @@ export interface OwnedMutationContext {
   ) => void;
   /** H1: install returned snapshot into the authoritative cache. */
   replaceSnapshot?: (snap: FantasySnapshot) => void;
-  invalidateOwned: () => void;
+  /**
+   * `keepSnapshot`: the snapshot was just replaced with the write's answer,
+   * so only the other owned surfaces are asked again.
+   */
+  invalidateOwned: (options?: { keepSnapshot?: boolean }) => void;
 }
 
 export interface RunOwnedMutationInput<TArgs> {
@@ -75,7 +79,9 @@ export async function runOwnedMutation<TArgs>(
     //    so the next render never flashes stale data.
     if (ctx.replaceSnapshot) ctx.replaceSnapshot(snapshot);
     // 2. Invalidate dependent owned surfaces (Team/Transfers/Points/Summary).
-    ctx.invalidateOwned();
+    //    Not the snapshot just replaced: refetching it was a third hub read
+    //    for the answer already on screen.
+    ctx.invalidateOwned({ keepSnapshot: !!ctx.replaceSnapshot });
     // 3. Success clears the matching draft (transfers/team drafts alike).
     if (input.matchingDraftKey) {
       fantasyDraftsStore.remove(input.matchingDraftKey);

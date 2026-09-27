@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "plan (read only), rehearse (rolled back), apply, seed, or check (read only)"
+        description: "plan (read only), rehearse (rolled back), apply, seed, seed-browsing, or check (read only)"
         required: true
         type: choice
         default: plan
@@ -18,9 +18,10 @@ on:
           - rehearse
           - apply
           - seed
+          - seed-browsing
           - check
       confirmation:
-        description: "For rehearse, apply and seed: type UPDATE_STAGING_DATABASE"
+        description: "For rehearse, apply, seed and seed-browsing: type UPDATE_STAGING_DATABASE"
         required: false
         type: string
 
@@ -53,7 +54,7 @@ jobs:
           set -euo pipefail
           case "$ACTION" in
             plan|check) ;;
-            rehearse|apply|seed) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
+            rehearse|apply|seed|seed-browsing) test "$CONFIRMATION" = "UPDATE_STAGING_DATABASE" ;;
             *) exit 2 ;;
           esac
 
@@ -68,7 +69,7 @@ jobs:
           python-version: "3.12"
 
       - name: No other staging writer is running
-        if: inputs.action == 'rehearse' || inputs.action == 'apply' || inputs.action == 'seed'
+        if: inputs.action == 'rehearse' || inputs.action == 'apply' || inputs.action == 'seed' || inputs.action == 'seed-browsing'
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}

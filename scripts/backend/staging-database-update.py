@@ -23,6 +23,12 @@ Actions (the only argument):
   seed      the deterministic Fantasy capacity seed
             (scripts/backend/fantasy-staging-seed.sql), only once nothing is
             pending and the disk has SEED_MIN_FREE_DISK_GB free
+  seed-browsing
+            the deterministic match-day content for the browsing workload
+            (scripts/backend/browsing-staging-seed.sql: a synthetic season of
+            240 fixtures, 8 of them in play, and 2,000 stories in French and
+            Arabic), only once nothing is pending. Run it shortly before a
+            browsing run: its match times are anchored on its first run
   check     read only: fails unless nothing is pending, the seed is loaded
             and, when BOTOLAGO_EXPECTED_STAGING_COMPUTE is set (e.g. Large),
             staging runs on that compute size (the load test's precondition)
@@ -59,6 +65,19 @@ MANAGEMENT_API = "https://api.supabase.com"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MIGRATIONS_DIR = REPO_ROOT / "supabase" / "migrations"
 SEED_FILE = REPO_ROOT / "scripts" / "backend" / "fantasy-staging-seed.sql"
+BROWSING_SEED_FILE = REPO_ROOT / "scripts" / "backend" / "browsing-staging-seed.sql"
+# What browsing-staging-seed.sql leaves behind: its season's fixtures and its
+# stories' editions, by the fixed ids and slugs it uses.
+BROWSING_SEED_SEASON_ID = "c91f49ad-62a0-4e2c-884c-f83799e67021"
+BROWSING_SEED_PROFILE = {"fixtures": 240, "articleEditions": 4_000}
+BROWSING_SEED_PROFILE_QUERY = (
+    "select (select count(*) from app.fixtures where season_id = "
+    f"'{BROWSING_SEED_SEASON_ID}'::uuid)::integer as \"fixtures\", "
+    "(select count(*) from app.article_editions where slug like "
+    "'capacity-browsing-article-%')::integer as \"articleEditions\""
+)
+# About 35 MB of rows and their WAL; a margin, not a measurement of need.
+BROWSING_SEED_MIN_FREE_DISK_GB = 1
 MIGRATION_PATTERN = re.compile(r"^(?P<version>[0-9]{14})_(?P<name>[a-z0-9_]+)\.sql$")
 ENUM_VALUE_ADDED = re.compile(r"(?is)\balter\s+type\s+\S+\s+add\s+value\b")
 
@@ -619,6 +638,39 @@ def run_seed(target: Target, migrations: list[Migration]) -> dict[str, Any]:
     raise UpdateError(f"the seed did not complete: {profile}")
 
 
+def browsing_seed_profile(target: Target) -> dict[str, int]:
+    rows = target.rows(BROWSING_SEED_PROFILE_QUERY)
+    if len(rows) != 1:
+        raise UpdateError("the browsing seed profile query returned no row")
+    return {key: int(rows[0].get(key, 0)) for key in BROWSING_SEED_PROFILE}
+
+
+def run_seed_browsing(target: Target, migrations: list[Migration]) -> dict[str, Any]:
+    pending = pending_migrations(migrations, read_history(target))
+    if pending:
+        raise UpdateError(f"apply the pending migrations first: {[m.filename for m in pending]}")
+    profile = browsing_seed_profile(target)
+    if profile == BROWSING_SEED_PROFILE:
+        return {"target": target.label, "browsingSeed": profile, "loaded": True, "ran": False}
+    # It writes fixtures, which the Fantasy tick also writes (AGENTS.md).
+    assert_fantasy_tick_off(target)
+    free = target.free_disk_gb()
+    if free is None or free < BROWSING_SEED_MIN_FREE_DISK_GB:
+        raise UpdateError(
+            f"staging's free disk ({'unknown' if free is None else f'{free:.1f} GB'}) is below "
+            f"the {BROWSING_SEED_MIN_FREE_DISK_GB} GB the browsing seed needs"
+        )
+    script = (
+        "select set_config('botolago.capacity_environment', 'staging-v2', false);\n"
+        + BROWSING_SEED_FILE.read_text("utf-8")
+    )
+    target.execute(script, SEED_WAIT_SECONDS)
+    profile = browsing_seed_profile(target)
+    if profile != BROWSING_SEED_PROFILE:
+        raise UpdateError(f"the browsing seed did not complete: {profile}")
+    return {"target": target.label, "browsingSeed": profile, "loaded": True, "ran": True}
+
+
 def run_check(target: Target, migrations: list[Migration]) -> dict[str, Any]:
     report = run_plan(target, migrations)
     if report["pending"]:
@@ -652,6 +704,7 @@ ACTIONS: dict[str, Callable[[Target, list[Migration]], dict[str, Any]]] = {
     "rehearse": run_rehearse,
     "apply": run_apply,
     "seed": run_seed,
+    "seed-browsing": run_seed_browsing,
     "check": run_check,
 }
 

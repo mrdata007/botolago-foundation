@@ -62,6 +62,12 @@ FULL_GATE_MODE = "full_gate"
 SETUP_REHEARSAL_MODE = "setup_rehearsal"
 SESSION_PROVISIONING_REHEARSAL_MODE = "session_provisioning_rehearsal"
 CLEANUP_RECOVERY_MODE = "cleanup_recovery"
+# Match-day browsing: a separate workload (browsing-load-test.py) run on the
+# same runners, users and cleanup as the gate. The gate itself is unchanged.
+BROWSING_MODE = "browsing"
+BROWSING_DEFAULT_VISITORS = 2_000
+BROWSING_MAX_VISITORS = 20_000
+BROWSING_DEFAULT_DURATION_SECONDS = 600
 # Supabase Management API key names accept lowercase alphanumerics and
 # underscores only; the requested display name used hyphens.
 TEMP_KEY_NAME = "phase6_fantasy_metrics"
@@ -80,6 +86,9 @@ EXPECTED_RUNTIME_KEYS = {
 }
 REQUIRED_RUNTIME_KEYS = EXPECTED_RUNTIME_KEYS - {"AWS_SESSION_TOKEN"}
 RUNNER_INSTANCE_TYPE = "t3.small"
+# The load runner needs Python 3.11 or newer (datetime.UTC). Amazon Linux
+# 2023's default python3 is 3.9, where it fails at import.
+RUNNER_PYTHON = "python3.11"
 RUNNER_SELF_TERMINATION_MINUTES = 105
 MAX_LIFETIME_MINUTES = 120
 MAX_ALLOWED_BUDGET_USD = 50.0
@@ -98,6 +107,19 @@ CONSERVATIVE_ESTIMATED_COST_USD = (
 
 def event(message: str) -> None:
     print(f"[{datetime.now(UTC).isoformat()}] {message}", flush=True)
+
+
+def runner_user_data() -> str:
+    return f"""#!/bin/bash
+set -euo pipefail
+dnf install -y {RUNNER_PYTHON} {RUNNER_PYTHON}-pip
+{RUNNER_PYTHON} -m venv /opt/botolago-venv
+/opt/botolago-venv/bin/pip install --disable-pip-version-check aiohttp==3.12.15 certifi==2026.7.22
+mkdir -p /opt/botolago
+chown -R ec2-user:ec2-user /opt/botolago /opt/botolago-venv
+touch /opt/botolago/ready
+shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
+"""
 
 
 def private_write(path: Path, value: str) -> None:
@@ -222,6 +244,73 @@ def percentile(values: list[float], percent: int) -> float:
     return round(ordered[index], 3)
 
 
+def browsing_settings() -> tuple[int, int]:
+    visitors = int(os.getenv("BOTOLAGO_BROWSING_VISITORS", str(BROWSING_DEFAULT_VISITORS)))
+    duration = int(
+        os.getenv("BOTOLAGO_BROWSING_DURATION_SECONDS", str(BROWSING_DEFAULT_DURATION_SECONDS))
+    )
+    if not RUNNER_COUNT <= visitors <= BROWSING_MAX_VISITORS or visitors % RUNNER_COUNT:
+        raise RuntimeError(
+            f"browsing visitors must be a multiple of {RUNNER_COUNT} up to {BROWSING_MAX_VISITORS}"
+        )
+    if not 60 <= duration <= 1800:
+        raise RuntimeError("browsing duration must be 60 to 1,800 seconds")
+    return visitors, duration
+
+
+def aggregate_browsing(shards: list[dict[str, Any]], visitors: int) -> dict[str, Any]:
+    if len(shards) != RUNNER_COUNT:
+        raise RuntimeError("browsing result does not contain five runner results")
+    latencies: list[float] = []
+    pages: list[float] = []
+    errors: Counter[str] = Counter()
+    rpcs: Counter[str] = Counter()
+    requests = 0
+    duration = 0
+    for shard in shards:
+        profile = shard.get("profile", {})
+        if profile.get("loadProfile") != "browsing":
+            raise RuntimeError("runner returned the wrong load profile")
+        if profile.get("visitorsTotal") != visitors:
+            raise RuntimeError("runner ran a different number of visitors")
+        requests += int(profile["requests"])
+        duration = int(profile["durationSeconds"])
+        latencies += [float(value) for value in shard.get("latencySamplesMs", [])]
+        pages += [float(value) for value in shard.get("pageSamplesMs", [])]
+        errors.update(shard.get("errorCodes", {}))
+        for rpc, summary in shard.get("rpcs", {}).items():
+            rpcs[rpc] += int(summary["count"])
+    unexpected = sum(errors.values())
+    rate = unexpected / max(requests, 1)
+    overall = {
+        "readP50Ms": percentile(latencies, 50),
+        "readP95Ms": percentile(latencies, 95),
+        "readP99Ms": percentile(latencies, 99),
+        "pageP95Ms": percentile(pages, 95),
+        "unexpectedErrors": unexpected,
+        "unexpectedErrorRate": round(rate, 6),
+    }
+    return {
+        "profile": {
+            "name": "browsing",
+            "visitors": visitors,
+            "durationSeconds": duration,
+            "requests": requests,
+            "requestsPerSecond": round(requests / max(duration, 1), 2),
+            "pageViews": len(pages),
+        },
+        "content": shards[0].get("content", {}),
+        "rpcCounts": dict(rpcs),
+        "errorCodes": dict(errors),
+        "overall": overall,
+        "passCriteria": {
+            "readP95": overall["readP95Ms"] <= 500,
+            "pageP95": overall["pageP95Ms"] <= 2000,
+            "unexpectedErrorRate": rate < 0.005,
+        },
+    }
+
+
 def safe_runner_diagnostic(value: str) -> str:
     normalized = value.replace("\r\n", "\n").replace("\r", "\n")
     patterns = (
@@ -302,6 +391,7 @@ class CapacityGate:
             SETUP_REHEARSAL_MODE,
             SESSION_PROVISIONING_REHEARSAL_MODE,
             CLEANUP_RECOVERY_MODE,
+            BROWSING_MODE,
         }:
             raise RuntimeError("unsupported capacity mode")
         self.mode = mode
@@ -855,16 +945,7 @@ commit;
             Name="/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
         )["Parameter"]["Value"]
         expires = (datetime.now(UTC) + timedelta(hours=2)).isoformat()
-        user_data = f"""#!/bin/bash
-set -euo pipefail
-dnf install -y python3 python3-pip
-python3 -m venv /opt/botolago-venv
-/opt/botolago-venv/bin/pip install --disable-pip-version-check aiohttp==3.12.15 certifi==2026.7.22
-mkdir -p /opt/botolago
-chown -R ec2-user:ec2-user /opt/botolago /opt/botolago-venv
-touch /opt/botolago/ready
-shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
-"""
+        user_data = runner_user_data()
         result = self.ec2.run_instances(
             ImageId=ami,
             InstanceType=RUNNER_INSTANCE_TYPE,
@@ -1014,6 +1095,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         load_script = PROJECT_ROOT / "scripts/backend/fantasy-load-test.py"
         session_script = PROJECT_ROOT / "scripts/backend/fantasy-session-provisioner.py"
         tls_helper = PROJECT_ROOT / "scripts/backend/fantasy_harness_tls.py"
+        browsing_script = PROJECT_ROOT / "scripts/backend/browsing-load-test.py"
 
         def deploy(index: int) -> None:
             ip = self.instance_ips[index]
@@ -1034,6 +1116,8 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 self.scp_to(ip, load_script, "/opt/botolago/fantasy-load-test.py")
                 self.scp_to(ip, session_script, "/opt/botolago/fantasy-session-provisioner.py")
                 self.scp_to(ip, tls_helper, "/opt/botolago/fantasy_harness_tls.py")
+                if self.mode == BROWSING_MODE:
+                    self.scp_to(ip, browsing_script, "/opt/botolago/browsing-load-test.py")
                 self.scp_to(ip, runtime_path, "/opt/botolago/runtime.env")
                 self.scp_to(ip, credential_path, f"/opt/botolago/credentials-{index}.json")
                 self.ssh(
@@ -1466,6 +1550,69 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
         )
         return aggregate
 
+    def run_browsing(self) -> dict[str, Any]:
+        visitors, duration = browsing_settings()
+        start_at = time.time() + synchronized_preparation_lead_seconds()
+        command = (
+            "umask 077; set -a; . /opt/botolago/runtime.env; set +a; "
+            "BOTOLAGO_LOAD_USERS=2500 BOTOLAGO_LOAD_SHARD_COUNT=5 "
+            "BOTOLAGO_LOAD_FIRST_USER=50001 "
+            f"BOTOLAGO_BROWSING_VISITORS={visitors} "
+            f"BOTOLAGO_BROWSING_DURATION_SECONDS={duration} "
+            f"BOTOLAGO_LOAD_START_AT={start_at:.3f} "
+            "BOTOLAGO_LOAD_SESSION_CACHE=/opt/botolago/sessions.json "
+            "BOTOLAGO_LOAD_RESULTS_PATH=/opt/botolago/browsing.json "
+            "BOTOLAGO_LOAD_SHARD_INDEX={index} "
+            "/opt/botolago-venv/bin/python /opt/botolago/browsing-load-test.py "
+            "> /opt/botolago/browsing.summary.json "
+            "2> /opt/botolago/browsing.error.log"
+        )
+
+        def run(index: int) -> dict[str, Any] | None:
+            time.sleep(runner_preparation_delay(index))
+            try:
+                self.ssh(self.instance_ips[index], command.format(index=index), duration + 900)
+                return None
+            except (subprocess.SubprocessError, OSError) as error:
+                # Exit 2 means the workload ran and missed a pass criterion;
+                # its result file is still collected below.
+                if getattr(error, "returncode", None) == 2:
+                    return None
+                diagnostic = "runner diagnostic unavailable"
+                try:
+                    diagnostic = self.ssh(
+                        self.instance_ips[index], "tail -c 4000 /opt/botolago/browsing.error.log", 30
+                    )
+                except (subprocess.SubprocessError, OSError):
+                    pass
+                return {
+                    "runner": index,
+                    "error": type(error).__name__,
+                    "diagnostic": safe_runner_diagnostic(diagnostic),
+                }
+
+        event(f"Starting synchronized browsing workload: {visitors} visitors for {duration} s")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=RUNNER_COUNT) as executor:
+            failures = [item for item in executor.map(run, range(RUNNER_COUNT)) if item]
+        if failures:
+            private_json(self.artifact_dir / "browsing-setup-failures.json", failures)
+            summaries = "; ".join(
+                f"runner={item['runner']} {item['error']}: {item['diagnostic']}" for item in failures
+            )
+            raise RuntimeError(f"browsing runner setup failed: {summaries}")
+        shards = []
+        for index, ip in enumerate(self.instance_ips):
+            local = self.artifact_dir / f"browsing-shard-{index}.json"
+            self.scp_from(ip, "/opt/botolago/browsing.json", local)
+            shards.append(json.loads(local.read_text(encoding="utf-8")))
+        aggregate = aggregate_browsing(shards, visitors)
+        private_json(self.artifact_dir / "browsing-aggregate.json", aggregate)
+        event(
+            f"Completed browsing: {aggregate['profile']['requests']} measured requests, "
+            f"unexpected errors {aggregate['overall']['unexpectedErrors']}"
+        )
+        return aggregate
+
     def aggregate_profile(self, profile: str, shards: list[dict[str, Any]]) -> dict[str, Any]:
         if len(shards) != RUNNER_COUNT:
             raise RuntimeError("profile does not contain five runner results")
@@ -1555,7 +1702,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
     def sample_database(self) -> None:
         try:
             rows = self.sql(
-                "with activity as materialized (select pid, coalesce(state, 'unknown') "
+                "with activity as materialized (select pid, usename, coalesce(state, 'unknown') "
                 "as state, wait_event, wait_event_type, "
                 "((state = 'active' and wait_event is not null and "
                 "coalesce(wait_event_type, '') not in ('Client', 'Activity')) or "
@@ -1576,7 +1723,9 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                 "as lock_waits, (select count(*) from activity where waiting)::integer "
                 "as waiting, (select count(*) from activity where state = 'idle' and "
                 "wait_event_type = 'Client' and wait_event = 'ClientRead')::integer "
-                "as idle_client_reads, coalesce((select max(query_age_seconds) from activity), "
+                "as idle_client_reads, (select count(*) from activity where usename = "
+                "'authenticator' and state <> 'idle')::integer as api_pool_busy, "
+                "coalesce((select max(query_age_seconds) from activity), "
                 "0)::numeric as longest_query_age_seconds, coalesce((select "
                 "jsonb_object_agg(state, total) from state_totals), '{}'::jsonb) as "
                 "state_counts, coalesce((select jsonb_agg(jsonb_build_object("
@@ -1759,6 +1908,28 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             )
             if active + idle > 0:
                 pool_utilization.append(100 * active / (active + idle))
+
+        # PostgREST holds its own pool and does not go through PgBouncer, whose
+        # series then read zero (run 36233241466 had no PgBouncer data at all).
+        # Its pool counts too, with the same 80% limit: the authenticator
+        # connections the database observer saw busy, over PostgREST's pool
+        # size. PostgREST's own "available" gauge cannot say this, because its
+        # connections open lazily and it reads 0 before any traffic.
+        pgrst_pool_max = max(
+            (
+                value
+                for scrape in per_scrape
+                for series, value in scrape.items()
+                if series.split("{")[0] == "pgrst_db_pool_max"
+            ),
+            default=0.0,
+        )
+        if pgrst_pool_max > 0:
+            pool_utilization += [
+                100 * int(sample["api_pool_busy"]) / pgrst_pool_max
+                for sample in self.sql_samples
+                if isinstance(sample.get("api_pool_busy"), int)
+            ]
 
         result = {
             "scrapes": len(records),
@@ -2467,6 +2638,31 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
                         "passed": all(criteria.values()),
                     }
                 )
+            elif self.mode == BROWSING_MODE:
+                browsing = self.run_browsing()
+                self.sample_database()
+                metrics_summary = self.await_metrics()
+                self.sample_database()
+                metrics = self.analyze_metrics()
+                criteria = {
+                    **{f"browsing_{key}": value for key, value in browsing["passCriteria"].items()},
+                    "metricsComplete": metrics_summary["scrapeErrors"] == 0,
+                    "connectionUtilization": metrics["maxConnectionUtilizationPercent"] < 80,
+                    "cpu": metrics["maxCpuPercent"] is not None and metrics["maxCpuPercent"] < 80,
+                    "poolUtilization": metrics["maxPoolUtilizationPercent"] is not None
+                    and metrics["maxPoolUtilizationPercent"] < 80,
+                    "deadlocks": metrics["deadlockDelta"] == 0,
+                    "conflicts": metrics["conflictDelta"] == 0,
+                }
+                outcome.update(
+                    {
+                        "browsing": browsing,
+                        "userCreation": dict(self.user_creation_stats),
+                        "metrics": metrics,
+                        "criteria": criteria,
+                        "passed": all(criteria.values()),
+                    }
+                )
         except Exception as error:
             failure = f"{type(error).__name__}: {error}"
             outcome["failure"] = failure
@@ -2499,6 +2695,7 @@ shutdown -h +{RUNNER_SELF_TERMINATION_MINUTES}
             SETUP_REHEARSAL_MODE: "setup rehearsal",
             SESSION_PROVISIONING_REHEARSAL_MODE: "session provisioning rehearsal",
             FULL_GATE_MODE: "external gate",
+            BROWSING_MODE: "browsing workload",
         }
         label = labels.get(self.mode, "cleanup")
         event(f"Phase 6 {label} verdict: {'PASS' if outcome['passed'] else 'FAIL'}")
@@ -2541,6 +2738,18 @@ if __name__ == "__main__":
             raise SystemExit(
                 CapacityGate(CLEANUP_RECOVERY_MODE).run_recovery_cleanup()
             )
+        if arguments == ["--rehearsal-then-browsing"]:
+            rehearsal = CapacityGate(SETUP_REHEARSAL_MODE)
+            secure_runtime = dict(rehearsal.runtime)
+            rehearsal_result = rehearsal.run()
+            if rehearsal_result != 0:
+                secure_runtime.clear()
+                raise SystemExit(rehearsal_result)
+            browsing_run = CapacityGate(BROWSING_MODE, runtime=secure_runtime)
+            try:
+                raise SystemExit(browsing_run.run())
+            finally:
+                secure_runtime.clear()
         if arguments == ["--rehearsal-then-full"]:
             rehearsal = CapacityGate(SETUP_REHEARSAL_MODE)
             secure_runtime = dict(rehearsal.runtime)
@@ -2555,7 +2764,7 @@ if __name__ == "__main__":
                 secure_runtime.clear()
         raise RuntimeError(
             "use --session-provisioning-rehearsal, --setup-rehearsal, "
-            "--full-gate, --rehearsal-then-full, or --cleanup-only"
+            "--full-gate, --rehearsal-then-full, --rehearsal-then-browsing, or --cleanup-only"
         )
     except KeyboardInterrupt:
         event("Interrupted; automatic cleanup may require the saved cloud state")

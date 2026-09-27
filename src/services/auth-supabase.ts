@@ -75,6 +75,25 @@ export interface SupabaseAuthDependencies {
  */
 const CODE_OWED = Symbol("code owed");
 
+/**
+ * How long a signed avatar URL is handed out again. `signedAvatarUrl` signs
+ * for an hour; this leaves a page a quarter of an hour to load it.
+ */
+const AVATAR_REUSE_MS = 45 * 60_000;
+
+/**
+ * The profile and avatar of the account last resolved with a complete
+ * sign-in. auth-js announces the same account's session again on every
+ * return to the tab (`SIGNED_IN`) and on every token refresh; each of those
+ * read the profile and signed the avatar again although neither had changed.
+ */
+interface ResolvedAccount {
+  readonly userId: string;
+  readonly profile: ProfileDto;
+  readonly avatarUrl: string | undefined;
+  readonly signedAt: number;
+}
+
 function hasWindow() {
   return typeof window !== "undefined";
 }
@@ -219,6 +238,8 @@ export class SupabaseAuthService implements AuthService {
    * it answers session reads and emits its events behind one lock.
    */
   private revision = 0;
+  /** See `ResolvedAccount`. Only ever reused for the same account's id. */
+  private resolved: ResolvedAccount | null = null;
 
   constructor(private readonly deps: SupabaseAuthDependencies = {}) {}
 
@@ -247,9 +268,16 @@ export class SupabaseAuthService implements AuthService {
   private init() {
     if (this.initialized || !hasWindow()) return;
     this.initialized = true;
-    void this.auth.getSession().then(({ data }) => this.applySession(data.session));
-    this.auth.onAuthStateChange((_event, session) => {
-      void this.applySession(session);
+    // auth-js answers every new subscriber with `INITIAL_SESSION` once it has
+    // read the stored session (and any sign-in in the URL), so that event is
+    // the start-up resolution. A `getSession()` read beside it resolved the
+    // same session a second time: two profile reads and two avatar signings.
+    this.auth.onAuthStateChange((event, session) => {
+      // The account on screen announced again (a return to the tab, a token
+      // refresh) keeps the profile it resolved to; its session is still
+      // judged and published afresh. A change to the user (`USER_UPDATED`)
+      // is read again.
+      void this.applySession(session, { reuseProfile: event !== "USER_UPDATED" });
     });
   }
 
@@ -298,17 +326,47 @@ export class SupabaseAuthService implements AuthService {
   private async resolveSignedIn(
     session: Session,
     knownProfile?: ProfileDto | null,
-  ): Promise<{ authUser: AuthUser; session: AuthSession }> {
+    reuseProfile = false,
+  ): Promise<{ authUser: AuthUser; session: AuthSession; account: ResolvedAccount | null }> {
     const { user } = session;
     let assurance: SessionAssurance = sessionAssuranceOf(session);
     let profile: ProfileDto | null = null;
+    // `reuseProfile`: the profile this same account last resolved to, when it
+    // resolved complete; never another account's. The level above is still
+    // this session's own.
+    const kept =
+      reuseProfile && knownProfile === undefined && this.resolved?.userId === user.id
+        ? this.resolved
+        : null;
     if (assurance === "complete") {
-      const read = knownProfile !== undefined ? knownProfile : await this.loadProfile(user.id);
+      const read =
+        knownProfile !== undefined
+          ? knownProfile
+          : kept
+            ? kept.profile
+            : await this.loadProfile(user.id);
       if (read === CODE_OWED) assurance = "second_factor_pending";
       else profile = read?.id === user.id ? read : null;
     }
-    const authUser = await buildAuthUser(user, profile, this.avatars.signedUrl);
-    return { authUser, session: sessionForAssurance(authUser, assurance) };
+    const reuseAvatar =
+      !!kept?.avatarUrl &&
+      kept.profile.avatarPath === profile?.avatarPath &&
+      Date.now() - kept.signedAt < AVATAR_REUSE_MS;
+    const authUser = await buildAuthUser(
+      user,
+      profile,
+      reuseAvatar ? async () => kept!.avatarUrl ?? null : this.avatars.signedUrl,
+    );
+    const account: ResolvedAccount | null =
+      assurance === "complete" && profile
+        ? {
+            userId: user.id,
+            profile,
+            avatarUrl: authUser.avatarDataUrl,
+            signedAt: reuseAvatar ? kept!.signedAt : Date.now(),
+          }
+        : null;
+    return { authUser, session: sessionForAssurance(authUser, assurance), account };
   }
 
   /**
@@ -327,12 +385,19 @@ export class SupabaseAuthService implements AuthService {
    * follows once resolved. The same account's new token (a refresh, the code
    * entered) keeps its screen while it resolves, as before.
    */
-  private async publishSignedIn(session: Session, knownProfile?: ProfileDto | null) {
+  private async publishSignedIn(
+    session: Session,
+    knownProfile?: ProfileDto | null,
+    reuseProfile = false,
+  ) {
     const shown = sessionAccountId(this.cachedSession);
     if (shown && shown !== session.user.id) this.emit({ user: null, status: "loading" });
     const revision = ++this.revision;
-    const resolved = await this.resolveSignedIn(session, knownProfile);
-    if (revision === this.revision) this.emit(resolved.session);
+    const resolved = await this.resolveSignedIn(session, knownProfile, reuseProfile);
+    if (revision === this.revision) {
+      this.resolved = resolved.account;
+      this.emit(resolved.session);
+    }
     return resolved;
   }
 
@@ -348,15 +413,19 @@ export class SupabaseAuthService implements AuthService {
     return data.session?.user?.id === userId ? data.session : null;
   }
 
-  private async applySession(session: Session | null): Promise<AuthSession> {
+  private async applySession(
+    session: Session | null,
+    options?: { reuseProfile?: boolean },
+  ): Promise<AuthSession> {
     if (!session?.user) {
+      this.resolved = null;
       const guest = readGuestFlag();
       const signedOut: AuthSession = { user: null, status: guest ? "guest" : "anonymous" };
       this.emit(signedOut);
       return signedOut;
     }
     writeGuestFlag(false);
-    return (await this.publishSignedIn(session)).session;
+    return (await this.publishSignedIn(session, undefined, options?.reuseProfile)).session;
   }
 
   getSession(): AuthSession {
@@ -606,6 +675,7 @@ export class SupabaseAuthService implements AuthService {
         .catch(() => undefined);
     }
     await this.auth.signOut({ scope }).catch(() => undefined);
+    if (scope !== "others") this.resolved = null;
     if (hasWindow()) {
       writeGuestFlag(false);
       try {

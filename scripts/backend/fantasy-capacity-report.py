@@ -63,6 +63,13 @@ def latest_summary(root: Path, mode: str) -> dict[str, Any] | None:
     return max(candidates, default=(0, None), key=lambda item: item[0])[1]
 
 
+SCOPE_LABELS = {
+    "rehearsal": "setup rehearsal only",
+    "full": "rehearsal, then the 2,500-user gate and soak",
+    "browsing": "rehearsal, then the match-day browsing workload",
+}
+
+
 def sanitize_failure(value: Any) -> str:
     text = " ".join(str(value or "not reported").split())[:300]
     if any(pattern.search(text.encode()) for pattern in FORBIDDEN_PATTERNS.values()):
@@ -90,6 +97,7 @@ def render(args: argparse.Namespace) -> int:
     root = args.evidence_root.resolve()
     rehearsal = latest_summary(root, "setup_rehearsal")
     full = latest_summary(root, "full_gate")
+    browsing = latest_summary(root, "browsing")
     recovery_candidates = sorted(
         root.glob("*/recovery-cleanup-summary.json"),
         key=lambda path: path.stat().st_mtime_ns,
@@ -108,7 +116,11 @@ def render(args: argparse.Namespace) -> int:
         and args.cleanup_exit == 0
         and rehearsal
         and rehearsal.get("passed")
-        and (args.scope == "rehearsal" or (full and full.get("passed")))
+        and (
+            args.scope == "rehearsal"
+            or (args.scope == "full" and full and full.get("passed"))
+            or (args.scope == "browsing" and browsing and browsing.get("passed"))
+        )
         and recovery_passed
     )
 
@@ -118,7 +130,7 @@ def render(args: argparse.Namespace) -> int:
         "",
         f"Workflow run: [{args.run_label}]({args.run_url})",
         "",
-        f"Scope: {'setup rehearsal only' if args.scope == 'rehearsal' else 'rehearsal, then the 2,500-user gate and soak'}",
+        f"Scope: {SCOPE_LABELS[args.scope]}",
         "",
         f"Verdict: **{'PASS' if gate_passed else 'FAIL/BLOCKED'}**",
         "",
@@ -127,7 +139,11 @@ def render(args: argparse.Namespace) -> int:
         "- Region: `eu-west-3`",
         "- Cost/lifetime guards: conservative estimate under `$50`; two-hour job limit; 105-minute runner self-termination",
         f"- Setup rehearsal: {'pass' if rehearsal and rehearsal.get('passed') else 'not passed'}",
-        f"- Exact 2,500-user gate and soak: {'pass' if full and full.get('passed') else 'not passed'}",
+        (
+            f"- Match-day browsing workload: {'pass' if browsing and browsing.get('passed') else 'not passed'}"
+            if args.scope == "browsing"
+            else f"- Exact 2,500-user gate and soak: {'pass' if full and full.get('passed') else 'not passed'}"
+        ),
         f"- Independent exact-zero cleanup: {'pass' if recovery_passed else 'not passed'}",
         f"- Evidence sanitizer: {'pass' if sanitized else 'failed; artifacts suppressed'}",
     ]
@@ -152,6 +168,25 @@ def render(args: argparse.Namespace) -> int:
                 f"- integrity: `{'pass' if integrity.get('passed') else 'fail'}`",
             ]
         )
+    elif browsing:
+        load = browsing.get("browsing", {})
+        overall = load.get("overall", {})
+        profile = load.get("profile", {})
+        metrics = browsing.get("metrics", {})
+        lines.extend(
+            [
+                "",
+                "Measured evidence:",
+                "",
+                f"- visitors / requests per second: `{profile.get('visitors', 'n/a')} / {profile.get('requestsPerSecond', 'n/a')}`",
+                f"- read p50/p95/p99: `{overall.get('readP50Ms', 'n/a')} / {overall.get('readP95Ms', 'n/a')} / {overall.get('readP99Ms', 'n/a')} ms`",
+                f"- page view p95: `{overall.get('pageP95Ms', 'n/a')} ms`",
+                f"- unexpected errors/rate: `{overall.get('unexpectedErrors', 'n/a')} / {overall.get('unexpectedErrorRate', 'n/a')}`",
+                f"- max database CPU/pool: `{metrics.get('maxCpuPercent', 'n/a')}% / {metrics.get('maxPoolUtilizationPercent', 'n/a')}%`",
+            ]
+        )
+        if not browsing.get("passed") and browsing.get("failure"):
+            lines.extend(["", f"Sanitized failure: `{sanitize_failure(browsing.get('failure'))}`"])
     elif not gate_passed:
         failure = (
             rehearsal.get("failure")
@@ -180,6 +215,7 @@ def render(args: argparse.Namespace) -> int:
         "rehearsalPassed": bool(rehearsal and rehearsal.get("passed")),
         "scope": args.scope,
         "fullGatePassed": bool(full and full.get("passed")),
+        "browsingPassed": bool(browsing and browsing.get("passed")),
         "violations": violations,
     }
     private_write(
@@ -199,7 +235,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--oidc-outcome", required=True)
     parser.add_argument("--capacity-exit", required=True, type=int)
     parser.add_argument("--cleanup-exit", required=True, type=int)
-    parser.add_argument("--scope", choices=("rehearsal", "full"), default="full")
+    parser.add_argument("--scope", choices=tuple(SCOPE_LABELS), default="full")
     return parser.parse_args()
 
 

@@ -64,9 +64,13 @@ export function createAppQueryClient() {
     defaultOptions: {
       queries: {
         // Avoid reloading the same home and football data on quick route
-        // changes. Mutations invalidate affected queries; match data still
-        // refreshes on focus once this short window has elapsed.
+        // changes. Mutations invalidate affected queries.
         staleTime: 15_000,
+        // Coming back to the tab asked again for every stale query on the
+        // page -- on a Fantasy screen the hub, the pool and the owned
+        // snapshot, each time the manager switched apps. The match queries
+        // that follow a live score poll, and opt back in while they do.
+        refetchOnWindowFocus: false,
         retry: shouldRetryQuery,
         retryDelay: (attempt) => queryRetryDelay(attempt),
       },

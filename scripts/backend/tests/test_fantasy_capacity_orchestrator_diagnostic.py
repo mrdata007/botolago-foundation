@@ -19,8 +19,9 @@ SCRIPT = (
     / "fantasy-capacity-orchestrator-diagnostic.py"
 )
 PRODUCTION_ORCHESTRATOR = SCRIPT.with_name("fantasy-capacity-orchestrator.py")
+# Re-pinned for the browsing mode and the PostgREST pool measurement.
 PRODUCTION_ORCHESTRATOR_SHA256 = (
-    "4c7e836ac01beb5891fef6323cf3ff28ada7e356688bbfd1bc51265d703a797f"
+    "33e17a5b595751bba47ff8a1aa4e1cb911273adae3b5ce8094b990d0249d6fe9"
 )
 SPEC = importlib.util.spec_from_file_location("fantasy_capacity_diagnostic", SCRIPT)
 assert SPEC and SPEC.loader

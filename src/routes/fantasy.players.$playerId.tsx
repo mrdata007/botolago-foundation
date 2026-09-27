@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Star } from "lucide-react";
 import { useId, type CSSProperties, type ReactNode } from "react";
 
@@ -32,6 +32,7 @@ import { fantasyPlayerHead } from "@/lib/fantasy-meta";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { fantasyFixtureDifficultyQuery, loadFantasyPlayer } from "@/services/fantasy-queries";
 import { footballService } from "@/services/football";
 
 export const Route = createFileRoute("/fantasy/players/$playerId")({
@@ -60,7 +61,9 @@ export const Route = createFileRoute("/fantasy/players/$playerId")({
     try {
       const player = await context.queryClient.ensureQueryData({
         queryKey: ["fantasy-player", params.playerId],
-        queryFn: () => fantasyService.getPlayer(params.playerId),
+        // Found in the shared pool entry, which a list the visitor came from
+        // already holds, rather than by downloading the pool for one player.
+        queryFn: () => loadFantasyPlayer(context.queryClient, params.playerId),
       });
       return player ? { player } : null;
     } catch {
@@ -114,10 +117,11 @@ function PlayerDetailPage() {
     maximumFractionDigits: 1,
   });
   const pctNf = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
+  const qc = useQueryClient();
 
   const playerQ = useQuery({
     queryKey: ["fantasy-player", playerId],
-    queryFn: () => fantasyService.getPlayer(playerId),
+    queryFn: () => loadFantasyPlayer(qc, playerId),
     // Identical on the server and on the client's first render — see the
     // loader comment. Without this the two trees disagree and React #418.
     initialData: loaderData?.player,
@@ -126,10 +130,7 @@ function PlayerDetailPage() {
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
   });
-  const fixturesQ = useQuery({
-    queryKey: ["fixture-difficulty"],
-    queryFn: () => fantasyService.getFixtureDifficulty(),
-  });
+  const fixturesQ = useQuery(fantasyFixtureDifficultyQuery());
   // BG-0071 — the real per-gameweek rows from api.fantasy_player_gameweek_history.
   const historyQ = useQuery({
     queryKey: ["fantasy-player-history", playerId],

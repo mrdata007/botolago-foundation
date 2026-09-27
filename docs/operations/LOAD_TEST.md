@@ -60,13 +60,15 @@ On 2026-09-25 staging was 45 database updates behind production.
    The updates go in one at a time. If one fails, it is undone, the ones
    before it stay, and the run stops and names it.
 
-### 2. Make staging the same size as production, with room on its disk (2 minutes, you only)
+### 2. Give staging the size to test, with room on its disk (2 minutes, you only)
 
-Supabase dashboard → **BotolaGO Production V2** → Settings → **Compute and
-Disk**: note the size (on 2026-09-25 the database settings pointed to
-**Large**). Then **BotolaGO Staging V2** → Settings → Compute and Disk → pick
-the same size, and set **Disk size** to at least **20 GB** → confirm. Staging
-restarts for a minute or two.
+The test answers "does this size pass?" for the size staging has while it
+runs. **BotolaGO Staging V2** → Settings → Compute and Disk → pick the size
+to test (`docs/backend/SCALE_AND_COST_REPORT.md` says which one and why), and
+set **Disk size** to at least **20 GB** → confirm. Staging restarts for a
+minute or two. On 2026-09-26 production itself was on **Micro** (60
+connections, 256 MB shared buffers, read from its settings); an earlier note
+here said Large, which was wrong.
 
 The disk matters. On 2026-09-26 the fake data filled staging's disk, the
 database stopped and could not restart until Supabase grew the disk by itself.
@@ -98,6 +100,18 @@ connection, the keys and the cleanup all work.
 Same button, scope **full**. It repeats the rehearsal, then runs the
 2,500-account test and the 10-minute soak, and cleans up.
 
+### 5b. Match-day browsing (optional, separate from the deadline test)
+
+Same button, scope **browsing**, and a number of **browsing_visitors**
+(default 2,000). It repeats the rehearsal, then has that many visitors read
+home, live match pages, news, fixtures, the league table and the Fantasy
+rankings for 10 minutes, the way the web app reads them today, and cleans up.
+It needs the fake football and news content first: **Staging database
+update**, action **seed-browsing**, confirmation `UPDATE_STAGING_DATABASE`,
+shortly before the run (its match times are anchored on its first run).
+Without it the run stops with "content_missing" instead of measuring empty
+tables. The deadline test itself does not change.
+
 ### 6. Read the result
 
 The run page shows the verdict (**PASS** or **FAIL/BLOCKED**) and the
@@ -120,13 +134,14 @@ previous size (Micro on 2026-09-25).
 | Load test stops at "Verify staging is ready"               | an update is missing, the fake data is not loaded, the Fantasy tick is switched on on staging, or staging is not (or cannot be shown to be) the size you typed | the run page says which; redo that step                                                                                                      |
 | seed stops with "GB of disk free" or "could not be read"   | staging's disk is too full for the fake data, or its free space could not be checked                                                                           | make the disk bigger (step 2); if Supabase says "Disk modification limit reached", wait until its timer ends                                 |
 | Staging is down with "No space left on device" in its logs | the disk filled up                                                                                                                                             | make the disk bigger; Postgres restarts by itself once it has room                                                                           |
+| browsing stops with "content_missing"                      | staging has no (or too little) football and news content                                                                                                       | run **Staging database update**, action **seed-browsing**, first                                                                             |
 | Load test stops at "Configure delegated AWS credentials"   | the Amazon connection from July (variable `AWS_LOAD_TEST_ROLE_ARN`, and the matching role in AWS) is gone or changed                                           | nothing was rented; the developer needs the AWS account to recreate the role                                                                 |
 | A run was cancelled halfway                                | fake accounts or computers may be left over                                                                                                                    | **Actions → Phase 6 staging cleanup**, confirmation `RUN_PHASE6_STAGING_CLEANUP`; the computers also switch themselves off after 105 minutes |
 
 ## What this test does not cover
 
-- **Match-day browsing**: thousands of people reading scores and news at
-  once. That is a different load (reads, cached pages) and has its own risks.
+- **Match-day browsing**: covered separately by scope **browsing** (step
+  5b), not by the deadline test.
 - **The website itself** (Lovable hosting) and sign-up bursts through Supabase
   Auth.
 - **Production's limit directly**: staging on production's size is the
@@ -157,7 +172,10 @@ previous size (Micro on 2026-09-25).
   (`phase6-capacity-gate.yml`, retired in #26) running from `main`, with the
   staging readiness check added and the verdict written to the run page
   instead of PR #6. The harness (`fantasy-capacity-orchestrator.py`,
-  `fantasy-load-test.py`) is unchanged.
+  `fantasy-load-test.py`) is unchanged except that the rented computers build
+  their Python environment with `python3.11`: Amazon Linux 2023's `python3` is
+  3.9, where the load script fails at import (the first rehearsal on
+  2026-09-26 stopped there).
 - Checked on 2026-09-25 against a local database with every repository
   migration: 125 temporary users, every load operation answered 200 (75
   lineup saves, 50 transfer previews, 50 confirmations, 25 chips, 25 reads),

@@ -22,7 +22,7 @@ import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
-import { fantasyService } from "@/services/fantasy-runtime";
+import { fantasyFixtureDifficultyQuery } from "@/services/fantasy-queries";
 import type { Club } from "@/types/domain";
 import type { FixtureDifficulty } from "@/types/fantasy";
 
@@ -78,10 +78,8 @@ function FdrBody() {
   const screen = useFantasyScreen({ needsAuth: false, needsTeam: false });
   const clubs = screen.clubs;
   const fdrQ = useQuery({
-    queryKey: ["fantasy-fixture-difficulty"],
-    queryFn: () => fantasyService.getFixtureDifficulty(),
+    ...fantasyFixtureDifficultyQuery(),
     enabled: screen.phase === "ready",
-    staleTime: 5 * 60_000,
   });
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
     key: "team",

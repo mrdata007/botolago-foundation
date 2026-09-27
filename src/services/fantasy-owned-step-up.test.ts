@@ -145,7 +145,11 @@ const WRITES: ReadonlyArray<{
   readonly owner: boolean;
   readonly write: (repo: V2CloudFantasyRepository) => Promise<FantasySnapshot>;
 }> = [
-  { screen: "Pick Team, the lineup", owner: true, write: (repo) => repo.saveTeam(lineup) },
+  {
+    screen: "Pick Team, the lineup",
+    owner: true,
+    write: (repo) => repo.saveTeam({ ...lineup, teamId: TEAM }),
+  },
   {
     screen: "team creation",
     owner: false,
@@ -156,6 +160,7 @@ const WRITES: ReadonlyArray<{
     owner: true,
     write: (repo) =>
       repo.confirmTransfers({
+        teamId: TEAM,
         expectedVersion: 3,
         formation: "4-4-2",
         bank: 1,
@@ -171,12 +176,13 @@ const WRITES: ReadonlyArray<{
   {
     screen: "Transfers and Pick Team, a chip activated",
     owner: true,
-    write: (repo) => repo.activateChip({ gameweekId: GW, chip: "bench_boost", expectedVersion: 3 }),
+    write: (repo) =>
+      repo.activateChip({ teamId: TEAM, gameweekId: GW, chip: "bench_boost", expectedVersion: 3 }),
   },
   {
     screen: "Pick Team, a chip cancelled",
     owner: true,
-    write: (repo) => repo.cancelChip({ gameweekId: GW, expectedVersion: 3 }),
+    write: (repo) => repo.cancelChip({ teamId: TEAM, gameweekId: GW, expectedVersion: 3 }),
   },
 ];
 
@@ -261,6 +267,7 @@ describe("the adapter types every refusal itself, as its file's rule says", () =
       owner: true,
       call: (repo) =>
         repo.previewTransfers({
+          teamId: TEAM,
           expectedVersion: 3,
           currentGameweekId: GW,
           transfers: [],

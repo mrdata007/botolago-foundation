@@ -17,7 +17,11 @@ import { join } from "node:path";
 const realClient = { ...(await import("../integrations/supabase/client")) };
 const signedOutAuth = {
   getSession: async () => ({ data: { session: null }, error: null }),
-  onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+  // As auth-js does: a new subscriber hears the stored session (none) once.
+  onAuthStateChange: (listener: (event: string, session: null) => void) => {
+    void Promise.resolve().then(() => listener("INITIAL_SESSION", null));
+    return { data: { subscription: { unsubscribe() {} } } };
+  },
   signOut: async () => ({ error: null }),
 };
 let standingIn = true;

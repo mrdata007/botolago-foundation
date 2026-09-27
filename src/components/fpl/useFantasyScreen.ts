@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n/provider";
 import { footballService } from "@/services/football";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import { fantasyPlayersQuery } from "@/services/fantasy-queries";
 import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import type { Club, Gameweek } from "@/types/domain";
 import type { FantasyPlayer, FantasyTeam } from "@/types/fantasy";
@@ -17,7 +18,7 @@ export type FantasyScreenPhase =
   | "season_closed"
   /** A season exists but no playable gameweek yet. */
   | "awaiting_gameweek"
-  /** A request failed; `retry` refetches everything. */
+  /** A request failed; `retry` asks again for what failed. */
   | "error"
   /** Anonymous visitor on a screen that needs a signed-in manager. */
   | "guest"
@@ -43,9 +44,11 @@ export interface FantasyScreenState {
  * Single source of truth for every Fantasy screen's entry state.
  *
  * Each dependency is an independent React Query; none of them can block the
- * others indefinitely (availability is timeout-bounded, the rest retry once
- * and then surface an error with a retry action). Screens that do not need
- * a team (`needsTeam: false`) still receive it when present.
+ * others indefinitely (availability is timeout-bounded, the rest follow the
+ * app's retry policy -- once, jittered, never for a refusal a retry cannot
+ * change such as a code owed -- and then surface an error with a retry
+ * action). Screens that do not need a team (`needsTeam: false`) still receive
+ * it when present.
  */
 export function useFantasyScreen(options: { needsTeam?: boolean; needsAuth?: boolean } = {}) {
   const { needsTeam = true, needsAuth = true } = options;
@@ -57,33 +60,27 @@ export function useFantasyScreen(options: { needsTeam?: boolean; needsAuth?: boo
   const isGuest = owned.source === "guest";
   const isCloud = owned.source === "cloud";
 
-  const playersQ = useQuery({
-    queryKey: ["fantasy-players"],
-    queryFn: () => fantasyService.getPlayers(),
-    enabled: ready,
-    staleTime: 60_000,
-    retry: 1,
-  });
+  const playersQ = useQuery({ ...fantasyPlayersQuery(), enabled: ready });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
     staleTime: 5 * 60_000,
-    retry: 1,
   });
   const gwQ = useQuery({
     queryKey: ["gameweek"],
     queryFn: () => fantasyService.getCurrentGameweek(),
     enabled: ready,
     staleTime: 60_000,
-    retry: 1,
   });
 
+  // Only what failed: asking again for all five read the hub and the whole
+  // player pool again for a screen that was missing one of them.
   const retry = () => {
-    void availability.refetch();
-    void playersQ.refetch();
-    void clubsQ.refetch();
-    void gwQ.refetch();
-    void owned.reload();
+    if (availability.isError || availability.view.kind === "error") void availability.refetch();
+    if (playersQ.isError) void playersQ.refetch();
+    if (clubsQ.isError) void clubsQ.refetch();
+    if (gwQ.isError) void gwQ.refetch();
+    if (owned.loadError) void owned.reload();
   };
 
   return useMemo<FantasyScreenState>(() => {

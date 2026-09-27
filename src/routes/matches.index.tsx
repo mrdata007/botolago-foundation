@@ -212,6 +212,9 @@ function MatchesPage() {
     // and nor does a hidden tab. See `matchDayRefetchInterval`.
     refetchInterval: (query) => matchDayRefetchInterval(query.state.data?.matches, Date.now()),
     refetchIntervalInBackground: false,
+    // Back on the tab, a day that is moving is asked for at once.
+    refetchOnWindowFocus: (query) =>
+      matchDayRefetchInterval(query.state.data?.matches, Date.now()) !== false,
   });
 
   // The live strip above the list reads the matches in play on its own

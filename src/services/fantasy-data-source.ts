@@ -13,7 +13,7 @@
 // user's cached data. `clearOwnedFantasyCache` removes exactly those keys.
 
 import { useMemo } from "react";
-import type { QueryClient } from "@tanstack/react-query";
+import { hashKey, type QueryClient, type QueryKey } from "@tanstack/react-query";
 import { AUTH_MODE } from "@/services/auth";
 import { useAuth } from "@/auth/AuthProvider";
 
@@ -85,6 +85,23 @@ export function keepSameOwnerData(scope: FantasyKeyScope) {
 export function clearOtherOwnersFantasyCache(qc: QueryClient, current: FantasyKeyScope): void {
   qc.removeQueries({
     predicate: (q) => isOwnedFantasyKey(q.queryKey) && !belongsToFantasyScope(q.queryKey, current),
+  });
+}
+
+/**
+ * Ask again for every owned-fantasy query. With `keepSnapshot`, not for the
+ * snapshot at `snapshotKey`: a write has just replaced it with the server's
+ * own answer, and invalidating it read the hub a third time for that answer.
+ */
+export function invalidateOwnedQueries(
+  qc: QueryClient,
+  snapshotKey: QueryKey,
+  options?: { keepSnapshot?: boolean },
+): Promise<void> {
+  const snapshotHash = hashKey(snapshotKey);
+  return qc.invalidateQueries({
+    predicate: (q) =>
+      isOwnedFantasyKey(q.queryKey) && !(options?.keepSnapshot && q.queryHash === snapshotHash),
   });
 }
 

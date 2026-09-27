@@ -524,5 +524,97 @@ select extensions.throws_ok(
 
 reset role;
 
+-- ---------------------------------------------------------------------------
+-- Ownership snapshot (20260926140000): "selected by" comes from a snapshot
+-- refreshed every 5 minutes while it is at most 10 minutes old, and is
+-- counted live otherwise. Everything else in the answer is unchanged.
+-- ---------------------------------------------------------------------------
+create function pg_temp.striker_owners()
+returns integer
+language sql
+as $$
+  select (item ->> 'ownershipCount')::integer
+  from jsonb_array_elements(
+    api.fantasy_player_season_stats('b0700000-0000-4000-8000-000000000001') -> 'items'
+  ) item
+  where item ->> 'fantasyPlayerId' = 'b0900000-0000-4000-8000-000000000001'
+$$;
+
+create temporary table live_answer as
+select api.fantasy_player_season_stats('b0700000-0000-4000-8000-000000000001') as answer;
+
+select app_private.fantasy_ownership_refresh(true);
+
+select extensions.ok(
+  exists (select 1 from app_private.fantasy_ownership_snapshot
+    where fantasy_season_id = 'b0700000-0000-4000-8000-000000000001'
+      and active_team_count = 2),
+  'the active season has a snapshot with its two active squads'
+);
+select extensions.ok(
+  not exists (select 1 from app_private.fantasy_ownership_snapshot
+    where fantasy_season_id = 'b0700000-0000-4000-8000-000000000002'),
+  'a planned season gets no snapshot'
+);
+select extensions.is(
+  api.fantasy_player_season_stats('b0700000-0000-4000-8000-000000000001'),
+  (select answer from live_answer),
+  'served from the snapshot, the answer is exactly the live one'
+);
+
+-- The striker is sold by the first active squad.
+update app.fantasy_squad_memberships
+set sold_at = '2089-09-23T12:00:00Z', sold_gameweek_id = 'b0800000-0000-4000-8000-000000000004'
+where id = 'b1200000-0000-4000-8000-000000000001';
+
+select extensions.is(
+  pg_temp.striker_owners(), 2,
+  'a sale shows in "selected by" at the next refresh, not before'
+);
+select app_private.fantasy_ownership_refresh(true);
+select extensions.is(
+  pg_temp.striker_owners(), 1,
+  'after the refresh the sale counts'
+);
+
+-- A snapshot older than 10 minutes (the job paused or failing) is ignored.
+update app_private.fantasy_ownership_snapshot
+set computed_at = statement_timestamp() - interval '11 minutes',
+    ownership = '{}'::jsonb, active_team_count = 999
+where fantasy_season_id = 'b0700000-0000-4000-8000-000000000001';
+select extensions.is(
+  pg_temp.striker_owners(), 1,
+  'a snapshot older than 10 minutes is ignored: ownership is counted live'
+);
+select extensions.is(
+  (api.fantasy_player_season_stats('b0700000-0000-4000-8000-000000000001')
+    ->> 'activeTeamCount')::integer,
+  2,
+  'and so is the active team count'
+);
+
+select extensions.ok(
+  not has_function_privilege('anon', 'app_private.fantasy_ownership_refresh(boolean)', 'execute')
+  and not has_function_privilege('authenticated', 'app_private.fantasy_ownership_refresh(boolean)', 'execute')
+  and not has_function_privilege('service_role', 'app_private.fantasy_ownership_refresh(boolean)', 'execute')
+  and not has_table_privilege('anon', 'app_private.fantasy_ownership_snapshot', 'select')
+  and not has_table_privilege('authenticated', 'app_private.fantasy_ownership_snapshot', 'select')
+  and not has_table_privilege('service_role', 'app_private.fantasy_ownership_snapshot', 'select'),
+  'the snapshot and its refresh are not reachable from the API'
+);
+select extensions.ok(
+  has_function_privilege('anon', 'api.fantasy_player_season_stats(uuid,uuid)', 'execute')
+  and has_function_privilege('authenticated', 'api.fantasy_player_season_stats(uuid,uuid)', 'execute'),
+  'visitors can still read the season stats'
+);
+select extensions.ok(
+  exists (select 1 from cron.job where jobname = 'fantasy-ownership-refresh'
+    and schedule = '*/5 * * * *' and active
+    and command like '%app_private.fantasy_ownership_refresh()%')
+  and exists (select 1 from cron.job where jobname = 'fantasy-ownership-refresh-history-prune'
+    and schedule = '37 3 * * *' and active),
+  'the refresh runs every 5 minutes and its history is pruned daily'
+);
+
 select * from extensions.finish();
 rollback;

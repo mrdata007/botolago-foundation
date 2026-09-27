@@ -5,7 +5,7 @@ import { FailureAwareImage } from "@/components/common/FailureAwareImage";
 import { useI18n } from "@/i18n/provider";
 import { clubInitials } from "@/lib/club-identity";
 import { responsiveMedia } from "@/lib/media";
-import { fantasyService } from "@/services/fantasy-runtime";
+import { fantasyFixtureDifficultyQuery } from "@/services/fantasy-queries";
 import type { Club } from "@/types/domain";
 import type { FixtureDifficulty } from "@/types/fantasy";
 
@@ -37,13 +37,7 @@ import type { FixtureDifficulty } from "@/types/fantasy";
  */
 export function useNextFixtures(clubs: Club[], gameweek: number | null, enabled = true) {
   const { t, tr } = useI18n();
-  const query = useQuery({
-    queryKey: ["fantasy-fixture-difficulty"],
-    queryFn: () => fantasyService.getFixtureDifficulty(),
-    enabled,
-    staleTime: 5 * 60_000,
-    retry: 1,
-  });
+  const query = useQuery({ ...fantasyFixtureDifficultyQuery(), enabled });
 
   const { labels, texts } = useMemo(() => {
     const labels = new Map<string, ReactNode>();
