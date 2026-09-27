@@ -841,3 +841,67 @@ describe("adaptive fixture integration", () => {
     expect(calls.some((c) => c.name === "service_begin_fantasy_finalization")).toBeFalse();
   });
 });
+
+describe("fixture-ready publication", () => {
+  it("publishes team totals and all ranking scopes while leaving the gameweek open", async () => {
+    const base = harness("live");
+    const live = snapshot();
+    live.incremental = true;
+    live.pendingFixtures = [{}];
+    live.pendingPlayerIds = [live.players[7]!.fantasyPlayerId];
+    live.playerFixtures = live.playerFixtures.filter(
+      (p) => p.fantasyPlayerId !== live.players[7]!.fantasyPlayerId,
+    );
+    const gateway: FantasyWorkerGateway = {
+      async rpc(name, args) {
+        if (name === "service_fantasy_lifecycle_state")
+          return { ...base.state, incrementalScoringEnabled: true };
+        if (name === "service_prepare_fantasy_live_scoring") return { calculationVersion: 1 };
+        if (name === "service_get_fantasy_scoring_snapshot") return live;
+        return base.gateway.rpc(name, args);
+      },
+    };
+    const result = await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 });
+    expect(result.outcome).toBe("points_published");
+    expect(
+      base.calls.filter((c) => c.name === "service_recalculate_fantasy_rankings"),
+    ).toHaveLength(4);
+    expect(base.calls.some((c) => c.name === "service_begin_fantasy_finalization")).toBe(false);
+    const persisted = base.calls.find((c) => c.name === "service_persist_fantasy_scoring_results")!;
+    expect(
+      (
+        persisted.args.p_team_results as Array<{
+          effectiveCaptainId: string | null;
+          substitutions: unknown[];
+        }>
+      )[0],
+    ).toMatchObject({ effectiveCaptainId: null, substitutions: [] });
+  });
+  it("keeps the original captain and bench pending until participation settles", () => {
+    const live = snapshot();
+    const captain = live.players[7]!.fantasyPlayerId;
+    live.incremental = true;
+    live.pendingPlayerIds = [captain];
+    live.playerFixtures = live.playerFixtures.filter((p) => p.fantasyPlayerId !== captain);
+    let result = calculateSnapshotResults(live).teamResults[0]!;
+    expect(result.effectiveCaptainId).toBeNull();
+    expect(result.substitutions).toEqual([]);
+    live.pendingPlayerIds = [];
+    result = calculateSnapshotResults(live).teamResults[0]!;
+    expect(result.effectiveCaptainId).toBe(live.players[12]!.fantasyPlayerId);
+    expect(result.substitutions).toHaveLength(1);
+  });
+  it("counts eligible double-fixture points, bench boost and triple captain without duplication", () => {
+    const live = snapshot();
+    live.incremental = true;
+    live.pendingPlayerIds = [live.players[0]!.fantasyPlayerId];
+    live.playerFixtures.push({ ...live.playerFixtures[7]!, fixtureId: id(999) });
+    live.teams[0]!.chipType = "triple_captain";
+    const result = calculateSnapshotResults(live).teamResults[0]!;
+    expect(result.captainPoints).toBe(8);
+    expect(result.provisionalScore).toBe(28);
+    expect(result.substitutions).toEqual([]);
+    live.teams[0]!.chipType = "bench_boost";
+    expect(calculateSnapshotResults(live).teamResults[0]!.provisionalScore).toBe(32);
+  });
+});

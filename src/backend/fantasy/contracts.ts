@@ -261,6 +261,7 @@ export const fixtureScoringSchema = z.object({
 });
 
 export const fantasyPointsSchema = z.object({
+  incrementalScoring: z.boolean().optional(),
   fixtureScoring: z.array(fixtureScoringSchema).optional(),
   teamId: postgresUuidSchema,
   gameweekId: postgresUuidSchema,
