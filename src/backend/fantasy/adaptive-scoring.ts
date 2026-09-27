@@ -128,7 +128,7 @@ export interface ParticipationTimeline {
   started: boolean;
   enteredAt: number | null;
   exitedAt: number | null;
-  /** Ordered match-event offsets, including stoppage time, for conceded goals. */
+  /** Regulation-minute offsets; added-time goals stay at 45 or 90. */
   concededAt: readonly number[];
   orderingVerified: boolean;
 }
@@ -156,12 +156,17 @@ export function deriveParticipation(input: ParticipationTimeline) {
   // timestamps alone cannot safely decide on-pitch conceded goals.
   if (
     input.concededAt.some(
-      (at) => !Number.isFinite(at) || at < 0 || at > 90 || at === start || at === end,
+      (at) =>
+        !Number.isFinite(at) ||
+        at < 0 ||
+        at > 90 ||
+        (at === start && !input.started) ||
+        (at === end && input.exitedAt !== null),
     )
   )
     throw new Error("participation_event_order_ambiguous");
   const minutes = Math.max(1, end - start);
-  const goalsConceded = input.concededAt.filter((at) => at > start && at < end).length;
+  const goalsConceded = input.concededAt.filter((at) => at >= start && at <= end).length;
   return { minutes, goalsConceded, cleanSheet: minutes >= 60 && goalsConceded === 0 };
 }
 

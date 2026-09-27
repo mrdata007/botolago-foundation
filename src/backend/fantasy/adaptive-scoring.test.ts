@@ -122,6 +122,11 @@ describe("adaptive scoring", () => {
     expect(
       deriveParticipation({ ...base, started: false, enteredAt: 90, exitedAt: 90, concededAt: [] }),
     ).toEqual({ minutes: 1, goalsConceded: 0, cleanSheet: false });
+    expect(deriveParticipation({ ...base, exitedAt: null, concededAt: [90] })).toEqual({
+      minutes: 90,
+      goalsConceded: 1,
+      cleanSheet: false,
+    });
     expect(() => deriveParticipation({ ...base, concededAt: [59] })).toThrow(
       "participation_event_order_ambiguous",
     );
