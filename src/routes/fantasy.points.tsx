@@ -329,22 +329,63 @@ function PointsBody() {
           clubs={clubs}
           renderDetail={(player) => {
             const events = breakdown.get(player.id)?.events ?? [];
-            if (events.length === 0) return null;
+            if (events.length === 0 && !breakdown.get(player.id)?.fixtureScoring?.length)
+              return null;
+            const modes = breakdown.get(player.id)?.fixtureScoring ?? [];
+            const fixtureIds = [
+              ...new Set([
+                ...modes.map((fixture) => fixture.fixtureId),
+                ...events.map((event) => event.fixtureId),
+              ]),
+            ];
             return (
               <ul className={cn("pb-2", ui.text.meta, ui.tone.muted)}>
-                {events.map((event, index) => (
-                  <li
-                    key={`${event.category}-${event.fixtureId ?? index}`}
-                    className="flex items-baseline justify-between gap-2"
-                  >
-                    <span className="min-w-0 truncate">
-                      {t(`fantasy.points.event.${event.category}` as never)}
-                    </span>
-                    <span dir="ltr" className={cn("shrink-0", ui.stat.sm, ui.tone.default)}>
-                      {event.points > 0 ? `+${event.points}` : event.points}
-                    </span>
-                  </li>
-                ))}
+                {fixtureIds.map((fixtureId, groupIndex) => {
+                  const fixture = modes.find((item) => item.fixtureId === fixtureId);
+                  const matchName = fixture?.teamIds
+                    ?.map((id) => {
+                      const club = clubOf(id);
+                      return club ? tr(club.shortName) : null;
+                    })
+                    .filter(Boolean)
+                    .join(" – ");
+                  return (
+                    <li key={fixtureId ?? groupIndex}>
+                      {fixture ? (
+                        <p className="font-semibold">
+                          {matchName ? `${matchName} · ` : ""}
+                          {fixture.pending
+                            ? t("fantasy.scoring.pending")
+                            : fixture.mode === "simple"
+                              ? fixture.estimated
+                                ? t("fantasy.scoring.simpleEstimated")
+                                : t("fantasy.scoring.simple")
+                              : t("fantasy.scoring.full")}
+                        </p>
+                      ) : null}
+                      <ul>
+                        {events
+                          .filter((event) => event.fixtureId === fixtureId)
+                          .map((event, index) => (
+                            <li
+                              key={`${event.category}-${index}`}
+                              className="flex items-baseline justify-between gap-2"
+                            >
+                              <span className="min-w-0 truncate">
+                                {t(`fantasy.points.event.${event.category}` as never)}
+                              </span>
+                              <span
+                                dir="ltr"
+                                className={cn("shrink-0", ui.stat.sm, ui.tone.default)}
+                              >
+                                {event.points > 0 ? `+${event.points}` : event.points}
+                              </span>
+                            </li>
+                          ))}
+                      </ul>
+                    </li>
+                  );
+                })}
               </ul>
             );
           }}

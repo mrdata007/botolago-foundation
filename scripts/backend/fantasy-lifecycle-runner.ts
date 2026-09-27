@@ -1,3 +1,7 @@
+import {
+  scoreCertifiedPlayerFixture,
+  type FieldEvidence,
+} from "../../src/backend/fantasy/adaptive-scoring";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { scorePlayerFixture, type ScoringRules } from "../../src/backend/fantasy/scoring";
@@ -20,6 +24,7 @@ const status = z.enum([
 ]);
 const lifecycleSchema = z.object({
   gameweekId: uuid,
+  adaptiveScoringEnabled: z.boolean().optional(),
   seasonId: uuid,
   status,
   lockVersion: positive,
@@ -52,6 +57,8 @@ export const scoringSnapshotSchema = z.object({
   calculationVersion: positive,
   inputDigest: z.string().regex(/^[0-9a-f]{64}$/),
   scoringVersion: positive,
+  adaptive: z.boolean().optional(),
+  fixtures: z.array(z.object({ adaptiveReady: z.boolean().optional() })).optional(),
   sealed: z.boolean(),
   ruleset: z.object({
     id: uuid,
@@ -99,7 +106,16 @@ export const scoringSnapshotSchema = z.object({
         fixtureId: uuid,
         position,
         sourceSequence: integer.min(0),
-        stats: statsSchema,
+        stats: z.preprocess(
+          (value) =>
+            value && typeof value === "object"
+              ? Object.fromEntries(Object.entries(value).filter(([, item]) => item !== null))
+              : value,
+          statsSchema.partial(),
+        ),
+        evidence: z.record(z.string(), z.unknown()).optional(),
+        scoringMode: z.enum(["full", "simple"]).nullable().optional(),
+        participationKnown: z.boolean().optional(),
       }),
     )
     .max(128000),
@@ -134,7 +150,7 @@ function scoringRules(snapshot: ScoringSnapshot): ScoringRules {
   // These are the exact published v1 scoring semantics implemented by the
   // domain scorer. A new ruleset must be reviewed instead of being ignored.
   if (
-    snapshot.ruleset.version !== 1 ||
+    ![1, 2].includes(snapshot.ruleset.version) ||
     snapshot.ruleset.minor_version > 1 ||
     snapshot.features.bonus_points_enabled ||
     snapshot.features.player_of_match_enabled ||
@@ -206,15 +222,25 @@ export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
     const total = totals.get(player.fantasyPlayerId);
     if (!total) throw new Error("fantasy_scoring_player_missing");
     // Explicit zero events retract corrected statistics; never filter them.
-    const events = scorePlayerFixture(
-      player.playerId,
-      player.fixtureId,
-      player.position,
-      player.stats,
-      rules,
-    );
+    const events = snapshot.adaptive
+      ? scoreCertifiedPlayerFixture(
+          player.playerId,
+          player.fixtureId,
+          player.position,
+          player.stats,
+          (player.evidence ?? {}) as FieldEvidence,
+          rules,
+          player.scoringMode ?? null,
+        )
+      : scorePlayerFixture(
+          player.playerId,
+          player.fixtureId,
+          player.position,
+          statsSchema.parse(player.stats),
+          rules,
+        );
     total.points += events.reduce((sum, event) => sum + event.points, 0);
-    total.minutes += player.stats.minutes;
+    total.minutes += player.stats.minutes ?? 0;
     return { fantasyPlayerId: player.fantasyPlayerId, fixtureId: player.fixtureId, events };
   });
   const formation = snapshot.positionRules.map((rule) => ({
@@ -386,7 +412,7 @@ export async function runFantasyLifecycle(
   options: FantasyWorkerOptions,
 ) {
   const gameweekId = uuid.parse(options.gameweekId);
-  const calculationVersion = positive.parse(options.calculationVersion);
+  let calculationVersion = positive.parse(options.calculationVersion);
   const batchSize = positive.max(100).parse(options.batchSize ?? 100);
   const maxBatches = positive.max(10000).parse(options.maxBatches ?? 5000);
   let calls = 0;
@@ -398,6 +424,7 @@ export async function runFantasyLifecycle(
     await call("service_fantasy_lifecycle_state", { p_gameweek_id: gameweekId }),
   );
   if (state.gameweekId !== gameweekId) throw new Error("fantasy_worker_scope_mismatch");
+  const adaptiveEnabled = state.adaptiveScoringEnabled === true;
   const expectedSeasonId = state.seasonId;
   const nextGameweekId = state.nextGameweekId ?? null;
   const finishPublishedWork = async () => {
@@ -479,6 +506,13 @@ export async function runFantasyLifecycle(
     const progression = await finishPublishedWork();
     return { outcome: "already_finalized", gameweekId, ...progression, calls };
   }
+  if (state.adaptiveScoringEnabled) {
+    await call("service_select_fantasy_scoring_modes", { p_gameweek_id: gameweekId });
+    const fresh = lifecycleSchema.parse(
+      await call("service_fantasy_lifecycle_state", { p_gameweek_id: gameweekId }),
+    );
+    calculationVersion = Math.max(calculationVersion, fresh.scoringInputVersion);
+  }
   let staleRereads = 0;
   while (["open", "locked", "live"].includes(state.status)) {
     let advanced: unknown;
@@ -507,12 +541,19 @@ export async function runFantasyLifecycle(
     state = lifecycleSchema.parse(advanced);
     if (state.gameweekId !== gameweekId || state.seasonId !== expectedSeasonId)
       throw new Error("fantasy_worker_scope_mismatch");
-    if (!state.changed && !state.hasMore)
+    if (!state.changed && !state.hasMore) {
+      if (adaptiveEnabled && state.status === "live") break;
       return { outcome: "waiting", gameweekId, reason: state.waitingReason, calls };
+    }
   }
-  if (state.status !== "provisional" && state.status !== "finalizing")
+  if (
+    state.status !== "provisional" &&
+    state.status !== "finalizing" &&
+    !(adaptiveEnabled && state.status === "live")
+  )
     throw new Error("fantasy_lifecycle_not_activated");
 
+  let adaptivePending = false;
   let afterTeamId: string | null = null;
   let digest: string | null = null;
   let playersPersisted = false;
@@ -533,18 +574,35 @@ export async function runFantasyLifecycle(
     )
       throw new Error("fantasy_scoring_snapshot_changed");
     digest = snapshot.inputDigest;
+    adaptivePending =
+      snapshot.adaptive === true &&
+      (snapshot.fixtures ?? []).some((fixture) => fixture.adaptiveReady !== true);
     if (state.status === "finalizing") {
       if (!snapshot.sealed) throw new Error("fantasy_scoring_snapshot_unsealed");
       break;
     }
     if (snapshot.sealed) throw new Error("fantasy_scoring_snapshot_state_mismatch");
+    const unresolvedTeams = new Set(
+      snapshot.adaptive
+        ? snapshot.teams
+            .filter((team) =>
+              team.players.some((player) =>
+                snapshot.playerFixtures.some(
+                  (f) => f.fantasyPlayerId === player.id && f.participationKnown !== true,
+                ),
+              ),
+            )
+            .map((team) => team.teamId)
+        : [],
+    );
+    if (unresolvedTeams.size) adaptivePending = true;
     const results = calculateSnapshotResults(snapshot);
     await call("service_persist_fantasy_scoring_results", {
       p_gameweek_id: gameweekId,
       p_calculation_version: calculationVersion,
       p_input_digest: digest,
       p_player_results: playersPersisted ? [] : results.playerResults,
-      p_team_results: results.teamResults,
+      p_team_results: results.teamResults.filter((team) => !unresolvedTeams.has(team.teamId)),
     });
     playersPersisted = true;
     processedTeams += results.teamResults.length;
@@ -558,6 +616,8 @@ export async function runFantasyLifecycle(
     afterTeamId = snapshot.afterTeamId;
   } while (calls <= maxBatches);
   if (!digest) throw new Error("fantasy_scoring_snapshot_missing");
+  if (adaptivePending || state.status === "live")
+    return { outcome: "waiting", gameweekId, reason: "adaptive_scoring_pending", calls };
   await call("service_begin_fantasy_finalization", {
     p_gameweek_id: gameweekId,
     p_calculation_version: calculationVersion,

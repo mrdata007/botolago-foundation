@@ -143,6 +143,13 @@ export interface PlayerPointsBreakdown {
   isViceCaptain?: boolean;
   isBench?: boolean;
   status: "provisional" | "live" | "final";
+  fixtureScoring?: Array<{
+    estimated?: boolean;
+    fixtureId: string;
+    teamIds?: string[];
+    mode: "full" | "simple" | null;
+    pending: boolean;
+  }>;
   events: PointsEvent[];
 }
 

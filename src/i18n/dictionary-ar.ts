@@ -2,6 +2,14 @@
 // checks it). Loaded on demand by the language provider, so a French reader
 // never downloads it; `dictionaries.ts` imports it for the tests.
 export const ar = {
+  "fantasy.scoring.simpleEstimated": "احتساب مبسط · بيانات تقديرية",
+  "fantasy.scoring.estimatesPolicy":
+    "يمكن اعتماد التقديرات المراجعة استناداً إلى أفضل البيانات المتاحة نهائياً واحتسابها في الترتيب. تُحفظ الافتراضات وتبقى النقاط خاضعة لإجراء التصحيح خلال 72 ساعة. تظل هوية اللاعب غير المحسومة قيد الانتظار.",
+  "fantasy.scoring.full": "احتساب كامل",
+  "fantasy.scoring.simple": "احتساب مبسط",
+  "fantasy.scoring.pending": "في انتظار البيانات",
+  "fantasy.scoring.policy":
+    "يُحدد نظام النقاط لكل مباراة بعد 12 ساعة من صافرة النهاية. إذا كانت الإحصائيات التفصيلية غير مكتملة، تُستبعد التمريرات الحاسمة والتصديات وركلات الجزاء المتصدى لها أو المهدرة، وتبقى بقية النقاط كما هي. نقص البيانات الأساسية يؤخر اعتماد النتائج. لا تغيّر الإحصائيات المتأخرة نظام الاحتساب.",
   "app.name": "BotolaGO",
   "app.tagline": "أخبار وفانتازي كرة القدم المغربية",
 

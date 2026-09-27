@@ -84,6 +84,16 @@ function RulesPage() {
       <h2 className={cn(ui.display.section, ui.tone.default)}>{t("fantasy.rules.title")}</h2>
       <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fantasy.rules.intro")}</p>
 
+      {rulesQ.data?.adaptiveScoring && (
+        <p className={cn("mt-4", ui.text.secondary, ui.tone.muted)}>
+          {t("fantasy.scoring.policy")}
+        </p>
+      )}
+      {rulesQ.data?.adaptiveScoring?.estimatesFinalForRankings && (
+        <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
+          {t("fantasy.scoring.estimatesPolicy")}
+        </p>
+      )}
       {rulesQ.isLoading ? (
         <UiStatePanel kind="loading" />
       ) : rulesQ.isError || !rulesQ.data ? (
