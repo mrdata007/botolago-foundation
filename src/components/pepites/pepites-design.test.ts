@@ -37,6 +37,8 @@ describe("the Figma parts' helpers", () => {
     expect(formatCount(1275, "ar")).toBe("1275");
     expect(nextSeasonLabel("2025-26")).toBe("2026-27");
     expect(nextSeasonLabel("2099-00")).toBe("2100-01");
+    expect(nextSeasonLabel("2025/2026")).toBe("2026/2027");
+    expect(nextSeasonLabel("2025-2026")).toBe("2026-2027");
     expect(nextSeasonLabel("saison")).toBe("saison");
   });
 

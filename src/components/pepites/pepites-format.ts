@@ -224,10 +224,11 @@ export function componentLabel(key: ComponentKey, t: (key: TranslationKey) => st
   }
 }
 
-/** "2026-27" after "2025-26". A label it cannot read stays as it is. */
+/** Preserve the provider's short/full year format and separator. */
 export function nextSeasonLabel(label: string): string {
-  const match = /^(\d{4})-(\d{2})$/.exec(label.trim());
+  const match = /^(\d{4})([-/])(\d{2}|\d{4})$/.exec(label.trim());
   if (!match) return label;
   const start = Number(match[1]) + 1;
-  return `${start}-${String((start + 1) % 100).padStart(2, "0")}`;
+  const end = match[3].length === 4 ? String(start + 1) : String((start + 1) % 100).padStart(2, "0");
+  return `${start}${match[2]}${end}`;
 }
