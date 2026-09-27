@@ -34,6 +34,7 @@ create table app_private.ai_news_drafts (
   model_provider text not null,
   model_name text not null,
   prompt_version text not null,
+  content_fingerprint text not null check (content_fingerprint ~ '^[a-f0-9]{32}$'),
   quality_status text not null check (quality_status in ('passed', 'review_required')),
   review_reasons jsonb not null default '[]'::jsonb check (jsonb_typeof(review_reasons) = 'array'),
   generated_at timestamptz not null default statement_timestamp(),
@@ -94,6 +95,9 @@ begin
     join app.article_editions edition on edition.id = draft.edition_id
     where draft.published_at is null and draft.quality_status = 'passed'
       and edition.status = 'draft' and edition.visibility = 'private'
+      and draft.content_fingerprint = md5(jsonb_build_object(
+        'title', edition.title, 'summary', edition.summary, 'bodyHtml', edition.body_html,
+        'seoTitle', edition.seo_title, 'seoDescription', edition.seo_description)::text)
       and (select count(distinct fact->>'outlet') from jsonb_array_elements(draft.facts) fact
         join app_private.ai_news_source_permissions permission
           on permission.outlet = fact->>'outlet' and permission.auto_publication_approved
@@ -121,6 +125,7 @@ declare
   title text;
   body_html text;
   slug text;
+  v_content_fingerprint text;
 begin
   if auth.role() <> 'service_role' then raise exception using errcode = '42501', message = 'ai_news_service_required'; end if;
   select * into settings from app_private.ai_news_settings where id = true;
@@ -187,15 +192,19 @@ begin
     article->>'seoTitle', article->>'seoDescription', p_payload->>'sanitizerVersion',
     (source->>'publishedAt')::timestamptz
   ) returning id into new_edition;
+  select md5(jsonb_build_object('title', edition.title, 'summary', edition.summary,
+    'bodyHtml', edition.body_html, 'seoTitle', edition.seo_title,
+    'seoDescription', edition.seo_description)::text)
+    into v_content_fingerprint from app.article_editions edition where edition.id = new_edition;
   insert into app_private.ai_news_drafts (
     candidate_key, source_id, story_id, edition_id, source_url, source_title, source_outlet,
     source_published_at, source_retrieved_at, facts, model_provider, model_name,
-    prompt_version, quality_status, review_reasons
+    prompt_version, content_fingerprint, quality_status, review_reasons
   ) values (
     p_key, v_source_id, new_story, new_edition, source_url, source->>'title', source->>'outlet',
     (source->>'publishedAt')::timestamptz, (source->>'retrievedAt')::timestamptz,
     source->'facts', p_payload->>'modelProvider', p_payload->>'modelName',
-    p_payload->>'promptVersion', p_payload->>'quality', p_payload->'reasons'
+    p_payload->>'promptVersion', v_content_fingerprint, p_payload->>'quality', p_payload->'reasons'
   );
   perform app_private.write_editorial_audit('ai_article_draft_created', new_story, new_edition,
     jsonb_build_object('candidateKey', p_key, 'sourceId', v_source_id,
@@ -217,6 +226,12 @@ begin
   select * into draft from app_private.ai_news_drafts where candidate_key = p_key for update;
   if not found then raise exception using errcode = 'P0002', message = 'ai_news_draft_missing'; end if;
   if draft.published_at is not null then return jsonb_build_object('published', false, 'articleId', draft.edition_id); end if;
+  if draft.content_fingerprint <> (select md5(jsonb_build_object(
+    'title', edition.title, 'summary', edition.summary, 'bodyHtml', edition.body_html,
+    'seoTitle', edition.seo_title, 'seoDescription', edition.seo_description)::text)
+    from app.article_editions edition where edition.id = draft.edition_id) then
+    raise exception using errcode = '22023', message = 'ai_news_content_changed';
+  end if;
   if draft.quality_status <> 'passed' or
     (select count(distinct fact->>'outlet') from jsonb_array_elements(draft.facts) fact
       join app_private.ai_news_source_permissions permission

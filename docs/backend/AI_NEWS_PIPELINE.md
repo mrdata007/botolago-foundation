@@ -52,7 +52,9 @@ their own approved source adapter and rights record before use.
    provenance is insufficient. The
    current ElBotola-only adapter cannot meet that final condition. This is a
    deliberate automatic-publication hold until another permitted, independently
-   sourced adapter and its checks are implemented and reviewed. Eligible drafts
+   sourced adapter and its checks are implemented and reviewed. The saved title,
+   excerpt, body and SEO fields are fingerprinted; an edited draft is excluded
+   from unattended publication. Eligible unchanged drafts
    left private by an interrupted publish attempt are retried on a later run;
    the database marks publication once and records one audit event.
 

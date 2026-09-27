@@ -109,23 +109,41 @@ select extensions.throws_ok($$select api.ai_news_publish(repeat('b', 64))$$,
   '22023', 'ai_news_independent_sources_required',
   'unattended publication requires attribution links for both outlets');
 reset role;
-update app.article_editions set body_html = body_html ||
-  '<p>The club notice is linked here. <a href="https://example.org/news/club-announcement">Official Test Club</a></p>'
-  where id = (select edition_id from app_private.ai_news_drafts where candidate_key = repeat('b', 64));
+update app_private.ai_news_settings set daily_limit = 3 where id;
+select set_config('test.ai_payload_linked', jsonb_set(
+  replace(current_setting('test.ai_payload_two_sources'), '12346', '12347')::jsonb,
+  '{html}', to_jsonb(replace(current_setting('test.ai_payload_two_sources')::jsonb->>'html', '12346', '12347') ||
+    '<p>The club notice is linked here. <a href="https://example.org/news/club-announcement">Official Test Club</a></p>'))::text, true);
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
-select extensions.is(api.ai_news_pending_publication()::text, jsonb_build_array(repeat('b', 64))::text,
+select extensions.is(api.ai_news_save_draft(repeat('c', 64), current_setting('test.ai_payload_linked')::jsonb)->>'created', 'true',
+  'a two-source article with both citation links can be drafted');
+select extensions.is(api.ai_news_pending_publication()::text, jsonb_build_array(repeat('c', 64))::text,
   'a draft citing both approved outlets is available for retry');
-select extensions.is(api.ai_news_publish(repeat('b', 64))->>'published', 'true',
+reset role;
+update app.article_editions set seo_title = seo_title || ' modifié'
+  where id = (select edition_id from app_private.ai_news_drafts where candidate_key = repeat('c', 64));
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select extensions.is(api.ai_news_pending_publication()::text, '[]',
+  'an edited draft is removed from unattended publication retries');
+select extensions.throws_ok($$select api.ai_news_publish(repeat('c', 64))$$,
+  '22023', 'ai_news_content_changed', 'an edited draft cannot be published automatically');
+reset role;
+update app.article_editions set seo_title = 'Décision annoncée par le club'
+  where id = (select edition_id from app_private.ai_news_drafts where candidate_key = repeat('c', 64));
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select extensions.is(api.ai_news_publish(repeat('c', 64))->>'published', 'true',
   'service publication requires both flags and two approved outlets');
 select extensions.is(api.ai_news_pending_publication()::text, '[]',
   'a published draft is removed from pending retries');
-select extensions.is(api.ai_news_publish(repeat('b', 64))->>'published', 'false',
+select extensions.is(api.ai_news_publish(repeat('c', 64))->>'published', 'false',
   'publication retry is idempotent');
 reset role;
 select extensions.is((select count(*)::text from app_private.editorial_audit_events
   where event_type = 'ai_article_published' and article_edition_id =
-    (select edition_id from app_private.ai_news_drafts where candidate_key = repeat('b', 64))), '1',
+    (select edition_id from app_private.ai_news_drafts where candidate_key = repeat('c', 64))), '1',
   'publication retry leaves one audit event');
 
 update app_private.ai_news_settings set daily_limit = 0 where id;
@@ -135,11 +153,11 @@ select extensions.is(api.ai_news_pending_publication()::text, '[]',
   'zero daily limit disables pending automatic publication');
 reset role;
 
-update app_private.ai_news_settings set daily_limit = 2 where id;
+update app_private.ai_news_settings set daily_limit = 3 where id;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select extensions.throws_ok(
-  $$select api.ai_news_save_draft(repeat('c', 64), current_setting('test.ai_payload')::jsonb)$$,
+  $$select api.ai_news_save_draft(repeat('d', 64), current_setting('test.ai_payload')::jsonb)$$,
   '22023', 'ai_news_daily_limit_reached', 'database enforces the daily ceiling');
 reset role;
 
