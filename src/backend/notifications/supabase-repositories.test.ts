@@ -10,14 +10,29 @@ describe("unsubscribe_notification_email response", () => {
   test.each(["unsubscribed", "already_unsubscribed", "invalid"] as const)(
     "accepts status %s",
     (status) => {
-      expect(parseNotificationEmailUnsubscribeResponse({ status })).toBe(status);
+      expect(parseNotificationEmailUnsubscribeResponse({ status })).toEqual({
+        status,
+        topic: null,
+      });
     },
   );
+
+  test("carries the Pépites topic when the token was a Pépites one", () => {
+    expect(
+      parseNotificationEmailUnsubscribeResponse({
+        status: "unsubscribed",
+        topic: "pepites_weekly",
+      }),
+    ).toEqual({ status: "unsubscribed", topic: "pepites_weekly" });
+    expect(() =>
+      parseNotificationEmailUnsubscribeResponse({ status: "unsubscribed", topic: "everything" }),
+    ).toThrow();
+  });
 
   test("ignores fields it does not know", () => {
     expect(
       parseNotificationEmailUnsubscribeResponse({ status: "unsubscribed", extra: "ignored" }),
-    ).toBe("unsubscribed");
+    ).toEqual({ status: "unsubscribed", topic: null });
   });
 
   test.each([
@@ -68,6 +83,6 @@ describe("SupabaseNotificationEmailUnsubscribeRepository", () => {
     ["a malformed token", `${TOKEN.slice(1)}!`],
   ])("answers invalid for %s without a request", async (_label, token) => {
     const repository = new SupabaseNotificationEmailUnsubscribeRepository();
-    expect(await repository.unsubscribe(token)).toBe("invalid");
+    expect(await repository.unsubscribe(token)).toEqual({ status: "invalid", topic: null });
   });
 });

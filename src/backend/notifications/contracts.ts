@@ -177,14 +177,29 @@ export const notificationEmailUnsubscribeStatusSchema = z.enum([
   "already_unsubscribed",
   "invalid",
 ]);
+/**
+ * A Pépites email's token turns off only the Pépites weekly email; the reply
+ * then says so with `topic`. Without it, the token turned off all product
+ * email.
+ */
+export const notificationEmailUnsubscribeTopicSchema = z.literal("pepites_weekly");
 export const notificationEmailUnsubscribeResultSchema = z.object({
   status: notificationEmailUnsubscribeStatusSchema,
+  topic: notificationEmailUnsubscribeTopicSchema.optional(),
 });
 
 export type NotificationCategory = z.infer<typeof notificationCategorySchema>;
 export type NotificationEmailUnsubscribeStatus = z.infer<
   typeof notificationEmailUnsubscribeStatusSchema
 >;
+export type NotificationEmailUnsubscribeTopic = z.infer<
+  typeof notificationEmailUnsubscribeTopicSchema
+>;
+/** What the link did: its status, and the one topic it turned off, if any. */
+export interface NotificationEmailUnsubscribeOutcome {
+  readonly status: NotificationEmailUnsubscribeStatus;
+  readonly topic: NotificationEmailUnsubscribeTopic | null;
+}
 export type NotificationCardDto = z.infer<typeof notificationCardSchema>;
 export type NotificationPageDto = z.infer<typeof notificationPageSchema>;
 export type NotificationPreferencesDto = z.infer<typeof notificationPreferencesSchema>;
@@ -229,7 +244,7 @@ export interface NotificationPreferenceRepository {
 
 /** No actor: the page that calls this is opened from an e-mail, usually signed out. */
 export interface NotificationEmailUnsubscribeRepository {
-  unsubscribe(token: string): Promise<NotificationEmailUnsubscribeStatus>;
+  unsubscribe(token: string): Promise<NotificationEmailUnsubscribeOutcome>;
 }
 
 export interface NotificationDeviceRepository {

@@ -117,6 +117,24 @@ const PAYLOADS: { readonly [K in EmailNotificationType]: EmailPayloadByType[K] }
     deadlineAt: "2026-10-02T15:30:00Z",
   },
   gameweek_finalized: { gameweek: 5, points: 64, overallRank: 1287, totalPoints: 312 },
+  // Sample names, not real players.
+  pepites_weekly: {
+    editionId: "edition-15",
+    seasonId: "season-2026-27",
+    week: 15,
+    round: 5,
+    publishedAt: "2026-10-05T19:00:00Z",
+    correctsEditionId: null,
+    entries: [T.raja, T.far, T.wydad, T.fus, T.berkane, T.mas, T.husa, T.irt, T.kacm, T.uts].map(
+      (club, index) => ({
+        rank: index + 1,
+        playerId: `sample-player-${index + 1}`,
+        name: `Joueur exemple ${index + 1}`,
+        club,
+        score: 86 - index * 3,
+      }),
+    ),
+  },
 };
 
 export function sampleDelivery(
@@ -135,6 +153,7 @@ export function sampleDelivery(
     },
     favoriteTeamId: T.raja.id,
     unsubscribeToken: "sample-token/with+chars=",
+    unsubscribeTopic: type === "pepites_weekly" ? "pepites_weekly" : null,
     type,
     payload: PAYLOADS[type],
   } as ClaimedEmailDelivery;
