@@ -60,7 +60,7 @@ select set_config('test.scoring_snapshot',api.service_get_fantasy_scoring_snapsh
 select extensions.is(jsonb_array_length(current_setting('test.scoring_snapshot')::jsonb->'fixtures'),1,'only ready fixture can award points');
 select extensions.is(jsonb_array_length(current_setting('test.scoring_snapshot')::jsonb->'pendingFixtures'),2,'unplayed and missing-data fixtures stay visible');
 select extensions.is(jsonb_array_length(current_setting('test.scoring_snapshot')::jsonb->'playerFixtures'),22,'no invented statistics for pending fixtures');
-select extensions.is(jsonb_array_length(current_setting('test.scoring_snapshot')::jsonb->'pendingPlayerIds'),44,'pending participation retained independently of zeros');
+select extensions.is(jsonb_array_length(current_setting('test.scoring_snapshot')::jsonb->'pendingPlayerIds'),10,'only locked-lineup participation can delay team settlement');
 select extensions.is(api.service_prepare_fantasy_live_scoring(pg_temp.scoring_id(6))->>'calculationVersion','1','identical retry keeps version');
 select set_config('test.scoring_players',(select jsonb_agg(jsonb_build_object('fantasyPlayerId',p->>'fantasyPlayerId','fixtureId',p->>'fixtureId','events',(
  select jsonb_agg(jsonb_build_object('category',category,'points',case when category='appearance' then 2 else 0 end,'sourceKey','fixture-stats:'||(p->>'fixtureId')||':'||(p->>'playerId')||':'||category) order by category)
@@ -99,6 +99,24 @@ update app.player_fixture_performances set assists=0 where player_id=pg_temp.sco
 update app.fixtures set status='finished',finalized_at='2026-08-10 14:00Z',source_sequence=11,
  provider_updated_at='2026-08-10 14:01Z' where id=pg_temp.scoring_id(3002);
 update app.fantasy_gameweeks set status='provisional' where id=pg_temp.scoring_id(6);
+create temporary table original_performances as select * from app.player_fixture_performances;
+delete from app.player_fixture_performances where player_id=pg_temp.scoring_id(1003);
+insert into app.player_fixture_performances(football_season_id,fixture_id,player_id,team_id,position,source_provider,source_version,started,appeared,minutes,goals,assists,clean_sheets,goals_conceded,saves,penalties_saved,penalties_missed,yellow_cards,red_cards,second_yellow_dismissals,own_goals,provider_observed_at)
+select football_season_id,pg_temp.scoring_id(3001),player_id,pg_temp.scoring_id(102),position,source_provider,source_version,false,false,0,0,0,0,0,0,0,0,0,0,0,0,provider_observed_at from app.player_fixture_performances where player_id=pg_temp.scoring_id(1066);
+update app_private.historical_performance_fixture_coverage set anonymous_starter_rows=1,identified_starter_rows=21,starter_rows=21,lineup_rows_seen=23,excluded_incomplete_rows=1 where fixture_id=pg_temp.scoring_id(3001);
+select extensions.is(jsonb_array_length(app_private.fantasy_scoring_input_document(pg_temp.scoring_id(6))->'pendingPlayerIds'),0,'unselected unidentified participant does not block all fantasy lineups');
+delete from app.player_fixture_performances where fixture_id=pg_temp.scoring_id(3001) and player_id=pg_temp.scoring_id(1066);
+insert into app.player_fixture_performances select * from original_performances where player_id=pg_temp.scoring_id(1003);
+update app_private.historical_performance_fixture_coverage set anonymous_starter_rows=0,identified_starter_rows=22,starter_rows=22,lineup_rows_seen=22,excluded_incomplete_rows=0 where fixture_id=pg_temp.scoring_id(3001);
+
+delete from app.player_fixture_performances where player_id=pg_temp.scoring_id(1002);
+insert into app.player_fixture_performances(football_season_id,fixture_id,player_id,team_id,position,source_provider,source_version,started,appeared,minutes,goals,assists,clean_sheets,goals_conceded,saves,penalties_saved,penalties_missed,yellow_cards,red_cards,second_yellow_dismissals,own_goals,provider_observed_at)
+select football_season_id,pg_temp.scoring_id(3001),player_id,pg_temp.scoring_id(102),position,source_provider,source_version,false,false,0,0,0,0,0,0,0,0,0,0,0,0,provider_observed_at from app.player_fixture_performances where player_id=pg_temp.scoring_id(1066);
+update app_private.historical_performance_fixture_coverage set anonymous_starter_rows=1,identified_starter_rows=21,starter_rows=21,lineup_rows_seen=23,excluded_incomplete_rows=1 where fixture_id=pg_temp.scoring_id(3001);
+select extensions.ok((app_private.fantasy_scoring_input_document(pg_temp.scoring_id(6))->'pendingPlayerIds') ? pg_temp.scoring_id(2002)::text,'unresolved selected player still prevents finalization');
+delete from app.player_fixture_performances where fixture_id=pg_temp.scoring_id(3001) and player_id=pg_temp.scoring_id(1066);
+insert into app.player_fixture_performances select * from original_performances where player_id=pg_temp.scoring_id(1002);
+update app_private.historical_performance_fixture_coverage set anonymous_starter_rows=0,identified_starter_rows=22,starter_rows=22,lineup_rows_seen=22,excluded_incomplete_rows=0 where fixture_id=pg_temp.scoring_id(3001);
 select extensions.is(api.service_prepare_fantasy_live_scoring(pg_temp.scoring_id(6))->>'calculationVersion','3','all ready facts advance the calculation');
 select set_config('test.scoring_snapshot',api.service_get_fantasy_scoring_snapshot(pg_temp.scoring_id(6),3,null,100)::text,true);
 select extensions.is(jsonb_array_length(current_setting('test.scoring_snapshot')::jsonb->'pendingFixtures'),0,'complete round has no pending fixtures');
@@ -112,6 +130,30 @@ select set_config('test.scoring_teams',(select jsonb_build_array(jsonb_build_obj
 
 select api.service_persist_fantasy_scoring_results(pg_temp.scoring_id(6),3,current_setting('test.scoring_snapshot')::jsonb->>'inputDigest',current_setting('test.scoring_players')::jsonb,current_setting('test.scoring_teams')::jsonb);
 select extensions.is(api.service_begin_fantasy_finalization(pg_temp.scoring_id(6),3,current_setting('test.scoring_snapshot')::jsonb->>'inputDigest')->>'sealed','true','complete round still enters normal finalization');
+select extensions.is(api.service_finalize_fantasy_team_results(pg_temp.scoring_id(6),3,null,100)->>'finalized','1','incremental results finalize under their sealed version');
+select api.service_roll_fantasy_free_transfers(pg_temp.scoring_id(6),100);
+select api.service_recalculate_fantasy_rankings(pg_temp.scoring_id(5),pg_temp.scoring_id(6),null,3);
+select api.service_recalculate_fantasy_rankings(pg_temp.scoring_id(5),null,null,3);
+select extensions.is(api.service_complete_fantasy_gameweek(pg_temp.scoring_id(6),3)->>'finalized','true','partial-to-full lifecycle completes');
+select extensions.is(api.service_complete_fantasy_gameweek(pg_temp.scoring_id(6),3)->>'stableResult','true','completion retry cannot duplicate settlement');
+select extensions.is((select final_score from app.fantasy_team_gameweek_results where gameweek_id=pg_temp.scoring_id(6)),24,'final total matches full rules without prior partial points added twice');
+select extensions.throws_ok($$select api.service_prepare_fantasy_live_scoring(pg_temp.scoring_id(6))$$,'PT409','gameweek_not_scorable','finalized history cannot reenter live scoring');
+insert into app.rounds(id,season_id,round_number,name,status)
+select pg_temp.scoring_id(6000+i),pg_temp.scoring_id(3),i,'Round '||i,'planned' from generate_series(2,30)i;
+insert into app.fantasy_gameweeks(id,fantasy_season_id,football_round_id,sequence_number,name,deadline_at,starts_at,ends_at,status)
+select pg_temp.scoring_id(5000+i),pg_temp.scoring_id(5),pg_temp.scoring_id(6000+i),i,'GW'||i,
+'2026-08-10 10:30Z'::timestamptz+i*interval '7 days','2026-08-10 12:00Z'::timestamptz+i*interval '7 days','2026-08-12 12:00Z'::timestamptz+i*interval '7 days','scheduled'
+from generate_series(2,30)i;
+do $$ declare i integer; n integer:=0; begin
+for i in 2..30 loop
+ update app.fantasy_gameweeks set status='live' where id=pg_temp.scoring_id(5000+i);
+ if app_private.fantasy_live_scoring_enabled(pg_temp.scoring_id(5000+i)) then n:=n+1; end if;
+ update app.fantasy_gameweeks set status='finalized',finalized_at=statement_timestamp(),points_state='final' where id=pg_temp.scoring_id(5000+i);
+end loop;
+perform set_config('test.policy_weeks',n::text,true);
+end $$;
+select extensions.is(current_setting('test.policy_weeks')::int,29,'season policy automatically covers every subsequent live gameweek');
+select extensions.ok(not app_private.fantasy_live_scoring_enabled(pg_temp.scoring_id(6)),'finalized week stays outside live publication');
 select set_config('request.jwt.claims','{"role":"authenticated"}',true);
 select extensions.throws_ok($$select api.service_prepare_fantasy_live_scoring(pg_temp.scoring_id(6))$$,'PT403','forbidden','browser cannot start scoring');
 select * from extensions.finish();

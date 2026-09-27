@@ -434,7 +434,8 @@ export async function runFantasyLifecycle(
   );
   if (state.gameweekId !== gameweekId) throw new Error("fantasy_worker_scope_mismatch");
   const adaptiveEnabled = state.adaptiveScoringEnabled === true;
-  const incrementalEnabled = state.incrementalScoringEnabled === true;
+  let incrementalEnabled = state.incrementalScoringEnabled === true;
+  let refreshIncrementalCapability = state.status === "open";
   const expectedSeasonId = state.seasonId;
   const nextGameweekId = state.nextGameweekId ?? null;
   const finishPublishedWork = async () => {
@@ -546,9 +547,23 @@ export async function runFantasyLifecycle(
       );
       if (state.gameweekId !== gameweekId || state.seasonId !== expectedSeasonId)
         throw new Error("fantasy_worker_scope_mismatch");
+      incrementalEnabled = state.incrementalScoringEnabled === true;
+      refreshIncrementalCapability = state.status === "open";
       continue;
     }
     state = lifecycleSchema.parse(advanced);
+    // The live policy is status-gated: an open week reports false. The
+    // advance RPC predates that capability and does not return it, so refresh
+    // once after locking rather than waiting for the next scheduled run.
+    if (refreshIncrementalCapability && state.status !== "open") {
+      const fresh = lifecycleSchema.parse(
+        await call("service_fantasy_lifecycle_state", { p_gameweek_id: gameweekId }),
+      );
+      if (fresh.gameweekId !== gameweekId || fresh.seasonId !== expectedSeasonId)
+        throw new Error("fantasy_worker_scope_mismatch");
+      incrementalEnabled = fresh.incrementalScoringEnabled === true;
+      refreshIncrementalCapability = false;
+    }
     if (state.gameweekId !== gameweekId || state.seasonId !== expectedSeasonId)
       throw new Error("fantasy_worker_scope_mismatch");
     if (!state.changed && !state.hasMore) {

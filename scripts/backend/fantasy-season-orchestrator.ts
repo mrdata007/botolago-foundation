@@ -510,6 +510,11 @@ export async function orchestrateFantasySeason(
   // A refusal is not a success: the round is waiting for a real kickoff.
   if (skipped.length > 0) verdict = mergeVerdict(verdict, "waiting");
   const targets = selection.targets.slice(0, maxWorkerRuns);
+  const deferredGameweeks = selection.targets
+    .slice(maxWorkerRuns)
+    .map((target) => target.gameweekId);
+  // Never silently starve later rounds behind old missing-data incidents.
+  if (deferredGameweeks.length > 0) verdict = mergeVerdict(verdict, "escalate");
   for (const target of targets) {
     try {
       const result = (await runFantasyLifecycle(gateway, {
@@ -529,7 +534,8 @@ export async function orchestrateFantasySeason(
         code: safeCode(error, "fantasy_worker_failed"),
       });
       verdict = mergeVerdict(verdict, "failed");
-      break;
+      // RPC mutations are transactional and scoped to this gameweek. Keep
+      // processing independent rounds; the failed round is retried next pass.
     }
   }
 
@@ -652,6 +658,7 @@ export async function orchestrateFantasySeason(
         ? { escalateHours: coverageEscalateHours, gameweeks: scoring.gameweeks }
         : undefined) as ScoringSummary | undefined,
     workers,
+    deferredGameweeks,
     skipped,
     prizes,
     deadlineWatch,
@@ -762,6 +769,7 @@ export function renderHealthSummary(summary: OrchestratorSummary): string {
       "Performances",
       `${summary.performances.fixturesProcessed} fixtures in ${summary.performances.batches} batch(es)${summary.performances.error ? `, error \`${summary.performances.error}\`` : ""}${summary.performances.diagnostic ? ` \`${JSON.stringify(summary.performances.diagnostic)}\`` : ""}${summary.performances.truncated ? ", listing truncated" : ""}`,
     ],
+    ["Deferred gameweeks", String(summary.deferredGameweeks.length)],
     ["Finished without statistics", renderCoverage(summary.performances)],
     ["Ended without final points", renderScoring(summary.scoring)],
     [
