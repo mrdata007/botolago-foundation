@@ -2,6 +2,16 @@
 // checks it). Loaded on demand by the language provider, so a French reader
 // never downloads it; `dictionaries.ts` imports it for the tests.
 export const ar = {
+  "fantasy.scoring.incrementalPolicy":
+    "تُحدَّث النقاط والترتيب بعد كل مباراة تتوفر بياناتها اللازمة، وتبقى النقاط مؤقتة خلال الجولة. تُطبَّق التبديلات التلقائية وانتقال شارة القيادة بعد التأكد من المشاركة.",
+  "fantasy.scoring.simpleEstimated": "احتساب مبسط · بيانات تقديرية",
+  "fantasy.scoring.estimatesPolicy":
+    "يمكن اعتماد التقديرات المراجعة استناداً إلى أفضل البيانات المتاحة نهائياً واحتسابها في الترتيب. تُحفظ الافتراضات وتبقى النقاط خاضعة لإجراء التصحيح خلال 72 ساعة. تظل هوية اللاعب غير المحسومة قيد الانتظار.",
+  "fantasy.scoring.full": "احتساب كامل",
+  "fantasy.scoring.simple": "احتساب مبسط",
+  "fantasy.scoring.pending": "في انتظار البيانات",
+  "fantasy.scoring.policy":
+    "يُحدد نظام النقاط لكل مباراة بعد 12 ساعة من صافرة النهاية. إذا كانت الإحصائيات التفصيلية غير مكتملة، تُستبعد التمريرات الحاسمة والتصديات وركلات الجزاء المتصدى لها أو المهدرة، وتبقى بقية النقاط كما هي. نقص البيانات الأساسية يؤخر اعتماد النتائج. لا تغيّر الإحصائيات المتأخرة نظام الاحتساب.",
   "app.name": "BotolaGO",
   "app.tagline": "أخبار وفانتازي كرة القدم المغربية",
 
@@ -542,7 +552,7 @@ export const ar = {
   "fantasy.leagues.me": "أنا",
   "fantasy.leagues.invite_help": "شارك هذا الرمز مع المدربين الذين تريد دعوتهم إلى الدوري.",
   "fantasy.leagues.copy_code": "نسخ رمز الدعوة",
-  "fantasy.leagues.no_standings": "سيظهر ترتيب هذا الدوري بعد احتساب الجولة الأولى.",
+  "fantasy.leagues.no_standings": "سيظهر ترتيب هذا الدوري بعد احتساب أولى المباريات.",
   "fantasy.leagues.no_members": "لا يوجد مدرب في هذا الدوري حاليًا.",
   "fantasy.leagues.empty_title": "لا توجد دوريات",
   "fantasy.leagues.no_members_title": "لا يوجد مدرب",
@@ -570,7 +580,7 @@ export const ar = {
   "fantasy.players.filter_club": "التصفية حسب النادي",
   "fantasy.players.filter_position": "التصفية حسب المركز",
   "fantasy.players.no_history": "لم تُلعب أي جولة بعد",
-  "fantasy.players.no_history_desc": "ستظهر نقاط هذا اللاعب هنا بعد احتساب الجولة الأولى.",
+  "fantasy.players.no_history_desc": "ستظهر نقاط هذا اللاعب هنا بعد احتساب أولى المباريات.",
   "fantasy.players.no_fixtures": "لا توجد مباريات قادمة",
   "fantasy.players.no_fixtures_desc": "لا توجد مباراة مبرمجة لهذا اللاعب في الجولات المقبلة.",
   "fantasy.players.not_found": "اللاعب غير موجود",
@@ -587,7 +597,8 @@ export const ar = {
   "fantasy.fixtures.double": "جولة مزدوجة",
   "fantasy.fixtures.blank": "جولة فارغة",
   "fantasy.rules.title": "القواعد",
-  "fantasy.rules.intro": "إليك كيف تعمل لعبة فانتازي BotolaGO.",
+  "fantasy.rules.intro":
+    "تلعب فانتازي BotolaGO بتشكيلة من 15 لاعباً من البطولة الاحترافية وميزانية 100 م. اختر 11 أساسياً وقائداً تُضاعف نقاطه، ثم عدّل فريقك قبل الموعد النهائي لكل جولة. ما يقدمه اللاعبون في المباريات الحقيقية هو ما يحدد رصيدك من النقاط.",
   "fantasy.rules.squad": "تشكيلة الفريق",
   "fantasy.rules.squad_desc": "15 لاعباً: حارسان، 5 مدافعين، 5 لاعبي وسط، 3 مهاجمين.",
   "fantasy.rules.budget": "الميزانية",
