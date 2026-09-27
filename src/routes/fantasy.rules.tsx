@@ -89,6 +89,11 @@ function RulesPage() {
           {t("fantasy.scoring.policy")}
         </p>
       )}
+      {rulesQ.data?.adaptiveScoring?.estimatesFinalForRankings && (
+        <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
+          {t("fantasy.scoring.estimatesPolicy")}
+        </p>
+      )}
       {rulesQ.isLoading ? (
         <UiStatePanel kind="loading" />
       ) : rulesQ.isError || !rulesQ.data ? (

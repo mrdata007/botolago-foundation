@@ -47,3 +47,49 @@ test("conflicting identities and ambiguous defensive ordering need review", () =
     "participation_event_order_ambiguous",
   );
 });
+
+test("final ranking estimates require explicit acceptance and retain their assumption", () => {
+  const base = input();
+  const doc = {
+    ...base,
+    players: base.players.map((p) => ({
+      ...p,
+      timeline: undefined,
+      stats: { minutes: 59 },
+      evidence: {
+        minutes: {
+          state: "estimated",
+          source: "reviewed-best-available",
+          observedAt: "2026-09-27T12:00:00Z",
+          references: ["report:fixture:1"],
+          reason: "Use published substitution minute",
+        },
+      },
+    })),
+  };
+  expect(() => prepareAdaptiveCorrection(doc, "2026-09-27T12:00:00Z")).toThrow(
+    "adaptive_estimate_acceptance_required",
+  );
+  const accepted = {
+    ...doc,
+    estimateAcceptance: {
+      policy: "best-available-v1",
+      finalForRankings: true,
+      assumptions: ["Use published substitution minute"],
+    },
+  };
+  const out = prepareAdaptiveCorrection(accepted, "2026-09-27T12:00:00Z");
+  expect(out.players[0]!.stats.minutes).toBe(59);
+  expect(out.players[0]!.evidence.minutes!.state).toBe("estimated");
+  expect(out.estimateAcceptance!.finalForRankings).toBe(true);
+  expect(() =>
+    prepareAdaptiveCorrection(
+      { ...accepted, estimatedNonParticipants: [id(1)] },
+      "2026-09-27T12:00:00Z",
+    ),
+  ).toThrow("adaptive_conflicting_participation");
+  doc.players[0]!.evidence.minutes.source = "unreviewed";
+  expect(() => prepareAdaptiveCorrection(accepted, "2026-09-27T12:00:00Z")).toThrow(
+    "adaptive_estimate_evidence_invalid",
+  );
+});

@@ -357,7 +357,11 @@ function PointsBody() {
                           {fixture.pending
                             ? t("fantasy.scoring.pending")
                             : fixture.mode === "simple"
-                              ? t("fantasy.scoring.simple")
+                              ? t(
+                                  fixture.estimated
+                                    ? "fantasy.scoring.simpleEstimated"
+                                    : "fantasy.scoring.simple",
+                                )
                               : t("fantasy.scoring.full")}
                         </p>
                       ) : null}

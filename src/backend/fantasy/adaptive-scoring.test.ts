@@ -158,3 +158,49 @@ describe("adaptive scoring", () => {
     ).toBe("full");
   });
 });
+
+it("reviewed estimates score only in locked simple mode and never certify full coverage", () => {
+  const proof = evidence();
+  proof.minutes = {
+    ...proof.minutes!,
+    state: "estimated",
+    source: "reviewed-best-available",
+    reason: "Use published substitution minute",
+  };
+  expect(readiness(stats, proof, "GK")).toEqual({ simple: true, full: false });
+  for (const mode of [null, "full"] as const)
+    expect(
+      scoreCertifiedPlayerFixture("p", "f", "GK", stats, proof, rules, mode).map((e) => e.category),
+    ).not.toContain("appearance");
+  expect(total(scoreCertifiedPlayerFixture("p", "f", "GK", stats, proof, rules, "simple"))).toBe(8);
+  proof.minutes.reason = "";
+  expect(readiness(stats, proof, "GK").simple).toBe(false);
+  proof.minutes.reason = "Use published substitution minute";
+  proof.minutes.source = "unreviewed";
+  expect(readiness(stats, proof, "GK").simple).toBe(false);
+});
+
+it("malformed service evidence remains pending instead of crashing scoring", () => {
+  for (const malformed of [
+    null,
+    42,
+    {},
+    { state: "verified", source: 123 },
+    { state: "verified", source: "report", observedAt: "2026-09-27T00:00:00Z", references: 3 },
+    {
+      state: "estimated",
+      source: "reviewed-best-available",
+      reason: 123,
+      observedAt: "2026-09-27T00:00:00Z",
+      references: ["report:1"],
+    },
+  ]) {
+    const proof = { ...evidence(), minutes: malformed } as unknown as FieldEvidence;
+    expect(readiness(stats, proof, "GK").simple).toBe(false);
+    expect(
+      scoreCertifiedPlayerFixture("p", "f", "GK", stats, proof, rules, "simple").map(
+        (e) => e.category,
+      ),
+    ).not.toContain("appearance");
+  }
+});

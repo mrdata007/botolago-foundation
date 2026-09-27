@@ -1424,6 +1424,15 @@ export type Database = {
         Returns: Json
       }
       save_predictions: { Args: { p_items: Json }; Returns: Json }
+      service_activate_adaptive_estimates: {
+        Args: {
+          p_expected_digest: string
+          p_from_gameweek: number
+          p_pause?: boolean
+          p_season_id: string
+        }
+        Returns: Json
+      }
       service_activate_adaptive_scoring: {
         Args: {
           p_expected_digest: string

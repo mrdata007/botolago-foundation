@@ -1,4 +1,4 @@
-# Adaptive Fantasy Scoring v2.0
+# Adaptive Fantasy Scoring v2.0 / v2.1
 
 ## Contracts
 
@@ -47,6 +47,51 @@ new calculation version/audit record; this endpoint does not reopen published
 weeks or change a locked mode. Retain all observations, seals and ledger history.
 
 No Sofascore scraper or API-Football credential is required.
+
+## Reviewed estimates: v2.1
+
+The separately published v2.1 ruleset permits reviewed best-available estimates
+for **simple** scoring. Accepted estimates produce final points and count in
+team, gameweek and season rankings through the existing finalization pipeline.
+Point values, mode locks, captain, substitutions, chips and ranking rules do not
+change. v2.0 remains strict and existing assignments are never silently upgraded.
+
+Activate a new assignment with `service_activate_adaptive_estimates` using the
+same audited activation digest and paused rollout as v2.0. An existing v2.0
+assignment is immutable; the endpoint rejects replacing it.
+
+An estimate must use evidence state `estimated`, source
+`reviewed-best-available`, a reason (8–500 characters), observation timestamp and
+evidence references. The service correction must additionally include:
+
+```json
+{
+  "estimateAcceptance": {
+    "policy": "best-available-v1",
+    "finalForRankings": true,
+    "assumptions": ["Explain the evidence chosen and unresolved discrepancy"]
+  }
+}
+```
+
+This acceptance is service-only and supplements the required reviewer, reason,
+references and expected previous digest. Unknown facts remain unknown. Identity
+and dated team membership checks remain mandatory; estimates cannot invent a
+player or silently turn an omitted player into a nonparticipant. An explicit
+`estimatedNonParticipants` list is supported with the same acceptance and dated
+membership validation, and cannot overlap appearance rows or verified absences.
+
+Estimated fields are scorable only after a fixture locks to simple mode. They
+never prove full readiness, never score excluded detail categories, and cannot
+be submitted to a fixture already locked full. Per-fixture responses expose
+`estimated: true`; French and Arabic breakdowns label estimated data. The rules
+response advertises `estimatesFinalForRankings` only for v2.1. Published results
+retain the existing reviewed 72-hour correction process.
+
+Verification includes strict/estimated separation, acceptance and identity
+rejection, unchanged full-mode locks, persistence replay, and a mixed fixture
+team finalized into both gameweek and season rankings. The new migration does
+not activate a production policy or import match corrections by itself.
 
 ## Rollout gates
 

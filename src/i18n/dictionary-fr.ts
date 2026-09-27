@@ -4,6 +4,9 @@
 // Arabic dictionary (dictionary-ar.ts) loads when a reader chooses Arabic.
 // `dictionaries.ts` puts both together for the tests and the i18n gate.
 export const fr = {
+  "fantasy.scoring.simpleEstimated": "Barème simplifié · données estimées",
+  "fantasy.scoring.estimatesPolicy":
+    "Les estimations examinées à partir des meilleures données disponibles peuvent être définitives et compter au classement. Les hypothèses sont conservées et les points restent soumis à la procédure de correction de 72 heures. Une identité ambiguë reste en attente.",
   "fantasy.scoring.full": "Barème complet",
   "fantasy.scoring.simple": "Barème simplifié",
   "fantasy.scoring.pending": "En attente des données",

@@ -3,12 +3,14 @@ import { scorePlayerFixture } from "./scoring";
 import type { FantasyPosition } from "./contracts";
 
 export type ScoringMode = "full" | "simple";
-export type EvidenceState = "verified" | "derived" | "unknown";
+export type EvidenceState = "verified" | "derived" | "estimated" | "unknown";
 export interface StatisticEvidence {
   state: EvidenceState;
   source: string;
   observedAt: string;
   references: readonly string[];
+  /** Explicit assumption retained for a reviewed best-available value. */
+  reason?: string;
 }
 export const SIMPLE_FIELDS = [
   "minutes",
@@ -48,12 +50,25 @@ export function certified(
   field: ScoringField,
   stats: CertifiedStats,
   evidence: FieldEvidence,
+  allowEstimated = false,
 ): boolean {
   const value = stats[field];
   const item = evidence[field];
   return (
     item !== undefined &&
-    item.state !== "unknown" &&
+    item !== null &&
+    typeof item === "object" &&
+    typeof item.source === "string" &&
+    typeof item.observedAt === "string" &&
+    Array.isArray(item.references) &&
+    ["verified", "derived", "estimated"].includes(item.state) &&
+    (item.state !== "estimated" ||
+      (allowEstimated &&
+        (SIMPLE_FIELDS as readonly string[]).includes(field) &&
+        item.source === "reviewed-best-available" &&
+        typeof item.reason === "string" &&
+        item.reason.trim().length >= 8 &&
+        item.reason.trim().length <= 500)) &&
     item.source.trim().length > 0 &&
     Number.isFinite(Date.parse(item.observedAt)) &&
     item.references.length > 0 &&
@@ -74,7 +89,7 @@ export function readiness(
   evidence: FieldEvidence,
   position: FantasyPosition,
 ) {
-  const core = SIMPLE_FIELDS.every((field) => certified(field, stats, evidence));
+  const core = SIMPLE_FIELDS.every((field) => certified(field, stats, evidence, true));
   const details = DETAIL_FIELDS.filter(
     (field) => position === "GK" || !["saves", "penaltiesSaved"].includes(field),
   );
@@ -82,6 +97,7 @@ export function readiness(
     simple: core,
     full:
       core &&
+      SIMPLE_FIELDS.every((field) => evidence[field]?.state !== "estimated") &&
       SIMPLE_FIELDS.filter((field) => field !== "cleanSheet").every(
         (field) => evidence[field]?.state === "verified",
       ) &&
@@ -118,7 +134,10 @@ export function scoreCertifiedPlayerFixture(
     )
       return false;
     const fields = categoryFields[event.category];
-    return fields !== undefined && fields.every((field) => certified(field, stats, evidence));
+    return (
+      fields !== undefined &&
+      fields.every((field) => certified(field, stats, evidence, mode === "simple"))
+    );
   });
 }
 

@@ -250,6 +250,7 @@ export interface FantasyOverallStandingsInput {
 }
 
 export const fixtureScoringSchema = z.object({
+  estimated: z.boolean().optional(),
   teamIds: z.array(postgresUuidSchema).optional(),
   fixtureId: postgresUuidSchema,
   mode: z.enum(["full", "simple"]).nullable(),
@@ -467,6 +468,7 @@ export const fantasyRulesSchema = z.object({
       selectionDelayHours: z.literal(12),
       scope: z.literal("fixture"),
       lateModeUpgrade: z.literal(false),
+      estimatesFinalForRankings: z.boolean().optional(),
     })
     .optional(),
   seasonId: postgresUuidSchema,
