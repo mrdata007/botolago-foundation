@@ -15,7 +15,7 @@ create table app_private.fantasy_fixture_observations (
   payload jsonb not null check (jsonb_typeof(payload)='object' and pg_column_size(payload)<2097152),
   full_ready boolean not null,
   simple_ready boolean not null,
-  unique(fixture_id, observed_at), unique(fixture_id,digest)
+  unique(fixture_id,digest)
 );
 create index fantasy_fixture_observations_cutoff on app_private.fantasy_fixture_observations(fixture_id,observed_at desc);
 create table app_private.fantasy_fixture_scoring_modes (
@@ -185,7 +185,7 @@ grant execute on function api.service_record_fantasy_observation(uuid,jsonb,text
 create function api.service_select_fantasy_scoring_modes(p_gameweek_id uuid)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare g app.fantasy_gameweeks%rowtype; f record; s app_private.fantasy_fixture_observations%rowtype;
- policy app_private.fantasy_adaptive_policy%rowtype; cutoff timestamptz;
+ policy app_private.fantasy_adaptive_policy%rowtype; cutoff timestamptz; rollout boolean;
 begin
  if not app_private.is_service_request() then raise exception using errcode='PT403',message='forbidden'; end if;
  select * into g from app.fantasy_gameweeks where id=p_gameweek_id for update;
@@ -198,7 +198,8 @@ begin
  order by fi.id for update of fi loop
  if f.finalized_at is null then continue; end if;
  cutoff:=f.finalized_at+interval '12 hours';
- if cutoff<policy.activated_at then
+ rollout:=cutoff<policy.activated_at;
+ if rollout then
  -- Overdue rollout fixtures select their first audit snapshot, never whichever
  -- payload happens to be current when the scoring worker restarts.
  select * into s from app_private.fantasy_fixture_observations where fixture_id=f.id
@@ -209,7 +210,9 @@ begin
  insert into app_private.fantasy_fixture_scoring_modes(gameweek_id,fixture_id,cutoff_at)
  values(g.id,f.id,cutoff) on conflict do nothing;
  if statement_timestamp()>=cutoff then
+ if not rollout then
  select * into s from app_private.fantasy_fixture_observations where fixture_id=f.id and observed_at<=cutoff order by observed_at desc,id desc limit 1;
+ end if;
  update app_private.fantasy_fixture_scoring_modes set mode=case when coalesce(s.full_ready,false) then 'full' else 'simple' end,
  selected_at=statement_timestamp(),selection_observation_id=s.id,reason=case when coalesce(s.full_ready,false) then 'complete_at_cutoff' else 'detailed_statistics_incomplete' end
  where gameweek_id=g.id and fixture_id=f.id and mode is null;

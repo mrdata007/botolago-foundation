@@ -112,6 +112,15 @@ do $$declare snap jsonb; begin
 end $$;
 select extensions.is((select count(*)::text from app.fantasy_player_point_events where gameweek_id=pg_temp.scoring_id(6)),current_setting('test.ledger_count'),'adaptive persistence replay never duplicates points');
 select extensions.is((select count(*)::integer from app.fantasy_player_point_events where fixture_id=pg_temp.scoring_id(3002) and category in ('assist','saves','penalty_save','penalty_miss') and superseded_at is null),0,'excluded simple categories have no verified-zero ledger rows');
+-- Two observations can share the statement clock; IDs break ties, and rollout
+-- still chooses exactly its first audit observation.
+do $$declare first_observation jsonb; begin
+ first_observation:=api.service_record_fantasy_observation(pg_temp.scoring_id(3003),pg_temp.adaptive_payload(3),'reviewed-correction');
+ perform api.service_record_fantasy_observation(pg_temp.scoring_id(3003),jsonb_set(pg_temp.adaptive_payload(3),'{players,0,evidence,saves,state}','"unknown"')||jsonb_build_object('expectedDigest',first_observation->>'digest'),'reviewed-correction');
+end $$;
+select extensions.is((select count(*)::integer from app_private.fantasy_fixture_observations where fixture_id=pg_temp.scoring_id(3003)),2,'same-clock observations do not collide');
+select api.service_select_fantasy_scoring_modes(pg_temp.scoring_id(6));
+select extensions.is((select mode from app_private.fantasy_fixture_scoring_modes where fixture_id=pg_temp.scoring_id(3003)),'full','overdue selection uses first audit ID even when later observations share its timestamp');
 select set_config('request.jwt.claims','{"role":"authenticated"}',true);
 select extensions.throws_ok($$select api.service_record_fantasy_observation(pg_temp.scoring_id(3001),current_setting('test.payload')::jsonb,'reviewed-correction')$$,'PT403','forbidden','service boundary enforced at runtime');
 select * from extensions.finish();
