@@ -5,11 +5,8 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
-import {
-  isKickoffDateUnconfirmed,
-  isKickoffTimeUnconfirmed,
-  MATCH_TIME_ZONE,
-} from "@/lib/match-kickoff";
+import { isKickoffDateUnconfirmed, isKickoffTimeUnconfirmed } from "@/lib/match-kickoff";
+import { timeZoneLabel, useViewerTimeZone } from "@/lib/viewer-time-zone";
 import { cn } from "@/lib/utils";
 import type { MatchEvent } from "@/services/match-live";
 import type { Club, Match } from "@/types/domain";
@@ -68,15 +65,16 @@ export function MatchScoreHeader({
   ref?: Ref<HTMLElement>;
 }) {
   const { t, tr, lang } = useI18n();
+  const timeZone = useViewerTimeZone();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   const kickoff = new Date(match.kickoff);
   const timeFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+    timeZone,
     hour: "2-digit",
     minute: "2-digit",
   }).format(kickoff);
   const dateFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+    timeZone,
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -95,7 +93,14 @@ export function MatchScoreHeader({
     t("matches.kickoff_date_unconfirmed")
   ) : (
     <>
-      {dateFmt} · {unconfirmedTime ? t("matches.kickoff_unconfirmed") : <bdi>{timeFmt}</bdi>}
+      {dateFmt} ·{" "}
+      {unconfirmedTime ? (
+        t("matches.kickoff_unconfirmed")
+      ) : (
+        <bdi>
+          {timeFmt} ({timeZoneLabel(timeZone)})
+        </bdi>
+      )}
     </>
   );
   const venue = tr(match.venue).trim();

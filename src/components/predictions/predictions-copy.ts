@@ -1,6 +1,7 @@
 import type { RoundState } from "@/backend/predictions/contracts";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { timeZoneLabel } from "@/lib/viewer-time-zone";
 import type { Language } from "@/types/domain";
 
 /**
@@ -137,23 +138,26 @@ function locale(lang: Language): string {
   return lang === "ar" ? "ar-MA" : "fr-FR";
 }
 
-/** "20:00", Casablanca time. */
-export function formatKickoffTime(iso: string, lang: Language): string {
+/** A fixture's displayed clock time; grouping remains on the Morocco calendar. */
+export function formatKickoffTime(iso: string, lang: Language, timeZone = MATCH_TIME_ZONE): string {
   return new Intl.DateTimeFormat(locale(lang), {
-    timeZone: MATCH_TIME_ZONE,
+    timeZone,
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(iso));
 }
 
 /** "ven. 20:00": the next lock, within a week. */
-export function formatLockMoment(iso: string, lang: Language): string {
-  return new Intl.DateTimeFormat(locale(lang), {
-    timeZone: MATCH_TIME_ZONE,
+export function formatLockMoment(iso: string, lang: Language, timeZone = MATCH_TIME_ZONE): string {
+  const formatted = new Intl.DateTimeFormat(locale(lang), {
+    timeZone,
     weekday: "short",
+    day: "numeric",
+    month: "short",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(iso));
+  return timeZone === MATCH_TIME_ZONE ? formatted : `${formatted} (${timeZoneLabel(timeZone)})`;
 }
 
 /** "Vendredi 26 septembre": a day heading. */

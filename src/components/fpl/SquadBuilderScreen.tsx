@@ -7,6 +7,7 @@ import { ui, UiBanner, UiButton, UiHeader, UiIconButton, UiSegmented } from "@/c
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
 import { cn } from "@/lib/utils";
+import { useViewerTimeZone } from "@/lib/viewer-time-zone";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position, SquadPlayer } from "@/types/fantasy";
 import { findClub } from "./club-lookup";
@@ -36,13 +37,14 @@ const ROWS: Position[] = ["GK", "DEF", "MID", "FWD"];
  */
 function DeadlineLine({ gameweek, deadlineIso }: { gameweek: number; deadlineIso: string }) {
   const { t, lang } = useI18n();
+  const timeZone = useViewerTimeZone();
   return (
     <p className={cn("min-w-0", ui.text.meta, ui.tone.onInkMuted)}>
       {t("fpl.gameweek")} {gameweek} · {t("fpl.deadline")}
       {/* French sets a narrow no-break space before a colon. */}
       {lang === "fr" ? " :" : ":"}{" "}
       <strong className={cn("whitespace-nowrap", ui.tone.onInkPlain)}>
-        {formatDeadline(deadlineIso, lang)}
+        {formatDeadline(deadlineIso, lang, { timeZone })}
       </strong>
     </p>
   );

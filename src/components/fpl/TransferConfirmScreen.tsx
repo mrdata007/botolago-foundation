@@ -11,6 +11,7 @@ import type { Club } from "@/types/domain";
 import type { FantasyPlayer } from "@/types/fantasy";
 import { findClub } from "./club-lookup";
 import { formatDeadline } from "./deadline";
+import { useViewerTimeZone } from "@/lib/viewer-time-zone";
 import { FplChipsRow } from "./FplChipsRow";
 
 /**
@@ -60,6 +61,7 @@ export function TransferConfirmScreen({
   busy?: boolean;
 }) {
   const { t, tr, lang } = useI18n();
+  const timeZone = useViewerTimeZone();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
@@ -142,7 +144,7 @@ export function TransferConfirmScreen({
           {/* French sets a narrow no-break space before a colon. */}
           {lang === "fr" ? " :" : ":"}{" "}
           <strong className={cn("whitespace-nowrap", ui.tone.onInkPlain)}>
-            <bdi>{formatDeadline(deadlineIso, lang)}</bdi>
+            <bdi>{formatDeadline(deadlineIso, lang, { timeZone })}</bdi>
           </strong>
         </p>
       </div>

@@ -101,6 +101,8 @@ export const ar = {
   "article.not_found_desc": "قد يكون هذا المقال قد أُزيل أو نُقل.",
 
   "matches.title": "المباريات",
+  "matches.local_time": "التوقيت المحلي: {zone}",
+  "matches.morocco_calendar": "أيام التقويم: المغرب",
   "matches.tab.all": "الكل",
   "matches.tab.live": "مباشر",
   "matches.tab.upcoming": "قادمة",

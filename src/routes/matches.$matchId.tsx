@@ -49,7 +49,7 @@ import { MatchPredictionCard } from "@/components/predictions/MatchPredictionCar
 import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/structured-data";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { useViewerTimeZone } from "@/lib/viewer-time-zone";
 import { matchRefetchInterval, rereadTableOnFinish } from "@/lib/match-refresh";
 
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
@@ -172,6 +172,7 @@ function MatchDetailPage() {
   const loaderData = isUnavailable(loaded) ? undefined : loaded;
   const navigate = useNavigate({ from: Route.fullPath });
   const { t, tr, lang } = useI18n();
+  const timeZone = useViewerTimeZone();
   // Articles and matches are the pages most often opened from a shared link,
   // where there is no in-app entry to go back to; fall back to the listing.
   const goBack = useBackTo("/matches");
@@ -293,10 +294,9 @@ function MatchDetailPage() {
   // As of the query's own read, which the server and the first render share.
   const phase = matchDataPhase(match, detailQ.dataUpdatedAt);
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
-  // Pinned to the competition zone so this names the same day the card, the
-  // strip and the fixture list name (BG-0100).
+  // The match detail names the viewer's local kickoff day.
   const dateFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+    timeZone,
     weekday: "long",
     day: "numeric",
     month: "long",

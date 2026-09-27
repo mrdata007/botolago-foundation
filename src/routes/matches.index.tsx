@@ -28,6 +28,7 @@ import { ui, UiCard, UiChip, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { isSameMatchDay, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
+import { timeZoneLabel, useViewerTimeZone } from "@/lib/viewer-time-zone";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { matchRounds } from "@/lib/match-days";
 import { unavailableHeaders } from "@/lib/page-availability";
@@ -166,6 +167,7 @@ function openingSeason(
  */
 function MatchesPage() {
   const { t, lang } = useI18n();
+  const timeZone = useViewerTimeZone();
   const { season: requestedSeasonId } = Route.useSearch();
   const { today } = Route.useLoaderData();
   // What the reader picked; `null` until they pick, which is the season and
@@ -373,6 +375,11 @@ function MatchesPage() {
         gameweeks={dayGameweeks}
         className="-mt-4 sm:mt-0"
       />
+      <p className={cn("mt-2", ui.text.micro, ui.tone.muted)}>
+        {t("matches.local_time").replace("{zone}", timeZoneLabel(timeZone))}
+        {" · "}
+        {t("matches.morocco_calendar")}
+      </p>
 
       {/* Loading / error / empty */}
       {loading && (
