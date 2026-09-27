@@ -53,7 +53,9 @@ export function PointsChart({
         fixture.pending
           ? t("fantasy.scoring.pending")
           : fixture.mode === "simple"
-            ? t(fixture.estimated ? "fantasy.scoring.simpleEstimated" : "fantasy.scoring.simple")
+            ? fixture.estimated
+              ? t("fantasy.scoring.simpleEstimated")
+              : t("fantasy.scoring.simple")
             : t("fantasy.scoring.full"),
       ),
       bar.provisional ? t("fantasy.points.status.provisional") : null,
@@ -108,11 +110,9 @@ export function PointsChart({
                     {fixture.pending
                       ? t("fantasy.scoring.pending")
                       : fixture.mode === "simple"
-                        ? t(
-                            fixture.estimated
-                              ? "fantasy.scoring.simpleEstimated"
-                              : "fantasy.scoring.simple",
-                          )
+                        ? fixture.estimated
+                          ? t("fantasy.scoring.simpleEstimated")
+                          : t("fantasy.scoring.simple")
                         : t("fantasy.scoring.full")}
                   </span>
                 ))}
