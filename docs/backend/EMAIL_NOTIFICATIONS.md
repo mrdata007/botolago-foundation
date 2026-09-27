@@ -14,6 +14,17 @@ is how it gets switched on, watched and paused.
 | Kick-off alert      | one hour before kick-off                                                                                     | fans of a club playing (favourite club, followed team or subscription) | Match alerts         |
 | Fantasy deadline    | 24 h before each gameweek deadline, only if that deadline is confirmed                                       | everyone with Fantasy reminders on                                     | Fantasy reminders    |
 | Fantasy round recap | when the gameweek's points are final                                                                         | every Fantasy manager with Fantasy reminders on                        | Fantasy reminders    |
+| Pépites weekly      | when a weekly Top 10 is published while Pépites is public (Monday 20:00 by default); stale after 36 h        | only readers who opted in (off for everyone by default)                | Pépites weekly       |
+
+**Pépites weekly** (migrations `20260926110000`–`20260926110100`,
+[PEPITES_ARCHITECTURE.md §5.4](../engineering/PEPITES_ARCHITECTURE.md)) is an
+explicit opt-in: `app.user_preferences.pepites_weekly_email` is false for every
+account, and only `api.set_my_pepites_weekly_email` or the Pépites unsubscribe
+link change it. Its unsubscribe link turns off Pépites only (the token carries
+`topic = 'pepites_weekly'`); every other email stays on. A staff preview never
+emails anyone, a withdrawn or corrected edition's unsent emails are cancelled,
+and a correction goes only to readers who had no email for that week.
+`app_private.pepites_email_report(edition_id)` counts an edition's emails.
 
 On top of the topic switches, every email needs: email notifications on (the
 **E-mails** switch on the Fantasy page, or Profile → Notifications), a
@@ -40,8 +51,9 @@ before anything is sent:
 - Everything Resend has accepted counts, plus anything being sent right now.
 - When the allowance is short, the most time-critical emails go first:
   kick-off alert, Fantasy deadline, match-day preview, match-day results,
-  Fantasy recap, round preview. Within one kind the order is shuffled, so the
-  same readers are not always the ones left waiting.
+  Fantasy recap, round preview, and Pépites weekly last. Within one kind the
+  order is shuffled, so the same readers are not always the ones left
+  waiting. No type, Pépites included, can spend the daily reserve.
 - Mail that is still waiting when its moment passes is cancelled, never sent
   late. Mail that fits when the quota resets goes out then.
 - If Resend still answers "daily/monthly quota exceeded" (for example because
@@ -75,6 +87,23 @@ moment, each notification one email, and the provider call carries the
 delivery id as its idempotency key. A moment that could not be sent in time is
 cancelled, never sent late.
 
+The idempotency key holds for **24 hours** at Resend: inside them, a retry
+under the same key and body returns the first result instead of sending
+again; after them, the same key would send a second email. So (since
+`20260926110100`, for every type):
+
+- each attempt records the SHA-256 of the exact request body, and a retry
+  whose body would differ from the first attempt's is closed unsent
+  (`delivery_body_changed`);
+- the delivery keeps its first claim time (`first_claimed_at`), and a send
+  whose outcome is unknown (timeout, network error, provider error, still in
+  progress, or a pass that claimed it and never recorded) is retried only
+  while that is under 23 hours old. After that it is closed as
+  `possibly_sent` and not sent again.
+
+The promise is at most one email per person per moment inside the provider's
+window and no automatic resend after it, not exactly-once in every case.
+
 ## How it works
 
 ```
@@ -100,6 +129,11 @@ pg_cron  football-live-refresh      every minute
          kick-off, never otherwise → Edge Function football-live-refresh → the
          same SportsMonks fixture handler the orchestrator uses, for
          yesterday–tomorrow.
+
+pg_cron  football-season-refresh    every 10 minutes (migration 20260926113100)
+         app_private.football_season_refresh_tick() — once an hour, under the
+         same switch → Edge Function football-live-refresh {"job":"season_fixtures"}
+         → the same handler, for yesterday to six weeks ahead, scores only.
 ```
 
 The live refresh exists because the GitHub orchestrator, scheduled hourly, ran
@@ -110,6 +144,27 @@ kick-off, nothing otherwise) is migration
 about 60 SportsMonks requests. `app_private.football_live_refresh_heartbeat`
 holds the last call, and the ops health check `live_scores` fails when a
 match is in play and no fixture refresh ran for 10 minutes.
+
+The season refresh (since migration `20260926113100`) covers what the live
+refresh does not: kickoffs confirmed or moved and matches postponed in the
+weeks ahead, which the Fantasy calendar sync picks up within 5 minutes. Until
+then only the GitHub orchestrator read beyond tomorrow, and GitHub started it
+3 to 6 hours apart. It costs one to three SportsMonks requests an hour.
+Six weeks ahead reaches rounds SportsMonks has just published: a match in a
+round (or of a club) the catalog has not registered yet is skipped, not
+rejected, and arrives with the Fantasy season orchestrator's next catalog
+step, as it did before. A run that could place no match at all still fails
+(`fixtures_not_catalogued`).
+`app_private.football_season_refresh_heartbeat` holds its last call. The two
+jobs never call at once (`app_private.football_refresh_dispatch` records the
+last call): each waits, answering `busy`, while the other's last call has no
+answer yet, for 150 s at most, and tries again at its next tick. With the
+switch on, the ops health check `provider_refresh` fails, and pages, when no
+successful refresh of a week or more reaching today has run for 4 hours
+(warns at 2), counted from when the refresh started or was switched back on.
+It needs the Edge Function deployed with the `season_fixtures` job
+(`scripts/backend/apply-20260926113100-football-season-refresh.sql` says so
+first); an older one answers 400 and the check fails 4 hours later.
 
 Code: migrations `20260924140000_notification_email_types.sql` and
 `20260924140100_notification_email_delivery.sql`; Edge Functions
