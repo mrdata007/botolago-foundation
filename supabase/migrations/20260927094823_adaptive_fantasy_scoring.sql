@@ -540,11 +540,14 @@ revoke all on function app_private.fantasy_player_fixture_modes(uuid,uuid) from 
 alter function api.get_my_fantasy_points(uuid,uuid) rename to get_my_fantasy_points_v1;
 revoke all on function api.get_my_fantasy_points_v1(uuid,uuid) from public,anon,authenticated,service_role;
 create function api.get_my_fantasy_points(p_team_id uuid,p_gameweek_id uuid)
-returns jsonb language sql stable security definer set search_path='' as $$
- select doc||jsonb_build_object('fixtureScoring',app_private.fantasy_fixture_mode_details(p_gameweek_id),
- 'players',(select coalesce(jsonb_agg(player||jsonb_build_object('fixtureScoring',app_private.fantasy_player_fixture_modes(p_gameweek_id,(player->>'fantasyPlayerId')::uuid))),'[]') from jsonb_array_elements(doc->'players') player))
- from (select api.get_my_fantasy_points_v1(p_team_id,p_gameweek_id) doc) authorized;
-$$;
+returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare doc jsonb;
+begin
+ perform app_private.assert_mfa_step_up();
+ doc:=api.get_my_fantasy_points_v1(p_team_id,p_gameweek_id);
+ return doc||jsonb_build_object('fixtureScoring',app_private.fantasy_fixture_mode_details(p_gameweek_id),
+ 'players',(select coalesce(jsonb_agg(player||jsonb_build_object('fixtureScoring',app_private.fantasy_player_fixture_modes(p_gameweek_id,(player->>'fantasyPlayerId')::uuid))),'[]') from jsonb_array_elements(doc->'players') player));
+end $$;
 revoke all on function api.get_my_fantasy_points(uuid,uuid) from public,anon;
 grant execute on function api.get_my_fantasy_points(uuid,uuid) to authenticated,service_role;
 
@@ -628,7 +631,7 @@ returns jsonb language plpgsql security definer set search_path='' as $$
 declare f app.fixtures%rowtype; r jsonb; pr uuid; tm uuid; rows jsonb:='[]'::jsonb; ev jsonb; stats jsonb;
  payload jsonb; result jsonb; anonymous jsonb:='{}'::jsonb;
 begin
- if not app_private.is_service_request() then raise exception using errcode='PT403',message='forbidden'; end if;
+ if not app_private.is_service_request() then raise exception using errcode='42501',message='football_service_role_required'; end if;
  select fi.* into f from app.fixtures fi join app_private.football_provider_mappings m on m.internal_entity_id=fi.id
  where m.provider_name=p_provider_name and m.entity_type='fixture' and m.external_id=p_fixture_external_id and m.active;
  if not exists(select 1 from app.fantasy_fixture_assignments a where a.fixture_id=f.id and a.superseded_at is null
