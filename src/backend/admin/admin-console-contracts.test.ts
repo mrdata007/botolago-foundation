@@ -204,7 +204,12 @@ describe("Frozen Admin Console contracts", () => {
     for (const item of ADMIN_CONSOLE_NAV_ITEMS) {
       expect(IMPLEMENTED_ROUTES.has(item.route)).toBe(true);
       const source = sources[item.route];
-      expect(source).toContain(`createFileRoute("${item.route}")`);
+      // TanStack gives an index route a trailing slash in its file route ID,
+      // while the navigation URL remains the parent path.
+      const routeId = SCREEN_ROUTE_FILES[item.route].endsWith(".index.tsx")
+        ? `${item.route}/`
+        : item.route;
+      expect(source).toContain(`createFileRoute("${routeId}")`);
       // The link is never the authority: the route re-checks access server-side.
       expect(source).toContain("loader:");
     }

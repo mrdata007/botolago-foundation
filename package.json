@@ -16,6 +16,8 @@
     "test:e2e": "playwright test",
     "test:e2e:staging": "playwright test tests/e2e/staging.acceptance.e2e.ts",
     "test:e2e:fantasy": "playwright test tests/e2e/fantasy.journey.e2e.ts",
+    "seo:audit": "bun scripts/seo/audit-site.ts",
+    "seo:gsc": "bun scripts/seo/analyze-search-console.ts",
     "test:backend": "bun test src/backend",
     "lint": "eslint .",
     "format": "prettier --write .",

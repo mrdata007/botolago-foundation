@@ -308,7 +308,8 @@ select extensions.throws_ok(
   format($$select pg_temp.resolve(%L)$$, pg_temp.assignment(pg_temp.fixture(1, 1))),
   'PT409', pg_temp.window_open(pg_temp.assignment(pg_temp.fixture(1, 1))),
   'so is a match being played');
-update app.fixtures set status = 'finished', period = 'post_match', home_score = 1, away_score = 0
+-- Both played matches are goalless, matching the all-zero goal facts below.
+update app.fixtures set status = 'finished', period = 'post_match', home_score = 0, away_score = 0
 where id in (pg_temp.fixture(1, 1), pg_temp.fixture(1, 3));
 select extensions.throws_ok(
   format($$select pg_temp.resolve(%L)$$, pg_temp.assignment(pg_temp.fixture(1, 1))),

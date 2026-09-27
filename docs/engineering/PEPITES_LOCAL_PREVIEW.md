@@ -96,3 +96,14 @@ E2E_PEPITES_LOCAL_STACK=1 E2E_BASE_URL=http://127.0.0.1:4174 \
 
 It writes to the local database (it publishes week 7), so reseed before
 running it again.
+
+## Fantasy handoff regression fixture
+
+After a clean Pépites seed, run `scripts/backend/pepites-local-fantasy-seed.sql`
+against the same isolated local database, with the scheduled writers paused.
+It requires the fictional catalog and email off, adds an open Fantasy season,
+and creates the fan's squad through the real RPC. Use
+`VITE_FANTASY_DATA_MODE=supabase VITE_FOOTBALL_DATA_MODE=supabase` alongside
+the existing real auth/Pépites settings. The local-stack browser suite then
+verifies the mapped player, transfer confirmation, reload, already-owned,
+unavailable, budget, club-limit, and sign-in handoff behavior.

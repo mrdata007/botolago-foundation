@@ -19,7 +19,7 @@ import {
 export interface PointsViewModel {
   gameweek: number;
   /** "engine" when derived from computeGameweekResult; "legacy_mock" when only totals exist. */
-  source: "engine" | "legacy_mock";
+  source: "engine" | "legacy_mock" | "server";
   totalPoints: number;
   /** XI points including captain multiplier BEFORE the transfer hit is subtracted. */
   rawXiPoints: number;
@@ -172,5 +172,36 @@ export function buildLegacyViewModel(
     averagePoints: gw.averagePoints,
     highestPoints: gw.highestPoints,
     computedAt: new Date().toISOString(),
+  };
+}
+
+/** Render the frozen server calculation without re-running captain/bench rules
+ * against today's editable squad or interpreting pending minutes as no-shows. */
+export function buildServerPointsViewModel(result: GameweekResult): PointsViewModel {
+  const a = result.authoritative;
+  if (!a) throw new Error("authoritative_points_required");
+  const captain = result.breakdown.find((p) => p.playerId === a.effectiveCaptainId);
+  return {
+    gameweek: result.gameweek,
+    source: "server",
+    totalPoints: result.totalPoints,
+    rawXiPoints: result.totalPoints + a.transferHit,
+    captainBonus: a.captainPoints,
+    effectiveCaptainId: a.effectiveCaptainId,
+    captainMultiplier: a.captainMultiplier,
+    captainTookOver: !!captain && captain.isViceCaptain === true,
+    originalBenchPoints: result.benchPoints,
+    benchBoostContribution: a.chipType === "bench_boost" ? result.benchPoints : 0,
+    tripleCaptainContribution: a.chipType === "triple_captain" ? (captain?.totalPoints ?? 0) : 0,
+    transferHitPoints: a.transferHit,
+    activeChip: a.chipType,
+    effectiveStartingIds: a.startingIds,
+    originalBenchIds: a.benchIds,
+    autoSubs: result.autoSubs,
+    breakdown: result.breakdown,
+    averagePoints: result.averagePoints,
+    highestPoints: result.highestPoints,
+    computedAt: new Date().toISOString(),
+    finalized: a.finalized,
   };
 }

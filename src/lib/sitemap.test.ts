@@ -22,6 +22,11 @@ describe("sitemap.xml", () => {
     expect(xml).not.toContain("/news");
     expect(xml).toContain("<loc>https://botolago.com/</loc>");
     expect(xml).toContain("<loc>https://botolago.com/fantasy/rules</loc>");
+    expect(xml).toContain("<loc>https://botolago.com/fantasy/players</loc>");
+    expect(xml).toContain("<loc>https://botolago.com/fantasy/top-players</loc>");
+    expect(xml).toContain("<loc>https://botolago.com/fantasy/fixtures</loc>");
+    expect(xml).toContain("<loc>https://botolago.com/fantasy/rankings</loc>");
+    expect(xml).toContain("<loc>https://botolago.com/fantasy/help</loc>");
     expect(xml).toContain("<loc>https://botolago.com/matches/standings</loc>");
   });
 

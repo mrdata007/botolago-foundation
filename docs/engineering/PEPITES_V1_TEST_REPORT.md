@@ -120,7 +120,9 @@ of the player's squad place.
 1. Review, then merge the stacked branches in order.
 2. Production migrations through `RELEASE_ACTIVATION_MIGRATION_RUNBOOK.md`,
    dry-run first, one writer at a time: `20260926060000` to
-   `20260926140000`.
+   `20260926212632` (including Follow/Stats at `20260926150000` and the frozen Stats correction).
+   Apply with mode `off`; old sealed runs retain unavailable detailed measures,
+   and newly computed runs capture them. Do not backfill from mutable provider data.
 3. Deploy the Edge Functions: `notification-email-dispatch` and
    `notification-email-unsubscribe` (changed), `player-photo-upload` (new).
 4. Data: the provider-B choice for attributes (open item, §12); check date

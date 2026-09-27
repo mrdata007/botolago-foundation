@@ -118,7 +118,10 @@ export function TopTenHero({
             <h2
               id={titleId}
               data-testid="pepites-edition-title"
-              className={cn(pp.monoStrong, "text-[11px] text-white ltr:tracking-[0.1em]")}
+              className={cn(
+                pp.monoStrong,
+                "text-[11px] leading-[1.4] text-white ltr:tracking-[0.06em]",
+              )}
             >
               {title}
             </h2>
@@ -180,7 +183,7 @@ export function TopTenHero({
             </div>
           </div>
           {reason ? (
-            <p className="text-[12px] leading-[1.45] text-[color:var(--pepites-on-night-sub)]">
+            <p className="text-[13px] leading-[1.5] text-[color:var(--pepites-on-night-sub)]">
               «&nbsp;{reason}&nbsp;»
             </p>
           ) : null}
@@ -260,7 +263,9 @@ export function LeaderboardRow({
           <p className={cn(pp.heavy, pp.text, "truncate text-[13px] leading-tight")}>
             <bdi>{player.name}</bdi>
           </p>
-          <p className={cn(pp.mono, pp.muted, "truncate text-[9px] leading-tight")}>
+          <p
+            className={cn(pp.mono, pp.muted, "text-[11px] leading-[1.4] [overflow-wrap:anywhere]")}
+          >
             {playerMetaLine(player, stats, { t, tr, lang })}
           </p>
           <Seg10Bar value={item.score} />
@@ -269,12 +274,18 @@ export function LeaderboardRow({
           <bdi className={cn(pp.display, pp.ink, "text-[22px]")}>
             {scoreText(item.score, lang, t("pepites.unranked"))}
           </bdi>
-          <span className={cn(pp.monoStrong, pp.muted, "text-[7px] ltr:tracking-[0.12em]")}>
+          <span
+            className={cn(
+              pp.monoStrong,
+              pp.muted,
+              "text-[10px] leading-[1.4] ltr:tracking-[0.04em]",
+            )}
+          >
             {t("pepites.score_name")}
           </span>
         </span>
       </div>
-      {reason ? <p className={cn(pp.muted, "ps-8 text-[12px] leading-[1.4]")}>{reason}</p> : null}
+      {reason ? <p className={cn(pp.muted, "ps-8 text-[13px] leading-[1.5]")}>{reason}</p> : null}
     </Link>
   );
 }

@@ -885,6 +885,10 @@ export type Database = {
         Args: { p_fantasy_player_id: string }
         Returns: Json
       }
+      fantasy_player_gameweek_history_v1: {
+        Args: { p_fantasy_player_id: string }
+        Returns: Json
+      }
       fantasy_player_pool: {
         Args: {
           p_after_id?: string
@@ -912,6 +916,7 @@ export type Database = {
       }
       fantasy_prizes: { Args: never; Returns: Json }
       fantasy_rules: { Args: { p_season_id: string }; Returns: Json }
+      fantasy_rules_v1: { Args: { p_season_id: string }; Returns: Json }
       fantasy_top_players: {
         Args: { p_gameweek_id: string; p_limit?: number }
         Returns: Json
@@ -937,6 +942,15 @@ export type Database = {
         Returns: Json
       }
       football_current_performance_fixture_batch: {
+        Args: {
+          p_after_fixture_external_id?: string
+          p_limit?: number
+          p_provider_name: string
+          p_season_external_id: string
+        }
+        Returns: Json
+      }
+      football_current_performance_fixture_batch_v1: {
         Args: {
           p_after_fixture_external_id?: string
           p_limit?: number
@@ -1082,10 +1096,29 @@ export type Database = {
         Args: { p_gameweek_id: string; p_team_id: string }
         Returns: Json
       }
+      get_my_fantasy_points_before_live: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
+      get_my_fantasy_points_v1: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
       get_my_fantasy_team: { Args: { p_season_id: string }; Returns: Json }
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
       ingest_current_player_fixture_performance: {
+        Args: {
+          p_coverage: Json
+          p_fixture_external_id: string
+          p_observed_at: string
+          p_provider_name: string
+          p_rows: Json
+          p_season_external_id: string
+        }
+        Returns: Json
+      }
+      ingest_current_player_fixture_performance_v1: {
         Args: {
           p_coverage: Json
           p_fixture_external_id: string
@@ -1372,6 +1405,7 @@ export type Database = {
         Args: { p_season_id: string; p_week: number }
         Returns: Json
       }
+      pepites_follow_state: { Args: { p_player_id: string }; Returns: Json }
       pepites_home: { Args: { p_version?: string }; Returns: Json }
       pepites_methodology: { Args: never; Returns: Json }
       pepites_player: {
@@ -1382,16 +1416,26 @@ export type Database = {
         Args: { p_limit?: number; p_player_id: string }
         Returns: Json
       }
+      pepites_player_stats: {
+        Args: { p_player_id: string; p_version: string }
+        Returns: Json
+      }
       pepites_ranking: {
         Args: {
+          p_followed?: boolean
           p_limit?: number
           p_max_age?: number
+          p_min_minutes?: number
           p_offset?: number
           p_position?: string
           p_sort?: string
           p_team_id?: string
           p_version?: string
         }
+        Returns: Json
+      }
+      pepites_set_follow: {
+        Args: { p_follow: boolean; p_player_id: string }
         Returns: Json
       }
       pepites_version: { Args: never; Returns: Json }
@@ -1508,6 +1552,28 @@ export type Database = {
         Returns: Json
       }
       save_predictions: { Args: { p_items: Json }; Returns: Json }
+      service_activate_adaptive_estimates: {
+        Args: {
+          p_expected_digest: string
+          p_from_gameweek: number
+          p_pause?: boolean
+          p_season_id: string
+        }
+        Returns: Json
+      }
+      service_activate_adaptive_scoring: {
+        Args: {
+          p_expected_digest: string
+          p_from_gameweek: number
+          p_pause?: boolean
+          p_season_id: string
+        }
+        Returns: Json
+      }
+      service_adaptive_scoring_audit: {
+        Args: { p_gameweek_id: string }
+        Returns: Json
+      }
       service_advance_fantasy_lifecycle: {
         Args: {
           p_batch_size?: number
@@ -1530,6 +1596,22 @@ export type Database = {
         Returns: Json
       }
       service_begin_fantasy_finalization: {
+        Args: {
+          p_calculation_version: number
+          p_gameweek_id: string
+          p_input_digest: string
+        }
+        Returns: Json
+      }
+      service_begin_fantasy_finalization_before_live: {
+        Args: {
+          p_calculation_version: number
+          p_gameweek_id: string
+          p_input_digest: string
+        }
+        Returns: Json
+      }
+      service_begin_fantasy_finalization_v1: {
         Args: {
           p_calculation_version: number
           p_gameweek_id: string
@@ -1643,6 +1725,14 @@ export type Database = {
         Args: { p_gameweek_id: string }
         Returns: Json
       }
+      service_fantasy_lifecycle_state_before_live: {
+        Args: { p_gameweek_id: string }
+        Returns: Json
+      }
+      service_fantasy_lifecycle_state_v1: {
+        Args: { p_gameweek_id: string }
+        Returns: Json
+      }
       service_fantasy_scoring_league_page: {
         Args: {
           p_after_league_id?: string
@@ -1725,6 +1815,10 @@ export type Database = {
       }
       service_ops_alert_email_target: { Args: never; Returns: string }
       service_ops_health: { Args: never; Returns: Json }
+      service_pause_adaptive_scoring: {
+        Args: { p_paused: boolean; p_season_id: string }
+        Returns: Json
+      }
       service_pause_email_provider: {
         Args: { p_reason: string; p_until: string }
         Returns: Json
@@ -1744,6 +1838,10 @@ export type Database = {
         Returns: Json
       }
       service_player_photo_work: { Args: { p_limit?: number }; Returns: Json }
+      service_prepare_fantasy_live_scoring: {
+        Args: { p_gameweek_id: string }
+        Returns: Json
+      }
       service_prepare_next_fantasy_gameweek: {
         Args: {
           p_batch_size?: number
@@ -1772,8 +1870,16 @@ export type Database = {
         }
         Returns: number
       }
+      service_record_adaptive_gap: {
+        Args: { p_fixture_external_id: string; p_reason: string }
+        Returns: Json
+      }
       service_record_current_player_list: {
         Args: { p_observations: Json }
+        Returns: Json
+      }
+      service_record_fantasy_observation: {
+        Args: { p_fixture_id: string; p_payload: Json; p_source: string }
         Returns: Json
       }
       service_record_notification_delivery_attempt: {
@@ -1822,6 +1928,10 @@ export type Database = {
           p_calculation_version: number
           p_gameweek_id: string
         }
+        Returns: Json
+      }
+      service_select_fantasy_scoring_modes: {
+        Args: { p_gameweek_id: string }
         Returns: Json
       }
       service_set_elbotola_source_active: {
@@ -4530,6 +4640,7 @@ export type Database = {
           overall_rank: number | null
           provisional_score: number
           rank: number | null
+          scoring_details: Json | null
           starting_points: number
           state: Database["app"]["Enums"]["fantasy_points_state"]
           transfer_hit: number
@@ -4549,6 +4660,7 @@ export type Database = {
           overall_rank?: number | null
           provisional_score: number
           rank?: number | null
+          scoring_details?: Json | null
           starting_points: number
           state?: Database["app"]["Enums"]["fantasy_points_state"]
           transfer_hit: number
@@ -4568,6 +4680,7 @@ export type Database = {
           overall_rank?: number | null
           provisional_score?: number
           rank?: number | null
+          scoring_details?: Json | null
           starting_points?: number
           state?: Database["app"]["Enums"]["fantasy_points_state"]
           transfer_hit?: number
@@ -5926,6 +6039,39 @@ export type Database = {
             columns: ["superseded_by"]
             isOneToOne: false
             referencedRelation: "pepites_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pepites_follows: {
+        Row: {
+          created_at: string
+          player_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          player_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          player_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pepites_follows_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pepites_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

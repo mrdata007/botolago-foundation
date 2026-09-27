@@ -9,10 +9,11 @@ import { gotoHydrated, initializeLanguage, observePage } from "./support";
  * Pépites against a LOCAL Supabase stack with real data: the ranking engine's
  * own runs, published through the editions functions
  * (scripts/backend/pepites-local-preview-seed.sql, then
+ * scripts/backend/pepites-local-fantasy-seed.sql, optionally
  * scripts/backend/pepites-local-preview-photos.ts). Skipped unless
  * E2E_PEPITES_LOCAL_STACK=1, and run against a development server started
  * with the local stack's URL and keys, the preview switch on and every
- * Pépites and sign-in read in `supabase` mode:
+ * Pépites, Fantasy, football and sign-in read in `supabase` mode:
  *
  *   E2E_PEPITES_LOCAL_STACK=1 E2E_BASE_URL=http://127.0.0.1:4174 \
  *     bunx playwright test tests/e2e/pepites.local-stack.e2e.ts
@@ -78,6 +79,7 @@ async function staffPage(browser: Browser): Promise<Page> {
   await page.locator("#mfa-challenge-code").fill(totp(TOTP_SECRET));
   await page.getByRole("button", { name: fr["auth.mfa_challenge.cta"] }).click();
   await page.waitForURL(/\/admin\/pepites/);
+  await gotoHydrated(page, "/admin/pepites", "fr");
   return page;
 }
 
@@ -187,12 +189,8 @@ test("a fan turns the weekly email on and reports an error the data desk then li
   page,
 }, testInfo) => {
   test.setTimeout(120_000);
-  // A signed-in session also reads the Fantasy hub, and the local catalog has
-  // no Fantasy season: that one 404 is expected here and nothing else is.
-  const diagnostics = observePage(page, {
-    allowResponse: (status, url) => status === 404 && url.pathname.endsWith("/rpc/fantasy_hub"),
-    allowExpectedResourceConsoleError: true,
-  });
+  await page.setViewportSize({ width: 390, height: 860 });
+  const diagnostics = observePage(page);
   await withoutLocalResizing(page);
   await initializeLanguage(page, "fr");
   await signIn(page, FAN, "/pepites");
@@ -202,9 +200,24 @@ test("a fan turns the weekly email on and reports an error the data desk then li
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-checked", "true");
 
-  await page.getByTestId("pepites-top-entry").first().click();
+  const playerPath = await page.getByTestId("pepites-top-entry").first().getAttribute("href");
+  expect(playerPath).toMatch(/^\/pepites\/joueur\//);
+  await gotoHydrated(page, playerPath!, "fr");
   await expect(page.getByTestId("pepites-player-name")).toBeVisible();
   const name = (await page.getByTestId("pepites-player-name").innerText()).trim();
+  const follow = page.getByTestId("pepites-follow");
+  await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  await gotoHydrated(page, "/pepites/classement?suivis=1", "fr");
+  await expect(page.getByTestId("pepites-ranking-row")).toHaveCount(1);
+  await gotoHydrated(page, playerPath!, "fr");
+  await page.getByRole("tab", { name: fr["pepites.player.tab_stats"] }).click();
+  await expect(page.getByTestId("pepites-player-stats")).toContainText(fr["pepites.stats.minutes"]);
+  await page.getByTestId("pepites-player-compare").click();
+  await page.getByTestId("pepites-compare-pick-b").click();
+  await page.getByTestId("pepites-compare-option").first().click();
+  await expect(page.getByTestId("pepites-compare-card")).toBeVisible();
+  await gotoHydrated(page, playerPath!, "fr");
   await page.getByTestId("pepites-report").click();
   await page.getByLabel(fr["pepites.report.field_label"]).selectOption("height_cm");
   await page.getByTestId("pepites-report-message").fill("Il mesure 1,84 m selon le club.");
@@ -220,4 +233,128 @@ test("a fan turns the weekly email on and reports an error the data desk then li
   await expect(issue.first()).toContainText("Il mesure 1,84 m selon le club.");
   await staff.context().close();
   await diagnostics.verify(testInfo);
+});
+
+test("+Fantasy replaces the mapped player in the real squad and survives reload", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const diagnostics = observePage(page);
+  await initializeLanguage(page, "fr");
+  await withoutLocalResizing(page);
+  const playerPath = "/pepites/joueur/7e030000-0000-4000-8000-000000000186";
+  await signIn(page, FAN, playerPath);
+  await page.waitForURL((url) => url.pathname === playerPath);
+  const fantasy = page.getByTestId("pepites-fantasy-link");
+  await expect(fantasy).toHaveAttribute(
+    "href",
+    "/fantasy/transfers?player=7e600000-0000-4000-8000-000000000186",
+  );
+  await fantasy.click();
+  await expect(page.getByRole("status").filter({ hasText: "Achraf V." })).toBeVisible();
+  await page.getByRole("button", { name: /Othmane F\./ }).click();
+  await page.getByRole("button", { name: /Suivant/ }).click();
+  await expect(page.getByText("Achraf V.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Confirmer" }).click();
+  await expect(page.getByRole("button", { name: /Achraf V\./ })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: /Achraf V\./ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Othmane F\./ })).toHaveCount(0);
+  await gotoHydrated(page, playerPath, "fr");
+  await page.getByTestId("pepites-fantasy-link").click();
+  await expect(page.getByText(fr["fantasy.transfers.incoming_owned"])).toBeVisible();
+  await gotoHydrated(page, "/fantasy/transfers?player=00000000-0000-4000-8000-000000000000", "fr");
+  await expect(page.getByText(fr["fantasy.transfers.incoming_unavailable"])).toBeVisible();
+  await gotoHydrated(page, "/fantasy/transfers?player=7e600000-0000-4000-8000-000000000004", "fr");
+  await page.getByRole("button", { name: /Walid I\./ }).click();
+  await expect(page.getByText(fr["fpl.club_limit"], { exact: true })).toBeVisible();
+  await gotoHydrated(page, "/fantasy/transfers?player=7e600000-0000-4000-8000-000000000188", "fr");
+  await page.getByRole("button", { name: /Ismail X\./ }).click();
+  await expect(page.getByText(fr["fpl.budget_exceeded"], { exact: true })).toBeVisible();
+  await diagnostics.verify(testInfo);
+});
+
+test("Fantasy sign-in preserves the incoming player deep link", async ({ page }) => {
+  await initializeLanguage(page, "fr");
+  const next = "/fantasy/transfers?player=7e600000-0000-4000-8000-000000000186";
+  await gotoHydrated(page, next, "fr");
+  const login = page.locator('a[href*="/auth/login"]').first();
+  await expect(login).toBeVisible();
+  const href = await login.getAttribute("href");
+  expect(new URL(href!, "http://localhost").searchParams.get("next")).toBe(next);
+  await login.click();
+  await page.locator('input[type="email"]').fill(FAN.email);
+  await page.locator('input[autocomplete="current-password"]').fill(FAN.password);
+  await page.locator('button[type="submit"]').click();
+  await expect(page.getByText(fr["fantasy.transfers.incoming_owned"])).toBeVisible();
+});
+
+test("Compare retries initial and later-page outages without losing its options", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await initializeLanguage(page, "fr");
+  let failInitial = true;
+  let failLater = true;
+  await page.route("**/rest/v1/rpc/pepites_ranking", async (route) => {
+    const offset = route.request().postDataJSON().p_offset ?? 0;
+    if ((offset === 0 && failInitial) || (offset > 0 && failLater)) {
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ code: "XX000", message: "test outage" }),
+      });
+    } else await route.continue();
+  });
+  await gotoHydrated(page, "/pepites/comparer", "fr");
+  await page.getByTestId("pepites-compare-pick-a").click();
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByTestId("pepites-error")).toBeVisible();
+  failInitial = false;
+  await sheet.getByRole("button", { name: fr["pepites.state.retry"] }).click();
+  await expect(page.getByTestId("pepites-compare-option")).toHaveCount(25);
+  await sheet.getByRole("button", { name: fr["pepites.ranking.load_more"] }).click();
+  await expect(sheet.getByTestId("pepites-error")).toBeVisible();
+  await expect(page.getByTestId("pepites-compare-option")).toHaveCount(25);
+  failLater = false;
+  await sheet.getByRole("button", { name: fr["pepites.state.retry"] }).click();
+  await expect(page.getByTestId("pepites-compare-option")).toHaveCount(50);
+  await expect(sheet.getByTestId("pepites-error")).toHaveCount(0);
+});
+
+test("Follow read failure shows no placeholder and recovers the existing followed state", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 390, height: 860 });
+  await initializeLanguage(page, "fr");
+  const path = "/pepites/joueur/7e030000-0000-4000-8000-000000000186";
+  await signIn(page, FAN, path);
+  await page.waitForURL((url) => url.pathname === path);
+  const follow = page.getByTestId("pepites-follow");
+  await expect(follow).toBeEnabled();
+  if ((await follow.getAttribute("aria-pressed")) !== "true") await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  let fail = true;
+  await page.route("**/rest/v1/rpc/pepites_follow_state", async (route) => {
+    if (fail)
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ code: "XX000", message: "test outage" }),
+      });
+    else await route.continue();
+  });
+  await page.reload();
+  await expect(page.getByTestId("pepites-follow-retry")).toBeVisible();
+  await expect(follow).not.toContainText("{n}");
+  await expect(follow).toBeDisabled();
+  await expect(follow).not.toHaveAttribute("aria-pressed", "false");
+  fail = false;
+  await page.getByTestId("pepites-follow-retry").click();
+  await expect(follow).toBeEnabled();
+  await expect(follow).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("pepites-follow-retry")).toHaveCount(0);
+  await follow.click();
+  await expect(follow).toHaveAttribute("aria-pressed", "false");
 });
