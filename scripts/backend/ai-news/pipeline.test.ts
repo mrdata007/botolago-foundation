@@ -243,6 +243,50 @@ describe("AI article gates", () => {
     expect(result).toMatchObject({ held: 1, heldDrafts: 1, drafted: 0, published: 0 });
     expect(savedQuality).toBe("review_required");
   });
+  test("counts review drafts against the daily save limit", async () => {
+    let generated = 0;
+    let saved = 0;
+    const later = {
+      ...candidate,
+      sourceId: "elbotola:124",
+      url: "https://www.elbotola.com/article/2026-09-27-09-00-124.html",
+      title: "Un calendrier révisé pour la compétition nationale",
+      publishedAt: "2026-09-27T07:00:00Z",
+    };
+    const store: Store = {
+      async existing() {
+        return [];
+      },
+      async pendingAutoPublication() {
+        return [];
+      },
+      async saveDraft() {
+        saved += 1;
+        return "created";
+      },
+      async publish() {
+        throw new Error("review_draft_was_published");
+      },
+    };
+    const result = await runPipeline(
+      [candidate, later],
+      store,
+      {
+        model: "fixture",
+        async generate() {
+          generated += 1;
+          return article;
+        },
+        async verify() {
+          return false;
+        },
+      },
+      { ...options, dailyLimit: 1 },
+    );
+    expect(result.heldDrafts).toBe(1);
+    expect(saved).toBe(1);
+    expect(generated).toBe(1);
+  });
   test("retries a saved, eligible draft without regenerating its article", async () => {
     const attempts: string[] = [];
     const store: Store = {

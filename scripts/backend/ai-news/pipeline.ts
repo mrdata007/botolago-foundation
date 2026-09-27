@@ -263,7 +263,7 @@ export async function runPipeline(
     }
   }
   for (const candidate of selected) {
-    if (result.drafted >= options.dailyLimit || options.dailyLimit === 0) break;
+    if (result.drafted + result.heldDrafts >= options.dailyLimit || options.dailyLimit === 0) break;
     const article = await writer.generate(candidate.language, candidate.facts, {
       outlet: candidate.outlet,
       url: candidate.url,
@@ -302,6 +302,7 @@ export async function runPipeline(
     // One outlet's uncorroborated account is useful for a draft, not unattended publication.
     if (
       options.automaticPublication &&
+      result.published < options.dailyLimit &&
       new Set(candidate.facts.map((fact) => fact.outlet)).size >= 2
     ) {
       await store.publish(draft.key);
