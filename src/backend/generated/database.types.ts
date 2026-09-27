@@ -4496,6 +4496,7 @@ export type Database = {
           overall_rank: number | null
           provisional_score: number
           rank: number | null
+          scoring_details: Json | null
           starting_points: number
           state: Database["app"]["Enums"]["fantasy_points_state"]
           transfer_hit: number
@@ -4515,6 +4516,7 @@ export type Database = {
           overall_rank?: number | null
           provisional_score: number
           rank?: number | null
+          scoring_details?: Json | null
           starting_points: number
           state?: Database["app"]["Enums"]["fantasy_points_state"]
           transfer_hit: number
@@ -4534,6 +4536,7 @@ export type Database = {
           overall_rank?: number | null
           provisional_score?: number
           rank?: number | null
+          scoring_details?: Json | null
           starting_points?: number
           state?: Database["app"]["Enums"]["fantasy_points_state"]
           transfer_hit?: number

@@ -1,4 +1,7 @@
 -- Fixture-ready points and live rankings, independently gated from ruleset selection.
+-- Keep calculated multipliers outside the immutable locked-lineup input digest.
+alter table app.fantasy_team_gameweek_results add column scoring_details jsonb
+ check(scoring_details is null or (jsonb_typeof(scoring_details)='object' and pg_column_size(scoring_details)<=65536));
 create table app_private.fantasy_live_scoring_policy (
  season_id uuid primary key references app.fantasy_seasons(id),
  enabled boolean not null default false,
@@ -316,11 +319,11 @@ begin
     insert into app.fantasy_auto_substitutions(lineup_id,player_out_id,player_in_id,sequence_number,reason,calculation_version)
       select lineup.id,(s->>'playerOutId')::uuid,(s->>'playerInId')::uuid,ordinality::integer,s->>'reason',p_calculation_version
       from jsonb_array_elements(team_result->'substitutions') with ordinality as substitutions(s,ordinality);
-    insert into app.fantasy_team_gameweek_results(fantasy_team_id,gameweek_id,starting_points,bench_points,captain_points,transfer_hit,chip_type,provisional_score,calculation_version)
-      values(lineup.fantasy_team_id,gw.id,starting_points,bench_points,captain_points,actual_hit,chip,actual_score,p_calculation_version)
+    insert into app.fantasy_team_gameweek_results(fantasy_team_id,gameweek_id,starting_points,bench_points,captain_points,transfer_hit,chip_type,provisional_score,calculation_version,scoring_details)
+      values(lineup.fantasy_team_id,gw.id,starting_points,bench_points,captain_points,actual_hit,chip,actual_score,p_calculation_version,team_result)
       on conflict(fantasy_team_id,gameweek_id) do update set starting_points=excluded.starting_points,bench_points=excluded.bench_points,
         captain_points=excluded.captain_points,transfer_hit=excluded.transfer_hit,chip_type=excluded.chip_type,
-        provisional_score=excluded.provisional_score,calculation_version=excluded.calculation_version
+        provisional_score=excluded.provisional_score,calculation_version=excluded.calculation_version,scoring_details=excluded.scoring_details
       where app.fantasy_team_gameweek_results.state='provisional';
     if not found then raise exception using errcode='PT409',message='fantasy_scoring_sealed'; end if;
     team_count:=team_count+1;
@@ -361,10 +364,19 @@ alter function api.get_my_fantasy_points(uuid,uuid) rename to get_my_fantasy_poi
 revoke all on function api.get_my_fantasy_points_before_live(uuid,uuid) from public,anon,authenticated,service_role;
 create function api.get_my_fantasy_points(p_team_id uuid,p_gameweek_id uuid)
 returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare d jsonb; details jsonb;
 begin
  -- Existing ownership, authentication and MFA guards remain in the wrapped RPC.
- return api.get_my_fantasy_points_before_live(p_team_id,p_gameweek_id)||jsonb_build_object(
- 'incrementalScoring',app_private.fantasy_live_scoring_enabled(p_gameweek_id));
+ d:=api.get_my_fantasy_points_before_live(p_team_id,p_gameweek_id);
+ select scoring_details into details from app.fantasy_team_gameweek_results
+ where fantasy_team_id=p_team_id and gameweek_id=p_gameweek_id;
+ if details is not null then
+   d:=d||jsonb_build_object('players',(select jsonb_agg(player||jsonb_build_object('multiplier',
+     (select r->'multiplier' from jsonb_array_elements(details->'players') r
+       where r->>'fantasyPlayerId'=player->>'fantasyPlayerId')) order by ord)
+     from jsonb_array_elements(d->'players') with ordinality x(player,ord)));
+ end if;
+ return d||jsonb_build_object('incrementalScoring',app_private.fantasy_live_scoring_enabled(p_gameweek_id));
 end $$;
 revoke all on function api.get_my_fantasy_points(uuid,uuid) from public,anon;
 grant execute on function api.get_my_fantasy_points(uuid,uuid) to authenticated,service_role;

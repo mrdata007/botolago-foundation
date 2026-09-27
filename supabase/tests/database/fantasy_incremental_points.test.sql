@@ -70,6 +70,7 @@ select set_config('test.scoring_teams',(select jsonb_build_array(jsonb_build_obj
  from app.fantasy_lineup_players where lineup_id=pg_temp.scoring_id(10)),true);
 
 select extensions.is(api.service_persist_fantasy_scoring_results(pg_temp.scoring_id(6),1,current_setting('test.scoring_snapshot')::jsonb->>'inputDigest',current_setting('test.scoring_players')::jsonb,current_setting('test.scoring_teams')::jsonb)->>'teamsPersisted','1','ready fixture points reach team while gameweek live');
+select extensions.is((select scoring_details->>'effectiveCaptainId' from app.fantasy_team_gameweek_results where fantasy_team_id=pg_temp.scoring_id(9)),pg_temp.scoring_id(2017)::text,'published captain decision is stored outside frozen lineup inputs');
 select api.service_recalculate_fantasy_rankings(pg_temp.scoring_id(5),pg_temp.scoring_id(6),null,1);
 select api.service_recalculate_fantasy_rankings(pg_temp.scoring_id(5),null,null,1);
 select extensions.is((select total_points from app.fantasy_rankings where fantasy_team_id=pg_temp.scoring_id(9) and league_id is null and gameweek_id is null),10,'live points count in season rankings');
