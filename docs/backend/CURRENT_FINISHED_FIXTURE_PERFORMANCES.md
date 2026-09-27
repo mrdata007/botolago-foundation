@@ -75,21 +75,32 @@ players carrying more. So the final score decides:
 - A starter with 90 minutes (where SportsMonks stops counting) was on from
   kick-off to at least the 90th minute, and conceded exactly what the side
   did.
-- Anyone else keeps SportsMonks' figure, capped at the side's. Only
-  SportsMonks knows when they were on the pitch. That includes a substitute
-  who reached 90 minutes after an early goal; 16 did last season.
+- For a shortened starter, use the final conceded count when a reconciled
+  normal-time goal timeline proves every conceded goal preceded both the team's
+  first recorded substitution/dismissal and that player's official minutes.
+  This overrides even a contradictory explicit provider zero. Own goals, VAR,
+  stoppage-time conceded goals, extra time, malformed/incomplete timelines and
+  equal-minute boundaries cannot supply this proof.
+- Otherwise a starter with 60–89 minutes whose team conceded requires an explicit
+  type-88 value, capped at the final conceded count. Missing type 88 stops with
+  `current_defensive_statistics_incomplete`; repair the provider facts or obtain
+  a usable timeline before re-importing. Omission cannot grant a clean sheet.
+- Other players retain SportsMonks' figure, capped at the side's. This includes
+  a substitute who reached 90 minutes after an early goal; 16 did last season.
 - One case counts against the player: a starter substituted in stoppage time
   just before a stoppage-time goal is credited that goal. Minutes cannot tell
   that exit apart. Last season at most 11 of the 2,243 such starters on sides
   that conceded looked like it, against 53 who carried no goals conceded at
-  all (37 of them goalkeepers). Substitution events would settle it exactly.
+  all (37 of them goalkeepers). The narrow timeline proof above does not
+  reconstruct this stoppage-time case; the existing full-match rule remains.
 - A fixture without exactly one CURRENT score per side stops with
   `current_final_score_missing`.
 
 The database (migration 20260925120000) checks the same against its own final
 score. A mismatch is refused with `CURRENT_GOALS_CONCEDED_MISMATCH`: one of the
 two scores is not final yet, so the fixture waits for the next run. Coverage
-reports `absentStatisticsCountedAsZero` and `goalsConcededFromFinalScore`. Its
+reports `absentStatisticsCountedAsZero`, `goalsConcededFromFinalScore`, and
+`goalsConcededFromTimeline` when that proof was used. Its
 `detailRows` must be at least one per player who appeared, each of whom
 carries minutes. It no longer needs one per player, since a substitute who
 never came on may carry none.
@@ -390,16 +401,6 @@ time; pg_cron jobs and other lanes are not covered by that and must be checked.
    advance the observation watermark.
 
 ### Shortened starter clean-sheet correction (2026-09-27)
-
-The importer now requests fixture events. When normal-time goal events reconcile
-with both final scores, every conceded goal predates the team's first recorded
-substitution/dismissal, and those goals also predate a starter's official minutes,
-it derives that starter's conceded count from the final score. Coverage records
-`goalsConcededFromTimeline`; this participates in the immutable source digest.
-Own goals, VAR events, stoppage-time conceded goals, extra time, malformed events
-and equal-minute boundaries are outside this narrow proof. A starter with 60–89
-minutes whose team conceded needs either that proof or an explicit type-88 value;
-an omitted value no longer silently grants that starter a clean sheet.
 
 Regression: Tiznit–Tanger (19874708), Soufiane El Azhari played 84 minutes and
 scored once. Tanger scored at 9, 47 and 55, before Tiznit's first substitution at 60. His conceded count is 3, clean sheets 0, and midfielder fantasy preview 7
