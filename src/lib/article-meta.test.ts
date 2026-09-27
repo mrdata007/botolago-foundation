@@ -228,6 +228,27 @@ describe("article metadata", () => {
     expect(jsonLd.publisher).toEqual({ "@type": "Organization", name: "BotolaGO" });
     expect(jsonLd.image).toEqual(["https://media.example.test/article.jpg"]);
   });
+
+  it("connects a story to its real clubs, players and competition", () => {
+    const article = detail({
+      teams: [{ id: "9b2f0c1e-0000-4000-8000-0000000000f1", slug: "wydad", name: "Wydad AC" }],
+      players: [
+        { id: "9b2f0c1e-0000-4000-8000-0000000000f2", slug: "ganvoula", name: "Silvère Ganvoula" },
+      ],
+      competitions: [
+        { id: "9b2f0c1e-0000-4000-8000-0000000000f3", slug: "botola-pro", name: "Botola Pro" },
+      ],
+    });
+    expect(buildArticleJsonLd(article, "https://botolago.com/news/x")?.about).toEqual([
+      {
+        "@type": "SportsTeam",
+        name: "Wydad AC",
+        url: "https://botolago.com/clubs/9b2f0c1e-0000-4000-8000-0000000000f1",
+      },
+      { "@type": "Person", name: "Silvère Ganvoula" },
+      { "@type": "SportsOrganization", name: "Botola Pro" },
+    ]);
+  });
 });
 
 describe("buildArticleJsonLd", () => {

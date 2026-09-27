@@ -1,4 +1,5 @@
 import { fr } from "@/i18n/dictionary-fr";
+import { PEPITES_ENABLED } from "@/lib/feature-flags";
 import type { AdminPermission } from "./contracts";
 
 export type AdminConsoleRoute =
@@ -11,7 +12,9 @@ export type AdminConsoleRoute =
   | "/admin/news"
   | "/admin/prizes"
   | "/admin/users"
-  | "/admin/users/$userId";
+  | "/admin/users/$userId"
+  | "/admin/pepites"
+  | "/admin/pepites/donnees";
 
 export type AdminConsoleSurface = "route" | "state" | "dialog";
 
@@ -374,6 +377,24 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
       ar: "الجوائز",
     },
   },
+  // Pépites: only in a build where Pépites is on (`PEPITES_ENABLED`), like
+  // its public pages.
+  ...(PEPITES_ENABLED
+    ? ([
+        {
+          route: "/admin/pepites",
+          permission: "pepites.edit",
+          testId: "admin-nav-pepites",
+          labels: { fr: "Pépites", ar: "Pépites" },
+        },
+        {
+          route: "/admin/pepites/donnees",
+          permission: "football.read_operations",
+          testId: "admin-nav-pepites-data",
+          labels: { fr: "Données joueurs", ar: "بيانات اللاعبين" },
+        },
+      ] as const)
+    : ([] as const)),
 ] as const satisfies readonly {
   readonly route: Exclude<
     AdminConsoleRoute,

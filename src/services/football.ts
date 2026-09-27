@@ -56,10 +56,17 @@ export function getFootballRepository(): FootballRepository {
   return mode === "supabase" ? supabaseRepository : mockRepository;
 }
 
-function requestContext(): RepositoryContext {
+/**
+ * `signal` is the query's own (React Query hands one to every `queryFn`):
+ * passed on, a cancelled query -- a server render past its budget
+ * (`@/lib/ssr-prefetch`), a page left before it loaded -- ends its requests
+ * instead of letting them run on.
+ */
+function requestContext(signal?: AbortSignal): RepositoryContext {
   return {
     actorId: null,
     requestId: globalThis.crypto?.randomUUID?.() ?? `football-${Date.now().toString(36)}`,
+    ...(signal ? { signal } : {}),
   };
 }
 
@@ -393,19 +400,24 @@ export function buildStandings(
 }
 
 export const footballService = {
-  async getSeasons(language: FootballLanguage): Promise<FootballSeason[]> {
-    return (await getFootballRepository().getSeasons(language, 12, requestContext())).map(toSeason);
-  },
-
-  async getClubs(language: FootballLanguage): Promise<Club[]> {
-    return (await getFootballRepository().getTeams(language, 100, requestContext())).map((team) =>
-      presentFootballClub(team),
+  async getSeasons(language: FootballLanguage, signal?: AbortSignal): Promise<FootballSeason[]> {
+    return (await getFootballRepository().getSeasons(language, 12, requestContext(signal))).map(
+      toSeason,
     );
   },
 
-  async getHomeMatches(language: FootballLanguage): Promise<FootballMatchCollection> {
+  async getClubs(language: FootballLanguage, signal?: AbortSignal): Promise<Club[]> {
+    return (await getFootballRepository().getTeams(language, 100, requestContext(signal))).map(
+      (team) => presentFootballClub(team),
+    );
+  },
+
+  async getHomeMatches(
+    language: FootballLanguage,
+    signal?: AbortSignal,
+  ): Promise<FootballMatchCollection> {
     const repository = getFootballRepository();
-    const matches = await repository.getHomeMatches(language, 3, requestContext());
+    const matches = await repository.getHomeMatches(language, 3, requestContext(signal));
     return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
   },
 
@@ -420,6 +432,7 @@ export const footballService = {
     date: Date,
     language: FootballLanguage,
     seasonId?: string,
+    signal?: AbortSignal,
   ): Promise<FootballMatchCollection> {
     const repository = getFootballRepository();
     const page = await repository.getMatchesByDate(
@@ -430,7 +443,7 @@ export const footballService = {
         seasonId,
         limit: 100,
       },
-      requestContext(),
+      requestContext(signal),
     );
     const matches = seasonId
       ? page.items.filter((match) => match.seasonId === seasonId)
@@ -450,11 +463,17 @@ export const footballService = {
   async getStandings(
     season: Pick<FootballSeason, "id" | "competitionId">,
     language: FootballLanguage,
+    signal?: AbortSignal,
   ): Promise<FootballStandings> {
     const repository = getFootballRepository();
     const [fixtures, stored] = await Promise.all([
-      repository.getSeasonFixtures(season.competitionId, season.id, language, requestContext()),
-      repository.getStandings(season.id, language, requestContext()),
+      repository.getSeasonFixtures(
+        season.competitionId,
+        season.id,
+        language,
+        requestContext(signal),
+      ),
+      repository.getStandings(season.id, language, requestContext(signal)),
     ]);
     return buildStandings(fixtures, stored);
   },
@@ -534,12 +553,12 @@ export const footballService = {
    * the end of the first rounds. The full team catalogue is only the last
    * resort: it also lists clubs that have been relegated.
    */
-  async getClubDirectory(language: FootballLanguage): Promise<ClubDirectory> {
+  async getClubDirectory(language: FootballLanguage, signal?: AbortSignal): Promise<ClubDirectory> {
     const repository = getFootballRepository();
-    const season = defaultSeason(await footballService.getSeasons(language)) ?? null;
+    const season = defaultSeason(await footballService.getSeasons(language, signal)) ?? null;
     if (season) {
       const [standings, page] = await Promise.all([
-        repository.getStandings(season.id, language, requestContext()),
+        repository.getStandings(season.id, language, requestContext(signal)),
         repository.getCompetitionFixtures(
           {
             competitionId: season.competitionId,
@@ -547,13 +566,13 @@ export const footballService = {
             language,
             limit: 100,
           },
-          requestContext(),
+          requestContext(signal),
         ),
       ]);
       const clubs = uniqueClubs(page.items, standings);
       if (clubs.length > 0) return { season, clubs: clubs.sort(byClubName(language)) };
     }
-    const catalogue = await footballService.getClubs(language);
+    const catalogue = await footballService.getClubs(language, signal);
     return { season: null, clubs: catalogue.sort(byClubName(language)) };
   },
 
