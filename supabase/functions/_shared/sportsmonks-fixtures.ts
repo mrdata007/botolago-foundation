@@ -33,6 +33,14 @@ interface FixtureConfiguration {
 interface ParsedRequest {
   readonly pageSize: number;
   readonly maxPages: number;
+  /**
+   * Leave a fixture whose round or club the catalog has not registered yet
+   * (`mapping_not_found`) for the catalog's next pass, instead of rejecting it
+   * and failing the run. The hourly season refresh sets it: SportsMonks
+   * publishes a season's rounds a few at a time, and only the orchestrator's
+   * catalog step registers them.
+   */
+  readonly skipUncatalogued: boolean;
 }
 
 interface FixtureCounts {
@@ -229,7 +237,9 @@ async function parseRequest(request: Request): Promise<ParsedRequest> {
   if (body.job !== "fixtures") throw new FixtureRuntimeError("invalid_request");
   const pageSize = body.pageSize ?? 50;
   const maxPages = body.maxPages ?? 1;
+  const skipUncatalogued = body.skipUncatalogued ?? false;
   if (
+    typeof skipUncatalogued !== "boolean" ||
     typeof pageSize !== "number" ||
     !Number.isInteger(pageSize) ||
     pageSize < 1 ||
@@ -241,7 +251,7 @@ async function parseRequest(request: Request): Promise<ParsedRequest> {
   ) {
     throw new FixtureRuntimeError("invalid_request");
   }
-  return { pageSize, maxPages };
+  return { pageSize, maxPages, skipUncatalogued };
 }
 
 async function responseJson(response: Response): Promise<JsonRecord> {
@@ -708,6 +718,14 @@ async function runFixtureJob(
           const outcome = await persistFixture(dependencies.client, fixture);
           counts[outcome] += 1;
         } catch (error) {
+          if (
+            parsed.skipUncatalogued &&
+            error instanceof FixtureRuntimeError &&
+            error.code === "mapping_not_found"
+          ) {
+            counts.skipped += 1;
+            continue;
+          }
           counts.rejected += 1;
           await recordRejection(dependencies.client, runId, raw, error);
         }
@@ -725,6 +743,20 @@ async function runFixtureJob(
         throw new FixtureRuntimeError("fixture_item_rejected");
       }
       if (result.nextPage === null) {
+        // Nothing placed at all is not a fresh season: its competition or
+        // season is missing, not one new round.
+        if (counts.skipped > 0 && counts.inserted + counts.updated === 0) {
+          await completeRun(
+            dependencies.client,
+            runId,
+            "partial",
+            counts,
+            { page },
+            "fixtures_not_catalogued",
+          );
+          finalized = true;
+          throw new FixtureRuntimeError("fixtures_not_catalogued");
+        }
         await completeRun(dependencies.client, runId, "succeeded", counts, {}, null);
         finalized = true;
         return counts;

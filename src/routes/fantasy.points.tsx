@@ -29,7 +29,11 @@ import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
-import { buildPointsViewModel, type PointsViewModel } from "@/services/points-service";
+import {
+  buildPointsViewModel,
+  buildServerPointsViewModel,
+  type PointsViewModel,
+} from "@/services/points-service";
 import { FORMATIONS, type FormationKey, type SquadPlayer } from "@/types/fantasy";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
@@ -103,6 +107,8 @@ function PointsBody() {
     enabled: screen.phase === "ready" && gw !== null && !!team,
     retry: 1,
     retryDelay: 1_500,
+    refetchInterval: (query) =>
+      isCloud && query.state.data?.authoritative?.finalized !== true ? 30_000 : false,
   });
 
   const lifecycle = isCloud
@@ -111,6 +117,7 @@ function PointsBody() {
   const vm = useMemo<PointsViewModel | null>(() => {
     if (!team || gw === null || !resultQ.data || resultQ.data.breakdown.length === 0) return null;
     try {
+      if (isCloud) return buildServerPointsViewModel(resultQ.data);
       return buildPointsViewModel({
         gameweek: gw,
         team,
@@ -124,7 +131,7 @@ function PointsBody() {
     } catch {
       return null;
     }
-  }, [team, gw, resultQ.data, players, lifecycle, currentGw]);
+  }, [team, gw, resultQ.data, players, lifecycle, currentGw, isCloud]);
 
   if (screen.phase !== "ready" || !team || gw === null) {
     return (
@@ -167,6 +174,7 @@ function PointsBody() {
   const pointsFor = (id: string) => {
     const b = breakdown.get(id);
     if (!b) return null;
+    if (vm?.source === "server") return b.totalPoints * Math.max(1, b.multiplier ?? 1);
     if (vm && id === captainId) {
       const raw = b.isCaptain ? Math.round(b.totalPoints / 2) : b.totalPoints;
       return raw * vm.captainMultiplier;
@@ -250,7 +258,7 @@ function PointsBody() {
   // BG-0075: the server's record of what finalization actually did, which the
   // client-side engine can only guess at for a gameweek it did not compute.
   // `vm.autoSubs` stays the fallback for mock mode, where there is no server.
-  const autoSubs = resultQ.data?.autoSubs.length ? resultQ.data.autoSubs : (vm?.autoSubs ?? []);
+  const autoSubs = resultQ.data ? resultQ.data.autoSubs : (vm?.autoSubs ?? []);
   const nameOf = (id: string) => {
     const player = playerOf(id);
     return player ? tr(player.name) : id;
@@ -270,6 +278,11 @@ function PointsBody() {
         />
       </UiHeader>
 
+      {resultQ.data?.authoritative?.incremental && (
+        <p className={cn("mx-[var(--ui-gutter)] my-3", ui.text.meta, ui.tone.muted)}>
+          {t("fantasy.scoring.incrementalPolicy")}
+        </p>
+      )}
       <FplStatBar
         hero
         items={[
@@ -329,22 +342,63 @@ function PointsBody() {
           clubs={clubs}
           renderDetail={(player) => {
             const events = breakdown.get(player.id)?.events ?? [];
-            if (events.length === 0) return null;
+            if (events.length === 0 && !breakdown.get(player.id)?.fixtureScoring?.length)
+              return null;
+            const modes = breakdown.get(player.id)?.fixtureScoring ?? [];
+            const fixtureIds = [
+              ...new Set([
+                ...modes.map((fixture) => fixture.fixtureId),
+                ...events.map((event) => event.fixtureId),
+              ]),
+            ];
             return (
               <ul className={cn("pb-2", ui.text.meta, ui.tone.muted)}>
-                {events.map((event, index) => (
-                  <li
-                    key={`${event.category}-${event.fixtureId ?? index}`}
-                    className="flex items-baseline justify-between gap-2"
-                  >
-                    <span className="min-w-0 truncate">
-                      {t(`fantasy.points.event.${event.category}` as never)}
-                    </span>
-                    <span dir="ltr" className={cn("shrink-0", ui.stat.sm, ui.tone.default)}>
-                      {event.points > 0 ? `+${event.points}` : event.points}
-                    </span>
-                  </li>
-                ))}
+                {fixtureIds.map((fixtureId, groupIndex) => {
+                  const fixture = modes.find((item) => item.fixtureId === fixtureId);
+                  const matchName = fixture?.teamIds
+                    ?.map((id) => {
+                      const club = clubOf(id);
+                      return club ? tr(club.shortName) : null;
+                    })
+                    .filter(Boolean)
+                    .join(" – ");
+                  return (
+                    <li key={fixtureId ?? groupIndex}>
+                      {fixture ? (
+                        <p className="font-semibold">
+                          {matchName ? `${matchName} · ` : ""}
+                          {fixture.pending
+                            ? t("fantasy.scoring.pending")
+                            : fixture.mode === "simple"
+                              ? fixture.estimated
+                                ? t("fantasy.scoring.simpleEstimated")
+                                : t("fantasy.scoring.simple")
+                              : t("fantasy.scoring.full")}
+                        </p>
+                      ) : null}
+                      <ul>
+                        {events
+                          .filter((event) => event.fixtureId === fixtureId)
+                          .map((event, index) => (
+                            <li
+                              key={`${event.category}-${index}`}
+                              className="flex items-baseline justify-between gap-2"
+                            >
+                              <span className="min-w-0 truncate">
+                                {t(`fantasy.points.event.${event.category}` as never)}
+                              </span>
+                              <span
+                                dir="ltr"
+                                className={cn("shrink-0", ui.stat.sm, ui.tone.default)}
+                              >
+                                {event.points > 0 ? `+${event.points}` : event.points}
+                              </span>
+                            </li>
+                          ))}
+                      </ul>
+                    </li>
+                  );
+                })}
               </ul>
             );
           }}

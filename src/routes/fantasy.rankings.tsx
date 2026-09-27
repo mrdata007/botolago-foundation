@@ -154,6 +154,7 @@ function RankingsPage() {
     // under the visitor's key before the second-factor gate moved on.
     enabled: isSessionSettled(status),
     placeholderData: sameOwnerData,
+    refetchInterval: 60_000,
   });
 
   // Keep the page in range whenever the filter or sort shrinks the board.

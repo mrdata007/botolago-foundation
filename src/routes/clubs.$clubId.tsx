@@ -35,7 +35,7 @@ import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
-import { breadcrumbJsonLd } from "@/lib/structured-data";
+import { breadcrumbJsonLd, sportsTeamJsonLd } from "@/lib/structured-data";
 import { useBackTo } from "@/lib/back-navigation";
 import {
   clubSeasonAbsent,
@@ -104,7 +104,8 @@ export const Route = createFileRoute("/clubs/$clubId")({
   headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: ({ params, loaderData }) => {
     const canonical = `${PUBLIC_SITE_ORIGIN}/clubs/${encodeURIComponent(params.clubId)}`;
-    const name = isUnavailable(loaderData) ? undefined : loaderData?.club.name.fr;
+    const club = isUnavailable(loaderData) ? undefined : loaderData?.club;
+    const name = club?.name.fr;
     const title = name
       ? `${name} — matchs, classement et effectif | BotolaGO`
       : "Club de Botola Pro — BotolaGO";
@@ -128,6 +129,17 @@ export const Route = createFileRoute("/clubs/$clubId")({
       ...(name
         ? {
             scripts: [
+              {
+                type: "application/ld+json",
+                children: serializeJsonLd(
+                  sportsTeamJsonLd({
+                    canonicalUrl: canonical,
+                    name,
+                    city: club?.city?.fr,
+                    logoUrl: club?.crestUrl,
+                  }),
+                ),
+              },
               {
                 type: "application/ld+json",
                 children: serializeJsonLd(

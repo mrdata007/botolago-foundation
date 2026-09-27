@@ -5,7 +5,7 @@ import type {
   NotificationDeviceRepository,
   NotificationDeviceSummaryDto,
   NotificationEmailUnsubscribeRepository,
-  NotificationEmailUnsubscribeStatus,
+  NotificationEmailUnsubscribeOutcome,
   NotificationListInput,
   NotificationPageDto,
   NotificationPreferenceRepository,
@@ -127,14 +127,14 @@ export class MockNotificationPreferenceRepository implements NotificationPrefere
  * previewed without a real e-mail.
  */
 export class MockNotificationEmailUnsubscribeRepository implements NotificationEmailUnsubscribeRepository {
-  async unsubscribe(token: string): Promise<NotificationEmailUnsubscribeStatus> {
-    if (!token.trim()) return "invalid";
+  async unsubscribe(token: string): Promise<NotificationEmailUnsubscribeOutcome> {
+    if (!token.trim()) return { status: "invalid", topic: null };
     preferences = {
       ...preferences,
       channels: { ...preferences.channels, email: false },
       updatedAt: now,
     };
-    return "unsubscribed";
+    return { status: "unsubscribed", topic: null };
   }
 }
 
