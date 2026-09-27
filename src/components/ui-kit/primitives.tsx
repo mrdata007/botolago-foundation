@@ -1407,6 +1407,7 @@ function UiOverlayClose({ onSurface = false }: { onSurface?: boolean }) {
 export function UiSheet({
   open,
   onOpenChange,
+  onCloseAutoFocus,
   title,
   titleHidden = false,
   description,
@@ -1417,6 +1418,8 @@ export function UiSheet({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Restore focus for sheets opened by controls outside Dialog.Trigger. */
+  onCloseAutoFocus?: (event: Event) => void;
   title: ReactNode;
   titleHidden?: boolean;
   description?: ReactNode;
@@ -1432,6 +1435,7 @@ export function UiSheet({
       <Dialog.Portal>
         <UiScrim />
         <Dialog.Content
+          onCloseAutoFocus={onCloseAutoFocus}
           className={cn(
             "fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] flex-col overflow-hidden",
             "mx-auto w-full max-w-2xl",

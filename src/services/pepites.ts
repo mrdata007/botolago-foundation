@@ -26,14 +26,14 @@ export function selectPepitesDataMode(
   configuredMode: string | undefined,
   production: boolean,
 ): PepitesDataMode {
-  if (production && configuredMode !== "supabase")
+  if (production && configuredMode !== undefined && configuredMode !== "supabase")
     throw new BackendError(
       "data_unavailable",
       "Production Pépites require VITE_PEPITES_DATA_MODE=supabase.",
       { status: 503 },
     );
   if (configuredMode === "mock" || configuredMode === "supabase") return configuredMode;
-  return "mock";
+  return production ? "supabase" : "mock";
 }
 
 const mockRepository = new MockPepitesRepository();

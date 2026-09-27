@@ -131,6 +131,8 @@ describe("selectPepitesDataMode", () => {
   it("demands the database in production", () => {
     expect(() => selectPepitesDataMode("mock", true)).toThrow();
     expect(selectPepitesDataMode("supabase", true)).toBe("supabase");
+    expect(selectPepitesDataMode(undefined, true)).toBe("supabase");
+    expect(() => selectPepitesDataMode("invalid", true)).toThrow();
     expect(selectPepitesDataMode(undefined, false)).toBe("mock");
   });
 });
