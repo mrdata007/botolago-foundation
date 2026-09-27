@@ -84,6 +84,10 @@ select extensions.is((select mode from app_private.fantasy_fixture_scoring_modes
 select api.service_pause_adaptive_scoring(pg_temp.scoring_id(5),false);
 
 select extensions.throws_ok($$select api.service_record_fantasy_observation(pg_temp.scoring_id(3002),jsonb_set(jsonb_set(pg_temp.adaptive_payload(2),'{players,0,stats,secondYellowDismissals}','1'),'{players,0,stats,yellowCards}','2'),'reviewed-correction')$$,'PT409','adaptive_disciplinary_overlap_review_required','double-counted second yellows require review');
+update app.fantasy_players set football_team_id=pg_temp.scoring_id(105) where id=pg_temp.scoring_id(2001);
+select extensions.is((select count(*)::integer from jsonb_array_elements(app_private.fantasy_scoring_input_document(pg_temp.scoring_id(6))->'playerFixtures') p where p->>'fantasyPlayerId'=pg_temp.scoring_id(2001)::text),1,'dated membership retains the played fixture without inventing a match at the new club');
+select extensions.is((select p#>>'{stats,minutes}' from jsonb_array_elements(app_private.fantasy_scoring_input_document(pg_temp.scoring_id(6))->'playerFixtures') p where p->>'fantasyPlayerId'=pg_temp.scoring_id(2001)::text),'90','transferred player keeps certified participation');
+update app.fantasy_players set football_team_id=pg_temp.scoring_id(101) where id=pg_temp.scoring_id(2001);
 -- Exercise the actual adaptive persistence contract with known simple facts and
 -- unknown rows, then replay the same page: the ledger must not grow.
 create function pg_temp.adaptive_results(doc jsonb) returns jsonb language sql as $$

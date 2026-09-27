@@ -233,14 +233,23 @@ begin
  select p.* into policy from app_private.fantasy_adaptive_policy p where p.season_id=(doc->>'seasonId')::uuid;
  doc:=doc||jsonb_build_object('adaptive',true,'policyPaused',policy.paused,'scoringVersion',2,
   'ruleset',(select to_jsonb(rs)-'created_at'-'updated_at' from app.fantasy_rulesets rs where rs.id=policy.ruleset_id));
- for fixture in select value from jsonb_array_elements(doc->'fixtures') loop
+ for fixture in select value from jsonb_array_elements(doc->'fixtures') where coalesce((value#>>'{assignment,counts_points}')::boolean,false) loop
  select * into mode_row from app_private.fantasy_fixture_scoring_modes where gameweek_id=p_gameweek_id and fixture_id=(fixture->>'fixtureId')::uuid;
  select * into obs from app_private.fantasy_fixture_observations where fixture_id=(fixture->>'fixtureId')::uuid order by observed_at desc,id desc limit 1;
  mode_ready:=case mode_row.mode when 'full' then coalesce(obs.full_ready,false) when 'simple' then coalesce(obs.simple_ready,false) else false end;
  fixtures:=fixtures||jsonb_build_array(fixture||jsonb_build_object('scoringMode',mode_row.mode,
  'modeSelectedAt',mode_row.selected_at,'modeCutoffAt',mode_row.cutoff_at,'modeReason',mode_row.reason,
  'adaptiveReady',mode_ready,'observationDigest',obs.digest,'observationId',obs.id));
- for player in select value from jsonb_array_elements(doc->'playerFixtures') where value->>'fixtureId'=fixture->>'fixtureId' loop
+ for player in select jsonb_build_object('fantasyPlayerId',fp.id,'playerId',fp.football_player_id,
+ 'fixtureId',fixture->>'fixtureId','position',pos.code,'sourceSequence',fixture->'sourceSequence','fixtureTeamId',fp.football_team_id)
+ from app.fantasy_players fp join app.fantasy_positions pos on pos.id=fp.position_id
+ join app.fixtures fi on fi.id=(fixture->>'fixtureId')::uuid
+ where fp.fantasy_season_id=(doc->>'seasonId')::uuid and (
+ exists(select 1 from app.team_memberships membership where membership.player_id=fp.football_player_id and membership.season_id=fi.season_id
+ and membership.team_id in(fi.home_team_id,fi.away_team_id) and membership.valid_from<=fi.kickoff_at::date
+ and (membership.valid_to is null or membership.valid_to>=fi.kickoff_at::date))
+
+ or exists(select 1 from jsonb_array_elements(coalesce(obs.payload->'players','[]')) observed where observed->>'playerId'=fp.football_player_id::text)) order by fp.id loop
  select value into r from jsonb_array_elements(coalesce(obs.payload->'players','[]')) where value->>'playerId'=player->>'playerId';
  known_absent:=r is null and coalesce((obs.payload->>'participationComplete')::boolean,false) and
  coalesce(obs.payload->'verifiedNonParticipants' ? (player->>'playerId'),false);
