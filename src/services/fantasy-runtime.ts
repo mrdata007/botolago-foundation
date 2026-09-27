@@ -141,6 +141,11 @@ function pointsDto(
       isViceCaptain: player.viceCaptain || undefined,
       isBench: player.slot === "bench" || undefined,
       status: dto.pointsState === "final" ? "final" : "provisional",
+      fixtureScoring:
+        player.fixtureScoring ??
+        dto.fixtureScoring?.filter((fixture) =>
+          player.events.some((event) => event.fixtureId === fixture.fixtureId),
+        ),
       events: player.events.map((event) => ({
         category: event.category,
         points: event.points,

@@ -4,6 +4,11 @@
 // Arabic dictionary (dictionary-ar.ts) loads when a reader chooses Arabic.
 // `dictionaries.ts` puts both together for the tests and the i18n gate.
 export const fr = {
+  "fantasy.scoring.full": "Barème complet",
+  "fantasy.scoring.simple": "Barème simplifié",
+  "fantasy.scoring.pending": "En attente des données",
+  "fantasy.scoring.policy":
+    "Le barème est fixé par match 12 heures après le coup de sifflet final. Si les statistiques détaillées sont incomplètes, les passes décisives, arrêts et penalties sauvés ou manqués sont exclus. Les autres points restent identiques. Des données essentielles manquantes retardent la validation. Les statistiques reçues plus tard ne changent pas le barème.",
   "app.name": "BotolaGO",
   "app.tagline": "Actualité & Fantasy du football marocain",
 

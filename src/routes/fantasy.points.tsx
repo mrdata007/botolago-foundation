@@ -329,9 +329,19 @@ function PointsBody() {
           clubs={clubs}
           renderDetail={(player) => {
             const events = breakdown.get(player.id)?.events ?? [];
-            if (events.length === 0) return null;
+            if (events.length === 0 && !breakdown.get(player.id)?.fixtureScoring?.length)
+              return null;
             return (
               <ul className={cn("pb-2", ui.text.meta, ui.tone.muted)}>
+                {breakdown.get(player.id)?.fixtureScoring?.map((fixture) => (
+                  <li key={fixture.fixtureId} className="font-semibold">
+                    {fixture.pending
+                      ? t("fantasy.scoring.pending")
+                      : fixture.mode === "simple"
+                        ? t("fantasy.scoring.simple")
+                        : t("fantasy.scoring.full")}
+                  </li>
+                ))}
                 {events.map((event, index) => (
                   <li
                     key={`${event.category}-${event.fixtureId ?? index}`}

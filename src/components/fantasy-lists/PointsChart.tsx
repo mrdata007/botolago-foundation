@@ -49,6 +49,13 @@ export function PointsChart({
         (opponent) =>
           `${opponent.shortName} (${opponent.home ? t("common.home") : t("common.away")})`,
       ),
+      ...(bar.fixtureScoring ?? []).map((fixture) =>
+        fixture.pending
+          ? t("fantasy.scoring.pending")
+          : fixture.mode === "simple"
+            ? t("fantasy.scoring.simple")
+            : t("fantasy.scoring.full"),
+      ),
       bar.provisional ? t("fantasy.points.status.provisional") : null,
     ]
       .filter(Boolean)
@@ -96,6 +103,15 @@ export function PointsChart({
                 )}
               >
                 <bdi>{gameweek(bar.sequence)}</bdi>
+                {bar.fixtureScoring?.map((fixture) => (
+                  <span key={fixture.fixtureId} className="block whitespace-normal">
+                    {fixture.pending
+                      ? t("fantasy.scoring.pending")
+                      : fixture.mode === "simple"
+                        ? t("fantasy.scoring.simple")
+                        : t("fantasy.scoring.full")}
+                  </span>
+                ))}
               </span>
             </li>
           );

@@ -1,3 +1,4 @@
+import { collectAdaptiveEvidence } from "./adaptive-performance-evidence";
 import { createClient } from "@supabase/supabase-js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -672,12 +673,33 @@ export async function runCurrentPerformanceBatch(
       continue;
     }
     try {
+      const normalizedFixture = await normalizeCurrentFinishedFixture(
+        payload,
+        Number(fixture.fixtureExternalId),
+      );
       normalized.push({
         ...fixture,
-        ...(await normalizeCurrentFinishedFixture(payload, Number(fixture.fixtureExternalId))),
+        adaptiveFieldEvidence: collectAdaptiveEvidence(
+          payload,
+          new Date().toISOString(),
+          normalizedFixture.rows,
+        ),
+        ...normalizedFixture,
       });
     } catch (error) {
       incomplete.push({ ...fixture, stage: "validation", ...failure(error) });
+    }
+  }
+  if (!diagnose && batch.adaptive === true) {
+    for (const gap of [...incomplete]) {
+      const status = row(
+        await rpc(client, "service_record_adaptive_gap", {
+          p_fixture_external_id: gap.fixtureExternalId,
+          p_reason: gap.code,
+        }),
+        "adaptiveGap",
+      );
+      if (status.certified === true) incomplete.splice(incomplete.indexOf(gap), 1);
     }
   }
   const page = {
@@ -723,7 +745,10 @@ export async function runCurrentPerformanceBatch(
           p_season_external_id: String(SEASON),
           p_fixture_external_id: fixture.fixtureExternalId,
           p_rows: fixture.rows,
-          p_coverage: fixture.coverage,
+          p_coverage:
+            batch.adaptive === true
+              ? { ...fixture.coverage, adaptiveFieldEvidence: fixture.adaptiveFieldEvidence }
+              : fixture.coverage,
           p_observed_at: observedAt,
         }),
         "result",
@@ -731,11 +756,18 @@ export async function runCurrentPerformanceBatch(
       if (
         result.active !== fixture.rows.length ||
         result.reconciled !== true ||
-        result.scoringStatisticsComplete !== true ||
+        (result.scoringStatisticsComplete !== true && result.adaptive !== true) ||
         typeof result.sourceVersion !== "string" ||
         !/^sportsmonks-current-fixture:[0-9a-f]{64}$/.test(result.sourceVersion)
       )
         fail("current_performance_reconciliation_failed");
+      if (result.adaptive === true && result.simpleReady !== true)
+        incomplete.push({
+          fixtureExternalId: fixture.fixtureExternalId,
+          kickoffAt: fixture.kickoffAt,
+          stage: "validation",
+          code: "adaptive_core_pending",
+        });
       fixtures.push({
         fixtureExternalId: fixture.fixtureExternalId,
         players: result.active,

@@ -743,3 +743,78 @@ describe("manual worker authorization", () => {
     expect(trustedWorkerEnvironment(env).gameweekId).toBe(gameweekId);
   });
 });
+
+describe("adaptive fixture integration", () => {
+  function adaptive() {
+    const doc = snapshot();
+    doc.adaptive = true;
+    doc.scoringVersion = 2;
+    doc.ruleset.version = 2;
+    doc.playerFixtures = doc.playerFixtures.map((p) => ({
+      ...p,
+      scoringMode: "full",
+      participationKnown: true,
+      evidence: Object.fromEntries(
+        Object.keys(p.stats).map((field) => [
+          field,
+          {
+            state: "verified",
+            source: "test",
+            observedAt: "2026-09-27T00:00:00Z",
+            references: ["test:fixture"],
+          },
+        ]),
+      ),
+    }));
+    return doc;
+  }
+  it("preserves full team totals, captain and bench rules", () => {
+    expect(calculateSnapshotResults(adaptive())).toEqual(calculateSnapshotResults(snapshot()));
+  });
+  it("mixes full and simple fixtures within a double gameweek", () => {
+    const doc = adaptive();
+    doc.playerFixtures[7]!.stats.assists = 2;
+    doc.playerFixtures.push({
+      ...doc.playerFixtures[7]!,
+      fixtureId: id(999),
+      scoringMode: "simple",
+    });
+    const results = calculateSnapshotResults(doc);
+    const captainEvents = results.playerResults.filter((p) => p.fantasyPlayerId === id(107));
+    expect(captainEvents[0]!.events.find((e) => e.category === "assist")!.points).toBe(6);
+    expect(captainEvents[1]!.events.some((e) => e.category === "assist")).toBeFalse();
+    expect(results.teamResults[0]!.captainPoints).toBe(10);
+  });
+  it("saves provisional player facts while unknown participation blocks lineup finalization", async () => {
+    const calls: Call[] = [];
+    const doc = adaptive();
+    doc.fixtures = [{ adaptiveReady: false }];
+    doc.playerFixtures[7]!.participationKnown = false;
+    const gateway: FantasyWorkerGateway = {
+      async rpc(name, args) {
+        calls.push({ name, args });
+        if (name === "service_fantasy_lifecycle_state")
+          return {
+            gameweekId,
+            seasonId,
+            status: "provisional",
+            lockVersion: 1,
+            sequenceNumber: 1,
+            scoringInputVersion: 1,
+            adaptiveScoringEnabled: true,
+          };
+        if (name === "service_select_fantasy_scoring_modes") return { enabled: true };
+        if (name === "service_get_fantasy_scoring_snapshot") return doc;
+        if (name === "service_persist_fantasy_scoring_results") return {};
+        throw new Error(name);
+      },
+    };
+    expect(
+      (await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 })).outcome,
+    ).toBe("waiting");
+    expect(
+      calls.find((c) => c.name === "service_persist_fantasy_scoring_results")!.args.p_team_results,
+    ).toEqual([]);
+    expect(calls.some((c) => c.name === "service_begin_fantasy_finalization")).toBeFalse();
+  });
+});
