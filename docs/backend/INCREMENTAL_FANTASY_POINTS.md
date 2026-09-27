@@ -55,3 +55,27 @@ state, and an identical retry. Restore each scheduler's recorded prior state.
 Rollback pauses new worker runs and disables this policy. Preserve existing
 provisional/final results, immutable snapshots and ledger history; do not replace
 published scores with the previous scoring method.
+
+## Season reliability checks
+
+The enabled policy applies to every gameweek in that season; a new season still
+requires explicit activation. Regression coverage visits GW1 through GW30,
+checks open-to-live capability refresh, and exercises partial publication,
+coverage loss, corrected snapshots, settlement and completion retries. The
+same-gameweek snapshot and ledger guards remain authoritative.
+
+Unknown participation is blocking only when a locked lineup selects the player.
+All fixture coverage and scorer reconciliation checks still apply. Unknown
+selected players cannot cause premature bench substitutions or vice promotion.
+
+The orchestrator keeps its bounded worker limit, reports deferred gameweeks as
+an escalation, and records a failed worker without skipping independent selected
+work. The database permits only one current gameweek per season. Provider data
+incidents therefore remain visible and may delay progression; this change does
+not manufacture essential facts or declare a blocked round complete.
+
+Before promoting the participation-scope migration, pause writers and rehearse
+it against production. Its narrower pending-player list changes the input digest
+for partial rounds: prepare a new calculation version, never mutate the old
+snapshot, then verify identical ready-fixture points and ranking totals. Sealed
+rounds have no pending participation and retain their semantic input digest.
