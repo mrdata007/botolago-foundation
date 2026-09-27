@@ -75,6 +75,11 @@ select api.service_recalculate_fantasy_rankings(pg_temp.scoring_id(5),pg_temp.sc
 select api.service_recalculate_fantasy_rankings(pg_temp.scoring_id(5),null,null,1);
 select extensions.is((select total_points from app.fantasy_rankings where fantasy_team_id=pg_temp.scoring_id(9) and league_id is null and gameweek_id is null),10,'live points count in season rankings');
 select extensions.is((select gameweek_points from app.fantasy_rankings where fantasy_team_id=pg_temp.scoring_id(9) and league_id is null and gameweek_id=pg_temp.scoring_id(6)),10,'live points count in gameweek rankings');
+update app.fantasy_rankings set rank=2 where fantasy_team_id=pg_temp.scoring_id(9) and league_id is null and gameweek_id is null;
+select api.service_recalculate_fantasy_rankings(pg_temp.scoring_id(5),null,null,1);
+select extensions.is((select previous_rank::int from app.fantasy_rankings where fantasy_team_id=pg_temp.scoring_id(9) and league_id is null and gameweek_id is null),2,'real rank movement records prior rank');
+select api.service_recalculate_fantasy_rankings(pg_temp.scoring_id(5),null,null,1);
+select extensions.is((select previous_rank::int from app.fantasy_rankings where fantasy_team_id=pg_temp.scoring_id(9) and league_id is null and gameweek_id is null),2,'unchanged retry preserves real rank movement');
 select extensions.is(api.service_persist_fantasy_scoring_results(pg_temp.scoring_id(6),1,current_setting('test.scoring_snapshot')::jsonb->>'inputDigest',current_setting('test.scoring_players')::jsonb,current_setting('test.scoring_teams')::jsonb)->>'teamsPersisted','1','retry succeeds');
 select extensions.is((select count(*)::int from app.fantasy_player_point_events where gameweek_id=pg_temp.scoring_id(6)),264,'retry cannot duplicate points');
 select extensions.throws_ok($$select api.service_begin_fantasy_finalization(pg_temp.scoring_id(6),1,current_setting('test.scoring_snapshot')::jsonb->>'inputDigest')$$,'PT409','fantasy_live_scoring_pending','partial points cannot finalize gameweek');

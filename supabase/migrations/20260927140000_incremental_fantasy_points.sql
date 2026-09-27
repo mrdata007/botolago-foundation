@@ -380,3 +380,18 @@ begin
 end $$;
 revoke all on function api.get_my_fantasy_points(uuid,uuid) from public,anon;
 grant execute on function api.get_my_fantasy_points(uuid,uuid) to authenticated,service_role;
+
+-- Idempotent live refreshes must not erase the last real ranking movement.
+do $patch$
+declare original text; changed text;
+begin
+ original:=pg_get_functiondef('api.service_recalculate_fantasy_rankings(uuid,uuid,uuid,bigint)'::regprocedure);
+ changed:=replace(original,'previous_rank = app.fantasy_rankings.rank, rank = excluded.rank,',
+ 'previous_rank = case when app.fantasy_rankings.rank = excluded.rank
+   and app.fantasy_rankings.calculation_version = excluded.calculation_version
+   and app.fantasy_rankings.total_points = excluded.total_points
+   and app.fantasy_rankings.gameweek_points is not distinct from excluded.gameweek_points
+   then app.fantasy_rankings.previous_rank else app.fantasy_rankings.rank end, rank = excluded.rank,');
+ if changed=original then raise exception 'LIVE_RANKING_PATCH_MISMATCH'; end if;
+ execute changed;
+end $patch$;
