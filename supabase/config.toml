@@ -415,6 +415,13 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/notification-email-unsubscribe/index.ts"
 
+# Pépites: a staff member's player photo and signed release, into the two
+# private buckets (the caller's JWT decides, through the database).
+[functions.player-photo-upload]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/player-photo-upload/index.ts"
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
