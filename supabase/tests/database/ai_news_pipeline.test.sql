@@ -103,8 +103,19 @@ set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select extensions.is(api.ai_news_save_draft(repeat('b', 64), current_setting('test.ai_payload_two_sources')::jsonb)->>'created', 'true',
   'approved independently sourced reporting can be drafted');
+select extensions.is(api.ai_news_pending_publication()::text, '[]',
+  'two listed outlets without two article links are not pending publication');
+select extensions.throws_ok($$select api.ai_news_publish(repeat('b', 64))$$,
+  '22023', 'ai_news_independent_sources_required',
+  'unattended publication requires attribution links for both outlets');
+reset role;
+update app.article_editions set body_html = body_html ||
+  '<p>The club notice is linked here. <a href="https://example.org/news/club-announcement">Official Test Club</a></p>'
+  where id = (select edition_id from app_private.ai_news_drafts where candidate_key = repeat('b', 64));
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select extensions.is(api.ai_news_pending_publication()::text, jsonb_build_array(repeat('b', 64))::text,
-  'an eligible saved draft is available for retry');
+  'a draft citing both approved outlets is available for retry');
 select extensions.is(api.ai_news_publish(repeat('b', 64))->>'published', 'true',
   'service publication requires both flags and two approved outlets');
 select extensions.is(api.ai_news_pending_publication()::text, '[]',

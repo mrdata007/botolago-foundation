@@ -537,6 +537,14 @@ export type Database = {
         Args: { p_idempotency_key: string; p_reason: string; p_user_id: string }
         Returns: Json
       }
+      ai_news_configuration: { Args: never; Returns: Json }
+      ai_news_existing: { Args: never; Returns: Json }
+      ai_news_pending_publication: { Args: never; Returns: Json }
+      ai_news_publish: { Args: { p_key: string }; Returns: Json }
+      ai_news_save_draft: {
+        Args: { p_key: string; p_payload: Json }
+        Returns: Json
+      }
       archive_fantasy_league: {
         Args: { p_league_id: string; p_team_id: string }
         Returns: boolean

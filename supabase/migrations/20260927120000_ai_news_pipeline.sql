@@ -96,7 +96,8 @@ begin
       and edition.status = 'draft' and edition.visibility = 'private'
       and (select count(distinct fact->>'outlet') from jsonb_array_elements(draft.facts) fact
         join app_private.ai_news_source_permissions permission
-          on permission.outlet = fact->>'outlet' and permission.auto_publication_approved) >= 2
+          on permission.outlet = fact->>'outlet' and permission.auto_publication_approved
+        where position('href="' || (fact->>'sourceUrl') || '"' in edition.body_html) > 0) >= 2
     order by draft.generated_at
     limit greatest(0, settings.daily_limit - (select count(*) from app_private.ai_news_drafts
       where published_at at time zone 'UTC' >= date_trunc('day', statement_timestamp() at time zone 'UTC')))
@@ -219,7 +220,9 @@ begin
   if draft.quality_status <> 'passed' or
     (select count(distinct fact->>'outlet') from jsonb_array_elements(draft.facts) fact
       join app_private.ai_news_source_permissions permission
-        on permission.outlet = fact->>'outlet' and permission.auto_publication_approved) < 2 then
+        on permission.outlet = fact->>'outlet' and permission.auto_publication_approved
+      join app.article_editions edition on edition.id = draft.edition_id
+      where position('href="' || (fact->>'sourceUrl') || '"' in edition.body_html) > 0) < 2 then
     raise exception using errcode = '22023', message = 'ai_news_independent_sources_required';
   end if;
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('ai-news-daily-publish', 0));

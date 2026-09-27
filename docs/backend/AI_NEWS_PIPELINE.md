@@ -47,7 +47,9 @@ their own approved source adapter and rights record before use.
    source facts, model and prompt metadata. Existing revision and audit triggers
    stay in use. Retries return the existing edition. A separate service RPC
    permits publication only if the database auto switch is on, the draft passed
-   quality gates, and facts have at least two distinct reporting outlets. The
+   quality gates, and the rendered article links facts from at least two
+   distinct approved reporting outlets. Merely listing a second outlet in
+   provenance is insufficient. The
    current ElBotola-only adapter cannot meet that final condition. This is a
    deliberate automatic-publication hold until another permitted, independently
    sourced adapter and its checks are implemented and reviewed. Eligible drafts
