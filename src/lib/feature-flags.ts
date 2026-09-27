@@ -233,41 +233,11 @@ export const PRONOSTICS_PROMOTED = true;
 export const ANALYTICS_ENABLED = true;
 
 /**
- * Pépites (the under-23 ranking) — OFF: not reachable in any build that is
- * not a local development server with the preview switched on.
- *
- * Owner instruction, 2026-09-26: build the complete v1, keep it unavailable
- * publicly. The database has its own switch, the real gate
- * (`app_private.pepites_settings.mode`, off / staff / public; see
- * docs/engineering/PEPITES_ARCHITECTURE.md §6.1), and it ships `off`. On top
- * of it, this flag keeps every Pépites route redirecting Home in production
- * and preview deployments: `import.meta.env.DEV` is false in every build, so
- * only `vite dev` with `VITE_PEPITES_PREVIEW=1` in `.env.local` opens the
- * pages (the local preview and the browser tests).
- *
- * At launch the owner replaces this with `true`, and the database mode then
- * decides what an open page shows, as for Pronostics.
- *
- * Gated surfaces (keep this list current):
- *   - `src/routes/pepites.tsx` — every /pepites route (redirect Home when off)
- *   - `src/routes/admin.pepites.tsx` — the two staff screens (redirect to
- *     /admin when off), and their entries in `ADMIN_CONSOLE_NAV_ITEMS`
+ * Pépites public release approved by the owner on 2026-09-27.
+ * Database off/staff/public access checks remain authoritative.
+ * Set this false and republish for an application-level rollback.
  */
-export const PEPITES_ENABLED: boolean =
-  import.meta.env?.DEV === true && import.meta.env?.VITE_PEPITES_PREVIEW === "1";
+export const PEPITES_ENABLED: boolean = true;
 
-/**
- * Pépites entry points — OFF, like the pages (same local preview switch).
- *
- * When on: Pépites takes the bottom-nav slot of Profil (plan §5), and Profile
- * moves to an icon in the top bar; the pages become indexable.
- *
- * Gated surfaces (keep this list current):
- *   - `src/components/shell/primary-nav.ts` — the Pépites tab replacing Profil
- *   - `src/components/shell/TopBar.tsx` — the Profile icon that replaces the tab
- *   - `src/routes/index.tsx` — the Pépites discovery tile replacing Profil's
- *   - `src/lib/sitemap.ts` — /pepites, /pepites/classement, /pepites/methode
- *   - `src/components/pepites/pepites-route.ts` — `index,follow` instead of
- *     `noindex`, and only for a page that is public
- */
+/** Public navigation and indexing follow the application release switch. */
 export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;
