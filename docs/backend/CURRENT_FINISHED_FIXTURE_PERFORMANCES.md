@@ -21,7 +21,7 @@ ingestion would, and never calls the ingestion RPC.
 accepted by the manual runner.
 
 The provider request is `GET /v3/football/fixtures/{id}` with
-`include=lineups.details;state;participants;scores` and the following
+`include=lineups.details;state;participants;scores;events` and the following
 detail-type filter:
 
 | ID  | Normalized statistic                             | When SportsMonks leaves it out                       |
@@ -32,7 +32,7 @@ detail-type filter:
 | 83  | Direct red cards                                 | Zero                                                 |
 | 84  | Yellow cards                                     | Zero                                                 |
 | 85  | Second-yellow dismissals                         | Zero                                                 |
-| 88  | Goals conceded while the player was on the pitch | Zero, then bounded by the final score (below)        |
+| 88  | Goals conceded while the player was on the pitch | Final score/timeline or explicit value (see below)   |
 | 112 | Penalties missed                                 | Zero                                                 |
 | 113 | Penalties saved                                  | Zero; an explicit null stays null                    |
 | 118 | Provider rating                                  | Null; optional, unused by Fantasy v1 scoring         |
@@ -388,3 +388,21 @@ time; pg_cron jobs and other lanes are not covered by that and must be checked.
    pass run. The fixture must come back with the same `sourceVersion` and the
    query in step 4 must return the same row counts: identical facts only
    advance the observation watermark.
+
+### Shortened starter clean-sheet correction (2026-09-27)
+
+The importer now requests fixture events. When normal-time goal events reconcile
+with both final scores, every conceded goal predates the team's first recorded
+substitution/dismissal, and those goals also predate a starter's official minutes,
+it derives that starter's conceded count from the final score. Coverage records
+`goalsConcededFromTimeline`; this participates in the immutable source digest.
+Own goals, VAR events, stoppage-time conceded goals, extra time, malformed events
+and equal-minute boundaries are outside this narrow proof. A starter with 60–89
+minutes whose team conceded needs either that proof or an explicit type-88 value;
+an omitted value no longer silently grants that starter a clean sheet.
+
+Regression: Tiznit–Tanger (19874708), Soufiane El Azhari played 84 minutes and
+scored once. Tanger scored at 9, 47 and 55, before Tiznit's first substitution at 60. His conceded count is 3, clean sheets 0, and midfielder fantasy preview 7
+(2 appearance + 5 goal), before captain/chip effects. Re-importing creates a new
+performance source version and retains the prior version as inactive history.
+This does not finalize a gameweek or create points by itself.
