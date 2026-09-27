@@ -90,6 +90,7 @@ function LeagueDetailBody() {
   const standingsQ = useQuery({
     queryKey: key("standings", leagueId),
     queryFn: () => fantasyService.getLeagueStandings(leagueId),
+    refetchInterval: 60_000,
     enabled: screen.phase === "ready",
   });
   const gw = screen.gameweek?.number ?? null;

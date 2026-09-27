@@ -10,6 +10,8 @@ import {
   PRONOSTICS_ENABLED,
   PRONOSTICS_PROMOTED,
   ANALYTICS_ENABLED,
+  PEPITES_ENABLED,
+  PEPITES_PROMOTED,
 } from "@/lib/feature-flags";
 import { SITEMAP_STATIC_PATHS } from "@/lib/sitemap";
 import { primaryNavItems } from "@/components/shell/primary-nav";
@@ -324,6 +326,40 @@ describe("PRONOSTICS_ENABLED / PRONOSTICS_PROMOTED", () => {
     ]);
     const strays = sourceFiles().filter(
       (file) => !allowed.has(file) && stripComments(read(file)).includes("PRONOSTICS_PROMOTED"),
+    );
+    expect(strays).toEqual([]);
+  });
+});
+
+/** Owner-approved Pépites public release; database gates still apply. */
+describe("PEPITES_ENABLED / PEPITES_PROMOTED", () => {
+  test("exposes the approved pages and navigation in production builds", () => {
+    expect(PEPITES_ENABLED).toBe(true);
+    expect(PEPITES_PROMOTED).toBe(true);
+    expect(primaryNavItems.some((item) => item.to === "/pepites")).toBe(true);
+    expect((SITEMAP_STATIC_PATHS as readonly string[]).includes("/pepites")).toBe(true);
+  });
+
+  test("the /pepites routes redirect while Pépites is off, the admin ones too", () => {
+    expect(stripComments(read("src/routes/pepites.tsx"))).toContain(
+      'if (!PEPITES_ENABLED) throw redirect({ to: "/", replace: true });',
+    );
+    expect(stripComments(read("src/routes/admin.pepites.tsx"))).toContain(
+      'if (!PEPITES_ENABLED) throw redirect({ to: "/admin", replace: true });',
+    );
+  });
+
+  test("no other source file mentions the promoted flag", () => {
+    const allowed = new Set([
+      "src/lib/feature-flags.ts",
+      "src/components/shell/primary-nav.ts",
+      "src/components/shell/TopBar.tsx",
+      "src/routes/index.tsx",
+      "src/lib/sitemap.ts",
+      "src/components/pepites/pepites-route.ts",
+    ]);
+    const strays = sourceFiles().filter(
+      (file) => !allowed.has(file) && stripComments(read(file)).includes("PEPITES_PROMOTED"),
     );
     expect(strays).toEqual([]);
   });
