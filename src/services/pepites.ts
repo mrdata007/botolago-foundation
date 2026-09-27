@@ -2,11 +2,13 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import { BackendError } from "@/backend/errors";
 import type {
   EditionResponse,
+  FollowState,
   HomeResponse,
   MethodologyResponse,
   PepitesRepository,
   PlayerMatchesResponse,
   PlayerResponse,
+  PlayerStatsResponse,
   RankingQuery,
   RankingResponse,
   ReportableField,
@@ -24,14 +26,14 @@ export function selectPepitesDataMode(
   configuredMode: string | undefined,
   production: boolean,
 ): PepitesDataMode {
-  if (production && configuredMode !== "supabase")
+  if (production && configuredMode !== undefined && configuredMode !== "supabase")
     throw new BackendError(
       "data_unavailable",
       "Production Pépites require VITE_PEPITES_DATA_MODE=supabase.",
       { status: 503 },
     );
   if (configuredMode === "mock" || configuredMode === "supabase") return configuredMode;
-  return "mock";
+  return production ? "supabase" : "mock";
 }
 
 const mockRepository = new MockPepitesRepository();
@@ -73,6 +75,19 @@ export const pepitesService = {
     signal?: AbortSignal,
   ): Promise<PlayerMatchesResponse> {
     return getPepitesRepository().playerMatches(playerId, limit, context(signal));
+  },
+  playerStats(
+    version: string | null,
+    playerId: string,
+    signal?: AbortSignal,
+  ): Promise<PlayerStatsResponse> {
+    return getPepitesRepository().playerStats(version, playerId, context(signal));
+  },
+  followState(playerId: string, signal?: AbortSignal): Promise<FollowState> {
+    return getPepitesRepository().followState(playerId, context(signal));
+  },
+  setFollow(playerId: string, follow: boolean): Promise<FollowState> {
+    return getPepitesRepository().setFollow(playerId, follow, context());
   },
   edition(seasonId: string | null, week: number, signal?: AbortSignal): Promise<EditionResponse> {
     return getPepitesRepository().edition(seasonId, week, context(signal));

@@ -3,13 +3,16 @@ import { reportMfaStepUp } from "@/backend/auth/step-up";
 /**
  * Pépites error codes. The database answers "not open to you" with
  * `{ available: false }`, not an error, so these are the real failures: the
- * network, a signed-out write, the account's second factor, the fans' report
- * limit, and anything else.
+ * network, a signed-out write, a guest following, the account's second
+ * factor, the fans' report limit, the follow cap, and anything else.
  */
 export const PEPITES_ERROR_CODES = [
   "unauthenticated",
+  "account_required",
   "mfa_required",
   "rate_limited",
+  "follow_limit",
+  "not_found",
   "invalid_request",
   "unavailable",
   "network",
@@ -63,6 +66,16 @@ export function mapPepitesError(error: unknown): PepitesError {
     message === "notification_access_denied"
   ) {
     return new PepitesError("unauthenticated", "Sign in to continue.", error);
+  }
+  // Following needs an account: a guest is asked to create one.
+  if (message === "PEPITES_ACCOUNT_REQUIRED") {
+    return new PepitesError("account_required", "Create an account to follow players.", error);
+  }
+  if (message === "PEPITES_FOLLOW_LIMIT") {
+    return new PepitesError("follow_limit", "Too many players followed.", error);
+  }
+  if (message === "PEPITES_PLAYER_NOT_FOUND") {
+    return new PepitesError("not_found", "No such player in Pépites.", error);
   }
   if (code === "PT429" || message === "DATA_ISSUE_RATE_LIMITED") {
     return new PepitesError("rate_limited", "Too many reports today.", error);

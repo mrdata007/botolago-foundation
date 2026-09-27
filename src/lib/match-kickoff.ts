@@ -140,6 +140,11 @@ export function matchDayKey(value: Date): string {
   return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
 }
 
+/** The competition-zone hour (0-23) a moment falls in. */
+export function matchZoneHour(value: Date): number {
+  return zoneParts(value).hour;
+}
+
 /** True when both moments fall on the same competition calendar day. */
 export function isSameMatchDay(a: Date, b: Date): boolean {
   return matchDayKey(a) === matchDayKey(b);

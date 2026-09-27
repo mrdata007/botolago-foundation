@@ -331,30 +331,21 @@ describe("PRONOSTICS_ENABLED / PRONOSTICS_PROMOTED", () => {
   });
 });
 
-/**
- * Pépites stays off in every build: only `vite dev` with VITE_PEPITES_PREVIEW=1
- * (the local preview and its browser tests) opens it. Unlike the flags above,
- * this one IS asserted off for a build, because the owner has not authorised
- * a public launch; flipping it is the launch decision.
- */
+/** Owner-approved Pépites public release; database gates still apply. */
 describe("PEPITES_ENABLED / PEPITES_PROMOTED", () => {
-  test("are off in any build: on only in a development server asked for the preview", () => {
-    const source = read("src/lib/feature-flags.ts");
-    expect(source).toContain(
-      'import.meta.env?.DEV === true && import.meta.env?.VITE_PEPITES_PREVIEW === "1"',
-    );
-    expect(source.match(/export const PEPITES_ENABLED/g)).toHaveLength(1);
-    expect(source.match(/export const PEPITES_PROMOTED/g)).toHaveLength(1);
-    // The unit tests run outside a development server.
-    expect(PEPITES_ENABLED).toBe(false);
-    expect(PEPITES_PROMOTED).toBe(false);
-    expect(primaryNavItems.some((item) => item.to === "/pepites")).toBe(false);
-    expect((SITEMAP_STATIC_PATHS as readonly string[]).includes("/pepites")).toBe(false);
+  test("exposes the approved pages and navigation in production builds", () => {
+    expect(PEPITES_ENABLED).toBe(true);
+    expect(PEPITES_PROMOTED).toBe(true);
+    expect(primaryNavItems.some((item) => item.to === "/pepites")).toBe(true);
+    expect((SITEMAP_STATIC_PATHS as readonly string[]).includes("/pepites")).toBe(true);
   });
 
-  test("the /pepites routes redirect Home while Pépites is off", () => {
+  test("the /pepites routes redirect while Pépites is off, the admin ones too", () => {
     expect(stripComments(read("src/routes/pepites.tsx"))).toContain(
       'if (!PEPITES_ENABLED) throw redirect({ to: "/", replace: true });',
+    );
+    expect(stripComments(read("src/routes/admin.pepites.tsx"))).toContain(
+      'if (!PEPITES_ENABLED) throw redirect({ to: "/admin", replace: true });',
     );
   });
 

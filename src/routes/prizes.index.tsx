@@ -7,6 +7,9 @@ import { UiHeader } from "@/components/ui-kit";
 import { fr } from "@/i18n/dictionary-fr";
 import { useI18n } from "@/i18n/provider";
 import { PRIZES_ENABLED } from "@/lib/feature-flags";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
+
+const CANONICAL = `${PUBLIC_SITE_ORIGIN}/prizes`;
 
 /**
  * `/prizes`. While the prize pages are switched off (see `PRIZES_ENABLED`),
@@ -25,7 +28,13 @@ export const Route = createFileRoute("/prizes/")({
       { name: "description", content: fr["prizes.meta_description"] },
       { property: "og:title", content: fr["prizes.meta_title"] },
       { property: "og:description", content: fr["prizes.meta_description"] },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: CANONICAL },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: fr["prizes.meta_title"] },
+      { name: "twitter:description", content: fr["prizes.meta_description"] },
     ],
+    links: [{ rel: "canonical", href: CANONICAL }],
   }),
   component: PrizesRoute,
 });

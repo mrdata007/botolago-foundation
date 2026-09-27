@@ -32,6 +32,7 @@ import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
 import { Route as PrizesTermsRouteImport } from './routes/prizes.terms'
 import { Route as PepitesRevelationRouteImport } from './routes/pepites.revelation'
 import { Route as PepitesMethodeRouteImport } from './routes/pepites.methode'
+import { Route as PepitesComparerRouteImport } from './routes/pepites.comparer'
 import { Route as PepitesClassementRouteImport } from './routes/pepites.classement'
 import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
 import { Route as MatchesStandingsRouteImport } from './routes/matches.standings'
@@ -61,12 +62,14 @@ import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
 import { Route as AdminSecurityRouteImport } from './routes/admin.security'
 import { Route as AdminPrizesRouteImport } from './routes/admin.prizes'
+import { Route as AdminPepitesRouteImport } from './routes/admin.pepites'
 import { Route as AdminNewsRouteImport } from './routes/admin.news'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as PronosticsLiguesIndexRouteImport } from './routes/pronostics.ligues.index'
+import { Route as AdminPepitesIndexRouteImport } from './routes/admin.pepites.index'
 import { Route as PronosticsLiguesRejoindreRouteImport } from './routes/pronostics.ligues.rejoindre'
 import { Route as PronosticsLiguesLeagueIdRouteImport } from './routes/pronostics.ligues.$leagueId'
 import { Route as PepitesSemaineNRouteImport } from './routes/pepites.semaine.$n'
@@ -76,6 +79,7 @@ import { Route as FantasyLeaguesJoinRouteImport } from './routes/fantasy.leagues
 import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin.users.$userId'
 import { Route as AdminStaffPrincipalIdRouteImport } from './routes/admin.staff.$principalId'
+import { Route as AdminPepitesDonneesRouteImport } from './routes/admin.pepites.donnees'
 import { Route as AdminNewsNewRouteImport } from './routes/admin.news.new'
 import { Route as AdminNewsArticleEditionIdRouteImport } from './routes/admin.news.$articleEditionId'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
@@ -194,6 +198,11 @@ const PepitesRevelationRoute = PepitesRevelationRouteImport.update({
 const PepitesMethodeRoute = PepitesMethodeRouteImport.update({
   id: '/methode',
   path: '/methode',
+  getParentRoute: () => PepitesRoute,
+} as any)
+const PepitesComparerRoute = PepitesComparerRouteImport.update({
+  id: '/comparer',
+  path: '/comparer',
   getParentRoute: () => PepitesRoute,
 } as any)
 const PepitesClassementRoute = PepitesClassementRouteImport.update({
@@ -341,6 +350,11 @@ const AdminPrizesRoute = AdminPrizesRouteImport.update({
   path: '/prizes',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPepitesRoute = AdminPepitesRouteImport.update({
+  id: '/pepites',
+  path: '/pepites',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminNewsRoute = AdminNewsRouteImport.update({
   id: '/news',
   path: '/news',
@@ -372,6 +386,11 @@ const PronosticsLiguesIndexRoute = PronosticsLiguesIndexRouteImport.update({
   id: '/ligues/',
   path: '/ligues/',
   getParentRoute: () => PronosticsRoute,
+} as any)
+const AdminPepitesIndexRoute = AdminPepitesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminPepitesRoute,
 } as any)
 const PronosticsLiguesRejoindreRoute =
   PronosticsLiguesRejoindreRouteImport.update({
@@ -420,6 +439,11 @@ const AdminStaffPrincipalIdRoute = AdminStaffPrincipalIdRouteImport.update({
   path: '/$principalId',
   getParentRoute: () => AdminStaffRoute,
 } as any)
+const AdminPepitesDonneesRoute = AdminPepitesDonneesRouteImport.update({
+  id: '/donnees',
+  path: '/donnees',
+  getParentRoute: () => AdminPepitesRoute,
+} as any)
 const AdminNewsNewRoute = AdminNewsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -462,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
+  '/admin/pepites': typeof AdminPepitesRouteWithChildren
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
@@ -491,6 +516,7 @@ export interface FileRoutesByFullPath {
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/pepites/classement': typeof PepitesClassementRoute
+  '/pepites/comparer': typeof PepitesComparerRoute
   '/pepites/methode': typeof PepitesMethodeRoute
   '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
@@ -505,6 +531,7 @@ export interface FileRoutesByFullPath {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
+  '/admin/pepites/donnees': typeof AdminPepitesDonneesRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
@@ -514,6 +541,7 @@ export interface FileRoutesByFullPath {
   '/pepites/semaine/$n': typeof PepitesSemaineNRoute
   '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
   '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
+  '/admin/pepites/': typeof AdminPepitesIndexRoute
   '/pronostics/ligues/': typeof PronosticsLiguesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -561,6 +589,7 @@ export interface FileRoutesByTo {
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/pepites/classement': typeof PepitesClassementRoute
+  '/pepites/comparer': typeof PepitesComparerRoute
   '/pepites/methode': typeof PepitesMethodeRoute
   '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
@@ -575,6 +604,7 @@ export interface FileRoutesByTo {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
+  '/admin/pepites/donnees': typeof AdminPepitesDonneesRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
@@ -584,6 +614,7 @@ export interface FileRoutesByTo {
   '/pepites/semaine/$n': typeof PepitesSemaineNRoute
   '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
   '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
+  '/admin/pepites': typeof AdminPepitesIndexRoute
   '/pronostics/ligues': typeof PronosticsLiguesIndexRoute
 }
 export interface FileRoutesById {
@@ -606,6 +637,7 @@ export interface FileRoutesById {
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
+  '/admin/pepites': typeof AdminPepitesRouteWithChildren
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
@@ -635,6 +667,7 @@ export interface FileRoutesById {
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
   '/pepites/classement': typeof PepitesClassementRoute
+  '/pepites/comparer': typeof PepitesComparerRoute
   '/pepites/methode': typeof PepitesMethodeRoute
   '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
@@ -649,6 +682,7 @@ export interface FileRoutesById {
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
+  '/admin/pepites/donnees': typeof AdminPepitesDonneesRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
@@ -658,6 +692,7 @@ export interface FileRoutesById {
   '/pepites/semaine/$n': typeof PepitesSemaineNRoute
   '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
   '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
+  '/admin/pepites/': typeof AdminPepitesIndexRoute
   '/pronostics/ligues/': typeof PronosticsLiguesIndexRoute
 }
 export interface FileRouteTypes {
@@ -681,6 +716,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/audit'
     | '/admin/news'
+    | '/admin/pepites'
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
@@ -710,6 +746,7 @@ export interface FileRouteTypes {
     | '/matches/standings'
     | '/news/$articleId'
     | '/pepites/classement'
+    | '/pepites/comparer'
     | '/pepites/methode'
     | '/pepites/revelation'
     | '/prizes/terms'
@@ -724,6 +761,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
+    | '/admin/pepites/donnees'
     | '/admin/staff/$principalId'
     | '/admin/users/$userId'
     | '/fantasy/leagues/$leagueId'
@@ -733,6 +771,7 @@ export interface FileRouteTypes {
     | '/pepites/semaine/$n'
     | '/pronostics/ligues/$leagueId'
     | '/pronostics/ligues/rejoindre'
+    | '/admin/pepites/'
     | '/pronostics/ligues/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -780,6 +819,7 @@ export interface FileRouteTypes {
     | '/matches/standings'
     | '/news/$articleId'
     | '/pepites/classement'
+    | '/pepites/comparer'
     | '/pepites/methode'
     | '/pepites/revelation'
     | '/prizes/terms'
@@ -794,6 +834,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
+    | '/admin/pepites/donnees'
     | '/admin/staff/$principalId'
     | '/admin/users/$userId'
     | '/fantasy/leagues/$leagueId'
@@ -803,6 +844,7 @@ export interface FileRouteTypes {
     | '/pepites/semaine/$n'
     | '/pronostics/ligues/$leagueId'
     | '/pronostics/ligues/rejoindre'
+    | '/admin/pepites'
     | '/pronostics/ligues'
   id:
     | '__root__'
@@ -824,6 +866,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/audit'
     | '/admin/news'
+    | '/admin/pepites'
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
@@ -853,6 +896,7 @@ export interface FileRouteTypes {
     | '/matches/standings'
     | '/news/$articleId'
     | '/pepites/classement'
+    | '/pepites/comparer'
     | '/pepites/methode'
     | '/pepites/revelation'
     | '/prizes/terms'
@@ -867,6 +911,7 @@ export interface FileRouteTypes {
     | '/.mcp/invoke-tool/$tool'
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
+    | '/admin/pepites/donnees'
     | '/admin/staff/$principalId'
     | '/admin/users/$userId'
     | '/fantasy/leagues/$leagueId'
@@ -876,6 +921,7 @@ export interface FileRouteTypes {
     | '/pepites/semaine/$n'
     | '/pronostics/ligues/$leagueId'
     | '/pronostics/ligues/rejoindre'
+    | '/admin/pepites/'
     | '/pronostics/ligues/'
   fileRoutesById: FileRoutesById
 }
@@ -1067,6 +1113,13 @@ declare module '@tanstack/react-router' {
       path: '/methode'
       fullPath: '/pepites/methode'
       preLoaderRoute: typeof PepitesMethodeRouteImport
+      parentRoute: typeof PepitesRoute
+    }
+    '/pepites/comparer': {
+      id: '/pepites/comparer'
+      path: '/comparer'
+      fullPath: '/pepites/comparer'
+      preLoaderRoute: typeof PepitesComparerRouteImport
       parentRoute: typeof PepitesRoute
     }
     '/pepites/classement': {
@@ -1272,6 +1325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPrizesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/pepites': {
+      id: '/admin/pepites'
+      path: '/pepites'
+      fullPath: '/admin/pepites'
+      preLoaderRoute: typeof AdminPepitesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/news': {
       id: '/admin/news'
       path: '/news'
@@ -1313,6 +1373,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pronostics/ligues/'
       preLoaderRoute: typeof PronosticsLiguesIndexRouteImport
       parentRoute: typeof PronosticsRoute
+    }
+    '/admin/pepites/': {
+      id: '/admin/pepites/'
+      path: '/'
+      fullPath: '/admin/pepites/'
+      preLoaderRoute: typeof AdminPepitesIndexRouteImport
+      parentRoute: typeof AdminPepitesRoute
     }
     '/pronostics/ligues/rejoindre': {
       id: '/pronostics/ligues/rejoindre'
@@ -1377,6 +1444,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminStaffPrincipalIdRouteImport
       parentRoute: typeof AdminStaffRoute
     }
+    '/admin/pepites/donnees': {
+      id: '/admin/pepites/donnees'
+      path: '/donnees'
+      fullPath: '/admin/pepites/donnees'
+      preLoaderRoute: typeof AdminPepitesDonneesRouteImport
+      parentRoute: typeof AdminPepitesRoute
+    }
     '/admin/news/new': {
       id: '/admin/news/new'
       path: '/new'
@@ -1422,6 +1496,20 @@ const AdminNewsRouteWithChildren = AdminNewsRoute._addFileChildren(
   AdminNewsRouteChildren,
 )
 
+interface AdminPepitesRouteChildren {
+  AdminPepitesDonneesRoute: typeof AdminPepitesDonneesRoute
+  AdminPepitesIndexRoute: typeof AdminPepitesIndexRoute
+}
+
+const AdminPepitesRouteChildren: AdminPepitesRouteChildren = {
+  AdminPepitesDonneesRoute: AdminPepitesDonneesRoute,
+  AdminPepitesIndexRoute: AdminPepitesIndexRoute,
+}
+
+const AdminPepitesRouteWithChildren = AdminPepitesRoute._addFileChildren(
+  AdminPepitesRouteChildren,
+)
+
 interface AdminStaffRouteChildren {
   AdminStaffPrincipalIdRoute: typeof AdminStaffPrincipalIdRoute
 }
@@ -1450,6 +1538,7 @@ interface AdminRouteChildren {
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminAuditRoute: typeof AdminAuditRoute
   AdminNewsRoute: typeof AdminNewsRouteWithChildren
+  AdminPepitesRoute: typeof AdminPepitesRouteWithChildren
   AdminPrizesRoute: typeof AdminPrizesRoute
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminStaffRoute: typeof AdminStaffRouteWithChildren
@@ -1460,6 +1549,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminAuditRoute: AdminAuditRoute,
   AdminNewsRoute: AdminNewsRouteWithChildren,
+  AdminPepitesRoute: AdminPepitesRouteWithChildren,
   AdminPrizesRoute: AdminPrizesRoute,
   AdminSecurityRoute: AdminSecurityRoute,
   AdminStaffRoute: AdminStaffRouteWithChildren,
@@ -1565,6 +1655,7 @@ const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 
 interface PepitesRouteChildren {
   PepitesClassementRoute: typeof PepitesClassementRoute
+  PepitesComparerRoute: typeof PepitesComparerRoute
   PepitesMethodeRoute: typeof PepitesMethodeRoute
   PepitesRevelationRoute: typeof PepitesRevelationRoute
   PepitesIndexRoute: typeof PepitesIndexRoute
@@ -1574,6 +1665,7 @@ interface PepitesRouteChildren {
 
 const PepitesRouteChildren: PepitesRouteChildren = {
   PepitesClassementRoute: PepitesClassementRoute,
+  PepitesComparerRoute: PepitesComparerRoute,
   PepitesMethodeRoute: PepitesMethodeRoute,
   PepitesRevelationRoute: PepitesRevelationRoute,
   PepitesIndexRoute: PepitesIndexRoute,

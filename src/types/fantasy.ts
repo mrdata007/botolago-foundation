@@ -136,6 +136,7 @@ export interface PointsEvent {
 }
 
 export interface PlayerPointsBreakdown {
+  multiplier?: number;
   playerId: string;
   totalPoints: number;
   minutesPlayed: number;
@@ -143,10 +144,28 @@ export interface PlayerPointsBreakdown {
   isViceCaptain?: boolean;
   isBench?: boolean;
   status: "provisional" | "live" | "final";
+  fixtureScoring?: Array<{
+    estimated?: boolean;
+    fixtureId: string;
+    teamIds?: string[];
+    mode: "full" | "simple" | null;
+    pending: boolean;
+  }>;
   events: PointsEvent[];
 }
 
 export interface GameweekResult {
+  authoritative?: {
+    startingIds: string[];
+    benchIds: string[];
+    effectiveCaptainId: string | null;
+    captainMultiplier: number;
+    captainPoints: number;
+    transferHit: number;
+    chipType: "wildcard" | "free_hit" | "bench_boost" | "triple_captain" | null;
+    incremental: boolean;
+    finalized: boolean;
+  };
   gameweek: number;
   totalPoints: number; // includes captain multiplier
   benchPoints: number;

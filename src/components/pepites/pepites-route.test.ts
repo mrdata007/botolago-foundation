@@ -75,9 +75,36 @@ describe("the ranking address", () => {
 
   it("round-trips between the address and the filters", () => {
     const filters = rankingFiltersFromSearch({ poste: "gk", age: 19, tri: "minutes" });
-    expect(filters).toEqual({ position: "GK", maxAge: 19, sort: "minutes" });
+    expect(filters).toEqual({
+      position: "GK",
+      maxAge: 19,
+      sort: "minutes",
+      teamId: null,
+      minMinutes: null,
+      followed: false,
+    });
     expect(rankingSearchFromFilters(filters)).toEqual({ poste: "gk", age: 19, tri: "minutes" });
-    expect(rankingSearchFromFilters({ position: null, maxAge: null, sort: "score" })).toEqual({});
+    expect(
+      rankingSearchFromFilters({
+        position: null,
+        maxAge: null,
+        sort: "score",
+        teamId: null,
+        minMinutes: null,
+        followed: false,
+      }),
+    ).toEqual({});
+    const club = "7e500000-0000-4000-8000-000000000001";
+    expect(validateRankingSearch({ club, min: "900" })).toEqual({ club, min: 900 });
+    expect(rankingSearchFromFilters(rankingFiltersFromSearch({ club, min: 900 }))).toEqual({
+      club,
+      min: 900,
+    });
+    expect(validateRankingSearch({ suivis: "1" })).toEqual({ suivis: "1" });
+    expect(validateRankingSearch({ suivis: 1 })).toEqual({ suivis: "1" });
+    expect(rankingSearchFromFilters(rankingFiltersFromSearch({ suivis: "1" }))).toEqual({
+      suivis: "1",
+    });
   });
 });
 
@@ -86,7 +113,7 @@ describe("the player and week addresses", () => {
     expect(isPlayerId("7e500000-0000-4000-8000-000000000001")).toBe(true);
     expect(isPlayerId("../admin")).toBe(false);
     expect(validatePlayerSearch({ onglet: "matchs" })).toEqual({ onglet: "matchs" });
-    expect(validatePlayerSearch({ onglet: "stats" })).toEqual({});
+    expect(validatePlayerSearch({ onglet: "stats" })).toEqual({ onglet: "stats" });
   });
 
   it("accepts a week between 1 and 60, written plainly", () => {

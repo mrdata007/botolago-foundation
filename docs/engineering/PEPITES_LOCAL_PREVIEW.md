@@ -10,7 +10,11 @@ server started with the preview switch. Two ways to look at it:
 VITE_PEPITES_PREVIEW=1 bun run dev -- --host 127.0.0.1 --port 4173
 ```
 
-Then open `http://127.0.0.1:4173/pepites`. The data is the sample set in
+Then open `http://127.0.0.1:4173/pepites`. The screens follow the Figma
+file "BotolaGO — Pépites (UI)": the Top 10 (`/pepites`), the full ranking
+(`/pepites/classement`), a player (`/pepites/joueur/…`, and `?onglet=matchs`),
+the Monday reveal as a story (`/pepites/revelation`, N°10 to N°1), the method
+(`/pepites/methode`) and a past week (`/pepites/semaine/14`). The data is the sample set in
 `src/backend/pepites/mock-repository.ts`: fictional players ("Joueur
 exemple"), real club names, weeks 14 to 16. The browser tests use it
 (`tests/e2e/pepites.e2e.ts`, also in CI) and drive the reveal from the
@@ -72,3 +76,34 @@ Two local limits, neither of them in production:
 - **The second factor.** `supabase/config.toml` has TOTP verification off
   locally. To sign in as the staff account, turn `[auth.mfa.totp]` on in
   your working copy, restart the stack, and put the file back.
+
+## 3. The staff screens
+
+With the local database and the second factor on (above), sign in as
+`staff@pepites.local` at `/auth/login?next=/admin/pepites`, and enter the
+code your authenticator app shows for the secret `JBSWY3DPEHPK3PXP`. The
+editor opens the week 7 draft; `/admin/pepites/donnees` holds the data desk,
+the player search and corrections, and the photo releases. Photo upload
+needs the Edge Functions running (`supabase functions serve`); the rest
+does not.
+
+The browser test of these screens runs against that server:
+
+```sh
+E2E_PEPITES_LOCAL_STACK=1 E2E_BASE_URL=http://127.0.0.1:4174 \
+  bunx playwright test tests/e2e/pepites.local-stack.e2e.ts
+```
+
+It writes to the local database (it publishes week 7), so reseed before
+running it again.
+
+## Fantasy handoff regression fixture
+
+After a clean Pépites seed, run `scripts/backend/pepites-local-fantasy-seed.sql`
+against the same isolated local database, with the scheduled writers paused.
+It requires the fictional catalog and email off, adds an open Fantasy season,
+and creates the fan's squad through the real RPC. Use
+`VITE_FANTASY_DATA_MODE=supabase VITE_FOOTBALL_DATA_MODE=supabase` alongside
+the existing real auth/Pépites settings. The local-stack browser suite then
+verifies the mapped player, transfer confirmation, reload, already-owned,
+unavailable, budget, club-limit, and sign-in handoff behavior.

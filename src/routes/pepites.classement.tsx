@@ -28,19 +28,21 @@ export const Route = createFileRoute("/pepites/classement")({
       if (!isServerRender()) return null;
       const { queryClient } = context;
       const pointer = await prefetchPointer(queryClient);
-      if (pointer?.available && pointer.version) {
+      if (pointer?.available && pointer.version && !deps.followed) {
         await prefetchFirstPageForSsr(
           queryClient,
           rankingPagesOptions("anon", {
             version: pointer.version,
             position: deps.position,
             maxAge: deps.maxAge,
-            teamId: null,
+            teamId: deps.teamId,
+            minMinutes: deps.minMinutes,
             sort: deps.sort,
             limit: 20,
           }),
         );
       }
+      if (deps.followed) return { cache: "private" as const };
       return ssrAvailability(queryClient) ?? { cache: pointerCache(pointer) };
     },
   },

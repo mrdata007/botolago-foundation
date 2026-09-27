@@ -8,6 +8,7 @@ export interface PointsBar {
   minutesPlayed: number;
   provisional: boolean;
   opponents: FantasyPlayerGameweekHistoryEntryDto["opponents"];
+  fixtureScoring?: FantasyPlayerGameweekHistoryEntryDto["fixtureScoring"];
   /**
    * Bar height as a share of the plot, 0–100. The best week of the window is
    * 100; a week that scored nothing — or lost points — is 0 and is drawn as
@@ -43,6 +44,7 @@ export function recentPointsBars(
     minutesPlayed: entry.minutesPlayed,
     provisional: entry.state === "provisional",
     opponents: entry.opponents,
+    ...(entry.fixtureScoring ? { fixtureScoring: entry.fixtureScoring } : {}),
     heightPct:
       entry.points <= 0 || best <= 0
         ? 0
