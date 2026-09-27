@@ -1020,6 +1020,10 @@ export type Database = {
         Args: { p_gameweek_id: string; p_team_id: string }
         Returns: Json
       }
+      get_my_fantasy_points_before_live: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
       get_my_fantasy_points_v1: {
         Args: { p_gameweek_id: string; p_team_id: string }
         Returns: Json
@@ -1475,6 +1479,14 @@ export type Database = {
         }
         Returns: Json
       }
+      service_begin_fantasy_finalization_before_live: {
+        Args: {
+          p_calculation_version: number
+          p_gameweek_id: string
+          p_input_digest: string
+        }
+        Returns: Json
+      }
       service_begin_fantasy_finalization_v1: {
         Args: {
           p_calculation_version: number
@@ -1585,6 +1597,10 @@ export type Database = {
         Args: { p_gameweek_id: string }
         Returns: Json
       }
+      service_fantasy_lifecycle_state_before_live: {
+        Args: { p_gameweek_id: string }
+        Returns: Json
+      }
       service_fantasy_lifecycle_state_v1: {
         Args: { p_gameweek_id: string }
         Returns: Json
@@ -1691,6 +1707,10 @@ export type Database = {
       }
       service_plan_current_player_list: {
         Args: { p_observation_id: string }
+        Returns: Json
+      }
+      service_prepare_fantasy_live_scoring: {
+        Args: { p_gameweek_id: string }
         Returns: Json
       }
       service_prepare_next_fantasy_gameweek: {

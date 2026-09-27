@@ -4,6 +4,8 @@
 // Arabic dictionary (dictionary-ar.ts) loads when a reader chooses Arabic.
 // `dictionaries.ts` puts both together for the tests and the i18n gate.
 export const fr = {
+  "fantasy.scoring.incrementalPolicy":
+    "Les points et le classement sont actualisés après chaque match admissible. Ils restent provisoires pendant la journée. Les remplacements automatiques et le relais du capitaine attendent que la participation soit établie.",
   "fantasy.scoring.simpleEstimated": "Barème simplifié · données estimées",
   "fantasy.scoring.estimatesPolicy":
     "Les estimations examinées à partir des meilleures données disponibles peuvent être définitives et compter au classement. Les hypothèses sont conservées et les points restent soumis à la procédure de correction de 72 heures. Une identité ambiguë reste en attente.",
@@ -570,7 +572,7 @@ export const fr = {
     "Partagez ce code avec les managers que vous voulez inviter dans la ligue.",
   "fantasy.leagues.copy_code": "Copier le code d'invitation",
   "fantasy.leagues.no_standings":
-    "Le classement de cette ligue apparaîtra après la première journée comptabilisée.",
+    "Le classement de cette ligue apparaîtra dès les premiers matchs comptabilisés.",
   "fantasy.leagues.no_members": "Aucun manager dans cette ligue pour le moment.",
   "fantasy.leagues.empty_title": "Aucune ligue",
   "fantasy.leagues.no_members_title": "Aucun manager",
@@ -599,7 +601,7 @@ export const fr = {
   "fantasy.players.filter_position": "Filtrer par poste",
   "fantasy.players.no_history": "Aucune journée jouée",
   "fantasy.players.no_history_desc":
-    "Les points de ce joueur apparaîtront ici après la première journée comptabilisée.",
+    "Les points de ce joueur apparaîtront ici dès les premiers matchs comptabilisés.",
   "fantasy.players.no_fixtures": "Aucun match à venir",
   "fantasy.players.no_fixtures_desc":
     "Aucune rencontre n'est programmée pour ce joueur dans les prochaines journées.",

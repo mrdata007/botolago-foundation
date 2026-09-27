@@ -25,6 +25,7 @@ const status = z.enum([
 const lifecycleSchema = z.object({
   gameweekId: uuid,
   adaptiveScoringEnabled: z.boolean().optional(),
+  incrementalScoringEnabled: z.boolean().optional(),
   seasonId: uuid,
   status,
   lockVersion: positive,
@@ -58,6 +59,9 @@ export const scoringSnapshotSchema = z.object({
   inputDigest: z.string().regex(/^[0-9a-f]{64}$/),
   scoringVersion: positive,
   adaptive: z.boolean().optional(),
+  incremental: z.boolean().optional(),
+  pendingPlayerIds: z.array(uuid).optional(),
+  pendingFixtures: z.array(z.unknown()).optional(),
   fixtures: z.array(z.object({ adaptiveReady: z.boolean().optional() })).optional(),
   sealed: z.boolean(),
   ruleset: z.object({
@@ -262,11 +266,16 @@ export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
       return { ...player, didPlay: total.minutes > 0 };
     });
     const benchBoost = team.chipType === "bench_boost";
-    const { substitutions, effectiveCaptainId } = calculateAutomaticSubstitutions(
-      players,
-      formation,
-      benchBoost,
+    const participationPending = team.players.some((player) =>
+      snapshot.pendingPlayerIds?.includes(player.id),
     );
+    const { substitutions, effectiveCaptainId } = participationPending
+      ? {
+          substitutions: [],
+          effectiveCaptainId:
+            players.find((player) => player.captain && player.didPlay)?.id ?? null,
+        }
+      : calculateAutomaticSubstitutions(players, formation, benchBoost);
     const selected = new Set(players.filter((player) => player.starter).map((player) => player.id));
     for (const sub of substitutions) {
       selected.delete(sub.playerOutId);
@@ -425,6 +434,7 @@ export async function runFantasyLifecycle(
   );
   if (state.gameweekId !== gameweekId) throw new Error("fantasy_worker_scope_mismatch");
   const adaptiveEnabled = state.adaptiveScoringEnabled === true;
+  const incrementalEnabled = state.incrementalScoringEnabled === true;
   const expectedSeasonId = state.seasonId;
   const nextGameweekId = state.nextGameweekId ?? null;
   const finishPublishedWork = async () => {
@@ -542,17 +552,24 @@ export async function runFantasyLifecycle(
     if (state.gameweekId !== gameweekId || state.seasonId !== expectedSeasonId)
       throw new Error("fantasy_worker_scope_mismatch");
     if (!state.changed && !state.hasMore) {
-      if (adaptiveEnabled && state.status === "live") break;
+      if ((adaptiveEnabled || incrementalEnabled) && state.status === "live") break;
       return { outcome: "waiting", gameweekId, reason: state.waitingReason, calls };
     }
   }
   if (
     state.status !== "provisional" &&
     state.status !== "finalizing" &&
-    !(adaptiveEnabled && state.status === "live")
+    !((adaptiveEnabled || incrementalEnabled) && state.status === "live")
   )
     throw new Error("fantasy_lifecycle_not_activated");
 
+  if (incrementalEnabled && state.status !== "finalizing") {
+    const prepared = z
+      .object({ calculationVersion: positive })
+      .parse(await call("service_prepare_fantasy_live_scoring", { p_gameweek_id: gameweekId }));
+    calculationVersion = prepared.calculationVersion;
+  }
+  let incrementalPending = false;
   let adaptivePending = false;
   let afterTeamId: string | null = null;
   let digest: string | null = null;
@@ -574,6 +591,8 @@ export async function runFantasyLifecycle(
     )
       throw new Error("fantasy_scoring_snapshot_changed");
     digest = snapshot.inputDigest;
+    incrementalPending =
+      (snapshot.pendingFixtures?.length ?? 0) > 0 || (snapshot.pendingPlayerIds?.length ?? 0) > 0;
     adaptivePending =
       snapshot.adaptive === true &&
       (snapshot.fixtures ?? []).some((fixture) => fixture.adaptiveReady !== true);
@@ -583,7 +602,7 @@ export async function runFantasyLifecycle(
     }
     if (snapshot.sealed) throw new Error("fantasy_scoring_snapshot_state_mismatch");
     const unresolvedTeams = new Set(
-      snapshot.adaptive
+      snapshot.adaptive && !snapshot.incremental
         ? snapshot.teams
             .filter((team) =>
               team.players.some((player) =>
@@ -615,9 +634,54 @@ export async function runFantasyLifecycle(
       throw new Error("fantasy_worker_cursor_invalid");
     afterTeamId = snapshot.afterTeamId;
   } while (calls <= maxBatches);
+  const publishRankings = async () => {
+    const rank = async (leagueId: string | null) => {
+      for (const rankingGameweekId of [gameweekId, null])
+        await call("service_recalculate_fantasy_rankings", {
+          p_season_id: state.seasonId,
+          p_gameweek_id: rankingGameweekId,
+          p_league_id: leagueId,
+          p_calculation_version: calculationVersion,
+        });
+    };
+    await rank(null);
+    let afterLeagueId: string | null = null;
+    do {
+      const page = z
+        .object({
+          leagueIds: z.array(uuid).max(100),
+          afterLeagueId: uuid.nullable(),
+          hasMore: z.boolean(),
+        })
+        .parse(
+          await call("service_fantasy_scoring_league_page", {
+            p_gameweek_id: gameweekId,
+            p_after_league_id: afterLeagueId,
+            p_batch_size: batchSize,
+          }),
+        );
+      for (const leagueId of page.leagueIds) await rank(leagueId);
+      if (!page.hasMore) break;
+      if (!page.afterLeagueId || page.afterLeagueId === afterLeagueId || !page.leagueIds.length)
+        throw new Error("fantasy_worker_cursor_invalid");
+      afterLeagueId = page.afterLeagueId;
+    } while (calls <= maxBatches);
+  };
   if (!digest) throw new Error("fantasy_scoring_snapshot_missing");
-  if (adaptivePending || state.status === "live")
+  if (adaptivePending || incrementalPending || state.status === "live") {
+    if (incrementalEnabled) {
+      await publishRankings();
+      return {
+        outcome: "points_published",
+        gameweekId,
+        calculationVersion,
+        processedTeams,
+        reason: "remaining_fixtures_pending",
+        calls,
+      };
+    }
     return { outcome: "waiting", gameweekId, reason: "adaptive_scoring_pending", calls };
+  }
   await call("service_begin_fantasy_finalization", {
     p_gameweek_id: gameweekId,
     p_calculation_version: calculationVersion,
@@ -663,37 +727,7 @@ export async function runFantasyLifecycle(
     if (result.updated === 0) break;
   } while (calls <= maxBatches);
 
-  const rank = async (leagueId: string | null) => {
-    for (const rankingGameweekId of [gameweekId, null])
-      await call("service_recalculate_fantasy_rankings", {
-        p_season_id: state.seasonId,
-        p_gameweek_id: rankingGameweekId,
-        p_league_id: leagueId,
-        p_calculation_version: calculationVersion,
-      });
-  };
-  await rank(null);
-  let afterLeagueId: string | null = null;
-  do {
-    const page = z
-      .object({
-        leagueIds: z.array(uuid).max(100),
-        afterLeagueId: uuid.nullable(),
-        hasMore: z.boolean(),
-      })
-      .parse(
-        await call("service_fantasy_scoring_league_page", {
-          p_gameweek_id: gameweekId,
-          p_after_league_id: afterLeagueId,
-          p_batch_size: batchSize,
-        }),
-      );
-    for (const leagueId of page.leagueIds) await rank(leagueId);
-    if (!page.hasMore) break;
-    if (!page.afterLeagueId || page.afterLeagueId === afterLeagueId || !page.leagueIds.length)
-      throw new Error("fantasy_worker_cursor_invalid");
-    afterLeagueId = page.afterLeagueId;
-  } while (calls <= maxBatches);
+  await publishRankings();
   await call("service_complete_fantasy_gameweek", {
     p_gameweek_id: gameweekId,
     p_calculation_version: calculationVersion,

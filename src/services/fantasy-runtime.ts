@@ -122,6 +122,27 @@ function pointsDto(
   if (!dto.result) return undefined;
   const captain = dto.players.find((player) => player.captain);
   return {
+    authoritative: {
+      startingIds: dto.players
+        .filter((p) => p.slot === "starter")
+        .sort((a, b) => a.slotOrder - b.slotOrder)
+        .map(
+          (p) =>
+            dto.autoSubstitutions.find((s) => s.playerOutId === p.fantasyPlayerId)?.playerInId ??
+            p.fantasyPlayerId,
+        ),
+      benchIds: dto.players
+        .filter((p) => p.slot === "bench")
+        .sort((a, b) => a.slotOrder - b.slotOrder)
+        .map((p) => p.fantasyPlayerId),
+      effectiveCaptainId: dto.players.find((p) => p.multiplier > 1)?.fantasyPlayerId ?? null,
+      captainMultiplier: dto.players.find((p) => p.multiplier > 1)?.multiplier ?? 1,
+      captainPoints: dto.result.captainPoints,
+      transferHit: dto.result.transferHit,
+      chipType: dto.result.chipType,
+      incremental: dto.incrementalScoring === true,
+      finalized: dto.pointsState === "final",
+    },
     gameweek: sequence,
     totalPoints: dto.result.finalScore ?? dto.result.provisionalScore,
     benchPoints: dto.result.benchPoints,
@@ -135,6 +156,7 @@ function pointsDto(
     })),
     breakdown: dto.players.map((player) => ({
       playerId: player.fantasyPlayerId,
+      multiplier: player.multiplier,
       totalPoints: player.finalPoints ?? player.provisionalPoints ?? 0,
       minutesPlayed: player.minutesPlayed ?? 0,
       isCaptain: player.captain || undefined,

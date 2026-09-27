@@ -2,6 +2,8 @@
 // checks it). Loaded on demand by the language provider, so a French reader
 // never downloads it; `dictionaries.ts` imports it for the tests.
 export const ar = {
+  "fantasy.scoring.incrementalPolicy":
+    "تُحدَّث النقاط والترتيب بعد كل مباراة تتوفر بياناتها اللازمة، وتبقى النقاط مؤقتة خلال الجولة. تُطبَّق التبديلات التلقائية وانتقال شارة القيادة بعد التأكد من المشاركة.",
   "fantasy.scoring.simpleEstimated": "احتساب مبسط · بيانات تقديرية",
   "fantasy.scoring.estimatesPolicy":
     "يمكن اعتماد التقديرات المراجعة استناداً إلى أفضل البيانات المتاحة نهائياً واحتسابها في الترتيب. تُحفظ الافتراضات وتبقى النقاط خاضعة لإجراء التصحيح خلال 72 ساعة. تظل هوية اللاعب غير المحسومة قيد الانتظار.",
@@ -550,7 +552,7 @@ export const ar = {
   "fantasy.leagues.me": "أنا",
   "fantasy.leagues.invite_help": "شارك هذا الرمز مع المدربين الذين تريد دعوتهم إلى الدوري.",
   "fantasy.leagues.copy_code": "نسخ رمز الدعوة",
-  "fantasy.leagues.no_standings": "سيظهر ترتيب هذا الدوري بعد احتساب الجولة الأولى.",
+  "fantasy.leagues.no_standings": "سيظهر ترتيب هذا الدوري بعد احتساب أولى المباريات.",
   "fantasy.leagues.no_members": "لا يوجد مدرب في هذا الدوري حاليًا.",
   "fantasy.leagues.empty_title": "لا توجد دوريات",
   "fantasy.leagues.no_members_title": "لا يوجد مدرب",
@@ -578,7 +580,7 @@ export const ar = {
   "fantasy.players.filter_club": "التصفية حسب النادي",
   "fantasy.players.filter_position": "التصفية حسب المركز",
   "fantasy.players.no_history": "لم تُلعب أي جولة بعد",
-  "fantasy.players.no_history_desc": "ستظهر نقاط هذا اللاعب هنا بعد احتساب الجولة الأولى.",
+  "fantasy.players.no_history_desc": "ستظهر نقاط هذا اللاعب هنا بعد احتساب أولى المباريات.",
   "fantasy.players.no_fixtures": "لا توجد مباريات قادمة",
   "fantasy.players.no_fixtures_desc": "لا توجد مباراة مبرمجة لهذا اللاعب في الجولات المقبلة.",
   "fantasy.players.not_found": "اللاعب غير موجود",
