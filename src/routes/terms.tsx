@@ -2,6 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { LegalRoutePage } from "@/components/legal/LegalRoutePage";
 import { fr } from "@/i18n/dictionary-fr";
+import { PUBLIC_SITE_ORIGIN } from "@/lib/site-origin";
+
+const CANONICAL = `${PUBLIC_SITE_ORIGIN}/terms`;
 
 /**
  * `/terms` — public, no auth gate.
@@ -21,7 +24,12 @@ export const Route = createFileRoute("/terms")({
       { property: "og:title", content: fr["legal.terms.meta_title"] },
       { property: "og:description", content: fr["legal.terms.meta_description"] },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: CANONICAL },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: fr["legal.terms.meta_title"] },
+      { name: "twitter:description", content: fr["legal.terms.meta_description"] },
     ],
+    links: [{ rel: "canonical", href: CANONICAL }],
   }),
   component: TermsRoute,
 });

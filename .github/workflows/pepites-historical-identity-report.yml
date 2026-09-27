@@ -1,0 +1,72 @@
+name: Pépites historical identity report (read only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit containing the identity report
+        required: true
+        type: string
+      confirmation:
+        description: Type READ_PEPITES_HISTORICAL_IDENTITIES
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: botolago-pepites-historical-identity-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' && github.actor == 'mrdata007'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production-football-ingestion
+    steps:
+      - name: Verify immutable read-only scope
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$CONFIRMATION" = READ_PEPITES_HISTORICAL_IDENTITIES
+          test "$GITHUB_RUN_ATTEMPT" = 1
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - name: Test the report's read-only boundaries
+        run: bun test scripts/backend/pepites-historical-identity-report.test.ts
+      - name: Read only the two quarantined historical fixtures
+        env:
+          SPORTSMONKS_API_TOKEN: ${{ secrets.SPORTSMONKS_API_TOKEN }}
+          PEPITES_IDENTITY_REPORT_DIR: ${{ runner.temp }}/pepites-identity-report
+        run: |
+          set -euo pipefail
+          test -n "$SPORTSMONKS_API_TOKEN"
+          printf '::add-mask::%s\n' "$SPORTSMONKS_API_TOKEN"
+          bun scripts/backend/pepites-historical-identity-report.ts
+          python scripts/backend/phase7f-scan-sanitized-evidence.py "$PEPITES_IDENTITY_REPORT_DIR"
+          if grep -R -F -q -- "$SPORTSMONKS_API_TOKEN" "$PEPITES_IDENTITY_REPORT_DIR"; then
+            echo 'CREDENTIAL_IN_EVIDENCE'
+            exit 1
+          fi
+      - name: Save identity clues for human review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pepites-historical-identities-${{ github.run_id }}
+          path: ${{ runner.temp }}/pepites-identity-report/*.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove local report
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/pepites-identity-report"

@@ -71,11 +71,14 @@ one edit away from not rolling back.
    Inside the database, pg_cron runs `news-publish-due-editions` every minute,
    `notification-email-tick` every 5 minutes, `fantasy-lifecycle-tick`
    every 5 minutes and `football-live-refresh` every 15 minutes
-   (`select jobname, schedule, active from cron.job`). The two email/results
-   jobs write only when switched on in
+   (`select jobname, schedule, active from cron.job`). Where migration
+   20260926113100 is applied, `football-season-refresh` runs every 10
+   minutes and has SportsMonks refresh the season's fixtures (yesterday to
+   six weeks ahead) once an hour, under the live refresh's switch. The
+   email/results jobs and the season refresh write only when switched on in
    `app_private.notification_email_settings`
    ([EMAIL_NOTIFICATIONS.md](docs/backend/EMAIL_NOTIFICATIONS.md)); pause
-   both with `select app_private.notification_email_configure('off', null,
+   all three with `select app_private.notification_email_configure('off', null,
 null, false);` before a write that touches fixtures or notifications, and
    restore the previous settings afterwards. The Fantasy tick (calendar sync
    and gameweek transitions) writes only when switched on in
@@ -112,6 +115,25 @@ null, false);` before a write that touches fixtures or notifications, and
    two minutes and then computes the whole archive on every request (as it
    did before the snapshot); the ops health check `news_sitemap` warns after
    two minutes and fails, paging, after ten, so resume it promptly.
+   Where migration 20260926100000 is applied, pg_cron also runs
+   `pepites-tick` every 15 minutes. It writes only while
+   `app_private.pepites_settings` has a mode other than `off` (the default):
+   Pépites runs and their snapshots and scores, weekly editions, data desk
+   issues and photo-release expiry
+   ([PEPITES_ARCHITECTURE.md](docs/engineering/PEPITES_ARCHITECTURE.md) §5.1).
+   Pause it before a write that touches fixtures, player performances,
+   players, team memberships or the Pépites tables, and restore the previous
+   mode afterwards: `select app_private.pepites_configure('off', null);`
+   Its companion `pepites-history-prune` runs daily at 03:41 UTC whatever the
+   mode: it deletes `pepites-tick` rows older than 7 days from
+   `cron.job_run_details` and tick rows older than 180 days from
+   `app_private.pepites_job_log`. Pause it by name for a write that touches
+   those tables, then set it back to `true`:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'pepites-history-prune'), active := false);`
+   The Pépites photo job (`scripts/backend/pepites-photo-job.ts`) has no
+   schedule; it runs only when someone runs it, and it writes to the
+   database (published photos, deletions) and to storage. Treat a run as a
+   write.
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 

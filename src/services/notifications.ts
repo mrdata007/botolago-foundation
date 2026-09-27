@@ -2,7 +2,7 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   NotificationDeviceRepository,
   NotificationEmailUnsubscribeRepository,
-  NotificationEmailUnsubscribeStatus,
+  NotificationEmailUnsubscribeOutcome,
   NotificationPreferenceRepository,
   NotificationPreferencesDto,
   NotificationPreferenceUpdate,
@@ -119,6 +119,6 @@ export async function setMyEmailNotifications(
 /** The one-click unsubscribe link from a notification e-mail. Works signed out. */
 export async function unsubscribeFromNotificationEmails(
   token: string,
-): Promise<NotificationEmailUnsubscribeStatus> {
+): Promise<NotificationEmailUnsubscribeOutcome> {
   return getNotificationRepositories().emailUnsubscribe.unsubscribe(token);
 }

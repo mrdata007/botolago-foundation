@@ -231,3 +231,13 @@ export const PRONOSTICS_PROMOTED = true;
  *     predictions kept on the phone), in French and Arabic
  */
 export const ANALYTICS_ENABLED = true;
+
+/**
+ * Pépites public release approved by the owner on 2026-09-27.
+ * Database off/staff/public access checks remain authoritative.
+ * Set this false and republish for an application-level rollback.
+ */
+export const PEPITES_ENABLED: boolean = true;
+
+/** Public navigation and indexing follow the application release switch. */
+export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;

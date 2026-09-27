@@ -1,7 +1,11 @@
 // Run with: `bun test src/services/points-service.test.ts`
 import "./__test-shim";
 import { describe, it, expect, beforeEach } from "bun:test";
-import { buildLegacyViewModel, buildPointsViewModel } from "./points-service";
+import {
+  buildLegacyViewModel,
+  buildPointsViewModel,
+  buildServerPointsViewModel,
+} from "./points-service";
 import { fantasyStateStore } from "./fantasy-state";
 import { DEFAULT_CHIPS, type ChipsState } from "@/lib/fantasy-engine";
 import type {
@@ -324,4 +328,41 @@ describe("fantasyStateStore — result persistence", () => {
     expect(fantasyStateStore.getResult(14)).toBeUndefined();
     expect(fantasyStateStore.getResult(13)?.totalPoints).toBe(42);
   });
+});
+
+it("renders authoritative live totals without promoting the vice or inventing substitutions", () => {
+  const vm = buildServerPointsViewModel({
+    gameweek: 1,
+    totalPoints: 7,
+    benchPoints: 6,
+    captainId: "pending-captain",
+    autoSubs: [],
+    breakdown: [
+      {
+        playerId: "vice",
+        totalPoints: 7,
+        minutesPlayed: 84,
+        isViceCaptain: true,
+        multiplier: 1,
+        status: "provisional",
+        events: [],
+      },
+    ],
+    authoritative: {
+      startingIds: ["pending-captain", "vice"],
+      benchIds: ["bench"],
+      effectiveCaptainId: null,
+      captainMultiplier: 1,
+      captainPoints: 0,
+      transferHit: 0,
+      chipType: null,
+      incremental: true,
+      finalized: false,
+    },
+  });
+  expect(vm.source).toBe("server");
+  expect(vm.totalPoints).toBe(7);
+  expect(vm.effectiveCaptainId).toBeNull();
+  expect(vm.autoSubs).toEqual([]);
+  expect(vm.effectiveStartingIds).toEqual(["pending-captain", "vice"]);
 });
