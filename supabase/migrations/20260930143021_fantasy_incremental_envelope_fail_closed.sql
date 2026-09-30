@@ -1,5 +1,5 @@
 -- Tighten envelope validation only; preserve all scoring values and valid legacy delegation.
-set local lock_timeout = '5s';
+-- Keep the definition atomic without relying on a caller-owned transaction.
 create or replace function app_private.fantasy_validate_scoring_document(p_document jsonb)
 returns void language plpgsql security definer set search_path='' as $$
 begin
