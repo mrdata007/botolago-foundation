@@ -248,6 +248,28 @@ candidate, then **propose ignore**, then a **second person approves**, then **ex
   affects what that reviewer sees next, in the browser or a per-user preference). It
   changes no status, no queue count for anyone else, and no ingestion.
 
+### 3.6 Every decision is logged, and every decision can be undone
+
+**Every decision is logged, with who and when.** Each proposed, approved, rejected, executed,
+cancelled and undone step is an append-only audit event with the actor, the time, the reason,
+the fingerprint and the correlation id, and each row on the screen shows who approved it and
+when. Nothing is edited in place and nothing is deleted.
+
+**Every decision can be undone, under the same two-person rule.** An **Undo** action on a
+mapped or ignored row creates a `deactivate` (or `reverse_ignore`) proposal with a reason. It
+needs a different approver exactly like any other decision; there is no quicker path for an
+undo. On execution:
+
+- a mapping undo **updates the existing row** to `active = false` (the row keeps its provider
+  id and app player, section 3.3), and the candidate returns to `unmapped` with
+  `existing_mapping_id` set;
+- the screen lists the fixtures that were reconciled with that mapping so they are re-run;
+- it does **not** change points already scored: a points correction is a separate action
+  under `fantasy.correct_points`, and the undo screen shows how many scored players the
+  mapping touched so the reviewers know whether one is needed;
+- undoing an undo is a new `reactivate` proposal that reuses the same row, through the normal
+  two-person flow.
+
 ## 4. How the reconciler uses it
 
 `ReconcileInput` gains an optional identity map: provider id to app player id, for each
@@ -385,6 +407,8 @@ goes through the same two-person flow, with a mandatory reason.
   that row.
 - **Reactivate** (a deactivated identity, or a remap of one): a new proposal that reuses the
   row.
+- **Undo** on a mapped or ignored row is a `deactivate` or `reverse_ignore` proposal under
+  the same two-person flow (section 3.6); it is never a one-click action.
 - If the intended new provider id or app player is already held by another row, the screen
   shows that row and the proposal is `already_mapped`; it cannot be proposed past the conflict.
 - Every change shows the exact before and after values, which are the same values written to
@@ -425,18 +449,19 @@ colour-only meaning.
 
 ## 6. Authority
 
-| Operation                                        | Requester                                                                  | Approver                   | Notes                                                                                           |
-| ------------------------------------------------ | -------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------- |
-| Read the queue and evidence                      | `football.read_operations` or `football.manage_mappings`                   | none                       | read only                                                                                       |
-| Skip for now                                     | any reader                                                                 | none                       | personal and non-mutating; changes no status and no one else's queue                            |
-| Propose a mapping or a batch                     | `football.manage_mappings`, AAL2, recent authentication                    | none                       | needs a reason; creates a pending proposal                                                      |
-| Approve or reject                                | a different `football.manage_mappings` holder, AAL2, recent authentication | n/a                        | self-approval refused by the database                                                           |
-| Execute                                          | a qualified `football.manage_mappings` operator                            | prior independent approval | exactly once, idempotency key                                                                   |
-| Replace, deactivate or reactivate                | as above                                                                   | as above                   | warning and reason mandatory; updates the existing row, never inserts a second one              |
-| **Propose "not a Botola player"** (`ignore`)     | `football.manage_mappings`, AAL2, recent authentication                    | none                       | reason required; refused (`identity_conflict`) if the id appears in a Botola lineup or incident |
-| **Approve "not a Botola player"**                | a different `football.manage_mappings` holder, AAL2, recent authentication | n/a                        | self-approval refused by the database                                                           |
-| **Execute "not a Botola player"**                | a qualified `football.manage_mappings` operator                            | prior independent approval | exactly once, idempotency key                                                                   |
-| Reverse "not a Botola player" (`reverse_ignore`) | as above                                                                   | as above                   | same two-person flow; nothing is deleted                                                        |
+| Operation                                                        | Requester                                                                  | Approver                   | Notes                                                                                             |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------- |
+| Read the queue and evidence                                      | `football.read_operations` or `football.manage_mappings`                   | none                       | read only                                                                                         |
+| Skip for now                                                     | any reader                                                                 | none                       | personal and non-mutating; changes no status and no one else's queue                              |
+| Propose a mapping or a batch                                     | `football.manage_mappings`, AAL2, recent authentication                    | none                       | needs a reason; creates a pending proposal                                                        |
+| Approve or reject                                                | a different `football.manage_mappings` holder, AAL2, recent authentication | n/a                        | self-approval refused by the database                                                             |
+| Execute                                                          | a qualified `football.manage_mappings` operator                            | prior independent approval | exactly once, idempotency key                                                                     |
+| Replace, deactivate or reactivate                                | as above                                                                   | as above                   | warning and reason mandatory; updates the existing row, never inserts a second one                |
+| **Undo a mapping or an ignore** (`deactivate`, `reverse_ignore`) | as above                                                                   | as above                   | reason required; shows the fixtures and scored players it touches; history kept; never a shortcut |
+| **Propose "not a Botola player"** (`ignore`)                     | `football.manage_mappings`, AAL2, recent authentication                    | none                       | reason required; refused (`identity_conflict`) if the id appears in a Botola lineup or incident   |
+| **Approve "not a Botola player"**                                | a different `football.manage_mappings` holder, AAL2, recent authentication | n/a                        | self-approval refused by the database                                                             |
+| **Execute "not a Botola player"**                                | a qualified `football.manage_mappings` operator                            | prior independent approval | exactly once, idempotency key                                                                     |
+| Reverse "not a Botola player" (`reverse_ignore`)                 | as above                                                                   | as above                   | same two-person flow; nothing is deleted                                                          |
 
 This adds rows to the dual-control matrix; it does not change any existing row. All steps
 write append-only audit events with the same correlation id.
@@ -483,9 +508,12 @@ nothing else.
    fields section 12 verified from real responses (Sofascore `teams/get-squad`, Flashscore
    `v1/teams/squad`). About 16 clubs x 2 providers = 32 requests per season, well inside
    the 500 a month, repeated only for transfers.
-3. The proposal builder fills the candidates table from (a) squads and (b) every reconciled
-   match: pairs the reconciler confirmed by incident become `incident` proposals with their
-   evidence, so each match played makes the next review shorter.
+3. The candidate builder fills the candidates table from (a) squads and (b) every
+   reconciled match: pairs the reconciler confirmed by incident become **suggested pairs**,
+   pre-filled with their evidence, so each match played makes the next review shorter. A
+   suggestion is not a proposal: only a person can propose it, so every proposal has a human
+   proposer and a different human approver (no machine-made proposal can be approved by
+   one person alone).
 4. A person reviews one club, then the rest. The first import is the main effort (about 25
    players a club), and is mostly confirming pre-filled pairs.
 
@@ -506,6 +534,10 @@ nothing else.
   10. the audit history records the exact before and after values (row id, provider, old and
       new external id, old and new app player, proposer, approver, reason, fingerprint,
       timestamps, correlation and idempotency key), and is not derived from the mapping row.
+- pgTAP, undo: an undo is a `deactivate` or `reverse_ignore` proposal that needs a different
+  approver; executing it sets `active = false` on the same row, keeps every prior state in the
+  audit, returns the candidate to `unmapped`, lists the fixtures to re-run and changes no scored
+  points; undoing an undo is a `reactivate` of the same row.
 - pgTAP, also required with the replacement model: a `map` for an identity held by an
   inactive row is refused; a row changed since the proposal (`expected_before`) is refused
   as `stale_evidence`; the table's two unique constraints are unchanged (a test asserts they
