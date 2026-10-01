@@ -285,12 +285,29 @@ describe("match page — the Résumé timeline", () => {
   );
 
   it("puts a home event's edge on the inline start and an away event's on the inline end", () => {
+    // The substitution is a "moment faible": hidden until the switch is off.
     const cards = [...html.matchAll(/<div data-club=""[^>]*class="([^"]*)"/g)].map((m) => m[1]!);
-    expect(cards).toHaveLength(4);
+    expect(cards).toHaveLength(3);
     expect(cards[0]).toContain("border-s-4");
     expect(cards[1]).toContain("border-e-4");
     expect(cards[2]).toContain("border-e-4");
-    expect(cards[3]).toContain("border-s-4");
+  });
+
+  it("hides substitutions by default and offers to show them, counted", () => {
+    expect(html).toContain(dictionaries.fr["matches.timeline.highlights"]);
+    expect(html).toContain(dictionaries.fr["matches.timeline.show_subs_one"]);
+    expect(html).not.toContain("Remplace");
+  });
+
+  it("puts each minute in a centre pill: navy for a goal, light grey for a card", () => {
+    const pills = [...html.matchAll(/<span class="([^"]*rounded-full[^"]*)"><bdi[^>]*>(\d+)/g)].map(
+      (m) => [m[2]!, m[1]!] as const,
+    );
+    expect(pills.map(([minute]) => minute)).toEqual(["12", "33", "45"]);
+    expect(pills[0]![1]).toContain("bg-[color:var(--ui-ink)]");
+    expect(pills[1]![1]).toContain("bg-[color:var(--ui-surface-sunken)]");
+    // A penalty is a goal for the pill's purposes.
+    expect(pills[2]![1]).toContain("bg-[color:var(--ui-ink)]");
   });
 
   it("isolates each minute, stoppage time included, with the prime in the body face", () => {
