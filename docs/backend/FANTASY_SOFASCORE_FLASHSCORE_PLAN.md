@@ -76,19 +76,23 @@ observedAt and references (provider event IDs + payload digest).
 
 | Field | Rule | Evidence state |
 |---|---|---|
-| Identity | Map Sofascore + Flashscore player IDs to app players via `app_private.football_provider_mappings` (new provider names `sofascore`, `flashscore`). Match on fixture side (home/away — **never** Sofascore lineup `teamId`, it is the player's registered club), then shirt number, then position. **Never match on name**: the providers spell the same player differently ("M. Elhtemy" / "Lahtimi M."). A name may be shown to a reviewer but never decides a match. Unmatched → review queue. Never auto-create players. | — |
-| `minutes`, started | Sofascore `minutesPlayed`/`substitute`; must agree with sub minutes from both providers' incidents (±2 min tolerance). Cap 90. | `verified` if consistent, else review |
-| `goals`, `ownGoals` | Taken from the **incident lists**: Sofascore incidents plus Flashscore summary. Both must list the same scorer/minute (±2). **Never read goals from Sofascore lineup statistics**: they undercount (WAC–Temara: a player who scored twice is credited once). Penalty goals count as goals. Flashscore own-goal labels are not yet seen in real data; do not guess them. | `verified`; disagreement → review |
+| Identity | Map Sofascore + Flashscore player IDs to app players via `app_private.football_provider_mappings` (new provider names `sofascore`, `flashscore`). Match on fixture side (home/away — **never** Sofascore lineup `teamId`, it is the player's registered club), then shirt number, then position. **Never match on name**: the providers spell the same player differently ("M. Elhtemy" / "Lahtimi M."). A name may be shown to a reviewer but never decides a match. **A shirt number is not enough on its own where points depend on it** (the providers number a player differently in 3 of the 7 Phase 0 matches): a player named in an incident is paired only when both providers attribute the same incident to the pair; shirt number alone pairs only players neither provider mentions in any incident, and the result says which basis was used. Unmatched → review queue. Never auto-create players. The player mapping table is brought forward so this stops depending on shirt numbers: [`FANTASY_PROVIDER_PLAYER_MAPPING_DESIGN.md`](FANTASY_PROVIDER_PLAYER_MAPPING_DESIGN.md). | — |
+| `minutes`, started | Sofascore `minutesPlayed`/`substitute`; must agree with the substitution minutes from both providers' incidents. Sofascore counts the clock, so `minutesPlayed` may run up to **6 minutes over** the substitution time and **2 under** it (decided 2026-10-01; a flat ±2 rejected 8 of 37 correct players in MAS–Zemamra). Cap 90. Substitutions are matched **per player** (not as a swap) within **5 minutes**; when the providers name different players for the same substitution only those players go to review. | `verified` if consistent, else that player to review |
+| `goals`, `ownGoals` | Taken from the **incident lists**: Sofascore incidents plus Flashscore summary. Taken in the order scored, the two lists must name **the same scorers** (as paired above) and both must add up to the final score; their minutes may differ by up to **10**. Otherwise the whole match goes to review and nothing is scored. **Never read goals from Sofascore lineup statistics**: they undercount (WAC–Temara: a player who scored twice is credited once). Penalty goals count as goals. Flashscore own-goal labels are not yet seen in real data; do not guess them. | `verified`; disagreement → review |
 | `assists` | Sofascore full-coverage `goalAssist` or incident `assist1`, and/or Flashscore summary assister. Agree → verified. One source names an assister and the other is silent → verified from that source. Both silent → 0 assists for that goal. Conflicting names → review. **A Sofascore limited-coverage `goalAssist: 0` is "unknown", never evidence.** | `verified` / review |
-| Cards | Union of both incident lists, deduplicated by player+minute. Count mismatch → review. Ignore Sofascore team-level card counts (seen wrong). | `verified` |
-| `penaltiesMissed` | Missed-penalty incident in both, or in one with no contradiction. Discover the exact incident type strings from real payloads; do not guess. | `verified` / review |
+| Cards | Matched **per player and card type** first, then within **5 minutes**. Equal counts on both providers → `verified`; a mismatch holds that player back, not the match. Ignore Sofascore team-level card counts (seen wrong). | `verified` / that player to review |
+| `penaltiesMissed` | Missed-penalty incident in both (same player, within 5 minutes). One provider only → that player to review. Exact incident type strings come from real payloads (`inGamePenalty`/`missed`, `PENALTY_MISSED`). | `verified` / that player to review |
 | `penaltiesSaved` | Only when an incident explicitly says the keeper saved. Otherwise review. | `verified` / review |
 | `saves` (GK) | From **Sofascore player statistics only**, and only on a full-coverage match (the player's statistics include `totalPass`). Present → `verified`. Otherwise **"unknown"**: no value is derived from shots on target (Phase 0: Flashscore and Sofascore disagree on 3 of 4 full matches, and Flashscore has no saves line). An unknown save leaves the fixture in simple mode (§5). | `verified` / `unknown` |
-| `goalsConceded`, `cleanSheet` | From the agreed goal timeline + the player's on-pitch interval (reuse `deriveParticipation` logic). | `verified` (cleanSheet as today) |
+| `goalsConceded`, `cleanSheet` | From the agreed goal timeline + the player's on-pitch interval (reuse `deriveParticipation` logic), **computed once on each provider's own times**. Appearance, clean-sheet and conceded points turn on 60 minutes and on a goal falling inside the interval, so the wider time windows above must never change them: if the two timelines disagree on any of minutes-above-or-below-60, goals conceded or clean sheet, that player goes to review. A goal on the same minute as his substitution is also review. | `verified` (cleanSheet as today) / that player to review |
 | Rating | Store Sofascore `rating` for display only. **Not scored** (bonus is disabled in rules v1). | — |
 
 Sanity checks per fixture (fail → whole fixture to review, nothing scored as
-full): goals per side = final score; scorers' minutes > 0; 11 starters per side;
+full): goals per side = final score in **both** providers; scorers' minutes > 0;
+11 starters per side; if one provider's lineup for a side is clearly broken
+(not 11 starters) and the other's is sound, the sound lineup is used for that
+side and every affected field's evidence says so (`lineup-used-alone`), and the
+same person must never come out twice;
 when Sofascore has full coverage, keeper saves + goals conceded = opponent shots
 on target (Sofascore figures only; this held for 13 of 14 team sides in Phase 0).
 
@@ -139,7 +143,9 @@ test expectations:
   Chaynane (90+4') yellow.
 - Tiznit–Tanger: assists Najari 2, Maali 1, Adila 1; saves from Sofascore
   player stats (`verified`).
-- DHJ–CODM: 8 goals reconcile with the 2–6 score; saves `unknown`.
+- DHJ–CODM: each provider's 8 goals add up to the 2–6 score; saves `unknown`.
+  The two lists name one scorer with different shirt numbers (6 and 21), so the
+  match stays in review until the player mapping exists.
 - WAC–Temara: goals come from incidents plus Flashscore (4), not the Sofascore
   lineup (3).
 - Players match across providers by side, shirt number and position, not name.
