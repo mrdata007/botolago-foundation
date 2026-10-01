@@ -54,6 +54,14 @@ on:
         description: Optional, raises the 15-value limit for enums (at most 80), for lists of statistic names.
         type: string
         required: false
+      collect_squads:
+        description: >-
+          Run the read-only squad candidate collector instead (32 requests: one squad per club per
+          provider, 16 clubs). Prints ONE sanitized evidence document: counts and states only, never
+          a name, a date or a raw payload. No database access.
+        type: boolean
+        default: false
+        required: false
 
 permissions:
   contents: read
@@ -73,7 +81,7 @@ jobs:
         with:
           bun-version: 1.3.14
       - name: Probe
-        if: ${{ inputs.paths != '' }}
+        if: ${{ inputs.paths != '' && !inputs.collect_squads }}
         env:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
           FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
@@ -93,6 +101,12 @@ jobs:
             [ -n "$spec" ] && rows+=("--rows=$spec")
           done <<< "$ROWS"
           printf '%s\n' "$PATHS" | grep . | tr '\n' '\0' | xargs -0 bun scripts/backend/provider-probe.ts "$PROVIDER" --shape ${ENUMS:+"--enum=$ENUMS"} ${ENUM_MAX:+"--enum-max=$ENUM_MAX"} ${KEYS:+"--keys=$KEYS"} "${rows[@]}"
+      - name: Collect squad candidate evidence (read-only)
+        if: ${{ inputs.collect_squads }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
+        run: bun scripts/backend/provider-squad-collector.ts
       - name: Build trimmed fixtures
         if: ${{ inputs.fixtures != '' }}
         env:
