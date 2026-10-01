@@ -1,7 +1,7 @@
 import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CircleDot, Bell, Gem, Newspaper, Shield, Target, Trophy, UserRound } from "lucide-react";
@@ -55,6 +55,7 @@ import { ui, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { bandGameweek } from "@/lib/band-gameweek";
 import { deadlineStripTime } from "@/lib/deadline-strip";
+import { NextMatchPick } from "@/components/home/NextMatchPick";
 import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
 import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { useAuth } from "@/auth/AuthProvider";
@@ -357,6 +358,17 @@ function HomeContent() {
     homeMatches.find((match) => match.gameweek > 0)?.gameweek,
     now.getTime(),
   );
+  // The next match to be played, for the band. While one is live, that live
+  // card is the hero and the band does not carry another.
+  const nextMatch = useMemo(
+    () =>
+      liveMatches.length > 0
+        ? undefined
+        : homeMatches
+            .filter((match) => match.status === "scheduled")
+            .sort((a, b) => a.kickoff.localeCompare(b.kickoff))[0],
+    [homeMatches, liveMatches],
+  );
   // The strip under the header in the 72 hours before a Fantasy deadline.
   const deadlineLeft = useDeadlineCountdown(gwQ.data?.deadline);
   const stripTime = gwQ.data?.isCurrent === false ? null : deadlineStripTime(deadlineLeft);
@@ -401,7 +413,16 @@ function HomeContent() {
         deadline={stripTime ? undefined : gwQ.data?.deadline}
         live={liveMatches.length > 0}
         overlap={liveMatches.length > 0}
-      />
+      >
+        {nextMatch && clubById(nextMatch.homeClubId) && clubById(nextMatch.awayClubId) ? (
+          <NextMatchPick
+            match={nextMatch}
+            home={clubById(nextMatch.homeClubId)!}
+            away={clubById(nextMatch.awayClubId)!}
+            withVote={PRONOSTICS_PROMOTED}
+          />
+        ) : null}
+      </GameweekBand>
 
       {/* -------------------------------------------------------- */}
       {/* 2. Live & upcoming                                        */}
@@ -754,7 +775,10 @@ function GameweekBand({
   live,
   overlap,
   afterStrip = false,
+  children,
 }: {
+  /** What sits at the foot of the band: the next match. */
+  children?: ReactNode;
   /** The deadline strip sits above: it has already cancelled the screen's top padding. */
   afterStrip?: boolean;
   greeting: string;
@@ -835,6 +859,7 @@ function GameweekBand({
           <DeadlineCountdown iso={deadline} label={t("home.deadline_fantasy")} />
         </div>
       ) : null}
+      {children}
     </section>
   );
 }
