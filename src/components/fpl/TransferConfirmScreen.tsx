@@ -12,6 +12,7 @@ import type { FantasyPlayer } from "@/types/fantasy";
 import { findClub } from "./club-lookup";
 import { formatDeadline } from "./deadline";
 import { FplChipsRow } from "./FplChipsRow";
+import { pointsUnit } from "@/lib/points-unit";
 
 /**
  * FPL-007 transfer confirmation.
@@ -171,7 +172,7 @@ export function TransferConfirmScreen({
           <UiKeyValueRow label={t("fpl.free_transfers_used")} value={freeUsed} />
           <UiKeyValueRow
             label={t("fpl.additional_transfers_used")}
-            value={`${paidUsed} (${hitPoints} ${t("fantasy.points.abbr")})`}
+            value={`${paidUsed} (${hitPoints} ${pointsUnit(hitPoints, t)})`}
           />
           <UiKeyValueRow
             label={t("fpl.left_in_bank")}

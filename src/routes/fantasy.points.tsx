@@ -37,6 +37,7 @@ import {
 import { FORMATIONS, type FormationKey, type SquadPlayer } from "@/types/fantasy";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
+import { pointsUnit } from "@/lib/points-unit";
 
 export const Route = createFileRoute("/fantasy/points")({
   head: () => fantasyHead("points"),
@@ -289,7 +290,7 @@ function PointsBody() {
           {
             label: t("fpl.points"),
             value: total ?? none,
-            unit: total === null ? undefined : t("fantasy.points.abbr"),
+            unit: total === null ? undefined : pointsUnit(total, t),
             sub: statusLabel ? (
               <span className={cn("inline-flex items-center gap-1.5", ui.text.label)}>
                 {gwStatus === "live" ? (
@@ -418,7 +419,7 @@ function PointsBody() {
               label: `GW${gw}`,
               render: (p) => {
                 const pts = pointsFor(p.id);
-                return pts === null ? none : `${pts}${t("fantasy.points.abbr")}`;
+                return pts === null ? none : `${pts}${pointsUnit(pts, t)}`;
               },
               // The column a reader came for: the heavy step of the ramp,
               // not the off-token `font-extrabold` it used to carry.

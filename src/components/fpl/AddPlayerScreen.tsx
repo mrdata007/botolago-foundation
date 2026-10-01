@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import type { Club, Player } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
 import { findClub } from "./club-lookup";
+import { pointsUnit } from "@/lib/points-unit";
 
 type SortKey = "form" | "price" | "selected" | "points";
 
@@ -493,7 +494,7 @@ export function AddPlayerScreen({
                       </span>
                       <span className={cn(ui.text.micro, ui.tone.muted)}>
                         <span className={ui.text.tabular}>{whole.format(player.totalPoints)}</span>{" "}
-                        {t("fantasy.points.abbr")}
+                        {pointsUnit(player.totalPoints, t)}
                       </span>
                     </span>
                     <span

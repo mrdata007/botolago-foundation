@@ -5,6 +5,7 @@ import type { FantasySummary } from "@/types/domain";
 import { useI18n } from "@/i18n/provider";
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+import { pointsUnit } from "@/lib/points-unit";
 
 /**
  * Home's Fantasy card (Option A, A-Home): the action gradient, one link.
@@ -77,7 +78,7 @@ export function FantasySummaryCard({ summary }: { summary: FantasySummary }) {
       <span aria-hidden className="flex shrink-0 items-baseline gap-1">
         <bdi className={ui.score.hero}>{points}</bdi>
         <span className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}>
-          {t("fantasy.points.abbr")}
+          {pointsUnit(summary.gameweekPoints, t)}
         </span>
       </span>
     </Link>
