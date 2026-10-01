@@ -798,5 +798,24 @@ select extensions.throws_ok($$select pg_temp.decide('a', pg_temp.get('lone')::uu
 select extensions.throws_ok($$select pg_temp.decide('b', pg_temp.get('lone')::uuid)$$, 'PT403', 'staff_suspended', '13.7 and a suspended operator cannot approve either: there is no bypass');
 select extensions.is(pg_temp.pstatus(pg_temp.get('lone')::uuid), 'pending', '13.8 so the proposal simply waits');
 
+-- ===========================================================================
+-- 14. The one older path that could write a player mapping is closed for the new providers
+-- ===========================================================================
+select pg_temp.mkplayer('legacy-path', 'forward', '1985-05-15');
+select extensions.throws_ok($$select api.resolve_football_mapping('sofascore', 'player', 'LEGACY-1',
+  (select id from app.players where slug = 'legacy-path'), 'test')$$, 'P0001', 'MAPPING_REVIEW_REQUIRED',
+  '14.1 the ingestion function refuses to create a Sofascore player mapping');
+select extensions.throws_ok($$select api.resolve_football_mapping('flashscore', 'player', 'LEGACY-2',
+  (select id from app.players where slug = 'legacy-path'), 'test')$$, 'P0001', 'MAPPING_REVIEW_REQUIRED',
+  '14.2 and a Flashscore one');
+select extensions.is((select count(*)::int from app_private.football_provider_mappings where external_id in ('LEGACY-1', 'LEGACY-2')), 0,
+  '14.3 nothing was written');
+select extensions.is(api.resolve_football_mapping('sportsmonks', 'player', 'LEGACY-SM',
+  (select id from app.players where slug = 'legacy-path'), 'test'),
+  (select id from app.players where slug = 'legacy-path'), '14.4 SportsMonks player mappings are created exactly as before');
+select extensions.is(api.resolve_football_mapping('sofascore', 'team', 'LEGACY-T',
+  'e4000000-0000-4000-8000-000000000001', 'test'), 'e4000000-0000-4000-8000-000000000001'::uuid,
+  '14.5 and other entities of the new providers are untouched by the guard');
+
 select * from extensions.finish();
 rollback;

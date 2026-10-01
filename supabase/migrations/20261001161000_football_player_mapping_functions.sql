@@ -1656,6 +1656,100 @@ end;
 $$;
 
 -- ===========================================================================
+-- The one existing path that could write a player mapping for the new providers
+-- ===========================================================================
+-- api.resolve_football_mapping (service_role, used by the SportsMonks
+-- ingestion) inserts a mapping row for any registered provider. Once sofascore
+-- and flashscore are registered it could therefore create their PLAYER mappings
+-- with no proposer, no second person and no audit. This adds exactly one guard
+-- and changes nothing else: a player mapping for either reviewed provider is
+-- refused (MAPPING_REVIEW_REQUIRED) before the insert. Every other provider and
+-- entity behaves as before, and no code calls it for these providers today.
+-- The preflight pins the text it was reviewed against (md5 read on production
+-- on 1 Oct 2026), so a drifted definition stops this migration instead of
+-- being overwritten.
+do $guard_preflight$
+begin
+  if md5(pg_get_functiondef('api.resolve_football_mapping(text,text,text,uuid,text,timestamptz)'::regprocedure))
+    <> '5d7ad20856e2bb22e2b7d44741e21be1' then
+    raise exception 'football_player_mapping: api.resolve_football_mapping is not the text this migration was reviewed against';
+  end if;
+end
+$guard_preflight$;
+
+create or replace function api.resolve_football_mapping(
+  p_provider_name text,
+  p_entity_type text,
+  p_external_id text,
+  p_internal_entity_id uuid default null,
+  p_source_version text default null,
+  p_last_seen_at timestamp with time zone default statement_timestamp()
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  mapped_id uuid;
+  normalized_entity_type app_private.football_entity_type;
+begin
+  if p_entity_type not in (
+    'country', 'competition', 'season', 'round', 'venue', 'team',
+    'player', 'fixture', 'event'
+  ) then
+    raise exception using errcode = '22023', message = 'INVALID_ENTITY_TYPE';
+  end if;
+  normalized_entity_type := p_entity_type::app_private.football_entity_type;
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(p_provider_name || ':' || p_entity_type || ':' || p_external_id, 0)
+  );
+
+  select mapping.internal_entity_id into mapped_id
+  from app_private.football_provider_mappings mapping
+  where mapping.provider_name = p_provider_name
+    and mapping.entity_type = normalized_entity_type
+    and mapping.external_id = p_external_id
+    and mapping.active;
+
+  if mapped_id is not null then
+    if p_internal_entity_id is not null and mapped_id <> p_internal_entity_id then
+      raise exception using errcode = 'P0001', message = 'MAPPING_COLLISION';
+    end if;
+    update app_private.football_provider_mappings
+    set last_seen_at = greatest(last_seen_at, p_last_seen_at),
+        source_version = coalesce(p_source_version, source_version)
+    where provider_name = p_provider_name
+      and entity_type = normalized_entity_type
+      and external_id = p_external_id;
+    return mapped_id;
+  end if;
+
+  if p_internal_entity_id is null then
+    raise exception using errcode = 'P0002', message = 'MAPPING_NOT_FOUND';
+  end if;
+
+  -- The only change: a reviewed provider's player mapping is never created here.
+  if p_provider_name in ('sofascore', 'flashscore') and normalized_entity_type = 'player' then
+    raise exception using errcode = 'P0001', message = 'MAPPING_REVIEW_REQUIRED';
+  end if;
+
+  begin
+    insert into app_private.football_provider_mappings (
+      provider_name, entity_type, external_id, internal_entity_id,
+      source_version, last_seen_at
+    ) values (
+      p_provider_name, normalized_entity_type, p_external_id,
+      p_internal_entity_id, p_source_version, p_last_seen_at
+    );
+  exception when unique_violation then
+    raise exception using errcode = 'P0001', message = 'MAPPING_COLLISION';
+  end;
+  return p_internal_entity_id;
+end;
+$$;
+
+-- ===========================================================================
 -- Privileges
 -- ===========================================================================
 revoke all on function
