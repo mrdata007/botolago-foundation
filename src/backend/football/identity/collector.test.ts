@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { CLUB_PROVIDER_TEAMS } from "./club-registry";
 import {
   collectSquads,
@@ -167,19 +167,30 @@ describe("collectSquads", () => {
 });
 
 describe("read-only guarantee", () => {
-  const sources = readdirSync(new URL(".", import.meta.url))
-    .filter(
-      (file) => file.endsWith(".ts") && !file.endsWith(".test.ts") && file !== "test-support.ts",
-    )
-    .map((file) => ({
-      file,
-      code: readFileSync(new URL(file, import.meta.url), "utf8")
-        .replace(/\/\*[\s\S]*?\*\//g, "")
-        .replace(/^\s*\/\/.*$/gm, ""),
-    }));
+  // The collector itself: everything that reads providers and builds evidence.
+  // (The mapping repository and the candidate builder have their own checks.)
+  const COLLECTOR_FILES = [
+    "candidate-signals.ts",
+    "club-registry.ts",
+    "collector.ts",
+    "completeness.ts",
+    "contracts.ts",
+    "dob.ts",
+    "evidence.ts",
+    "flashscore-squad.ts",
+    "id-checks.ts",
+    "position-agreement.ts",
+    "sofascore-squad.ts",
+  ];
+  const sources = COLLECTOR_FILES.map((file) => ({
+    file,
+    code: readFileSync(new URL(file, import.meta.url), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, ""),
+  }));
 
   test("the collector sources have no database, file, network or console capability", () => {
-    expect(sources.length).toBeGreaterThan(8);
+    expect(sources.length).toBe(11);
     for (const { file, code } of sources) {
       for (const forbidden of [
         /supabase/i,
