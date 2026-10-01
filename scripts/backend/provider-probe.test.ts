@@ -47,6 +47,13 @@ describe("enumsOf", () => {
     expect(line).not.toContain("Player");
   });
 
+  test("the limit can be raised, but only up to 80", () => {
+    const many = { items: Array.from({ length: 20 }, (_, i) => ({ key: `stat${i}` })) };
+    expect(enumsOf(many, ["$.items[].key"], 30)[0]).toContain('"stat19" x1');
+    const huge = { items: Array.from({ length: 100 }, (_, i) => ({ key: `k${i}` })) };
+    expect(enumsOf(huge, ["$.items[].key"], 1000)[0]).toContain("100 distinct values");
+  });
+
   test("never prints an object, and says nothing for a missing path", () => {
     expect(enumsOf(incidents, ["$.incidents[].player"])).toEqual([]);
     expect(enumsOf(incidents, ["$.nope[].x"])).toEqual([]);

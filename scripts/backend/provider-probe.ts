@@ -131,13 +131,20 @@ export function valuesAt(value: unknown, path: string): unknown[] {
 
 /** More distinct values than this and the field is free text or a name: not listed. */
 const MAX_ENUM_VALUES = 15;
+/** The most the limit can be raised to, for a field of known keys such as statistic names. */
+const MAX_ENUM_VALUES_RAISED = 80;
 
 /**
  * The distinct values of the named fields, with counts. A field with many
  * different values (a name, a free-text line) is reported only as a count, so
  * this cannot be used to dump third-party content into a public log.
  */
-export function enumsOf(value: unknown, paths: readonly string[]): string[] {
+export function enumsOf(
+  value: unknown,
+  paths: readonly string[],
+  limit = MAX_ENUM_VALUES,
+): string[] {
+  const max = Math.min(Math.max(Math.trunc(limit) || MAX_ENUM_VALUES, 1), MAX_ENUM_VALUES_RAISED);
   return paths.flatMap((path) => {
     const counts = new Map<string, number>();
     let found = 0;
@@ -148,7 +155,7 @@ export function enumsOf(value: unknown, paths: readonly string[]): string[] {
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
     if (found === 0) return [];
-    if (counts.size > MAX_ENUM_VALUES) {
+    if (counts.size > max) {
       return [`ENUM ${path}: ${counts.size} distinct values over ${found} (not listed)`];
     }
     const listed = [...counts.entries()].map(
@@ -164,6 +171,7 @@ if (import.meta.main) {
     rest.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3);
   const shape = rest.includes("--shape");
   const enums = (flag("enum") ?? "").split(",").filter(Boolean);
+  const enumMax = Number(flag("enum-max") ?? MAX_ENUM_VALUES);
   const skip = flag("skip") ? (flag("skip") ?? "").split(",").filter(Boolean) : DEFAULT_SKIP;
   const outAt = rest.indexOf("--out");
   const outDir = outAt >= 0 ? rest[outAt + 1] : undefined;
@@ -171,7 +179,7 @@ if (import.meta.main) {
   if ((provider !== "sofascore" && provider !== "flashscore") || paths.length === 0) {
     console.error(
       "usage: provider-probe.ts <sofascore|flashscore> <path-and-query>... " +
-        "[--shape] [--enum=$.a[].b,...] [--skip=part,...] [--out dir]",
+        "[--shape] [--enum=$.a[].b,...] [--enum-max=N] [--skip=part,...] [--out dir]",
     );
     process.exit(2);
   }
@@ -191,7 +199,7 @@ if (import.meta.main) {
       try {
         const parsed: unknown = JSON.parse(result.body);
         if (shape) console.log(shapeOf(parsed, skip).join("\n"));
-        if (enums.length > 0) console.log(enumsOf(parsed, enums).join("\n"));
+        if (enums.length > 0) console.log(enumsOf(parsed, enums, enumMax).join("\n"));
       } catch {
         console.log("(response is not JSON)");
       }

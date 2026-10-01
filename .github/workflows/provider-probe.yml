@@ -24,6 +24,10 @@ on:
           $.incidents[].incidentType. A field with more than 15 distinct values is only counted.
         type: string
         required: false
+      enum_max:
+        description: Optional, raises the 15-value limit for enums (at most 80), for lists of statistic names.
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -49,9 +53,10 @@ jobs:
           PROVIDER: ${{ inputs.provider }}
           PATHS: ${{ inputs.paths }}
           ENUMS: ${{ inputs.enums }}
+          ENUM_MAX: ${{ inputs.enum_max }}
         run: |
           set -eu
           count=$(printf '%s\n' "$PATHS" | grep -c . || true)
           if [ "$count" -gt 10 ]; then echo "Max 10 paths per run"; exit 1; fi
           # shellcheck disable=SC2086
-          printf '%s\n' "$PATHS" | grep . | tr '\n' '\0' | xargs -0 bun scripts/backend/provider-probe.ts "$PROVIDER" --shape ${ENUMS:+"--enum=$ENUMS"}
+          printf '%s\n' "$PATHS" | grep . | tr '\n' '\0' | xargs -0 bun scripts/backend/provider-probe.ts "$PROVIDER" --shape ${ENUMS:+"--enum=$ENUMS"} ${ENUM_MAX:+"--enum-max=$ENUM_MAX"}
