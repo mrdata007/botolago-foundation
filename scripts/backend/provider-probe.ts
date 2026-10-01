@@ -135,6 +135,19 @@ export function valuesAt(value: unknown, path: string): unknown[] {
   return nodes;
 }
 
+const MAX_KEYS = 200;
+
+/** The property names of the object(s) at a path, e.g. the endpoint names under `$.paths`. Names only. */
+export function keysOf(value: unknown, path: string): string[] {
+  return valuesAt(value, path)
+    .filter((node) => node !== null && typeof node === "object" && !Array.isArray(node))
+    .flatMap((node) => {
+      const names = Object.keys(node as object);
+      const shown = names.slice(0, MAX_KEYS).join(" ");
+      return [`KEYS ${path} (${names.length}): ${shown}${names.length > MAX_KEYS ? " ..." : ""}`];
+    });
+}
+
 const MAX_ROWS = 120;
 const MAX_ROW_FIELDS = 8;
 
@@ -208,6 +221,7 @@ if (import.meta.main) {
   const shape = rest.includes("--shape");
   const enums = (flag("enum") ?? "").split(",").filter(Boolean);
   const enumMax = Number(flag("enum-max") ?? MAX_ENUM_VALUES);
+  const keyPaths = (flag("keys") ?? "").split(",").filter(Boolean);
   const rowSpecs = rest.filter((a) => a.startsWith("--rows=")).map((a) => a.slice(7));
   const skip = flag("skip") ? (flag("skip") ?? "").split(",").filter(Boolean) : DEFAULT_SKIP;
   const outAt = rest.indexOf("--out");
@@ -216,7 +230,7 @@ if (import.meta.main) {
   if ((provider !== "sofascore" && provider !== "flashscore") || paths.length === 0) {
     console.error(
       "usage: provider-probe.ts <sofascore|flashscore> <path-and-query>... " +
-        "[--shape] [--enum=$.a[].b,...] [--enum-max=N] [--rows=$.a[]:f1,f2] [--skip=part,...] [--out dir]",
+        "[--shape] [--enum=$.a[].b,...] [--enum-max=N] [--rows=$.a[]:f1,f2] [--keys=$.a,...] [--skip=part,...] [--out dir]",
     );
     process.exit(2);
   }
@@ -232,11 +246,12 @@ if (import.meta.main) {
         requestsThisRun: requestsUsed(),
       }),
     );
-    if (shape || enums.length > 0 || rowSpecs.length > 0) {
+    if (shape || enums.length > 0 || rowSpecs.length > 0 || keyPaths.length > 0) {
       try {
         const parsed: unknown = JSON.parse(result.body);
         if (shape) console.log(shapeOf(parsed, skip).join("\n"));
         if (enums.length > 0) console.log(enumsOf(parsed, enums, enumMax).join("\n"));
+        for (const keyPath of keyPaths) console.log(keysOf(parsed, keyPath).join("\n"));
         for (const spec of rowSpecs) console.log(`${spec}\n${rowsOf(parsed, spec).join("\n")}`);
       } catch {
         console.log("(response is not JSON)");

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { enumsOf, probe, readQuota, rowsOf, shapeOf, valuesAt } from "./provider-probe";
+import { enumsOf, keysOf, probe, readQuota, rowsOf, shapeOf, valuesAt } from "./provider-probe";
 
 // Synthetic data only: nothing here comes from a provider.
 const incidents = {
@@ -94,6 +94,14 @@ describe("rowsOf", () => {
   test("caps the rows", () => {
     const big = { list: Array.from({ length: 500 }, (_, i) => ({ id: i })) };
     expect(rowsOf(big, "$.list[]:id")).toHaveLength(120);
+  });
+});
+
+describe("keysOf", () => {
+  test("lists the property names of an object, never its values", () => {
+    const doc = { paths: { "/v1/a": { secret: "x" }, "/v1/b": {} }, list: [1] };
+    expect(keysOf(doc, "$.paths")).toEqual(["KEYS $.paths (2): /v1/a /v1/b"]);
+    expect(keysOf(doc, "$.list")).toEqual([]);
   });
 });
 

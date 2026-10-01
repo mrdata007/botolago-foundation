@@ -24,6 +24,10 @@ on:
           $.incidents[].incidentType. A field with more than 15 distinct values is only counted.
         type: string
         required: false
+      keys:
+        description: Optional, comma-separated object paths whose property names to list, e.g. $.paths
+        type: string
+        required: false
       rows:
         description: >-
           Optional, one list spec per line, printing one row per entry with only the named
@@ -62,6 +66,7 @@ jobs:
           ENUMS: ${{ inputs.enums }}
           ENUM_MAX: ${{ inputs.enum_max }}
           ROWS: ${{ inputs.rows }}
+          KEYS: ${{ inputs.keys }}
         run: |
           set -eu
           count=$(printf '%s\n' "$PATHS" | grep -c . || true)
@@ -71,4 +76,4 @@ jobs:
           while IFS= read -r spec; do
             [ -n "$spec" ] && rows+=("--rows=$spec")
           done <<< "$ROWS"
-          printf '%s\n' "$PATHS" | grep . | tr '\n' '\0' | xargs -0 bun scripts/backend/provider-probe.ts "$PROVIDER" --shape ${ENUMS:+"--enum=$ENUMS"} ${ENUM_MAX:+"--enum-max=$ENUM_MAX"} "${rows[@]}"
+          printf '%s\n' "$PATHS" | grep . | tr '\n' '\0' | xargs -0 bun scripts/backend/provider-probe.ts "$PROVIDER" --shape ${ENUMS:+"--enum=$ENUMS"} ${ENUM_MAX:+"--enum-max=$ENUM_MAX"} ${KEYS:+"--keys=$KEYS"} "${rows[@]}"
