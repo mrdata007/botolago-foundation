@@ -516,6 +516,7 @@ export const fr = {
   "fantasy.points.history": "Historique",
   "fantasy.points.breakdown": "Détail par joueur",
   "fantasy.points.abbr": "pts",
+  "fantasy.points.abbr_one": "pt",
   "fantasy.points.raw_xi": "XI brut",
   "fantasy.points.captain_bonus": "Bonus capitaine",
   "fantasy.points.effective_captain": "Capitaine effectif",
