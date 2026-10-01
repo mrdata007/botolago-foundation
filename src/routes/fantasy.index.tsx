@@ -1,4 +1,3 @@
-import fantasyHeroPhoto from "@/assets/photos/fantasy-hero.webp";
 import { BrandedText } from "@/components/brand/BrandedText";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -17,9 +16,9 @@ import type { ReactNode } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { MediaImage } from "@/components/common/FailureAwareImage";
 import { SectionHeader, SectionHeaderLink } from "@/components/common/SectionHeader";
-import { useDeadlineCountdown, formatDeadline } from "@/components/fpl/deadline";
-import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
+import { DeadlineCard } from "@/components/fantasy/DeadlineCard";
+import { deadlineChecklist } from "@/lib/deadline-checklist";
 import { PrizeWelcome } from "@/components/prizes/PrizeWelcome";
 import {
   FantasyHubLeagues,
@@ -27,8 +26,6 @@ import {
   FantasyHubTeamArea,
 } from "@/components/fantasy/FantasyHubPersonal";
 import { fantasyHubLayout } from "@/components/fantasy/fantasy-hub-layout";
-import { GameweekStatusText } from "@/components/fpl/GameweekStatusText";
-import { nextDeadlineAfter } from "@/components/fantasy/gameweek-presentation";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { ui, UiCard, UiPageTitle, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -39,7 +36,6 @@ import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { newsService } from "@/services/news";
 import { prizesService } from "@/services/prizes";
-import type { Gameweek } from "@/types/domain";
 
 export const Route = createFileRoute("/fantasy/")({
   head: () => fantasyHead("hub"),
@@ -119,6 +115,17 @@ function FantasyHub() {
     queryFn: () => fantasyService.getLeagues("private"),
     enabled: hasTeam,
   });
+  // The fixtures the other Fantasy screens read, for "starters with no match".
+  const fixtures = useQuery({
+    queryKey: key("fixture-difficulty"),
+    queryFn: () => fantasyService.getFixtureDifficulty(),
+    enabled: hasTeam && !!gameweek,
+    staleTime: 60_000,
+  });
+  const checklist =
+    hasTeam && team && gameweek
+      ? deadlineChecklist(team, screen.players, fixtures.data ?? [], gameweek.number)
+      : undefined;
   // The prize welcome's catalog, same key: the proposition says prizes are
   // there to be won only when the catalog lists one, and says it inline —
   // the dialog itself waits until there is a team to go with it.
@@ -134,7 +141,11 @@ function FantasyHub() {
       <UiPageTitle title={t("fantasy.title")} />
 
       {gameweek && screen.phase === "ready" ? (
-        <GameweekBand gameweek={gameweek} />
+        <DeadlineCard
+          gameweek={gameweek}
+          checklist={checklist}
+          freeTransfers={hasTeam && team ? team.freeTransfers : undefined}
+        />
       ) : screen.phase === "loading" ? (
         <UiSkeleton className="h-24 rounded-none" />
       ) : null}
@@ -234,84 +245,6 @@ function FantasyHub() {
           the proposition, which names the prizes inline. */}
       {PRIZES_ENABLED && layout.prizeWelcome && <PrizeWelcome />}
     </FantasyFrame>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* The gameweek band                                                    */
-/* ------------------------------------------------------------------ */
-
-/**
- * "JOURNÉE 14 · DATE LIMITE / ven. 25 sept., 19:30 — [⏱ 1j 13h 59min]" on the
- * floodlit photo.
- *
- * The scrim runs `to bottom` over the whole band: the board's `to right`
- * darkened only the text side, and in Arabic the text is on the other side.
- * Text on it is the plain on-ink white; the countdown pill is the action
- * gradient with ink-deep, the pairing the gradient is specified for. After
- * the deadline the pill gives way to the gameweek's state, when there is one.
- */
-function GameweekBand({ gameweek }: { gameweek: Gameweek }) {
-  const { t, lang } = useI18n();
-  const left = useDeadlineCountdown(gameweek.deadline);
-  // Read with the countdown's tick, so it appears when the deadline passes.
-  const next = left?.passed ? nextDeadlineAfter(gameweek, Date.now()) : null;
-  return (
-    <section
-      aria-label={`${t("fpl.gameweek")} ${gameweek.number}`}
-      className="relative isolate overflow-hidden"
-    >
-      <img
-        src={fantasyHeroPhoto}
-        alt=""
-        aria-hidden
-        decoding="async"
-        className="absolute inset-0 -z-10 h-full w-full object-cover object-[50%_55%]"
-      />
-      <span
-        aria-hidden
-        className="absolute inset-0 -z-10"
-        style={{
-          backgroundImage:
-            "linear-gradient(to bottom, color-mix(in oklab, var(--ui-ink-deep) 76%, transparent), color-mix(in oklab, var(--ui-ink-deep) 90%, transparent))",
-        }}
-      />
-      <div className={cn("py-3.5", ui.space.gutter, ui.tone.onInkPlain)}>
-        {/* One element, "Journée 14 · Date limite" — pinned by the e2e
-            journey. The space between the two spans is part of the text. */}
-        <p className="flex flex-wrap items-baseline gap-x-2">
-          <span className={cn(ui.display.title, "uppercase")}>
-            {`${t("fpl.gameweek")} ${gameweek.number}`}
-          </span>{" "}
-          <span className={cn(ui.text.label, ui.tone.onInkMuted)}>{`· ${t("fpl.deadline")}`}</span>
-        </p>
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-          <p className={cn(ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}>
-            <bdi>{formatDeadline(gameweek.deadline, lang, { weekday: "short" })}</bdi>
-          </p>
-          {left && !left.passed ? (
-            // Home's deadline pill, so the same deadline reads the same way
-            // on both screens ("13h 59min" on the last day, never "0j").
-            <DeadlineCountdown iso={gameweek.deadline} />
-          ) : left?.passed && gameweek.status ? (
-            <GameweekStatusText
-              status={gameweek.status}
-              deadlinePassed
-              className={cn(ui.text.label, "min-h-8")}
-            />
-          ) : null}
-        </div>
-        {next ? (
-          // After the deadline, the one a manager can still act on: a team
-          // that joined late plays from the next gameweek, and this is the
-          // only place its deadline is named.
-          <p className={cn("mt-1", ui.text.meta, ui.tone.onInkMuted)}>
-            {`${t("fpl.gameweek")} ${next.number} · ${t("fantasy.next_deadline")} · `}
-            <bdi>{formatDeadline(next.deadline, lang, { weekday: "short" })}</bdi>
-          </p>
-        ) : null}
-      </div>
-    </section>
   );
 }
 

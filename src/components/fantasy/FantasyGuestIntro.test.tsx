@@ -304,8 +304,10 @@ describe("the Fantasy hub around the proposition", () => {
   });
 
   it("keeps the band caption the e2e journey finds the hub by", () => {
-    // "Journée N · Date limite", one element.
-    expect(hub).toContain('{`${t("fpl.gameweek")} ${gameweek.number}`}');
-    expect(hub).toContain('{`· ${t("fpl.deadline")}`}');
+    // "Journée N · Date limite", one element, now drawn by the deadline card.
+    const card = code("src/components/fantasy/DeadlineCard.tsx");
+    expect(hub).toContain("<DeadlineCard");
+    expect(card).toContain('{`${t("fpl.gameweek")} ${gameweek.number}`}');
+    expect(card).toContain('{`· ${t("fpl.deadline")}`}');
   });
 });
