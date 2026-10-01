@@ -360,6 +360,13 @@ create function pg_temp.unguarded_api_functions() returns text[] language sql st
          'admin_revoke_role', 'admin_save_fantasy_prize', 'admin_save_fantasy_prize_settings',
          'admin_set_fantasy_prize_flag', 'admin_set_fantasy_prize_winner_status',
          'admin_shorten_role_expiry', 'admin_suspend_staff', 'admin_unban_user',
+         -- The player-mapping workflow (20261001161000): staff RPCs that call the staff check.
+         'admin_football_mapping_add_position_note', 'admin_football_mapping_app_player_options',
+         'admin_football_mapping_cancel', 'admin_football_mapping_decide', 'admin_football_mapping_execute',
+         'admin_football_mapping_get_candidate', 'admin_football_mapping_get_proposal',
+         'admin_football_mapping_list_candidates', 'admin_football_mapping_list_proposals',
+         'admin_football_mapping_propose', 'admin_football_mapping_refresh_evidence',
+         'admin_football_mapping_reviewer_availability',
          'editorial_convert_imported_story', 'editorial_create_draft', 'editorial_get_article',
          'editorial_list_revisions', 'editorial_list_stories', 'editorial_register_media',
          'editorial_schedule_health', 'editorial_set_placement', 'editorial_soft_delete_story',

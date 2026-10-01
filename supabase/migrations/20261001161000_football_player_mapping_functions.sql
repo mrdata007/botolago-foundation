@@ -1217,21 +1217,18 @@ $$;
 -- ===========================================================================
 -- Reads (staff: football.read_operations or football.manage_mappings)
 -- ===========================================================================
-create function app_private.football_mapping_assert_reader()
-returns uuid
+create function app_private.football_mapping_require_reader(p_principal uuid)
+returns void
 language plpgsql
 stable
 security definer
 set search_path = ''
 as $$
-declare
-  v_principal uuid := app_private.admin_assert_principal(true, false);
 begin
-  if not (app_private.admin_has_permission(v_principal, 'football.read_operations')
-    or app_private.admin_has_permission(v_principal, 'football.manage_mappings')) then
+  if not (app_private.admin_has_permission(p_principal, 'football.read_operations')
+    or app_private.admin_has_permission(p_principal, 'football.manage_mappings')) then
     raise exception using errcode = 'PT403', message = 'permission_missing';
   end if;
-  return v_principal;
 end;
 $$;
 
@@ -1290,8 +1287,10 @@ stable
 security definer
 set search_path = ''
 as $$
+declare
+  v_viewer uuid := app_private.admin_assert_principal(true, false);
 begin
-  perform app_private.football_mapping_assert_reader();
+  perform app_private.football_mapping_require_reader(v_viewer);
   if p_status is not null and p_status not in ('unmapped', 'proposed', 'mapped', 'ignored') then
     raise exception using errcode = 'PT400', message = 'invalid_filter';
   end if;
@@ -1319,9 +1318,10 @@ security definer
 set search_path = ''
 as $$
 declare
+  v_viewer uuid := app_private.admin_assert_principal(true, false);
   c app_private.football_player_mapping_candidates%rowtype;
 begin
-  perform app_private.football_mapping_assert_reader();
+  perform app_private.football_mapping_require_reader(v_viewer);
   select * into c from app_private.football_player_mapping_candidates where id = p_candidate_id;
   if not found then raise exception using errcode = 'PT404', message = 'candidate_not_found'; end if;
   return app_private.football_mapping_candidate_json(c);
@@ -1375,8 +1375,9 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_viewer uuid := app_private.football_mapping_assert_reader();
+  v_viewer uuid := app_private.admin_assert_principal(true, false);
 begin
+  perform app_private.football_mapping_require_reader(v_viewer);
   if p_status is not null and p_status not in ('open', 'pending', 'approved', 'executed', 'rejected',
     'expired', 'cancelled', 'stale_evidence', 'identity_conflict', 'position_disagreement', 'already_mapped') then
     raise exception using errcode = 'PT400', message = 'invalid_filter';
@@ -1403,9 +1404,10 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_viewer uuid := app_private.football_mapping_assert_reader();
+  v_viewer uuid := app_private.admin_assert_principal(true, false);
   p app_private.football_player_mapping_proposals%rowtype;
 begin
+  perform app_private.football_mapping_require_reader(v_viewer);
   select * into p from app_private.football_player_mapping_proposals where id = p_proposal_id;
   if not found then raise exception using errcode = 'PT404', message = 'proposal_not_found'; end if;
   return app_private.football_mapping_proposal_json(p, v_viewer);
@@ -1421,9 +1423,10 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_viewer uuid := app_private.football_mapping_assert_reader();
+  v_viewer uuid := app_private.admin_assert_principal(true, false);
   v_count integer;
 begin
+  perform app_private.football_mapping_require_reader(v_viewer);
   select count(*) into v_count
   from app_private.staff_principals sp
   where sp.status = 'active' and sp.id <> v_viewer
@@ -1448,9 +1451,10 @@ security definer
 set search_path = ''
 as $$
 declare
+  v_viewer uuid := app_private.admin_assert_principal(true, false);
   c app_private.football_player_mapping_candidates%rowtype;
 begin
-  perform app_private.football_mapping_assert_reader();
+  perform app_private.football_mapping_require_reader(v_viewer);
   select * into c from app_private.football_player_mapping_candidates where id = p_candidate_id;
   if not found then raise exception using errcode = 'PT404', message = 'candidate_not_found'; end if;
   return coalesce((
@@ -1765,7 +1769,7 @@ revoke all on function
   app_private.football_mapping_resync_candidate(text, text),
   app_private.football_mapping_release_candidates(uuid),
   app_private.football_mapping_audit(uuid, text, app_private.football_player_mapping_proposals, text, uuid, jsonb, jsonb),
-  app_private.football_mapping_assert_reader(),
+  app_private.football_mapping_require_reader(uuid),
   app_private.football_mapping_candidate_json(app_private.football_player_mapping_candidates),
   app_private.football_mapping_proposal_json(app_private.football_player_mapping_proposals, uuid)
 from public, anon, authenticated, service_role;
