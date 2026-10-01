@@ -154,6 +154,96 @@ come from the observation and are reviewed before anything is recorded):
   formula; their amounts exist only in the plan. Needs the owner's acceptance.
 - **Existing Fantasy club, position or price changes: none.** No held player is involved.
 
+## Observe of 19874705 on 1 Oct 2026 and the exact plan
+
+Run 36838133534 (reviewed main `03d34c3e`, project `tkewgajrljbwgwedqsxn`). It made
+exactly two database calls: record the observation (one insert, after waiting out
+any running scheduled job) and plan it (a read; nothing is stored). Observation
+`15b64b8d-ae40-4be3-9fdf-00f469e03282` was recorded at 08:44:09 UTC: 16 clubs,
+490 squad players, 40 lineup players for 705, none unidentified or unnamed.
+
+**This table is a filtered read-only preview, not an exact scoped plan.** It is the
+17 entries of the stored full-season plan (133 changes, digest `f6be5b13…`) that
+concern players in 705's lineup. A scoped plan with its own digest only exists
+after the scoped recorder runs, which is a production write and is not approved.
+The other 116 changes in the stored plan are not part of this package, among them
+the 9 held-player Fantasy moves (Zniti included) and 5 players skipped as
+ambiguous. The scoped recorder refuses any of them.
+
+Recomputed from the fresh evidence (it matches the earlier estimate, but was not
+forced to): **15 canonical creations, 2 membership-only repairs, 17 Fantasy
+entries.** Read-only check against production just before: of the 40 lineup
+players, 23 pass both identity checks and 17 do not (15 with no mapping, the 2
+mapped ones with no 2026/27 club record), the same 17 ids as below.
+
+| Provider id | Canonical identity                                                             | Position                                   | Mapping        | Dated membership                                                                      | Fantasy entry, price |
+| ----------- | ------------------------------------------------------------------------------ | ------------------------------------------ | -------------- | ------------------------------------------------------------------------------------- | -------------------- |
+| 37901711    | **new** canonical player "Yassine Amaadour", born 2004-08-10                   | goalkeeper (provider squad position) → GK  | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, no shirt number | create, 4.80         |
+| 37947231    | **new** canonical player "Zakaria Benabbou", born 1995-09-04                   | goalkeeper (provider squad position) → GK  | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, no shirt number | create, 4.80         |
+| 37308657    | existing canonical player `ac7d265e…` (Achraf Marzak)                          | defender (existing canonical record) → DEF | already mapped | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, shirt 2         | create, 5.00         |
+| 37532637    | **new** canonical player "Soulaimane Driouache", no birth date at the provider | defender (provider squad position) → DEF   | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, shirt 4         | create, 5.00         |
+| 37753134    | **new** canonical player "Issam Bouabsidi", born 2004-03-27                    | defender (provider squad position) → DEF   | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, no shirt number | create, 5.00         |
+| 38227065    | **new** canonical player "Yassine Aboursas", born 1996-06-15                   | defender (provider squad position) → DEF   | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, no shirt number | create, 5.00         |
+| 38227326    | **new** canonical player "Youssef El Maataoui", no birth date at the provider  | defender (provider squad position) → DEF   | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, shirt 38        | create, 5.00         |
+| 37612154    | **new** canonical player "Mohamed Kassou", born 2003-01-01                     | midfielder (provider squad position) → MID | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, shirt 19        | create, 7.20         |
+| 38227066    | **new** canonical player "Mustapha El Crachna", born 2006-01-21                | midfielder (provider squad position) → MID | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, no shirt number | create, 7.20         |
+| 38227067    | **new** canonical player "Yassin Crachna", born 2004-10-18                     | midfielder (provider squad position) → MID | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, shirt 21        | create, 7.20         |
+| 38227072    | **new** canonical player "Hicham Zeghari", born 1998-11-20                     | midfielder (provider squad position) → MID | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, no shirt number | create, 7.20         |
+| 38227323    | **new** canonical player "Wissam Erbati", no birth date at the provider        | midfielder (provider squad position) → MID | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, shirt 29        | create, 7.20         |
+| 38227325    | **new** canonical player "Ayman Azzouzi", no birth date at the provider        | midfielder (provider squad position) → MID | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, shirt 37        | create, 7.20         |
+| 37635144    | existing canonical player `1f44ae29…` (Anouar Ousserhane)                      | forward (existing canonical record) → FWD  | already mapped | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, shirt 11        | create, 7.20         |
+| 38227068    | **new** canonical player "Ali Salam", no birth date at the provider            | forward (provider squad position) → FWD    | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, shirt 22        | create, 7.20         |
+| 38227324    | **new** canonical player "Nadir El Fadili", born 2006-02-13                    | forward (provider squad position) → FWD    | create mapping | create 2026/27 record at Moghreb Tétouan, 24 Sep 2026 to 30 Jun 2027, no shirt number | create, 7.20         |
+| 37640437    | **new** canonical player "Hamza Kattoussi", no birth date at the provider      | midfielder (provider squad position) → MID | create mapping | create 2026/27 record at RSB Berkane, 24 Sep 2026 to 30 Jun 2027, shirt 34            | create, 7.20         |
+
+Prices are the opening-catalog algorithm (`botolago-initial-price-v1.0`) with the
+default rating 6 and confidence 0, because none of these players has history:
+goalkeeper 4.80 (2), defender 5.00 (5), midfielder 7.20 (7), forward 7.20 (3).
+
+Existing records changed: **none.** The two mapped players each have only an old
+season club record, no 2026/27 record, no Fantasy entry and no performance rows;
+every other row of the plan is an addition. No locked lineup, squad, price,
+position or scoring reference changes: the 17 are new Fantasy players owned by
+nobody, so no GW1 lineup (6 lineups, 90 rows) can contain them.
+
+What the Fantasy additions mean for users, if approved: 17 more players
+appear in the transfer market (catalog 606 to 623) at the prices above, and from
+GW2 they can be bought like any other player; they carry no points, price history
+or owners yet. They are **not needed for the import** (it needs only the mapping
+and the dated club record), but the existing apply does them in the same step and
+its final check refuses to finish unless they are done.
+
+Not claimed: that 705 is ingestable. The two import checks can only be shown to
+hold after the apply (they hold by construction and in the rehearsal, not in
+production). The import also checks goalkeeper statistics against each keeper's
+canonical position, and 705 has two new keepers (37901711, 37947231); that check
+runs only inside the real import. 705's provider data itself passed the read-only
+diagnose in full (40 valid rows, 22 starters identified, no statistic missing).
+
+Clocks: the scoped recorder will only use a source observation under 30 minutes
+old, and the apply refuses one older than 24 hours. The observation above is
+therefore stale for the recorder from about 09:13 UTC, and a later approved
+execution would need a fresh Observe first. The checks are not weakened.
+
+## CI on this branch: the browser failure
+
+Head `1163fe7c`: `database-quality` passed, and the GW1 rehearsal step ran **21
+tests, 21 passed, 0 failed**. `application-quality` failed in the development-server
+browser suite (33 tests). Diagnosis, from the failed run's own trace:
+
+- The failure is a hydration mismatch on the Home page. The server and the browser
+  render the same sample match with kickoff times one hour apart (10:25 and 11:25).
+- Cause: the server's Node and the browser disagree about the Africa/Casablanca
+  offset on 1 Oct 2026. Run locally, Node 22 and 24 with time-zone data 2026c give
+  UTC+0, Node 20 and the browser give UTC+1. The same test passes on the default Node
+  here and **fails when the dev server runs on Node 24**, which reproduces it.
+- It is an environment difference (the runner image's Node time-zone data), not a
+  regression: this branch changes no application code, PR #255 failed the same way
+  and a re-run on another runner passed.
+- No re-run was made. A re-run only tests which runner image it lands on.
+- It is also a real risk to the product: match times are shown in Casablanca time,
+  and whichever source is wrong shows wrong kickoff times. That is a separate fix.
+
 ## Rehearsal on a disposable database
 
 `scripts/backend/gw1-identity-repair-rehearsal.test.ts` runs the real recorder, plan,
