@@ -28,6 +28,7 @@ import {
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { clubStyle } from "@/lib/club-palette";
+import { upcomingFixtures } from "@/lib/upcoming-fixtures";
 import { fantasyPlayerHead } from "@/lib/fantasy-meta";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { cn } from "@/lib/utils";
@@ -187,10 +188,15 @@ function PlayerDetailPage() {
   const club = findClub(clubs, p.clubId);
   const colours = club ? crestStyle(club) : clubStyle(null);
   const name = splitPlayerName(tr(p.name));
-  // Whatever the service returns for this club, unfiltered: a gameweek's
-  // fixture set is the backend's answer, and a postponed match that has been
-  // deferred out of a gameweek must not be re-added by a frontend assumption.
-  const playerFixtures = (fixturesQ.data ?? []).filter((f) => f.clubId === p.clubId).slice(0, 5);
+  // Whatever the service returns for this club: a gameweek's fixture set is the
+  // backend's answer, and a postponed match that has been deferred out of a
+  // gameweek must not be re-added by a frontend assumption. Rows are only ever
+  // removed here, and only those already played: the feed starts at Fantasy's current
+  // gameweek, which stays on the last round until it is finalized, so the match
+  // just played would otherwise sit under "Prochains matchs".
+  const playerFixtures = upcomingFixtures(
+    (fixturesQ.data ?? []).filter((f) => f.clubId === p.clubId),
+  ).slice(0, 5);
   const bars = recentPointsBars(historyQ.data ?? []);
 
   /** An unknown figure is an en dash. A real zero is a zero. */
