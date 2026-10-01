@@ -1,4 +1,5 @@
 import type { RepositoryContext } from "../../src/backend/contracts/repository";
+import { matchDayKey } from "../../src/lib/match-kickoff";
 import type { FootballLanguage } from "../../src/backend/football/contracts";
 import { MockFootballRepository } from "../../src/backend/football/mock-repository";
 import { MockNewsRepository } from "../../src/backend/news/mock-repository";
@@ -78,11 +79,16 @@ const RPC: Record<string, Handler> = {
       language: language(args),
       limit: 1_000,
     });
-    const day = new Intl.DateTimeFormat("en-CA", {
-      timeZone: text(args.p_timezone) ?? "Africa/Casablanca",
-    });
+    const zone = text(args.p_timezone) ?? "Africa/Casablanca";
+    // Casablanca is the application's own rule: this runner's `Intl` may carry
+    // older time-zone data than the page under test (they differ from 2026-09-20).
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: zone });
+    const dayOf = (kickoffAt: string) =>
+      zone === "Africa/Casablanca"
+        ? matchDayKey(new Date(kickoffAt))
+        : day.format(new Date(kickoffAt));
     return {
-      items: items.filter((match) => day.format(new Date(match.kickoffAt)) === args.p_date),
+      items: items.filter((match) => dayOf(match.kickoffAt) === args.p_date),
       nextCursor: null,
     };
   },

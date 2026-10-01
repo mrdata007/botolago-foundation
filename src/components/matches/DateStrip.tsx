@@ -5,12 +5,8 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { capitalizeFirst } from "@/lib/match-days";
 import { ui, UiButton, UiChip, UiIconButton } from "@/components/ui-kit";
-import {
-  addMatchDays,
-  isSameMatchDay,
-  MATCH_TIME_ZONE,
-  startOfMatchDay,
-} from "@/lib/match-kickoff";
+import { addMatchDays, isSameMatchDay, startOfMatchDay } from "@/lib/match-kickoff";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /**
  * The Matches page's date navigation (Option A, A-Matches).
@@ -104,11 +100,10 @@ export function DateStrip({
   }, [selectedDay, rangeDays, minimumDay, maximumDay]);
 
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
-  const weekdayFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+  const weekdayFmt = moroccoDateTimeFormat(locale, {
     weekday: "short",
   });
-  const dayFmt = new Intl.DateTimeFormat(locale, { timeZone: MATCH_TIME_ZONE, day: "numeric" });
+  const dayFmt = moroccoDateTimeFormat(locale, { day: "numeric" });
 
   // Center the active day when it changes.
   //
@@ -143,8 +138,7 @@ export function DateStrip({
   const canGoPrevious = !minimumDay || selectedDay > minimumDay;
   const canGoNext = !maximumDay || selectedDay < maximumDay;
 
-  const heading = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+  const heading = moroccoDateTimeFormat(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",

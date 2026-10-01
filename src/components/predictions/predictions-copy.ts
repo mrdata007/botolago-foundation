@@ -1,7 +1,7 @@
 import type { RoundState } from "@/backend/predictions/contracts";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import type { Language } from "@/types/domain";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /**
  * Pronostics' counted phrases and times. Arabic agrees the noun with the
@@ -139,8 +139,7 @@ function locale(lang: Language): string {
 
 /** "20:00", Casablanca time. */
 export function formatKickoffTime(iso: string, lang: Language): string {
-  return new Intl.DateTimeFormat(locale(lang), {
-    timeZone: MATCH_TIME_ZONE,
+  return moroccoDateTimeFormat(locale(lang), {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(iso));
@@ -148,8 +147,7 @@ export function formatKickoffTime(iso: string, lang: Language): string {
 
 /** "ven. 20:00": the next lock, within a week. */
 export function formatLockMoment(iso: string, lang: Language): string {
-  return new Intl.DateTimeFormat(locale(lang), {
-    timeZone: MATCH_TIME_ZONE,
+  return moroccoDateTimeFormat(locale(lang), {
     weekday: "short",
     hour: "2-digit",
     minute: "2-digit",
@@ -158,8 +156,7 @@ export function formatLockMoment(iso: string, lang: Language): string {
 
 /** "Vendredi 26 septembre": a day heading. */
 export function formatDayHeading(iso: string, lang: Language): string {
-  const text = new Intl.DateTimeFormat(locale(lang), {
-    timeZone: MATCH_TIME_ZONE,
+  const text = moroccoDateTimeFormat(locale(lang), {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -169,8 +166,7 @@ export function formatDayHeading(iso: string, lang: Language): string {
 
 /** The Casablanca calendar day of an instant, `YYYY-MM-DD`: groups a journée by day. */
 export function matchDay(iso: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: MATCH_TIME_ZONE,
+  return moroccoDateTimeFormat("en-CA", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

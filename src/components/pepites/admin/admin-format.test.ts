@@ -23,12 +23,23 @@ const entry = (n: number): DraftEntry => ({
 });
 
 describe("Morocco time for the schedule field", () => {
-  it("reads 20:00 in Casablanca as 19:00 UTC outside Ramadan (UTC+1)", () => {
-    expect(casablancaLocalToIso("2026-10-12T20:00")).toBe("2026-10-12T19:00:00.000Z");
-    expect(isoToCasablancaLocal("2026-10-12T19:00:00.000Z")).toBe("2026-10-12T20:00");
+  it("reads 20:00 in Casablanca as 19:00 UTC before the change to UTC+0 all year (UTC+1)", () => {
+    expect(casablancaLocalToIso("2026-09-12T20:00")).toBe("2026-09-12T19:00:00.000Z");
+    expect(isoToCasablancaLocal("2026-09-12T19:00:00.000Z")).toBe("2026-09-12T20:00");
   });
 
-  it("follows the zone's own offset during Ramadan (UTC+0 in 2027)", () => {
+  it("reads 20:00 in Casablanca as 20:00 UTC from 2026-09-20 (UTC+0 all year)", () => {
+    expect(casablancaLocalToIso("2026-10-12T20:00")).toBe("2026-10-12T20:00:00.000Z");
+    expect(isoToCasablancaLocal("2026-10-12T20:00:00.000Z")).toBe("2026-10-12T20:00");
+    expect(casablancaLocalToIso("2027-07-12T20:00")).toBe("2027-07-12T20:00:00.000Z");
+  });
+
+  it("followed the zone's own offset during Ramadan 2026 (UTC+0, between two UTC+1 spells)", () => {
+    expect(casablancaLocalToIso("2026-03-01T20:00")).toBe("2026-03-01T20:00:00.000Z");
+    expect(casablancaLocalToIso("2026-04-01T20:00")).toBe("2026-04-01T19:00:00.000Z");
+  });
+
+  it("is UTC+0 in Ramadan 2027 too, as in every month from 2026-09-20", () => {
     expect(casablancaLocalToIso("2027-02-22T20:00")).toBe("2027-02-22T20:00:00.000Z");
   });
 
