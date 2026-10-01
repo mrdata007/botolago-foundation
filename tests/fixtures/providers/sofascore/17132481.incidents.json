@@ -1,0 +1,277 @@
+{
+  "incidents": [
+    {
+      "incidentType": "period",
+      "time": 90,
+      "addedTime": 999,
+      "text": "FT",
+      "homeScore": 2,
+      "awayScore": 1
+    },
+    {
+      "id": 126925063,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 90,
+      "addedTime": 2,
+      "isHome": true,
+      "playerIn": {
+        "id": 1182110,
+        "name": "Salaheddine Ghedamsi",
+        "shortName": "S. Ghedamsi"
+      },
+      "playerOut": {
+        "id": 895127,
+        "name": "Tshegofatso Mabasa",
+        "shortName": "T. Mabasa"
+      }
+    },
+    {
+      "id": 126934812,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 86,
+      "isHome": true,
+      "playerIn": {
+        "id": 2161842,
+        "name": "Mounir Elgouje",
+        "shortName": "M. Elgouje"
+      },
+      "playerOut": {
+        "id": 544156,
+        "name": "Anas Tahiri",
+        "shortName": "A. Tahiri"
+      }
+    },
+    {
+      "id": 126931776,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 81,
+      "isHome": false,
+      "playerIn": {
+        "id": 2790119,
+        "name": "Achraf Eddahbi",
+        "shortName": "A. Eddahbi"
+      },
+      "playerOut": {
+        "id": 2776291,
+        "name": "Mouad Mouzalim",
+        "shortName": "M. Mouzalim"
+      }
+    },
+    {
+      "id": 126925061,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 77,
+      "isHome": true,
+      "playerIn": {
+        "id": 1140935,
+        "name": "El Habib Brija",
+        "shortName": "E. H. Brija"
+      },
+      "playerOut": {
+        "id": 919329,
+        "name": "Achraf Harmach",
+        "shortName": "A. Harmach"
+      }
+    },
+    {
+      "id": 126925060,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 77,
+      "isHome": true,
+      "playerIn": {
+        "id": 1140961,
+        "name": "Khalid Baba",
+        "shortName": "K. Baba"
+      },
+      "playerOut": {
+        "id": 1096751,
+        "name": "Devin Titus",
+        "shortName": "D. Titus"
+      }
+    },
+    {
+      "id": 126925066,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 73,
+      "isHome": false,
+      "playerIn": {
+        "id": 1213241,
+        "name": "Oussama Dahr",
+        "shortName": "O. Dahr"
+      },
+      "playerOut": {
+        "id": 1894253,
+        "name": "Zakaria Ajoughlal",
+        "shortName": "Z. Ajoughlal"
+      }
+    },
+    {
+      "id": 125666527,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 72,
+      "isHome": true,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 1103558,
+        "name": "Marouane Ouhrou",
+        "shortName": "M. Ouhrou"
+      }
+    },
+    {
+      "id": 125666526,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 70,
+      "isHome": true,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 919329,
+        "name": "Achraf Harmach",
+        "shortName": "A. Harmach"
+      }
+    },
+    {
+      "id": 126925065,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 67,
+      "isHome": false,
+      "playerIn": {
+        "id": 1528418,
+        "name": "Youssef Dalouzi",
+        "shortName": "Y. Dalouzi"
+      },
+      "playerOut": {
+        "id": 2776292,
+        "name": "Mouad Rahni",
+        "shortName": "M. Rahni"
+      }
+    },
+    {
+      "id": 126925064,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 67,
+      "isHome": false,
+      "playerIn": {
+        "id": 2790099,
+        "name": "Issam Jaafra",
+        "shortName": "I. Jaafra"
+      },
+      "playerOut": {
+        "id": 1525325,
+        "name": "Youness Moukhlis",
+        "shortName": "Y. Moukhlis"
+      }
+    },
+    {
+      "id": 363303293,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 64,
+      "isHome": true,
+      "homeScore": 2,
+      "awayScore": 1,
+      "player": {
+        "id": 1919299,
+        "name": "Anas El Mahraoui",
+        "shortName": "A. E. Mahraoui"
+      },
+      "assist1": {
+        "id": 1096751,
+        "name": "Devin Titus",
+        "shortName": "D. Titus"
+      }
+    },
+    {
+      "id": 363303292,
+      "incidentType": "goal",
+      "incidentClass": "penalty",
+      "time": 59,
+      "isHome": true,
+      "from": "penalty",
+      "homeScore": 1,
+      "awayScore": 1,
+      "player": {
+        "id": 895127,
+        "name": "Tshegofatso Mabasa",
+        "shortName": "T. Mabasa"
+      }
+    },
+    {
+      "id": 125666525,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 49,
+      "isHome": false,
+      "rescinded": false,
+      "player": {
+        "id": 1939981,
+        "name": "Jawad Essaghir",
+        "shortName": "J. Essaghir"
+      }
+    },
+    {
+      "id": 363303290,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 48,
+      "isHome": false,
+      "homeScore": 0,
+      "awayScore": 1,
+      "player": {
+        "id": 1939981,
+        "name": "Jawad Essaghir",
+        "shortName": "J. Essaghir"
+      }
+    },
+    {
+      "id": 126925059,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 46,
+      "isHome": true,
+      "playerIn": {
+        "id": 1919299,
+        "name": "Anas El Mahraoui",
+        "shortName": "A. E. Mahraoui"
+      },
+      "playerOut": {
+        "id": 2150417,
+        "name": "Adam   Brika",
+        "shortName": "A. Brika"
+      }
+    },
+    {
+      "incidentType": "period",
+      "time": 45,
+      "addedTime": 999,
+      "text": "HT",
+      "homeScore": 0,
+      "awayScore": 0
+    },
+    {
+      "id": 125666524,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 16,
+      "isHome": true,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 1545316,
+        "name": "Noureddine Oussama",
+        "shortName": "N. Oussama"
+      }
+    }
+  ]
+}

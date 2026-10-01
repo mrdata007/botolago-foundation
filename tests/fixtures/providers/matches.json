@@ -1,0 +1,15 @@
+{
+  "note": "Phase 0 match plan: provider IDs and labels only. flashscoreId is null where it has not been found yet.",
+  "matches": [
+    { "key": "2026-r1-touarga-fus", "label": "Union Touarga 2-1 FUS Rabat", "sofascoreId": 16958239, "flashscoreId": "88o4wcDb" },
+    { "key": "2026-r1-dhj-codm", "label": "Difaa El Jadidi 2-6 COD Meknes", "sofascoreId": 16958236, "flashscoreId": "vZ4vNyTH" },
+    { "key": "2026-r1-wac-temara", "label": "Wydad AC 1-3 Widad Temara", "sofascoreId": 17132472, "flashscoreId": "pW7nLFcU" },
+    { "key": "2026-r1-tiznit-tanger", "label": "Amal Tiznit 1-3 IR Tanger", "sofascoreId": 16958238, "flashscoreId": "0rrduJrn" },
+    { "key": "2026-r1-mas-zemamra", "label": "Maghreb Fez 2-1 Renaissance Zemamra", "sofascoreId": 17132481, "flashscoreId": "W81WOcb5" },
+    { "key": "2026-r1-tetouan-berkane", "label": "Moghreb Tetouan 0-0 Berkane", "sofascoreId": 17132482, "flashscoreId": "nLBqJSRq" },
+    { "key": "2026-r1-kacm-husa", "label": "Kawkab Marrakech 2-3 Hassania Agadir", "sofascoreId": 17132480, "flashscoreId": "GYlCyyrB" },
+    { "key": "2025-r30-wydad-touarga", "label": "Wydad AC 1-2 Union Touarga", "sofascoreId": 16438990, "flashscoreId": null },
+    { "key": "2025-r29-touarga-tanger", "label": "Union Touarga 1-0 IR Tanger", "sofascoreId": 16408824, "flashscoreId": null },
+    { "key": "2025-r26-husa-touarga", "label": "Hassania Agadir 1-0 Union Touarga", "sofascoreId": 16354496, "flashscoreId": null }
+  ]
+}

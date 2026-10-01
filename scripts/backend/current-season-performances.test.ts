@@ -5,7 +5,6 @@ import {
   CurrentPerformanceError,
   normalizeCurrentFinishedFixture,
   providerValueType,
-  verifiedUnusedDeclarations,
   type LineupParticipation,
   runCurrentPerformanceBatch,
   currentPerformanceGuard,
@@ -1464,66 +1463,40 @@ describe("shortened starters and reconciled goal timelines", () => {
   });
 });
 
-// A named substitute the provider shows as unused may be left out by the
-// database when it cannot place him (migration 20261001130000). Here the
-// importer's side: which facts it reads, what it declares, and that nothing
-// changes for any other fixture.
-describe("verified unused substitutes", () => {
-  /** A bench player of club 10 (index 0 of withBench) and one of club 20 (index 1). */
-  const BENCH_HOME = 200;
-  const benchIndex = (playerId: number) => 22 + (playerId - 200);
-  const asUnused = (payload: ReturnType<typeof fixture>, playerId: number) => {
-    // The shape SportsMonks sends for a substitute who never came on and has no
-    // record: no statistics at all.
-    payload.data.lineups[benchIndex(playerId)]!.details = [];
-  };
-  /**
-   * Two bench players with no rating: 201 has explicit zeros; 200 has no
-   * statistics at all, unless `bare` is false (so a test can set one on him).
-   */
-  const twoUnused = (bare = true) => {
+// Diagnose-only evidence: what the provider says each named lineup player did, by
+// ids and type ids. It changes nothing that is ingested.
+describe("lineup participation evidence", () => {
+  const HOME_BENCH = 200;
+  const AWAY_BENCH = 201;
+  const indexOf = (playerId: number) => 22 + (playerId - 200);
+  /** Two bench players, no rating; 200 (club 10) has no statistics at all, 201 explicit zeros. */
+  const bench = (bare = true) => {
     const payload = withBench(fixture(), 2);
-    for (const playerId of [BENCH_HOME, BENCH_HOME + 1]) {
-      const lineup = payload.data.lineups[benchIndex(playerId)]!;
+    for (const playerId of [HOME_BENCH, AWAY_BENCH]) {
+      const lineup = payload.data.lineups[indexOf(playerId)]!;
       lineup.details = lineup.details.filter((detail) => detail.type_id !== 118);
     }
-    if (bare) asUnused(payload, BENCH_HOME);
+    if (bare) payload.data.lineups[indexOf(HOME_BENCH)]!.details = [];
     return payload;
   };
-  const part = (patch: Partial<LineupParticipation> = {}): LineupParticipation => ({
-    externalPlayerId: "300",
-    externalTeamId: "10",
-    role: "substitute",
-    officialMinutes: null,
-    scoringStatisticTypeIds: [],
-    unknownStatisticTypeIds: [],
-    zeroStatisticTypeIds: [],
-    eventTypeIds: [],
-    ...patch,
-  });
+  /** Gives 200 the statistic as well as 20 minutes, so the fixture is still valid. */
+  const cameOn = (payload: ReturnType<typeof fixture>, typeId: number, value = 1) => {
+    setDetail(payload, indexOf(HOME_BENCH), 119, 20);
+    setDetail(
+      payload,
+      indexOf(HOME_BENCH),
+      typeId as (typeof CURRENT_PERFORMANCE_TYPES)[number],
+      value,
+    );
+    return payload;
+  };
+  const factsOf = async (payload: ReturnType<typeof fixture>, playerId = HOME_BENCH) => {
+    const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
+    return normalized.participation.find((entry) => entry.externalPlayerId === String(playerId))!;
+  };
 
-  test("A: a substitute with no minutes and no events is declared, with ids and type ids only", async () => {
-    const normalized = await normalizeCurrentFinishedFixture(twoUnused(), 9001);
-    expect(normalized.verifiedUnusedSubstitutes[0]).toEqual({
-      externalPlayerId: "200",
-      externalTeamId: "10",
-      role: "substitute",
-      officialMinutes: null,
-      scoringStatisticTypeIds: [],
-      unknownStatisticTypeIds: [],
-      zeroStatisticTypeIds: [],
-    });
-    // The second bench player carries explicit zeros, including 119: unused too.
-    expect(normalized.verifiedUnusedSubstitutes.map((entry) => entry.externalPlayerId)).toEqual([
-      "200",
-      "201",
-    ]);
-    expect(
-      normalized.participation.find((entry) => entry.externalPlayerId === "201")
-        ?.zeroStatisticTypeIds,
-    ).toEqual([52, 57, 79, 83, 84, 85, 88, 112, 113, 119, 324]);
-    const facts = normalized.participation.find((entry) => entry.externalPlayerId === "200");
-    expect(facts).toEqual({
+  test("a substitute with no statistics at all: minutes absent, nothing else", async () => {
+    expect(await factsOf(bench())).toEqual({
       externalPlayerId: "200",
       externalTeamId: "10",
       role: "substitute",
@@ -1533,134 +1506,79 @@ describe("verified unused substitutes", () => {
       zeroStatisticTypeIds: [],
       eventTypeIds: [],
     });
-    // Only ids and numbers: no field could hold a name or a raw payload.
-    expect(Object.keys(facts!).sort()).toEqual([
-      "eventTypeIds",
-      "externalPlayerId",
-      "externalTeamId",
-      "officialMinutes",
-      "role",
-      "scoringStatisticTypeIds",
-      "unknownStatisticTypeIds",
-      "zeroStatisticTypeIds",
-    ]);
   });
 
-  test("his row is unchanged: all zero, so he scores nothing, and the coverage is unchanged", async () => {
-    const withIt = twoUnused();
-    const normalized = await normalizeCurrentFinishedFixture(withIt, 9001);
-    const player = normalized.rows.find((row) => row.externalPlayerId === "200")!;
-    expect(player).toMatchObject({
-      started: false,
-      appeared: false,
-      minutes: 0,
-      goals: 0,
-      assists: 0,
-      cleanSheets: 0,
-      goalsConceded: 0,
-      saves: 0,
-      penaltiesSaved: 0,
-      penaltiesMissed: 0,
-      yellowCards: 0,
-      redCards: 0,
-      secondYellowDismissals: 0,
-      ownGoals: 0,
-    });
-    // The declaration is a separate field: the coverage the database digests has no new key.
-    expect("verifiedUnusedSubstitutes" in normalized.coverage).toBe(false);
-  });
-
-  test("a starter is never declared, and the 11 starters of each club are still required", async () => {
-    const payload = twoUnused();
-    const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
-    const declared = new Set(
-      normalized.verifiedUnusedSubstitutes.map((entry) => entry.externalPlayerId),
-    );
-    for (let id = 100; id < 122; id += 1) expect(declared.has(String(id))).toBe(false);
-    // A starter turned into a substitute leaves 21 starters: the fixture is refused as before.
-    const short = twoUnused();
-    short.data.lineups[0]!.type_id = 12;
-    short.data.lineups[0]!.details = [];
-    await expect(normalizeCurrentFinishedFixture(short, 9001)).rejects.toMatchObject({
-      code: "historical_fixture_coverage_incomplete",
+  test("a substitute with an explicit zero: minutes 0 and the explicit zeros, no scoring type", async () => {
+    expect(await factsOf(bench(), AWAY_BENCH)).toEqual({
+      externalPlayerId: "201",
+      externalTeamId: "20",
+      role: "substitute",
+      officialMinutes: 0,
+      scoringStatisticTypeIds: [],
+      unknownStatisticTypeIds: [],
+      zeroStatisticTypeIds: [52, 57, 79, 83, 84, 85, 88, 112, 113, 119, 324],
+      eventTypeIds: [],
     });
   });
 
-  test("C: a substitute with official minutes is not declared", async () => {
-    const payload = twoUnused(false);
-    setDetail(payload, benchIndex(BENCH_HOME), 119, 20);
-    const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
-    expect(normalized.verifiedUnusedSubstitutes.map((entry) => entry.externalPlayerId)).toEqual([
-      "201",
-    ]);
-    expect(
-      normalized.participation.find((entry) => entry.externalPlayerId === "200")?.officialMinutes,
-    ).toBe(20);
+  test("a starter is reported as a starter, with his minutes", async () => {
+    const facts = await factsOf(bench(), 100);
+    // His rating (type 118) is a scoring-relevant value above zero.
+    expect(facts).toMatchObject({
+      role: "starter",
+      officialMinutes: 90,
+      scoringStatisticTypeIds: [118],
+    });
   });
 
-  // F, G (and second yellow) carry no minutes requirement, so the importer sees them
-  // on an unused-looking substitute and must not declare him.
+  test("minutes above zero are reported", async () => {
+    const payload = bench(false);
+    setDetail(payload, indexOf(HOME_BENCH), 119, 20);
+    expect((await factsOf(payload)).officialMinutes).toBe(20);
+  });
+
+  // Each of these is a value above zero on a substitute who came on.
   for (const [label, typeId] of [
-    ["F: a yellow card", 84],
-    ["G: a direct red card", 83],
-    ["G2: a second yellow", 85],
-    ["goals conceded on the bench", 88],
+    ["a yellow card", 84],
+    ["a red card", 83],
+    ["a second yellow", 85],
+    ["an assist", 79],
+    ["a missed penalty", 112],
+    ["a save", 57],
+    ["a saved penalty", 113],
+    ["goals conceded", 88],
+    ["a provider rating", 118],
   ] as const)
-    test(`${label} keeps him undeclared`, async () => {
-      const payload = twoUnused(false);
-      setDetail(payload, benchIndex(BENCH_HOME), typeId, 1);
-      const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
-      expect(normalized.verifiedUnusedSubstitutes.map((entry) => entry.externalPlayerId)).toEqual([
-        "201",
-      ]);
-      expect(
-        normalized.participation.find((entry) => entry.externalPlayerId === "200")
-          ?.scoringStatisticTypeIds,
-      ).toEqual([typeId]);
+    test(`${label} is reported as a scoring-relevant type`, async () => {
+      const facts = await factsOf(cameOn(bench(false), typeId, typeId === 118 ? 6 : 1));
+      expect(facts.scoringStatisticTypeIds).toEqual([typeId]);
+      expect(facts.officialMinutes).toBe(20);
     });
 
-  // D, E, H, I without minutes are refused for the whole fixture by the existing check
-  // (a bench player with an on-pitch statistic and no minutes): the fixture is blocked.
-  for (const [label, typeId] of [
-    ["D: a goal", 52],
-    ["E: an assist", 79],
-    ["H: an own goal", 324],
-    ["I: a missed penalty", 112],
-    ["I: a saved penalty", 113],
-    ["I: a save", 57],
-  ] as const)
-    test(`${label} on a substitute with no minutes blocks the fixture`, async () => {
-      const payload = twoUnused(false);
-      setDetail(payload, benchIndex(BENCH_HOME), typeId, 1);
-      await expect(normalizeCurrentFinishedFixture(payload, 9001)).rejects.toMatchObject({
-        code: "current_statistics_inconsistent",
-      });
-    });
-
-  test("the declaration function refuses every scoring-relevant statistic and unknown value", () => {
-    for (const typeId of [52, 57, 79, 83, 84, 85, 88, 112, 113, 118, 324])
-      expect(verifiedUnusedDeclarations([part({ scoringStatisticTypeIds: [typeId] })])).toEqual([]);
-    for (const typeId of [57, 113])
-      expect(verifiedUnusedDeclarations([part({ unknownStatisticTypeIds: [typeId] })])).toEqual([]);
-    expect(verifiedUnusedDeclarations([part({ eventTypeIds: [19] })])).toEqual([]);
-    expect(verifiedUnusedDeclarations([part({ officialMinutes: 1 })])).toEqual([]);
-    expect(verifiedUnusedDeclarations([part({ role: "starter" })])).toEqual([]);
-    expect(verifiedUnusedDeclarations([part({ role: "unknown" })])).toEqual([]);
-    expect(verifiedUnusedDeclarations([part({ officialMinutes: 0 })])).toHaveLength(1);
-    expect(verifiedUnusedDeclarations([part()])).toHaveLength(1);
+  test("a goal is reported", async () => {
+    const payload = withScore(cameOn(bench(false), 52), 1, 0);
+    expect((await factsOf(payload)).scoringStatisticTypeIds).toEqual([52]);
   });
 
-  test("a provider rating means he played: not declared", async () => {
-    const payload = twoUnused(false);
-    setDetail(payload, benchIndex(BENCH_HOME), 118, 6);
-    const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
-    expect(normalized.verifiedUnusedSubstitutes.map((entry) => entry.externalPlayerId)).toEqual([
-      "201",
-    ]);
+  test("an own goal is reported", async () => {
+    const payload = withScore(cameOn(bench(false), 324), 0, 1);
+    expect((await factsOf(payload)).scoringStatisticTypeIds).toEqual([324]);
   });
 
-  test("a match event that names a substitute keeps him undeclared", async () => {
-    const payload = twoUnused();
+  test("an explicit null goalkeeper statistic is unknown, not zero", async () => {
+    const payload = bench();
+    const lineup = payload.data.lineups[indexOf(AWAY_BENCH)]!;
+    for (const detail of lineup.details)
+      if (detail.type_id === 57 || detail.type_id === 113)
+        (detail.data as { value: number | null }).value = null;
+    const facts = await factsOf(payload, AWAY_BENCH);
+    expect(facts.unknownStatisticTypeIds).toEqual([57, 113]);
+    expect(facts.zeroStatisticTypeIds).not.toContain(57);
+    expect(facts.zeroStatisticTypeIds).not.toContain(113);
+  });
+
+  test("a match event that names a player is reported by type id, for either side of it", async () => {
+    const payload = bench();
     (payload.data as unknown as { events: unknown[] }).events = [
       { id: 1, fixture_id: 9001, type_id: 19, participant_id: 10, player_id: 200, minute: 80 },
       {
@@ -1674,140 +1592,144 @@ describe("verified unused substitutes", () => {
       },
     ];
     const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
-    // 200 was booked, 201 was brought on by a substitution: neither is unused.
-    expect(normalized.verifiedUnusedSubstitutes).toEqual([]);
-    expect(
-      normalized.participation.find((entry) => entry.externalPlayerId === "200")?.eventTypeIds,
-    ).toEqual([19]);
-    expect(
-      normalized.participation.find((entry) => entry.externalPlayerId === "201")?.eventTypeIds,
-    ).toEqual([18]);
+    const events = (id: string) =>
+      normalized.participation.find((entry) => entry.externalPlayerId === id)?.eventTypeIds;
+    expect(events("200")).toEqual([19]);
+    expect(events("201")).toEqual([18]);
+    expect(events("100")).toEqual([18]);
+    expect(events("101")).toEqual([]);
   });
 
-  test("M: an unnamed row keeps the existing unnamed logic and is never declared", async () => {
-    const payload = twoUnused();
-    unnamedRow(payload, benchIndex(BENCH_HOME));
+  test("an unnamed row has no entry", async () => {
+    const payload = bench();
+    unnamedRow(payload, indexOf(HOME_BENCH));
     const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
-    expect(normalized.unnamedRows).toEqual([expect.objectContaining({ role: "substitute" })]);
-    expect(normalized.participation.some((entry) => entry.externalPlayerId === "null")).toBe(false);
-    expect(normalized.verifiedUnusedSubstitutes.map((entry) => entry.externalPlayerId)).toEqual([
-      "201",
-    ]);
-    expect(normalized.coverage.excludedIncompleteRows).toBe(1);
+    expect(normalized.participation).toHaveLength(23);
+    expect(normalized.unnamedRows).toHaveLength(1);
   });
 
-  const unusedCanary = async (options: {
-    only: string | null;
-    excluded?: unknown;
-    adaptive?: boolean;
-  }) => {
-    const { client, received } = batchClient({
-      items: [{ externalFixtureId: "9001" }],
-      ingest: () =>
-        options.excluded === undefined
-          ? undefined
-          : {
-              data: {
-                active: 24 - (Array.isArray(options.excluded) ? options.excluded.length : 0),
-                reconciled: true,
-                scoringStatisticsComplete: true,
-                sourceVersion: `sportsmonks-current-fixture:${"b".repeat(64)}`,
-                excludedVerifiedUnusedUnmapped: options.excluded,
-              },
-              error: null,
-            },
-    });
-    const wrapped = options.adaptive
-      ? {
-          schema: (name: "api") => ({
-            rpc: async (rpcName: string, args: Record<string, unknown>) => {
-              const answer = await client.schema(name).rpc(rpcName, args);
-              return rpcName === "football_current_performance_fixture_batch"
-                ? { ...answer, data: { ...(answer.data as object), adaptive: true } }
-                : answer;
-            },
-          }),
-        }
-      : client;
-    const result = await runCurrentPerformanceBatch(
-      wrapped,
-      "t",
-      null,
-      async () => {
-        return twoUnused();
-      },
-      options.only === null ? {} : { onlyFixtureExternalId: options.only },
-    );
-    const ingest = received.find((args) => "p_rows" in args)!;
-    return { result, ingest };
-  };
-
-  test("a one-fixture canary sends the declaration beside the coverage; a normal page never does", async () => {
-    const canary = await unusedCanary({ only: "9001" });
-    const coverage = canary.ingest.p_coverage as Record<string, unknown>;
-    expect(coverage.verifiedUnusedSubstitutes).toHaveLength(2);
-    // The rows themselves are untouched: the database removes his row, never this script.
-    expect((canary.ingest.p_rows as unknown[]).length).toBe(24);
-    const page = await unusedCanary({ only: null });
-    expect("verifiedUnusedSubstitutes" in (page.ingest.p_coverage as object)).toBe(false);
-    expect(canary.result.verdict).toBe("pass");
-  });
-
-  test("the player the database left out is reported, and the expected row count follows", async () => {
-    const { result } = await unusedCanary({ only: "9001", excluded: ["200"] });
-    expect(result).toMatchObject({
-      verdict: "pass",
-      fixtures: [
-        { fixtureExternalId: "9001", players: 23, excludedVerifiedUnusedUnmapped: ["200"] },
-      ],
-    });
-  });
-
-  test("a result that left out anyone not declared, or too many, or under adaptive scoring, is refused", async () => {
-    for (const excluded of [["100"], ["200", "201", "202"], ["200", "200"], "200", [200]]) {
-      const { result } = await unusedCanary({ only: "9001", excluded });
-      expect(result.verdict).toBe("incomplete");
-      expect(result.incomplete[0]).toMatchObject({
-        stage: "database",
-        code: "current_performance_reconciliation_failed",
-      });
-    }
-    const adaptive = await unusedCanary({ only: "9001", excluded: ["200"], adaptive: true });
-    expect(adaptive.result.verdict).toBe("incomplete");
-    // A silent exclusion is also refused: rows that are missing without a reported reason.
-    const silent = await unusedCanary({ only: "9001", excluded: [] });
-    expect(silent.result.verdict).toBe("pass");
-  });
-
-  test("diagnose lists the provider facts for every named player and writes nothing", async () => {
+  test("diagnose carries the evidence for every named player and writes nothing", async () => {
     const { client, calls } = batchClient({ items: [{ externalFixtureId: "9001" }] });
     const result = (await runCurrentPerformanceBatch(
       client,
       "t",
       null,
       async () => {
-        return twoUnused();
+        const payload = bench();
+        // A name and an unrelated field the provider might send: neither may appear.
+        (
+          payload.data.lineups[indexOf(HOME_BENCH)] as unknown as Record<string, unknown>
+        ).player_name = "Secret Name";
+        (payload.data as unknown as Record<string, unknown>).name = "Secret Match";
+        return payload;
       },
       { mode: "diagnose", onlyFixtureExternalId: "9001" },
     )) as unknown as {
       writesAttempted: boolean;
-      fixtures: Array<{
-        participation: LineupParticipation[];
-        verifiedUnusedSubstituteIds: string[];
-        lineup: unknown[];
-      }>;
+      fixtures: Array<{ participation: LineupParticipation[]; lineup: unknown[] }>;
     };
     expect(result.writesAttempted).toBe(false);
     expect(calls).toEqual(["football_current_performance_fixture_batch"]);
-    const fixtureEvidence = result.fixtures[0]!;
-    expect(fixtureEvidence.participation).toHaveLength(24);
-    expect(fixtureEvidence.verifiedUnusedSubstituteIds).toEqual(["200", "201"]);
+    const evidence = result.fixtures[0]!;
+    expect(evidence.participation).toHaveLength(24);
+    expect(evidence.participation.find((entry) => entry.externalPlayerId === "200")?.role).toBe(
+      "substitute",
+    );
     // The lineup list the owner already reads is unchanged.
-    expect(fixtureEvidence.lineup[0]).toEqual({
+    expect(evidence.lineup[0]).toEqual({
       externalPlayerId: "100",
       externalTeamId: "10",
       started: true,
     });
-    expect(JSON.stringify(fixtureEvidence)).not.toMatch(/name/i);
+    const text = JSON.stringify(result);
+    expect(text).not.toMatch(/Secret|player_name/);
+    for (const entry of evidence.participation)
+      expect(Object.keys(entry).sort()).toEqual([
+        "eventTypeIds",
+        "externalPlayerId",
+        "externalTeamId",
+        "officialMinutes",
+        "role",
+        "scoringStatisticTypeIds",
+        "unknownStatisticTypeIds",
+        "zeroStatisticTypeIds",
+      ]);
+  });
+
+  // Ingestion is exactly what it was: the database is called with the rows and the
+  // coverage the normalizer always produced, and nothing else.
+  const COVERAGE_KEYS = [
+    "absentStatisticsCountedAsZero",
+    "anonymousStarterRows",
+    "cleanSheetSource",
+    "detailRows",
+    "excludedIncompleteRows",
+    "goalkeeperStatistics",
+    "goalsConcededFromFinalScore",
+    "identifiedStarterRows",
+    "invalidDetailRows",
+    "lineupRowsSeen",
+    "missingStatisticRows",
+    "scoringStatisticsComplete",
+    "starterRows",
+    "teamCount",
+    "validPlayerRows",
+  ];
+  for (const [label, options] of [
+    ["a page", {}],
+    ["the orchestrator's pass", { mode: "ingest" as const }],
+    ["a one-fixture canary", { onlyFixtureExternalId: "9001" }],
+  ] as const)
+    test(`${label} calls the ingest function with the same arguments as before`, async () => {
+      const { client, received } = batchClient({ items: [{ externalFixtureId: "9001" }] });
+      const result = await runCurrentPerformanceBatch(
+        client,
+        "t",
+        null,
+        async () => bench(),
+        options,
+      );
+      const ingest = received.filter((args) => "p_rows" in args);
+      expect(ingest).toHaveLength(1);
+      const normalized = await normalizeCurrentFinishedFixture(bench(), 9001);
+      expect(Object.keys(ingest[0]!).sort()).toEqual([
+        "p_coverage",
+        "p_fixture_external_id",
+        "p_observed_at",
+        "p_provider_name",
+        "p_rows",
+        "p_season_external_id",
+      ]);
+      expect(ingest[0]!.p_rows).toEqual(normalized.rows);
+      expect(ingest[0]!.p_coverage).toEqual(normalized.coverage);
+      expect(Object.keys(ingest[0]!.p_coverage as object).sort()).toContain("validPlayerRows");
+      for (const key of Object.keys(ingest[0]!.p_coverage as object))
+        expect(COVERAGE_KEYS).toContain(key);
+      expect(JSON.stringify(ingest[0])).not.toMatch(/participation|verifiedUnused|eventTypeIds/);
+      expect(result).toMatchObject({ verdict: "pass", fixturesProcessed: 1 });
+      // The evidence of an ingest run has no participation field either.
+      expect(JSON.stringify(result)).not.toMatch(/participation/);
+    });
+
+  test("adaptive ingestion sends the same coverage plus only the adaptive evidence", async () => {
+    const { client, received } = batchClient({ items: [{ externalFixtureId: "9001" }] });
+    const wrapped = {
+      schema: (name: "api") => ({
+        rpc: async (rpcName: string, args: Record<string, unknown>) => {
+          const answer = await client.schema(name).rpc(rpcName, args);
+          return rpcName === "football_current_performance_fixture_batch"
+            ? { ...answer, data: { ...(answer.data as object), adaptive: true } }
+            : answer;
+        },
+      }),
+    };
+    await runCurrentPerformanceBatch(wrapped, "t", null, async () => bench(), {});
+    const coverage = received.find((args) => "p_rows" in args)!.p_coverage as Record<
+      string,
+      unknown
+    >;
+    expect(Object.keys(coverage).filter((key) => !COVERAGE_KEYS.includes(key))).toEqual([
+      "adaptiveFieldEvidence",
+    ]);
   });
 });

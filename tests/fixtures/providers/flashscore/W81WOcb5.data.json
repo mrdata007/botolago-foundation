@@ -1,0 +1,26 @@
+{
+  "DATA": {
+    "EVENT": {
+      "EVENT_ID": "W81WOcb5",
+      "START_UTIME": 1790532000,
+      "STAGE": "FINISHED",
+      "ROUND": "Round 1",
+      "HOME_NAME": "Maghreb Fez",
+      "AWAY_NAME": "Renaissance Zemamra",
+      "HOME_PARTICIPANT_IDS": [
+        "ptdhYAkN"
+      ],
+      "AWAY_PARTICIPANT_IDS": [
+        "M50CklHf"
+      ],
+      "HOME_SCORE_FULL": 2,
+      "AWAY_SCORE_FULL": 1
+    },
+    "TOURNAMENT": {
+      "NAME": "Morocco: Botola Pro",
+      "TOURNAMENT_ID": "CGClceUj",
+      "TOURNAMENT_STAGE_ID": "GKXUiwEl",
+      "TOURNAMENT_SEASON_ID": "CGClceUj"
+    }
+  }
+}

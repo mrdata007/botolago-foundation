@@ -54,19 +54,18 @@ const MINUTES = 119;
  */
 const ON_PITCH_TYPES = [52, 57, 79, 112, 113, 324] as const;
 /**
- * What a substitute's provider facts must NOT contain for him to count as
- * unused: goals 52, saves 57, assists 79, red 83, yellow 84, second yellow 85,
+ * Statistic types whose value above zero shows a player was on the pitch or
+ * scored: goals 52, saves 57, assists 79, red 83, yellow 84, second yellow 85,
  * goals conceded 88, penalties missed 112 and saved 113, rating 118, own goals
- * 324. A value above zero on any of them is a sign he played or scored.
+ * 324. Diagnostics only: nothing here changes what is ingested.
  */
 const PARTICIPATION_SCORING_TYPES = [52, 57, 79, 83, 84, 85, 88, 112, 113, 118, 324] as const;
-/** An explicit null here is "unknown", which is never zero. */
+/** An explicit null on these goalkeeper statistics is "unknown", which is never zero. */
 const PARTICIPATION_UNKNOWN_TYPES = [57, 113] as const;
-/** Evidence only: the most the database accepts in one declaration. */
-const MAX_VERIFIED_UNUSED_DECLARATIONS = 40;
 /**
- * One lineup player's provider facts, by provider ids and type ids only (no
- * names, no raw payload): enough to show whether he was an unused substitute.
+ * One named lineup player's provider facts, by provider ids and type ids only
+ * (no names, no raw payload). Read-only evidence for the diagnose run: it is
+ * never sent to the database.
  */
 export type LineupParticipation = {
   externalPlayerId: string;
@@ -287,28 +286,6 @@ function unidentifiedLineupRow(lineup: Row, path: string): UnidentifiedLineupRow
   };
 }
 
-/** The substitutes whose provider facts show them unused (see the return of the normalizer). */
-export function verifiedUnusedDeclarations(participation: LineupParticipation[]): Row[] {
-  const unused = participation.filter(
-    (player) =>
-      player.role === "substitute" &&
-      (player.officialMinutes ?? 0) === 0 &&
-      player.scoringStatisticTypeIds.length === 0 &&
-      player.unknownStatisticTypeIds.length === 0 &&
-      player.eventTypeIds.length === 0,
-  );
-  if (unused.length > MAX_VERIFIED_UNUSED_DECLARATIONS) return [];
-  return unused.map((player) => ({
-    externalPlayerId: player.externalPlayerId,
-    externalTeamId: player.externalTeamId,
-    role: "substitute",
-    officialMinutes: player.officialMinutes,
-    scoringStatisticTypeIds: [],
-    unknownStatisticTypeIds: [],
-    zeroStatisticTypeIds: player.zeroStatisticTypeIds,
-  }));
-}
-
 export async function normalizeCurrentFinishedFixture(payload: unknown, expectedFixtureId: number) {
   const fixture = row(row(payload, "$").data, "data");
   if (
@@ -525,7 +502,7 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
       substituteRowsWithoutMinutes: benchOnPitchWithoutMinutes,
     });
   // The provider's own match events that name a player (a goal, a card, a
-  // substitution): a substitute any of them names is never called unused.
+  // substitution), by type id only.
   if (Array.isArray(fixture.events)) {
     for (const raw of fixture.events) {
       if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
@@ -681,16 +658,8 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     },
     /** Evidence only: which rows were left out, and where they sit in the payload. */
     unnamedRows: unidentified,
-    /** Evidence only: each named lineup player's provider facts, ids and type ids only. */
+    /** Diagnose evidence only: each named lineup player's provider facts. Never sent to the database. */
     participation,
-    /**
-     * Substitutes the provider shows as unused: not a starter, no official
-     * minutes, no scoring-relevant statistic with a value, no unknown one, and
-     * named by no match event. Sent beside the coverage, never inside it; the
-     * database alone decides whether anyone is left out (only a player it
-     * cannot place at all), and a fixture that leaves nobody out is unchanged.
-     */
-    verifiedUnusedSubstitutes: verifiedUnusedDeclarations(participation),
   };
 }
 
@@ -978,13 +947,10 @@ export async function runCurrentPerformanceBatch(
           externalTeamId: player.externalTeamId,
           started: player.started,
         })),
-        // Provider facts by id and type id only (no names): whether each named
-        // player started, his official minutes, and which scoring-relevant
-        // statistics and match events carry him. Read-only evidence.
+        // Provider facts by id and type id only (no names): role, official minutes,
+        // which scoring-relevant statistics carry a value, which are unknown, which
+        // are an explicit zero, and which match events name the player.
         participation: fixture.participation,
-        verifiedUnusedSubstituteIds: fixture.verifiedUnusedSubstitutes.map(
-          (declaration) => declaration.externalPlayerId,
-        ),
       })),
       incomplete,
       ...page,
@@ -993,9 +959,6 @@ export async function runCurrentPerformanceBatch(
 
   const fixtures: Row[] = [];
   const observedAt = new Date().toISOString();
-  // The declaration goes to the database only on a one-fixture canary: a page or an
-  // orchestrator pass never sends it, so every other fixture's call, and its source
-  // version, is exactly what it was before this rule existed.
   for (const fixture of normalized) {
     try {
       const result = row(
@@ -1007,34 +970,13 @@ export async function runCurrentPerformanceBatch(
           p_coverage:
             batch.adaptive === true
               ? { ...fixture.coverage, adaptiveFieldEvidence: fixture.adaptiveFieldEvidence }
-              : only !== null && fixture.verifiedUnusedSubstitutes.length > 0
-                ? {
-                    ...fixture.coverage,
-                    verifiedUnusedSubstitutes: fixture.verifiedUnusedSubstitutes,
-                  }
-                : fixture.coverage,
+              : fixture.coverage,
           p_observed_at: observedAt,
         }),
         "result",
       );
-      // Players the database left out because it cannot place them, each of
-      // whom this importer declared as verified unused: never anyone else.
-      const left = result.excludedVerifiedUnusedUnmapped;
-      const declaredIds = new Set(
-        fixture.verifiedUnusedSubstitutes.map((declaration) => declaration.externalPlayerId),
-      );
       if (
-        left !== undefined &&
-        (batch.adaptive === true ||
-          !Array.isArray(left) ||
-          left.length > 2 ||
-          new Set(left).size !== left.length ||
-          left.some((leftId) => typeof leftId !== "string" || !declaredIds.has(leftId)))
-      )
-        fail("current_performance_reconciliation_failed");
-      const leftOut = Array.isArray(left) ? left.length : 0;
-      if (
-        result.active !== fixture.rows.length - leftOut ||
+        result.active !== fixture.rows.length ||
         result.reconciled !== true ||
         (result.scoringStatisticsComplete !== true && result.adaptive !== true) ||
         typeof result.sourceVersion !== "string" ||
@@ -1054,7 +996,6 @@ export async function runCurrentPerformanceBatch(
         sourceVersion: result.sourceVersion,
         coverage: fixture.coverage,
         ...(fixture.unnamedRows.length ? { unnamedRows: fixture.unnamedRows } : {}),
-        ...(leftOut > 0 ? { excludedVerifiedUnusedUnmapped: left } : {}),
       });
     } catch (error) {
       incomplete.push({

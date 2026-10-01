@@ -1,0 +1,26 @@
+{
+  "DATA": {
+    "EVENT": {
+      "EVENT_ID": "0rrduJrn",
+      "START_UTIME": 1790280000,
+      "STAGE": "FINISHED",
+      "ROUND": "Round 1",
+      "HOME_NAME": "Amal Tiznit",
+      "AWAY_NAME": "IR Tanger",
+      "HOME_PARTICIPANT_IDS": [
+        "Q1Nl5eWC"
+      ],
+      "AWAY_PARTICIPANT_IDS": [
+        "xUZ5xVki"
+      ],
+      "HOME_SCORE_FULL": 1,
+      "AWAY_SCORE_FULL": 3
+    },
+    "TOURNAMENT": {
+      "NAME": "Morocco: Botola Pro",
+      "TOURNAMENT_ID": "CGClceUj",
+      "TOURNAMENT_STAGE_ID": "GKXUiwEl",
+      "TOURNAMENT_SEASON_ID": "CGClceUj"
+    }
+  }
+}

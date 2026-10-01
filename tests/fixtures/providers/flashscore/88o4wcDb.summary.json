@@ -1,0 +1,298 @@
+{
+  "DATA": [
+    {
+      "STAGE_NAME": "1st Half",
+      "RESULT_HOME": "2",
+      "RESULT_AWAY": "0",
+      "ITEMS": [
+        {
+          "INCIDENT_ID": "GOx4OUcC",
+          "INCIDENT_TEAM": 1,
+          "INCIDENT_TIME": "12'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "GOAL",
+              "INCIDENT_NAME": "Goal",
+              "PARTICIPANT_NAME": "Ajerrar A.",
+              "PARTICIPANT_ID": "C4iGf8t2",
+              "HOME_SCORE": "1",
+              "AWAY_SCORE": "0"
+            },
+            {
+              "INCIDENT_TYPE": "ASSISTANCE",
+              "INCIDENT_NAME": "Assistance",
+              "PARTICIPANT_NAME": "Kajai Y.",
+              "PARTICIPANT_ID": "hUeu7ybK"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "KdiZAcl2",
+          "INCIDENT_TEAM": 1,
+          "INCIDENT_TIME": "21'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "YELLOW_CARD",
+              "INCIDENT_NAME": "Yellow Card",
+              "PARTICIPANT_NAME": "Regragui H.",
+              "PARTICIPANT_ID": "tnZ20jB7"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "UZhYl6I7",
+          "INCIDENT_TEAM": 1,
+          "INCIDENT_TIME": "28'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "GOAL",
+              "INCIDENT_NAME": "Goal",
+              "PARTICIPANT_NAME": "Lotfi S.",
+              "PARTICIPANT_ID": "2P6FH20M",
+              "HOME_SCORE": "2",
+              "AWAY_SCORE": "0"
+            },
+            {
+              "INCIDENT_TYPE": "ASSISTANCE",
+              "INCIDENT_NAME": "Assistance",
+              "PARTICIPANT_NAME": "Ait Lamkadem R.",
+              "PARTICIPANT_ID": "8Wpl5TyG"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "l6h9thBj",
+          "INCIDENT_TEAM": 2,
+          "INCIDENT_TIME": "34'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "YELLOW_CARD",
+              "INCIDENT_NAME": "Yellow Card",
+              "PARTICIPANT_NAME": "Bakhkhach M.",
+              "PARTICIPANT_ID": "Kfr4Uw45"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "SxDM5Xse",
+          "INCIDENT_TEAM": 2,
+          "INCIDENT_TIME": "41'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_OUT",
+              "INCIDENT_NAME": "Substitution - Out",
+              "PARTICIPANT_NAME": "Moutaraji I.",
+              "PARTICIPANT_ID": "hWfHzfrt"
+            },
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_IN",
+              "INCIDENT_NAME": "Substitution - In",
+              "PARTICIPANT_NAME": "Faidi C.",
+              "PARTICIPANT_ID": "SYfsMw6n"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "STAGE_NAME": "2nd Half",
+      "RESULT_HOME": "0",
+      "RESULT_AWAY": "1",
+      "ITEMS": [
+        {
+          "INCIDENT_ID": "SrUvQu7K",
+          "INCIDENT_TEAM": 1,
+          "INCIDENT_TIME": "59'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_OUT",
+              "INCIDENT_NAME": "Substitution - Out",
+              "PARTICIPANT_NAME": "Ajerrar A.",
+              "PARTICIPANT_ID": "C4iGf8t2"
+            },
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_IN",
+              "INCIDENT_NAME": "Substitution - In",
+              "PARTICIPANT_NAME": "Moustaghfir N.",
+              "PARTICIPANT_ID": "UDJ9aI0S"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "dEhTTrPh",
+          "INCIDENT_TEAM": 1,
+          "INCIDENT_TIME": "59'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_OUT",
+              "INCIDENT_NAME": "Substitution - Out",
+              "PARTICIPANT_NAME": "Regragui H.",
+              "PARTICIPANT_ID": "tnZ20jB7"
+            },
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_IN",
+              "INCIDENT_NAME": "Substitution - In",
+              "PARTICIPANT_NAME": "Douieb I.",
+              "PARTICIPANT_ID": "8jeKcs9j"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "C8ygunnC",
+          "INCIDENT_TEAM": 1,
+          "INCIDENT_TIME": "59'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_OUT",
+              "INCIDENT_NAME": "Substitution - Out",
+              "PARTICIPANT_NAME": "Nanah A.",
+              "PARTICIPANT_ID": "ENnRDcAC"
+            },
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_IN",
+              "INCIDENT_NAME": "Substitution - In",
+              "PARTICIPANT_NAME": "Chaynane A.",
+              "PARTICIPANT_ID": "4W9zY5jn"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "OlzyROOH",
+          "INCIDENT_TEAM": 2,
+          "INCIDENT_TIME": "70'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "PENALTY_KICK",
+              "INCIDENT_NAME": "Penalty Awarded",
+              "PARTICIPANT_NAME": "Lahtimi M.",
+              "PARTICIPANT_ID": "lhTF6Kpn"
+            },
+            {
+              "INCIDENT_TYPE": "PENALTY_SCORED",
+              "INCIDENT_NAME": "Penalty",
+              "PARTICIPANT_NAME": "Lahtimi M.",
+              "PARTICIPANT_ID": "lhTF6Kpn",
+              "HOME_SCORE": "2",
+              "AWAY_SCORE": "1"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "r5oFZmz2",
+          "INCIDENT_TEAM": 1,
+          "INCIDENT_TIME": "73'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "YELLOW_CARD",
+              "INCIDENT_NAME": "Yellow Card",
+              "PARTICIPANT_NAME": "Rhailouf W.",
+              "PARTICIPANT_ID": "GhxoOstL"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "CGagtghA",
+          "INCIDENT_TEAM": 1,
+          "INCIDENT_TIME": "73'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_OUT",
+              "INCIDENT_NAME": "Substitution - Out",
+              "PARTICIPANT_NAME": "Ashabi M.",
+              "PARTICIPANT_ID": "nusnqK1F"
+            },
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_IN",
+              "INCIDENT_NAME": "Substitution - In",
+              "PARTICIPANT_NAME": "Danny",
+              "PARTICIPANT_ID": "f33B3Jdn"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "EXHdNNv2",
+          "INCIDENT_TEAM": 2,
+          "INCIDENT_TIME": "75'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_OUT",
+              "INCIDENT_NAME": "Substitution - Out",
+              "PARTICIPANT_NAME": "Ferdaoussi H.",
+              "PARTICIPANT_ID": "M1QRYd5d"
+            },
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_IN",
+              "INCIDENT_NAME": "Substitution - In",
+              "PARTICIPANT_NAME": "Tazi S.",
+              "PARTICIPANT_ID": "Y7ZKkYvM"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "pQwO2jbB",
+          "INCIDENT_TEAM": 2,
+          "INCIDENT_TIME": "75'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_OUT",
+              "INCIDENT_NAME": "Substitution - Out",
+              "PARTICIPANT_NAME": "Bakhkhach M.",
+              "PARTICIPANT_ID": "Kfr4Uw45"
+            },
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_IN",
+              "INCIDENT_NAME": "Substitution - In",
+              "PARTICIPANT_NAME": "Ferhane M.",
+              "PARTICIPANT_ID": "rDDfKMJc"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "juxL527M",
+          "INCIDENT_TEAM": 2,
+          "INCIDENT_TIME": "78'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "YELLOW_CARD",
+              "INCIDENT_NAME": "Yellow Card",
+              "PARTICIPANT_NAME": "Ferhane M.",
+              "PARTICIPANT_ID": "rDDfKMJc"
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "4bGk4UP6",
+          "INCIDENT_TEAM": 1,
+          "INCIDENT_TIME": "83'",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_OUT",
+              "INCIDENT_NAME": "Substitution - Out",
+              "PARTICIPANT_NAME": "Akharraz Y.",
+              "PARTICIPANT_ID": "WKliejA7"
+            },
+            {
+              "INCIDENT_TYPE": "SUBSTITUTION_IN",
+              "INCIDENT_NAME": "Substitution - In",
+              "PARTICIPANT_NAME": "Mellouk W."
+            }
+          ]
+        },
+        {
+          "INCIDENT_ID": "OfHJFeyR",
+          "INCIDENT_TEAM": 1,
+          "INCIDENT_TIME": "90+4'",
+          "ADDED_TIME": "4",
+          "INCIDENT_PARTICIPANTS": [
+            {
+              "INCIDENT_TYPE": "YELLOW_CARD",
+              "INCIDENT_NAME": "Yellow Card",
+              "PARTICIPANT_NAME": "Chaynane A.",
+              "PARTICIPANT_ID": "4W9zY5jn"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

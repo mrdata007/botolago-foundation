@@ -1,0 +1,271 @@
+{
+  "incidents": [
+    {
+      "incidentType": "period",
+      "time": 90,
+      "addedTime": 999,
+      "text": "FT",
+      "homeScore": 1,
+      "awayScore": 3
+    },
+    {
+      "id": 126928771,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 90,
+      "isHome": false,
+      "playerIn": {
+        "id": 1919291,
+        "name": "Akram El Wahabi",
+        "shortName": "A. E. Wahabi"
+      },
+      "playerOut": {
+        "id": 919474,
+        "name": "Saad Ait Khorsa",
+        "shortName": "S. A. Khorsa"
+      }
+    },
+    {
+      "id": 126928770,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 85,
+      "isHome": false,
+      "playerIn": {
+        "id": 281093,
+        "name": "Soufyan Ahannach",
+        "shortName": "S. Ahannach"
+      },
+      "playerOut": {
+        "id": 1525285,
+        "name": "Abdel Hamid Maali",
+        "shortName": "A. H. Maali"
+      }
+    },
+    {
+      "id": 125661263,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 77,
+      "isHome": true,
+      "rescinded": false,
+      "player": {
+        "id": 2600941,
+        "name": "Abdellatif Ait Ouaarab",
+        "shortName": "A. A. Ouaarab"
+      }
+    },
+    {
+      "id": 126928774,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 74,
+      "isHome": true,
+      "playerIn": {
+        "id": 1632047,
+        "name": "Younes Sakhi",
+        "shortName": "Y. Sakhi"
+      },
+      "playerOut": {
+        "id": 2600944,
+        "name": "Zakaria Essalhi",
+        "shortName": "Z. Essalhi"
+      }
+    },
+    {
+      "id": 125661262,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 74,
+      "isHome": false,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 1126845,
+        "name": "Achraf Laaziri",
+        "shortName": "A. Laaziri"
+      }
+    },
+    {
+      "id": 126928769,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 71,
+      "isHome": false,
+      "playerIn": {
+        "id": 2451593,
+        "name": "Akram Tali",
+        "shortName": "A. Tali"
+      },
+      "playerOut": {
+        "id": 981300,
+        "name": "Ennaama El Bellali",
+        "shortName": "E. E. Bellali"
+      }
+    },
+    {
+      "id": 126928768,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 71,
+      "isHome": false,
+      "playerIn": {
+        "id": 1049187,
+        "name": "Mohamed El Arouch",
+        "shortName": "M. E. Arouch"
+      },
+      "playerOut": {
+        "id": 1186787,
+        "name": "Youness Najari",
+        "shortName": "Y. Najari"
+      }
+    },
+    {
+      "id": 126928773,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 60,
+      "isHome": true,
+      "playerIn": {
+        "id": 919491,
+        "name": "Othman Fadiz",
+        "shortName": "O. Fadiz"
+      },
+      "playerOut": {
+        "id": 1461306,
+        "name": "Mouad Goulouss",
+        "shortName": "M. Goulouss"
+      }
+    },
+    {
+      "id": 126928772,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 60,
+      "isHome": true,
+      "playerIn": {
+        "id": 365552,
+        "name": "Saliu Popoola",
+        "shortName": "S. Popoola"
+      },
+      "playerOut": {
+        "id": 884821,
+        "name": "Youssef Anouar",
+        "shortName": "Y. Anouar"
+      }
+    },
+    {
+      "id": 363185624,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 54,
+      "isHome": false,
+      "homeScore": 1,
+      "awayScore": 3,
+      "player": {
+        "id": 2137652,
+        "name": "Ibrahima Dieng",
+        "shortName": "I. Dieng"
+      },
+      "assist1": {
+        "id": 1186787,
+        "name": "Youness Najari",
+        "shortName": "Y. Najari"
+      }
+    },
+    {
+      "id": 125661261,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 52,
+      "isHome": true,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 1140914,
+        "name": "Ayoub Adila",
+        "shortName": "A. Adila"
+      }
+    },
+    {
+      "id": 125661260,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 49,
+      "isHome": false,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 981300,
+        "name": "Ennaama El Bellali",
+        "shortName": "E. E. Bellali"
+      }
+    },
+    {
+      "id": 363185623,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 47,
+      "isHome": false,
+      "homeScore": 1,
+      "awayScore": 2,
+      "player": {
+        "id": 1525285,
+        "name": "Abdel Hamid Maali",
+        "shortName": "A. H. Maali"
+      },
+      "assist1": {
+        "id": 1186787,
+        "name": "Youness Najari",
+        "shortName": "Y. Najari"
+      }
+    },
+    {
+      "incidentType": "period",
+      "time": 45,
+      "addedTime": 999,
+      "text": "HT",
+      "homeScore": 1,
+      "awayScore": 1
+    },
+    {
+      "id": 363185622,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 45,
+      "addedTime": 1,
+      "isHome": true,
+      "homeScore": 1,
+      "awayScore": 1,
+      "player": {
+        "id": 1140925,
+        "name": "Soufiane El Azhari",
+        "shortName": "S. E. Azhari"
+      },
+      "assist1": {
+        "id": 1140914,
+        "name": "Ayoub Adila",
+        "shortName": "A. Adila"
+      }
+    },
+    {
+      "id": 363185621,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 9,
+      "isHome": false,
+      "homeScore": 0,
+      "awayScore": 1,
+      "player": {
+        "id": 919474,
+        "name": "Saad Ait Khorsa",
+        "shortName": "S. A. Khorsa"
+      },
+      "assist1": {
+        "id": 1525285,
+        "name": "Abdel Hamid Maali",
+        "shortName": "A. H. Maali"
+      }
+    }
+  ]
+}

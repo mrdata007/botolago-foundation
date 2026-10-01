@@ -120,6 +120,9 @@ export const newsTeamFilterSchema = z.object({
   code: z.string().nullable(),
   primaryColor: z.string().nullable(),
   secondaryColor: z.string().nullable(),
+  // Optional so a database that has not yet had the crest migration still parses.
+  crestUrl: z.string().nullable().optional(),
+  crestPath: z.string().nullable().optional(),
 });
 export type NewsTeamFilterDto = z.infer<typeof newsTeamFilterSchema>;
 
