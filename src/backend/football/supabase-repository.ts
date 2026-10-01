@@ -1,5 +1,6 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { z } from "zod";
+import { moroccoDayBounds } from "@/lib/morocco-time";
 import { getFootballApi } from "@/integrations/supabase/v2-client";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import { postgresUuidSchema } from "@/backend/contracts/validation";
@@ -182,6 +183,7 @@ export class SupabaseFootballRepository implements FootballRepository {
         p_date: input.date,
         p_language: input.language,
         p_timezone: input.timezone ?? "Africa/Casablanca",
+        ...matchDayRange(input),
         p_statuses: input.statuses ? [...input.statuses] : undefined,
         p_competition_id: input.competitionId ?? undefined,
         p_season_id: input.seasonId ? requireUuid(input.seasonId) : undefined,
@@ -473,4 +475,20 @@ export class SupabaseFootballRepository implements FootballRepository {
     throwIfError(error);
     return parse(z.array(availabilitySchema), data);
   }
+}
+
+/**
+ * The day's exact start and end, in UTC, when the day is a Moroccan one. The
+ * database then only compares instants and never uses its own time-zone data
+ * (which can lag behind Morocco's clock). Another zone keeps the old date and
+ * zone path.
+ */
+export function matchDayRange(input: Pick<MatchesByDateInput, "date" | "timezone">): {
+  p_range_start?: string;
+  p_range_end?: string;
+} {
+  if ((input.timezone ?? "Africa/Casablanca") !== "Africa/Casablanca") return {};
+  const bounds = moroccoDayBounds(input.date);
+  if (!bounds) return {};
+  return { p_range_start: bounds.start.toISOString(), p_range_end: bounds.end.toISOString() };
 }
