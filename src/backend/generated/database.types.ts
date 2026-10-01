@@ -1094,6 +1094,8 @@ export type Database = {
           p_date: string
           p_language?: string
           p_limit?: number
+          p_range_end?: string
+          p_range_start?: string
           p_season_id?: string
           p_statuses?: string[]
           p_timezone?: string
