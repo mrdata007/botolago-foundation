@@ -285,6 +285,7 @@ function presentTeam(team: NewsTeamFilterDto): Club {
     primaryColor: team.primaryColor ?? "#0a2540",
     secondaryColor: team.secondaryColor ?? undefined,
     crestPlaceholder: team.code ?? team.shortName.slice(0, 3).toUpperCase(),
+    crestUrl: resolveMediaUrl({ sourceUrl: team.crestUrl, storagePath: team.crestPath }),
   };
 }
 
