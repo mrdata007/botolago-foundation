@@ -198,6 +198,7 @@ export const fr = {
   "matches.section.upcoming": "À venir",
   "matches.section.finished": "Résultats",
   "matches.section.no_matches_today": "Aucun match programmé à cette date.",
+  "matches.empty.next": "Prochains matchs : {date}",
   "matches.section.no_live": "Aucun match en direct pour le moment.",
   "matches.section.no_upcoming": "Aucun match à venir.",
   "matches.section.no_finished": "Aucun résultat pour l'instant.",

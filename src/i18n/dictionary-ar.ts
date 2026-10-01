@@ -190,6 +190,7 @@ export const ar = {
   "matches.section.upcoming": "المباريات القادمة",
   "matches.section.finished": "النتائج",
   "matches.section.no_matches_today": "لا توجد مباريات في هذا التاريخ.",
+  "matches.empty.next": "المباريات القادمة: {date}",
   "matches.section.no_live": "لا توجد مباريات مباشرة حالياً.",
   "matches.section.no_upcoming": "لا توجد مباريات قادمة.",
   "matches.section.no_finished": "لا توجد نتائج بعد.",
