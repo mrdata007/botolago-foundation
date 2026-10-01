@@ -16,6 +16,8 @@ export interface ProviderIdCheck {
   readonly idsInMultipleClubs: readonly {
     readonly externalPlayerId: string;
     readonly clubKeys: readonly string[];
+    /** The clubs whose squad lists him although the provider registers him to another team. */
+    readonly registeredElsewhereIn: readonly string[];
   }[];
   /** Of those, the ones whose attributes differ between the clubs' entries. */
   readonly conflictingAttributes: readonly string[];
@@ -41,14 +43,22 @@ export function checkProviderIds(squads: readonly ProviderSquad[]): IdChecks {
   const byProvider = {} as Record<ProviderName, ProviderIdCheck>;
   for (const provider of ["sofascore", "flashscore"] as const) {
     const own = squads.filter((squad) => squad.provider === provider);
-    const seen = new Map<string, { clubKeys: string[]; attributes: Set<string> }>();
+    const seen = new Map<
+      string,
+      { clubKeys: string[]; elsewhere: string[]; attributes: Set<string> }
+    >();
     const duplicates: { clubKey: string; externalPlayerId: string }[] = [];
     for (const squad of own) {
       for (const id of squad.diagnostics.duplicateIds)
         duplicates.push({ clubKey: squad.clubKey, externalPlayerId: id });
       for (const player of squad.players) {
-        const entry = seen.get(player.externalPlayerId) ?? { clubKeys: [], attributes: new Set() };
+        const entry = seen.get(player.externalPlayerId) ?? {
+          clubKeys: [],
+          elsewhere: [],
+          attributes: new Set(),
+        };
         entry.clubKeys.push(squad.clubKey);
+        if (player.registeredTeamDisagreement) entry.elsewhere.push(squad.clubKey);
         entry.attributes.add(attributesOf(player));
         seen.set(player.externalPlayerId, entry);
       }
@@ -61,6 +71,7 @@ export function checkProviderIds(squads: readonly ProviderSquad[]): IdChecks {
       idsInMultipleClubs: multiple.map(([externalPlayerId, entry]) => ({
         externalPlayerId,
         clubKeys: entry.clubKeys,
+        registeredElsewhereIn: entry.elsewhere,
       })),
       conflictingAttributes: multiple
         .filter(([, entry]) => entry.attributes.size > 1)

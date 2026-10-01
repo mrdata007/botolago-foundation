@@ -56,7 +56,7 @@ describe("provider id checks", () => {
     const result = checkProviderIds([squad("a", ["1", "2"]), squad("b", ["2", "3"])]);
     expect(result.conclusion).toBe("PROVIDER_ID_COLLISION_NEEDS_REVIEW");
     expect(result.byProvider.sofascore.idsInMultipleClubs).toEqual([
-      { externalPlayerId: "2", clubKeys: ["a", "b"] },
+      { externalPlayerId: "2", clubKeys: ["a", "b"], registeredElsewhereIn: [] },
     ]);
     expect(result.byProvider.sofascore.conflictingAttributes).toEqual([]);
   });
@@ -92,5 +92,12 @@ describe("provider id checks", () => {
       "NO_CURRENT_SNAPSHOT_COLLISION_OBSERVED",
       "PROVIDER_ID_COLLISION_NEEDS_REVIEW",
     ]).toContain(result.conclusion);
+  });
+
+  test("says which squad lists the id although the provider registers him elsewhere", () => {
+    const a = squad("a", ["2"]);
+    const b = squad("b", ["2"], {}, { registeredTeamDisagreement: true });
+    const result = checkProviderIds([a, b]);
+    expect(result.byProvider.sofascore.idsInMultipleClubs[0]?.registeredElsewhereIn).toEqual(["b"]);
   });
 });
