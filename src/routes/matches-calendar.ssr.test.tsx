@@ -345,7 +345,9 @@ describe("/matches rows and the live strip (A05)", () => {
    * strip, higher on the page, links to the same match; the row is the last.
    */
   const rowLabel = (html: string) =>
-    [...html.matchAll(/<a aria-label="([^"]*)" href="\/matches\/7b1f2c3d[^"]*"/g)].at(-1)?.[1];
+    [...html.matchAll(/<a aria-label="([^"]*)"[^>]*? href="\/matches\/7b1f2c3d[^"]*"/g)].at(
+      -1,
+    )?.[1];
 
   test("a row shows the strip's newer reading of its match, and the day's when that is newer", async () => {
     stubFootball();
