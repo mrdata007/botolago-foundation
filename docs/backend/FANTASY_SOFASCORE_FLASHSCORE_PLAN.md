@@ -154,6 +154,14 @@ test expectations:
 **Phase 3 — Dropped.** Ruleset v2.2 is not published (D2 = B). Next phase
 after 2 is Phase 4.
 
+**Before Phase 4 — Player mapping.** The player ID mapping table and its admin
+review screen come first (design:
+[`FANTASY_PLAYER_MAPPING_TABLE_AND_REVIEW_SCREEN_DESIGN.md`](FANTASY_PLAYER_MAPPING_TABLE_AND_REVIEW_SCREEN_DESIGN.md)).
+The owner decisions are recorded in section 0 of that design (two-person approval for
+every mapping and for "not a Botola player", at least two distinct reviewers, 90-day
+retention of provider display names only). It needs its own PRs; Phase 4 does not start
+before the reconciler can take the mapping as input.
+
 **Phase 4 — Ingestion worker (staging only).** Edge function or script that,
 for each finished Botola fixture, pulls both sources at +2 h and +11 h after
 full time (before the +12 h mode lock), records observations through

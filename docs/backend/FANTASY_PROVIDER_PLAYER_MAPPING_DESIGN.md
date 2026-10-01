@@ -5,6 +5,9 @@ Design only. No migration, no database write, no code in this document's PR.
 with a unique timestamp, staging first, one writer per database, production only
 through the owner-run path).
 
+The table, its proposal flow, the approval rules and the admin review screen are
+designed in [`FANTASY_PLAYER_MAPPING_TABLE_AND_REVIEW_SCREEN_DESIGN.md`](FANTASY_PLAYER_MAPPING_TABLE_AND_REVIEW_SCREEN_DESIGN.md).
+
 ## The problem
 
 The reconciler (`src/backend/fantasy/provider-reconciler.ts`) has to know that a
