@@ -1,0 +1,30 @@
+{
+  "statistics": [
+    {
+      "period": "ALL",
+      "groups": [
+        {
+          "groupName": "Match overview",
+          "statisticsItems": [
+            {
+              "key": "yellowCards",
+              "name": "Yellow cards",
+              "home": "2",
+              "away": "2",
+              "homeValue": 2,
+              "awayValue": 2
+            },
+            {
+              "key": "redCards",
+              "name": "Red cards",
+              "home": "0",
+              "away": "0",
+              "homeValue": 0,
+              "awayValue": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

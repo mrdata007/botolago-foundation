@@ -1,0 +1,258 @@
+{
+  "incidents": [
+    {
+      "incidentType": "period",
+      "time": 90,
+      "addedTime": 999,
+      "text": "FT",
+      "homeScore": 1,
+      "awayScore": 0
+    },
+    {
+      "id": 125307555,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 90,
+      "addedTime": 6,
+      "isHome": true,
+      "rescinded": false,
+      "player": {
+        "id": 1010890,
+        "name": "Hamid Ahdad",
+        "shortName": "H. Ahaddad"
+      }
+    },
+    {
+      "id": 352536068,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 90,
+      "addedTime": 2,
+      "isHome": true,
+      "homeScore": 1,
+      "awayScore": 0,
+      "player": {
+        "id": 1013197,
+        "name": "Jalal Tachtach",
+        "shortName": "J. Tachtach"
+      }
+    },
+    {
+      "id": 126421514,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 80,
+      "isHome": false,
+      "playerIn": {
+        "id": 2162075,
+        "name": "Saad Lotfi",
+        "shortName": "S. Lotfi"
+      },
+      "playerOut": {
+        "id": 893191,
+        "name": "Mohamed Fouzair",
+        "shortName": "M. Fouzair"
+      }
+    },
+    {
+      "id": 126421509,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 75,
+      "isHome": true,
+      "playerIn": {
+        "id": 1004511,
+        "name": "Youssef Arbidi",
+        "shortName": "Y. Arbidi"
+      },
+      "playerOut": {
+        "id": 1140891,
+        "name": "Abderrahmane Qassaq",
+        "shortName": "A. Qassaq"
+      }
+    },
+    {
+      "id": 126421508,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 75,
+      "isHome": true,
+      "playerIn": {
+        "id": 1597138,
+        "name": "Mohamed Amine Katiba",
+        "shortName": "M. A. Katiba"
+      },
+      "playerOut": {
+        "id": 1525286,
+        "name": "Abdellah Ait Brayim",
+        "shortName": "A. A. Brayim"
+      }
+    },
+    {
+      "id": 126421513,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 67,
+      "isHome": false,
+      "playerIn": {
+        "id": 1606003,
+        "name": "Hossam Essadak",
+        "shortName": "H. Essadak"
+      },
+      "playerOut": {
+        "id": 359284,
+        "name": "Omar Arjoune",
+        "shortName": "O. Arjoune"
+      }
+    },
+    {
+      "id": 126421512,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 67,
+      "isHome": false,
+      "playerIn": {
+        "id": 1021138,
+        "name": "Mohamed Amine Essahel",
+        "shortName": "M. A. Essahel"
+      },
+      "playerOut": {
+        "id": 919783,
+        "name": "Hamza Regragui",
+        "shortName": "H. Regragui"
+      }
+    },
+    {
+      "id": 126421507,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 63,
+      "isHome": true,
+      "playerIn": {
+        "id": 1655428,
+        "name": "Ismail Hrila",
+        "shortName": "I. Hrila"
+      },
+      "playerOut": {
+        "id": 2417446,
+        "name": "Ayoub Sahnoune",
+        "shortName": "A. Sahnoune"
+      }
+    },
+    {
+      "id": 126421506,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 63,
+      "isHome": true,
+      "playerIn": {
+        "id": 1182631,
+        "name": "Fahd Bendahmane",
+        "shortName": "F. Bendahmane"
+      },
+      "playerOut": {
+        "id": 879566,
+        "name": "Mohamed Ounajem",
+        "shortName": "M. Ounajem"
+      }
+    },
+    {
+      "id": 125307553,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 54,
+      "isHome": true,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 1592863,
+        "name": "Assane Beye",
+        "shortName": "A. Beye"
+      }
+    },
+    {
+      "id": 126421511,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 46,
+      "isHome": false,
+      "playerIn": {
+        "id": 1392556,
+        "name": "Youness Akharraz",
+        "shortName": "Y. Akharraz"
+      },
+      "playerOut": {
+        "id": 2077076,
+        "name": "Taha Majni",
+        "shortName": "T. Majni"
+      }
+    },
+    {
+      "id": 126421510,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 46,
+      "isHome": false,
+      "playerIn": {
+        "id": 2573777,
+        "name": "Koffi Konan",
+        "shortName": "K. Konan"
+      },
+      "playerOut": {
+        "id": 1140806,
+        "name": "Walid Rhailouf",
+        "shortName": "W. Rhailouf"
+      }
+    },
+    {
+      "incidentType": "period",
+      "time": 45,
+      "addedTime": 999,
+      "text": "HT",
+      "homeScore": 0,
+      "awayScore": 0
+    },
+    {
+      "id": 125307552,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 42,
+      "isHome": false,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 581308,
+        "name": "Yacine Bammou",
+        "shortName": "Y. Bammou"
+      }
+    },
+    {
+      "id": 125307551,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 25,
+      "isHome": true,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 879566,
+        "name": "Mohamed Ounajem",
+        "shortName": "M. Ounajem"
+      }
+    },
+    {
+      "id": 125307550,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 11,
+      "isHome": false,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 2077076,
+        "name": "Taha Majni",
+        "shortName": "T. Majni"
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "event": {
+    "id": 16958238,
+    "startTimestamp": 1790280000,
+    "status": {
+      "type": "finished"
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "season": {
+      "id": 102220
+    },
+    "tournament": {
+      "uniqueTournament": {
+        "id": 937
+      }
+    },
+    "homeTeam": {
+      "id": 223445,
+      "name": "Union Sportive Amal Tiznit",
+      "shortName": "Amal Tiznit"
+    },
+    "awayTeam": {
+      "id": 87180,
+      "name": "Ittihad Tanger",
+      "shortName": "Ittihad Tanger"
+    },
+    "homeScore": {
+      "current": 1,
+      "period1": 1,
+      "period2": 0
+    },
+    "awayScore": {
+      "current": 3,
+      "period1": 1,
+      "period2": 2
+    }
+  }
+}

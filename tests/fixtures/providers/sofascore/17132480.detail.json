@@ -1,0 +1,40 @@
+{
+  "event": {
+    "id": 17132480,
+    "startTimestamp": 1790539200,
+    "status": {
+      "type": "finished"
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "season": {
+      "id": 102220
+    },
+    "tournament": {
+      "uniqueTournament": {
+        "id": 937
+      }
+    },
+    "homeTeam": {
+      "id": 47696,
+      "name": "Kawkab Athletic Club Marrakech",
+      "shortName": "KACM"
+    },
+    "awayTeam": {
+      "id": 55039,
+      "name": "Hassania d'Agadir",
+      "shortName": "HUSA"
+    },
+    "homeScore": {
+      "current": 2,
+      "period1": 1,
+      "period2": 1
+    },
+    "awayScore": {
+      "current": 3,
+      "period1": 1,
+      "period2": 2
+    }
+  }
+}

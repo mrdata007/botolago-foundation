@@ -1,0 +1,40 @@
+{
+  "event": {
+    "id": 16958236,
+    "startTimestamp": 1790445600,
+    "status": {
+      "type": "finished"
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "season": {
+      "id": 102220
+    },
+    "tournament": {
+      "uniqueTournament": {
+        "id": 937
+      }
+    },
+    "homeTeam": {
+      "id": 55043,
+      "name": "Difaâ Hassani El-Jadidi",
+      "shortName": "DHJ"
+    },
+    "awayTeam": {
+      "id": 55025,
+      "name": "CODM Meknès",
+      "shortName": "CODM"
+    },
+    "homeScore": {
+      "current": 2,
+      "period1": 1,
+      "period2": 1
+    },
+    "awayScore": {
+      "current": 6,
+      "period1": 5,
+      "period2": 1
+    }
+  }
+}
