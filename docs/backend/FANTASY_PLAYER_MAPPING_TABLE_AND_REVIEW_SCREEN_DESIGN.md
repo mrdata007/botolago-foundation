@@ -13,15 +13,16 @@ says what the table and the review screen are.
 
 These are decided. The rest of the document is written to them.
 
-| #   | Decision                                                                                                                                                                                                                                                                                                                    | Where it lands       |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| D1  | **Two-person approval for every production player mapping.** Strong matches may be grouped in batches, but each executed mapping still has a proposer, a different approver, AAL2, recent authentication, an immutable fingerprint, a reason and an audit event. There is no single-review shortcut.                        | sections 3.2, 5.3, 6 |
-| D2  | **Date of birth is a strong name-independent signal only if real Sofascore or Flashscore responses prove the field exists and is sufficiently populated.** Height may be shown as corroboration, never as an identity key. Nothing is designed against an assumed endpoint or field. The evidence is in section 12.         | sections 5.2, 12     |
-| D3  | **Retention.** Provider display names are purged 90 days after the candidate becomes `mapped` or `ignored`. Everything else is kept: provider ids, app player id, fixture references, evidence signals, fingerprints, proposal and approval decisions, reasons, audit events. Only third-party display-name text is purged. | section 3.4          |
-| D4  | **At least two distinct authorized humans are required in production.** Self-approval protection is not weakened if only one `football_operator` exists. The system shows "second qualified reviewer required" and provides no bypass.                                                                                      | sections 5.5, 6      |
-| D5  | **Arabic.** No separately curated Arabic player-name spellings in v1. The admin interface itself has French and Arabic copy and RTL support. Player names are shown exactly as stored in the app catalog and the provider evidence.                                                                                         | section 5.6          |
-| A   | **Position is a ranking signal, not a hard filter.** It never hides an otherwise plausible same-team candidate, never rejects a pairing by itself, and a contradiction is visibly flagged.                                                                                                                                  | sections 5.2, 3.2    |
-| B   | **"Not a Botola player" is a durable production classification and needs dual control** (propose, a different person approves, execute), like a mapping: reversible, reason required, fingerprinted, audited, impossible to self-approve. "Skip for now" stays a personal, non-mutating screen action.                      | sections 3.5, 5.3, 6 |
+| #   | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Where it lands          |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| D1  | **Two-person approval for every production player mapping.** Strong matches may be grouped in batches, but each executed mapping still has a proposer, a different approver, AAL2, recent authentication, an immutable fingerprint, a reason and an audit event. There is no single-review shortcut.                                                                                                                                                                                                                                                                        | sections 3.2, 5.3, 6    |
+| D2  | **Date of birth is a strong name-independent signal only if real Sofascore or Flashscore responses prove the field exists and is sufficiently populated.** Height may be shown as corroboration, never as an identity key. Nothing is designed against an assumed endpoint or field. The evidence is in section 12.                                                                                                                                                                                                                                                         | sections 5.2, 12        |
+| D3  | **Retention.** Provider display names are purged 90 days after the candidate becomes `mapped` or `ignored`. Everything else is kept: provider ids, app player id, fixture references, evidence signals, fingerprints, proposal and approval decisions, reasons, audit events. Only third-party display-name text is purged.                                                                                                                                                                                                                                                 | section 3.4             |
+| D4  | **At least two distinct authorized humans are required in production.** Self-approval protection is not weakened if only one `football_operator` exists. The system shows "second qualified reviewer required" and provides no bypass.                                                                                                                                                                                                                                                                                                                                      | sections 5.5, 6         |
+| D5  | **Arabic.** No separately curated Arabic player-name spellings in v1. The admin interface itself has French and Arabic copy and RTL support. Player names are shown exactly as stored in the app catalog and the provider evidence.                                                                                                                                                                                                                                                                                                                                         | section 5.6             |
+| A   | **Position is a ranking signal, not a hard filter.** It never hides an otherwise plausible same-team candidate, never rejects a pairing by itself, and a contradiction is visibly flagged.                                                                                                                                                                                                                                                                                                                                                                                  | sections 5.2, 3.2       |
+| B   | **"Not a Botola player" is a durable production classification and needs dual control** (propose, a different person approves, execute), like a mapping: reversible, reason required, fingerprinted, audited, impossible to self-approve. "Skip for now" stays a personal, non-mutating screen action.                                                                                                                                                                                                                                                                      | sections 3.5, 5.3, 6    |
+| E   | **The mapping table keeps one current row per provider identity, and a replacement is an update of that row.** Both of its unique constraints are unconditional (not limited to active rows), so a deactivated row still holds its provider id and its app player. A reviewed replacement, deactivation or reactivation updates the existing row in one guarded transaction; it never inserts a second row. History lives in the append-only audit and the proposal record, never in the mutable mapping row. The table and its constraints stay unchanged in this project. | sections 2, 3.3, 5.4, 9 |
 
 ## 1. What this has to solve
 
@@ -39,22 +40,23 @@ not conveniences.
 
 ## 2. What already exists and is reused
 
-| Piece                       | Where                                                                                                                                                                                                | Use here                                                                                                                                               |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Mapping table               | `app_private.football_provider_mappings` (migration `20260720095345`)                                                                                                                                | stores the approved mapping, unchanged                                                                                                                 |
-| Uniqueness                  | `(provider_name, entity_type, external_id)` and `(provider_name, entity_type, internal_entity_id)`                                                                                                   | one provider id maps to one app player, and one app player has at most one id per provider: a second record for the same person cannot be mapped twice |
-| Manual correction fields    | `manually_corrected`, `correction_reason` (10 to 500 chars), `corrected_by`, `corrected_at`, with a check that they go together                                                                      | every approved row is a manual correction with a reason and a person                                                                                   |
-| Target check                | trigger `validate_provider_mapping_target` (the `player` target must exist in `app.players`)                                                                                                         | a mapping can only point at a real app player                                                                                                          |
-| Permission                  | `football.manage_mappings` (held by `football_operator` and `platform_admin`)                                                                                                                        | who may propose and decide                                                                                                                             |
-| Admin plumbing              | `loadAdminStaffRouteAccess`, `AdminSurfaces`, `AdminDestructiveAction`, the approvals queue (`/admin/approvals`), the audit log (`/admin/audit`), repository and DTO pattern in `src/backend/admin/` | the screen is built on these, not beside them                                                                                                          |
-| Authority rules             | `ADMIN_DUAL_CONTROL_MATRIX.md`: distinct humans, AAL2, recent authentication, immutable fingerprint, idempotency key, reason, append-only audit                                                      | the approval rules below follow it                                                                                                                     |
-| Precedent for unmapped rows | `20260802010200_historical_performance_mapping_quarantine.sql` quarantines lineup players with no mapping                                                                                            | same idea: unmapped is listed, never guessed or created                                                                                                |
+| Piece                       | Where                                                                                                                                                                                                                                    | Use here                                                                                                                                                                                                                                     |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mapping table               | `app_private.football_provider_mappings` (migration `20260720095345`)                                                                                                                                                                    | stores the approved mapping, unchanged                                                                                                                                                                                                       |
+| Uniqueness                  | `(provider_name, entity_type, external_id)` and `(provider_name, entity_type, internal_entity_id)`, both **unconditional** unique constraints (inline `unique`, verified in migration `20260720095345`), not partial indexes on `active` | one provider id maps to one app player and one app player has at most one id per provider, **whether the row is active or not**: a deactivated row still occupies both identities, so a second row for either identity can never be inserted |
+| Manual correction fields    | `manually_corrected`, `correction_reason` (10 to 500 chars), `corrected_by`, `corrected_at`, with a check that they go together                                                                                                          | every approved row is a manual correction with a reason and a person                                                                                                                                                                         |
+| Target check                | trigger `validate_provider_mapping_target` (the `player` target must exist in `app.players`)                                                                                                                                             | a mapping can only point at a real app player                                                                                                                                                                                                |
+| Permission                  | `football.manage_mappings` (held by `football_operator` and `platform_admin`)                                                                                                                                                            | who may propose and decide                                                                                                                                                                                                                   |
+| Admin plumbing              | `loadAdminStaffRouteAccess`, `AdminSurfaces`, `AdminDestructiveAction`, the approvals queue (`/admin/approvals`), the audit log (`/admin/audit`), repository and DTO pattern in `src/backend/admin/`                                     | the screen is built on these, not beside them                                                                                                                                                                                                |
+| Authority rules             | `ADMIN_DUAL_CONTROL_MATRIX.md`: distinct humans, AAL2, recent authentication, immutable fingerprint, idempotency key, reason, append-only audit                                                                                          | the approval rules below follow it                                                                                                                                                                                                           |
+| Precedent for unmapped rows | `20260802010200_historical_performance_mapping_quarantine.sql` quarantines lineup players with no mapping                                                                                                                                | same idea: unmapped is listed, never guessed or created                                                                                                                                                                                      |
 
 **Invariants this design keeps** (owner requirement):
 
 - the existing table `app_private.football_provider_mappings` and its two unique
-  constraints are the only place a mapping lives; nothing is added to it and nothing
-  duplicates it;
+  constraints are the only place a mapping lives, and they are **not changed** by this
+  project. The table holds the ONE CURRENT mapping row for each provider identity; nothing
+  is added to it and nothing duplicates it;
 - the candidate and proposal tables are workflow and evidence tables only; deleting every
   row of them never changes what is mapped;
 - names are for human reading only and are never machine identity: no code that decides a
@@ -62,8 +64,10 @@ not conveniences.
 - a mapping that contradicts the two providers' incident lists sends the fixture to
   review (section 4);
 - one app player appears at most once per fixture (section 4);
-- there is no deletion: a mapping is deactivated or replaced forward-only, with a reason,
-  through the same two-person flow.
+- there is no deletion, and no second row. "No deletion" is defined as: the current
+  mapping row is audibly updated or deactivated, and every prior state stays immutable in
+  the approval and audit history (section 3.3). A mapping is never replaced by inserting a
+  new row, because the unique constraints would refuse it.
 
 No change to the mapping table is needed. Two new providers are registered
 (`sofascore`, `flashscore` in `app_private.football_providers`).
@@ -77,81 +81,134 @@ direct grants; the admin repository calls trusted functions.
 
 One row per provider player id that the system has seen and cannot map yet.
 
-| Column                                                           | Meaning                                                                                                                                                                                           |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                                                             | uuid                                                                                                                                                                                              |
-| `provider_name`                                                  | `sofascore` or `flashscore`                                                                                                                                                                       |
-| `external_id`                                                    | the provider's player id                                                                                                                                                                          |
-| `team_id`                                                        | the app team, when the team is mapped                                                                                                                                                             |
-| `season_id`                                                      | the season it was seen in                                                                                                                                                                         |
-| `first_seen_fixture_id`, `last_seen_fixture_id`, `fixtures_seen` | where and how often                                                                                                                                                                               |
-| `shirt_numbers_seen`                                             | the numbers it wore, per fixture (can differ between providers)                                                                                                                                   |
-| `position_seen`                                                  | `G`, `D`, `M`, `F` or unknown, as the provider gave it                                                                                                                                            |
-| `attributes_seen`                                                | jsonb of provider-supplied attributes, only those section 12 proves exist (provider birth date and height for Sofascore); `null` where the provider did not send one. Display and signal only     |
-| `display_name`                                                   | **shown to the reviewer only, never read by any code that decides a match.** The only third-party text in the row; purged by section 3.4                                                          |
-| `display_name_purged_at`                                         | null until the purge                                                                                                                                                                              |
-| `blocked_fixtures`                                               | fixtures currently in review or with players held back because of this id (what approving it unblocks)                                                                                            |
-| `status`                                                         | `unmapped`, `proposed`, `mapped`, `ignored`. `mapped` and `ignored` are only ever set by executing an approved proposal (sections 3.3 and 3.5); no screen action and no import sets them directly |
-| `status_changed_at`                                              | when `status` last changed (the 90-day clock of section 3.4 starts here for `mapped` and `ignored`)                                                                                               |
+| Column                                                           | Meaning                                                                                                                                                                                                   |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                                             | uuid                                                                                                                                                                                                      |
+| `provider_name`                                                  | `sofascore` or `flashscore`                                                                                                                                                                               |
+| `external_id`                                                    | the provider's player id                                                                                                                                                                                  |
+| `team_id`                                                        | the app team, when the team is mapped                                                                                                                                                                     |
+| `season_id`                                                      | the season it was seen in                                                                                                                                                                                 |
+| `first_seen_fixture_id`, `last_seen_fixture_id`, `fixtures_seen` | where and how often                                                                                                                                                                                       |
+| `shirt_numbers_seen`                                             | the numbers it wore, per fixture (can differ between providers)                                                                                                                                           |
+| `position_seen`                                                  | `G`, `D`, `M`, `F` or unknown, as the provider gave it                                                                                                                                                    |
+| `attributes_seen`                                                | jsonb of provider-supplied attributes, only those section 12 proves exist (provider birth date and height for Sofascore); `null` where the provider did not send one. Display and signal only             |
+| `display_name`                                                   | **shown to the reviewer only, never read by any code that decides a match.** The only third-party text in the row; purged by section 3.4                                                                  |
+| `display_name_purged_at`                                         | null until the purge                                                                                                                                                                                      |
+| `blocked_fixtures`                                               | fixtures currently in review or with players held back because of this id (what approving it unblocks)                                                                                                    |
+| `existing_mapping_id`                                            | the id of the mapping row that already holds this provider id, active or not; null when no row exists. A candidate with a row is acted on only by `replace` or `reactivate` (section 3.3), never by `map` |
+| `status`                                                         | `unmapped`, `proposed`, `mapped`, `ignored`. `mapped` and `ignored` are only ever set by executing an approved proposal (sections 3.3 and 3.5); no screen action and no import sets them directly         |
+| `status_changed_at`                                              | when `status` last changed (the 90-day clock of section 3.4 starts here for `mapped` and `ignored`)                                                                                                       |
 
 ### 3.2 `football_player_mapping_proposals` (a decision waiting for a second person)
 
 One row per proposed decision. Every durable production decision about a candidate goes
 through this table, whatever its kind.
 
-| Column                                            | Meaning                                                                                                                                                                                                                |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`, `batch_id`                                  | a proposal belongs to a batch (a batch of one is allowed)                                                                                                                                                              |
-| `kind`                                            | `map` (pair provider ids with an app player), `replace`, `deactivate` (section 5.4), `ignore` ("not a Botola player", section 3.5), `reverse_ignore`                                                                   |
-| `app_player_id`                                   | the app player (`app.players`); null for `ignore` and `reverse_ignore`                                                                                                                                                 |
-| `sofascore_external_id`, `flashscore_external_id` | either may be null for a player one provider does not list. For `ignore` and `reverse_ignore`, exactly one id is set                                                                                                   |
-| `basis`                                           | `incident` (both providers attributed the same goal, card or substitution to the pair), `shirt_position` (same side, shirt number and position, no incident), `manual` (the reviewer chose it)                         |
-| `evidence`                                        | jsonb: fixture ids, incident kinds and minutes, shirt numbers per provider, positions, and the signal results of section 5.2 (agree, disagree, missing). References and counts only, no names and no provider payloads |
-| `signals`                                         | jsonb: the per-candidate ranking signals shown to the reviewer (section 5.2), kept with the proposal                                                                                                                   |
-| `status`                                          | see the state table below                                                                                                                                                                                              |
-| `requested_by`, `requested_at`, `reason`          | the proposer (a human), and why                                                                                                                                                                                        |
-| `position_note`                                   | required before a `position_disagreement` proposal can be approved (what the disagreement is and why the pairing still holds)                                                                                          |
-| `decided_by`, `decided_at`, `decision_reason`     | a different human                                                                                                                                                                                                      |
-| `position_disagreement_acknowledged`              | the approver's explicit acknowledgement, required when the proposal carries a position disagreement                                                                                                                    |
-| `fingerprint`                                     | hash of the payload (kind, ids, app player, evidence references, signals, reason); any change invalidates an approval. It never includes a name                                                                        |
-| `expires_at`                                      | pending proposals expire (default 72 hours)                                                                                                                                                                            |
+| Column                                                                | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`, `batch_id`                                                      | a proposal belongs to a batch (a batch of one is allowed)                                                                                                                                                                                                                                                                                                                                                                                     |
+| `kind`                                                                | `map` (the first mapping: inserts a row for a provider id and an app player that no row holds), `replace` (updates the existing row of an **active** mapping, section 3.3), `deactivate` (sets `active = false` on the existing row), `reactivate` (reuses the existing row of a **deactivated** identity: sets `active = true` and, if the proposal names them, new values), `ignore` ("not a Botola player", section 3.5), `reverse_ignore` |
+| `app_player_id`                                                       | the app player (`app.players`); null for `ignore` and `reverse_ignore`                                                                                                                                                                                                                                                                                                                                                                        |
+| `mapping_id`, `provider_name`                                         | for `replace`, `deactivate` and `reactivate`: the existing mapping row this proposal changes, and its provider. A proposal changes exactly one mapping row                                                                                                                                                                                                                                                                                    |
+| `new_external_id`, `new_app_player_id`                                | for `replace` and `reactivate`: the new provider id and/or the new app player for that row; at least one is set, and an unchanged field is null                                                                                                                                                                                                                                                                                               |
+| `expected_before`                                                     | jsonb snapshot of the row as the proposer saw it (row id, provider, external id, app player id, `active`). Execution refuses if the row no longer matches it                                                                                                                                                                                                                                                                                  |
+| `executed_before`, `executed_after`, `executed_at`, `idempotency_key` | written once at execution: the row's exact values before and after. After `executed` the proposal row is immutable (the database refuses any update)                                                                                                                                                                                                                                                                                          |
+| `sofascore_external_id`, `flashscore_external_id`                     | either may be null for a player one provider does not list. For `ignore` and `reverse_ignore`, exactly one id is set                                                                                                                                                                                                                                                                                                                          |
+| `basis`                                                               | `incident` (both providers attributed the same goal, card or substitution to the pair), `shirt_position` (same side, shirt number and position, no incident), `manual` (the reviewer chose it)                                                                                                                                                                                                                                                |
+| `evidence`                                                            | jsonb: fixture ids, incident kinds and minutes, shirt numbers per provider, positions, and the signal results of section 5.2 (agree, disagree, missing). References and counts only, no names and no provider payloads                                                                                                                                                                                                                        |
+| `signals`                                                             | jsonb: the per-candidate ranking signals shown to the reviewer (section 5.2), kept with the proposal                                                                                                                                                                                                                                                                                                                                          |
+| `status`                                                              | see the state table below                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `requested_by`, `requested_at`, `reason`                              | the proposer (a human), and why                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `position_note`                                                       | required before a `position_disagreement` proposal can be approved (what the disagreement is and why the pairing still holds)                                                                                                                                                                                                                                                                                                                 |
+| `decided_by`, `decided_at`, `decision_reason`                         | a different human                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `position_disagreement_acknowledged`                                  | the approver's explicit acknowledgement, required when the proposal carries a position disagreement                                                                                                                                                                                                                                                                                                                                           |
+| `fingerprint`                                                         | hash of the payload (kind, ids, app player, evidence references, signals, reason); any change invalidates an approval. It never includes a name                                                                                                                                                                                                                                                                                               |
+| `expires_at`                                                          | pending proposals expire (default 72 hours)                                                                                                                                                                                                                                                                                                                                                                                                   |
 
-Constraints: a pending proposal cannot name an app player or a provider id that already
-has an active mapping or another pending proposal (a replacement is a separate, explicit
-operation, section 5.4). `requested_by <> decided_by` is enforced in the database, not
-only in the screen, for every kind.
+Constraints: a pending proposal cannot name an app player or a provider id that is held
+by **any** mapping row, active or inactive, or by another pending proposal, except as the
+declared target of its own `replace`, `deactivate` or `reactivate`. At most one pending
+proposal exists per mapping row. A `map` proposal is refused (`already_mapped`) when a row
+holds either identity; the reviewer then uses `replace` or `reactivate`.
+`requested_by <> decided_by` is enforced in the database, not only in the screen, for
+every kind.
 
 #### Proposal states
 
-| State                   | Meaning                                                                                                                                                                                                     | Can be approved?                 | Leaves by                                                                                                                                         |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pending`               | waiting for a second person                                                                                                                                                                                 | yes                              | `approved`, `rejected`, `expired`, `cancelled`, or one of the four held states below                                                              |
-| `approved`              | a different person approved the exact fingerprint; not yet executed                                                                                                                                         | n/a                              | `executed`, or `stale_evidence`, `identity_conflict`, `already_mapped` if the world changed before execution                                      |
-| `executed`              | written exactly once, in one transaction, with its audit events                                                                                                                                             | n/a                              | final                                                                                                                                             |
-| `rejected`              | a different person rejected it, with a reason                                                                                                                                                               | n/a                              | final                                                                                                                                             |
-| `expired`               | not decided in time                                                                                                                                                                                         | no                               | final; a new proposal may be made                                                                                                                 |
-| `cancelled`             | withdrawn by the proposer, with a reason                                                                                                                                                                    | n/a                              | final                                                                                                                                             |
-| `stale_evidence`        | the provider evidence the proposal rests on changed after it was made (a newer read of the squad or a lineup shows a different team, shirt, position or id for the pair, or a fixture it cites was re-read) | no                               | the proposer refreshes the evidence, which makes a new fingerprint and returns it to `pending`; an earlier approval never carries over            |
-| `identity_conflict`     | the pairing collides with another identity: another pending or active record claims the same provider id or the same app player for someone else, or the two providers' incident lists contradict it        | no                               | rejected or cancelled, or replaced through the explicit replace operation; never resolved by editing the conflicting record in place              |
-| `position_disagreement` | the providers' positions disagree with each other or with the app player's position. **A flag that holds the proposal for a human, never a rejection**                                                      | only after both acknowledgements | the proposer adds a `position_note` (back to `pending`, marked as needing acknowledgement); the approver must tick the acknowledgement to approve |
-| `already_mapped`        | at approval or execution the provider id or the app player already has an active mapping (created meanwhile by someone else). The unique constraints make this a database refusal                           | no                               | final for this proposal; the candidate shows the existing mapping; changing it is a separate `replace` proposal                                   |
+| State                   | Meaning                                                                                                                                                                                                                                                                                                                                           | Can be approved?                 | Leaves by                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pending`               | waiting for a second person                                                                                                                                                                                                                                                                                                                       | yes                              | `approved`, `rejected`, `expired`, `cancelled`, or one of the four held states below                                                                                     |
+| `approved`              | a different person approved the exact fingerprint; not yet executed                                                                                                                                                                                                                                                                               | n/a                              | `executed`, or `stale_evidence`, `identity_conflict`, `already_mapped` if the world changed before execution                                                             |
+| `executed`              | written exactly once, in one transaction, with its audit events                                                                                                                                                                                                                                                                                   | n/a                              | final                                                                                                                                                                    |
+| `rejected`              | a different person rejected it, with a reason                                                                                                                                                                                                                                                                                                     | n/a                              | final                                                                                                                                                                    |
+| `expired`               | not decided in time                                                                                                                                                                                                                                                                                                                               | no                               | final; a new proposal may be made                                                                                                                                        |
+| `cancelled`             | withdrawn by the proposer, with a reason                                                                                                                                                                                                                                                                                                          | n/a                              | final                                                                                                                                                                    |
+| `stale_evidence`        | the provider evidence the proposal rests on changed after it was made (a newer read of the squad or a lineup shows a different team, shirt, position or id for the pair, or a fixture it cites was re-read)                                                                                                                                       | no                               | the proposer refreshes the evidence, which makes a new fingerprint and returns it to `pending`; an earlier approval never carries over                                   |
+| `identity_conflict`     | the decision collides with another identity or with the evidence: another pending or approved proposal claims the same provider id or app player, or the two providers' incident lists contradict the pairing, or (for `ignore`) the id appears in a Botola lineup or incident                                                                    | no                               | rejected or cancelled, or re-proposed after the other record is resolved by its own reviewed proposal; never resolved by editing the other record in place               |
+| `position_disagreement` | the providers' positions disagree with each other or with the app player's position. **A flag that holds the proposal for a human, never a rejection**                                                                                                                                                                                            | only after both acknowledgements | the proposer adds a `position_note` (back to `pending`, marked as needing acknowledgement); the approver must tick the acknowledgement to approve                        |
+| `already_mapped`        | at proposal, approval or execution the intended new provider id, or the intended new app player, is already held by **another mapping row** (active or inactive), whether created meanwhile or already there. This is detected by re-checking both unique constraints against current state before any write, so the constraint never has to fire | no                               | final for this proposal; nothing is written; the candidate shows the row that holds the identity; moving it is a separate reviewed `replace` or `reactivate` of that row |
 
 Every transition, including into and out of the held states, writes an append-only audit
 event with the same correlation id. A held state is also what the reviewer screen shows as
 a banner (section 5.5), so a proposal is never silently stuck.
 
-### 3.3 What approval writes
+### 3.3 Current state, history, and what each kind writes
 
-On execution, one transaction writes up to two rows to `football_provider_mappings`
-(one per provider id present): `entity_type = 'player'`, `internal_entity_id` the app
-player, `manually_corrected = true`, `correction_reason` from the proposal,
-`corrected_by` the approver, `corrected_at` now. The unique constraints make a
-double-mapping impossible. The proposal moves to `executed`; the candidate rows move to
-`mapped`. An append-only audit event records request, decision and execution with the
-correlation id, as for every admin mutation.
+**The model.** `app_private.football_provider_mappings` is the **current state**: one row
+per provider identity, holding that identity's present mapping. Because both unique
+constraints are unconditional, a row keeps its provider id and its app player even when
+`active = false`. So nothing in this project ever inserts a second row for an identity that
+already has one, and nothing deletes a row. **History is not in the mapping row** (it is
+overwritten by the next change); it lives in the append-only audit events and in the
+proposal record, which are immutable.
 
-Rollback is forward-only: deactivate (`active = false`) with a reason through the same
-two-person flow, never delete.
+| Kind         | Writes to the mapping table                                                                                                                                                                                                                                                                                                    | Notes                                                                                                                 |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `map`        | **inserts** one row per provider id present (up to two, one per provider): `entity_type = 'player'`, `internal_entity_id` the app player, `active = true`, `manually_corrected = true`, `correction_reason`, `corrected_by` the approver, `corrected_at` and `last_seen_at` now                                                | only when no row holds either identity; the candidate rows move to `mapped`                                           |
+| `replace`    | **updates the existing row**, not insert plus deactivate. Example A: the provider id is right but mapped to the wrong app player: update `internal_entity_id`. Example B: the app player is right but the provider id was wrong: update `external_id`. Example C: both were wrong: update both columns in the same transaction | applies to an active row; `active` is unchanged; correction fields and `last_seen_at` are refreshed                   |
+| `deactivate` | **updates** `active = false` on the existing row; the row keeps its provider id and app player                                                                                                                                                                                                                                 | the identity stays reserved by that row; the candidate returns to `unmapped` with `existing_mapping_id` set           |
+| `reactivate` | **updates** the same row: `active = true`, and, if the proposal names them, a new `external_id` and/or `internal_entity_id`                                                                                                                                                                                                    | a new two-person proposal each time; a later remap of a deactivated identity reuses its row and never inserts another |
+
+**The guarded execution transaction** (every kind, exactly once):
+
+1. Lock the proposal and the target mapping row.
+2. Check the proposal is `approved`, its fingerprint still matches the payload, the approver
+   is a different person with AAL2 and recent authentication, and the idempotency key is
+   unseen.
+3. Check the mapping row still equals `expected_before` (compare and swap). If not, the
+   proposal becomes `stale_evidence` and nothing is written.
+4. **Re-check both unique constraints against current state**: no other row holds the new
+   `(provider, 'player', external_id)` and none holds the new
+   `(provider, 'player', internal_entity_id)`, and the new app player exists (the existing
+   target trigger also re-checks this on update). If another row holds either, the proposal
+   enters `already_mapped` (or `identity_conflict` when a pending or approved proposal or the
+   incident evidence contradicts it) and execution is **refused**.
+5. Update (or insert, for `map`) the single row.
+6. Write the audit events and the proposal's `executed_before` and `executed_after`, in the
+   same transaction.
+
+If any step fails, the transaction rolls back and the mapping row is byte-identical to what
+it was; the proposal records the refusal and its reason.
+
+**What is audited for every replacement, deactivation and reactivation** (append-only, with
+one correlation id and the proposal's idempotency key): the mapping row id; the provider;
+the old and new `external_id`; the old and new app player id (`internal_entity_id`); the old
+and new `active`; the proposer and the approver; the reason and the decision reason; the
+immutable evidence fingerprint; and the request, decision and execution timestamps. These
+are copied into the audit event and the proposal at execution time. Historical provenance is
+**never** read from the mutable mapping row, whose `corrected_by`, `corrected_at` and
+`correction_reason` describe only its latest change.
+
+**"Forward-only", defined.** There is no deletion: the current mapping row is audibly updated
+or deactivated while every prior state remains immutable in the approval and audit history.
+A reversal is a new reviewed proposal that moves the row forward again; no earlier state is
+edited or removed.
+
+**Limit.** The two unique constraints are not deferrable, so exchanging the targets of two
+rows (a swap) cannot be a single replacement. A replacement whose target is held by another
+row is refused (`already_mapped`) until that other row has been resolved by its own reviewed
+proposal; a pure two-way swap is out of scope for v1 and would be a separate reviewed
+change.
 
 ### 3.4 Retention
 
@@ -196,6 +253,9 @@ candidate, then **propose ignore**, then a **second person approves**, then **ex
 `ReconcileInput` gains an optional identity map: provider id to app player id, for each
 provider, plus the set of executed `ignore` ids. Rules, strongest first:
 
+0. **Only active rows count.** The map the reconciler is given is built from rows with
+   `active = true`; a deactivated row means "not mapped" (although it still reserves its
+   identity, section 3.3).
 1. **Mapping.** Two entries whose ids map to the same app player are the same player
    (basis `mapping`). A differing shirt number no longer matters.
 2. **An incident disagrees with a mapping** (the providers attribute one goal to two
@@ -301,7 +361,7 @@ Other rules:
 ### 5.3 Approval
 
 `/admin/approvals` gains a type, "Player mapping batch", covering every `kind`
-(mapping, replace, deactivate, ignore, reverse ignore). The second operator sees the batch
+(map, replace, deactivate, reactivate, ignore, reverse ignore). The second operator sees the batch
 as a table (proposed decisions, basis, evidence, signals, impact), can open any row, and
 approves or rejects the batch as a whole or row by row. A changed fingerprint, an expired
 proposal, a held state, or the proposer opening their own batch removes the approve control
@@ -311,11 +371,25 @@ matrix requires for sensitive changes.
 There is one approval path for every production mapping and every "not a Botola player"
 decision. There is no shortcut for strong matches or any other group.
 
-### 5.4 Replace or deactivate an existing mapping
+### 5.4 Replace, deactivate or reactivate an existing mapping
 
-Same two-person flow, with a mandatory reason and a warning showing which fixtures and
-scored points the old mapping touched. Never silently overwritten (a manual correction is
-never replaced by a proposal).
+All three change the **existing mapping row**; none inserts a second row (section 3.3). Each
+goes through the same two-person flow, with a mandatory reason.
+
+- **Replace** (an active mapping that is wrong): the screen shows the current row (provider
+  id, app player, who corrected it last) beside the intended new value, and which of the
+  three cases it is: a different app player for the same provider id, a different provider id
+  for the same app player, or both. It warns which fixtures and scored points the old
+  mapping touched.
+- **Deactivate:** sets the row inactive. The provider id and the app player stay reserved by
+  that row.
+- **Reactivate** (a deactivated identity, or a remap of one): a new proposal that reuses the
+  row.
+- If the intended new provider id or app player is already held by another row, the screen
+  shows that row and the proposal is `already_mapped`; it cannot be proposed past the conflict.
+- Every change shows the exact before and after values, which are the same values written to
+  the audit history. Never silently overwritten: a manual correction is never replaced by a
+  proposal that skips the review.
 
 ### 5.5 States the screen must handle
 
@@ -358,7 +432,7 @@ colour-only meaning.
 | Propose a mapping or a batch                     | `football.manage_mappings`, AAL2, recent authentication                    | none                       | needs a reason; creates a pending proposal                                                      |
 | Approve or reject                                | a different `football.manage_mappings` holder, AAL2, recent authentication | n/a                        | self-approval refused by the database                                                           |
 | Execute                                          | a qualified `football.manage_mappings` operator                            | prior independent approval | exactly once, idempotency key                                                                   |
-| Replace or deactivate                            | as above                                                                   | as above                   | warning and reason mandatory                                                                    |
+| Replace, deactivate or reactivate                | as above                                                                   | as above                   | warning and reason mandatory; updates the existing row, never inserts a second one              |
 | **Propose "not a Botola player"** (`ignore`)     | `football.manage_mappings`, AAL2, recent authentication                    | none                       | reason required; refused (`identity_conflict`) if the id appears in a Botola lineup or incident |
 | **Approve "not a Botola player"**                | a different `football.manage_mappings` holder, AAL2, recent authentication | n/a                        | self-approval refused by the database                                                           |
 | **Execute "not a Botola player"**                | a qualified `football.manage_mappings` operator                            | prior independent approval | exactly once, idempotency key                                                                   |
@@ -390,11 +464,13 @@ In `src/backend/admin/`, next to the existing repositories, with DTOs and stable
 - `addPositionNote(proposalId, note)`
 - `decideMappingProposal(id, decision, reason, fingerprint, positionDisagreementAcknowledged?)`
 - `executeMappingBatch(batchId, idempotencyKey)`
+- `replaceMapping(mappingId, newExternalId?, newAppPlayerId?, reason, idempotencyKey)`
 - `deactivateMapping(mappingId, reason, idempotencyKey)`
+- `reactivateMapping(mappingId, newExternalId?, newAppPlayerId?, reason, idempotencyKey)`
 - `getQualifiedReviewerAvailability(proposalId)` (the count behind "second qualified
   reviewer required")
 
-Stable error codes: `mapping_already_exists`, `app_player_already_mapped`,
+Stable error codes: `mapping_already_exists`, `app_player_already_mapped`, `mapping_row_changed` (the row no longer matches `expected_before`),
 `proposal_expired`, `fingerprint_mismatch`, `self_approval_denied`, `not_authorized`,
 `stale_candidate`, `stale_evidence`, `identity_conflict`, `position_disagreement_unacknowledged`,
 `second_reviewer_required`, `ignore_refused_id_in_lineup`. The visual console calls these and
@@ -415,11 +491,30 @@ nothing else.
 
 ## 9. Tests to write when it is built
 
-- pgTAP: the unique constraints, `requested_by <> decided_by` for **every kind including
-  `ignore` and `reverse_ignore`**, an execution writes both rows or neither, a pending
-  proposal cannot name an already mapped player, expiry, the fingerprint check, forward-only
-  deactivation, each held state and its allowed transitions (`stale_evidence` refresh makes a
-  new fingerprint and never carries an approval over; `identity_conflict` cannot be approved;
+- pgTAP, the existing-row replacement model (each of these is a required case):
+  1. replacing `internal_entity_id` on an existing mapping row (the provider id stays);
+  2. replacing `external_id` on an existing mapping row (the app player stays);
+  3. replacing both columns atomically in one transaction;
+  4. a replacement whose new provider id is held by another row is refused
+     (`already_mapped`), nothing written;
+  5. a replacement whose new app player is held by another row is refused, nothing written;
+  6. deactivation followed by a reviewed reactivation reuses the same row (same row id, no
+     second row, the unique constraints never fire);
+  7. self-approval is refused for replace, deactivate and reactivate;
+  8. a stale fingerprint is refused, and an approval never carries over a change;
+  9. a failed replacement leaves the original mapping row byte-identical;
+  10. the audit history records the exact before and after values (row id, provider, old and
+      new external id, old and new app player, proposer, approver, reason, fingerprint,
+      timestamps, correlation and idempotency key), and is not derived from the mapping row.
+- pgTAP, also required with the replacement model: a `map` for an identity held by an
+  inactive row is refused; a row changed since the proposal (`expected_before`) is refused
+  as `stale_evidence`; the table's two unique constraints are unchanged (a test asserts they
+  are still unconditional and that no second row can exist for an identity).
+- pgTAP, the rest: the unique constraints, `requested_by <> decided_by` for **every kind
+  including `ignore` and `reverse_ignore`**, an execution writes both rows or neither, a
+  pending proposal cannot name an already mapped player, expiry, the fingerprint check,
+  forward-only deactivation (no deletion, every prior state preserved in the audit), each
+  held state and its allowed transitions (`stale_evidence` refresh makes a new fingerprint and never carries an approval over; `identity_conflict` cannot be approved;
   `position_disagreement` needs the note and the acknowledgement; `already_mapped` is final
   and writes nothing), an `ignore` of an id that is in a lineup or incident is refused, the
   display-name purge clears only the name and leaves every id, signal, fingerprint, decision
@@ -530,6 +625,12 @@ endpoints returning the whole squad.
   as decided.
 
 ### 12.3 Classification
+
+In short, and unchanged by the later decisions: provider ids are the machine identity keys
+within each provider; club or side and starter or bench are machine inputs; date of birth,
+shirt number, position, height and nationality are reviewer and ranking signals only; names
+are for human reading only. Date of birth is **not** promoted to an automatic identity input
+until the planned 16-club population probe validates plausibility and the app-side coverage.
 
 **Safe to use automatically** (as machine inputs for candidate generation, ranking and
 evidence; **never** as an approval, which always needs two people):
