@@ -12,6 +12,7 @@ import { formatNumber, nextSeasonLabel, revealTime, scoreText } from "./pepites-
 import { PepitesShell } from "./PepitesShell";
 import { MonoLine, NightBand } from "./PepitesVisuals";
 import { secondsUntil } from "./reveal";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /** A white Pépites card (Figma: radius 14, the soft navy shadow). */
 export function PepitesCard({
@@ -336,13 +337,12 @@ export function UpdatedLine({ iso }: { iso: string | null | undefined }) {
   if (!iso) return null;
   const date = new Date(iso);
   if (!Number.isFinite(date.getTime())) return null;
-  const text = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR", {
+  const text = moroccoDateTimeFormat(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR", {
     day: "numeric",
     month: "long",
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
-    timeZone: "Africa/Casablanca",
   }).format(date);
   return (
     <p className={cn("text-[12px]", pp.muted)}>

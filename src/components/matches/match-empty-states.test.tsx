@@ -119,25 +119,33 @@ describe("matchDataPhase", () => {
     });
 
     test("at the provider's placeholder hour, is upcoming until the end of its day", () => {
-      // Midnight UTC, 01:00 in Casablanca: the day is set, the hour is not
+      // Before Morocco moved to UTC+0 all year (UTC+1). Midnight UTC, 01:00 in Casablanca: the day is set, the hour is not
       // (`isKickoffTimeUnconfirmed`). Read as a kick-off that had passed, it
       // said the match's data was not available from 01:00 on the very day
       // it is to be played.
-      const placeholder = { status: "scheduled" as const, kickoff: "2026-09-27T00:00:00Z" };
+      const placeholder = { status: "scheduled" as const, kickoff: "2026-09-13T00:00:00Z" };
       const phaseAt = (iso: string) => matchDataPhase(placeholder, Date.parse(iso));
       // 02:00, 23:00 and 23:59 in Casablanca, the same day.
-      expect(phaseAt("2026-09-27T01:00:00Z")).toBe("upcoming");
-      expect(phaseAt("2026-09-27T22:00:00Z")).toBe("upcoming");
-      expect(phaseAt("2026-09-27T22:59:00Z")).toBe("upcoming");
+      expect(phaseAt("2026-09-13T01:00:00Z")).toBe("upcoming");
+      expect(phaseAt("2026-09-13T22:00:00Z")).toBe("upcoming");
+      expect(phaseAt("2026-09-13T22:59:00Z")).toBe("upcoming");
       // Midnight and 01:30 the next day in Casablanca, whatever the UTC date
       // says: the day is over, and the feed never moved the match on.
-      expect(phaseAt("2026-09-27T23:00:00Z")).toBe("unreported");
-      expect(phaseAt("2026-09-28T00:30:00Z")).toBe("unreported");
-      expect(noStatsMessage(phaseAt("2026-09-27T22:00:00Z"), inLanguage("fr"))).toBe(
+      expect(phaseAt("2026-09-13T23:00:00Z")).toBe("unreported");
+      expect(phaseAt("2026-09-14T00:30:00Z")).toBe("unreported");
+      expect(noStatsMessage(phaseAt("2026-09-13T22:00:00Z"), inLanguage("fr"))).toBe(
         "Le match n'a pas encore commencé : pas de statistiques à afficher.",
       );
     });
 
+    test("from 2026-09-20 the day ends at midnight UTC, as Casablanca is UTC+0", () => {
+      const placeholder = { status: "scheduled" as const, kickoff: "2026-09-27T00:00:00Z" };
+      const phaseAt = (iso: string) => matchDataPhase(placeholder, Date.parse(iso));
+      expect(phaseAt("2026-09-27T01:00:00Z")).toBe("upcoming");
+      expect(phaseAt("2026-09-27T22:59:00Z")).toBe("upcoming");
+      expect(phaseAt("2026-09-27T23:59:00Z")).toBe("upcoming");
+      expect(phaseAt("2026-09-28T00:00:00Z")).toBe("unreported");
+    });
     test("is awaited exactly while the page checks for it, a placeholder kick-off included", () => {
       // "This page updates itself" is only said while it does. A kick-off at
       // the provider's placeholder hour (midnight UTC) is not watched

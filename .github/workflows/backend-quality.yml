@@ -66,6 +66,12 @@ jobs:
         env:
           LEGAL_GATE_ALLOW_PLACEHOLDERS: "1"
       - run: bunx playwright install --with-deps chromium
+      # Morocco's clock from three runtimes that carry different time-zone data
+      # (Node 22.23.2 and Chromium: UTC+1 after 2026-09-20; Node 22.23.3: UTC+0):
+      # the app must print the same thing in all of them, which is what keeps
+      # the server's HTML and the browser's first render identical.
+      - name: Time-zone parity (server against browser, old and new data)
+        run: bun run test:timezone-parity
       # Against the development server and the mock data it serves without a
       # `.env`: no secret, no shared backend. Each passed three runs in a row
       # before joining this gate; the signed-in staging suites stay on their
