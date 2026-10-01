@@ -1,0 +1,26 @@
+{
+  "DATA": {
+    "EVENT": {
+      "EVENT_ID": "nLBqJSRq",
+      "START_UTIME": 1790524800,
+      "STAGE": "FINISHED",
+      "ROUND": "Round 1",
+      "HOME_NAME": "Moghreb Tetouan",
+      "AWAY_NAME": "Berkane",
+      "HOME_PARTICIPANT_IDS": [
+        "OWfdXU4T"
+      ],
+      "AWAY_PARTICIPANT_IDS": [
+        "Me4oCiMn"
+      ],
+      "HOME_SCORE_FULL": 0,
+      "AWAY_SCORE_FULL": 0
+    },
+    "TOURNAMENT": {
+      "NAME": "Morocco: Botola Pro",
+      "TOURNAMENT_ID": "CGClceUj",
+      "TOURNAMENT_STAGE_ID": "GKXUiwEl",
+      "TOURNAMENT_SEASON_ID": "CGClceUj"
+    }
+  }
+}
