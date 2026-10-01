@@ -108,25 +108,61 @@ export function shapeOf(value: unknown, skip: readonly string[] = DEFAULT_SKIP):
   });
 }
 
-/** Every value at a path such as `$.incidents[].incidentType`. */
+/** Every value at a path such as `$.incidents[].incidentType` or `$.DATA[0].ITEMS[]`. */
 export function valuesAt(value: unknown, path: string): unknown[] {
   let nodes: unknown[] = [value];
   for (const segment of path
     .replace(/^\$\.?/, "")
     .split(".")
     .filter(Boolean)) {
-    const each = segment.endsWith("[]");
-    const key = each ? segment.slice(0, -2) : segment;
+    const match = /^([^[\]]*)(?:\[(\d*)\])?$/.exec(segment);
+    const key = match?.[1] ?? segment;
+    const bracket = match?.[2];
     nodes = nodes.flatMap((node) => {
-      const child =
-        node !== null && typeof node === "object"
-          ? (node as Record<string, unknown>)[key]
-          : undefined;
+      let child: unknown = node;
+      if (key !== "") {
+        child =
+          node !== null && typeof node === "object"
+            ? (node as Record<string, unknown>)[key]
+            : undefined;
+      }
       if (child === undefined) return [];
-      return each ? (Array.isArray(child) ? child : []) : [child];
+      if (bracket === undefined) return [child];
+      if (!Array.isArray(child)) return [];
+      return bracket === "" ? child : child.slice(Number(bracket), Number(bracket) + 1);
     });
   }
   return nodes;
+}
+
+const MAX_ROWS = 120;
+const MAX_ROW_FIELDS = 8;
+
+/**
+ * One line per entry of a list, with only the named scalar fields, for lists of
+ * matches or statistic lines (never players): `$.DATA[].EVENTS[]:EVENT_ID,HOME_NAME`.
+ * At most 8 fields and 120 rows; objects and lists are never printed.
+ */
+export function rowsOf(value: unknown, spec: string): string[] {
+  const at = spec.lastIndexOf(":");
+  if (at < 0) return [];
+  const path = spec.slice(0, at);
+  const fields = spec
+    .slice(at + 1)
+    .split(",")
+    .filter(Boolean)
+    .slice(0, MAX_ROW_FIELDS);
+  return valuesAt(value, path)
+    .slice(0, MAX_ROWS)
+    .map((entry, index) => {
+      const cells = fields.map((field) => {
+        const cell = valuesAt(entry, `$.${field}`)[0];
+        if (cell === undefined) return "-";
+        if (cell !== null && typeof cell === "object") return "(object)";
+        return String(cell).slice(0, 60);
+      });
+      return `ROW ${index} | ${cells.join(" | ")}`;
+    });
 }
 
 /** More distinct values than this and the field is free text or a name: not listed. */
@@ -172,6 +208,7 @@ if (import.meta.main) {
   const shape = rest.includes("--shape");
   const enums = (flag("enum") ?? "").split(",").filter(Boolean);
   const enumMax = Number(flag("enum-max") ?? MAX_ENUM_VALUES);
+  const rowSpecs = rest.filter((a) => a.startsWith("--rows=")).map((a) => a.slice(7));
   const skip = flag("skip") ? (flag("skip") ?? "").split(",").filter(Boolean) : DEFAULT_SKIP;
   const outAt = rest.indexOf("--out");
   const outDir = outAt >= 0 ? rest[outAt + 1] : undefined;
@@ -179,7 +216,7 @@ if (import.meta.main) {
   if ((provider !== "sofascore" && provider !== "flashscore") || paths.length === 0) {
     console.error(
       "usage: provider-probe.ts <sofascore|flashscore> <path-and-query>... " +
-        "[--shape] [--enum=$.a[].b,...] [--enum-max=N] [--skip=part,...] [--out dir]",
+        "[--shape] [--enum=$.a[].b,...] [--enum-max=N] [--rows=$.a[]:f1,f2] [--skip=part,...] [--out dir]",
     );
     process.exit(2);
   }
@@ -195,11 +232,12 @@ if (import.meta.main) {
         requestsThisRun: requestsUsed(),
       }),
     );
-    if (shape || enums.length > 0) {
+    if (shape || enums.length > 0 || rowSpecs.length > 0) {
       try {
         const parsed: unknown = JSON.parse(result.body);
         if (shape) console.log(shapeOf(parsed, skip).join("\n"));
         if (enums.length > 0) console.log(enumsOf(parsed, enums, enumMax).join("\n"));
+        for (const spec of rowSpecs) console.log(`${spec}\n${rowsOf(parsed, spec).join("\n")}`);
       } catch {
         console.log("(response is not JSON)");
       }

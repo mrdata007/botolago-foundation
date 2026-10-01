@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { enumsOf, probe, readQuota, shapeOf, valuesAt } from "./provider-probe";
+import { enumsOf, probe, readQuota, rowsOf, shapeOf, valuesAt } from "./provider-probe";
 
 // Synthetic data only: nothing here comes from a provider.
 const incidents = {
@@ -61,8 +61,39 @@ describe("enumsOf", () => {
 });
 
 describe("valuesAt", () => {
+  test("an index picks one item of a list", () => {
+    const data = { DATA: [{ n: "first" }, { n: "second" }] };
+    expect(valuesAt(data, "$.DATA[1].n")).toEqual(["second"]);
+    expect(valuesAt(data, "$.DATA[5].n")).toEqual([]);
+  });
+
   test("walks keys and lists", () => {
     expect(valuesAt(incidents, "$.incidents[].time")).toEqual([12, 70, 21]);
+  });
+});
+
+describe("rowsOf", () => {
+  const data = {
+    DATA: [
+      { EVENTS: [{ EVENT_ID: "a1", HOME: "Alpha", SCORE: 2, NESTED: { x: 1 } }] },
+      { EVENTS: [{ EVENT_ID: "b2", HOME: "Beta" }] },
+    ],
+  };
+
+  test("prints one line per entry with only the named fields", () => {
+    expect(rowsOf(data, "$.DATA[].EVENTS[]:EVENT_ID,HOME,SCORE")).toEqual([
+      "ROW 0 | a1 | Alpha | 2",
+      "ROW 1 | b2 | Beta | -",
+    ]);
+  });
+
+  test("never prints an object, and an index picks one list item", () => {
+    expect(rowsOf(data, "$.DATA[0].EVENTS[]:EVENT_ID,NESTED")).toEqual(["ROW 0 | a1 | (object)"]);
+  });
+
+  test("caps the rows", () => {
+    const big = { list: Array.from({ length: 500 }, (_, i) => ({ id: i })) };
+    expect(rowsOf(big, "$.list[]:id")).toHaveLength(120);
   });
 });
 
