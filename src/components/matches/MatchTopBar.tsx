@@ -53,7 +53,10 @@ export function MatchTopBar({
   ) : undefined;
 
   return (
-    <div data-match-bar="" className="sticky top-0 z-30">
+    // The surface sits behind both bars. The two cross-fade, so for a moment
+    // each is part transparent; with nothing opaque behind them the match
+    // header's date line, scrolling under the bar, showed through both.
+    <div data-match-bar="" className={cn("sticky top-0 z-30", ui.surface.bar)}>
       <div
         inert={showCompact}
         className={cn(
@@ -97,6 +100,10 @@ function CompactBar({
       inert={!shown}
       className={cn(
         "absolute inset-0 overflow-hidden transition-opacity duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
+        // The white bar's own hairline, across the whole width: a light kit
+        // (CODM's white half) is the same colour as the page, and without an
+        // edge the bar read as filled on one side only.
+        ui.rule.block,
         !shown && "pointer-events-none opacity-0",
       )}
     >
