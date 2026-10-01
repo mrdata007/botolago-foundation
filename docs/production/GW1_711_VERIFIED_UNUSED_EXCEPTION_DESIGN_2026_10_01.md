@@ -1,149 +1,170 @@
-# Fixture 711: leaving out a verified-unused, unplaceable substitute (design, 1 Oct 2026)
+# Leaving out an owner-approved, verified-unused, unplaceable substitute (design v2, 1 Oct 2026)
 
-**Status: design and local validation only. Nothing here has been applied, deployed or run in
-production.** The migration below is a file in this branch; no database has it except a
-disposable local one.
+**Status: designed and implemented locally. Not applied, not deployed, not merged. Nothing
+here has run in production.** This replaces the first draft (commit `fa389697`), which had
+four defects recorded in `GW1_711_PARTICIPATION_DIAGNOSTICS_2026_10_01.md` (A to D). Each is
+answered below.
 
-Question: can a **named** lineup player the list cannot place (no canonical player, no
-position) be left out of performance ingestion when the provider itself shows he was an unused
-substitute with no scoring events? Target: SportsMonks player 38227322 (Soufane Abderrahmane),
-fixture 19874711.
+Target: SportsMonks player 38227322 (Soufane Abderrahmane), substitute for CR Khemis
+Zemamra in fixture 19874711.
 
-## 1. What the provider evidence shows today: CANNOT_VERIFY_UNUSED
+## 1. Evidence it rests on
 
-The earlier read-only diagnose (run 36857665428) printed only provider ids, club and a
-started flag for the 39 lineup players, so it cannot show his minutes or statistics. Nothing
-stored in the database holds 711's lineup or events (no performance or coverage row exists for
-it). The earlier evidence says he is a substitute (`started: false`, shirt 21) and that the
-provider listed no position for him; it does not say whether the provider recorded minutes,
-statistics or events for him. So the answer is **CANNOT_VERIFY_UNUSED today**: not "he played",
-just "the facts are not on file".
+Read-only diagnose run 36870906327 (main `060d9ba3`, fixture 19874711 only): role
+substitute; official minutes none sent; no scoring-relevant statistic with a value; no
+unknown statistic; no match event names him. The provider sent no statistic rows for him at
+all, so the zeros are the provider's "absent means zero" rule, not explicit zeros. The same
+payload's events do name other players, so his empty list is meaningful. Six other
+substitutes have the same empty record, which is why scope cannot be "whoever is unused".
 
-Closing the gap needs one read-only run of the diagnose after this patch is on `main`. The
-patch makes the diagnose print, for every named lineup player, only: provider player id, club
-id, role, official minutes, the scoring-relevant statistic types with a value above zero, the
-goalkeeper types sent as null, the types sent as explicit zero, and the types of match events
-that name him. No names, no raw payload.
+## 2. Why 711 is blocked
 
-## 2. Why 711 fails today
+`api.ingest_current_player_fixture_performance` raises `PLAYER_MAPPING_NOT_FOUND` for any
+named lineup player with no canonical player. A canonical player needs a real position, the
+provider gives him none, and the one fixture is one transaction, so he blocks all 39 players
+though he cannot change a point.
 
-`api.ingest_current_player_fixture_performance` loops over every row and raises
-`PLAYER_MAPPING_NOT_FOUND` for a provider player the list has no mapping for. The
-identity-apply plan skips a player with no position (`skip_no_position`), so he never gets a
-mapping. The whole fixture is one transaction, so one such row blocks all 39 players.
+## 3. The answer to the four defects
 
-## 3. The rule (all must hold or the fixture stays blocked as today)
+**A. The limit belongs on the approved list.** The first draft returned no declarations when
+more than two substitutes were unused. Now the limit is 2 on the owner-approved list (the
+allowlist, and the declaration the database receives). How many other substitutes happened to
+be unused is never counted. Tested in both languages: eight unused substitutes, one approved,
+the one is left out and the other seven are imported as before.
 
-- The importer declares him only if: substitute (never a starter); official minutes absent or
-  0; no scoring-relevant statistic with a value (goals, assists, saves, penalties saved or
-  missed, own goals, yellow, red, second yellow, goals conceded, rating); no goalkeeper
-  statistic sent as null; and no provider match event names him (goal, card, substitution).
-- The database re-checks the row it received: not started, not appeared, every counted
-  statistic exactly 0, no rating, same club as declared.
-- The database leaves him out only if: the fixture is mapped; its gameweek is not under
-  adaptive scoring; his club is mapped and plays in the fixture; **no mapping row of any kind
-  (active or inactive) exists for his provider id**, which also rules out anyone a Fantasy
-  team holds or a locked lineup contains; and at most 2 players in the fixture qualify.
-- Every other row, including the 22 starters, goalkeeper checks, statistics completeness,
-  goal reconciliation and the 11-starters check, follows the existing path unchanged.
-- A declaration that is malformed or that his own row contradicts is refused as
-  `INVALID_PROVIDER_PAYLOAD`. That is a caller defect, not a case to decide.
-- The exception is only sent on a **one-fixture canary** run, never by a page or an
-  orchestrator pass.
+**B. Scope is explicit and owner-reviewed.**
 
-"Missing position" is not a condition. A player who played, scored, was booked or started is
-refused whatever his position field says.
+- The scope is `scripts/backend/verified-unused-exceptions.json`, a file in the repository.
+  Each entry is an exact fixture id plus an exact provider player id, so every change is a
+  reviewed commit, and a run only sees the entries of the exact commit it was dispatched at.
+- An entry is `proposed` or `approved`. Only `approved` is honoured, and an approved entry
+  names an approver and a date. At most 2 entries per fixture, no duplicates, strict shape.
+- The importer reads the file only on a one-fixture run (`only_fixture_external_id`). A page
+  or an orchestrator pass never reads it, so it cannot change them.
+- Nobody is discovered at run time. A player not listed is never left out, whatever the
+  provider says. The provider's facts must also independently show him unused, checked in
+  the importer and again in the database.
+- The first-use entry is committed as **proposed**: fixture 19874711, player 38227322. The
+  owner flips it to approved (with name and date) in a reviewed commit.
+- If an approved entry no longer holds (the provider now shows minutes or an event, he is
+  not in the lineup, or the preflight record changed) the fixture is **not ingested** and
+  the evidence says why. It does not fall back to ingesting him.
 
-## 4. Where it lives (smallest place)
+**C. "No provider mapping" is not "no canonical or Fantasy record".**
 
-A new migration (`20261001130000_verified_unused_unmapped_participants.sql`) renames the
-current function to `..._before_exclusions` and adds a thin wrapper of the same name. With no
-declaration the wrapper calls the old function with exactly what it was given. The old
-function, the coverage table, the scoring document and its digests are untouched. The
-declaration is removed before the old function sees it, so a fixture that leaves nobody out
-keeps its source version.
+- What the database can check is checked: no provider mapping of any kind (active or not) for
+  his id, his club is one of the fixture's two clubs, the gameweek is not under adaptive
+  scoring, the starters in the rows are the starters the coverage reports and no club has
+  more than 11.
+- What it cannot check is a **reviewed claim**, not a proof: that no canonical player, Fantasy
+  player, squad membership or locked lineup represents the same real person under another
+  id. It is recorded in a preflight record
+  (`GW1_711_38227322_UNUSED_PREFLIGHT_2026_10_01.md`) with read-only SQL for the owner to run
+  and a table for the owner to fill in. Each allowlist entry pins that file's sha256; a
+  changed file is refused until re-reviewed. The file's digest is stored with each exclusion.
+- The preflight record is **not yet owner-reviewed**. Every check in it reads "not yet
+  confirmed".
 
-## 5. Audit record
+**D. Event verification is described truthfully.**
 
-Table `app_private.current_fixture_excluded_participants` (append-only, service-role insert
-and select only, RLS forced), keyed by fixture, coverage source version and provider player
-id. Each row says: provider player, club, role `substitute`, reason
-`verified_unused_unmapped`, official minutes, the type ids that were zero, and the time the
-provider observed. A view joins it to the coverage's current source version. "Left out as
-verified unused" is therefore a stored fact, never a silent gap. The excluded count is also
-carried in the coverage the fixture already stores (`excludedIncompleteRows` increases and
-`validPlayerRows` decreases by the same number, so rows seen is unchanged), and the RPC
-result lists the ids (`excludedVerifiedUnusedUnmapped`). An unknown player stays a refusal;
-only a verified-unused one gets this record.
+- The database cannot see the provider payload. That he had no minutes, statistic or match
+  event is **trusted importer evidence**, not independently verified by the database.
+- It is carried through a contract the database validates for form and consistency: the
+  declaration must carry empty lists for scoring statistics, unknown statistics and match
+  events, plus a SHA-256 of exactly those facts in a fixed text form. The database recomputes
+  that digest and refuses a declaration that does not match. The same digest is stored in the
+  audit row with `evidence_basis = importer_declared_digest_bound`, so what the exception
+  rested on is auditable later. A cross-language test vector keeps the TypeScript and SQL
+  digests identical.
 
-## 6. Why GW1 points cannot change because of it
+## 4. What it does, step by step
+
+1. The importer reads the provider payload, builds the per-player facts (as in the merged
+   diagnostics) and, on a one-fixture run, checks each allowlist entry for that fixture.
+2. For each approved entry whose facts still show an unused substitute, it adds a declaration
+   to `p_coverage.verifiedUnusedSubstitutes`. Rows and every other coverage field are
+   untouched. A fixture with no approved entry sends exactly the call it always did.
+3. The new database wrapper (in front of the renamed existing function) refuses a malformed
+   declaration (`INVALID_PROVIDER_PAYLOAD`), checks the facts above, and if any precondition
+   fails raises `VERIFIED_UNUSED_EXCEPTION_PRECONDITION_FAILED` (SQLSTATE 55000) and writes
+   nothing.
+4. If all hold it removes his row, moves him from the valid rows to the rows left out in the
+   coverage (rows seen unchanged), calls the existing function unchanged, then records him in
+   `app_private.current_fixture_excluded_participants` bound to the coverage's source version.
+5. The result lists the ids left out. The importer requires exactly the declared set and a
+   row count lowered by the same number; anything else is a reconciliation failure.
+
+Unchanged: starters, mapped players (known substitutes are imported as before), goalkeeper
+checks, statistics completeness, the 11 starters per side, goal reconciliation, the
+scoring document and every digest for every other fixture.
+
+## 5. Audit representation
+
+`app_private.current_fixture_excluded_participants` (append-only, service role only, RLS
+forced), one row per left-out player per coverage version: provider player and club, role
+`substitute`, reason `verified_unused_unmapped`, official minutes, zero-statistic types, event
+types (always empty), `evidence_basis`, `evidence_digest`, `preflight_digest`, the provider's
+observed time. The view `current_fixture_verified_unused_participants` joins it to the
+fixture's current coverage row. "Left out on purpose and verified" is a stored fact;
+"unknown" is never recorded this way.
+
+## 6. Why GW1 points cannot change
 
 The scoring document is built from Fantasy players joined to performance rows. A player with
 no Fantasy player has no scoring row either way, and the exclusion requires that no mapping
-exists, so no Fantasy player can exist for him. If a Fantasy player did exist, a missing
-performance row is scored as did-not-play with zero statistics, the same as the all-zero row
-he would otherwise have. His own row is all zeros by the rule, so it adds no points. The
-local test builds the scoring document after the exclusion and checks it has 23 player
-rows (the Fantasy players of the two clubs) and none for him, and no new key, so the digest of
-every other fixture is unchanged. 705 and 708 are not touched: their source versions are
-computed without any declaration.
+exists. A missing performance row scores as did-not-play with zero statistics, the same as
+the all-zero row he would otherwise have. The local test builds the scoring document after
+an exclusion and checks it validates, has no new key (every other fixture's digest is
+unchanged) and has one row per Fantasy player of the two clubs. Fixtures 705 and 708 are not
+touched: they never carry a declaration.
 
-## 7. Tests (local, disposable Postgres 16, pgTAP)
+## 7. Local validation
 
-`supabase/tests/database/current_performance_verified_unused_unmapped.test.sql`: 68 tests, all
-passing locally. Cases: PASS A; REFUSE B (starter, alone and with minutes), C (minutes, alone
-and with appeared), D goal, E assist, F yellow, G red, G2 second yellow, H own goal, I missed
-penalty, saved penalty and save, goals conceded, null saves, null saved penalties, rating,
-clean sheet, wrong club, malformed declarations, duplicates; J held by a Fantasy team; K in a
-locked lineup; L existing mapping with wrong membership; M unnamed row (existing logic);
-adaptive scoring; privileges (anon and authenticated refused); idempotent repeat; unchanged
-digest for a declared-but-not-excluded fixture; scoring-document shape. The existing suite
-shows no regression versus the baseline (same results before and after).
+Disposable Postgres 16 with Supabase stand-ins, not the CI stack. CI's `database-quality` job
+is the authority; Docker was not available here.
 
-**Negative controls:** 25 mutations of the migration, each rebuilt from scratch and run
-against the test file. Each makes at least one test fail (for example allowing goals fails
-the goal tests, allowing inactive mappings fails the J/K tests, delivering the declaration to
-the old function fails the digest test, dropping the audit write fails the audit tests, and
-dropping the whole migration fails 24 tests). Three mutations first produced no failure
-because other checks covered them; isolating tests were added (starter alone, minutes alone,
-a valid adaptive payload) and now each fails them.
+- **Database:** `current_performance_verified_unused_unmapped.test.sql`, 85 pgTAP tests, all
+  passing. Cases: PASS A; REFUSE B (starter, alone and with minutes), C (minutes, alone and
+  with appeared), D goal, E assist, F yellow, G red, G2 second yellow, H own goal, I missed
+  penalty, saved penalty and save, goals conceded, null saves, null saved penalties, rating,
+  clean sheet, wrong club, malformed declarations, duplicates; the new contract (wrong
+  fixture, event named, missing or wrong evidence digest, missing preflight digest, more
+  than 2 declared, an unapproved third unknown substitute still blocks); J held by a Fantasy
+  team, K in a locked lineup, L known player (refused when declared, existing refusal
+  unchanged when not); M unnamed row; adaptive scoring; a missing starter and a club with 12
+  starters; eight unused substitutes with one approved; privileges; idempotent repeat;
+  unchanged digest for a fixture that excludes nobody; scoring-document shape.
+- **Database negative controls:** 35 mutations of the migration, each rebuilt from scratch.
+  Each makes at least one test fail. Two controls first passed silently (a redundant digest
+  format check and a NULL comparison that would have skipped a missing digest); the second was
+  a real gap, now fixed with `IS DISTINCT FROM` and a test.
+- **Existing database suite:** 110 files, 2,714 tests, against a baseline of 109 files and
+  2,629 tests before this work. The same 27 files fail before and after, all for limits of the
+  local stand-in (for example a missing `mfa_factors` column); none is related.
+- **TypeScript:** `current-season-performances.test.ts` and
+  `verified-unused-exceptions.test.ts`, 117 tests passing; the whole `scripts/backend` and
+  `src/backend` suite, 1,221 passing, 0 failing. 17 mutations of the importer and the
+  allowlist module all fail tests.
+- **Normal path unchanged:** main's importer and this one were run side by side on 80
+  combinations (two fixtures, four payload shapes, adaptive on and off, five run modes). Every
+  RPC call and argument is identical; results are byte-identical in ingest modes, and diagnose
+  differs only by the new `verifiedUnusedScope` report.
+- Typecheck, ESLint, Prettier, secret scan and migration check are clean.
 
-TypeScript: `scripts/backend/current-season-performances.test.ts`, 65 tests passing (22 new);
-7 mutations of the importer all fail tests. CI's `database-quality` job is the authority for
-the pgTAP run: Docker is not available here, so the local database was a hand-built Postgres
-with Supabase stand-ins, not the CI stack.
+## 8. Remaining risks
 
-## 8. Risks
+- A player the provider shows as unused who in fact played, with no minutes and no event,
+  would be left out; no Fantasy points are lost (no Fantasy player), but his real minutes are
+  not recorded. Mitigations: at most 2, named by owner, digest-bound evidence, one fixture.
+- The preflight claim about the same real person is human-reviewed, not machine-verified.
+- Adaptive scoring is refused, not supported.
+- The migration must be applied before an approved entry is used.
 
-- **Wrong "unused" call:** a player who did play but whom the provider shows with no minutes
-  and no events would be left out. He has no Fantasy player and no owner, so no points are
-  lost, but his real minutes would not be recorded. Mitigations: match events are also
-  checked; at most 2 per fixture; the audit table names each one; the exception only runs on
-  a canary the owner approves after reading the diagnose.
-- **Provider quirks:** a substitute with goals conceded but no minutes is treated as having
-  played (not excluded).
-- **Adaptive scoring:** not reviewed for this rule, so under it the exception does not apply.
-- **Order of deployment:** the migration must be applied before the importer sends a
-  declaration. The importer sends nothing outside a canary, so merging the script first does
-  no harm.
-- **Not covered:** the generated types file lists the renamed function; the types check needs
-  Docker and could not be run here.
+## 9. Approvals still needed (each separate; none is given by this document)
 
-## 9. Does 707's player 37541460 qualify?
-
-**NEITHER verified today.** The 707 lineup and events stored earlier show an unmapped bench
-player of his club's side who played and was booked. I did not re-derive in this session
-whether that player is 37541460, so he is not assumed to be unused; the same read-only
-diagnose for 707 would settle it. The rule is not loosened for him.
-
-## 10. Next approval needed
-
-1. Review of this patch (migration, test, importer changes, this note).
-2. If approved: merge to `main`, then run the read-only diagnose for fixture 711 only, which
-   now prints 38227322's facts. If it says verified unused, then a fresh scoped Observe, one
-   rolled-back rehearsal of the 11 other identity repairs, the migration, and a single canary
-   ingest of 711, each under its own approval.
-3. If the diagnose shows he had minutes or an event, the rule refuses and his position is
-   needed after all.
-
-Nothing was run in production for this work.
+1. Review and merge of this patch (migration, importer, tests, allowlist, preflight record).
+2. The owner runs the preflight checks, fills in the record, and flips the entry to approved
+   in a reviewed commit (which also updates the pinned digest of the record).
+3. Applying migration `20261001130000` through the reviewed migration path.
+4. A fresh scoped Observe, one rolled-back rehearsal of the other 11 identity repairs, then
+   one canary ingest of fixture 19874711 with the approved entry.

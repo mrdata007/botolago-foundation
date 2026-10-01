@@ -148,9 +148,24 @@ create function pg_temp.coverage(lineup integer, valid integer, excluded integer
     'goalkeeperStatistics', 'explicit_value_or_null_canonical_position_checked_in_database')
     || case when declaration is null then '{}'::jsonb else jsonb_build_object('verifiedUnusedSubstitutes', declaration) end
 $$;
+-- A declaration as the importer sends it, with the digest of its own facts
+-- (recomputed after the patch, unless the patch sets its own).
 create function pg_temp.declare(ext text, team text, patch jsonb default '{}') returns jsonb language sql as $$
-  select jsonb_build_object('externalPlayerId', ext, 'externalTeamId', team, 'role', 'substitute',
-    'scoringStatisticTypeIds', '[]'::jsonb, 'unknownStatisticTypeIds', '[]'::jsonb, 'zeroStatisticTypeIds', '[119]'::jsonb) || patch
+  with merged as (
+    select jsonb_build_object('fixtureExternalId', '19891001', 'externalPlayerId', ext, 'externalTeamId', team,
+      'role', 'substitute', 'scoringStatisticTypeIds', '[]'::jsonb, 'unknownStatisticTypeIds', '[]'::jsonb,
+      'eventTypeIds', '[]'::jsonb, 'zeroStatisticTypeIds', '[119]'::jsonb,
+      'preflightDigest', encode(extensions.digest('vu-preflight', 'sha256'), 'hex')) || patch as m)
+  select m || case when m ? 'evidenceDigest' then '{}'::jsonb else jsonb_build_object('evidenceDigest',
+    encode(extensions.digest(
+      'sportsmonks-verified-unused:v1|fixture=' || (m ->> 'fixtureExternalId') || '|player=' || (m ->> 'externalPlayerId')
+      || '|team=' || (m ->> 'externalTeamId') || '|role=substitute|minutes='
+      || case when coalesce(m -> 'officialMinutes', 'null'::jsonb) = 'null'::jsonb then '-' else '0' end
+      || '|scoring=|unknown=|events=|zero='
+      || coalesce((select string_agg(z #>> '{}', ',' order by z #>> '{}')
+           from jsonb_array_elements(case when jsonb_typeof(m -> 'zeroStatisticTypeIds') = 'array'
+             then m -> 'zeroStatisticTypeIds' else '[]'::jsonb end) z), ''), 'sha256'), 'hex')) end
+  from merged
 $$;
 create function pg_temp.ingest(p_rows jsonb, p_coverage jsonb) returns jsonb language sql as $$
   select api.ingest_current_player_fixture_performance('sportsmonks', '28647', '19891001', p_rows, p_coverage,
@@ -252,34 +267,79 @@ select extensions.throws_ok(
 select extensions.throws_ok(
   $$select pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123','68911'), pg_temp.bench('88902','68912'))),
     pg_temp.coverage(24, 24, 0, 22, 0, jsonb_build_array(pg_temp.declare('88902','68912'))))$$,
-  'P0002', 'PLAYER_MAPPING_NOT_FOUND', 'J: a player a Fantasy team holds is never left out');
+  '55000', 'VERIFIED_UNUSED_EXCEPTION_PRECONDITION_FAILED', 'J: a player a Fantasy team holds is never left out: the approved exception is refused');
 -- K: in a locked Fantasy lineup.
 select extensions.throws_ok(
   $$select pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123','68911'), pg_temp.bench('88903','68912'))),
     pg_temp.coverage(24, 24, 0, 22, 0, jsonb_build_array(pg_temp.declare('88903','68912'))))$$,
-  'P0002', 'PLAYER_MAPPING_NOT_FOUND', 'K: a player in a locked lineup is never left out');
+  '55000', 'VERIFIED_UNUSED_EXCEPTION_PRECONDITION_FAILED', 'K: a player in a locked lineup is never left out: the approved exception is refused');
 -- L: mapped, but no club record for this club on this date.
 select extensions.throws_ok(
   $$select pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123','68911'), pg_temp.bench('89124','68911'))),
     pg_temp.coverage(24, 24, 0, 22, 0, jsonb_build_array(pg_temp.declare('89124','68911'))))$$,
-  'P0002', 'PLAYER_MEMBERSHIP_NOT_FOUND', 'L: a mapped player with the wrong club record still fails the membership check');
+  '55000', 'VERIFIED_UNUSED_EXCEPTION_PRECONDITION_FAILED', 'L: a mapped player is never left out: the approved exception is refused');
+-- ...and, undeclared, he takes the existing path and its refusal exactly as before.
+select extensions.throws_ok(
+  $$select pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123','68911'), pg_temp.bench('89124','68911'))),
+    pg_temp.coverage(24, 24))$$,
+  'P0002', 'PLAYER_MEMBERSHIP_NOT_FOUND', 'L: the same mapped player, undeclared, still fails the membership check');
 -- A club the list does not map.
 select extensions.throws_ok(
   $$select pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123','68911'), pg_temp.bench('88901','68999'))),
     pg_temp.coverage(24, 24, 0, 22, 0, jsonb_build_array(pg_temp.declare('88901','68999'))))$$,
-  'P0002', 'TEAM_MAPPING_NOT_FOUND', 'an unmapped club is refused by the existing check');
--- A third unknown substitute: more than 2 is not this rule's case.
+  '55000', 'VERIFIED_UNUSED_EXCEPTION_PRECONDITION_FAILED', 'an unmapped club: the approved exception is refused');
+-- More than 2 declared is a defect in the caller: the limit is on the approved list.
 select extensions.throws_ok(
   $$select pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123','68911'), pg_temp.bench('88901','68911'),
       pg_temp.bench('88904','68911'), pg_temp.bench('88905','68912'))),
     pg_temp.coverage(26, 26, 0, 22, 0, jsonb_build_array(pg_temp.declare('88901','68911'),
       pg_temp.declare('88904','68911'), pg_temp.declare('88905','68912'))))$$,
-  'P0002', 'PLAYER_MAPPING_NOT_FOUND', 'three unknown substitutes in one fixture are not left out');
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'three declared players are refused: the limit is 2 on the approved list');
+-- An unknown substitute nobody approved still blocks the fixture, whoever else was.
+select extensions.throws_ok(
+  $$select pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123','68911'), pg_temp.bench('88901','68911'),
+      pg_temp.bench('88904','68911'), pg_temp.bench('88905','68912'))),
+    pg_temp.coverage(26, 26, 0, 22, 0, jsonb_build_array(pg_temp.declare('88901','68911'),
+      pg_temp.declare('88904','68911'))))$$,
+  'P0002', 'PLAYER_MAPPING_NOT_FOUND', 'a third unknown substitute that was not approved still blocks the fixture');
+-- The new declaration contract.
+select extensions.throws_ok($$select pg_temp.one_unknown('{}', '{"fixtureExternalId":"19891002"}')$$,
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'the declaration must name this fixture');
+select extensions.throws_ok($$select pg_temp.one_unknown('{}', '{"eventTypeIds":[19]}')$$,
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'a match event naming him is refused');
+select extensions.throws_ok($$select pg_temp.one_unknown('{}', '{"eventTypeIds":null}')$$,
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'the event list is part of the contract: absent is not empty');
+select extensions.throws_ok(
+  $$select pg_temp.one_unknown('{}', jsonb_build_object('evidenceDigest', repeat('a', 64)))$$,
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'a digest that is not the digest of the declared facts is refused');
+select extensions.throws_ok($$select pg_temp.one_unknown('{}', '{"evidenceDigest":null}')$$,
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'the evidence digest is required: absent is not a match');
+-- Right digest for the real fixture, but the declaration names another fixture: only the
+-- fixture binding can stop this one.
+select extensions.throws_ok(
+  $$select pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123','68911'), pg_temp.bench('88901','68911'))),
+    pg_temp.coverage(24, 24, 0, 22, 0, jsonb_build_array(
+      pg_temp.declare('88901','68911') || '{"fixtureExternalId":"19891002"}'::jsonb)))$$,
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'a declaration that names another fixture is refused even with a valid digest');
+select extensions.throws_ok($$select pg_temp.one_unknown('{}', '{"evidenceDigest":"nothex"}')$$,
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'a malformed evidence digest is refused');
+select extensions.throws_ok($$select pg_temp.one_unknown('{}', '{"preflightDigest":"nothex"}')$$,
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'a malformed preflight digest is refused');
+select extensions.throws_ok($$select pg_temp.one_unknown('{}', '{"preflightDigest":null}')$$,
+  '22023', 'INVALID_PROVIDER_PAYLOAD', 'the preflight digest is required');
 -- 11 starters per side is still required.
 select extensions.throws_ok(
   $$select pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123','68911'), pg_temp.bench('88901','68911')), array[22]),
     pg_temp.coverage(24, 24, 0, 22, 0, jsonb_build_array(pg_temp.declare('88901','68911'))))$$,
-  '22023', 'CURRENT_PERFORMANCE_INCOMPLETE', 'a missing starter is not hidden by the exception');
+  '55000', 'VERIFIED_UNUSED_EXCEPTION_PRECONDITION_FAILED', 'a missing starter is not hidden by the exception: the starters must be the ones reported');
+-- No club may have more than 11 starters, whatever else is true.
+select extensions.throws_ok(
+  $$select pg_temp.ingest(
+    (select jsonb_agg(case when n = 12 then pg_temp.starter(n) || '{"externalTeamId":"68911"}'::jsonb
+        else pg_temp.starter(n) end order by n) from generate_series(1, 22) n)
+      || jsonb_build_array(pg_temp.bench('89123','68911'), pg_temp.bench('88901','68911')),
+    pg_temp.coverage(24, 24, 0, 22, 0, jsonb_build_array(pg_temp.declare('88901','68911'))))$$,
+  '55000', 'VERIFIED_UNUSED_EXCEPTION_PRECONDITION_FAILED', 'a club with more than 11 starters is refused');
 -- The rows seen must still add up.
 select extensions.throws_ok(
   $$select pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123','68911'), pg_temp.bench('88901','68911'))),
@@ -347,6 +407,18 @@ select extensions.is(
   '{"player":"88901","club":"68911","role":"substitute","reason":"verified_unused_unmapped","minutes":null,"zeroTypes":[119]}'::jsonb,
   'A: the left-out player is recorded: identified, substitute, verified unused, with the evidence');
 select extensions.is(
+  (select jsonb_build_object('basis', evidence_basis, 'events', to_jsonb(event_type_ids),
+     'evidenceDigest', evidence_digest, 'preflightDigest', preflight_digest)
+   from app_private.current_fixture_verified_unused_participants where fixture_id = md5('vu-fixture')::uuid),
+  jsonb_build_object('basis', 'importer_declared_digest_bound', 'events', '[]'::jsonb,
+    'evidenceDigest', pg_temp.declare('88901', '68911') ->> 'evidenceDigest',
+    'preflightDigest', encode(extensions.digest('vu-preflight', 'sha256'), 'hex')),
+  'A: the record says what it rests on: importer-declared evidence, bound by digest, and the reviewed preflight');
+select extensions.is(
+  pg_temp.declare('88901', '68911') ->> 'evidenceDigest',
+  'c47774629d2fb31ff88760ff67eb01b11739c856b7613d6b7cfb32e56c65e82f',
+  'the digest of these facts is the one the TypeScript test vector pins (the two languages agree)');
+select extensions.is(
   (select team_id from app_private.current_fixture_excluded_participants where fixture_id = md5('vu-fixture')::uuid),
   '63910000-0000-4000-8000-000000000001'::uuid, 'A: the record carries the internal club');
 select extensions.is(
@@ -382,9 +454,14 @@ select extensions.is(
   (select version from expected_version), 'no declaration: the existing function gives the version it always gave');
 select extensions.is(
   pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123', '68911'))),
-    pg_temp.coverage(23, 23, 0, 22, 0, jsonb_build_array(pg_temp.declare('89123', '68911')))) ->> 'sourceVersion',
+    pg_temp.coverage(23, 23) || '{"verifiedUnusedSubstitutes":[]}'::jsonb) ->> 'sourceVersion',
   (select version from expected_version),
-  'a declaration for a KNOWN player leaves the source version, the rows and the coverage as they were');
+  'an empty declaration leaves the source version, the rows and the coverage as they were');
+select extensions.throws_ok(
+  $$select pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123', '68911'))),
+    pg_temp.coverage(23, 23, 0, 22, 0, jsonb_build_array(pg_temp.declare('89123', '68911'))))$$,
+  '55000', 'VERIFIED_UNUSED_EXCEPTION_PRECONDITION_FAILED',
+  'a declaration for a KNOWN player is refused: never ingested around, never dropped');
 select extensions.is(
   (select count(*)::integer from app_private.historical_performance_fixture_coverage
    where fixture_id = md5('vu-fixture')::uuid and excluded_incomplete_rows = 0 and performance_rows = 23),
@@ -413,6 +490,33 @@ select extensions.is(
   (select array_agg(external_player_id order by external_player_id) from app_private.current_fixture_verified_unused_participants
    where fixture_id = md5('vu-fixture')::uuid),
   array['88901'], 'M: only the named, declared player is recorded');
+
+-- The limit is on the approved list, not on how many substitutes were unused: seven
+-- known substitutes who stayed on the bench do not stop the one approved exclusion.
+insert into app.players (id, slug, full_name, display_name, position)
+select md5('vu-player-' || n)::uuid, 'vu-player-' || n, 'VU Player ' || n, 'VU Player ' || n, 'midfielder'
+from generate_series(27, 33) n;
+insert into app.team_memberships (player_id, team_id, season_id, shirt_number, valid_from, active)
+select md5('vu-player-' || n)::uuid, '63910000-0000-4000-8000-000000000001'::uuid,
+  '43910000-0000-4000-8000-000000000001'::uuid, n, current_date - 30, true
+from generate_series(27, 33) n;
+insert into app_private.football_provider_mappings (
+  provider_name, entity_type, external_id, internal_entity_id, source_version, last_seen_at, active
+)
+select 'sportsmonks', 'player', (89100 + n)::text, md5('vu-player-' || n)::uuid, 'vu-player-' || n, statement_timestamp(), true
+from generate_series(27, 33) n;
+select extensions.is(
+  pg_temp.ingest(
+    pg_temp.rows(jsonb_build_array(pg_temp.bench('89123', '68911'), pg_temp.bench('89127', '68911'),
+      pg_temp.bench('89128', '68911'), pg_temp.bench('89129', '68911'), pg_temp.bench('89130', '68911'),
+      pg_temp.bench('89131', '68911'), pg_temp.bench('89132', '68911'), pg_temp.bench('89133', '68911'),
+      pg_temp.bench('88901', '68911'))),
+    pg_temp.coverage(31, 31, 0, 22, 0, jsonb_build_array(pg_temp.declare('88901', '68911')))) -> 'excludedVerifiedUnusedUnmapped',
+  '["88901"]'::jsonb,
+  'eight unused substitutes in the payload, one approved and unplaceable: only he is left out, and the other seven are imported');
+select extensions.is(
+  (select count(*)::integer from app.player_fixture_performances where fixture_id = md5('vu-fixture')::uuid and active and not appeared),
+  8, 'the eight known bench players are stored as before');
 
 -- ---------------------------------------------------------------------------
 -- Fantasy: what scoring reads is unchanged, and it accepts this coverage.
@@ -448,22 +552,21 @@ select extensions.is(
      and (pf #>> '{stats,yellowCards}')::integer = 0),
   1, 'a known bench player is scored from his own zero row, as before');
 
--- Adaptive scoring has its own participation evidence and is not reviewed for this
--- rule: under it nobody is left out, and the fixture takes the adaptive path as before.
+-- Adaptive scoring has its own participation evidence and is not reviewed for this rule.
 insert into app_private.fantasy_adaptive_policy (season_id, from_gameweek, ruleset_id, activated_at, paused)
 values ('73910000-0000-4000-8000-000000000002', 1,
   (select id from app.fantasy_rulesets order by version desc, minor_version desc limit 1),
   statement_timestamp(), false);
 select extensions.ok(app_private.fantasy_adaptive_enabled('73910000-0000-4000-8000-000000000003'),
   'fixture: the gameweek is now under adaptive scoring');
--- The payload is a valid adaptive one, so the only thing that can stop it is the
--- unknown player: the adaptive path must still see him and refuse, as before.
+-- The payload is a valid adaptive one: the exception is refused outright, never
+-- applied under a scoring path whose participation evidence it was not reviewed for.
 select extensions.throws_ok(
   $$select pg_temp.ingest(pg_temp.rows(jsonb_build_array(pg_temp.bench('89123','68911'), pg_temp.bench('88901','68911'))),
     pg_temp.coverage(24, 24, 0, 22, 0, jsonb_build_array(pg_temp.declare('88901','68911')))
       || '{"adaptiveFieldEvidence":{}}'::jsonb)$$,
-  'PT409', 'adaptive_player_mapping_missing',
-  'adaptive scoring: the exception does not apply (the adaptive path still refuses the unknown player, as before)');
+  '55000', 'VERIFIED_UNUSED_EXCEPTION_PRECONDITION_FAILED',
+  'adaptive scoring: the exception is refused (that path is not reviewed for it)');
 
 select * from extensions.finish();
 rollback;
