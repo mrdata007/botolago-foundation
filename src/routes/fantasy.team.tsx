@@ -22,6 +22,7 @@ import { useNextFixtures } from "@/components/fpl/useNextFixtures";
 import { ui, UiButton, UiHeader, UiIconButton, UiSegmented } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { useViewerTimeZone } from "@/lib/viewer-time-zone";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 import {
@@ -102,6 +103,7 @@ function useCountdownText(deadlineIso: string | undefined): string | null {
 
 function PickTeamBody() {
   const { t, lang } = useI18n();
+  const timeZone = useViewerTimeZone();
   const qc = useQueryClient();
   const { user } = useAuth();
   const screen = useFantasyScreen();
@@ -472,7 +474,7 @@ function PickTeamBody() {
       label: t("fpl.deadline"),
       // No weekday: the countdown under it says how far off it is, and with
       // it the date needed two lines in a third of the strip (FR and AR).
-      value: <bdi>{formatDeadline(gameweek.deadline, lang)}</bdi>,
+      value: <bdi>{formatDeadline(gameweek.deadline, lang, { timeZone })}</bdi>,
       text: true,
       sub: deadlineSub,
     },

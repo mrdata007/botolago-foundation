@@ -2,30 +2,27 @@ import { useEffect, useState } from "react";
 
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { timeZoneLabel } from "@/lib/viewer-time-zone";
 import type { Language } from "@/types/domain";
 
 /**
- * A gameweek deadline, formatted on the competition's own calendar.
- *
- * `timeZone: MATCH_TIME_ZONE` is the whole point (BG-0100): without it the
- * formatter follows the viewer's browser, and the deadline disagrees with every
- * kickoff on the screen for anyone outside Morocco. The hub, Pick Team, the
- * squad builder and the transfer confirmation each spelled this formatter out
- * on their own; this is that formatter once.
+ * A gameweek deadline, formatted in the viewer's zone when supplied.
+ * The server fallback preserves identical HTML through hydration.
  */
 export function formatDeadline(
   deadlineIso: string,
   lang: Language,
-  options: { weekday?: "short" | "long" } = {},
+  options: { weekday?: "short" | "long"; timeZone?: string } = {},
 ): string {
-  return new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+  const formatted = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     ...(options.weekday ? { weekday: options.weekday } : {}),
     day: "numeric",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: MATCH_TIME_ZONE,
+    timeZone: options.timeZone ?? MATCH_TIME_ZONE,
   }).format(new Date(deadlineIso));
+  return options.timeZone ? `${formatted} (${timeZoneLabel(options.timeZone)})` : formatted;
 }
 
 export interface DeadlineCountdown {

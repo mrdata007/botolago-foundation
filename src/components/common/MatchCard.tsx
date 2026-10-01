@@ -6,11 +6,8 @@ import { ClubCrest } from "./ClubCrest";
 import { cn } from "@/lib/utils";
 import { ui, UiBadge, UiLivePill } from "@/components/ui-kit";
 import { clubMatchPalettes, clubStyle, type ClubPalette } from "@/lib/club-palette";
-import {
-  isKickoffDateUnconfirmed,
-  isKickoffTimeUnconfirmed,
-  MATCH_TIME_ZONE,
-} from "@/lib/match-kickoff";
+import { isKickoffDateUnconfirmed, isKickoffTimeUnconfirmed } from "@/lib/match-kickoff";
+import { differsFromMatchDay, timeZoneLabel, useViewerTimeZone } from "@/lib/viewer-time-zone";
 
 /**
  * Match card (Option A "Club colours").
@@ -114,6 +111,7 @@ export function MatchCard({
   extras?: MatchCardExtras;
 }) {
   const { t, tr, lang } = useI18n();
+  const timeZone = useViewerTimeZone();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   const kickoff = new Date(match.kickoff);
   // The pair, not two independent palettes: the clash rule may re-colour away.
@@ -129,14 +127,20 @@ export function MatchCard({
   const isHero = variant === "hero";
 
   const timeFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+    timeZone,
     hour: "2-digit",
     minute: "2-digit",
   }).format(kickoff);
   const weekdayFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+    timeZone,
     weekday: "short",
     day: "2-digit",
+    month: "short",
+  }).format(kickoff);
+  const localDayDiffers = differsFromMatchDay(match.kickoff, timeZone);
+  const localDate = new Intl.DateTimeFormat(locale, {
+    timeZone,
+    day: "numeric",
     month: "short",
   }).format(kickoff);
 
@@ -308,6 +312,9 @@ export function MatchCard({
           the card, then shrunk to its content and centred by auto margins. */}
       <div className="pointer-events-none absolute inset-x-0 top-4 mx-auto flex w-fit flex-col items-center gap-2">
         {figure}
+        {isScheduled && !unconfirmedDate && !unconfirmedTime && localDayDiffers ? (
+          <span className={cn(ui.text.micro, ui.tone.muted)}>{localDate}</span>
+        ) : null}
         {caption}
       </div>
     </>
@@ -328,6 +335,9 @@ export function MatchCard({
         )}
       >
         {figure}
+        {isScheduled && !unconfirmedDate && !unconfirmedTime && localDayDiffers ? (
+          <span className={cn(ui.text.micro, ui.tone.muted)}>{localDate}</span>
+        ) : null}
         {isLive ? null : caption}
         {roundTag}
       </div>
@@ -345,6 +355,9 @@ export function MatchCard({
       to="/matches/$matchId"
       params={{ matchId: match.id }}
       aria-label={a11yLabel}
+      title={
+        isScheduled && !unconfirmedDate && !unconfirmedTime ? timeZoneLabel(timeZone) : undefined
+      }
       className={cn(
         // `min-w-0` is load-bearing, not cosmetic. Every caller renders these
         // cards into a single-column `grid` or a flex column, whose track is

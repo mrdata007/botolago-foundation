@@ -6,6 +6,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { useViewerTimeZone } from "@/lib/viewer-time-zone";
 import { predictionsService } from "@/services/predictions";
 import { formatLockMoment, formatNumber } from "./predictions-copy";
 import { noteServerTime, predictionsKeys, roundQueryOptions } from "./use-predictions-round";
@@ -17,6 +18,7 @@ import { noteServerTime, predictionsKeys, roundQueryOptions } from "./use-predic
  */
 export function PredictionsHomeCard() {
   const { t, lang } = useI18n();
+  const timeZone = useViewerTimeZone();
   const { status, user } = useAuth();
   const uid = status === "authenticated" ? (user?.id ?? null) : null;
   const round = useQuery(roundQueryOptions(null, lang));
@@ -73,7 +75,7 @@ export function PredictionsHomeCard() {
                 .replace("{total}", formatNumber(total, lang))
             : t("predictions.home.guest_line")}
           {uid && journee.nextLockAt
-            ? ` · ${t("predictions.next_lock").replace("{when}", formatLockMoment(journee.nextLockAt, lang))}`
+            ? ` · ${t("predictions.next_lock").replace("{when}", formatLockMoment(journee.nextLockAt, lang, timeZone))}`
             : null}
         </span>
       </span>

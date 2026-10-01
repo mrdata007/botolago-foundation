@@ -109,6 +109,8 @@ export const fr = {
   "article.not_found_desc": "Cet article a peut-être été retiré ou déplacé.",
 
   "matches.title": "Matches",
+  "matches.local_time": "Heures locales : {zone}",
+  "matches.morocco_calendar": "Jours du calendrier : Maroc",
   "matches.tab.all": "Tous",
   "matches.tab.live": "En direct",
   "matches.tab.upcoming": "À venir",

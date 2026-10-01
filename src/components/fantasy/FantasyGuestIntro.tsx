@@ -3,6 +3,7 @@ import { BookOpen, CalendarClock, Coins, Plus, Star, Timer, Trophy, Users } from
 import { useId, type ComponentType } from "react";
 
 import { formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline";
+import { useViewerTimeZone } from "@/lib/viewer-time-zone";
 import { ui, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,7 @@ export function FantasyGuestIntro({
   prizes: boolean;
 }) {
   const { t, lang } = useI18n();
+  const timeZone = useViewerTimeZone();
   const titleId = useId();
   const howId = useId();
   const signInNoteId = useId();
@@ -188,7 +190,7 @@ export function FantasyGuestIntro({
                 )}
               >
                 <Timer className={cn("h-4 w-4 shrink-0", ui.tone.ink)} aria-hidden />
-                <bdi>{formatDeadline(deadline.deadline, lang, { weekday: "short" })}</bdi>
+                <bdi>{formatDeadline(deadline.deadline, lang, { weekday: "short", timeZone })}</bdi>
               </span>
             </p>
           ) : null}

@@ -32,6 +32,7 @@ import { nextDeadlineAfter } from "@/components/fantasy/gameweek-presentation";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { ui, UiCard, UiPageTitle, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useViewerTimeZone } from "@/lib/viewer-time-zone";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { NEWS_ENABLED, PRIZES_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
@@ -253,6 +254,7 @@ function FantasyHub() {
  */
 function GameweekBand({ gameweek }: { gameweek: Gameweek }) {
   const { t, lang } = useI18n();
+  const timeZone = useViewerTimeZone();
   const left = useDeadlineCountdown(gameweek.deadline);
   // Read with the countdown's tick, so it appears when the deadline passes.
   const next = left?.passed ? nextDeadlineAfter(gameweek, Date.now()) : null;
@@ -287,7 +289,7 @@ function GameweekBand({ gameweek }: { gameweek: Gameweek }) {
         </p>
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <p className={cn(ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}>
-            <bdi>{formatDeadline(gameweek.deadline, lang, { weekday: "short" })}</bdi>
+            <bdi>{formatDeadline(gameweek.deadline, lang, { weekday: "short", timeZone })}</bdi>
           </p>
           {left && !left.passed ? (
             // Home's deadline pill, so the same deadline reads the same way
@@ -307,7 +309,7 @@ function GameweekBand({ gameweek }: { gameweek: Gameweek }) {
           // only place its deadline is named.
           <p className={cn("mt-1", ui.text.meta, ui.tone.onInkMuted)}>
             {`${t("fpl.gameweek")} ${next.number} · ${t("fantasy.next_deadline")} · `}
-            <bdi>{formatDeadline(next.deadline, lang, { weekday: "short" })}</bdi>
+            <bdi>{formatDeadline(next.deadline, lang, { weekday: "short", timeZone })}</bdi>
           </p>
         ) : null}
       </div>

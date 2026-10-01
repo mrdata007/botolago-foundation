@@ -19,6 +19,7 @@ import {
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
+import { useViewerTimeZone } from "@/lib/viewer-time-zone";
 import type { MyPredictionDto } from "@/backend/predictions/contracts";
 import { FixturePredictionCard, type FixtureScore } from "./FixturePredictionCard";
 import { PredictionsShareButton, type ShareTally } from "./PredictionsShareButton";
@@ -63,6 +64,7 @@ export function PredictionsPage({
   onTabChange: (tab: PredictionsTab) => void;
 }) {
   const { t, lang } = useI18n();
+  const timeZone = useViewerTimeZone();
   const { requireAuth } = useAuth();
   const [rulesOpen, setRulesOpen] = useState(false);
   const model = usePredictionsRound(roundNumber, seed);
@@ -173,7 +175,7 @@ export function PredictionsPage({
             <span className="whitespace-nowrap">
               {t("predictions.next_lock").replace(
                 "{when}",
-                formatLockMoment(journee.nextLockAt, lang),
+                formatLockMoment(journee.nextLockAt, lang, timeZone),
               )}
             </span>
           </>

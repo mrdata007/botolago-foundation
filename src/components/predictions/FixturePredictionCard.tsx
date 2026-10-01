@@ -7,6 +7,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiBadge, UiCard, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { differsFromMatchDay, timeZoneLabel, useViewerTimeZone } from "@/lib/viewer-time-zone";
 import { presentFootballClub } from "@/services/football";
 import type { Pick } from "./use-predictions-round";
 import { formatKickoffTime } from "./predictions-copy";
@@ -57,6 +58,13 @@ export function FixturePredictionCard({
   onStep: (side: "home" | "away", delta: 1 | -1) => void;
 }) {
   const { t, lang } = useI18n();
+  const timeZone = useViewerTimeZone();
+  const localDate = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+    timeZone,
+    day: "numeric",
+    month: "short",
+  }).format(new Date(fixture.kickoffAt));
+  const dateChanges = differsFromMatchDay(fixture.kickoffAt, timeZone);
   const home = presentFootballClub(fixture.home);
   const away = presentFootballClub(fixture.away);
   const homeName = fixture.home.shortName || fixture.home.name;
@@ -119,7 +127,10 @@ export function FixturePredictionCard({
           {fixture.live ? (
             <ScoreLine score={fixture.live} className={ui.text.bodyStrong} />
           ) : fixture.kickoffConfirmed ? (
-            <bdi>{formatKickoffTime(fixture.kickoffAt, lang)}</bdi>
+            <span className="flex flex-col items-center" title={timeZoneLabel(timeZone)}>
+              <bdi>{formatKickoffTime(fixture.kickoffAt, lang, timeZone)}</bdi>
+              {dateChanges ? <span className={ui.text.micro}>{localDate}</span> : null}
+            </span>
           ) : (
             t("predictions.fixture.time_tbc")
           )}
@@ -177,7 +188,7 @@ export function FixturePredictionCard({
           {fixture.kickoffConfirmed
             ? t("predictions.fixture.until").replace(
                 "{time}",
-                formatKickoffTime(fixture.kickoffAt, lang),
+                `${dateChanges ? `${localDate} · ` : ""}${formatKickoffTime(fixture.kickoffAt, lang, timeZone)}`,
               )
             : t("predictions.fixture.time_tbc")}
         </p>
