@@ -107,6 +107,30 @@ export function moroccoWallToInstant(
   return new Date(instant);
 }
 
+/**
+ * The exact start and end (as UTC instants, end excluded) of the Moroccan
+ * calendar day named by a `YYYY-MM-DD` key. Not always 24 hours: the day the
+ * clock changes is 25 hours long. Returns null for a key that is not a date.
+ */
+export function moroccoDayBounds(dayKey: string): { start: Date; end: Date } | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dayKey);
+  if (!match) return null;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const check = new Date(Date.UTC(year, month - 1, day));
+  if (
+    check.getUTCFullYear() !== year ||
+    check.getUTCMonth() !== month - 1 ||
+    check.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  const next = new Date(Date.UTC(year, month - 1, day + 1));
+  return {
+    start: moroccoWallToInstant(year, month, day),
+    end: moroccoWallToInstant(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate()),
+  };
+}
+
 export type MoroccoFormatOptions = Omit<Intl.DateTimeFormatOptions, "timeZone" | "timeZoneName">;
 
 /**
