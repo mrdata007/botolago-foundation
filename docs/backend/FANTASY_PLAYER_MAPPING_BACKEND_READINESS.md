@@ -4,6 +4,20 @@
 `claude/player-mapping-backend` (PR #282, draft, stacked on #278). Nothing here maps a
 player. Applying the migrations creates empty tables and functions only.
 
+## 0. Provider registration (approved item B)
+
+- Migration `20261001150000` is one `insert ... on conflict do nothing` of `sofascore` and `flashscore` into
+  `app_private.football_providers`. Asserted by a text test: it contains nothing else (no mapping table, no `alter`/`drop`/`update`/`delete`/`create`/`grant`).
+- **Staging** (Staging V2): `plan` showed 14 pending migrations (13 older ones production already runs, plus this one); the rehearsal stops before
+  it by design (an earlier migration adds an enum value); `apply` then applied all 14, each in its own transaction, in order. Read back on staging: providers
+  `fixture, flashscore, sofascore, sportsmonks`, both new rows `active` at configuration version 1, **0** mapping rows for either, the history row recorded, and the
+  mapping table still has exactly its 2 unique constraints.
+- **Production**: NOT applied by me. The owner-run path is the guarded script
+  `scripts/backend/apply-20261001150000-register-sofascore-flashscore-providers.sql` (SQL editor; rehearsal as shipped, change `rollback;` to `commit;` to apply).
+  It refuses a second run or an already registered provider, records the migration file byte for byte (sha256-checked) and checks afterwards that exactly two rows were added,
+  every earlier provider row is byte-identical, the mapping table has the same row count and constraint definitions, and no mapping row names a new provider.
+  Read-only check of production on 1 Oct 2026 (after staging): providers `fixture, sportsmonks`; migration not recorded; no mapping row for either new provider.
+
 ## 1. Files
 
 | File                                                                               | What                                                                                                         |
@@ -142,3 +156,11 @@ Local, CI and staging evidence: after the migrations the three tables are empty 
 | mapping table gains a foreign key from the workflow                                 | 1                  |
 | legacy ingestion path can create reviewed-provider player mappings                  | 3                  |
 | legacy path guard blocks SportsMonks players too                                    | 1                  |
+
+## 10. CI and staging rehearsal of the mapping migrations
+
+- CI (`database-quality`) on the PR: `db:reset` applies the whole chain, all pgTAP pass (including the three new files), `db:lint` passes, generated API types match.
+- Two repository tests had to learn about the new functions and were changed in the same commit (not loosened): the ordinary-account step-up inventory
+  (`ordinary_account_mfa_step_up_reads.test.sql`, which names the staff RPCs that call the staff check, and the apply script that carries the same text) and the committed API types.
+- Staging rehearsal of both mapping migrations (one transaction, rolled back) passed on Staging V2, including the pinned-md5 preflight on `api.resolve_football_mapping`.
+  Afterwards staging has no mapping table and no recorded mapping migration.
