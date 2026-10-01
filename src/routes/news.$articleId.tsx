@@ -180,7 +180,7 @@ function ArticlePage() {
 
   if (articleQ.isLoading) {
     return (
-      <AppShell backgroundVariant="news" topBar={<ArticleBar onBack={goBack} />}>
+      <AppShell hideBottomNav backgroundVariant="news" topBar={<ArticleBar onBack={goBack} />}>
         <LoadingState />
       </AppShell>
     );
@@ -188,7 +188,7 @@ function ArticlePage() {
 
   if (articleQ.isError) {
     return (
-      <AppShell backgroundVariant="news" topBar={<ArticleBar onBack={goBack} />}>
+      <AppShell hideBottomNav backgroundVariant="news" topBar={<ArticleBar onBack={goBack} />}>
         <div className="mt-8">
           <ErrorState onRetry={() => void articleQ.refetch()} />
         </div>
@@ -198,7 +198,7 @@ function ArticlePage() {
 
   if (!article) {
     return (
-      <AppShell backgroundVariant="news" topBar={<ArticleBar onBack={goBack} />}>
+      <AppShell hideBottomNav backgroundVariant="news" topBar={<ArticleBar onBack={goBack} />}>
         <UiCard padding="lg" className="mt-8 text-center">
           <h1 className={cn(ui.display.header, ui.tone.default)}>{t("article.not_found_title")}</h1>
           <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
@@ -266,6 +266,7 @@ function ArticlePage() {
 
   return (
     <AppShell
+      hideBottomNav
       backgroundVariant="news"
       // The reading page is white from the bar down (A-Article): the sheet
       // over the photo simply continues to the foot of the page.

@@ -254,7 +254,7 @@ function MatchDetailPage() {
 
   if (detailQ.isLoading) {
     return (
-      <AppShell backgroundVariant="matches" topBar={plainBar}>
+      <AppShell hideBottomNav backgroundVariant="matches" topBar={plainBar}>
         <LoadingState />
       </AppShell>
     );
@@ -262,7 +262,7 @@ function MatchDetailPage() {
 
   if (detailQ.isError) {
     return (
-      <AppShell backgroundVariant="matches" topBar={plainBar}>
+      <AppShell hideBottomNav backgroundVariant="matches" topBar={plainBar}>
         <div className="mt-8">
           <ErrorState onRetry={() => void detailQ.refetch()} />
         </div>
@@ -272,7 +272,7 @@ function MatchDetailPage() {
 
   if (!match || !home || !away || !live || !palettes) {
     return (
-      <AppShell backgroundVariant="matches" topBar={plainBar}>
+      <AppShell hideBottomNav backgroundVariant="matches" topBar={plainBar}>
         <UiCard padding="lg" className="mt-8 text-center">
           <h1 className={cn(ui.display.section, ui.tone.default)}>
             {t("matches.detail.not_found_title")}
@@ -338,6 +338,7 @@ function MatchDetailPage() {
 
   return (
     <AppShell
+      hideBottomNav
       backgroundVariant="matches"
       topBar={
         <MatchTopBar

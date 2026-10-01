@@ -29,6 +29,7 @@ export function AppShell({
   backgroundVariant,
   contentWidth = "compact",
   bottomNav,
+  hideBottomNav = false,
   liveStrip = false,
   topBar,
   pageHeader,
@@ -38,6 +39,13 @@ export function AppShell({
   backgroundVariant?: BackgroundVariant;
   contentWidth?: "compact" | "wide";
   bottomNav?: ReactNode;
+  /**
+   * No tab bar, and no space kept for it. For a detail page (match, club,
+   * article) whose own bar has the way back. Wins over `bottomNav`; passing
+   * `null` there does not hide the bar, since `null` falls through to the
+   * default.
+   */
+  hideBottomNav?: boolean;
   /** Live scores under the top bar while any match is live (Home, Matches). */
   liveStrip?: boolean;
   /**
@@ -62,10 +70,10 @@ export function AppShell({
       {topBar ?? <TopBar />}
       {pageHeader}
       {liveStrip && <LiveStrip />}
-      <UiScreen width={contentWidth === "wide" ? "wide" : "content"} bottomNav>
+      <UiScreen width={contentWidth === "wide" ? "wide" : "content"} bottomNav={!hideBottomNav}>
         {children}
       </UiScreen>
-      {bottomNav ?? <BottomNav />}
+      {hideBottomNav ? null : (bottomNav ?? <BottomNav />)}
     </div>
   );
 }
