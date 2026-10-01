@@ -5,7 +5,7 @@ import { questionView } from "@/components/predictions/match-votes";
 import { useMatchVotes } from "@/components/predictions/use-match-votes";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { cn } from "@/lib/utils";
 import type { MatchVoteChoice } from "@/backend/predictions/contracts";
 import type { Club, Match } from "@/types/domain";
@@ -43,8 +43,7 @@ export function NextMatchPick({
   const { t, tr, lang } = useI18n();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   const kickoff = new Date(match.kickoff);
-  const when = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+  const when = moroccoDateTimeFormat(locale, {
     weekday: "short",
     hour: "2-digit",
     minute: "2-digit",
@@ -71,8 +70,7 @@ export function NextMatchPick({
         </span>
         <span className="flex flex-col items-center text-center">
           <bdi className={cn(ui.score.row, ui.text.tabular)}>
-            {new Intl.DateTimeFormat(locale, {
-              timeZone: MATCH_TIME_ZONE,
+            {moroccoDateTimeFormat(locale, {
               hour: "2-digit",
               minute: "2-digit",
             }).format(kickoff)}

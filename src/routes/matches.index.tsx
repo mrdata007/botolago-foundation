@@ -27,7 +27,8 @@ import { MatchCardSkeleton } from "@/components/common/Skeletons";
 import { ui, UiCard, UiChip, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import { isSameMatchDay, matchDayFromKey, matchDayKey, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { isSameMatchDay, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { matchRounds, nextMatchDayAfter } from "@/lib/match-days";
 import { unavailableHeaders } from "@/lib/page-availability";
@@ -293,8 +294,7 @@ function MatchesPage() {
 
   const nextDayLabel = useMemo(() => {
     if (!nextDay) return null;
-    return new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-      timeZone: MATCH_TIME_ZONE,
+    return moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
       weekday: "short",
       day: "numeric",
       month: "short",

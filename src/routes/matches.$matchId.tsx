@@ -49,8 +49,8 @@ import { MatchPredictionCard } from "@/components/predictions/MatchPredictionCar
 import { cn } from "@/lib/utils";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { breadcrumbJsonLd, sportsEventJsonLd } from "@/lib/structured-data";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { matchRefetchInterval, rereadTableOnFinish } from "@/lib/match-refresh";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 const TAB_KEYS: MatchTabKey[] = ["summary", "stats", "lineups", "h2h"];
 
@@ -295,8 +295,7 @@ function MatchDetailPage() {
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   // Pinned to the competition zone so this names the same day the card, the
   // strip and the fixture list name (BG-0100).
-  const dateFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+  const dateFmt = moroccoDateTimeFormat(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",

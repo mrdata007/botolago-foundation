@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import type { Club } from "@/types/domain";
 import type { FixtureDifficulty } from "@/types/fantasy";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 export const Route = createFileRoute("/fantasy/fixtures")({
   head: () => fantasyHead("fixtures"),
@@ -119,10 +120,9 @@ function FdrBody() {
    * fall on the same day, and keeps the locale's own range idiom otherwise.
    */
   const spanOf = useMemo(() => {
-    const dtf = new Intl.DateTimeFormat(locale, {
+    const dtf = moroccoDateTimeFormat(locale, {
       day: "numeric",
       month: "short",
-      timeZone: MATCH_TIME_ZONE,
     });
     return (gw: number): string => {
       const times = rows

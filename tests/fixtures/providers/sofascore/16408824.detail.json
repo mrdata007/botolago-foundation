@@ -1,0 +1,40 @@
+{
+  "event": {
+    "id": 16408824,
+    "startTimestamp": 1783011600,
+    "status": {
+      "type": "finished"
+    },
+    "roundInfo": {
+      "round": 29
+    },
+    "season": {
+      "id": 78750
+    },
+    "tournament": {
+      "uniqueTournament": {
+        "id": 937
+      }
+    },
+    "homeTeam": {
+      "id": 118834,
+      "name": "Union Touarga Sport",
+      "shortName": "Union Touarga"
+    },
+    "awayTeam": {
+      "id": 87180,
+      "name": "Ittihad Tanger",
+      "shortName": "Ittihad Tanger"
+    },
+    "homeScore": {
+      "current": 1,
+      "period1": 0,
+      "period2": 1
+    },
+    "awayScore": {
+      "current": 0,
+      "period1": 0,
+      "period2": 0
+    }
+  }
+}

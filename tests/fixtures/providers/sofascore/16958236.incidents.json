@@ -1,0 +1,362 @@
+{
+  "incidents": [
+    {
+      "incidentType": "period",
+      "time": 90,
+      "addedTime": 999,
+      "text": "FT",
+      "homeScore": 2,
+      "awayScore": 6
+    },
+    {
+      "id": 126910889,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 86,
+      "isHome": false,
+      "playerIn": {
+        "id": 1525316,
+        "name": "Oussama Daoui",
+        "shortName": "O. Daoui"
+      },
+      "playerOut": {
+        "id": 880101,
+        "name": "Hamza El Wasti",
+        "shortName": "H. El Wasti"
+      }
+    },
+    {
+      "id": 362975868,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 80,
+      "isHome": false,
+      "from": "regular",
+      "homeScore": 2,
+      "awayScore": 6,
+      "player": {
+        "id": 1416474,
+        "name": "Taoufik Razko",
+        "shortName": "T. Razko"
+      }
+    },
+    {
+      "id": 362974498,
+      "incidentType": "goal",
+      "incidentClass": "penalty",
+      "time": 73,
+      "isHome": true,
+      "from": "penalty",
+      "homeScore": 2,
+      "awayScore": 5,
+      "player": {
+        "id": 1177366,
+        "name": "Mouad Mouchtanim",
+        "shortName": "M. Mouchtanim"
+      }
+    },
+    {
+      "id": 126910886,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 72,
+      "isHome": false,
+      "playerIn": {
+        "id": 1416474,
+        "name": "Taoufik Razko",
+        "shortName": "T. Razko"
+      },
+      "playerOut": {
+        "id": 919761,
+        "name": "Larbi Naji",
+        "shortName": "L. Naji"
+      }
+    },
+    {
+      "id": 126910885,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 68,
+      "isHome": true,
+      "playerIn": {
+        "id": 1140899,
+        "name": "Youssef Michte",
+        "shortName": "Y. Michte"
+      },
+      "playerOut": {
+        "id": 1017970,
+        "name": "Pedro Miguel",
+        "shortName": "P. Miguel"
+      }
+    },
+    {
+      "id": 125649370,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 65,
+      "isHome": false,
+      "rescinded": false,
+      "player": {
+        "id": 919761,
+        "name": "Larbi Naji",
+        "shortName": "L. Naji"
+      }
+    },
+    {
+      "id": 126910873,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 62,
+      "isHome": false,
+      "playerIn": {
+        "id": 1004434,
+        "name": "Joseph Guede Gnadou",
+        "shortName": "J. G. Gnadou"
+      },
+      "playerOut": {
+        "id": 1140894,
+        "name": "Zakaria Bahrou",
+        "shortName": "Z. Bahrou"
+      }
+    },
+    {
+      "id": 126910872,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 62,
+      "isHome": false,
+      "playerIn": {
+        "id": 882322,
+        "name": "Badr Gaddarine",
+        "shortName": "B. Gaddarine"
+      },
+      "playerOut": {
+        "id": 2217473,
+        "name": "Willy Onana",
+        "shortName": "W. Onana"
+      }
+    },
+    {
+      "id": 362974135,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 62,
+      "isHome": true,
+      "from": "regular",
+      "homeScore": 1,
+      "awayScore": 5,
+      "player": {
+        "id": 1919290,
+        "name": "Soufiane Abaaziz",
+        "shortName": "S. Abaaziz"
+      }
+    },
+    {
+      "id": 125649367,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 48,
+      "isHome": false,
+      "rescinded": false,
+      "player": {
+        "id": 919699,
+        "name": "Saad Morsli",
+        "shortName": "S. Morsli"
+      }
+    },
+    {
+      "id": 126910870,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 46,
+      "isHome": true,
+      "playerIn": {
+        "id": 2606326,
+        "name": "Anass Mostakime",
+        "shortName": "A. Mostakime"
+      },
+      "playerOut": {
+        "id": 2161836,
+        "name": "Ayoub El Khaffi",
+        "shortName": "A. E. Khaffi"
+      }
+    },
+    {
+      "id": 126910869,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 46,
+      "isHome": true,
+      "playerIn": {
+        "id": 1177366,
+        "name": "Mouad Mouchtanim",
+        "shortName": "M. Mouchtanim"
+      },
+      "playerOut": {
+        "id": 1140816,
+        "name": "Abderrazak Ennakouss",
+        "shortName": "A. Ennakouss"
+      }
+    },
+    {
+      "id": 126910866,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 46,
+      "isHome": false,
+      "playerIn": {
+        "id": 1008598,
+        "name": "Mohamed Zrida",
+        "shortName": "M. Zrida"
+      },
+      "playerOut": {
+        "id": 1140945,
+        "name": "Hamza El Janati",
+        "shortName": "H. E. Janati"
+      }
+    },
+    {
+      "id": 362973982,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 46,
+      "isHome": false,
+      "from": "regular",
+      "homeScore": 0,
+      "awayScore": 5,
+      "player": {
+        "id": 880101,
+        "name": "Hamza El Wasti",
+        "shortName": "H. El Wasti"
+      }
+    },
+    {
+      "incidentType": "period",
+      "time": 45,
+      "addedTime": 999,
+      "text": "HT",
+      "homeScore": 1,
+      "awayScore": 5
+    },
+    {
+      "id": 125649366,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 45,
+      "isHome": true,
+      "rescinded": false,
+      "player": {
+        "id": 2161836,
+        "name": "Ayoub El Khaffi",
+        "shortName": "A. E. Khaffi"
+      }
+    },
+    {
+      "id": 126910833,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 41,
+      "isHome": true,
+      "playerIn": {
+        "id": 919738,
+        "name": "Achraf El Idrissi",
+        "shortName": "A. E. Idrissi"
+      },
+      "playerOut": {
+        "id": 1475496,
+        "name": "Yassine El Ouatki",
+        "shortName": "Y. E. Ouatki"
+      }
+    },
+    {
+      "id": 126910831,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 41,
+      "isHome": true,
+      "playerIn": {
+        "id": 2451317,
+        "name": "Aymen Riyane",
+        "shortName": "A. Riyane"
+      },
+      "playerOut": {
+        "id": 1469601,
+        "name": "Boulkassoum Diarra",
+        "shortName": "B. Diarra"
+      }
+    },
+    {
+      "id": 362973913,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 35,
+      "isHome": false,
+      "from": "regular",
+      "homeScore": 0,
+      "awayScore": 4,
+      "player": {
+        "id": 2217473,
+        "name": "Willy Onana",
+        "shortName": "W. Onana"
+      }
+    },
+    {
+      "id": 362973772,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 26,
+      "isHome": false,
+      "from": "regular",
+      "homeScore": 0,
+      "awayScore": 3,
+      "player": {
+        "id": 1140945,
+        "name": "Hamza El Janati",
+        "shortName": "H. E. Janati"
+      }
+    },
+    {
+      "id": 125649358,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 24,
+      "isHome": true,
+      "rescinded": false,
+      "player": {
+        "id": 1469601,
+        "name": "Boulkassoum Diarra",
+        "shortName": "B. Diarra"
+      }
+    },
+    {
+      "id": 362973771,
+      "incidentType": "goal",
+      "incidentClass": "penalty",
+      "time": 13,
+      "isHome": false,
+      "from": "penalty",
+      "homeScore": 0,
+      "awayScore": 2,
+      "player": {
+        "id": 1140894,
+        "name": "Zakaria Bahrou",
+        "shortName": "Z. Bahrou"
+      }
+    },
+    {
+      "id": 362973773,
+      "incidentType": "goal",
+      "incidentClass": "penalty",
+      "time": 10,
+      "isHome": false,
+      "from": "penalty",
+      "homeScore": 0,
+      "awayScore": 1,
+      "player": {
+        "id": 880101,
+        "name": "Hamza El Wasti",
+        "shortName": "H. El Wasti"
+      }
+    }
+  ]
+}

@@ -67,7 +67,7 @@ import { cn } from "@/lib/utils";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { siteJsonLd } from "@/lib/structured-data";
-import { matchDayFromKey, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { matchDayFromKey } from "@/lib/match-kickoff";
 import { advanceGreetingClock, greetingPart } from "@/lib/greeting";
 import { capitalizeFirst, groupByMatchDay } from "@/lib/match-days";
 import type { Match } from "@/types/domain";
@@ -75,6 +75,7 @@ import stadiumBand from "@/assets/brand/home-band-stadium.webp";
 import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
 import liveBand from "@/assets/photos/home-band-live.webp";
 import liveBandSmall from "@/assets/photos/home-band-live-800.webp";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
 const HOME_DESCRIPTION =
@@ -328,8 +329,7 @@ function HomeContent() {
   const dateLine = useMemo(() => {
     // The greeting dates the football day, so it follows the competition
     // calendar rather than the viewer's browser (BG-0100).
-    const fmt = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-      timeZone: MATCH_TIME_ZONE,
+    const fmt = moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -367,8 +367,7 @@ function HomeContent() {
     activeDay === "all" ? upcomingDays : upcomingDays.filter((day) => day.key === activeDay);
   const dayChipLabel = (key: string) =>
     capitalizeFirst(
-      new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-        timeZone: MATCH_TIME_ZONE,
+      moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
         weekday: "short",
         day: "numeric",
       }).format(matchDayFromKey(key)),

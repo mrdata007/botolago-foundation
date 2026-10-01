@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import type { Language } from "@/types/domain";
 
 /**
  * A gameweek deadline, formatted on the competition's own calendar.
  *
- * `timeZone: MATCH_TIME_ZONE` is the whole point (BG-0100): without it the
+ * Pinning the competition's calendar is the whole point (BG-0100): without it the
  * formatter follows the viewer's browser, and the deadline disagrees with every
  * kickoff on the screen for anyone outside Morocco. The hub, Pick Team, the
  * squad builder and the transfer confirmation each spelled this formatter out
@@ -18,13 +18,12 @@ export function formatDeadline(
   lang: Language,
   options: { weekday?: "short" | "long" } = {},
 ): string {
-  return new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+  return moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     ...(options.weekday ? { weekday: options.weekday } : {}),
     day: "numeric",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: MATCH_TIME_ZONE,
   }).format(new Date(deadlineIso));
 }
 

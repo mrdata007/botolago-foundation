@@ -1,5 +1,5 @@
 // Upload the club crests BotolaGO supplies (docs: see the migration
-// 20260928090000_curated_team_crests.sql).
+// 20261001170000_curated_team_crests.sql).
 //
 // For each crest in the folder it makes a 256 px PNG (so a JPEG saved as .png
 // becomes a real PNG), uploads it to `football-media` at

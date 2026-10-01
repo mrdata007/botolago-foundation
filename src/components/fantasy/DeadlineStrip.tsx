@@ -3,7 +3,7 @@ import { ChevronRight, Clock } from "lucide-react";
 
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,8 +31,7 @@ export function DeadlineStrip({
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const left = `${nf.format(time.hours)} ${t("home.hours")} ${nf.format(time.minutes).padStart(2, lang === "ar" ? "٠" : "0")}`;
-  const when = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-    timeZone: MATCH_TIME_ZONE,
+  const when = moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     weekday: "short",
     hour: "2-digit",
     minute: "2-digit",

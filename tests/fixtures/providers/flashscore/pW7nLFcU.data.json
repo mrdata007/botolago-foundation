@@ -1,0 +1,26 @@
+{
+  "DATA": {
+    "EVENT": {
+      "EVENT_ID": "pW7nLFcU",
+      "START_UTIME": 1790452800,
+      "STAGE": "FINISHED",
+      "ROUND": "Round 1",
+      "HOME_NAME": "Wydad AC",
+      "AWAY_NAME": "Widad Temara",
+      "HOME_PARTICIPANT_IDS": [
+        "2yuuwjkA"
+      ],
+      "AWAY_PARTICIPANT_IDS": [
+        "hbO5F4bD"
+      ],
+      "HOME_SCORE_FULL": 1,
+      "AWAY_SCORE_FULL": 3
+    },
+    "TOURNAMENT": {
+      "NAME": "Morocco: Botola Pro",
+      "TOURNAMENT_ID": "CGClceUj",
+      "TOURNAMENT_STAGE_ID": "GKXUiwEl",
+      "TOURNAMENT_SEASON_ID": "CGClceUj"
+    }
+  }
+}

@@ -299,6 +299,78 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_football_mapping_add_position_note: {
+        Args: {
+          p_idempotency_key: string
+          p_note: string
+          p_proposal_id: string
+        }
+        Returns: Json
+      }
+      admin_football_mapping_app_player_options: {
+        Args: {
+          p_app_team_id?: string
+          p_candidate_id: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
+      admin_football_mapping_cancel: {
+        Args: {
+          p_idempotency_key: string
+          p_proposal_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      admin_football_mapping_decide: {
+        Args: {
+          p_decision: string
+          p_decision_reason: string
+          p_fingerprint: string
+          p_idempotency_key: string
+          p_position_acknowledged: boolean
+          p_proposal_id: string
+        }
+        Returns: Json
+      }
+      admin_football_mapping_execute: {
+        Args: { p_idempotency_key: string; p_proposal_id: string }
+        Returns: Json
+      }
+      admin_football_mapping_get_candidate: {
+        Args: { p_candidate_id: string }
+        Returns: Json
+      }
+      admin_football_mapping_get_proposal: {
+        Args: { p_proposal_id: string }
+        Returns: Json
+      }
+      admin_football_mapping_list_candidates: {
+        Args: {
+          p_after?: string
+          p_limit?: number
+          p_provider?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
+      admin_football_mapping_list_proposals: {
+        Args: { p_after?: string; p_limit?: number; p_status?: string }
+        Returns: Json
+      }
+      admin_football_mapping_propose: {
+        Args: { p_idempotency_key: string; p_items: Json; p_reason: string }
+        Returns: Json
+      }
+      admin_football_mapping_refresh_evidence: {
+        Args: { p_idempotency_key: string; p_proposal_id: string }
+        Returns: Json
+      }
+      admin_football_mapping_reviewer_availability: {
+        Args: never
+        Returns: Json
+      }
       admin_get_analytics_overview: { Args: never; Returns: Json }
       admin_get_approval: { Args: { p_approval_id: string }; Returns: Json }
       admin_get_fantasy_prize_settings: {
@@ -984,6 +1056,12 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      football_mapping_expire_proposals: { Args: never; Returns: number }
+      football_mapping_purge_display_names: { Args: never; Returns: number }
+      football_mapping_record_observations: {
+        Args: { p_observations: Json }
+        Returns: Json
+      }
       football_match_absences: {
         Args: { p_fixture_id: string; p_language?: string }
         Returns: Json
@@ -1016,6 +1094,8 @@ export type Database = {
           p_date: string
           p_language?: string
           p_limit?: number
+          p_range_end?: string
+          p_range_start?: string
           p_season_id?: string
           p_statuses?: string[]
           p_timezone?: string

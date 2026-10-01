@@ -1,6 +1,6 @@
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { cn } from "@/lib/utils";
 import { SQUAD_RULES } from "@/types/fantasy";
 
@@ -16,8 +16,7 @@ export function FantasyRuleChips({ deadline }: { deadline?: string }) {
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   const nf = new Intl.NumberFormat(locale);
   const when = deadline
-    ? new Intl.DateTimeFormat(locale, {
-        timeZone: MATCH_TIME_ZONE,
+    ? moroccoDateTimeFormat(locale, {
         weekday: "short",
         day: "numeric",
         month: "short",

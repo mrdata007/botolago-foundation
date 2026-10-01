@@ -6,11 +6,8 @@ import { ClubCrest } from "./ClubCrest";
 import { cn } from "@/lib/utils";
 import { ui, UiBadge, UiLivePill } from "@/components/ui-kit";
 import { clubMatchPalettes, clubStyle, type ClubPalette } from "@/lib/club-palette";
-import {
-  isKickoffDateUnconfirmed,
-  isKickoffTimeUnconfirmed,
-  MATCH_TIME_ZONE,
-} from "@/lib/match-kickoff";
+import { isKickoffDateUnconfirmed, isKickoffTimeUnconfirmed } from "@/lib/match-kickoff";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /**
  * Match card (Option A "Club colours").
@@ -130,13 +127,11 @@ export function MatchCard({
   const unconfirmedTime = isKickoffTimeUnconfirmed(match);
   const isHero = variant === "hero";
 
-  const timeFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+  const timeFmt = moroccoDateTimeFormat(locale, {
     hour: "2-digit",
     minute: "2-digit",
   }).format(kickoff);
-  const weekdayFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+  const weekdayFmt = moroccoDateTimeFormat(locale, {
     weekday: "short",
     day: "2-digit",
     month: "short",

@@ -1,0 +1,40 @@
+{
+  "event": {
+    "id": 17132472,
+    "startTimestamp": 1790452800,
+    "status": {
+      "type": "finished"
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "season": {
+      "id": 102220
+    },
+    "tournament": {
+      "uniqueTournament": {
+        "id": 937
+      }
+    },
+    "homeTeam": {
+      "id": 36268,
+      "name": "Wydad Casablanca",
+      "shortName": "WAC"
+    },
+    "awayTeam": {
+      "id": 204302,
+      "name": "Widad Temara",
+      "shortName": "WS Temara"
+    },
+    "homeScore": {
+      "current": 1,
+      "period1": 0,
+      "period2": 1
+    },
+    "awayScore": {
+      "current": 3,
+      "period1": 1,
+      "period2": 2
+    }
+  }
+}

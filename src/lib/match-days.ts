@@ -1,5 +1,6 @@
 import type { Match } from "@/types/domain";
 import { addMatchDays, matchDayKey, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /** One football day of fixtures, in the order they were given. */
 export interface MatchDayGroup {
@@ -31,8 +32,7 @@ export function groupByMatchDay(
     now = new Date(),
   }: { locale: string; today: string; tomorrow: string; now?: Date },
 ): MatchDayGroup[] {
-  const labelFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+  const labelFmt = moroccoDateTimeFormat(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",

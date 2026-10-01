@@ -9,6 +9,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
 import { resolveMediaUrl } from "@/lib/media";
 import type { Club } from "@/types/domain";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /**
  * Small, pure helpers the Pépites screens share. Numbers use Latin digits in
@@ -165,10 +166,9 @@ export function scoreText(
 export function shortDate(iso: string, lang: Language): string {
   const date = new Date(iso);
   if (!Number.isFinite(date.getTime())) return "";
-  return new Intl.DateTimeFormat(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR", {
+  return moroccoDateTimeFormat(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR", {
     day: "numeric",
     month: "short",
-    timeZone: "Africa/Casablanca",
   }).format(date);
 }
 
@@ -176,12 +176,11 @@ export function shortDate(iso: string, lang: Language): string {
 export function revealTime(iso: string, lang: Language): string {
   const date = new Date(iso);
   if (!Number.isFinite(date.getTime())) return "";
-  return new Intl.DateTimeFormat(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR", {
+  return moroccoDateTimeFormat(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR", {
     weekday: "long",
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
-    timeZone: "Africa/Casablanca",
   }).format(date);
 }
 
