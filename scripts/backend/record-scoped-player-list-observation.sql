@@ -26,6 +26,27 @@
 -- fixtures to repair, then run this REHEARSAL, then (within the 30 minutes)
 -- the real run. If the 30 minutes pass, observe again; never edit the check.
 --
+-- WHAT A REHEARSAL PROVES. A rehearsal records the scoped observation, then
+-- (scope_rehearse_apply = 'true') applies its plan INSIDE the same transaction
+-- and re-runs, on the result, the two checks the statistics import makes for
+-- every lineup player (an active provider mapping to a player, and a club
+-- record for this season at that club covering the kickoff date). The report's
+-- ineligibleAfterRehearsedApply lists whoever still fails them. Then the whole
+-- transaction is rolled back. It is still a WRITE: it takes locks, writes
+-- rows and rolls them back, so it needs the owner's authorization like any
+-- production write. listedPlayersWithNoPlanChange (real run, no apply) only
+-- says which listed ids the plan does not touch; that is NOT proof of
+-- eligibility.
+--
+-- FANTASY CATALOG. The existing apply couples identity repair to Fantasy
+-- catalog changes: a player the plan places who is not in the Fantasy catalog
+-- is also ADDED to it, priced by the opening-catalog formula, and a Fantasy
+-- player filed under another club is MOVED. Neither is needed for the
+-- statistics import (which checks players, mappings and club records only),
+-- nor for scoring squads that do not hold the player. So the script stops,
+-- listing them, unless scope_ack_fantasy_additions is 'true', and unless each
+-- move of a player a Fantasy team holds is in scope_ack_held_moves.
+--
 -- GUARDS. It stops, saving nothing, unless:
 --   * the reviewed player list equals, exactly, the lineup players of those
 --     fixtures that cannot be placed today (NO_MAPPING or
@@ -35,10 +56,11 @@
 --   * the plan changes no player outside the reviewed list and leaves no
 --     Fantasy squad over the club limit;
 --   * no Fantasy move touches a player a Fantasy team holds, unless the owner
---     accepted that move and its provider id is in scope_ack_held_moves.
--- It also reports which listed players the plan would STILL leave unplaced
--- (for example a player the provider gives no position): those fixtures will
--- go on failing, so read that line first.
+--     accepted that move and its provider id is in scope_ack_held_moves;
+--   * no Fantasy catalog addition is in the plan unless acknowledged.
+-- It also reports which listed players are not placed (for example a player
+-- the provider gives no position): those fixtures will go on failing, so read
+-- that line first.
 --
 -- HOW TO RUN
 --   1. Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor.
@@ -55,7 +77,10 @@
 --                                  diagnose-fixture-identities.sql)
 --        scope_ack_held_moves      provider ids of held-player moves the owner
 --                                  accepted, or leave empty
---      scope_dry_run stays 'true' for the rehearsal.
+--        scope_ack_fantasy_additions  'true' once the owner accepted the
+--                                  Fantasy catalog additions the report lists
+--      scope_dry_run stays 'true' for the rehearsal, and so does
+--      scope_rehearse_apply (it needs the Fantasy tick paused, as the apply does).
 --   3. Paste this WHOLE file and press Run. A rehearsal ends with an error
 --      that starts "REHEARSAL, nothing saved:" and carries the report. That
 --      is the expected result, not a failure.
@@ -73,12 +98,50 @@ select set_config('botolago.scope_source_observation', 'PASTE-OBSERVATION-ID', f
   set_config('botolago.scope_fixtures', 'PASTE-FIXTURE-IDS', false),
   set_config('botolago.scope_players', 'PASTE-PLAYER-IDS', false),
   set_config('botolago.scope_ack_held_moves', '', false),
+  set_config('botolago.scope_ack_fantasy_additions', 'false', false),
+  set_config('botolago.scope_rehearse_apply', 'true', false),
   set_config('botolago.scope_dry_run', 'true', false);
 commit;
 
 begin;
 set local lock_timeout = '5s';
 set local statement_timeout = '120s';
+
+-- The two identity checks the statistics import makes for every lineup player
+-- (api.ingest_current_player_fixture_performance): an active provider mapping
+-- to a player, and a club record for this season at that club covering the
+-- kickoff DATE. Returns the provider ids of the lineup players, of the given
+-- fixtures, that fail either (or whose club is not one of the fixture's two).
+create or replace function pg_temp.gw1_unplaced(p_source jsonb, p_fixtures text[]) returns text[]
+language sql stable as $f$
+  select coalesce(array_agg(distinct unplaced.player_ext order by unplaced.player_ext), '{}'::text[])
+  from (
+    select member ->> 'externalPlayerId' as player_ext
+    from jsonb_array_elements(p_source -> 'lineups') lineup
+    cross join lateral jsonb_array_elements(lineup -> 'players') member
+    join app_private.football_provider_mappings fixture_map
+      on fixture_map.provider_name = 'sportsmonks' and fixture_map.entity_type = 'fixture'
+      and fixture_map.external_id = lineup ->> 'fixtureExternalId' and fixture_map.active
+    join app.fixtures fixture on fixture.id = fixture_map.internal_entity_id
+    left join app_private.football_provider_mappings team_map
+      on team_map.provider_name = 'sportsmonks' and team_map.entity_type = 'team'
+      and team_map.external_id = member ->> 'teamExternalId' and team_map.active
+    left join app_private.football_provider_mappings player_map
+      on player_map.provider_name = 'sportsmonks' and player_map.entity_type = 'player'
+      and player_map.external_id = member ->> 'externalPlayerId' and player_map.active
+    where lineup ->> 'fixtureExternalId' = any (p_fixtures)
+      and (team_map.internal_entity_id is null
+        or team_map.internal_entity_id not in (fixture.home_team_id, fixture.away_team_id)
+        or player_map.internal_entity_id is null
+        or not exists (
+          select 1 from app.team_memberships membership
+          join app.seasons season on season.id = membership.season_id and season.is_current
+          where membership.player_id = player_map.internal_entity_id
+            and membership.team_id = team_map.internal_entity_id
+            and membership.valid_from <= fixture.kickoff_at::date
+            and (membership.valid_to is null or membership.valid_to >= fixture.kickoff_at::date)))
+  ) unplaced
+$f$;
 
 do $scope$
 declare
@@ -98,7 +161,12 @@ declare
   plan jsonb;
   outside text[];
   held jsonb;
-  still_unplaced text[];
+  not_changed text[];
+  fantasy_adds jsonb;
+  ack_fantasy_adds boolean;
+  rehearse_apply boolean;
+  unplaced_after text[];
+  rehearsed jsonb;
   report jsonb;
 begin
   -- Settings -----------------------------------------------------------------
@@ -124,6 +192,12 @@ begin
     raise exception 'stop: scope_dry_run must be ''true'' or ''false''';
   end if;
   dry_run := current_setting('botolago.scope_dry_run') = 'true';
+  if current_setting('botolago.scope_ack_fantasy_additions') not in ('true', 'false')
+    or current_setting('botolago.scope_rehearse_apply') not in ('true', 'false') then
+    raise exception 'stop: scope_ack_fantasy_additions and scope_rehearse_apply must be ''true'' or ''false''';
+  end if;
+  ack_fantasy_adds := current_setting('botolago.scope_ack_fantasy_additions') = 'true';
+  rehearse_apply := current_setting('botolago.scope_rehearse_apply') = 'true';
 
   -- Preflight ------------------------------------------------------------------
   if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260925200000') then
@@ -148,34 +222,7 @@ begin
   end if;
 
   -- The reviewed list must be exactly what cannot be placed today.
-  select coalesce(array_agg(distinct unplaced.player_ext order by unplaced.player_ext), '{}'::text[])
-  into unresolved
-  from (
-    select member ->> 'externalPlayerId' as player_ext
-    from jsonb_array_elements(source -> 'lineups') lineup
-    cross join lateral jsonb_array_elements(lineup -> 'players') member
-    join app_private.football_provider_mappings fixture_map
-      on fixture_map.provider_name = 'sportsmonks' and fixture_map.entity_type = 'fixture'
-      and fixture_map.external_id = lineup ->> 'fixtureExternalId' and fixture_map.active
-    join app.fixtures fixture on fixture.id = fixture_map.internal_entity_id
-    left join app_private.football_provider_mappings team_map
-      on team_map.provider_name = 'sportsmonks' and team_map.entity_type = 'team'
-      and team_map.external_id = member ->> 'teamExternalId' and team_map.active
-    left join app_private.football_provider_mappings player_map
-      on player_map.provider_name = 'sportsmonks' and player_map.entity_type = 'player'
-      and player_map.external_id = member ->> 'externalPlayerId' and player_map.active
-    where lineup ->> 'fixtureExternalId' = any (fixtures)
-      and (team_map.internal_entity_id is null
-        or team_map.internal_entity_id not in (fixture.home_team_id, fixture.away_team_id)
-        or player_map.internal_entity_id is null
-        or not exists (
-          select 1 from app.team_memberships membership
-          join app.seasons season on season.id = membership.season_id and season.is_current
-          where membership.player_id = player_map.internal_entity_id
-            and membership.team_id = team_map.internal_entity_id
-            and membership.valid_from <= fixture.kickoff_at::date
-            and (membership.valid_to is null or membership.valid_to >= fixture.kickoff_at::date)))
-  ) unplaced;
+  unresolved := pg_temp.gw1_unplaced(source, fixtures);
   not_listed := array(select unnest(unresolved) except select unnest(players));
   not_unresolved := array(select unnest(players) except select unnest(unresolved));
   if cardinality(not_listed) > 0 or cardinality(not_unresolved) > 0 then
@@ -244,8 +291,24 @@ begin
   if exists (select 1 from jsonb_array_elements(held) h where h ->> 'externalPlayerId' <> all (acknowledged)) then
     raise exception 'stop: the plan moves players that Fantasy teams hold: %. Put their provider ids in scope_ack_held_moves only once the owner has accepted each move', held;
   end if;
-  still_unplaced := array(select unnest(players)
+  fantasy_adds := (select coalesce(jsonb_agg(jsonb_build_object(
+      'externalPlayerId', change ->> 'externalPlayerId', 'name', change ->> 'name',
+      'club', change ->> 'club', 'position', change ->> 'fantasyPosition',
+      'price', change ->> 'fantasyPrice') order by change ->> 'club', change ->> 'name'), '[]'::jsonb)
+    from jsonb_array_elements(plan -> 'changes') change where change ->> 'fantasy' = 'add');
+  if jsonb_array_length(fantasy_adds) > 0 and not ack_fantasy_adds then
+    raise exception 'stop: placing these players also ADDS % of them to the Fantasy catalog (priced by the opening-catalog formula). The statistics import does not need that. Set scope_ack_fantasy_additions to ''true'' only once the owner has accepted it: %',
+      jsonb_array_length(fantasy_adds), fantasy_adds;
+  end if;
+  not_changed := array(select unnest(players)
     except select change ->> 'externalPlayerId' from jsonb_array_elements(plan -> 'changes') change);
+
+  -- A rehearsal applies the plan inside this transaction and asks the import's
+  -- own questions of the result; the raise below rolls all of it back.
+  if dry_run and rehearse_apply then
+    rehearsed := api.service_apply_current_player_list(new_id, plan ->> 'digest');
+    unplaced_after := pg_temp.gw1_unplaced(source, fixtures);
+  end if;
 
   report := jsonb_build_object(
     'sourceObservationId', source_id,
@@ -253,9 +316,14 @@ begin
     'planDigest', plan ->> 'digest',
     'listedPlayers', cardinality(players),
     'summary', plan -> 'summary',
-    'stillUnplacedAfterApply', to_jsonb(still_unplaced),
+    -- NOT proof of eligibility: only the listed ids the plan does not touch.
+    'listedPlayersWithNoPlanChange', to_jsonb(not_changed),
+    'rehearsedApply', rehearsed,
+    -- Whoever still fails the import's identity checks after the rehearsed apply.
+    'ineligibleAfterRehearsedApply', case when rehearsed is null then null else to_jsonb(unplaced_after) end,
     'skipped', plan -> 'skipped',
     'heldFantasyMoves', held,
+    'fantasyCatalogAdditions', fantasy_adds,
     'changes', (select jsonb_agg(jsonb_build_object(
         'ext', change ->> 'externalPlayerId', 'name', change ->> 'name', 'club', change ->> 'club',
         'player', change ->> 'player', 'membership', change ->> 'membership',

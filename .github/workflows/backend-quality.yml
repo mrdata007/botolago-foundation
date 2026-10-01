@@ -138,6 +138,15 @@ jobs:
         run: bun test scripts/backend/pepites-editions-concurrency.test.ts scripts/backend/pepites-weekly-email-e2e.test.ts
         env:
           PEPITES_E2E_DB_URL: postgres://postgres:postgres@127.0.0.1:55322/postgres
+      # The GW1 identity repair (scripts/backend/record-scoped-player-list-observation.sql
+      # and diagnose-fixture-identities.sql), rehearsed with the real recorder,
+      # plan and apply and the real statistics import. Its season and rows stay
+      # behind, so it runs after the pgTAP suite and refuses a database that
+      # already holds a SportsMonks season 28647.
+      - name: GW1 identity repair rehearsal on the disposable stack
+        run: bun test scripts/backend/gw1-identity-repair-rehearsal.test.ts
+        env:
+          GW1_REPAIR_E2E_DB_URL: postgres://postgres:postgres@127.0.0.1:55322/postgres
       - run: bun run backend:db:lint
       - name: Verify generated database types
         id: generated_types
