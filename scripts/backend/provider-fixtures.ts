@@ -220,6 +220,70 @@ export const FLASHSCORE_SPEC = {
   },
 } as const satisfies Record<string, KeepSpec>;
 
+// ---- Per-match summary (counts and labels only: no names, no values that identify people) ----
+
+type Json = Record<string, unknown>;
+const asList = (value: unknown): Json[] => (Array.isArray(value) ? (value as Json[]) : []);
+const asObject = (value: unknown): Json =>
+  value !== null && typeof value === "object" ? (value as Json) : {};
+const tally = (labels: string[]) =>
+  Object.fromEntries(
+    [...new Set(labels)].sort().map((label) => [label, labels.filter((l) => l === label).length]),
+  );
+
+export function summarizeSofascore(raw: {
+  lineups: unknown;
+  incidents: unknown;
+  statistics: unknown;
+}) {
+  const sides = [asObject(asObject(raw.lineups).home), asObject(asObject(raw.lineups).away)];
+  const stats = sides.flatMap((side) =>
+    asList(side.players).flatMap((p) => (p.statistics ? [asObject(p.statistics)] : [])),
+  );
+  const incidents = asList(asObject(raw.incidents).incidents);
+  const goals = incidents.filter((i) => i.incidentType === "goal");
+  const sum = (key: string) => stats.reduce((total, s) => total + Number(s[key] ?? 0), 0);
+  const teamKeys = asList(asObject(raw.statistics).statistics).flatMap((period) =>
+    asList(period.groups).flatMap((group) =>
+      asList(group.statisticsItems).map((item) => String(item.key)),
+    ),
+  );
+  return {
+    playersWithStatistics: stats.length,
+    fullCoverage: stats.some((s) => s.totalPass !== undefined),
+    rated: stats.filter((s) => s.rating !== undefined).length,
+    keepersWithSaves: stats.filter((s) => s.saves !== undefined).length,
+    incidents: tally(
+      incidents.map((i) => `${String(i.incidentType)}/${String(i.incidentClass ?? "")}`),
+    ),
+    goalsInIncidents: goals.length,
+    goalsWithAssistInIncidents: goals.filter((g) => g.assist1 !== undefined).length,
+    goalsInLineups: sum("goals"),
+    assistsInLineups: sum("goalAssist"),
+    teamStatKeys: [...new Set(teamKeys)].filter((key) =>
+      (SOFASCORE_TEAM_STAT_KEYS as readonly string[]).includes(key),
+    ),
+  };
+}
+
+export function summarizeFlashscore(raw: { data: unknown; summary: unknown; statistics: unknown }) {
+  const event = asObject(asObject(asObject(raw.data).DATA).EVENT);
+  const types = asList(asObject(raw.summary).DATA).flatMap((stage) =>
+    asList(stage.ITEMS).flatMap((item) =>
+      asList(item.INCIDENT_PARTICIPANTS).map((p) => String(p.INCIDENT_TYPE)),
+    ),
+  );
+  const matchStage = asList(asObject(raw.statistics).DATA).find((s) => s.STAGE_NAME === "Match");
+  const onTarget = asList(matchStage?.GROUPS)
+    .flatMap((group) => asList(group.ITEMS))
+    .find((item) => item.INCIDENT_NAME === "Shots on target");
+  return {
+    score: [event.HOME_SCORE_FULL ?? null, event.AWAY_SCORE_FULL ?? null],
+    incidentTypes: tally(types),
+    shotsOnTarget: onTarget ? [onTarget.VALUE_HOME, onTarget.VALUE_AWAY] : null,
+  };
+}
+
 // ---- Plan and run ----------------------------------------------------------
 
 export interface PlannedMatch {
@@ -278,9 +342,12 @@ if (import.meta.main) {
   };
 
   for (const match of plan.matches) {
+    const sofascoreRaw: Record<string, unknown> = {};
+    const flashscoreRaw: Record<string, unknown> = {};
     if (match.sofascoreId !== null) {
       for (const [name, build] of Object.entries(SOFASCORE_ENDPOINTS)) {
         const raw = await fetchJson("sofascore", build(match.sofascoreId));
+        sofascoreRaw[name] = raw;
         if (name === "statistics") {
           write(
             outDir,
@@ -297,12 +364,25 @@ if (import.meta.main) {
     if (match.flashscoreId !== null) {
       for (const [name, build] of Object.entries(FLASHSCORE_ENDPOINTS)) {
         const raw = await fetchJson("flashscore", build(match.flashscoreId));
+        flashscoreRaw[name] = raw;
         const spec = FLASHSCORE_SPEC[name as keyof typeof FLASHSCORE_SPEC];
         note(`flashscore.${name}`, droppedFields(raw, spec));
         write(outDir, `flashscore/${match.flashscoreId}.${name}.json`, trim(raw, spec));
       }
     }
     console.log(`${match.key}: done (${requestsUsed()} requests so far)`);
+    if (match.sofascoreId !== null) {
+      const { lineups, incidents, statistics } = sofascoreRaw;
+      console.log(
+        `SUMMARY ${match.key} sofascore ${JSON.stringify(summarizeSofascore({ lineups, incidents, statistics }))}`,
+      );
+    }
+    if (match.flashscoreId !== null) {
+      const { data, summary, statistics } = flashscoreRaw;
+      console.log(
+        `SUMMARY ${match.key} flashscore ${JSON.stringify(summarizeFlashscore({ data, summary, statistics }))}`,
+      );
+    }
   }
   // Field names only: which fields the keep-lists left out, so a needed one is not missed.
   for (const [scope, names] of dropped)
