@@ -260,6 +260,45 @@ describe("the Supabase adapter", () => {
     expect(executes[0]!.args.p_idempotency_key).toBe(`00000000-0000-4000-8000-${ID.slice(-12)}`);
   });
 
+  test("executeMappingBatch pages through every approved proposal, so a batch beyond the first 200 is not skipped", async () => {
+    const idOf = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+    const BATCH = "55555555-5555-4555-8555-555555555555";
+    const OTHER = "66666666-6666-4666-8666-666666666666";
+    // 450 approved proposals ordered by id; the target batch's four are on the 2nd and 3rd pages.
+    const targets = new Set([201, 250, 401, 450]);
+    const all = Array.from({ length: 450 }, (_, i) =>
+      proposalDto({
+        id: idOf(i + 1),
+        status: "approved",
+        batchId: targets.has(i + 1) ? BATCH : OTHER,
+      }),
+    );
+    const pages: (string | null)[] = [];
+    const executed: string[] = [];
+    const repo = new SupabasePlayerMappingRepository({
+      rpc: (name, args) => {
+        let data: unknown;
+        if (name === "admin_football_mapping_list_proposals") {
+          pages.push(args.p_after as string | null);
+          const after = (args.p_after as string | null) ?? "";
+          data = all.filter((p) => p.id > after).slice(0, args.p_limit as number);
+        } else {
+          executed.push(args.p_proposal_id as string);
+          data = { ok: true, id: args.p_proposal_id, status: "executed" };
+        }
+        return Promise.resolve({ data, error: null }) as ReturnType<MappingRpcClient["rpc"]>;
+      },
+    });
+    const results = await repo.executeMappingBatch(
+      BATCH,
+      (id) => `00000000-0000-4000-8000-${id.slice(-12)}`,
+      ctx(),
+    );
+    expect(results.map((r) => r.proposalId)).toEqual([idOf(201), idOf(250), idOf(401), idOf(450)]);
+    expect(executed).toHaveLength(4);
+    expect(pages).toEqual([null, idOf(200), idOf(400)]);
+  });
+
   test("reviewer availability is exposed (the screen shows second qualified reviewer required)", async () => {
     const { repo } = fake({ qualifiedReviewersAvailable: 0, secondReviewerRequired: true });
     expect(await repo.getQualifiedReviewerAvailability(ctx())).toEqual({

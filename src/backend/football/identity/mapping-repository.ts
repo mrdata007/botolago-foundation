@@ -466,9 +466,24 @@ export class SupabasePlayerMappingRepository implements PlayerMappingRepository 
     idempotencyKeyFor: (proposalId: string) => string,
     context: RepositoryContext,
   ) {
-    const proposals = await this.listMappingProposals("approved", null, 200, context);
+    // The list is capped at 200 per page and paged by proposal id, so one page can miss
+    // proposals of this batch. Read every page of approved proposals before filtering.
+    const pageSize = 200;
+    const batchProposals: ProposalDto[] = [];
+    let cursor: string | null = null;
+    for (;;) {
+      const page: readonly ProposalDto[] = await this.listMappingProposals(
+        "approved",
+        cursor,
+        pageSize,
+        context,
+      );
+      for (const proposal of page) if (proposal.batchId === batchId) batchProposals.push(proposal);
+      if (page.length < pageSize) break;
+      cursor = page[page.length - 1]!.id;
+    }
     const results: { proposalId: string; result: TransitionResult }[] = [];
-    for (const proposal of proposals.filter((p) => p.batchId === batchId)) {
+    for (const proposal of batchProposals) {
       results.push({
         proposalId: proposal.id,
         result: await this.executeMappingProposal(
