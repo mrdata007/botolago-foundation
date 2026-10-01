@@ -29,7 +29,14 @@ import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
 import { useOnLiveMatchEnd } from "@/components/matches/use-live-matches";
-import { StandingsNotes } from "@/components/matches/StandingsTable";
+import {
+  FormChips,
+  StandingsLegend,
+  StandingsNotes,
+  ZONE_BAR,
+} from "@/components/matches/StandingsTable";
+import { zoneLabel } from "@/components/matches/standings-copy";
+import { tableZones } from "@/lib/league-table";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { STRETCHED_LINK } from "@/components/clubs/stretched-link";
 import { rowClubName } from "@/lib/club-identity";
@@ -365,8 +372,10 @@ function HomeContent() {
 
   const standingsLoading = seasonsQ.isPending || (currentSeason != null && standingsQ.isPending);
   const standingsFailed = seasonsQ.isError || standingsQ.isError;
-  const standingsRows = standingsQ.data?.overall ?? [];
+  const standingsRows = useMemo(() => standingsQ.data?.overall ?? [], [standingsQ.data]);
   const standingsTop = standingsRows.slice(0, 5);
+  // Zones are decided on the whole table (a tie may run past the top five).
+  const standingsZones = useMemo(() => tableZones(standingsRows), [standingsRows]);
   const showStandings = standingsLoading || standingsFailed || standingsRows.length > 0;
 
   return (
@@ -579,6 +588,7 @@ function HomeContent() {
               {standingsTop.map((row) => {
                 const club = clubById(row.clubId);
                 if (!club) return null;
+                const zone = standingsZones.get(row.clubId) ?? null;
                 // Each club opens its club page. The name is the link and its
                 // ::after stretches over the row, so the whole row is the
                 // target while the link is named by the club alone and the
@@ -588,18 +598,26 @@ function HomeContent() {
                     key={row.clubId}
                     className="relative flex items-center gap-2.5 px-3.5 py-2 transition-colors hover:bg-[color:var(--ui-surface-sunken)]"
                   >
-                    <span
-                      className={cn("w-5 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}
-                      aria-hidden
-                    >
-                      {row.position}
+                    {zone ? (
+                      <span
+                        aria-hidden
+                        className={cn("absolute inset-y-0 start-0 w-1", ZONE_BAR[zone])}
+                      />
+                    ) : null}
+                    <span className={cn("w-5 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}>
+                      <span aria-hidden>{row.position}</span>
+                      <span className="sr-only">
+                        {row.position}
+                        {zone ? `, ${zoneLabel(zone, t)}` : ""}
+                      </span>
                     </span>
                     <ClubCrest club={club} size="sm" />
+                    {/* Wraps rather than ending in an ellipsis. */}
                     <Link
                       to="/clubs/$clubId"
                       params={{ clubId: club.id }}
                       className={cn(
-                        "min-w-0 flex-1 truncate",
+                        "min-w-0 flex-1",
                         ui.text.body,
                         "[font-weight:var(--ui-weight-heavy)]",
                         ui.tone.default,
@@ -608,18 +626,7 @@ function HomeContent() {
                     >
                       {rowClubName(tr(club.shortName), tr(club.name))}
                     </Link>
-                    <span
-                      className={cn("w-7 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}
-                      aria-label={t("matches.table.played")}
-                    >
-                      {row.played}
-                    </span>
-                    <bdi
-                      className={cn("w-9 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}
-                      aria-label={t("matches.table.goal_difference")}
-                    >
-                      {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
-                    </bdi>
+                    <FormChips form={row.form} className="shrink-0" />
                     <span
                       className={cn("w-8 shrink-0 text-end", ui.stat.md, ui.tone.default)}
                       aria-label={t("matches.table.points")}
@@ -631,6 +638,9 @@ function HomeContent() {
               })}
             </UiCard>
           )}
+          {!standingsLoading && !standingsFailed && standingsTop.length > 0 ? (
+            <StandingsLegend className="mt-3" />
+          ) : null}
           {/* Worked out from the results, and a tie the top five may cut
               through: said here as the Classement tab says it. */}
           {standingsQ.data && !standingsLoading && !standingsFailed ? (
