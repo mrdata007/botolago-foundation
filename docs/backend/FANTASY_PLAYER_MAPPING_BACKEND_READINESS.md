@@ -47,9 +47,9 @@ Staff (`authenticated`; authority is checked inside every function: staff princi
 | `api.admin_football_mapping_list_candidates`, `_get_candidate`, `_list_proposals`, `_get_proposal`, `_reviewer_availability`, `_app_player_options` | `football.read_operations` or `football.manage_mappings`, AAL2 |
 
 Service role only: `api.football_mapping_record_observations`, `api.football_mapping_expire_proposals`,
-`api.football_mapping_purge_display_names`. Internal helpers (`app_private.football_mapping_*`, 19 of them) have no grant
+`api.football_mapping_purge_display_names`. Internal helpers (`app_private.football_mapping_*`, 20 of them) have no grant
 for anon, authenticated, service_role or PUBLIC. The three tables have no privilege for any role and forced RLS with no policy.
-All 31 functions are `SECURITY DEFINER` with an empty `search_path`.
+Of the 35 new functions, the 24 that read or write data are `SECURITY DEFINER`; every one has an empty `search_path` (asserted). The other 11 are pure helpers and triggers.
 
 ## 5. Approval and audit enforcement
 
@@ -80,7 +80,7 @@ Local, CI and staging evidence: after the migrations the three tables are empty 
 
 ## 8. Rollback and forward correction
 
-- **Before first use** (tables empty): a reviewed forward migration may drop the three tables and the 31 functions; nothing else
+- **Before first use** (tables empty): a reviewed forward migration may drop the three tables and the 35 functions; nothing else
   depends on them (restore `api.resolve_football_mapping` to its previous text if the guard must go).
 - **After first use**: no rollback by deletion. The proposal record and audit are immutable. Correct forward: `deactivate`
   (or `replace`, `reverse_ignore`) through the same two-person flow; the mapping row is updated, never inserted twice or deleted.
