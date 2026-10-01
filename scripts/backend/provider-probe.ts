@@ -62,28 +62,57 @@ export async function probe(provider: keyof typeof HOSTS, pathAndQuery: string) 
   return { status: response.status, quota, body };
 }
 
+/** Field paths and types only, never values: safe to print in public logs. */
+export function shapeOf(value: unknown, path = "$", out: string[] = []): string[] {
+  if (out.length > 400) return out;
+  if (Array.isArray(value)) {
+    out.push(`${path}: array(${value.length})`);
+    if (value.length > 0) shapeOf(value[0], `${path}[]`, out);
+  } else if (value !== null && typeof value === "object") {
+    for (const [name, child] of Object.entries(value)) shapeOf(child, `${path}.${name}`, out);
+  } else {
+    out.push(`${path}: ${value === null ? "null" : typeof value}`);
+  }
+  return out;
+}
+
 if (import.meta.main) {
-  const [provider, path, flag, outDir] = process.argv.slice(2);
-  if ((provider !== "sofascore" && provider !== "flashscore") || !path) {
-    console.error("usage: provider-probe.ts <sofascore|flashscore> <path-and-query> [--out dir]");
+  const args = process.argv.slice(2);
+  const [provider, ...rest] = args;
+  const shape = rest.includes("--shape");
+  const outAt = rest.indexOf("--out");
+  const outDir = outAt >= 0 ? rest[outAt + 1] : undefined;
+  const paths = rest.filter((a, i) => !a.startsWith("--") && i !== outAt + 1);
+  if ((provider !== "sofascore" && provider !== "flashscore") || paths.length === 0) {
+    console.error("usage: provider-probe.ts <sofascore|flashscore> <path-and-query>... [--shape] [--out dir]");
     process.exit(2);
   }
-  const result = await probe(provider, path);
-  console.log(
-    JSON.stringify({
-      provider,
-      status: result.status,
-      bytes: result.body.length,
-      quota: result.quota,
-      requestsThisRun: requestsUsed(),
-    }),
-  );
-  if (flag === "--out" && outDir) {
-    const dir = resolve(outDir);
-    if (dir.startsWith(resolve(import.meta.dir, "../.."))) {
-      throw new Error("--out must be outside the repository");
+  for (const path of paths) {
+    const result = await probe(provider, path);
+    console.log(
+      JSON.stringify({
+        provider,
+        path,
+        status: result.status,
+        bytes: result.body.length,
+        quota: result.quota,
+        requestsThisRun: requestsUsed(),
+      }),
+    );
+    if (shape) {
+      try {
+        console.log(shapeOf(JSON.parse(result.body)).join("\n"));
+      } catch {
+        console.log("(response is not JSON)");
+      }
     }
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(resolve(dir, `${provider}-${path.replace(/[^\w]+/g, "_")}.json`), result.body);
+    if (outDir) {
+      const dir = resolve(outDir);
+      if (dir.startsWith(resolve(import.meta.dir, "../.."))) {
+        throw new Error("--out must be outside the repository");
+      }
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(resolve(dir, `${provider}-${path.replace(/[^\w]+/g, "_")}.json`), result.body);
+    }
   }
 }
