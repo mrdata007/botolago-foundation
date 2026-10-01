@@ -112,3 +112,13 @@ export function formatShare(percent: number, lang: Language): string {
     maximumFractionDigits: 0,
   }).format(percent / 100);
 }
+
+/**
+ * Fewer votes than this and a share means nothing: one vote reads "100 %".
+ * Below it the card shows no percentages and no total.
+ */
+export const MIN_VOTES_FOR_SHARES = 20;
+
+export function sharesVisible(total: number): boolean {
+  return total >= MIN_VOTES_FOR_SHARES;
+}

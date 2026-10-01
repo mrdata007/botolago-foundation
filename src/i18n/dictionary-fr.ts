@@ -1951,6 +1951,7 @@ export const fr = {
   "predictions.votes.no_goal": "Aucun but",
   "predictions.votes.answer_share": "{answer} : {share} des votes",
   "predictions.votes.answer_share_mine": "{answer} : {share} des votes (votre vote)",
+  "predictions.votes.too_few": "Pas encore assez de votes",
   "predictions.votes.edit": "Modifier mon vote",
   "predictions.votes.phone":
     "Votre vote est gardé sur ce téléphone. Créez un compte pour qu'il compte.",
