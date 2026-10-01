@@ -320,6 +320,74 @@ describe("current finished fixture performance ingestion", () => {
       },
     });
   });
+  test("a goal mismatch names who was credited and what the provider's goal events say", async () => {
+    const payload = withBench(withScore(fixture(), 1, 3), 4);
+    setDetail(payload, 11, 52, 1);
+    setDetail(payload, 12, 52, 1);
+    setDetail(payload, 13, 52, 1);
+    unnamedRow(payload, 5); // a home starter
+    unnamedRow(payload, 25); // an away substitute
+    const withEvents = {
+      data: {
+        ...payload.data,
+        events: [
+          { id: 1, fixture_id: 9001, participant_id: 20, type_id: 14, player_id: 111, minute: 9 },
+          {
+            id: 2,
+            fixture_id: 9001,
+            participant_id: 20,
+            type_id: 16,
+            player_id: 112,
+            minute: 90,
+            extra_minute: 6,
+          },
+          { id: 3, fixture_id: 9001, participant_id: 20, type_id: 14, player_id: null, minute: 70 },
+          { id: 4, fixture_id: 9001, participant_id: 10, type_id: 18, player_id: 105, minute: 60 },
+        ],
+      },
+    };
+    await expect(normalizeCurrentFinishedFixture(withEvents, 9001)).rejects.toMatchObject({
+      code: "current_goal_totals_mismatch",
+      diagnostic: {
+        teamExternalId: "10",
+        finalGoals: 1,
+        attributedGoals: 0,
+        credited: [
+          { externalPlayerId: "111", externalTeamId: "20", goals: 1, ownGoals: 0 },
+          { externalPlayerId: "112", externalTeamId: "20", goals: 1, ownGoals: 0 },
+          { externalPlayerId: "113", externalTeamId: "20", goals: 1, ownGoals: 0 },
+        ],
+        // A substitution is not a goal; a goal with no scorer id keeps a null playerId.
+        goalEvents: [
+          {
+            eventId: 1,
+            typeId: 14,
+            participantId: 20,
+            playerId: 111,
+            minute: 9,
+            extraMinute: null,
+          },
+          { eventId: 2, typeId: 16, participantId: 20, playerId: 112, minute: 90, extraMinute: 6 },
+          {
+            eventId: 3,
+            typeId: 14,
+            participantId: 20,
+            playerId: null,
+            minute: 70,
+            extraMinute: null,
+          },
+        ],
+        unidentifiedRows: [
+          { teamExternalId: "10", starters: 1, others: 0 },
+          { teamExternalId: "20", starters: 0, others: 1 },
+        ],
+      },
+    });
+    // Without an event list the diagnostic still says who was credited, and never invents goals.
+    await expect(normalizeCurrentFinishedFixture(payload, 9001)).rejects.toMatchObject({
+      diagnostic: { goalEvents: [] },
+    });
+  });
   test("an absent statistic counts as zero: SportsMonks sends only the ones that are not", async () => {
     // Fixture 19874708's shape: minutes and a rating for the players who
     // played, and a goal only on the scorer (a 1-0).
@@ -403,6 +471,27 @@ describe("current finished fixture performance ingestion", () => {
     await expect(normalizeCurrentFinishedFixture(zero, 9001)).rejects.toThrow(
       "current_starter_minutes_missing",
     );
+  });
+  test("a starter without minutes is named by provider id, with the statistics it did carry", async () => {
+    const payload = fixture();
+    payload.data.lineups[5].details = payload.data.lineups[5].details.filter(
+      (detail) => detail.type_id !== 119,
+    );
+    await expect(normalizeCurrentFinishedFixture(payload, 9001)).rejects.toMatchObject({
+      code: "current_starter_minutes_missing",
+      diagnostic: {
+        starterRows: 1,
+        players: [
+          {
+            externalPlayerId: "105",
+            teamExternalId: "10",
+            detailTypeIds: [...CURRENT_PERFORMANCE_TYPES]
+              .filter((typeId) => typeId !== 119)
+              .sort((a, b) => a - b),
+          },
+        ],
+      },
+    });
   });
   test("a substitute without minutes never scored, assisted, saved, missed a penalty or put through an own goal", async () => {
     // Unused substitutes come with no statistics at all, or none but a card.
@@ -1344,4 +1433,31 @@ describe("shortened starters and reconciled goal timelines", () => {
       });
     });
   }
+  test("the failure says why the timeline could not prove the concession, in numbers only", async () => {
+    const noDeparture = timeline();
+    noDeparture.data.events.pop();
+    await expect(normalizeCurrentFinishedFixture(noDeparture, 9001)).rejects.toMatchObject({
+      code: "current_defensive_statistics_incomplete",
+      diagnostic: {
+        fixtureExternalId: "9001",
+        playerExternalId: "100",
+        teamExternalId: "10",
+        minutes: 84,
+        goalsConcededByTeam: 3,
+        explicitGoalsConceded: false,
+        timeline: null,
+      },
+    });
+    // The last goal falls on the player's own last minute: not provably before it.
+    const late = timeline();
+    setDetail(late, 0, 119, 60);
+    late.data.events[3]!.minute = 60;
+    late.data.events[4]!.minute = 75;
+    await expect(normalizeCurrentFinishedFixture(late, 9001)).rejects.toMatchObject({
+      diagnostic: {
+        minutes: 60,
+        timeline: { lastConcededGoalMinute: 60, firstDepartureMinute: 75 },
+      },
+    });
+  });
 });
