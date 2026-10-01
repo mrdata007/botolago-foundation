@@ -84,7 +84,9 @@ if (import.meta.main) {
   const outDir = outAt >= 0 ? rest[outAt + 1] : undefined;
   const paths = rest.filter((a, i) => !a.startsWith("--") && i !== outAt + 1);
   if ((provider !== "sofascore" && provider !== "flashscore") || paths.length === 0) {
-    console.error("usage: provider-probe.ts <sofascore|flashscore> <path-and-query>... [--shape] [--out dir]");
+    console.error(
+      "usage: provider-probe.ts <sofascore|flashscore> <path-and-query>... [--shape] [--out dir]",
+    );
     process.exit(2);
   }
   for (const path of paths) {
