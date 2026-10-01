@@ -1,0 +1,745 @@
+{
+  "confirmed": true,
+  "home": {
+    "players": [
+      {
+        "player": {
+          "id": 1920270,
+          "name": "Ayoub Ait Wahmane",
+          "shortName": "A. A. Wahmane",
+          "position": "G",
+          "jerseyNumber": "16"
+        },
+        "teamId": 55043,
+        "shirtNumber": 16,
+        "position": "G",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 90,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1919297,
+          "name": "Oussama Benchchaoui",
+          "shortName": "O. Benchchaoui",
+          "position": "D",
+          "jerseyNumber": "2"
+        },
+        "teamId": 55043,
+        "shirtNumber": 2,
+        "position": "D",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 90,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1140962,
+          "name": "Mohamed Bentarcha",
+          "shortName": "M. Bentarcha",
+          "position": "D",
+          "jerseyNumber": "14"
+        },
+        "teamId": 55043,
+        "shirtNumber": 14,
+        "position": "D",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 90,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1469601,
+          "name": "Boulkassoum Diarra",
+          "shortName": "B. Diarra",
+          "position": "D",
+          "jerseyNumber": "4"
+        },
+        "teamId": 55043,
+        "shirtNumber": 20,
+        "position": "D",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 41,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1017970,
+          "name": "Pedro Miguel",
+          "shortName": "P. Miguel",
+          "position": "M"
+        },
+        "teamId": 55043,
+        "shirtNumber": 70,
+        "position": "M",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 68,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1475496,
+          "name": "Yassine El Ouatki",
+          "shortName": "Y. E. Ouatki",
+          "position": "M",
+          "jerseyNumber": "13"
+        },
+        "teamId": 55043,
+        "shirtNumber": 15,
+        "position": "M",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 41,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1525299,
+          "name": "Brahim El Idrissi Bouzidi",
+          "shortName": "B. E. I. Bouzidi",
+          "position": "M",
+          "jerseyNumber": "6"
+        },
+        "teamId": 55043,
+        "shirtNumber": 6,
+        "position": "M",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 90,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1919290,
+          "name": "Soufiane Abaaziz",
+          "shortName": "S. Abaaziz",
+          "position": "D",
+          "jerseyNumber": "23"
+        },
+        "teamId": 55043,
+        "shirtNumber": 23,
+        "position": "D",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 90,
+          "goals": 1,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 2161836,
+          "name": "Ayoub El Khaffi",
+          "shortName": "A. E. Khaffi",
+          "position": "M",
+          "jerseyNumber": "8"
+        },
+        "teamId": 55043,
+        "shirtNumber": 8,
+        "position": "M",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 46,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1140816,
+          "name": "Abderrazak Ennakouss",
+          "shortName": "A. Ennakouss",
+          "position": "F",
+          "jerseyNumber": "17"
+        },
+        "teamId": 55043,
+        "shirtNumber": 17,
+        "position": "F",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 46,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1029681,
+          "name": "Romuald Dacosta",
+          "shortName": "R. Dacosta",
+          "position": "F",
+          "jerseyNumber": "80"
+        },
+        "teamId": 55043,
+        "shirtNumber": 9,
+        "position": "F",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 90,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 2451317,
+          "name": "Aymen Riyane",
+          "shortName": "A. Riyane",
+          "position": "D",
+          "jerseyNumber": "13"
+        },
+        "teamId": 55043,
+        "shirtNumber": 13,
+        "position": "D",
+        "substitute": true,
+        "statistics": {
+          "minutesPlayed": 49,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 919738,
+          "name": "Achraf El Idrissi",
+          "shortName": "A. E. Idrissi",
+          "position": "F"
+        },
+        "teamId": 55043,
+        "shirtNumber": 99,
+        "position": "F",
+        "substitute": true,
+        "statistics": {
+          "minutesPlayed": 49,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1177366,
+          "name": "Mouad Mouchtanim",
+          "shortName": "M. Mouchtanim",
+          "position": "M",
+          "jerseyNumber": "10"
+        },
+        "teamId": 55043,
+        "shirtNumber": 10,
+        "position": "M",
+        "substitute": true,
+        "statistics": {
+          "minutesPlayed": 44,
+          "goals": 1,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 2606326,
+          "name": "Anass Mostakime",
+          "shortName": "A. Mostakime"
+        },
+        "teamId": 55043,
+        "shirtNumber": 12,
+        "substitute": true,
+        "statistics": {
+          "minutesPlayed": 44,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1140899,
+          "name": "Youssef Michte",
+          "shortName": "Y. Michte",
+          "position": "M",
+          "jerseyNumber": "88"
+        },
+        "teamId": 55043,
+        "shirtNumber": 88,
+        "position": "M",
+        "substitute": true,
+        "statistics": {
+          "minutesPlayed": 22,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 2590184,
+          "name": "Haitam Azimi",
+          "shortName": "H. Azimi",
+          "position": "G"
+        },
+        "teamId": 55043,
+        "shirtNumber": 61,
+        "position": "G",
+        "substitute": true
+      },
+      {
+        "player": {
+          "id": 2776293,
+          "name": "Omar Hmamouch",
+          "shortName": "O. Hmamouch",
+          "position": "M"
+        },
+        "teamId": 55043,
+        "shirtNumber": 11,
+        "position": "M",
+        "substitute": true
+      },
+      {
+        "player": {
+          "id": 2127600,
+          "name": "Reda Ech-Chgraoui",
+          "shortName": "R. Ech-Chgraoui",
+          "position": "F",
+          "jerseyNumber": "99"
+        },
+        "teamId": 80393,
+        "shirtNumber": 5,
+        "position": "F",
+        "substitute": true
+      },
+      {
+        "player": {
+          "id": 2746243,
+          "name": "Ibra Lo",
+          "shortName": "I. Lo",
+          "position": "F"
+        },
+        "teamId": 55043,
+        "shirtNumber": 77,
+        "position": "F",
+        "substitute": true
+      }
+    ],
+    "formation": "3-4-2-1"
+  },
+  "away": {
+    "players": [
+      {
+        "player": {
+          "id": 307470,
+          "name": "Anas Zniti",
+          "shortName": "A. Zniti",
+          "position": "G",
+          "jerseyNumber": "16"
+        },
+        "teamId": 47674,
+        "shirtNumber": 1,
+        "position": "G",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 90,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1924082,
+          "name": "Ayoub Lourhraz",
+          "shortName": "A. Lourhraz",
+          "position": "D",
+          "jerseyNumber": "2"
+        },
+        "teamId": 55025,
+        "shirtNumber": 2,
+        "position": "D",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 90,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1401580,
+          "name": "Anass Nouader",
+          "shortName": "A. Nouader",
+          "position": "D",
+          "jerseyNumber": "18"
+        },
+        "teamId": 55025,
+        "shirtNumber": 18,
+        "position": "D",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 90,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1140959,
+          "name": "Karim El Bounagate",
+          "shortName": "K. E. Bounagate",
+          "position": "D",
+          "jerseyNumber": "5"
+        },
+        "teamId": 375028,
+        "shirtNumber": 5,
+        "position": "D",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 90,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 919699,
+          "name": "Saad Morsli",
+          "shortName": "S. Morsli",
+          "position": "D"
+        },
+        "teamId": 241802,
+        "shirtNumber": 27,
+        "position": "D",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 90,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 919761,
+          "name": "Larbi Naji",
+          "shortName": "L. Naji",
+          "position": "M",
+          "jerseyNumber": "29"
+        },
+        "teamId": 55025,
+        "shirtNumber": 29,
+        "position": "M",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 72,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1919284,
+          "name": "Adnane Berdad",
+          "shortName": "A. Berdad",
+          "position": "M",
+          "jerseyNumber": "6"
+        },
+        "teamId": 55025,
+        "shirtNumber": 6,
+        "position": "M",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 90,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 880101,
+          "name": "Hamza El Wasti",
+          "shortName": "H. El Wasti",
+          "position": "M",
+          "jerseyNumber": "18"
+        },
+        "teamId": 55025,
+        "shirtNumber": 22,
+        "position": "M",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 86,
+          "goals": 2,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1140945,
+          "name": "Hamza El Janati",
+          "shortName": "H. E. Janati",
+          "position": "M",
+          "jerseyNumber": "6"
+        },
+        "teamId": 55025,
+        "shirtNumber": 6,
+        "position": "M",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 46,
+          "goals": 1,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1140894,
+          "name": "Zakaria Bahrou",
+          "shortName": "Z. Bahrou",
+          "position": "F"
+        },
+        "teamId": 55025,
+        "shirtNumber": 7,
+        "position": "F",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 62,
+          "goals": 1,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 2217473,
+          "name": "Willy Onana",
+          "shortName": "W. Onana",
+          "position": "F"
+        },
+        "teamId": 55025,
+        "shirtNumber": 10,
+        "position": "F",
+        "substitute": false,
+        "statistics": {
+          "minutesPlayed": 62,
+          "goals": 1,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1008598,
+          "name": "Mohamed Zrida",
+          "shortName": "M. Zrida",
+          "position": "M",
+          "jerseyNumber": "26"
+        },
+        "teamId": 305260,
+        "shirtNumber": 19,
+        "position": "M",
+        "substitute": true,
+        "statistics": {
+          "minutesPlayed": 44,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 882322,
+          "name": "Badr Gaddarine",
+          "shortName": "B. Gaddarine",
+          "position": "D",
+          "jerseyNumber": "4"
+        },
+        "teamId": 55025,
+        "shirtNumber": 4,
+        "position": "D",
+        "substitute": true,
+        "statistics": {
+          "minutesPlayed": 28,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1004434,
+          "name": "Joseph Guede Gnadou",
+          "shortName": "J. G. Gnadou",
+          "position": "F",
+          "jerseyNumber": "18"
+        },
+        "teamId": 55025,
+        "shirtNumber": 45,
+        "position": "F",
+        "substitute": true,
+        "statistics": {
+          "minutesPlayed": 28,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1416474,
+          "name": "Taoufik Razko",
+          "shortName": "T. Razko",
+          "position": "M",
+          "jerseyNumber": "14"
+        },
+        "teamId": 55025,
+        "shirtNumber": 17,
+        "position": "M",
+        "substitute": true,
+        "statistics": {
+          "minutesPlayed": 18,
+          "goals": 1,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 1525316,
+          "name": "Oussama Daoui",
+          "shortName": "O. Daoui",
+          "position": "D",
+          "jerseyNumber": "16"
+        },
+        "teamId": 55025,
+        "shirtNumber": 16,
+        "position": "D",
+        "substitute": true,
+        "statistics": {
+          "minutesPlayed": 4,
+          "goals": 0,
+          "goalAssist": 0,
+          "ownGoals": 0,
+          "totalShots": 0
+        }
+      },
+      {
+        "player": {
+          "id": 2045637,
+          "name": "Soufiane Taher",
+          "shortName": "S. Taher",
+          "position": "G",
+          "jerseyNumber": "44"
+        },
+        "teamId": 55025,
+        "shirtNumber": 44,
+        "position": "G",
+        "substitute": true
+      },
+      {
+        "player": {
+          "id": 1526456,
+          "name": "Ayoub Lakhlifi",
+          "shortName": "A. Lakhlifi",
+          "position": "D",
+          "jerseyNumber": "97"
+        },
+        "teamId": 55025,
+        "shirtNumber": 97,
+        "position": "D",
+        "substitute": true
+      },
+      {
+        "player": {
+          "id": 2613942,
+          "name": "Mohammed El Miloudi",
+          "shortName": "M. E. Miloudi",
+          "position": "M"
+        },
+        "teamId": 55025,
+        "shirtNumber": 30,
+        "position": "M",
+        "substitute": true
+      },
+      {
+        "player": {
+          "id": 1919278,
+          "name": "Zouhir Eddib",
+          "shortName": "Z. Eddib",
+          "position": "F",
+          "jerseyNumber": "9"
+        },
+        "teamId": 55025,
+        "shirtNumber": 99,
+        "position": "F",
+        "substitute": true
+      }
+    ],
+    "formation": "4-3-1-2"
+  }
+}

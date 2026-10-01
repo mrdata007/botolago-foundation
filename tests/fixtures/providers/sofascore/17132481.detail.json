@@ -1,0 +1,40 @@
+{
+  "event": {
+    "id": 17132481,
+    "startTimestamp": 1790532000,
+    "status": {
+      "type": "finished"
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "season": {
+      "id": 102220
+    },
+    "tournament": {
+      "uniqueTournament": {
+        "id": 937
+      }
+    },
+    "homeTeam": {
+      "id": 55035,
+      "name": "MAS de Fès",
+      "shortName": "MAS"
+    },
+    "awayTeam": {
+      "id": 263373,
+      "name": "Renaissance Zemamra",
+      "shortName": "Renaissance Zemamra"
+    },
+    "homeScore": {
+      "current": 2,
+      "period1": 0,
+      "period2": 2
+    },
+    "awayScore": {
+      "current": 1,
+      "period1": 0,
+      "period2": 1
+    }
+  }
+}

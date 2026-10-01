@@ -1,0 +1,26 @@
+{
+  "DATA": {
+    "EVENT": {
+      "EVENT_ID": "vZ4vNyTH",
+      "START_UTIME": 1790445600,
+      "STAGE": "FINISHED",
+      "ROUND": "Round 1",
+      "HOME_NAME": "Difaa El Jadidi",
+      "AWAY_NAME": "COD Meknes",
+      "HOME_PARTICIPANT_IDS": [
+        "Iui2yZzh"
+      ],
+      "AWAY_PARTICIPANT_IDS": [
+        "E1gvHxFa"
+      ],
+      "HOME_SCORE_FULL": 2,
+      "AWAY_SCORE_FULL": 6
+    },
+    "TOURNAMENT": {
+      "NAME": "Morocco: Botola Pro",
+      "TOURNAMENT_ID": "CGClceUj",
+      "TOURNAMENT_STAGE_ID": "GKXUiwEl",
+      "TOURNAMENT_SEASON_ID": "CGClceUj"
+    }
+  }
+}
