@@ -1,4 +1,5 @@
 import { PepitesAdminError } from "@/backend/pepites/admin-repository";
+import { moroccoDateTimeFormat, moroccoOffsetMs, moroccoWallToInstant } from "@/lib/morocco-time";
 
 /**
  * Pure helpers for the Pépites staff screens: Morocco-time scheduling, the
@@ -6,52 +7,24 @@ import { PepitesAdminError } from "@/backend/pepites/admin-repository";
  * Admin copy is inline French/Arabic, like the rest of the console.
  */
 
-const ZONE = "Africa/Casablanca";
-
-/** The zone's offset from UTC at `instant`, in minutes. */
-function zoneOffsetMinutes(instant: number): number {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date(instant));
-  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value);
-  const asUtc = Date.UTC(
-    get("year"),
-    get("month") - 1,
-    get("day"),
-    get("hour"),
-    get("minute"),
-    get("second"),
-  );
-  return Math.round((asUtc - Math.floor(instant / 1000) * 1000) / 60_000);
-}
-
 /**
  * "2026-10-12T20:00" read as Morocco time, as an ISO instant, or null.
- * Morocco moves between UTC+1 and UTC+0 (Ramadan), so the offset is the
- * zone's own at that moment, not a constant.
+ * Morocco moves between UTC+1 and UTC+0 (Ramadan, and from 2026-09-20 UTC+0
+ * all year), so the offset is the application's own rule at that moment, not a
+ * constant and not whatever time-zone data the runtime happens to carry.
  */
 export function casablancaLocalToIso(local: string): string | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local);
   if (!match) return null;
   const [, y, mo, d, h, mi] = match.map(Number) as unknown as number[];
-  const guess = Date.UTC(y!, mo! - 1, d!, h!, mi!);
-  let instant = guess - zoneOffsetMinutes(guess) * 60_000;
-  // Near a change of offset the first guess can land on the other side.
-  instant = guess - zoneOffsetMinutes(instant) * 60_000;
+  const instant = moroccoWallToInstant(y!, mo!, d!, h!, mi!).getTime();
   return Number.isFinite(instant) ? new Date(instant).toISOString() : null;
 }
 
 /** An instant as the "YYYY-MM-DDTHH:mm" a datetime field holds, in Morocco time. */
 export function isoToCasablancaLocal(iso: string): string {
   const instant = Date.parse(iso);
-  const shifted = new Date(instant + zoneOffsetMinutes(instant) * 60_000);
+  const shifted = new Date(instant + moroccoOffsetMs(instant));
   return shifted.toISOString().slice(0, 16);
 }
 
@@ -76,14 +49,13 @@ export function adminDateTime(iso: string | null | undefined, rtl: boolean): str
   if (!iso) return "—";
   const date = new Date(iso);
   if (!Number.isFinite(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(rtl ? "ar-MA-u-nu-latn" : "fr-FR", {
+  return moroccoDateTimeFormat(rtl ? "ar-MA-u-nu-latn" : "fr-FR", {
     weekday: "short",
     day: "numeric",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
-    timeZone: ZONE,
   }).format(date);
 }
 

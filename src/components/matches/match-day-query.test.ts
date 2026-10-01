@@ -172,10 +172,15 @@ describe("the day the calendar opens on", () => {
   // The server's clock is UTC; the competition's days are Casablanca's
   // (UTC+1 outside Ramadan). At 23:30 UTC it is already tomorrow there.
   test("today is the competition's day, not the server's", () => {
-    expect(openingMatchDay(season, matchDayKey(new Date("2026-09-25T23:30:00Z")))).toBe(
-      "2026-09-26",
+    // Before Morocco moved to UTC+0 all year (UTC+1): 23:30Z is already the next day there.
+    expect(openingMatchDay(season, matchDayKey(new Date("2026-09-12T23:30:00Z")))).toBe(
+      "2026-09-13",
     );
-    expect(openingMatchDay(season, matchDayKey(new Date("2026-09-25T22:59:00Z")))).toBe(
+    expect(openingMatchDay(season, matchDayKey(new Date("2026-09-12T22:59:00Z")))).toBe(
+      "2026-09-12",
+    );
+    // From 2026-09-20 the competition's day is the UTC day.
+    expect(openingMatchDay(season, matchDayKey(new Date("2026-09-25T23:30:00Z")))).toBe(
       "2026-09-25",
     );
   });
@@ -458,7 +463,7 @@ describe("the fixtures the server renders reach the browser's first render", () 
       },
     ];
     const fixtures = { matches: [], clubs: [], standings: [] };
-    const today = matchDayKey(new Date("2026-09-25T23:30:00Z"));
+    const today = matchDayKey(new Date("2026-09-12T23:30:00Z"));
 
     delete globals.window;
     const server = new QueryClient();
@@ -482,7 +487,7 @@ describe("the fixtures the server renders reach the browser's first render", () 
       browser.getQueryData<FootballSeason[]>(["football", "seasons", "fr"])!,
     );
     const key = matchDayQuery(openingMatchDay(shown, today), "fr", shown?.id).queryKey;
-    expect(key).toEqual(["football", "matches", "2026-09-26", "current", "fr"]);
+    expect(key).toEqual(["football", "matches", "2026-09-13", "current", "fr"]);
     expect(browser.getQueryData(key)).toEqual(fixtures);
   });
 });

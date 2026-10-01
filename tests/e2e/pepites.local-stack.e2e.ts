@@ -4,6 +4,7 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 
 import { dictionaries } from "../../src/i18n/dictionaries";
 import { gotoHydrated, initializeLanguage, observePage } from "./support";
+import { moroccoParts } from "../../src/lib/morocco-time";
 
 /**
  * Pépites against a LOCAL Supabase stack with real data: the ranking engine's
@@ -83,19 +84,15 @@ async function staffPage(browser: Browser): Promise<Page> {
   return page;
 }
 
-/** "YYYY-MM-DDTHH:mm" in Morocco time, `minutes` from now. */
+/**
+ * "YYYY-MM-DDTHH:mm" in Morocco time, `minutes` from now. Uses the
+ * application's own rule: this runner's `Intl` may carry older time-zone data
+ * than the page under test (they differ from 2026-09-20).
+ */
 function casablancaLocal(minutes: number): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Africa/Casablanca",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date(Date.now() + minutes * 60_000));
-  const get = (type: string) => parts.find((part) => part.type === type)!.value;
-  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+  const p = moroccoParts(new Date(Date.now() + minutes * 60_000));
+  const two = (n: number) => String(n).padStart(2, "0");
+  return `${p.year}-${two(p.month)}-${two(p.day)}T${two(p.hour)}:${two(p.minute)}`;
 }
 
 test("the week 7 draft: edited, late, published; an open page shows it without a reload", async ({

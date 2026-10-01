@@ -54,9 +54,9 @@ function fixture(
 }
 
 // Saturday 26 September 2026. Morocco is UTC+1 outside Ramadan.
-const derby = () => fixture(RAJA, WYDAD, "2026-09-26T20:00:00Z");
-const early = () => fixture(FAR, BERKANE, "2026-09-26T15:00:00Z");
-const middle = () => fixture(FUS, MAS, "2026-09-26T17:00:00Z");
+const derby = () => fixture(RAJA, WYDAD, "2026-09-26T21:00:00Z");
+const early = () => fixture(FAR, BERKANE, "2026-09-26T16:00:00Z");
+const middle = () => fixture(FUS, MAS, "2026-09-26T18:00:00Z");
 const unconfirmed = () =>
   fixture(HUSA, IRT, "2026-09-26T00:00:00Z", { timeConfirmed: false, status: "scheduled" });
 
@@ -74,16 +74,16 @@ function defaultPayload<K extends EmailNotificationType>(type: K): EmailPayloadB
     round_preview: {
       round: { id: "round-5", number: 5, name: "Journée 5" },
       fixtures: [
-        fixture(RAJA, FAR, "2026-10-03T19:00:00Z"),
-        fixture(WYDAD, BERKANE, "2026-10-02T19:00:00Z"),
-        fixture(FUS, HUSA, "2026-10-04T16:00:00Z"),
+        fixture(RAJA, FAR, "2026-10-03T20:00:00Z"),
+        fixture(WYDAD, BERKANE, "2026-10-02T20:00:00Z"),
+        fixture(FUS, HUSA, "2026-10-04T17:00:00Z"),
         fixture(MAS, IRT, "2026-10-03T00:00:00Z", { timeConfirmed: false }),
       ],
     },
     match_starting: { fixture: derby(), minutes: 60 },
     deadline_24h: {
       gameweek: { id: "gw-5", sequence: 5, name: "Journée 5" },
-      deadlineAt: "2026-09-25T17:30:00Z",
+      deadlineAt: "2026-09-25T18:30:00Z",
     },
     gameweek_finalized: { gameweek: 5, points: 64, overallRank: 12, totalPoints: 312 },
     pepites_weekly: pepitesPayload(),
@@ -101,7 +101,7 @@ function pepitesPayload(
     seasonId: "season-2026",
     week: 16,
     round: 5,
-    publishedAt: "2026-10-12T19:00:00Z",
+    publishedAt: "2026-10-12T20:00:00Z",
     correctsEditionId: null,
     entries: Array.from({ length: 10 }, (_, index) => ({
       rank: index + 1,
@@ -317,7 +317,7 @@ describe("escaping", () => {
     const odd = team("odd", `Club "Olympique" & Fils'`, `نادي "الأولمبي" & أبناؤه`);
     const payload = {
       date: "2026-09-26",
-      fixtures: [fixture(odd, WYDAD, "2026-09-26T20:00:00Z")],
+      fixtures: [fixture(odd, WYDAD, "2026-09-26T21:00:00Z")],
     };
     const email = render(delivery("matchday_preview", { favoriteTeamId: "odd", payload }));
     expect(email.html).toContain("Club &quot;Olympique&quot; &amp; Fils&#39;");
@@ -329,7 +329,7 @@ describe("escaping", () => {
   it("strips line breaks and bidi overrides from data before it reaches the subject", () => {
     const sneaky = team("sneaky", "Raja\r\nBcc: victim@example.com", "Raja‮evil");
     const payload = {
-      fixture: fixture(sneaky, WYDAD, "2026-09-26T20:00:00Z"),
+      fixture: fixture(sneaky, WYDAD, "2026-09-26T21:00:00Z"),
       minutes: 60,
     };
     const fr = render(delivery("match_starting", { payload }));
@@ -424,7 +424,7 @@ describe("time not confirmed", () => {
     expect(email.text).toContain(
       [
         "Samedi 3 octobre",
-        "- Raja Casablanca – AS FAR · 15:00",
+        "- Raja Casablanca – AS FAR · 16:00",
         "- Maghreb Fès – Ittihad Tanger · heure à confirmer",
       ].join("\n"),
     );
@@ -468,7 +468,7 @@ describe("postponed and cancelled matches", () => {
     const payload = {
       round: { id: "r", number: 5, name: "Journée 5" },
       fixtures: [
-        fixture(RAJA, FAR, "2026-10-03T19:00:00Z"),
+        fixture(RAJA, FAR, "2026-10-03T20:00:00Z"),
         fixture(HUSA, IRT, "2026-10-04T00:00:00Z", { status: "postponed", timeConfirmed: false }),
       ],
     };
@@ -530,7 +530,7 @@ describe("time zones", () => {
 
   it("uses the delivery's own zone when it differs", () => {
     const email = render(delivery("match_starting", { timezone: "Europe/Paris" }));
-    expect(email.text).toContain("Coup d'envoi à 22:00");
+    expect(email.text).toContain("Coup d'envoi à 23:00");
     expect(email.text).not.toContain("21:00");
   });
 
@@ -640,7 +640,7 @@ describe("round preview", () => {
   it("falls back to the round name when it has no number", () => {
     const payload = {
       round: { id: "r", number: null, name: "Barrages" },
-      fixtures: [fixture(RAJA, FAR, "2026-10-03T19:00:00Z")],
+      fixtures: [fixture(RAJA, FAR, "2026-10-03T20:00:00Z")],
     };
     expect(render(delivery("round_preview", { payload })).subject).toBe(
       "Barrages de Botola Pro : le programme",

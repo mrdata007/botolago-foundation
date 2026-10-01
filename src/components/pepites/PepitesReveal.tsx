@@ -25,21 +25,20 @@ import {
   usePepitesViewer,
   useVersionPointer,
 } from "./use-pepites";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /** "LUN. 20:00": the reveal's day and hour, in Morocco time. */
 function revealStamp(iso: string | null, lang: "fr" | "ar"): string {
   if (!iso) return "";
   const date = new Date(iso);
   if (!Number.isFinite(date.getTime())) return "";
-  const day = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR", {
+  const day = moroccoDateTimeFormat(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR", {
     weekday: lang === "ar" ? "long" : "short",
-    timeZone: "Africa/Casablanca",
   }).format(date);
-  const time = new Intl.DateTimeFormat("fr-FR", {
+  const time = moroccoDateTimeFormat("fr-FR", {
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
-    timeZone: "Africa/Casablanca",
   }).format(date);
   return `${lang === "ar" ? day : day.toLocaleUpperCase("fr")} ${time}`;
 }
