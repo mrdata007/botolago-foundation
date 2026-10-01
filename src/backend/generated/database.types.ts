@@ -1934,6 +1934,15 @@ export type Database = {
         Args: { p_gameweek_id: string }
         Returns: Json
       }
+      service_set_curated_team_crest: {
+        Args: {
+          p_attribution: string
+          p_external_team_id: string
+          p_mime_type: string
+          p_storage_path: string
+        }
+        Returns: Json
+      }
       service_set_elbotola_source_active: {
         Args: { p_active: boolean }
         Returns: Json
