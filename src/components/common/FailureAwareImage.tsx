@@ -20,6 +20,13 @@ type ImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src"> & {
    * (BG-0076) instead of inventing a second failure mechanism beside it.
    */
   onFailed?: (src: string) => void;
+  /**
+   * Keep the image invisible (not removed) until it has really loaded. For an
+   * image that sits on top of a fallback it is meant to replace, such as the
+   * letters under a crest: an opaque image box that is still downloading
+   * would otherwise hide the fallback and leave an empty shape.
+   */
+  revealOnLoad?: boolean;
 };
 
 function ImageAttempt({
@@ -30,9 +37,12 @@ function ImageAttempt({
   decoding = "async",
   loading = "lazy",
   onFailed,
+  revealOnLoad = false,
+  className,
   ...props
 }: ImageProps) {
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   // `srcSet` holds resized copies of `src` (see `responsiveMedia`). If they
   // fail -- the image service is off in this environment -- the next try drops
   // them and loads `src` itself, and only that failing removes the picture.
@@ -46,7 +56,12 @@ function ImageAttempt({
   // loading, is left alone.
   useEffect(() => {
     const image = imageRef.current;
-    if (!image?.complete || image.naturalWidth > 0) return;
+    if (!image?.complete) return;
+    // Finished before React was listening: its `load` event is not replayed.
+    if (image.naturalWidth > 0) {
+      setLoaded(true);
+      return;
+    }
     const { src: current } = image;
     image.src = current;
   }, []);
@@ -57,12 +72,17 @@ function ImageAttempt({
   const image = (
     <img
       {...props}
+      className={cn(className, revealOnLoad && !loaded && "opacity-0")}
       ref={imageRef}
       src={src}
       srcSet={useCopies ? srcSet : undefined}
       sizes={useCopies ? sizes : undefined}
       decoding={decoding}
       loading={loading}
+      onLoad={(event) => {
+        setLoaded(true);
+        props.onLoad?.(event);
+      }}
       onError={() => {
         if (useCopies) {
           setCopiesFailed(true);

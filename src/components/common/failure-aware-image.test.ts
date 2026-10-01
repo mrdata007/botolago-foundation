@@ -18,7 +18,9 @@ const SOURCE = readFileSync(join(import.meta.dir, "FailureAwareImage.tsx"), "utf
 describe("FailureAwareImage: a failure before hydration", () => {
   it("is asked for again once mounted, if the image already shows as broken", () => {
     expect(SOURCE).toContain("ref={imageRef}");
-    expect(SOURCE).toContain("if (!image?.complete || image.naturalWidth > 0) return;");
+    expect(SOURCE).toContain("if (!image?.complete) return;");
+    // One that loaded is left alone (it is only marked as shown).
+    expect(SOURCE).toMatch(/if \(image\.naturalWidth > 0\) \{\s*setLoaded\(true\);\s*return;\s*\}/);
     // Not a no-op: setting `src`, even to the same value, makes the browser
     // load the image again, and a broken one fires `error` again.
     expect(SOURCE).toContain("image.src = current;");
@@ -27,5 +29,18 @@ describe("FailureAwareImage: a failure before hydration", () => {
   it("then drops the resized copies before giving up on the original", () => {
     expect(SOURCE).toContain("srcSet={useCopies ? srcSet : undefined}");
     expect(SOURCE).toMatch(/if \(useCopies\) \{\s*setCopiesFailed\(true\);\s*return;\s*\}/);
+  });
+});
+
+describe("FailureAwareImage: revealOnLoad", () => {
+  it("keeps the image invisible, not removed, until it has loaded", () => {
+    expect(SOURCE).toContain('revealOnLoad && !loaded && "opacity-0"');
+    // Hidden, not unmounted: an unmounted image would never start loading.
+    expect(SOURCE).toContain("setLoaded(true);");
+    expect(SOURCE).toContain("onLoad={(event) => {");
+  });
+
+  it("is off unless asked for, so photos and other images behave as before", () => {
+    expect(SOURCE).toContain("revealOnLoad = false,");
   });
 });

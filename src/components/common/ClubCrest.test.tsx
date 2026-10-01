@@ -214,3 +214,20 @@ describe("ClubCrest — source rules", () => {
     expect(code).not.toMatch(/(^|[\s"'`{])-?(ml|mr|pl|pr|left|right)-[\w.[\]/-]+/m);
   });
 });
+
+describe("ClubCrest — never an empty circle", () => {
+  it("hides the opaque badge plate until the badge has loaded, so the letters show meanwhile", () => {
+    const html = render(
+      <ClubCrest
+        club={{
+          ...WYDAD,
+          crestUrl:
+            "https://example.test/storage/v1/object/public/football-media/football/teams/2846/crest.png",
+        }}
+      />,
+    );
+    // The monogram is in the markup, and the badge on top of it starts transparent.
+    expect(html).toContain(WYDAD.crestPlaceholder);
+    expect(html).toMatch(/<img[^>]*class="[^"]*opacity-0/);
+  });
+});

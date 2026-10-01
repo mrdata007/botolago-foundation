@@ -61,6 +61,10 @@ const BADGE_SIZES: Record<ClubCrestSize, string> = {
  * dark), lifted off the block by `--ui-shadow-lifted` and ringed in the
  * club's edge colour, so it stays a disc on a light kit's block too.
  *
+ * The badge's plate is opaque, so it stays invisible until the badge has
+ * loaded (`revealOnLoad`); until then, and if it never loads, the monogram
+ * shows. A crest is never an empty circle.
+ *
  * Decorative: the club's name is always printed beside a crest, so the disc
  * is hidden from assistive tech and carries the name only as a tooltip.
  *
@@ -125,6 +129,7 @@ export function ClubCrest({
         srcSet={badge.srcSet}
         sizes={badge.sizes}
         loading={loading}
+        revealOnLoad
         alt=""
         aria-hidden
         className={cn(
