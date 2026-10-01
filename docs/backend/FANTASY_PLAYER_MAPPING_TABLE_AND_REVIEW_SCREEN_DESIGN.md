@@ -13,15 +13,15 @@ says what the table and the review screen are.
 
 These are decided. The rest of the document is written to them.
 
-| #   | Decision                                                                                                                                                                                                                                                                                                                    | Where it lands       |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| D1  | **Two-person approval for every production player mapping.** Strong matches may be grouped in batches, but each executed mapping still has a proposer, a different approver, AAL2, recent authentication, an immutable fingerprint, a reason and an audit event. There is no single-review shortcut.                        | sections 3.2, 5.3, 6 |
-| D2  | **Date of birth is a strong name-independent signal only if real Sofascore or Flashscore responses prove the field exists and is sufficiently populated.** Height may be shown as corroboration, never as an identity key. Nothing is designed against an assumed endpoint or field. The evidence is in section 12.         | sections 5.2, 12     |
-| D3  | **Retention.** Provider display names are purged 90 days after the candidate becomes `mapped` or `ignored`. Everything else is kept: provider ids, app player id, fixture references, evidence signals, fingerprints, proposal and approval decisions, reasons, audit events. Only third-party display-name text is purged. | section 3.4          |
-| D4  | **At least two distinct authorized humans are required in production.** Self-approval protection is not weakened if only one `football_operator` exists. The system shows "second qualified reviewer required" and provides no bypass.                                                                                      | sections 5.5, 6      |
-| D5  | **Arabic.** No separately curated Arabic player-name spellings in v1. The admin interface itself has French and Arabic copy and RTL support. Player names are shown exactly as stored in the app catalog and the provider evidence.                                                                                         | section 5.6          |
-| A   | **Position is a ranking signal, not a hard filter.** It never hides an otherwise plausible same-team candidate, never rejects a pairing by itself, and a contradiction is visibly flagged.                                                                                                                                  | sections 5.2, 3.2    |
-| B   | **"Not a Botola player" is a durable production classification and needs dual control** (propose, a different person approves, execute), like a mapping: reversible, reason required, fingerprinted, audited, impossible to self-approve. "Skip for now" stays a personal, non-mutating screen action.                      | sections 3.5, 5.3, 6 |
+| #   | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Where it lands            |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------- |
+| D1  | **One reviewer approves a mapping: the owner, as `football_operator`.** Every decision records who and when, and every decision can be undone (section 3.6). The design is built so a second approver can be switched on later without changing the tables or the screen: the number of approvals a proposal needs is a policy value (`approvals_required`, 1 now), copied onto each proposal when it is made, and the database refuses self-approval whenever it is 2 or more. _This replaces the earlier draft's two-person rule._ | sections 3.2, 3.6, 5.3, 6 |
+| D2  | **Date of birth is a confirmation check only, never the only match.** It is used only because the real responses show the field exists and is populated (section 12: present on Sofascore, absent from Flashscore squads), and only to confirm a pairing that already rests on an incident or on shirt and position. Height is corroboration only. Nothing is designed against an assumed endpoint or field.                                                                                                                         | sections 5.2, 12          |
+| D3  | **Retention.** Provider display names are purged 90 days after the candidate becomes `mapped` or `ignored`. Everything else is kept: provider ids, app player id, fixture references, evidence signals, fingerprints, proposal and approval decisions, reasons, audit events. Only third-party display-name text is purged.                                                                                                                                                                                                          | section 3.4               |
+| D4  | **Reviewer: the owner only, for now.** One qualified reviewer is enough while `approvals_required` is 1; the screen says "single reviewer" so it is never mistaken for a second check. Raising the policy to 2 later makes the screen show "second qualified reviewer required" until a second person exists, with no bypass.                                                                                                                                                                                                        | sections 5.5, 6           |
+| D5  | **Arabic.** No separately curated Arabic player-name spellings in v1. The admin interface itself has French and Arabic copy and RTL support. Player names are shown exactly as stored in the app catalog and the provider evidence.                                                                                                                                                                                                                                                                                                  | section 5.6               |
+| A   | **Position is a ranking signal, not a hard filter.** It never hides an otherwise plausible same-team candidate, never rejects a pairing by itself, and a contradiction is visibly flagged.                                                                                                                                                                                                                                                                                                                                           | sections 5.2, 3.2         |
+| B   | **"Not a Botola player" is a durable production classification** with the same approval policy as a mapping (one reviewer now, two if the policy is raised): reversible, reason required, fingerprinted, audited. It is refused outright for an id that appears in a Botola lineup or incident. "Skip for now" stays a personal, non-mutating screen action.                                                                                                                                                                         | sections 3.5, 5.3, 6      |
 
 ## 1. What this has to solve
 
@@ -63,7 +63,7 @@ not conveniences.
   review (section 4);
 - one app player appears at most once per fixture (section 4);
 - there is no deletion: a mapping is deactivated or replaced forward-only, with a reason,
-  through the same two-person flow.
+  through the same approval flow, and every decision can be undone (section 3.6).
 
 No change to the mapping table is needed. Two new providers are registered
 (`sofascore`, `flashscore` in `app_private.football_providers`).
@@ -94,7 +94,7 @@ One row per provider player id that the system has seen and cannot map yet.
 | `status`                                                         | `unmapped`, `proposed`, `mapped`, `ignored`. `mapped` and `ignored` are only ever set by executing an approved proposal (sections 3.3 and 3.5); no screen action and no import sets them directly |
 | `status_changed_at`                                              | when `status` last changed (the 90-day clock of section 3.4 starts here for `mapped` and `ignored`)                                                                                               |
 
-### 3.2 `football_player_mapping_proposals` (a decision waiting for a second person)
+### 3.2 `football_player_mapping_proposals` (a decision waiting for approval)
 
 One row per proposed decision. Every durable production decision about a candidate goes
 through this table, whatever its kind.
@@ -109,26 +109,29 @@ through this table, whatever its kind.
 | `evidence`                                        | jsonb: fixture ids, incident kinds and minutes, shirt numbers per provider, positions, and the signal results of section 5.2 (agree, disagree, missing). References and counts only, no names and no provider payloads |
 | `signals`                                         | jsonb: the per-candidate ranking signals shown to the reviewer (section 5.2), kept with the proposal                                                                                                                   |
 | `status`                                          | see the state table below                                                                                                                                                                                              |
-| `requested_by`, `requested_at`, `reason`          | the proposer (a human), and why                                                                                                                                                                                        |
+| `requested_by`, `requested_at`, `reason`          | the proposer (a human, or the system for a machine-built proposal), and why                                                                                                                                            |
+| `approvals_required`                              | how many distinct approvals this proposal needs. Copied from the policy when the proposal is made and never changed afterwards (1 now)                                                                                 |
 | `position_note`                                   | required before a `position_disagreement` proposal can be approved (what the disagreement is and why the pairing still holds)                                                                                          |
-| `decided_by`, `decided_at`, `decision_reason`     | a different human                                                                                                                                                                                                      |
+| `decided_by`, `decided_at`, `decision_reason`     | the reviewer. With `approvals_required` 1 this may be the person who proposed it; with 2 or more it is a different human (each approval is its own audit row)                                                          |
 | `position_disagreement_acknowledged`              | the approver's explicit acknowledgement, required when the proposal carries a position disagreement                                                                                                                    |
 | `fingerprint`                                     | hash of the payload (kind, ids, app player, evidence references, signals, reason); any change invalidates an approval. It never includes a name                                                                        |
 | `expires_at`                                      | pending proposals expire (default 72 hours)                                                                                                                                                                            |
 
 Constraints: a pending proposal cannot name an app player or a provider id that already
 has an active mapping or another pending proposal (a replacement is a separate, explicit
-operation, section 5.4). `requested_by <> decided_by` is enforced in the database, not
-only in the screen, for every kind.
+operation, section 5.4). When `approvals_required` is 2 or more, `requested_by <> decided_by`
+and distinct approvers are enforced in the database, not only in the screen, for every kind.
+When it is 1 nothing relaxes any other check: AAL2, recent authentication, the reason, the
+fingerprint and the audit event all still apply, and the decision is recorded with who and when.
 
 #### Proposal states
 
 | State                   | Meaning                                                                                                                                                                                                     | Can be approved?                 | Leaves by                                                                                                                                         |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pending`               | waiting for a second person                                                                                                                                                                                 | yes                              | `approved`, `rejected`, `expired`, `cancelled`, or one of the four held states below                                                              |
-| `approved`              | a different person approved the exact fingerprint; not yet executed                                                                                                                                         | n/a                              | `executed`, or `stale_evidence`, `identity_conflict`, `already_mapped` if the world changed before execution                                      |
+| `pending`               | waiting for approval                                                                                                                                                                                        | yes                              | `approved`, `rejected`, `expired`, `cancelled`, or one of the four held states below                                                              |
+| `approved`              | the reviewer(s) approved the exact fingerprint; not yet executed (with `approvals_required` 1 this and `executed` happen in one action)                                                                     | n/a                              | `executed`, or `stale_evidence`, `identity_conflict`, `already_mapped` if the world changed before execution                                      |
 | `executed`              | written exactly once, in one transaction, with its audit events                                                                                                                                             | n/a                              | final                                                                                                                                             |
-| `rejected`              | a different person rejected it, with a reason                                                                                                                                                               | n/a                              | final                                                                                                                                             |
+| `rejected`              | the reviewer rejected it, with a reason                                                                                                                                                                     | n/a                              | final                                                                                                                                             |
 | `expired`               | not decided in time                                                                                                                                                                                         | no                               | final; a new proposal may be made                                                                                                                 |
 | `cancelled`             | withdrawn by the proposer, with a reason                                                                                                                                                                    | n/a                              | final                                                                                                                                             |
 | `stale_evidence`        | the provider evidence the proposal rests on changed after it was made (a newer read of the squad or a lineup shows a different team, shirt, position or id for the pair, or a fixture it cites was re-read) | no                               | the proposer refreshes the evidence, which makes a new fingerprint and returns it to `pending`; an earlier approval never carries over            |
@@ -151,7 +154,7 @@ double-mapping impossible. The proposal moves to `executed`; the candidate rows 
 correlation id, as for every admin mutation.
 
 Rollback is forward-only: deactivate (`active = false`) with a reason through the same
-two-person flow, never delete.
+approval flow (section 3.6), never delete.
 
 ### 3.4 Retention
 
@@ -170,14 +173,15 @@ two-person flow, never delete.
 ### 3.5 "Not a Botola player" (`ignore`)
 
 A durable classification of one provider id as not part of the Botola player pool. It can
-suppress a legitimate player's mapping and so affect ingestion and scoring, so it is a
-two-person decision exactly like a mapping:
+suppress a legitimate player's mapping and so affect ingestion and scoring, so it follows the
+same approval policy as a mapping:
 
-candidate, then **propose ignore**, then a **second person approves**, then **execute**.
+candidate, then **propose ignore**, then **approve** (one reviewer now, two if the policy is
+raised), then **execute**.
 
 - Reason required (10 to 500 characters), fingerprinted, audited, and self-approval is
-  refused by the database.
-- **Reversible:** a `reverse_ignore` proposal goes through the same two-person flow and
+  refused by the database whenever the policy needs two approvals.
+- **Reversible:** a `reverse_ignore` proposal goes through the same approval flow and
   returns the candidate to `unmapped`. Nothing is deleted; the history stays.
 - **Protection against a wrong classification:** an `ignore` proposal for an id that
   appears in any Botola match lineup or in any reconciled incident (a goal, card, assist or
@@ -190,6 +194,38 @@ candidate, then **propose ignore**, then a **second person approves**, then **ex
 - **"Skip for now"** is not this. It is a personal, non-mutating screen action (it only
   affects what that reviewer sees next, in the browser or a per-user preference). It
   changes no status, no queue count for anyone else, and no ingestion.
+
+### 3.6 One reviewer now, a second approver later, and undo
+
+**The policy.** One row of server-owned configuration, `football_player_mapping_policy`
+(`approvals_required`, default 1, `updated_by`, `updated_at`, `reason`). Raising or lowering
+it needs `platform_admin`, a reason and recent authentication, and writes an audit event.
+Each proposal copies the value when it is created, so changing the policy never changes a
+proposal that is already pending.
+
+| `approvals_required` | Who decides                                                           | What the database enforces                                                                                                                                                                     |
+| -------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 (now)              | the owner as `football_operator`, who may also have made the proposal | `football.manage_mappings`, AAL2, recent authentication, a reason of 10 to 500 characters, the fingerprint, an idempotency key, and an audit event for each of proposed, approved and executed |
+| 2 or more (later)    | that many distinct authorized humans, none of them the proposer       | all of the above, plus `requested_by <> decided_by`, distinct approvers, and "second qualified reviewer required" while there are too few people                                               |
+
+Going from 1 to 2 needs no change to the tables and none to the screen beyond the policy
+value; the approval screen already shows an approvals count and an "approved by" list.
+Mappings made while the policy was 1 stay valid and are marked with the policy they were
+approved under.
+
+**Every decision is logged, with who and when.** Each proposed, approved, rejected,
+executed, cancelled and undone step is an append-only audit event with the actor, the
+time, the reason, the fingerprint and the correlation id, and the row on the screen shows
+"approved by <name>, <date and time>". Nothing is edited in place and nothing is deleted.
+
+**Every decision can be undone.** An **Undo** action on a mapped or ignored row creates a
+`deactivate` (or `reverse_ignore`) proposal with a reason, under the same policy. On
+execution it sets the mapping `active = false` (history kept), returns the candidate to
+`unmapped`, and lists the fixtures that were reconciled with that mapping so they are
+re-run. It does not change points already scored: a points correction is a separate
+action under `fantasy.correct_points`, and the Undo screen shows how many scored players
+the mapping touched so the owner knows whether one is needed. Undoing an undo is a new
+mapping decision, through the normal flow.
 
 ## 4. How the reconciler uses it
 
@@ -228,7 +264,7 @@ existing dictionaries; no authority is inferred from route state or client stora
 Player mappings                                   [ Club ▾ ] [ Season ▾ ] [ Basis ▾ ] [ Status ▾ ]
 -------------------------------------------------------------------------------------------------
  Unmapped 212   Proposed 14   Waiting for approval 3   Held 2   Mapped 1,140   Ignored 9
- Qualified reviewers available: 1   -> "Second qualified reviewer required" (see 5.5)
+ Mode: single reviewer (approvals required: 1)   [ if the policy is raised: "Second qualified reviewer required" ]
 
  [ ] Strong matches (47)                                                 Propose selected as batch
  ----------------------------------------------------------------------------------------------
@@ -242,8 +278,9 @@ Player mappings                                   [ Club ▾ ] [ Season ▾ ] [ 
 
 - "Strong matches" are proposals with basis `incident` in two or more different
   fixtures and no incident or id contradiction. They are pre-filled, never pre-approved,
-  and the batch is only a way to **propose** many pairs at once: every row still needs the
-  second person's approval, recorded per row.
+  and the batch is only a way to move through many pairs: every row is still decided, and
+  recorded, one row at a time (and needs the second approval too if the policy is raised
+  to 2).
 - **A position disagreement does not remove a pairing from this list.** It marks the row
   with a visible flag, takes the row out of one-click batch selection, and puts it in the
   `position_disagreement` state until the proposer's note and the approver's
@@ -301,19 +338,20 @@ Other rules:
 ### 5.3 Approval
 
 `/admin/approvals` gains a type, "Player mapping batch", covering every `kind`
-(mapping, replace, deactivate, ignore, reverse ignore). The second operator sees the batch
-as a table (proposed decisions, basis, evidence, signals, impact), can open any row, and
-approves or rejects the batch as a whole or row by row. A changed fingerprint, an expired
-proposal, a held state, or the proposer opening their own batch removes the approve control
-and says why. Execution is a separate, exactly-once step by a qualified operator, as the
-matrix requires for sensitive changes.
+(mapping, replace, deactivate, ignore, reverse ignore). The reviewer sees the batch as a
+table (proposed decisions, basis, evidence, signals, impact), can open any row, and
+approves or rejects row by row (a batch is a way to move through the list, not one
+decision). A changed fingerprint, an expired proposal or a held state removes the approve
+control and says why; with the policy at 2 or more, so does opening one's own proposal. With the policy at 1, approving executes in the same action; at 2 or more, execution is a
+separate, exactly-once step by a qualified operator. Either way each step is its own
+audit event.
 
 There is one approval path for every production mapping and every "not a Botola player"
-decision. There is no shortcut for strong matches or any other group.
+decision, set by the policy. There is no shortcut for strong matches or any other group.
 
 ### 5.4 Replace or deactivate an existing mapping
 
-Same two-person flow, with a mandatory reason and a warning showing which fixtures and
+Same approval flow, with a mandatory reason and a warning showing which fixtures and
 scored points the old mapping touched. Never silently overwritten (a manual correction is
 never replaced by a proposal).
 
@@ -326,22 +364,22 @@ conflict (`identity_conflict`, naming the other record), a position disagreement
 (`position_disagreement`, flagged, with the note and acknowledgement fields), and a
 read-only mode for staff without the write permission.
 
-**Second qualified reviewer required (decision D4).** The queue header and every approval
-row show how many qualified reviewers are available besides the proposer: distinct humans
-with `football.manage_mappings`, currently active, with a second factor enrolled so they
-can reach AAL2. When none is available the proposal stays `pending`, the approve control is
-absent, and the screen says **"second qualified reviewer required"** (and its Arabic
-equivalent). There is no bypass: no override flag, no admin shortcut, no self-approval, and
-this feature adds no break-glass path. If the proposal expires meanwhile it is simply
-proposed again.
+**Single-reviewer mode (decisions D1 and D4).** While `approvals_required` is 1 the queue
+header says "single reviewer" and the approver is the owner. If the policy is raised to 2 or
+more, the header and every approval row show how many qualified reviewers are available
+besides the proposer: distinct humans with `football.manage_mappings`, currently active, with
+a second factor enrolled so they can reach AAL2. When there are too few, the proposal stays
+`pending`, the approve control is absent, and the screen says **"second qualified reviewer
+required"**. There is no bypass at any setting: no override flag, no admin shortcut, no
+break-glass path added by this feature.
 
 Desktop first, tables that stay usable at tablet width, keyboard navigable, no
 colour-only meaning.
 
 ### 5.6 Language and direction (decision D5)
 
-- All interface copy (labels, states, errors, the "second qualified reviewer required"
-  message, buttons) exists in French and Arabic and passes the existing copy gate.
+- All interface copy (labels, states, errors, the "single reviewer" and "second qualified reviewer required"
+  messages, buttons) exists in French and Arabic and passes the existing copy gate.
 - The layout supports RTL: logical properties, mirrored icons where direction carries
   meaning, tables that read correctly right to left.
 - Player and club names are shown **exactly as stored** in the app catalog and the provider
@@ -351,31 +389,31 @@ colour-only meaning.
 
 ## 6. Authority
 
-| Operation                                        | Requester                                                                  | Approver                   | Notes                                                                                           |
-| ------------------------------------------------ | -------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------- |
-| Read the queue and evidence                      | `football.read_operations` or `football.manage_mappings`                   | none                       | read only                                                                                       |
-| Skip for now                                     | any reader                                                                 | none                       | personal and non-mutating; changes no status and no one else's queue                            |
-| Propose a mapping or a batch                     | `football.manage_mappings`, AAL2, recent authentication                    | none                       | needs a reason; creates a pending proposal                                                      |
-| Approve or reject                                | a different `football.manage_mappings` holder, AAL2, recent authentication | n/a                        | self-approval refused by the database                                                           |
-| Execute                                          | a qualified `football.manage_mappings` operator                            | prior independent approval | exactly once, idempotency key                                                                   |
-| Replace or deactivate                            | as above                                                                   | as above                   | warning and reason mandatory                                                                    |
-| **Propose "not a Botola player"** (`ignore`)     | `football.manage_mappings`, AAL2, recent authentication                    | none                       | reason required; refused (`identity_conflict`) if the id appears in a Botola lineup or incident |
-| **Approve "not a Botola player"**                | a different `football.manage_mappings` holder, AAL2, recent authentication | n/a                        | self-approval refused by the database                                                           |
-| **Execute "not a Botola player"**                | a qualified `football.manage_mappings` operator                            | prior independent approval | exactly once, idempotency key                                                                   |
-| Reverse "not a Botola player" (`reverse_ignore`) | as above                                                                   | as above                   | same two-person flow; nothing is deleted                                                        |
+| Operation                                                        | Requester                                                                      | Approver                         | Notes                                                                                                                 |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Read the queue and evidence                                      | `football.read_operations` or `football.manage_mappings`                       | none                             | read only                                                                                                             |
+| Skip for now                                                     | any reader                                                                     | none                             | personal and non-mutating; changes no status and no one else's queue                                                  |
+| Propose a mapping or a batch                                     | `football.manage_mappings`, AAL2, recent authentication                        | none                             | needs a reason; creates a pending proposal                                                                            |
+| Approve or reject                                                | the reviewer: a `football.manage_mappings` holder, AAL2, recent authentication | n/a                              | at `approvals_required` 1 the proposer may approve; at 2 or more a different human, refused by the database otherwise |
+| Execute                                                          | a qualified `football.manage_mappings` operator                                | prior approval(s) per the policy | exactly once, idempotency key; at policy 1 it runs with the approval                                                  |
+| Replace or deactivate                                            | as above                                                                       | as above                         | warning and reason mandatory                                                                                          |
+| **Propose "not a Botola player"** (`ignore`)                     | `football.manage_mappings`, AAL2, recent authentication                        | none                             | reason required; refused (`identity_conflict`) if the id appears in a Botola lineup or incident                       |
+| **Approve "not a Botola player"**                                | as for a mapping                                                               | n/a                              | same policy                                                                                                           |
+| **Execute "not a Botola player"**                                | a qualified `football.manage_mappings` operator                                | prior approval(s) per the policy | exactly once, idempotency key                                                                                         |
+| Reverse "not a Botola player" (`reverse_ignore`)                 | as above                                                                       | as above                         | same flow; nothing is deleted                                                                                         |
+| **Undo a mapping or an ignore** (`deactivate`, `reverse_ignore`) | as above                                                                       | as above                         | reason required; shows the fixtures and scored players it touches; history kept                                       |
+| **Change `approvals_required`**                                  | `platform_admin`, AAL2, recent authentication                                  | none                             | reason required, audited; never changes pending proposals                                                             |
 
 This adds rows to the dual-control matrix; it does not change any existing row. All steps
 write append-only audit events with the same correlation id.
 
-**Decision D1 (recorded):** two-person approval for every production mapping. Strong matches
-may be proposed together in a batch to cut review work; each executed mapping still has a
-proposer, a different approver, AAL2, recent authentication, an immutable fingerprint, a
-reason and an audit event. The previous option of a single reviewer for strong matches is
-**not** adopted.
+**Decision D1 (recorded, 1 Oct 2026):** one reviewer approves a mapping, the owner as
+`football_operator`. Every decision is logged with who and when and can be undone. The
+approval count is a policy value (section 3.6), so a second approver can be added later by
+changing it, with the database refusing self-approval from that point.
 
-**Decision D4 (recorded):** production needs at least two distinct authorized humans. If
-only one `football_operator` exists, proposals wait and the screen says "second qualified
-reviewer required". Self-approval protection is never relaxed to cover that gap.
+**Decision D4 (recorded, 1 Oct 2026):** the only reviewer for now is the owner. The screen
+says "single reviewer" so this is never mistaken for a two-person check.
 
 ## 7. Repository contract (sketch)
 
@@ -391,8 +429,11 @@ In `src/backend/admin/`, next to the existing repositories, with DTOs and stable
 - `decideMappingProposal(id, decision, reason, fingerprint, positionDisagreementAcknowledged?)`
 - `executeMappingBatch(batchId, idempotencyKey)`
 - `deactivateMapping(mappingId, reason, idempotencyKey)`
+- `getMappingPolicy()` and `setMappingPolicy(approvalsRequired, reason, idempotencyKey)`
+  (`platform_admin` only)
+- `undoMapping(mappingId, reason, idempotencyKey)` (a `deactivate` proposal under the policy)
 - `getQualifiedReviewerAvailability(proposalId)` (the count behind "second qualified
-  reviewer required")
+  reviewer required"; only meaningful when the policy is 2 or more)
 
 Stable error codes: `mapping_already_exists`, `app_player_already_mapped`,
 `proposal_expired`, `fingerprint_mismatch`, `self_approval_denied`, `not_authorized`,
@@ -415,8 +456,12 @@ nothing else.
 
 ## 9. Tests to write when it is built
 
-- pgTAP: the unique constraints, `requested_by <> decided_by` for **every kind including
-  `ignore` and `reverse_ignore`**, an execution writes both rows or neither, a pending
+- pgTAP: the unique constraints, the approval policy (at `approvals_required` 1 the proposer
+  may decide and the decision is logged with who and when; at 2 or more `requested_by <>
+decided_by` and distinct approvers for **every kind including `ignore` and
+  `reverse_ignore`**, and a pending proposal keeps the count it was made with when the policy
+  changes), undo (deactivate sets `active = false`, keeps history, returns the candidate to
+  `unmapped`, lists the fixtures to re-run), an execution writes both rows or neither, a pending
   proposal cannot name an already mapped player, expiry, the fingerprint check, forward-only
   deactivation, each held state and its allowed transitions (`stale_evidence` refresh makes a
   new fingerprint and never carries an approval over; `identity_conflict` cannot be approved;
@@ -433,8 +478,9 @@ nothing else.
   list always includes lower-confidence alternatives.
 - Admin repository and route tests with the mock repository pattern used by
   `/admin/approvals`, including the French and Arabic copy gate, RTL layout, and the
-  "second qualified reviewer required" state with a single operator (no bypass control
-  exists in the DOM or the repository).
+  "single reviewer" mode, the "second qualified reviewer required" state when the policy is
+  raised with only one operator (no bypass control exists in the DOM or the repository), and
+  the Undo action.
 - A browser test of the queue, the comparison and the approval for the strong-match batch
   on the development server with sample data only.
 
@@ -455,16 +501,16 @@ nothing else.
 
 ## 11. Decisions
 
-All five decisions the earlier draft asked for are made (section 0). Nothing else in the
+The decisions the earlier draft asked for are made (section 0). Nothing else in the
 design is open except these facts to establish before building, none of which needs an owner
 decision:
 
 - the population probe of section 10 step 2 (whether Sofascore's date of birth is present
-  often enough, in every club, to be used as a ranking signal);
+  often enough, in every club, to be used as a confirmation check);
 - the app catalog's own date-of-birth coverage (without a date on the app side, a provider
   date can only be shown, not compared);
-- who the two reviewers are in practice. The design does not depend on the answer: with one
-  qualified reviewer the screen says "second qualified reviewer required".
+- when, if ever, to raise `approvals_required` to 2 and who the second approver would be. The
+  design does not depend on the answer: it works at 1 today and at 2 with no rebuild.
 
 ## 12. Provider identity fields: evidence from real responses
 
