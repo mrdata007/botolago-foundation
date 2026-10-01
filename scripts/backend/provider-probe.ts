@@ -21,7 +21,7 @@ const HOSTS = {
 } as const;
 
 /** Stop when RapidAPI says fewer than this many requests remain. */
-const MIN_REMAINING = 40;
+const MIN_REMAINING = 100;
 
 let requestCount = 0;
 
