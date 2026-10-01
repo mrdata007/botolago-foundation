@@ -38,6 +38,22 @@ that the 25 and 27 Sept player-list updates observed lineups for **19874708 only
 (an observation of 707, 709 and 710 was recorded on 26 and 27 Sept and never
 applied), and none ever covered 705, 706 or 711.
 
+## Provider evidence collected 1 Oct (read-only, one run per fixture)
+
+Four runs of the protected diagnose workflow, all at the reviewed merge
+`03d34c3e`, all `writesAttempted: false`. Provider ids only; no personal data.
+
+| Fixture  | What the provider sent                                                                                                                                                                                                                                         | What it means                                                                                                                                                                                                |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 19874706 | Team 16850: final score 3. Match events list exactly 3 goals for it (3', 68' penalty, 85'). Player statistics credit **4** goals, one to player 37551374 who has no goal event. Other team: events and statistics agree. No unidentified rows.                 | One extra goal credit in the player statistics. Disallowed goal or provider error: **unknown**. Not fixable by adding players; needs the provider's answer or an owner decision on which source wins.        |
+| 19874709 | Team 16938: final score 3. Match events list 3 goals (19' penalty, 58', 90+6'); the last two are the same player (38227298). His statistics row credits **1** goal. Credited total is 2. No unidentified rows (the earlier "unnamed scorers" theory is wrong). | Statistics row is short by one goal; events agree with the final score. Why: **unknown**. Same kind of decision as 706, in the opposite direction.                                                           |
+| 19874710 | One starter (37550342, team 270260): 62 minutes, team conceded 2 (last at 73'), no explicit goals-conceded figure, first substitution at 46'.                                                                                                                  | The old full-stat pipeline wants his goals-conceded or an official minutes proof. Only the last conceded minute is known, so his concessions cannot be derived. **Unknown stays unknown**; nothing invented. |
+| 19874708 | One starter (38226822, team 228516) has no minutes figure (only stat types 88 and 118).                                                                                                                                                                        | Same code that accepted the stored snapshot before; provider response changed. Accepted snapshot preserved; not a GW1 blocker.                                                                               |
+
+Consequence for the GW1 plan: 706 and 709 are **not** identity problems and no
+catalog repair will clear them. They are data-disagreement problems that need a
+separate, explicit decision. Neither was touched.
+
 ## The three database refusals, exactly
 
 - `PLAYER_MAPPING_NOT_FOUND`: no active `football_provider_mappings` row for the
