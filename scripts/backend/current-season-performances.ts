@@ -71,6 +71,13 @@ export type LineupParticipation = {
   externalPlayerId: string;
   externalTeamId: string;
   role: "starter" | "substitute" | "unknown";
+  /**
+   * The provider's `position_id` on the lineup row, as sent; null when it sent
+   * none. SportsMonks position types: 24 goalkeeper, 25 defender, 26
+   * midfielder, 27 attacker. Evidence only: nothing reads it to create a
+   * player, and a missing one stays missing.
+   */
+  positionId: number | null;
   /** Official minutes (type 119); null when the provider sent none. */
   officialMinutes: number | null;
   /** Scoring-relevant statistic types carrying a value above zero. */
@@ -469,6 +476,12 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
       externalPlayerId: String(playerId),
       externalTeamId: String(teamId),
       role: lineup.type_id === 11 ? "starter" : lineup.type_id === 12 ? "substitute" : "unknown",
+      positionId:
+        typeof lineup.position_id === "number" &&
+        Number.isSafeInteger(lineup.position_id) &&
+        lineup.position_id > 0
+          ? lineup.position_id
+          : null,
       officialMinutes: values.has(MINUTES) ? values.get(MINUTES)! : null,
       scoringStatisticTypeIds: PARTICIPATION_SCORING_TYPES.filter(
         (typeId) => (values.get(typeId) ?? 0) > 0,
