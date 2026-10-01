@@ -770,7 +770,10 @@ export function UiSegmented<T extends string>({
             disabled={option.disabled}
             onClick={() => onChange(option.value)}
             className={cn(
-              "truncate px-2 transition-colors disabled:opacity-50",
+              // A label wraps onto a second line rather than ending in an
+              // ellipsis ("Mes pronostics" at 375px); the tab stays 44px tall
+              // and grows only when it has to.
+              "px-2 py-1 text-center leading-tight transition-colors disabled:opacity-50",
               pill ? ui.radius.full : ui.radius.segment,
               size === "md"
                 ? cn("min-h-[var(--ui-tap-min)]", ui.text.meta)
@@ -897,7 +900,8 @@ export function UiTabs<T extends string>({
                 : ui.tone.muted,
             )}
           >
-            <span className="truncate">{option.label}</span>
+            {/* Wraps rather than ending in an ellipsis ("Mes pronostics" at 375px). */}
+            <span className="min-w-0 text-center leading-tight">{option.label}</span>
           </button>
         );
       })}

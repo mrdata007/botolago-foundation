@@ -66,7 +66,7 @@ export function PredictionsHomeCard() {
           {t("predictions.title")} ·{" "}
           {t("predictions.round.name").replace("{n}", String(journee.number))}
         </span>
-        <span className={cn("truncate", ui.text.meta, ui.tone.muted)}>
+        <span className={cn(ui.text.meta, ui.tone.muted)}>
           {uid
             ? t("predictions.progress")
                 .replace("{done}", formatNumber(done, lang))

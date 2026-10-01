@@ -98,9 +98,11 @@ export function FantasyCreateCard({
   return (
     <Link to={canCreate ? "/fantasy/create" : "/fantasy"} className={CARD} style={GRADIENT}>
       <span className="min-w-0 flex-1">
-        <span className={cn("block truncate", ui.text.label)}>{plain(t("home.fantasy_hub"))}</span>
+        {/* The call to action wraps onto a second line rather than ending in
+            an ellipsis: a button that cannot be read cannot be trusted. */}
+        <span className={cn("block", ui.text.label)}>{plain(t("home.fantasy_hub"))}</span>
         <span className={cn("mt-1 flex items-center gap-1", ui.display.section)}>
-          <span className="min-w-0 truncate">{title}</span>
+          <span className="min-w-0">{title}</span>
           <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
         </span>
       </span>
