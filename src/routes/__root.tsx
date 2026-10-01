@@ -139,7 +139,10 @@ function NotFoundBody() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error: caught, reset }: { error: unknown; reset: () => void }) {
+  // The router types the caught value as `unknown`; anything thrown that is
+  // not an Error is wrapped so the reporters keep receiving one.
+  const error = caught instanceof Error ? caught : new Error(String(caught));
   console.error(error);
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
