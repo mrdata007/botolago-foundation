@@ -43,6 +43,7 @@ export const ar = {
   "home.gameweek": "الجولة",
   "home.deadline": "الموعد النهائي",
   "home.deadline_fantasy": "الموعد النهائي للفانتازي",
+  "home.deadline_strip": "فانتازي ج{gw}: بقي {time} · {when}",
   "home.deadline_in": "خلال",
   "home.days": "ي",
   "home.hours": "س",

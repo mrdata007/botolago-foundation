@@ -47,6 +47,9 @@ import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
 import { ui, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { bandGameweek } from "@/lib/band-gameweek";
+import { deadlineStripTime } from "@/lib/deadline-strip";
+import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
+import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
 import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
@@ -347,6 +350,9 @@ function HomeContent() {
     homeMatches.find((match) => match.gameweek > 0)?.gameweek,
     now.getTime(),
   );
+  // The strip under the header in the 72 hours before a Fantasy deadline.
+  const deadlineLeft = useDeadlineCountdown(gwQ.data?.deadline);
+  const stripTime = gwQ.data?.isCurrent === false ? null : deadlineStripTime(deadlineLeft);
 
   // Up to three curated stories: the edition's lead plus its next articles.
   // Never the full News page — a lightweight preview only.
@@ -373,11 +379,17 @@ function HomeContent() {
           crawlers and screen-reader users a descriptive title. It is read in
           the reader's language; `HOME_TITLE`, the <title>, is French for all. */}
       <h1 className="sr-only">{t("home.sr_title")}</h1>
+      {stripTime && gwQ.data ? (
+        <DeadlineStrip gameweek={gwQ.data.number} deadline={gwQ.data.deadline} time={stripTime} />
+      ) : null}
       <GameweekBand
+        afterStrip={stripTime !== null}
         greeting={greeting}
         dateLine={dateLine}
         gameweek={bandGameweekNumber}
-        deadline={gwQ.data?.deadline}
+        // The strip above says the deadline inside 72 hours; the band's own
+        // pill would repeat it.
+        deadline={stripTime ? undefined : gwQ.data?.deadline}
         live={liveMatches.length > 0}
         overlap={liveMatches.length > 0}
       />
@@ -731,7 +743,10 @@ function GameweekBand({
   deadline,
   live,
   overlap,
+  afterStrip = false,
 }: {
+  /** The deadline strip sits above: it has already cancelled the screen's top padding. */
+  afterStrip?: boolean;
   greeting: string;
   dateLine: string;
   gameweek?: number;
@@ -762,7 +777,8 @@ function GameweekBand({
         "relative isolate overflow-hidden",
         // Flush under the bar (and the live strip): UiScreen's `pt-4` is
         // taken back on a phone, where the band runs edge to edge.
-        "-mx-[var(--ui-gutter)] -mt-4 px-[var(--ui-gutter)] pt-6",
+        "-mx-[var(--ui-gutter)] px-[var(--ui-gutter)] pt-6",
+        afterStrip ? "mt-0" : "-mt-4",
         overlap ? "pb-24" : "pb-7",
         "sm:mx-0 sm:mt-0 sm:rounded-[var(--ui-radius-sheet)] sm:px-6",
         ui.tone.onInkPlain,

@@ -46,6 +46,7 @@ export const fr = {
   "home.gameweek": "Journée",
   "home.deadline": "Date limite",
   "home.deadline_fantasy": "Date limite Fantasy",
+  "home.deadline_strip": "Fantasy J{gw} : plus que {time} · {when}",
   "home.deadline_in": "dans",
   "home.days": "j",
   "home.hours": "h",
