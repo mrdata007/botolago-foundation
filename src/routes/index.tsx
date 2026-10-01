@@ -46,6 +46,7 @@ import {
 import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
 import { ui, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { bandGameweek } from "@/lib/band-gameweek";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
 import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
@@ -341,8 +342,11 @@ function HomeContent() {
   );
   // The band names the Fantasy gameweek; before Fantasy has one (or for a
   // visitor it is not open to), the league round of the next fixture.
-  const bandGameweek =
-    gwQ.data?.number ?? homeMatches.find((match) => match.gameweek > 0)?.gameweek;
+  const bandGameweekNumber = bandGameweek(
+    gwQ.data,
+    homeMatches.find((match) => match.gameweek > 0)?.gameweek,
+    now.getTime(),
+  );
 
   // Up to three curated stories: the edition's lead plus its next articles.
   // Never the full News page — a lightweight preview only.
@@ -372,7 +376,7 @@ function HomeContent() {
       <GameweekBand
         greeting={greeting}
         dateLine={dateLine}
-        gameweek={bandGameweek}
+        gameweek={bandGameweekNumber}
         deadline={gwQ.data?.deadline}
         live={liveMatches.length > 0}
         overlap={liveMatches.length > 0}
@@ -436,7 +440,7 @@ function HomeContent() {
                           home={home}
                           away={away}
                           variant="list"
-                          listGameweek={bandGameweek}
+                          listGameweek={bandGameweekNumber}
                         />
                       );
                     })}
