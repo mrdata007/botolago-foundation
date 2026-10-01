@@ -51,10 +51,11 @@ import {
   SkeletonList,
 } from "@/components/common/Skeletons";
 import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
-import { ui, UiCard } from "@/components/ui-kit";
+import { ui, UiCard, UiChip } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { bandGameweek } from "@/lib/band-gameweek";
 import { deadlineStripTime } from "@/lib/deadline-strip";
+import { FantasyRuleChips } from "@/components/home/FantasyRuleChips";
 import { NextMatchPick } from "@/components/home/NextMatchPick";
 import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
 import { useDeadlineCountdown } from "@/components/fpl/deadline";
@@ -66,7 +67,7 @@ import { cn } from "@/lib/utils";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { siteJsonLd } from "@/lib/structured-data";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { matchDayFromKey, MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { advanceGreetingClock, greetingPart } from "@/lib/greeting";
 import { capitalizeFirst, groupByMatchDay } from "@/lib/match-days";
 import type { Match } from "@/types/domain";
@@ -358,6 +359,21 @@ function HomeContent() {
     homeMatches.find((match) => match.gameweek > 0)?.gameweek,
     now.getTime(),
   );
+  // Day chips over "À venir": every day, or just one. A day that has left the
+  // list (its matches began) drops the choice back to every day.
+  const [dayFilter, setDayFilter] = useState("all");
+  const activeDay = upcomingDays.some((day) => day.key === dayFilter) ? dayFilter : "all";
+  const shownDays =
+    activeDay === "all" ? upcomingDays : upcomingDays.filter((day) => day.key === activeDay);
+  const dayChipLabel = (key: string) =>
+    capitalizeFirst(
+      new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+        timeZone: MATCH_TIME_ZONE,
+        weekday: "short",
+        day: "numeric",
+      }).format(matchDayFromKey(key)),
+    );
+
   // The next match to be played, for the band. While one is live, that live
   // card is the hero and the band does not carry another.
   const nextMatch = useMemo(
@@ -463,7 +479,27 @@ function HomeContent() {
             <EmptyState compact>{t("state.empty")}</EmptyState>
           ) : (
             <div className="grid gap-4">
-              {upcomingDays.map((day) => (
+              {upcomingDays.length > 1 ? (
+                <div
+                  role="group"
+                  aria-label={t("matches.section.upcoming")}
+                  className="flex flex-wrap gap-1.5"
+                >
+                  <UiChip selected={activeDay === "all"} onClick={() => setDayFilter("all")}>
+                    {t("matches.tab.all")}
+                  </UiChip>
+                  {upcomingDays.slice(0, 4).map((day) => (
+                    <UiChip
+                      key={day.key}
+                      selected={activeDay === day.key}
+                      onClick={() => setDayFilter(day.key)}
+                    >
+                      {dayChipLabel(day.key)}
+                    </UiChip>
+                  ))}
+                </div>
+              ) : null}
+              {shownDays.map((day) => (
                 <div key={day.key} className="min-w-0">
                   <SectionGroupHeader as="h4" title={day.label} />
                   {/* The card clips the rows' club edge bars to its corners. */}
@@ -531,6 +567,8 @@ function HomeContent() {
         ) : (
           <HeroSkeleton />
         )}
+
+        {fantasyReady ? <FantasyRuleChips deadline={gwQ.data?.deadline} /> : null}
 
         {fantasyReady && source !== "guest" && (
           <div className="mt-3">
