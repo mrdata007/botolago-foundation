@@ -30,6 +30,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { clubStyle } from "@/lib/club-palette";
 import { fantasyPlayerHead } from "@/lib/fantasy-meta";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
+import { upcomingFixtures } from "@/lib/upcoming-fixtures";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
@@ -187,10 +188,13 @@ function PlayerDetailPage() {
   const club = findClub(clubs, p.clubId);
   const colours = club ? crestStyle(club) : clubStyle(null);
   const name = splitPlayerName(tr(p.name));
-  // Whatever the service returns for this club, unfiltered: a gameweek's
-  // fixture set is the backend's answer, and a postponed match that has been
-  // deferred out of a gameweek must not be re-added by a frontend assumption.
-  const playerFixtures = (fixturesQ.data ?? []).filter((f) => f.clubId === p.clubId).slice(0, 5);
+  // The backend's answer for this club, minus matches that have already kicked
+  // off (it returns the whole gameweek, played matches included). A fixture
+  // with no kickoff time is kept, so a postponed match is not re-added or lost
+  // by a frontend assumption.
+  const playerFixtures = upcomingFixtures(
+    (fixturesQ.data ?? []).filter((f) => f.clubId === p.clubId),
+  ).slice(0, 5);
   const bars = recentPointsBars(historyQ.data ?? []);
 
   /** An unknown figure is an en dash. A real zero is a zero. */
