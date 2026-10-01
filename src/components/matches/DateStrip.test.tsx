@@ -99,8 +99,8 @@ describe("DateStrip — the page's today", () => {
 
   // Thirty seconds into Sunday in Casablanca, for a page the server rendered
   // on Saturday.
-  const JUST_PAST_MIDNIGHT = new Date("2026-09-26T23:00:30Z");
-  const saturday = matchDayFromKey("2026-09-26");
+  const JUST_PAST_MIDNIGHT = new Date("2026-09-12T23:00:30Z");
+  const saturday = matchDayFromKey("2026-09-12");
   const jumpButton = `>${fr["matches.date.jump_today"]}</button>`;
   /** The label over each day chip's number, in strip order. */
   const chipLabels = (html: string) =>
@@ -136,7 +136,7 @@ describe("DateStrip — the page's today", () => {
     expect(html).toContain(`>${fr["matches.date.tomorrow"]}</p>`);
     expect(html).toContain(jumpButton);
     // Any instant of the day will do: the strip counts in calendar days.
-    const lateOnSaturday = new Date("2026-09-26T21:30:00Z");
+    const lateOnSaturday = new Date("2026-09-12T21:30:00Z");
     expect(
       render(<DateStrip selected={saturday} today={lateOnSaturday} onSelect={noop} />),
     ).toContain(`>${fr["matches.date.today"]}</p>`);

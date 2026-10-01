@@ -56,6 +56,7 @@ import {
   usePepitesViewer,
   useVersionPointer,
 } from "./use-pepites";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 export type PlayerTab = "overview" | "matches" | "stats";
 
@@ -1292,10 +1293,9 @@ function PlayerMatches({
 function matchDate(iso: string): string {
   const date = new Date(iso);
   if (!Number.isFinite(date.getTime())) return "";
-  const parts = new Intl.DateTimeFormat("en-GB", {
+  const parts = moroccoDateTimeFormat("en-GB", {
     day: "2-digit",
     month: "2-digit",
-    timeZone: "Africa/Casablanca",
   }).formatToParts(date);
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
   return `${get("day")}.${get("month")}`;

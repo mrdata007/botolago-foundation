@@ -42,12 +42,19 @@ describe("deadlineCountdown", () => {
 
 describe("formatDeadline", () => {
   // BG-0100: the competition's calendar, not the machine running the test.
+  // From 2026-09-20 Morocco is UTC+0 all year, so 18:30Z reads 18:30 there.
   test("reads the deadline in Casablanca time in both languages", () => {
     const fr = formatDeadline(DEADLINE, "fr");
     expect(fr).toContain("24");
-    expect(fr).toContain("19:30");
+    expect(fr).toContain("18:30");
     const ar = formatDeadline(DEADLINE, "ar");
-    expect(ar).toContain("19:30");
+    expect(ar).toContain("18:30");
+  });
+
+  test("still reads UTC+1 for a deadline before the change", () => {
+    const before = "2026-09-10T18:30:00Z"; // 19:30 in Casablanca, UTC+1
+    expect(formatDeadline(before, "fr")).toContain("19:30");
+    expect(formatDeadline(before, "ar")).toContain("19:30");
   });
 
   test("adds the weekday only when asked", () => {
