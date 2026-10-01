@@ -17,7 +17,7 @@ import type {
 import { FootballError } from "@/backend/football/errors";
 import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { SupabaseFootballRepository } from "@/backend/football/supabase-repository";
-import { clubShortCode } from "@/lib/club-identity";
+import { clubShortCode, uniqueClubShortCodes } from "@/lib/club-identity";
 import { seasonsWithResults, type SquadPlayer } from "@/lib/club-season";
 import {
   computeLeagueTable,
@@ -107,14 +107,18 @@ const DATE_UNCONFIRMED_STATUSES: readonly MatchCardDto["status"][] = ["postponed
  */
 const CALLED_OFF_STATUSES: readonly MatchCardDto["status"][] = ["cancelled", "abandoned"];
 
-export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string | null): Club {
+export function presentFootballClub(
+  team: TeamSummaryDto,
+  supabaseUrl?: string | null,
+  shortCode?: string,
+): Club {
   // BG-0111 — `team.code` is blank (not null) for 13 of the 21 active clubs on
   // production, and `??` does not fall back on `""`. That shipped an empty
   // crest placeholder for most of the league: blank initials in `ClubCrest`
   // and a bare "(D)" on the pitch fixture plate. `clubShortCode` treats a
   // whitespace-only code as absent and derives the letters from `short_name`,
   // which is populated for all 21.
-  const placeholder = clubShortCode(team.code, team.shortName);
+  const placeholder = shortCode ?? clubShortCode(team.code, team.shortName);
   // The API has already translated `name` and `shortName` into the language
   // asked for, so both halves below hold that one language: `.fr` is Arabic
   // in an Arabic response. Display only — anything that orders or keys clubs
@@ -139,6 +143,16 @@ export function presentFootballClub(team: TeamSummaryDto, supabaseUrl?: string |
       supabaseUrl,
     ),
   };
+}
+
+/**
+ * A whole list of clubs, with no two of them sharing the letters on their
+ * crest. Use this rather than mapping `presentFootballClub` yourself: one
+ * club cannot know that another has the same code.
+ */
+export function presentFootballClubs(teams: readonly TeamSummaryDto[]): Club[] {
+  const codes = uniqueClubShortCodes(teams);
+  return teams.map((team) => presentFootballClub(team, undefined, codes.get(team.id)));
 }
 
 export function toMatch(match: MatchCardDto): Match {
@@ -279,7 +293,7 @@ function uniqueClubs(
     teams.set(match.awayTeam.id, match.awayTeam);
   }
   for (const row of standings) teams.set(row.team.id, row.team);
-  return [...teams.values()].map((team) => presentFootballClub(team));
+  return presentFootballClubs([...teams.values()]);
 }
 
 /**
@@ -407,8 +421,8 @@ export const footballService = {
   },
 
   async getClubs(language: FootballLanguage, signal?: AbortSignal): Promise<Club[]> {
-    return (await getFootballRepository().getTeams(language, 100, requestContext(signal))).map(
-      (team) => presentFootballClub(team),
+    return presentFootballClubs(
+      await getFootballRepository().getTeams(language, 100, requestContext(signal)),
     );
   },
 
