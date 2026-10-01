@@ -78,7 +78,7 @@ create function app_private.football_mapping_dob_signal(
 )
 returns jsonb
 language plpgsql
-immutable
+stable
 set search_path = ''
 as $$
 declare
@@ -135,7 +135,7 @@ declare
   v_pos text := 'no_signal';
   v_club text := 'no_signal';
   v_dob jsonb;
-  v_flags text[] := '{}';
+  v_flags text[] := array[]::text[];
   v_registered boolean;
   v_incomplete boolean;
   v_app_shirts integer[];
@@ -302,7 +302,6 @@ declare
   v_app_pos text;
   v_pos_dis boolean := false;
   v_target_player uuid;
-  v_target_provider text;
   v_target_candidate uuid;
   v_player_ok boolean;
   v_rev integer;
