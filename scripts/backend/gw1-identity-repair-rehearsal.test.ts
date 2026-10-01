@@ -519,6 +519,46 @@ describeDb("GW1 identity repair, rehearsed on a disposable database", () => {
     expect(missing[0].class).toBe("INPUT_PROBLEM");
   });
 
+  it("the resolver's transaction is read only: PostgreSQL refuses a write placed inside it", async () => {
+    const before = await counts();
+    // The script as the owner runs it, with one write added just before its rollback.
+    const tampered = withSetting(
+      withSetting(RESOLVER, "identity_fixture", FIXTURE_EXT),
+      "identity_observation",
+      sourceId,
+    ).replace(
+      /rollback;\s*$/,
+      `insert into app.teams (id, slug, name, short_name) values (gen_random_uuid(), 'gw1-e2e-${BASE}-write', 'x', 'x');\nrollback;`,
+    );
+    expect(await message(async () => await db(c).unsafe(tampered))).toContain(
+      "read-only transaction",
+    );
+    await db(c)
+      .unsafe("rollback")
+      .catch(() => undefined);
+    expect(await counts()).toEqual(before);
+    const leaked = await db(
+      c,
+    )`select count(*) n from app.teams where slug = ${`gw1-e2e-${BASE}-write`}`;
+    expect(Number((leaked as Row[])[0]!.n)).toBe(0);
+  });
+  it("a rehearsal that applies refuses while the Fantasy tick is on, as the apply does", async () => {
+    await db(c)`select app_private.fantasy_automation_configure(true)`;
+    try {
+      const before = await counts();
+      const { error } = await runRecorder({
+        source: sourceId,
+        players: unresolved,
+        ackHeld: [S_HELD],
+        ackFantasy: true,
+      });
+      expect(error).toContain("fantasy_tick_must_be_paused");
+      expect(await counts()).toEqual(before);
+    } finally {
+      await db(c)`select app_private.fantasy_automation_configure(false)`;
+    }
+  });
+
   // -- Refusals leave nothing behind -------------------------------------------
   describe("a wrong scope or an unexpected change fails safely", () => {
     const cases: Array<[string, () => Scope | Promise<Scope>, string]> = [
