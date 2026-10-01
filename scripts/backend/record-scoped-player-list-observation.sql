@@ -69,7 +69,7 @@
 --        * GitHub -> Actions: no run in progress;
 --        * pg_cron: nothing mid-run (the script checks and stops if so);
 --        * no other query running.
---   2. Fill in the four values just below this header:
+--   2. Fill in the values just below this header:
 --        scope_source_observation  the fresh observation's "observationId"
 --        scope_fixtures            provider fixture ids, comma separated
 --        scope_players             the reviewed provider player ids, comma

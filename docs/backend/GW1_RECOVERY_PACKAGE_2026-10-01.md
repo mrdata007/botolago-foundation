@@ -1,9 +1,10 @@
 # GW1 recovery package, 1 October 2026
 
-**Status: prepared, NOT applied.** Nothing here has been run against production
-except read-only queries and two read-only `DIAGNOSE_CURRENT_FINISHED_PERFORMANCES`
-workflow runs (36830045703 for 19874705, 36830153958 for 19874711; both
-`writesAttempted: false`, no database write). Production: `tkewgajrljbwgwedqsxn`.
+**Status: prepared and rehearsed on a disposable database, NOT applied.** Nothing
+here has been run against production except read-only queries and read-only
+`DIAGNOSE_CURRENT_FINISHED_PERFORMANCES` workflow runs (36830045703 for 19874705,
+36830153958 for 19874711; both `writesAttempted: false`, no database write).
+No production Observe, record, rehearsal, apply or INGEST has been run or approved. Production: `tkewgajrljbwgwedqsxn`.
 Gameweek 1 (`7fcb28c5-…`) is `provisional`; GW2's deadline is 2 Oct 14:30 UTC.
 
 Source evidence: orchestrator run 36796732583 (artifacts 11133214909 and the
@@ -64,6 +65,8 @@ one to one), a held player keeps their Fantasy squad place and price.
    is unplaced, refuses any plan change outside the list, and refuses a Fantasy move
    of a player a team holds unless that move was accepted.
    **Under 30 minutes after step 1** (the record function refuses older).
+   A rehearsal applies the plan inside its transaction and re-runs the import's
+   own identity checks; it is a write and needs the owner's authorization.
 4. **Apply** the scoped plan with the existing `apply-current-player-list.sql`
    (Fantasy tick paused first; within 24 hours; rehearsal first).
 
@@ -74,6 +77,144 @@ moves. **One move touches a held player**: Anas Zniti (goalkeeper, 404731) is he
 in 1 Fantasy squad and 1 GW1 lineup, filed under RSB Berkane, listed by the provider
 at CODM Meknès. Moving him changes which fixture scores for him. The owner must
 accept or reject that explicitly.
+
+## What the existing apply bundles, and what the import needs
+
+The import checks only an active provider mapping to a player and a club record
+for the season covering the kickoff date (`api.ingest_current_player_fixture_performance`).
+The existing apply (`service_apply_current_player_list`) does more, in one function
+with no switch, and its last check requires the plan to reach zero changes:
+
+| Step of the apply                                           | Needed for the import?                                                       | Needed to score GW1 for current squads?   |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------- |
+| Create the canonical player (`app.players`)                 | yes, when the player is unknown                                              | no                                        |
+| Provider mapping                                            | yes                                                                          | no                                        |
+| Dated club record (season start to season end)              | yes                                                                          | no                                        |
+| Remove the player's other club records this season (a move) | not for a new player; it is what lets a moved player resolve at the new club | no                                        |
+| Move the Fantasy player to the new club                     | no                                                                           | only if a team holds him (see Anas Zniti) |
+| Add a new Fantasy player with a formula price               | **no**                                                                       | **no** (nobody holds him)                 |
+
+So Fantasy catalog additions are optional expansion that the current apply cannot
+skip. The recorder therefore stops until the owner accepts them
+(`scope_ack_fantasy_additions`), and stops on any held-player move. An identity-only
+apply would need a new migration (a variant of the apply that skips steps 5 and 6
+and ignores Fantasy-only changes in its final check); it is not prepared and not
+needed if the owner accepts the additions.
+
+## First production candidate: 19874705
+
+Chosen from the evidence, not from the older three-fixture estimate (25 additions
+and 7 moves), which is not the scope of this package.
+
+|                                                   | 19874705 | 19874711                                                 |
+| ------------------------------------------------- | -------- | -------------------------------------------------------- |
+| Players that cannot be placed                     | 17       | 12                                                       |
+| Unknown to the canonical list (create, map, join) | 15       | 8                                                        |
+| Known, with no club record (join)                 | 2        | 3                                                        |
+| Known, listed at another club (move)              | 0        | 1 (also an existing, unheld Fantasy player: club change) |
+| Held by a Fantasy team                            | 0        | 0                                                        |
+| Existing membership rows changed or removed       | 0        | 1                                                        |
+| Existing Fantasy rows changed                     | 0        | 1                                                        |
+| Validation failure in the diagnostic              | none     | none                                                     |
+
+705's repair is purely additive: nothing existing is moved, removed or repriced,
+so it is the easiest to reverse (delete what was added). 711 is smaller but removes a
+club record and changes an existing Fantasy player's club. The cost of 705 is more
+additions, including 7 starters of club 9511 (its starting XI is mostly unknown to
+the catalog). Risk: a no-position player among the 15, as in 707, would block it.
+The fresh observation shows that; if it does, 711 is the fallback.
+
+Exact required changes for 705 (provider ids; names, positions and dates of birth
+come from the observation and are reviewed before anything is recorded):
+
+- **Canonical player creation, provider mapping, dated club record (15):**
+  club 9511: 37532637, 37612154, 37753134, 37901711, 37947231, 38227065, 38227066,
+  38227067, 38227068, 38227072, 38227323, 38227324, 38227325, 38227326;
+  club 9535: 37640437. (7 are starters.)
+- **Dated club record only, player and mapping already exist (2):** 37308657
+  (defender, listed at no club) and 37635144 (forward, listed at no club), both for 9511.
+- **New Fantasy catalog entries and prices (17), coupled by the existing apply, not
+  needed by the import:** one per player above, priced by the opening-catalog
+  formula; their amounts exist only in the plan. Needs the owner's acceptance.
+- **Existing Fantasy club, position or price changes: none.** No held player is involved.
+
+## Rehearsal on a disposable database
+
+`scripts/backend/gw1-identity-repair-rehearsal.test.ts` runs the real recorder, plan,
+apply, identity resolver and the real statistics-import RPC on sanitized synthetic data
+(an unmapped player, a mapped player with no club record, a correctly resolved one, a
+held player whose club would change, and one with no provider position). Run locally on
+a PostgreSQL built from this repository's own migrations (21 tests pass; they also
+pass while the real `pg_cron` worker runs 14 jobs), and in CI's `database-quality` job
+on the Supabase stack (see the pull request). It shows:
+
+- before the repair the real import refuses with both `PLAYER_MEMBERSHIP_NOT_FOUND`
+  and `PLAYER_MAPPING_NOT_FOUND`; after it the import's own checks pass for everyone
+  except the player with no position, and the import refuses that lineup (and accepts
+  the lineup without him);
+- a repair writes the required mapping and a club record dated from the season start to
+  its end, one per player, none duplicated; the held player's old club record is replaced,
+  his price, squad place and position are unchanged and only his Fantasy club changes;
+- a wrong list (a placed player listed, an unplaced one missing), a fixture the
+  observation did not cover, a held-player move without the guard, Fantasy additions
+  nobody accepted, and a source observation older than 30 minutes all stop with nothing
+  saved; the apply refuses an observation older than 24 hours;
+- a rehearsal leaves no persistent change (nine table counts and a hash of squads,
+  prices, positions and the scoring snapshot, all unchanged) and reports
+  `ineligibleAfterRehearsedApply` from the import's own checks after applying inside
+  its transaction; without that step the report says nothing about eligibility;
+- the apply waits for a transfer holding the squads lock; two applies at once give one
+  update and no duplicate player; a failure part-way through rolls everything back and
+  the apply then succeeds on retry; retrying an applied observation is refused;
+- the resolver's read-only transaction refuses a write placed inside it, and a rehearsal
+  that applies refuses while the Fantasy tick is on.
+
+It found a defect in the first version of the recorder (its session temp function made a
+second run in the same editor session fail), fixed. Removing the held-move guard, the
+list-equality check or the post-apply eligibility check each fails the suite.
+
+Not covered by that suite: the real production data volume, the plan's behaviour on
+names it has never seen, and the scheduled jobs of production beyond the local ones.
+
+## The two special cases
+
+**Anas Zniti (provider 404731), fixture 19874710. Not in the first package.**
+Evidence: the stored provider lineup of 19874710 (26 Sept 18:00 UTC) lists him as CODM
+Meknès's **starting goalkeeper (shirt 1)**; the provider lineup of 19874705, Berkane's
+match, does not include him; our 2026/27 record at RSB Berkane was carried over on 17 Sept
+(not dated provider evidence), and his 2025/26 Berkane record ended 2026-07-05.
+He is held in 1 Fantasy squad and in that team's locked GW1 lineup as a starter (slot 1,
+not captain; the team has a Bench Boost active, which does not change a starter). His
+Fantasy club is Berkane, so GW1 looks for him in 19874705, where he is not listed:
+his participation is unknown, which blocks that lineup and the gameweek. Canonical
+correction (a club record at CODM from the provider evidence) and Fantasy policy (which
+fixture scores for a held player) are separate decisions; the existing apply makes
+both at once. If he played the whole match for CODM (two goals conceded at 62' and
+73', so no clean sheet): 2 for the appearance, minus 1 for goals conceded, plus one
+point per three saves; his minutes and saves are unknown until 19874710 imports.
+Nothing is executed.
+
+**Player 37541460 (no provider position), fixture 19874707.** Provider data: bench,
+shirt 24, FUS Rabat; no date of birth, no position. Our data: no mapping and no player
+under any similar name. `app.players.position` is NOT NULL with four values (no
+"unknown"), and the import rejects any other position, so a canonical identity cannot
+be created without a real position; the Fantasy catalog position is derived from it
+and is not needed. His participation stays unknown: he is not omitted, and nothing is
+invented. The position can be sought from the provider's lineup row (`position_id`,
+not exposed by the diagnostic today) or an official source; either needs approval.
+He blocks 19874707 only, not the first fixture.
+
+## How the safety claims were checked
+
+`STABLE` is not a complete no-write guarantee (a stable function can call a volatile
+one). For the production functions actually invoked, the bodies and callees were read:
+`api.football_current_performance_fixture_batch` is a wrapper over `_v1` that reads
+only; `app_private.current_player_list_plan` and `current_player_list_season` call only
+non-volatile helpers and contain no write statements; the one volatile function found
+(`fantasy_validate_scoring_document`, called by `fantasy_scoring_input_document`) was not
+called. The resolver script declares its transaction read only, and a test shows PostgreSQL
+refusing a write inside it. A rehearsal that applies and rolls back is a write and is not
+run against production without authorization.
 
 ## Local changes
 
