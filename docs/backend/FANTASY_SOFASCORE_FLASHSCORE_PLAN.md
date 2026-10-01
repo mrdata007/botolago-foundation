@@ -22,13 +22,15 @@ owner-run production path).
 | Cards (yellow / second yellow / red) | ✅ incidents | ✅ summary |
 | **Assists** | ✅ only on ~70% of matches | ✅ summary lists assister (e.g. Touarga–FUS: Kajai, Ait Lamkadem — Sofascore had none) |
 | Penalty goal / penalty miss | ⚠️ incidentClass `penalty` — but recorded Touarga–FUS 70' penalty as `regular` | ✅ summary marks "(Penalty)" |
-| **GK saves** | ✅ player `saves` on ~70% of matches | ❌ no player stats; ✅ team shots on target |
+| **GK saves** | ✅ player `saves` on full-coverage matches (7 of 10 in Phase 0) | ❌ no player stats, no saves line; team shots on target exist but do not match Sofascore's |
 | Goals conceded, clean sheet | derived from goal timeline + minutes | same, cross-check |
 | Player rating | ✅ on ~70% of matches | ❌ |
 
 Neither source alone covers every match. Together they cover every scoring
-field in `FANTASY_RULES_V1.md` for almost every match, with GK saves *derived*
-when Sofascore lacks them (§4).
+field in `FANTASY_RULES_V1.md` except GK saves on matches where Sofascore has
+only limited coverage. Those saves are "unknown" and the fixture scores in
+simple mode (§4, §5). Phase 0 findings:
+[`docs/audits/2026-10-01-fantasy-providers-phase0.md`](../audits/2026-10-01-fantasy-providers-phase0.md).
 
 ## 2. Endpoints (verified on RapidAPI, 2026-10-01)
 
@@ -74,35 +76,36 @@ observedAt and references (provider event IDs + payload digest).
 
 | Field | Rule | Evidence state |
 |---|---|---|
-| Identity | Map Sofascore + Flashscore player IDs to app players via `app_private.football_provider_mappings` (new provider names `sofascore`, `flashscore`). Match on fixture side (home/away — **never** Sofascore lineup `teamId`, it is the player's registered club), then shirt number, then normalised name. Unmatched → review queue. Never auto-create players. | — |
+| Identity | Map Sofascore + Flashscore player IDs to app players via `app_private.football_provider_mappings` (new provider names `sofascore`, `flashscore`). Match on fixture side (home/away — **never** Sofascore lineup `teamId`, it is the player's registered club), then shirt number, then position. **Never match on name**: the providers spell the same player differently ("M. Elhtemy" / "Lahtimi M."). A name may be shown to a reviewer but never decides a match. Unmatched → review queue. Never auto-create players. | — |
 | `minutes`, started | Sofascore `minutesPlayed`/`substitute`; must agree with sub minutes from both providers' incidents (±2 min tolerance). Cap 90. | `verified` if consistent, else review |
-| `goals`, `ownGoals` | Both providers must list the same scorer/minute (±2). | `verified`; disagreement → review |
+| `goals`, `ownGoals` | Taken from the **incident lists**: Sofascore incidents plus Flashscore summary. Both must list the same scorer/minute (±2). **Never read goals from Sofascore lineup statistics**: they undercount (WAC–Temara: a player who scored twice is credited once). Penalty goals count as goals. Flashscore own-goal labels are not yet seen in real data; do not guess them. | `verified`; disagreement → review |
 | `assists` | Sofascore full-coverage `goalAssist` or incident `assist1`, and/or Flashscore summary assister. Agree → verified. One source names an assister and the other is silent → verified from that source. Both silent → 0 assists for that goal. Conflicting names → review. **A Sofascore limited-coverage `goalAssist: 0` is "unknown", never evidence.** | `verified` / review |
 | Cards | Union of both incident lists, deduplicated by player+minute. Count mismatch → review. Ignore Sofascore team-level card counts (seen wrong). | `verified` |
 | `penaltiesMissed` | Missed-penalty incident in both, or in one with no contradiction. Discover the exact incident type strings from real payloads; do not guess. | `verified` / review |
 | `penaltiesSaved` | Only when an incident explicitly says the keeper saved. Otherwise review. | `verified` / review |
-| `saves` (GK) | 1) Sofascore player `saves` present → `verified`. 2) Else, if exactly one keeper played the whole match for that team: `saves = opponent shots on target − goals conceded by that keeper (excluding own goals)`, only when Sofascore and Flashscore team shots-on-target agree → `derived`. 3) Else review. | `verified` / `derived` |
+| `saves` (GK) | From **Sofascore player statistics only**, and only on a full-coverage match (the player's statistics include `totalPass`). Present → `verified`. Otherwise **"unknown"**: no value is derived from shots on target (Phase 0: Flashscore and Sofascore disagree on 3 of 4 full matches, and Flashscore has no saves line). An unknown save leaves the fixture in simple mode (§5). | `verified` / `unknown` |
 | `goalsConceded`, `cleanSheet` | From the agreed goal timeline + the player's on-pitch interval (reuse `deriveParticipation` logic). | `verified` (cleanSheet as today) |
 | Rating | Store Sofascore `rating` for display only. **Not scored** (bonus is disabled in rules v1). | — |
 
 Sanity checks per fixture (fail → whole fixture to review, nothing scored as
 full): goals per side = final score; scorers' minutes > 0; 11 starters per side;
-derived saves ≥ 0; sum of player shots/saves = team totals when Sofascore has
-full coverage.
+when Sofascore has full coverage, keeper saves + goals conceded = opponent shots
+on target (Sofascore figures only; this held for 13 of 14 team sides in Phase 0).
 
-## 5. Scoring-mode change (needs a new ruleset)
+## 5. Scoring mode (no new ruleset)
 
 Today `readiness()` makes **full** mode require every detail field to be
-`verified`. A `derived` save would drop the fixture to **simple** (no assists,
-no saves). To let derived saves count:
+`verified`. A save that is `unknown` keeps the fixture in **simple** mode (no
+assists, no saves), exactly as today. Decision D2 = B: nothing is derived, so
+**no new ruleset is published**. Ruleset v2.2 (derived saves) is dropped, and
+v1.x, v2.0 and v2.1 stay as they are.
 
-- Publish a new ruleset **v2.2** by a new forward migration. Do not edit v1.x,
-  v2.0 or v2.1, and never change an existing season assignment.
-- v2.2: `saves` with state `derived` and source `derived-shots-on-target-v1`
-  counts toward full readiness. All other fields unchanged.
-- pgTAP + unit tests: full with derived saves under v2.2; still simple under v2.0.
-
-If the owner declines (D2 = no), skip this section; those fixtures score simple.
+- Full-coverage Sofascore matches (about 7 in 10) reach full mode when every
+  other field is `verified`.
+- Limited-coverage matches (about 3 in 10) score simple mode. If Sofascore later
+  fills a match, a re-poll can lift it to full before the +12 h mode lock.
+- Revisit only if a reliable saves source appears; that would be a new owner
+  decision and a new plan section.
 
 ## 6. Work for the coding agent, in order
 
@@ -131,14 +134,19 @@ from the Phase 0 fixtures.
 implementing §4, returning stats + evidence + a discrepancy list. Required
 test expectations:
 - Touarga–FUS: assists Ajerrar←Kajai, Lotfi←Ait Lamkadem; FUS goal is a
-  penalty; Asmama saves 3 (FUS 4 on target − 1), Lakred saves 1 (3 − 2), both
-  `derived`; Regragui, Rhailouf, Chaynane (90+4') yellow.
+  penalty (Flashscore marks it; Sofascore says `regular`); both keepers' saves
+  `unknown` (limited coverage), so the fixture stays simple; Regragui, Rhailouf,
+  Chaynane (90+4') yellow.
 - Tiznit–Tanger: assists Najari 2, Maali 1, Adila 1; saves from Sofascore
   player stats (`verified`).
-- DHJ–CODM: 8 goals reconcile with the 2–6 score.
+- DHJ–CODM: 8 goals reconcile with the 2–6 score; saves `unknown`.
+- WAC–Temara: goals come from incidents plus Flashscore (4), not the Sofascore
+  lineup (3).
+- Players match across providers by side, shirt number and position, not name.
 - A fixture where providers disagree on a scorer goes to review, scores nothing.
 
-**Phase 3 — Ruleset v2.2** (only if D2 = yes). Migration + pgTAP + types.
+**Phase 3 — Dropped.** Ruleset v2.2 is not published (D2 = B). Next phase
+after 2 is Phase 4.
 
 **Phase 4 — Ingestion worker (staging only).** Edge function or script that,
 for each finished Botola fixture, pulls both sources at +2 h and +11 h after
@@ -162,7 +170,7 @@ scoring rollout gates — owner-run only.
 | # | Decision | Default if not answered |
 |---|---|---|
 | D1 | SportMonks still feeds fixtures, teams and the player catalog. Keep it for those, or replace it too? | **Keep for catalog/fixtures now**; Sofascore + Flashscore replace it only for player performance. Full removal is a later project. |
-| D2 | Count derived GK saves toward full scoring (ruleset v2.2)? | **Yes** |
+| D2 | Count derived GK saves toward full scoring (ruleset v2.2)? | **Decided 2026-10-01: B, no.** Saves come from Sofascore player stats only, otherwise unknown (Phase 0 evidence). |
 | D3 | Show Sofascore ratings/rich stats in the app as content (not points)? | **Yes, display only** |
 
 ## 8. Risks
@@ -172,6 +180,7 @@ scoring rollout gates — owner-run only.
 - Sofascore BASIC is 500 requests/month. Budget ≈ 3 calls × 8 matches + 1 list
   ≈ 25 per round, ≈ 50 per round with the +11 h re-poll → ~200/month. Keep
   per-user traffic off the API entirely.
-- Shots-on-target figures differ slightly between providers; derived saves are
-  only used when both agree.
+- Shots-on-target figures differ between providers (Phase 0), which is why
+  saves are never derived from them.
+- About 3 in 10 matches have limited Sofascore coverage and score simple mode.
 - Raw provider payloads must not be committed (public repo).
