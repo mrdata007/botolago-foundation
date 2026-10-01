@@ -225,6 +225,56 @@ old, and the apply refuses one older than 24 hours. The observation above is
 therefore stale for the recorder from about 09:13 UTC, and a later approved
 execution would need a fresh Observe first. The checks are not weakened.
 
+## Production rehearsal of 19874705, 1 Oct 2026 (OBSERVED, REHEARSED; nothing committed)
+
+Stage reached: **OBSERVED and REHEARSED.** Not committed, not ingested, not scored.
+
+- Pinned script: `scripts/backend/record-scoped-player-list-observation.sql`, git
+  blob `6c8ed81c`, sha256 `3ea2abcd5af7db832abdccec51b88632de6ed1b30520fdf8005f0cb71e26cf6a`
+  (unchanged since commit `7d3887ab`). Only four values were filled in: the
+  observation id, the fixture, the 17 provider ids, and the Fantasy-additions
+  acknowledgement. Held-player moves acknowledged: none.
+- CI for that version: `database-quality` passed on head `9a0858a9` and on `1163fe7c`
+  (repair suite 21 of 21 on the latter).
+- Before: Fantasy tick off since 26 Sep 22:24 UTC (not changed), no pg_cron run in
+  progress, no active query, no production workflow running, no gameweek finalizing.
+- Fresh Observe: run 36841727934, main `03d34c3e`. Observation
+  `c0f3648f-39b6-4f05-88e2-f32743a33e12`, observed 09:17:28 UTC, digest `fc0068f1…`.
+  It is the one expected persistent write (observations 5 to 6).
+- Baseline taken after that observation: row counts and a content hash for 21
+  tables (players, provider mappings, club records, Fantasy players, price history,
+  initial-price evidence, observations, applied updates, scoring snapshots,
+  lineups, lineup players, squads, teams, gameweeks, point events, gameweek
+  points, performances, automation settings, adaptive policy, cron jobs, fixtures).
+- Rehearsal: the scoped recorder built a genuinely scoped observation (17 players,
+  not the 133-change plan) and applied only that plan inside the transaction that
+  ends in the deliberate error. Scoped plan digest `3ccf6fea0f3369adf6c258298e356ccc3324200c49e26a1827b195801f2b40fe`.
+  Result: 17 changes (15 players created, 2 club records for existing players),
+  17 Fantasy entries, 0 moves, 0 links, 0 duplicates retired, 0 memberships removed,
+  0 skipped, 0 club-limit violations, 0 held Fantasy moves, and
+  `ineligibleAfterRehearsedApply = []`: all 40 identified lineup players pass the
+  import's identity and dated-membership checks after the rehearsed apply.
+- The 17 rows match the reviewed table and the owner's list exactly (identity,
+  club, position, price; 15 new, 2 existing, no duplicate of the two existing).
+- After: every one of the 21 hashes and counts is identical to the baseline; the
+  rehearsed scoped observation and the 15 players and mappings do not exist; no
+  open transactions; automation settings and cron jobs unchanged.
+
+Not shown by the rehearsal, and said plainly:
+
+- The exact membership dates are not displayed in the report; they are set by the
+  apply (season start 24 Sep 2026 to 30 Jun 2027). What was verified is the result
+  that matters: the kickoff date (27 Sep) is covered for all 40 players.
+- Everything in the real statistics import after the identity checks: a goalkeeper
+  must carry explicit saves and penalties-saved (an explicit null from the provider is
+  refused; an absent one counts as zero), and 705 has two new keepers (37901711,
+  37947231); the canonical-position check; 22 starters and two clubs; goals conceded
+  against the final score held in the database; the stale-observation watermark.
+  These run only inside the real import. The provider payload for 705 passed the
+  read-only diagnose in full earlier today.
+- Sequence counters, if any table uses them, are not rolled back by PostgreSQL;
+  that has no effect on data.
+
 ## CI on this branch: the browser failure
 
 Head `1163fe7c`: `database-quality` passed, and the GW1 rehearsal step ran **21
