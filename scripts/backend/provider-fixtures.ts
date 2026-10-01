@@ -56,6 +56,8 @@ export const SOFASCORE_PLAYER_STATS: KeepSpec = {
   onTargetScoringAttempt: true,
   // Present only on full-coverage matches: how coverage is told apart from a real zero.
   totalPass: true,
+  // A missed penalty is a scoring fact; the incident ("inGamePenalty", class "missed") is the other source.
+  penaltyMiss: true,
 };
 
 const SOFASCORE_LINEUP_SIDE: KeepSpec = {
@@ -325,11 +327,16 @@ function write(outDir: string, relative: string, value: unknown) {
 }
 
 if (import.meta.main) {
-  const [planPath, flag, outDir] = process.argv.slice(2);
+  const [planPath, flag, outDir, ...rest] = process.argv.slice(2);
   if (!planPath || flag !== "--out" || !outDir) {
-    console.error("usage: provider-fixtures.ts <plan.json> --out <dir>");
+    console.error("usage: provider-fixtures.ts <plan.json> --out <dir> [--only=<key>,<key>]");
     process.exit(2);
   }
+  const only = rest
+    .find((a) => a.startsWith("--only="))
+    ?.slice(7)
+    .split(",")
+    .filter(Boolean);
   if (resolve(outDir).startsWith(resolve(import.meta.dir, "../.."))) {
     throw new Error("--out must be outside the repository: review the files, then commit them");
   }
@@ -342,6 +349,7 @@ if (import.meta.main) {
   };
 
   for (const match of plan.matches) {
+    if (only && !only.includes(match.key)) continue;
     const sofascoreRaw: Record<string, unknown> = {};
     const flashscoreRaw: Record<string, unknown> = {};
     if (match.sofascoreId !== null) {

@@ -35,6 +35,10 @@ on:
           3-day artifact for review. Prints counts and dropped field names, never values.
         type: string
         required: false
+      only:
+        description: Optional with fixtures, comma-separated plan keys to fetch (saves requests on a re-run).
+        type: string
+        required: false
       keys:
         description: Optional, comma-separated object paths whose property names to list, e.g. $.paths
         type: string
@@ -95,13 +99,14 @@ jobs:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
           FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
           PLAN: ${{ inputs.fixtures }}
+          ONLY: ${{ inputs.only }}
         run: |
           set -eu
           case "$PLAN" in
             tests/fixtures/providers/*.json) ;;
             *) echo "The plan must be a .json file under tests/fixtures/providers/"; exit 1 ;;
           esac
-          bun scripts/backend/provider-fixtures.ts "$PLAN" --out "$RUNNER_TEMP/provider-fixtures"
+          bun scripts/backend/provider-fixtures.ts "$PLAN" --out "$RUNNER_TEMP/provider-fixtures" ${ONLY:+"--only=$ONLY"}
       - name: Upload trimmed fixtures for review
         if: ${{ inputs.fixtures != '' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
