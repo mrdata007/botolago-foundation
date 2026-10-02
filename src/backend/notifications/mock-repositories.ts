@@ -12,6 +12,7 @@ import type {
   NotificationPreferencesDto,
   NotificationPreferenceUpdate,
   NotificationRepository,
+  NotificationSubscriptionRepository,
 } from "./contracts";
 import { NotificationError } from "./errors";
 
@@ -56,6 +57,7 @@ let preferences: NotificationPreferencesDto = {
 
 let readIds = new Set<string>();
 let devices: NotificationDeviceSummaryDto[] = [];
+let matchReminders = new Set<string>();
 
 export function resetNotificationMocks(): void {
   preferences = {
@@ -66,6 +68,7 @@ export function resetNotificationMocks(): void {
   };
   readIds = new Set();
   devices = [];
+  matchReminders = new Set();
 }
 
 export class MockNotificationRepository implements NotificationRepository {
@@ -178,3 +181,15 @@ export class MockNotificationDeviceRepository implements NotificationDeviceRepos
 }
 
 export const MOCK_NOTIFICATION_USER_ID = USER_ID;
+
+export class MockNotificationSubscriptionRepository implements NotificationSubscriptionRepository {
+  async setMatchReminder(
+    fixtureId: string,
+    enabled: boolean,
+    context: RepositoryContext,
+  ): Promise<void> {
+    requireActor(context);
+    if (enabled) matchReminders.add(fixtureId);
+    else matchReminders.delete(fixtureId);
+  }
+}

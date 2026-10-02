@@ -9,6 +9,7 @@ import type {
   NotificationPreferencesDto,
   NotificationPreferenceUpdate,
   NotificationRepository,
+  NotificationSubscriptionRepository,
 } from "@/backend/notifications/contracts";
 import { NotificationError } from "@/backend/notifications/errors";
 import {
@@ -16,12 +17,14 @@ import {
   MockNotificationEmailUnsubscribeRepository,
   MockNotificationPreferenceRepository,
   MockNotificationRepository,
+  MockNotificationSubscriptionRepository,
 } from "@/backend/notifications/mock-repositories";
 import {
   SupabaseNotificationDeviceRepository,
   SupabaseNotificationEmailUnsubscribeRepository,
   SupabaseNotificationPreferenceRepository,
   SupabaseNotificationRepository,
+  SupabaseNotificationSubscriptionRepository,
 } from "@/backend/notifications/supabase-repositories";
 import { authService } from "@/services/auth";
 
@@ -45,12 +48,14 @@ const mock = {
   preferences: new MockNotificationPreferenceRepository(),
   devices: new MockNotificationDeviceRepository(),
   emailUnsubscribe: new MockNotificationEmailUnsubscribeRepository(),
+  subscriptions: new MockNotificationSubscriptionRepository(),
 };
 const cloud = {
   notifications: new SupabaseNotificationRepository(),
   preferences: new SupabaseNotificationPreferenceRepository(),
   devices: new SupabaseNotificationDeviceRepository(),
   emailUnsubscribe: new SupabaseNotificationEmailUnsubscribeRepository(),
+  subscriptions: new SupabaseNotificationSubscriptionRepository(),
 };
 
 export function getNotificationsDataMode(): NotificationsDataMode {
@@ -65,6 +70,7 @@ export function getNotificationRepositories(): {
   preferences: NotificationPreferenceRepository;
   devices: NotificationDeviceRepository;
   emailUnsubscribe: NotificationEmailUnsubscribeRepository;
+  subscriptions: NotificationSubscriptionRepository;
 } {
   return getNotificationsDataMode() === "supabase" ? cloud : mock;
 }
@@ -152,4 +158,13 @@ export function markAllMyNotificationsRead(): Promise<number> {
 /** Removes a notification from the inbox (it is archived, not deleted). */
 export function dismissMyNotification(id: string): Promise<void> {
   return getNotificationRepositories().notifications.dismiss(id, true, notificationContext());
+}
+
+/** Turns the reminder for one match on or off for the signed-in account. */
+export function setMyMatchReminder(fixtureId: string, enabled: boolean): Promise<void> {
+  return getNotificationRepositories().subscriptions.setMatchReminder(
+    fixtureId,
+    enabled,
+    notificationContext(),
+  );
 }

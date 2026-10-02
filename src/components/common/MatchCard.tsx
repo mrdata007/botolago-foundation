@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import type { Club, Match, MatchStatus } from "@/types/domain";
 import { useI18n } from "@/i18n/provider";
 import { ClubCrest } from "./ClubCrest";
+import { MatchReminderBell } from "./MatchReminderBell";
 import { cn } from "@/lib/utils";
 import { ui, UiBadge, UiLivePill } from "@/components/ui-kit";
 import { clubMatchPalettes, clubStyle, type ClubPalette } from "@/lib/club-palette";
@@ -291,6 +292,10 @@ export function MatchCard({
     );
 
   const hasScore = isLive || isFinished;
+  // "Remind me": only for a match still to come whose kick-off is real (the
+  // reminder is sent an hour before it), never on the hero or a history row.
+  const showReminder =
+    !isHero && variant !== "compact" && isScheduled && !unconfirmedDate && !unconfirmedTime;
   const scoreClass = (lost: boolean) =>
     cn(
       ui.score.row,
@@ -329,7 +334,8 @@ export function MatchCard({
       </div>
       <div
         className={cn(
-          "grid min-w-0 items-center gap-x-3 gap-y-2 py-3 pe-1",
+          "grid min-w-0 items-center gap-x-3 gap-y-2 py-3",
+          showReminder ? "pe-14" : "pe-1",
           hasScore ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-1",
         )}
       >
@@ -348,7 +354,7 @@ export function MatchCard({
     </div>
   );
 
-  return (
+  const link = (
     <Link
       to="/matches/$matchId"
       params={{ matchId: match.id }}
@@ -368,6 +374,16 @@ export function MatchCard({
       {/* The label above states all of this. */}
       <div aria-hidden>{content}</div>
     </Link>
+  );
+
+  if (!showReminder) return link;
+  return (
+    <div className="relative min-w-0">
+      {link}
+      <div className="absolute end-3 top-1/2 -translate-y-1/2">
+        <MatchReminderBell fixtureId={match.id} />
+      </div>
+    </div>
   );
 }
 
