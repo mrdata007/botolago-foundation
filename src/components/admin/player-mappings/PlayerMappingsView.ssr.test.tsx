@@ -296,6 +296,26 @@ describe("the comparison", () => {
     has(html, "aperçu, pas une décision");
   });
 
+  test("widened to all players, an option from another club says so on the row", async () => {
+    const { world, candidates } = await fixture();
+    const target = candidates.find((c) => c.provider === "sofascore")!;
+    const all = await loadOptions(world.repository, target, "all", proposer);
+    const other = all.find((o) => (o.signals as { club?: string }).club === "mismatch")!;
+    expect(other).toBeDefined();
+    const html = render({
+      state: ready({ candidates }),
+      repository: world.repository,
+      initial: {
+        selection: { kind: "candidate", id: target.id },
+        options: [other, ...all.filter((o) => o !== other)],
+      },
+    });
+    has(html, 'data-testid="mapping-club-flag"');
+    has(html, "Autre club : à vérifier");
+    // The comparison reads it as a case to investigate, not a strong suggestion.
+    has(html, "La meilleure option appartient à un autre club.");
+  });
+
   test("a Flashscore candidate says the provider carries no date of birth", async () => {
     const { world, candidates } = await fixture();
     const target = candidates.find((c) => c.provider === "flashscore")!;

@@ -153,6 +153,7 @@ export type PreviewReason =
   | "no_agreeing_signal"
   | "top_dob_conflict"
   | "top_position_conflict"
+  | "top_club_mismatch"
   | "multi_squad"
   | "registered_team_disagreement"
   | "unique_dob_match"
@@ -174,8 +175,10 @@ export interface Preview {
  * structured evidence only (never a name, never a number of its own):
  *
  *  D  conflict / needs manual investigation: the best option has a DOB
- *     conflict or a position disagreement, or the candidate sits in two squads,
- *     or the provider registers the player with another team.
+ *     conflict, a position disagreement, or belongs to ANOTHER club than the
+ *     one the candidate was observed in (possible when the reviewer widens to
+ *     all players), or the candidate sits in two squads, or the provider
+ *     registers the player with another team.
  *  A  very strong reviewer suggestion: ONE best option, whose DOB matches (valid
  *     on both sides, never 1 January), no other option matches the DOB, the best
  *     option has no shirt or position conflict, and the squad is complete.
@@ -202,6 +205,7 @@ export function classifyPreview(
   const conflicts: PreviewReason[] = [];
   if (top.dob === "conflict") conflicts.push("top_dob_conflict");
   if (top.position === "conflict") conflicts.push("top_position_conflict");
+  if (top.club === "mismatch") conflicts.push("top_club_mismatch");
   if (multi) conflicts.push("multi_squad");
   if (registered) conflicts.push("registered_team_disagreement");
   if (conflicts.length > 0) return { category: "D", reasons: conflicts };
