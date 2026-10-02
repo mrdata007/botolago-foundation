@@ -424,7 +424,7 @@ function PickTeamBody() {
   const bench = squad.filter((s) => s.slot >= 12).sort((a, b) => a.slot - b.slot);
   const rowFor = (pos: string, limit: number) =>
     xi.filter((s) => posOf(s.playerId) === pos).slice(0, limit);
-  const card = (s: SquadPlayer) => {
+  const card = (s: SquadPlayer, size?: "md" | "sm") => {
     const p = playerOf(s.playerId);
     if (!p) return <div key={s.playerId} />;
     return (
@@ -437,6 +437,7 @@ function PickTeamBody() {
         vice={!!s.isViceCaptain}
         highlighted={selectedId === s.playerId}
         onClick={() => onCardTap(s.playerId)}
+        size={size}
       />
     );
   };
@@ -562,12 +563,12 @@ function PickTeamBody() {
         <FplPitch
           className="mx-[var(--ui-gutter)] mt-3"
           rows={[
-            rowFor("GK", 1).map(card),
-            rowFor("DEF", cfg.DEF).map(card),
-            rowFor("MID", cfg.MID).map(card),
-            rowFor("FWD", cfg.FWD).map(card),
+            rowFor("GK", 1).map((s) => card(s)),
+            rowFor("DEF", cfg.DEF).map((s) => card(s)),
+            rowFor("MID", cfg.MID).map((s) => card(s)),
+            rowFor("FWD", cfg.FWD).map((s) => card(s)),
           ]}
-          bench={bench.map(card)}
+          bench={bench.map((s) => card(s, "sm"))}
           benchLabels={benchLabels}
           benchHighlighted={activeBenchBoost}
         />
