@@ -55,6 +55,7 @@ export function MatchPredictionCard({
           pick={pick}
           open={isFixtureOpen(fixture, model.now)}
           scored={scored}
+          saved={model.uid ? (saved ?? null) : undefined}
           className="justify-center"
           onStep={(side, delta) => {
             const next = nextPick(pick, side, delta);

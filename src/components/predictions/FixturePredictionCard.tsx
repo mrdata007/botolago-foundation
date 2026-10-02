@@ -6,6 +6,7 @@ import { matchOutcome } from "@/backend/predictions/scoring";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiBadge, UiCard, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useJustTurnedOn } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { presentFootballClub } from "@/services/football";
 import type { Pick } from "./use-predictions-round";
@@ -42,6 +43,7 @@ export function FixturePredictionCard({
   open,
   scored,
   notCounted = false,
+  saved,
   className,
   onStep,
 }: {
@@ -52,6 +54,13 @@ export function FixturePredictionCard({
   scored: FixtureScore | null;
   /** A guest pick the import refused because the match had started. */
   notCounted?: boolean;
+  /**
+   * The copy the server holds, for a signed-in reader: `null` when nothing is
+   * saved yet, left out for a guest (whose picks stay on the phone). The card
+   * settles and its tick pops the moment the server's copy matches the pick,
+   * never on the tap itself.
+   */
+  saved?: ScorePair | null;
   /** Extra layout from the host, e.g. centring when a deck makes the card taller. */
   className?: string;
   onStep: (side: "home" | "away", delta: 1 | -1) => void;
@@ -62,12 +71,24 @@ export function FixturePredictionCard({
   const homeName = fixture.home.shortName || fixture.home.name;
   const awayName = fixture.away.shortName || fixture.away.name;
 
+  // A signed-in pick is "locked in" once the server holds exactly it.
+  const confirmed = Boolean(saved && pick && saved.home === pick.home && saved.away === pick.away);
+  const justSaved = useJustTurnedOn(confirmed);
+  // A result that arrives while the page is open celebrates once; one that was
+  // already in when the page opened does not.
+  const scoredKind = fixture.final && fixture.result ? (scored?.kind ?? null) : null;
+  const justScored = useJustTurnedOn(scoredKind === "exact" || scoredKind === "outcome");
+
   if (fixture.final && fixture.result) {
     return (
       <UiCard
         padding="sm"
         testId={`prediction-${fixture.id}`}
-        className={cn("flex flex-col gap-1.5", className)}
+        className={cn(
+          "flex flex-col gap-1.5",
+          justScored && (scoredKind === "exact" ? "glow-exact" : "glow-hit"),
+          className,
+        )}
       >
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <span className={cn("min-w-0 truncate", ui.text.bodyStrong)} dir="auto">
@@ -81,7 +102,7 @@ export function FixturePredictionCard({
           {scored?.points !== null && scored?.points !== undefined ? (
             <UiBadge
               tone={scored.points === 3 ? "positive" : scored.points === 1 ? "action" : "neutral"}
-              className="ms-auto"
+              className={cn("ms-auto", justScored && "pop")}
             >
               <bdi>+{scored.points}</bdi>
             </UiBadge>
@@ -106,7 +127,7 @@ export function FixturePredictionCard({
     <UiCard
       padding="sm"
       testId={`prediction-${fixture.id}`}
-      className={cn("flex flex-col gap-2", className)}
+      className={cn("flex flex-col gap-2", justSaved && "settle", className)}
     >
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div className="flex min-w-0 items-center gap-2">
@@ -173,7 +194,7 @@ export function FixturePredictionCard({
       )}
       {open && pick ? (
         <p className={cn("inline-flex items-center gap-1", ui.text.micro, ui.tone.muted)}>
-          <Check className="h-3.5 w-3.5" aria-hidden />
+          <Check className={cn("h-3.5 w-3.5", justSaved && "pop")} aria-hidden />
           {fixture.kickoffConfirmed
             ? t("predictions.fixture.until").replace(
                 "{time}",

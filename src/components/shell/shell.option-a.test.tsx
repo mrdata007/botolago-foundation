@@ -230,7 +230,10 @@ describe("Option A common blocks", () => {
     // The score: display-face figures as three flex children, the container
     // following the page direction and each figure in its own <bdi>.
     expect(strip).toContain("ui.score.row");
-    expect(strip).toMatch(/<bdi>\{hs\}<\/bdi>\s*<span aria-hidden>–<\/span>\s*<bdi>\{as\}<\/bdi>/);
+    // The figures are `FlipScore`s (each drops in when it changes); still three pieces, so Arabic keeps the order.
+    expect(strip).toMatch(
+      /<FlipScore value=\{hs\} \/>\s*<span aria-hidden>–<\/span>\s*<FlipScore value=\{as\} \/>/,
+    );
     expect(strip).not.toMatch(/<bdi\b[^>]*className=[^>]*\bflex\b/);
     // The breathing dot stays, and the minute is plain on navy (not live-fg).
     expect(strip).toContain("live-breathe");

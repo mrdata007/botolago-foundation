@@ -5,6 +5,8 @@ import {
   countUpValue,
   easeOutCubic,
   flashClass,
+  halfProgress,
+  tickedMinute,
   flipOffsets,
   prefersReducedMotion,
   tokenMs,
@@ -128,5 +130,54 @@ describe("flashClass", () => {
 
   it("is nothing when the number did not move", () => {
     expect(flashClass(null)).toBeNull();
+  });
+});
+
+describe("tickedMinute", () => {
+  const t0 = 1_000_000;
+
+  it("is the data's minute until a whole minute has passed", () => {
+    expect(tickedMinute(63, t0, t0)).toBe(63);
+    expect(tickedMinute(63, t0, t0 + 59_000)).toBe(63);
+  });
+
+  it("moves up one after a minute with no new figure", () => {
+    expect(tickedMinute(63, t0, t0 + 61_000)).toBe(64);
+  });
+
+  it("never runs more than one ahead, however long the feed is quiet", () => {
+    expect(tickedMinute(63, t0, t0 + 10 * 60_000)).toBe(64);
+    expect(tickedMinute(63, t0, t0 + 10 * 60_000, 2)).toBe(65);
+  });
+
+  it("has nothing to tick when there is no minute", () => {
+    expect(tickedMinute(undefined, t0, t0 + 120_000)).toBeUndefined();
+  });
+
+  it("does not run backwards if the clock does", () => {
+    expect(tickedMinute(63, t0, t0 - 5_000)).toBe(63);
+  });
+});
+
+describe("halfProgress", () => {
+  it("fills the first half over 45 minutes and the second over the next 45", () => {
+    expect(halfProgress(0, false)).toEqual({ first: 0, second: 0 });
+    expect(halfProgress(30, false)).toEqual({ first: 30 / 45, second: 0 });
+    expect(halfProgress(45, false)).toEqual({ first: 1, second: 0 });
+    expect(halfProgress(67.5, false)).toEqual({ first: 1, second: 0.5 });
+    expect(halfProgress(90, false)).toEqual({ first: 1, second: 1 });
+  });
+
+  it("stops at full for stoppage and extra time", () => {
+    expect(halfProgress(97, false)).toEqual({ first: 1, second: 1 });
+  });
+
+  it("shows the break at half-time, whatever the minute", () => {
+    expect(halfProgress(45, true)).toEqual({ first: 1, second: 0 });
+    expect(halfProgress(undefined, true)).toEqual({ first: 1, second: 0 });
+  });
+
+  it("is empty with no minute", () => {
+    expect(halfProgress(undefined, false)).toEqual({ first: 0, second: 0 });
   });
 });

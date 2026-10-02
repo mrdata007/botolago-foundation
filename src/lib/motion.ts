@@ -207,3 +207,110 @@ export function useFlip<T extends HTMLElement>(order: readonly string[], resetKe
 
   return container;
 }
+
+/**
+ * True for `holdMs` after `value` changes, and never on the first render. The
+ * moment to play a one-off animation for a figure that changed while the page
+ * was open (a score, a rank). False under reduced motion.
+ */
+export function useJustChanged<T>(value: T, holdMs = 700): boolean {
+  const [changed, setChanged] = useState(false);
+  const previous = useRef(value);
+
+  useEffect(() => {
+    const moved = previous.current !== value;
+    previous.current = value;
+    if (!moved || prefersReducedMotion()) return;
+    setChanged(true);
+    const timer = setTimeout(() => setChanged(false), holdMs);
+    return () => clearTimeout(timer);
+  }, [value, holdMs]);
+
+  return changed;
+}
+
+/**
+ * True for `holdMs` after `flag` turns from false to true, and never on the
+ * first render: a card that is already saved, or a result that is already in,
+ * when the page opens does not celebrate. False under reduced motion.
+ */
+export function useJustTurnedOn(flag: boolean, holdMs = 900): boolean {
+  const [on, setOn] = useState(false);
+  const previous = useRef(flag);
+
+  useEffect(() => {
+    const turnedOn = flag && !previous.current;
+    previous.current = flag;
+    if (!turnedOn || prefersReducedMotion()) return;
+    setOn(true);
+    const timer = setTimeout(() => setOn(false), holdMs);
+    return () => clearTimeout(timer);
+  }, [flag, holdMs]);
+
+  return on;
+}
+
+const MINUTE_MS = 60_000;
+
+/**
+ * The match minute to show, given the last one the data gave and how long ago
+ * it arrived: that minute, plus one if a whole minute has passed without a
+ * refresh. Never more than `maxExtra` ahead, so a stalled feed is never
+ * dressed up as a clock running free.
+ */
+export function tickedMinute(
+  base: number | undefined,
+  receivedAt: number,
+  now: number,
+  maxExtra = 1,
+): number | undefined {
+  if (base === undefined) return undefined;
+  const extra = Math.floor((now - receivedAt) / MINUTE_MS);
+  return base + Math.min(maxExtra, Math.max(0, extra));
+}
+
+/**
+ * The live minute, ticking on between data refreshes: it moves up by one when
+ * a minute has gone by with no new figure, and snaps to the data the moment a
+ * new minute arrives. It starts on the data's own minute (so the server render
+ * and first paint agree) and only ticks while `running` (live play, not the
+ * interval) and the tab is visible.
+ */
+export function useTickingMinute(minute: number | undefined, running: boolean): number | undefined {
+  const [extra, setExtra] = useState(0);
+  const receivedAt = useRef(0);
+
+  useEffect(() => {
+    receivedAt.current = Date.now();
+    setExtra(0);
+  }, [minute]);
+
+  useEffect(() => {
+    if (!running || minute === undefined) return;
+    const timer = setInterval(() => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      const next = (tickedMinute(minute, receivedAt.current, Date.now()) ?? minute) - minute;
+      setExtra((was) => (was === next ? was : next));
+    }, 15_000);
+    return () => clearInterval(timer);
+  }, [minute, running]);
+
+  return minute === undefined ? undefined : minute + (running ? extra : 0);
+}
+
+/**
+ * The two halves of the live progress bar, each 0..1 full: the first half
+ * fills over minutes 0-45, the second over 45-90. At half-time the first is
+ * full and the second empty, whatever the minute says.
+ */
+export function halfProgress(
+  minute: number | undefined,
+  halfTime: boolean,
+): { first: number; second: number } {
+  if (halfTime) return { first: 1, second: 0 };
+  const m = Math.max(0, minute ?? 0);
+  return {
+    first: Math.min(1, m / 45),
+    second: Math.min(1, Math.max(0, (m - 45) / 45)),
+  };
+}
