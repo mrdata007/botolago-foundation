@@ -18,6 +18,7 @@
 import type { ReactNode } from "react";
 
 import { UiScreen } from "@/components/ui-kit";
+import { MatchdayStrip } from "@/components/matches/MatchdayStrip";
 import { LiveStrip } from "@/components/matches/LiveStrip";
 import { cn } from "@/lib/utils";
 import { TopBar } from "./TopBar";
@@ -31,6 +32,7 @@ export function AppShell({
   bottomNav,
   hideBottomNav = false,
   liveStrip = false,
+  matchdayStrip = false,
   topBar,
   pageHeader,
   className,
@@ -46,6 +48,8 @@ export function AppShell({
    * default.
    */
   hideBottomNav?: boolean;
+  /** Today's matches in one row under the top bar, from 1024px (Home). */
+  matchdayStrip?: boolean;
   /** Live scores under the top bar while any match is live (Home, Matches). */
   liveStrip?: boolean;
   /**
@@ -69,6 +73,7 @@ export function AppShell({
       <PageBackground variant={backgroundVariant} />
       {topBar ?? <TopBar wide={contentWidth === "desktop"} />}
       {pageHeader}
+      {matchdayStrip ? <MatchdayStrip /> : null}
       {liveStrip && <LiveStrip />}
       <UiScreen
         width={

@@ -36,6 +36,7 @@ export const fr = {
   "nav.home": "Accueil",
   "nav.primary": "Navigation principale",
   "nav.search.label": "Rechercher",
+  "matches.matchday_strip": "Matchs du jour",
   "nav.search.placeholder": "Club, joueur…",
   "nav.search.empty": "Aucun résultat",
   "nav.search.loading": "Recherche…",

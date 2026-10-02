@@ -33,6 +33,7 @@ export const ar = {
   "nav.home": "الرئيسية",
   "nav.primary": "التنقل الرئيسي",
   "nav.search.label": "بحث",
+  "matches.matchday_strip": "مباريات اليوم",
   "nav.search.placeholder": "نادٍ، لاعب…",
   "nav.search.empty": "لا توجد نتائج",
   "nav.search.loading": "جارٍ البحث…",

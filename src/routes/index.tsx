@@ -406,7 +406,7 @@ function HomeContent() {
   const showStandings = standingsLoading || standingsFailed || standingsRows.length > 0;
 
   return (
-    <AppShell liveStrip contentWidth="desktop">
+    <AppShell liveStrip matchdayStrip contentWidth="desktop">
       {/* -------------------------------------------------------- */}
       {/* 1. Gameweek band — the page's anchor                     */}
       {/* -------------------------------------------------------- */}
