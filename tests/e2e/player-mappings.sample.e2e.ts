@@ -221,6 +221,28 @@ test.describe("the two-person rule", () => {
 });
 
 test.describe("single-approver mode", () => {
+  test("the screen says SINGLE-OPERATOR REVIEW MODE only while the server allows self-approval", async ({
+    page,
+  }, testInfo) => {
+    const observed = observePage(page);
+    await openSample(page, "fr", `${SMALL}&reviewers=1&selfapprove=1`);
+    const banner = page.getByTestId("mapping-single-operator-mode");
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText("MODE RELECTURE PAR UN SEUL OPÉRATEUR");
+    await expect(banner).toContainText("approuver sa propre proposition");
+    await expect(banner).toContainText("L’exécution reste une action distincte");
+    await expect(banner).toContainText("consignée dans l’audit");
+    await expect(page.getByTestId("second-reviewer-required")).toHaveCount(0);
+    // The same screen with the server saying two people are required: no such banner.
+    await openSample(page, "fr", `${SMALL}&reviewers=1`);
+    await expect(page.getByTestId("mapping-single-operator-mode")).toHaveCount(0);
+    await openSample(page, "ar", `${SMALL}&reviewers=1&selfapprove=1`);
+    await expect(page.getByTestId("mapping-single-operator-mode")).toContainText(
+      "وضع المراجعة بمشغِّل واحد",
+    );
+    await observed.verify(testInfo);
+  });
+
   test("a lone reviewer may approve their own proposal, with a warning, and nothing executes", async ({
     page,
   }, testInfo) => {

@@ -22,6 +22,11 @@ export interface PlayerMappingCopy {
   readonly previewNotice: string;
   readonly writesDisabled: string;
   readonly noPermission: string;
+  /** Shown while the SERVER says one operator may approve their own proposal. */
+  readonly singleOperator: {
+    readonly title: string;
+    readonly points: readonly string[];
+  };
   readonly loading: string;
   readonly loadingProgress: (loaded: number) => string;
   readonly loadFailed: (code: string) => string;
@@ -239,6 +244,15 @@ const fr: PlayerMappingCopy = {
     "La création de propositions n’est pas encore activée. Cet écran est en lecture seule jusqu’à l’approbation de la première proposition.",
   noPermission:
     "Votre rôle permet de lire cette file, pas de proposer ni d’approuver (football.manage_mappings requis).",
+  singleOperator: {
+    title: "MODE RELECTURE PAR UN SEUL OPÉRATEUR",
+    points: [
+      "Le même relecteur autorisé peut approuver sa propre proposition : personne d’autre ne la vérifie.",
+      "L’approbation reste une action explicite : elle porte sur l’empreinte exacte affichée.",
+      "L’exécution reste une action distincte : approuver n’écrit aucun rapprochement.",
+      "Chaque action est consignée dans l’audit.",
+    ],
+  },
   loading: "Chargement des candidats…",
   loadingProgress: (loaded) => `Chargement des candidats… ${loaded} reçus`,
   loadFailed: (code) => `Impossible de charger la file de rapprochement (${code}).`,
@@ -567,6 +581,15 @@ const ar: PlayerMappingCopy = {
     "إنشاء الاقتراحات غير مفعَّل بعد. هذه الشاشة للقراءة فقط إلى حين الموافقة على أول اقتراح.",
   noPermission:
     "دورك يسمح بقراءة هذه القائمة فقط، لا بالاقتراح ولا بالموافقة (يلزم football.manage_mappings).",
+  singleOperator: {
+    title: "وضع المراجعة بمشغِّل واحد",
+    points: [
+      "يستطيع المراجع المخوَّل نفسه الموافقة على اقتراحه: لا يراجعه أحد غيره.",
+      "تبقى الموافقة إجراءً صريحًا: تخصّ البصمة الدقيقة المعروضة.",
+      "يبقى التنفيذ إجراءً منفصلًا: الموافقة لا تكتب أي مطابقة.",
+      "يُسجَّل كل إجراء في سجل التدقيق.",
+    ],
+  },
   loading: "جارٍ تحميل المرشَّحين…",
   loadingProgress: (loaded) => `جارٍ تحميل المرشَّحين… وصل ${loaded}`,
   loadFailed: (code) => `تعذّر تحميل قائمة المطابقة (${code}).`,

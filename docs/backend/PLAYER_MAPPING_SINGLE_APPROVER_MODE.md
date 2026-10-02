@@ -5,12 +5,16 @@ operator may approve their own mapping proposal. The two-person design is not
 removed: it is behind a switch in the database, and turning the switch off
 brings it back with no other change.
 
-> **Status, 2026-10-02: the switch is OFF again.** It was ON only for the first
-> production mapping (the controlled bootstrap test). It was turned off by the
-> guarded script `scripts/backend/data-mapping-single-approver-switch-off.sql`
-> (apply run 37039857030). Two different qualified people are required again.
-> See `docs/production/APPLIED_2026_10_02_FIRST_PLAYER_MAPPING_AND_DUAL_CONTROL_RESTORE.md`.
-> The first mapping was self-approved under this switch and stays valid.
+> **Status, 2026-10-02 (latest): the switch is ON (single-operator mapping mode).**
+> History the same day: ON for the first controlled mapping, OFF again
+> (`scripts/backend/data-mapping-single-approver-switch-off.sql`, run 37039857030),
+> then ON by owner decision (`scripts/backend/data-mapping-single-approver-switch-on.sql`,
+> apply run 37047274663). The owner decided there will be no mandatory second human
+> reviewer for now: the same qualified operator may propose, self-approve and
+> explicitly execute, as three separate deliberate actions. The two-person rule is not
+> removed; turn the switch off and a different person is required again. The screen
+> shows **MODE RELECTURE PAR UN SEUL OPÉRATEUR** while the server says self-approval is
+> allowed. See `docs/production/APPLIED_2026_10_02_FIRST_PLAYER_MAPPING_AND_DUAL_CONTROL_RESTORE.md`.
 
 ## What the switch is
 
