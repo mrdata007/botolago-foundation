@@ -1,0 +1,1386 @@
+<title>BotolaGO Fantasy Demo</title>
+<meta name="robots" content="noindex" />
+<style>
+  /*{{FONT_FACES}}*/
+
+  /* One look, on purpose: a dark stage in BotolaGO's ink, so the phone and
+     its bright product screens are what the room looks at. */
+  :root {
+    color-scheme: dark;
+    --stage: oklch(0.17 0.06 258);
+    --stage-deep: oklch(0.13 0.05 258);
+    --panel: oklch(0.22 0.07 258 / 0.78);
+    --panel-solid: oklch(0.21 0.065 258);
+    --raise: oklch(0.29 0.08 258);
+    --rule: oklch(0.9 0.03 250 / 0.14);
+    --text: oklch(0.97 0.01 250);
+    --muted: oklch(0.8 0.03 250);
+    --faint: oklch(0.66 0.04 250);
+    --spring: oklch(0.88 0.19 152);
+    --sky: oklch(0.88 0.11 205);
+    --on-action: oklch(0.24 0.09 258);
+    --action: linear-gradient(to bottom, var(--spring), var(--sky));
+    --bezel: oklch(0.2 0.01 260);
+    --focus: var(--sky);
+    --display: "Changa", "Manrope", "Arial Narrow", system-ui, sans-serif;
+    --body: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --radius: 14px;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--stage-deep);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  button,
+  input {
+    font: inherit;
+    color: inherit;
+  }
+  button {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* ---------------- The stage (large screens) ---------------- */
+
+  .demo {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(340px, 420px) 1fr;
+    height: 100%;
+    isolation: isolate;
+  }
+  .demo::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background:
+      linear-gradient(to bottom, oklch(0.13 0.05 258 / 0.72), oklch(0.13 0.05 258 / 0.94)),
+      url("{{STAGE_PHOTO}}") center 60% / cover no-repeat;
+  }
+  .demo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(60% 55% at 64% 42%, oklch(0.62 0.14 205 / 0.22), transparent 70%);
+  }
+
+  .rail {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-height: 0;
+    padding: 28px 24px 0 32px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .brand img {
+    width: 168px;
+    height: auto;
+    display: block;
+  }
+  .eyebrow {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sky);
+  }
+  .brand h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 30px;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+  .brand p.sub {
+    margin: 0;
+    color: var(--muted);
+    max-width: 36ch;
+  }
+
+  /* Steps: a real sequence, so they are numbered. */
+  .steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .step > button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 40px;
+    padding: 4px 10px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    text-align: start;
+    color: var(--muted);
+    font-weight: 700;
+    transition:
+      background-color 160ms ease,
+      color 160ms ease;
+  }
+  .step > button:hover {
+    background: oklch(0.9 0.03 250 / 0.06);
+    color: var(--text);
+  }
+  .num {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1px solid var(--rule);
+    font-size: 13px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  .step.done .num {
+    border-color: transparent;
+    background: oklch(0.9 0.03 250 / 0.12);
+    color: var(--text);
+  }
+  .step.current > button {
+    background: var(--panel);
+    color: var(--text);
+    box-shadow: inset 0 0 0 1px var(--rule);
+  }
+  .step.current .num {
+    border: 0;
+    background-image: var(--action);
+    color: var(--on-action);
+  }
+
+  .brief {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border-radius: var(--radius);
+    background: var(--panel);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    backdrop-filter: blur(14px);
+  }
+  .brief .kicker {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .brief h2 {
+    margin: -6px 0 0;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 22px;
+    line-height: 1.25;
+  }
+  .brief .lead {
+    margin: 0;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .tip {
+    display: flex;
+    gap: 10px;
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: oklch(0.88 0.11 205 / 0.1);
+    color: var(--sky);
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .tip svg {
+    flex: none;
+    margin-top: 2px;
+  }
+  .score {
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .score strong {
+    color: var(--text);
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 14px;
+    white-space: nowrap;
+    background: var(--raise);
+    color: var(--text);
+    transition:
+      filter 160ms ease,
+      background-color 160ms ease,
+      opacity 160ms ease;
+  }
+  .btn:hover {
+    background: oklch(0.33 0.08 258);
+  }
+  .btn.primary {
+    background-image: var(--action);
+    color: var(--on-action);
+    box-shadow: 0 10px 24px -12px oklch(0.8 0.15 180 / 0.8);
+  }
+  .btn.primary:hover {
+    filter: brightness(1.05);
+  }
+  .btn[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn.grow {
+    flex: 1 1 0;
+  }
+
+  /* Previous / Next stay in reach however long the rail gets. */
+  .nav {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    gap: 8px;
+    margin: auto -8px 0;
+    padding: 14px 8px 20px;
+    background: linear-gradient(to bottom, transparent, var(--stage-deep) 38%);
+  }
+
+  details.panel {
+    border-radius: var(--radius);
+    background: var(--panel);
+    box-shadow: inset 0 0 0 1px var(--rule);
+  }
+  details.panel > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 16px;
+    font-weight: 800;
+    cursor: pointer;
+    list-style: none;
+  }
+  details.panel > summary::-webkit-details-marker {
+    display: none;
+  }
+  details.panel > summary svg {
+    transition: transform 160ms ease;
+  }
+  details.panel[open] > summary svg {
+    transform: rotate(180deg);
+  }
+  .panel-body {
+    display: grid;
+    gap: 14px;
+    padding: 0 16px 16px;
+  }
+  .field {
+    display: grid;
+    gap: 6px;
+  }
+  .field > span,
+  .field-label {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .field input[type="text"] {
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid var(--rule);
+    background: var(--stage-deep);
+    outline: none;
+  }
+  .field input[type="text"]:focus-visible {
+    border-color: var(--sky);
+  }
+  .swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .swatch {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.18);
+  }
+  .swatch[aria-pressed="true"] {
+    border-color: var(--text);
+  }
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-preview {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex: none;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 18px;
+  }
+  .logo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 4px;
+  }
+  .hint {
+    margin: 0;
+    font-size: 13px;
+    color: var(--faint);
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .toggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+  }
+  .toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .toggle .field-label {
+    flex: none;
+  }
+  .seg {
+    display: inline-flex;
+    padding: 3px;
+    border-radius: 999px;
+    background: oklch(0.9 0.03 250 / 0.08);
+  }
+  .seg button {
+    min-height: 34px;
+    min-width: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-weight: 800;
+    font-size: 13px;
+  }
+  .seg button[aria-pressed="true"] {
+    background: var(--text);
+    color: var(--on-action);
+  }
+
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+  }
+  .foot .hint kbd {
+    font: inherit;
+    font-weight: 800;
+    color: var(--muted);
+  }
+
+  /* ---------------- The phone ---------------- */
+
+  .stage {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 0;
+    padding: 24px;
+  }
+  .device-slot {
+    position: relative;
+  }
+  .device {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 418px;
+    height: 868px;
+    padding: 12px;
+    border-radius: 64px;
+    background: var(--bezel);
+    box-shadow:
+      inset 0 0 0 2px oklch(0.42 0.01 260),
+      inset 0 0 0 5px oklch(0.14 0.01 260),
+      0 50px 90px -30px oklch(0.05 0.04 258 / 0.9),
+      0 0 0 1px oklch(0.05 0.02 258 / 0.6);
+    transform-origin: top center;
+  }
+  .screen {
+    position: relative;
+    width: 394px;
+    height: 844px;
+    overflow: hidden;
+    border-radius: 52px;
+    background: #fff;
+  }
+  .statusbar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 44px;
+    padding: 0 30px 0 34px;
+    font-size: 15px;
+    font-weight: 700;
+    color: oklch(0.2 0.02 260);
+    background: #fff;
+    transition:
+      background-color 200ms ease,
+      color 200ms ease;
+  }
+  .statusbar.dark {
+    color: #fff;
+    background: oklch(0.2 0.075 258);
+  }
+  .island {
+    position: absolute;
+    top: 9px;
+    left: 50%;
+    width: 112px;
+    height: 30px;
+    margin-left: -56px;
+    border-radius: 999px;
+    background: #000;
+  }
+  .status-icons {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .screen iframe {
+    display: block;
+    width: 394px;
+    height: 800px;
+    border: 0;
+    background: #fff;
+  }
+  .caption {
+    position: absolute;
+    left: 50%;
+    width: max-content;
+    max-width: 620px;
+    margin: 0;
+    transform: translateX(-50%);
+    text-align: center;
+    font-size: 13px;
+    color: var(--faint);
+    text-wrap: balance;
+  }
+  .caption b {
+    color: var(--muted);
+    font-weight: 800;
+  }
+  .fallback {
+    position: absolute;
+    inset: 44px 0 0;
+    display: none;
+    place-content: center;
+    gap: 12px;
+    padding: 24px;
+    text-align: center;
+    background: var(--panel-solid);
+    color: var(--text);
+  }
+  .fallback.show {
+    display: grid;
+  }
+  .fallback a {
+    color: var(--sky);
+    font-weight: 800;
+  }
+
+  /* ---------------- Phones: the app is the screen ---------------- */
+
+  .topbar,
+  .sheet-head,
+  .scrim {
+    display: none;
+  }
+
+  @media (max-width: 899px), (max-height: 559px) {
+    body {
+      overflow: hidden;
+    }
+    .demo {
+      display: flex;
+      flex-direction: column;
+    }
+    .demo::before,
+    .demo::after {
+      display: none;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px;
+      background: var(--stage);
+      border-bottom: 1px solid var(--rule);
+    }
+    .topbar .mark {
+      width: 34px;
+      height: 34px;
+      flex: none;
+    }
+    .topbar .where {
+      flex: 1;
+      min-width: 0;
+      display: grid;
+      padding: 2px 4px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      text-align: start;
+    }
+    .topbar .where small {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--sky);
+    }
+    .topbar .where strong {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-family: var(--display);
+      font-size: 17px;
+      line-height: 1.25;
+    }
+    .icon-btn {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      flex: none;
+      border: 0;
+      border-radius: 999px;
+      background: oklch(0.9 0.03 250 / 0.1);
+    }
+    .icon-btn.primary {
+      background-image: var(--action);
+      color: var(--on-action);
+    }
+    .icon-btn[disabled] {
+      opacity: 0.4;
+    }
+    [dir="rtl"] .icon-btn svg.flip {
+      transform: scaleX(-1);
+    }
+    .stage {
+      flex: 1;
+      padding: 0;
+      display: block;
+    }
+    .device-slot {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .device {
+      position: static;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border-radius: 0;
+      box-shadow: none;
+      transform: none !important;
+      background: #fff;
+    }
+    .screen {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+    }
+    .statusbar,
+    .caption {
+      display: none;
+    }
+    .screen iframe {
+      width: 100%;
+      height: 100%;
+    }
+    .fallback {
+      inset: 0;
+    }
+
+    /* The rail becomes the guide sheet. */
+    .rail {
+      position: fixed;
+      inset: auto 0 0;
+      z-index: 20;
+      max-height: 86%;
+      padding: 0 16px;
+      border-radius: 22px 22px 0 0;
+      background: var(--panel-solid);
+      box-shadow: 0 -20px 50px -20px oklch(0.05 0.04 258 / 0.9);
+      transform: translateY(105%);
+      transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      visibility: hidden;
+    }
+    .demo.sheet-open .rail {
+      transform: none;
+      visibility: visible;
+    }
+    .rail .brand {
+      display: none;
+    }
+    .sheet-head {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 -16px;
+      padding: 12px 16px 8px;
+      background: var(--panel-solid);
+    }
+    .sheet-head strong {
+      font-family: var(--display);
+      font-size: 18px;
+    }
+    .scrim {
+      position: fixed;
+      inset: 0;
+      z-index: 19;
+      display: block;
+      background: oklch(0.05 0.04 258 / 0.55);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 200ms ease;
+    }
+    .demo.sheet-open .scrim {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .nav {
+      margin: 0 -16px;
+      padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+      background: var(--panel-solid);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+    }
+  }
+</style>
+
+<div class="demo" id="demo">
+  <header class="topbar">
+    <img class="mark" src="{{MARK_SVG}}" alt="BotolaGO" />
+    <button class="where" id="where" type="button" aria-haspopup="dialog" aria-controls="rail">
+      <small id="where-step"></small>
+      <strong id="where-title"></strong>
+    </button>
+    <button class="icon-btn" id="m-prev" type="button">
+      <svg
+        class="flip"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="m15 18-6-6 6-6" />
+      </svg>
+      <span class="sr-only" data-t="prev"></span>
+    </button>
+    <button class="icon-btn primary" id="m-next" type="button">
+      <svg
+        class="flip"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+      <span class="sr-only" data-t="next"></span>
+    </button>
+  </header>
+
+  <aside class="rail" id="rail" aria-labelledby="demo-title">
+    <div class="sheet-head">
+      <strong data-t="guide"></strong>
+      <button class="icon-btn" id="sheet-close" type="button">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          aria-hidden="true"
+        >
+          <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+        <span class="sr-only" data-t="close"></span>
+      </button>
+    </div>
+
+    <div class="brand">
+      <img src="{{WORDMARK_SVG}}" alt="BotolaGO" width="168" height="30" />
+      <p class="eyebrow" data-t="eyebrow"></p>
+      <h1 id="demo-title" data-t="title"></h1>
+      <p class="sub" data-t="subtitle"></p>
+    </div>
+
+    <ol class="steps" id="steps"></ol>
+
+    <section class="brief" aria-live="polite">
+      <p class="kicker" id="brief-kicker"></p>
+      <h2 id="brief-title"></h2>
+      <p class="lead" id="brief-lead"></p>
+      <p class="tip">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path
+            d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2Z"
+          />
+        </svg>
+        <span id="brief-tip"></span>
+      </p>
+      <p class="score" id="score" hidden></p>
+      <div class="row" id="actions">
+        <button class="btn primary" id="autofill" type="button" hidden data-t="autofill"></button>
+      </div>
+    </section>
+
+    <details class="panel" id="sponsor-panel">
+      <summary>
+        <span data-t="sponsorTitle"></span>
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </summary>
+      <div class="panel-body">
+        <label class="field">
+          <span data-t="sponsorName"></span>
+          <input type="text" id="sponsor-name" maxlength="40" autocomplete="off" />
+        </label>
+        <div class="field">
+          <span class="field-label" id="swatch-label" data-t="sponsorColor"></span>
+          <div class="swatches" id="swatches" role="group" aria-labelledby="swatch-label"></div>
+        </div>
+        <div class="field">
+          <span class="field-label" data-t="sponsorLogo"></span>
+          <div class="logo-row">
+            <span class="logo-preview" id="logo-preview" aria-hidden="true"></span>
+            <label class="btn" for="sponsor-logo"><span data-t="addLogo"></span></label>
+            <input
+              class="sr-only"
+              type="file"
+              id="sponsor-logo"
+              accept="image/png,image/jpeg,image/svg+xml,image/webp"
+            />
+            <button class="btn" type="button" id="logo-clear" hidden data-t="removeLogo"></button>
+          </div>
+          <p class="hint" data-t="logoHint"></p>
+        </div>
+      </div>
+    </details>
+
+    <div class="toggles">
+      <div class="toggle">
+        <span class="field-label" id="app-lang-label" data-t="appLang"></span>
+        <div class="seg" role="group" aria-labelledby="app-lang-label">
+          <button type="button" data-app-lang="fr">Français</button>
+          <button type="button" data-app-lang="ar" lang="ar" dir="rtl">العربية</button>
+        </div>
+      </div>
+      <div class="toggle">
+        <span class="field-label" id="guide-lang-label" data-t="guideLang"></span>
+        <div class="seg" role="group" aria-labelledby="guide-lang-label">
+          <button type="button" data-guide-lang="fr">FR</button>
+          <button type="button" data-guide-lang="en">EN</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <button class="btn" id="reset" type="button" data-t="reset"></button>
+      <p class="hint" data-t="keys"></p>
+    </div>
+
+    <div class="nav">
+      <button class="btn grow" id="prev" type="button" data-t="prev"></button>
+      <button class="btn primary grow" id="next" type="button" data-t="next"></button>
+    </div>
+  </aside>
+
+  <div class="scrim" id="scrim"></div>
+
+  <main class="stage" id="stage">
+    <div class="device-slot" id="device-slot">
+      <div class="device" id="device">
+        <div class="screen">
+          <div class="statusbar" id="statusbar" aria-hidden="true">
+            <span>9:41</span>
+            <span class="island"></span>
+            <span class="status-icons">
+              <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor">
+                <rect x="0" y="8" width="3" height="4" rx="1" />
+                <rect x="5" y="5.5" width="3" height="6.5" rx="1" />
+                <rect x="10" y="3" width="3" height="9" rx="1" />
+                <rect x="15" y="0" width="3" height="12" rx="1" />
+              </svg>
+              <svg width="26" height="12" viewBox="0 0 26 12" fill="none">
+                <rect
+                  x="0.5"
+                  y="0.5"
+                  width="22"
+                  height="11"
+                  rx="3"
+                  stroke="currentColor"
+                  opacity="0.45"
+                />
+                <rect x="2" y="2" width="16" height="8" rx="1.8" fill="currentColor" />
+                <rect
+                  x="24"
+                  y="4"
+                  width="1.6"
+                  height="4"
+                  rx="0.8"
+                  fill="currentColor"
+                  opacity="0.5"
+                />
+              </svg>
+            </span>
+          </div>
+          <iframe id="app" src="app.html" title="BotolaGO"></iframe>
+          <div class="fallback" id="fallback" role="alert">
+            <p data-t="fallback"></p>
+            <a href="app.html" target="_blank" rel="noopener" data-t="openApp"></a>
+          </div>
+        </div>
+      </div>
+      <p class="caption" id="caption"></p>
+    </div>
+  </main>
+</div>
+
+<script>
+  (() => {
+    const STEPS = /*{{STEPS_JSON}}*/ [];
+    const SWATCHES = ["#1d2740", "#0f5132", "#7a1d2e", "#b45309", "#5b21b6", "#0e7490", "#111111"];
+    const COPY = {
+      fr: {
+        eyebrow: "Démo interactive",
+        title: "BotolaGO Fantasy",
+        subtitle: "Le jeu Fantasy de la Botola Pro, sur les vrais écrans de l’application.",
+        stepOf: "Étape {n} sur {total}",
+        prev: "Précédent",
+        next: "Suivant",
+        guide: "Guide de la démo",
+        close: "Fermer",
+        autofill: "Compléter l’équipe",
+        reset: "Recommencer la démo",
+        score: "Score de l’équipe : {n} pts",
+        sponsorTitle: "Partenaire à présenter",
+        sponsorName: "Nom de la marque",
+        sponsorPlaceholder: "Votre marque",
+        sponsorColor: "Couleur",
+        sponsorLogo: "Logo",
+        addLogo: "Ajouter un logo",
+        removeLogo: "Retirer",
+        logoHint: "PNG, JPG ou SVG. Il reste sur cet appareil.",
+        appLang: "Application",
+        guideLang: "Guide",
+        keys: "Les flèches ← → changent d’étape.",
+        caption:
+          "<b>Données de démonstration.</b> Clubs, joueurs et prix réels 2026/27 · matchs, points et managers simulés.",
+        fallback: "La démo ne s’est pas affichée dans ce cadre.",
+        openApp: "Ouvrir la démo dans un nouvel onglet",
+        logoError: "Ce fichier n’a pas pu être lu comme une image.",
+      },
+      en: {
+        eyebrow: "Interactive demo",
+        title: "BotolaGO Fantasy",
+        subtitle: "The Botola Pro Fantasy game, on the app’s real screens.",
+        stepOf: "Step {n} of {total}",
+        prev: "Previous",
+        next: "Next",
+        guide: "Demo guide",
+        close: "Close",
+        autofill: "Complete the team",
+        reset: "Restart the demo",
+        score: "Team score: {n} pts",
+        sponsorTitle: "Partner to pitch",
+        sponsorName: "Brand name",
+        sponsorPlaceholder: "Your brand",
+        sponsorColor: "Colour",
+        sponsorLogo: "Logo",
+        addLogo: "Add a logo",
+        removeLogo: "Remove",
+        logoHint: "PNG, JPG or SVG. It stays on this device.",
+        appLang: "App",
+        guideLang: "Guide",
+        keys: "The ← → arrow keys change step.",
+        caption:
+          "<b>Demo data.</b> Real 2026/27 clubs, players and prices · matches, points and managers simulated.",
+        fallback: "The demo could not be shown in this frame.",
+        openApp: "Open the demo in a new tab",
+        logoError: "That file could not be read as an image.",
+      },
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const demo = $("demo");
+    const frame = $("app");
+    const STORE = "botolago.demo.presenter.v1";
+
+    const saved = (() => {
+      try {
+        return JSON.parse(localStorage.getItem(STORE) || "{}") || {};
+      } catch {
+        return {};
+      }
+    })();
+    const prefs = {
+      guideLang: saved.guideLang === "en" ? "en" : "fr",
+      sponsor: {
+        name: typeof saved.sponsor?.name === "string" ? saved.sponsor.name : "",
+        color: /^#[0-9a-f]{6}$/i.test(saved.sponsor?.color || "")
+          ? saved.sponsor.color
+          : SWATCHES[0],
+        logo: typeof saved.sponsor?.logo === "string" ? saved.sponsor.logo : null,
+      },
+    };
+    const persist = () => {
+      try {
+        localStorage.setItem(STORE, JSON.stringify(prefs));
+      } catch {
+        /* storage blocked: the page still works */
+      }
+    };
+
+    let current = 0;
+    let status = null;
+    let appReady = false;
+
+    const t = (key, values = {}) =>
+      Object.entries(values).reduce(
+        (text, [k, v]) => text.replaceAll(`{${k}}`, String(v)),
+        COPY[prefs.guideLang][key],
+      );
+
+    const send = (message) => {
+      try {
+        frame.contentWindow?.postMessage(
+          { ...message, type: `botolago-demo:${message.type}` },
+          "*",
+        );
+      } catch {
+        /* the frame is gone */
+      }
+    };
+
+    const layout = () =>
+      matchMedia("(max-width: 899px), (max-height: 559px)").matches ? "solo" : "stage";
+
+    // ---------- rendering ----------
+
+    function renderSteps() {
+      const list = $("steps");
+      list.textContent = "";
+      STEPS.forEach((step, index) => {
+        const li = document.createElement("li");
+        li.className = "step" + (index === current ? " current" : index < current ? " done" : "");
+        const button = document.createElement("button");
+        button.type = "button";
+        if (index === current) button.setAttribute("aria-current", "step");
+        const num = document.createElement("span");
+        num.className = "num";
+        num.textContent = String(index + 1);
+        const label = document.createElement("span");
+        label.textContent = step.title[prefs.guideLang];
+        button.append(num, label);
+        button.addEventListener("click", () => go(index));
+        li.append(button);
+        list.append(li);
+      });
+    }
+
+    function renderBrief() {
+      const step = STEPS[current];
+      const lang = prefs.guideLang;
+      $("brief-kicker").textContent = t("stepOf", { n: current + 1, total: STEPS.length });
+      $("brief-title").textContent = step.title[lang];
+      $("brief-lead").textContent = step.lead[lang];
+      $("brief-tip").textContent = step.tip[lang];
+      $("where-step").textContent = t("stepOf", { n: current + 1, total: STEPS.length });
+      $("where-title").textContent = step.title[lang];
+
+      const building = step.id === "build";
+      const complete = status && status.filled === 11 && status.hasCaptain;
+      $("autofill").hidden = !building || !!status?.saved;
+      $("autofill").disabled = !!complete;
+
+      const scoreLine = $("score");
+      const showScore = status?.played && typeof status.points === "number" && current >= 3;
+      scoreLine.hidden = !showScore;
+      if (showScore) {
+        scoreLine.innerHTML = "";
+        const [before, after] = t("score", { n: "\u0000" }).split("\u0000");
+        const strong = document.createElement("strong");
+        strong.textContent = String(status.points);
+        scoreLine.append(before, strong, after);
+      }
+
+      $("prev").disabled = current === 0;
+      $("m-prev").disabled = current === 0;
+      $("next").disabled = current === STEPS.length - 1;
+      $("m-next").disabled = current === STEPS.length - 1;
+      $("sponsor-panel").open = step.id === "sponsor" || $("sponsor-panel").open;
+    }
+
+    function renderCopy() {
+      document.documentElement.lang = prefs.guideLang;
+      document.querySelectorAll("[data-t]").forEach((node) => {
+        node.textContent = t(node.dataset.t);
+      });
+      $("caption").innerHTML = t("caption");
+      $("sponsor-name").placeholder = t("sponsorPlaceholder");
+      document
+        .querySelectorAll("[data-guide-lang]")
+        .forEach((b) =>
+          b.setAttribute("aria-pressed", String(b.dataset.guideLang === prefs.guideLang)),
+        );
+      renderSteps();
+      renderBrief();
+    }
+
+    function renderAppLang() {
+      const lang = status?.lang === "ar" ? "ar" : "fr";
+      document
+        .querySelectorAll("[data-app-lang]")
+        .forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.appLang === lang)));
+    }
+
+    function renderSponsor() {
+      const { name, color, logo } = prefs.sponsor;
+      const input = $("sponsor-name");
+      if (document.activeElement !== input) input.value = name;
+      const swatches = $("swatches");
+      swatches.textContent = "";
+      SWATCHES.forEach((hex) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "swatch";
+        b.style.background = hex;
+        b.setAttribute("aria-label", hex);
+        b.setAttribute("aria-pressed", String(hex === color));
+        b.addEventListener("click", () => updateSponsor({ color: hex }));
+        swatches.append(b);
+      });
+      const preview = $("logo-preview");
+      preview.textContent = "";
+      if (logo) {
+        const img = document.createElement("img");
+        img.src = logo;
+        img.alt = "";
+        preview.append(img);
+        preview.style.background = "#fff";
+      } else {
+        const label = (name.trim() || t("sponsorPlaceholder")).split(/\s+/).filter(Boolean);
+        preview.textContent = (
+          label.length > 1 ? label[0][0] + label[1][0] : (label[0] || "").slice(0, 2)
+        ).toUpperCase();
+        preview.style.background = color;
+        preview.style.color = "#fff";
+      }
+      $("logo-clear").hidden = !logo;
+    }
+
+    function updateSponsor(change) {
+      prefs.sponsor = { ...prefs.sponsor, ...change };
+      persist();
+      renderSponsor();
+      send({ type: "sponsor", sponsor: prefs.sponsor });
+    }
+
+    // ---------- navigation ----------
+
+    function go(index, fromApp = false) {
+      current = Math.max(0, Math.min(STEPS.length - 1, index));
+      renderSteps();
+      renderBrief();
+      $("statusbar").classList.toggle("dark", STEPS[current].path === "/");
+      if (!fromApp) {
+        send({ type: "navigate", path: STEPS[current].path });
+        closeSheet();
+      }
+      send({ type: "highlight", on: STEPS[current].id === "sponsor" });
+    }
+
+    const next = () => go(current + 1);
+    const prev = () => go(current - 1);
+
+    function stepForPath(path) {
+      if (path === "/fantasy/matchday") return STEPS.findIndex((s) => s.id === "build");
+      return STEPS.findIndex((s) => s.path === path);
+    }
+
+    // ---------- the guide sheet on phones ----------
+
+    function openSheet() {
+      demo.classList.add("sheet-open");
+      $("where").setAttribute("aria-expanded", "true");
+      $("sheet-close").focus();
+    }
+    function closeSheet() {
+      if (!demo.classList.contains("sheet-open")) return;
+      demo.classList.remove("sheet-open");
+      $("where").setAttribute("aria-expanded", "false");
+    }
+
+    // ---------- the phone's size ----------
+
+    function fit() {
+      const device = $("device");
+      const slot = $("device-slot");
+      if (layout() === "solo") {
+        device.style.transform = "";
+        return;
+      }
+      const stage = $("stage").getBoundingClientRect();
+      const captionSpace = 44;
+      const scale = Math.min(1, (stage.height - 48 - captionSpace) / 868, (stage.width - 48) / 418);
+      device.style.transform = `translateX(-50%) scale(${scale})`;
+      slot.style.width = `${418 * scale}px`;
+      slot.style.height = `${868 * scale + captionSpace}px`;
+      $("caption").style.top = `${868 * scale + 16}px`;
+    }
+
+    // ---------- the logo upload ----------
+
+    function readLogo(file) {
+      if (!file || !file.type.startsWith("image/")) {
+        $("sponsor-logo").setCustomValidity(t("logoError"));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          // Kept small, so it travels to the app and into storage quickly.
+          const size = 256;
+          const ratio = Math.min(
+            1,
+            size / Math.max(img.naturalWidth || size, img.naturalHeight || size),
+          );
+          const w = Math.max(1, Math.round((img.naturalWidth || size) * ratio));
+          const h = Math.max(1, Math.round((img.naturalHeight || size) * ratio));
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          updateSponsor({ logo: canvas.toDataURL("image/png") });
+        };
+        img.onerror = () => alertLogo();
+        img.src = String(reader.result);
+      };
+      reader.onerror = () => alertLogo();
+      reader.readAsDataURL(file);
+    }
+    function alertLogo() {
+      const hint = document.querySelector('[data-t="logoHint"]');
+      hint.textContent = t("logoError");
+    }
+
+    // ---------- wiring ----------
+
+    $("next").addEventListener("click", next);
+    $("prev").addEventListener("click", prev);
+    $("m-next").addEventListener("click", next);
+    $("m-prev").addEventListener("click", prev);
+    $("where").addEventListener("click", openSheet);
+    $("sheet-close").addEventListener("click", closeSheet);
+    $("scrim").addEventListener("click", closeSheet);
+    $("autofill").addEventListener("click", () => {
+      send({ type: "autofill" });
+      if (status?.path !== "/fantasy/create") send({ type: "navigate", path: "/fantasy/create" });
+      closeSheet();
+    });
+    $("reset").addEventListener("click", () => {
+      send({ type: "reset" });
+      go(0, true);
+      closeSheet();
+    });
+    $("sponsor-name").addEventListener("input", (e) =>
+      updateSponsor({ name: e.target.value.slice(0, 40) }),
+    );
+    $("sponsor-logo").addEventListener("change", (e) => {
+      readLogo(e.target.files?.[0]);
+      e.target.value = "";
+    });
+    $("logo-clear").addEventListener("click", () => updateSponsor({ logo: null }));
+    document.querySelectorAll("[data-guide-lang]").forEach((b) =>
+      b.addEventListener("click", () => {
+        prefs.guideLang = b.dataset.guideLang === "en" ? "en" : "fr";
+        persist();
+        renderCopy();
+        renderSponsor();
+      }),
+    );
+    document
+      .querySelectorAll("[data-app-lang]")
+      .forEach((b) =>
+        b.addEventListener("click", () => send({ type: "lang", lang: b.dataset.appLang })),
+      );
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeSheet();
+      const typing =
+        e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+      if (typing || e.altKey || e.metaKey || e.ctrlKey) return;
+      if (e.key === "ArrowRight") next();
+      if (e.key === "ArrowLeft") prev();
+    });
+
+    window.addEventListener("message", (event) => {
+      if (event.source !== frame.contentWindow) return;
+      const data = event.data;
+      if (!data || data.type !== "botolago-demo:status") return;
+      const first = !appReady;
+      appReady = true;
+      $("fallback").classList.remove("show");
+      status = data;
+      if (first) {
+        send({ type: "hello", layout: layout() });
+        send({ type: "sponsor", sponsor: prefs.sponsor });
+        send({ type: "highlight", on: STEPS[current].id === "sponsor" });
+      }
+      const index = stepForPath(data.path);
+      if (index >= 0 && index !== current) go(index, true);
+      else renderBrief();
+      $("statusbar").classList.toggle("dark", data.path === "/");
+      renderAppLang();
+    });
+
+    frame.addEventListener("load", () => {
+      send({ type: "hello", layout: layout() });
+      send({ type: "sponsor", sponsor: prefs.sponsor });
+    });
+    setTimeout(() => {
+      if (!appReady) $("fallback").classList.add("show");
+    }, 8000);
+
+    window.addEventListener("resize", () => {
+      fit();
+      send({ type: "hello", layout: layout() });
+    });
+
+    renderCopy();
+    renderSponsor();
+    renderAppLang();
+    fit();
+  })();
+</script>

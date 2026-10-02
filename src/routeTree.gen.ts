@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DemoRouteImport } from './routes/demo'
 import { Route as FantasyRouteImport } from './routes/fantasy'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as NewsRouteImport } from './routes/news'
@@ -101,6 +102,11 @@ const AdminRoute = AdminRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FantasyRoute = FantasyRouteImport.update({
@@ -490,6 +496,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/demo': typeof DemoRoute
   '/fantasy': typeof FantasyRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
@@ -570,6 +577,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/demo': typeof DemoRoute
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
   '/notifications': typeof NotificationsRoute
@@ -647,6 +655,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/demo': typeof DemoRoute
   '/fantasy': typeof FantasyRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
@@ -729,6 +738,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/demo'
     | '/fantasy'
     | '/mcp'
     | '/news'
@@ -809,6 +819,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/demo'
     | '/mcp'
     | '/news'
     | '/notifications'
@@ -885,6 +896,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/demo'
     | '/fantasy'
     | '/mcp'
     | '/news'
@@ -966,6 +978,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  DemoRoute: typeof DemoRoute
   FantasyRoute: typeof FantasyRouteWithChildren
   McpRoute: typeof McpRoute
   NewsRoute: typeof NewsRouteWithChildren
@@ -1012,6 +1025,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fantasy': {
@@ -1771,6 +1791,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  DemoRoute: DemoRoute,
   FantasyRoute: FantasyRouteWithChildren,
   McpRoute: McpRoute,
   NewsRoute: NewsRouteWithChildren,
