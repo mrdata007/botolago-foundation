@@ -68,6 +68,8 @@ interface MockCandidate {
 interface MockProposal {
   dto: ProposalDto;
   candidates: string[];
+  /** Each candidate's evidence revision when the proposal was made (or last refreshed). */
+  revisions: Record<string, number>;
 }
 
 const OPEN = new Set(["pending", "approved", "position_disagreement", "stale_evidence"]);
@@ -105,6 +107,12 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
   private readonly idempotent = new Map<string, unknown>();
   private readonly qualified: Set<string>;
   private readonly allowSelfApproval: boolean;
+  /** Per actor: does the session carry the second factor (AAL2), and is the sign-in recent? */
+  private readonly sessions: Record<string, { aal2: boolean; recentSignIn: boolean }>;
+  /** The fingerprint each proposal was sealed with: the database recomputes it from the row. */
+  private readonly sealed = new Map<string, string>();
+  /** How many times a candidate's evidence moved since the start (the database's evidence_revision). */
+  private readonly evidenceBumps = new Map<string, number>();
 
   constructor(
     seed: {
@@ -115,8 +123,18 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
       readonly qualifiedActors?: readonly string[];
       /** The database switch for single-approver mode. Off by default, as in two-person mode. */
       readonly allowSelfApproval?: boolean;
+      /** Sessions that lack AAL2 or a recent sign-in. Everyone else is fully authenticated. */
+      readonly sessions?: Readonly<
+        Record<string, { readonly aal2?: boolean; readonly recentSignIn?: boolean }>
+      >;
     } = {},
   ) {
+    this.sessions = Object.fromEntries(
+      Object.entries(seed.sessions ?? {}).map(([id, s]) => [
+        id,
+        { aal2: s.aal2 ?? true, recentSignIn: s.recentSignIn ?? true },
+      ]),
+    );
     this.allowSelfApproval = seed.allowSelfApproval ?? false;
     this.qualified = new Set(seed.qualifiedActors ?? []);
     this.appPlayers = [...(seed.appPlayers ?? [])];
@@ -145,6 +163,15 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
     if (!this.qualified.has(context.actorId))
       throw new MappingError("permission_missing", "Permission is missing.");
     return context.actorId;
+  }
+
+  /** Propose, decide and execute need the second factor and a recent sign-in, as in the database. */
+  private assertStrongSession(actor: string): void {
+    const session = this.sessions[actor];
+    if (session && !session.aal2)
+      throw new MappingError("mfa_assurance_insufficient", "A second factor (AAL2) is required.");
+    if (session && !session.recentSignIn)
+      throw new MappingError("recent_auth_required", "A recent sign-in is required.");
   }
 
   private once<T>(actor: string, op: string, key: string, run: () => T): T {
@@ -193,7 +220,7 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
       displayName: candidate.displayName,
       displayNamePurgedAt: null,
       lineupOrIncidentSeen: candidate.lineupOrIncidentSeen,
-      evidenceRevision: 2,
+      evidenceRevision: 2 + (this.evidenceBumps.get(candidate.id) ?? 0),
       flags: observations.length > 0 ? flags : [...candidate.flags],
       observations,
       openProposalId:
@@ -378,6 +405,7 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
     context: RepositoryContext,
   ): Promise<ProposeResult> {
     const me = this.actor(context);
+    this.assertStrongSession(me);
     if (reason.trim().length < 10 || reason.trim().length > 500)
       throw new MappingError("reason_required", "A reason is required.");
     if (items.length < 1 || items.length > 100)
@@ -441,10 +469,17 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
         new Set(positions).size > 1 ||
         (!!player.position && positions.some((pos) => pos !== player.position));
       candidateIds = ids;
+      const externalIdOf = (candidateId: string | undefined) =>
+        candidateId
+          ? (this.candidates.find((c) => c.id === candidateId)?.externalId ?? null)
+          : null;
       Object.assign(dto, {
         appPlayerId: item.appPlayerId,
         sofascoreCandidateId: item.sofascoreCandidateId ?? null,
         flashscoreCandidateId: item.flashscoreCandidateId ?? null,
+        // As the database does: the proposal carries the provider ids it would map.
+        sofascoreExternalId: externalIdOf(item.sofascoreCandidateId),
+        flashscoreExternalId: externalIdOf(item.flashscoreCandidateId),
         basis: item.basis ?? "manual",
       });
     } else if (isIgnoreItem(item)) {
@@ -545,7 +580,14 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
       ...dto,
     } as ProposalDto;
     proposal.fingerprint = sha({ ...payload, id: undefined });
-    this.proposals.push({ dto: proposal, candidates: candidateIds });
+    this.sealed.set(proposal.id, proposal.fingerprint);
+    this.proposals.push({
+      dto: proposal,
+      candidates: candidateIds,
+      revisions: Object.fromEntries(
+        candidateIds.map((candidateId) => [candidateId, this.evidenceBumps.get(candidateId) ?? 0]),
+      ),
+    });
     for (const candidateId of candidateIds) {
       const c = this.candidate(candidateId);
       if ((item.kind === "map" || item.kind === "ignore") && c.status === "unmapped")
@@ -659,6 +701,7 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
     p.dto.positionNote = note.trim();
     p.dto.status = p.dto.effectiveStatus = "pending";
     p.dto.fingerprint = sha({ fingerprint: p.dto.fingerprint, note: p.dto.positionNote });
+    this.sealed.set(p.dto.id, p.dto.fingerprint);
     return { ok: true, id: p.dto.id, status: "pending" };
   }
 
@@ -680,11 +723,18 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
       decisionReason: null,
     });
     p.dto.fingerprint = sha({ refreshed: p.dto.fingerprint });
+    this.sealed.set(p.dto.id, p.dto.fingerprint);
+    p.revisions = Object.fromEntries(
+      p.candidates.map((candidateId) => [candidateId, this.evidenceBumps.get(candidateId) ?? 0]),
+    );
     return { ok: true, id: p.dto.id, status: "pending" };
   }
 
   /** A change in the world since the proposal: another human's ignore, or a row that took the identity. */
   private conflictOf(p: MockProposal): string | null {
+    // The evidence the proposal was made on has moved: execution re-validates and holds it.
+    if (p.candidates.some((id) => (this.evidenceBumps.get(id) ?? 0) !== (p.revisions[id] ?? 0)))
+      return "stale_evidence";
     if (p.candidates.some((id) => this.candidate(id).status === "ignored") && p.dto.kind === "map")
       return "identity_conflict";
     if (p.dto.kind === "map") {
@@ -715,6 +765,7 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
     context: RepositoryContext,
   ): Promise<TransitionResult> {
     const me = this.actor(context);
+    this.assertStrongSession(me);
     const p = this.proposal(input.proposalId);
     if (p.dto.requestedBy === me && !this.allowSelfApproval)
       throw new MappingError("self_approval_denied", "A different person must decide.");
@@ -781,12 +832,19 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
     context: RepositoryContext,
   ): Promise<TransitionResult> {
     const me = this.actor(context);
+    this.assertStrongSession(me);
     return this.once(me, "execute", key, () => {
       const p = this.proposal(proposalId);
       if (p.dto.status === "executed")
         throw new MappingError("operation_already_executed", "Already executed.");
       if (p.dto.status !== "approved")
         throw new MappingError("proposal_not_approved", "Not approved.");
+      // An approval stands for 24 hours; the database says approval_expired after that.
+      if (p.dto.effectiveStatus === "expired")
+        throw new MappingError("approval_expired", "The approval has expired.");
+      // The database recomputes the stored row's fingerprint and refuses any difference.
+      if (p.dto.fingerprint !== this.sealed.get(p.dto.id))
+        throw new MappingError("fingerprint_mismatch", "The proposal changed.");
       const code = this.conflictOf(p);
       if (code) {
         p.dto.status = p.dto.effectiveStatus = code as ProposalDto["status"];
@@ -894,6 +952,32 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
   }
   candidateCount() {
     return this.candidates.length;
+  }
+  /** Test hook: change what a session carries (AAL2, a recent sign-in) while the screen is open. */
+  setSession(actorId: string, session: { aal2?: boolean; recentSignIn?: boolean }) {
+    const current = this.sessions[actorId] ?? { aal2: true, recentSignIn: true };
+    this.sessions[actorId] = {
+      aal2: session.aal2 ?? current.aal2,
+      recentSignIn: session.recentSignIn ?? current.recentSignIn,
+    };
+  }
+  /** Test hook: new observations arrive for a candidate, so evidence made earlier is stale. */
+  /** Test hook: new observations arrive for a candidate, so evidence made earlier is stale. */
+  bumpEvidence(provider: "sofascore" | "flashscore", externalId: string) {
+    const id = this.candidateIdOf(provider, externalId);
+    this.evidenceBumps.set(id, (this.evidenceBumps.get(id) ?? 0) + 1);
+  }
+  /** Test hook: the stored row no longer matches the fingerprint it was sealed with. */
+  tamperFingerprint(proposalId: string) {
+    this.proposal(proposalId).dto.fingerprint = "f".repeat(64);
+  }
+  /** Test hook: every mapping row, for "exactly one row changed" checks. */
+  snapshotMappings(): readonly MockMappingRow[] {
+    return this.mappings.map((m) => ({ ...m }));
+  }
+  /** Test hook: every candidate's status, for "nothing unrelated changed" checks. */
+  snapshotCandidateStatuses(): ReadonlyMap<string, string> {
+    return new Map(this.candidates.map((c) => [c.id, `${c.status}|${c.existingMappingId ?? ""}`]));
   }
   /** Test hook: the world moves a proposal into a state the screen must show (held, expired). */
   patchProposal(proposalId: string, patch: Partial<ProposalDto>) {

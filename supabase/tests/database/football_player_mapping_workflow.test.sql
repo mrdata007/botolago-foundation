@@ -780,6 +780,67 @@ select extensions.is((select count(*)::int from app_private.admin_audit_events w
   '12.9 every audit event is still there');
 
 -- ===========================================================================
+-- 12b. The execute step, as the screen's Execute control calls it
+-- (api.admin_football_mapping_execute only: no other path writes a mapping)
+-- ===========================================================================
+select pg_temp.record(pg_temp.obs('sofascore', 'S-EXEC', 'T-100'));
+select pg_temp.mkplayer('exec-player', 'midfielder', '1990-01-12');
+select pg_temp.put('exec1', (pg_temp.propose('a', jsonb_build_array(jsonb_build_object('kind', 'map',
+  'sofascoreCandidateId', pg_temp.cid('sofascore', 'S-EXEC'), 'appPlayerId', (select id from app.players where slug = 'exec-player'))))
+  -> 'proposals' -> 0 ->> 'id'));
+select extensions.throws_ok($$select pg_temp.execute('b', pg_temp.get('exec1')::uuid)$$, 'PT409', 'proposal_not_approved',
+  '12b.1 a pending proposal cannot be executed');
+select pg_temp.decide('b', pg_temp.get('exec1')::uuid);
+select pg_temp.put('maps_before', (select count(*)::text from app_private.football_provider_mappings));
+select pg_temp.put('cands_before', (select md5(string_agg(c::text, '|' order by c.id)) from app_private.football_player_mapping_candidates c
+  where c.external_id <> 'S-EXEC'));
+
+-- who may call it at all
+select extensions.throws_ok($$select pg_temp.execute('fan', pg_temp.get('exec1')::uuid)$$, 'PT403', 'staff_access_denied',
+  '12b.2 a signed-in person who is not staff cannot execute');
+select extensions.throws_ok($$select pg_temp.execute('nofb', pg_temp.get('exec1')::uuid)$$, 'PT403', 'permission_missing',
+  '12b.3 staff without football.manage_mappings cannot execute');
+select extensions.throws_ok($$select pg_temp.execute('aal1', pg_temp.get('exec1')::uuid)$$, 'PT403', 'mfa_assurance_insufficient',
+  '12b.4 a session without the second factor (AAL2) cannot execute');
+select extensions.throws_ok($$select pg_temp.execute('old', pg_temp.get('exec1')::uuid)$$, 'PT403', 'recent_auth_required',
+  '12b.5 a stale sign-in cannot execute');
+select extensions.is(pg_temp.pstatus(pg_temp.get('exec1')::uuid), 'approved', '12b.6 every refusal left the proposal approved');
+select extensions.is((select count(*)::text from app_private.football_provider_mappings), pg_temp.get('maps_before'),
+  '12b.7 and wrote no mapping');
+
+-- the fingerprint of the stored row is recomputed at execution
+set local session_replication_role = replica;
+update app_private.football_player_mapping_proposals set fingerprint = repeat('0', 64) where id = pg_temp.get('exec1')::uuid;
+set local session_replication_role = origin;
+select extensions.throws_ok($$select pg_temp.execute('a', pg_temp.get('exec1')::uuid)$$, 'PT409', 'fingerprint_mismatch',
+  '12b.8 a stored row that no longer matches its fingerprint is refused at execution');
+select extensions.is((select count(*)::text from app_private.football_provider_mappings), pg_temp.get('maps_before'),
+  '12b.9 and wrote no mapping');
+-- put the true fingerprint back (the same tamper path, in reverse) and prove only that was in the way
+set local session_replication_role = replica;
+update app_private.football_player_mapping_proposals p set fingerprint = app_private.football_mapping_row_fingerprint(p)
+  where p.id = pg_temp.get('exec1')::uuid;
+set local session_replication_role = origin;
+
+-- the one successful execution writes exactly one row and nothing else
+select extensions.is((pg_temp.execute('a', pg_temp.get('exec1')::uuid) ->> 'ok')::boolean, true,
+  '12b.10 with the true fingerprint, a qualified operator executes');
+select extensions.is((select count(*)::text from app_private.football_provider_mappings), (pg_temp.get('maps_before')::int + 1)::text,
+  '12b.11 exactly one mapping row was written');
+select extensions.is((select count(*)::int from app_private.football_provider_mappings
+  where provider_name = 'sofascore' and external_id = 'S-EXEC' and entity_type = 'player' and active
+    and internal_entity_id = (select id from app.players where slug = 'exec-player')), 1,
+  '12b.12 and it maps that provider id to the intended app player');
+select extensions.is((select md5(string_agg(c::text, '|' order by c.id)) from app_private.football_player_mapping_candidates c
+  where c.external_id <> 'S-EXEC'), pg_temp.get('cands_before'), '12b.13 no other candidate changed');
+select extensions.is(pg_temp.cstatus('sofascore', 'S-EXEC'), 'mapped', '12b.14 the candidate is mapped');
+select extensions.is(pg_temp.pstatus(pg_temp.get('exec1')::uuid), 'executed', '12b.15 the proposal is executed and final');
+select extensions.throws_ok($$select pg_temp.execute('a', pg_temp.get('exec1')::uuid)$$, 'PT409', 'operation_already_executed',
+  '12b.16 it cannot be executed twice');
+select extensions.is((select count(*)::text from app_private.football_provider_mappings), (pg_temp.get('maps_before')::int + 1)::text,
+  '12b.17 and the second attempt wrote nothing');
+
+-- ===========================================================================
 -- 13. Reads and the second reviewer (decision D4)
 -- ===========================================================================
 select pg_temp.act('a');
