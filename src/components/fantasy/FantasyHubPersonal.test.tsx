@@ -209,7 +209,7 @@ describe("the hub's personal parts, for each visitor", () => {
     ["anonymous", "guest"],
     ["guest", "guest"],
   ] as const)(
-    "signed out (%s): the proposition, sign-in first on the way to the builder, nothing personal",
+    "signed out (%s): the proposition, straight to the builder, nothing personal",
     async (authStatus, source) => {
       const html = await hub({ authStatus, source, phase: "ready", team: null });
       expect(html).toContain('data-testid="fantasy-guest-intro"');
@@ -217,8 +217,7 @@ describe("the hub's personal parts, for each visitor", () => {
         tag.includes('data-testid="fantasy-intro-create"'),
       );
       const href = new URL(hrefOf(create ?? ""), "https://botolago.com");
-      expect(href.pathname).toBe("/auth/login");
-      expect(href.searchParams.get("next")).toBe(GUEST_CREATE_NEXT);
+      expect(href.pathname).toBe(GUEST_CREATE_NEXT);
       expectNoDashboard(html);
       expect(placeholders(html)).toEqual([]);
     },

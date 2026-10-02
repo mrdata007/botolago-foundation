@@ -682,8 +682,9 @@ export const ar = {
   "fantasy.intro.deadline_body":
     "أجرِ انتقالاتك واختر أساسييك وقائدك قبل الموعد النهائي، وبعده يُقفَل فريقك حتى نهاية الجولة.",
   "fantasy.intro.join_by": "الموعد النهائي للمشاركة ابتداءً من الجولة {n}:",
-  "fantasy.intro.sign_in_note":
-    "سجّل الدخول أو أنشئ حساباً مجانياً أولاً، ثم تنتقل مباشرةً إلى إنشاء فريقك.",
+  "fantasy.intro.sign_in_note": "كوّن فريقك الآن: لا يُطلب حساب مجاني إلا عند الحفظ.",
+  "fantasy.create.sign_in_reason": "أنشئ حسابًا مجانيًا أو سجّل الدخول لحفظ فريقك.",
+  "fantasy.create.guest_note": "مسودتك محفوظة على هذا الجهاز. يُطلب حساب مجاني عند الحفظ.",
   "fantasy.validation.squad_size": "يجب أن يضم الفريق 15 لاعباً.",
   "fantasy.validation.position_count": "تشكيلة المراكز غير صحيحة.",
   "fantasy.validation.club_limit": "عدد لاعبي النادي الواحد أكثر من المسموح (3).",

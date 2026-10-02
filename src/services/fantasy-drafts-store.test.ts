@@ -96,3 +96,27 @@ describe("fantasyDraftsStore — clear semantics", () => {
     expect(fantasyDraftsStore.listForUid("u1").length).toBe(1);
   });
 });
+
+describe("fantasyDraftsStore — a visitor's create-team draft", () => {
+  const visitor = k({ uid: "__guest__", kind: "create-team" });
+  const account = k({ uid: "user-1", kind: "create-team" });
+
+  it("is its own entry, invisible to an account until it is moved", () => {
+    fantasyDraftsStore.save(visitor, { teamName: "Atlas FC" });
+    expect(fantasyDraftsStore.read(account)).toBeNull();
+    expect(fantasyDraftsStore.read<{ teamName: string }>(visitor)?.payload.teamName).toBe(
+      "Atlas FC",
+    );
+  });
+
+  it("moves to the account's key and leaves nothing behind", () => {
+    fantasyDraftsStore.save(visitor, { teamName: "Atlas FC" });
+    const taken = fantasyDraftsStore.read<{ teamName: string }>(visitor);
+    fantasyDraftsStore.save(account, taken!.payload);
+    fantasyDraftsStore.remove(visitor);
+    expect(fantasyDraftsStore.read<{ teamName: string }>(account)?.payload.teamName).toBe(
+      "Atlas FC",
+    );
+    expect(fantasyDraftsStore.read(visitor)).toBeNull();
+  });
+});

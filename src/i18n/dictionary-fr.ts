@@ -708,7 +708,11 @@ export const fr = {
     "Transferts, titulaires et capitaine se règlent avant la date limite. Ensuite, votre équipe est verrouillée jusqu’à la fin de la journée.",
   "fantasy.intro.join_by": "Date limite pour jouer dès la Journée {n} :",
   "fantasy.intro.sign_in_note":
-    "Connectez-vous ou créez un compte gratuit d’abord : vous passerez ensuite directement à la création de votre équipe.",
+    "Composez votre équipe dès maintenant : un compte gratuit n’est demandé qu’au moment d’enregistrer.",
+  "fantasy.create.sign_in_reason":
+    "Créez un compte gratuit ou connectez-vous pour enregistrer votre équipe.",
+  "fantasy.create.guest_note":
+    "Votre brouillon est gardé sur cet appareil. Un compte gratuit est demandé à l’enregistrement.",
   "fantasy.validation.squad_size": "L'équipe doit compter 15 joueurs.",
   "fantasy.validation.position_count": "Composition invalide par poste.",
   "fantasy.validation.club_limit": "Trop de joueurs d'un même club (max 3).",
