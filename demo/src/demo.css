@@ -1,0 +1,29 @@
+/* The product's stylesheet, whole: tokens, fonts, Tailwind, the kit. */
+@import "../../src/styles.css";
+
+/* Tailwind reads the product's `src/` for class names; add the demo's. */
+@source "./";
+
+/* The sponsor placements, lit while the presenter is on the sponsor step. */
+.demo-sponsor-highlight {
+  position: relative;
+  outline: 2px solid var(--ui-action-a, #2dd4bf);
+  outline-offset: 3px;
+  animation: demo-sponsor-pulse 1.6s var(--ease-standard, ease-in-out) infinite;
+}
+
+@keyframes demo-sponsor-pulse {
+  0%,
+  100% {
+    outline-color: color-mix(in oklab, var(--ui-ink-fg) 85%, transparent);
+  }
+  50% {
+    outline-color: color-mix(in oklab, var(--ui-ink-fg) 25%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-sponsor-highlight {
+    animation: none;
+  }
+}

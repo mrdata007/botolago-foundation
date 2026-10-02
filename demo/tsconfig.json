@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["./**/*.ts", "./**/*.tsx"],
+  "exclude": ["./dist/**"],
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "paths": {
+      "@/*": ["../src/*"]
+    }
+  }
+}
