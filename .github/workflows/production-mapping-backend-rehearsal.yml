@@ -42,7 +42,6 @@ jobs:
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
-      EVIDENCE_DIR: ${{ runner.temp }}/mapping-rehearsal-evidence
 
     steps:
       - name: Enforce dispatch guards
@@ -69,6 +68,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export EVIDENCE_DIR="$RUNNER_TEMP/mapping-rehearsal-evidence"
           install -d -m 0700 "$EVIDENCE_DIR"
           python3 scripts/backend/production-mapping-backend-rehearsal.py
 
