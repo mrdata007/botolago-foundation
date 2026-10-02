@@ -1,6 +1,8 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
+  NotificationCategory,
   NotificationDeviceRepository,
+  NotificationPageDto,
   NotificationEmailUnsubscribeRepository,
   NotificationEmailUnsubscribeOutcome,
   NotificationPreferenceRepository,
@@ -121,4 +123,33 @@ export async function unsubscribeFromNotificationEmails(
   token: string,
 ): Promise<NotificationEmailUnsubscribeOutcome> {
   return getNotificationRepositories().emailUnsubscribe.unsubscribe(token);
+}
+
+/** One page of the signed-in account's notifications, newest first. */
+export function loadMyNotifications(
+  category: NotificationCategory | null,
+  cursor?: string | null,
+): Promise<NotificationPageDto> {
+  return getNotificationRepositories().notifications.list(
+    { category, cursor: cursor ?? undefined, limit: 20 },
+    notificationContext(),
+  );
+}
+
+/** How many of the signed-in account's notifications are unread. */
+export function loadMyUnreadNotificationCount(): Promise<number> {
+  return getNotificationRepositories().notifications.unreadCount(null, notificationContext());
+}
+
+export function markMyNotificationRead(id: string, read = true): Promise<void> {
+  return getNotificationRepositories().notifications.markRead(id, read, notificationContext());
+}
+
+export function markAllMyNotificationsRead(): Promise<number> {
+  return getNotificationRepositories().notifications.markAllRead(null, notificationContext());
+}
+
+/** Removes a notification from the inbox (it is archived, not deleted). */
+export function dismissMyNotification(id: string): Promise<void> {
+  return getNotificationRepositories().notifications.dismiss(id, true, notificationContext());
 }

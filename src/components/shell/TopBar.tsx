@@ -22,6 +22,7 @@ import { useI18n } from "@/i18n/provider";
 import { PEPITES_PROMOTED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { GlobalSearch } from "./GlobalSearch";
+import { NotificationBell } from "./NotificationBell";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { isPrimaryRouteActive, primaryNavItems } from "./primary-nav";
 
@@ -68,6 +69,7 @@ export function TopBar({
               <Search aria-hidden />
             </UiIconButton>
           ) : null}
+          <NotificationBell />
           <LanguageSwitcher />
           {/* Pépites takes Profil's slot in the bar once promoted, so the
               profile moves here. */}
