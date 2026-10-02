@@ -5,6 +5,7 @@ import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { ui, UiPlayerPlate } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
+import { useJustTurnedOn } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
@@ -21,7 +22,18 @@ import { plateName } from "./plate-name";
  * letter in a light ring, the vice its inverse — a surface disc with the brand
  * letter in a navy ring. Every colour is a token that flips with the theme.
  */
-function RoleMarker({ letter, title, tone }: { letter: string; title: string; tone: "c" | "v" }) {
+function RoleMarker({
+  letter,
+  title,
+  tone,
+  fresh = false,
+}: {
+  letter: string;
+  title: string;
+  tone: "c" | "v";
+  /** Just given: the marker pops in. */
+  fresh?: boolean;
+}) {
   return (
     <span
       aria-hidden
@@ -32,6 +44,7 @@ function RoleMarker({ letter, title, tone }: { letter: string; title: string; to
         ui.text.micro,
         "[font-weight:var(--ui-weight-heavy)]",
         "ring-2",
+        fresh && "pop",
         tone === "c"
           ? cn(ui.surface.inkPlain, "ring-[color:var(--ui-on-ink-plain)]")
           : cn("bg-[color:var(--ui-surface)]", ui.tone.ink, "ring-[color:var(--ui-ink)]"),
@@ -94,6 +107,9 @@ export function FplPlayerCard({
   size?: "md" | "sm";
 }) {
   const { tr, t } = useI18n();
+  // The armband just passed to this player (not on first show): a gold ring
+  // opens around the shirt and the "C" pops.
+  const newCaptain = useJustTurnedOn(Boolean(captain));
   const fullName = tr(player.name);
   // The surname — and in Arabic "عطية الله", not a bare "الله" (plate-name.ts).
   const shortName = plateName(fullName);
@@ -140,8 +156,19 @@ export function FplPlayerCard({
             imageUrl={player.jerseyImageUrl}
             ariaLabel={club ? tr(club.shortName) : undefined}
           />
+          {newCaptain ? (
+            <span
+              aria-hidden
+              className="captain-ring pointer-events-none absolute inset-0 rounded-full"
+            />
+          ) : null}
           {captain ? (
-            <RoleMarker letter={t("fantasy.captain")} title={t("fantasy.captain_full")} tone="c" />
+            <RoleMarker
+              letter={t("fantasy.captain")}
+              title={t("fantasy.captain_full")}
+              tone="c"
+              fresh={newCaptain}
+            />
           ) : vice ? (
             <RoleMarker letter={t("fantasy.vice")} title={t("fantasy.vice_full")} tone="v" />
           ) : null}

@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ConfettiBurst } from "@/components/fantasy/ConfettiBurst";
 import { toast } from "sonner";
 
 import { showStepUpNotice } from "@/auth/step-up-notice";
@@ -81,6 +82,8 @@ function TransfersBody() {
   const navigate = useNavigate({ from: "/fantasy/transfers" });
   const screen = useFantasyScreen();
   const owned = useFantasyOwned();
+  // Counts confirmed transfers, so each one gets its own confetti burst.
+  const [burst, setBurst] = useState(0);
   const isCloud = owned.source === "cloud";
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     minimumFractionDigits: 1,
@@ -541,6 +544,7 @@ function TransfersBody() {
         );
         if (res.ok) {
           toast.success(t("fpl.transfers_confirmed"));
+          setBurst((count) => count + 1);
           setOutIds([]);
           setInIds([]);
           setConfirming(false);
@@ -584,6 +588,7 @@ function TransfersBody() {
       });
       await qc.invalidateQueries({ queryKey: ["owned-fantasy"] });
       toast.success(t("fpl.transfers_confirmed"));
+      setBurst((count) => count + 1);
       setOutIds([]);
       setInIds([]);
       setConfirming(false);
@@ -686,6 +691,7 @@ function TransfersBody() {
 
   return (
     <>
+      {burst > 0 ? <ConfettiBurst key={burst} /> : null}
       <SquadBuilderScreen
         title={t("fpl.transfers")}
         kicker={t("fantasy.title")}

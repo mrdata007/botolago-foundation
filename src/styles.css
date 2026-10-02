@@ -985,6 +985,36 @@ html[dir="rtl"] .lucide-arrow-left {
   animation: glow-hit 900ms var(--ease-decelerate) 2;
 }
 
+/* The new captain: a gold ring opens around the shirt and fades. */
+@keyframes captain-ring {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--ui-caution) 85%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 16px color-mix(in oklab, var(--ui-caution) 0%, transparent);
+  }
+}
+
+@utility captain-ring {
+  animation: captain-ring 900ms var(--ease-decelerate) 1 both;
+}
+
+/* One confetti piece: each sets --dx, --dy and --rot for where it ends. */
+@keyframes confetti-fly {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+  }
+}
+
+@utility confetti-piece {
+  animation: confetti-fly 1100ms var(--ease-decelerate) both;
+}
+
 /* A number that just went up or down: a green or red wash that fades out. */
 @keyframes flash-up {
   from {

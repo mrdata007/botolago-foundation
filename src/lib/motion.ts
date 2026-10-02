@@ -140,70 +140,111 @@ export function useChangeFlash(
   return direction;
 }
 
-/** Where a row was and where it is now, on the vertical axis. */
-export type RowPositions = ReadonlyMap<string, number>;
+/** Where an item sits inside its container, in layout pixels. */
+export type Place = { readonly x: number; readonly y: number };
+export type Places = ReadonlyMap<string, Place>;
 
 /**
- * How far each row must start from its new place so it appears to slide from
- * its old one: `previous - next`, for rows in both lists that actually moved.
- * A row that is new, gone, or has not moved gets no entry.
+ * How far each item must start from its new place so it appears to slide from
+ * its old one: `previous - next`, for items in both lists that actually moved
+ * by a pixel or more. An item that is new, gone, or has not moved gets no entry.
  */
-export function flipOffsets(previous: RowPositions, next: RowPositions): Map<string, number> {
-  const offsets = new Map<string, number>();
-  for (const [key, top] of next) {
+export function flipOffsets(previous: Places, next: Places): Map<string, Place> {
+  const offsets = new Map<string, Place>();
+  for (const [key, place] of next) {
     const before = previous.get(key);
     if (before === undefined) continue;
-    const delta = before - top;
-    if (Math.abs(delta) >= 1) offsets.set(key, delta);
+    const x = before.x - place.x;
+    const y = before.y - place.y;
+    if (Math.abs(x) >= 1 || Math.abs(y) >= 1) offsets.set(key, { x, y });
   }
   return offsets;
 }
 
+/** The translation an element is currently drawn with (an animation in flight). */
+function currentTranslation(element: HTMLElement): Place {
+  const transform = getComputedStyle(element).transform;
+  if (!transform || transform === "none") return { x: 0, y: 0 };
+  const matrix = new DOMMatrixReadOnly(transform);
+  return { x: matrix.e, y: matrix.f };
+}
+
 /**
- * Slides the rows of a list to their new places when their order changes.
+ * Slides the items of a container to their new places when their order
+ * changes: rows of a table, players on a pitch.
  *
- * Give the container ref to the element holding the rows and mark each row
- * with `data-flip-key={stableId}` (an id, not the row's index). After every
- * render in which `order` changed, each row that moved is put back where it
- * was and let go, and it glides to its new place.
+ * Give the container ref to the element holding the items and mark each item
+ * with `data-flip-key={stableId}` (an id, not the item's index). Positions are
+ * kept relative to the container and with any slide in flight taken out, so
+ * scrolling the page, or an earlier slide, never throws a later one off. They
+ * are recorded after every render, and a slide plays only on a render in which
+ * `order` changed.
  *
- * Pass `resetKey` (a season, a gameweek) so a switch to a different table does
- * not slide: the rows are different, not re-ordered.
+ * Pass `resetKey` (a season, a gameweek) so a switch to a different list does
+ * not slide: the items are different, not re-ordered.
  */
 export function useFlip<T extends HTMLElement>(order: readonly string[], resetKey?: string) {
   const container = useRef<T | null>(null);
-  const positions = useRef<RowPositions>(new Map());
-  const lastReset = useRef(resetKey);
+  const places = useRef<Places>(new Map());
+  const last = useRef<{ signature: string; reset: string | undefined } | null>(null);
   const signature = order.join("\u0000");
 
-  useLayoutEffect(() => {
+  const measure = () => {
     const root = container.current;
-    if (!root) return;
-    const next = new Map<string, number>();
-    const rows = new Map<string, HTMLElement>();
-    for (const row of root.querySelectorAll<HTMLElement>("[data-flip-key]")) {
-      const key = row.dataset.flipKey;
+    const found = new Map<string, Place>();
+    const items = new Map<string, HTMLElement>();
+    if (!root) return { found, items };
+    const origin = root.getBoundingClientRect();
+    for (const item of root.querySelectorAll<HTMLElement>("[data-flip-key]")) {
+      const key = item.dataset.flipKey;
       if (!key) continue;
-      next.set(key, row.getBoundingClientRect().top);
-      rows.set(key, row);
+      const rect = item.getBoundingClientRect();
+      const drawn = currentTranslation(item);
+      found.set(key, { x: rect.left - origin.left - drawn.x, y: rect.top - origin.top - drawn.y });
+      items.set(key, item);
     }
-    const sameTable = lastReset.current === resetKey;
-    lastReset.current = resetKey;
-    const previous = positions.current;
-    positions.current = next;
-    if (!sameTable || prefersReducedMotion() || typeof Element.prototype.animate !== "function") {
+    return { found, items };
+  };
+
+  useLayoutEffect(() => {
+    const { found, items } = measure();
+    const before = last.current;
+    const previous = places.current;
+    places.current = found;
+    last.current = { signature, reset: resetKey };
+    if (
+      !before ||
+      before.signature === signature ||
+      before.reset !== resetKey ||
+      prefersReducedMotion() ||
+      typeof Element.prototype.animate !== "function"
+    ) {
       return;
     }
     const duration = tokenMs("--duration-route", 260);
-    for (const [key, delta] of flipOffsets(previous, next)) {
-      rows
+    for (const [key, offset] of flipOffsets(previous, found)) {
+      items
         .get(key)
-        ?.animate([{ transform: `translateY(${delta}px)` }, { transform: "translateY(0)" }], {
-          duration,
-          easing: "cubic-bezier(0.2, 0.7, 0.2, 1)",
-        });
+        ?.animate(
+          [
+            { transform: `translate(${offset.x}px, ${offset.y}px)` },
+            { transform: "translate(0, 0)" },
+          ],
+          { duration, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" },
+        );
     }
-  }, [signature, resetKey]);
+  });
+
+  // A resize moves the items without a render: keep the record true to it.
+  useEffect(() => {
+    const root = container.current;
+    if (!root || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      places.current = measure().found;
+    });
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
 
   return container;
 }

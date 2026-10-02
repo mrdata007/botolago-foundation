@@ -1,6 +1,6 @@
 # Motion plan — making the app feel alive
 
-Status: **PRs 1–5 built (Phase 0 toolkit, #4 press, #5 skeletons, #3 stagger, #1 count-up, #2 sliding rows, #11 page transitions, #12 tab bar, #9 live cards, #8 pronostics); the rest not started.** Covers the 13 animation ideas agreed with the
+Status: **PRs 1–6 built (Phase 0 toolkit, #4 press, #5 skeletons, #3 stagger, #1 count-up, #2 sliding rows, #11 page transitions, #12 tab bar, #9 live cards, #8 pronostics, #6 pitch, #7 captain and transfers); only #10 Pépites and #13 notifications remain.** Covers the 13 animation ideas agreed with the
 owner on 2026-10-02. Nothing here is built yet.
 
 ## What already exists (build on it, don't duplicate it)
@@ -140,7 +140,7 @@ _Built. Notes: every page renders its own `AppShell`, so the tab bar is a new co
 
 ## Phase 4 — football moments
 
-_PR 5 built (#9 live cards, #8 pronostics); #6, #7 and #10 remain. Notes: the live minute ticks at most ONE minute ahead of the data and snaps back to it on every refresh, so a stalled feed is never shown as a running clock; it does not tick at half-time. The progress bar is two halves with a gap, filled by `scaleX` from the inline start. A pick is "locked in" only when the server's copy equals the pick (signed-in readers); guests' picks stay on the phone and do not celebrate. A result celebrates only if it arrives while the page is open. The match page's own header bar keeps its width-based fill, fed by the ticking minute._
+_PR 5 built (#9 live cards, #8 pronostics); PR 6 built (#6 pitch, #7 captain and transfers: the pitch rows drop in goalkeeper first, a swap slides both players, the new captain gets a gold ring and a popped C, a confirmed transfer throws a 24-piece CSS confetti burst; none of it under reduced motion). `useFlip` now records positions inside the container after every render and with any slide in flight taken out, so scrolling between renders no longer throws a slide off (fixes a flaw in the PR 3 version, which recorded viewport positions only when the order changed). `fantasy/Pitch.tsx` is unused, so the pitch work is in `FplPitch` and `UiPitchSurface`. #10 remains. Notes: the live minute ticks at most ONE minute ahead of the data and snaps back to it on every refresh, so a stalled feed is never shown as a running clock; it does not tick at half-time. The progress bar is two halves with a gap, filled by `scaleX` from the inline start. A pick is "locked in" only when the server's copy equals the pick (signed-in readers); guests' picks stay on the phone and do not celebrate. A result celebrates only if it arrives while the page is open. The match page's own header bar keeps its width-based fill, fed by the ticking minute._
 
 **#9 Live match cards.**
 - `MatchCard`, `MatchScoreHeader`, `LiveStrip`: when the score changes, the

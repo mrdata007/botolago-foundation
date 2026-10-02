@@ -40,7 +40,8 @@ import type {
   TextareaHTMLAttributes,
   ThHTMLAttributes,
 } from "react";
-import { useId, useRef } from "react";
+import { isValidElement, useId, useRef } from "react";
+import { staggerStyle } from "@/lib/motion";
 
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -2381,12 +2382,28 @@ export function UiPitchSurface({
 
         <div className="relative flex flex-col gap-3 px-1 pb-4 pt-3">
           {rows.map((row, rowIndex) => (
-            <div key={rowIndex} className="flex items-start justify-evenly gap-1">
-              {row.map((slot, slotIndex) => (
-                <div key={slotIndex} className="min-w-0 shrink grow-0 basis-[76px] sm:basis-[84px]">
-                  {slot}
-                </div>
-              ))}
+            // The lines arrive one after another, goalkeeper first. A row is
+            // keyed by its place, so a swap never replays it.
+            <div
+              key={rowIndex}
+              className="enter-rise stagger flex items-start justify-evenly gap-1"
+              style={staggerStyle(rowIndex)}
+            >
+              {row.map((slot, slotIndex) => {
+                // A player card carries its player's id as its React key; the
+                // slot wears it as `data-flip-key`, so `useFlip` on the pitch
+                // can slide a swapped player to the new place.
+                const flipKey = isValidElement(slot) && slot.key != null ? String(slot.key) : null;
+                return (
+                  <div
+                    key={flipKey ?? slotIndex}
+                    data-flip-key={flipKey ?? undefined}
+                    className="min-w-0 shrink grow-0 basis-[76px] sm:basis-[84px]"
+                  >
+                    {slot}
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>
@@ -2395,11 +2412,11 @@ export function UiPitchSurface({
       {bench && bench.length > 0 ? (
         <div
           className={cn(
-            "relative px-2 pb-3 pt-2",
+            "enter-rise stagger relative px-2 pb-3 pt-2",
             benchHighlighted &&
               "outline outline-2 -outline-offset-2 outline-[color:var(--ui-accent-sky)]",
           )}
-          style={{ background: "var(--ui-pitch-bench)" }}
+          style={{ background: "var(--ui-pitch-bench)", ...staggerStyle(rows.length) }}
         >
           {benchLabels ? (
             <div className="mb-1 flex items-start justify-evenly gap-1">
@@ -2418,11 +2435,18 @@ export function UiPitchSurface({
             </div>
           ) : null}
           <div className="flex items-start justify-evenly gap-1">
-            {bench.map((slot, index) => (
-              <div key={index} className="w-[76px] shrink-0 sm:w-[84px]">
-                {slot}
-              </div>
-            ))}
+            {bench.map((slot, index) => {
+              const flipKey = isValidElement(slot) && slot.key != null ? String(slot.key) : null;
+              return (
+                <div
+                  key={flipKey ?? index}
+                  data-flip-key={flipKey ?? undefined}
+                  className="w-[76px] shrink-0 sm:w-[84px]"
+                >
+                  {slot}
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : null}

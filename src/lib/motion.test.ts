@@ -76,60 +76,65 @@ describe("changeDirection", () => {
 });
 
 describe("flipOffsets", () => {
-  it("gives each moved row the distance back to where it was", () => {
-    const before = new Map([
-      ["a", 0],
-      ["b", 50],
-      ["c", 100],
+  const at = (entries: Array<[string, number, number]>) =>
+    new Map(entries.map(([key, x, y]) => [key, { x, y }] as const));
+
+  it("gives each moved item the distance back to where it was", () => {
+    const before = at([
+      ["a", 0, 0],
+      ["b", 0, 50],
+      ["c", 0, 100],
     ]);
-    const after = new Map([
-      ["b", 0],
-      ["a", 50],
-      ["c", 100],
+    const after = at([
+      ["b", 0, 0],
+      ["a", 0, 50],
+      ["c", 0, 100],
     ]);
     const offsets = flipOffsets(before, after);
-    expect(offsets.get("b")).toBe(50);
-    expect(offsets.get("a")).toBe(-50);
+    expect(offsets.get("b")).toEqual({ x: 0, y: 50 });
+    expect(offsets.get("a")).toEqual({ x: 0, y: -50 });
     expect(offsets.has("c")).toBe(false);
   });
 
-  it("ignores a new row and a row that went away", () => {
-    const before = new Map([
-      ["a", 0],
-      ["gone", 50],
+  it("moves along both axes, as players swap places on a pitch", () => {
+    const before = at([
+      ["gk", 100, 0],
+      ["st", 20, 200],
     ]);
-    const after = new Map([
-      ["new", 0],
-      ["a", 50],
+    const after = at([
+      ["st", 100, 0],
+      ["gk", 20, 200],
+    ]);
+    const offsets = flipOffsets(before, after);
+    expect(offsets.get("st")).toEqual({ x: -80, y: 200 });
+    expect(offsets.get("gk")).toEqual({ x: 80, y: -200 });
+  });
+
+  it("ignores a new item and an item that went away", () => {
+    const before = at([
+      ["a", 0, 0],
+      ["gone", 0, 50],
+    ]);
+    const after = at([
+      ["new", 0, 0],
+      ["a", 0, 50],
     ]);
     const offsets = flipOffsets(before, after);
     expect(offsets.has("new")).toBe(false);
     expect(offsets.has("gone")).toBe(false);
-    expect(offsets.get("a")).toBe(-50);
+    expect(offsets.get("a")).toEqual({ x: 0, y: -50 });
+  });
+
+  it("ignores a move of less than a pixel", () => {
+    expect(flipOffsets(at([["a", 0, 0.4]]), at([["a", 0, 0]])).size).toBe(0);
   });
 
   it("gives nothing when the order is unchanged", () => {
-    const rows = new Map([
-      ["a", 0],
-      ["b", 50],
+    const rows = at([
+      ["a", 0, 0],
+      ["b", 0, 50],
     ]);
     expect(flipOffsets(rows, new Map(rows)).size).toBe(0);
-  });
-});
-
-describe("flashClass", () => {
-  it("is green when a higher-is-better number rises, red when it falls", () => {
-    expect(flashClass("up", "higher")).toBe("flash-up");
-    expect(flashClass("down", "higher")).toBe("flash-down");
-  });
-
-  it("is turned round for a rank, where a lower number is the better one", () => {
-    expect(flashClass("down", "lower")).toBe("flash-up");
-    expect(flashClass("up", "lower")).toBe("flash-down");
-  });
-
-  it("is nothing when the number did not move", () => {
-    expect(flashClass(null)).toBeNull();
   });
 });
 
