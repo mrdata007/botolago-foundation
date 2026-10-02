@@ -1,0 +1,82 @@
+name: Production V2 mapping backend rehearsal (rolled back, never commits)
+
+# Runs the reviewed combined apply script
+# (scripts/backend/apply-20261001150000-mapping-backend-combined.sql) against
+# Production V2 AS SHIPPED, ending in its own `rollback;`, and proves production
+# is unchanged afterwards. There is no commit mode here: the runner refuses a
+# script that is not byte-identical to the reviewed one or that contains an
+# active `commit;`. The real apply stays an owner-run action.
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact main commit approved for this rehearsal
+        required: true
+        type: string
+      confirmation:
+        description: Type REHEARSE_MAPPING_BACKEND_PRODUCTION
+        required: true
+        type: string
+
+concurrency:
+  group: botolago-production-v2-mutation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  rehearse:
+    name: Rehearse the mapping backend on Production V2 and verify rollback
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production-admin-activation
+    env:
+      CONFIRMATION: ${{ inputs.confirmation }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+
+    steps:
+      - name: Enforce dispatch guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
+            printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          fi
+          [[ "${GITHUB_RUN_ATTEMPT:-}" == "1" ]] || { echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"; exit 2; }
+          [[ "$EXPECTED_COMMIT" == "$GITHUB_SHA" ]] || { echo "The dispatched commit is not the current main commit."; exit 2; }
+          [[ "$GITHUB_REF" == "refs/heads/main" ]] || { echo "Rehearsal may run only from main."; exit 2; }
+          [[ "$CONFIRMATION" == "REHEARSE_MAPPING_BACKEND_PRODUCTION" ]] || { echo "Invalid confirmation."; exit 2; }
+          [[ "${SUPABASE_PRODUCTION_PROJECT_REF:-}" == "tkewgajrljbwgwedqsxn" ]] || { echo "Production project-ref guard failed."; exit 2; }
+          [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]] || { echo "Protected credential injection failed."; exit 2; }
+          echo "Dispatch guards: PASS"
+
+      - name: Check out the reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Rehearse (rolled back) and verify production is unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          export EVIDENCE_DIR="$RUNNER_TEMP/mapping-rehearsal-evidence"
+          install -d -m 0700 "$EVIDENCE_DIR"
+          python3 scripts/backend/production-mapping-backend-rehearsal.py
+
+      - name: Upload sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mapping-backend-rehearsal-${{ github.run_id }}
+          path: ${{ runner.temp }}/mapping-rehearsal-evidence
+          if-no-files-found: warn
+          retention-days: 14

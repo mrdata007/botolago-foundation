@@ -182,7 +182,7 @@ function PointsBody() {
     }
     return b.totalPoints;
   };
-  const card = (id: string) => {
+  const card = (id: string, size?: "md" | "sm") => {
     const p = playerOf(id);
     if (!p) return <div key={id} />;
     const pts = pointsFor(id);
@@ -194,6 +194,7 @@ function PointsBody() {
         sub={pts === null ? none : String(pts)}
         captain={id === captainId}
         vice={id === viceId && id !== captainId}
+        size={size}
       />
     );
   };
@@ -201,7 +202,7 @@ function PointsBody() {
     startingIds
       .filter((id) => posOf(id) === pos)
       .slice(0, limit)
-      .map(card);
+      .map((id) => card(id));
   const benchLabels = benchIds.map((id, index) =>
     index === 0 ? t("fpl.gkp") : `${index}. ${t(`player.pos.${posOf(id) ?? "DEF"}` as never)}`,
   );
@@ -332,7 +333,7 @@ function PointsBody() {
         <FplPitch
           className="mx-[var(--ui-gutter)] mt-3"
           rows={[row("GK", 1), row("DEF", cfg.DEF), row("MID", cfg.MID), row("FWD", cfg.FWD)]}
-          bench={benchIds.map(card)}
+          bench={benchIds.map((id) => card(id, "sm"))}
           benchLabels={benchLabels}
         />
       ) : (

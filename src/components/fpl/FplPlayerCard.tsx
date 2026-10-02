@@ -100,8 +100,8 @@ export function FplPlayerCard({
   const kit = getKitForClub(club, player.kitPattern);
   const doubtful = player.status === "doubtful";
   const flagged = player.status !== "available";
-  // The board's shirts: 34px on the pitch, 30px on the bench strip.
-  const jersey = size === "md" ? 34 : 30;
+  // The board's shirts: 42px on the pitch, 34px on the bench strip.
+  const jersey = size === "md" ? 42 : 34;
 
   const noMatchText = t("fantasy.hub.no_match");
   const role = captain

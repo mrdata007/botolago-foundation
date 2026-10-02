@@ -91,8 +91,11 @@ export function normalizeFlashscoreSquad(payload: unknown, requestedTeamId: stri
         dobSignalState: "not_provided",
         dobJanuary1: false,
         heightSignal: null,
+        // The candidate tables accept only `flag:` plus 1 to 6 digits; anything else is no signal.
         nationalitySignal:
-          typeof flag === "number" && Number.isSafeInteger(flag) ? `flag:${flag}` : null,
+          typeof flag === "number" && Number.isInteger(flag) && flag >= 0 && flag <= 999999
+            ? `flag:${flag}`
+            : null,
         signalValues: { birthDate: null },
         private: { displayName: typeof item.PLAYER_NAME === "string" ? item.PLAYER_NAME : null },
       });

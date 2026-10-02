@@ -14,7 +14,8 @@ export type AdminConsoleRoute =
   | "/admin/users"
   | "/admin/users/$userId"
   | "/admin/pepites"
-  | "/admin/pepites/donnees";
+  | "/admin/pepites/donnees"
+  | "/admin/football/player-mappings";
 
 export type AdminConsoleSurface = "route" | "state" | "dialog";
 
@@ -395,6 +396,15 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
         },
       ] as const)
     : ([] as const)),
+  // Player mapping: the reviewer queue for provider players. Reading needs
+  // football.read_operations; proposing and approving need
+  // football.manage_mappings, which the database checks on every call.
+  {
+    route: "/admin/football/player-mappings",
+    permission: "football.read_operations",
+    testId: "admin-nav-player-mappings",
+    labels: { fr: "Rapprochement joueurs", ar: "مطابقة اللاعبين" },
+  },
 ] as const satisfies readonly {
   readonly route: Exclude<
     AdminConsoleRoute,

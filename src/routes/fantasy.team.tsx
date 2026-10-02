@@ -438,7 +438,7 @@ function PickTeamBody() {
     if (clubId) clubCounts.set(clubId, (clubCounts.get(clubId) ?? 0) + 1);
   }
   const clubLimitOk = [...clubCounts.values()].every((n) => n <= SQUAD_RULES.maxPerClub);
-  const card = (s: SquadPlayer) => {
+  const card = (s: SquadPlayer, size?: "md" | "sm") => {
     const p = playerOf(s.playerId);
     if (!p) return <div key={s.playerId} />;
     return (
@@ -452,6 +452,7 @@ function PickTeamBody() {
         highlighted={selectedId === s.playerId}
         noMatch={playing !== null && !playing.has(p.clubId)}
         onClick={() => onCardTap(s.playerId)}
+        size={size}
       />
     );
   };
@@ -617,12 +618,12 @@ function PickTeamBody() {
         <FplPitch
           className="mx-[var(--ui-gutter)] mt-3"
           rows={[
-            rowFor("GK", 1).map(card),
-            rowFor("DEF", cfg.DEF).map(card),
-            rowFor("MID", cfg.MID).map(card),
-            rowFor("FWD", cfg.FWD).map(card),
+            rowFor("GK", 1).map((s) => card(s)),
+            rowFor("DEF", cfg.DEF).map((s) => card(s)),
+            rowFor("MID", cfg.MID).map((s) => card(s)),
+            rowFor("FWD", cfg.FWD).map((s) => card(s)),
           ]}
-          bench={bench.map(card)}
+          bench={bench.map((s) => card(s, "sm"))}
           benchLabels={benchLabels}
           benchHighlighted={activeBenchBoost}
         />
