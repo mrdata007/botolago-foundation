@@ -704,7 +704,7 @@ describe("dual control", () => {
     expect(mine.canApprove).toBe(false);
     const control = dualControlFor(
       mine,
-      { qualifiedReviewersAvailable: 1, secondReviewerRequired: false },
+      { qualifiedReviewersAvailable: 1, selfApprovalAllowed: false, secondReviewerRequired: false },
       { canManage: true },
     );
     expect(control).toMatchObject({
@@ -728,7 +728,7 @@ describe("dual control", () => {
     expect(theirs.canApprove).toBe(true);
     const control = dualControlFor(
       theirs,
-      { qualifiedReviewersAvailable: 1, secondReviewerRequired: false },
+      { qualifiedReviewersAvailable: 1, selfApprovalAllowed: false, secondReviewerRequired: false },
       { canManage: true },
     );
     expect(control).toMatchObject({ canDecide: true, blockedBy: null });
@@ -742,7 +742,11 @@ describe("dual control", () => {
       qualifiedActors: [SAMPLE_ACTORS.proposer],
     });
     const availability = await only.getQualifiedReviewerAvailability(proposer);
-    expect(availability).toEqual({ qualifiedReviewersAvailable: 0, secondReviewerRequired: true });
+    expect(availability).toEqual({
+      qualifiedReviewersAvailable: 0,
+      selfApprovalAllowed: false,
+      secondReviewerRequired: true,
+    });
     const candidate = lonely.candidates[0]!;
     const options = await only.listMappingCandidatesForAppPlayer(candidate.id!, null, 5, proposer);
     const created = await only.proposeMappings(
@@ -761,13 +765,80 @@ describe("dual control", () => {
     expect(waitingForSecondReviewer([proposal])).toHaveLength(1);
   });
 
+  test("single-approver mode: the proposer is offered their own proposal, with no second-reviewer wall", async () => {
+    const lonely = buildSampleWorld({ sofascore: 10, flashscore: 0 });
+    const only = new InMemoryPlayerMappingRepository({
+      candidates: lonely.candidates,
+      appPlayers: lonely.appPlayers,
+      qualifiedActors: [SAMPLE_ACTORS.proposer],
+      allowSelfApproval: true,
+    });
+    const availability = await only.getQualifiedReviewerAvailability(proposer);
+    expect(availability).toEqual({
+      qualifiedReviewersAvailable: 0,
+      selfApprovalAllowed: true,
+      secondReviewerRequired: false,
+    });
+    const candidate = lonely.candidates[0]!;
+    const options = await only.listMappingCandidatesForAppPlayer(candidate.id!, null, 5, proposer);
+    const created = await only.proposeMappings(
+      [{ kind: "map", sofascoreCandidateId: candidate.id!, appPlayerId: options[0]!.appPlayerId }],
+      "Je suis le seul relecteur pour l'instant.",
+      crypto.randomUUID(),
+      proposer,
+    );
+    const id = (created.proposals[0] as { id: string }).id;
+    const proposal = await only.getMappingProposal(id, proposer);
+    expect(proposal.canApprove).toBe(true);
+    const control = dualControlFor(proposal, availability, { canManage: true });
+    expect(control).toMatchObject({
+      role: "proposer",
+      canDecide: true,
+      blockedBy: null,
+      showSecondReviewerRequired: false,
+    });
+    expect(waitingForSecondReviewer([proposal])).toHaveLength(0);
+    // Approving needs the exact fingerprint and a reason, and is recorded as a self-approval.
+    await expect(
+      only.decideMappingProposal(
+        {
+          proposalId: id,
+          decision: "approve",
+          reason: "Preuves relues.",
+          fingerprint: "0".repeat(64),
+        },
+        crypto.randomUUID(),
+        proposer,
+      ),
+    ).rejects.toMatchObject({ code: "fingerprint_mismatch" });
+    await only.decideMappingProposal(
+      {
+        proposalId: id,
+        decision: "approve",
+        reason: "Preuves relues, tout concorde.",
+        fingerprint: proposal.fingerprint,
+      },
+      crypto.randomUUID(),
+      proposer,
+    );
+    const approved = await only.getMappingProposal(id, proposer);
+    expect(approved).toMatchObject({ status: "approved", selfApproved: true });
+    expect(dualControlFor(approved, availability, { canManage: true }).canDecide).toBe(false);
+    // Nothing is executed by approving.
+    expect(only.mappings).toHaveLength(0);
+  });
+
   test("a viewer without football.manage_mappings is never offered a decision", async () => {
     const { id } = await propose();
     const theirs = await world.repository.getMappingProposal(id, approver);
     expect(
       dualControlFor(
         theirs,
-        { qualifiedReviewersAvailable: 1, secondReviewerRequired: false },
+        {
+          qualifiedReviewersAvailable: 1,
+          selfApprovalAllowed: false,
+          secondReviewerRequired: false,
+        },
         { canManage: false },
       ),
     ).toMatchObject({ canDecide: false, blockedBy: "no_permission" });
@@ -780,7 +851,11 @@ describe("dual control", () => {
     expect(
       dualControlFor(
         expired,
-        { qualifiedReviewersAvailable: 1, secondReviewerRequired: false },
+        {
+          qualifiedReviewersAvailable: 1,
+          selfApprovalAllowed: false,
+          secondReviewerRequired: false,
+        },
         { canManage: true },
       ).blockedBy,
     ).toBe("expired");
@@ -793,7 +868,11 @@ describe("dual control", () => {
     expect(
       dualControlFor(
         stale,
-        { qualifiedReviewersAvailable: 1, secondReviewerRequired: false },
+        {
+          qualifiedReviewersAvailable: 1,
+          selfApprovalAllowed: false,
+          secondReviewerRequired: false,
+        },
         { canManage: true },
       ).blockedBy,
     ).toBe("held");

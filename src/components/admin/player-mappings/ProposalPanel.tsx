@@ -136,9 +136,26 @@ export function ProposalPanel({
         </div>
       )}
 
-      {proposal.proposedByMe && proposal.status === "pending" && effective !== "expired" && (
-        <p className={cn(ui.text.secondary, ui.tone.muted)} data-testid="mapping-own-proposal">
-          {p.ownProposal} {p.waitingOther}
+      {proposal.proposedByMe &&
+        proposal.status === "pending" &&
+        effective !== "expired" &&
+        (control.canDecide ? (
+          <div data-testid="mapping-self-approval-notice">
+            <AdminNotice tone="alert" role="status">
+              {p.selfApprovalNotice}
+            </AdminNotice>
+          </div>
+        ) : (
+          <p className={cn(ui.text.secondary, ui.tone.muted)} data-testid="mapping-own-proposal">
+            {p.ownProposal} {p.waitingOther}
+          </p>
+        ))}
+      {proposal.selfApproved && (
+        <p
+          className={cn(ui.text.secondary, ui.tone.muted)}
+          data-testid="mapping-self-approved-note"
+        >
+          {p.selfApprovedNote}
         </p>
       )}
       {effective === "expired" && (

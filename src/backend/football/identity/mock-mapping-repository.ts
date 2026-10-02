@@ -104,6 +104,7 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
   private readonly proposals: MockProposal[] = [];
   private readonly idempotent = new Map<string, unknown>();
   private readonly qualified: Set<string>;
+  private readonly allowSelfApproval: boolean;
 
   constructor(
     seed: {
@@ -112,8 +113,11 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
       readonly mappings?: readonly MockMappingRow[];
       /** Actor ids that hold football.manage_mappings. */
       readonly qualifiedActors?: readonly string[];
+      /** The database switch for single-approver mode. Off by default, as in two-person mode. */
+      readonly allowSelfApproval?: boolean;
     } = {},
   ) {
+    this.allowSelfApproval = seed.allowSelfApproval ?? false;
     this.qualified = new Set(seed.qualifiedActors ?? []);
     this.appPlayers = [...(seed.appPlayers ?? [])];
     this.mappings.push(...(seed.mappings ?? []).map((m) => ({ ...m })));
@@ -204,7 +208,11 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
     return {
       ...p.dto,
       proposedByMe: mine,
-      canApprove: p.dto.status === "pending" && !mine && p.dto.effectiveStatus !== "expired",
+      selfApproved: p.dto.decidedBy !== null && p.dto.decidedBy === p.dto.requestedBy,
+      canApprove:
+        p.dto.status === "pending" &&
+        (!mine || this.allowSelfApproval) &&
+        p.dto.effectiveStatus !== "expired",
     };
   }
 
@@ -532,6 +540,7 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
       executedAfter: null,
       holdCode: null,
       proposedByMe: true,
+      selfApproved: false,
       canApprove: false,
       ...dto,
     } as ProposalDto;
@@ -707,7 +716,7 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
   ): Promise<TransitionResult> {
     const me = this.actor(context);
     const p = this.proposal(input.proposalId);
-    if (p.dto.requestedBy === me)
+    if (p.dto.requestedBy === me && !this.allowSelfApproval)
       throw new MappingError("self_approval_denied", "A different person must decide.");
     if (input.reason.trim().length < 10)
       throw new MappingError("reason_required", "A reason is required.");
@@ -864,7 +873,11 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
   ): Promise<ReviewerAvailability> {
     const me = this.actor(context);
     const others = [...this.qualified].filter((id) => id !== me).length;
-    return { qualifiedReviewersAvailable: others, secondReviewerRequired: others === 0 };
+    return {
+      qualifiedReviewersAvailable: others,
+      selfApprovalAllowed: this.allowSelfApproval,
+      secondReviewerRequired: others === 0 && !this.allowSelfApproval,
+    };
   }
 
   /** Test hook: another human's decision lands outside this repository. */

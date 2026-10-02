@@ -231,6 +231,7 @@ describe("dual control", () => {
     const { repo } = await seeded([A]);
     expect(await repo.getQualifiedReviewerAvailability(ctx(A))).toEqual({
       qualifiedReviewersAvailable: 0,
+      selfApprovalAllowed: false,
       secondReviewerRequired: true,
     });
     const proposed = (await proposeMap(repo, "777")).proposals[0]!;

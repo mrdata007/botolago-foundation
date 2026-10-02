@@ -27,11 +27,18 @@ const proposer = ctx(SAMPLE_ACTORS.proposer);
 const approver = ctx(SAMPLE_ACTORS.approver);
 const both: ReviewerAvailability = {
   qualifiedReviewersAvailable: 1,
+  selfApprovalAllowed: false,
   secondReviewerRequired: false,
 };
 const lonely: ReviewerAvailability = {
   qualifiedReviewersAvailable: 0,
+  selfApprovalAllowed: false,
   secondReviewerRequired: true,
+};
+const loneSelfApprover: ReviewerAvailability = {
+  qualifiedReviewersAvailable: 0,
+  selfApprovalAllowed: true,
+  secondReviewerRequired: false,
 };
 
 const noop = () => {};
@@ -370,9 +377,16 @@ describe("the comparison", () => {
 });
 
 /** Two people have the world in common; each sees it from their own seat. */
-async function proposalWorld(availability: ReviewerAvailability) {
+async function proposalWorld(availability: ReviewerAvailability, allowSelfApproval = false) {
   const world = buildSampleWorld({ sofascore: 20, flashscore: 0 });
-  const repo = world.repository;
+  const repo = allowSelfApproval
+    ? new InMemoryPlayerMappingRepository({
+        candidates: world.candidates,
+        appPlayers: world.appPlayers,
+        qualifiedActors: [SAMPLE_ACTORS.proposer],
+        allowSelfApproval: true,
+      })
+    : world.repository;
   const candidate = (await loadAllCandidates(repo, {}, proposer))[0]!;
   const options = await loadOptions(repo, candidate, "club", proposer);
   const pick =
@@ -458,6 +472,40 @@ describe("dual control, as drawn", () => {
       initial: { selection: { kind: "proposal", id: w.id } },
     });
     has(ar, "مطلوب مراجع ثانٍ مؤهَّل");
+  });
+
+  test("single-approver mode: the lone proposer sees a warning and approve/reject, not the second-reviewer wall", async () => {
+    const w = await proposalWorld(loneSelfApprover, true);
+    const data = await w.seenBy(proposer);
+    const html = render({
+      state: ready(data),
+      proposalsEnabled: true,
+      repository: w.repo,
+      initial: { selection: { kind: "proposal", id: w.id } },
+    });
+    has(html, 'data-testid="mapping-self-approval-notice"');
+    has(html, "personne d’autre ne la vérifie");
+    has(html, 'data-testid="mapping-approve"');
+    has(html, 'data-testid="mapping-reject"');
+    has(html, data.proposals[0]!.fingerprint);
+    lacks(html, 'data-testid="second-reviewer-required"');
+    lacks(html, 'data-testid="mapping-own-proposal"');
+    const ar = render({
+      lang: "ar",
+      state: ready(data),
+      proposalsEnabled: true,
+      repository: w.repo,
+      initial: { selection: { kind: "proposal", id: w.id } },
+    });
+    has(ar, "لا يراجعه أحد غيرك");
+    // Read-only (writes off): still no control, whoever the proposer is.
+    const off = render({
+      state: ready(data),
+      proposalsEnabled: false,
+      repository: w.repo,
+      initial: { selection: { kind: "proposal", id: w.id } },
+    });
+    lacks(off, 'data-testid="mapping-approve"');
   });
 
   test("the 'waiting for a second reviewer' view lists the proposer's own pending proposals", async () => {

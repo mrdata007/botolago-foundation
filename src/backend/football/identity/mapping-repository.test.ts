@@ -300,9 +300,14 @@ describe("the Supabase adapter", () => {
   });
 
   test("reviewer availability is exposed (the screen shows second qualified reviewer required)", async () => {
-    const { repo } = fake({ qualifiedReviewersAvailable: 0, secondReviewerRequired: true });
+    const { repo } = fake({
+      qualifiedReviewersAvailable: 0,
+      selfApprovalAllowed: false,
+      secondReviewerRequired: true,
+    });
     expect(await repo.getQualifiedReviewerAvailability(ctx())).toEqual({
       qualifiedReviewersAvailable: 0,
+      selfApprovalAllowed: false,
       secondReviewerRequired: true,
     });
   });
