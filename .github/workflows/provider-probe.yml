@@ -1,0 +1,130 @@
+name: Provider probe (Sofascore / Flashscore, read-only)
+
+# Manual only. Phase 0 of docs/backend/FANTASY_SOFASCORE_FLASHSCORE_PLAN.md.
+# No database access. Logs and artifacts of a public repository are public and
+# the provider payloads are third-party data, so by default only the SHAPE of
+# each response is printed (field names and types, never values). The optional
+# enums / rows / keys inputs print only the values and names the caller names
+# (an enum with more than 15 distinct values is only counted). The fixtures
+# input writes TRIMMED copies (only the fields the adapters read) to a 3-day
+# artifact for review. Every path is one RapidAPI request against a monthly
+# quota, so the list is capped at 10 and the script stops below 100 remaining.
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: Provider to call
+        type: choice
+        options: [sofascore, flashscore]
+        required: true
+      paths:
+        description: One path-and-query per line (max 10), e.g. matches/detail?matchId=16958239. Leave empty when building fixtures.
+        type: string
+        required: false
+      enums:
+        description: >-
+          Optional, comma-separated field paths whose distinct values to print, e.g.
+          $.incidents[].incidentType. A field with more than 15 distinct values is only counted.
+        type: string
+        required: false
+      fixtures:
+        description: >-
+          Optional, a match plan under tests/fixtures/providers/ (e.g. matches.json). Fetches every
+          planned match and uploads TRIMMED copies (only the fields the adapters read) as a
+          3-day artifact for review. Prints counts and dropped field names, never values.
+        type: string
+        required: false
+      only:
+        description: Optional with fixtures, comma-separated plan keys to fetch (saves requests on a re-run).
+        type: string
+        required: false
+      keys:
+        description: Optional, comma-separated object paths whose property names to list, e.g. $.paths
+        type: string
+        required: false
+      rows:
+        description: >-
+          Optional, one list spec per line, printing one row per entry with only the named
+          fields, e.g. $.DATA[].EVENTS[]:EVENT_ID,HOME_NAME. For lists of matches or statistic
+          lines, never players.
+        type: string
+        required: false
+      enum_max:
+        description: Optional, raises the 15-value limit for enums (at most 80), for lists of statistic names.
+        type: string
+        required: false
+      collect_squads:
+        description: >-
+          Run the read-only squad candidate collector instead (32 requests: one squad per club per
+          provider, 16 clubs). Prints ONE sanitized evidence document: counts and states only, never
+          a name, a date or a raw payload. No database access.
+        type: boolean
+        default: false
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging-load-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - name: Probe
+        if: ${{ inputs.paths != '' && !inputs.collect_squads }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
+          PROVIDER: ${{ inputs.provider }}
+          PATHS: ${{ inputs.paths }}
+          ENUMS: ${{ inputs.enums }}
+          ENUM_MAX: ${{ inputs.enum_max }}
+          ROWS: ${{ inputs.rows }}
+          KEYS: ${{ inputs.keys }}
+        run: |
+          set -eu
+          count=$(printf '%s\n' "$PATHS" | grep -c . || true)
+          if [ "$count" -gt 10 ]; then echo "Max 10 paths per run"; exit 1; fi
+          # shellcheck disable=SC2086
+          rows=()
+          while IFS= read -r spec; do
+            [ -n "$spec" ] && rows+=("--rows=$spec")
+          done <<< "$ROWS"
+          printf '%s\n' "$PATHS" | grep . | tr '\n' '\0' | xargs -0 bun scripts/backend/provider-probe.ts "$PROVIDER" --shape ${ENUMS:+"--enum=$ENUMS"} ${ENUM_MAX:+"--enum-max=$ENUM_MAX"} ${KEYS:+"--keys=$KEYS"} "${rows[@]}"
+      - name: Collect squad candidate evidence (read-only)
+        if: ${{ inputs.collect_squads }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
+        run: bun scripts/backend/provider-squad-collector.ts
+      - name: Build trimmed fixtures
+        if: ${{ inputs.fixtures != '' }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
+          PLAN: ${{ inputs.fixtures }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          set -eu
+          case "$PLAN" in
+            tests/fixtures/providers/*.json) ;;
+            *) echo "The plan must be a .json file under tests/fixtures/providers/"; exit 1 ;;
+          esac
+          bun scripts/backend/provider-fixtures.ts "$PLAN" --out "$RUNNER_TEMP/provider-fixtures" ${ONLY:+"--only=$ONLY"}
+      - name: Upload trimmed fixtures for review
+        if: ${{ inputs.fixtures != '' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: provider-fixtures-trimmed
+          path: ${{ runner.temp }}/provider-fixtures
+          retention-days: 3

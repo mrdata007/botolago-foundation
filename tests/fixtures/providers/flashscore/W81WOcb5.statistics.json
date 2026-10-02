@@ -1,0 +1,199 @@
+{
+  "DATA": [
+    {
+      "STAGE_NAME": "Match",
+      "GROUPS": [
+        {
+          "GROUP_LABEL": "Top stats",
+          "ITEMS": [
+            {
+              "INCIDENT_NAME": "Ball possession",
+              "VALUE_HOME": "65%",
+              "VALUE_AWAY": "35%"
+            },
+            {
+              "INCIDENT_NAME": "Total shots",
+              "VALUE_HOME": "13",
+              "VALUE_AWAY": "4"
+            },
+            {
+              "INCIDENT_NAME": "Shots on target",
+              "VALUE_HOME": "5",
+              "VALUE_AWAY": "2"
+            },
+            {
+              "INCIDENT_NAME": "Corner kicks",
+              "VALUE_HOME": "6",
+              "VALUE_AWAY": "0"
+            },
+            {
+              "INCIDENT_NAME": "Yellow cards",
+              "VALUE_HOME": "3",
+              "VALUE_AWAY": "1"
+            }
+          ]
+        },
+        {
+          "GROUP_LABEL": "Shots",
+          "ITEMS": [
+            {
+              "INCIDENT_NAME": "Total shots",
+              "VALUE_HOME": "13",
+              "VALUE_AWAY": "4"
+            },
+            {
+              "INCIDENT_NAME": "Shots on target",
+              "VALUE_HOME": "5",
+              "VALUE_AWAY": "2"
+            },
+            {
+              "INCIDENT_NAME": "Shots off target",
+              "VALUE_HOME": "8",
+              "VALUE_AWAY": "2"
+            }
+          ]
+        },
+        {
+          "GROUP_LABEL": "Attack",
+          "ITEMS": [
+            {
+              "INCIDENT_NAME": "Corner kicks",
+              "VALUE_HOME": "6",
+              "VALUE_AWAY": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "STAGE_NAME": "1st Half",
+      "GROUPS": [
+        {
+          "GROUP_LABEL": "Top stats",
+          "ITEMS": [
+            {
+              "INCIDENT_NAME": "Ball possession",
+              "VALUE_HOME": "72%",
+              "VALUE_AWAY": "28%"
+            },
+            {
+              "INCIDENT_NAME": "Total shots",
+              "VALUE_HOME": "6",
+              "VALUE_AWAY": "2"
+            },
+            {
+              "INCIDENT_NAME": "Shots on target",
+              "VALUE_HOME": "2",
+              "VALUE_AWAY": "0"
+            },
+            {
+              "INCIDENT_NAME": "Corner kicks",
+              "VALUE_HOME": "3",
+              "VALUE_AWAY": "0"
+            },
+            {
+              "INCIDENT_NAME": "Yellow cards",
+              "VALUE_HOME": "1",
+              "VALUE_AWAY": "0"
+            }
+          ]
+        },
+        {
+          "GROUP_LABEL": "Shots",
+          "ITEMS": [
+            {
+              "INCIDENT_NAME": "Total shots",
+              "VALUE_HOME": "6",
+              "VALUE_AWAY": "2"
+            },
+            {
+              "INCIDENT_NAME": "Shots on target",
+              "VALUE_HOME": "2",
+              "VALUE_AWAY": "0"
+            },
+            {
+              "INCIDENT_NAME": "Shots off target",
+              "VALUE_HOME": "4",
+              "VALUE_AWAY": "2"
+            }
+          ]
+        },
+        {
+          "GROUP_LABEL": "Attack",
+          "ITEMS": [
+            {
+              "INCIDENT_NAME": "Corner kicks",
+              "VALUE_HOME": "3",
+              "VALUE_AWAY": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "STAGE_NAME": "2nd Half",
+      "GROUPS": [
+        {
+          "GROUP_LABEL": "Top stats",
+          "ITEMS": [
+            {
+              "INCIDENT_NAME": "Ball possession",
+              "VALUE_HOME": "58%",
+              "VALUE_AWAY": "42%"
+            },
+            {
+              "INCIDENT_NAME": "Total shots",
+              "VALUE_HOME": "7",
+              "VALUE_AWAY": "2"
+            },
+            {
+              "INCIDENT_NAME": "Shots on target",
+              "VALUE_HOME": "3",
+              "VALUE_AWAY": "2"
+            },
+            {
+              "INCIDENT_NAME": "Corner kicks",
+              "VALUE_HOME": "3",
+              "VALUE_AWAY": "0"
+            },
+            {
+              "INCIDENT_NAME": "Yellow cards",
+              "VALUE_HOME": "2",
+              "VALUE_AWAY": "1"
+            }
+          ]
+        },
+        {
+          "GROUP_LABEL": "Shots",
+          "ITEMS": [
+            {
+              "INCIDENT_NAME": "Total shots",
+              "VALUE_HOME": "7",
+              "VALUE_AWAY": "2"
+            },
+            {
+              "INCIDENT_NAME": "Shots on target",
+              "VALUE_HOME": "3",
+              "VALUE_AWAY": "2"
+            },
+            {
+              "INCIDENT_NAME": "Shots off target",
+              "VALUE_HOME": "4",
+              "VALUE_AWAY": "0"
+            }
+          ]
+        },
+        {
+          "GROUP_LABEL": "Attack",
+          "ITEMS": [
+            {
+              "INCIDENT_NAME": "Corner kicks",
+              "VALUE_HOME": "3",
+              "VALUE_AWAY": "0"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

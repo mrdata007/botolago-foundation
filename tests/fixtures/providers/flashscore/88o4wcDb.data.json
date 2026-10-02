@@ -1,0 +1,26 @@
+{
+  "DATA": {
+    "EVENT": {
+      "EVENT_ID": "88o4wcDb",
+      "START_UTIME": 1790438400,
+      "STAGE": "FINISHED",
+      "ROUND": "Round 1",
+      "HOME_NAME": "Union Touarga",
+      "AWAY_NAME": "FUS Rabat",
+      "HOME_PARTICIPANT_IDS": [
+        "GKY9yk5c"
+      ],
+      "AWAY_PARTICIPANT_IDS": [
+        "zP99MHKe"
+      ],
+      "HOME_SCORE_FULL": 2,
+      "AWAY_SCORE_FULL": 1
+    },
+    "TOURNAMENT": {
+      "NAME": "Morocco: Botola Pro",
+      "TOURNAMENT_ID": "CGClceUj",
+      "TOURNAMENT_STAGE_ID": "GKXUiwEl",
+      "TOURNAMENT_SEASON_ID": "CGClceUj"
+    }
+  }
+}

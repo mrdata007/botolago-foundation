@@ -1,3 +1,4 @@
+import { collectAdaptiveEvidence } from "./adaptive-performance-evidence";
 import { createClient } from "@supabase/supabase-js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -24,7 +25,7 @@ export const CURRENT_PERFORMANCE_TYPES = [
  * request without it gets a payload without scores, and every fixture then
  * stops at `current_final_score_missing`.
  */
-const CURRENT_PERFORMANCE_INCLUDE = "lineups.details;state;participants;scores";
+const CURRENT_PERFORMANCE_INCLUDE = "lineups.details;state;participants;scores;events";
 // SportsMonks sends a statistic only when it is not zero: on 2026-09-24's
 // first match (fixture 19874708) only the 3 scorers carried goals and only the
 // players who came on carried minutes, and last season's accepted fixtures
@@ -40,12 +41,10 @@ const CURRENT_PERFORMANCE_INCLUDE = "lineups.details;state;participants;scores";
 // SportsMonks' own figure is not reliable (last season 40 of the 327
 // goalkeepers who played a whole match for a side that conceded carried
 // fewer). A starter with 90 minutes conceded what the side did; anyone else
-// keeps SportsMonks' figure, since only it knows when they were on the pitch,
-// capped at the side's. A substitute can reach 90 after an early goal (16 did
-// last season). The one case this counts against a player is a starter
-// substituted in stoppage time just before a stoppage-time goal (at most 11 of
-// 2,243 last season). The database checks the same against its own final
-// score (20260925120000).
+// uses a reconciled goal timeline when every conceded goal preceded both the
+// first team departure and their official minutes. Otherwise an explicit
+// provider figure is required for a shortened starter's defensive eligibility.
+// Same-minute goals/departures are deliberately not ordered by guesswork.
 /** Counted as zero when absent (an explicit null on 57 or 113 stays null and is not counted). */
 const COUNTED_TYPES = [52, 57, 79, 83, 84, 85, 88, 112, 113, 119, 324] as const;
 const MINUTES = 119;
@@ -54,9 +53,139 @@ const MINUTES = 119;
  * minutes played (the scorer awards saves without looking at minutes).
  */
 const ON_PITCH_TYPES = [52, 57, 79, 112, 113, 324] as const;
+/**
+ * Statistic types whose value above zero shows a player was on the pitch or
+ * scored: goals 52, saves 57, assists 79, red 83, yellow 84, second yellow 85,
+ * goals conceded 88, penalties missed 112 and saved 113, rating 118, own goals
+ * 324. Diagnostics only: nothing here changes what is ingested.
+ */
+const PARTICIPATION_SCORING_TYPES = [52, 57, 79, 83, 84, 85, 88, 112, 113, 118, 324] as const;
+/** An explicit null on these goalkeeper statistics is "unknown", which is never zero. */
+const PARTICIPATION_UNKNOWN_TYPES = [57, 113] as const;
+/**
+ * One named lineup player's provider facts, by provider ids and type ids only
+ * (no names, no raw payload). Read-only evidence for the diagnose run: it is
+ * never sent to the database.
+ */
+export type LineupParticipation = {
+  externalPlayerId: string;
+  externalTeamId: string;
+  role: "starter" | "substitute" | "unknown";
+  /**
+   * The provider's `position_id` on the lineup row, as sent; null when it sent
+   * none. SportsMonks position types: 24 goalkeeper, 25 defender, 26
+   * midfielder, 27 attacker. Evidence only: nothing reads it to create a
+   * player, and a missing one stays missing.
+   */
+  positionId: number | null;
+  /** Official minutes (type 119); null when the provider sent none. */
+  officialMinutes: number | null;
+  /** Scoring-relevant statistic types carrying a value above zero. */
+  scoringStatisticTypeIds: number[];
+  /** Goalkeeper statistic types the provider sent as an explicit null. */
+  unknownStatisticTypeIds: number[];
+  /** Statistic types the provider sent with an explicit zero. */
+  zeroStatisticTypeIds: number[];
+  /** Types of the provider's own match events that name this player. */
+  eventTypeIds: number[];
+};
 /** SportsMonks stops counting at 90: a starter with 90 minutes was on from kick-off to the 90th. */
 const WHOLE_MATCH_MINUTES = 90;
 const SEASON = 28647;
+/** Provider event type ids that put a goal on the board: goal, own goal, penalty. */
+const GOAL_EVENT_TYPES = [14, 15, 16];
+/** Numbers only: id, type, side, scorer id (when the provider gave one) and minute. */
+function goalEventSummary(fixture: Row): Row[] {
+  if (!Array.isArray(fixture.events)) return [];
+  const num = (value: unknown) => (Number.isSafeInteger(value) ? (value as number) : null);
+  return fixture.events
+    .filter(
+      (raw): raw is Row =>
+        !!raw &&
+        typeof raw === "object" &&
+        GOAL_EVENT_TYPES.includes((raw as Row).type_id as number),
+    )
+    .map((event) => ({
+      eventId: num(event.id),
+      typeId: num(event.type_id),
+      participantId: num(event.participant_id),
+      playerId: num(event.player_id),
+      minute: num(event.minute),
+      extraMinute: num(event.extra_minute),
+    }))
+    .slice(0, 30);
+}
+/** How many lineup rows the provider left without a player id, per club (starters apart). */
+function unidentifiedByTeam(lineups: Row[]): Row[] {
+  const counts = new Map<string, { starters: number; others: number }>();
+  for (const lineup of lineups) {
+    if (lineup.player_id !== null && lineup.player_id !== undefined) continue;
+    const key = String(lineup.team_id);
+    const entry = counts.get(key) ?? { starters: 0, others: 0 };
+    if (lineup.type_id === 11) entry.starters += 1;
+    else entry.others += 1;
+    counts.set(key, entry);
+  }
+  return [...counts].map(([teamExternalId, entry]) => ({ teamExternalId, ...entry }));
+}
+/** Proves only the narrow case where all conceded goals precede any departure.
+ * Own goals, VAR, extra time and malformed/incomplete timelines need review;
+ * this is not a general reconstruction of on-pitch intervals.
+ */
+function starterConcessionBoundary(
+  fixture: Row,
+  fixtureId: number,
+  goalsFor: Map<number, number>,
+): Map<number, { lastGoal: number; firstDeparture: number }> {
+  const result = new Map<number, { lastGoal: number; firstDeparture: number }>();
+  if ((fixture.state as Row)?.developer_name !== "FT" || !Array.isArray(fixture.events))
+    return result;
+  const events: Row[] = [];
+  const ids = new Set<number>();
+  for (const raw of fixture.events) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return result;
+    const event = raw as Row;
+    if (
+      !Number.isSafeInteger(event.id) ||
+      (event.id as number) <= 0 ||
+      ids.has(event.id as number) ||
+      event.fixture_id !== fixtureId ||
+      !Number.isSafeInteger(event.type_id) ||
+      ![14, 16, 17, 18, 19, 20, 21, 1675].includes(event.type_id as number) ||
+      !goalsFor.has(event.participant_id as number) ||
+      !Number.isInteger(event.minute) ||
+      (event.minute as number) < 0 ||
+      (event.minute as number) > 90 ||
+      (event.extra_minute != null &&
+        (!Number.isInteger(event.extra_minute) || (event.extra_minute as number) < 0))
+    )
+      return result;
+    ids.add(event.id as number);
+    events.push(event);
+  }
+  const goals = events.filter((event) => event.type_id === 14 || event.type_id === 16);
+  for (const [team, count] of goalsFor) {
+    if (goals.filter((event) => event.participant_id === team).length !== count) return result;
+  }
+  for (const team of goalsFor.keys()) {
+    const conceded = goals.filter((event) => event.participant_id !== team);
+    const departures = events.filter(
+      (event) => event.participant_id === team && [18, 20, 21].includes(event.type_id as number),
+    );
+    // Require an observed departure as well as official minutes. A missing
+    // substitution list cannot certify a shortened starter's participation.
+    if (
+      conceded.length &&
+      departures.length &&
+      conceded.every((event) => event.extra_minute == null || event.extra_minute === 0)
+    )
+      result.set(team, {
+        lastGoal: Math.max(...conceded.map((event) => event.minute as number)),
+        firstDeparture: Math.min(...departures.map((event) => event.minute as number)),
+      });
+  }
+  return result;
+}
 interface PerformanceRow extends Omit<HistoricalPlayerPerformanceRow, "saves" | "penaltiesSaved"> {
   readonly saves: number | null;
   readonly penaltiesSaved: number | null;
@@ -253,12 +382,17 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
       rows: unidentified,
     });
   const optionalValues = new Map<string, { saves: number | null; penaltiesSaved: number | null }>();
+  const explicitConceded = new Set<string>();
   const lineupIds = new Set<number>();
   const normalizationLineups: Row[] = [];
   let detailRows = 0;
   let absentAsZero = 0;
   let startersWithoutMinutes = 0;
   let benchOnPitchWithoutMinutes = 0;
+  // Which starters came without minutes, and which statistics they did carry:
+  // provider ids and type ids only, so the gap can be traced to one row.
+  const startersWithoutMinutesRows: Row[] = [];
+  const participation: LineupParticipation[] = [];
   for (const [index, lineup] of lineups.entries()) {
     const path = `data.lineups[${index}]`;
     if (isUnidentified(lineup)) {
@@ -291,6 +425,8 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
         field: `${path}.details`,
         valueType: providerValueType(details),
       });
+    if (details.some((detail) => detail && typeof detail === "object" && detail.type_id === 88))
+      explicitConceded.add(String(playerId));
     const types = new Set<number>();
     const values = new Map<number, number>();
     const normalizationDetails: Row[] = [];
@@ -326,10 +462,38 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     }
     // Minutes played decide, whether SportsMonks left them out or sent 0.
     if (!((values.get(MINUTES) ?? 0) > 0)) {
-      if (lineup.type_id === 11) startersWithoutMinutes += 1;
-      else if (ON_PITCH_TYPES.some((typeId) => (values.get(typeId) ?? 0) > 0))
+      if (lineup.type_id === 11) {
+        startersWithoutMinutes += 1;
+        startersWithoutMinutesRows.push({
+          externalPlayerId: String(playerId),
+          teamExternalId: String(teamId),
+          detailTypeIds: [...types].sort((a, b) => a - b),
+        });
+      } else if (ON_PITCH_TYPES.some((typeId) => (values.get(typeId) ?? 0) > 0))
         benchOnPitchWithoutMinutes += 1;
     }
+    participation.push({
+      externalPlayerId: String(playerId),
+      externalTeamId: String(teamId),
+      role: lineup.type_id === 11 ? "starter" : lineup.type_id === 12 ? "substitute" : "unknown",
+      positionId:
+        typeof lineup.position_id === "number" &&
+        Number.isSafeInteger(lineup.position_id) &&
+        lineup.position_id > 0
+          ? lineup.position_id
+          : null,
+      officialMinutes: values.has(MINUTES) ? values.get(MINUTES)! : null,
+      scoringStatisticTypeIds: PARTICIPATION_SCORING_TYPES.filter(
+        (typeId) => (values.get(typeId) ?? 0) > 0,
+      ),
+      unknownStatisticTypeIds: PARTICIPATION_UNKNOWN_TYPES.filter(
+        (typeId) => types.has(typeId) && !values.has(typeId),
+      ),
+      zeroStatisticTypeIds: [...types]
+        .filter((typeId) => values.get(typeId) === 0)
+        .sort((a, b) => a - b),
+      eventTypeIds: [],
+    });
     absentAsZero += COUNTED_TYPES.filter((typeId) => !types.has(typeId)).length;
     // Absent is zero; an explicit null stays unknown (and the database refuses
     // an unknown goalkeeper statistic).
@@ -343,12 +507,29 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     fail("current_starter_minutes_missing", {
       fixtureExternalId: String(expectedFixtureId),
       starterRows: startersWithoutMinutes,
+      players: startersWithoutMinutesRows.slice(0, 22),
     });
   if (benchOnPitchWithoutMinutes)
     fail("current_statistics_inconsistent", {
       fixtureExternalId: String(expectedFixtureId),
       substituteRowsWithoutMinutes: benchOnPitchWithoutMinutes,
     });
+  // The provider's own match events that name a player (a goal, a card, a
+  // substitution), by type id only.
+  if (Array.isArray(fixture.events)) {
+    for (const raw of fixture.events) {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+      const event = raw as Row;
+      if (!Number.isSafeInteger(event.type_id)) continue;
+      for (const named of [event.player_id, event.related_player_id]) {
+        const entry = participation.find(
+          (candidate) => candidate.externalPlayerId === String(named),
+        );
+        if (entry && !entry.eventTypeIds.includes(event.type_id as number))
+          entry.eventTypeIds.push(event.type_id as number);
+      }
+    }
+  }
   const normalized = await normalizeHistoricalFixture(
     { data: { ...fixture, lineups: normalizationLineups } },
     expectedFixtureId,
@@ -381,6 +562,8 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
         unplacedUnnamedStarters: unplaced,
       });
   }
+  const boundaries = starterConcessionBoundary(fixture, expectedFixtureId, goalsFor);
+  let goalsConcededFromTimeline = 0;
   let goalsConcededFromFinalScore = 0;
   const rows: PerformanceRow[] = normalized.rows.map((player) => {
     // Type88 is goals conceded while the player was on the pitch, when
@@ -388,8 +571,40 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
     // starter with 90 minutes. Type194 is a team/season aggregate and is
     // deliberately not used as player eligibility.
     const conceded = totalGoals - goalsFor.get(Number(player.externalTeamId))!;
+    const boundary = boundaries.get(Number(player.externalTeamId));
+    const timelineProvesConceded =
+      player.started &&
+      boundary !== undefined &&
+      boundary.lastGoal < Math.min(boundary.firstDeparture, player.minutes);
+    if (
+      player.started &&
+      player.minutes >= 60 &&
+      player.minutes < 90 &&
+      conceded > 0 &&
+      !explicitConceded.has(player.externalPlayerId) &&
+      !timelineProvesConceded
+    )
+      fail("current_defensive_statistics_incomplete", {
+        fixtureExternalId: String(expectedFixtureId),
+        playerExternalId: player.externalPlayerId,
+        // Why neither proof was available, as numbers only: the player's
+        // official minutes, the goals his side conceded, whether the provider
+        // gave goals conceded for him, and the timeline's two boundaries
+        // (null when the events could not be used at all).
+        teamExternalId: player.externalTeamId,
+        minutes: player.minutes,
+        goalsConcededByTeam: conceded,
+        explicitGoalsConceded: false,
+        timeline: boundary
+          ? {
+              lastConcededGoalMinute: boundary.lastGoal,
+              firstDepartureMinute: boundary.firstDeparture,
+            }
+          : null,
+      });
+    if (timelineProvesConceded && player.minutes < 90) goalsConcededFromTimeline += 1;
     const goalsConceded =
-      player.started && player.minutes >= WHOLE_MATCH_MINUTES
+      (player.started && player.minutes >= WHOLE_MATCH_MINUTES) || timelineProvesConceded
         ? conceded
         : Math.min(player.goalsConceded, conceded);
     if (goalsConceded !== player.goalsConceded) goalsConcededFromFinalScore += 1;
@@ -420,6 +635,20 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
         teamExternalId: String(teamId),
         finalGoals: goalsFor.get(teamId)!,
         attributedGoals: attributed,
+        // Where the goals were credited and what the provider's own event list
+        // says, by provider id and minute only: the gap is then one named
+        // goal, not a count. The totals are never adjusted to match.
+        credited: rows
+          .filter((player) => player.goals > 0 || player.ownGoals > 0)
+          .map((player) => ({
+            externalPlayerId: player.externalPlayerId,
+            externalTeamId: player.externalTeamId,
+            goals: player.goals,
+            ownGoals: player.ownGoals,
+          }))
+          .slice(0, 30),
+        goalEvents: goalEventSummary(fixture),
+        unidentifiedRows: unidentifiedByTeam(lineups),
       });
   }
   return {
@@ -436,11 +665,14 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
       missingStatisticRows: 0,
       absentStatisticsCountedAsZero: absentAsZero,
       goalsConcededFromFinalScore,
+      ...(goalsConcededFromTimeline > 0 ? { goalsConcededFromTimeline } : {}),
       cleanSheetSource: "official_minutes_and_on_pitch_goals_conceded",
       goalkeeperStatistics: "explicit_value_or_null_canonical_position_checked_in_database",
     },
     /** Evidence only: which rows were left out, and where they sit in the payload. */
     unnamedRows: unidentified,
+    /** Diagnose evidence only: each named lineup player's provider facts. Never sent to the database. */
+    participation,
   };
 }
 
@@ -672,12 +904,33 @@ export async function runCurrentPerformanceBatch(
       continue;
     }
     try {
+      const normalizedFixture = await normalizeCurrentFinishedFixture(
+        payload,
+        Number(fixture.fixtureExternalId),
+      );
       normalized.push({
         ...fixture,
-        ...(await normalizeCurrentFinishedFixture(payload, Number(fixture.fixtureExternalId))),
+        adaptiveFieldEvidence: collectAdaptiveEvidence(
+          payload,
+          new Date().toISOString(),
+          normalizedFixture.rows,
+        ),
+        ...normalizedFixture,
       });
     } catch (error) {
       incomplete.push({ ...fixture, stage: "validation", ...failure(error) });
+    }
+  }
+  if (!diagnose && batch.adaptive === true) {
+    for (const gap of [...incomplete]) {
+      const status = row(
+        await rpc(client, "service_record_adaptive_gap", {
+          p_fixture_external_id: gap.fixtureExternalId,
+          p_reason: gap.code,
+        }),
+        "adaptiveGap",
+      );
+      if (status.certified === true) incomplete.splice(incomplete.indexOf(gap), 1);
     }
   }
   const page = {
@@ -707,6 +960,10 @@ export async function runCurrentPerformanceBatch(
           externalTeamId: player.externalTeamId,
           started: player.started,
         })),
+        // Provider facts by id and type id only (no names): role, official minutes,
+        // which scoring-relevant statistics carry a value, which are unknown, which
+        // are an explicit zero, and which match events name the player.
+        participation: fixture.participation,
       })),
       incomplete,
       ...page,
@@ -723,7 +980,10 @@ export async function runCurrentPerformanceBatch(
           p_season_external_id: String(SEASON),
           p_fixture_external_id: fixture.fixtureExternalId,
           p_rows: fixture.rows,
-          p_coverage: fixture.coverage,
+          p_coverage:
+            batch.adaptive === true
+              ? { ...fixture.coverage, adaptiveFieldEvidence: fixture.adaptiveFieldEvidence }
+              : fixture.coverage,
           p_observed_at: observedAt,
         }),
         "result",
@@ -731,11 +991,18 @@ export async function runCurrentPerformanceBatch(
       if (
         result.active !== fixture.rows.length ||
         result.reconciled !== true ||
-        result.scoringStatisticsComplete !== true ||
+        (result.scoringStatisticsComplete !== true && result.adaptive !== true) ||
         typeof result.sourceVersion !== "string" ||
         !/^sportsmonks-current-fixture:[0-9a-f]{64}$/.test(result.sourceVersion)
       )
         fail("current_performance_reconciliation_failed");
+      if (result.adaptive === true && result.simpleReady !== true)
+        incomplete.push({
+          fixtureExternalId: fixture.fixtureExternalId,
+          kickoffAt: fixture.kickoffAt,
+          stage: "validation",
+          code: "adaptive_core_pending",
+        });
       fixtures.push({
         fixtureExternalId: fixture.fixtureExternalId,
         players: result.active,

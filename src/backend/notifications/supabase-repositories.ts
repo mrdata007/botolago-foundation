@@ -13,7 +13,7 @@ import {
   type NotificationDeviceRepository,
   type NotificationDeviceSummaryDto,
   type NotificationEmailUnsubscribeRepository,
-  type NotificationEmailUnsubscribeStatus,
+  type NotificationEmailUnsubscribeOutcome,
   type NotificationListInput,
   type NotificationPageDto,
   type NotificationPreferenceRepository,
@@ -161,14 +161,15 @@ export class SupabaseNotificationPreferenceRepository implements NotificationPre
 /** The unsubscribe RPC's reply, or `data_unavailable` for anything else. */
 export function parseNotificationEmailUnsubscribeResponse(
   value: unknown,
-): NotificationEmailUnsubscribeStatus {
-  return parse(notificationEmailUnsubscribeResultSchema, value).status;
+): NotificationEmailUnsubscribeOutcome {
+  const result = parse(notificationEmailUnsubscribeResultSchema, value);
+  return { status: result.status, topic: result.topic ?? null };
 }
 
 export class SupabaseNotificationEmailUnsubscribeRepository implements NotificationEmailUnsubscribeRepository {
-  async unsubscribe(token: string): Promise<NotificationEmailUnsubscribeStatus> {
+  async unsubscribe(token: string): Promise<NotificationEmailUnsubscribeOutcome> {
     const candidate = notificationEmailUnsubscribeTokenSchema.safeParse(token);
-    if (!candidate.success) return "invalid";
+    if (!candidate.success) return { status: "invalid", topic: null };
     const { data, error } = await getNotificationsApi().rpc("unsubscribe_notification_email", {
       p_token: candidate.data,
     });

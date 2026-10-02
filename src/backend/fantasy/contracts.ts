@@ -249,7 +249,20 @@ export interface FantasyOverallStandingsInput {
   readonly limit?: number;
 }
 
+export const fixtureScoringSchema = z.object({
+  estimated: z.boolean().optional(),
+  teamIds: z.array(postgresUuidSchema).optional(),
+  fixtureId: postgresUuidSchema,
+  mode: z.enum(["full", "simple"]).nullable(),
+  pending: z.boolean(),
+  cutoffAt: z.string().nullable(),
+  reason: z.string().nullable(),
+  excludedCategories: z.array(z.string()),
+});
+
 export const fantasyPointsSchema = z.object({
+  incrementalScoring: z.boolean().optional(),
+  fixtureScoring: z.array(fixtureScoringSchema).optional(),
   teamId: postgresUuidSchema,
   gameweekId: postgresUuidSchema,
   gameweekStatus: z.enum(FANTASY_GAMEWEEK_STATUSES),
@@ -272,6 +285,7 @@ export const fantasyPointsSchema = z.object({
     .nullable(),
   players: z.array(
     z.object({
+      fixtureScoring: z.array(fixtureScoringSchema).optional(),
       fantasyPlayerId: postgresUuidSchema,
       slot: z.enum(["starter", "bench"]),
       slotOrder: z.number().int().positive(),
@@ -412,6 +426,7 @@ export type FantasyPlayerSeasonStatsDto = z.infer<typeof fantasyPlayerSeasonStat
  * one fixture for a club (a double gameweek). The RPC returns `[]`, never null.
  */
 export const fantasyPlayerGameweekHistoryEntrySchema = z.object({
+  fixtureScoring: z.array(fixtureScoringSchema).optional(),
   gameweekId: postgresUuidSchema,
   gameweekSequence: z.coerce.number().int().positive(),
   gameweekName: z.string().min(1),
@@ -448,6 +463,15 @@ export const fantasyTransferPreviewSchema = z.object({
 export type FantasyTransferPreviewDto = z.infer<typeof fantasyTransferPreviewSchema>;
 
 export const fantasyRulesSchema = z.object({
+  adaptiveScoring: z
+    .object({
+      fromGameweek: z.number().int(),
+      selectionDelayHours: z.literal(12),
+      scope: z.literal("fixture"),
+      lateModeUpgrade: z.literal(false),
+      estimatesFinalForRankings: z.boolean().optional(),
+    })
+    .optional(),
   seasonId: postgresUuidSchema,
   rulesetId: postgresUuidSchema,
   rulesetCode: z.string(),

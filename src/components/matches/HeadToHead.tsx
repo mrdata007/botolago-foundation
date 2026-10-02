@@ -8,7 +8,6 @@ import { ui, UiCard, UiTable, UiTBody, UiTD, UiTH, UiTHead, UiTR } from "@/compo
 import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { sharedPositions } from "@/lib/league-table";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
 import type { FootballSeason } from "@/services/football";
 import type { Club, Match, TableRow } from "@/types/domain";
@@ -20,6 +19,7 @@ import {
 } from "./head-to-head";
 import { listSeparator } from "./standings-copy";
 import { FormChips, StandingsNotes } from "./StandingsTable";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /**
  * The "Face à face" tab (A-H2H): where the two clubs stand, then how their
@@ -311,8 +311,7 @@ function MeetingRow({
   awayPalette: ClubPalette;
 }) {
   const { t, tr, lang } = useI18n();
-  const date = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-    timeZone: MATCH_TIME_ZONE,
+  const date = moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     day: "numeric",
     month: "short",
     year: "numeric",

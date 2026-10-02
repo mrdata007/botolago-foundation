@@ -38,11 +38,11 @@ import {
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
 import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 export const Route = createFileRoute("/fantasy/leagues/$leagueId")({
   head: () => fantasyHead("league"),
@@ -90,6 +90,7 @@ function LeagueDetailBody() {
   const standingsQ = useQuery({
     queryKey: key("standings", leagueId),
     queryFn: () => fantasyService.getLeagueStandings(leagueId),
+    refetchInterval: 60_000,
     enabled: screen.phase === "ready",
   });
   const gw = screen.gameweek?.number ?? null;
@@ -116,13 +117,12 @@ function LeagueDetailBody() {
 
   // BG-0100: pinned to the competition calendar, never the viewer's. A
   // formatter without `timeZone` disagrees with every other time on the page.
-  const updated = new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+  const updated = moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     weekday: "long",
     day: "numeric",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: MATCH_TIME_ZONE,
   }).format(new Date());
 
   const movementLabels = {

@@ -9,119 +9,87 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as PronosticsRouteImport } from './routes/pronostics'
-import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as NewsRouteImport } from './routes/news'
-import { Route as McpRouteImport } from './routes/mcp'
-import { Route as FantasyRouteImport } from './routes/fantasy'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as PronosticsIndexRouteImport } from './routes/pronostics.index'
-import { Route as PrizesIndexRouteImport } from './routes/prizes.index'
-import { Route as MatchesIndexRouteImport } from './routes/matches.index'
-import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
-import { Route as ClubsIndexRouteImport } from './routes/clubs.index'
-import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
-import { Route as PrizesTermsRouteImport } from './routes/prizes.terms'
-import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
-import { Route as MatchesStandingsRouteImport } from './routes/matches.standings'
-import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
-import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
-import { Route as FantasyTopPlayersRouteImport } from './routes/fantasy.top-players'
-import { Route as FantasyTeamRouteImport } from './routes/fantasy.team'
-import { Route as FantasyRulesRouteImport } from './routes/fantasy.rules'
-import { Route as FantasyRankingsRouteImport } from './routes/fantasy.rankings'
-import { Route as FantasyProfileRouteImport } from './routes/fantasy.profile'
-import { Route as FantasyPointsRouteImport } from './routes/fantasy.points'
-import { Route as FantasyPlayersRouteImport } from './routes/fantasy.players'
-import { Route as FantasyLeaguesRouteImport } from './routes/fantasy.leagues'
-import { Route as FantasyHelpRouteImport } from './routes/fantasy.help'
-import { Route as FantasyFixturesRouteImport } from './routes/fantasy.fixtures'
-import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
-import { Route as ClubsClubIdRouteImport } from './routes/clubs.$clubId'
-import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
-import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-password'
-import { Route as AuthRegisterRouteImport } from './routes/auth.register'
-import { Route as AuthProfileSetupRouteImport } from './routes/auth.profile-setup'
-import { Route as AuthMfaChallengeRouteImport } from './routes/auth.mfa-challenge'
-import { Route as AuthLoginRouteImport } from './routes/auth.login'
-import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AdminStaffRouteImport } from './routes/admin.staff'
-import { Route as AdminSecurityRouteImport } from './routes/admin.security'
-import { Route as AdminPrizesRouteImport } from './routes/admin.prizes'
-import { Route as AdminNewsRouteImport } from './routes/admin.news'
-import { Route as AdminAuditRouteImport } from './routes/admin.audit'
-import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
-import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as FantasyRouteImport } from './routes/fantasy'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as NewsRouteImport } from './routes/news'
+import { Route as PepitesRouteImport } from './routes/pepites'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PronosticsRouteImport } from './routes/pronostics'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
-import { Route as PronosticsLiguesIndexRouteImport } from './routes/pronostics.ligues.index'
-import { Route as PronosticsLiguesRejoindreRouteImport } from './routes/pronostics.ligues.rejoindre'
-import { Route as PronosticsLiguesLeagueIdRouteImport } from './routes/pronostics.ligues.$leagueId'
-import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.players.$playerId'
-import { Route as FantasyLeaguesJoinRouteImport } from './routes/fantasy.leagues.join'
-import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
-import { Route as AdminUsersUserIdRouteImport } from './routes/admin.users.$userId'
-import { Route as AdminStaffPrincipalIdRouteImport } from './routes/admin.staff.$principalId'
-import { Route as AdminNewsNewRouteImport } from './routes/admin.news.new'
-import { Route as AdminNewsArticleEditionIdRouteImport } from './routes/admin.news.$articleEditionId'
-import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
+import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as AdminNewsRouteImport } from './routes/admin.news'
+import { Route as AdminPepitesRouteImport } from './routes/admin.pepites'
+import { Route as AdminPrizesRouteImport } from './routes/admin.prizes'
+import { Route as AdminSecurityRouteImport } from './routes/admin.security'
+import { Route as AdminStaffRouteImport } from './routes/admin.staff'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
+import { Route as AuthMfaChallengeRouteImport } from './routes/auth.mfa-challenge'
+import { Route as AuthProfileSetupRouteImport } from './routes/auth.profile-setup'
+import { Route as AuthRegisterRouteImport } from './routes/auth.register'
+import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-password'
+import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
+import { Route as ClubsIndexRouteImport } from './routes/clubs.index'
+import { Route as ClubsClubIdRouteImport } from './routes/clubs.$clubId'
+import { Route as DevPlayerMappingsSampleRouteImport } from './routes/dev.player-mappings-sample'
+import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
+import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
+import { Route as FantasyFixturesRouteImport } from './routes/fantasy.fixtures'
+import { Route as FantasyHelpRouteImport } from './routes/fantasy.help'
+import { Route as FantasyLeaguesRouteImport } from './routes/fantasy.leagues'
+import { Route as FantasyPlayersRouteImport } from './routes/fantasy.players'
+import { Route as FantasyPointsRouteImport } from './routes/fantasy.points'
+import { Route as FantasyProfileRouteImport } from './routes/fantasy.profile'
+import { Route as FantasyRankingsRouteImport } from './routes/fantasy.rankings'
+import { Route as FantasyRulesRouteImport } from './routes/fantasy.rules'
+import { Route as FantasyTeamRouteImport } from './routes/fantasy.team'
+import { Route as FantasyTopPlayersRouteImport } from './routes/fantasy.top-players'
+import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
+import { Route as MatchesIndexRouteImport } from './routes/matches.index'
+import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
+import { Route as MatchesStandingsRouteImport } from './routes/matches.standings'
+import { Route as NewsArticleIdRouteImport } from './routes/news.$articleId'
+import { Route as PepitesIndexRouteImport } from './routes/pepites.index'
+import { Route as PepitesClassementRouteImport } from './routes/pepites.classement'
+import { Route as PepitesComparerRouteImport } from './routes/pepites.comparer'
+import { Route as PepitesMethodeRouteImport } from './routes/pepites.methode'
+import { Route as PepitesRevelationRouteImport } from './routes/pepites.revelation'
+import { Route as PrizesIndexRouteImport } from './routes/prizes.index'
+import { Route as PrizesTermsRouteImport } from './routes/prizes.terms'
+import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
+import { Route as PronosticsIndexRouteImport } from './routes/pronostics.index'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as AdminFootballPlayerMappingsRouteImport } from './routes/admin.football.player-mappings'
+import { Route as AdminNewsArticleEditionIdRouteImport } from './routes/admin.news.$articleEditionId'
+import { Route as AdminNewsNewRouteImport } from './routes/admin.news.new'
+import { Route as AdminPepitesIndexRouteImport } from './routes/admin.pepites.index'
+import { Route as AdminPepitesDonneesRouteImport } from './routes/admin.pepites.donnees'
+import { Route as AdminStaffPrincipalIdRouteImport } from './routes/admin.staff.$principalId'
+import { Route as AdminUsersUserIdRouteImport } from './routes/admin.users.$userId'
+import { Route as FantasyLeaguesLeagueIdRouteImport } from './routes/fantasy.leagues.$leagueId'
+import { Route as FantasyLeaguesJoinRouteImport } from './routes/fantasy.leagues.join'
+import { Route as FantasyPlayersPlayerIdRouteImport } from './routes/fantasy.players.$playerId'
+import { Route as PepitesJoueurPlayerIdRouteImport } from './routes/pepites.joueur.$playerId'
+import { Route as PepitesSemaineNRouteImport } from './routes/pepites.semaine.$n'
+import { Route as PronosticsLiguesIndexRouteImport } from './routes/pronostics.ligues.index'
+import { Route as PronosticsLiguesLeagueIdRouteImport } from './routes/pronostics.ligues.$leagueId'
+import { Route as PronosticsLiguesRejoindreRouteImport } from './routes/pronostics.ligues.rejoindre'
 
-const UnsubscribeRoute = UnsubscribeRouteImport.update({
-  id: '/unsubscribe',
-  path: '/unsubscribe',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PronosticsRoute = PronosticsRouteImport.update({
-  id: '/pronostics',
-  path: '/pronostics',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NewsRoute = NewsRouteImport.update({
-  id: '/news',
-  path: '/news',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FantasyRoute = FantasyRouteImport.update({
-  id: '/fantasy',
-  path: '/fantasy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -129,189 +97,76 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PronosticsIndexRoute = PronosticsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => PronosticsRoute,
-} as any)
-const PrizesIndexRoute = PrizesIndexRouteImport.update({
-  id: '/prizes/',
-  path: '/prizes/',
+const FantasyRoute = FantasyRouteImport.update({
+  id: '/fantasy',
+  path: '/fantasy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MatchesIndexRoute = MatchesIndexRouteImport.update({
-  id: '/matches/',
-  path: '/matches/',
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FantasyIndexRoute = FantasyIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const ClubsIndexRoute = ClubsIndexRouteImport.update({
-  id: '/clubs/',
-  path: '/clubs/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileSecurityRoute = ProfileSecurityRouteImport.update({
-  id: '/security',
-  path: '/security',
-  getParentRoute: () => ProfileRoute,
-} as any)
-const PrizesTermsRoute = PrizesTermsRouteImport.update({
-  id: '/prizes/terms',
-  path: '/prizes/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
-  id: '/$articleId',
-  path: '/$articleId',
-  getParentRoute: () => NewsRoute,
-} as any)
-const MatchesStandingsRoute = MatchesStandingsRouteImport.update({
-  id: '/matches/standings',
-  path: '/matches/standings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MatchesMatchIdRoute = MatchesMatchIdRouteImport.update({
-  id: '/matches/$matchId',
-  path: '/matches/$matchId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FantasyTransfersRoute = FantasyTransfersRouteImport.update({
-  id: '/transfers',
-  path: '/transfers',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyTopPlayersRoute = FantasyTopPlayersRouteImport.update({
-  id: '/top-players',
-  path: '/top-players',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyTeamRoute = FantasyTeamRouteImport.update({
-  id: '/team',
-  path: '/team',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyRulesRoute = FantasyRulesRouteImport.update({
-  id: '/rules',
-  path: '/rules',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyRankingsRoute = FantasyRankingsRouteImport.update({
-  id: '/rankings',
-  path: '/rankings',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyProfileRoute = FantasyProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyPointsRoute = FantasyPointsRouteImport.update({
-  id: '/points',
-  path: '/points',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyPlayersRoute = FantasyPlayersRouteImport.update({
-  id: '/players',
-  path: '/players',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyLeaguesRoute = FantasyLeaguesRouteImport.update({
-  id: '/leagues',
-  path: '/leagues',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyHelpRoute = FantasyHelpRouteImport.update({
-  id: '/help',
-  path: '/help',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyFixturesRoute = FantasyFixturesRouteImport.update({
-  id: '/fixtures',
-  path: '/fixtures',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const FantasyCreateRoute = FantasyCreateRouteImport.update({
-  id: '/create',
-  path: '/create',
-  getParentRoute: () => FantasyRoute,
-} as any)
-const ClubsClubIdRoute = ClubsClubIdRouteImport.update({
-  id: '/clubs/$clubId',
-  path: '/clubs/$clubId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthVerifyRoute = AuthVerifyRouteImport.update({
-  id: '/verify',
-  path: '/verify',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthUpdatePasswordRoute = AuthUpdatePasswordRouteImport.update({
-  id: '/update-password',
-  path: '/update-password',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthRegisterRoute = AuthRegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthProfileSetupRoute = AuthProfileSetupRouteImport.update({
-  id: '/profile-setup',
-  path: '/profile-setup',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthMfaChallengeRoute = AuthMfaChallengeRouteImport.update({
-  id: '/mfa-challenge',
-  path: '/mfa-challenge',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/callback',
-  path: '/callback',
-  getParentRoute: () => AuthRoute,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminStaffRoute = AdminStaffRouteImport.update({
-  id: '/staff',
-  path: '/staff',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSecurityRoute = AdminSecurityRouteImport.update({
-  id: '/security',
-  path: '/security',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPrizesRoute = AdminPrizesRouteImport.update({
-  id: '/prizes',
-  path: '/prizes',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminNewsRoute = AdminNewsRouteImport.update({
+const NewsRoute = NewsRouteImport.update({
   id: '/news',
   path: '/news',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PepitesRoute = PepitesRouteImport.update({
+  id: '/pepites',
+  path: '/pepites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PronosticsRoute = PronosticsRouteImport.update({
+  id: '/pronostics',
+  path: '/pronostics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
+  id: '/approvals',
+  path: '/approvals',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAuditRoute = AdminAuditRouteImport.update({
@@ -319,87 +174,311 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
-  id: '/approvals',
-  path: '/approvals',
+const AdminNewsRoute = AdminNewsRouteImport.update({
+  id: '/news',
+  path: '/news',
   getParentRoute: () => AdminRoute,
 } as any)
-const Char91DotwellKnownChar93OauthProtectedResourceRoute =
-  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
-    id: '/.well-known/oauth-protected-resource',
-    path: '/.well-known/oauth-protected-resource',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const Char91DotmcpChar93ListToolsRoute =
-  Char91DotmcpChar93ListToolsRouteImport.update({
-    id: '/.mcp/list-tools',
-    path: '/.mcp/list-tools',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const PronosticsLiguesIndexRoute = PronosticsLiguesIndexRouteImport.update({
-  id: '/ligues/',
-  path: '/ligues/',
+const AdminPepitesRoute = AdminPepitesRouteImport.update({
+  id: '/pepites',
+  path: '/pepites',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPrizesRoute = AdminPrizesRouteImport.update({
+  id: '/prizes',
+  path: '/prizes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSecurityRoute = AdminSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStaffRoute = AdminStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/callback',
+  path: '/callback',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthMfaChallengeRoute = AuthMfaChallengeRouteImport.update({
+  id: '/mfa-challenge',
+  path: '/mfa-challenge',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthProfileSetupRoute = AuthProfileSetupRouteImport.update({
+  id: '/profile-setup',
+  path: '/profile-setup',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthUpdatePasswordRoute = AuthUpdatePasswordRouteImport.update({
+  id: '/update-password',
+  path: '/update-password',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthVerifyRoute = AuthVerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => AuthRoute,
+} as any)
+const ClubsIndexRoute = ClubsIndexRouteImport.update({
+  id: '/clubs/',
+  path: '/clubs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClubsClubIdRoute = ClubsClubIdRouteImport.update({
+  id: '/clubs/$clubId',
+  path: '/clubs/$clubId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevPlayerMappingsSampleRoute = DevPlayerMappingsSampleRouteImport.update({
+  id: '/dev/player-mappings-sample',
+  path: '/dev/player-mappings-sample',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FantasyIndexRoute = FantasyIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyCreateRoute = FantasyCreateRouteImport.update({
+  id: '/create',
+  path: '/create',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyFixturesRoute = FantasyFixturesRouteImport.update({
+  id: '/fixtures',
+  path: '/fixtures',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyHelpRoute = FantasyHelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyLeaguesRoute = FantasyLeaguesRouteImport.update({
+  id: '/leagues',
+  path: '/leagues',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyPlayersRoute = FantasyPlayersRouteImport.update({
+  id: '/players',
+  path: '/players',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyPointsRoute = FantasyPointsRouteImport.update({
+  id: '/points',
+  path: '/points',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyProfileRoute = FantasyProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyRankingsRoute = FantasyRankingsRouteImport.update({
+  id: '/rankings',
+  path: '/rankings',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyRulesRoute = FantasyRulesRouteImport.update({
+  id: '/rules',
+  path: '/rules',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyTeamRoute = FantasyTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyTopPlayersRoute = FantasyTopPlayersRouteImport.update({
+  id: '/top-players',
+  path: '/top-players',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const FantasyTransfersRoute = FantasyTransfersRouteImport.update({
+  id: '/transfers',
+  path: '/transfers',
+  getParentRoute: () => FantasyRoute,
+} as any)
+const MatchesIndexRoute = MatchesIndexRouteImport.update({
+  id: '/matches/',
+  path: '/matches/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MatchesMatchIdRoute = MatchesMatchIdRouteImport.update({
+  id: '/matches/$matchId',
+  path: '/matches/$matchId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MatchesStandingsRoute = MatchesStandingsRouteImport.update({
+  id: '/matches/standings',
+  path: '/matches/standings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsArticleIdRoute = NewsArticleIdRouteImport.update({
+  id: '/$articleId',
+  path: '/$articleId',
+  getParentRoute: () => NewsRoute,
+} as any)
+const PepitesIndexRoute = PepitesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PepitesRoute,
+} as any)
+const PepitesClassementRoute = PepitesClassementRouteImport.update({
+  id: '/classement',
+  path: '/classement',
+  getParentRoute: () => PepitesRoute,
+} as any)
+const PepitesComparerRoute = PepitesComparerRouteImport.update({
+  id: '/comparer',
+  path: '/comparer',
+  getParentRoute: () => PepitesRoute,
+} as any)
+const PepitesMethodeRoute = PepitesMethodeRouteImport.update({
+  id: '/methode',
+  path: '/methode',
+  getParentRoute: () => PepitesRoute,
+} as any)
+const PepitesRevelationRoute = PepitesRevelationRouteImport.update({
+  id: '/revelation',
+  path: '/revelation',
+  getParentRoute: () => PepitesRoute,
+} as any)
+const PrizesIndexRoute = PrizesIndexRouteImport.update({
+  id: '/prizes/',
+  path: '/prizes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrizesTermsRoute = PrizesTermsRouteImport.update({
+  id: '/prizes/terms',
+  path: '/prizes/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileSecurityRoute = ProfileSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const PronosticsIndexRoute = PronosticsIndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => PronosticsRoute,
 } as any)
-const PronosticsLiguesRejoindreRoute =
-  PronosticsLiguesRejoindreRouteImport.update({
-    id: '/ligues/rejoindre',
-    path: '/ligues/rejoindre',
-    getParentRoute: () => PronosticsRoute,
-  } as any)
-const PronosticsLiguesLeagueIdRoute =
-  PronosticsLiguesLeagueIdRouteImport.update({
-    id: '/ligues/$leagueId',
-    path: '/ligues/$leagueId',
-    getParentRoute: () => PronosticsRoute,
-  } as any)
-const FantasyPlayersPlayerIdRoute = FantasyPlayersPlayerIdRouteImport.update({
-  id: '/$playerId',
-  path: '/$playerId',
-  getParentRoute: () => FantasyPlayersRoute,
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const FantasyLeaguesJoinRoute = FantasyLeaguesJoinRouteImport.update({
-  id: '/join',
-  path: '/join',
-  getParentRoute: () => FantasyLeaguesRoute,
-} as any)
-const FantasyLeaguesLeagueIdRoute = FantasyLeaguesLeagueIdRouteImport.update({
-  id: '/$leagueId',
-  path: '/$leagueId',
-  getParentRoute: () => FantasyLeaguesRoute,
-} as any)
-const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
-  id: '/$userId',
-  path: '/$userId',
-  getParentRoute: () => AdminUsersRoute,
-} as any)
-const AdminStaffPrincipalIdRoute = AdminStaffPrincipalIdRouteImport.update({
-  id: '/$principalId',
-  path: '/$principalId',
-  getParentRoute: () => AdminStaffRoute,
-} as any)
-const AdminNewsNewRoute = AdminNewsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AdminNewsRoute,
-} as any)
-const AdminNewsArticleEditionIdRoute =
-  AdminNewsArticleEditionIdRouteImport.update({
-    id: '/$articleEditionId',
-    path: '/$articleEditionId',
-    getParentRoute: () => AdminNewsRoute,
-  } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
     id: '/.mcp/invoke-tool/$tool',
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
-const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
-  id: '/.lovable/oauth/consent',
-  path: '/.lovable/oauth/consent',
-  getParentRoute: () => rootRouteImport,
+const AdminFootballPlayerMappingsRoute =
+  AdminFootballPlayerMappingsRouteImport.update({
+    id: '/football/player-mappings',
+    path: '/football/player-mappings',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminNewsArticleEditionIdRoute =
+  AdminNewsArticleEditionIdRouteImport.update({
+    id: '/$articleEditionId',
+    path: '/$articleEditionId',
+    getParentRoute: () => AdminNewsRoute,
+  } as any)
+const AdminNewsNewRoute = AdminNewsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AdminNewsRoute,
 } as any)
+const AdminPepitesIndexRoute = AdminPepitesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminPepitesRoute,
+} as any)
+const AdminPepitesDonneesRoute = AdminPepitesDonneesRouteImport.update({
+  id: '/donnees',
+  path: '/donnees',
+  getParentRoute: () => AdminPepitesRoute,
+} as any)
+const AdminStaffPrincipalIdRoute = AdminStaffPrincipalIdRouteImport.update({
+  id: '/$principalId',
+  path: '/$principalId',
+  getParentRoute: () => AdminStaffRoute,
+} as any)
+const AdminUsersUserIdRoute = AdminUsersUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => AdminUsersRoute,
+} as any)
+const FantasyLeaguesLeagueIdRoute = FantasyLeaguesLeagueIdRouteImport.update({
+  id: '/$leagueId',
+  path: '/$leagueId',
+  getParentRoute: () => FantasyLeaguesRoute,
+} as any)
+const FantasyLeaguesJoinRoute = FantasyLeaguesJoinRouteImport.update({
+  id: '/join',
+  path: '/join',
+  getParentRoute: () => FantasyLeaguesRoute,
+} as any)
+const FantasyPlayersPlayerIdRoute = FantasyPlayersPlayerIdRouteImport.update({
+  id: '/$playerId',
+  path: '/$playerId',
+  getParentRoute: () => FantasyPlayersRoute,
+} as any)
+const PepitesJoueurPlayerIdRoute = PepitesJoueurPlayerIdRouteImport.update({
+  id: '/joueur/$playerId',
+  path: '/joueur/$playerId',
+  getParentRoute: () => PepitesRoute,
+} as any)
+const PepitesSemaineNRoute = PepitesSemaineNRouteImport.update({
+  id: '/semaine/$n',
+  path: '/semaine/$n',
+  getParentRoute: () => PepitesRoute,
+} as any)
+const PronosticsLiguesIndexRoute = PronosticsLiguesIndexRouteImport.update({
+  id: '/ligues/',
+  path: '/ligues/',
+  getParentRoute: () => PronosticsRoute,
+} as any)
+const PronosticsLiguesLeagueIdRoute =
+  PronosticsLiguesLeagueIdRouteImport.update({
+    id: '/ligues/$leagueId',
+    path: '/ligues/$leagueId',
+    getParentRoute: () => PronosticsRoute,
+  } as any)
+const PronosticsLiguesRejoindreRoute =
+  PronosticsLiguesRejoindreRouteImport.update({
+    id: '/ligues/rejoindre',
+    path: '/ligues/rejoindre',
+    getParentRoute: () => PronosticsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -408,6 +487,7 @@ export interface FileRoutesByFullPath {
   '/fantasy': typeof FantasyRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
+  '/pepites': typeof PepitesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
@@ -419,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
+  '/admin/pepites': typeof AdminPepitesRouteWithChildren
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
@@ -432,6 +513,7 @@ export interface FileRoutesByFullPath {
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
+  '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -447,24 +529,34 @@ export interface FileRoutesByFullPath {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/pepites/classement': typeof PepitesClassementRoute
+  '/pepites/comparer': typeof PepitesComparerRoute
+  '/pepites/methode': typeof PepitesMethodeRoute
+  '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs/': typeof ClubsIndexRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
+  '/pepites/': typeof PepitesIndexRoute
   '/prizes/': typeof PrizesIndexRoute
   '/pronostics/': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/football/player-mappings': typeof AdminFootballPlayerMappingsRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
+  '/admin/pepites/donnees': typeof AdminPepitesDonneesRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/pepites/joueur/$playerId': typeof PepitesJoueurPlayerIdRoute
+  '/pepites/semaine/$n': typeof PepitesSemaineNRoute
   '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
   '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
+  '/admin/pepites/': typeof AdminPepitesIndexRoute
   '/pronostics/ligues/': typeof PronosticsLiguesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -496,6 +588,7 @@ export interface FileRoutesByTo {
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
+  '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -511,24 +604,34 @@ export interface FileRoutesByTo {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/pepites/classement': typeof PepitesClassementRoute
+  '/pepites/comparer': typeof PepitesComparerRoute
+  '/pepites/methode': typeof PepitesMethodeRoute
+  '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs': typeof ClubsIndexRoute
   '/fantasy': typeof FantasyIndexRoute
   '/matches': typeof MatchesIndexRoute
+  '/pepites': typeof PepitesIndexRoute
   '/prizes': typeof PrizesIndexRoute
   '/pronostics': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/football/player-mappings': typeof AdminFootballPlayerMappingsRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
+  '/admin/pepites/donnees': typeof AdminPepitesDonneesRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/pepites/joueur/$playerId': typeof PepitesJoueurPlayerIdRoute
+  '/pepites/semaine/$n': typeof PepitesSemaineNRoute
   '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
   '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
+  '/admin/pepites': typeof AdminPepitesIndexRoute
   '/pronostics/ligues': typeof PronosticsLiguesIndexRoute
 }
 export interface FileRoutesById {
@@ -539,6 +642,7 @@ export interface FileRoutesById {
   '/fantasy': typeof FantasyRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
+  '/pepites': typeof PepitesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
@@ -550,6 +654,7 @@ export interface FileRoutesById {
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
+  '/admin/pepites': typeof AdminPepitesRouteWithChildren
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
@@ -563,6 +668,7 @@ export interface FileRoutesById {
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
+  '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -578,24 +684,34 @@ export interface FileRoutesById {
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
+  '/pepites/classement': typeof PepitesClassementRoute
+  '/pepites/comparer': typeof PepitesComparerRoute
+  '/pepites/methode': typeof PepitesMethodeRoute
+  '/pepites/revelation': typeof PepitesRevelationRoute
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs/': typeof ClubsIndexRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
+  '/pepites/': typeof PepitesIndexRoute
   '/prizes/': typeof PrizesIndexRoute
   '/pronostics/': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/football/player-mappings': typeof AdminFootballPlayerMappingsRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
+  '/admin/pepites/donnees': typeof AdminPepitesDonneesRoute
   '/admin/staff/$principalId': typeof AdminStaffPrincipalIdRoute
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/fantasy/leagues/$leagueId': typeof FantasyLeaguesLeagueIdRoute
   '/fantasy/leagues/join': typeof FantasyLeaguesJoinRoute
   '/fantasy/players/$playerId': typeof FantasyPlayersPlayerIdRoute
+  '/pepites/joueur/$playerId': typeof PepitesJoueurPlayerIdRoute
+  '/pepites/semaine/$n': typeof PepitesSemaineNRoute
   '/pronostics/ligues/$leagueId': typeof PronosticsLiguesLeagueIdRoute
   '/pronostics/ligues/rejoindre': typeof PronosticsLiguesRejoindreRoute
+  '/admin/pepites/': typeof AdminPepitesIndexRoute
   '/pronostics/ligues/': typeof PronosticsLiguesIndexRoute
 }
 export interface FileRouteTypes {
@@ -607,6 +723,7 @@ export interface FileRouteTypes {
     | '/fantasy'
     | '/mcp'
     | '/news'
+    | '/pepites'
     | '/privacy'
     | '/profile'
     | '/pronostics'
@@ -618,6 +735,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/audit'
     | '/admin/news'
+    | '/admin/pepites'
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
@@ -631,6 +749,7 @@ export interface FileRouteTypes {
     | '/auth/update-password'
     | '/auth/verify'
     | '/clubs/$clubId'
+    | '/dev/player-mappings-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -646,24 +765,34 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
+    | '/pepites/classement'
+    | '/pepites/comparer'
+    | '/pepites/methode'
+    | '/pepites/revelation'
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs/'
     | '/fantasy/'
     | '/matches/'
+    | '/pepites/'
     | '/prizes/'
     | '/pronostics/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/football/player-mappings'
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
+    | '/admin/pepites/donnees'
     | '/admin/staff/$principalId'
     | '/admin/users/$userId'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
+    | '/pepites/joueur/$playerId'
+    | '/pepites/semaine/$n'
     | '/pronostics/ligues/$leagueId'
     | '/pronostics/ligues/rejoindre'
+    | '/admin/pepites/'
     | '/pronostics/ligues/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -695,6 +824,7 @@ export interface FileRouteTypes {
     | '/auth/update-password'
     | '/auth/verify'
     | '/clubs/$clubId'
+    | '/dev/player-mappings-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -710,24 +840,34 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
+    | '/pepites/classement'
+    | '/pepites/comparer'
+    | '/pepites/methode'
+    | '/pepites/revelation'
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs'
     | '/fantasy'
     | '/matches'
+    | '/pepites'
     | '/prizes'
     | '/pronostics'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/football/player-mappings'
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
+    | '/admin/pepites/donnees'
     | '/admin/staff/$principalId'
     | '/admin/users/$userId'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
+    | '/pepites/joueur/$playerId'
+    | '/pepites/semaine/$n'
     | '/pronostics/ligues/$leagueId'
     | '/pronostics/ligues/rejoindre'
+    | '/admin/pepites'
     | '/pronostics/ligues'
   id:
     | '__root__'
@@ -737,6 +877,7 @@ export interface FileRouteTypes {
     | '/fantasy'
     | '/mcp'
     | '/news'
+    | '/pepites'
     | '/privacy'
     | '/profile'
     | '/pronostics'
@@ -748,6 +889,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/audit'
     | '/admin/news'
+    | '/admin/pepites'
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
@@ -761,6 +903,7 @@ export interface FileRouteTypes {
     | '/auth/update-password'
     | '/auth/verify'
     | '/clubs/$clubId'
+    | '/dev/player-mappings-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -776,24 +919,34 @@ export interface FileRouteTypes {
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
+    | '/pepites/classement'
+    | '/pepites/comparer'
+    | '/pepites/methode'
+    | '/pepites/revelation'
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs/'
     | '/fantasy/'
     | '/matches/'
+    | '/pepites/'
     | '/prizes/'
     | '/pronostics/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/football/player-mappings'
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
+    | '/admin/pepites/donnees'
     | '/admin/staff/$principalId'
     | '/admin/users/$userId'
     | '/fantasy/leagues/$leagueId'
     | '/fantasy/leagues/join'
     | '/fantasy/players/$playerId'
+    | '/pepites/joueur/$playerId'
+    | '/pepites/semaine/$n'
     | '/pronostics/ligues/$leagueId'
     | '/pronostics/ligues/rejoindre'
+    | '/admin/pepites/'
     | '/pronostics/ligues/'
   fileRoutesById: FileRoutesById
 }
@@ -804,6 +957,7 @@ export interface RootRouteChildren {
   FantasyRoute: typeof FantasyRouteWithChildren
   McpRoute: typeof McpRoute
   NewsRoute: typeof NewsRouteWithChildren
+  PepitesRoute: typeof PepitesRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRouteWithChildren
   PronosticsRoute: typeof PronosticsRouteWithChildren
@@ -813,6 +967,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ClubsClubIdRoute: typeof ClubsClubIdRoute
+  DevPlayerMappingsSampleRoute: typeof DevPlayerMappingsSampleRoute
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
   MatchesStandingsRoute: typeof MatchesStandingsRoute
   PrizesTermsRoute: typeof PrizesTermsRoute
@@ -825,74 +980,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/unsubscribe': {
-      id: '/unsubscribe'
-      path: '/unsubscribe'
-      fullPath: '/unsubscribe'
-      preLoaderRoute: typeof UnsubscribeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pronostics': {
-      id: '/pronostics'
-      path: '/pronostics'
-      fullPath: '/pronostics'
-      preLoaderRoute: typeof PronosticsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/news': {
-      id: '/news'
-      path: '/news'
-      fullPath: '/news'
-      preLoaderRoute: typeof NewsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/fantasy': {
-      id: '/fantasy'
-      path: '/fantasy'
-      fullPath: '/fantasy'
-      preLoaderRoute: typeof FantasyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -902,284 +994,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pronostics/': {
-      id: '/pronostics/'
-      path: '/'
-      fullPath: '/pronostics/'
-      preLoaderRoute: typeof PronosticsIndexRouteImport
-      parentRoute: typeof PronosticsRoute
-    }
-    '/prizes/': {
-      id: '/prizes/'
-      path: '/prizes'
-      fullPath: '/prizes/'
-      preLoaderRoute: typeof PrizesIndexRouteImport
+    '/fantasy': {
+      id: '/fantasy'
+      path: '/fantasy'
+      fullPath: '/fantasy'
+      preLoaderRoute: typeof FantasyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/matches/': {
-      id: '/matches/'
-      path: '/matches'
-      fullPath: '/matches/'
-      preLoaderRoute: typeof MatchesIndexRouteImport
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/fantasy/': {
-      id: '/fantasy/'
-      path: '/'
-      fullPath: '/fantasy/'
-      preLoaderRoute: typeof FantasyIndexRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/clubs/': {
-      id: '/clubs/'
-      path: '/clubs'
-      fullPath: '/clubs/'
-      preLoaderRoute: typeof ClubsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile/security': {
-      id: '/profile/security'
-      path: '/security'
-      fullPath: '/profile/security'
-      preLoaderRoute: typeof ProfileSecurityRouteImport
-      parentRoute: typeof ProfileRoute
-    }
-    '/prizes/terms': {
-      id: '/prizes/terms'
-      path: '/prizes/terms'
-      fullPath: '/prizes/terms'
-      preLoaderRoute: typeof PrizesTermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/news/$articleId': {
-      id: '/news/$articleId'
-      path: '/$articleId'
-      fullPath: '/news/$articleId'
-      preLoaderRoute: typeof NewsArticleIdRouteImport
-      parentRoute: typeof NewsRoute
-    }
-    '/matches/standings': {
-      id: '/matches/standings'
-      path: '/matches/standings'
-      fullPath: '/matches/standings'
-      preLoaderRoute: typeof MatchesStandingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/matches/$matchId': {
-      id: '/matches/$matchId'
-      path: '/matches/$matchId'
-      fullPath: '/matches/$matchId'
-      preLoaderRoute: typeof MatchesMatchIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/fantasy/transfers': {
-      id: '/fantasy/transfers'
-      path: '/transfers'
-      fullPath: '/fantasy/transfers'
-      preLoaderRoute: typeof FantasyTransfersRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/top-players': {
-      id: '/fantasy/top-players'
-      path: '/top-players'
-      fullPath: '/fantasy/top-players'
-      preLoaderRoute: typeof FantasyTopPlayersRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/team': {
-      id: '/fantasy/team'
-      path: '/team'
-      fullPath: '/fantasy/team'
-      preLoaderRoute: typeof FantasyTeamRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/rules': {
-      id: '/fantasy/rules'
-      path: '/rules'
-      fullPath: '/fantasy/rules'
-      preLoaderRoute: typeof FantasyRulesRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/rankings': {
-      id: '/fantasy/rankings'
-      path: '/rankings'
-      fullPath: '/fantasy/rankings'
-      preLoaderRoute: typeof FantasyRankingsRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/profile': {
-      id: '/fantasy/profile'
-      path: '/profile'
-      fullPath: '/fantasy/profile'
-      preLoaderRoute: typeof FantasyProfileRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/points': {
-      id: '/fantasy/points'
-      path: '/points'
-      fullPath: '/fantasy/points'
-      preLoaderRoute: typeof FantasyPointsRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/players': {
-      id: '/fantasy/players'
-      path: '/players'
-      fullPath: '/fantasy/players'
-      preLoaderRoute: typeof FantasyPlayersRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/leagues': {
-      id: '/fantasy/leagues'
-      path: '/leagues'
-      fullPath: '/fantasy/leagues'
-      preLoaderRoute: typeof FantasyLeaguesRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/help': {
-      id: '/fantasy/help'
-      path: '/help'
-      fullPath: '/fantasy/help'
-      preLoaderRoute: typeof FantasyHelpRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/fixtures': {
-      id: '/fantasy/fixtures'
-      path: '/fixtures'
-      fullPath: '/fantasy/fixtures'
-      preLoaderRoute: typeof FantasyFixturesRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/fantasy/create': {
-      id: '/fantasy/create'
-      path: '/create'
-      fullPath: '/fantasy/create'
-      preLoaderRoute: typeof FantasyCreateRouteImport
-      parentRoute: typeof FantasyRoute
-    }
-    '/clubs/$clubId': {
-      id: '/clubs/$clubId'
-      path: '/clubs/$clubId'
-      fullPath: '/clubs/$clubId'
-      preLoaderRoute: typeof ClubsClubIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/verify': {
-      id: '/auth/verify'
-      path: '/verify'
-      fullPath: '/auth/verify'
-      preLoaderRoute: typeof AuthVerifyRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/update-password': {
-      id: '/auth/update-password'
-      path: '/update-password'
-      fullPath: '/auth/update-password'
-      preLoaderRoute: typeof AuthUpdatePasswordRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/register': {
-      id: '/auth/register'
-      path: '/register'
-      fullPath: '/auth/register'
-      preLoaderRoute: typeof AuthRegisterRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/profile-setup': {
-      id: '/auth/profile-setup'
-      path: '/profile-setup'
-      fullPath: '/auth/profile-setup'
-      preLoaderRoute: typeof AuthProfileSetupRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/mfa-challenge': {
-      id: '/auth/mfa-challenge'
-      path: '/mfa-challenge'
-      fullPath: '/auth/mfa-challenge'
-      preLoaderRoute: typeof AuthMfaChallengeRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/login': {
-      id: '/auth/login'
-      path: '/login'
-      fullPath: '/auth/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/forgot-password': {
-      id: '/auth/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/auth/forgot-password'
-      preLoaderRoute: typeof AuthForgotPasswordRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof AuthRoute
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/staff': {
-      id: '/admin/staff'
-      path: '/staff'
-      fullPath: '/admin/staff'
-      preLoaderRoute: typeof AdminStaffRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/security': {
-      id: '/admin/security'
-      path: '/security'
-      fullPath: '/admin/security'
-      preLoaderRoute: typeof AdminSecurityRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/prizes': {
-      id: '/admin/prizes'
-      path: '/prizes'
-      fullPath: '/admin/prizes'
-      preLoaderRoute: typeof AdminPrizesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/news': {
-      id: '/admin/news'
+    '/news': {
+      id: '/news'
       path: '/news'
-      fullPath: '/admin/news'
-      preLoaderRoute: typeof AdminNewsRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/audit': {
-      id: '/admin/audit'
-      path: '/audit'
-      fullPath: '/admin/audit'
-      preLoaderRoute: typeof AdminAuditRouteImport
-      parentRoute: typeof AdminRoute
+    '/pepites': {
+      id: '/pepites'
+      path: '/pepites'
+      fullPath: '/pepites'
+      preLoaderRoute: typeof PepitesRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/approvals': {
-      id: '/admin/approvals'
-      path: '/approvals'
-      fullPath: '/admin/approvals'
-      preLoaderRoute: typeof AdminApprovalsRouteImport
-      parentRoute: typeof AdminRoute
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/.well-known/oauth-protected-resource': {
-      id: '/.well-known/oauth-protected-resource'
-      path: '/.well-known/oauth-protected-resource'
-      fullPath: '/.well-known/oauth-protected-resource'
-      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pronostics': {
+      id: '/pronostics'
+      path: '/pronostics'
+      fullPath: '/pronostics'
+      preLoaderRoute: typeof PronosticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.mcp/list-tools': {
@@ -1189,18 +1078,431 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/approvals': {
+      id: '/admin/approvals'
+      path: '/approvals'
+      fullPath: '/admin/approvals'
+      preLoaderRoute: typeof AdminApprovalsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/news': {
+      id: '/admin/news'
+      path: '/news'
+      fullPath: '/admin/news'
+      preLoaderRoute: typeof AdminNewsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/pepites': {
+      id: '/admin/pepites'
+      path: '/pepites'
+      fullPath: '/admin/pepites'
+      preLoaderRoute: typeof AdminPepitesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/prizes': {
+      id: '/admin/prizes'
+      path: '/prizes'
+      fullPath: '/admin/prizes'
+      preLoaderRoute: typeof AdminPrizesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/security': {
+      id: '/admin/security'
+      path: '/security'
+      fullPath: '/admin/security'
+      preLoaderRoute: typeof AdminSecurityRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/staff': {
+      id: '/admin/staff'
+      path: '/staff'
+      fullPath: '/admin/staff'
+      preLoaderRoute: typeof AdminStaffRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/mfa-challenge': {
+      id: '/auth/mfa-challenge'
+      path: '/mfa-challenge'
+      fullPath: '/auth/mfa-challenge'
+      preLoaderRoute: typeof AuthMfaChallengeRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/profile-setup': {
+      id: '/auth/profile-setup'
+      path: '/profile-setup'
+      fullPath: '/auth/profile-setup'
+      preLoaderRoute: typeof AuthProfileSetupRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/register': {
+      id: '/auth/register'
+      path: '/register'
+      fullPath: '/auth/register'
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/update-password': {
+      id: '/auth/update-password'
+      path: '/update-password'
+      fullPath: '/auth/update-password'
+      preLoaderRoute: typeof AuthUpdatePasswordRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/auth/verify': {
+      id: '/auth/verify'
+      path: '/verify'
+      fullPath: '/auth/verify'
+      preLoaderRoute: typeof AuthVerifyRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/clubs/': {
+      id: '/clubs/'
+      path: '/clubs'
+      fullPath: '/clubs/'
+      preLoaderRoute: typeof ClubsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clubs/$clubId': {
+      id: '/clubs/$clubId'
+      path: '/clubs/$clubId'
+      fullPath: '/clubs/$clubId'
+      preLoaderRoute: typeof ClubsClubIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/player-mappings-sample': {
+      id: '/dev/player-mappings-sample'
+      path: '/dev/player-mappings-sample'
+      fullPath: '/dev/player-mappings-sample'
+      preLoaderRoute: typeof DevPlayerMappingsSampleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fantasy/': {
+      id: '/fantasy/'
+      path: '/'
+      fullPath: '/fantasy/'
+      preLoaderRoute: typeof FantasyIndexRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/create': {
+      id: '/fantasy/create'
+      path: '/create'
+      fullPath: '/fantasy/create'
+      preLoaderRoute: typeof FantasyCreateRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/fixtures': {
+      id: '/fantasy/fixtures'
+      path: '/fixtures'
+      fullPath: '/fantasy/fixtures'
+      preLoaderRoute: typeof FantasyFixturesRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/help': {
+      id: '/fantasy/help'
+      path: '/help'
+      fullPath: '/fantasy/help'
+      preLoaderRoute: typeof FantasyHelpRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/leagues': {
+      id: '/fantasy/leagues'
+      path: '/leagues'
+      fullPath: '/fantasy/leagues'
+      preLoaderRoute: typeof FantasyLeaguesRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/players': {
+      id: '/fantasy/players'
+      path: '/players'
+      fullPath: '/fantasy/players'
+      preLoaderRoute: typeof FantasyPlayersRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/points': {
+      id: '/fantasy/points'
+      path: '/points'
+      fullPath: '/fantasy/points'
+      preLoaderRoute: typeof FantasyPointsRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/profile': {
+      id: '/fantasy/profile'
+      path: '/profile'
+      fullPath: '/fantasy/profile'
+      preLoaderRoute: typeof FantasyProfileRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/rankings': {
+      id: '/fantasy/rankings'
+      path: '/rankings'
+      fullPath: '/fantasy/rankings'
+      preLoaderRoute: typeof FantasyRankingsRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/rules': {
+      id: '/fantasy/rules'
+      path: '/rules'
+      fullPath: '/fantasy/rules'
+      preLoaderRoute: typeof FantasyRulesRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/team': {
+      id: '/fantasy/team'
+      path: '/team'
+      fullPath: '/fantasy/team'
+      preLoaderRoute: typeof FantasyTeamRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/top-players': {
+      id: '/fantasy/top-players'
+      path: '/top-players'
+      fullPath: '/fantasy/top-players'
+      preLoaderRoute: typeof FantasyTopPlayersRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/fantasy/transfers': {
+      id: '/fantasy/transfers'
+      path: '/transfers'
+      fullPath: '/fantasy/transfers'
+      preLoaderRoute: typeof FantasyTransfersRouteImport
+      parentRoute: typeof FantasyRoute
+    }
+    '/matches/': {
+      id: '/matches/'
+      path: '/matches'
+      fullPath: '/matches/'
+      preLoaderRoute: typeof MatchesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/matches/$matchId': {
+      id: '/matches/$matchId'
+      path: '/matches/$matchId'
+      fullPath: '/matches/$matchId'
+      preLoaderRoute: typeof MatchesMatchIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/matches/standings': {
+      id: '/matches/standings'
+      path: '/matches/standings'
+      fullPath: '/matches/standings'
+      preLoaderRoute: typeof MatchesStandingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news/$articleId': {
+      id: '/news/$articleId'
+      path: '/$articleId'
+      fullPath: '/news/$articleId'
+      preLoaderRoute: typeof NewsArticleIdRouteImport
+      parentRoute: typeof NewsRoute
+    }
+    '/pepites/': {
+      id: '/pepites/'
+      path: '/'
+      fullPath: '/pepites/'
+      preLoaderRoute: typeof PepitesIndexRouteImport
+      parentRoute: typeof PepitesRoute
+    }
+    '/pepites/classement': {
+      id: '/pepites/classement'
+      path: '/classement'
+      fullPath: '/pepites/classement'
+      preLoaderRoute: typeof PepitesClassementRouteImport
+      parentRoute: typeof PepitesRoute
+    }
+    '/pepites/comparer': {
+      id: '/pepites/comparer'
+      path: '/comparer'
+      fullPath: '/pepites/comparer'
+      preLoaderRoute: typeof PepitesComparerRouteImport
+      parentRoute: typeof PepitesRoute
+    }
+    '/pepites/methode': {
+      id: '/pepites/methode'
+      path: '/methode'
+      fullPath: '/pepites/methode'
+      preLoaderRoute: typeof PepitesMethodeRouteImport
+      parentRoute: typeof PepitesRoute
+    }
+    '/pepites/revelation': {
+      id: '/pepites/revelation'
+      path: '/revelation'
+      fullPath: '/pepites/revelation'
+      preLoaderRoute: typeof PepitesRevelationRouteImport
+      parentRoute: typeof PepitesRoute
+    }
+    '/prizes/': {
+      id: '/prizes/'
+      path: '/prizes'
+      fullPath: '/prizes/'
+      preLoaderRoute: typeof PrizesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prizes/terms': {
+      id: '/prizes/terms'
+      path: '/prizes/terms'
+      fullPath: '/prizes/terms'
+      preLoaderRoute: typeof PrizesTermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/security': {
+      id: '/profile/security'
+      path: '/security'
+      fullPath: '/profile/security'
+      preLoaderRoute: typeof ProfileSecurityRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/pronostics/': {
+      id: '/pronostics/'
+      path: '/'
+      fullPath: '/pronostics/'
+      preLoaderRoute: typeof PronosticsIndexRouteImport
+      parentRoute: typeof PronosticsRoute
+    }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/football/player-mappings': {
+      id: '/admin/football/player-mappings'
+      path: '/football/player-mappings'
+      fullPath: '/admin/football/player-mappings'
+      preLoaderRoute: typeof AdminFootballPlayerMappingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/news/$articleEditionId': {
+      id: '/admin/news/$articleEditionId'
+      path: '/$articleEditionId'
+      fullPath: '/admin/news/$articleEditionId'
+      preLoaderRoute: typeof AdminNewsArticleEditionIdRouteImport
+      parentRoute: typeof AdminNewsRoute
+    }
+    '/admin/news/new': {
+      id: '/admin/news/new'
+      path: '/new'
+      fullPath: '/admin/news/new'
+      preLoaderRoute: typeof AdminNewsNewRouteImport
+      parentRoute: typeof AdminNewsRoute
+    }
+    '/admin/pepites/': {
+      id: '/admin/pepites/'
+      path: '/'
+      fullPath: '/admin/pepites/'
+      preLoaderRoute: typeof AdminPepitesIndexRouteImport
+      parentRoute: typeof AdminPepitesRoute
+    }
+    '/admin/pepites/donnees': {
+      id: '/admin/pepites/donnees'
+      path: '/donnees'
+      fullPath: '/admin/pepites/donnees'
+      preLoaderRoute: typeof AdminPepitesDonneesRouteImport
+      parentRoute: typeof AdminPepitesRoute
+    }
+    '/admin/staff/$principalId': {
+      id: '/admin/staff/$principalId'
+      path: '/$principalId'
+      fullPath: '/admin/staff/$principalId'
+      preLoaderRoute: typeof AdminStaffPrincipalIdRouteImport
+      parentRoute: typeof AdminStaffRoute
+    }
+    '/admin/users/$userId': {
+      id: '/admin/users/$userId'
+      path: '/$userId'
+      fullPath: '/admin/users/$userId'
+      preLoaderRoute: typeof AdminUsersUserIdRouteImport
+      parentRoute: typeof AdminUsersRoute
+    }
+    '/fantasy/leagues/$leagueId': {
+      id: '/fantasy/leagues/$leagueId'
+      path: '/$leagueId'
+      fullPath: '/fantasy/leagues/$leagueId'
+      preLoaderRoute: typeof FantasyLeaguesLeagueIdRouteImport
+      parentRoute: typeof FantasyLeaguesRoute
+    }
+    '/fantasy/leagues/join': {
+      id: '/fantasy/leagues/join'
+      path: '/join'
+      fullPath: '/fantasy/leagues/join'
+      preLoaderRoute: typeof FantasyLeaguesJoinRouteImport
+      parentRoute: typeof FantasyLeaguesRoute
+    }
+    '/fantasy/players/$playerId': {
+      id: '/fantasy/players/$playerId'
+      path: '/$playerId'
+      fullPath: '/fantasy/players/$playerId'
+      preLoaderRoute: typeof FantasyPlayersPlayerIdRouteImport
+      parentRoute: typeof FantasyPlayersRoute
+    }
+    '/pepites/joueur/$playerId': {
+      id: '/pepites/joueur/$playerId'
+      path: '/joueur/$playerId'
+      fullPath: '/pepites/joueur/$playerId'
+      preLoaderRoute: typeof PepitesJoueurPlayerIdRouteImport
+      parentRoute: typeof PepitesRoute
+    }
+    '/pepites/semaine/$n': {
+      id: '/pepites/semaine/$n'
+      path: '/semaine/$n'
+      fullPath: '/pepites/semaine/$n'
+      preLoaderRoute: typeof PepitesSemaineNRouteImport
+      parentRoute: typeof PepitesRoute
+    }
     '/pronostics/ligues/': {
       id: '/pronostics/ligues/'
       path: '/ligues'
       fullPath: '/pronostics/ligues/'
       preLoaderRoute: typeof PronosticsLiguesIndexRouteImport
-      parentRoute: typeof PronosticsRoute
-    }
-    '/pronostics/ligues/rejoindre': {
-      id: '/pronostics/ligues/rejoindre'
-      path: '/ligues/rejoindre'
-      fullPath: '/pronostics/ligues/rejoindre'
-      preLoaderRoute: typeof PronosticsLiguesRejoindreRouteImport
       parentRoute: typeof PronosticsRoute
     }
     '/pronostics/ligues/$leagueId': {
@@ -1210,68 +1512,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PronosticsLiguesLeagueIdRouteImport
       parentRoute: typeof PronosticsRoute
     }
-    '/fantasy/players/$playerId': {
-      id: '/fantasy/players/$playerId'
-      path: '/$playerId'
-      fullPath: '/fantasy/players/$playerId'
-      preLoaderRoute: typeof FantasyPlayersPlayerIdRouteImport
-      parentRoute: typeof FantasyPlayersRoute
-    }
-    '/fantasy/leagues/join': {
-      id: '/fantasy/leagues/join'
-      path: '/join'
-      fullPath: '/fantasy/leagues/join'
-      preLoaderRoute: typeof FantasyLeaguesJoinRouteImport
-      parentRoute: typeof FantasyLeaguesRoute
-    }
-    '/fantasy/leagues/$leagueId': {
-      id: '/fantasy/leagues/$leagueId'
-      path: '/$leagueId'
-      fullPath: '/fantasy/leagues/$leagueId'
-      preLoaderRoute: typeof FantasyLeaguesLeagueIdRouteImport
-      parentRoute: typeof FantasyLeaguesRoute
-    }
-    '/admin/users/$userId': {
-      id: '/admin/users/$userId'
-      path: '/$userId'
-      fullPath: '/admin/users/$userId'
-      preLoaderRoute: typeof AdminUsersUserIdRouteImport
-      parentRoute: typeof AdminUsersRoute
-    }
-    '/admin/staff/$principalId': {
-      id: '/admin/staff/$principalId'
-      path: '/$principalId'
-      fullPath: '/admin/staff/$principalId'
-      preLoaderRoute: typeof AdminStaffPrincipalIdRouteImport
-      parentRoute: typeof AdminStaffRoute
-    }
-    '/admin/news/new': {
-      id: '/admin/news/new'
-      path: '/new'
-      fullPath: '/admin/news/new'
-      preLoaderRoute: typeof AdminNewsNewRouteImport
-      parentRoute: typeof AdminNewsRoute
-    }
-    '/admin/news/$articleEditionId': {
-      id: '/admin/news/$articleEditionId'
-      path: '/$articleEditionId'
-      fullPath: '/admin/news/$articleEditionId'
-      preLoaderRoute: typeof AdminNewsArticleEditionIdRouteImport
-      parentRoute: typeof AdminNewsRoute
-    }
-    '/.mcp/invoke-tool/$tool': {
-      id: '/.mcp/invoke-tool/$tool'
-      path: '/.mcp/invoke-tool/$tool'
-      fullPath: '/.mcp/invoke-tool/$tool'
-      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/.lovable/oauth/consent': {
-      id: '/.lovable/oauth/consent'
-      path: '/.lovable/oauth/consent'
-      fullPath: '/.lovable/oauth/consent'
-      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
-      parentRoute: typeof rootRouteImport
+    '/pronostics/ligues/rejoindre': {
+      id: '/pronostics/ligues/rejoindre'
+      path: '/ligues/rejoindre'
+      fullPath: '/pronostics/ligues/rejoindre'
+      preLoaderRoute: typeof PronosticsLiguesRejoindreRouteImport
+      parentRoute: typeof PronosticsRoute
     }
   }
 }
@@ -1288,6 +1534,20 @@ const AdminNewsRouteChildren: AdminNewsRouteChildren = {
 
 const AdminNewsRouteWithChildren = AdminNewsRoute._addFileChildren(
   AdminNewsRouteChildren,
+)
+
+interface AdminPepitesRouteChildren {
+  AdminPepitesDonneesRoute: typeof AdminPepitesDonneesRoute
+  AdminPepitesIndexRoute: typeof AdminPepitesIndexRoute
+}
+
+const AdminPepitesRouteChildren: AdminPepitesRouteChildren = {
+  AdminPepitesDonneesRoute: AdminPepitesDonneesRoute,
+  AdminPepitesIndexRoute: AdminPepitesIndexRoute,
+}
+
+const AdminPepitesRouteWithChildren = AdminPepitesRoute._addFileChildren(
+  AdminPepitesRouteChildren,
 )
 
 interface AdminStaffRouteChildren {
@@ -1318,20 +1578,24 @@ interface AdminRouteChildren {
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminAuditRoute: typeof AdminAuditRoute
   AdminNewsRoute: typeof AdminNewsRouteWithChildren
+  AdminPepitesRoute: typeof AdminPepitesRouteWithChildren
   AdminPrizesRoute: typeof AdminPrizesRoute
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminStaffRoute: typeof AdminStaffRouteWithChildren
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
+  AdminFootballPlayerMappingsRoute: typeof AdminFootballPlayerMappingsRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminAuditRoute: AdminAuditRoute,
   AdminNewsRoute: AdminNewsRouteWithChildren,
+  AdminPepitesRoute: AdminPepitesRouteWithChildren,
   AdminPrizesRoute: AdminPrizesRoute,
   AdminSecurityRoute: AdminSecurityRoute,
   AdminStaffRoute: AdminStaffRouteWithChildren,
   AdminUsersRoute: AdminUsersRouteWithChildren,
+  AdminFootballPlayerMappingsRoute: AdminFootballPlayerMappingsRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -1431,6 +1695,29 @@ const NewsRouteChildren: NewsRouteChildren = {
 
 const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 
+interface PepitesRouteChildren {
+  PepitesClassementRoute: typeof PepitesClassementRoute
+  PepitesComparerRoute: typeof PepitesComparerRoute
+  PepitesMethodeRoute: typeof PepitesMethodeRoute
+  PepitesRevelationRoute: typeof PepitesRevelationRoute
+  PepitesIndexRoute: typeof PepitesIndexRoute
+  PepitesJoueurPlayerIdRoute: typeof PepitesJoueurPlayerIdRoute
+  PepitesSemaineNRoute: typeof PepitesSemaineNRoute
+}
+
+const PepitesRouteChildren: PepitesRouteChildren = {
+  PepitesClassementRoute: PepitesClassementRoute,
+  PepitesComparerRoute: PepitesComparerRoute,
+  PepitesMethodeRoute: PepitesMethodeRoute,
+  PepitesRevelationRoute: PepitesRevelationRoute,
+  PepitesIndexRoute: PepitesIndexRoute,
+  PepitesJoueurPlayerIdRoute: PepitesJoueurPlayerIdRoute,
+  PepitesSemaineNRoute: PepitesSemaineNRoute,
+}
+
+const PepitesRouteWithChildren =
+  PepitesRoute._addFileChildren(PepitesRouteChildren)
+
 interface ProfileRouteChildren {
   ProfileSecurityRoute: typeof ProfileSecurityRoute
 }
@@ -1467,6 +1754,7 @@ const rootRouteChildren: RootRouteChildren = {
   FantasyRoute: FantasyRouteWithChildren,
   McpRoute: McpRoute,
   NewsRoute: NewsRouteWithChildren,
+  PepitesRoute: PepitesRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRouteWithChildren,
   PronosticsRoute: PronosticsRouteWithChildren,
@@ -1477,6 +1765,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ClubsClubIdRoute: ClubsClubIdRoute,
+  DevPlayerMappingsSampleRoute: DevPlayerMappingsSampleRoute,
   MatchesMatchIdRoute: MatchesMatchIdRoute,
   MatchesStandingsRoute: MatchesStandingsRoute,
   PrizesTermsRoute: PrizesTermsRoute,

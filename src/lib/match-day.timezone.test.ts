@@ -40,10 +40,10 @@ function inZone(zone: string, body: string): unknown {
   return JSON.parse(proc.stdout.toString());
 }
 
-/** 20:00 in Casablanca on 24 Sep 2026 — an ordinary evening kickoff. */
-const EVENING_KICKOFF = "2026-09-24T20:00:00+01:00";
+/** 20:00 in Casablanca on 10 Sep 2026 — an ordinary evening kickoff. */
+const EVENING_KICKOFF = "2026-09-10T20:00:00+01:00";
 /** The provider's UTC-midnight placeholder for an unconfirmed hour. */
-const PLACEHOLDER_KICKOFF = "2026-09-24T00:00:00Z";
+const PLACEHOLDER_KICKOFF = "2026-09-10T00:00:00Z";
 
 const VIEWER_ZONES = [
   "UTC",
@@ -52,6 +52,20 @@ const VIEWER_ZONES = [
   "Asia/Tokyo", // UTC+9: an evening kickoff is the next morning
   "Pacific/Auckland", // UTC+12/+13: furthest ahead
 ];
+
+describe("from 2026-09-20 the competition calendar is UTC (Morocco is UTC+0 all year)", () => {
+  it("files 23:30Z on the 25th on the 25th, where UTC+1 would have said the 26th", () => {
+    expect(matchDayKey(new Date("2026-09-25T23:30:00Z"))).toBe("2026-09-25");
+    expect(matchDayKey(new Date("2026-09-26T00:30:00Z"))).toBe("2026-09-26");
+  });
+
+  it("walks calendar days in UTC after the change", () => {
+    const start = new Date("2026-10-02T12:00:00Z");
+    expect(addMatchDays(start, 1).toISOString()).toBe("2026-10-03T00:00:00.000Z");
+    expect(startOfMatchDay(start).toISOString()).toBe("2026-10-02T00:00:00.000Z");
+    expect(matchDayFromKey("2026-10-02").toISOString()).toBe("2026-10-02T00:00:00.000Z");
+  });
+});
 
 describe("BG-0100: the competition calendar is the same for every viewer", () => {
   it("is not a no-op — a browser-local day really does disagree with the competition day", () => {
@@ -63,20 +77,20 @@ describe("BG-0100: the competition calendar is the same for every viewer", () =>
       return localDayOf(new Date(${JSON.stringify(EVENING_KICKOFF)}));
     `,
     );
-    expect(local).toBe("2026-09-25");
-    expect(matchDayKey(new Date(EVENING_KICKOFF))).toBe("2026-09-24");
+    expect(local).toBe("2026-09-11");
+    expect(matchDayKey(new Date(EVENING_KICKOFF))).toBe("2026-09-10");
   });
 
   for (const zone of VIEWER_ZONES) {
-    it(`files the evening kickoff on 2026-09-24 for a viewer in ${zone}`, () => {
+    it(`files the evening kickoff on 2026-09-10 for a viewer in ${zone}`, () => {
       const seen = inZone(
         zone,
         `
         const kickoff = new Date(${JSON.stringify(EVENING_KICKOFF)});
         return {
           key: matchDayKey(kickoff),
-          sameAsSelected: isSameMatchDay(kickoff, matchDayFromKey("2026-09-24")),
-          sameAsNeighbour: isSameMatchDay(kickoff, matchDayFromKey("2026-09-25")),
+          sameAsSelected: isSameMatchDay(kickoff, matchDayFromKey("2026-09-10")),
+          sameAsNeighbour: isSameMatchDay(kickoff, matchDayFromKey("2026-09-11")),
           startKey: matchDayKey(startOfMatchDay(kickoff)),
           nextKey: matchDayKey(addMatchDays(kickoff, 1)),
           prevKey: matchDayKey(addMatchDays(kickoff, -1)),
@@ -84,16 +98,16 @@ describe("BG-0100: the competition calendar is the same for every viewer", () =>
       `,
       );
       expect(seen).toEqual({
-        key: "2026-09-24",
+        key: "2026-09-10",
         sameAsSelected: true,
         sameAsNeighbour: false,
-        startKey: "2026-09-24",
-        nextKey: "2026-09-25",
-        prevKey: "2026-09-23",
+        startKey: "2026-09-10",
+        nextKey: "2026-09-11",
+        prevKey: "2026-09-09",
       });
     });
 
-    it(`files the unconfirmed-hour placeholder on 2026-09-24 for a viewer in ${zone}`, () => {
+    it(`files the unconfirmed-hour placeholder on 2026-09-10 for a viewer in ${zone}`, () => {
       // 00:00Z is 01:00 in Casablanca, i.e. still the 24th there, but it is
       // the 23rd for every viewer west of Greenwich.
       const seen = inZone(
@@ -102,17 +116,17 @@ describe("BG-0100: the competition calendar is the same for every viewer", () =>
         return matchDayKey(new Date(${JSON.stringify(PLACEHOLDER_KICKOFF)}));
       `,
       );
-      expect(seen).toBe("2026-09-24");
+      expect(seen).toBe("2026-09-10");
     });
   }
 
   it("groups a fixture list into the same days regardless of the viewer's zone", () => {
     const fixtures = [
-      "2026-09-24T14:00:00+01:00",
-      "2026-09-24T20:00:00+01:00",
-      "2026-09-24T23:30:00+01:00",
-      "2026-09-25T00:30:00+01:00",
-      "2026-09-25T18:00:00+01:00",
+      "2026-09-10T14:00:00+01:00",
+      "2026-09-10T20:00:00+01:00",
+      "2026-09-10T23:30:00+01:00",
+      "2026-09-11T00:30:00+01:00",
+      "2026-09-11T18:00:00+01:00",
     ];
     const grouped = VIEWER_ZONES.map((zone) =>
       inZone(
@@ -129,8 +143,8 @@ describe("BG-0100: the competition calendar is the same for every viewer", () =>
       ),
     );
     const expected = {
-      "2026-09-24": fixtures.slice(0, 3),
-      "2026-09-25": fixtures.slice(3),
+      "2026-09-10": fixtures.slice(0, 3),
+      "2026-09-11": fixtures.slice(3),
     };
     for (const g of grouped) expect(g).toEqual(expected);
   });

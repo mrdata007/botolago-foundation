@@ -5,6 +5,7 @@ import {
   CurrentPerformanceError,
   normalizeCurrentFinishedFixture,
   providerValueType,
+  type LineupParticipation,
   runCurrentPerformanceBatch,
   currentPerformanceGuard,
   isProviderOutage,
@@ -320,6 +321,74 @@ describe("current finished fixture performance ingestion", () => {
       },
     });
   });
+  test("a goal mismatch names who was credited and what the provider's goal events say", async () => {
+    const payload = withBench(withScore(fixture(), 1, 3), 4);
+    setDetail(payload, 11, 52, 1);
+    setDetail(payload, 12, 52, 1);
+    setDetail(payload, 13, 52, 1);
+    unnamedRow(payload, 5); // a home starter
+    unnamedRow(payload, 25); // an away substitute
+    const withEvents = {
+      data: {
+        ...payload.data,
+        events: [
+          { id: 1, fixture_id: 9001, participant_id: 20, type_id: 14, player_id: 111, minute: 9 },
+          {
+            id: 2,
+            fixture_id: 9001,
+            participant_id: 20,
+            type_id: 16,
+            player_id: 112,
+            minute: 90,
+            extra_minute: 6,
+          },
+          { id: 3, fixture_id: 9001, participant_id: 20, type_id: 14, player_id: null, minute: 70 },
+          { id: 4, fixture_id: 9001, participant_id: 10, type_id: 18, player_id: 105, minute: 60 },
+        ],
+      },
+    };
+    await expect(normalizeCurrentFinishedFixture(withEvents, 9001)).rejects.toMatchObject({
+      code: "current_goal_totals_mismatch",
+      diagnostic: {
+        teamExternalId: "10",
+        finalGoals: 1,
+        attributedGoals: 0,
+        credited: [
+          { externalPlayerId: "111", externalTeamId: "20", goals: 1, ownGoals: 0 },
+          { externalPlayerId: "112", externalTeamId: "20", goals: 1, ownGoals: 0 },
+          { externalPlayerId: "113", externalTeamId: "20", goals: 1, ownGoals: 0 },
+        ],
+        // A substitution is not a goal; a goal with no scorer id keeps a null playerId.
+        goalEvents: [
+          {
+            eventId: 1,
+            typeId: 14,
+            participantId: 20,
+            playerId: 111,
+            minute: 9,
+            extraMinute: null,
+          },
+          { eventId: 2, typeId: 16, participantId: 20, playerId: 112, minute: 90, extraMinute: 6 },
+          {
+            eventId: 3,
+            typeId: 14,
+            participantId: 20,
+            playerId: null,
+            minute: 70,
+            extraMinute: null,
+          },
+        ],
+        unidentifiedRows: [
+          { teamExternalId: "10", starters: 1, others: 0 },
+          { teamExternalId: "20", starters: 0, others: 1 },
+        ],
+      },
+    });
+    // Without an event list the diagnostic still says who was credited, and never invents goals.
+    await expect(normalizeCurrentFinishedFixture(payload, 9001)).rejects.toMatchObject({
+      diagnostic: { goalEvents: [] },
+    });
+  });
   test("an absent statistic counts as zero: SportsMonks sends only the ones that are not", async () => {
     // Fixture 19874708's shape: minutes and a rating for the players who
     // played, and a goal only on the scorer (a 1-0).
@@ -403,6 +472,27 @@ describe("current finished fixture performance ingestion", () => {
     await expect(normalizeCurrentFinishedFixture(zero, 9001)).rejects.toThrow(
       "current_starter_minutes_missing",
     );
+  });
+  test("a starter without minutes is named by provider id, with the statistics it did carry", async () => {
+    const payload = fixture();
+    payload.data.lineups[5].details = payload.data.lineups[5].details.filter(
+      (detail) => detail.type_id !== 119,
+    );
+    await expect(normalizeCurrentFinishedFixture(payload, 9001)).rejects.toMatchObject({
+      code: "current_starter_minutes_missing",
+      diagnostic: {
+        starterRows: 1,
+        players: [
+          {
+            externalPlayerId: "105",
+            teamExternalId: "10",
+            detailTypeIds: [...CURRENT_PERFORMANCE_TYPES]
+              .filter((typeId) => typeId !== 119)
+              .sort((a, b) => a - b),
+          },
+        ],
+      },
+    });
   });
   test("a substitute without minutes never scored, assisted, saved, missed a penalty or put through an own goal", async () => {
     // Unused substitutes come with no statistics at all, or none but a card.
@@ -1145,7 +1235,7 @@ describe("current finished fixture performance ingestion", () => {
       "test-provider-token",
       null,
       async (_path, query) => {
-        expect(query.include).toBe("lineups.details;state;participants;scores");
+        expect(query.include).toBe("lineups.details;state;participants;scores;events");
         return fixture();
       },
     );
@@ -1212,7 +1302,7 @@ describe("current finished fixture performance ingestion", () => {
     );
     for (const { query } of requests)
       expect(query).toEqual({
-        include: "lineups.details;state;participants;scores",
+        include: "lineups.details;state;participants;scores;events",
         filters: `lineupDetailTypes:${CURRENT_PERFORMANCE_TYPES.join(",")}`,
       });
     // Every fixture the stub answered validated; only 9003's 404 is a gap.
@@ -1272,5 +1362,394 @@ describe("current finished fixture performance ingestion", () => {
     expect(free.incomplete[0]).toMatchObject({ code: "current_performance_rpc_failed" });
     expect(free.incomplete[0]?.diagnostic).not.toHaveProperty("reason");
     expect(JSON.stringify(free)).not.toContain("10.0.0.1");
+  });
+});
+
+describe("shortened starters and reconciled goal timelines", () => {
+  function timeline() {
+    const payload = withScore(fixture(), 1, 3);
+    setDetail(payload, 0, 119, 84);
+    setDetail(payload, 0, 52, 1);
+    setDetail(payload, 11, 52, 3);
+    payload.data.lineups[0]!.details = payload.data.lineups[0]!.details.filter(
+      (d) => d.type_id !== 88,
+    );
+    return {
+      data: {
+        ...payload.data,
+        events: [
+          { id: 1, fixture_id: 9001, participant_id: 20, type_id: 14, minute: 9 },
+          { id: 2, fixture_id: 9001, participant_id: 10, type_id: 14, minute: 45, extra_minute: 2 },
+          { id: 3, fixture_id: 9001, participant_id: 20, type_id: 14, minute: 47 },
+          { id: 4, fixture_id: 9001, participant_id: 20, type_id: 14, minute: 55 },
+          { id: 5, fixture_id: 9001, participant_id: 10, type_id: 18, minute: 60 },
+        ],
+      },
+    };
+  }
+  test("Azhari: all three goals before the first departure remove the false clean sheet", async () => {
+    const result = await normalizeCurrentFinishedFixture(timeline(), 9001);
+    expect(result.rows[0]).toMatchObject({
+      minutes: 84,
+      goals: 1,
+      goalsConceded: 3,
+      cleanSheets: 0,
+    });
+    expect(result.coverage).toMatchObject({ goalsConcededFromTimeline: 1 });
+  });
+  test("timeline overrides a contradictory explicit zero", async () => {
+    const payload = timeline();
+    setDetail(payload, 0, 88, 0);
+    expect((await normalizeCurrentFinishedFixture(payload, 9001)).rows[0]!.cleanSheets).toBe(0);
+  });
+  for (const scenario of [
+    "missing",
+    "duplicate",
+    "same minute",
+    "early red",
+    "wrong fixture",
+    "own goal",
+    "no departure",
+    "official minutes",
+  ] as const) {
+    test(`does not derive a clean sheet from an uncertain timeline: ${scenario}`, async () => {
+      const payload = timeline();
+      if (scenario === "missing") payload.data.events.splice(0, 1);
+      if (scenario === "duplicate") payload.data.events[1]!.id = 1;
+      if (scenario === "same minute") payload.data.events[4]!.minute = 55;
+      if (scenario === "early red") {
+        payload.data.events[4]!.type_id = 20;
+        payload.data.events[4]!.minute = 50;
+      }
+      if (scenario === "wrong fixture") payload.data.events[0]!.fixture_id = 9002;
+      if (scenario === "own goal") payload.data.events[0]!.type_id = 15;
+      if (scenario === "no departure") payload.data.events.pop();
+      if (scenario === "official minutes") {
+        setDetail(payload, 0, 119, 60);
+        payload.data.events[3]!.minute = 60;
+        payload.data.events[4]!.minute = 75;
+      }
+      await expect(normalizeCurrentFinishedFixture(payload, 9001)).rejects.toMatchObject({
+        code: "current_defensive_statistics_incomplete",
+      });
+    });
+  }
+  test("the failure says why the timeline could not prove the concession, in numbers only", async () => {
+    const noDeparture = timeline();
+    noDeparture.data.events.pop();
+    await expect(normalizeCurrentFinishedFixture(noDeparture, 9001)).rejects.toMatchObject({
+      code: "current_defensive_statistics_incomplete",
+      diagnostic: {
+        fixtureExternalId: "9001",
+        playerExternalId: "100",
+        teamExternalId: "10",
+        minutes: 84,
+        goalsConcededByTeam: 3,
+        explicitGoalsConceded: false,
+        timeline: null,
+      },
+    });
+    // The last goal falls on the player's own last minute: not provably before it.
+    const late = timeline();
+    setDetail(late, 0, 119, 60);
+    late.data.events[3]!.minute = 60;
+    late.data.events[4]!.minute = 75;
+    await expect(normalizeCurrentFinishedFixture(late, 9001)).rejects.toMatchObject({
+      diagnostic: {
+        minutes: 60,
+        timeline: { lastConcededGoalMinute: 60, firstDepartureMinute: 75 },
+      },
+    });
+  });
+});
+
+// Diagnose-only evidence: what the provider says each named lineup player did, by
+// ids and type ids. It changes nothing that is ingested.
+describe("lineup participation evidence", () => {
+  const HOME_BENCH = 200;
+  const AWAY_BENCH = 201;
+  const indexOf = (playerId: number) => 22 + (playerId - 200);
+  /** Two bench players, no rating; 200 (club 10) has no statistics at all, 201 explicit zeros. */
+  const bench = (bare = true) => {
+    const payload = withBench(fixture(), 2);
+    for (const playerId of [HOME_BENCH, AWAY_BENCH]) {
+      const lineup = payload.data.lineups[indexOf(playerId)]!;
+      lineup.details = lineup.details.filter((detail) => detail.type_id !== 118);
+    }
+    if (bare) payload.data.lineups[indexOf(HOME_BENCH)]!.details = [];
+    return payload;
+  };
+  /** Gives 200 the statistic as well as 20 minutes, so the fixture is still valid. */
+  const cameOn = (payload: ReturnType<typeof fixture>, typeId: number, value = 1) => {
+    setDetail(payload, indexOf(HOME_BENCH), 119, 20);
+    setDetail(
+      payload,
+      indexOf(HOME_BENCH),
+      typeId as (typeof CURRENT_PERFORMANCE_TYPES)[number],
+      value,
+    );
+    return payload;
+  };
+  const factsOf = async (payload: ReturnType<typeof fixture>, playerId = HOME_BENCH) => {
+    const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
+    return normalized.participation.find((entry) => entry.externalPlayerId === String(playerId))!;
+  };
+
+  test("a substitute with no statistics at all: minutes absent, nothing else", async () => {
+    expect(await factsOf(bench())).toEqual({
+      externalPlayerId: "200",
+      externalTeamId: "10",
+      role: "substitute",
+      positionId: null,
+      officialMinutes: null,
+      scoringStatisticTypeIds: [],
+      unknownStatisticTypeIds: [],
+      zeroStatisticTypeIds: [],
+      eventTypeIds: [],
+    });
+  });
+
+  test("a substitute with an explicit zero: minutes 0 and the explicit zeros, no scoring type", async () => {
+    expect(await factsOf(bench(), AWAY_BENCH)).toEqual({
+      externalPlayerId: "201",
+      externalTeamId: "20",
+      role: "substitute",
+      positionId: null,
+      officialMinutes: 0,
+      scoringStatisticTypeIds: [],
+      unknownStatisticTypeIds: [],
+      zeroStatisticTypeIds: [52, 57, 79, 83, 84, 85, 88, 112, 113, 119, 324],
+      eventTypeIds: [],
+    });
+  });
+
+  test("the provider's position id is carried as sent, and a missing or unusable one stays null", async () => {
+    for (const [sent, expected] of [
+      [25, 25],
+      [27, 27],
+      [undefined, null],
+      [null, null],
+      [0, null],
+      [-3, null],
+      ["25", null],
+      [2.5, null],
+    ] as const) {
+      const payload = bench();
+      (payload.data.lineups[indexOf(HOME_BENCH)] as Record<string, unknown>).position_id = sent;
+      expect((await factsOf(payload)).positionId).toBe(expected);
+    }
+  });
+
+  test("a starter is reported as a starter, with his minutes", async () => {
+    const facts = await factsOf(bench(), 100);
+    // His rating (type 118) is a scoring-relevant value above zero.
+    expect(facts).toMatchObject({
+      role: "starter",
+      officialMinutes: 90,
+      scoringStatisticTypeIds: [118],
+    });
+  });
+
+  test("minutes above zero are reported", async () => {
+    const payload = bench(false);
+    setDetail(payload, indexOf(HOME_BENCH), 119, 20);
+    expect((await factsOf(payload)).officialMinutes).toBe(20);
+  });
+
+  // Each of these is a value above zero on a substitute who came on.
+  for (const [label, typeId] of [
+    ["a yellow card", 84],
+    ["a red card", 83],
+    ["a second yellow", 85],
+    ["an assist", 79],
+    ["a missed penalty", 112],
+    ["a save", 57],
+    ["a saved penalty", 113],
+    ["goals conceded", 88],
+    ["a provider rating", 118],
+  ] as const)
+    test(`${label} is reported as a scoring-relevant type`, async () => {
+      const facts = await factsOf(cameOn(bench(false), typeId, typeId === 118 ? 6 : 1));
+      expect(facts.scoringStatisticTypeIds).toEqual([typeId]);
+      expect(facts.officialMinutes).toBe(20);
+    });
+
+  test("a goal is reported", async () => {
+    const payload = withScore(cameOn(bench(false), 52), 1, 0);
+    expect((await factsOf(payload)).scoringStatisticTypeIds).toEqual([52]);
+  });
+
+  test("an own goal is reported", async () => {
+    const payload = withScore(cameOn(bench(false), 324), 0, 1);
+    expect((await factsOf(payload)).scoringStatisticTypeIds).toEqual([324]);
+  });
+
+  test("an explicit null goalkeeper statistic is unknown, not zero", async () => {
+    const payload = bench();
+    const lineup = payload.data.lineups[indexOf(AWAY_BENCH)]!;
+    for (const detail of lineup.details)
+      if (detail.type_id === 57 || detail.type_id === 113)
+        (detail.data as { value: number | null }).value = null;
+    const facts = await factsOf(payload, AWAY_BENCH);
+    expect(facts.unknownStatisticTypeIds).toEqual([57, 113]);
+    expect(facts.zeroStatisticTypeIds).not.toContain(57);
+    expect(facts.zeroStatisticTypeIds).not.toContain(113);
+  });
+
+  test("a match event that names a player is reported by type id, for either side of it", async () => {
+    const payload = bench();
+    (payload.data as unknown as { events: unknown[] }).events = [
+      { id: 1, fixture_id: 9001, type_id: 19, participant_id: 10, player_id: 200, minute: 80 },
+      {
+        id: 2,
+        fixture_id: 9001,
+        type_id: 18,
+        participant_id: 20,
+        player_id: 100,
+        related_player_id: 201,
+        minute: 70,
+      },
+    ];
+    const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
+    const events = (id: string) =>
+      normalized.participation.find((entry) => entry.externalPlayerId === id)?.eventTypeIds;
+    expect(events("200")).toEqual([19]);
+    expect(events("201")).toEqual([18]);
+    expect(events("100")).toEqual([18]);
+    expect(events("101")).toEqual([]);
+  });
+
+  test("an unnamed row has no entry", async () => {
+    const payload = bench();
+    unnamedRow(payload, indexOf(HOME_BENCH));
+    const normalized = await normalizeCurrentFinishedFixture(payload, 9001);
+    expect(normalized.participation).toHaveLength(23);
+    expect(normalized.unnamedRows).toHaveLength(1);
+  });
+
+  test("diagnose carries the evidence for every named player and writes nothing", async () => {
+    const { client, calls } = batchClient({ items: [{ externalFixtureId: "9001" }] });
+    const result = (await runCurrentPerformanceBatch(
+      client,
+      "t",
+      null,
+      async () => {
+        const payload = bench();
+        // A name and an unrelated field the provider might send: neither may appear.
+        (
+          payload.data.lineups[indexOf(HOME_BENCH)] as unknown as Record<string, unknown>
+        ).player_name = "Secret Name";
+        (payload.data as unknown as Record<string, unknown>).name = "Secret Match";
+        return payload;
+      },
+      { mode: "diagnose", onlyFixtureExternalId: "9001" },
+    )) as unknown as {
+      writesAttempted: boolean;
+      fixtures: Array<{ participation: LineupParticipation[]; lineup: unknown[] }>;
+    };
+    expect(result.writesAttempted).toBe(false);
+    expect(calls).toEqual(["football_current_performance_fixture_batch"]);
+    const evidence = result.fixtures[0]!;
+    expect(evidence.participation).toHaveLength(24);
+    expect(evidence.participation.find((entry) => entry.externalPlayerId === "200")?.role).toBe(
+      "substitute",
+    );
+    // The lineup list the owner already reads is unchanged.
+    expect(evidence.lineup[0]).toEqual({
+      externalPlayerId: "100",
+      externalTeamId: "10",
+      started: true,
+    });
+    const text = JSON.stringify(result);
+    expect(text).not.toMatch(/Secret|player_name/);
+    for (const entry of evidence.participation)
+      expect(Object.keys(entry).sort()).toEqual([
+        "eventTypeIds",
+        "externalPlayerId",
+        "externalTeamId",
+        "officialMinutes",
+        "positionId",
+        "role",
+        "scoringStatisticTypeIds",
+        "unknownStatisticTypeIds",
+        "zeroStatisticTypeIds",
+      ]);
+  });
+
+  // Ingestion is exactly what it was: the database is called with the rows and the
+  // coverage the normalizer always produced, and nothing else.
+  const COVERAGE_KEYS = [
+    "absentStatisticsCountedAsZero",
+    "anonymousStarterRows",
+    "cleanSheetSource",
+    "detailRows",
+    "excludedIncompleteRows",
+    "goalkeeperStatistics",
+    "goalsConcededFromFinalScore",
+    "identifiedStarterRows",
+    "invalidDetailRows",
+    "lineupRowsSeen",
+    "missingStatisticRows",
+    "scoringStatisticsComplete",
+    "starterRows",
+    "teamCount",
+    "validPlayerRows",
+  ];
+  for (const [label, options] of [
+    ["a page", {}],
+    ["the orchestrator's pass", { mode: "ingest" as const }],
+    ["a one-fixture canary", { onlyFixtureExternalId: "9001" }],
+  ] as const)
+    test(`${label} calls the ingest function with the same arguments as before`, async () => {
+      const { client, received } = batchClient({ items: [{ externalFixtureId: "9001" }] });
+      const result = await runCurrentPerformanceBatch(
+        client,
+        "t",
+        null,
+        async () => bench(),
+        options,
+      );
+      const ingest = received.filter((args) => "p_rows" in args);
+      expect(ingest).toHaveLength(1);
+      const normalized = await normalizeCurrentFinishedFixture(bench(), 9001);
+      expect(Object.keys(ingest[0]!).sort()).toEqual([
+        "p_coverage",
+        "p_fixture_external_id",
+        "p_observed_at",
+        "p_provider_name",
+        "p_rows",
+        "p_season_external_id",
+      ]);
+      expect(ingest[0]!.p_rows).toEqual(normalized.rows);
+      expect(ingest[0]!.p_coverage).toEqual(normalized.coverage);
+      expect(Object.keys(ingest[0]!.p_coverage as object).sort()).toContain("validPlayerRows");
+      for (const key of Object.keys(ingest[0]!.p_coverage as object))
+        expect(COVERAGE_KEYS).toContain(key);
+      expect(JSON.stringify(ingest[0])).not.toMatch(/participation|verifiedUnused|eventTypeIds/);
+      expect(result).toMatchObject({ verdict: "pass", fixturesProcessed: 1 });
+      // The evidence of an ingest run has no participation field either.
+      expect(JSON.stringify(result)).not.toMatch(/participation/);
+    });
+
+  test("adaptive ingestion sends the same coverage plus only the adaptive evidence", async () => {
+    const { client, received } = batchClient({ items: [{ externalFixtureId: "9001" }] });
+    const wrapped = {
+      schema: (name: "api") => ({
+        rpc: async (rpcName: string, args: Record<string, unknown>) => {
+          const answer = await client.schema(name).rpc(rpcName, args);
+          return rpcName === "football_current_performance_fixture_batch"
+            ? { ...answer, data: { ...(answer.data as object), adaptive: true } }
+            : answer;
+        },
+      }),
+    };
+    await runCurrentPerformanceBatch(wrapped, "t", null, async () => bench(), {});
+    const coverage = received.find((args) => "p_rows" in args)!.p_coverage as Record<
+      string,
+      unknown
+    >;
+    expect(Object.keys(coverage).filter((key) => !COVERAGE_KEYS.includes(key))).toEqual([
+      "adaptiveFieldEvidence",
+    ]);
   });
 });

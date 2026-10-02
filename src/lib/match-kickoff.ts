@@ -1,6 +1,13 @@
 import type { Match } from "@/types/domain";
+import { MOROCCO_TIME_ZONE, moroccoParts, moroccoWallToInstant } from "@/lib/morocco-time";
 
-export const MATCH_TIME_ZONE = "Africa/Casablanca";
+/**
+ * The competition's zone name. Kept for callers that need to NAME the zone (a
+ * request parameter, a label). Never hand it to `Intl` to format a time the
+ * user sees: runtimes disagree about this zone from 2026-09-20, so use the
+ * formatters in `@/lib/morocco-time`.
+ */
+export const MATCH_TIME_ZONE = MOROCCO_TIME_ZONE;
 
 /**
  * A postponed or cancelled match has no confirmed DATE, not merely an
@@ -80,64 +87,28 @@ export function isKickoffTimeUnconfirmed(match: Pick<Match, "kickoff" | "status"
  * every viewer on earth.
  */
 
-const DAY_PARTS = new Intl.DateTimeFormat("en-US", {
-  timeZone: MATCH_TIME_ZONE,
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  hourCycle: "h23",
-});
-
-type ZoneParts = {
-  year: number;
-  month: number;
-  day: number;
-  hour: number;
-  minute: number;
-  second: number;
-};
-
-function zoneParts(instant: Date): ZoneParts {
-  const out: Record<string, number> = {};
-  for (const part of DAY_PARTS.formatToParts(instant)) {
-    if (part.type !== "literal") out[part.type] = Number(part.value);
-  }
-  return out as unknown as ZoneParts;
-}
-
 /**
- * The competition-zone offset, in ms, in effect at `instant`.
- *
- * Morocco is not a fixed `+01:00`: the clock drops to `+00:00` for Ramadan
- * and back afterwards, so the offset has to be read at the instant in
- * question rather than hardcoded.
+ * Morocco is not a fixed `+01:00`: the clock dropped to `+00:00` for Ramadan
+ * and, from 2026-09-20, stays there. The offset is read at the instant in
+ * question from the application's own rule (`@/lib/morocco-time`), which gives
+ * the same answer on the server and in every browser.
  */
-function zoneOffsetMs(instant: Date): number {
-  const p = zoneParts(instant);
-  const asIfUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
-  // `instant` carries sub-second precision the parts do not; drop it so the
-  // difference is exactly the offset.
-  return asIfUtc - Math.floor(instant.getTime() / 1000) * 1000;
-}
+const zoneParts = moroccoParts;
 
 /** The instant of competition-zone midnight opening the given calendar day. */
 function midnightOf(year: number, month: number, day: number): Date {
-  const wallAsUtc = Date.UTC(year, month - 1, day);
-  // One correction pass resolves the ordinary case; a second settles the day
-  // the offset itself changes, where the first guess can land on the wrong
-  // side of the transition.
-  let instant = new Date(wallAsUtc);
-  for (let i = 0; i < 2; i += 1) instant = new Date(wallAsUtc - zoneOffsetMs(instant));
-  return instant;
+  return moroccoWallToInstant(year, month, day);
 }
 
 /** The competition calendar day a moment falls on, as `YYYY-MM-DD`. */
 export function matchDayKey(value: Date): string {
   const p = zoneParts(value);
   return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+}
+
+/** The competition-zone hour (0-23) a moment falls in. */
+export function matchZoneHour(value: Date): number {
+  return zoneParts(value).hour;
 }
 
 /** True when both moments fall on the same competition calendar day. */

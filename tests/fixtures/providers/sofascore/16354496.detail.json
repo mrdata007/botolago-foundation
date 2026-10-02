@@ -1,0 +1,40 @@
+{
+  "event": {
+    "id": 16354496,
+    "startTimestamp": 1782050400,
+    "status": {
+      "type": "finished"
+    },
+    "roundInfo": {
+      "round": 26
+    },
+    "season": {
+      "id": 78750
+    },
+    "tournament": {
+      "uniqueTournament": {
+        "id": 937
+      }
+    },
+    "homeTeam": {
+      "id": 55039,
+      "name": "Hassania d'Agadir",
+      "shortName": "HUSA"
+    },
+    "awayTeam": {
+      "id": 118834,
+      "name": "Union Touarga Sport",
+      "shortName": "Union Touarga"
+    },
+    "homeScore": {
+      "current": 1,
+      "period1": 0,
+      "period2": 1
+    },
+    "awayScore": {
+      "current": 0,
+      "period1": 0,
+      "period2": 0
+    }
+  }
+}

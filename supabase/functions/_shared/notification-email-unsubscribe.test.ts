@@ -123,3 +123,39 @@ describe("one-click unsubscribe", () => {
     expect(big.status).toBe(413);
   });
 });
+
+describe("Pépites topic links", () => {
+  it("passes the Pépites topic on to the page, and nothing else", async () => {
+    const { rpcClient, calls } = client({ data: { status: "invalid" }, error: null });
+    const redirect = async (query: string) =>
+      (
+        await handleEmailUnsubscribeRequest(new Request(`${ENDPOINT}?${query}`), {
+          environment: { APP_URL: "https://botolago.com" },
+          client: rpcClient,
+        })
+      ).headers.get("location");
+    expect(await redirect(`token=${TOKEN}&topic=pepites_weekly`)).toBe(
+      `https://botolago.com/unsubscribe?token=${TOKEN}&topic=pepites_weekly`,
+    );
+    expect(await redirect(`token=${TOKEN}&topic=everything`)).toBe(
+      `https://botolago.com/unsubscribe?token=${TOKEN}`,
+    );
+    expect(calls).toEqual([]);
+  });
+
+  it("lets the token, not the topic parameter, decide what the POST turns off", async () => {
+    const { rpcClient, calls } = client({
+      data: { status: "unsubscribed", topic: "pepites_weekly" },
+      error: null,
+    });
+    const response = await handleEmailUnsubscribeRequest(
+      new Request(`${ENDPOINT}?token=${TOKEN}&topic=pepites_weekly`, {
+        method: "POST",
+        body: "List-Unsubscribe=One-Click",
+      }),
+      { environment: {}, client: rpcClient },
+    );
+    expect(response.status).toBe(200);
+    expect(calls).toEqual([{ name: "unsubscribe_notification_email", args: { p_token: TOKEN } }]);
+  });
+});

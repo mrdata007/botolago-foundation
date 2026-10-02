@@ -1,5 +1,6 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { z } from "zod";
+import { moroccoDayBounds } from "@/lib/morocco-time";
 import { getFootballApi } from "@/integrations/supabase/v2-client";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import { postgresUuidSchema } from "@/backend/contracts/validation";
@@ -88,6 +89,20 @@ export function encodeMatchCursor(cursor: MatchPageCursor | null): string | null
   return cursor ? encodeURIComponent(JSON.stringify(cursor)) : null;
 }
 
+/**
+ * The request with the caller's abort signal, when it has one. A server render
+ * that stops waiting for its data (`@/lib/ssr-prefetch`) cancels its queries,
+ * and the signal is how that cancellation reaches the HTTP request: without
+ * it the read ran on to the client's own 10 s timeout after the page had gone
+ * out without it (audit 2026-09-26).
+ */
+function withSignal<T extends { abortSignal(signal: AbortSignal): T }>(
+  request: T,
+  context: RepositoryContext,
+): T {
+  return context.signal ? request.abortSignal(context.signal) : request;
+}
+
 /** The API's page ceiling (`football_competition_fixtures` refuses more than 100). */
 const SEASON_FIXTURE_PAGE_SIZE = 100;
 /**
@@ -101,12 +116,15 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getSeasons(
     language: FootballLanguage,
     limit: number,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly SeasonSummaryDto[]> {
-    const { data, error } = await getFootballApi().rpc("football_season_catalog", {
-      p_language: language,
-      p_limit: limit,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_season_catalog", {
+        p_language: language,
+        p_limit: limit,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(seasonSummarySchema), data);
   }
@@ -114,12 +132,15 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getTeams(
     language: FootballLanguage,
     limit: number,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly TeamSummaryDto[]> {
-    const { data, error } = await getFootballApi().rpc("football_team_catalog", {
-      p_language: language,
-      p_limit: limit,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_team_catalog", {
+        p_language: language,
+        p_limit: limit,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(teamSummarySchema), data);
   }
@@ -127,41 +148,51 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getHomeMatches(
     language: FootballLanguage,
     limit: number,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly MatchCardDto[]> {
-    const { data, error } = await getFootballApi().rpc("football_home_matches", {
-      p_language: language,
-      p_limit: limit,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_home_matches", {
+        p_language: language,
+        p_limit: limit,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(matchCardSchema), data);
   }
 
-  async getLiveMatches(language: FootballLanguage, limit: number, _context: RepositoryContext) {
-    const { data, error } = await getFootballApi().rpc("football_live_matches", {
-      p_language: language,
-      p_limit: limit,
-    });
+  async getLiveMatches(language: FootballLanguage, limit: number, context: RepositoryContext) {
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_live_matches", {
+        p_language: language,
+        p_limit: limit,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(matchCardSchema), data);
   }
 
   async getMatchesByDate(
     input: MatchesByDateInput,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<MatchPageDto> {
     const cursor = decodeCursor(input.cursor);
-    const { data, error } = await getFootballApi().rpc("football_matches_by_date", {
-      p_date: input.date,
-      p_language: input.language,
-      p_timezone: input.timezone ?? "Africa/Casablanca",
-      p_statuses: input.statuses ? [...input.statuses] : undefined,
-      p_competition_id: input.competitionId ?? undefined,
-      p_season_id: input.seasonId ? requireUuid(input.seasonId) : undefined,
-      p_after_kickoff: cursor?.kickoffAt,
-      p_after_id: cursor?.id,
-      p_limit: input.limit ?? 50,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_matches_by_date", {
+        p_date: input.date,
+        p_language: input.language,
+        p_timezone: input.timezone ?? "Africa/Casablanca",
+        ...matchDayRange(input),
+        p_statuses: input.statuses ? [...input.statuses] : undefined,
+        p_competition_id: input.competitionId ?? undefined,
+        p_season_id: input.seasonId ? requireUuid(input.seasonId) : undefined,
+        p_after_kickoff: cursor?.kickoffAt,
+        p_after_id: cursor?.id,
+        p_limit: input.limit ?? 50,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(matchPageSchema, data);
   }
@@ -169,12 +200,15 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getMatchDetail(
     id: string,
     language: FootballLanguage,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<MatchDetailHeaderDto> {
-    const { data, error } = await getFootballApi().rpc("football_match_detail", {
-      p_fixture_id: requireUuid(id),
-      p_language: language,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_match_detail", {
+        p_fixture_id: requireUuid(id),
+        p_language: language,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(matchCardSchema, data);
   }
@@ -182,12 +216,15 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getTimeline(
     id: string,
     language: FootballLanguage,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly MatchTimelineItemDto[]> {
-    const { data, error } = await getFootballApi().rpc("football_match_timeline", {
-      p_fixture_id: requireUuid(id),
-      p_language: language,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_match_timeline", {
+        p_fixture_id: requireUuid(id),
+        p_language: language,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(timelineItemSchema), data);
   }
@@ -195,12 +232,15 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getLineups(
     id: string,
     language: FootballLanguage,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly MatchLineupDto[]> {
-    const { data, error } = await getFootballApi().rpc("football_match_lineups", {
-      p_fixture_id: requireUuid(id),
-      p_language: language,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_match_lineups", {
+        p_fixture_id: requireUuid(id),
+        p_language: language,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(lineupSchema), data);
   }
@@ -208,12 +248,15 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getStatistics(
     id: string,
     language: FootballLanguage,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly MatchStatisticComparisonDto[]> {
-    const { data, error } = await getFootballApi().rpc("football_match_statistics", {
-      p_fixture_id: requireUuid(id),
-      p_language: language,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_match_statistics", {
+        p_fixture_id: requireUuid(id),
+        p_language: language,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(matchStatisticSchema), data);
   }
@@ -221,12 +264,15 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getPressure(
     id: string,
     language: FootballLanguage,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly MatchPressurePointDto[]> {
-    const { data, error } = await getFootballApi().rpc("football_match_pressure", {
-      p_fixture_id: requireUuid(id),
-      p_language: language,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_match_pressure", {
+        p_fixture_id: requireUuid(id),
+        p_language: language,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(matchPressurePointSchema), data);
   }
@@ -234,12 +280,15 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getAbsences(
     id: string,
     language: FootballLanguage,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly MatchAbsenceDto[]> {
-    const { data, error } = await getFootballApi().rpc("football_match_absences", {
-      p_fixture_id: requireUuid(id),
-      p_language: language,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_match_absences", {
+        p_fixture_id: requireUuid(id),
+        p_language: language,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(matchAbsenceSchema), data);
   }
@@ -248,13 +297,16 @@ export class SupabaseFootballRepository implements FootballRepository {
     id: string,
     language: FootballLanguage,
     limit: number,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ) {
-    const { data, error } = await getFootballApi().rpc("football_head_to_head", {
-      p_fixture_id: requireUuid(id),
-      p_language: language,
-      p_limit: limit,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_head_to_head", {
+        p_fixture_id: requireUuid(id),
+        p_language: language,
+        p_limit: limit,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(matchCardSchema), data);
   }
@@ -262,14 +314,17 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getStandings(
     seasonId: string,
     language: FootballLanguage,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly StandingRowDto[]> {
-    const { data, error } = await getFootballApi().rpc("football_standings", {
-      p_season_id: requireUuid(seasonId),
-      p_language: language,
-      p_group_key: "",
-      p_table_type: "overall",
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_standings", {
+        p_season_id: requireUuid(seasonId),
+        p_language: language,
+        p_group_key: "",
+        p_table_type: "overall",
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(standingRowSchema), data);
   }
@@ -278,19 +333,22 @@ export class SupabaseFootballRepository implements FootballRepository {
     competitionId: string,
     seasonId: string,
     language: FootballLanguage,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly MatchCardDto[]> {
     const items: MatchCardDto[] = [];
     let cursor: MatchPageCursor | null = null;
     for (let page = 0; page < SEASON_FIXTURE_PAGE_LIMIT; page += 1) {
-      const { data, error } = await getFootballApi().rpc("football_competition_fixtures", {
-        p_competition_id: requireUuid(competitionId),
-        p_season_id: requireUuid(seasonId),
-        p_after_kickoff: cursor?.kickoffAt,
-        p_after_id: cursor?.id,
-        p_limit: SEASON_FIXTURE_PAGE_SIZE,
-        p_language: language,
-      });
+      const { data, error } = await withSignal(
+        getFootballApi().rpc("football_competition_fixtures", {
+          p_competition_id: requireUuid(competitionId),
+          p_season_id: requireUuid(seasonId),
+          p_after_kickoff: cursor?.kickoffAt,
+          p_after_id: cursor?.id,
+          p_limit: SEASON_FIXTURE_PAGE_SIZE,
+          p_language: language,
+        }),
+        context,
+      );
       throwIfError(error);
       const parsed: MatchPageDto = parse(matchPageSchema, data);
       items.push(...parsed.items);
@@ -303,12 +361,15 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getCompetition(
     id: string,
     language: FootballLanguage,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<CompetitionSummaryDto> {
-    const { data, error } = await getFootballApi().rpc("football_competition_summary", {
-      p_competition_id: requireUuid(id),
-      p_language: language,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_competition_summary", {
+        p_competition_id: requireUuid(id),
+        p_language: language,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(competitionSummarySchema, data);
   }
@@ -316,43 +377,52 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getTeam(
     id: string,
     language: FootballLanguage,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<TeamSummaryDto> {
-    const { data, error } = await getFootballApi().rpc("football_team_summary", {
-      p_team_id: requireUuid(id),
-      p_language: language,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_team_summary", {
+        p_team_id: requireUuid(id),
+        p_language: language,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(teamSummarySchema, data);
   }
 
   async getTeamFixtures(
     input: TeamFixturesInput,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly MatchCardDto[]> {
-    const { data, error } = await getFootballApi().rpc("football_team_fixtures", {
-      p_team_id: requireUuid(input.teamId),
-      p_before_kickoff: input.before?.kickoffAt,
-      p_before_id: input.before ? requireUuid(input.before.id) : undefined,
-      p_limit: input.limit ?? 20,
-      p_language: input.language,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_team_fixtures", {
+        p_team_id: requireUuid(input.teamId),
+        p_before_kickoff: input.before?.kickoffAt,
+        p_before_id: input.before ? requireUuid(input.before.id) : undefined,
+        p_limit: input.limit ?? 20,
+        p_language: input.language,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(matchCardSchema), data);
   }
 
   async getCompetitionFixtures(
     input: CompetitionFixturesInput,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<MatchPageDto> {
-    const { data, error } = await getFootballApi().rpc("football_competition_fixtures", {
-      p_competition_id: requireUuid(input.competitionId),
-      p_season_id: input.seasonId ? requireUuid(input.seasonId) : undefined,
-      p_after_kickoff: input.after?.kickoffAt,
-      p_after_id: input.after ? requireUuid(input.after.id) : undefined,
-      p_limit: input.limit ?? 50,
-      p_language: input.language,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_competition_fixtures", {
+        p_competition_id: requireUuid(input.competitionId),
+        p_season_id: input.seasonId ? requireUuid(input.seasonId) : undefined,
+        p_after_kickoff: input.after?.kickoffAt,
+        p_after_id: input.after ? requireUuid(input.after.id) : undefined,
+        p_limit: input.limit ?? 50,
+        p_language: input.language,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(matchPageSchema, data);
   }
@@ -361,13 +431,16 @@ export class SupabaseFootballRepository implements FootballRepository {
     teamId: string,
     seasonId: string | null,
     language: FootballLanguage,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly SquadMemberDto[]> {
-    const { data, error } = await getFootballApi().rpc("football_team_squad", {
-      p_team_id: requireUuid(teamId),
-      p_season_id: seasonId ? requireUuid(seasonId) : undefined,
-      p_language: language,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_team_squad", {
+        p_team_id: requireUuid(teamId),
+        p_season_id: seasonId ? requireUuid(seasonId) : undefined,
+        p_language: language,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(squadMemberSchema), data);
   }
@@ -375,25 +448,47 @@ export class SupabaseFootballRepository implements FootballRepository {
   async getPlayer(
     id: string,
     language: FootballLanguage,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<PlayerSummaryDto> {
-    const { data, error } = await getFootballApi().rpc("football_player_summary", {
-      p_player_id: requireUuid(id),
-      p_language: language,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_player_summary", {
+        p_player_id: requireUuid(id),
+        p_language: language,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(playerSummarySchema, data);
   }
 
   async getAvailability(
     id: string,
-    _context: RepositoryContext,
+    context: RepositoryContext,
   ): Promise<readonly AvailabilityStatusDto[]> {
-    const { data, error } = await getFootballApi().rpc("football_player_availability", {
-      p_player_id: requireUuid(id),
-      p_limit: 20,
-    });
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_player_availability", {
+        p_player_id: requireUuid(id),
+        p_limit: 20,
+      }),
+      context,
+    );
     throwIfError(error);
     return parse(z.array(availabilitySchema), data);
   }
+}
+
+/**
+ * The day's exact start and end, in UTC, when the day is a Moroccan one. The
+ * database then only compares instants and never uses its own time-zone data
+ * (which can lag behind Morocco's clock). Another zone keeps the old date and
+ * zone path.
+ */
+export function matchDayRange(input: Pick<MatchesByDateInput, "date" | "timezone">): {
+  p_range_start?: string;
+  p_range_end?: string;
+} {
+  if ((input.timezone ?? "Africa/Casablanca") !== "Africa/Casablanca") return {};
+  const bounds = moroccoDayBounds(input.date);
+  if (!bounds) return {};
+  return { p_range_start: bounds.start.toISOString(), p_range_end: bounds.end.toISOString() };
 }

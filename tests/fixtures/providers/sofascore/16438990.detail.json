@@ -1,0 +1,40 @@
+{
+  "event": {
+    "id": 16438990,
+    "startTimestamp": 1783270800,
+    "status": {
+      "type": "finished"
+    },
+    "roundInfo": {
+      "round": 30
+    },
+    "season": {
+      "id": 78750
+    },
+    "tournament": {
+      "uniqueTournament": {
+        "id": 937
+      }
+    },
+    "homeTeam": {
+      "id": 36268,
+      "name": "Wydad Casablanca",
+      "shortName": "WAC"
+    },
+    "awayTeam": {
+      "id": 118834,
+      "name": "Union Touarga Sport",
+      "shortName": "Union Touarga"
+    },
+    "homeScore": {
+      "current": 1,
+      "period1": 0,
+      "period2": 1
+    },
+    "awayScore": {
+      "current": 2,
+      "period1": 1,
+      "period2": 1
+    }
+  }
+}

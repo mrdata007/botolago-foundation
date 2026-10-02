@@ -1,0 +1,40 @@
+{
+  "event": {
+    "id": 16958239,
+    "startTimestamp": 1790438400,
+    "status": {
+      "type": "finished"
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "season": {
+      "id": 102220
+    },
+    "tournament": {
+      "uniqueTournament": {
+        "id": 937
+      }
+    },
+    "homeTeam": {
+      "id": 118834,
+      "name": "Union Touarga Sport",
+      "shortName": "Union Touarga"
+    },
+    "awayTeam": {
+      "id": 55027,
+      "name": "Fath Union Sport",
+      "shortName": "FUS Rabat"
+    },
+    "homeScore": {
+      "current": 2,
+      "period1": 2,
+      "period2": 0
+    },
+    "awayScore": {
+      "current": 1,
+      "period1": 0,
+      "period2": 1
+    }
+  }
+}

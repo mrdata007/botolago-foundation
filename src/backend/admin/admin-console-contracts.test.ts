@@ -18,6 +18,9 @@ const IMPLEMENTED_ROUTES = new Set([
   "/admin/prizes",
   "/admin/users",
   "/admin/users/$userId",
+  "/admin/pepites",
+  "/admin/pepites/donnees",
+  "/admin/football/player-mappings",
 ]);
 
 /**
@@ -40,6 +43,9 @@ const SCREEN_ROUTE_FILES: Record<AdminConsoleRoute, string> = {
   "/admin/prizes": "../../routes/admin.prizes.tsx",
   "/admin/users": "../../routes/admin.users.tsx",
   "/admin/users/$userId": "../../routes/admin.users.$userId.tsx",
+  "/admin/pepites": "../../routes/admin.pepites.index.tsx",
+  "/admin/pepites/donnees": "../../routes/admin.pepites.donnees.tsx",
+  "/admin/football/player-mappings": "../../routes/admin.football.player-mappings.tsx",
 };
 
 /** Route sources only. `admin-console-contracts.ts` is deliberately NOT read
@@ -200,7 +206,12 @@ describe("Frozen Admin Console contracts", () => {
     for (const item of ADMIN_CONSOLE_NAV_ITEMS) {
       expect(IMPLEMENTED_ROUTES.has(item.route)).toBe(true);
       const source = sources[item.route];
-      expect(source).toContain(`createFileRoute("${item.route}")`);
+      // TanStack gives an index route a trailing slash in its file route ID,
+      // while the navigation URL remains the parent path.
+      const routeId = SCREEN_ROUTE_FILES[item.route].endsWith(".index.tsx")
+        ? `${item.route}/`
+        : item.route;
+      expect(source).toContain(`createFileRoute("${routeId}")`);
       // The link is never the authority: the route re-checks access server-side.
       expect(source).toContain("loader:");
     }

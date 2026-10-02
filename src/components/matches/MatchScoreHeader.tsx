@@ -5,16 +5,13 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
-import {
-  isKickoffDateUnconfirmed,
-  isKickoffTimeUnconfirmed,
-  MATCH_TIME_ZONE,
-} from "@/lib/match-kickoff";
+import { isKickoffDateUnconfirmed, isKickoffTimeUnconfirmed } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
 import type { MatchEvent } from "@/services/match-live";
 import type { Club, Match } from "@/types/domain";
 import { BallIcon } from "./BallIcon";
 import { GOAL_EVENT_TYPES } from "./goal-moment";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /** The navy status pill under the score box, in the live pill's shape. */
 const STATUS_PILL = cn(
@@ -70,13 +67,11 @@ export function MatchScoreHeader({
   const { t, tr, lang } = useI18n();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   const kickoff = new Date(match.kickoff);
-  const timeFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+  const timeFmt = moroccoDateTimeFormat(locale, {
     hour: "2-digit",
     minute: "2-digit",
   }).format(kickoff);
-  const dateFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+  const dateFmt = moroccoDateTimeFormat(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",

@@ -83,13 +83,23 @@ insert into app.teams (
     'AWY', '10000000-0000-4000-8000-000000000001', 'Rabat', null, '#334455'
   );
 insert into app.players (
-  id, slug, full_name, display_name, date_of_birth,
-  nationality_country_id, position, preferred_foot
+  id, slug, full_name, display_name, position
 ) values (
   '70000000-0000-4000-8000-000000000001', 'player-test',
-  'Player Test', 'P. Test', '2000-01-01',
-  '10000000-0000-4000-8000-000000000001', 'midfielder', 'right'
+  'Player Test', 'P. Test', 'midfielder'
 );
+-- Date of birth, nationality and foot are written only by the attribute
+-- resolver, from observations (20260926060000).
+do $$
+begin
+  perform app_private.record_player_attribute_observation(
+    '70000000-0000-4000-8000-000000000001', attribute, value_text, null,
+    'provider', 'sportsmonks', 'test-fixture', '2029-08-01T00:00:00Z')
+  from (values ('date_of_birth', '2000-01-01'), ('nationality', 'MA'),
+    ('preferred_foot', 'right')) observed(attribute, value_text);
+  perform app_private.resolve_player_attributes(array['70000000-0000-4000-8000-000000000001'::uuid]);
+end;
+$$;
 insert into app.team_memberships (
   id, player_id, team_id, season_id, shirt_number, valid_from
 ) values (

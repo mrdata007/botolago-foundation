@@ -71,7 +71,7 @@ from generate_series(1, 5) club_number;
 -- 20 distinct app.players rows. Players 1-3 share one display name (the
 -- three-row cluster), players 4-5 share another (the two-row cluster), the rest
 -- are distinct.
-insert into app.players (id, slug, full_name, display_name, date_of_birth, position)
+insert into app.players (id, slug, full_name, display_name, position)
 select ('d75' || lpad(player_number::text, 5, '0') || '-0000-4000-8000-000000000001')::uuid,
   'bg0057-player-' || player_number,
   'BG0057 Player ' || player_number,
@@ -80,12 +80,26 @@ select ('d75' || lpad(player_number::text, 5, '0') || '-0000-4000-8000-000000000
     when player_number <= 5 then 'Abdallah Pair'
     else 'BG0057 Unique ' || player_number
   end,
-  case when player_number = 2 then null else make_date(1990 + player_number, 1, 1) end,
   case when player_number <= 2 then 'goalkeeper'::app.football_position
     when player_number <= 7 then 'defender'::app.football_position
     when player_number <= 12 then 'midfielder'::app.football_position
     else 'forward'::app.football_position end
 from generate_series(1, 20) player_number;
+-- Dates of birth are written only by the attribute resolver, from
+-- observations (20260926060000). Player 2 has none.
+do $$
+begin
+  perform app_private.record_player_attribute_observation(
+    ('d75' || lpad(player_number::text, 5, '0') || '-0000-4000-8000-000000000001')::uuid,
+    'date_of_birth', make_date(1990 + player_number, 1, 1)::text, null,
+    'provider', 'sportsmonks', 'test-fixture', '2026-01-01T00:00:00Z')
+  from generate_series(1, 20) player_number
+  where player_number <> 2;
+  perform app_private.resolve_player_attributes(array(
+    select ('d75' || lpad(player_number::text, 5, '0') || '-0000-4000-8000-000000000001')::uuid
+    from generate_series(1, 20) player_number));
+end;
+$$;
 
 insert into app.fantasy_competitions (id, football_competition_id, slug, name, active)
 values ('d7600000-0000-4000-8000-000000000001', 'd7100000-0000-4000-8000-000000000001',

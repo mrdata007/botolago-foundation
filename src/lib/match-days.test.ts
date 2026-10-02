@@ -34,10 +34,16 @@ describe("groupByMatchDay — Home's 'À venir' day groups", () => {
   });
 
   it("files a kickoff under the competition's day, not the UTC one (BG-0100)", () => {
-    // 23:30 UTC on the 25th is 00:30 on the 26th in Casablanca.
+    // Before Morocco moved to UTC+0 all year: 23:30 UTC on the 12th is 00:30 on the
+    // 13th in Casablanca (UTC+1).
+    const [day] = groupByMatchDay([match("late", "2026-09-12T23:30:00Z")], LABELS);
+    expect(day!.key).toBe("2026-09-13");
+    expect(day!.label).toBe("Dimanche 13 septembre");
+  });
+
+  it("from 2026-09-20 the competition's day is the UTC day (UTC+0 all year)", () => {
     const [day] = groupByMatchDay([match("late", "2026-09-25T23:30:00Z")], LABELS);
-    expect(day!.key).toBe("2026-09-26");
-    expect(day!.label).toBe("Samedi 26 septembre");
+    expect(day!.key).toBe("2026-09-25");
   });
 
   it("keeps the order it is given and gathers consecutive matches of a day", () => {

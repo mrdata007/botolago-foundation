@@ -1,0 +1,490 @@
+{
+  "DATA": [
+    {
+      "FORMATION_NAME": "Starting Lineups",
+      "PLAYER_GROUP_TYPE": 1,
+      "FORMATIONS": [
+        {
+          "FORMATION_LINE": 1,
+          "MEMBERS": [
+            {
+              "PLAYER_ID": "W0A7lL4I",
+              "PLAYER_FULL_NAME": "Abaaziz S.",
+              "SHORT_NAME": "Abaaziz",
+              "PLAYER_NUMBER": 23,
+              "PLAYER_POSITION": 5,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                3
+              ]
+            },
+            {
+              "PLAYER_ID": "6cwv6kvA",
+              "PLAYER_FULL_NAME": "Ait Wahmane A. (G)",
+              "SHORT_NAME": "Ait Wahmane",
+              "PLAYER_NUMBER": 16,
+              "PLAYER_POSITION": 1,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 3
+            },
+            {
+              "PLAYER_ID": "prkV7B9c",
+              "PLAYER_FULL_NAME": "Benchchaoui O.",
+              "SHORT_NAME": "Benchchaoui",
+              "PLAYER_NUMBER": 2,
+              "PLAYER_POSITION": 2,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "A1vs5QhM",
+              "PLAYER_FULL_NAME": "Bentarcha M.",
+              "SHORT_NAME": "Bentarcha",
+              "PLAYER_NUMBER": 14,
+              "PLAYER_POSITION": 4,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "dKFoZAHD",
+              "PLAYER_FULL_NAME": "Dacosta R.",
+              "SHORT_NAME": "Dacosta",
+              "PLAYER_NUMBER": 9,
+              "PLAYER_POSITION": 10,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "ttFiSTM7",
+              "PLAYER_FULL_NAME": "Diarra B.",
+              "SHORT_NAME": "Diarra",
+              "PLAYER_NUMBER": 20,
+              "PLAYER_POSITION": 3,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                1,
+                6
+              ]
+            },
+            {
+              "PLAYER_ID": "CY4cnRYK",
+              "PLAYER_FULL_NAME": "El Idrissi Bouzidi B.",
+              "SHORT_NAME": "El Idrissi Bouzidi",
+              "PLAYER_NUMBER": 6,
+              "PLAYER_POSITION": 7,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "2JPjkS5d",
+              "PLAYER_FULL_NAME": "El Khafi A.",
+              "SHORT_NAME": "El Khafi",
+              "PLAYER_NUMBER": 8,
+              "PLAYER_POSITION": 8,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                1,
+                6
+              ]
+            },
+            {
+              "PLAYER_ID": "WIXJwiHI",
+              "PLAYER_FULL_NAME": "El Ouatki Y.",
+              "SHORT_NAME": "El Ouatki",
+              "PLAYER_NUMBER": 15,
+              "PLAYER_POSITION": 6,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                6
+              ]
+            },
+            {
+              "PLAYER_ID": "M5qsz213",
+              "PLAYER_FULL_NAME": "Ennakouss A.",
+              "SHORT_NAME": "Ennakouss",
+              "PLAYER_NUMBER": 17,
+              "PLAYER_POSITION": 9,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                6
+              ]
+            },
+            {
+              "PLAYER_ID": "nZoQztrf",
+              "PLAYER_FULL_NAME": "Pessoa P.",
+              "SHORT_NAME": "Pessoa",
+              "PLAYER_NUMBER": 70,
+              "PLAYER_POSITION": 11,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                6
+              ]
+            }
+          ]
+        },
+        {
+          "FORMATION_LINE": 2,
+          "MEMBERS": [
+            {
+              "PLAYER_ID": "IwbD8fB0",
+              "PLAYER_FULL_NAME": "Bahrou Z.",
+              "SHORT_NAME": "Bahrou",
+              "PLAYER_NUMBER": 7,
+              "PLAYER_POSITION": 11,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                3,
+                6
+              ]
+            },
+            {
+              "PLAYER_ID": "OhjODGhj",
+              "PLAYER_FULL_NAME": "Berdad A.",
+              "SHORT_NAME": "Berdad",
+              "PLAYER_NUMBER": 6,
+              "PLAYER_POSITION": 7,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                8
+              ]
+            },
+            {
+              "PLAYER_ID": "fN5oxSRL",
+              "PLAYER_FULL_NAME": "El Bounagate K.",
+              "SHORT_NAME": "El Bounagate",
+              "PLAYER_NUMBER": 5,
+              "PLAYER_POSITION": 4,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "llRfH2xq",
+              "PLAYER_FULL_NAME": "El Janati H.",
+              "SHORT_NAME": "El Janati",
+              "PLAYER_NUMBER": 21,
+              "PLAYER_POSITION": 9,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                3,
+                8,
+                6
+              ]
+            },
+            {
+              "PLAYER_ID": "nXajO6Aq",
+              "PLAYER_FULL_NAME": "El Morsli S.",
+              "SHORT_NAME": "El Morsli",
+              "PLAYER_NUMBER": 27,
+              "PLAYER_POSITION": 5,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                1,
+                8
+              ]
+            },
+            {
+              "PLAYER_ID": "KQXWbv4i",
+              "PLAYER_FULL_NAME": "Elowasti H.",
+              "SHORT_NAME": "Elowasti",
+              "PLAYER_NUMBER": 22,
+              "PLAYER_POSITION": 8,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                3,
+                3,
+                6
+              ]
+            },
+            {
+              "PLAYER_ID": "jgP8skkL",
+              "PLAYER_FULL_NAME": "Lourhraz A.",
+              "SHORT_NAME": "Lourhraz",
+              "PLAYER_NUMBER": 2,
+              "PLAYER_POSITION": 2,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "6DsTnU9B",
+              "PLAYER_FULL_NAME": "Naji L.",
+              "SHORT_NAME": "Naji",
+              "PLAYER_NUMBER": 29,
+              "PLAYER_POSITION": 6,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                1,
+                6
+              ]
+            },
+            {
+              "PLAYER_ID": "M7pXwpYm",
+              "PLAYER_FULL_NAME": "Nouader A.",
+              "SHORT_NAME": "Nouader",
+              "PLAYER_NUMBER": 18,
+              "PLAYER_POSITION": 3,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "vBmxY9Dd",
+              "PLAYER_FULL_NAME": "Onana W.",
+              "SHORT_NAME": "Onana",
+              "PLAYER_NUMBER": 10,
+              "PLAYER_POSITION": 10,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                3,
+                6
+              ]
+            },
+            {
+              "PLAYER_ID": "xpg1dh4G",
+              "PLAYER_FULL_NAME": "Zniti A. (G)",
+              "SHORT_NAME": "Zniti",
+              "PLAYER_NUMBER": 1,
+              "PLAYER_POSITION": 1,
+              "PLAYER_POSITION_ID": 1,
+              "PLAYER_TYPE": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "FORMATION_NAME": "Substitutes",
+      "PLAYER_GROUP_TYPE": 1,
+      "FORMATIONS": [
+        {
+          "FORMATION_LINE": 1,
+          "MEMBERS": [
+            {
+              "PLAYER_ID": "Me0eoYV8",
+              "PLAYER_FULL_NAME": "Azimi H. (G)",
+              "SHORT_NAME": "Azimi",
+              "PLAYER_NUMBER": 61,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "xGhdH1sH",
+              "PLAYER_FULL_NAME": "Ech Chgraoui R.",
+              "SHORT_NAME": "Ech Chgraoui",
+              "PLAYER_NUMBER": 5,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "lKRbcLHH",
+              "PLAYER_FULL_NAME": "Hmamouch O.",
+              "SHORT_NAME": "Hmamouch",
+              "PLAYER_NUMBER": 11,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "6yxEy9S7",
+              "PLAYER_FULL_NAME": "Idrissi A.",
+              "SHORT_NAME": "Idrissi",
+              "PLAYER_NUMBER": 99,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                7
+              ]
+            },
+            {
+              "PLAYER_ID": "6VWdR9yD",
+              "PLAYER_FULL_NAME": "Lo I.",
+              "SHORT_NAME": "Lo",
+              "PLAYER_NUMBER": 77,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "2eqdigzB",
+              "PLAYER_FULL_NAME": "Michte Y.",
+              "SHORT_NAME": "Michte",
+              "PLAYER_NUMBER": 88,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                7
+              ]
+            },
+            {
+              "PLAYER_ID": "pnXdiL4s",
+              "PLAYER_FULL_NAME": "Mostakime A.",
+              "SHORT_NAME": "Mostakime",
+              "PLAYER_NUMBER": 12,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                7
+              ]
+            },
+            {
+              "PLAYER_ID": "lpLhmL70",
+              "PLAYER_FULL_NAME": "Mouchtanim M.",
+              "SHORT_NAME": "Mouchtanim",
+              "PLAYER_NUMBER": 10,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                7,
+                8,
+                3
+              ]
+            },
+            {
+              "PLAYER_ID": "EL16d5Js",
+              "PLAYER_FULL_NAME": "Riyane A.",
+              "SHORT_NAME": "Riyane",
+              "PLAYER_NUMBER": 13,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                7
+              ]
+            }
+          ]
+        },
+        {
+          "FORMATION_LINE": 2,
+          "MEMBERS": [
+            {
+              "PLAYER_ID": "bciRFtna",
+              "PLAYER_FULL_NAME": "Daoui Oussama",
+              "SHORT_NAME": "Daoui",
+              "PLAYER_NUMBER": 16,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                7
+              ]
+            },
+            {
+              "PLAYER_ID": "23eCijPG",
+              "PLAYER_FULL_NAME": "Eddib Z.",
+              "SHORT_NAME": "Eddib",
+              "PLAYER_NUMBER": 9,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "vR0oDtdI",
+              "PLAYER_FULL_NAME": "Gaddarine B.",
+              "SHORT_NAME": "Gaddarine",
+              "PLAYER_NUMBER": 4,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                7
+              ]
+            },
+            {
+              "PLAYER_ID": "hYKCYol2",
+              "PLAYER_FULL_NAME": "Guede J.",
+              "SHORT_NAME": "Guede",
+              "PLAYER_NUMBER": 45,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                7
+              ]
+            },
+            {
+              "PLAYER_ID": "jaWuVd78",
+              "PLAYER_FULL_NAME": "Lakhlifi A.",
+              "SHORT_NAME": "Lakhlifi",
+              "PLAYER_NUMBER": 97,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "4Kw7NhFG",
+              "PLAYER_FULL_NAME": "Miloudi Y.",
+              "SHORT_NAME": "Miloudi",
+              "PLAYER_NUMBER": 30,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "K8DYJ8JE",
+              "PLAYER_FULL_NAME": "Razko T.",
+              "SHORT_NAME": "Razko",
+              "PLAYER_NUMBER": 17,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                7,
+                3
+              ]
+            },
+            {
+              "PLAYER_ID": "0bTTiFRP",
+              "PLAYER_FULL_NAME": "Taher S. (G)",
+              "SHORT_NAME": "Taher",
+              "PLAYER_NUMBER": 44,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1
+            },
+            {
+              "PLAYER_ID": "E3YQDDn7",
+              "PLAYER_FULL_NAME": "Zrida M.",
+              "SHORT_NAME": "Zrida",
+              "PLAYER_NUMBER": 19,
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 1,
+              "INCIDENTS": [
+                7
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "FORMATION_NAME": "Coaches",
+      "PLAYER_GROUP_TYPE": 4,
+      "FORMATIONS": [
+        {
+          "FORMATION_LINE": 1,
+          "MEMBERS": [
+            {
+              "PLAYER_ID": "jagXDwnd",
+              "PLAYER_FULL_NAME": "Cheu R.",
+              "SHORT_NAME": "Cheu R.",
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 2
+            }
+          ]
+        },
+        {
+          "FORMATION_LINE": 2,
+          "MEMBERS": [
+            {
+              "PLAYER_ID": "QPi59dFa",
+              "PLAYER_FULL_NAME": "Paixao J.",
+              "SHORT_NAME": "Paixao J.",
+              "PLAYER_POSITION_ID": 2,
+              "PLAYER_TYPE": 2
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

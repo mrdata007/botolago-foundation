@@ -1,5 +1,6 @@
 import type { ArticleCardDto, NewsTeamFilterDto } from "@/backend/news/contracts";
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { resolveMediaUrl } from "@/lib/media";
 import { presentArticle } from "@/services/news";
 import type { Article, ArticleCategory, Club } from "@/types/domain";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -170,6 +171,7 @@ export function presentNewsTeam(team: NewsTeamFilterDto): Club {
     primaryColor: team.primaryColor ?? "",
     secondaryColor: team.secondaryColor ?? undefined,
     crestPlaceholder: team.code ?? team.shortName.slice(0, 3).toUpperCase(),
+    crestUrl: resolveMediaUrl({ sourceUrl: team.crestUrl, storagePath: team.crestPath }),
   };
 }
 

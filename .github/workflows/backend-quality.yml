@@ -55,6 +55,12 @@ jobs:
         env:
           LEGAL_GATE_ALLOW_PLACEHOLDERS: "1"
       - run: bunx playwright install --with-deps chromium
+      # Morocco's clock from three runtimes that carry different time-zone data
+      # (Node 22.23.2 and Chromium: UTC+1 after 2026-09-20; Node 22.23.3: UTC+0):
+      # the app must print the same thing in all of them, which is what keeps
+      # the server's HTML and the browser's first render identical.
+      - name: Time-zone parity (server against browser, old and new data)
+        run: bun run test:timezone-parity
       # Against the development server and the mock data it serves without a
       # `.env`: no secret, no shared backend. Each passed three runs in a row
       # before joining this gate; the signed-in staging suites stay on their
@@ -69,6 +75,14 @@ jobs:
           tests/e2e/legal-brackets.e2e.ts
           tests/e2e/news-hero-fallback.e2e.ts
           tests/e2e/pronostics.e2e.ts
+          tests/e2e/player-mappings.sample.e2e.ts
+      # Pépites is off in every build: its pages open only on a development
+      # server started with the local preview switch, so it has its own step
+      # (and its own server). Sample data only, like the step above.
+      - name: Pépites browser suite (local preview switch on)
+        env:
+          VITE_PEPITES_PREVIEW: "1"
+        run: bunx playwright test tests/e2e/pepites.e2e.ts
       # The same pages from the production bundle: the Worker module in
       # `.output` with the ASSETS binding Cloudflare gives it, run under Bun
       # rather than workerd (tests/e2e/built-output-serve.ts says what that
@@ -125,6 +139,12 @@ jobs:
       # has not been shown to pass on this one. Add it like the step above
       # once it has.
       - run: bun run backend:db:test
+      # After the pgTAP suite: they leave append-only rows (editions, runs) and
+      # a current season behind, which the pgTAP files do not expect to find.
+      - name: Pépites editions concurrency and weekly email end to end
+        run: bun test scripts/backend/pepites-editions-concurrency.test.ts scripts/backend/pepites-weekly-email-e2e.test.ts
+        env:
+          PEPITES_E2E_DB_URL: postgres://postgres:postgres@127.0.0.1:55322/postgres
       - run: bun run backend:db:lint
       - name: Verify generated database types
         id: generated_types

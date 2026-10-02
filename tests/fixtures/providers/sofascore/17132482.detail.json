@@ -1,0 +1,40 @@
+{
+  "event": {
+    "id": 17132482,
+    "startTimestamp": 1790524800,
+    "status": {
+      "type": "finished"
+    },
+    "roundInfo": {
+      "round": 1
+    },
+    "season": {
+      "id": 102220
+    },
+    "tournament": {
+      "uniqueTournament": {
+        "id": 937
+      }
+    },
+    "homeTeam": {
+      "id": 55049,
+      "name": "Moghreb Atlético Tetuán",
+      "shortName": "Moghreb Tetouan"
+    },
+    "awayTeam": {
+      "id": 80395,
+      "name": "RS Berkane",
+      "shortName": "RS Berkane"
+    },
+    "homeScore": {
+      "current": 0,
+      "period1": 0,
+      "period2": 0
+    },
+    "awayScore": {
+      "current": 0,
+      "period1": 0,
+      "period2": 0
+    }
+  }
+}

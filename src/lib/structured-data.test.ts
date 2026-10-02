@@ -1,7 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
 import { serializeJsonLd } from "./article-meta";
-import { breadcrumbJsonLd, siteJsonLd, sportsEventJsonLd } from "./structured-data";
+import {
+  breadcrumbJsonLd,
+  siteJsonLd,
+  sportsEventJsonLd,
+  sportsTeamJsonLd,
+} from "./structured-data";
 import type { Match } from "@/types/domain";
 
 type Graph = { "@graph": Array<Record<string, unknown>> };
@@ -55,6 +60,33 @@ describe("structured data", () => {
         { position: 2, name: "Clubs", item: "https://botolago.com/clubs" },
       ],
     });
+  });
+
+  test("a club is a SportsTeam using only real public identity", () => {
+    expect(
+      sportsTeamJsonLd({
+        canonicalUrl: "https://botolago.com/clubs/club-1",
+        name: "Wydad AC",
+        city: "Casablanca",
+        logoUrl: "https://media.example.test/wydad.png",
+      }),
+    ).toEqual({
+      "@context": "https://schema.org",
+      "@type": "SportsTeam",
+      name: "Wydad AC",
+      url: "https://botolago.com/clubs/club-1",
+      sport: "Football",
+      location: { "@type": "City", name: "Casablanca" },
+      logo: "https://media.example.test/wydad.png",
+    });
+
+    expect(
+      sportsTeamJsonLd({
+        canonicalUrl: "https://botolago.com/clubs/club-2",
+        name: "Club sans média",
+        city: " ",
+      }),
+    ).not.toHaveProperty("location");
   });
 
   const event = (value: Match) =>

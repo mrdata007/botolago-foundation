@@ -1,0 +1,231 @@
+{
+  "incidents": [
+    {
+      "incidentType": "period",
+      "time": 90,
+      "addedTime": 999,
+      "text": "FT",
+      "homeScore": 0,
+      "awayScore": 0
+    },
+    {
+      "id": 126924416,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 90,
+      "addedTime": 4,
+      "isHome": true,
+      "playerIn": {
+        "id": 919649,
+        "name": "Yassine Boursas",
+        "shortName": "Y. Boursas"
+      },
+      "playerOut": {
+        "id": 1140960,
+        "name": "Mohamed Kassou",
+        "shortName": "M. Kassou"
+      }
+    },
+    {
+      "id": 126924415,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 90,
+      "addedTime": 4,
+      "isHome": true,
+      "playerIn": {
+        "id": 2790062,
+        "name": "Ali Salam",
+        "shortName": "A. Salam"
+      },
+      "playerOut": {
+        "id": 1459151,
+        "name": "Moad  Karmoun",
+        "shortName": "M. Karmoun"
+      }
+    },
+    {
+      "id": 126924414,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 90,
+      "addedTime": 4,
+      "isHome": true,
+      "playerIn": {
+        "id": 1878240,
+        "name": "Aymane Zerri",
+        "shortName": "A. Zerri"
+      },
+      "playerOut": {
+        "id": 2178618,
+        "name": "Nadir El Fadili",
+        "shortName": "N. E. Fadili"
+      }
+    },
+    {
+      "id": 125662208,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 78,
+      "isHome": false,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 1823726,
+        "name": "Mohammed Ouyahya",
+        "shortName": "M. Ouyahya"
+      }
+    },
+    {
+      "id": 126924420,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 72,
+      "isHome": false,
+      "playerIn": {
+        "id": 970592,
+        "name": "Mohamed Aymen Sadil",
+        "shortName": "M. A. Sadil"
+      },
+      "playerOut": {
+        "id": 970761,
+        "name": "Jamal Harkass",
+        "shortName": "J. Harkass"
+      }
+    },
+    {
+      "id": 126924419,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 72,
+      "isHome": false,
+      "playerIn": {
+        "id": 366156,
+        "name": "Zinédine Machach",
+        "shortName": "Z. Machach"
+      },
+      "playerOut": {
+        "id": 2203635,
+        "name": "Youness El Kaabi",
+        "shortName": "Y. E. Kaabi"
+      }
+    },
+    {
+      "id": 126924413,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 72,
+      "isHome": true,
+      "playerIn": {
+        "id": 1401965,
+        "name": "Anwar Oussarhan",
+        "shortName": "Oussarhan"
+      },
+      "playerOut": {
+        "id": 1972600,
+        "name": "Diae-Eddine Eddaoudi",
+        "shortName": "D. Eddaoudi"
+      }
+    },
+    {
+      "id": 125662207,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 71,
+      "isHome": false,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 970761,
+        "name": "Jamal Harkass",
+        "shortName": "J. Harkass"
+      }
+    },
+    {
+      "id": 126924418,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 62,
+      "isHome": false,
+      "playerIn": {
+        "id": 1021138,
+        "name": "Mohamed Amine Essahel",
+        "shortName": "M. A. Essahel"
+      },
+      "playerOut": {
+        "id": 297510,
+        "name": "Rayane Aabid",
+        "shortName": "R. Aabid"
+      }
+    },
+    {
+      "id": 126924412,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 61,
+      "isHome": true,
+      "playerIn": {
+        "id": 2178617,
+        "name": "Mustapha El Crachna",
+        "shortName": "M. E. Crachna"
+      },
+      "playerOut": {
+        "id": 1496358,
+        "name": "Yassine Karraz",
+        "shortName": "Y. Karraz"
+      }
+    },
+    {
+      "id": 125662206,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 61,
+      "isHome": false,
+      "rescinded": false,
+      "player": {
+        "id": 1140890,
+        "name": "Abdelghafour Lamirat",
+        "shortName": "A. Lamirat"
+      }
+    },
+    {
+      "id": 125662205,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 51,
+      "isHome": true,
+      "reason": "Simulation",
+      "rescinded": false,
+      "player": {
+        "id": 1140960,
+        "name": "Mohamed Kassou",
+        "shortName": "M. Kassou"
+      }
+    },
+    {
+      "incidentType": "period",
+      "time": 45,
+      "addedTime": 999,
+      "text": "HT",
+      "homeScore": 0,
+      "awayScore": 0
+    },
+    {
+      "id": 126924417,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 17,
+      "isHome": false,
+      "playerIn": {
+        "id": 1182584,
+        "name": "Youssef Mehri",
+        "shortName": "Y. Mehri"
+      },
+      "playerOut": {
+        "id": 1095727,
+        "name": "Haytam Manaout",
+        "shortName": "H. Manaout"
+      }
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "statistics": [
+    {
+      "period": "ALL",
+      "groups": [
+        {
+          "groupName": "Match overview",
+          "statisticsItems": [
+            {
+              "key": "totalShotsOnGoal",
+              "name": "Total shots",
+              "home": "15",
+              "away": "6",
+              "homeValue": 15,
+              "awayValue": 6
+            },
+            {
+              "key": "goalkeeperSaves",
+              "name": "Goalkeeper saves",
+              "home": "0",
+              "away": "2",
+              "homeValue": 0,
+              "awayValue": 2
+            },
+            {
+              "key": "yellowCards",
+              "name": "Yellow cards",
+              "home": "3",
+              "away": "1",
+              "homeValue": 3,
+              "awayValue": 1
+            },
+            {
+              "key": "redCards",
+              "name": "Red cards",
+              "home": "0",
+              "away": "0",
+              "homeValue": 0,
+              "awayValue": 0
+            }
+          ]
+        },
+        {
+          "groupName": "Shots",
+          "statisticsItems": [
+            {
+              "key": "totalShotsOnGoal",
+              "name": "Total shots",
+              "home": "15",
+              "away": "6",
+              "homeValue": 15,
+              "awayValue": 6
+            },
+            {
+              "key": "shotsOnGoal",
+              "name": "Shots on target",
+              "home": "4",
+              "away": "1",
+              "homeValue": 4,
+              "awayValue": 1
+            }
+          ]
+        },
+        {
+          "groupName": "Attack",
+          "statisticsItems": []
+        },
+        {
+          "groupName": "Passes",
+          "statisticsItems": []
+        },
+        {
+          "groupName": "Duels",
+          "statisticsItems": []
+        },
+        {
+          "groupName": "Defending",
+          "statisticsItems": []
+        },
+        {
+          "groupName": "Goalkeeping",
+          "statisticsItems": [
+            {
+              "key": "goalkeeperSaves",
+              "name": "Total saves",
+              "home": "0",
+              "away": "2",
+              "homeValue": 0,
+              "awayValue": 2
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

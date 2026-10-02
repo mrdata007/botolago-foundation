@@ -1,0 +1,26 @@
+{
+  "DATA": {
+    "EVENT": {
+      "EVENT_ID": "GYlCyyrB",
+      "START_UTIME": 1790539200,
+      "STAGE": "FINISHED",
+      "ROUND": "Round 1",
+      "HOME_NAME": "Kawkab Marrakech",
+      "AWAY_NAME": "Hassania Agadir",
+      "HOME_PARTICIPANT_IDS": [
+        "lA6RXjzH"
+      ],
+      "AWAY_PARTICIPANT_IDS": [
+        "04t7zgjb"
+      ],
+      "HOME_SCORE_FULL": 2,
+      "AWAY_SCORE_FULL": 3
+    },
+    "TOURNAMENT": {
+      "NAME": "Morocco: Botola Pro",
+      "TOURNAMENT_ID": "CGClceUj",
+      "TOURNAMENT_STAGE_ID": "GKXUiwEl",
+      "TOURNAMENT_SEASON_ID": "CGClceUj"
+    }
+  }
+}

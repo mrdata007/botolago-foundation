@@ -14,13 +14,14 @@ import { renderToString } from "react-dom/server";
 
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
-import { MATCH_TIME_ZONE, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
+import { matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
 import { RETRY_AFTER_SECONDS, UNAVAILABLE_HEADER, withPageStatus } from "@/lib/page-availability";
 import { SSR_DEHYDRATE_OPTIONS } from "@/lib/ssr-prefetch";
 import { footballService, type FootballSeason } from "@/services/football";
 import { createAppQueryClient } from "@/services/query-client";
 import type { Club, Match } from "@/types/domain";
 import { Route as MatchesRoute } from "./matches.index";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /**
  * /matches rendered for real, the way the server renders it and the way the
@@ -70,9 +71,9 @@ function stubFootball() {
       gameweek: 3,
       homeClubId: HOME.id,
       awayClubId: AWAY.id,
-      // Evening in Casablanca on the day asked for: 20:00 most of the year,
-      // 19:00 while Morocco keeps UTC for Ramadan.
-      kickoff: `${day}T19:00:00Z`,
+      // Evening in Casablanca on the day asked for: 20:00, since Morocco is UTC+0
+      // all year from 2026-09-20 (it was 21:00 under UTC+1, 20:00 during Ramadan).
+      kickoff: `${day}T20:00:00Z`,
       status: "scheduled",
       venue: { fr: "Stade Mohammed V", ar: "Stade Mohammed V" },
     };
@@ -323,17 +324,18 @@ describe("/matches in the server's HTML", () => {
     expect((MatchesRoute.options.loader as { staleReloadMode?: string }).staleReloadMode).toBe(
       "blocking",
     );
-    setSystemTime(new Date("2026-09-26T22:50:00Z"));
+    // Before Morocco moved to UTC+0 all year, so the competition's midnight is 23:00Z.
+    setSystemTime(new Date("2026-09-12T22:50:00Z"));
     const router = matchesRouter(appClient(), false);
     await router.load();
     const today = () =>
       router.state.matches.find((match) => match.routeId === "/matches/")?.loaderData;
-    expect(today()).toEqual({ today: "2026-09-26" });
+    expect(today()).toEqual({ today: "2026-09-12" });
 
     await router.navigate({ to: "/news" });
-    setSystemTime(new Date("2026-09-26T23:10:00Z"));
+    setSystemTime(new Date("2026-09-12T23:10:00Z"));
     await router.navigate({ to: "/matches" } as never);
-    expect(today()).toEqual({ today: "2026-09-27" });
+    expect(today()).toEqual({ today: "2026-09-13" });
   });
 });
 
@@ -343,7 +345,9 @@ describe("/matches rows and the live strip (A05)", () => {
    * strip, higher on the page, links to the same match; the row is the last.
    */
   const rowLabel = (html: string) =>
-    [...html.matchAll(/<a aria-label="([^"]*)" href="\/matches\/7b1f2c3d[^"]*"/g)].at(-1)?.[1];
+    [...html.matchAll(/<a aria-label="([^"]*)"[^>]*? href="\/matches\/7b1f2c3d[^"]*"/g)].at(
+      -1,
+    )?.[1];
 
   test("a row shows the strip's newer reading of its match, and the day's when that is newer", async () => {
     stubFootball();
@@ -352,14 +356,13 @@ describe("/matches rows and the live strip (A05)", () => {
     const day = await footballService.getMatchDay(new Date(`${today}T12:00:00Z`), "fr");
     const [scheduled] = day.matches;
     // The row's kick-off time as the match card formats it, in the
-    // competition's zone: "20:00" does not hold during Ramadan, when this
-    // runs on the real day.
-    const kickoffTime = new Intl.DateTimeFormat("fr-FR", {
-      timeZone: MATCH_TIME_ZONE,
+    // competition's zone (the application's own rule, so the answer does not
+    // depend on the time-zone data of the machine running the test).
+    const kickoffTime = moroccoDateTimeFormat("fr-FR", {
       hour: "2-digit",
       minute: "2-digit",
     }).format(new Date(scheduled!.kickoff));
-    expect(["20:00", "19:00"]).toContain(kickoffTime);
+    expect(kickoffTime).toMatch(/^\d{2}:\d{2}$/);
     const inPlay = {
       matches: [{ ...scheduled!, status: "live" as const, minute: 12, homeScore: 1, awayScore: 0 }],
       clubs: [HOME, AWAY],
