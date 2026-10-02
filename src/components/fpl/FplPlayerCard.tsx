@@ -61,6 +61,7 @@ export function FplPlayerCard({
   vice,
   highlighted,
   dimmed,
+  noMatch,
   onClick,
   onRemove,
   removeLabel,
@@ -84,6 +85,8 @@ export function FplPlayerCard({
   vice?: boolean;
   highlighted?: boolean;
   dimmed?: boolean;
+  /** The player's club has no match this gameweek: a "!" badge on the shirt. */
+  noMatch?: boolean;
   onClick?: () => void;
   onRemove?: () => void;
   removeLabel?: string;
@@ -100,6 +103,7 @@ export function FplPlayerCard({
   // The board's shirts: 34px on the pitch, 30px on the bench strip.
   const jersey = size === "md" ? 34 : 30;
 
+  const noMatchText = t("fantasy.hub.no_match");
   const role = captain
     ? `, ${t("fantasy.captain_full")}`
     : vice
@@ -122,7 +126,7 @@ export function FplPlayerCard({
       sub={sub ?? " "}
       state={highlighted ? "selected" : doubtful ? "doubtful" : "default"}
       onClick={onClick}
-      ariaLabel={`${fullName}${club ? `, ${tr(club.shortName)}` : ""}${role}`}
+      ariaLabel={`${fullName}${club ? `, ${tr(club.shortName)}` : ""}${role}${noMatch ? `, ${noMatchText}` : ""}`}
       className={cn(dimmed && "opacity-45", className)}
       visual={
         // The marker rides inside the visual so it is placed against the
@@ -197,6 +201,24 @@ export function FplPlayerCard({
             aria-hidden
           >
             <AlertTriangle className="h-3 w-3" />
+          </span>
+        ) : noMatch ? (
+          // "!" for a club with no match: the same caution badge as an
+          // availability flag, with the word for it as the title.
+          <span
+            className={cn(
+              "grid h-5 w-5 place-items-center",
+              ui.radius.full,
+              "bg-[color:var(--ui-caution)]",
+              ui.tone.onCaution,
+              ui.text.micro,
+              "[font-weight:var(--ui-weight-heavy)]",
+              "shadow-[var(--ui-shadow-card)]",
+            )}
+            title={noMatchText}
+            aria-hidden
+          >
+            !
           </span>
         ) : undefined
       }

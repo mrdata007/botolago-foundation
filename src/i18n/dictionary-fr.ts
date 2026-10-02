@@ -836,6 +836,13 @@ export const fr = {
   "fantasy.hub.my_players": "Mes joueurs en J{gw}",
   "fantasy.hub.no_match": "Pas de match",
   "fantasy.hub.players_none": "Aucun match connu pour cette journée.",
+  "fantasy.team.no_match_swap_formation":
+    "{name} n'a pas de match en J{gw}. Passez en {formation} avec {in}.",
+  "fantasy.team.no_match_swap_same": "{name} n'a pas de match en J{gw}. Remplacez-le par {in}.",
+  "fantasy.team.no_match_only": "{name} n'a pas de match en J{gw}.",
+  "fantasy.team.no_match_apply": "Appliquer",
+  "fantasy.team.chip_bank": "Banque {n}",
+  "fantasy.team.chip_club_limit": "{n} max / club",
   "fantasy.hub.create_invite": "Créer une ligue et inviter",
   "fantasy.hub.invite_share": "Inviter des amis",
   "fantasy.hub.invite_whatsapp": "WhatsApp",

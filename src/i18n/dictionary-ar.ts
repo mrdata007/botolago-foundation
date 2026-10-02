@@ -796,6 +796,13 @@ export const ar = {
   "fantasy.hub.my_players": "لاعبيّ في ج{gw}",
   "fantasy.hub.no_match": "بلا مباراة",
   "fantasy.hub.players_none": "لا توجد مباراة معروفة لهذه الجولة.",
+  "fantasy.team.no_match_swap_formation":
+    "{name} بلا مباراة في ج{gw}. انتقل إلى {formation} مع {in}.",
+  "fantasy.team.no_match_swap_same": "{name} بلا مباراة في ج{gw}. استبدله بـ {in}.",
+  "fantasy.team.no_match_only": "{name} بلا مباراة في ج{gw}.",
+  "fantasy.team.no_match_apply": "تطبيق",
+  "fantasy.team.chip_bank": "الرصيد {n}",
+  "fantasy.team.chip_club_limit": "{n} كحد أقصى / ناد",
   "fantasy.hub.create_invite": "أنشئ دوريًا وادعُ أصدقاءك",
   "fantasy.hub.invite_share": "دعوة الأصدقاء",
   "fantasy.hub.invite_whatsapp": "واتساب",
