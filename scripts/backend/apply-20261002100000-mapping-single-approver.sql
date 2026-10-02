@@ -49,8 +49,20 @@ begin
     raise exception 'stop: the player-mapping backend (20261001161000) is not recorded -- is this Production V2?';
   end if;
   if exists (select 1 from supabase_migrations.schema_migrations
-      where version >= '20261002100000' or name = 'football_mapping_single_approver_switch') then
-    raise exception 'stop: this migration, or a newer one, is already recorded';
+      where version = '20261002100000' or name = 'football_mapping_single_approver_switch') then
+    raise exception 'stop: this migration is already recorded';
+  end if;
+  -- Nothing newer than the reviewed mapping backend is recorded EXCEPT the one
+  -- reviewed, unrelated migration below (api.list_my_match_reminders, a read-only
+  -- function from pull request #274, recorded with the repository file's exact
+  -- sha256). Any other, missing or changed migration stops the script.
+  if (select string_agg(version || ':' || name || ':' || encode(sha256(convert_to(statements[1], 'UTF8')), 'hex'), ',' order by version)
+      from supabase_migrations.schema_migrations where version > '20261001161000')
+    is distinct from '20261002110000:list_my_match_reminders:c0512530a5fc67fc3da8de7dd96b497d984f743b9e54c707446161958048fdf2' then
+    raise exception 'stop: the migrations recorded after 20261001161000 are not exactly the reviewed 20261002110000 list_my_match_reminders';
+  end if;
+  if to_regprocedure('api.list_my_match_reminders()') is null then
+    raise exception 'stop: 20261002110000 is recorded but api.list_my_match_reminders() does not exist';
   end if;
   if to_regclass('app_private.football_mapping_settings') is not null
     or to_regprocedure('app_private.football_mapping_self_approval_allowed()') is not null then

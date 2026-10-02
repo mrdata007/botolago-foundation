@@ -32,8 +32,8 @@ PROJECT_REF = "tkewgajrljbwgwedqsxn"
 STAGING_REF = "srdrflfrfpwixsllveid"
 API = "https://api.supabase.com"
 SCRIPT = "scripts/backend/apply-20261002100000-mapping-single-approver.sql"
-REHEARSAL_SCRIPT_SHA256 = "88f4cf396111a7aa39b67b63ac58ca406ef5de166bc4bba3e423a29171f701ed"
-COMMIT_SCRIPT_SHA256 = "0644be90c1872b20fe110a516a81de32fc7c169c690e76e6e0bb2f5dca37c1db"
+REHEARSAL_SCRIPT_SHA256 = "5dc40ecbaf0a0256c0fbcbf034383a821f0445f23e6f2f32fc472fe1e0c8fe4e"
+COMMIT_SCRIPT_SHA256 = "cf6a6cb4f79c98d515712a8bec3f29815a3b5f26097dc38266a0c7c0d5bc2395"
 MIGRATION = "supabase/migrations/20261002100000_football_mapping_single_approver_switch.sql"
 MIGRATION_SHA256 = "1fb64a5c5a8a231715663e38159a826842bf00360a058492fce666eb032c904e"
 
@@ -47,6 +47,7 @@ select jsonb_build_object(
   'history_rows', (select count(*) from supabase_migrations.schema_migrations),
   'history_has_switch', (select count(*) from supabase_migrations.schema_migrations where version = '20261002100000'),
   'latest_version', (select max(version) from supabase_migrations.schema_migrations),
+  'migrations_after_reviewed', (select string_agg(version || ':' || name || ':' || encode(sha256(convert_to(statements[1], 'UTF8')), 'hex'), ',' order by version) from supabase_migrations.schema_migrations where version > '20261001161000'),
   'settings_table', to_regclass('app_private.football_mapping_settings')::text,
   'switch_on', case when to_regclass('app_private.football_mapping_settings') is null then null else (xpath('/row/c/text()', query_to_xml('select allow_self_approval as c from app_private.football_mapping_settings', false, true, '')))[1]::text end,
   'switch_rows', case when to_regclass('app_private.football_mapping_settings') is null then null else (xpath('/row/c/text()', query_to_xml('select count(*) as c from app_private.football_mapping_settings', false, true, '')))[1]::text::bigint end,
@@ -94,7 +95,8 @@ OLD_MD5 = {
 }
 
 EXPECT_BEFORE = {
-    "history_has_switch": 0, "latest_version": "20261001161000", "settings_table": None,
+    "history_has_switch": 0, "latest_version": "20261002110000",
+    "migrations_after_reviewed": "20261002110000:list_my_match_reminders:c0512530a5fc67fc3da8de7dd96b497d984f743b9e54c707446161958048fdf2", "settings_table": None,
     "self_approved_column": 0, "proposals": 0, "candidates": 1004, "observations": 1006,
     "mapping_rows": 1541, "reviewed_provider_mapping_rows": 0,
     "resolver_md5": "c4c7253284afa52aea055f74e3806d73",
@@ -111,7 +113,9 @@ UNCHANGED = [
 ]
 
 EXPECT_AFTER = {
-    "history_has_switch": 1, "latest_version": "20261002100000", "settings_table": "app_private.football_mapping_settings",
+    "history_has_switch": 1, "latest_version": "20261002110000",
+    "migrations_after_reviewed": "20261002100000:football_mapping_single_approver_switch:1fb64a5c5a8a231715663e38159a826842bf00360a058492fce666eb032c904e,20261002110000:list_my_match_reminders:c0512530a5fc67fc3da8de7dd96b497d984f743b9e54c707446161958048fdf2",
+    "settings_table": "app_private.football_mapping_settings",
     "switch_on": "true", "switch_rows": 1, "settings_forced_rls": 1, "settings_api_grants": 0,
     "new_fns_api_grants": 0, "self_approved_column": 1, "two_people_check": None,
     "proposals": 0,
@@ -243,7 +247,7 @@ def main() -> int:
     evidence["after"] = after
     recorded = after.get("history_has_switch")
     if recorded == 0:
-        unchanged_everything = all(before.get(k) == after.get(k) for k in UNCHANGED + ["settings_table", "decide_md5", "execute_md5", "availability_md5", "proposal_json_md5", "private_functions"])
+        unchanged_everything = all(before.get(k) == after.get(k) for k in UNCHANGED + ["settings_table", "migrations_after_reviewed", "decide_md5", "execute_md5", "availability_md5", "proposal_json_md5", "private_functions"])
         outcome = OUT_FAILED if unchanged_everything else OUT_UNVERIFIED
         evidence["outcome"] = outcome
         write_evidence(evidence_dir, evidence)
