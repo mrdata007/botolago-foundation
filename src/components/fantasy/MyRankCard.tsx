@@ -8,6 +8,7 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { LeagueStanding } from "@/types/fantasy";
 import { selectMyRankState, type TeamPresence } from "./my-rank-state";
+import { pointsUnit } from "@/lib/points-unit";
 
 /**
  * "Your position" — the line above the rankings table (A-Rankings).
@@ -136,7 +137,7 @@ export function MyRankCard({
             <bdi className={cn(ui.text.tabular, "[font-weight:var(--ui-weight-strong)]")}>
               {nf.format(ranked.totalScore)}
             </bdi>{" "}
-            <span className={ui.tone.muted}>{t("fantasy.points.abbr")}</span>
+            <span className={ui.tone.muted}>{pointsUnit(ranked.totalScore, t)}</span>
           </span>
           <span aria-hidden className={ui.tone.muted}>
             ·

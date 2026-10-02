@@ -33,6 +33,7 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
+import { pointsUnit } from "@/lib/points-unit";
 
 export const Route = createFileRoute("/fantasy/players")({
   /**
@@ -651,7 +652,7 @@ function PlayerListRow({
         </span>
         <span className={cn(ui.text.meta, ui.tone.muted)}>
           <bdi className={ui.stat.sm}>{nf.format(player.totalPoints)}</bdi>{" "}
-          {t("fantasy.points.abbr")}
+          {pointsUnit(player.totalPoints, t)}
         </span>
       </span>
 

@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { prizesService } from "@/services/prizes";
 import { PRIZE_HERO_ART, PRIZE_HERO_PHOTO, PRIZE_TIER_ART } from "./prize-art";
 import { fill, formatMad, howToWin, periodLabel, tierLabel } from "./prize-presentation";
+import { pointsLabel } from "@/components/matches/standings-copy";
 
 const TIER_ICONS: Record<PrizeTier, ComponentType<{ className?: string }>> = {
   gameweek: Medal,
@@ -326,7 +327,7 @@ function WinnersWall() {
                 <bdi
                   className={cn("shrink-0", ui.text.bodyStrong, ui.text.tabular, ui.tone.default)}
                 >
-                  {fill(t("prizes.points"), { points: nf.format(winner.points) })}
+                  {pointsLabel(winner.points, lang, t, nf.format)}
                 </bdi>
               </li>
             ))}

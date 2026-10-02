@@ -4,6 +4,7 @@ import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { PointsBar } from "./points-chart";
+import { pointsUnit } from "@/lib/points-unit";
 
 /** The tallest bar, in px: the best week of the window. */
 const PLOT_PX = 64;
@@ -43,7 +44,7 @@ export function PointsChart({
   const describe = (bar: PointsBar) =>
     [
       gameweek(bar.sequence),
-      `${nf.format(bar.points)} ${t("fantasy.points.abbr")}`,
+      `${nf.format(bar.points)} ${pointsUnit(bar.points, t)}`,
       `${nf.format(bar.minutesPlayed)} ${t("home.minutes")}`,
       ...bar.opponents.map(
         (opponent) =>

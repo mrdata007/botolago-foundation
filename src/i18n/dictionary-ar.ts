@@ -498,6 +498,7 @@ export const ar = {
   "fantasy.points.history": "السجل",
   "fantasy.points.breakdown": "تفصيل حسب اللاعب",
   "fantasy.points.abbr": "ن",
+  "fantasy.points.abbr_one": "ن",
   "fantasy.points.raw_xi": "التشكيلة الأساسية (خام)",
   "fantasy.points.captain_bonus": "بونص القائد",
   "fantasy.points.effective_captain": "القائد الفعلي",
