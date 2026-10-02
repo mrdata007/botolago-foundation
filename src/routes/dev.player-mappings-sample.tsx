@@ -1,5 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { InMemoryPlayerMappingRepository } from "@/backend/football/identity/mock-mapping-repository";
 import { SAMPLE_ACTORS, buildSampleWorld } from "@/backend/football/identity/sample-mapping-data";
 import { PlayerMappingsScreen } from "@/components/admin/player-mappings/PlayerMappingsScreen";
@@ -65,6 +65,19 @@ function SampleHarness() {
           : [SAMPLE_ACTORS.proposer, SAMPLE_ACTORS.approver],
     });
   }, [search.scale, search.reviewers, search.selfapprove]);
+
+  // Development only: lets a browser test change what the session carries (AAL2, a recent
+  // sign-in) while the screen is open. The route does not exist outside a development server.
+  useEffect(() => {
+    (window as unknown as { __mappingSample?: unknown }).__mappingSample = {
+      setSession: (who: Seat, session: { aal2?: boolean; recentSignIn?: boolean }) =>
+        repository.setSession(
+          who === "approver" ? SAMPLE_ACTORS.approver : SAMPLE_ACTORS.proposer,
+          session,
+        ),
+      mappingCount: () => repository.mappings.length,
+    };
+  }, [repository]);
 
   const actorId = seat === "approver" ? SAMPLE_ACTORS.approver : SAMPLE_ACTORS.proposer;
   return (

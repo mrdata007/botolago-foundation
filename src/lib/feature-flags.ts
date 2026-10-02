@@ -259,8 +259,9 @@ export const HOME_DEADLINE_FIRST = false;
  * real page first (the queue of 1,004 candidates, the ranked options, no write
  * control while this was off). With this on, the screen draws the controls to
  * propose a pairing, and for a DIFFERENT qualified person to approve or reject
- * it. Proposing creates a proposal only: nothing is mapped, and nothing here
- * executes anything.
+ * it. Proposing and approving create and decide a proposal only: nothing is
+ * mapped by either. An approved proposal offers ONE explicit, typed execute
+ * step (ExecuteMapping), which is the reviewed execute RPC and nothing else.
  *
  * The database authorises every one of those calls again (staff, MFA, recent
  * sign-in, `football.manage_mappings`, and, unless the owner's single-approver

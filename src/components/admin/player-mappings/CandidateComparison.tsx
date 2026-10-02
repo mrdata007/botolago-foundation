@@ -68,6 +68,7 @@ export function CandidateComparison({
   context,
   preloadedOptions,
   onChanged,
+  onExecuted,
   onClose,
 }: {
   candidate: CandidateDto;
@@ -83,6 +84,8 @@ export function CandidateComparison({
   /** Sample options for a static render; the screen asks the repository otherwise. */
   preloadedOptions?: readonly AppPlayerOption[];
   onChanged: () => void;
+  /** An execution succeeded: the screen keeps this sentence, because the proposal panel goes away. */
+  onExecuted?: (result: string) => void;
   onClose: () => void;
 }) {
   const rtl = lang === "ar";
@@ -202,6 +205,7 @@ export function CandidateComparison({
       {openProposal && (
         <ProposalPanel
           proposal={openProposal}
+          candidate={candidate}
           availability={availability}
           viewer={viewer}
           lang={lang}
@@ -209,6 +213,7 @@ export function CandidateComparison({
           writesEnabled={writesEnabled}
           actions={actions}
           onChanged={onChanged}
+          onExecuted={onExecuted}
         />
       )}
 

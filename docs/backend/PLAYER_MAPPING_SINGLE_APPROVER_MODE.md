@@ -26,8 +26,8 @@ functions that refused a self-approval are replaced.
 - The evidence re-check at approval and again at execution; a changed world
   holds the proposal.
 - A proposal expires after 72 hours, an approval after 24 hours.
-- Execution is a separate call. The screen has no execute control; approving
-  maps nothing.
+- Execution is a separate, explicit step (see
+  `PLAYER_MAPPING_EXECUTE_CONTROL.md`). Approving maps nothing.
 - No wait between proposing and approving (owner decision).
 
 ## What is new
