@@ -5,6 +5,13 @@ operator may approve their own mapping proposal. The two-person design is not
 removed: it is behind a switch in the database, and turning the switch off
 brings it back with no other change.
 
+> **Status, 2026-10-02: the switch is OFF again.** It was ON only for the first
+> production mapping (the controlled bootstrap test). It was turned off by the
+> guarded script `scripts/backend/data-mapping-single-approver-switch-off.sql`
+> (apply run 37039857030). Two different qualified people are required again.
+> See `docs/production/APPLIED_2026_10_02_FIRST_PLAYER_MAPPING_AND_DUAL_CONTROL_RESTORE.md`.
+> The first mapping was self-approved under this switch and stays valid.
+
 ## What the switch is
 
 `app_private.football_mapping_settings` holds one row.
