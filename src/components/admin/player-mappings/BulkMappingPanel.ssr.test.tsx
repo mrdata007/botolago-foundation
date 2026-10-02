@@ -95,6 +95,9 @@ describe("the owner review screen", () => {
     has(html, "APPROUVER LE LOT RÉVISÉ");
     has(html, "EXÉCUTER LE LOT APPROUVÉ");
     has(html, "Flashscore est exclu");
+    // The words match the real limit: bounded calls of 25, never "100".
+    has(html, "en appels de 25 au plus");
+    lacks(html, "de 100 au plus");
     has(html, "Aucune ne déclenche la suivante");
   });
 

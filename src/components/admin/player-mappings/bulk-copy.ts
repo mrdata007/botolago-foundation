@@ -1,4 +1,7 @@
-import type { BulkRowState } from "@/backend/football/identity/bulk-mapping/contract";
+import {
+  MAX_PROPOSE_PER_CALL,
+  type BulkRowState,
+} from "@/backend/football/identity/bulk-mapping/contract";
 import type { Lang } from "./copy";
 
 export interface BulkCopy {
@@ -131,7 +134,7 @@ const fr: BulkCopy = {
   phases: {
     propose: {
       heading: "1. Proposer le lot révisé",
-      what: "Crée une proposition par ligne sélectionnée et encore non proposée, en lots de 100 au plus. N'approuve rien, n'associe rien.",
+      what: `Crée une proposition par ligne sélectionnée et encore non proposée, en appels de ${MAX_PROPOSE_PER_CALL} au plus. N'approuve rien, n'associe rien.`,
       button: "PROPOSER LE LOT RÉVISÉ",
       running: "Proposition en cours…",
       typeLabel: "Saisissez la phrase pour confirmer",
@@ -232,7 +235,7 @@ const ar: BulkCopy = {
       ...fr.phases.propose,
       heading: "١. اقتراح الدفعة المراجَعة",
       button: "اقتراح الدفعة المراجَعة",
-      what: "ينشئ اقتراحًا لكل سطر محدّد لم يُقترح بعد، بحد أقصى 100 في الاستدعاء. لا يوافق ولا يربط.",
+      what: `ينشئ اقتراحًا لكل سطر محدّد لم يُقترح بعد، بحد أقصى ${MAX_PROPOSE_PER_CALL} في الاستدعاء الواحد. لا يوافق ولا يربط.`,
       typeLabel: "اكتب العبارة للتأكيد",
     },
     approve: {
