@@ -108,6 +108,8 @@ export interface PlayerMappingCopy {
     readonly signalDob: string;
     readonly signalShirt: string;
     readonly signalPosition: string;
+    readonly clubMismatch: string;
+    readonly clubUnknown: string;
     readonly match: string;
     readonly conflict: string;
     readonly noSignal: string;
@@ -339,6 +341,7 @@ const fr: PlayerMappingCopy = {
       no_agreeing_signal: "Aucun signal ne concorde.",
       top_dob_conflict: "La meilleure option a une date de naissance différente.",
       top_position_conflict: "La meilleure option a un poste différent.",
+      top_club_mismatch: "La meilleure option appartient à un autre club.",
       multi_squad: "Le candidat figure dans deux effectifs.",
       registered_team_disagreement: "Le fournisseur l’enregistre dans une autre équipe.",
       unique_dob_match: "Une seule option a la même date de naissance.",
@@ -364,6 +367,8 @@ const fr: PlayerMappingCopy = {
     signalDob: "Naissance",
     signalShirt: "Numéro",
     signalPosition: "Poste",
+    clubMismatch: "Autre club : à vérifier",
+    clubUnknown: "Aucun club connu",
     match: "Concorde",
     conflict: "Différent",
     noSignal: "Sans signal",
@@ -632,6 +637,7 @@ const ar: PlayerMappingCopy = {
       no_agreeing_signal: "لا توجد إشارة متوافقة.",
       top_dob_conflict: "أفضل خيار له تاريخ ميلاد مختلف.",
       top_position_conflict: "أفضل خيار له مركز مختلف.",
+      top_club_mismatch: "أفضل خيار ينتمي إلى نادٍ آخر.",
       multi_squad: "المرشَّح وارد في تشكيلتين.",
       registered_team_disagreement: "يسجّله المزوّد في فريق آخر.",
       unique_dob_match: "خيار واحد فقط له تاريخ الميلاد نفسه.",
@@ -657,6 +663,8 @@ const ar: PlayerMappingCopy = {
     signalDob: "الميلاد",
     signalShirt: "الرقم",
     signalPosition: "المركز",
+    clubMismatch: "نادٍ آخر: يلزم التحقق",
+    clubUnknown: "لا نادي معروف",
     match: "يتوافق",
     conflict: "مختلف",
     noSignal: "دون إشارة",

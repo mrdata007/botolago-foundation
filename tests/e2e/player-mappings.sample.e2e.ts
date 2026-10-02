@@ -230,6 +230,8 @@ test.describe("the comparison", () => {
     await page.getByTestId("mapping-scope-all").click();
     await page.getByTestId("mapping-options-toggle").click();
     await expect(page.getByTestId("mapping-option")).toHaveCount(200);
+    // Widened, an option from another club says so on its row.
+    await expect(page.getByTestId("mapping-club-flag").first()).toContainText("Autre club");
   });
 
   test("filters and search narrow the queue", async ({ page }) => {

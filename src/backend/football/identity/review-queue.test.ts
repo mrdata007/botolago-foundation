@@ -609,6 +609,17 @@ describe("preview categories (a way to read the queue, never a decision)", () =>
     expect(classifyPreview(plain, [])).toEqual({ category: "C", reasons: ["no_options"] });
   });
 
+  test("D: a best option from ANOTHER club is never a very strong suggestion, however well its date of birth matches", () => {
+    const other = option(1, 6, { dob: "match", shirt: "match", position: "match" });
+    other.signals = { ...other.signals, club: "mismatch" };
+    const preview = classifyPreview(plain, [other, option(2, 0, {})]);
+    expect(preview).toEqual({ category: "D", reasons: ["top_club_mismatch"] });
+    // A player with no club on record is not a mismatch: it can still read as A.
+    const noClub = option(1, 6, { dob: "match", shirt: "match", position: "match" });
+    noClub.signals = { ...noClub.signals, club: "no_signal" };
+    expect(classifyPreview(plain, [noClub]).category).toBe("A");
+  });
+
   test("D: a DOB conflict or position disagreement at the top, two squads, or another registered team", () => {
     expect(classifyPreview(plain, [option(1, -2, { dob: "conflict" })]).reasons).toEqual([
       "top_dob_conflict",
