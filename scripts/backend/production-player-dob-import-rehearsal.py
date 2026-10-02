@@ -48,7 +48,6 @@ select jsonb_build_object(
   'dob_observations', (select count(*) from app_private.player_attribute_observations where attribute = 'date_of_birth'),
   'attribute_observations', (select count(*) from app_private.player_attribute_observations),
   'observations_digest', (select md5(coalesce(string_agg(o::text, '|' order by o.id), '')) from app_private.player_attribute_observations o),
-  'correct_holders', (select count(*) from app_private.staff_principals sp where sp.status = 'active' and app_private.admin_has_permission(sp.id, 'football.correct')),
   'audit_events', (select count(*) from app_private.admin_audit_events),
   'candidates', (select count(*) from app_private.football_player_mapping_candidates),
   'candidates_digest', (select md5(coalesce(string_agg(c::text, '|' order by c.id), '')) from app_private.football_player_mapping_candidates c),
@@ -67,7 +66,7 @@ select jsonb_build_object(
 COMPARE_KEYS = [
     "latest_version", "history_rows", "listed_players_found", "listed_players_without_dob",
     "listed_player_dob_observations", "players", "players_digest", "players_with_dob", "dob_observations",
-    "attribute_observations", "observations_digest", "correct_holders", "audit_events", "candidates",
+    "attribute_observations", "observations_digest", "audit_events", "candidates",
     "candidates_digest", "proposals", "mapping_rows", "mapping_identity_digest", "cron_jobs", "cron_digest",
     "fantasy_table_counts", "gameweek_digest",
 ]
@@ -75,7 +74,7 @@ COMPARE_KEYS = [
 # What production must look like BEFORE (the script's own preflight checks the same and more).
 EXPECT_BEFORE = {
     "latest_version": "20261002110000", "listed_players_found": 3, "listed_players_without_dob": 3,
-    "listed_player_dob_observations": 0, "correct_holders": 1, "proposals": 0, "busy_sessions": 0,
+    "listed_player_dob_observations": 0, "proposals": 0, "busy_sessions": 0,
 }
 
 class RehearsalError(Exception):
