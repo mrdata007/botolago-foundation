@@ -162,6 +162,26 @@ export interface PlayerMappingCopy {
     readonly held: string;
     readonly notPending: string;
     readonly executionSeparate: string;
+    readonly execute: {
+      readonly title: string;
+      readonly intro: string;
+      readonly targetHeading: string;
+      readonly provider: string;
+      readonly externalId: string;
+      readonly appPlayer: string;
+      readonly candidate: string;
+      readonly kind: string;
+      readonly whatMap: string;
+      readonly whatOther: string;
+      readonly typeLabel: string;
+      readonly typeHint: (phrase: string) => string;
+      readonly button: string;
+      readonly running: string;
+      readonly done: string;
+      readonly result: (provider: string, externalId: string, appPlayerId: string) => string;
+      readonly dismiss: string;
+      readonly fingerprintCheck: string;
+    };
     readonly approve: string;
     readonly approveConfirm: string;
     readonly approvePrompt: (fingerprint: string) => string;
@@ -430,7 +450,31 @@ const fr: PlayerMappingCopy = {
     held: "Cette proposition est bloquée : le monde a changé depuis qu’elle a été faite.",
     notPending: "Cette proposition n’attend plus de décision.",
     executionSeparate:
-      "L’exécution est une étape distincte qui n’existe pas dans cet écran. Rien n’est rapproché ici.",
+      "L’approbation ne rapproche rien. L’exécution est une étape distincte, plus bas : rien n’est écrit tant que vous ne l’avez pas confirmée.",
+    execute: {
+      title: "Exécuter cette proposition approuvée",
+      intro:
+        "Une seule proposition à la fois. Vérifiez l’empreinte et la cible ci-dessous : l’exécution écrit le rapprochement, une seule fois, et la base revérifie tout au moment d’écrire.",
+      targetHeading: "Cible du rapprochement",
+      provider: "Fournisseur",
+      externalId: "Identifiant fournisseur",
+      appPlayer: "Joueur de l’application",
+      candidate: "Candidat",
+      kind: "Type de décision",
+      whatMap:
+        "Écrit UNE ligne de rapprochement : cet identifiant fournisseur désigne désormais ce joueur. Une correction ultérieure passe par un remplacement ou une désactivation revus, jamais par une suppression.",
+      whatOther: "Applique cette décision approuvée à la ligne existante, exactement une fois.",
+      typeLabel: "Confirmation écrite",
+      typeHint: (phrase) => `Saisissez exactement ${phrase} pour activer le bouton.`,
+      button: "Exécuter le rapprochement",
+      running: "Exécution en cours…",
+      done: "Exécuté. Une seule ligne a été écrite.",
+      result: (provider, externalId, appPlayerId) =>
+        `Exécuté : une seule ligne écrite. ${provider} ${externalId} désigne désormais le joueur ${appPlayerId}.`,
+      dismiss: "Fermer ce message",
+      fingerprintCheck:
+        "Avant d’exécuter, l’écran relit la proposition : si l’empreinte a changé depuis votre lecture, rien n’est exécuté.",
+    },
     approve: "Approuver",
     approveConfirm: "Confirmer l’approbation",
     approvePrompt: (fingerprint) => `Approuver exactement l’empreinte ${fingerprint} ?`,
@@ -726,7 +770,32 @@ const ar: PlayerMappingCopy = {
     expired: "انتهت صلاحية هذا الاقتراح، ولم يعد ممكنًا البتّ فيه.",
     held: "هذا الاقتراح متوقف: تغيّر الوضع منذ تقديمه.",
     notPending: "لم يعد هذا الاقتراح ينتظر قرارًا.",
-    executionSeparate: "التنفيذ خطوة منفصلة غير موجودة في هذه الشاشة. لا شيء يُطابَق هنا.",
+    executionSeparate:
+      "الموافقة لا تطابق شيئًا. التنفيذ خطوة منفصلة أدناه: لا يُكتب شيء حتى تؤكّدها.",
+    execute: {
+      title: "تنفيذ هذا الاقتراح المعتمَد",
+      intro:
+        "اقتراح واحد في كل مرة. راجع البصمة والهدف أدناه: التنفيذ يكتب المطابقة مرة واحدة، وتعيد قاعدة البيانات التحقق من كل شيء عند الكتابة.",
+      targetHeading: "هدف المطابقة",
+      provider: "المزوِّد",
+      externalId: "معرّف المزوِّد",
+      appPlayer: "لاعب التطبيق",
+      candidate: "المرشَّح",
+      kind: "نوع القرار",
+      whatMap:
+        "يكتب سطر مطابقة واحدًا: يصبح معرّف المزوِّد هذا يشير إلى هذا اللاعب. أي تصحيح لاحق يتم باستبدال أو إيقاف مُراجَعين، وليس بالحذف.",
+      whatOther: "يطبّق هذا القرار المعتمَد على السطر الموجود، مرة واحدة تمامًا.",
+      typeLabel: "تأكيد كتابي",
+      typeHint: (phrase) => `اكتب ${phrase} بالضبط لتفعيل الزر.`,
+      button: "تنفيذ المطابقة",
+      running: "جارٍ التنفيذ…",
+      done: "تم التنفيذ. كُتب سطر واحد فقط.",
+      result: (provider, externalId, appPlayerId) =>
+        `تم التنفيذ: كُتب سطر واحد فقط. ${provider} ${externalId} يشير الآن إلى اللاعب ${appPlayerId}.`,
+      dismiss: "إغلاق هذه الرسالة",
+      fingerprintCheck:
+        "قبل التنفيذ تعيد الشاشة قراءة الاقتراح: إن تغيّرت البصمة منذ قراءتك فلن يُنفَّذ شيء.",
+    },
     approve: "موافقة",
     approveConfirm: "تأكيد الموافقة",
     approvePrompt: (fingerprint) => `الموافقة على البصمة ${fingerprint} تحديدًا؟`,

@@ -1,5 +1,6 @@
 import { useReducer, useState } from "react";
 import type {
+  CandidateDto,
   ProposalDto,
   ReviewerAvailability,
 } from "@/backend/football/identity/mapping-contracts";
@@ -14,6 +15,8 @@ import {
 import { ui, UiBadge, UiButton, UiCheckbox, UiTextarea } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { mappingErrorMessage, type Lang, type PlayerMappingCopy } from "./copy";
+import { canOfferExecute } from "./execute-confirmation";
+import { ExecuteMapping } from "./ExecuteMapping";
 import { AdminDatum, Fact, SignalPill, UtcDate } from "./parts";
 import type { MappingActions } from "./use-player-mappings";
 
@@ -45,10 +48,12 @@ type Message = { readonly tone: "info" | "alert"; readonly text: string } | null
  *    or reject that fingerprint, with a reason of their own;
  *  - when nobody else is qualified the proposal says SECOND QUALIFIED REVIEWER
  *    REQUIRED and offers no way round it;
- *  - nothing here executes anything: execution is a separate step.
+ *  - approving executes nothing. An approved proposal offers ONE explicit,
+ *    typed execute step (see ExecuteMapping), which is the reviewed execute RPC.
  */
 export function ProposalPanel({
   proposal,
+  candidate = null,
   availability,
   viewer,
   lang,
@@ -56,8 +61,11 @@ export function ProposalPanel({
   writesEnabled,
   actions,
   onChanged,
+  onExecuted,
 }: {
   proposal: ProposalDto;
+  /** The candidate the proposal names, when the queue has it: a readable label, nothing more. */
+  candidate?: CandidateDto | null;
   availability: ReviewerAvailability;
   viewer: MappingViewer;
   lang: Lang;
@@ -65,6 +73,8 @@ export function ProposalPanel({
   writesEnabled: boolean;
   actions: MappingActions;
   onChanged: () => void;
+  /** An execution succeeded: the screen keeps this sentence, because this panel goes away. */
+  onExecuted?: (result: string) => void;
 }) {
   const rtl = lang === "ar";
   const [action, dispatch] = useReducer(destructiveActionReducer, IDLE_DESTRUCTIVE_ACTION);
@@ -346,6 +356,17 @@ export function ProposalPanel({
             />
           </div>
         </div>
+      )}
+
+      {writesEnabled && viewer.canManage && canOfferExecute(proposal) && (
+        <ExecuteMapping
+          proposal={proposal}
+          candidate={candidate}
+          copy={copy}
+          actions={actions}
+          onChanged={onChanged}
+          onExecuted={onExecuted}
+        />
       )}
 
       {canActAsProposer &&

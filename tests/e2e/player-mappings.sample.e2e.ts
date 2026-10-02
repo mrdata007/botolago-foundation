@@ -38,6 +38,25 @@ async function proposeFirst(page: Page) {
   await expect(page.getByTestId("mapping-propose-message")).toBeVisible();
 }
 
+const PHRASE = "EXECUTE_PLAYER_MAPPING";
+const APPROVAL_REASON = "Preuves relues, tout concorde.";
+
+/** Proposes the first candidate, then approves it from the same seat (single-approver mode). */
+async function proposeAndSelfApprove(page: Page) {
+  await proposeFirst(page);
+  await page.getByTestId("mapping-approve").click();
+  await page.getByTestId("mapping-approve-reason").fill(APPROVAL_REASON);
+  await page.getByTestId("mapping-approve-commit").click();
+  await expect(page.getByTestId("mapping-proposal-status")).toHaveText(/Approuvée|موافَق عليه/);
+}
+
+const mappingCount = (page: Page) =>
+  page.evaluate(() =>
+    (
+      window as unknown as { __mappingSample: { mappingCount(): number } }
+    ).__mappingSample.mappingCount(),
+  );
+
 test.describe("keyboard", () => {
   test("rows are reached with Tab and moved through with the arrow keys, Home and End", async ({
     page,
@@ -235,6 +254,179 @@ test.describe("single-approver mode", () => {
     await expect(page.getByTestId("mapping-self-approval-notice")).toHaveCount(0);
     await expect(page.getByTestId("mapping-approve")).toHaveCount(0);
   });
+});
+
+test.describe("execute one approved proposal", () => {
+  const SELF = `${SMALL}&reviewers=1&selfapprove=1`;
+
+  test("it is offered only after approval, needs the typed phrase, and executes exactly one mapping", async ({
+    page,
+  }, testInfo) => {
+    const observed = observePage(page);
+    await openSample(page, "fr", SELF);
+    await proposeFirst(page);
+    // Pending: no execute control.
+    await expect(page.getByTestId("mapping-execute-panel")).toHaveCount(0);
+    await page.getByTestId("mapping-approve").click();
+    await page.getByTestId("mapping-approve-reason").fill(APPROVAL_REASON);
+    await page.getByTestId("mapping-approve-commit").click();
+    await expect(page.getByTestId("mapping-proposal-status")).toHaveText("Approuvée");
+    // Approved: the control appears, and NOTHING has been written by approving.
+    await expect(page.getByTestId("mapping-execute-panel")).toBeVisible();
+    expect(await mappingCount(page)).toBe(0);
+    // The exact fingerprint and the target are on screen.
+    const fingerprint = (await page.getByTestId("mapping-fingerprint").innerText()).trim();
+    await expect(page.getByTestId("mapping-execute-fingerprint")).toHaveText(fingerprint);
+    await expect(page.getByTestId("mapping-execute-provider")).toBeVisible();
+    await expect(page.getByTestId("mapping-execute-external-id")).toBeVisible();
+    await expect(page.getByTestId("mapping-execute-app-player")).toBeVisible();
+    // 11. Typed confirmation: disabled until the phrase is exact.
+    const button = page.getByTestId("mapping-execute");
+    const input = page.getByTestId("mapping-execute-input");
+    await expect(button).toBeDisabled();
+    await input.fill("execute_player_mapping");
+    await expect(button).toBeDisabled();
+    await input.fill("EXECUTE");
+    await expect(button).toBeDisabled();
+    // Enter in the field never executes.
+    await input.fill(PHRASE);
+    await expect(button).toBeEnabled();
+    await input.press("Enter");
+    expect(await mappingCount(page)).toBe(0);
+    // 12. One press: one mapping.
+    await button.click();
+    // The panel goes away with the proposal; the screen keeps what was written.
+    await expect(page.getByTestId("mapping-execute-result")).toContainText("Exécuté");
+    expect(await mappingCount(page)).toBe(1);
+    // 8. Executed: the control is gone and a second execution is impossible.
+    await expect(page.getByTestId("mapping-execute-panel")).toHaveCount(0);
+    await expect(page.getByTestId("mapping-execute")).toHaveCount(0);
+    await page.screenshot({ path: testInfo.outputPath("execute-done-fr.png"), fullPage: true });
+    await observed.verify(testInfo);
+  });
+
+  test("a rejected proposal has no execute control", async ({ page }) => {
+    await openSample(page, "fr", SELF);
+    await proposeFirst(page);
+    await page.getByTestId("mapping-reject").click();
+    await page.getByTestId("mapping-reject-reason").fill("Je préfère ne pas rapprocher ceci.");
+    await page.getByTestId("mapping-reject-commit").click();
+    // A rejected proposal is final: the screen is back on the candidate, with no execute control.
+    await expect(page.getByTestId("mapping-proposal")).toHaveCount(0);
+    await expect(page.getByTestId("mapping-execute-panel")).toHaveCount(0);
+    expect(await mappingCount(page)).toBe(0);
+  });
+
+  test("9. a session without the second factor is refused, in words, and nothing is written", async ({
+    page,
+  }) => {
+    await openSample(page, "fr", SELF);
+    await proposeAndSelfApprove(page);
+    await page.evaluate(() =>
+      (
+        window as unknown as { __mappingSample: { setSession(w: string, s: object): void } }
+      ).__mappingSample.setSession("proposer", { aal2: false }),
+    );
+    await page.getByTestId("mapping-execute-input").fill(PHRASE);
+    await page.getByTestId("mapping-execute").click();
+    await expect(page.getByTestId("mapping-execute-message")).toContainText("AAL2");
+    expect(await mappingCount(page)).toBe(0);
+    await expect(page.getByTestId("mapping-execute-panel")).toBeVisible();
+  });
+
+  test("10. a stale sign-in is refused, in words, and nothing is written", async ({ page }) => {
+    await openSample(page, "fr", SELF);
+    await proposeAndSelfApprove(page);
+    await page.evaluate(() =>
+      (
+        window as unknown as { __mappingSample: { setSession(w: string, s: object): void } }
+      ).__mappingSample.setSession("proposer", { recentSignIn: false }),
+    );
+    await page.getByTestId("mapping-execute-input").fill(PHRASE);
+    await page.getByTestId("mapping-execute").click();
+    await expect(page.getByTestId("mapping-execute-message")).toContainText("récente");
+    expect(await mappingCount(page)).toBe(0);
+  });
+
+  test("14. it can be done from the keyboard alone, in order, with a visible focus", async ({
+    page,
+  }) => {
+    await openSample(page, "fr", SELF);
+    await proposeAndSelfApprove(page);
+    const input = page.getByTestId("mapping-execute-input");
+    await input.focus();
+    await expect(input).toBeFocused();
+    await page.keyboard.type(PHRASE);
+    await page.keyboard.press("Tab");
+    const button = page.getByTestId("mapping-execute");
+    await expect(button).toBeFocused();
+    expect(await mappingCount(page)).toBe(0);
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("mapping-execute-result")).toContainText("Exécuté");
+    expect(await mappingCount(page)).toBe(1);
+  });
+
+  test("the two-person flow works too: a second person approves, then executes", async ({
+    page,
+  }) => {
+    await openSample(page, "fr");
+    await proposeFirst(page);
+    await seat(page, "approver");
+    await page.getByTestId("mapping-tab-proposed").click();
+    await page.getByTestId("mapping-row").first().click();
+    await page.getByTestId("mapping-approve").click();
+    await page.getByTestId("mapping-approve-reason").fill(APPROVAL_REASON);
+    await page.getByTestId("mapping-approve-commit").click();
+    await expect(page.getByTestId("mapping-execute-panel")).toBeVisible();
+    await page.getByTestId("mapping-execute-input").fill(PHRASE);
+    await page.getByTestId("mapping-execute").click();
+    await expect(page.getByTestId("mapping-execute-result")).toContainText("Exécuté");
+    expect(await mappingCount(page)).toBe(1);
+  });
+
+  test("15. Arabic: right to left, the phrase stays Latin and left to right, the flow works", async ({
+    page,
+  }, testInfo) => {
+    const observed = observePage(page);
+    await openSample(page, "ar", SELF);
+    await proposeAndSelfApprove(page);
+    await expect(page.getByTestId("mapping-execute-panel")).toContainText(
+      "تنفيذ هذا الاقتراح المعتمَد",
+    );
+    await expect(page.getByTestId("player-mappings")).toHaveAttribute("dir", "rtl");
+    const input = page.getByTestId("mapping-execute-input");
+    await expect(input).toHaveAttribute("dir", "ltr");
+    await expectNothingOffScreen(page, "[data-testid=player-mappings]", { scrollRails: true });
+    await page.screenshot({ path: testInfo.outputPath("execute-ar-desktop.png"), fullPage: true });
+    await input.fill(PHRASE);
+    await page.getByTestId("mapping-execute").click();
+    await expect(page.getByTestId("mapping-execute-result")).toContainText("تم التنفيذ");
+    expect(await mappingCount(page)).toBe(1);
+    await observed.verify(testInfo);
+  });
+
+  for (const lang of ["fr", "ar"] as const) {
+    test(`16. a phone (390px) shows the execute panel without clipping, in ${lang}`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await openSample(page, lang, SELF);
+      await proposeAndSelfApprove(page);
+      const panel = page.getByTestId("mapping-execute-panel");
+      await panel.scrollIntoViewIfNeeded();
+      await expect(panel).toBeVisible();
+      await expectNothingOffScreen(page, "[data-testid=player-mappings]", { scrollRails: true });
+      // The button is at least a finger tall and as wide as the field above it.
+      const box = await page.getByTestId("mapping-execute").boundingBox();
+      const field = await page.getByTestId("mapping-execute-input").boundingBox();
+      expect(box!.height).toBeGreaterThanOrEqual(43);
+      expect(Math.abs(box!.width - field!.width)).toBeLessThanOrEqual(2);
+      await page.screenshot({
+        path: testInfo.outputPath(`execute-${lang}-phone.png`),
+        fullPage: true,
+      });
+    });
+  }
 });
 
 test.describe("the comparison", () => {

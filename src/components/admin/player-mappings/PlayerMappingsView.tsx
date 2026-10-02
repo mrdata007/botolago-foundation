@@ -97,6 +97,8 @@ export function PlayerMappingsView({
   const [filters, setFilters] = useState<QueueFilters>({ ...NO_FILTERS, ...initial?.filters });
   const [page, setPage] = useState(initial?.page ?? 0);
   const [selection, setSelection] = useState<Selection>(initial?.selection ?? null);
+  // What the last successful execution wrote, kept on screen after its panel is gone.
+  const [executedNotice, setExecutedNotice] = useState<string | null>(null);
   const lastOpened = useRef<string | null>(null);
   const listRef = useRef<HTMLUListElement | null>(null);
 
@@ -205,6 +207,22 @@ export function PlayerMappingsView({
           </div>
         )}
       </header>
+      {executedNotice && (
+        <div data-testid="mapping-execute-result">
+          <AdminNotice tone="info" role="status">
+            <span className="block">{executedNotice}</span>
+            <UiButton
+              size="sm"
+              variant="outline"
+              className="mt-2 w-full sm:w-auto"
+              onClick={() => setExecutedNotice(null)}
+              data-testid="mapping-execute-result-dismiss"
+            >
+              {copy.proposal.execute.dismiss}
+            </UiButton>
+          </AdminNotice>
+        </div>
+      )}
       {children}
     </section>
   );
@@ -273,6 +291,7 @@ export function PlayerMappingsView({
           context={context}
           preloadedOptions={initial?.options}
           onChanged={onReload}
+          onExecuted={setExecutedNotice}
           onClose={() => setSelection(null)}
         />
       ) : selectedProposal ? (
@@ -289,6 +308,13 @@ export function PlayerMappingsView({
           </div>
           <ProposalPanel
             proposal={selectedProposal}
+            candidate={
+              ready.candidates.find(
+                (c) =>
+                  c.id ===
+                  (selectedProposal.sofascoreCandidateId ?? selectedProposal.flashscoreCandidateId),
+              ) ?? null
+            }
             availability={ready.availability}
             viewer={viewer}
             lang={lang}
@@ -296,6 +322,7 @@ export function PlayerMappingsView({
             writesEnabled={proposalsEnabled}
             actions={actions}
             onChanged={onReload}
+            onExecuted={setExecutedNotice}
           />
         </div>
       ) : (

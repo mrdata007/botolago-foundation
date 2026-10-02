@@ -20,6 +20,7 @@ import {
   ROWS_PER_PAGE,
   type PlayerMappingsViewProps,
 } from "./PlayerMappingsView";
+import { isConfirmationTyped } from "./execute-confirmation";
 import { createMappingActions, type QueueData } from "./use-player-mappings";
 
 const ctx = (actorId: string): RepositoryContext => ({ actorId, requestId: "ssr" });
@@ -576,7 +577,7 @@ describe("dual control, as drawn", () => {
     has(approverView, "Il a changé de poste depuis le mercato.");
   });
 
-  test("an approved proposal says execution is a separate step, and offers no decision", async () => {
+  test("an approved proposal says approval maps nothing, offers no decision, and offers the execute step", async () => {
     const w = await proposalWorld(both);
     const proposal = (await w.seenBy(approver)).proposals[0]!;
     await w.repo.decideMappingProposal(
@@ -597,11 +598,11 @@ describe("dual control, as drawn", () => {
       initial: { selection: { kind: "proposal", id: w.id } },
     });
     has(html, 'data-testid="mapping-execution-separate"');
-    has(html, "L’exécution est une étape distincte");
+    has(html, "L’approbation ne rapproche rien");
     has(html, "Approuvée");
     lacks(html, 'data-testid="mapping-approve"');
-    lacks(html, "mapping-execute");
-    // And nothing was mapped: approval is not execution.
+    has(html, 'data-testid="mapping-execute-panel"');
+    // And nothing was mapped: approval is not execution, and nothing ran on its own.
     expect(w.repo.mappings).toHaveLength(0);
   });
 
@@ -739,4 +740,104 @@ describe("no direct browser table access", () => {
 });
 
 // A reference so the unused-type import above stays honest.
+
+describe("the execute control", () => {
+  async function worldIn(state: "pending" | "approved" | "rejected" | "approved-expired") {
+    const w = await proposalWorld(both);
+    const proposal = (await w.seenBy(approver)).proposals[0]!;
+    if (state !== "pending") {
+      await w.repo.decideMappingProposal(
+        {
+          proposalId: w.id,
+          decision: state === "rejected" ? "reject" : "approve",
+          reason: "Preuves relues et concordantes.",
+          fingerprint: proposal.fingerprint,
+        },
+        crypto.randomUUID(),
+        approver,
+      );
+    }
+    if (state === "approved-expired") w.repo.patchProposal(w.id, { effectiveStatus: "expired" });
+    return w;
+  }
+  const show = async (
+    w: Awaited<ReturnType<typeof worldIn>>,
+    extra: Partial<PlayerMappingsViewProps> = {},
+  ) =>
+    render({
+      state: ready(await w.seenBy(approver)),
+      proposalsEnabled: true,
+      repository: w.repo,
+      context: approver,
+      initial: { selection: { kind: "proposal", id: w.id } },
+      ...extra,
+    });
+
+  test("1. a pending proposal has no execute control", async () => {
+    const html = await show(await worldIn("pending"));
+    has(html, 'data-testid="mapping-proposal"');
+    lacks(html, "mapping-execute");
+  });
+
+  test("2. a rejected proposal has no execute control", async () => {
+    const html = await show(await worldIn("rejected"));
+    has(html, "Rejetée");
+    lacks(html, "mapping-execute");
+  });
+
+  test("3. an expired approval has no execute control", async () => {
+    const html = await show(await worldIn("approved-expired"));
+    has(html, 'data-testid="mapping-proposal"');
+    lacks(html, "mapping-execute");
+  });
+
+  test("4. an approved proposal shows the exact fingerprint, the target, and a button that waits for the typed phrase", async () => {
+    const w = await worldIn("approved");
+    const html = await show(w);
+    const proposal = (await w.seenBy(approver)).proposals[0]!;
+    has(html, 'data-testid="mapping-execute-panel"');
+    has(html, 'data-testid="mapping-execute-fingerprint"');
+    // The fingerprint appears in the execute panel as well as the proposal facts.
+    expect(html.split(proposal.fingerprint).length - 1).toBeGreaterThanOrEqual(2);
+    has(html, 'data-testid="mapping-execute-provider"');
+    has(html, 'data-testid="mapping-execute-external-id"');
+    has(html, 'data-testid="mapping-execute-app-player"');
+    has(html, proposal.sofascoreExternalId!);
+    has(html, proposal.appPlayerId!);
+    has(html, "EXECUTE_PLAYER_MAPPING");
+    // Nothing typed yet: the button is disabled and nothing has run.
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*data-testid="mapping-execute"/);
+    expect(w.repo.mappings).toHaveLength(0);
+  });
+
+  test("the control is only drawn when writes are on and the viewer may manage mappings", async () => {
+    const w = await worldIn("approved");
+    lacks(await show(w, { proposalsEnabled: false }), "mapping-execute");
+    lacks(await show(w, { viewer: { canManage: false } }), "mapping-execute");
+  });
+
+  test("11. the typed phrase must match exactly", () => {
+    expect(isConfirmationTyped("")).toBe(false);
+    expect(isConfirmationTyped("execute_player_mapping")).toBe(false);
+    expect(isConfirmationTyped("EXECUTE")).toBe(false);
+    expect(isConfirmationTyped("EXECUTE_PLAYER_MAPPING_NOW")).toBe(false);
+    expect(isConfirmationTyped("EXECUTE_PLAYER_MAPPING")).toBe(true);
+    expect(isConfirmationTyped("  EXECUTE_PLAYER_MAPPING \n")).toBe(true);
+  });
+
+  test("15. French and Arabic say it in words, the phrase stays Latin, and Arabic is right to left", async () => {
+    const w = await worldIn("approved");
+    const fr = await show(w);
+    has(fr, "Exécuter cette proposition approuvée");
+    has(fr, "Cible du rapprochement");
+    has(fr, "Exécuter le rapprochement");
+    const ar = await show(w, { lang: "ar" });
+    has(ar, "تنفيذ هذا الاقتراح المعتمَد");
+    has(ar, "هدف المطابقة");
+    has(ar, "تنفيذ المطابقة");
+    has(ar, "EXECUTE_PLAYER_MAPPING");
+    has(ar, 'dir="rtl"');
+  });
+});
+
 export type _Unused = ProposalDto | InMemoryPlayerMappingRepository;
