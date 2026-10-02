@@ -104,11 +104,24 @@ select extensions.is(
 -- ---------------------------------------------------------------------------
 -- Dual control is in the table, not only in the functions
 -- ---------------------------------------------------------------------------
+-- Single-approver switch (20261002100000): the fixed table check became a
+-- trigger that follows the switch, and the table records a self-decision.
 select extensions.is(
-  (select pg_get_constraintdef(oid) from pg_constraint
+  (select count(*)::int from pg_constraint
    where conname = 'football_player_mapping_proposals_two_people_check'),
-  'CHECK (((decided_by IS NULL) OR (decided_by IS DISTINCT FROM requested_by)))',
-  'requested_by <> decided_by is a table check for every kind');
+  0, 'the fixed two-people table check is gone');
+select extensions.is(
+  (select count(*)::int from pg_trigger
+   where tgrelid = 'app_private.football_player_mapping_proposals'::regclass
+     and tgname = 'football_player_mapping_proposals_self_decision_guard' and not tgisinternal),
+  1, 'a trigger refuses a self-decision while the switch is off');
+select extensions.is(
+  (select attgenerated::text from pg_attribute
+   where attrelid = 'app_private.football_player_mapping_proposals'::regclass and attname = 'self_approved'),
+  's', 'self_approved is a generated column: it cannot be set, only derived');
+select extensions.is(
+  (select count(*)::int from app_private.football_mapping_settings), 1,
+  'the switch is one row');
 
 -- ---------------------------------------------------------------------------
 -- No function that decides anything reads a name
