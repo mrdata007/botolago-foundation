@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { deadlineStripTime } from "./deadline-strip";
+import { deadlineStripTime, deadlineWithinHours } from "./deadline-strip";
 
 const left = (days: number, hours: number, minutes: number, passed = false) => ({
   days,
@@ -20,5 +20,18 @@ describe("deadlineStripTime", () => {
     expect(deadlineStripTime(left(4, 5, 0))).toBeNull();
     expect(deadlineStripTime(left(0, 0, 0, true))).toBeNull();
     expect(deadlineStripTime(null)).toBeNull();
+  });
+});
+
+describe("deadlineWithinHours", () => {
+  test("false until the countdown is known", () => {
+    expect(deadlineWithinHours(null, 24)).toBe(false);
+  });
+  test("true inside the window, false at or past its edge", () => {
+    expect(deadlineWithinHours(left(0, 23, 0), 24)).toBe(true);
+    expect(deadlineWithinHours(left(1, 0, 0), 24)).toBe(false);
+  });
+  test("false once the deadline has passed", () => {
+    expect(deadlineWithinHours(left(0, 0, 0, true), 24)).toBe(false);
   });
 });

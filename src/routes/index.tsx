@@ -8,7 +8,7 @@ import { CircleDot, Bell, Gem, Newspaper, Shield, Target, Trophy, UserRound } fr
 
 import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
-import { PEPITES_PROMOTED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
+import { HOME_DEADLINE_FIRST, PEPITES_PROMOTED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCard";
 import { footballService, type FootballSeason } from "@/services/football";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
@@ -54,7 +54,7 @@ import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
 import { ui, UiCard, UiChip } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { bandGameweek } from "@/lib/band-gameweek";
-import { deadlineStripTime } from "@/lib/deadline-strip";
+import { deadlineStripTime, deadlineWithinHours } from "@/lib/deadline-strip";
 import { FantasyRuleChips } from "@/components/home/FantasyRuleChips";
 import { NextMatchPick } from "@/components/home/NextMatchPick";
 import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
@@ -386,6 +386,10 @@ function HomeContent() {
   );
   // The strip under the header in the 72 hours before a Fantasy deadline.
   const deadlineLeft = useDeadlineCountdown(gwQ.data?.deadline);
+  // Flag off by default: the Fantasy card leads the phone layout only inside
+  // the last 24 hours before the deadline.
+  const fantasyFirst =
+    HOME_DEADLINE_FIRST && gwQ.data?.isCurrent !== false && deadlineWithinHours(deadlineLeft, 24);
   const stripTime = gwQ.data?.isCurrent === false ? null : deadlineStripTime(deadlineLeft);
 
   // Up to three curated stories: the edition's lead plus its next articles.
@@ -602,7 +606,9 @@ function HomeContent() {
           {/* -------------------------------------------------------- */}
           {/* The card names itself ("VOTRE FANTASY · ATLAS XI"), as the board
           draws it; the heading is for the document outline. */}
-          <Section className="order-5 lg:order-4 lg:mt-0">
+          <Section
+            className={cn("lg:order-4 lg:mt-0", fantasyFirst ? "-order-1 sm:mt-0" : "order-5")}
+          >
             <h2 className="sr-only">{plain(t("home.fantasy_hub"))}</h2>
             {status === "loading" || availability.isPending ? (
               <HeroSkeleton />

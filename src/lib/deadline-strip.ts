@@ -17,3 +17,9 @@ export function deadlineStripTime(
     hours < DEADLINE_STRIP_HOURS || (hours === DEADLINE_STRIP_HOURS && left.minutes === 0);
   return withinWindow ? { hours, minutes: left.minutes } : null;
 }
+
+/** True while a deadline is still ahead and less than `hours` whole hours away. */
+export function deadlineWithinHours(left: DeadlineCountdown | null, hours: number): boolean {
+  if (!left || left.passed) return false;
+  return left.days * 24 + left.hours < hours;
+}

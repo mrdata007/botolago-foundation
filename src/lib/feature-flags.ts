@@ -242,3 +242,12 @@ export const PEPITES_ENABLED: boolean = true;
 
 /** Public navigation and indexing follow the application release switch. */
 export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;
+
+/**
+ * Home puts the Fantasy card first in the 24 hours before a Fantasy deadline
+ * (a countdown-first variant of the phone layout). Off until the owner asks
+ * for it: the match-first order stays the default.
+ *
+ * Gated surface: `src/routes/index.tsx` — the Fantasy section's order.
+ */
+export const HOME_DEADLINE_FIRST = false;

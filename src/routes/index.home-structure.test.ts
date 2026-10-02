@@ -38,7 +38,7 @@ describe("Accueil (Home) structural contract", () => {
     // matches 3, Pronostics 4, Fantasy 5, news 6, standings 7, discovery 8.
     expect(source).toContain('<Section className="order-3 lg:mt-0">'); // upcoming matches
     expect(source).toContain('<Section className="order-4 lg:order-5">'); // Pronostics
-    expect(source).toContain('<Section className="order-5 lg:order-4 lg:mt-0">'); // Fantasy
+    expect(source).toContain('fantasyFirst ? "-order-1 sm:mt-0" : "order-5"'); // Fantasy
     expect(source).toContain('<Section className="order-6">'); // news
     expect(source).toContain('<Section className="order-7">'); // standings
     expect(source).toContain('<Section className="order-8 pb-2">'); // discovery
