@@ -50,7 +50,7 @@ import { importDecisionService } from "@/services/fantasy-import-decision";
 import { classifyRepoError, runOwnedMutation } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyStateStore } from "@/services/fantasy-state";
-import type { FantasyPlayer, SquadPlayer } from "@/types/fantasy";
+import { SQUAD_RULES, type FantasyPlayer, type SquadPlayer } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/create")({
   head: () => fantasyHead("create"),
@@ -212,6 +212,20 @@ function CreateTeamBody() {
   const activeSlotPlayer = playerOf(activeSlot?.playerId ?? null);
   const pickerBank = round1(summary.bankRemaining + (activeSlotPlayer?.price ?? 0));
   const takenIds = draft.slots.map((s) => s.playerId).filter(Boolean) as string[];
+  // For the picker's budget bar and its "Club 3/3" note.
+  const clubCountsFor = (excludingId: string | null) => {
+    const counts = new Map<string, number>();
+    for (const id of takenIds) {
+      if (id === excludingId) continue;
+      const clubId = playerOf(id)?.clubId;
+      if (clubId) counts.set(clubId, (counts.get(clubId) ?? 0) + 1);
+    }
+    return counts;
+  };
+  const builderBudget = {
+    total: SQUAD_RULES.budget,
+    teamValue: round1(SQUAD_RULES.budget - summary.bankRemaining),
+  };
 
   /**
    * The three-per-club count `placeInto` runs, exposed so the picker can show
@@ -492,6 +506,8 @@ function CreateTeamBody() {
               : undefined
           }
           onClose={() => setPickerSlot(null)}
+          budget={builderBudget}
+          clubCounts={clubCountsFor(activeSlot.playerId)}
         />
       ) : pickerAny ? (
         <AddPlayerScreen
@@ -506,6 +522,8 @@ function CreateTeamBody() {
           disabledIds={takenIds}
           onPick={onPickAny}
           onClose={() => setPickerAny(false)}
+          budget={builderBudget}
+          clubCounts={clubCountsFor(null)}
         />
       ) : null}
 
