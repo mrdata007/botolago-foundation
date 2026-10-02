@@ -20,17 +20,28 @@ import { ui, UiIconLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { PEPITES_PROMOTED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
+import { GlobalSearch } from "./GlobalSearch";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { isPrimaryRouteActive, primaryNavItems } from "./primary-nav";
 
-export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
+export function TopBar({
+  trailing,
+  wide = false,
+}: {
+  trailing?: React.ReactNode;
+  /** From 1024px, open the bar to the desktop canvas and add the search field. */
+  wide?: boolean;
+}) {
   const { t } = useI18n();
 
   return (
     <header className={cn("sticky top-0 z-30", ui.surface.bar, ui.rule.block, ui.safe.top, "pb-2")}>
       <div
         className={cn(
-          "mx-auto flex items-center gap-3 md:max-w-[var(--ui-content-max)]",
+          "mx-auto flex items-center gap-3",
+          wide
+            ? "md:max-w-[var(--ui-content-max)] lg:max-w-[var(--ui-desktop-max)]"
+            : "md:max-w-[var(--ui-content-max)]",
           ui.space.gutter,
           "min-h-[var(--ui-tap-min)]",
         )}
@@ -40,6 +51,8 @@ export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
         <Logo size="sm" />
 
         <PrimaryNavLinks />
+
+        {wide ? <GlobalSearch className="hidden w-64 lg:block" /> : null}
 
         <div className="ms-auto flex items-center gap-2 md:ms-0">
           {trailing}

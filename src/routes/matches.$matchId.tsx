@@ -16,6 +16,7 @@ import {
 } from "@/services/football";
 import { newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { Section } from "@/components/common/Section";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -166,6 +167,8 @@ export const Route = createFileRoute("/matches/$matchId")({
 });
 
 function MatchDetailPage() {
+  // The summary shows the line-ups beside the timeline once there is room.
+  const wideLayout = useMediaQuery("(min-width: 1024px)");
   const { matchId } = Route.useParams();
   const { tab = "summary" } = Route.useSearch();
   const loaded = Route.useLoaderData();
@@ -339,6 +342,7 @@ function MatchDetailPage() {
     <AppShell
       hideBottomNav
       backgroundVariant="matches"
+      contentWidth="desktop"
       topBar={
         <MatchTopBar
           kicker={kicker}
@@ -382,84 +386,105 @@ function MatchDetailPage() {
         lineups={lineups}
       />
 
-      {/* Pronostics (BG-0146): the same prediction as /pronostics. A card, not
+      {/* Phone: the prediction, then the tabs. Desktop (1024px up): the tabs
+          and their panel take two columns, the prediction a 340px column
+          beside them, and the summary shows the line-ups next to the timeline. */}
+      <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_340px] lg:items-start lg:gap-x-6">
+        {/* Pronostics (BG-0146): the same prediction as /pronostics. A card, not
           a fifth tab (the four tabs are pinned). Shown once promoted. */}
-      {PRONOSTICS_PROMOTED && (
-        <MatchPredictionCard
-          fixtureId={match.id}
-          roundNumber={match.gameweek > 0 ? match.gameweek : null}
-        />
-      )}
-
-      <MatchTabs
-        active={tab}
-        onChange={(key) =>
-          navigate({ search: { tab: key === "summary" ? undefined : key }, replace: true })
-        }
-        homePalette={palettes.home}
-      />
-
-      {/* Keyed on the tab so every switch remounts the panel and replays a
-          quick fade — the swap is still instant, just no longer invisible. */}
-      <div
-        key={tab}
-        id={MATCH_PANEL_ID}
-        role="tabpanel"
-        aria-labelledby={`${MATCH_TAB_ID_BASE}-tab-${tab}`}
-        className="mt-4 animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-quick)] ease-[var(--ease-standard)]"
-      >
-        {tab === "summary" && (
-          <>
-            <h2 className="sr-only">{t("matches.detail.summary")}</h2>
-            <EventTimeline
-              events={live.events}
-              home={home}
-              away={away}
-              palettes={palettes}
-              lineups={lineups}
-              isLive={isLive}
-              phase={phase}
-              halfTime={
-                match.halfTimeHomeScore !== undefined && match.halfTimeAwayScore !== undefined
-                  ? { home: match.halfTimeHomeScore, away: match.halfTimeAwayScore }
-                  : undefined
-              }
+        {PRONOSTICS_PROMOTED && (
+          <div className="order-1 lg:col-start-3 lg:row-start-1 lg:mt-4">
+            <MatchPredictionCard
+              fixtureId={match.id}
+              roundNumber={match.gameweek > 0 ? match.gameweek : null}
             />
-          </>
+          </div>
         )}
 
-        {tab === "stats" && (
-          <StatComparison
-            stats={live.stats}
-            home={home}
-            away={away}
-            palettes={palettes}
-            isLive={isLive}
-            phase={phase}
-            pressure={pressure}
+        <div className="order-2 min-w-0 lg:col-span-2 lg:col-start-1 lg:row-start-1">
+          <MatchTabs
+            active={tab}
+            onChange={(key) =>
+              navigate({ search: { tab: key === "summary" ? undefined : key }, replace: true })
+            }
+            homePalette={palettes.home}
           />
-        )}
 
-        {tab === "lineups" && (
-          <LineupsView
-            lineups={lineups}
-            home={home}
-            away={away}
-            palettes={palettes}
-            phase={phase}
-            absences={absences}
-          />
-        )}
+          {/* Keyed on the tab so every switch remounts the panel and replays a
+          quick fade — the swap is still instant, just no longer invisible. */}
+          <div
+            key={tab}
+            id={MATCH_PANEL_ID}
+            role="tabpanel"
+            aria-labelledby={`${MATCH_TAB_ID_BASE}-tab-${tab}`}
+            className="mt-4 animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-quick)] ease-[var(--ease-standard)]"
+          >
+            {tab === "summary" && (
+              <>
+                <h2 className="sr-only">{t("matches.detail.summary")}</h2>
+                <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
+                  <EventTimeline
+                    events={live.events}
+                    home={home}
+                    away={away}
+                    palettes={palettes}
+                    lineups={lineups}
+                    isLive={isLive}
+                    phase={phase}
+                    halfTime={
+                      match.halfTimeHomeScore !== undefined && match.halfTimeAwayScore !== undefined
+                        ? { home: match.halfTimeHomeScore, away: match.halfTimeAwayScore }
+                        : undefined
+                    }
+                  />
+                  {wideLayout ? (
+                    <LineupsView
+                      lineups={lineups}
+                      home={home}
+                      away={away}
+                      palettes={palettes}
+                      phase={phase}
+                      absences={absences}
+                    />
+                  ) : null}
+                </div>
+              </>
+            )}
 
-        {tab === "h2h" && season && (
-          <HeadToHeadTab
-            season={season}
-            home={home}
-            away={away}
-            palettes={palettes}
-            meetings={h2h}
-          />
-        )}
+            {tab === "stats" && (
+              <StatComparison
+                stats={live.stats}
+                home={home}
+                away={away}
+                palettes={palettes}
+                isLive={isLive}
+                phase={phase}
+                pressure={pressure}
+              />
+            )}
+
+            {tab === "lineups" && (
+              <LineupsView
+                lineups={lineups}
+                home={home}
+                away={away}
+                palettes={palettes}
+                phase={phase}
+                absences={absences}
+              />
+            )}
+
+            {tab === "h2h" && season && (
+              <HeadToHeadTab
+                season={season}
+                home={home}
+                away={away}
+                palettes={palettes}
+                meetings={h2h}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Related news — hidden at launch (NEWS_ENABLED). The cards link to

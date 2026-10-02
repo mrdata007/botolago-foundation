@@ -35,6 +35,12 @@ export const fr = {
 
   "nav.home": "Accueil",
   "nav.primary": "Navigation principale",
+  "nav.search.label": "Rechercher",
+  "nav.search.placeholder": "Club, joueur…",
+  "nav.search.empty": "Aucun résultat",
+  "nav.search.loading": "Recherche…",
+  "nav.search.club": "Club",
+  "nav.search.player": "Joueur",
   "nav.news": "Actualités",
   "nav.fantasy": "Fantasy",
   "nav.matches": "Matches",

@@ -92,6 +92,7 @@ export const UI_TOKENS = [
   "--ui-row-min",
   "--ui-column-max",
   "--ui-content-max",
+  "--ui-desktop-max",
   // surfaces
   "--ui-page",
   "--ui-surface",

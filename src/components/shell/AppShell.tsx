@@ -37,7 +37,7 @@ export function AppShell({
 }: {
   children: ReactNode;
   backgroundVariant?: BackgroundVariant;
-  contentWidth?: "compact" | "wide";
+  contentWidth?: "compact" | "wide" | "desktop";
   bottomNav?: ReactNode;
   /**
    * No tab bar, and no space kept for it. For a detail page (match, club,
@@ -67,10 +67,15 @@ export function AppShell({
   return (
     <div className={cn("relative min-h-dvh text-[color:var(--ui-on-surface)]", className)}>
       <PageBackground variant={backgroundVariant} />
-      {topBar ?? <TopBar />}
+      {topBar ?? <TopBar wide={contentWidth === "desktop"} />}
       {pageHeader}
       {liveStrip && <LiveStrip />}
-      <UiScreen width={contentWidth === "wide" ? "wide" : "content"} bottomNav={!hideBottomNav}>
+      <UiScreen
+        width={
+          contentWidth === "wide" ? "wide" : contentWidth === "desktop" ? "desktop" : "content"
+        }
+        bottomNav={!hideBottomNav}
+      >
         {children}
       </UiScreen>
       {hideBottomNav ? null : (bottomNav ?? <BottomNav />)}

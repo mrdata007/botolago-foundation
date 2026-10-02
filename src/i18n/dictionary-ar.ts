@@ -32,6 +32,12 @@ export const ar = {
 
   "nav.home": "الرئيسية",
   "nav.primary": "التنقل الرئيسي",
+  "nav.search.label": "بحث",
+  "nav.search.placeholder": "نادٍ، لاعب…",
+  "nav.search.empty": "لا توجد نتائج",
+  "nav.search.loading": "جارٍ البحث…",
+  "nav.search.club": "نادٍ",
+  "nav.search.player": "لاعب",
   "nav.news": "الأخبار",
   "nav.fantasy": "فانتازي",
   "nav.matches": "المباريات",
