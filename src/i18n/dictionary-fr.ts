@@ -59,11 +59,14 @@ export const fr = {
   "reminders.bell.off": "Me rappeler ce match",
   "reminders.bell.on": "Rappel activé pour ce match",
   "reminders.sign_in_reason": "Connectez-vous pour être rappelé avant le match.",
-  "reminders.toast.on": "Rappel activé. Vous serez prévenu(e) environ une heure avant le coup d'envoi.",
-  "reminders.toast.needs_email": "Rappel enregistré. Pour le recevoir, activez les notifications par e-mail.",
+  "reminders.toast.on":
+    "Rappel activé. Vous serez prévenu(e) environ une heure avant le coup d'envoi.",
+  "reminders.toast.needs_email":
+    "Rappel enregistré. Pour le recevoir, activez les notifications par e-mail.",
   "reminders.toast.enable_email": "Activer",
   "reminders.toast.email_on": "Notifications par e-mail activées.",
-  "reminders.toast.off": "Rappel désactivé.",  "nav.news": "Actualités",
+  "reminders.toast.off": "Rappel désactivé.",
+  "nav.news": "Actualités",
   "nav.fantasy": "Fantasy",
   "nav.matches": "Matches",
   "nav.profile": "Profil",
