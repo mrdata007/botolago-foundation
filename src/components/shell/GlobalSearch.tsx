@@ -16,7 +16,14 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
 import { ui } from "@/components/ui-kit";
 
-export function GlobalSearch({ className }: { className?: string }) {
+export function GlobalSearch({
+  className,
+  autoFocus = false,
+}: {
+  className?: string;
+  /** Focus the field as soon as it appears (the phone's search row). */
+  autoFocus?: boolean;
+}) {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
   const listId = useId();
@@ -83,6 +90,7 @@ export function GlobalSearch({ className }: { className?: string }) {
         placeholder={t("nav.search.placeholder")}
         value={text}
         autoComplete="off"
+        autoFocus={autoFocus}
         onFocus={() => {
           setArmed(true);
           setOpen(true);

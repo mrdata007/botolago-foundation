@@ -13,10 +13,11 @@
 
 import { Link, useRouterState } from "@tanstack/react-router";
 
-import { UserRound } from "lucide-react";
+import { Search, UserRound } from "lucide-react";
+import { useState } from "react";
 
 import { Logo } from "@/components/brand/Logo";
-import { ui, UiIconLinkButton } from "@/components/ui-kit";
+import { ui, UiIconButton, UiIconLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { PEPITES_PROMOTED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ export function TopBar({
   wide?: boolean;
 }) {
   const { t } = useI18n();
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <header className={cn("sticky top-0 z-30", ui.surface.bar, ui.rule.block, ui.safe.top, "pb-2")}>
@@ -56,6 +58,16 @@ export function TopBar({
 
         <div className="ms-auto flex items-center gap-2 md:ms-0">
           {trailing}
+          {wide ? (
+            <UiIconButton
+              className="lg:hidden"
+              aria-label={t("nav.search.label")}
+              aria-expanded={searchOpen}
+              onClick={() => setSearchOpen((open) => !open)}
+            >
+              <Search aria-hidden />
+            </UiIconButton>
+          ) : null}
           <LanguageSwitcher />
           {/* Pépites takes Profil's slot in the bar once promoted, so the
               profile moves here. */}
@@ -66,6 +78,11 @@ export function TopBar({
           ) : null}
         </div>
       </div>
+      {wide && searchOpen ? (
+        <div className={cn("mx-auto pt-2 lg:hidden", ui.space.gutter)}>
+          <GlobalSearch autoFocus />
+        </div>
+      ) : null}
     </header>
   );
 }
