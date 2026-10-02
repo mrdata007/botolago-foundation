@@ -1,10 +1,13 @@
-import { createHash, randomUUID } from "node:crypto";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type { BuiltCandidate } from "./candidate-builder";
+import { SIGNAL_WEIGHTS } from "./candidate-signals";
+import { classifyAppDob, dobSignal } from "./dob";
 import {
   type AppPlayerOption,
   type CandidateDto,
   type CandidateFilter,
+  type CandidateStatus,
+  type ObservationDto,
   type ProposalDto,
   type ProposeItem,
   type ProposeResult,
@@ -32,7 +35,23 @@ export interface MockAppPlayer {
   readonly id: string;
   readonly displayName: string;
   readonly position: "G" | "D" | "M" | "F" | null;
+  /**
+   * What the ranking reads, when a test or a sample wants real signals. Absent
+   * means "no signal" for that attribute, exactly as a missing value does in
+   * the database function.
+   */
+  readonly teamId?: string | null;
+  readonly birthDate?: string | null;
+  readonly shirtNumber?: number | null;
 }
+/** A candidate to seed, with the fields the screen reads. */
+export type MockSeedCandidate = BuiltCandidate & {
+  /** A fixed id keeps a sample deterministic. */
+  readonly id?: string;
+  readonly displayName?: string | null;
+  readonly status?: CandidateStatus;
+  readonly lineupOrIncidentSeen?: boolean;
+};
 interface MockCandidate {
   id: string;
   provider: "sofascore" | "flashscore";
@@ -40,6 +59,7 @@ interface MockCandidate {
   status: CandidateDto["status"];
   flags: string[];
   observationCount: number;
+  observations: readonly BuiltCandidate["observations"][number][];
   position: "G" | "D" | "M" | "F" | null;
   displayName: string | null;
   lineupOrIncidentSeen: boolean;
@@ -51,9 +71,32 @@ interface MockProposal {
 }
 
 const OPEN = new Set(["pending", "approved", "position_disagreement", "stale_evidence"]);
-const uuid = () => randomUUID();
-const sha = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+/** The list functions cap a page at 200, as the database does. */
+const PAGE_CAP = 200;
+// Web Crypto, not node:crypto, so the same class can back a browser sample.
+const uuid = () => globalThis.crypto.randomUUID();
+/**
+ * A deterministic 64-hex digest: four FNV-1a passes over the JSON. It stands in
+ * for the database's SHA-256 fingerprint, which only has to be stable for equal
+ * input and different for changed input here. Never used to decide anything.
+ */
+const sha = (value: unknown): string => {
+  const text = JSON.stringify(value) ?? "";
+  let out = "";
+  for (let pass = 0; pass < 4; pass += 1) {
+    let high = 0x811c9dc5 ^ (pass * 0x9e3779b1);
+    let low = 0xc9dc5118 ^ pass;
+    for (let index = 0; index < text.length; index += 1) {
+      const code = text.charCodeAt(index);
+      high = Math.imul(high ^ code, 0x01000193) >>> 0;
+      low = Math.imul(low ^ (code + pass), 0x01000193) >>> 0;
+    }
+    out += high.toString(16).padStart(8, "0") + low.toString(16).padStart(8, "0");
+  }
+  return out;
+};
 const refuse = (index: number, code: string) => ({ index, ok: false as const, code });
+const byId = <T extends { id: string }>(a: T, b: T) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
 export class InMemoryPlayerMappingRepository implements PlayerMappingRepository {
   readonly mappings: MockMappingRow[] = [];
@@ -64,7 +107,7 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
 
   constructor(
     seed: {
-      readonly candidates?: readonly BuiltCandidate[];
+      readonly candidates?: readonly MockSeedCandidate[];
       readonly appPlayers?: readonly MockAppPlayer[];
       readonly mappings?: readonly MockMappingRow[];
       /** Actor ids that hold football.manage_mappings. */
@@ -76,15 +119,16 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
     this.mappings.push(...(seed.mappings ?? []).map((m) => ({ ...m })));
     for (const built of seed.candidates ?? []) {
       this.candidates.push({
-        id: uuid(),
+        id: built.id ?? uuid(),
         provider: built.provider,
         externalId: built.externalPlayerId,
-        status: "unmapped",
+        status: built.status ?? "unmapped",
         flags: [...built.flags],
         observationCount: built.observations.length,
+        observations: built.observations,
         position: built.observations.find((o) => o.positionSignal)?.positionSignal ?? null,
-        displayName: null,
-        lineupOrIncidentSeen: false,
+        displayName: built.displayName ?? null,
+        lineupOrIncidentSeen: built.lineupOrIncidentSeen ?? false,
         existingMappingId: null,
       });
     }
@@ -108,6 +152,33 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
   }
 
   private dto(candidate: MockCandidate): CandidateDto {
+    const observations: ObservationDto[] = [...candidate.observations]
+      .sort((a, b) => (a.providerTeamId < b.providerTeamId ? -1 : 1))
+      .map((o) => ({
+        providerTeamId: o.providerTeamId,
+        clubKey: o.clubKey,
+        appTeamId: o.appTeamId,
+        squadCompleteness: o.squadCompleteness,
+        registeredTeamId: o.registeredTeamId,
+        registeredTeamDisagreement: o.registeredTeamDisagreement,
+        shirtNumber: o.shirtNumber,
+        position: o.positionSignal,
+        dobState: o.dobState,
+        dobJanuary1: o.dobJanuary1,
+        heightCm: o.heightCm,
+        nationality: o.nationalitySignal,
+        observedAt: "2026-10-02T07:00:00.000Z",
+      }));
+    // The same three flags the database function derives from the observations.
+    const flags = [
+      ...(observations.length > 1 ? ["MULTI_SQUAD_OBSERVATION"] : []),
+      ...(observations.some((o) => o.squadCompleteness === "INCOMPLETE_PROVIDER_SQUAD")
+        ? ["INCOMPLETE_PROVIDER_SQUAD"]
+        : []),
+      ...(observations.some((o) => o.registeredTeamDisagreement)
+        ? ["REGISTERED_TEAM_DISAGREEMENT"]
+        : []),
+    ];
     return {
       id: candidate.id,
       provider: candidate.provider,
@@ -118,12 +189,22 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
       displayName: candidate.displayName,
       displayNamePurgedAt: null,
       lineupOrIncidentSeen: candidate.lineupOrIncidentSeen,
-      evidenceRevision: 1,
-      flags: candidate.flags,
-      observations: [],
+      evidenceRevision: 2,
+      flags: observations.length > 0 ? flags : [...candidate.flags],
+      observations,
       openProposalId:
         this.proposals.find((p) => OPEN.has(p.dto.status) && p.candidates.includes(candidate.id))
           ?.dto.id ?? null,
+    };
+  }
+
+  /** What the viewer is shown of a proposal, as the database function computes it. */
+  private view(p: MockProposal, me: string): ProposalDto {
+    const mine = p.dto.requestedBy === me;
+    return {
+      ...p.dto,
+      proposedByMe: mine,
+      canApprove: p.dto.status === "pending" && !mine && p.dto.effectiveStatus !== "expired",
     };
   }
 
@@ -141,18 +222,21 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
 
   async listMappingCandidates(
     filter: CandidateFilter,
-    _cursor: string | null,
+    cursor: string | null,
     limit: number,
     context: RepositoryContext,
   ) {
     this.actor(context);
+    // Ordered by id and paged after the cursor, capped at 200: the database's contract.
     return this.candidates
       .filter(
         (c) =>
           (!filter.status || c.status === filter.status) &&
-          (!filter.provider || c.provider === filter.provider),
+          (!filter.provider || c.provider === filter.provider) &&
+          (cursor === null || c.id > cursor),
       )
-      .slice(0, limit)
+      .sort(byId)
+      .slice(0, Math.min(Math.max(limit, 1), PAGE_CAP))
       .map((c) => this.dto(c));
   }
 
@@ -163,38 +247,100 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
 
   async listMappingCandidatesForAppPlayer(
     candidateId: string,
-    _appTeamId: string | null,
+    appTeamId: string | null,
     limit: number,
     context: RepositoryContext,
   ): Promise<readonly AppPlayerOption[]> {
     this.actor(context);
     const candidate = this.candidate(candidateId);
     return this.appPlayers
+      .filter((player) => appTeamId === null || (player.teamId ?? null) === appTeamId)
       .map((player) => {
-        const positionMatch =
-          candidate.position && player.position
-            ? candidate.position === player.position
-              ? 1
-              : -1
-            : 0;
+        const signals = this.signalsFor(candidate, player);
         return {
           appPlayerId: player.id,
           displayName: player.displayName,
           position: player.position,
-          signals: {},
-          score: positionMatch,
+          signals,
+          score: scoreOf(signals),
           alreadyMappedForProvider: this.mappings.some(
             (m) => m.provider === candidate.provider && m.appPlayerId === player.id,
           ),
         };
       })
       .sort((a, b) => b.score - a.score || (a.appPlayerId < b.appPlayerId ? -1 : 1))
-      .slice(0, limit);
+      .slice(0, Math.min(Math.max(limit, 1), PAGE_CAP));
+  }
+
+  /**
+   * The reviewer signals of one candidate against one app player, in the shape
+   * of `app_private.football_mapping_candidate_signals`. Reads structure only:
+   * the display names of both sides are never an input.
+   */
+  private signalsFor(candidate: MockCandidate, player: MockAppPlayer): Record<string, unknown> {
+    const observations = candidate.observations;
+    // The latest observation carrying a valid date, else the latest one.
+    const dobSource = observations.find((o) => o.dobState === "valid") ?? observations[0];
+    const dob = dobSource
+      ? dobSignal(classifyAppDob(player.birthDate ?? null, new Date("2026-10-02T00:00:00Z")), {
+          state: dobSource.dobState as Parameters<typeof dobSignal>[1]["state"],
+          birthDate: dobSource.birthDate,
+          january1: dobSource.dobJanuary1,
+          representationDisagreement: false,
+        })
+      : ({ kind: "no_signal", reason: "provider_missing" } as const);
+    const shirts = observations.map((o) => o.shirtNumber).filter((n): n is number => n !== null);
+    const shirt =
+      player.shirtNumber === null || player.shirtNumber === undefined
+        ? "no_signal"
+        : shirts.includes(player.shirtNumber)
+          ? "match"
+          : shirts.length > 0
+            ? "conflict"
+            : "no_signal";
+    const providerPosition = candidate.position;
+    const position =
+      providerPosition && player.position
+        ? providerPosition === player.position
+          ? "match"
+          : "conflict"
+        : "no_signal";
+    const teamIds = observations.map((o) => o.appTeamId).filter((id): id is string => id !== null);
+    const club =
+      teamIds.length === 0 || !player.teamId
+        ? "no_signal"
+        : teamIds.includes(player.teamId)
+          ? "match"
+          : "mismatch";
+    const registered = observations.some((o) => o.registeredTeamDisagreement);
+    const incomplete = observations.some(
+      (o) => o.squadCompleteness === "INCOMPLETE_PROVIDER_SQUAD",
+    );
+    const flags = [
+      ...(observations.length > 1 ? ["MULTI_SQUAD_OBSERVATION"] : []),
+      ...(dob.kind === "conflict" ? ["DOB_CONFLICT"] : []),
+      ...(position === "conflict" ? ["POSITION_DISAGREEMENT"] : []),
+      ...(shirt === "conflict" ? ["SHIRT_DIFFERENCE"] : []),
+      ...(registered ? ["REGISTERED_TEAM_DISAGREEMENT"] : []),
+      ...(club === "mismatch" ? ["CLUB_CONTEXT_MISMATCH"] : []),
+      ...(incomplete ? ["INCOMPLETE_PROVIDER_SQUAD"] : []),
+    ];
+    return {
+      dob: dob.kind,
+      dobReason: dob.kind === "no_signal" ? dob.reason : null,
+      shirt,
+      position,
+      providerPosition,
+      club,
+      registeredTeamDisagreement: registered,
+      observationCount: observations.length,
+      flags,
+    };
   }
 
   async listMappingProposals(
     status: string | null,
-    _c: string | null,
+    cursor: string | null,
     limit: number,
     context: RepositoryContext,
   ) {
@@ -202,18 +348,19 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
     return this.proposals
       .filter(
         (p) =>
-          status === null ||
-          p.dto.status === status ||
-          (status === "open" && OPEN.has(p.dto.status)),
+          (status === null ||
+            p.dto.status === status ||
+            (status === "open" && OPEN.has(p.dto.status))) &&
+          (cursor === null || p.dto.id > cursor),
       )
-      .slice(0, limit)
-      .map((p) => ({ ...p.dto, proposedByMe: p.dto.requestedBy === me }));
+      .sort((a, b) => byId(a.dto, b.dto))
+      .slice(0, Math.min(Math.max(limit, 1), PAGE_CAP))
+      .map((p) => this.view(p, me));
   }
 
   async getMappingProposal(proposalId: string, context: RepositoryContext) {
     const me = this.actor(context);
-    const found = this.proposal(proposalId);
-    return { ...found.dto, proposedByMe: found.dto.requestedBy === me };
+    return this.view(this.proposal(proposalId), me);
   }
 
   async proposeMappings(
@@ -735,6 +882,28 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
   candidateCount() {
     return this.candidates.length;
   }
+  /** Test hook: the world moves a proposal into a state the screen must show (held, expired). */
+  patchProposal(proposalId: string, patch: Partial<ProposalDto>) {
+    Object.assign(this.proposal(proposalId).dto, patch);
+  }
+}
+
+/** The database's rank: only agreement adds, a valid conflict costs a little, missing is zero. */
+function scoreOf(signals: Record<string, unknown>): number {
+  const dob =
+    signals.dob === "match"
+      ? SIGNAL_WEIGHTS.dobMatch
+      : signals.dob === "conflict"
+        ? SIGNAL_WEIGHTS.dobConflict
+        : 0;
+  const shirt = signals.shirt === "match" ? SIGNAL_WEIGHTS.shirtMatch : 0;
+  const position =
+    signals.position === "match"
+      ? SIGNAL_WEIGHTS.positionMatch
+      : signals.position === "conflict"
+        ? SIGNAL_WEIGHTS.positionConflict
+        : 0;
+  return dob + shirt + position;
 }
 
 type IgnoreItem = Extract<ProposeItem, { kind: "ignore" | "reverse_ignore" }>;

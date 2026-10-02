@@ -42,6 +42,7 @@ import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-pas
 import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
 import { Route as ClubsIndexRouteImport } from './routes/clubs.index'
 import { Route as ClubsClubIdRouteImport } from './routes/clubs.$clubId'
+import { Route as DevPlayerMappingsSampleRouteImport } from './routes/dev.player-mappings-sample'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
 import { Route as FantasyFixturesRouteImport } from './routes/fantasy.fixtures'
@@ -70,6 +71,7 @@ import { Route as ProfileSecurityRouteImport } from './routes/profile.security'
 import { Route as PronosticsIndexRouteImport } from './routes/pronostics.index'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as AdminFootballPlayerMappingsRouteImport } from './routes/admin.football.player-mappings'
 import { Route as AdminNewsArticleEditionIdRouteImport } from './routes/admin.news.$articleEditionId'
 import { Route as AdminNewsNewRouteImport } from './routes/admin.news.new'
 import { Route as AdminPepitesIndexRouteImport } from './routes/admin.pepites.index'
@@ -252,6 +254,11 @@ const ClubsClubIdRoute = ClubsClubIdRouteImport.update({
   path: '/clubs/$clubId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevPlayerMappingsSampleRoute = DevPlayerMappingsSampleRouteImport.update({
+  id: '/dev/player-mappings-sample',
+  path: '/dev/player-mappings-sample',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FantasyIndexRoute = FantasyIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -393,6 +400,12 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AdminFootballPlayerMappingsRoute =
+  AdminFootballPlayerMappingsRouteImport.update({
+    id: '/football/player-mappings',
+    path: '/football/player-mappings',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const AdminNewsArticleEditionIdRoute =
   AdminNewsArticleEditionIdRouteImport.update({
     id: '/$articleEditionId',
@@ -500,6 +513,7 @@ export interface FileRoutesByFullPath {
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
+  '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -529,6 +543,7 @@ export interface FileRoutesByFullPath {
   '/pronostics/': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/football/player-mappings': typeof AdminFootballPlayerMappingsRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
   '/admin/pepites/donnees': typeof AdminPepitesDonneesRoute
@@ -573,6 +588,7 @@ export interface FileRoutesByTo {
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
+  '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -602,6 +618,7 @@ export interface FileRoutesByTo {
   '/pronostics': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/football/player-mappings': typeof AdminFootballPlayerMappingsRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
   '/admin/pepites/donnees': typeof AdminPepitesDonneesRoute
@@ -651,6 +668,7 @@ export interface FileRoutesById {
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
+  '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -680,6 +698,7 @@ export interface FileRoutesById {
   '/pronostics/': typeof PronosticsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/football/player-mappings': typeof AdminFootballPlayerMappingsRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
   '/admin/pepites/donnees': typeof AdminPepitesDonneesRoute
@@ -730,6 +749,7 @@ export interface FileRouteTypes {
     | '/auth/update-password'
     | '/auth/verify'
     | '/clubs/$clubId'
+    | '/dev/player-mappings-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -759,6 +779,7 @@ export interface FileRouteTypes {
     | '/pronostics/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/football/player-mappings'
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
     | '/admin/pepites/donnees'
@@ -803,6 +824,7 @@ export interface FileRouteTypes {
     | '/auth/update-password'
     | '/auth/verify'
     | '/clubs/$clubId'
+    | '/dev/player-mappings-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -832,6 +854,7 @@ export interface FileRouteTypes {
     | '/pronostics'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/football/player-mappings'
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
     | '/admin/pepites/donnees'
@@ -880,6 +903,7 @@ export interface FileRouteTypes {
     | '/auth/update-password'
     | '/auth/verify'
     | '/clubs/$clubId'
+    | '/dev/player-mappings-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -909,6 +933,7 @@ export interface FileRouteTypes {
     | '/pronostics/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/football/player-mappings'
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
     | '/admin/pepites/donnees'
@@ -942,6 +967,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ClubsClubIdRoute: typeof ClubsClubIdRoute
+  DevPlayerMappingsSampleRoute: typeof DevPlayerMappingsSampleRoute
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
   MatchesStandingsRoute: typeof MatchesStandingsRoute
   PrizesTermsRoute: typeof PrizesTermsRoute
@@ -1185,6 +1211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClubsClubIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev/player-mappings-sample': {
+      id: '/dev/player-mappings-sample'
+      path: '/dev/player-mappings-sample'
+      fullPath: '/dev/player-mappings-sample'
+      preLoaderRoute: typeof DevPlayerMappingsSampleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/fantasy/': {
       id: '/fantasy/'
       path: '/'
@@ -1381,6 +1414,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/football/player-mappings': {
+      id: '/admin/football/player-mappings'
+      path: '/football/player-mappings'
+      fullPath: '/admin/football/player-mappings'
+      preLoaderRoute: typeof AdminFootballPlayerMappingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/news/$articleEditionId': {
       id: '/admin/news/$articleEditionId'
       path: '/$articleEditionId'
@@ -1543,6 +1583,7 @@ interface AdminRouteChildren {
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminStaffRoute: typeof AdminStaffRouteWithChildren
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
+  AdminFootballPlayerMappingsRoute: typeof AdminFootballPlayerMappingsRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -1554,6 +1595,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSecurityRoute: AdminSecurityRoute,
   AdminStaffRoute: AdminStaffRouteWithChildren,
   AdminUsersRoute: AdminUsersRouteWithChildren,
+  AdminFootballPlayerMappingsRoute: AdminFootballPlayerMappingsRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -1723,6 +1765,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ClubsClubIdRoute: ClubsClubIdRoute,
+  DevPlayerMappingsSampleRoute: DevPlayerMappingsSampleRoute,
   MatchesMatchIdRoute: MatchesMatchIdRoute,
   MatchesStandingsRoute: MatchesStandingsRoute,
   PrizesTermsRoute: PrizesTermsRoute,
