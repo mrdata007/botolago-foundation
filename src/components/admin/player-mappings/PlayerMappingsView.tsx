@@ -34,6 +34,8 @@ import {
 import { ui, UiBadge, UiButton, UiInput, UiSelect } from "@/components/ui-kit";
 import { rovingTabStop, rovingTarget } from "@/components/ui-kit/tabs-keyboard";
 import { cn } from "@/lib/utils";
+import { getBulkCopy } from "./bulk-copy";
+import { BulkMappingPanel } from "./BulkMappingPanel";
 import { CandidateComparison } from "./CandidateComparison";
 import {
   getPlayerMappingCopy,
@@ -53,6 +55,12 @@ import {
 
 export const ROWS_PER_PAGE = 25;
 
+/** Only to label the button; the panel verifies the manifest itself. */
+const bulkRowCount = (manifest: unknown): number =>
+  Array.isArray((manifest as { rows?: unknown } | null)?.rows)
+    ? (manifest as { rows: unknown[] }).rows.length
+    : 0;
+
 type Selection = { readonly kind: "candidate" | "proposal"; readonly id: string } | null;
 
 export interface PlayerMappingsViewProps {
@@ -65,6 +73,12 @@ export interface PlayerMappingsViewProps {
   readonly context: RepositoryContext;
   readonly actions: MappingActions;
   readonly onReload: () => void;
+  /**
+   * The frozen, committed batch manifest. Drawn only for a person who may manage
+   * mappings while proposals are enabled; the panel verifies it before anything is
+   * offered, and every action still goes through the reviewed backend.
+   */
+  readonly bulkManifest?: unknown;
   /** A starting point, for a static render and for tests. */
   readonly initial?: {
     readonly view?: QueueView;
@@ -73,6 +87,11 @@ export interface PlayerMappingsViewProps {
     readonly selection?: Selection;
     readonly options?: readonly AppPlayerOption[];
     readonly previews?: ReadonlyMap<string, RowPreview>;
+    readonly bulk?: boolean;
+    readonly bulkPanel?: Pick<
+      import("./BulkMappingPanel").BulkMappingPanelProps,
+      "initial"
+    >["initial"];
   };
 }
 
@@ -90,6 +109,7 @@ export function PlayerMappingsView({
   context,
   actions,
   onReload,
+  bulkManifest,
   initial,
 }: PlayerMappingsViewProps) {
   const copy = getPlayerMappingCopy(lang);
@@ -97,6 +117,8 @@ export function PlayerMappingsView({
   const [filters, setFilters] = useState<QueueFilters>({ ...NO_FILTERS, ...initial?.filters });
   const [page, setPage] = useState(initial?.page ?? 0);
   const [selection, setSelection] = useState<Selection>(initial?.selection ?? null);
+  const hasBulk = bulkManifest !== undefined && bulkManifest !== null;
+  const [showBulk, setShowBulk] = useState(initial?.bulk ?? false);
   // What the last successful execution wrote, kept on screen after its panel is gone.
   const [executedNotice, setExecutedNotice] = useState<string | null>(null);
   const lastOpened = useRef<string | null>(null);
@@ -220,6 +242,18 @@ export function PlayerMappingsView({
             </AdminNotice>
           </div>
         )}
+        {proposalsEnabled && viewer.canManage && hasBulk && data && !showBulk && (
+          <div className="mt-3">
+            <UiButton
+              size="sm"
+              variant="outline"
+              onClick={() => setShowBulk((current) => !current)}
+              data-testid="bulk-open"
+            >
+              {getBulkCopy(lang).open(bulkRowCount(bulkManifest))}
+            </UiButton>
+          </div>
+        )}
       </header>
       {executedNotice && (
         <div data-testid="mapping-execute-result">
@@ -268,6 +302,21 @@ export function PlayerMappingsView({
   const ready = state.data;
   if (ready.candidates.length === 0)
     return wrapper(<AdminEmptyState testId="mapping-empty">{copy.empty}</AdminEmptyState>);
+
+  if (showBulk && proposalsEnabled && viewer.canManage && hasBulk)
+    return wrapper(
+      <BulkMappingPanel
+        lang={lang}
+        copy={copy}
+        data={ready}
+        repository={repository}
+        context={context}
+        rawManifest={bulkManifest}
+        onReload={onReload}
+        onClose={() => setShowBulk(false)}
+        initial={initial?.bulkPanel}
+      />,
+    );
 
   // ---- the detail of one selection ----
   const selectedProposal =
