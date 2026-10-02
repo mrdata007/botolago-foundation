@@ -15,6 +15,7 @@ import { useMemo, useState } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { authOutlineClass } from "@/components/auth/auth-classes";
+import { PushOptInCard } from "@/components/notifications/PushOptInCard";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiButton, UiCard, UiChip, UiLinkButton, UiPageTitle } from "@/components/ui-kit";
@@ -108,6 +109,7 @@ function Inbox() {
 
   return (
     <div className="grid gap-4">
+      <PushOptInCard />
       <div role="group" aria-label={t("notifications.title")} className="flex flex-wrap gap-1.5">
         <UiChip selected={category === null} onClick={() => setCategory(null)}>
           {t("notifications.filter.all")}

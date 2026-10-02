@@ -1,6 +1,7 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   NotificationCategory,
+  NotificationDeviceRegistrationInput,
   NotificationDeviceRepository,
   NotificationPageDto,
   NotificationEmailUnsubscribeRepository,
@@ -122,6 +123,41 @@ export async function setMyEmailNotifications(
   const current = await repository.get(context);
   if (current.channels.email === enabled) return current;
   return repository.update(withEmailChannel(current, enabled), current.language, context);
+}
+
+/** `current` with only the phone (push) channel changed. */
+export function withPushChannel(
+  current: NotificationPreferencesDto,
+  push: boolean,
+): NotificationPreferenceUpdate {
+  return {
+    ...withEmailChannel(current, current.channels.email),
+    channels: { ...current.channels, push },
+  };
+}
+
+/** Turns phone alerts on or off for the signed-in account (reads the stored row first). */
+export async function setMyPushNotifications(
+  enabled: boolean,
+  repository: NotificationPreferenceRepository = getNotificationRepositories().preferences,
+  context: RepositoryContext = notificationContext(),
+): Promise<NotificationPreferencesDto> {
+  const current = await repository.get(context);
+  if (current.channels.push === enabled) return current;
+  return repository.update(withPushChannel(current, enabled), current.language, context);
+}
+
+/** Saves this browser's push address as one of the account's devices. */
+export function registerMyPushDevice(input: NotificationDeviceRegistrationInput) {
+  return getNotificationRepositories().devices.register(input, notificationContext());
+}
+
+export function listMyDevices() {
+  return getNotificationRepositories().devices.list(notificationContext());
+}
+
+export function unregisterMyDevice(id: string) {
+  return getNotificationRepositories().devices.unregister(id, notificationContext());
 }
 
 /** The one-click unsubscribe link from a notification e-mail. Works signed out. */

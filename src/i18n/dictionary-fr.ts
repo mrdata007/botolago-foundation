@@ -54,6 +54,17 @@ export const fr = {
   "notifications.dismiss": "Supprimer la notification",
   "notifications.load_more": "Voir plus",
   "notifications.unread": "Non lue",
+  "notifications.push.title": "Alertes sur votre téléphone",
+  "notifications.push.off_body":
+    "Recevez vos rappels de match et alertes Fantasy même quand BotolaGO est fermé. Votre navigateur vous demandera l'autorisation.",
+  "notifications.push.on_body": "Les alertes sont activées sur cet appareil.",
+  "notifications.push.blocked_body":
+    "Les notifications sont bloquées pour ce site. Autorisez-les dans les réglages de votre navigateur, puis revenez ici.",
+  "notifications.push.ios_body":
+    "Sur iPhone, ajoutez d'abord BotolaGO à l'écran d'accueil (Partager, puis « Sur l'écran d'accueil »), puis ouvrez-le depuis l'icône.",
+  "notifications.push.turn_on": "Activer les alertes",
+  "notifications.push.turn_off": "Désactiver sur cet appareil",
+  "notifications.push.failed": "Impossible de modifier les alertes pour le moment. Réessayez.",
   "notifications.signin_title": "Connectez-vous pour voir vos notifications",
   "notifications.signin_body": "Vos rappels de match et alertes Fantasy arrivent ici.",
   "reminders.bell.off": "Me rappeler ce match",

@@ -10,14 +10,14 @@ Most of the plumbing for reminders and notifications **already exists in the dat
 (built in July and September). What is missing is mostly the part the user sees and the
 part that actually delivers a push to a phone. So Phase 5 is smaller than it first looked:
 
-| Item | New database tables? | What is really missing |
-| --- | --- | --- |
-| Reminder bell on match rows | **No** | The button, an inbox to read the reminders in, and the delivery |
-| Phone push notifications | **No** (tables exist) | A sender, a service worker, keys, a permission prompt |
-| Follow players | **Yes, one small change** | A "player" kind of follow |
-| Share cards | **No** | An image-making page and the page tags |
-| Readable web addresses | **Maybe** (a `slug` per match and player) | Redirects from the old addresses |
-| Pépites header and tab bar | **No** | Front-end only |
+| Item                        | New database tables?                      | What is really missing                                          |
+| --------------------------- | ----------------------------------------- | --------------------------------------------------------------- |
+| Reminder bell on match rows | **No**                                    | The button, an inbox to read the reminders in, and the delivery |
+| Phone push notifications    | **No** (tables exist)                     | A sender, a service worker, keys, a permission prompt           |
+| Follow players              | **Yes, one small change**                 | A "player" kind of follow                                       |
+| Share cards                 | **No**                                    | An image-making page and the page tags                          |
+| Readable web addresses      | **Maybe** (a `slug` per match and player) | Redirects from the old addresses                                |
+| Pépites header and tab bar  | **No**                                    | Front-end only                                                  |
 
 ## What already exists (checked in the code today)
 
@@ -55,7 +55,7 @@ device. Two small database changes would fix both (they need approval; not writt
 (a) a read function listing the user's match reminders; (b) let the "match starting" job
 create the inbox message for users with a reminder even when e-mail is off.
 **Status (2 Oct):** (a) is written as `supabase/migrations/20261002110000_list_my_match_reminders.sql` with a pgTAP test, in this pull request only: **not applied to production**; applying it is a separate approval, and the bell works without it. (b) is **not written**: it means rewriting a large existing job that cannot be tested locally here, so it needs its own careful pull request.
-Until then the bell remembers what *this device* set, and its message offers to turn
+Until then the bell remembers what _this device_ set, and its message offers to turn
 e-mail notifications on when they are off.
 
 1. Does the existing fan-out already create an in-app `match_starting` notification for
@@ -65,6 +65,7 @@ e-mail notifications on when they are off.
    image page and the push sender depend on it.
 
 ### Step 1 — Inbox screen (front end only)
+
 - A "Notifications" screen listing the user's notifications (read, dismiss, "mark all
   read"), using the existing functions. Opens from a bell in the top bar and from Profile.
 - Tapping a notification goes to its match, article or Fantasy page (the deep-link
@@ -73,6 +74,7 @@ e-mail notifications on when they are off.
 - **Why first:** the bell and every later feature need somewhere to land.
 
 ### Step 2 — Reminder bell on match rows (front end, plus one possible approval)
+
 - A 44 px bell button at the end of each match row ("Me rappeler"), turned on and off with
   the existing function. A signed-out visitor is asked to sign in first, as with
   "Suivre" on a club.
@@ -84,6 +86,7 @@ e-mail notifications on when they are off.
 - Also: the same bell on the match page header.
 
 ### Step 3 — Real phone notifications (the big one)
+
 - **Web push only at first** (works in Chrome and Android; on iPhone only after the user
   adds the site to the Home Screen, which is an Apple rule, not ours).
 - Needs from the owner: a one-time **VAPID key pair** (we generate it, the owner stores
@@ -99,7 +102,33 @@ e-mail notifications on when they are off.
 - Native iOS/Android apps (FCM/APNs) are **out of scope**; the tables already allow them
   later.
 
+**Built (2 Oct), switched off:** the encryption and signing for web push (checked against
+the RFC 8291 worked example), the `web_push` sender, a manual-only dispatcher workflow
+(`notification-push-dispatch.yml`: owner only, exact commit, typed confirmation, the
+mutation lock; no schedule), a key generator, the service worker (`public/sw.js`), and a
+"Alertes sur votre téléphone" card on `/notifications`. The card shows only when
+`NOTIFICATIONS_PUSH_ENABLED` is `true` **and** `VITE_WEB_PUSH_PUBLIC_KEY` is set; the flag
+is `false`. The permission prompt appears only after a tap; iPhone users are told to add the
+site to the Home Screen first.
+
+**To switch it on (owner):**
+
+1. Run `bun scripts/backend/generate-vapid-keys.ts` on your own computer. Store the private
+   key as the GitHub secret `WEB_PUSH_VAPID_PRIVATE_KEY` and the public key as the variables
+   `WEB_PUSH_VAPID_PUBLIC_KEY` and `VITE_WEB_PUSH_PUBLIC_KEY`; set `WEB_PUSH_SUBJECT`
+   (`mailto:` address) in environment `production-admin-activation`.
+2. Publish the new privacy-policy version (what is stored, why, how to switch it off).
+3. **Decide who creates the push messages** (nothing creates them in production today):
+   (A) extend the existing "match starting" e-mail job to also queue push deliveries
+   (a reviewed database migration, no duplicate inbox items), or
+   (B) a TypeScript path using `service_create_user_notification` with
+   `NOTIFICATION_PUSH_PROVIDER=web_push` (no migration, but e-mail-on users would get a
+   second inbox item).
+4. Run the dispatcher workflow with `CHECK_PUSH_CONFIGURATION` first, then set the flag
+   to `true`.
+
 ### Step 4 — Follow players
+
 - Follow a real player (not only Pépites) from the player profile and the Fantasy player
   card; the home "Mes clubs" chip gets a "Mes joueurs" sibling later.
 - **Database change (approval needed):** the list of follow kinds has no "player". A new
@@ -110,6 +139,7 @@ e-mail notifications on when they are off.
   existing fan-out. Rate limits already exist per user.
 
 ### Step 5 — Share cards
+
 - A server page that draws a card image (result, upcoming match, "my Fantasy team") at
   1200×630 for link previews and a 1080×1350 version for stories, in the brand colours
   and fonts, French and Arabic (right-to-left; Arabic letter joining must be tested,
@@ -119,6 +149,7 @@ e-mail notifications on when they are off.
 - No new tables. No personal data in the image except what the user chooses to share.
 
 ### Step 6 — Readable web addresses
+
 - Target: `/clubs/wydad-ac` (already works through the club `slug`),
   `/matches/wydad-ac-as-far-2026-10-02`, `/fantasy/players/ayoub-elouasti`.
 - Old id addresses keep working and **redirect permanently** to the readable one;
@@ -129,33 +160,36 @@ e-mail notifications on when they are off.
 - Needs the SEO notes in `docs/seo/` checked first so no ranking is lost.
 
 ### Step 7 — Pépites header and tab bar (front end only)
+
 - Use the shared header and tab bar on every Pépites page so it feels like part of the
   app. Can be done any time; it has no dependency on the others.
 
 ## Order and effort (rough)
 
-| Step | Depends on | Size |
-| --- | --- | --- |
-| 0 Checks | – | small |
-| 1 Inbox | – | medium |
-| 2 Bell | 1 (and 0) | small–medium |
-| 3 Push | 1, 2, owner keys | large |
-| 4 Follow players | 3 for phone alerts | medium |
-| 5 Share cards | host answer from step 0 | medium |
-| 6 Readable URLs | SEO review | medium |
-| 7 Pépites header | – | small |
+| Step             | Depends on              | Size         |
+| ---------------- | ----------------------- | ------------ |
+| 0 Checks         | –                       | small        |
+| 1 Inbox          | –                       | medium       |
+| 2 Bell           | 1 (and 0)               | small–medium |
+| 3 Push           | 1, 2, owner keys        | large        |
+| 4 Follow players | 3 for phone alerts      | medium       |
+| 5 Share cards    | host answer from step 0 | medium       |
+| 6 Readable URLs  | SEO review              | medium       |
+| 7 Pépites header | –                       | small        |
 
 Steps 1, 2 and 7 can ship without any database change. Steps 3 to 6 each have a
 decision attached.
 
 ## Database changes that need approval (full list)
+
 1. Step 2, maybe: let match reminders reach the fan-out.
 2. Step 4: add a "player" follow (own migration file for the enum value).
 3. Step 6, maybe: add `slug` to fixtures and players.
-Each follows the repository rules: forward-only migration with a unique timestamp, a
-pgTAP test, regenerated types, a dry run first, and only one writer at a time.
+   Each follows the repository rules: forward-only migration with a unique timestamp, a
+   pgTAP test, regenerated types, a dry run first, and only one writer at a time.
 
 ## Risks
+
 - **Notification spam** drives uninstalls: default to one reminder per match, respect the
   existing quiet hours and daily/weekly digest settings, cap per user per day.
 - **iPhone push** depends on Home Screen install; the settings screen must say so.
@@ -166,6 +200,7 @@ pgTAP test, regenerated types, a dry run first, and only one writer at a time.
   are deleted within seven days of becoming invalid (already the table's rule).
 
 ## What the owner decides
+
 1. Approve the order above (or reorder).
 2. Step 3: approve web-push-only for now, and who holds the key pair.
 3. Step 4 and Step 6: approve the two database changes when we reach them.

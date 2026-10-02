@@ -253,6 +253,16 @@ export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;
 export const HOME_DEADLINE_FIRST = false;
 
 /**
+ * Phone alerts (web push) card on /notifications. Off until the owner has
+ * stored the push keys, published the new privacy policy and chosen who
+ * creates the push messages (docs/engineering/PHASE5_ENGAGEMENT_PLAN.md,
+ * step 3). Also needs VITE_WEB_PUSH_PUBLIC_KEY at build time.
+ *
+ * Gated surface: `src/components/notifications/PushOptInCard.tsx`.
+ */
+export const NOTIFICATIONS_PUSH_ENABLED: boolean = false;
+
+/**
  * Player-mapping PROPOSALS on /admin/football/player-mappings: ON since 2026-10-02.
  *
  * Owner decision, 2026-10-02: the reviewer screen was verified read-only on the

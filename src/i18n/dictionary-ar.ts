@@ -50,6 +50,17 @@ export const ar = {
   "notifications.dismiss": "حذف الإشعار",
   "notifications.load_more": "عرض المزيد",
   "notifications.unread": "غير مقروء",
+  "notifications.push.title": "تنبيهات على هاتفك",
+  "notifications.push.off_body":
+    "استقبل تذكيرات المباريات وتنبيهات الفانتازي حتى عندما يكون BotolaGO مغلقًا. سيطلب منك المتصفح الإذن.",
+  "notifications.push.on_body": "التنبيهات مفعّلة على هذا الجهاز.",
+  "notifications.push.blocked_body":
+    "الإشعارات محظورة لهذا الموقع. اسمح بها من إعدادات المتصفح ثم عد إلى هنا.",
+  "notifications.push.ios_body":
+    "على آيفون، أضف BotolaGO أولًا إلى الشاشة الرئيسية (مشاركة ثم «إضافة إلى الشاشة الرئيسية») ثم افتحه من الأيقونة.",
+  "notifications.push.turn_on": "تفعيل التنبيهات",
+  "notifications.push.turn_off": "إيقاف على هذا الجهاز",
+  "notifications.push.failed": "تعذّر تعديل التنبيهات حاليًا. حاول مرة أخرى.",
   "notifications.signin_title": "سجّل الدخول لعرض إشعاراتك",
   "notifications.signin_body": "تصلك هنا تذكيرات المباريات وتنبيهات فانتازي.",
   "reminders.bell.off": "ذكّرني بهذه المباراة",
