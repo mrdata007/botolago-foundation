@@ -1,6 +1,6 @@
 # Motion plan — making the app feel alive
 
-Status: **all seven PRs built. Left out on purpose: the card-flip on the weekly reveal (#10) and pull-to-refresh (#13).** Covers the 13 animation ideas agreed with the
+Status: **all seven PRs built, plus the reveal card flip (#10, follow-up). Left out on purpose: pull-to-refresh (#13).** Covers the 13 animation ideas agreed with the
 owner on 2026-10-02. Nothing here is built yet.
 
 ## What already exists (build on it, don't duplicate it)
@@ -181,7 +181,7 @@ _PR 5 built (#9 live cards, #8 pronostics); PR 6 built (#6 pitch, #7 captain and
 
 ## Phase 5 — notifications
 
-_Built, with #10 (PR 7). Notes: the bell shakes and the badge pops only when the unread count goes UP while the page is open. Inbox cards that arrive above the old first card fade in one by one (`newAtTop`); older cards added by "load more", a filter switch and the first load do not. #10: the stat bars, the score ring and the minutes bars fill the first time they are scrolled into view (server HTML and reduced motion show them finished), and the player photo leans up to 6 degrees towards a mouse (`TiltFrame`; never touch or pen). Not built: the card-flip on the weekly reveal. Pépites is switched off on the test backend, so #10 was checked on a scratch page, not in the app._
+_Built, with #10 (PR 7). Notes: the bell shakes and the badge pops only when the unread count goes UP while the page is open. Inbox cards that arrive above the old first card fade in one by one (`newAtTop`); older cards added by "load more", a filter switch and the first load do not. #10: the stat bars, the score ring and the minutes bars fill the first time they are scrolled into view (server HTML and reduced motion show them finished), and the player photo leans up to 6 degrees towards a mouse (`TiltFrame`; never touch or pen). The weekly-reveal card flip was added afterwards: on `/pepites/revelation` each player's photo (or shirt) card turns over from a night-blue back showing the rank, and the name, figures and editor's line rise in after it; it replays for every player of the story (keyed by player id) and shows the front straight away under reduced motion. Pépites is switched off on the test backend, so #10 was checked on a scratch page, not in the app._
 
 **#13 New items and the bell.**
 - `NotificationBell`: when the unread count goes up (the 60s check in

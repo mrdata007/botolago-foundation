@@ -168,18 +168,36 @@ export function PepitesReveal({ rank }: { rank: number }) {
           </p>
         </div>
 
-        <div className="relative mt-auto flex flex-col items-center">
-          <div className="relative z-10 flex h-[230px] w-[230px] items-end justify-center">
-            {photoUrl ? (
-              <img
-                src={photoUrl}
-                alt=""
-                className="size-[230px] rounded-[28px] object-cover drop-shadow-[0_10px_16px_rgba(0,0,0,0.5)]"
-                data-testid="pepites-reveal-photo"
-              />
-            ) : (
-              <PepitesShirt player={player} number={item.rank} className="h-[200px] w-[214px]" />
-            )}
+        {/* Keyed by the player, so each player in the story is a new card that
+            turns over: the back (the rank on the night blue), then the front. */}
+        <div key={player.id} className="relative mt-auto flex flex-col items-center">
+          <div className="relative z-10 h-[230px] w-[230px] [perspective:900px]">
+            <div className="card-flip relative size-full">
+              <div className="flex size-full items-end justify-center [backface-visibility:hidden]">
+                {photoUrl ? (
+                  <img
+                    src={photoUrl}
+                    alt=""
+                    className="size-[230px] rounded-[28px] object-cover drop-shadow-[0_10px_16px_rgba(0,0,0,0.5)]"
+                    data-testid="pepites-reveal-photo"
+                  />
+                ) : (
+                  <PepitesShirt
+                    player={player}
+                    number={item.rank}
+                    className="h-[200px] w-[214px]"
+                  />
+                )}
+              </div>
+              <div
+                aria-hidden
+                className="absolute inset-0 grid place-items-center rounded-[28px] border border-white/20 bg-[linear-gradient(160deg,#1e4fa0,#0d1738)] [backface-visibility:hidden] [transform:rotateY(180deg)]"
+              >
+                <span className={cn(pp.display, pp.energyText, "text-[96px] leading-none")}>
+                  <bdi>{formatNumber(item.rank, lang)}</bdi>
+                </span>
+              </div>
+            </div>
           </div>
           <span
             aria-hidden
@@ -189,7 +207,11 @@ export function PepitesReveal({ rank }: { rank: number }) {
             )}
           />
           <h1
-            className={cn(pp.display, "relative z-10 mt-3 text-center text-[32px] leading-[1.1]")}
+            className={cn(
+              pp.display,
+              "enter-rise relative z-10 mt-3 text-center text-[32px] leading-[1.1]",
+            )}
+            style={{ animationDelay: "320ms" }}
             data-testid="pepites-reveal-name"
           >
             <bdi>{player.name}</bdi>
@@ -207,7 +229,11 @@ export function PepitesReveal({ rank }: { rank: number }) {
           </span>
         </div>
 
-        <dl className="relative z-10 mt-4 grid grid-cols-3 gap-2">
+        <dl
+          key={`tiles-${player.id}`}
+          className="enter-rise relative z-10 mt-4 grid grid-cols-3 gap-2"
+          style={{ animationDelay: "400ms" }}
+        >
           {tiles.map((tile) => (
             <div
               key={tile.label}
@@ -229,7 +255,12 @@ export function PepitesReveal({ rank }: { rank: number }) {
         </dl>
         {reason ? (
           <p
-            className={cn(pp.bold, "mt-4 text-center text-[12px] leading-[1.45] text-[#e4e9f7]")}
+            key={`reason-${player.id}`}
+            className={cn(
+              pp.bold,
+              "enter-rise mt-4 text-center text-[12px] leading-[1.45] text-[#e4e9f7]",
+            )}
+            style={{ animationDelay: "480ms" }}
             data-testid="pepites-reveal-reason"
           >
             «&nbsp;{reason}&nbsp;»

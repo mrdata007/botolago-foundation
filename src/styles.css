@@ -1015,6 +1015,24 @@ html[dir="rtl"] .lucide-arrow-left {
   animation: confetti-fly 1100ms var(--ease-decelerate) both;
 }
 
+/* A reveal card turning over: it starts face down (its back towards the
+   reader) and turns to its front. Needs a `perspective` on its parent and
+   `backface-visibility: hidden` on both faces. Under reduced motion the
+   duration is cut to almost nothing, so the front is simply there. */
+@keyframes card-flip {
+  from {
+    transform: rotateY(180deg);
+  }
+  to {
+    transform: rotateY(0deg);
+  }
+}
+
+@utility card-flip {
+  transform-style: preserve-3d;
+  animation: card-flip 650ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
 /* A number that just went up or down: a green or red wash that fades out. */
 @keyframes flash-up {
   from {
