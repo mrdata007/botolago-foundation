@@ -1,3 +1,4 @@
+import { AnimatedNumber } from "@/components/common/AnimatedNumber";
 import pointsPendingArt from "@/assets/illustrations/points-pending.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -290,7 +291,7 @@ function PointsBody() {
         items={[
           {
             label: t("fpl.points"),
-            value: total ?? none,
+            value: total === null ? none : <AnimatedNumber value={total} format={String} />,
             unit: total === null ? undefined : pointsUnit(total, t),
             sub: statusLabel ? (
               <span className={cn("inline-flex items-center gap-1.5", ui.text.label)}>

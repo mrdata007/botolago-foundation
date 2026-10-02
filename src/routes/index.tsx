@@ -77,6 +77,7 @@ import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
 import liveBand from "@/assets/photos/home-band-live.webp";
 import liveBandSmall from "@/assets/photos/home-band-live-800.webp";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
+import { staggerStyle } from "@/lib/motion";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
 const HOME_DESCRIPTION =
@@ -492,13 +493,14 @@ function HomeContent() {
                 ) : newsPreview.length === 0 ? (
                   <EmptyState compact>{t("state.empty")}</EmptyState>
                 ) : (
-                  newsPreview.map((a) => (
-                    <ArticleCard
+                  newsPreview.map((a, index) => (
+                    <div
                       key={a.id}
-                      article={a}
-                      variant="compact"
-                      clubs={clubsQ.data ?? []}
-                    />
+                      className="enter-rise stagger min-w-0"
+                      style={staggerStyle(index)}
+                    >
+                      <ArticleCard article={a} variant="compact" clubs={clubsQ.data ?? []} />
+                    </div>
                   ))
                 )}
               </div>
@@ -803,7 +805,7 @@ function DiscoveryLink({
       className={cn(
         "flex min-h-16 flex-col items-center justify-center gap-1.5 px-2 py-3 text-center",
         ui.surface.card,
-        "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+        "press-tile",
         ui.focus,
       )}
     >

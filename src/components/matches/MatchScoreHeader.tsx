@@ -9,7 +9,9 @@ import { isKickoffDateUnconfirmed, isKickoffTimeUnconfirmed } from "@/lib/match-
 import { cn } from "@/lib/utils";
 import type { MatchEvent } from "@/services/match-live";
 import type { Club, Match } from "@/types/domain";
+import { useTickingMinute } from "@/lib/motion";
 import { BallIcon } from "./BallIcon";
+import { FlipScore } from "./FlipScore";
 import { GOAL_EVENT_TYPES } from "./goal-moment";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
@@ -66,6 +68,8 @@ export function MatchScoreHeader({
 }) {
   const { t, tr, lang } = useI18n();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
+  // The minute keeps ticking between refreshes (at most one ahead of the data).
+  const liveMinute = useTickingMinute(match.minute, match.status === "live");
   const kickoff = new Date(match.kickoff);
   const timeFmt = moroccoDateTimeFormat(locale, {
     hour: "2-digit",
@@ -144,9 +148,9 @@ export function MatchScoreHeader({
             >
               <span className="sr-only">{scoreA11y}</span>
               <span aria-hidden className={cn("flex items-center gap-3", ui.score.hero)}>
-                <bdi>{hs}</bdi>
+                <FlipScore value={hs} />
                 <span>–</span>
-                <bdi>{as}</bdi>
+                <FlipScore value={as} />
               </span>
             </div>
           ) : isScheduled ? (
@@ -175,7 +179,7 @@ export function MatchScoreHeader({
 
           {isLive ? (
             <>
-              <UiLivePill size="md" minute={match.minute} />
+              <UiLivePill size="md" minute={liveMinute} />
               {/* The page refreshes itself while live; said once, quietly. */}
               <span className="sr-only">{t("matches.detail.live_updating")}</span>
             </>
@@ -204,7 +208,7 @@ export function MatchScoreHeader({
         <div aria-hidden className="flex h-1.25 bg-[color:var(--ui-rule)]">
           <span
             className="bg-[color:var(--ui-live)] transition-[width] duration-[var(--duration-sheet)] ease-[var(--ease-standard)]"
-            style={{ width: `${Math.min(100, (elapsed / 90) * 100)}%` }}
+            style={{ width: `${Math.min(100, (Math.max(elapsed, liveMinute ?? 0) / 90) * 100)}%` }}
           />
         </div>
       )}

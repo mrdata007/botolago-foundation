@@ -3,6 +3,9 @@ import { Link } from "@tanstack/react-router";
 import type { Club, Match, MatchStatus } from "@/types/domain";
 import { useI18n } from "@/i18n/provider";
 import { ClubCrest } from "./ClubCrest";
+import { FlipScore } from "@/components/matches/FlipScore";
+import { LiveProgress } from "@/components/matches/LiveProgress";
+import { useTickingMinute } from "@/lib/motion";
 import { MatchReminderBell } from "./MatchReminderBell";
 import { cn } from "@/lib/utils";
 import { ui, UiBadge, UiLivePill } from "@/components/ui-kit";
@@ -79,19 +82,14 @@ const LIST_FRAME = cn(
 );
 
 /** The same row as a card of its own: the card surface, clipping its edges. */
-const CARD_FRAME = cn(
-  ui.surface.card,
-  "overflow-hidden",
-  "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
-  ui.focus,
-);
+const CARD_FRAME = cn(ui.surface.card, "overflow-hidden", "press-tile", ui.focus);
 
 /** The split live card: a feature surface, lifted off the page. */
 const HERO_FRAME = cn(
   "relative overflow-hidden",
   ui.radius.sheet,
   ui.shadow.lifted,
-  "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+  "press-tile",
   ui.focus,
 );
 
@@ -127,6 +125,8 @@ export function MatchCard({
   const unconfirmedDate = isKickoffDateUnconfirmed(match) || status === "cancelled";
   const unconfirmedTime = isKickoffTimeUnconfirmed(match);
   const isHero = variant === "hero";
+  // The minute keeps ticking between data refreshes (at most one ahead).
+  const liveMinute = useTickingMinute(match.minute, status === "live");
 
   const timeFmt = moroccoDateTimeFormat(locale, {
     hour: "2-digit",
@@ -183,9 +183,9 @@ export function MatchCard({
   /** Three flex children in a container that follows the page direction. */
   const score = (className: string) => (
     <div className={cn("flex items-center gap-1.5", className)}>
-      <bdi>{hs}</bdi>
+      <FlipScore value={hs} />
       <span>–</span>
-      <bdi>{as}</bdi>
+      <FlipScore value={as} />
     </div>
   );
 
@@ -195,7 +195,7 @@ export function MatchCard({
     if (isLive) {
       return (
         <UiLivePill
-          minute={match.minute}
+          minute={liveMinute}
           size={isHero ? "md" : "sm"}
           // Extra time names itself on the pill; the rest of play is "live".
           label={status === "extra_time" ? t("matches.status.extra_time") : undefined}
@@ -343,12 +343,12 @@ export function MatchCard({
           <ClubCrest club={home} palette={pair.home} size="xs" className="h-6 w-6" />
           <span className={cn("min-w-0", nameClass(homeLost))}>{homeName}</span>
         </div>
-        {hasScore ? <bdi className={scoreClass(homeLost)}>{hs}</bdi> : null}
+        {hasScore ? <FlipScore value={hs} className={scoreClass(homeLost)} /> : null}
         <div className="flex min-w-0 items-center gap-2">
           <ClubCrest club={away} palette={pair.away} size="xs" className="h-6 w-6" />
           <span className={cn("min-w-0", nameClass(awayLost))}>{awayName}</span>
         </div>
-        {hasScore ? <bdi className={scoreClass(awayLost)}>{as}</bdi> : null}
+        {hasScore ? <FlipScore value={as} className={scoreClass(awayLost)} /> : null}
       </div>
       <span {...clubStyle(pair.away)} className={ui.club.edgeFill} />
     </div>
@@ -372,7 +372,16 @@ export function MatchCard({
       )}
     >
       {/* The label above states all of this. */}
-      <div aria-hidden>{content}</div>
+      <div aria-hidden className={isLive ? "relative" : undefined}>
+        {content}
+        {isLive ? (
+          <LiveProgress
+            minute={liveMinute}
+            halfTime={status === "half_time"}
+            className={cn("absolute bottom-0", isHero ? "inset-x-0" : "inset-x-1")}
+          />
+        ) : null}
+      </div>
     </Link>
   );
 

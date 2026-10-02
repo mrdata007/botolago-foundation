@@ -35,6 +35,7 @@ import { unavailableHeaders } from "@/lib/page-availability";
 import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Match } from "@/types/domain";
+import { staggerStyle } from "@/lib/motion";
 
 const MATCHES_TITLE = "Matches Botola Pro — scores en direct | BotolaGO";
 const MATCHES_DESCRIPTION =
@@ -343,19 +344,14 @@ function MatchesPage() {
   const failed = seasonsQ.isLoadingError || matchesQ.isLoadingError;
 
   const rows = (list: readonly Match[]) =>
-    list.map((m) => {
+    list.map((m, index) => {
       const home = clubById(m.homeClubId);
       const away = clubById(m.awayClubId);
       if (!home || !away) return null;
       return (
-        <MatchCard
-          key={m.id}
-          match={m}
-          home={home}
-          away={away}
-          variant="list"
-          listGameweek={dayGameweek}
-        />
+        <div key={m.id} className="enter-rise stagger min-w-0" style={staggerStyle(index)}>
+          <MatchCard match={m} home={home} away={away} variant="list" listGameweek={dayGameweek} />
+        </div>
       );
     });
 

@@ -36,8 +36,8 @@ export function PlayerRow({
         "flex min-w-0 items-center gap-3 px-3 py-2.5",
         ui.surface.card,
         ui.space.row,
-        "transition-[transform,background-color] duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
-        "hover:bg-[color:var(--ui-surface-sunken)] active:translate-y-px",
+        "press-tile",
+        "hover:bg-[color:var(--ui-surface-sunken)]",
       )}
     >
       {typeof rank === "number" && (

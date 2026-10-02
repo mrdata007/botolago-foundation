@@ -1,5 +1,6 @@
 import { dehydrate, hydrate, type DehydratedState } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
+import { defaultViewTransition } from "@/lib/page-transition";
 import { SSR_DEHYDRATE_OPTIONS } from "@/lib/ssr-prefetch";
 import { createAppQueryClient } from "@/services/query-client";
 import { routeTree } from "./routeTree.gen";
@@ -11,6 +12,9 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    // A change of page cross-fades or slides in (src/lib/page-transition.ts,
+    // styles.css). Browsers without view transitions change page as before.
+    defaultViewTransition,
     defaultPreloadStaleTime: 0,
     // The data a public page's loader warmed on the server (`prefetchForSsr`)
     // travels with the HTML and seeds the browser's cache before its first

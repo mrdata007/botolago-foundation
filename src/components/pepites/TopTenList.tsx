@@ -1,3 +1,4 @@
+import { TiltFrame } from "./TiltFrame";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
@@ -24,6 +25,7 @@ import {
   PepitesShirt,
   Seg10Bar,
 } from "./PepitesVisuals";
+import { staggerStyle } from "@/lib/motion";
 
 /** What the ranking knows about a player that the edition does not carry. */
 export type PlayerStats = Pick<RankingRow, "minutes" | "goals" | "assists" | "ratingAvg" | "ga90">;
@@ -169,14 +171,16 @@ export function TopTenHero({
             </div>
             <div className="-mb-1 shrink-0">
               {photoUrl ? (
-                <img
-                  src={photoUrl}
-                  alt=""
-                  loading="eager"
-                  decoding="async"
-                  className="size-[120px] rounded-[20px] object-cover shadow-[0_10px_16px_rgb(0_0_0/0.45)]"
-                  data-testid="pepites-hero-photo"
-                />
+                <TiltFrame>
+                  <img
+                    src={photoUrl}
+                    alt=""
+                    loading="eager"
+                    decoding="async"
+                    className="size-[120px] rounded-[20px] object-cover shadow-[0_10px_16px_rgb(0_0_0/0.45)]"
+                    data-testid="pepites-hero-photo"
+                  />
+                </TiltFrame>
               ) : (
                 <PepitesShirt player={player} number={item.rank} />
               )}
@@ -302,8 +306,8 @@ export function TopTenList({
 }) {
   return (
     <ol className="flex flex-col gap-2" data-testid={testId} start={items[0]?.rank}>
-      {items.map((item) => (
-        <li key={item.player.id}>
+      {items.map((item, index) => (
+        <li key={item.player.id} className="enter-rise stagger" style={staggerStyle(index)}>
           <LeaderboardRow item={item} stats={stats.get(item.player.id)} />
         </li>
       ))}

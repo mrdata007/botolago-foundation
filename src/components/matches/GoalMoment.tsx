@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { tokenMs } from "@/lib/motion";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import type { MatchEvent } from "@/services/match-live";
@@ -13,16 +14,6 @@ import type { Club } from "@/types/domain";
  * `--duration-sheet`, the word and the scorer card land on `--duration-hero`.
  */
 export const GOAL_MOMENT_MS = 2400;
-
-/** A motion token's value in milliseconds, read from the page, or `fallback`. */
-function tokenMs(name: string, fallback: number): number {
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  const value = Number.parseFloat(raw);
-  if (!Number.isFinite(value)) return fallback;
-  if (raw.endsWith("ms")) return value;
-  if (raw.endsWith("s")) return value * 1000;
-  return fallback;
-}
 
 /**
  * The goal moment (A-Goal): when a new goal arrives while the page is open,

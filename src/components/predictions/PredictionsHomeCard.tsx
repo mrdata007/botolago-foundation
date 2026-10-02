@@ -44,12 +44,7 @@ export function PredictionsHomeCard() {
   return (
     <Link
       to="/pronostics"
-      className={cn(
-        "flex items-center gap-3 p-4",
-        ui.surface.card,
-        ui.focus,
-        "transition-transform duration-[var(--duration-tap)] active:translate-y-px",
-      )}
+      className={cn("flex items-center gap-3 p-4", ui.surface.card, ui.focus, "press-tile")}
       data-testid="home-predictions-card"
     >
       <span
