@@ -572,6 +572,15 @@
     color: var(--sky);
     font-weight: 800;
   }
+  .fallback .why {
+    margin: 0;
+    font-size: 12px;
+    color: var(--faint);
+    word-break: break-word;
+  }
+  .fallback .btn {
+    justify-self: center;
+  }
 
   /* ---------------- Phones: the app is the screen ---------------- */
 
@@ -967,7 +976,9 @@
           </div>
           <iframe id="app" src="/demo/app.html" title="BotolaGO"></iframe>
           <div class="fallback" id="fallback" role="alert">
-            <p data-t="fallback"></p>
+            <p id="fallback-text"></p>
+            <p class="why" id="fallback-why" hidden></p>
+            <button class="btn primary" id="retry" type="button" data-t="retry"></button>
             <a href="/demo/app.html" target="_blank" rel="noopener" data-t="openApp"></a>
           </div>
         </div>
@@ -1007,7 +1018,9 @@
         keys: "Les flèches ← → changent d’étape.",
         caption:
           "<b>Données de démonstration.</b> Clubs, joueurs et prix réels 2026/27 · matchs, points et managers simulés.",
-        fallback: "La démo ne s’est pas affichée dans ce cadre.",
+        fallbackSlow: "La démo met du temps à se charger. Elle pèse environ 3 Mo.",
+        fallbackError: "La démo a rencontré une erreur au démarrage.",
+        retry: "Réessayer",
         openApp: "Ouvrir la démo dans un nouvel onglet",
         logoError: "Ce fichier n’a pas pu être lu comme une image.",
       },
@@ -1036,7 +1049,9 @@
         keys: "The ← → arrow keys change step.",
         caption:
           "<b>Demo data.</b> Real 2026/27 clubs, players and prices · matches, points and managers simulated.",
-        fallback: "The demo could not be shown in this frame.",
+        fallbackSlow: "The demo is slow to load. It is about 3 MB.",
+        fallbackError: "The demo hit an error while starting.",
+        retry: "Try again",
         openApp: "Open the demo in a new tab",
         logoError: "That file could not be read as an image.",
       },
@@ -1075,6 +1090,8 @@
     let current = 0;
     let status = null;
     let appReady = false;
+    let booted = false;
+    let bootError = "";
 
     const t = (key, values = {}) =>
       Object.entries(values).reduce(
@@ -1356,9 +1373,24 @@
       if (e.key === "ArrowLeft") prev();
     });
 
+    function showFallback() {
+      if (appReady) return;
+      const text = bootError ? t("fallbackError") : t("fallbackSlow");
+      $("fallback-text").textContent = text;
+      const why = $("fallback-why");
+      why.hidden = !bootError;
+      why.textContent = bootError;
+      $("fallback").classList.add("show");
+    }
+
     window.addEventListener("message", (event) => {
       if (event.source !== frame.contentWindow) return;
       const data = event.data;
+      if (data && data.type === "botolago-demo:boot") booted = true;
+      if (data && data.type === "botolago-demo:boot-error" && !appReady) {
+        bootError = String(data.message || "").slice(0, 200);
+        showFallback();
+      }
       if (!data || data.type !== "botolago-demo:status") return;
       const first = !appReady;
       appReady = true;
@@ -1380,9 +1412,16 @@
       send({ type: "hello", layout: layout() });
       send({ type: "sponsor", sponsor: prefs.sponsor });
     });
-    setTimeout(() => {
-      if (!appReady) $("fallback").classList.add("show");
-    }, 8000);
+    // A slow connection is not a failure: wait before saying anything, and
+    // the message goes away by itself if the app answers late.
+    setTimeout(showFallback, 15000);
+    $("retry").addEventListener("click", () => {
+      $("fallback").classList.remove("show");
+      booted = false;
+      bootError = "";
+      frame.src = "app.html?retry=" + Date.now();
+      setTimeout(showFallback, 15000);
+    });
 
     window.addEventListener("resize", () => {
       fit();

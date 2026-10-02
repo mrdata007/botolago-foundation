@@ -5,6 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="robots" content="noindex" />
     <title>BotolaGO · Démo</title>
+    <!-- A plain script that runs before the app: if the app cannot start in
+         this browser, the presenter page around it is told why. -->
+    <script>
+      (function () {
+        var up = window.parent;
+        if (up === window) return;
+        function tell(message) {
+          try {
+            up.postMessage(message, "*");
+          } catch (error) {
+            /* the presenter is gone */
+          }
+        }
+        tell({ type: "botolago-demo:boot" });
+        window.addEventListener("error", function (event) {
+          tell({
+            type: "botolago-demo:boot-error",
+            message: String((event && event.message) || "error").slice(0, 200),
+          });
+        });
+        window.addEventListener("unhandledrejection", function (event) {
+          var reason = event && event.reason;
+          tell({
+            type: "botolago-demo:boot-error",
+            message: String((reason && reason.message) || reason || "rejected").slice(0, 200),
+          });
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
