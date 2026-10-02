@@ -72,3 +72,23 @@ executed are refused at execution. Executed mappings are not touched.
   `tests/e2e/player-mappings.sample.e2e.ts` (`selfapprove=1` on the sample page).
 - A negative control: with the switch function forced to `true` the two-person
   tests fail; forced to `false` the section 15 tests fail.
+
+## Getting it onto production
+
+The migration is applied only through the reviewed path, never from this
+repository alone.
+
+1. **Rehearsal (this change).** `scripts/backend/apply-20261002100000-mapping-single-approver.sql`
+   runs the migration inside one transaction on Production V2, checks it, and
+   ends in its own `rollback;`. The workflow
+   `production-mapping-single-approver-rehearsal.yml` (owner only, from `main`,
+   typed confirmation) runs it, reads production before and after, and fails
+   unless the two reads are identical. It has no commit mode.
+2. **Apply (a separate, later change).** Only after the owner has seen the
+   rehearsal and approved that one operation.
+3. **Publish** in Lovable so the screen updates.
+
+The preflight stops the script, and changes nothing, if production is not
+exactly what was reviewed: the four replaced functions are the reviewed text,
+there is no proposal at all, 1,004 candidates and 1,541 mapping rows, nobody
+else is working, and no scheduled job or Fantasy finalization is running.
