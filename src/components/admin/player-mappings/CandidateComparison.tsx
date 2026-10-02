@@ -285,6 +285,20 @@ export function CandidateComparison({
                           <span data-testid="mapping-position-flag">{d.positionDisagreement}</span>
                         </UiBadge>
                       )}
+                      {signals.club === "mismatch" && (
+                        <UiBadge tone="caution">
+                          <span data-testid="mapping-club-flag" data-club="mismatch">
+                            {d.clubMismatch}
+                          </span>
+                        </UiBadge>
+                      )}
+                      {signals.club === "no_signal" && scope === "all" && (
+                        <UiBadge tone="neutral">
+                          <span data-testid="mapping-club-unknown" data-club="no_signal">
+                            {d.clubUnknown}
+                          </span>
+                        </UiBadge>
+                      )}
                       {option.alreadyMappedForProvider && (
                         <UiBadge tone="negative">{d.alreadyMapped}</UiBadge>
                       )}
