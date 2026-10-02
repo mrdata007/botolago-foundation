@@ -110,7 +110,7 @@ describe("three-player DOB import apply: the workflow", () => {
 
   it("has no mode, list or input that could widen the import", () => {
     const inputs = workflow.slice(workflow.indexOf("inputs:"), workflow.indexOf("concurrency:"));
-    expect([...inputs.matchAll(/^      (\w+):$/gm)].map((m) => m[1])).toEqual([
+    expect([...inputs.matchAll(/^ {6}(\w+):$/gm)].map((m) => m[1])).toEqual([
       "expected_commit",
       "confirmation",
     ]);
