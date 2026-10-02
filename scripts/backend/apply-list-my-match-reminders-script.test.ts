@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * The guarded script that puts 20261002100000 (the match-reminders read) on
+ * The guarded script that puts 20261002110000 (the match-reminders read) on
  * production. Like the other apply scripts, it records the migration file
  * whole in the history and runs that record only after its sha256 matches the
  * repository file, so the file must be carried byte for byte, once, and the
@@ -17,7 +17,7 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
-const VERSION = "20261002100000";
+const VERSION = "20261002110000";
 const NAME = "list_my_match_reminders";
 const script = read(`scripts/backend/apply-${VERSION}-list-my-match-reminders.sql`);
 const migration = read(`supabase/migrations/${VERSION}_${NAME}.sql`);

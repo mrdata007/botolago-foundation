@@ -1,6 +1,6 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
--- Apply migration 20261002100000_list_my_match_reminders: adds api.list_my_match_reminders(), the read that
+-- Apply migration 20261002110000_list_my_match_reminders: adds api.list_my_match_reminders(), the read that
 -- gives back the matches the signed-in account set a "remind me" on, so the
 -- reminder bell can show its saved state on a new phone (pull request #274).
 --
@@ -57,8 +57,8 @@ begin
   if to_regclass('supabase_migrations.schema_migrations') is null then
     raise exception 'stop: supabase_migrations.schema_migrations does not exist -- is this the BotolaGO database?';
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261002100000') then
-    raise exception 'stop: migration 20261002100000 is already recorded as applied';
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261002110000') then
+    raise exception 'stop: migration 20261002110000 is already recorded as applied';
   end if;
   if not exists (select 1 from supabase_migrations.schema_migrations where version = '20260720121729') then
     raise exception 'stop: migration 20260720121729 (notification API) is not applied yet';
@@ -86,13 +86,13 @@ end
 $preflight$;
 
 -- ---------------------------------------------------------------------------
--- Migration 20261002100000, exactly as in the repository, into the history
+-- Migration 20261002110000, exactly as in the repository, into the history
 -- ---------------------------------------------------------------------------
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20261002100000',
+  '20261002110000',
   'list_my_match_reminders',
-  array[$bg_20261002100000_file$-- BotolaGO — read back the signed-in user's match reminders.
+  array[$bg_20261002110000_file$-- BotolaGO — read back the signed-in user's match reminders.
 --
 -- The "remind me" bell saves a reminder with
 -- `api.set_my_notification_subscription('match', fixture, true)`, but nothing
@@ -134,7 +134,7 @@ $$;
 revoke all on function api.list_my_match_reminders()
 from public, anon, authenticated, service_role;
 grant execute on function api.list_my_match_reminders() to authenticated;
-$bg_20261002100000_file$]
+$bg_20261002110000_file$]
 );
 
 -- ---------------------------------------------------------------------------
@@ -142,16 +142,16 @@ $bg_20261002100000_file$]
 -- ---------------------------------------------------------------------------
 do $apply$
 declare
-  part_20261002100000 text := (
-    select statements[1] from supabase_migrations.schema_migrations where version = '20261002100000'
+  part_20261002110000 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20261002110000'
   );
 begin
-  if encode(sha256(convert_to(part_20261002100000, 'UTF8')), 'hex')
+  if encode(sha256(convert_to(part_20261002110000, 'UTF8')), 'hex')
     is distinct from 'c0512530a5fc67fc3da8de7dd96b497d984f743b9e54c707446161958048fdf2' then
-    raise exception 'stop: 20261002100000 is not the repository file byte for byte -- was this script cut short or changed?';
+    raise exception 'stop: 20261002110000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
-  execute part_20261002100000;
+  execute part_20261002110000;
 end
 $apply$;
 
@@ -179,7 +179,7 @@ begin
   if not exists (select 1 from pg_proc where oid = signature and prosecdef and provolatile = 's') then
     problems := problems || 'it is not a stable security-definer function'::text;
   end if;
-  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261002100000') then
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261002110000') then
     problems := problems || 'history row missing'::text;
   end if;
 
@@ -213,7 +213,7 @@ $postflight$;
 rollback;
 
 select case
-  when exists (select 1 from supabase_migrations.schema_migrations where version = '20261002100000')
+  when exists (select 1 from supabase_migrations.schema_migrations where version = '20261002110000')
     then 'Applied. The reminder bell now reads its saved state from the server.'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;

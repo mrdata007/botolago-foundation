@@ -54,7 +54,7 @@ Also, no function returns a user's reminders, so the bell cannot show its state 
 device. Two small database changes would fix both (they need approval; not written):
 (a) a read function listing the user's match reminders; (b) let the "match starting" job
 create the inbox message for users with a reminder even when e-mail is off.
-**Status (2 Oct):** (a) is written as `supabase/migrations/20261002100000_list_my_match_reminders.sql` with a pgTAP test, in this pull request only: **not applied to production**; applying it is a separate approval, and the bell works without it. (b) is **not written**: it means rewriting a large existing job that cannot be tested locally here, so it needs its own careful pull request.
+**Status (2 Oct):** (a) is written as `supabase/migrations/20261002110000_list_my_match_reminders.sql` with a pgTAP test, in this pull request only: **not applied to production**; applying it is a separate approval, and the bell works without it. (b) is **not written**: it means rewriting a large existing job that cannot be tested locally here, so it needs its own careful pull request.
 Until then the bell remembers what *this device* set, and its message offers to turn
 e-mail notifications on when they are off.
 
