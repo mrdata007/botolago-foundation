@@ -206,6 +206,20 @@ export function PlayerMappingsView({
             </AdminNotice>
           </div>
         )}
+        {/* Drawn only while the SERVER says self-approval is allowed. The policy is
+            never decided here: the database is the authority. */}
+        {proposalsEnabled && viewer.canManage && data?.availability.selfApprovalAllowed && (
+          <div className="mt-3" data-testid="mapping-single-operator-mode">
+            <AdminNotice tone="alert" role="status">
+              <strong className="block">{copy.singleOperator.title}</strong>
+              <ul className="mt-1 list-disc ps-5">
+                {copy.singleOperator.points.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            </AdminNotice>
+          </div>
+        )}
       </header>
       {executedNotice && (
         <div data-testid="mapping-execute-result">
