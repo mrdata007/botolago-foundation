@@ -60,6 +60,10 @@ create function pg_temp.pid(p_who text) returns uuid language sql as
   $$ select id from app_private.staff_principals where auth_user_id = ('e1000000-0000-4000-8000-0000000000' ||
      case p_who when 'a' then 'a1' when 'b' then 'b1' when 'c' then 'c1' end)::uuid $$;
 
+-- Sections 1 to 14 test the two-person rule, so the single-approver switch
+-- (20261002100000) is turned off for them; section 15 turns it on again.
+update app_private.football_mapping_settings set allow_self_approval = false;
+
 -- A club, two squads' worth of app players.
 insert into app.teams (id, slug, name, short_name) values
   ('e4000000-0000-4000-8000-000000000001', 'map-club-one', 'Map Club One', 'MC1'),
@@ -257,7 +261,7 @@ select extensions.throws_ok($$select pg_temp.decide('old', pg_temp.get('happy'):
   '3.11 and recent authentication');
 select extensions.throws_ok($$update app_private.football_player_mapping_proposals set decided_by = requested_by,
   decided_at = now(), decision_reason = 'Approving my own proposal.' where id = pg_temp.get('happy')::uuid$$,
-  '23514', null, '3.12 the table itself refuses a self-approval, whatever calls it');
+  'PT403', 'self_approval_denied', '3.12 the table itself refuses a self-approval while the switch is off, whatever calls it');
 
 select extensions.is((pg_temp.decide('b', pg_temp.get('happy')::uuid) ->> 'status'), 'approved', '3.13 a different human approves the exact fingerprint');
 select extensions.is((select count(*)::int from app_private.admin_audit_events where action = 'football.mapping_approved'
@@ -816,6 +820,66 @@ select extensions.is(api.resolve_football_mapping('sportsmonks', 'player', 'LEGA
 select extensions.is(api.resolve_football_mapping('sofascore', 'team', 'LEGACY-T',
   'e4000000-0000-4000-8000-000000000001', 'test'), 'e4000000-0000-4000-8000-000000000001'::uuid,
   '14.5 and other entities of the new providers are untouched by the guard');
+
+-- ===========================================================================
+-- 15. Single-approver switch (20261002100000)
+-- ===========================================================================
+select pg_temp.act('a');
+select extensions.is((api.admin_football_mapping_reviewer_availability() ->> 'selfApprovalAllowed')::boolean, false,
+  '15.1 with the switch off, the screen is told self-approval is not allowed');
+select extensions.is((api.admin_football_mapping_get_proposal(pg_temp.get('lone')::uuid) ->> 'canApprove')::boolean, false,
+  '15.2 and the proposer cannot approve their own proposal');
+update app_private.football_mapping_settings set allow_self_approval = true;
+select extensions.is((api.admin_football_mapping_reviewer_availability() ->> 'selfApprovalAllowed')::boolean, true,
+  '15.3 with the switch on, the screen is told it is');
+select extensions.is((api.admin_football_mapping_reviewer_availability() ->> 'secondReviewerRequired')::boolean, false,
+  '15.4 and a lone operator is no longer told a second reviewer is required');
+select extensions.is((api.admin_football_mapping_get_proposal(pg_temp.get('lone')::uuid) ->> 'canApprove')::boolean, true,
+  '15.5 the proposer can approve their own proposal');
+select extensions.throws_ok($$select pg_temp.decide('a', pg_temp.get('lone')::uuid, 'approve', false, repeat('0', 64))$$,
+  'PT409', 'fingerprint_mismatch', '15.6 a self-approval of any other fingerprint is still refused');
+select extensions.throws_ok($$select pg_temp.decide('aal1', pg_temp.get('lone')::uuid)$$, 'PT403', null,
+  '15.7 a session without the second factor still cannot decide');
+select extensions.is((pg_temp.decide('a', pg_temp.get('lone')::uuid) ->> 'status'), 'approved',
+  '15.8 the proposer approves their own proposal');
+select extensions.is((select self_approved from app_private.football_player_mapping_proposals where id = pg_temp.get('lone')::uuid), true,
+  '15.9 and the proposal says so');
+select extensions.is((select count(*)::int from app_private.admin_audit_events
+  where action = 'football.mapping_approved' and (safe_after ->> 'selfApproved')::boolean
+    and (safe_after ->> 'proposalId')::uuid = pg_temp.get('lone')::uuid), 1,
+  '15.10 and so does the audit trail');
+select extensions.is((pg_temp.execute('a', pg_temp.get('lone')::uuid) ->> 'ok')::boolean, true,
+  '15.11 a self-approved proposal executes, as its own separate step');
+select extensions.is((select count(*)::int from app_private.admin_audit_events
+  where action = 'football.mapping_executed' and (safe_after ->> 'selfApproved')::boolean
+    and (safe_after ->> 'proposalId')::uuid = pg_temp.get('lone')::uuid), 1,
+  '15.12 and the execution audit says it was self-approved');
+
+-- A self-approval stops being executable when the switch is turned off.
+select pg_temp.record(pg_temp.obs('sofascore', 'S-LONE2', 'T-100'));
+select pg_temp.mkplayer('lone-two', 'forward', '1987-07-17');
+select pg_temp.put('lone2', (pg_temp.propose('a', jsonb_build_array(jsonb_build_object('kind', 'map', 'sofascoreCandidateId', pg_temp.cid('sofascore', 'S-LONE2'),
+  'appPlayerId', (select id from app.players where slug = 'lone-two')))) -> 'proposals' -> 0 ->> 'id'));
+select extensions.is((pg_temp.decide('a', pg_temp.get('lone2')::uuid) ->> 'status'), 'approved', '15.13 a second self-approval');
+update app_private.football_mapping_settings set allow_self_approval = false;
+select extensions.throws_ok($$select pg_temp.execute('a', pg_temp.get('lone2')::uuid)$$, 'PT409', 'self_approval_no_longer_allowed',
+  '15.14 turning the switch off stops a self-approved proposal from executing');
+select extensions.throws_ok($$select pg_temp.decide('a', pg_temp.get('lone2')::uuid, 'reject')$$, 'PT403', 'self_approval_denied',
+  '15.15 and a self-decision is refused again');
+update app_private.football_mapping_settings set allow_self_approval = true;
+select extensions.is((pg_temp.execute('a', pg_temp.get('lone2')::uuid) ->> 'ok')::boolean, true,
+  '15.16 turned back on, it executes');
+
+-- Rejecting your own proposal is allowed with the switch on, and a refresh clears a self-approval.
+select pg_temp.record(pg_temp.obs('sofascore', 'S-LONE3', 'T-100'));
+select pg_temp.mkplayer('lone-three', 'forward', '1988-08-18');
+select pg_temp.put('lone3', (pg_temp.propose('a', jsonb_build_array(jsonb_build_object('kind', 'map', 'sofascoreCandidateId', pg_temp.cid('sofascore', 'S-LONE3'),
+  'appPlayerId', (select id from app.players where slug = 'lone-three')))) -> 'proposals' -> 0 ->> 'id'));
+select extensions.is((pg_temp.decide('a', pg_temp.get('lone3')::uuid, 'reject') ->> 'status'), 'rejected', '15.17 the proposer can reject their own proposal');
+select extensions.is((select self_approved from app_private.football_player_mapping_proposals where id = pg_temp.get('lone3')::uuid), true,
+  '15.18 and it is marked as a self-decision');
+select extensions.is((select self_approved from app_private.football_player_mapping_proposals where status = 'pending' limit 1) is not true, true,
+  '15.19 a pending proposal is never marked self-approved');
 
 select * from extensions.finish();
 rollback;

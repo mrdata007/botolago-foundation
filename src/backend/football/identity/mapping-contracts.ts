@@ -55,6 +55,7 @@ export const MAPPING_ERROR_CODES = [
   "mfa_assurance_insufficient",
   "recent_auth_required",
   "self_approval_denied",
+  "self_approval_no_longer_allowed",
   "not_authorized",
   "proposal_not_found",
   "candidate_not_found",
@@ -178,6 +179,8 @@ export const proposalSchema = z.object({
   executedAfter: z.record(z.string(), z.unknown()).nullable(),
   holdCode: nullableString,
   proposedByMe: z.boolean(),
+  /** The proposer decided their own proposal (single-approver mode). */
+  selfApproved: z.boolean().default(false),
   canApprove: z.boolean(),
 });
 export type ProposalDto = z.infer<typeof proposalSchema>;
@@ -210,6 +213,8 @@ export type TransitionResult = z.infer<typeof transitionResultSchema>;
 
 export const reviewerAvailabilitySchema = z.object({
   qualifiedReviewersAvailable: z.number().int(),
+  /** The database switch that lets a proposer approve their own proposal is on. */
+  selfApprovalAllowed: z.boolean().default(false),
   secondReviewerRequired: z.boolean(),
 });
 export type ReviewerAvailability = z.infer<typeof reviewerAvailabilitySchema>;

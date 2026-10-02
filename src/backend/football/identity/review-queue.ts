@@ -462,7 +462,10 @@ export type DualControlBlock =
 export interface DualControl {
   /** The viewer proposed it. */
   readonly role: "proposer" | "other";
-  /** Approve and reject controls are drawn. Never true for the viewer's own proposal. */
+  /**
+   * Approve and reject controls are drawn. True for the viewer's own proposal
+   * only when the server offered it (single-approver mode).
+   */
   readonly canDecide: boolean;
   /** Why they are not drawn. Null when they are. */
   readonly blockedBy: DualControlBlock | null;
@@ -472,8 +475,9 @@ export interface DualControl {
 
 /**
  * The server decides (`canApprove`, and again at the decision); this only
- * decides what to DRAW. There is no owner override, no self-approval and no
- * "approve" for a proposal the server did not offer to this viewer.
+ * decides what to DRAW. There is no owner override and no "approve" for a
+ * proposal the server did not offer to this viewer; a proposer is offered their
+ * own only while the server's single-approver switch is on.
  */
 export function dualControlFor(
   proposal: ProposalDto,
@@ -483,19 +487,19 @@ export function dualControlFor(
   const role = proposal.proposedByMe ? "proposer" : "other";
   const blockedBy: DualControlBlock | null = !viewer.canManage
     ? "no_permission"
-    : proposal.proposedByMe
-      ? "own_proposal"
-      : isExpired(proposal)
-        ? "expired"
-        : HELD_PROPOSAL_STATUSES.includes(proposal.status)
-          ? "held"
-          : proposal.status !== "pending"
-            ? "not_pending"
-            : !proposal.canApprove
-              ? availability.secondReviewerRequired
+    : isExpired(proposal)
+      ? "expired"
+      : HELD_PROPOSAL_STATUSES.includes(proposal.status)
+        ? "held"
+        : proposal.status !== "pending"
+          ? "not_pending"
+          : proposal.canApprove
+            ? null
+            : proposal.proposedByMe
+              ? "own_proposal"
+              : availability.secondReviewerRequired
                 ? "second_reviewer_required"
-                : "not_pending"
-              : null;
+                : "not_pending";
   return {
     role,
     canDecide: blockedBy === null,
