@@ -6,6 +6,8 @@ import {
   easeOutCubic,
   flashClass,
   halfProgress,
+  newAtTop,
+  tiltAngles,
   tickedMinute,
   flipOffsets,
   prefersReducedMotion,
@@ -184,5 +186,48 @@ describe("halfProgress", () => {
 
   it("is empty with no minute", () => {
     expect(halfProgress(undefined, false)).toEqual({ first: 0, second: 0 });
+  });
+});
+
+describe("tiltAngles", () => {
+  it("is flat at the centre", () => {
+    expect(tiltAngles(100, 50, 200, 100)).toEqual({ rotateX: 0, rotateY: 0 });
+  });
+
+  it("leans towards the edge the pointer is near, at most `max` degrees", () => {
+    expect(tiltAngles(200, 50, 200, 100)).toEqual({ rotateX: 0, rotateY: 6 });
+    expect(tiltAngles(0, 50, 200, 100)).toEqual({ rotateX: 0, rotateY: -6 });
+    expect(tiltAngles(100, 0, 200, 100)).toEqual({ rotateX: 6, rotateY: 0 });
+    expect(tiltAngles(100, 100, 200, 100)).toEqual({ rotateX: -6, rotateY: 0 });
+  });
+
+  it("never goes past the limit, even for a pointer outside the box", () => {
+    expect(tiltAngles(900, -400, 200, 100, 4)).toEqual({ rotateX: 4, rotateY: 4 });
+  });
+
+  it("does nothing for a box with no size", () => {
+    expect(tiltAngles(5, 5, 0, 0)).toEqual({ rotateX: 0, rotateY: 0 });
+  });
+});
+
+describe("newAtTop", () => {
+  it("names the cards that arrived above the old first one", () => {
+    expect(newAtTop(["b", "c"], ["x", "y", "b", "c"])).toEqual(["x", "y"]);
+  });
+
+  it("ignores older cards added at the end (load more)", () => {
+    expect(newAtTop(["a", "b"], ["a", "b", "c", "d"])).toEqual([]);
+  });
+
+  it("ignores the first load, when there was nothing before", () => {
+    expect(newAtTop([], ["a", "b"])).toEqual([]);
+  });
+
+  it("ignores a different list, whose old first item is gone", () => {
+    expect(newAtTop(["a", "b"], ["x", "y"])).toEqual([]);
+  });
+
+  it("ignores an unchanged list", () => {
+    expect(newAtTop(["a", "b"], ["a", "b"])).toEqual([]);
   });
 });

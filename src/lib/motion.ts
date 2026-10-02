@@ -355,3 +355,88 @@ export function halfProgress(
     second: Math.min(1, Math.max(0, (m - 45) / 45)),
   };
 }
+
+export type RevealState = "static" | "armed" | "played";
+
+/**
+ * A bar or ring that fills once, when it is first scrolled into view.
+ *
+ * It starts `static`: finished, which is what the server sends and what stays
+ * if scripts never run, or the reader wants less motion, or there is no
+ * `IntersectionObserver`. Once on the page it is `armed` (empty, before the
+ * first paint) until at least 40% of it is on screen, then `played` (filling),
+ * and never armed again.
+ */
+export function useRevealOnView<T extends HTMLElement>() {
+  const ref = useRef<T | null>(null);
+  const [state, setState] = useState<RevealState>("static");
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element || prefersReducedMotion() || typeof IntersectionObserver === "undefined") return;
+    setState("armed");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        setState("played");
+        observer.disconnect();
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, state] as const;
+}
+
+/**
+ * How far a card tilts for a pointer at (`x`, `y`) in a box of `width` by
+ * `height`: up to `max` degrees either way, none at the centre. The edge the
+ * pointer is near dips towards it.
+ */
+export function tiltAngles(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  max = 6,
+): { rotateX: number; rotateY: number } {
+  if (width <= 0 || height <= 0) return { rotateX: 0, rotateY: 0 };
+  const clamp = (value: number) => Math.min(1, Math.max(-1, value));
+  const nx = clamp((x / width - 0.5) * 2);
+  const ny = clamp((y / height - 0.5) * 2);
+  const round = (value: number) => Math.round(value * 100) / 100 || 0;
+  return { rotateX: round(-ny * max), rotateY: round(nx * max) };
+}
+
+/**
+ * Which cards arrived at the top of a list since the last one: the ids that
+ * now come before what used to be the first. Nothing if the list was empty,
+ * or if its old first item is gone (a different list altogether, such as
+ * another filter), and nothing for older items added at the end (load more).
+ */
+export function newAtTop(previous: readonly string[], next: readonly string[]): string[] {
+  const first = previous[0];
+  if (first === undefined) return [];
+  const at = next.indexOf(first);
+  return at > 0 ? next.slice(0, at).filter((id) => !previous.includes(id)) : [];
+}
+
+/** The ids that have arrived at the top of `ids` while the page was open. */
+export function useArrivals(ids: readonly string[]): ReadonlySet<string> {
+  const previous = useRef(ids);
+  const [arrived, setArrived] = useState<ReadonlySet<string>>(new Set());
+  const signature = ids.join("\u0000");
+
+  // Before paint, so a new card is never drawn once in its final place first.
+  useLayoutEffect(() => {
+    const fresh = newAtTop(previous.current, ids);
+    previous.current = ids;
+    if (fresh.length === 0 || prefersReducedMotion()) return;
+    setArrived((was) => new Set([...was, ...fresh]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signature]);
+
+  return arrived;
+}

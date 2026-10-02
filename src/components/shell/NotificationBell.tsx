@@ -6,6 +6,8 @@ import { Bell } from "lucide-react";
 import { useOptionalAuth } from "@/auth/AuthProvider";
 import { UiIconLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useChangeFlash } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 import { useUnreadNotificationCount } from "@/services/use-my-notifications";
 
 /** The badge says "9+" past nine: the exact number is for the inbox. */
@@ -21,6 +23,10 @@ export function NotificationBell() {
 function SignedInBell() {
   const { t } = useI18n();
   const unread = useUnreadNotificationCount();
+  // Something new arrived while the page was open: the bell shakes once and the
+  // badge pops. Not on first show, not when the count goes down, not with
+  // reduced motion.
+  const arrived = useChangeFlash(unread) === "up";
   return (
     <span className="relative inline-flex">
       <UiIconLinkButton
@@ -29,12 +35,15 @@ function SignedInBell() {
           unread > 0 ? `${t("notifications.title")} (${unread})` : t("notifications.title")
         }
       >
-        <Bell aria-hidden />
+        <Bell aria-hidden className={cn(arrived && "wiggle")} />
       </UiIconLinkButton>
       {unread > 0 ? (
         <span
           aria-hidden
-          className="pointer-events-none absolute -end-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-[color:var(--ui-ink)] px-1 text-[0.6875rem] leading-none text-[color:var(--ui-on-ink)] [font-weight:var(--ui-weight-heavy)]"
+          className={cn(
+            "pointer-events-none absolute -end-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-[color:var(--ui-ink)] px-1 text-[0.6875rem] leading-none text-[color:var(--ui-on-ink)] [font-weight:var(--ui-weight-heavy)]",
+            arrived && "pop",
+          )}
         >
           {bellBadgeText(unread)}
         </span>

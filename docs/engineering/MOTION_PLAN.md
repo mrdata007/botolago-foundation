@@ -1,6 +1,6 @@
 # Motion plan — making the app feel alive
 
-Status: **PRs 1–6 built (Phase 0 toolkit, #4 press, #5 skeletons, #3 stagger, #1 count-up, #2 sliding rows, #11 page transitions, #12 tab bar, #9 live cards, #8 pronostics, #6 pitch, #7 captain and transfers); only #10 Pépites and #13 notifications remain.** Covers the 13 animation ideas agreed with the
+Status: **all seven PRs built. Left out on purpose: the card-flip on the weekly reveal (#10) and pull-to-refresh (#13).** Covers the 13 animation ideas agreed with the
 owner on 2026-10-02. Nothing here is built yet.
 
 ## What already exists (build on it, don't duplicate it)
@@ -180,6 +180,8 @@ _PR 5 built (#9 live cards, #8 pronostics); PR 6 built (#6 pitch, #7 captain and
 - `PepitesReveal` (weekly reveal) gets a short card-flip reveal per player.
 
 ## Phase 5 — notifications
+
+_Built, with #10 (PR 7). Notes: the bell shakes and the badge pops only when the unread count goes UP while the page is open. Inbox cards that arrive above the old first card fade in one by one (`newAtTop`); older cards added by "load more", a filter switch and the first load do not. #10: the stat bars, the score ring and the minutes bars fill the first time they are scrolled into view (server HTML and reduced motion show them finished), and the player photo leans up to 6 degrees towards a mouse (`TiltFrame`; never touch or pen). Not built: the card-flip on the weekly reveal. Pépites is switched off on the test backend, so #10 was checked on a scratch page, not in the app._
 
 **#13 New items and the bell.**
 - `NotificationBell`: when the unread count goes up (the 60s check in

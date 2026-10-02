@@ -23,6 +23,7 @@ import { useI18n } from "@/i18n/provider";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { formatRelativeTime } from "@/lib/format-time";
 import { notificationDestination } from "@/lib/notification-link";
+import { staggerStyle, useArrivals } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import {
   useMyNotifications,
@@ -96,6 +97,9 @@ function Inbox() {
     [inboxQ.data, hidden],
   );
 
+  // Cards that arrive at the top while the page is open fade in one by one.
+  const arrived = useArrivals(cards.map((card) => card.id));
+
   const open = (card: NotificationCardDto) => {
     if (!card.readAt) read.mutate(card.id);
     const destination = notificationDestination(card.deepLink, NEWS_ENABLED);
@@ -155,11 +159,18 @@ function Inbox() {
         <>
           <UiCard padding="none" className="overflow-hidden">
             <ul className="divide-y divide-[color:var(--ui-rule)]">
-              {cards.map((card) => {
+              {cards.map((card, index) => {
                 const Icon = CATEGORY_ICON[card.category];
                 const isUnread = !card.readAt;
                 return (
-                  <li key={card.id} className="flex items-stretch">
+                  <li
+                    key={card.id}
+                    className={cn(
+                      "flex items-stretch",
+                      arrived.has(card.id) && "enter-rise stagger",
+                    )}
+                    style={arrived.has(card.id) ? staggerStyle(index) : undefined}
+                  >
                     <button
                       type="button"
                       onClick={() => open(card)}

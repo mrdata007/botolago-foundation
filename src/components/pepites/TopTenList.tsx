@@ -1,3 +1,4 @@
+import { TiltFrame } from "./TiltFrame";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
@@ -170,14 +171,16 @@ export function TopTenHero({
             </div>
             <div className="-mb-1 shrink-0">
               {photoUrl ? (
-                <img
-                  src={photoUrl}
-                  alt=""
-                  loading="eager"
-                  decoding="async"
-                  className="size-[120px] rounded-[20px] object-cover shadow-[0_10px_16px_rgb(0_0_0/0.45)]"
-                  data-testid="pepites-hero-photo"
-                />
+                <TiltFrame>
+                  <img
+                    src={photoUrl}
+                    alt=""
+                    loading="eager"
+                    decoding="async"
+                    className="size-[120px] rounded-[20px] object-cover shadow-[0_10px_16px_rgb(0_0_0/0.45)]"
+                    data-testid="pepites-hero-photo"
+                  />
+                </TiltFrame>
               ) : (
                 <PepitesShirt player={player} number={item.rank} />
               )}
