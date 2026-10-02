@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import type { Club, Player } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
 import { findClub } from "./club-lookup";
+import { playersShowingLabel } from "@/lib/players-count";
 
 type SortKey = "form" | "price" | "selected" | "points";
 
@@ -336,9 +337,7 @@ export function AddPlayerScreen({
           ui.tone.muted,
         )}
       >
-        {t("fantasy.players.showing")
-          .replace("{n}", whole.format(rows.length))
-          .replace("{total}", whole.format(players.length))}
+        {playersShowingLabel(rows.length, players.length, lang, t, whole.format)}
       </p>
     </div>
   );
