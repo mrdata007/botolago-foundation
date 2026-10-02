@@ -243,17 +243,21 @@ export const PEPITES_ENABLED: boolean = true;
 export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;
 
 /**
- * Player-mapping PROPOSALS on /admin/football/player-mappings. Off: the screen
- * reads the candidate queue and the ranking, and every control that would
- * create, approve, reject or withdraw a proposal is replaced by a notice. Nothing
- * is created from a switch that is off.
+ * Player-mapping PROPOSALS on /admin/football/player-mappings: ON since 2026-10-02.
  *
- * It stays false until the owner has approved the FIRST real proposal, and is
- * then turned on in its own reviewed change. The database authorises every one
- * of those calls again (staff, MFA, recent sign-in, `football.manage_mappings`,
- * and a proposer who is never the approver), so this is an application-level
- * brake, not the authority.
+ * Owner decision, 2026-10-02: the reviewer screen was verified read-only on the
+ * real page first (the queue of 1,004 candidates, the ranked options, no write
+ * control while this was off). With this on, the screen draws the controls to
+ * propose a pairing, and for a DIFFERENT qualified person to approve or reject
+ * it. Proposing creates a proposal only: nothing is mapped, and nothing here
+ * executes anything.
+ *
+ * The database authorises every one of those calls again (staff, MFA, recent
+ * sign-in, `football.manage_mappings`, and a proposer who is never the
+ * approver: there is no single-approval mode), so this is an application-level
+ * brake, not the authority. Set this false and republish to take the controls
+ * away again; proposals already made stay as they are.
  *
  * Gated surfaces: `src/components/admin/player-mappings/PlayerMappingsScreen.tsx`.
  */
-export const PLAYER_MAPPING_PROPOSALS_ENABLED: boolean = false;
+export const PLAYER_MAPPING_PROPOSALS_ENABLED: boolean = true;
