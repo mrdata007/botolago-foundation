@@ -77,7 +77,8 @@ export function validateRecord(record: ObservationRecord): string[] {
     record.birthDate !== null &&
     /^\d{4}-\d{2}-\d{2}$/.test(record.birthDate) &&
     !Number.isNaN(Date.parse(record.birthDate));
-  if ((record.dobState === "valid") !== dateOk) problems.push("birthDate");
+  // The recorder keeps a date only for the valid state (it nulls any other), so only a valid state needs one.
+  if (record.dobState === "valid" && !dateOk) problems.push("birthDate");
   if (record.dobJanuary1 && record.dobState !== "valid") problems.push("dobJanuary1");
   if (
     record.heightCm !== null &&
@@ -91,7 +92,9 @@ export function validateRecord(record: ObservationRecord): string[] {
     problems.push("nationalitySignal");
   if (record.registeredTeamId !== null && record.registeredTeamId.length === 0)
     problems.push("registeredTeamId");
-  if (record.displayName !== null && !text(record.displayName, 200)) problems.push("displayName");
+  // The recorder trims the name and stores null when it is empty; only a trimmed length over 200 can fail.
+  if (record.displayName !== null && record.displayName.trim().length > 200)
+    problems.push("displayName");
   if (typeof record.registeredTeamDisagreement !== "boolean")
     problems.push("registeredTeamDisagreement");
   return problems;
@@ -109,6 +112,8 @@ export interface DryRunCounts {
   readonly positionSignals: Record<string, number>;
   readonly registeredTeamDisagreements: number;
   readonly malformedItems: number;
+  /** Field names only (never a value), for items that fail the contract. */
+  readonly malformedFields: Record<string, number>;
 }
 
 export function dryRunCounts(
@@ -150,6 +155,12 @@ export function dryRunCounts(
     positionSignals: positions,
     registeredTeamDisagreements: records.filter((r) => r.registeredTeamDisagreement).length,
     malformedItems: records.filter((r) => validateRecord(r).length > 0).length,
+    malformedFields: records
+      .flatMap(validateRecord)
+      .reduce<Record<string, number>>((acc, field) => {
+        acc[field] = (acc[field] ?? 0) + 1;
+        return acc;
+      }, {}),
   };
 }
 

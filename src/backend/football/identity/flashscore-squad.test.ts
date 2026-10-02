@@ -54,6 +54,39 @@ describe("normalizeFlashscoreSquad", () => {
     expect(parsed.diagnostics.malformedEntries).toBe(1);
   });
 
+  test("a nationality flag outside the 1 to 6 digit form is no signal", () => {
+    const item = (id: string, flag: unknown) => ({
+      PLAYER_ID: id,
+      PLAYER_TYPE_ID: "DEFENDER",
+      PLAYER_FLAG_ID: flag,
+    });
+    const parsed = normalizeFlashscoreSquad(
+      {
+        DATA: [
+          {
+            ITEMS: [
+              item("AAAA0001", 152),
+              item("AAAA0002", 999999),
+              item("AAAA0003", 1000000),
+              item("AAAA0004", -5),
+              item("AAAA0005", 1.5),
+              item("AAAA0006", "152"),
+            ],
+          },
+        ],
+      },
+      "TEAM0001",
+    );
+    expect(parsed.players.map((p) => p.nationalitySignal)).toEqual([
+      "flag:152",
+      "flag:999999",
+      null,
+      null,
+      null,
+      null,
+    ]);
+  });
+
   test("a response that is not a squad is flagged", () => {
     expect(normalizeFlashscoreSquad({}, "TEAM0001").structureOk).toBe(false);
   });

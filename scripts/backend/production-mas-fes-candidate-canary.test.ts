@@ -49,9 +49,12 @@ describe("MAS Fès candidate canary", () => {
     expect(validateRecord(record({ shirtNumber: 100 }))).toContain("shirtNumber");
     expect(validateRecord(record({ heightCm: 119 }))).toContain("heightCm");
     expect(validateRecord(record({ dobState: "valid", birthDate: null }))).toContain("birthDate");
-    expect(validateRecord(record({ dobState: "missing", birthDate: "1999-05-17" }))).toContain(
-      "birthDate",
-    );
+    // The recorder keeps a date only for the valid state, so a stray date on another state is not a failure.
+    expect(validateRecord(record({ dobState: "missing", birthDate: "1999-05-17" }))).toEqual([]);
+    // It also trims the display name and stores null when empty; only a trimmed length over 200 fails.
+    expect(validateRecord(record({ displayName: "  Padded Name  " }))).toEqual([]);
+    expect(validateRecord(record({ displayName: "   " }))).toEqual([]);
+    expect(validateRecord(record({ displayName: "x".repeat(201) }))).toContain("displayName");
     expect(
       validateRecord(record({ dobState: "missing", birthDate: null, dobJanuary1: true })),
     ).toContain("dobJanuary1");
@@ -100,9 +103,28 @@ describe("MAS Fès candidate canary", () => {
     expect(counts.positionSignals).toEqual({ M: 2, none: 1 });
     expect(counts.registeredTeamDisagreements).toBe(1);
     expect(counts.malformedItems).toBe(0);
+    expect(counts.malformedFields).toEqual({});
     const text = JSON.stringify(counts);
     expect(text).not.toContain("Test Player");
     expect(text).not.toContain("1999");
+  });
+
+  it("reports the field name, never the value, of a malformed item", () => {
+    const counts = dryRunCounts(
+      [record({ shirtNumber: 120 }), record({ externalPlayerId: "2", heightCm: 5 })],
+      [
+        {
+          provider: "sofascore",
+          status: "ok",
+          completeness: { state: "COMPLETE" },
+          players: [1],
+          diagnostics: { duplicateIds: [] },
+        },
+      ],
+    );
+    expect(counts.malformedItems).toBe(2);
+    expect(counts.malformedFields).toEqual({ shirtNumber: 1, heightCm: 1 });
+    expect(JSON.stringify(counts)).not.toContain("120");
   });
 
   it("counts a shared provider id once as a candidate with two observations", () => {
