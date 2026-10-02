@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 
 import type { Match } from "@/types/domain";
-import { capitalizeFirst, groupByMatchDay, matchRounds } from "./match-days";
+import { capitalizeFirst, groupByMatchDay, matchRounds, onlyFollowedClubs } from "./match-days";
 
 function match(id: string, kickoff: string, gameweek = 14): Match {
   return {
@@ -91,5 +91,21 @@ describe("capitalizeFirst", () => {
   it("capitalises the first letter only — French months stay lower case", () => {
     expect(capitalizeFirst("jeudi 24 septembre")).toBe("Jeudi 24 septembre");
     expect(capitalizeFirst("")).toBe("");
+  });
+});
+
+describe("onlyFollowedClubs", () => {
+  const m = (id: string, home: string, away: string) =>
+    ({ id, homeClubId: home, awayClubId: away }) as unknown as Match;
+  const days = [
+    { key: "2026-10-02", label: "A", matches: [m("1", "a", "b"), m("2", "c", "d")] },
+    { key: "2026-10-03", label: "B", matches: [m("3", "e", "f")] },
+  ];
+  it("keeps matches where a followed club plays, home or away", () => {
+    expect(onlyFollowedClubs(days, ["b"]).map((d) => d.matches.map((x) => x.id))).toEqual([["1"]]);
+  });
+  it("drops a day left empty and keeps nothing when no club is followed", () => {
+    expect(onlyFollowedClubs(days, ["f"]).map((d) => d.key)).toEqual(["2026-10-03"]);
+    expect(onlyFollowedClubs(days, [])).toEqual([]);
   });
 });

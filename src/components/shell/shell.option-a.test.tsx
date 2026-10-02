@@ -182,12 +182,12 @@ describe("Option A shell — AppShell slots", () => {
   const shell = code("src/components/shell/AppShell.tsx");
 
   it("renders the replacement top bar, else the global one", () => {
-    expect(shell).toContain("{topBar ?? <TopBar />}");
+    expect(shell).toContain("{topBar ?? <TopBar");
   });
 
   it("renders the full-bleed page header outside the content column, before the live strip", () => {
     const header = shell.indexOf("{pageHeader}");
-    expect(header).toBeGreaterThan(shell.indexOf("{topBar ?? <TopBar />}"));
+    expect(header).toBeGreaterThan(shell.indexOf("{topBar ?? <TopBar"));
     expect(header).toBeLessThan(shell.indexOf("{liveStrip && <LiveStrip />}"));
     expect(header).toBeLessThan(shell.indexOf("<UiScreen"));
   });

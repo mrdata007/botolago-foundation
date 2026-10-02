@@ -6,6 +6,7 @@ Allow: /
 Disallow: /admin
 Disallow: /auth
 Disallow: /profile
+Disallow: /notifications
 Disallow: /mcp
 Disallow: /.mcp/
 Disallow: /.lovable/

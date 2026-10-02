@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import type { Club, Match, MatchStatus } from "@/types/domain";
 import { useI18n } from "@/i18n/provider";
 import { ClubCrest } from "./ClubCrest";
+import { MatchReminderBell } from "./MatchReminderBell";
 import { cn } from "@/lib/utils";
 import { ui, UiBadge, UiLivePill } from "@/components/ui-kit";
 import { clubMatchPalettes, clubStyle, type ClubPalette } from "@/lib/club-palette";
@@ -16,10 +17,10 @@ import { moroccoDateTimeFormat } from "@/lib/morocco-time";
  *
  *   - `list`     the A-Home / A-Matches row, flat, for a caller's card that
  *                stacks rows one hairline apart: a 4px club edge at each end,
- *                the crest discs, the names, and in the middle the kickoff
- *                time or the score in the display face. Live rows carry the
- *                navy live pill under the score; finished rows put "Terminé"
- *                there and quieten the loser's name.
+ *                the kickoff time (or the live pill, or "Terminé") in a column
+ *                at the start, then the two teams one above the other with
+ *                their crest discs and full names, and the two scores at the
+ *                end of their lines. The loser's name is quietened.
  *   - `row`      the same row as a card of its own (the default).
  *   - `compact`  the standalone row that always names its round (H2H lists).
  *   - `hero`     Home's live match: the two club colours split down the
@@ -36,9 +37,11 @@ import { moroccoDateTimeFormat } from "@/lib/morocco-time";
  * figure is its own `<bdi>` inside a container that inherits the page
  * direction, so the home score lands on the home side in both languages.
  *
- * Club names truncate on one line in a row, or wrap at word boundaries in the
- * hero halves. They never break inside a word: `break-words` did, and
- * printed "Wyda / d AC" once the crest disc grew.
+ * A row stacks its two teams, home on the first line, each with its full
+ * name; a name wraps at word boundaries when it must and is never cut with an
+ * ellipsis. In the hero halves it wraps to two lines. A name never breaks
+ * inside a word: `break-words` did, and printed "Wyda / d AC" once the crest
+ * disc grew.
  *
  * `aria-label` states the whole card (score, minute, status), so the visual
  * content under it is hidden from assistive tech rather than read twice.
@@ -280,13 +283,24 @@ export function MatchCard({
     </span>
   ) : null;
 
-  // A row's cells, padded to the board's 60px with a 32px crest; a live row's
-  // first line gives its bottom padding to the pill's line underneath.
-  const cellPad = isLive ? "pb-1.5 pt-3" : "py-3.5";
-
   const nameClass = (lost: boolean) =>
     cn(
       ui.text.secondary,
+      lost
+        ? cn("[font-weight:var(--ui-weight-strong)]", ui.tone.muted)
+        : cn("[font-weight:var(--ui-weight-heavy)]", ui.tone.default),
+    );
+
+  const hasScore = isLive || isFinished;
+  // "Remind me": only for a match still to come whose kick-off is real (the
+  // reminder is sent an hour before it), never on the hero or a history row.
+  const showReminder =
+    !isHero && variant !== "compact" && isScheduled && !unconfirmedDate && !unconfirmedTime;
+  const scoreClass = (lost: boolean) =>
+    cn(
+      ui.score.row,
+      ui.text.tabular,
+      "text-end",
       lost
         ? cn("[font-weight:var(--ui-weight-strong)]", ui.tone.muted)
         : cn("[font-weight:var(--ui-weight-heavy)]", ui.tone.default),
@@ -307,35 +321,40 @@ export function MatchCard({
       </div>
     </>
   ) : (
-    // Five tracks: edge | home | figure | away | edge. A live row adds a
-    // second line for its pill, spanning the three middle tracks, so the
-    // pill never widens the figure's track and squeezes the names.
-    <div className="grid grid-cols-[4px_minmax(0,1fr)_auto_minmax(0,1fr)_4px] items-stretch gap-x-2.5">
-      <span {...clubStyle(pair.home)} className={cn(ui.club.edgeFill, isLive && "row-span-2")} />
-      <div className={cn("flex min-w-0 flex-1 items-center gap-2", cellPad)}>
-        <ClubCrest club={home} palette={pair.home} size="sm" />
-        <span className={cn("min-w-0 truncate", nameClass(homeLost))}>{homeName}</span>
+    // Stacked: edge | time | teams | edge. The time column carries the kickoff
+    // (or the state of a match under way) and the round; the teams sit one
+    // above the other, each with its full name, so no name is ever cut. A
+    // match under way or over has its two scores at the end of each line.
+    <div className="grid grid-cols-[4px_6.25rem_minmax(0,1fr)_4px] items-stretch gap-x-3">
+      <span {...clubStyle(pair.home)} className={ui.club.edgeFill} />
+      <div className="flex min-w-0 flex-col items-center justify-center gap-1 py-3 text-center">
+        {isLive || isFinished ? null : figure}
+        {caption}
+        {roundTag}
       </div>
       <div
         className={cn(
-          "flex min-w-16 flex-col items-center justify-center gap-1 text-center",
-          cellPad,
+          "grid min-w-0 items-center gap-x-3 gap-y-2 py-3",
+          showReminder ? "pe-14" : "pe-1",
+          hasScore ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-1",
         )}
       >
-        {figure}
-        {isLive ? null : caption}
-        {roundTag}
+        <div className="flex min-w-0 items-center gap-2">
+          <ClubCrest club={home} palette={pair.home} size="xs" className="h-6 w-6" />
+          <span className={cn("min-w-0", nameClass(homeLost))}>{homeName}</span>
+        </div>
+        {hasScore ? <bdi className={scoreClass(homeLost)}>{hs}</bdi> : null}
+        <div className="flex min-w-0 items-center gap-2">
+          <ClubCrest club={away} palette={pair.away} size="xs" className="h-6 w-6" />
+          <span className={cn("min-w-0", nameClass(awayLost))}>{awayName}</span>
+        </div>
+        {hasScore ? <bdi className={scoreClass(awayLost)}>{as}</bdi> : null}
       </div>
-      <div className={cn("flex min-w-0 flex-1 items-center justify-end gap-2", cellPad)}>
-        <span className={cn("min-w-0 truncate text-end", nameClass(awayLost))}>{awayName}</span>
-        <ClubCrest club={away} palette={pair.away} size="sm" />
-      </div>
-      <span {...clubStyle(pair.away)} className={cn(ui.club.edgeFill, isLive && "row-span-2")} />
-      {isLive ? <div className="col-[2/5] flex justify-center pb-3">{caption}</div> : null}
+      <span {...clubStyle(pair.away)} className={ui.club.edgeFill} />
     </div>
   );
 
-  return (
+  const link = (
     <Link
       to="/matches/$matchId"
       params={{ matchId: match.id }}
@@ -355,6 +374,16 @@ export function MatchCard({
       {/* The label above states all of this. */}
       <div aria-hidden>{content}</div>
     </Link>
+  );
+
+  if (!showReminder) return link;
+  return (
+    <div className="relative min-w-0">
+      {link}
+      <div className="absolute end-3 top-1/2 -translate-y-1/2">
+        <MatchReminderBell fixtureId={match.id} />
+      </div>
+    </div>
   );
 }
 

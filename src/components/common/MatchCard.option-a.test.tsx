@@ -135,9 +135,13 @@ describe("MatchCard (Option A) — the list row", () => {
     expect(html).not.toContain(fr["matches.status.ft"]);
   });
 
-  it("writes a score as three children — home, dash, away — never one string", async () => {
+  it("stacks the two scores at the end of their lines, each its own bdi", async () => {
     const html = await card(fixture({ status: "finished", homeScore: 2, awayScore: 0 }), FAR, RAJA);
-    expect(html).toMatch(/<bdi>2<\/bdi><span>–<\/span><bdi>0<\/bdi>/);
+    // Home's score on the first line, away's on the second: the order is the
+    // order of the names, in both languages.
+    expect(html).toMatch(
+      />AS FAR<[\s\S]*<bdi class="[^"]*">2<\/bdi>[\s\S]*>Raja CA<[\s\S]*<bdi class="[^"]*">0<\/bdi>/,
+    );
     expect(html).not.toContain("2 – 0");
   });
 
@@ -174,20 +178,18 @@ describe("MatchCard (Option A) — the list row", () => {
     expect(classOf(html, "Raja CA")).toContain(DEFAULT);
   });
 
-  it("gives a live row the navy pill on a line of its own, and its name the minute", async () => {
+  it("puts a live row's navy pill in the time column, and its name the minute", async () => {
     const html = await card(
       fixture({ status: "live", minute: 63, homeScore: 1, awayScore: 1 }),
       WYDAD,
       FAR,
     );
-    // The pill spans the three middle tracks, so it never widens the score's
-    // track and squeezes the names (measured: "Wydad AC" truncated at 390px).
-    expect(html).toContain("col-[2/5]");
-    expect(html).toContain("row-span-2");
     expect(html).toContain(`>${fr["matches.status.live"]}<`);
     expect(html).toContain("63′");
     expect(html).toContain("bg-[color:var(--ui-ink)]");
     expect(html).toContain(fr["matches.a11y.live_minute"].replace("{minute}", "63"));
+    // Both scores are shown, one per line.
+    expect(html.match(/<bdi class="[^"]*">1<\/bdi>/g)?.length).toBe(2);
   });
 
   it("names the round only when the page has not already named it", async () => {
@@ -199,11 +201,18 @@ describe("MatchCard (Option A) — the list row", () => {
     expect(compact).toContain(`${fr["matches.gameweek"]} 14`);
   });
 
-  it("truncates a club name on one line and never breaks it inside a word", async () => {
+  it("shows a long club name in full and never breaks it inside a word", async () => {
     const html = await card(fixture(), club("Renaissance Sportive de Berkane", "RSB"), RAJA);
-    expect(classOf(html, "Renaissance Sportive de Berkane")).toContain("truncate");
+    // No ellipsis: the name wraps between words when it has to.
+    expect(classOf(html, "Renaissance Sportive de Berkane")).not.toContain("truncate");
     // `break-words` is what printed "Wyda / d AC" once the crest disc grew.
     expect(html).not.toMatch(/break-words|break-all|overflow-wrap|word-break/);
+  });
+
+  it("stacks the teams, home above away, each with a 24px crest", async () => {
+    const html = await card(fixture(), FAR, RAJA);
+    expect(html.indexOf(">AS FAR<")).toBeLessThan(html.indexOf(">Raja CA<"));
+    expect(html.match(/h-6 w-6/g)?.length).toBe(2);
   });
 
   it("is its own card as a row or compact, and a flat row inside a caller's card as a list", async () => {

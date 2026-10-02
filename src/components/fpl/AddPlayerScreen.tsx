@@ -1,4 +1,4 @@
-import { Check, Lock, Plus, Search, X } from "lucide-react";
+import { Check, Lock, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { crestStyle } from "@/components/common/club-crest-style";
@@ -19,8 +19,10 @@ import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
 import { cn } from "@/lib/utils";
 import type { Club, Player } from "@/types/domain";
-import type { FantasyPlayer, Position } from "@/types/fantasy";
+import { SQUAD_RULES, type FantasyPlayer, type Position } from "@/types/fantasy";
 import { findClub } from "./club-lookup";
+import { pointsUnit } from "@/lib/points-unit";
+import { positionWord, transferCostLabel } from "./picker-copy";
 
 type SortKey = "form" | "price" | "selected" | "points";
 
@@ -91,6 +93,12 @@ export function AddPlayerScreen({
   onPick,
   onRemove,
   onClose,
+  replacing,
+  budget,
+  noMatchClubIds,
+  gameweek,
+  clubCounts,
+  maxPerClub = SQUAD_RULES.maxPerClub,
 }: {
   players: FantasyPlayer[];
   clubs: Club[];
@@ -114,6 +122,20 @@ export function AddPlayerScreen({
   /** Clear the slot instead of replacing its player. */
   onRemove?: () => void;
   onClose: () => void;
+  /** Replacing a named player: "Remplacer Kandouss · défenseur · vendu 5,9 M". */
+  replacing?: { player: FantasyPlayer; soldPrice: number };
+  /**
+   * The budget card: what the squad may cost, the free transfers left and the
+   * points a further transfer costs. Omit a figure and its line is left out.
+   */
+  budget?: { total: number; teamValue?: number; freeTransfers?: number; hitPoints?: number };
+  /** Clubs with no match this round; `null`/omitted when the round's fixtures are not known. */
+  noMatchClubIds?: ReadonlySet<string> | null;
+  /** The round `noMatchClubIds` is about. */
+  gameweek?: number | null;
+  /** Players per club in the squad after this pick, for "Club 3/3". */
+  clubCounts?: ReadonlyMap<string, number>;
+  maxPerClub?: number;
 }) {
   const { t, tr, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
@@ -127,6 +149,10 @@ export function AddPlayerScreen({
   const [clubId, setClubId] = useState<string>("");
   const [sort, setSort] = useState<SortKey>("price");
   const [query, setQuery] = useState("");
+  const [hideBlocked, setHideBlocked] = useState(false);
+  const [playsOnly, setPlaysOnly] = useState(false);
+  const [minForm, setMinForm] = useState<number | "">("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Literal branches, never a computed key: a key assembled at runtime is
   // invisible to the i18n gate (W4) and to the TranslationKey type alike.
@@ -184,11 +210,16 @@ export function AddPlayerScreen({
     return null;
   };
 
-  const rows = useMemo(() => {
+  // Not memoised: the answer depends on `blockOf`, which reads the squad rules
+  // the route hands down on every render.
+  const rows = (() => {
     let list = players.slice();
     if (effectivePos) list = list.filter((p) => p.position === effectivePos);
     if (clubId) list = list.filter((p) => p.clubId === clubId);
     if (maxPrice !== "") list = list.filter((p) => p.price <= maxPrice + 0.001);
+    if (minForm !== "") list = list.filter((p) => p.form !== null && p.form >= minForm);
+    if (playsOnly && noMatchClubIds) list = list.filter((p) => !noMatchClubIds.has(p.clubId));
+    if (hideBlocked) list = list.filter((p) => p.id === currentPlayerId || blockOf(p) === null);
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       list = list.filter(
@@ -202,9 +233,13 @@ export function AddPlayerScreen({
       return b.price - a.price || a.name.fr.localeCompare(b.name.fr);
     });
     return list;
-  }, [players, effectivePos, clubId, maxPrice, query, sort]);
+  })();
 
   const current = currentPlayerId ? players.find((p) => p.id === currentPlayerId) : undefined;
+
+  // What the "Filtres" sheet holds that is switched on; position, price and
+  // sort are in the row itself.
+  const activeFilters = (clubId ? 1 : 0) + (minForm !== "" ? 1 : 0) + (playsOnly ? 1 : 0);
 
   const header = (
     <div className={cn("shrink-0 pb-1", ui.surface.bar, ui.rule.block)}>
@@ -245,13 +280,80 @@ export function AddPlayerScreen({
         />
       </div>
 
-      <div className="px-4 pt-2.5">
-        {pinned ? (
-          /**
+      {replacing ? (
+        <p
+          className={cn("px-4 pt-2.5", ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}
+          data-testid="picker-context"
+        >
+          <bdi>
+            {t("fpl.pick.replacing")
+              .replace("{name}", tr(replacing.player.name))
+              .replace("{position}", positionWord(replacing.player.position, t))
+              .replace("{price}", nf.format(replacing.soldPrice))}
+          </bdi>
+        </p>
+      ) : null}
+
+      {budget ? (
+        <div className="px-4 pt-2.5" data-testid="picker-budget">
+          <div className={cn("p-3", ui.radius.card, ui.surface.sunken)}>
+            <div className="flex items-baseline justify-between gap-3">
+              <span className={cn(ui.text.label, ui.tone.muted)}>
+                {t("fpl.pick.budget_available")}
+              </span>
+              <span className={cn(ui.stat.lg, ui.text.tabular, ui.tone.default)}>
+                <bdi>{nf.format(bank)}</bdi>
+              </span>
+            </div>
+            {budget.teamValue !== undefined ? (
+              <>
+                <div
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={budget.total}
+                  aria-valuenow={Math.min(budget.total, budget.teamValue)}
+                  aria-label={t("fpl.pick.budget_used")
+                    .replace("{value}", nf.format(budget.teamValue))
+                    .replace("{total}", nf.format(budget.total))}
+                  className={cn(
+                    "mt-2 h-2 overflow-hidden",
+                    ui.radius.full,
+                    "bg-[color:var(--ui-rule)]",
+                  )}
+                >
+                  <span
+                    className="block h-full"
+                    style={{
+                      width: `${Math.max(0, Math.min(100, (budget.teamValue / budget.total) * 100))}%`,
+                      backgroundImage: "var(--ui-grad-action)",
+                    }}
+                  />
+                </div>
+                <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
+                  <bdi>
+                    {t("fpl.pick.budget_used")
+                      .replace("{value}", nf.format(budget.teamValue))
+                      .replace("{total}", nf.format(budget.total))}
+                  </bdi>
+                </p>
+              </>
+            ) : null}
+            {budget.freeTransfers !== undefined && budget.hitPoints !== undefined ? (
+              <p className={cn("mt-1", ui.text.meta, "[font-weight:var(--ui-weight-strong)]")}>
+                {transferCostLabel(budget.freeTransfers, budget.hitPoints, lang, t, whole.format)}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {pinned ? (
+        <div className="px-4 pt-2.5">
+          {/**
            * An imposed position is not a control, so it is not drawn as one.
            * A disabled chip row still reads as a filter the list is ignoring;
            * a pill with a lock states the fact.
-           */
+           */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span
               className={cn(
@@ -270,44 +372,38 @@ export function AddPlayerScreen({
               {t("fpl.pick.position_locked")}
             </span>
           </div>
-        ) : (
-          <div
-            role="group"
-            aria-label={t("fantasy.picker.filter_position")}
-            className="grid grid-cols-5 gap-2"
-          >
-            {(["", ...ALL_POSITIONS] as const).map((value) => (
-              <UiChip
-                key={value || "all"}
-                selected={effectivePos === value}
-                disabled={value !== "" && !selectable.includes(value)}
-                onClick={() => setPos(value)}
-                className="justify-center px-1 disabled:opacity-45"
-              >
-                <span className="truncate">
-                  {value === "" ? t("fpl.all") : positionLabel(value)}
-                </span>
-              </UiChip>
-            ))}
-          </div>
-        )}
-      </div>
+        </div>
+      ) : null}
 
-      <div className="grid grid-cols-3 gap-2 px-4 pt-2">
-        <UiSelect
-          label={t("fantasy.picker.filter_club")}
-          value={clubId}
-          onChange={(e) => setClubId(e.target.value)}
-          fieldClassName={FILTER_FIELD}
-          options={[
-            { value: "", label: t("fpl.all") },
-            ...clubs.map((c) => ({ value: c.id, label: tr(c.shortName) })),
-          ]}
-        />
+      {/* One row: position, top price, sort and "Filtres". It scrolls sideways
+          on a narrow phone rather than wrapping onto a second and third line. */}
+      <div
+        role="group"
+        aria-label={t("fpl.pick.filters")}
+        className="flex items-center gap-2 overflow-x-auto px-4 pt-2.5 pb-0.5"
+      >
+        {pinned ? null : (
+          <UiSelect
+            label={t("fantasy.picker.filter_position")}
+            value={effectivePos}
+            onChange={(e) => setPos(e.target.value as Position | "")}
+            className="w-28 shrink-0"
+            fieldClassName={FILTER_FIELD}
+            options={[
+              { value: "", label: t("fpl.all") },
+              ...ALL_POSITIONS.map((value) => ({
+                value,
+                label: positionLabel(value),
+                disabled: !selectable.includes(value),
+              })),
+            ]}
+          />
+        )}
         <UiSelect
           label={t("fantasy.picker.filter_price")}
           value={maxPrice === "" ? "" : String(maxPrice)}
           onChange={(e) => setMaxPrice(e.target.value === "" ? "" : Number(e.target.value))}
+          className="w-28 shrink-0"
           fieldClassName={FILTER_FIELD}
           options={[
             { value: "", label: t("fpl.unlimited") },
@@ -318,6 +414,7 @@ export function AddPlayerScreen({
           label={t("fantasy.picker.sort")}
           value={sort}
           onChange={(e) => setSort(e.target.value as SortKey)}
+          className="w-28 shrink-0"
           fieldClassName={FILTER_FIELD}
           options={[
             { value: "price", label: t("fantasy.picker.sort.price") },
@@ -326,20 +423,29 @@ export function AddPlayerScreen({
             { value: "selected", label: t("fantasy.picker.sort.ownership") },
           ]}
         />
+        <UiChip
+          selected={activeFilters > 0}
+          onClick={() => setFiltersOpen(true)}
+          className="shrink-0"
+        >
+          <SlidersHorizontal className="h-4 w-4" aria-hidden />
+          {t("fpl.pick.filters")}
+          {activeFilters > 0 ? (
+            <span className={ui.text.tabular}>· {whole.format(activeFilters)}</span>
+          ) : null}
+        </UiChip>
       </div>
 
-      <p
-        className={cn(
-          "px-4 pt-2",
-          ui.text.meta,
-          "[font-weight:var(--ui-weight-strong)]",
-          ui.tone.muted,
-        )}
-      >
-        {t("fantasy.players.showing")
-          .replace("{n}", whole.format(rows.length))
-          .replace("{total}", whole.format(players.length))}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 pt-2">
+        <p className={cn(ui.text.meta, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}>
+          {t("fantasy.players.showing")
+            .replace("{n}", whole.format(rows.length))
+            .replace("{total}", whole.format(players.length))}
+        </p>
+        <UiChip selected={hideBlocked} onClick={() => setHideBlocked((on) => !on)}>
+          {t("fpl.pick.hide_blocked")}
+        </UiChip>
+      </div>
     </div>
   );
 
@@ -467,13 +573,29 @@ export function AddPlayerScreen({
                       {block ? (
                         <span
                           className={cn(
-                            "block truncate",
+                            "block",
                             ui.text.meta,
                             "[font-weight:var(--ui-weight-heavy)]",
                             block === "taken" ? ui.tone.muted : ui.tone.negative,
                           )}
                         >
-                          {blockLabel(block)}
+                          {block === "club_limit" && club && clubCounts
+                            ? t("fpl.pick.club_full")
+                                .replace("{club}", tr(club.name))
+                                .replace(
+                                  "{n}",
+                                  whole.format(clubCounts.get(player.clubId) ?? maxPerClub),
+                                )
+                                .replace("{max}", whole.format(maxPerClub))
+                            : blockLabel(block)}
+                        </span>
+                      ) : noMatchClubIds?.has(player.clubId) && gameweek ? (
+                        // Still buyable: a player with no match this round is
+                        // a fine pick for the next one. Said, not forbidden.
+                        <span className="block">
+                          <UiBadge tone="caution" className="px-2 py-0">
+                            {t("fpl.pick.no_match_round").replace("{gw}", whole.format(gameweek))}
+                          </UiBadge>
                         </span>
                       ) : (
                         <span className={cn("block truncate", ui.text.meta, ui.tone.muted)}>
@@ -493,7 +615,7 @@ export function AddPlayerScreen({
                       </span>
                       <span className={cn(ui.text.micro, ui.tone.muted)}>
                         <span className={ui.text.tabular}>{whole.format(player.totalPoints)}</span>{" "}
-                        {t("fantasy.points.abbr")}
+                        {pointsUnit(player.totalPoints, t)}
                       </span>
                     </span>
                     <span
@@ -505,8 +627,11 @@ export function AddPlayerScreen({
                           ? ui.surface.inkPlain
                           : block
                             ? cn(ui.surface.sunken, ui.tone.faint)
-                            : cn(ui.surface.sunken, ui.tone.ink),
+                            : "text-[color:var(--ui-ink-deep)]",
                       )}
+                      style={
+                        !owned && !block ? { backgroundImage: "var(--ui-grad-action)" } : undefined
+                      }
                     >
                       {owned ? (
                         <Check className="h-[18px] w-[18px]" />
@@ -523,6 +648,66 @@ export function AddPlayerScreen({
           })}
         </ul>
       )}
+      <UiSheet
+        open={filtersOpen}
+        onOpenChange={setFiltersOpen}
+        title={t("fpl.pick.filters_title")}
+        footer={
+          <div className="grid grid-cols-2 gap-2">
+            <UiButton
+              variant="soft"
+              onClick={() => {
+                setClubId("");
+                setMinForm("");
+                setPlaysOnly(false);
+              }}
+            >
+              {t("fpl.pick.filters_reset")}
+            </UiButton>
+            <UiButton onClick={() => setFiltersOpen(false)}>
+              {t("fpl.pick.filters_apply").replace("{n}", whole.format(rows.length))}
+            </UiButton>
+          </div>
+        }
+      >
+        <div className="grid gap-3 p-4">
+          <UiSelect
+            label={t("fantasy.picker.filter_club")}
+            value={clubId}
+            onChange={(e) => setClubId(e.target.value)}
+            options={[
+              { value: "", label: t("fpl.all") },
+              ...clubs.map((c) => ({ value: c.id, label: tr(c.shortName) })),
+            ]}
+          />
+          <UiSelect
+            label={t("fantasy.picker.filter_price")}
+            value={maxPrice === "" ? "" : String(maxPrice)}
+            onChange={(e) => setMaxPrice(e.target.value === "" ? "" : Number(e.target.value))}
+            options={[
+              { value: "", label: t("fpl.unlimited") },
+              ...prices.map((p) => ({ value: String(p), label: nf.format(p) })),
+            ]}
+          />
+          <UiSelect
+            label={t("fpl.pick.filter_form")}
+            value={minForm === "" ? "" : String(minForm)}
+            onChange={(e) => setMinForm(e.target.value === "" ? "" : Number(e.target.value))}
+            options={[
+              { value: "", label: t("fpl.all") },
+              ...[2, 4, 6].map((value) => ({
+                value: String(value),
+                label: `≥ ${whole.format(value)}`,
+              })),
+            ]}
+          />
+          {noMatchClubIds ? (
+            <UiChip selected={playsOnly} onClick={() => setPlaysOnly((on) => !on)}>
+              {t("fpl.pick.filter_plays")}
+            </UiChip>
+          ) : null}
+        </div>
+      </UiSheet>
     </UiSheet>
   );
 }

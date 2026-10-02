@@ -63,10 +63,16 @@ export function useNextFixtures(clubs: Club[], gameweek: number | null, enabled 
 
       const marker = row.isHome ? t("fpl.home_short") : t("fpl.away_short");
       const text = `${code} (${marker})`;
+      // The chip is the fixture's difficulty colour (`--ui-fdr-N`, with its own
+      // readable foreground), so a manager reads "easy" or "hard" at a glance.
       const node = (
         <span
           key={`${row.opponentClubId}-${row.isHome ? "h" : "a"}`}
-          className="inline-flex items-center gap-1 align-middle"
+          className="inline-flex items-center gap-1 rounded-full px-1.5 align-middle"
+          style={{
+            backgroundColor: `var(--ui-fdr-${row.difficulty})`,
+            color: `var(--ui-on-fdr-${row.difficulty})`,
+          }}
           title={`${tr(opponent.name)} (${marker})`}
         >
           {opponent.crestUrl ? (
@@ -109,7 +115,17 @@ export function useNextFixtures(clubs: Club[], gameweek: number | null, enabled 
     return { labels, texts };
   }, [query.data, clubs, gameweek, t, tr]);
 
+  // Clubs with a match in the gameweek; null when the gameweek's fixtures are not known.
+  const playingClubIds = useMemo(() => {
+    if (!query.data || gameweek === null) return null;
+    const inRound = (query.data as FixtureDifficulty[]).filter((row) => row.gameweek === gameweek);
+    if (inRound.length === 0) return null;
+    return new Set(inRound.filter((row) => !row.isBlank).map((row) => row.clubId));
+  }, [query.data, gameweek]);
+
   return {
+    /** Clubs that play in the gameweek, or null when its fixtures are not known. */
+    playingClubIds,
     /** clubId -> the rendered plate content (crest + code + marker). */
     labels,
     /** clubId -> the same plate as plain text, for titles and assertions. */

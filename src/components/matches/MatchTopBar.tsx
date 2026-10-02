@@ -61,7 +61,7 @@ export function MatchTopBar({
           showCompact && "opacity-0",
         )}
       >
-        <UiHeader kicker={kicker} onBack={onBack} trailing={share} className="pb-2" />
+        <UiHeader kicker={kicker} onBack={onBack} trailing={share} wide className="pb-2" />
       </div>
       {fixture ? (
         <CompactBar {...fixture} shown={showCompact} onBack={onBack} onShare={onShare} />
@@ -108,7 +108,7 @@ function CompactBar({
         className={cn(
           // Over the page's content column on a wide screen, like the white
           // bar's controls; the colours behind stay full-bleed.
-          "absolute inset-x-0 top-0 mx-auto flex h-full max-w-[var(--ui-content-max)] items-start justify-between px-3",
+          "absolute inset-x-0 top-0 mx-auto flex h-full max-w-[var(--ui-content-max)] items-start lg:max-w-[var(--ui-desktop-max)] justify-between px-3",
           ui.safe.top,
         )}
       >

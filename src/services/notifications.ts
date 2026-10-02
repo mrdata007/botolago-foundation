@@ -1,12 +1,15 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
+  NotificationCategory,
   NotificationDeviceRepository,
+  NotificationPageDto,
   NotificationEmailUnsubscribeRepository,
   NotificationEmailUnsubscribeOutcome,
   NotificationPreferenceRepository,
   NotificationPreferencesDto,
   NotificationPreferenceUpdate,
   NotificationRepository,
+  NotificationSubscriptionRepository,
 } from "@/backend/notifications/contracts";
 import { NotificationError } from "@/backend/notifications/errors";
 import {
@@ -14,12 +17,14 @@ import {
   MockNotificationEmailUnsubscribeRepository,
   MockNotificationPreferenceRepository,
   MockNotificationRepository,
+  MockNotificationSubscriptionRepository,
 } from "@/backend/notifications/mock-repositories";
 import {
   SupabaseNotificationDeviceRepository,
   SupabaseNotificationEmailUnsubscribeRepository,
   SupabaseNotificationPreferenceRepository,
   SupabaseNotificationRepository,
+  SupabaseNotificationSubscriptionRepository,
 } from "@/backend/notifications/supabase-repositories";
 import { authService } from "@/services/auth";
 
@@ -43,12 +48,14 @@ const mock = {
   preferences: new MockNotificationPreferenceRepository(),
   devices: new MockNotificationDeviceRepository(),
   emailUnsubscribe: new MockNotificationEmailUnsubscribeRepository(),
+  subscriptions: new MockNotificationSubscriptionRepository(),
 };
 const cloud = {
   notifications: new SupabaseNotificationRepository(),
   preferences: new SupabaseNotificationPreferenceRepository(),
   devices: new SupabaseNotificationDeviceRepository(),
   emailUnsubscribe: new SupabaseNotificationEmailUnsubscribeRepository(),
+  subscriptions: new SupabaseNotificationSubscriptionRepository(),
 };
 
 export function getNotificationsDataMode(): NotificationsDataMode {
@@ -63,6 +70,7 @@ export function getNotificationRepositories(): {
   preferences: NotificationPreferenceRepository;
   devices: NotificationDeviceRepository;
   emailUnsubscribe: NotificationEmailUnsubscribeRepository;
+  subscriptions: NotificationSubscriptionRepository;
 } {
   return getNotificationsDataMode() === "supabase" ? cloud : mock;
 }
@@ -121,4 +129,47 @@ export async function unsubscribeFromNotificationEmails(
   token: string,
 ): Promise<NotificationEmailUnsubscribeOutcome> {
   return getNotificationRepositories().emailUnsubscribe.unsubscribe(token);
+}
+
+/** One page of the signed-in account's notifications, newest first. */
+export function loadMyNotifications(
+  category: NotificationCategory | null,
+  cursor?: string | null,
+): Promise<NotificationPageDto> {
+  return getNotificationRepositories().notifications.list(
+    { category, cursor: cursor ?? undefined, limit: 20 },
+    notificationContext(),
+  );
+}
+
+/** How many of the signed-in account's notifications are unread. */
+export function loadMyUnreadNotificationCount(): Promise<number> {
+  return getNotificationRepositories().notifications.unreadCount(null, notificationContext());
+}
+
+export function markMyNotificationRead(id: string, read = true): Promise<void> {
+  return getNotificationRepositories().notifications.markRead(id, read, notificationContext());
+}
+
+export function markAllMyNotificationsRead(): Promise<number> {
+  return getNotificationRepositories().notifications.markAllRead(null, notificationContext());
+}
+
+/** Removes a notification from the inbox (it is archived, not deleted). */
+export function dismissMyNotification(id: string): Promise<void> {
+  return getNotificationRepositories().notifications.dismiss(id, true, notificationContext());
+}
+
+/** Turns the reminder for one match on or off for the signed-in account. */
+export function setMyMatchReminder(fixtureId: string, enabled: boolean): Promise<void> {
+  return getNotificationRepositories().subscriptions.setMatchReminder(
+    fixtureId,
+    enabled,
+    notificationContext(),
+  );
+}
+
+/** The matches the signed-in account has a reminder on. */
+export function loadMyMatchReminders(): Promise<readonly string[]> {
+  return getNotificationRepositories().subscriptions.listMatchReminders(notificationContext());
 }

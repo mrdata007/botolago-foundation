@@ -5,6 +5,7 @@ import {
   formatShare,
   formatVoteTotal,
   questionView,
+  sharesVisible,
   votePercentages,
   withMyVote,
 } from "./match-votes";
@@ -105,5 +106,13 @@ describe("formatVoteTotal", () => {
   test("Arabic spells the thousands out", () => {
     expect(formatVoteTotal(6_900, "ar")).toContain("ألف");
     expect(formatVoteTotal(167, "ar")).toContain("167");
+  });
+});
+
+describe("sharesVisible", () => {
+  test("hides shares until a question has 20 votes", () => {
+    expect(sharesVisible(0)).toBe(false);
+    expect(sharesVisible(19)).toBe(false);
+    expect(sharesVisible(20)).toBe(true);
   });
 });

@@ -83,7 +83,7 @@ export function UiScreen({
   raised = false,
 }: {
   children: ReactNode;
-  width?: "column" | "content" | "wide";
+  width?: "column" | "content" | "wide" | "desktop";
   className?: string;
   /** Reserve clearance for the fixed bottom navigation. */
   bottomNav?: boolean;
@@ -98,6 +98,9 @@ export function UiScreen({
         width === "column" && "max-w-[var(--ui-column-max)]",
         width === "content" && "max-w-2xl",
         width === "wide" && "max-w-5xl",
+        // A phone keeps the reading column, a tablet opens to 896px, and from
+        // 1024px the page takes the 1320px desktop canvas.
+        width === "desktop" && "max-w-2xl md:max-w-4xl lg:max-w-[var(--ui-desktop-max)]",
         bottomNav ? "pb-28 md:pb-12" : "pb-8",
         "pt-4 md:pt-6",
         raised &&
@@ -140,6 +143,7 @@ export function UiHeader({
   children,
   tone = "surface",
   sticky = false,
+  wide = false,
   className,
 }: {
   /**
@@ -158,6 +162,8 @@ export function UiHeader({
   leading?: ReactNode;
   trailing?: ReactNode;
   children?: ReactNode;
+  /** Follow a desktop-width page (1320px) from 1024px up. */
+  wide?: boolean;
   tone?: "gradient" | "ink" | "surface";
   sticky?: boolean;
   className?: string;
@@ -189,7 +195,13 @@ export function UiHeader({
           column (672px less the gutters), so on a wide screen Back and the
           actions sit over the column's edges, not the window's. Inside a
           narrower frame the cap never binds. */}
-      <div className="mx-auto w-full max-w-[calc(var(--ui-content-max)_-_2*var(--ui-gutter))]">
+      <div
+        className={cn(
+          "mx-auto w-full max-w-[calc(var(--ui-content-max)_-_2*var(--ui-gutter))]",
+          // A desktop-width page: the bar's content follows it from 1024px.
+          wide && "lg:max-w-[calc(var(--ui-desktop-max)_-_2*var(--ui-gutter))]",
+        )}
+      >
         {/* Centring: the two `1fr` tracks are equal whenever the title fits
             between two flanks as wide as the wider one, so every such title is
             centred on the bar. A title too wide for that slot (at 390px beside
@@ -770,7 +782,10 @@ export function UiSegmented<T extends string>({
             disabled={option.disabled}
             onClick={() => onChange(option.value)}
             className={cn(
-              "truncate px-2 transition-colors disabled:opacity-50",
+              // A label wraps onto a second line rather than ending in an
+              // ellipsis ("Mes pronostics" at 375px); the tab stays 44px tall
+              // and grows only when it has to.
+              "px-2 py-1 text-center leading-tight transition-colors disabled:opacity-50",
               pill ? ui.radius.full : ui.radius.segment,
               size === "md"
                 ? cn("min-h-[var(--ui-tap-min)]", ui.text.meta)
@@ -897,7 +912,8 @@ export function UiTabs<T extends string>({
                 : ui.tone.muted,
             )}
           >
-            <span className="truncate">{option.label}</span>
+            {/* Wraps rather than ending in an ellipsis ("Mes pronostics" at 375px). */}
+            <span className="min-w-0 text-center leading-tight">{option.label}</span>
           </button>
         );
       })}

@@ -1191,6 +1191,7 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-row-min: 3rem; /* list row / full-width control height */
   --ui-column-max: 480px; /* the phone canvas, mobile-first single column */
   --ui-content-max: 672px; /* the reading column: long-form copy, a wide table */
+  --ui-desktop-max: 82.5rem; /* 1320px: the desktop canvas, three columns with 24px gaps */
 
   /* ---- Surfaces (light) ------------------------------------------ */
   --ui-page: oklch(0.975 0.004 250);

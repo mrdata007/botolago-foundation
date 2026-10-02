@@ -66,6 +66,7 @@ import {
 } from "@/components/ui-kit";
 import { FailureAwareImage } from "@/components/common/FailureAwareImage";
 import { useI18n } from "@/i18n/provider";
+import { pointsLabel } from "@/components/matches/standings-copy";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/prizes")({
@@ -433,7 +434,7 @@ function WinnersPanel({ access, repository, onNotice }: PanelProps) {
                             </>
                           ) : null}
                           {" · "}
-                          {fill(t("prizes.points"), { points: skip.points })}
+                          {pointsLabel(skip.points, lang, t, String)}
                           {" · "}
                           {skipReasonLabel(t, skip.reason)}
                         </li>

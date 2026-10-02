@@ -256,8 +256,11 @@ export function MatchScoreHeader({
 
 /**
  * One half of the split: the club's fill, its crest as a surface disc, the
- * name in the display face and the city. The inner padding (64px on the
- * seam side) is the room the score box takes over the seam.
+ * name in the display face and the city, all against the half's OUTER edge
+ * (the home half's inline start, the away half's inline end), so the score
+ * box over the seam never covers a name. The name is at most 104px wide and
+ * wraps between words onto as many lines as it needs: it is never cut. The
+ * inner padding (64px on the seam side) is the room the score box takes.
  */
 function TeamHalf({
   club,
@@ -274,21 +277,16 @@ function TeamHalf({
     <div
       {...clubStyle(palette)}
       className={cn(
-        "flex min-w-0 flex-1 flex-col items-center justify-center gap-2 py-12",
+        "flex min-w-0 flex-1 flex-col justify-center gap-2 py-12",
         ui.club.fill,
-        side === "home" ? "pe-16 ps-3" : "pe-3 ps-16",
+        side === "home" ? "items-start pe-16 ps-4 text-start" : "items-end pe-4 ps-16 text-end",
       )}
     >
       <ClubCrest club={club} palette={palette} size="lg" tone="inverse" loading="eager" />
-      <p
-        className={cn(
-          "line-clamp-2 max-w-full break-words text-center text-balance",
-          ui.display.teamLg,
-        )}
-      >
+      <p className={cn("max-w-[6.5rem] break-words text-balance", ui.display.teamLg)}>
         {tr(club.name)}
       </p>
-      {city ? <p className={cn("max-w-full truncate", ui.text.label)}>{city}</p> : null}
+      {city ? <p className={cn("max-w-[6.5rem]", ui.text.label)}>{city}</p> : null}
     </div>
   );
 }

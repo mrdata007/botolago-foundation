@@ -1301,6 +1301,7 @@ export type Database = {
         Returns: boolean
       }
       leave_prediction_league: { Args: { p_league_id: string }; Returns: Json }
+      list_my_match_reminders: { Args: never; Returns: Json }
       list_my_notification_devices: { Args: never; Returns: Json }
       list_my_notifications: {
         Args: {
@@ -2012,6 +2013,15 @@ export type Database = {
       }
       service_select_fantasy_scoring_modes: {
         Args: { p_gameweek_id: string }
+        Returns: Json
+      }
+      service_set_curated_team_crest: {
+        Args: {
+          p_attribution: string
+          p_external_team_id: string
+          p_mime_type: string
+          p_storage_path: string
+        }
         Returns: Json
       }
       service_set_elbotola_source_active: {
