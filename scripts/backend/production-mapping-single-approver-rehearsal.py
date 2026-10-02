@@ -31,7 +31,7 @@ PROJECT_REF = "tkewgajrljbwgwedqsxn"
 STAGING_REF = "srdrflfrfpwixsllveid"
 API = "https://api.supabase.com"
 SCRIPT = "scripts/backend/apply-20261002100000-mapping-single-approver.sql"
-SCRIPT_SHA256 = "88f4cf396111a7aa39b67b63ac58ca406ef5de166bc4bba3e423a29171f701ed"
+SCRIPT_SHA256 = "5dc40ecbaf0a0256c0fbcbf034383a821f0445f23e6f2f32fc472fe1e0c8fe4e"
 MIGRATION = "supabase/migrations/20261002100000_football_mapping_single_approver_switch.sql"
 MIGRATION_SHA256 = "1fb64a5c5a8a231715663e38159a826842bf00360a058492fce666eb032c904e"
 
@@ -40,6 +40,7 @@ select jsonb_build_object(
   'history_rows', (select count(*) from supabase_migrations.schema_migrations),
   'history_has_switch', (select count(*) from supabase_migrations.schema_migrations where version = '20261002100000'),
   'latest_version', (select max(version) from supabase_migrations.schema_migrations),
+  'migrations_after_reviewed', (select string_agg(version || ':' || name || ':' || encode(sha256(convert_to(statements[1], 'UTF8')), 'hex'), ',' order by version) from supabase_migrations.schema_migrations where version > '20261001161000'),
   'settings_table', to_regclass('app_private.football_mapping_settings')::text,
   'self_approved_column', (select count(*) from pg_attribute where attrelid = 'app_private.football_player_mapping_proposals'::regclass and attname = 'self_approved' and not attisdropped),
   'two_people_check', (select pg_get_constraintdef(oid) from pg_constraint where conname = 'football_player_mapping_proposals_two_people_check'),
@@ -74,7 +75,7 @@ select jsonb_build_object(
 
 # Facts that must be identical before and after. busy_sessions is a live read, not a state.
 COMPARE_KEYS = [
-    "history_rows", "history_has_switch", "latest_version", "settings_table", "self_approved_column",
+    "history_rows", "history_has_switch", "latest_version", "migrations_after_reviewed", "settings_table", "self_approved_column",
     "two_people_check", "proposal_triggers", "proposal_columns", "proposals_acl", "decide_md5",
     "execute_md5", "availability_md5", "proposal_json_md5", "resolver_md5", "decide_acl",
     "api_functions", "private_functions", "candidates", "observations", "proposals", "mapping_rows",
@@ -84,7 +85,8 @@ COMPARE_KEYS = [
 
 # What production must look like BEFORE (the script's own preflight checks the same and more).
 EXPECT_BEFORE = {
-    "history_has_switch": 0, "latest_version": "20261001161000", "settings_table": None,
+    "history_has_switch": 0, "latest_version": "20261002110000",
+    "migrations_after_reviewed": "20261002110000:list_my_match_reminders:c0512530a5fc67fc3da8de7dd96b497d984f743b9e54c707446161958048fdf2", "settings_table": None,
     "self_approved_column": 0, "proposals": 0, "candidates": 1004, "observations": 1006,
     "mapping_rows": 1541, "reviewed_provider_mapping_rows": 0,
     "decide_md5": "6a23f72de1be2af83ed7d92d3abd40b8",

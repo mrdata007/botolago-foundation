@@ -90,3 +90,46 @@ describe("single-approver switch apply workflow", () => {
     expect(body).not.toMatch(/commit;|apply:|--commit|mode:/i);
   });
 });
+
+describe("single-approver switch: the production-drift guard", () => {
+  const script = scriptBytes.toString("utf8");
+  const reminders = read("supabase/migrations/20261002110000_list_my_match_reminders.sql");
+  const remindersSha = sha(reminders);
+
+  it("accepts exactly one extra, reviewed migration, pinned by name and sha256", () => {
+    expect(script).toContain(`'20261002110000:list_my_match_reminders:${remindersSha}'`);
+    expect(runner).toContain(`20261002110000:list_my_match_reminders:${remindersSha}`);
+    expect(read("scripts/backend/production-mapping-single-approver-rehearsal.py")).toContain(
+      `20261002110000:list_my_match_reminders:${remindersSha}`,
+    );
+  });
+
+  it("is an exact-set comparison, never 'newer than' or 'ignore newer'", () => {
+    expect(script).toContain("where version > '20261001161000')");
+    expect(script).toContain("is distinct from '20261002110000:list_my_match_reminders:");
+    // The old catch-all comparison is gone: this migration is checked by equality only.
+    expect(script).not.toContain("where version >= '20261002100000'");
+    expect(script).toContain("where version = '20261002100000'");
+  });
+
+  it("keeps every mapping-function digest and the other preflight assertions", () => {
+    for (const digest of [
+      "6a23f72de1be2af83ed7d92d3abd40b8",
+      "92ad7b83e9c8225b4c1cc3a9ef21c935",
+      "6df9704512ef417cfc5c2b032ea22a15",
+      "abbf9649618367198d24c12c80e10053",
+      "c4c7253284afa52aea055f74e3806d73",
+      "e0ff799389c935e3844df2620b53ae87",
+    ]) {
+      expect(script).toContain(digest);
+    }
+    for (const guard of [
+      "a proposal already exists",
+      "the candidate population or the mapping rows are not what was reviewed",
+      "another database session is working right now",
+      "a mapping function is not the reviewed text",
+    ]) {
+      expect(script).toContain(guard);
+    }
+  });
+});
