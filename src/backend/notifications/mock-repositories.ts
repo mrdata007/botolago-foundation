@@ -192,4 +192,9 @@ export class MockNotificationSubscriptionRepository implements NotificationSubsc
     if (enabled) matchReminders.add(fixtureId);
     else matchReminders.delete(fixtureId);
   }
+
+  async listMatchReminders(context: RepositoryContext): Promise<readonly string[]> {
+    requireActor(context);
+    return [...matchReminders];
+  }
 }

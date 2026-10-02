@@ -240,6 +240,8 @@ export interface NotificationRepository {
  */
 export interface NotificationSubscriptionRepository {
   setMatchReminder(fixtureId: string, enabled: boolean, context: RepositoryContext): Promise<void>;
+  /** The matches the account has an enabled reminder on. */
+  listMatchReminders(context: RepositoryContext): Promise<readonly string[]>;
 }
 
 export interface NotificationPreferenceRepository {

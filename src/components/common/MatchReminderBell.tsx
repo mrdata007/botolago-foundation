@@ -7,24 +7,42 @@
 // they are off the toast offers to turn them on.
 
 import { Bell, BellRing } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useOptionalAuth } from "@/auth/AuthProvider";
 import { UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { rememberReminder, useHasReminder } from "@/lib/match-reminders";
+import { rememberReminder, replaceReminders, useHasReminder } from "@/lib/match-reminders";
 import {
+  loadMyMatchReminders,
   loadMyNotificationPreferences,
   setMyEmailNotifications,
   setMyMatchReminder,
 } from "@/services/notifications";
+
+// One read of the account's reminders per account and page load, shared by
+// every bell on the page. A server without the read function (not yet
+// updated) answers with an error; the bell then keeps what this device set.
+const syncing = new Map<string, Promise<void>>();
+function syncRemindersOnce(userId: string): void {
+  if (syncing.has(userId)) return;
+  syncing.set(
+    userId,
+    loadMyMatchReminders()
+      .then((ids) => replaceReminders(userId, ids))
+      .catch(() => undefined),
+  );
+}
 
 export function MatchReminderBell({ fixtureId }: { fixtureId: string }) {
   const { t } = useI18n();
   const auth = useOptionalAuth();
   const userId = auth?.status === "authenticated" && auth.user ? auth.user.id : null;
   const on = useHasReminder(userId, fixtureId);
+  useEffect(() => {
+    if (userId) syncRemindersOnce(userId);
+  }, [userId]);
   const [pending, setPending] = useState(false);
 
   const toggle = async (account: string) => {

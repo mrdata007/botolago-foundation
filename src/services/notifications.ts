@@ -168,3 +168,8 @@ export function setMyMatchReminder(fixtureId: string, enabled: boolean): Promise
     notificationContext(),
   );
 }
+
+/** The matches the signed-in account has a reminder on. */
+export function loadMyMatchReminders(): Promise<readonly string[]> {
+  return getNotificationRepositories().subscriptions.listMatchReminders(notificationContext());
+}

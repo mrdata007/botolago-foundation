@@ -1301,6 +1301,7 @@ export type Database = {
         Returns: boolean
       }
       leave_prediction_league: { Args: { p_league_id: string }; Returns: Json }
+      list_my_match_reminders: { Args: never; Returns: Json }
       list_my_notification_devices: { Args: never; Returns: Json }
       list_my_notifications: {
         Args: {

@@ -61,6 +61,16 @@ export function rememberReminder(userId: string, fixtureId: string, on: boolean)
   listeners.forEach((listener) => listener());
 }
 
+/** Replaces this device's list with what the server says the account has. */
+export function replaceReminders(userId: string, ids: readonly string[]): void {
+  try {
+    window.localStorage.setItem(storageKey(userId), JSON.stringify(ids.slice(0, MAX_REMEMBERED)));
+  } catch {
+    /* storage unavailable: the bell keeps asking the server */
+  }
+  listeners.forEach((listener) => listener());
+}
+
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);

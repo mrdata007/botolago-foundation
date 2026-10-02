@@ -236,4 +236,11 @@ export class SupabaseNotificationSubscriptionRepository implements NotificationS
     });
     throwIfError(error);
   }
+
+  async listMatchReminders(context: RepositoryContext): Promise<readonly string[]> {
+    requireActor(context);
+    const { data, error } = await getNotificationsApi().rpc("list_my_match_reminders");
+    throwIfError(error);
+    return parse(z.array(z.string().uuid()), data);
+  }
 }
