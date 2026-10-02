@@ -18,6 +18,7 @@ import { authService } from "@/services/auth";
 import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
 import type { FantasySummary, Gameweek } from "@/types/domain";
 import type { FantasyTeam } from "@/types/fantasy";
+import { CreateLeagueInvite } from "./CreateLeagueInvite";
 import { FantasyGuestIntro } from "./FantasyGuestIntro";
 import { joinTarget, type FantasyHubLayout } from "./fantasy-hub-layout";
 import { pointsUnit } from "@/lib/points-unit";
@@ -415,6 +416,7 @@ function LeaguesSection({
           }))}
         />
       )}
+      <CreateLeagueInvite />
       <div className="mt-3 flex flex-wrap gap-2">
         <UiLinkButton to="/fantasy/leagues/join" variant="soft" size="sm" className="flex-auto">
           <Plus className="h-4 w-4" aria-hidden />
