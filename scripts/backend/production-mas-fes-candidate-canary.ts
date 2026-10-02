@@ -195,7 +195,7 @@ select jsonb_build_object(
 
 export type Snapshot = Record<string, unknown>;
 
-async function snapshot(token: string): Promise<Snapshot> {
+export async function snapshot(token: string): Promise<Snapshot> {
   const response = await fetch(`${API}/v1/projects/${PROJECT_REF}/database/query`, {
     method: "POST",
     headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
@@ -302,7 +302,7 @@ export function safeCode(body: unknown, status: number | null): string {
       : `http_${status}`;
 }
 
-async function callRecorderOnce(
+export async function callRecorderOnce(
   serviceKey: string,
   records: readonly ObservationRecord[],
 ): Promise<RecorderResult> {
