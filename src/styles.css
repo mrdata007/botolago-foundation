@@ -913,6 +913,24 @@ html[dir="rtl"] .lucide-arrow-left {
   animation: pop var(--duration-sheet) var(--ease-emphasized) both;
 }
 
+/* The tab bar's newly active icon: a small bounce, with no fade, so the icon
+   is never hidden if the bar is drawn again part-way through. */
+@keyframes tab-pop {
+  0% {
+    transform: scale(0.82);
+  }
+  55% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@utility tab-pop {
+  animation: tab-pop var(--duration-sheet) var(--ease-emphasized) both;
+}
+
 /* A number that just went up or down: a green or red wash that fades out. */
 @keyframes flash-up {
   from {
@@ -963,6 +981,86 @@ html[dir="rtl"] .lucide-arrow-left {
 @utility wiggle {
   transform-origin: 50% 10%;
   animation: wiggle var(--duration-hero) var(--ease-standard) 1;
+}
+
+/* ------------------------------------------------------------------ */
+/* Page transitions                                                   */
+/* src/lib/page-transition.ts picks the kind per navigation. The page  */
+/* is the `root` group; the bottom bar is held still in its own group  */
+/* (`bottom-nav`). --vt-dir is +1 left-to-right and -1 right-to-left, */
+/* so a page arrives from the reading side in Arabic too. No          */
+/* transition runs under reduced motion: the router asks first, and   */
+/* the rule at the end of this block is the belt to that braces.      */
+/* ------------------------------------------------------------------ */
+:root {
+  --vt-dir: 1;
+}
+:root[dir="rtl"] {
+  --vt-dir: -1;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duration-route);
+  animation-timing-function: var(--ease-standard);
+}
+
+@keyframes vt-out-forward {
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--vt-dir) * -16px));
+  }
+}
+@keyframes vt-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--vt-dir) * 24px));
+  }
+}
+@keyframes vt-out-back {
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--vt-dir) * 16px));
+  }
+}
+@keyframes vt-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--vt-dir) * -24px));
+  }
+}
+
+:root:active-view-transition-type(forward)::view-transition-old(root) {
+  animation-name: vt-out-forward;
+}
+:root:active-view-transition-type(forward)::view-transition-new(root) {
+  animation-name: vt-in-forward;
+}
+:root:active-view-transition-type(back)::view-transition-old(root) {
+  animation-name: vt-out-back;
+}
+:root:active-view-transition-type(back)::view-transition-new(root) {
+  animation-name: vt-in-back;
+}
+
+/* The bottom bar is the same bar on both sides: show only the new one, at
+   once, so nothing cross-fades or doubles. (Its pill slides by itself.) */
+::view-transition-old(bottom-nav) {
+  display: none;
+}
+::view-transition-new(bottom-nav) {
+  animation: none;
+}
+::view-transition-group(bottom-nav) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 
 /* Live dot — a slow fade in and out, 1.5s a cycle (after premierleague.com).

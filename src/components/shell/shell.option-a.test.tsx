@@ -124,9 +124,11 @@ describe("Option A shell — bottom nav", () => {
   const nav = code("src/components/shell/BottomNav.tsx");
 
   it("paints the action-gradient pill behind the ACTIVE icon only", () => {
+    // One sliding pill once measured; before that the active item paints its own.
     expect(nav).toContain(
-      'style={active ? { backgroundImage: "var(--ui-grad-action)" } : undefined}',
+      'style={active && !slide ? { backgroundImage: "var(--ui-grad-action)" } : undefined}',
     );
+    expect(nav).toContain('backgroundImage: "var(--ui-grad-action)"');
     expect(nav).toContain("text-[color:var(--ui-ink-deep)]");
     expect(nav).toContain("h-8 w-14");
     expect(nav).toContain("ui.radius.full");

@@ -18,19 +18,104 @@
 // `--bottomnav-h` in styles.css computes, term for term (76px in French,
 // 82px in Arabic, whose micro line is taller). Change one, change both.
 //
-// RTL-safe (no physical utilities) and reduced-motion-safe (the global
-// media query in styles.css neutralises the transition).
+// The pill is ONE element that slides to the active item when the route
+// changes, rather than a background that appears on one item and vanishes from
+// another. It is placed from the active icon's measured position, so it follows
+// the layout in either direction and at any width. Until it has been measured
+// (the server render, the first paint) the active item paints its own pill, so
+// the bar is right with no script. The newly active icon pops once.
+//
+// RTL-safe (no physical utilities in the markup; the pill's offsets are
+// measured, so they are right in both directions) and reduced-motion-safe (the
+// global media query in styles.css neutralises the transitions).
 
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { isPrimaryRouteActive, primaryNavItems } from "./primary-nav";
 
+/**
+ * Where the pill was and which tab was active when the last bar went away.
+ * Each page renders its own bar, so a bar that is new on a page starts here
+ * and slides on from where the last one left off. Written only in effects,
+ * so the server (which shares this module between requests) never reads it
+ * and the first client render matches the server's.
+ */
+let lastPlacement: { to: string; x: number; y: number } | null = null;
+
+/** When the last pop began, so a bar drawn again part-way through carries on. */
+let lastPop: { to: string; at: number } | null = null;
+const POP_MS = 320;
+
 export function BottomNav() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  const activeTo = primaryNavItems.find((item) => isPrimaryRouteActive(pathname, item.to))?.to;
+  const rowRef = useRef<HTMLDivElement>(null);
+  const iconRefs = useRef(new Map<string, HTMLSpanElement>());
+  // Where the sliding pill sits, from the active icon. Null until measured.
+  const [slide, setSlide] = useState<{ x: number; y: number } | null>(() =>
+    lastPlacement ? { x: lastPlacement.x, y: lastPlacement.y } : null,
+  );
+  // Slides are switched on only once the pill has somewhere to slide from, so
+  // it is never seen travelling in from the corner.
+  const [settled, setSettled] = useState(() => lastPlacement !== null);
+  const pillRef = useRef<HTMLSpanElement>(null);
+  // The icon that just became active, for the one-off pop; `elapsed` is how far
+  // into it a bar that was drawn again part-way through already is.
+  const [popped, setPopped] = useState<{ to: string; elapsed: number } | null>(() =>
+    lastPop && lastPop.to === lastPlacement?.to && performance.now() - lastPop.at < POP_MS
+      ? { to: lastPop.to, elapsed: performance.now() - lastPop.at }
+      : null,
+  );
+  const previousActive = useRef(lastPlacement?.to);
+
+  const measure = useCallback(() => {
+    const icon = activeTo ? iconRefs.current.get(activeTo) : undefined;
+    if (!icon) {
+      setSlide(null);
+      return;
+    }
+    const x = icon.offsetLeft;
+    const y = icon.offsetTop;
+    // Let the pill's current spot be computed before it is given the new one,
+    // or a bar that has just mounted would jump instead of slide.
+    pillRef.current?.getBoundingClientRect();
+    setSlide((was) => (was && was.x === x && was.y === y ? was : { x, y }));
+  }, [activeTo]);
+
+  // `lang` is a dependency: the Arabic micro line is taller, which moves the pill.
+  useLayoutEffect(measure, [measure, lang]);
+
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!row || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [measure]);
+
+  useEffect(() => {
+    if (!slide || settled) return;
+    const frame = requestAnimationFrame(() => setSettled(true));
+    return () => cancelAnimationFrame(frame);
+  }, [slide, settled]);
+
+  useEffect(() => {
+    if (lastPlacement && previousActive.current !== activeTo && activeTo) {
+      lastPop = { to: activeTo, at: performance.now() };
+      setPopped({ to: activeTo, elapsed: 0 });
+    }
+    previousActive.current = activeTo;
+  }, [activeTo]);
+
+  useEffect(() => {
+    if (activeTo && slide) lastPlacement = { to: activeTo, x: slide.x, y: slide.y };
+  }, [activeTo, slide]);
 
   return (
     <nav
@@ -43,10 +128,32 @@ export function BottomNav() {
         "pt-2",
         ui.shadow.raised,
       )}
+      // Held still while the page behind it changes (see the view transitions
+      // in styles.css), so the bar does not flicker between pages.
+      style={{ viewTransitionName: "bottom-nav" }}
     >
       {/* Under 360px the bar gives its side padding to the items: at 320px
           the Arabic "الملف الشخصي" (77px) had 72px and lost its last letter. */}
-      <div className="mx-auto flex max-w-2xl items-stretch justify-between px-2 max-[359px]:px-1">
+      <div
+        ref={rowRef}
+        className="relative mx-auto flex max-w-2xl items-stretch justify-between px-2 max-[359px]:px-1"
+      >
+        {slide ? (
+          <span
+            aria-hidden
+            ref={pillRef}
+            className={cn("pointer-events-none absolute h-8 w-14", ui.radius.full)}
+            style={{
+              left: 0,
+              top: 0,
+              transform: `translate(${slide.x}px, ${slide.y}px)`,
+              backgroundImage: "var(--ui-grad-action)",
+              transition: settled
+                ? "transform var(--duration-sheet) var(--ease-emphasized)"
+                : "none",
+            }}
+          />
+        ) : null}
         {primaryNavItems.map((item) => {
           const active = isPrimaryRouteActive(pathname, item.to);
           const Icon = item.icon;
@@ -82,17 +189,30 @@ export function BottomNav() {
                   gradient under it: 12.4:1 light, 10.7:1 dark. */}
               <span
                 aria-hidden
+                ref={(node) => {
+                  if (node) iconRefs.current.set(item.to, node);
+                  else iconRefs.current.delete(item.to);
+                }}
                 className={cn(
-                  "grid h-8 w-14 shrink-0 place-items-center",
+                  "relative grid h-8 w-14 shrink-0 place-items-center",
                   ui.radius.full,
                   "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
                   active
                     ? "text-[color:var(--ui-ink-deep)]"
                     : "group-hover:bg-[color:var(--ui-surface-sunken)]",
                 )}
-                style={active ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
+                style={active && !slide ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
               >
-                <Icon className="h-5 w-5 shrink-0" />
+                <span
+                  className={cn("inline-flex", active && popped?.to === item.to && "tab-pop")}
+                  style={
+                    active && popped?.to === item.to && popped.elapsed > 0
+                      ? { animationDelay: `-${Math.round(popped.elapsed)}ms` }
+                      : undefined
+                  }
+                >
+                  <Icon className="h-5 w-5 shrink-0" />
+                </span>
               </span>
               {/* BG-0124 — no local `leading-*` here. A `leading-none` on
                   this span, combined with `truncate`, once cut 2px off the

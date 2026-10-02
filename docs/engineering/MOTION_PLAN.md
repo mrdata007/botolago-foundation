@@ -1,6 +1,6 @@
 # Motion plan — making the app feel alive
 
-Status: **PRs 1–3 built (Phase 0 toolkit, #4 press, #5 skeletons, #3 stagger, #1 count-up, #2 sliding rows); the rest not started.** Covers the 13 animation ideas agreed with the
+Status: **PRs 1–4 built (Phase 0 toolkit, #4 press, #5 skeletons, #3 stagger, #1 count-up, #2 sliding rows, #11 page transitions, #12 tab bar); the rest not started.** Covers the 13 animation ideas agreed with the
 owner on 2026-10-02. Nothing here is built yet.
 
 ## What already exists (build on it, don't duplicate it)
@@ -116,6 +116,8 @@ _Built. Notes: `AnimatedNumber` renders plain text (a text change outside a live
   gameweek) — only animate when the same table updates.
 
 ## Phase 3 — moving between pages
+
+_Built. Notes: every page renders its own `AppShell`, so the tab bar is a new component on each navigation. The pill's last position is therefore remembered at module level (written only in effects, so the server never reads it) and a new bar starts there and slides. The pop is a scale-only bounce (`tab-pop`) so the icon is never hidden if the bar is redrawn part-way through. Page transitions: `src/lib/page-transition.ts` picks forward / back / fade; nothing runs for search-only changes, under reduced motion, or on the first page. Measured: the pill slides in French, mirrors in Arabic, and jumps under reduced motion; back restores the scroll position. The tab bar's pill-only background contract test (`shell.option-a.test.tsx`) was updated to the sliding pill._
 
 **#11 Smooth page changes.**
 - Turn on TanStack Router's built-in view transitions
