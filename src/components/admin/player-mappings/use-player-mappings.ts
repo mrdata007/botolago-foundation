@@ -201,6 +201,12 @@ export interface MappingActions {
   cancel(proposal: ProposalDto, reason: string): Promise<void>;
   addNote(proposal: ProposalDto, note: string): Promise<void>;
   refreshEvidence(proposal: ProposalDto): Promise<void>;
+  /**
+   * Execute ONE approved proposal, once, through the reviewed execute RPC.
+   * Never batches and never runs on its own: a person asked for exactly this
+   * proposal, having read exactly this fingerprint.
+   */
+  execute(proposal: ProposalDto): Promise<void>;
 }
 
 /**
@@ -213,6 +219,16 @@ export function createMappingActions(
   context: () => RepositoryContext,
 ): MappingActions {
   const key = () => globalThis.crypto.randomUUID();
+  // One idempotency key per proposal for the life of this screen: a double press
+  // or a retry after a lost response replays the same operation, never a second one.
+  const executeKeys = new Map<string, string>();
+  const executeKeyFor = (proposalId: string) => {
+    const known = executeKeys.get(proposalId);
+    if (known) return known;
+    const fresh = key();
+    executeKeys.set(proposalId, fresh);
+    return fresh;
+  };
   const assertOk = (result: { ok?: boolean; code?: string }) => {
     if (result.ok === false)
       throw mapMappingError({ message: result.code ?? "mapping_unavailable" });
@@ -263,6 +279,25 @@ export function createMappingActions(
     },
     async refreshEvidence(proposal) {
       assertOk(await repository.refreshProposalEvidence(proposal.id, key(), context()));
+    },
+    async execute(proposal) {
+      // Read the proposal again, now: the person confirmed the fingerprint they
+      // were shown, so a proposal that has moved since is never executed.
+      const fresh = await repository.getMappingProposal(proposal.id, context());
+      if (fresh.status === "executed")
+        throw mapMappingError({ message: "operation_already_executed" });
+      if (fresh.status !== "approved" || fresh.effectiveStatus === "expired")
+        throw mapMappingError({
+          message:
+            fresh.effectiveStatus === "expired" ? "approval_expired" : "proposal_not_approved",
+        });
+      if (fresh.fingerprint !== proposal.fingerprint)
+        throw mapMappingError({ message: "fingerprint_mismatch" });
+      // The database re-checks everything again (staff, AAL2, recent sign-in,
+      // the fingerprint of the stored row, the evidence) and writes exactly once.
+      assertOk(
+        await repository.executeMappingProposal(proposal.id, executeKeyFor(proposal.id), context()),
+      );
     },
   };
 }

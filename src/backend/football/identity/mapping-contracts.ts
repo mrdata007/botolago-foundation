@@ -4,8 +4,9 @@ import { z } from "zod";
  * The repository contract of the player-mapping workflow (migrations
  * 20261001160000 and 20261001161000). The future admin screen calls this and
  * nothing else: it infers no authority from the browser and never touches a
- * table. Every durable decision has a human proposer and a DIFFERENT human
- * approver; nothing here executes a decision on its own.
+ * table. Every durable decision has a human proposer and an approver (the same
+ * person only while the owner's single-approver switch is on); nothing here
+ * executes a decision on its own.
  */
 export const MAPPING_PROVIDERS = ["sofascore", "flashscore"] as const;
 export type MappingProvider = (typeof MAPPING_PROVIDERS)[number];
