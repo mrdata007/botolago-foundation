@@ -1,12 +1,18 @@
 # Production: first player mapping, and the two-person rule restored (2026-10-02)
 
-Two things happened on Production V2 (`tkewgajrljbwgwedqsxn`) on 2026-10-02, in this
+> **Latest state (same day, see section 3): the single-approver switch is ON again** by
+> owner decision (controlled single-operator mapping mode). Section 2 below is the
+> history of the temporary switch-off.
+
+Three things happened on Production V2 (`tkewgajrljbwgwedqsxn`) on 2026-10-02, in this
 order:
 
 1. The first reviewed Sofascore mapping was written, by the owner, from the owner's
    authenticated MFA session, while the temporary single-approver switch was ON.
 2. The single-approver switch was turned OFF again, so two different qualified
-   people are required for every later mapping.
+   people were required for every later mapping.
+3. Later that day the owner decided there will be no mandatory second reviewer for now,
+   and the switch was turned ON again (single-operator mapping mode).
 
 The owner accepted the first mapping as the completed single-approver bootstrap test.
 Result of step 2: `DUAL_CONTROL_RESTORED_FIRST_MAPPING_PRESERVED`.
@@ -130,3 +136,76 @@ independently):
 No second proposal or mapping was created, approved or executed. Still not
 authorised: a second proposal, bulk mapping, automatic proposals or approvals,
 reconciler integration, mapping suggestions that write, and any Fantasy scoring change.
+
+## 3. Later the same day: single-operator mapping mode restored (switch ON)
+
+Owner decision, 2026-10-02: **no mandatory second human reviewer for now.** BotolaGO
+operates in controlled single-operator mapping mode: the same qualified operator may
+propose, self-approve and explicitly execute, as three separate deliberate actions.
+The two-person rule stays in the database: `allow_self_approval = false` makes a
+different human necessary again.
+
+Result: `SINGLE_OPERATOR_MAPPING_MODE_RESTORED`.
+
+| What                            | Value                                                                                                                                                                                     |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Change                          | `app_private.football_mapping_settings.allow_self_approval`: `false` to `true`, one row, nothing else (the same reviewed switch; no second implementation, no migration)                  |
+| Reviewed script                 | `scripts/backend/data-mapping-single-approver-switch-on.sql` (PR #309)                                                                                                                    |
+| Script SHA-256 (rehearsal form) | `b45ca1bfa2bc0bf0d9101c1f775b0dac76bd0fbdcb97358688d3ed6bbcbae0dd`                                                                                                                        |
+| Commit version SHA-256          | `e747160ed600041825b6ad1732dd86655cfe32e57ca1ca80c955d72ccfdc35a9`                                                                                                                        |
+| Main commit                     | `07bb16011c0fa92ed659a450d1565b0838e93a5a`                                                                                                                                                |
+| Rehearsal (rolled back)         | [37047028658](https://github.com/mrdata007/botolago-foundation/actions/runs/37047028658), passed, production identical afterwards                                                         |
+| Real apply (once)               | [37047274663](https://github.com/mrdata007/botolago-foundation/actions/runs/37047274663), `SINGLE_OPERATOR_SWITCH_ON_APPLIED_AND_VERIFIED`                                                |
+| Screen                          | PR #310 (live as release `07bb1601`): the banner **MODE RELECTURE PAR UN SEUL OPÉRATEUR** (Arabic: وضع المراجعة بمشغِّل واحد) shows only while the server's `selfApprovalAllowed` is true |
+
+The script refused to run unless: exactly one settings row, switch OFF, exactly one
+proposal and it is the executed first mapping, no pending/approved/held proposal,
+1,542 mapping rows with exactly one reviewed-provider row, the first mapping row and
+the proposal byte-identical, the first candidate the only mapped one, 1,004
+candidates, 1,006 observations, the reviewed text of the functions that read the
+switch, no Fantasy gameweek finalizing, and no other database session writing.
+
+### What did not change
+
+The workflow is still: review evidence, propose, review the exact proposal, approve,
+then explicitly execute. Never propose-then-auto-approve; never approve-then-auto-execute;
+no one-click mapping; no mapping from a ranking or category. `football.manage_mappings`, a
+signed-in human, AAL2, recent sign-in, the written reason, the exact fingerprint, the
+evidence re-check, idempotency, the append-only audit and the separate execute step are
+all as they were.
+
+### Behaviour proof (rolled back, nothing left in production)
+
+One transaction in production that flipped the switch, exercised the live functions as the
+lone reviewer, flipped it back, and ended in a deliberate error (a re-read showed
+production back to the exact baseline):
+
+- switch ON: availability `selfApprovalAllowed: true`, `secondReviewerRequired: false`,
+  `qualifiedReviewersAvailable: 0`; the proposer's approve call is no longer refused (it
+  reaches the state check: `proposal_not_pending`);
+- no second factor: `mfa_assurance_insufficient`; stale sign-in: `recent_auth_required`;
+- execution is its own call (`operation_already_executed` on the finished proposal);
+- switch OFF again: `self_approval_denied`, and `secondReviewerRequired: true`.
+
+Fingerprint, stale or moved evidence, and execution as a separate step were proven on the
+repo's database tests, run on local Postgres 16 (231/231, section 15 and 12b) and in CI:
+15.5 and 15.8 (the proposer approves their own proposal), 15.6 and 3.9 (another
+fingerprint is refused), 7.16, 8.3, 10.13 and 12b.8 (moved evidence or a changed row holds
+or refuses execution), 15.11 (a self-approved proposal executes as its own step), 15.14 and
+15.15 (turning the switch off stops it and restores the refusal).
+
+### After the switch was ON (independent read)
+
+Switch `true`; one settings row; reviewer availability `selfApprovalAllowed: true`,
+`secondReviewerRequired: false`. Identical to before: 1 proposal (executed), 0 open,
+1,542 mapping rows, 1 reviewed-provider row, the first mapping active with digest
+`41e82d12a6a5dc65516ac91dad70c605`, 1,004 candidates (1 mapped), 1,006 observations, 9
+audit events (digest `6843d79681f74ebc3c2199a460eb2392`), cron digest
+`5e3bb0b2d3bfc5d697ff50dfe78cfd06`, gameweek digest `9568bcf1c092fca15a0bdf9a08c117ca`, all
+40 Fantasy table counts, latest migration `20261002110000`. No mapping, proposal or audit
+event was created.
+
+The original reason on the first mapping, "claude testing", is unchanged; the explanation
+in section 1 remains documentation only. Still not authorised: a second proposal or
+mapping, batch proposals, automatic approval or execution, reconciler integration,
+candidate refresh, provider re-collection, and Fantasy scoring work.
