@@ -68,6 +68,9 @@ class FakeGateway implements NotificationWorkerGateway {
   async claimDeliveries(): Promise<readonly ClaimedNotificationDelivery[]> {
     return [];
   }
+  async claimPushDeliveries(): Promise<readonly ClaimedNotificationDelivery[]> {
+    return [];
+  }
   async recordDelivery() {}
   async invalidateDevice() {}
 }

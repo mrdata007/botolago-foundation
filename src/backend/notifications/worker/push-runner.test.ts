@@ -48,7 +48,10 @@ function gatewayWith(deliveries: ClaimedNotificationDelivery[]) {
   const recorded: Array<{ id: string; delivered: boolean; code: string | null }> = [];
   const invalidated: string[] = [];
   const gateway = {
-    claimDeliveries: async () => deliveries,
+    claimDeliveries: async () => {
+      throw new Error("the general claim hands out e-mail; push must not use it");
+    },
+    claimPushDeliveries: async () => deliveries,
     recordDelivery: async (
       d: ClaimedNotificationDelivery,
       r: { delivered: boolean; stableErrorCode: string | null },
@@ -121,7 +124,7 @@ describe("runPushDispatch", () => {
   test("refuses to start with bad settings, before claiming anything", async () => {
     let claimed = false;
     const gateway = {
-      claimDeliveries: async () => {
+      claimPushDeliveries: async () => {
         claimed = true;
         return [];
       },

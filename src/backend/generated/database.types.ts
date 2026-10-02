@@ -1742,6 +1742,10 @@ export type Database = {
         Args: { p_lease_seconds?: number; p_limit?: number }
         Returns: Json
       }
+      service_claim_push_deliveries: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
       service_complete_fantasy_gameweek: {
         Args: { p_calculation_version: number; p_gameweek_id: string }
         Returns: Json

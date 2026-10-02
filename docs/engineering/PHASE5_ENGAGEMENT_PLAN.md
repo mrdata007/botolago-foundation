@@ -118,12 +118,14 @@ site to the Home Screen first.
    `WEB_PUSH_VAPID_PUBLIC_KEY` and `VITE_WEB_PUSH_PUBLIC_KEY`; set `WEB_PUSH_SUBJECT`
    (`mailto:` address) in environment `production-admin-activation`.
 2. Publish the new privacy-policy version (what is stored, why, how to switch it off).
-3. **Decide who creates the push messages** (nothing creates them in production today):
-   (A) extend the existing "match starting" e-mail job to also queue push deliveries
-   (a reviewed database migration, no duplicate inbox items), or
-   (B) a TypeScript path using `service_create_user_notification` with
-   `NOTIFICATION_PUSH_PROVIDER=web_push` (no migration, but e-mail-on users would get a
-   second inbox item).
+3. **Who creates the push messages: option A chosen (2 Oct).** Migration
+   `20261002120000_match_reminder_push.sql` (written, with a pgTAP test; **not applied to
+   production**, which needs its own approval and dry run) adds the phone alert to the
+   existing "match starting" job: e-mail users get it on the same inbox message (no
+   duplicates); phone-only users get their inbox message made by the new step. It honours
+   quiet hours, never queues after kick-off, and adds a push-only claim
+   (`service_claim_push_deliveries`) so the phone dispatcher can never touch e-mail. It
+   works only while the e-mail job's mode is on, because it rides its schedule.
 4. Run the dispatcher workflow with `CHECK_PUSH_CONFIGURATION` first, then set the flag
    to `true`.
 

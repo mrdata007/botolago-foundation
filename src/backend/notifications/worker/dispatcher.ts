@@ -13,8 +13,12 @@ export async function dispatchNotificationBatch(
   gateway: NotificationWorkerGateway,
   providers: ReadonlyMap<string, NotificationDeliveryProvider>,
   limit = 100,
+  claim: "all" | "push" = "all",
 ): Promise<DispatchResult> {
-  const deliveries = await gateway.claimDeliveries(limit);
+  const deliveries =
+    claim === "push"
+      ? await gateway.claimPushDeliveries(limit)
+      : await gateway.claimDeliveries(limit);
   const result = { claimed: deliveries.length, sent: 0, failed: 0, invalidatedDevices: 0 };
   for (const delivery of deliveries) {
     const provider = providers.get(`${delivery.channel}:${delivery.providerKey}`);

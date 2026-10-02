@@ -36,6 +36,9 @@ class DeliveryGateway implements NotificationWorkerGateway {
   async claimDeliveries() {
     return [delivery];
   }
+  async claimPushDeliveries() {
+    return [delivery];
+  }
   async recordDelivery() {
     this.recorded += 1;
   }

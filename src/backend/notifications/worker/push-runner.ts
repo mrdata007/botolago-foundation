@@ -61,5 +61,6 @@ export async function runPushDispatch(
     gateway,
     new Map([[`${provider.channel}:${provider.key}`, provider]]),
     configuration.limit,
+    "push",
   );
 }

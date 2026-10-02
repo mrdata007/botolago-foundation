@@ -80,6 +80,8 @@ export interface NotificationWorkerGateway {
     complete: boolean,
   ): Promise<void>;
   claimDeliveries(limit: number): Promise<readonly ClaimedNotificationDelivery[]>;
+  /** Phone (web push) deliveries only; never hands out e-mail. */
+  claimPushDeliveries(limit: number): Promise<readonly ClaimedNotificationDelivery[]>;
   recordDelivery(
     delivery: ClaimedNotificationDelivery,
     result: {
@@ -206,6 +208,14 @@ export class SupabaseNotificationWorkerGateway implements NotificationWorkerGate
         p_limit: limit,
         p_lease_seconds: 120,
       });
+    if (error) throw mapNotificationError(error);
+    return z.array(claimedDeliverySchema).parse(data);
+  }
+
+  async claimPushDeliveries(limit: number): Promise<readonly ClaimedNotificationDelivery[]> {
+    const { data, error } = await this.client
+      .schema("api")
+      .rpc("service_claim_push_deliveries", { p_limit: limit, p_lease_seconds: 120 });
     if (error) throw mapNotificationError(error);
     return z.array(claimedDeliverySchema).parse(data);
   }
