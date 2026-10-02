@@ -1,0 +1,83 @@
+name: Production V2 single-approver switch APPLY (one-shot, commits once)
+
+# ONE-SHOT application of the single-approver switch (migration
+# 20261002100000) to Production V2, in one transaction, by the reviewed script
+# with its single final `rollback;` turned into `commit;` and nothing else
+# changed. It exists only to be run after the owner has seen the rehearsal
+# (run 36999714135) and approved that one operation. The runner pins the
+# script, its commit version and the migration by sha256, re-reads production,
+# never retries, classifies the outcome from a fresh read, and deletes nothing.
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact main commit approved for this one production apply
+        required: true
+        type: string
+      confirmation:
+        description: Type APPLY_SINGLE_APPROVER_PRODUCTION
+        required: true
+        type: string
+
+concurrency:
+  group: botolago-production-v2-mutation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    name: Apply the single-approver switch to Production V2 and verify
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production-admin-activation
+    env:
+      CONFIRMATION: ${{ inputs.confirmation }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+
+    steps:
+      - name: Enforce dispatch guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
+            printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          fi
+          [[ "${GITHUB_RUN_ATTEMPT:-}" == "1" ]] || { echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"; exit 2; }
+          [[ "$EXPECTED_COMMIT" == "$GITHUB_SHA" ]] || { echo "The dispatched commit is not the current main commit."; exit 2; }
+          [[ "$GITHUB_REF" == "refs/heads/main" ]] || { echo "Apply may run only from main."; exit 2; }
+          [[ "$CONFIRMATION" == "APPLY_SINGLE_APPROVER_PRODUCTION" ]] || { echo "Invalid confirmation."; exit 2; }
+          [[ "${SUPABASE_PRODUCTION_PROJECT_REF:-}" == "tkewgajrljbwgwedqsxn" ]] || { echo "Production project-ref guard failed."; exit 2; }
+          [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]] || { echo "Protected credential injection failed."; exit 2; }
+          echo "Dispatch guards: PASS"
+
+      - name: Check out the reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Apply once (never retried) and verify production
+        shell: bash
+        run: |
+          set -euo pipefail
+          export EVIDENCE_DIR="$RUNNER_TEMP/single-approver-apply-evidence"
+          install -d -m 0700 "$EVIDENCE_DIR"
+          python3 scripts/backend/production-mapping-single-approver-apply.py
+
+      - name: Upload sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: single-approver-apply-${{ github.run_id }}
+          path: ${{ runner.temp }}/single-approver-apply-evidence
+          if-no-files-found: warn
+          retention-days: 30
