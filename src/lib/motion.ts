@@ -104,6 +104,19 @@ export function changeDirection(
 }
 
 /**
+ * Which flash a change earns: green when it is good news, red when it is not.
+ * `better` says which way is good — a score going up is, a rank number going
+ * up (12th to 14th) is not. Null when nothing moved.
+ */
+export function flashClass(
+  moved: ChangeDirection | null,
+  better: "higher" | "lower" = "higher",
+): "flash-up" | "flash-down" | null {
+  if (moved === null) return null;
+  return (moved === "up") === (better === "higher") ? "flash-up" : "flash-down";
+}
+
+/**
  * The direction a number just moved, for `holdMs` after it changed, then null.
  * It is null on the first render and under reduced motion. Whether "up" is
  * good news is the caller's call (a rank number going up is a worse rank).

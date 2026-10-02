@@ -1,6 +1,6 @@
 # Motion plan — making the app feel alive
 
-Status: **PRs 1 and 2 built (Phase 0 toolkit, #4 press, #5 skeletons, #3 stagger); the rest not started.** Covers the 13 animation ideas agreed with the
+Status: **PRs 1–3 built (Phase 0 toolkit, #4 press, #5 skeletons, #3 stagger, #1 count-up, #2 sliding rows); the rest not started.** Covers the 13 animation ideas agreed with the
 owner on 2026-10-02. Nothing here is built yet.
 
 ## What already exists (build on it, don't duplicate it)
@@ -96,6 +96,8 @@ Check: Playwright run on a 375px screen in light, dark and Arabic; record a
 short video of each screen to review.
 
 ## Phase 2 — numbers and tables that react
+
+_Built. Notes: `AnimatedNumber` renders plain text (a text change outside a live region is not announced, so no hidden duplicate is needed). Count-up and flash are on the Fantasy rank card (points and rank), the Home Fantasy card, the Fantasy points total, the league table and the predictions board. Rows slide on the league table, the predictions board and the standings. Not done: the Pépites ranking (its rows re-order when the reader changes the sort, which should not animate 100+ rows), `PointsChart` labels, and Pépites scores (static per edition)._
 
 **#1 Numbers that count up.**
 - Use `useCountUp` in: `MyRankCard`, `FantasySummaryCard`, points on

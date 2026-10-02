@@ -1904,15 +1904,19 @@ export function UiTR({
   highlighted = false,
   onClick,
   className,
+  flipKey,
 }: {
   children: ReactNode;
   /** "This row is you" in a standings table. */
   highlighted?: boolean;
   onClick?: () => void;
   className?: string;
+  /** A stable id for the row: with `useFlip` on the table, it slides when it moves. */
+  flipKey?: string;
 }) {
   return (
     <tr
+      data-flip-key={flipKey}
       onClick={onClick}
       className={cn(
         ui.rule.block,

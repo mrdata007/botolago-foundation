@@ -4,6 +4,7 @@ import {
   changeDirection,
   countUpValue,
   easeOutCubic,
+  flashClass,
   flipOffsets,
   prefersReducedMotion,
   tokenMs,
@@ -111,5 +112,21 @@ describe("flipOffsets", () => {
       ["b", 50],
     ]);
     expect(flipOffsets(rows, new Map(rows)).size).toBe(0);
+  });
+});
+
+describe("flashClass", () => {
+  it("is green when a higher-is-better number rises, red when it falls", () => {
+    expect(flashClass("up", "higher")).toBe("flash-up");
+    expect(flashClass("down", "higher")).toBe("flash-down");
+  });
+
+  it("is turned round for a rank, where a lower number is the better one", () => {
+    expect(flashClass("down", "lower")).toBe("flash-up");
+    expect(flashClass("up", "lower")).toBe("flash-down");
+  });
+
+  it("is nothing when the number did not move", () => {
+    expect(flashClass(null)).toBeNull();
   });
 });

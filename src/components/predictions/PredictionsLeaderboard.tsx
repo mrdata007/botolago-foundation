@@ -19,7 +19,9 @@ import {
   UiTHead,
   UiTR,
 } from "@/components/ui-kit";
+import { AnimatedNumber } from "@/components/common/AnimatedNumber";
 import { useI18n } from "@/i18n/provider";
+import { useFlip } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { predictionsService } from "@/services/predictions";
 import { formatNumber, matchesLeftLabel, roundsPlayedLabel } from "./predictions-copy";
@@ -63,8 +65,19 @@ export function PredictionsLeaderboard({
   const first = board.data?.pages[0] ?? null;
   const rows = board.data?.pages.flatMap((page) => page?.items ?? []) ?? [];
 
+  // Rows glide when a refresh re-orders the board; switching journée or
+  // season shows a different board, so it does not slide.
+  const boardRef = useFlip<HTMLElement>(
+    rows.map((row) => row.id),
+    `${scope}:${scope === "round" ? roundNumber : "season"}`,
+  );
+
   return (
-    <section className="flex flex-col gap-3" aria-labelledby="predictions-board-title">
+    <section
+      className="flex flex-col gap-3"
+      aria-labelledby="predictions-board-title"
+      ref={boardRef}
+    >
       <h2 id="predictions-board-title" className="sr-only">
         {t("predictions.tab.board")}
       </h2>
@@ -117,7 +130,7 @@ export function PredictionsLeaderboard({
             </UiTHead>
             <UiTBody>
               {rows.map((row) => (
-                <UiTR key={row.id} highlighted={row.isMe}>
+                <UiTR key={row.id} flipKey={row.id} highlighted={row.isMe}>
                   <UiTD strong>
                     <bdi>{formatNumber(row.rank, lang)}</bdi>
                     {row.tied ? (
@@ -133,7 +146,7 @@ export function PredictionsLeaderboard({
                     <span dir="auto">{row.isMe ? t("predictions.board.you") : row.name}</span>
                   </UiTD>
                   <UiTD numeric strong>
-                    {formatNumber(row.points, lang)}
+                    <AnimatedNumber value={row.points} format={(n) => formatNumber(n, lang)} />
                   </UiTD>
                   <UiTD numeric>{formatNumber(row.exact, lang)}</UiTD>
                   {scope === "season" ? (

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import createTeamArt from "@/assets/illustrations/create-team.webp";
+import { AnimatedNumber } from "@/components/common/AnimatedNumber";
 import type { FantasySummary } from "@/types/domain";
 import { useI18n } from "@/i18n/provider";
 import { ui } from "@/components/ui-kit";
@@ -71,12 +72,17 @@ export function FantasySummaryCard({ summary }: { summary: FantasySummary }) {
               "[font-weight:var(--ui-weight-strong)]",
             )}
           >
-            {t("fpl.rank")} <bdi className={ui.text.tabular}>{rank}</bdi>
+            {t("fpl.rank")}{" "}
+            <bdi className={ui.text.tabular}>
+              <AnimatedNumber value={summary.overallRank ?? 0} format={nf.format} better="lower" />
+            </bdi>
           </span>
         )}
       </span>
       <span aria-hidden className="flex shrink-0 items-baseline gap-1">
-        <bdi className={ui.score.hero}>{points}</bdi>
+        <bdi className={ui.score.hero}>
+          <AnimatedNumber value={summary.gameweekPoints} format={nf.format} />
+        </bdi>
         <span className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}>
           {pointsUnit(summary.gameweekPoints, t)}
         </span>

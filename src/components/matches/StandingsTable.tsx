@@ -4,6 +4,7 @@ import { clubLabel } from "@/components/fantasy/club-identity";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle } from "@/lib/club-palette";
+import { useFlip } from "@/lib/motion";
 import {
   sharedPositions,
   tableZones,
@@ -67,6 +68,12 @@ export function StandingsTable({
 }) {
   const { t, tr, lang } = useI18n();
   const zoned = view === "overall" || view === "form";
+  // A club glides to its new place when a result moves it. A different view or
+  // season (a different caption) is a different table, so it does not slide.
+  const tableRef = useFlip<HTMLDivElement>(
+    rows.map((row) => row.clubId),
+    caption,
+  );
   const figures = view !== "form";
   // The head row's type is `ui.text.label` on the `thead`: 12px, 800, uppercase.
   const head = "py-2";
@@ -83,7 +90,7 @@ export function StandingsTable({
   );
 
   return (
-    <div className={cn("overflow-hidden", ui.surface.card)}>
+    <div className={cn("overflow-hidden", ui.surface.card)} ref={tableRef}>
       <table className="w-full table-fixed border-collapse">
         <caption className="sr-only">{caption}</caption>
         <colgroup>
@@ -153,6 +160,7 @@ export function StandingsTable({
             return (
               <tr
                 key={row.clubId}
+                data-flip-key={row.clubId}
                 data-club={tint?.["data-club"]}
                 style={tint?.style}
                 aria-current={current ? "true" : undefined}

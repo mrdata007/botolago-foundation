@@ -1,6 +1,7 @@
 import { Hourglass, Target, UserPlus } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { AnimatedNumber, FlashOnChange } from "@/components/common/AnimatedNumber";
 import { RankOrdinal } from "@/components/fantasy-lists/RankOrdinal";
 import { rankOrdinal } from "@/components/fantasy-lists/rank-ordinal";
 import { ui, UiIconButton, UiLinkButton, UiRankMovement, UiSkeleton } from "@/components/ui-kit";
@@ -115,10 +116,12 @@ export function MyRankCard({
       >
         {kicker}
         <p className={cn("mt-2", ui.tone.default)}>
-          <RankOrdinal
-            size="hero"
-            parts={rankOrdinal(ranked.rank, lang, t, (value) => nf.format(value))}
-          />
+          <FlashOnChange value={ranked.rank} better="lower">
+            <RankOrdinal
+              size="hero"
+              parts={rankOrdinal(ranked.rank, lang, t, (value) => nf.format(value))}
+            />
+          </FlashOnChange>
         </p>
         <p
           className={cn(
@@ -135,7 +138,7 @@ export function MyRankCard({
           </span>
           <span className="whitespace-nowrap">
             <bdi className={cn(ui.text.tabular, "[font-weight:var(--ui-weight-strong)]")}>
-              {nf.format(ranked.totalScore)}
+              <AnimatedNumber value={ranked.totalScore} format={nf.format} />
             </bdi>{" "}
             <span className={ui.tone.muted}>{pointsUnit(ranked.totalScore, t)}</span>
           </span>
