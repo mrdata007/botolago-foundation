@@ -16,6 +16,8 @@ set search_path = ''
 as $$
 declare current_user_id uuid := auth.uid(); result jsonb;
 begin
+  -- Like every account read: an account with a second factor must have used it.
+  perform app_private.assert_mfa_step_up();
   if current_user_id is null then
     raise exception using errcode = 'PT401', message = 'notification_access_denied';
   end if;

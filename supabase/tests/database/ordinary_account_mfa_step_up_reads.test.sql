@@ -191,6 +191,7 @@ returns table (name text, statement text) language sql stable as $$
     ('api.list_my_notifications', 'select api.list_my_notifications()'),
     ('api.my_notification_unread_count', 'select api.my_notification_unread_count()'),
     ('api.list_my_notification_devices', 'select api.list_my_notification_devices()'),
+    ('api.list_my_match_reminders', 'select api.list_my_match_reminders()'),
     ('api.news_saved_articles', 'select api.news_saved_articles()'),
     ('api.fantasy_hub', 'select api.fantasy_hub(''fr'')'),
     ('api.get_my_fantasy_team', format('select api.get_my_fantasy_team(%L)', pg_temp.id(6))),
@@ -403,8 +404,8 @@ select extensions.is(
    where n.nspname = 'api'
      and p.prosrc ~ 'perform app_private\.assert_mfa_step_up\(\);'
      and has_function_privilege('authenticated', p.oid, 'execute')),
-  75,
-  'the 50 functions of point 5, the two account-deletion functions, the two Pépites weekly email functions (20260926110100), the Pépites error report and 16 staff functions (20260926120000), the photo upload paths (20260926130000), the two admin lists (20260926140000) and following a player (20260926150000) run it'
+  76,
+  'the 50 functions of point 5, the two account-deletion functions, the two Pépites weekly email functions (20260926110100), the Pépites error report and 16 staff functions (20260926120000), the photo upload paths (20260926130000), the two admin lists (20260926140000), following a player (20260926150000) and the match-reminders read (20261002100000) run it'
 );
 select extensions.is(pg_temp.unguarded_api_relations(), '{}'::text[],
   'every api view a signed-in session can read refuses without the step-up, and no other api relation but live scores is readable');
