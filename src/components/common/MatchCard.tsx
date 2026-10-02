@@ -79,19 +79,14 @@ const LIST_FRAME = cn(
 );
 
 /** The same row as a card of its own: the card surface, clipping its edges. */
-const CARD_FRAME = cn(
-  ui.surface.card,
-  "overflow-hidden",
-  "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
-  ui.focus,
-);
+const CARD_FRAME = cn(ui.surface.card, "overflow-hidden", "press-tile", ui.focus);
 
 /** The split live card: a feature surface, lifted off the page. */
 const HERO_FRAME = cn(
   "relative overflow-hidden",
   ui.radius.sheet,
   ui.shadow.lifted,
-  "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+  "press-tile",
   ui.focus,
 );
 

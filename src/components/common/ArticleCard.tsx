@@ -81,8 +81,7 @@ const LEAD_FRAME: PhotoFrame = { sizes: READING_COLUMN_SIZES, ratio: 3 / 2, smRa
 const IMAGE_LED_FRAME: PhotoFrame = { sizes: READING_COLUMN_SIZES, ratio: 16 / 9, smRatio: 8 / 3 };
 
 /** Press feedback shared by both shapes. */
-const PRESS =
-  "transition-[box-shadow,transform] duration-[var(--duration-quick)] ease-[var(--ease-standard)] active:translate-y-px";
+const PRESS = "press-tile";
 
 /** A small separator dot, tinted from the text around it. */
 function Dot({ onPhoto = false }: { onPhoto?: boolean }) {

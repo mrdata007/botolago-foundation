@@ -24,6 +24,7 @@ import {
   PepitesShirt,
   Seg10Bar,
 } from "./PepitesVisuals";
+import { staggerStyle } from "@/lib/motion";
 
 /** What the ranking knows about a player that the edition does not carry. */
 export type PlayerStats = Pick<RankingRow, "minutes" | "goals" | "assists" | "ratingAvg" | "ga90">;
@@ -302,8 +303,8 @@ export function TopTenList({
 }) {
   return (
     <ol className="flex flex-col gap-2" data-testid={testId} start={items[0]?.rank}>
-      {items.map((item) => (
-        <li key={item.player.id}>
+      {items.map((item, index) => (
+        <li key={item.player.id} className="enter-rise stagger" style={staggerStyle(index)}>
           <LeaderboardRow item={item} stats={stats.get(item.player.id)} />
         </li>
       ))}

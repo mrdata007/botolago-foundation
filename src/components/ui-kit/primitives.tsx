@@ -24,7 +24,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Link, useRouter } from "@tanstack/react-router";
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, Info, Loader2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, Info, X } from "lucide-react";
 import type {
   AnchorHTMLAttributes,
   AriaAttributes,
@@ -516,11 +516,7 @@ export function UiCard({
         padding === "sm" && "p-3",
         padding === "md" && "p-4",
         padding === "lg" && "p-5",
-        interactive &&
-          cn(
-            "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
-            ui.focus,
-          ),
+        interactive && cn("press-tile", ui.focus),
         className,
       )}
     >
@@ -1206,16 +1202,7 @@ export function UiStatePanel({
         data-testid={testId}
         className={cn("py-6", className)}
       >
-        <div
-          className={cn(
-            "mx-auto mb-4 flex items-center justify-center gap-2",
-            ui.text.meta,
-            ui.tone.muted,
-          )}
-        >
-          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
-          {t("state.loading")}
-        </div>
+        <span className="sr-only">{t("state.loading")}</span>
         <div className="space-y-3">
           <UiSkeleton className="h-12" />
           <UiSkeleton className="h-24" />

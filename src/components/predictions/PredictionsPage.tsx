@@ -37,6 +37,7 @@ import {
   type Pick,
   type RoundSeed,
 } from "./use-predictions-round";
+import { staggerStyle } from "@/lib/motion";
 
 export type PredictionsTab = "predict" | "board" | "leagues";
 
@@ -326,7 +327,15 @@ function DayGroups({
           <h2 className={cn(ui.text.label, ui.tone.muted)}>
             {formatDayHeading(group.first, lang)}
           </h2>
-          {group.fixtures.map((fixture) => children(fixture))}
+          {group.fixtures.map((fixture, index) => (
+            <div
+              key={fixture.id}
+              className="enter-rise stagger min-w-0"
+              style={staggerStyle(index)}
+            >
+              {children(fixture)}
+            </div>
+          ))}
         </section>
       ))}
     </div>

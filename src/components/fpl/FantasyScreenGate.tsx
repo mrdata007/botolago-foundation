@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { CalendarClock, Loader2, LogIn, UserPlus } from "lucide-react";
+import { CalendarClock, LogIn, UserPlus } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
 import {
@@ -71,16 +71,7 @@ export function FantasyPhaseBody({
     // replaced by a spinner. The pitch block takes the pitch card's radius.
     return (
       <div role="status" aria-label={t("state.loading")} className={cn("py-6", ui.space.gutter)}>
-        <div
-          className={cn(
-            "mx-auto mb-4 flex items-center justify-center gap-2",
-            ui.text.meta,
-            ui.tone.muted,
-          )}
-        >
-          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
-          {t("state.loading")}
-        </div>
+        <span className="sr-only">{t("state.loading")}</span>
         <div className="space-y-3">
           <UiSkeleton className={cn("h-12", ui.radius.full)} />
           <UiSkeleton className={cn("h-[420px]", ui.radius.sheet)} />

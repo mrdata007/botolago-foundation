@@ -349,7 +349,7 @@ function AuthenticatedProfile({
                     "relative flex min-h-28 min-w-0 flex-col items-center justify-end gap-2 px-2 pb-3 pt-8 text-center",
                     ui.surface.card,
                     ui.edge.blockEnd,
-                    "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+                    "press-tile",
                   )}
                 >
                   {favorite ? (

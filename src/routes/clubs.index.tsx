@@ -125,7 +125,7 @@ function ClubTile({ club }: { club: Club }) {
         "flex min-h-36 w-full min-w-0 flex-col items-center justify-center gap-2.5 px-3 pb-4 pt-5 text-center",
         ui.surface.card,
         ui.edge.blockEnd,
-        "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+        "press-tile",
         ui.focus,
       )}
     >

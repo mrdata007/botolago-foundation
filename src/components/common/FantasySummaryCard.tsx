@@ -32,7 +32,7 @@ const CARD = cn(
   "flex min-w-0 items-center gap-4 px-5 py-6",
   ui.radius.sheet,
   "text-[color:var(--ui-ink-deep)]",
-  "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+  "press-tile",
   ui.focus,
 );
 const GRADIENT = { backgroundImage: "var(--ui-grad-action)" } as const;

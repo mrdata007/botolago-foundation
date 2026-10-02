@@ -850,16 +850,119 @@ html[dir="rtl"] .lucide-arrow-left {
   --shimmer-to: left;
 }
 
-/* Unified press-feedback for interactive tiles/cards. */
+/* Unified press-feedback for interactive tiles/cards: a touch of lift under
+   a mouse (never on a touch screen, where hover sticks after a tap), and a
+   small sink while pressed. `transform` only, so it never moves the layout. */
 @utility press-tile {
   transition:
     transform var(--duration-tap) var(--ease-standard),
     box-shadow var(--duration-quick) var(--ease-standard),
     background-color var(--duration-quick) var(--ease-standard);
 }
+@media (hover: hover) {
+  .press-tile:hover {
+    transform: translateY(-1px);
+  }
+}
 .press-tile:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.985);
   box-shadow: var(--shadow-subtle);
+}
+
+/* An item that appears: a fade and an 8px rise. `both` holds it hidden through
+   its delay and visible after; reduced motion (below) cuts the duration and
+   the delay, so it simply appears. */
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility enter-rise {
+  animation: enter-rise var(--duration-route) var(--ease-decelerate) both;
+}
+
+/* A list's items arrive one after another: set `--i` to the item's index. The
+   first eight step 40ms apart; a longer list shares the last step, so a long
+   list never makes its tail wait. */
+@utility stagger {
+  animation-delay: calc(min(var(--i, 0), 7) * 40ms);
+}
+
+/* A badge or tick that lands: a quick overshoot. */
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@utility pop {
+  animation: pop var(--duration-sheet) var(--ease-emphasized) both;
+}
+
+/* A number that just went up or down: a green or red wash that fades out. */
+@keyframes flash-up {
+  from {
+    background-color: color-mix(in oklab, var(--ui-positive) 28%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@keyframes flash-down {
+  from {
+    background-color: color-mix(in oklab, var(--ui-negative) 28%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@utility flash-up {
+  animation: flash-up 1s var(--ease-standard) both;
+}
+
+@utility flash-down {
+  animation: flash-down 1s var(--ease-standard) both;
+}
+
+/* The bell, when something new arrives: one small shake. */
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-14deg);
+  }
+  40% {
+    transform: rotate(12deg);
+  }
+  60% {
+    transform: rotate(-8deg);
+  }
+  80% {
+    transform: rotate(4deg);
+  }
+}
+
+@utility wiggle {
+  transform-origin: 50% 10%;
+  animation: wiggle var(--duration-hero) var(--ease-standard) 1;
 }
 
 /* Live dot — a slow fade in and out, 1.5s a cycle (after premierleague.com).

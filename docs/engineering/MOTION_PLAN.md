@@ -1,6 +1,6 @@
 # Motion plan — making the app feel alive
 
-Status: **plan, not started.** Covers the 13 animation ideas agreed with the
+Status: **PRs 1 and 2 built (Phase 0 toolkit, #4 press, #5 skeletons, #3 stagger); the rest not started.** Covers the 13 animation ideas agreed with the
 owner on 2026-10-02. Nothing here is built yet.
 
 ## What already exists (build on it, don't duplicate it)
@@ -64,6 +64,8 @@ Tests: unit tests for `useCountUp` (ends on exact value, skips under reduced
 motion), `useFlip` (no movement when order is unchanged), `useChangeFlash`.
 
 ## Phase 1 — quick wins across the whole app
+
+_Built. Notes: only page-loading spinners became skeletons (`LoadingState`, the Fantasy gate, the shared loading panel); spinners inside buttons and the sign-in redirect screen stay. The stagger is on the Matches day list, a club's matches, the Home news preview, the Pépites top ten and the prediction fixtures._
 
 **#4 Press effect on buttons and cards.**
 - Extend `press-tile` with a hover lift (`translateY(-1px)` + stronger shadow,
