@@ -826,6 +826,16 @@ export const fr = {
   // it, so the whole phrase is one string with a {rank} slot, and French
   // takes "er" for the first place (Intl.PluralRules ordinal "one").
   "fantasy.hub.my_leagues": "Mes ligues",
+  "fantasy.hub.stat_value": "Valeur",
+  "fantasy.hub.stat_bank": "Banque",
+  "fantasy.hub.stat_rank": "Rang",
+  "fantasy.hub.my_points": "Mes points J{gw}",
+  "fantasy.hub.points_before":
+    "Vos points s'affichent en direct dès le coup d'envoi de {match}, {when}",
+  "fantasy.hub.points_unknown": "Vos points s'affichent dès le début de la journée.",
+  "fantasy.hub.my_players": "Mes joueurs en J{gw}",
+  "fantasy.hub.no_match": "Pas de match",
+  "fantasy.hub.players_none": "Aucun match connu pour cette journée.",
   "fantasy.bench_short": "Banc",
   "fantasy.xpts": "xPts",
   "fantasy.chip.bench_boost": "Bench Boost",

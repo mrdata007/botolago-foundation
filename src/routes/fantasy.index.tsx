@@ -17,6 +17,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { MediaImage } from "@/components/common/FailureAwareImage";
 import { SectionHeader, SectionHeaderLink } from "@/components/common/SectionHeader";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
+import { FantasyHubRound } from "@/components/fantasy/FantasyHubRound";
 import { DeadlineCard } from "@/components/fantasy/DeadlineCard";
 import { deadlineChecklist } from "@/lib/deadline-checklist";
 import { PrizeWelcome } from "@/components/prizes/PrizeWelcome";
@@ -163,6 +164,19 @@ function FantasyHub() {
           prizes={(introPrizes.data?.length ?? 0) > 0}
         />
       </div>
+
+      {hasTeam && team && gameweek && screen.phase === "ready" ? (
+        <FantasyHubRound
+          team={team}
+          players={screen.players}
+          clubs={screen.clubs}
+          fixtures={fixtures.data ?? []}
+          fixturesPending={fixtures.isPending}
+          gameweek={gameweek}
+          summary={summary.data ?? null}
+          summaryPending={summary.isPending}
+        />
+      ) : null}
 
       <ShortcutTiles />
 
