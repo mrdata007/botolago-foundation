@@ -24,9 +24,21 @@ describe("production mapping backend rehearsal runner", () => {
   it("can only rehearse: no commit path and the script is never edited", () => {
     expect(runner).toContain("rollback;");
     expect(runner).toContain("active commit;");
-    expect(runner).not.toMatch(/script\.replace\(|re\.sub\(|script_path\.write_text|script\s*=\s*script\./);
-    expect(script.toString("utf8").split("\n").filter((line) => line.trim() === "rollback;")).toHaveLength(1);
-    expect(script.toString("utf8").split("\n").filter((line) => /^\s*commit\s*;\s*$/.test(line))).toHaveLength(0);
+    expect(runner).not.toMatch(
+      /script\.replace\(|re\.sub\(|script_path\.write_text|script\s*=\s*script\./,
+    );
+    expect(
+      script
+        .toString("utf8")
+        .split("\n")
+        .filter((line) => line.trim() === "rollback;"),
+    ).toHaveLength(1);
+    expect(
+      script
+        .toString("utf8")
+        .split("\n")
+        .filter((line) => /^\s*commit\s*;\s*$/.test(line)),
+    ).toHaveLength(0);
   });
 
   it("is guarded like the other production workflows", () => {
@@ -36,7 +48,10 @@ describe("production mapping backend rehearsal runner", () => {
     expect(workflow).toContain("REHEARSE_MAPPING_BACKEND_PRODUCTION");
     expect(workflow).toContain("tkewgajrljbwgwedqsxn");
     expect(workflow).toContain("GITHUB_WORKFLOW_RERUN_FORBIDDEN");
-    const body = workflow.split("\n").filter((line) => !line.trim().startsWith("#")).join("\n");
+    const body = workflow
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("#"))
+      .join("\n");
     expect(body).not.toMatch(/commit;|apply:|--commit|mode:/i);
   });
 });
