@@ -33,6 +33,7 @@ import { StandingsNotes } from "@/components/matches/StandingsTable";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { STRETCHED_LINK } from "@/components/clubs/stretched-link";
 import { rowClubName } from "@/lib/club-identity";
+import { homeBandMatchday } from "@/lib/home-matchday";
 import { DeadlineCountdown } from "@/components/common/DeadlineCountdown";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import {
@@ -338,10 +339,13 @@ function HomeContent() {
       ),
     [homeMatches, lang, t],
   );
-  // The band names the Fantasy gameweek; before Fantasy has one (or for a
-  // visitor it is not open to), the league round of the next fixture.
-  const bandGameweek =
-    gwQ.data?.number ?? homeMatches.find((match) => match.gameweek > 0)?.gameweek;
+  // The band names the round of the next fixture, which is what the cards under
+  // it show. Fantasy's "current" gameweek stays on the previous round until it
+  // is finalized, so it is only the fallback (see `homeBandMatchday`).
+  const bandGameweek = homeBandMatchday(homeMatches, gwQ.data?.number);
+  // The Fantasy deadline belongs to Fantasy's own gameweek: show it only when
+  // the band names that same round, never a deadline under another round.
+  const bandDeadline = gwQ.data?.number === bandGameweek ? gwQ.data?.deadline : undefined;
 
   // Up to three curated stories: the edition's lead plus its next articles.
   // Never the full News page — a lightweight preview only.
@@ -372,7 +376,7 @@ function HomeContent() {
         greeting={greeting}
         dateLine={dateLine}
         gameweek={bandGameweek}
-        deadline={gwQ.data?.deadline}
+        deadline={bandDeadline}
         live={liveMatches.length > 0}
         overlap={liveMatches.length > 0}
       />
