@@ -32,6 +32,12 @@ const FLAT_DROP_SHADOW =
 const FLAT_SHIRT =
   "M8 3 4 5.5 2.5 10l3 1.2V21h13v-9.8l3-1.2L20 5.5 16 3c-.8 1.4-2.3 2.3-4 2.3S8.8 4.4 8 3z";
 
+/** The back of the collar, visible through the neck opening. */
+const FLAT_BACK_COLLAR = "M8 3Q12 1.6 16 3c-.8 1.4-2.3 2.3-4 2.3S8.8 4.4 8 3z";
+
+/** The outer edge of shirt plus back collar, so the outline wraps both. */
+const FLAT_OUTLINE = "M8 3Q12 1.6 16 3l4 2.5 1.5 4.5-3 1.2V21h-13v-9.8l-3-1.2L4 5.5z";
+
 interface JerseyVisualProps {
   kit: KitConfig;
   size?: number;
@@ -208,7 +214,13 @@ export function JerseyVisual({
 }
 
 /**
- * The flat shirt. The club's pattern survives in the flat form — stripes,
+ * The pitch shirt. It keeps the Option A silhouette but is lit like an
+ * object — a top-down light, shaded flanks, a chest sheen, sleeve seams,
+ * the inside of the back collar and a contact shadow — so it reads as 3D.
+ * Like the dimensional shirt above, those black/white stops are lighting,
+ * not palette.
+ *
+ * The club's pattern survives in the flat form — stripes,
  * bands, a central stripe or contrasting sleeves in the kit's second colour —
  * clipped to the silhouette, because two red clubs are told apart by exactly
  * that.
@@ -232,7 +244,8 @@ function FlatJersey({
   className?: string;
   ariaLabel?: string;
 }) {
-  const clipId = `${useId().replace(/:/g, "")}-flat`;
+  const uid = useId().replace(/:/g, "");
+  const clipId = `${uid}-flat`;
   const { primary, secondary, pattern } = kit;
   const lightKit = kit.ink !== "#ffffff";
   return (
@@ -249,7 +262,34 @@ function FlatJersey({
           <clipPath id={clipId}>
             <path d={FLAT_SHIRT} />
           </clipPath>
+          {/* Top-lit, darker toward the hem. */}
+          <linearGradient id={`${uid}-v`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.38" />
+            <stop offset="0.32" stopColor="#fff" stopOpacity="0.06" />
+            <stop offset="0.7" stopColor="#000" stopOpacity="0.06" />
+            <stop offset="1" stopColor="#000" stopOpacity="0.34" />
+          </linearGradient>
+          {/* Both flanks fall into shade, so the torso reads as round. */}
+          <linearGradient id={`${uid}-h`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#000" stopOpacity="0.34" />
+            <stop offset="0.26" stopColor="#000" stopOpacity="0" />
+            <stop offset="0.62" stopColor="#000" stopOpacity="0" />
+            <stop offset="1" stopColor="#000" stopOpacity="0.4" />
+          </linearGradient>
+          {/* Soft sheen on the chest. */}
+          <radialGradient id={`${uid}-s`} cx="0.38" cy="0.3" r="0.42">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.42" />
+            <stop offset="1" stopColor="#fff" stopOpacity="0" />
+          </radialGradient>
         </defs>
+
+        {/* Contact shadow on the surface below. */}
+        <ellipse cx="12" cy="22.3" rx="6.8" ry="1" fill="#000" opacity="0.18" />
+
+        {/* Inside of the back collar, seen through the neck opening. */}
+        <path d={FLAT_BACK_COLLAR} fill={primary} />
+        <path d={FLAT_BACK_COLLAR} fill="#000" opacity="0.45" />
+
         <path d={FLAT_SHIRT} fill={primary} />
         {pattern === "solid" ? null : (
           <g clipPath={`url(#${clipId})`} fill={secondary}>
@@ -266,15 +306,42 @@ function FlatJersey({
             )}
           </g>
         )}
+
+        <g clipPath={`url(#${clipId})`}>
+          {/* Sleeves sit behind the torso: a shade darker, with a seam. */}
+          <path d="M0 0H6.4L5.5 12H0Z M24 0H17.6L18.5 12H24Z" fill="#000" opacity="0.16" />
+          <rect width="24" height="24" fill={`url(#${uid}-h)`} />
+          <rect width="24" height="24" fill={`url(#${uid}-v)`} />
+          <ellipse cx="11" cy="9.5" rx="6" ry="7" fill={`url(#${uid}-s)`} />
+          <path
+            d="M6.4 4.6 5.5 11.2M17.6 4.6l.9 6.6"
+            stroke="#000"
+            strokeOpacity="0.3"
+            strokeWidth="0.45"
+            fill="none"
+          />
+          {/* Cuffs and hem. */}
+          <path d="M2.5 10l3 1.2M21.5 10l-3 1.2" stroke={secondary} strokeWidth="1.3" />
+          <rect x="0" y="20" width="24" height="1" fill="#000" opacity="0.2" />
+        </g>
+
+        {/* Collar rim in the kit's second colour. */}
         <path
-          d={FLAT_SHIRT}
+          d="M8 3c.8 1.4 2.3 2.3 4 2.3s3.2-.9 4-2.3"
+          fill="none"
+          stroke={secondary}
+          strokeWidth="1.2"
+          strokeLinecap="round"
+        />
+        <path
+          d={FLAT_OUTLINE}
           fill="none"
           stroke={
             lightKit
               ? "color-mix(in oklab, var(--ui-ink-deep) 55%, transparent)"
               : "var(--ui-on-ink-plain)"
           }
-          strokeWidth="1.1"
+          strokeWidth="1"
           strokeLinejoin="round"
         />
       </svg>
