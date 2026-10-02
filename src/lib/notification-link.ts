@@ -39,3 +39,23 @@ export function notificationDestination(
       return null;
   }
 }
+
+/**
+ * The page a notification opens, as a path a service worker can open. `null`
+ * means "no page of its own": the caller opens the inbox instead.
+ */
+export function notificationPath(
+  link: NotificationCardDto["deepLink"],
+  newsEnabled: boolean,
+): string | null {
+  const destination = notificationDestination(link, newsEnabled);
+  if (!destination) return null;
+  switch (destination.to) {
+    case "/matches/$matchId":
+      return `/matches/${destination.params.matchId}`;
+    case "/news/$articleId":
+      return `/news/${destination.params.articleId}`;
+    default:
+      return destination.to;
+  }
+}
