@@ -54,6 +54,7 @@ import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
 import { ui, UiCard, UiChip } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { bandGameweek } from "@/lib/band-gameweek";
+import { followedTeamIdsQuery } from "@/services/follows";
 import { deadlineStripTime, deadlineWithinHours } from "@/lib/deadline-strip";
 import { FantasyRuleChips } from "@/components/home/FantasyRuleChips";
 import { NextMatchPick } from "@/components/home/NextMatchPick";
@@ -69,7 +70,7 @@ import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { siteJsonLd } from "@/lib/structured-data";
 import { matchDayFromKey } from "@/lib/match-kickoff";
 import { advanceGreetingClock, greetingPart } from "@/lib/greeting";
-import { capitalizeFirst, groupByMatchDay } from "@/lib/match-days";
+import { capitalizeFirst, groupByMatchDay, onlyFollowedClubs } from "@/lib/match-days";
 import type { Match } from "@/types/domain";
 import stadiumBand from "@/assets/brand/home-band-stadium.webp";
 import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
@@ -245,7 +246,7 @@ const isInPlay = (match: Match) => match.status === "live";
  */
 function HomeContent() {
   const { t, tr, lang } = useI18n();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const { source, key } = useFantasyDataSource();
   const { renderedAt } = Route.useLoaderData();
   const now = useGreetingClock(renderedAt);
@@ -362,9 +363,15 @@ function HomeContent() {
   // Day chips over "À venir": every day, or just one. A day that has left the
   // list (its matches began) drops the choice back to every day.
   const [dayFilter, setDayFilter] = useState("all");
-  const activeDay = upcomingDays.some((day) => day.key === dayFilter) ? dayFilter : "all";
+  // "Mes clubs": only matches of the clubs this reader follows. The chip is
+  // there only for a signed-in reader who follows at least one club.
+  const followedQ = useQuery(followedTeamIdsQuery(user?.id ?? null));
+  const followedIds = followedQ.data ?? [];
+  const [mineOnly, setMineOnly] = useState(false);
+  const listDays = mineOnly ? onlyFollowedClubs(upcomingDays, followedIds) : upcomingDays;
+  const activeDay = listDays.some((day) => day.key === dayFilter) ? dayFilter : "all";
   const shownDays =
-    activeDay === "all" ? upcomingDays : upcomingDays.filter((day) => day.key === activeDay);
+    activeDay === "all" ? listDays : listDays.filter((day) => day.key === activeDay);
   const dayChipLabel = (key: string) =>
     capitalizeFirst(
       moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
@@ -520,7 +527,7 @@ function HomeContent() {
                 <EmptyState compact>{t("state.empty")}</EmptyState>
               ) : (
                 <div className="grid gap-4">
-                  {upcomingDays.length > 1 ? (
+                  {upcomingDays.length > 1 || followedIds.length > 0 ? (
                     <div
                       role="group"
                       aria-label={t("matches.section.upcoming")}
@@ -529,7 +536,12 @@ function HomeContent() {
                       <UiChip selected={activeDay === "all"} onClick={() => setDayFilter("all")}>
                         {t("matches.tab.all")}
                       </UiChip>
-                      {upcomingDays.slice(0, 4).map((day) => (
+                      {followedIds.length > 0 ? (
+                        <UiChip selected={mineOnly} onClick={() => setMineOnly((on) => !on)}>
+                          {t("profile.clubs.title")}
+                        </UiChip>
+                      ) : null}
+                      {listDays.slice(0, 4).map((day) => (
                         <UiChip
                           key={day.key}
                           selected={activeDay === day.key}
@@ -539,6 +551,9 @@ function HomeContent() {
                         </UiChip>
                       ))}
                     </div>
+                  ) : null}
+                  {shownDays.length === 0 ? (
+                    <EmptyState compact>{t("state.empty")}</EmptyState>
                   ) : null}
                   {shownDays.map((day) => (
                     <div key={day.key} className="min-w-0">

@@ -89,3 +89,20 @@ export function nextMatchDayAfter(
   }
   return next;
 }
+
+/**
+ * The days narrowed to matches that involve a followed club; a day left with
+ * no match is dropped. An empty `followedIds` keeps nothing.
+ */
+export function onlyFollowedClubs(
+  days: readonly MatchDayGroup[],
+  followedIds: readonly string[],
+): MatchDayGroup[] {
+  const followed = new Set(followedIds);
+  return days.flatMap((day) => {
+    const matches = day.matches.filter(
+      (match) => followed.has(match.homeClubId) || followed.has(match.awayClubId),
+    );
+    return matches.length > 0 ? [{ ...day, matches }] : [];
+  });
+}
