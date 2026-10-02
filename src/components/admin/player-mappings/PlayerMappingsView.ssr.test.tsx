@@ -407,6 +407,73 @@ async function proposalWorld(availability: ReviewerAvailability, allowSelfApprov
   return { world, repo, candidate, id, seenBy, options };
 }
 
+describe("single-operator review mode banner (the server decides, the screen only draws it)", () => {
+  const bannerPoints = [
+    "Le même relecteur autorisé peut approuver sa propre proposition",
+    "L’approbation reste une action explicite",
+    "L’exécution reste une action distincte",
+    "Chaque action est consignée dans l’audit.",
+  ];
+
+  test("when the server says self-approval is allowed, the banner says what that means", async () => {
+    const { candidates } = await fixture();
+    const html = render({
+      state: ready({ candidates, availability: loneSelfApprover }),
+      proposalsEnabled: true,
+    });
+    has(html, 'data-testid="mapping-single-operator-mode"');
+    has(html, "MODE RELECTURE PAR UN SEUL OPÉRATEUR");
+    for (const point of bannerPoints) has(html, point);
+    lacks(html, "SECOND RELECTEUR QUALIFIÉ REQUIS");
+    lacks(html, 'data-testid="second-reviewer-required"');
+    const ar = render({
+      lang: "ar",
+      state: ready({ candidates, availability: loneSelfApprover }),
+      proposalsEnabled: true,
+    });
+    has(ar, 'data-testid="mapping-single-operator-mode"');
+    has(ar, "وضع المراجعة بمشغِّل واحد");
+    has(ar, 'dir="rtl"');
+  });
+
+  test("it is drawn on a proposal's screen too, still without the second-reviewer wall", async () => {
+    const w = await proposalWorld(loneSelfApprover, true);
+    const data = await w.seenBy(proposer);
+    const html = render({
+      state: ready(data),
+      proposalsEnabled: true,
+      repository: w.repo,
+      initial: { selection: { kind: "proposal", id: w.id } },
+    });
+    has(html, 'data-testid="mapping-single-operator-mode"');
+    lacks(html, "SECOND RELECTEUR QUALIFIÉ REQUIS");
+  });
+
+  test("when the server says two people are required, there is no such banner", async () => {
+    const { candidates } = await fixture();
+    for (const availability of [both, lonely]) {
+      const html = render({ state: ready({ candidates, availability }), proposalsEnabled: true });
+      lacks(html, 'data-testid="mapping-single-operator-mode"');
+      lacks(html, "MODE RELECTURE PAR UN SEUL OPÉRATEUR");
+    }
+  });
+
+  test("nothing in the browser decides the policy: read-only or no permission, no banner", async () => {
+    const { candidates } = await fixture();
+    const readOnly = render({
+      state: ready({ candidates, availability: loneSelfApprover }),
+      proposalsEnabled: false,
+    });
+    lacks(readOnly, 'data-testid="mapping-single-operator-mode"');
+    const reader = render({
+      state: ready({ candidates, availability: loneSelfApprover }),
+      proposalsEnabled: true,
+      viewer: { canManage: false },
+    });
+    lacks(reader, 'data-testid="mapping-single-operator-mode"');
+  });
+});
+
 describe("dual control, as drawn", () => {
   test("the proposer sees their pending proposal, waiting, with no approve or reject", async () => {
     const w = await proposalWorld(both);
