@@ -23,8 +23,8 @@ part that actually delivers a push to a phone. So Phase 5 is smaller than it fir
 
 - **Reminder storage:** `app.notification_subscriptions` can hold a follow for a match,
   a club, a competition or a news topic. The function `api.set_my_notification_subscription`
-  already turns one on or off for the signed-in user. The front end has a repository for
-  it (`src/backend/notifications/supabase-repositories.ts`) but **no screen uses it**.
+  already turns one on or off for the signed-in user. (Step 2 added the front-end
+  repository and the bell that use it; there is still **no function to read the list back**.)
 - **Notification types** already include `match_starting`, `goal`, `half_time`,
   `full_time`, `lineup_available`, `followed_team_result`, `deadline_24h`, `deadline_1h`.
 - **Phones:** `app.device_registrations` and a private table of push addresses exist, with
@@ -45,6 +45,18 @@ part that actually delivers a push to a phone. So Phase 5 is smaller than it fir
 ## Step by step (each step is its own pull request, in this order)
 
 ### Step 0 — Check two things before building (read-only, half a day)
+
+**Result of check 1 (done 2 Oct):** the "match starting" job, which runs about an hour before
+kick-off, already counts users with a match reminder, and it creates the inbox message
+(and the e-mail) for them. But it only does so for users who have **e-mail notifications
+turned on** (and a confirmed e-mail). A user with a reminder and e-mail off gets nothing.
+Also, no function returns a user's reminders, so the bell cannot show its state on a new
+device. Two small database changes would fix both (they need approval; not written):
+(a) a read function listing the user's match reminders; (b) let the "match starting" job
+create the inbox message for users with a reminder even when e-mail is off.
+Until then the bell remembers what *this device* set, and its message offers to turn
+e-mail notifications on when they are off.
+
 1. Does the existing fan-out already create an in-app `match_starting` notification for
    people who subscribed to a match (not just for a favourite club)? If not, that is a
    small database function change (needs approval).
@@ -65,8 +77,9 @@ part that actually delivers a push to a phone. So Phase 5 is smaller than it fir
   "Suivre" on a club.
 - What the reminder does **at first**: puts a message in the inbox shortly before kick-off.
   The button's wording will say exactly that. **No claim of phone alerts until Step 3.**
-- Possible approval: extend the "one hour before kick-off" fan-out to people who set a
-  reminder on that match (Step 0, question 1).
+- Possible approval: the two small database changes under "Result of check 1" in Step 0.
+- **Built (2 Oct):** the bell on upcoming match rows (not on live, finished or
+  postponed rows, nor when the kick-off time is unconfirmed). It needs no database change.
 - Also: the same bell on the match page header.
 
 ### Step 3 — Real phone notifications (the big one)
