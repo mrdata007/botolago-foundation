@@ -20,6 +20,8 @@ type Search = {
   lang?: "fr" | "ar";
   /** `1`: only one qualified reviewer exists (the second-reviewer-required state). */
   reviewers?: "1";
+  /** `1`: single-approver mode, a proposer may approve their own proposal. */
+  selfapprove?: "1";
   /** `small`: a few dozen candidates, for a fast browser test. */
   scale?: "small";
   /** `1`: the proposal switch is on, so the write controls are drawn. */
@@ -33,6 +35,7 @@ export const Route = createFileRoute("/dev/player-mappings-sample")({
     ...(search.lang === "ar" || search.lang === "fr" ? { lang: search.lang } : {}),
     // The router parses `1` into a number before it gets here.
     ...(String(search.reviewers) === "1" ? { reviewers: "1" as const } : {}),
+    ...(String(search.selfapprove) === "1" ? { selfapprove: "1" as const } : {}),
     ...(search.scale === "small" ? { scale: "small" as const } : {}),
     ...(String(search.writes) === "1" ? { writes: "1" as const } : {}),
   }),
@@ -55,12 +58,13 @@ function SampleHarness() {
     return new InMemoryPlayerMappingRepository({
       candidates: world.candidates,
       appPlayers: world.appPlayers,
+      allowSelfApproval: search.selfapprove === "1",
       qualifiedActors:
         search.reviewers === "1"
           ? [SAMPLE_ACTORS.proposer]
           : [SAMPLE_ACTORS.proposer, SAMPLE_ACTORS.approver],
     });
-  }, [search.scale, search.reviewers]);
+  }, [search.scale, search.reviewers, search.selfapprove]);
 
   const actorId = seat === "approver" ? SAMPLE_ACTORS.approver : SAMPLE_ACTORS.proposer;
   return (

@@ -253,9 +253,10 @@ export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;
  * executes anything.
  *
  * The database authorises every one of those calls again (staff, MFA, recent
- * sign-in, `football.manage_mappings`, and a proposer who is never the
- * approver: there is no single-approval mode), so this is an application-level
- * brake, not the authority. Set this false and republish to take the controls
+ * sign-in, `football.manage_mappings`, and, unless the owner's single-approver
+ * switch is on (docs/backend/PLAYER_MAPPING_SINGLE_APPROVER_MODE.md), a
+ * proposer who is never the approver), so this is an application-level brake,
+ * not the authority. Set this false and republish to take the controls
  * away again; proposals already made stay as they are.
  *
  * Gated surfaces: `src/components/admin/player-mappings/PlayerMappingsScreen.tsx`.

@@ -156,6 +156,8 @@ export interface PlayerMappingCopy {
     readonly secondReviewerRequiredHelp: string;
     readonly ownProposal: string;
     readonly waitingOther: string;
+    readonly selfApprovalNotice: string;
+    readonly selfApprovedNote: string;
     readonly expired: string;
     readonly held: string;
     readonly notPending: string;
@@ -421,6 +423,9 @@ const fr: PlayerMappingCopy = {
     ownProposal:
       "Vous avez proposé ceci. Une autre personne doit l’approuver ou la rejeter ; vous ne le pouvez pas.",
     waitingOther: "En attente de la décision d’un autre relecteur.",
+    selfApprovalNotice:
+      "Vous êtes l’auteur de cette proposition et vous pouvez l’approuver vous-même : personne d’autre ne la vérifie. Relisez l’empreinte et les preuves avant d’approuver.",
+    selfApprovedNote: "Approuvée par son auteur, sans second relecteur.",
     expired: "Cette proposition a expiré. Elle ne peut plus être décidée.",
     held: "Cette proposition est bloquée : le monde a changé depuis qu’elle a été faite.",
     notPending: "Cette proposition n’attend plus de décision.",
@@ -473,6 +478,8 @@ const fr: PlayerMappingCopy = {
     mfa_assurance_insufficient: "Une seconde vérification (AAL2) est requise.",
     recent_auth_required: "Reconnectez-vous : une authentification récente est requise.",
     self_approval_denied: "Vous ne pouvez pas approuver votre propre proposition.",
+    self_approval_no_longer_allowed:
+      "L’approbation par l’auteur n’est plus autorisée : une autre personne doit approuver.",
     not_authorized: "Seul l’auteur de la proposition peut faire cela.",
     proposal_not_found: "Proposition introuvable.",
     candidate_not_found: "Candidat introuvable.",
@@ -713,6 +720,9 @@ const ar: PlayerMappingCopy = {
       "لا يوجد شخص مؤهَّل آخر يستطيع الموافقة على هذا الاقتراح. لا التفاف على ذلك: يبقى بالانتظار.",
     ownProposal: "أنت من اقترح هذا. يجب أن يوافق عليه شخص آخر أو يرفضه؛ ولا يمكنك ذلك.",
     waitingOther: "بانتظار قرار مراجع آخر.",
+    selfApprovalNotice:
+      "أنت من اقترح هذا ويمكنك الموافقة عليه بنفسك: لا يراجعه أحد غيرك. راجع البصمة والأدلة جيدًا قبل الموافقة.",
+    selfApprovedNote: "وافق عليه صاحب الاقتراح نفسه، دون مراجع ثانٍ.",
     expired: "انتهت صلاحية هذا الاقتراح، ولم يعد ممكنًا البتّ فيه.",
     held: "هذا الاقتراح متوقف: تغيّر الوضع منذ تقديمه.",
     notPending: "لم يعد هذا الاقتراح ينتظر قرارًا.",
@@ -762,6 +772,7 @@ const ar: PlayerMappingCopy = {
     mfa_assurance_insufficient: "يلزم تحقق ثانٍ (AAL2).",
     recent_auth_required: "أعد تسجيل الدخول: يلزم توثيق حديث.",
     self_approval_denied: "لا يمكنك الموافقة على اقتراحك أنت.",
+    self_approval_no_longer_allowed: "لم تعد موافقة صاحب الاقتراح مسموحًا بها: يلزم شخص آخر.",
     not_authorized: "صاحب الاقتراح وحده يستطيع فعل ذلك.",
     proposal_not_found: "الاقتراح غير موجود.",
     candidate_not_found: "المرشَّح غير موجود.",

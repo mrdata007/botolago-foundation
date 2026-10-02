@@ -201,6 +201,42 @@ test.describe("the two-person rule", () => {
   });
 });
 
+test.describe("single-approver mode", () => {
+  test("a lone reviewer may approve their own proposal, with a warning, and nothing executes", async ({
+    page,
+  }, testInfo) => {
+    const observed = observePage(page);
+    await openSample(page, "fr", `${SMALL}&reviewers=1&selfapprove=1`);
+    await proposeFirst(page);
+    // No "second reviewer required" wall, but a clear notice that nobody else checks.
+    await expect(page.getByTestId("second-reviewer-required")).toHaveCount(0);
+    await expect(page.getByTestId("mapping-self-approval-notice")).toBeVisible();
+    await expect(page.getByTestId("mapping-own-proposal")).toHaveCount(0);
+    await expect(page.getByTestId("mapping-approve")).toBeVisible();
+    await expect(page.getByTestId("mapping-reject")).toBeVisible();
+    const fingerprint = (await page.getByTestId("mapping-fingerprint").innerText()).trim();
+    await page.getByTestId("mapping-approve").click();
+    await expect(page.getByTestId("mapping-approve-confirm")).toContainText(fingerprint);
+    await page.getByTestId("mapping-approve-reason").fill("ok");
+    await expect(page.getByTestId("mapping-approve-commit")).toBeDisabled();
+    await page.getByTestId("mapping-approve-reason").fill("Preuves relues, tout concorde.");
+    await page.getByTestId("mapping-approve-commit").click();
+    await expect(page.getByTestId("mapping-proposal-status")).toHaveText("Approuvée");
+    await expect(page.getByTestId("mapping-self-approved-note")).toBeVisible();
+    await expect(page.getByTestId("mapping-execution-separate")).toBeVisible();
+    await expect(page.getByTestId("mapping-approve")).toHaveCount(0);
+    await observed.verify(testInfo);
+  });
+
+  test("the two-person wall is back when the switch is off", async ({ page }) => {
+    await openSample(page, "fr", `${SMALL}&reviewers=1`);
+    await proposeFirst(page);
+    await expect(page.getByTestId("second-reviewer-required")).toBeVisible();
+    await expect(page.getByTestId("mapping-self-approval-notice")).toHaveCount(0);
+    await expect(page.getByTestId("mapping-approve")).toHaveCount(0);
+  });
+});
+
 test.describe("the comparison", () => {
   test("every app player of the club is listed; a position disagreement is flagged, never hidden", async ({
     page,
