@@ -75,6 +75,7 @@ jobs:
           tests/e2e/legal-brackets.e2e.ts
           tests/e2e/news-hero-fallback.e2e.ts
           tests/e2e/pronostics.e2e.ts
+          tests/e2e/player-mappings.sample.e2e.ts
       # Pépites is off in every build: its pages open only on a development
       # server started with the local preview switch, so it has its own step
       # (and its own server). Sample data only, like the step above.

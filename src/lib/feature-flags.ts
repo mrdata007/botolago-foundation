@@ -241,3 +241,19 @@ export const PEPITES_ENABLED: boolean = true;
 
 /** Public navigation and indexing follow the application release switch. */
 export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;
+
+/**
+ * Player-mapping PROPOSALS on /admin/football/player-mappings. Off: the screen
+ * reads the candidate queue and the ranking, and every control that would
+ * create, approve, reject or withdraw a proposal is replaced by a notice. Nothing
+ * is created from a switch that is off.
+ *
+ * It stays false until the owner has approved the FIRST real proposal, and is
+ * then turned on in its own reviewed change. The database authorises every one
+ * of those calls again (staff, MFA, recent sign-in, `football.manage_mappings`,
+ * and a proposer who is never the approver), so this is an application-level
+ * brake, not the authority.
+ *
+ * Gated surfaces: `src/components/admin/player-mappings/PlayerMappingsScreen.tsx`.
+ */
+export const PLAYER_MAPPING_PROPOSALS_ENABLED: boolean = false;
