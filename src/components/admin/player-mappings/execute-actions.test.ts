@@ -233,19 +233,40 @@ describe("executing one approved proposal", () => {
     expect(w.repo.mappings).toHaveLength(1);
   });
 
-  test("a proposal that is not approved (pending, rejected, expired) is never executed", async () => {
+  test("a proposal that is not approved or whose approval expired never reaches the database", async () => {
+    const countingRepo = (repo: InMemoryPlayerMappingRepository) => {
+      const calls = { execute: 0 };
+      const proxy: PlayerMappingRepository = new Proxy(repo, {
+        get(target, prop, receiver) {
+          if (prop === "executeMappingProposal") {
+            return (...args: Parameters<PlayerMappingRepository["executeMappingProposal"]>) => {
+              calls.execute += 1;
+              return target.executeMappingProposal(...args);
+            };
+          }
+          return Reflect.get(target, prop, receiver);
+        },
+      });
+      return { calls, proxy };
+    };
+
     const pending = await setup();
     const shownPending = await pending.repo.getMappingProposal(pending.id, approver);
+    const pendingSpy = countingRepo(pending.repo);
     expect(
-      await codeOf(createMappingActions(pending.repo, () => approver).execute(shownPending)),
+      await codeOf(createMappingActions(pendingSpy.proxy, () => approver).execute(shownPending)),
     ).toBe("proposal_not_approved");
+    expect(pendingSpy.calls.execute).toBe(0);
 
     const expired = await setup();
     const approved = await expired.approve();
     expired.repo.patchProposal(expired.id, { effectiveStatus: "expired" });
-    expect(await codeOf(createMappingActions(expired.repo, () => approver).execute(approved))).toBe(
-      "approval_expired",
-    );
+    const expiredSpy = countingRepo(expired.repo);
+    expect(
+      await codeOf(createMappingActions(expiredSpy.proxy, () => approver).execute(approved)),
+    ).toBe("approval_expired");
+    expect(expiredSpy.calls.execute).toBe(0);
+
     expect(expired.repo.mappings).toHaveLength(0);
     expect(pending.repo.mappings).toHaveLength(0);
   });
