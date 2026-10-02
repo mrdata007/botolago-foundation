@@ -49,30 +49,10 @@ const CATEGORY_ICON: Record<NotificationCategory, LucideIcon> = {
 function NotificationsPage() {
   const { t } = useI18n();
   const { status } = useAuth();
-  const unread = useUnreadNotificationCount();
-  const { readAll } = useNotificationActions();
   const signedIn = status === "authenticated";
 
   return (
-    <AppShell
-      pageHeader={
-        <UiPageTitle
-          title={t("notifications.title")}
-          trailing={
-            signedIn && unread > 0 ? (
-              <UiButton
-                variant="soft"
-                size="sm"
-                disabled={readAll.isPending}
-                onClick={() => readAll.mutate()}
-              >
-                {t("notifications.mark_all_read")}
-              </UiButton>
-            ) : null
-          }
-        />
-      }
-    >
+    <AppShell pageHeader={<UiPageTitle title={t("notifications.title")} />}>
       {signedIn ? <Inbox /> : status === "loading" ? null : <SignInPrompt />}
     </AppShell>
   );
@@ -106,7 +86,8 @@ function Inbox() {
   const navigate = useNavigate();
   const [category, setCategory] = useState<NotificationCategory | null>(null);
   const inboxQ = useMyNotifications(category);
-  const { read, dismiss } = useNotificationActions();
+  const { read, readAll, dismiss } = useNotificationActions();
+  const unread = useUnreadNotificationCount();
   // A dismissed card leaves at once, before the refreshed list arrives.
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
 
@@ -143,6 +124,18 @@ function Inbox() {
           </UiChip>
         ) : null}
       </div>
+
+      {unread > 0 ? (
+        <UiButton
+          variant="ghost"
+          size="sm"
+          className="justify-self-end"
+          disabled={readAll.isPending}
+          onClick={() => readAll.mutate()}
+        >
+          {t("notifications.mark_all_read")}
+        </UiButton>
+      ) : null}
 
       {inboxQ.isError ? (
         <ErrorState onRetry={() => void inboxQ.refetch()} />
