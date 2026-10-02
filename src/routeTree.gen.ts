@@ -16,6 +16,7 @@ import { Route as FantasyRouteImport } from './routes/fantasy'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as PepitesRouteImport } from './routes/pepites'
+import { Route as DemoRouteImport } from './routes/demo'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PronosticsRouteImport } from './routes/pronostics'
@@ -120,6 +121,11 @@ const NewsRoute = NewsRouteImport.update({
 const PepitesRoute = PepitesRouteImport.update({
   id: '/pepites',
   path: '/pepites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -488,6 +494,7 @@ export interface FileRoutesByFullPath {
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
   '/pepites': typeof PepitesRouteWithChildren
+  '/demo': typeof DemoRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
@@ -565,6 +572,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
+  '/demo': typeof DemoRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -643,6 +651,7 @@ export interface FileRoutesById {
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
   '/pepites': typeof PepitesRouteWithChildren
+  '/demo': typeof DemoRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
@@ -724,6 +733,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/news'
     | '/pepites'
+    | '/demo'
     | '/privacy'
     | '/profile'
     | '/pronostics'
@@ -801,6 +811,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/mcp'
     | '/news'
+    | '/demo'
     | '/privacy'
     | '/profile'
     | '/sitemap.xml'
@@ -878,6 +889,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/news'
     | '/pepites'
+    | '/demo'
     | '/privacy'
     | '/profile'
     | '/pronostics'
@@ -958,6 +970,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   NewsRoute: typeof NewsRouteWithChildren
   PepitesRoute: typeof PepitesRouteWithChildren
+  DemoRoute: typeof DemoRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRouteWithChildren
   PronosticsRoute: typeof PronosticsRouteWithChildren
@@ -1027,6 +1040,13 @@ declare module '@tanstack/react-router' {
       path: '/pepites'
       fullPath: '/pepites'
       preLoaderRoute: typeof PepitesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -1755,6 +1775,7 @@ const rootRouteChildren: RootRouteChildren = {
   McpRoute: McpRoute,
   NewsRoute: NewsRouteWithChildren,
   PepitesRoute: PepitesRouteWithChildren,
+  DemoRoute: DemoRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRouteWithChildren,
   PronosticsRoute: PronosticsRouteWithChildren,

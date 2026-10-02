@@ -8,7 +8,7 @@
  *   preview.html  the same presenter page as a whole document, to open
  *                 locally or host anywhere static next to app.html
  *
- * Usage: bun run demo:build
+ * Usage: bun run demo:build [--into-public]
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -132,6 +132,22 @@ writeFileSync(
   join(siteDir, "preview.html"),
   `<!doctype html>\n<html lang="fr">\n<head>\n<meta charset="utf-8" />\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />\n</head>\n<body>\n${presenter}\n</body>\n</html>\n`,
 );
+
+// `--into-public` also writes the demo where the website serves it from:
+// public/demo/index.html is botolago.com/demo/, with the app beside it. The
+// absolute path keeps the frame working at /demo without the trailing slash.
+if (process.argv.includes("--into-public")) {
+  const publicDemo = join(repoDir, "public", "demo");
+  rmSync(publicDemo, { recursive: true, force: true });
+  mkdirSync(publicDemo, { recursive: true });
+  const live = readFileSync(join(siteDir, "preview.html"), "utf8")
+    .replace('src="app.html"', 'src="/demo/app.html"')
+    .replace('href="app.html"', 'href="/demo/app.html"');
+  if (live.includes('"app.html"')) throw new Error("a relative app.html link is left");
+  writeFileSync(join(publicDemo, "index.html"), live);
+  writeFileSync(join(publicDemo, "app.html"), html);
+  console.log("public/demo/index.html + app.html written (botolago.com/demo/)");
+}
 
 const size = (file: string) =>
   `${(readFileSync(join(siteDir, file)).length / 1024 / 1024).toFixed(2)} MB`;

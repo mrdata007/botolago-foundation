@@ -40,6 +40,7 @@
     "backend:db:lint": "supabase db lint --local --schema app,api,app_private --level warning --fail-on error",
     "demo:dev": "vite --config demo/vite.config.ts",
     "demo:build": "bun demo/scripts/build.ts",
+    "demo:publish": "bun demo/scripts/build.ts --into-public",
     "demo:typecheck": "tsc --noEmit -p demo/tsconfig.json"
   },
   "dependencies": {
