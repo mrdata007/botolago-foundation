@@ -201,7 +201,8 @@ export const PRONOSTICS_ENABLED = true;
  * Gated surfaces (keep this list current):
  *   - `src/routes/pronostics.index.tsx` — `index,follow` instead of `noindex`
  *   - `src/lib/sitemap.ts` — the /pronostics entry
- *   - `src/routes/index.tsx` — the Home card and the sixth discovery tile
+ *   - `src/routes/index.tsx` — the Home card, the one-tap "who wins" vote in the
+ *     band's next-match panel, and the sixth discovery tile
  *   - `src/components/matches/MatchesTabs.tsx` — the "Pronostics" tab
  *   - `src/routes/matches.$matchId.tsx` — the "Votre pronostic" card
  *   - `src/routes/fantasy.leagues.$leagueId.tsx` — the league's "Pronostics" tab
@@ -241,6 +242,15 @@ export const PEPITES_ENABLED: boolean = true;
 
 /** Public navigation and indexing follow the application release switch. */
 export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;
+
+/**
+ * Home puts the Fantasy card first in the 24 hours before a Fantasy deadline
+ * (a countdown-first variant of the phone layout). Off until the owner asks
+ * for it: the match-first order stays the default.
+ *
+ * Gated surface: `src/routes/index.tsx` — the Fantasy section's order.
+ */
+export const HOME_DEADLINE_FIRST = false;
 
 /**
  * Player-mapping PROPOSALS on /admin/football/player-mappings: ON since 2026-10-02.

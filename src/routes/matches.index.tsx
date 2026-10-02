@@ -28,8 +28,9 @@ import { ui, UiCard, UiChip, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { isSameMatchDay, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
-import { matchRounds } from "@/lib/match-days";
+import { matchRounds, nextMatchDayAfter } from "@/lib/match-days";
 import { unavailableHeaders } from "@/lib/page-availability";
 import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -194,6 +195,16 @@ function MatchesPage() {
   // the band names the day the server rendered as the server named it.
   const todayDate = useMemo(() => dateFromKey(today), [today]);
 
+  // The fixtures still to come (the Home page's own query, so one request
+  // serves both): they say which day to open on and what to point an empty
+  // day at.
+  const upcomingQ = useQuery({
+    queryKey: ["football", "home-matches", lang],
+    queryFn: () => footballService.getHomeMatches(lang),
+    enabled: seasonsQ.isSuccess,
+  });
+  const nextDay = nextMatchDayAfter(upcomingQ.data?.matches ?? [], matchDay);
+
   const dayQuery = matchDayQuery(matchDay, lang, selectedSeason?.id);
   const matchesQ = useQuery({
     ...dayQuery,
@@ -280,6 +291,15 @@ function MatchesPage() {
   }, [dayMatches]);
 
   const totalDay = dayCounts.live + dayCounts.upcoming + dayCounts.finished;
+
+  const nextDayLabel = useMemo(() => {
+    if (!nextDay) return null;
+    return moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }).format(matchDayFromKey(nextDay));
+  }, [nextDay, lang]);
 
   const visibleByBucket = useMemo(() => {
     const buckets: Record<"live" | "upcoming" | "finished", Match[]> = {
@@ -399,6 +419,22 @@ function MatchesPage() {
         <div className="mt-4">
           <EmptyState illustration={noMatchesArt}>
             {t("matches.section.no_matches_today")}
+            {nextDay && nextDayLabel ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDay(clampMatchDay(nextDay, selectedSeason));
+                }}
+                className={cn(
+                  ui.text.bodyStrong,
+                  ui.tone.ink,
+                  ui.focus,
+                  "min-h-[var(--ui-tap-min)]",
+                )}
+              >
+                {t("matches.empty.next").replace("{date}", nextDayLabel)} →
+              </button>
+            ) : null}
           </EmptyState>
         </div>
       )}

@@ -33,10 +33,16 @@ describe("Accueil (Home) structural contract", () => {
     const discovery = indexOfOrThrow('t("home.explore")');
 
     expect(greeting).toBeLessThan(matches);
-    expect(matches).toBeLessThan(fantasy);
-    expect(fantasy).toBeLessThan(news);
-    expect(news).toBeLessThan(standings);
-    expect(standings).toBeLessThan(discovery);
+    // From 768px the sections sit in columns, so the source is grouped by
+    // column and the phone order is carried by `order-N` classes. Phone order:
+    // matches 3, Pronostics 4, Fantasy 5, news 6, standings 7, discovery 8.
+    expect(source).toContain('<Section className="order-3 lg:mt-0">'); // upcoming matches
+    expect(source).toContain('<Section className="order-4 lg:order-5">'); // Pronostics
+    expect(source).toContain('fantasyFirst ? "-order-1 sm:mt-0" : "order-5"'); // Fantasy
+    expect(source).toContain('<Section className="order-6">'); // news
+    expect(source).toContain('<Section className="order-7">'); // standings
+    expect(source).toContain('<Section className="order-8 pb-2">'); // discovery
+    expect([fantasy, news, standings, discovery].every((i) => i > matches)).toBe(true);
   });
 
   test("the standings snapshot only renders with a real, non-empty table", () => {
@@ -94,7 +100,7 @@ describe("Accueil (Home) structural contract", () => {
     });
 
     test("the news preview section is behind the flag", () => {
-      const gate = "{NEWS_ENABLED && (\n        <Section>";
+      const gate = '{NEWS_ENABLED && (\n            <Section className="order-6">';
       expect(source).toContain(gate);
       // …and the section behind it is the News preview, not another one.
       const gated = source.slice(source.indexOf(gate), source.indexOf(gate) + 160);

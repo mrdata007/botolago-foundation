@@ -14,6 +14,7 @@ import {
   UiStatePanel,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { pointsLabel } from "@/components/matches/standings-copy";
 import { cn } from "@/lib/utils";
 import { prizesService } from "@/services/prizes";
 import { PRIZE_HERO_ART, PRIZE_HERO_PHOTO, PRIZE_TIER_ART } from "./prize-art";
@@ -326,7 +327,7 @@ function WinnersWall() {
                 <bdi
                   className={cn("shrink-0", ui.text.bodyStrong, ui.text.tabular, ui.tone.default)}
                 >
-                  {fill(t("prizes.points"), { points: nf.format(winner.points) })}
+                  {pointsLabel(winner.points, lang, t, nf.format)}
                 </bdi>
               </li>
             ))}

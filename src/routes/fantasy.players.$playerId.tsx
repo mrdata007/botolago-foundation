@@ -17,6 +17,7 @@ import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import {
   ui,
   UiCard,
+  UiDifficultyCell,
   UiEmptyState,
   UiErrorState,
   UiHeader,
@@ -28,8 +29,10 @@ import {
 import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { clubStyle } from "@/lib/club-palette";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { fantasyPlayerHead } from "@/lib/fantasy-meta";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
+import { upcomingFixtures } from "@/lib/upcoming-fixtures";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
@@ -73,7 +76,8 @@ export const Route = createFileRoute("/fantasy/players/$playerId")({
 
 function PlayerDetailFramed() {
   return (
-    <FantasyFrame bottomNav>
+    // A detail page: no tab bar, and one sticky action bar in its place.
+    <FantasyFrame>
       <PlayerDetailPage />
     </FantasyFrame>
   );
@@ -187,11 +191,22 @@ function PlayerDetailPage() {
   const club = findClub(clubs, p.clubId);
   const colours = club ? crestStyle(club) : clubStyle(null);
   const name = splitPlayerName(tr(p.name));
-  // Whatever the service returns for this club, unfiltered: a gameweek's
-  // fixture set is the backend's answer, and a postponed match that has been
-  // deferred out of a gameweek must not be re-added by a frontend assumption.
-  const playerFixtures = (fixturesQ.data ?? []).filter((f) => f.clubId === p.clubId).slice(0, 5);
+  // The backend's answer for this club, minus matches that have already kicked
+  // off (it returns the whole gameweek, played matches included). A fixture
+  // with no kickoff time is kept, so a postponed match is not re-added or lost
+  // by a frontend assumption.
+  const playerFixtures = upcomingFixtures(
+    (fixturesQ.data ?? []).filter((f) => f.clubId === p.clubId),
+  ).slice(0, 5);
   const bars = recentPointsBars(historyQ.data ?? []);
+  // Minutes over the whole season: the sum of the history rows, an en dash
+  // while it loads or when the player has no scored round at all.
+  const seasonMinutes =
+    historyQ.data && historyQ.data.length > 0
+      ? historyQ.data.reduce((sum, entry) => sum + entry.minutesPlayed, 0)
+      : null;
+  const nextFixture = playerFixtures[0];
+  const nextOpponent = nextFixture ? findClub(clubs, nextFixture.opponentClubId) : undefined;
 
   /** An unknown figure is an en dash. A real zero is a zero. */
   const orNone = (value: number | null | undefined) =>
@@ -280,17 +295,59 @@ function PlayerDetailPage() {
             <KeyNumber label={t("fantasy.points.title")} value={nf.format(p.totalPoints)} />
             <KeyNumber label={t("fantasy.form")} value={orNone(p.form)} divided />
             <KeyNumber
+              label={t("fantasy.players.minutes")}
+              value={historyQ.isPending ? t("fantasy.stat.none") : orNone(seasonMinutes)}
+              divided
+            />
+            <KeyNumber
               label={t("fantasy.ownership")}
               value={<Percent parts={pctNf.formatToParts(p.ownership / 100)} />}
               divided
             />
-            <KeyNumber
-              label={t("fantasy.expected_points")}
-              value={orNone(p.expectedPoints)}
-              divided
-            />
           </dl>
         </UiCard>
+
+        {nextFixture && nextOpponent ? (
+          <section className="mt-6 px-4" data-testid="player-next-match">
+            <SectionHeader title={t("fantasy.players.next_match")} />
+            <UiCard padding="md">
+              <div className="flex items-center gap-3">
+                <ClubCrest club={nextOpponent} size="md" />
+                <div className="min-w-0 flex-1">
+                  <p className={cn(ui.text.bodyStrong, ui.tone.default)}>
+                    {t("matches.vs")} {clubLabel(nextOpponent, tr)}
+                  </p>
+                  <p className={cn(ui.text.meta, ui.tone.muted)}>
+                    {nextFixture.isHome ? t("fantasy.players.home") : t("fantasy.players.away")}
+                    {nextFixture.kickoffAt ? (
+                      <>
+                        {" · "}
+                        <bdi>
+                          {moroccoDateTimeFormat(locale, {
+                            weekday: "short",
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }).format(new Date(nextFixture.kickoffAt))}
+                        </bdi>
+                      </>
+                    ) : null}
+                  </p>
+                  {p.expectedPoints !== undefined && p.expectedPoints !== null ? (
+                    <p className={cn(ui.text.meta, ui.tone.muted)}>
+                      {t("fantasy.players.next_xpts")}{" "}
+                      <span className={ui.text.tabular}>{nf.format(p.expectedPoints)}</span>
+                    </p>
+                  ) : null}
+                </div>
+                <UiDifficultyCell difficulty={nextFixture.difficulty} className="min-w-12 shrink-0">
+                  {t("fantasy.fixtures.difficulty")} {nf.format(nextFixture.difficulty)}
+                </UiDifficultyCell>
+              </div>
+            </UiCard>
+          </section>
+        ) : null}
 
         <section className="mt-6 px-4">
           <SectionHeader
@@ -358,7 +415,7 @@ function PlayerDetailPage() {
             does on the top players screen — bringing a player in always means
             choosing who goes out first. */}
         <div
-          className="sticky bottom-[var(--bottomnav-h)] z-20 mt-2 flex gap-2.5 px-4 pb-3 pt-6 md:bottom-0"
+          className="sticky bottom-0 z-20 mt-2 flex gap-2.5 px-4 pb-3 pt-6"
           style={
             {
               backgroundImage:
@@ -379,7 +436,7 @@ function PlayerDetailPage() {
           </UiLinkButton>
           <UiLinkButton to="/fantasy/transfers" className="flex-[1.7]">
             <Plus className="h-5 w-5" aria-hidden />
-            {t("fantasy.top.transfer_in")}
+            {t("fantasy.players.recruit_price").replace("{price}", priceNf.format(p.price))}
           </UiLinkButton>
         </div>
       </div>

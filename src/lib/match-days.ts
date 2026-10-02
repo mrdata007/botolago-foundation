@@ -69,3 +69,40 @@ export function matchRounds(matches: readonly Pick<Match, "gameweek">[]): number
     (a, b) => a - b,
   );
 }
+
+/**
+ * The first competition day after `dayKey` (a `YYYY-MM-DD` key) on which one
+ * of `matches` is still to be played, or null when there is none. Postponed
+ * and finished matches do not count: this answers "when is the next match?".
+ */
+export function nextMatchDayAfter(
+  matches: readonly Pick<Match, "status" | "kickoff">[],
+  dayKey: string,
+): string | null {
+  let next: string | null = null;
+  for (const match of matches) {
+    if (match.status !== "scheduled" && match.status !== "live") continue;
+    const kickoff = new Date(match.kickoff);
+    if (Number.isNaN(kickoff.getTime())) continue;
+    const key = matchDayKey(kickoff);
+    if (key > dayKey && (next === null || key < next)) next = key;
+  }
+  return next;
+}
+
+/**
+ * The days narrowed to matches that involve a followed club; a day left with
+ * no match is dropped. An empty `followedIds` keeps nothing.
+ */
+export function onlyFollowedClubs(
+  days: readonly MatchDayGroup[],
+  followedIds: readonly string[],
+): MatchDayGroup[] {
+  const followed = new Set(followedIds);
+  return days.flatMap((day) => {
+    const matches = day.matches.filter(
+      (match) => followed.has(match.homeClubId) || followed.has(match.awayClubId),
+    );
+    return matches.length > 0 ? [{ ...day, matches }] : [];
+  });
+}

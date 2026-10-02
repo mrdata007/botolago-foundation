@@ -96,17 +96,17 @@ describe("FantasyGuestIntro — what the game is, before anything personal", () 
     expect(plain).not.toMatch(/\{(size|budget|max|n)\}/);
   });
 
-  it("has ONE call to action, and a signed-out visitor signs in first and comes back to the builder", async () => {
+  it("has ONE call to action, and a signed-out visitor goes straight to the builder", async () => {
     const html = await render(intro({ audience: "signed_out" }));
     const primary = anchors(html).filter((tag) => tag.includes("var(--ui-grad-action)"));
     expect(primary).toHaveLength(1);
     expect(primary[0]).toContain('data-testid="fantasy-intro-create"');
     const href = new URL(hrefOf(primary[0]), "https://botolago.com");
-    expect(href.pathname).toBe("/auth/login");
-    expect(href.searchParams.get("next")).toBe(GUEST_CREATE_NEXT);
+    // No sign-in first: an account is asked for when they press "Enregistrer".
+    expect(href.pathname).toBe("/fantasy/create");
     expect(GUEST_CREATE_NEXT).toBe("/fantasy/create");
     expect(text(html)).toContain(escapeHtml(fr["fantasy.create.title"]));
-    // The login page is not a surprise: the line under the button says so.
+    // The account is not a surprise: the line under the button says when it is asked.
     expect(text(html)).toContain(escapeHtml(fr["fantasy.intro.sign_in_note"]));
   });
 
@@ -304,8 +304,10 @@ describe("the Fantasy hub around the proposition", () => {
   });
 
   it("keeps the band caption the e2e journey finds the hub by", () => {
-    // "Journée N · Date limite", one element.
-    expect(hub).toContain('{`${t("fpl.gameweek")} ${gameweek.number}`}');
-    expect(hub).toContain('{`· ${t("fpl.deadline")}`}');
+    // "Journée N · Date limite", one element, now drawn by the deadline card.
+    const card = code("src/components/fantasy/DeadlineCard.tsx");
+    expect(hub).toContain("<DeadlineCard");
+    expect(card).toContain('{`${t("fpl.gameweek")} ${gameweek.number}`}');
+    expect(card).toContain('{`· ${t("fpl.deadline")}`}');
   });
 });

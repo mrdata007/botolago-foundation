@@ -18,6 +18,7 @@
 import type { ReactNode } from "react";
 
 import { UiScreen } from "@/components/ui-kit";
+import { MatchdayStrip } from "@/components/matches/MatchdayStrip";
 import { LiveStrip } from "@/components/matches/LiveStrip";
 import { cn } from "@/lib/utils";
 import { TopBar } from "./TopBar";
@@ -29,15 +30,26 @@ export function AppShell({
   backgroundVariant,
   contentWidth = "compact",
   bottomNav,
+  hideBottomNav = false,
   liveStrip = false,
+  matchdayStrip = false,
   topBar,
   pageHeader,
   className,
 }: {
   children: ReactNode;
   backgroundVariant?: BackgroundVariant;
-  contentWidth?: "compact" | "wide";
+  contentWidth?: "compact" | "wide" | "desktop";
   bottomNav?: ReactNode;
+  /**
+   * No tab bar, and no space kept for it. For a detail page (match, club,
+   * article) whose own bar has the way back. Wins over `bottomNav`; passing
+   * `null` there does not hide the bar, since `null` falls through to the
+   * default.
+   */
+  hideBottomNav?: boolean;
+  /** Today's matches in one row under the top bar, from 1024px (Home). */
+  matchdayStrip?: boolean;
   /** Live scores under the top bar while any match is live (Home, Matches). */
   liveStrip?: boolean;
   /**
@@ -59,13 +71,19 @@ export function AppShell({
   return (
     <div className={cn("relative min-h-dvh text-[color:var(--ui-on-surface)]", className)}>
       <PageBackground variant={backgroundVariant} />
-      {topBar ?? <TopBar />}
+      {topBar ?? <TopBar wide={contentWidth === "desktop"} />}
       {pageHeader}
+      {matchdayStrip ? <MatchdayStrip /> : null}
       {liveStrip && <LiveStrip />}
-      <UiScreen width={contentWidth === "wide" ? "wide" : "content"} bottomNav>
+      <UiScreen
+        width={
+          contentWidth === "wide" ? "wide" : contentWidth === "desktop" ? "desktop" : "content"
+        }
+        bottomNav={!hideBottomNav}
+      >
         {children}
       </UiScreen>
-      {bottomNav ?? <BottomNav />}
+      {hideBottomNav ? null : (bottomNav ?? <BottomNav />)}
     </div>
   );
 }

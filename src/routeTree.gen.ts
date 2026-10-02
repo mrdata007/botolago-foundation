@@ -12,11 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DemoRouteImport } from './routes/demo'
 import { Route as FantasyRouteImport } from './routes/fantasy'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as NewsRouteImport } from './routes/news'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as PepitesRouteImport } from './routes/pepites'
-import { Route as DemoRouteImport } from './routes/demo'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PronosticsRouteImport } from './routes/pronostics'
@@ -103,6 +104,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FantasyRoute = FantasyRouteImport.update({
   id: '/fantasy',
   path: '/fantasy',
@@ -118,14 +124,14 @@ const NewsRoute = NewsRouteImport.update({
   path: '/news',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PepitesRoute = PepitesRouteImport.update({
   id: '/pepites',
   path: '/pepites',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoRoute = DemoRouteImport.update({
-  id: '/demo',
-  path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -490,11 +496,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/demo': typeof DemoRoute
   '/fantasy': typeof FantasyRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
+  '/notifications': typeof NotificationsRoute
   '/pepites': typeof PepitesRouteWithChildren
-  '/demo': typeof DemoRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
@@ -570,9 +577,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/demo': typeof DemoRoute
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
-  '/demo': typeof DemoRoute
+  '/notifications': typeof NotificationsRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -647,11 +655,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/demo': typeof DemoRoute
   '/fantasy': typeof FantasyRouteWithChildren
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
+  '/notifications': typeof NotificationsRoute
   '/pepites': typeof PepitesRouteWithChildren
-  '/demo': typeof DemoRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
@@ -729,11 +738,12 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/demo'
     | '/fantasy'
     | '/mcp'
     | '/news'
+    | '/notifications'
     | '/pepites'
-    | '/demo'
     | '/privacy'
     | '/profile'
     | '/pronostics'
@@ -809,9 +819,10 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/demo'
     | '/mcp'
     | '/news'
-    | '/demo'
+    | '/notifications'
     | '/privacy'
     | '/profile'
     | '/sitemap.xml'
@@ -885,11 +896,12 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/demo'
     | '/fantasy'
     | '/mcp'
     | '/news'
+    | '/notifications'
     | '/pepites'
-    | '/demo'
     | '/privacy'
     | '/profile'
     | '/pronostics'
@@ -966,11 +978,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  DemoRoute: typeof DemoRoute
   FantasyRoute: typeof FantasyRouteWithChildren
   McpRoute: typeof McpRoute
   NewsRoute: typeof NewsRouteWithChildren
+  NotificationsRoute: typeof NotificationsRoute
   PepitesRoute: typeof PepitesRouteWithChildren
-  DemoRoute: typeof DemoRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRouteWithChildren
   PronosticsRoute: typeof PronosticsRouteWithChildren
@@ -1014,6 +1027,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/fantasy': {
       id: '/fantasy'
       path: '/fantasy'
@@ -1035,18 +1055,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pepites': {
       id: '/pepites'
       path: '/pepites'
       fullPath: '/pepites'
       preLoaderRoute: typeof PepitesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo': {
-      id: '/demo'
-      path: '/demo'
-      fullPath: '/demo'
-      preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -1771,11 +1791,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  DemoRoute: DemoRoute,
   FantasyRoute: FantasyRouteWithChildren,
   McpRoute: McpRoute,
   NewsRoute: NewsRouteWithChildren,
+  NotificationsRoute: NotificationsRoute,
   PepitesRoute: PepitesRouteWithChildren,
-  DemoRoute: DemoRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRouteWithChildren,
   PronosticsRoute: PronosticsRouteWithChildren,

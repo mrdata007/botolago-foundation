@@ -1,4 +1,4 @@
-import { Ban, Pencil, Trophy } from "lucide-react";
+import { Ban, Check, Pencil, Trophy } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 
 import type { MatchVoteChoice, PredictionFixtureDto } from "@/backend/predictions/contracts";
@@ -7,7 +7,7 @@ import { ui, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { presentFootballClub } from "@/services/football";
-import { formatShare, formatVoteTotal, type VoteQuestionView } from "./match-votes";
+import { formatShare, formatVoteTotal, sharesVisible, type VoteQuestionView } from "./match-votes";
 
 /** The player's own answer: an ink outline over a wash of ink, as Sofascore marks it. */
 const MINE = cn(
@@ -50,7 +50,12 @@ export function MatchVoteCard({
   const awayName = fixture.away.shortName || fixture.away.name;
   const voted = view.mine !== null;
   const revealed = !open || (voted && !editing);
-  const total = t("predictions.votes.total").replace("{n}", formatVoteTotal(view.total, lang));
+  const showShares = sharesVisible(view.total);
+  // Under the threshold neither the shares nor the count are shown ("0 % ·
+  // 0 votes" tells a reader nothing), only that more votes are needed.
+  const total = showShares
+    ? t("predictions.votes.total").replace("{n}", formatVoteTotal(view.total, lang))
+    : t("predictions.votes.too_few");
 
   const label = (choice: MatchVoteChoice): string => {
     const team = choice === "home" ? homeName : awayName;
@@ -158,12 +163,14 @@ export function MatchVoteCard({
                 {/* Pinned inside the pill: left to find its own place in a
                     wrapping row, the browser puts it past the card's edge. */}
                 <span className="sr-only start-0 top-0">
-                  {(option.mine
-                    ? t("predictions.votes.answer_share_mine")
-                    : t("predictions.votes.answer_share")
-                  )
-                    .replace("{answer}", label(option.choice))
-                    .replace("{share}", share)}
+                  {showShares
+                    ? (option.mine
+                        ? t("predictions.votes.answer_share_mine")
+                        : t("predictions.votes.answer_share")
+                      )
+                        .replace("{answer}", label(option.choice))
+                        .replace("{share}", share)
+                    : label(option.choice)}
                 </span>
                 <span aria-hidden className="mx-auto flex shrink-0 items-center">
                   {face(option.choice)}
@@ -176,7 +183,11 @@ export function MatchVoteCard({
                     "mx-auto shrink-0 whitespace-nowrap [font-weight:var(--ui-weight-heavy)]",
                   )}
                 >
-                  <bdi>{share}</bdi>
+                  {showShares ? (
+                    <bdi>{share}</bdi>
+                  ) : option.mine ? (
+                    <Check className="h-4 w-4" />
+                  ) : null}
                 </span>
               </li>
             );

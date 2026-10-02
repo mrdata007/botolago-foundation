@@ -1,14 +1,14 @@
 import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CircleDot, Bell, Gem, Newspaper, Shield, Target, Trophy, UserRound } from "lucide-react";
 
 import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
-import { PEPITES_PROMOTED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
+import { HOME_DEADLINE_FIRST, PEPITES_PROMOTED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCard";
 import { footballService, type FootballSeason } from "@/services/football";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
@@ -29,7 +29,14 @@ import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { MatchCard } from "@/components/common/MatchCard";
 import { useOnLiveMatchEnd } from "@/components/matches/use-live-matches";
-import { StandingsNotes } from "@/components/matches/StandingsTable";
+import {
+  FormChips,
+  StandingsLegend,
+  StandingsNotes,
+  ZONE_BAR,
+} from "@/components/matches/StandingsTable";
+import { zoneLabel } from "@/components/matches/standings-copy";
+import { tableZones } from "@/lib/league-table";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { STRETCHED_LINK } from "@/components/clubs/stretched-link";
 import { rowClubName } from "@/lib/club-identity";
@@ -44,8 +51,15 @@ import {
   SkeletonList,
 } from "@/components/common/Skeletons";
 import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
-import { ui, UiCard } from "@/components/ui-kit";
+import { ui, UiCard, UiChip } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { bandGameweek } from "@/lib/band-gameweek";
+import { followedTeamIdsQuery } from "@/services/follows";
+import { deadlineStripTime, deadlineWithinHours } from "@/lib/deadline-strip";
+import { FantasyRuleChips } from "@/components/home/FantasyRuleChips";
+import { NextMatchPick } from "@/components/home/NextMatchPick";
+import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
+import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { useAuth } from "@/auth/AuthProvider";
 import { authService } from "@/services/auth";
 import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
@@ -54,8 +68,9 @@ import { cn } from "@/lib/utils";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { siteJsonLd } from "@/lib/structured-data";
+import { matchDayFromKey } from "@/lib/match-kickoff";
 import { advanceGreetingClock, greetingPart } from "@/lib/greeting";
-import { capitalizeFirst, groupByMatchDay } from "@/lib/match-days";
+import { capitalizeFirst, groupByMatchDay, onlyFollowedClubs } from "@/lib/match-days";
 import type { Match } from "@/types/domain";
 import stadiumBand from "@/assets/brand/home-band-stadium.webp";
 import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
@@ -231,7 +246,7 @@ const isInPlay = (match: Match) => match.status === "live";
  */
 function HomeContent() {
   const { t, tr, lang } = useI18n();
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const { source, key } = useFantasyDataSource();
   const { renderedAt } = Route.useLoaderData();
   const now = useGreetingClock(renderedAt);
@@ -340,8 +355,49 @@ function HomeContent() {
   );
   // The band names the Fantasy gameweek; before Fantasy has one (or for a
   // visitor it is not open to), the league round of the next fixture.
-  const bandGameweek =
-    gwQ.data?.number ?? homeMatches.find((match) => match.gameweek > 0)?.gameweek;
+  const bandGameweekNumber = bandGameweek(
+    gwQ.data,
+    homeMatches.find((match) => match.gameweek > 0)?.gameweek,
+    now.getTime(),
+  );
+  // Day chips over "À venir": every day, or just one. A day that has left the
+  // list (its matches began) drops the choice back to every day.
+  const [dayFilter, setDayFilter] = useState("all");
+  // "Mes clubs": only matches of the clubs this reader follows. The chip is
+  // there only for a signed-in reader who follows at least one club.
+  const followedQ = useQuery(followedTeamIdsQuery(user?.id ?? null));
+  const followedIds = followedQ.data ?? [];
+  const [mineOnly, setMineOnly] = useState(false);
+  const listDays = mineOnly ? onlyFollowedClubs(upcomingDays, followedIds) : upcomingDays;
+  const activeDay = listDays.some((day) => day.key === dayFilter) ? dayFilter : "all";
+  const shownDays =
+    activeDay === "all" ? listDays : listDays.filter((day) => day.key === activeDay);
+  const dayChipLabel = (key: string) =>
+    capitalizeFirst(
+      moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+        weekday: "short",
+        day: "numeric",
+      }).format(matchDayFromKey(key)),
+    );
+
+  // The next match to be played, for the band. While one is live, that live
+  // card is the hero and the band does not carry another.
+  const nextMatch = useMemo(
+    () =>
+      liveMatches.length > 0
+        ? undefined
+        : homeMatches
+            .filter((match) => match.status === "scheduled")
+            .sort((a, b) => a.kickoff.localeCompare(b.kickoff))[0],
+    [homeMatches, liveMatches],
+  );
+  // The strip under the header in the 72 hours before a Fantasy deadline.
+  const deadlineLeft = useDeadlineCountdown(gwQ.data?.deadline);
+  // Flag off by default: the Fantasy card leads the phone layout only inside
+  // the last 24 hours before the deadline.
+  const fantasyFirst =
+    HOME_DEADLINE_FIRST && gwQ.data?.isCurrent !== false && deadlineWithinHours(deadlineLeft, 24);
+  const stripTime = gwQ.data?.isCurrent === false ? null : deadlineStripTime(deadlineLeft);
 
   // Up to three curated stories: the edition's lead plus its next articles.
   // Never the full News page — a lightweight preview only.
@@ -354,12 +410,14 @@ function HomeContent() {
 
   const standingsLoading = seasonsQ.isPending || (currentSeason != null && standingsQ.isPending);
   const standingsFailed = seasonsQ.isError || standingsQ.isError;
-  const standingsRows = standingsQ.data?.overall ?? [];
+  const standingsRows = useMemo(() => standingsQ.data?.overall ?? [], [standingsQ.data]);
   const standingsTop = standingsRows.slice(0, 5);
+  // Zones are decided on the whole table (a tie may run past the top five).
+  const standingsZones = useMemo(() => tableZones(standingsRows), [standingsRows]);
   const showStandings = standingsLoading || standingsFailed || standingsRows.length > 0;
 
   return (
-    <AppShell liveStrip>
+    <AppShell liveStrip matchdayStrip contentWidth="desktop">
       {/* -------------------------------------------------------- */}
       {/* 1. Gameweek band — the page's anchor                     */}
       {/* -------------------------------------------------------- */}
@@ -368,291 +426,356 @@ function HomeContent() {
           crawlers and screen-reader users a descriptive title. It is read in
           the reader's language; `HOME_TITLE`, the <title>, is French for all. */}
       <h1 className="sr-only">{t("home.sr_title")}</h1>
-      <GameweekBand
-        greeting={greeting}
-        dateLine={dateLine}
-        gameweek={bandGameweek}
-        deadline={gwQ.data?.deadline}
-        live={liveMatches.length > 0}
-        overlap={liveMatches.length > 0}
-      />
-
-      {/* -------------------------------------------------------- */}
-      {/* 2. Live & upcoming                                        */}
-      {/* -------------------------------------------------------- */}
-      <h2 className="sr-only">{plain(t("home.live_upcoming"))}</h2>
-      {/* Each live match as the split club-colour card; the first rises out
+      {stripTime && gwQ.data ? (
+        <DeadlineStrip gameweek={gwQ.data.number} deadline={gwQ.data.deadline} time={stripTime} />
+      ) : null}
+      {/* Phone: one column, in the order the order-N classes give. From 768px
+          the three columns below are real columns (`contents` on a phone lets
+          their children join the one list): tablet is the hero across the
+          top and two columns under it, desktop is 340 / fluid / 340. */}
+      <div className="flex flex-col md:grid md:grid-cols-2 md:items-start md:gap-x-6 lg:grid-cols-[340px_minmax(0,1fr)_340px]">
+        <div className="contents md:flex md:flex-col lg:min-w-0 md:col-span-2 lg:order-2 lg:col-span-1">
+          <div className="order-1 lg:min-w-0">
+            <GameweekBand
+              afterStrip={stripTime !== null}
+              greeting={greeting}
+              dateLine={dateLine}
+              gameweek={bandGameweekNumber}
+              // The strip above says the deadline inside 72 hours; the band's own
+              // pill would repeat it.
+              deadline={stripTime ? undefined : gwQ.data?.deadline}
+              live={liveMatches.length > 0}
+              overlap={liveMatches.length > 0}
+            >
+              {nextMatch && clubById(nextMatch.homeClubId) && clubById(nextMatch.awayClubId) ? (
+                <NextMatchPick
+                  match={nextMatch}
+                  home={clubById(nextMatch.homeClubId)!}
+                  away={clubById(nextMatch.awayClubId)!}
+                  withVote={PRONOSTICS_PROMOTED}
+                />
+              ) : null}
+            </GameweekBand>
+          </div>
+          {/* -------------------------------------------------------- */}
+          {/* 2. Live & upcoming                                        */}
+          {/* -------------------------------------------------------- */}
+          <h2 className="sr-only">{plain(t("home.live_upcoming"))}</h2>
+          {/* Each live match as the split club-colour card; the first rises out
           of the band, so the gameweek and its live match read as one moment. */}
-      {liveMatches.length > 0 && (
-        <div className="relative -mt-16 grid gap-3">
-          {liveMatches.map((match) => {
-            const home = clubById(match.homeClubId);
-            const away = clubById(match.awayClubId);
-            if (!home || !away) return null;
-            return (
-              <MatchCard key={match.id} match={match} home={home} away={away} variant="hero" />
-            );
-          })}
-        </div>
-      )}
-      {(matchesQ.isError || upcomingDays.length > 0 || homeMatches.length === 0) && (
-        <Section>
-          <SectionHeader
-            as="h3"
-            title={t("matches.section.upcoming")}
-            action={<ViewAllLink to="/matches" />}
-          />
-          {matchesQ.isPending ? (
-            <UiCard
-              padding="none"
-              className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
-            >
-              <MatchCardSkeleton flat />
-              <MatchCardSkeleton flat />
-            </UiCard>
-          ) : matchesQ.isError ? (
-            <ErrorState onRetry={() => void matchesQ.refetch()} />
-          ) : upcomingDays.length === 0 ? (
-            <EmptyState compact>{t("state.empty")}</EmptyState>
-          ) : (
-            <div className="grid gap-4">
-              {upcomingDays.map((day) => (
-                <div key={day.key} className="min-w-0">
-                  <SectionGroupHeader as="h4" title={day.label} />
-                  {/* The card clips the rows' club edge bars to its corners. */}
-                  <UiCard
-                    padding="none"
-                    className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
-                  >
-                    {day.matches.map((m) => {
-                      const home = clubById(m.homeClubId);
-                      const away = clubById(m.awayClubId);
-                      if (!home || !away) return null;
-                      return (
-                        <MatchCard
-                          key={m.id}
-                          match={m}
-                          home={home}
-                          away={away}
-                          variant="list"
-                          listGameweek={bandGameweek}
-                        />
-                      );
-                    })}
-                  </UiCard>
-                </div>
-              ))}
-            </div>
-          )}
-        </Section>
-      )}
-
-      {/* Pronostics (BG-0146), right after the matches: shown once promoted,
-          and it hides itself while the game is off in the database. */}
-      {PRONOSTICS_PROMOTED && (
-        <Section>
-          <PredictionsHomeCard />
-        </Section>
-      )}
-
-      {/* -------------------------------------------------------- */}
-      {/* 3. Fantasy — the manager's card / team entry              */}
-      {/* -------------------------------------------------------- */}
-      {/* The card names itself ("VOTRE FANTASY · ATLAS XI"), as the board
-          draws it; the heading is for the document outline. */}
-      <Section>
-        <h2 className="sr-only">{plain(t("home.fantasy_hub"))}</h2>
-        {status === "loading" || availability.isPending ? (
-          <HeroSkeleton />
-        ) : availability.isError ? (
-          <ErrorState onRetry={() => void availability.refetch()} />
-        ) : availability.data.status !== "ready" ? (
-          <FantasyUnavailableState reason={availability.data.status} />
-        ) : source === "guest" ? (
-          <FantasyCreateCard canCreate={canCreate} />
-        ) : summaryQ.isError || gwQ.isError ? (
-          <ErrorState
-            onRetry={() => {
-              void summaryQ.refetch();
-              void gwQ.refetch();
-            }}
-          />
-        ) : summaryQ.data && gwQ.data ? (
-          <FantasySummaryCard summary={summaryQ.data} />
-        ) : summaryQ.isSuccess && summaryQ.data === null ? (
-          <FantasyCreateCard canCreate={canCreate} />
-        ) : (
-          <HeroSkeleton />
-        )}
-
-        {fantasyReady && source !== "guest" && (
-          <div className="mt-3">
-            {alertsQ.isError || playersQ.isError ? null : alertsQ.data && playersQ.data ? (
-              alertsQ.data.length > 0 && (
-                <>
-                  <div className="mb-1.5 inline-flex items-center gap-1.5">
-                    <Bell className={cn("h-3.5 w-3.5 shrink-0", ui.tone.ink)} aria-hidden />
-                    {/* `home.fantasy_alerts` carries `{accent}` markers, so
-                        it must go through <Trans> — rendered raw it prints
-                        the literal markers on screen. */}
-                    <Trans
-                      text={t("home.fantasy_alerts")}
-                      className={cn(ui.text.label, ui.tone.muted)}
-                      accentClassName={ui.tone.ink}
-                    />
-                  </div>
-                  <FantasyAlertList alerts={alertsQ.data} players={playersQ.data} />
-                </>
-              )
-            ) : (
-              <SkeletonList count={1}>{() => <AlertRowSkeleton />}</SkeletonList>
-            )}
-          </div>
-        )}
-      </Section>
-
-      {/* -------------------------------------------------------- */}
-      {/* 4. News preview — hidden at launch (NEWS_ENABLED)         */}
-      {/* -------------------------------------------------------- */}
-      {NEWS_ENABLED && (
-        <Section>
-          <SectionHeader
-            title={plain(t("home.news_preview"))}
-            action={<ViewAllLink to="/news" />}
-          />
-          <div className="grid gap-2.5">
-            {newsQ.isError ? (
-              <ErrorState onRetry={() => void newsQ.refetch()} />
-            ) : !newsPreview ? (
-              <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
-            ) : newsPreview.length === 0 ? (
-              <EmptyState compact>{t("state.empty")}</EmptyState>
-            ) : (
-              newsPreview.map((a) => (
-                <ArticleCard key={a.id} article={a} variant="compact" clubs={clubsQ.data ?? []} />
-              ))
-            )}
-          </div>
-        </Section>
-      )}
-
-      {/* -------------------------------------------------------- */}
-      {/* 5. Standings snapshot — only when the backend has one     */}
-      {/* -------------------------------------------------------- */}
-      {showStandings && (
-        <Section>
-          <SectionHeader
-            title={plain(t("matches.table_preview"))}
-            action={<ViewAllLink to="/matches/standings" />}
-          />
-          {standingsLoading ? (
-            <SkeletonList count={5}>{() => <StandingsRowSkeleton />}</SkeletonList>
-          ) : standingsFailed ? (
-            <ErrorState
-              onRetry={() => {
-                void seasonsQ.refetch();
-                void standingsQ.refetch();
-              }}
-            />
-          ) : (
-            <UiCard
-              padding="none"
-              className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
-            >
-              {standingsTop.map((row) => {
-                const club = clubById(row.clubId);
-                if (!club) return null;
-                // Each club opens its club page. The name is the link and its
-                // ::after stretches over the row, so the whole row is the
-                // target while the link is named by the club alone and the
-                // figures are still read as figures.
+          {liveMatches.length > 0 && (
+            <div className="relative order-2 -mt-16 grid gap-3">
+              {liveMatches.map((match) => {
+                const home = clubById(match.homeClubId);
+                const away = clubById(match.awayClubId);
+                if (!home || !away) return null;
                 return (
-                  <div
-                    key={row.clubId}
-                    className="relative flex items-center gap-2.5 px-3.5 py-2 transition-colors hover:bg-[color:var(--ui-surface-sunken)]"
-                  >
-                    <span
-                      className={cn("w-5 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}
-                      aria-hidden
-                    >
-                      {row.position}
-                    </span>
-                    <ClubCrest club={club} size="sm" />
-                    <Link
-                      to="/clubs/$clubId"
-                      params={{ clubId: club.id }}
-                      className={cn(
-                        "min-w-0 flex-1 truncate",
-                        ui.text.body,
-                        "[font-weight:var(--ui-weight-heavy)]",
-                        ui.tone.default,
-                        STRETCHED_LINK,
-                      )}
-                    >
-                      {rowClubName(tr(club.shortName), tr(club.name))}
-                    </Link>
-                    <span
-                      className={cn("w-7 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}
-                      aria-label={t("matches.table.played")}
-                    >
-                      {row.played}
-                    </span>
-                    <bdi
-                      className={cn("w-9 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}
-                      aria-label={t("matches.table.goal_difference")}
-                    >
-                      {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
-                    </bdi>
-                    <span
-                      className={cn("w-8 shrink-0 text-end", ui.stat.md, ui.tone.default)}
-                      aria-label={t("matches.table.points")}
-                    >
-                      {row.points}
-                    </span>
-                  </div>
+                  <MatchCard key={match.id} match={match} home={home} away={away} variant="hero" />
                 );
               })}
-            </UiCard>
+            </div>
           )}
-          {/* Worked out from the results, and a tie the top five may cut
-              through: said here as the Classement tab says it. */}
-          {standingsQ.data && !standingsLoading && !standingsFailed ? (
-            <StandingsNotes
-              rows={standingsRows}
-              shown={standingsTop}
-              computed={standingsQ.data.computed}
-              seasonStatus={currentSeason?.status}
-              className="mt-2"
-            />
-          ) : null}
-        </Section>
-      )}
-
-      {/* -------------------------------------------------------- */}
-      {/* 6. Discovery links                                        */}
-      {/* -------------------------------------------------------- */}
-      <Section className="pb-2">
-        <SectionHeader title={<BrandedText text={t("home.explore")} />} />
-        {/* Four across; with News on, five tiles do not fit a 390px row
-            ("Actualités" is wider than a fifth of it), so they wrap in threes. */}
-        <div className={cn("grid gap-2", NEWS_ENABLED ? "grid-cols-3" : "grid-cols-4")}>
-          <DiscoveryLink to="/matches" icon={CircleDot} label={t("nav.matches")} />
-          <DiscoveryLink to="/clubs" icon={Shield} label={t("clubs.title")} />
-          <DiscoveryLink to="/fantasy" icon={Trophy} label={t("nav.fantasy")} />
-          {/* News discovery tile — hidden at launch (NEWS_ENABLED). */}
-          {NEWS_ENABLED && <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />}
-          {/* Pépites, once promoted, takes Profil's tile as it takes its slot in the bar. */}
-          {PEPITES_PROMOTED ? (
-            <DiscoveryLink to="/pepites" icon={Gem} label={t("nav.pepites")} />
-          ) : (
-            <DiscoveryLink to="/profile" icon={UserRound} label={t("nav.profile")} />
-          )}
-          {/* A sixth tile makes two rows of three (BG-0146): shown once promoted. */}
-          {PRONOSTICS_PROMOTED && (
-            <DiscoveryLink to="/pronostics" icon={Target} label={t("home.discover.predictions")} />
+          {/* -------------------------------------------------------- */}
+          {/* 4. News preview — hidden at launch (NEWS_ENABLED)         */}
+          {/* -------------------------------------------------------- */}
+          {NEWS_ENABLED && (
+            <Section className="order-6">
+              <SectionHeader
+                title={plain(t("home.news_preview"))}
+                action={<ViewAllLink to="/news" />}
+              />
+              <div className="grid gap-2.5">
+                {newsQ.isError ? (
+                  <ErrorState onRetry={() => void newsQ.refetch()} />
+                ) : !newsPreview ? (
+                  <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
+                ) : newsPreview.length === 0 ? (
+                  <EmptyState compact>{t("state.empty")}</EmptyState>
+                ) : (
+                  newsPreview.map((a) => (
+                    <ArticleCard
+                      key={a.id}
+                      article={a}
+                      variant="compact"
+                      clubs={clubsQ.data ?? []}
+                    />
+                  ))
+                )}
+              </div>
+            </Section>
           )}
         </div>
-      </Section>
+        <div className="contents md:flex md:flex-col lg:min-w-0 md:order-2 lg:order-1">
+          {(matchesQ.isError || upcomingDays.length > 0 || homeMatches.length === 0) && (
+            <Section className="order-3 lg:mt-0">
+              <SectionHeader
+                as="h3"
+                title={t("matches.section.upcoming")}
+                action={<ViewAllLink to="/matches" />}
+              />
+              {matchesQ.isPending ? (
+                <UiCard
+                  padding="none"
+                  className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+                >
+                  <MatchCardSkeleton flat />
+                  <MatchCardSkeleton flat />
+                </UiCard>
+              ) : matchesQ.isError ? (
+                <ErrorState onRetry={() => void matchesQ.refetch()} />
+              ) : upcomingDays.length === 0 ? (
+                <EmptyState compact>{t("state.empty")}</EmptyState>
+              ) : (
+                <div className="grid gap-4">
+                  {upcomingDays.length > 1 || followedIds.length > 0 ? (
+                    <div
+                      role="group"
+                      aria-label={t("matches.section.upcoming")}
+                      className="flex flex-wrap gap-1.5"
+                    >
+                      <UiChip selected={activeDay === "all"} onClick={() => setDayFilter("all")}>
+                        {t("matches.tab.all")}
+                      </UiChip>
+                      {followedIds.length > 0 ? (
+                        <UiChip selected={mineOnly} onClick={() => setMineOnly((on) => !on)}>
+                          {t("profile.clubs.title")}
+                        </UiChip>
+                      ) : null}
+                      {listDays.slice(0, 4).map((day) => (
+                        <UiChip
+                          key={day.key}
+                          selected={activeDay === day.key}
+                          onClick={() => setDayFilter(day.key)}
+                        >
+                          {dayChipLabel(day.key)}
+                        </UiChip>
+                      ))}
+                    </div>
+                  ) : null}
+                  {shownDays.length === 0 ? (
+                    <EmptyState compact>{t("state.empty")}</EmptyState>
+                  ) : null}
+                  {shownDays.map((day) => (
+                    <div key={day.key} className="min-w-0">
+                      <SectionGroupHeader as="h4" title={day.label} />
+                      {/* The card clips the rows' club edge bars to its corners. */}
+                      <UiCard
+                        padding="none"
+                        className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+                      >
+                        {day.matches.map((m) => {
+                          const home = clubById(m.homeClubId);
+                          const away = clubById(m.awayClubId);
+                          if (!home || !away) return null;
+                          return (
+                            <MatchCard
+                              key={m.id}
+                              match={m}
+                              home={home}
+                              away={away}
+                              variant="list"
+                              listGameweek={bandGameweekNumber}
+                            />
+                          );
+                        })}
+                      </UiCard>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+          )}
+          {/* -------------------------------------------------------- */}
+          {/* 6. Discovery links                                        */}
+          {/* -------------------------------------------------------- */}
+          <Section className="order-8 pb-2">
+            <SectionHeader title={<BrandedText text={t("home.explore")} />} />
+            {/* Four across; with News on, five tiles do not fit a 390px row
+            ("Actualités" is wider than a fifth of it), so they wrap in threes. */}
+            <div className={cn("grid gap-2", NEWS_ENABLED ? "grid-cols-3" : "grid-cols-4")}>
+              <DiscoveryLink to="/matches" icon={CircleDot} label={t("nav.matches")} />
+              <DiscoveryLink to="/clubs" icon={Shield} label={t("clubs.title")} />
+              <DiscoveryLink to="/fantasy" icon={Trophy} label={t("nav.fantasy")} />
+              {/* News discovery tile — hidden at launch (NEWS_ENABLED). */}
+              {NEWS_ENABLED && <DiscoveryLink to="/news" icon={Newspaper} label={t("nav.news")} />}
+              {/* Pépites, once promoted, takes Profil's tile as it takes its slot in the bar. */}
+              {PEPITES_PROMOTED ? (
+                <DiscoveryLink to="/pepites" icon={Gem} label={t("nav.pepites")} />
+              ) : (
+                <DiscoveryLink to="/profile" icon={UserRound} label={t("nav.profile")} />
+              )}
+              {/* A sixth tile makes two rows of three (BG-0146): shown once promoted. */}
+              {PRONOSTICS_PROMOTED && (
+                <DiscoveryLink
+                  to="/pronostics"
+                  icon={Target}
+                  label={t("home.discover.predictions")}
+                />
+              )}
+            </div>
+          </Section>
+        </div>
+        <div className="contents md:flex md:flex-col lg:min-w-0 md:order-3 lg:order-3">
+          {/* -------------------------------------------------------- */}
+          {/* 3. Fantasy — the manager's card / team entry              */}
+          {/* -------------------------------------------------------- */}
+          {/* The card names itself ("VOTRE FANTASY · ATLAS XI"), as the board
+          draws it; the heading is for the document outline. */}
+          <Section
+            className={cn("lg:order-4 lg:mt-0", fantasyFirst ? "-order-1 sm:mt-0" : "order-5")}
+          >
+            <h2 className="sr-only">{plain(t("home.fantasy_hub"))}</h2>
+            {status === "loading" || availability.isPending ? (
+              <HeroSkeleton />
+            ) : availability.isError ? (
+              <ErrorState onRetry={() => void availability.refetch()} />
+            ) : availability.data.status !== "ready" ? (
+              <FantasyUnavailableState reason={availability.data.status} />
+            ) : source === "guest" ? (
+              <FantasyCreateCard canCreate={canCreate} />
+            ) : summaryQ.isError || gwQ.isError ? (
+              <ErrorState
+                onRetry={() => {
+                  void summaryQ.refetch();
+                  void gwQ.refetch();
+                }}
+              />
+            ) : summaryQ.data && gwQ.data ? (
+              <FantasySummaryCard summary={summaryQ.data} />
+            ) : summaryQ.isSuccess && summaryQ.data === null ? (
+              <FantasyCreateCard canCreate={canCreate} />
+            ) : (
+              <HeroSkeleton />
+            )}
+
+            {fantasyReady ? <FantasyRuleChips deadline={gwQ.data?.deadline} /> : null}
+
+            {fantasyReady && source !== "guest" && (
+              <div className="mt-3">
+                {alertsQ.isError || playersQ.isError ? null : alertsQ.data && playersQ.data ? (
+                  alertsQ.data.length > 0 && (
+                    <>
+                      <div className="mb-1.5 inline-flex items-center gap-1.5">
+                        <Bell className={cn("h-3.5 w-3.5 shrink-0", ui.tone.ink)} aria-hidden />
+                        {/* `home.fantasy_alerts` carries `{accent}` markers, so
+                        it must go through <Trans> — rendered raw it prints
+                        the literal markers on screen. */}
+                        <Trans
+                          text={t("home.fantasy_alerts")}
+                          className={cn(ui.text.label, ui.tone.muted)}
+                          accentClassName={ui.tone.ink}
+                        />
+                      </div>
+                      <FantasyAlertList alerts={alertsQ.data} players={playersQ.data} />
+                    </>
+                  )
+                ) : (
+                  <SkeletonList count={1}>{() => <AlertRowSkeleton />}</SkeletonList>
+                )}
+              </div>
+            )}
+          </Section>
+          {/* Pronostics (BG-0146), right after the matches: shown once promoted,
+          and it hides itself while the game is off in the database. */}
+          {PRONOSTICS_PROMOTED && (
+            <Section className="order-4 lg:order-5">
+              <PredictionsHomeCard />
+            </Section>
+          )}
+          {/* -------------------------------------------------------- */}
+          {/* 5. Standings snapshot — only when the backend has one     */}
+          {/* -------------------------------------------------------- */}
+          {showStandings && (
+            <Section className="order-7">
+              <SectionHeader
+                title={plain(t("matches.table_preview"))}
+                action={<ViewAllLink to="/matches/standings" />}
+              />
+              {standingsLoading ? (
+                <SkeletonList count={5}>{() => <StandingsRowSkeleton />}</SkeletonList>
+              ) : standingsFailed ? (
+                <ErrorState
+                  onRetry={() => {
+                    void seasonsQ.refetch();
+                    void standingsQ.refetch();
+                  }}
+                />
+              ) : (
+                <UiCard
+                  padding="none"
+                  className="divide-y divide-[color:var(--ui-rule)] overflow-hidden"
+                >
+                  {standingsTop.map((row) => {
+                    const club = clubById(row.clubId);
+                    if (!club) return null;
+                    const zone = standingsZones.get(row.clubId) ?? null;
+                    // Each club opens its club page. The name is the link and its
+                    // ::after stretches over the row, so the whole row is the
+                    // target while the link is named by the club alone and the
+                    // figures are still read as figures.
+                    return (
+                      <div
+                        key={row.clubId}
+                        className="relative flex items-center gap-2.5 px-3.5 py-2 transition-colors hover:bg-[color:var(--ui-surface-sunken)]"
+                      >
+                        {zone ? (
+                          <span
+                            aria-hidden
+                            className={cn("absolute inset-y-0 start-0 w-1", ZONE_BAR[zone])}
+                          />
+                        ) : null}
+                        <span className={cn("w-5 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}>
+                          <span aria-hidden>{row.position}</span>
+                          <span className="sr-only">
+                            {row.position}
+                            {zone ? `, ${zoneLabel(zone, t)}` : ""}
+                          </span>
+                        </span>
+                        <ClubCrest club={club} size="sm" />
+                        {/* Wraps rather than ending in an ellipsis. */}
+                        <Link
+                          to="/clubs/$clubId"
+                          params={{ clubId: club.id }}
+                          className={cn(
+                            "min-w-0 flex-1",
+                            ui.text.body,
+                            "[font-weight:var(--ui-weight-heavy)]",
+                            ui.tone.default,
+                            STRETCHED_LINK,
+                          )}
+                        >
+                          {rowClubName(tr(club.shortName), tr(club.name))}
+                        </Link>
+                        <FormChips form={row.form} className="shrink-0" />
+                        <span
+                          className={cn("w-8 shrink-0 text-end", ui.stat.md, ui.tone.default)}
+                          aria-label={t("matches.table.points")}
+                        >
+                          {row.points}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </UiCard>
+              )}
+              {!standingsLoading && !standingsFailed && standingsTop.length > 0 ? (
+                <StandingsLegend className="mt-3" />
+              ) : null}
+              {/* Worked out from the results, and a tie the top five may cut
+              through: said here as the Classement tab says it. */}
+              {standingsQ.data && !standingsLoading && !standingsFailed ? (
+                <StandingsNotes
+                  rows={standingsRows}
+                  shown={standingsTop}
+                  computed={standingsQ.data.computed}
+                  seasonStatus={currentSeason?.status}
+                  className="mt-2"
+                />
+              ) : null}
+            </Section>
+          )}
+        </div>
+      </div>
     </AppShell>
   );
 }
@@ -726,7 +849,13 @@ function GameweekBand({
   deadline,
   live,
   overlap,
+  afterStrip = false,
+  children,
 }: {
+  /** What sits at the foot of the band: the next match. */
+  children?: ReactNode;
+  /** The deadline strip sits above: it has already cancelled the screen's top padding. */
+  afterStrip?: boolean;
   greeting: string;
   dateLine: string;
   gameweek?: number;
@@ -757,7 +886,8 @@ function GameweekBand({
         "relative isolate overflow-hidden",
         // Flush under the bar (and the live strip): UiScreen's `pt-4` is
         // taken back on a phone, where the band runs edge to edge.
-        "-mx-[var(--ui-gutter)] -mt-4 px-[var(--ui-gutter)] pt-6",
+        "-mx-[var(--ui-gutter)] px-[var(--ui-gutter)] pt-6",
+        afterStrip ? "mt-0" : "-mt-4",
         overlap ? "pb-24" : "pb-7",
         "sm:mx-0 sm:mt-0 sm:rounded-[var(--ui-radius-sheet)] sm:px-6",
         ui.tone.onInkPlain,
@@ -804,6 +934,7 @@ function GameweekBand({
           <DeadlineCountdown iso={deadline} label={t("home.deadline_fantasy")} />
         </div>
       ) : null}
+      {children}
     </section>
   );
 }

@@ -23,7 +23,7 @@ import { listSeparator, zoneLabel } from "./standings-copy";
 export type StandingsView = "overall" | "home" | "away" | "form";
 
 /** The zone colours: a 4px bar at the row's start edge, keyed in the legend. */
-const ZONE_BAR: Record<LeagueZone, string> = {
+export const ZONE_BAR: Record<LeagueZone, string> = {
   champions_league: "bg-[color:var(--ui-ink-fg)]",
   confederation_cup: "bg-[color:var(--ui-positive)]",
   relegation: "bg-[color:var(--ui-negative)]",

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { deadlineCountdown, formatDeadline } from "./deadline";
+import { deadlineCountdown, deadlineParts, formatDeadline } from "./deadline";
 
 const DEADLINE = "2026-09-24T18:30:00Z";
 const at = (iso: string) => Date.parse(iso);
@@ -61,5 +61,29 @@ describe("formatDeadline", () => {
     expect(formatDeadline(DEADLINE, "fr")).not.toMatch(/jeu/);
     expect(formatDeadline(DEADLINE, "fr", { weekday: "short" })).toMatch(/^jeu\.?/);
     expect(formatDeadline(DEADLINE, "fr", { weekday: "long" })).toMatch(/^jeudi/);
+  });
+});
+
+describe("deadlineParts", () => {
+  const now = Date.parse("2026-10-01T12:00:00Z");
+
+  test("counts whole hours (days included), minutes and seconds", () => {
+    // 2 days 23 h 58 min 07 s ahead.
+    const parts = deadlineParts("2026-10-04T11:58:07Z", now);
+    expect(parts).toEqual({ hours: 71, minutes: 58, seconds: 7, passed: false });
+  });
+
+  test("is passed, and all zeros, once the deadline has gone", () => {
+    expect(deadlineParts("2026-10-01T11:59:59Z", now)).toEqual({
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      passed: true,
+    });
+    expect(deadlineParts("2026-10-01T12:00:00Z", now)?.passed).toBe(true);
+  });
+
+  test("is null for a date that does not parse", () => {
+    expect(deadlineParts("not a date", now)).toBeNull();
   });
 });

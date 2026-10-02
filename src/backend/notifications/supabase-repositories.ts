@@ -20,6 +20,7 @@ import {
   type NotificationPreferencesDto,
   type NotificationPreferenceUpdate,
   type NotificationRepository,
+  type NotificationSubscriptionRepository,
 } from "./contracts";
 import { mapNotificationError, NotificationError } from "./errors";
 
@@ -218,5 +219,28 @@ export class SupabaseNotificationDeviceRepository implements NotificationDeviceR
       p_device_id: requireUuid(id),
     });
     throwIfError(error);
+  }
+}
+
+export class SupabaseNotificationSubscriptionRepository implements NotificationSubscriptionRepository {
+  async setMatchReminder(
+    fixtureId: string,
+    enabled: boolean,
+    context: RepositoryContext,
+  ): Promise<void> {
+    requireActor(context);
+    const { error } = await getNotificationsApi().rpc("set_my_notification_subscription", {
+      p_kind: "match",
+      p_target_id: requireUuid(fixtureId),
+      p_enabled: enabled,
+    });
+    throwIfError(error);
+  }
+
+  async listMatchReminders(context: RepositoryContext): Promise<readonly string[]> {
+    requireActor(context);
+    const { data, error } = await getNotificationsApi().rpc("list_my_match_reminders");
+    throwIfError(error);
+    return parse(z.array(z.string().uuid()), data);
   }
 }
