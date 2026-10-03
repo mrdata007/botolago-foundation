@@ -21,6 +21,15 @@ async function openSample(page: Page, language: "fr" | "ar", query = SMALL) {
   await expect(page.getByTestId("mapping-row").first()).toBeVisible();
 }
 
+/**
+ * The first Sofascore candidate. A Flashscore candidate cannot be proposed from the comparison (the
+ * database requires the reviewed Sofascore mapping it rests on, which only the batch screen carries),
+ * so every flow that PROPOSES starts from a Sofascore row.
+ */
+function firstSofascoreRow(page: Page) {
+  return page.locator('[data-testid="mapping-row"][data-provider="sofascore"]').first();
+}
+
 async function seat(page: Page, who: "proposer" | "approver" | "reader") {
   await page.getByTestId(`sample-seat-${who}`).click();
   await expect(page.getByTestId("mapping-queue")).toBeVisible();
@@ -28,7 +37,7 @@ async function seat(page: Page, who: "proposer" | "approver" | "reader") {
 
 /** Proposes the first candidate against its best-ranked option, from the open comparison. */
 async function proposeFirst(page: Page) {
-  await page.getByTestId("mapping-row").first().click();
+  await firstSofascoreRow(page).click();
   await expect(page.getByTestId("mapping-comparison")).toBeVisible();
   await expect(page.getByTestId("mapping-option").first()).toBeVisible();
   await page.getByTestId("mapping-option-select").first().click();
@@ -121,7 +130,7 @@ test.describe("keyboard", () => {
 
   test("a proposal can be made from the keyboard alone", async ({ page }) => {
     await openSample(page, "fr");
-    await page.getByTestId("mapping-row").first().focus();
+    await firstSofascoreRow(page).focus();
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("mapping-option").first()).toBeVisible();
     const select = page.getByTestId("mapping-option-select").first();
@@ -163,7 +172,7 @@ test.describe("the two-person rule", () => {
     // A different reviewer sees the same exact fingerprint, and may decide.
     await seat(page, "approver");
     await page.getByTestId("mapping-tab-proposed").click();
-    await page.getByTestId("mapping-row").first().click();
+    await firstSofascoreRow(page).click();
     await expect(page.getByTestId("mapping-fingerprint")).toHaveText(fingerprint);
     await expect(page.getByTestId("mapping-approve")).toBeVisible();
     await expect(page.getByTestId("mapping-reject")).toBeVisible();
@@ -187,7 +196,7 @@ test.describe("the two-person rule", () => {
     await openSample(page, "fr");
     await seat(page, "reader");
     await expect(page.getByTestId("mapping-row").first()).toBeVisible();
-    await page.getByTestId("mapping-row").first().click();
+    await firstSofascoreRow(page).click();
     await expect(page.getByTestId("mapping-option").first()).toBeVisible();
     await expect(page.getByTestId("mapping-option-select")).toHaveCount(0);
     await expect(page.getByTestId("mapping-propose-trigger")).toHaveCount(0);
@@ -197,7 +206,7 @@ test.describe("the two-person rule", () => {
   test("with the proposal switch off, the screen only reads", async ({ page }) => {
     await openSample(page, "fr", "scale=small");
     await expect(page.getByTestId("mapping-read-only")).toBeVisible();
-    await page.getByTestId("mapping-row").first().click();
+    await firstSofascoreRow(page).click();
     await expect(page.getByTestId("mapping-option").first()).toBeVisible();
     await expect(page.getByTestId("mapping-option-select")).toHaveCount(0);
     await expect(page.getByTestId("mapping-propose-trigger")).toHaveCount(0);
@@ -395,7 +404,7 @@ test.describe("execute one approved proposal", () => {
     await proposeFirst(page);
     await seat(page, "approver");
     await page.getByTestId("mapping-tab-proposed").click();
-    await page.getByTestId("mapping-row").first().click();
+    await firstSofascoreRow(page).click();
     await page.getByTestId("mapping-approve").click();
     await page.getByTestId("mapping-approve-reason").fill(APPROVAL_REASON);
     await page.getByTestId("mapping-approve-commit").click();
@@ -459,7 +468,7 @@ test.describe("the comparison", () => {
     // A candidate that carries a position, so a disagreement is possible.
     await page.getByTestId("mapping-filter-provider").selectOption("sofascore");
     await page.getByTestId("mapping-filter-evidence").selectOption("rich");
-    await page.getByTestId("mapping-row").first().click();
+    await firstSofascoreRow(page).click();
     await expect(page.getByTestId("mapping-provider-evidence")).toBeVisible();
     await page.getByTestId("mapping-options-toggle").click();
     const options = page.getByTestId("mapping-option");
