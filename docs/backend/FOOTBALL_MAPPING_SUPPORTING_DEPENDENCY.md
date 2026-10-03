@@ -124,19 +124,34 @@ Flashscore players on its own.
 
 Staging (`srdrflfrfpwixsllveid`) has migrations `20261001150000`, `…160000`, `…161000` only. It has no
 single-approver switch (`20261002100000`), so its `admin_football_mapping_execute` is an earlier text than
-production's, and this migration's built-in check refuses to apply there. That is the check working.
-Production's six functions match the reviewed text exactly. Staging holds no mappings and no proposals.
+production's, and this migration's built-in check refuses to apply there on its own. That is the check
+working. Production's six functions match the reviewed text exactly. Staging holds no mappings and no proposals.
 
-What was done on staging, read-only or rolled back, never committed: the schema and function texts were
-read; the single-approver prerequisite's tables and trigger were applied inside a transaction that was
-rolled back (it ran cleanly); two attempts to run the prerequisite plus this migration in one rolled-back
-transaction through the available SQL tool each hit that tool's 60-second client limit. After each,
-staging was re-read: no new column, table or function, no open transaction, function texts unchanged.
+**Rehearsal (2026-10-03, one transaction, rolled back, nothing saved).** The single-approver prerequisite
+(`20261002100000`) and then every statement of this migration were run against staging's real schema, followed by
+synthetic checks, and the transaction was ended with a deliberate error so everything rolled back. Result:
 
-**Not rehearsed on staging:** the full prerequisite + this migration in one transaction. Do it with the
-owner's own database tooling (one transaction, ending in a deliberate error that carries the checks out)
-before any production apply. What backs it meanwhile: every migration applies cleanly in order on a fresh
-local database, and the preflight refuses a database that is not at the reviewed state.
+- the migration's own preflight passed once the prerequisite was in (the six replaced functions matched the
+  reviewed text);
+- all 14 functions in play, including the nine this migration creates or replaces, have exactly the same text
+  (md5) as on the local database the pgTAP tests ran against;
+- the two proposal columns, the check constraint and the index were created; the read function is executable by
+  the signed-in role only (not by visitors), and the two internal helpers and the compute function are executable
+  by nobody;
+- on synthetic data: no fields refused as `supporting_dependency_required`, a made-up id as
+  `supporting_mapping_missing`, a made-up class as `supporting_dependency_invalid`, and a hand-made Sofascore
+  row with a right-looking version label as `supporting_mapping_unreviewed`;
+- afterwards staging was re-read: no new column, table or function, no synthetic row, no open transaction, function
+  texts unchanged, still three migrations recorded.
+
+**One deliberate difference.** The tool used for the rehearsal waits for a human to confirm any statement containing
+`DROP`, so the one `DROP FUNCTION` of this migration (the old nine-argument compute function, replaced by a
+twelve-argument one) was run as a rename of that function instead. Everything else is identical. The real
+`DROP FUNCTION` was therefore exercised only on the local database (where all tests pass), not on staging.
+
+**Not covered by the rehearsal:** staging has no mappings or proposals, so the end-to-end lifecycle (propose, approve,
+execute with real reviewed Sofascore mappings) was run only on the local disposable database and in CI. Production's
+own rows were never touched.
 
 ## Production
 
