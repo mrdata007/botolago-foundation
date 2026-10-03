@@ -7,8 +7,11 @@ import {
   flashClass,
   halfProgress,
   newAtTop,
+  parallaxShift,
+  readingProgress,
   tiltAngles,
   tickedMinute,
+  turnedOnNow,
   flipOffsets,
   prefersReducedMotion,
   tokenMs,
@@ -229,5 +232,58 @@ describe("newAtTop", () => {
 
   it("ignores an unchanged list", () => {
     expect(newAtTop(["a", "b"], ["a", "b"])).toEqual([]);
+  });
+});
+
+describe("readingProgress", () => {
+  it("is nothing while the article is below the fold", () => {
+    expect(readingProgress(800, 3000, 800)).toBe(0);
+    expect(readingProgress(1200, 3000, 800)).toBe(0);
+  });
+
+  it("is everything once the article's end has gone off the top", () => {
+    expect(readingProgress(-3000, 3000, 800)).toBe(1);
+    expect(readingProgress(-5000, 3000, 800)).toBe(1);
+  });
+
+  it("is half way in the middle", () => {
+    expect(readingProgress(-1100, 3000, 800)).toBe(0.5);
+  });
+
+  it("copes with an empty box", () => {
+    expect(readingProgress(0, 0, 0)).toBe(0);
+  });
+});
+
+describe("parallaxShift", () => {
+  it("lags a fifth of the scroll and stops at the limit", () => {
+    expect(parallaxShift(100)).toBe(20);
+    expect(parallaxShift(1000)).toBe(48);
+    expect(parallaxShift(1000, 30)).toBe(30);
+  });
+
+  it("does nothing above the top (rubber-banding)", () => {
+    expect(parallaxShift(-80)).toBe(0);
+  });
+});
+
+describe("turnedOnNow", () => {
+  it("fires when a loaded flag goes from off to on", () => {
+    expect(turnedOnNow(false, true, true, true)).toBe(true);
+  });
+
+  it("does not fire for a flag that was already on, or is off", () => {
+    expect(turnedOnNow(true, true, true, true)).toBe(false);
+    expect(turnedOnNow(false, false, true, true)).toBe(false);
+    expect(turnedOnNow(true, false, true, true)).toBe(false);
+  });
+
+  it("does not fire while the data is still loading", () => {
+    expect(turnedOnNow(false, true, false, false)).toBe(false);
+  });
+
+  it("does not fire on the render where the data has just arrived", () => {
+    // Off while loading, on the moment it loads: the reader did nothing.
+    expect(turnedOnNow(false, true, true, false)).toBe(false);
   });
 });

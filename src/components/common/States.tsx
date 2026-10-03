@@ -67,7 +67,7 @@ export function EmptyState({
           aria-hidden
           loading="lazy"
           decoding="async"
-          className={cn("w-auto max-w-full object-contain", compact ? "h-20" : "h-28")}
+          className={cn("drift-in w-auto max-w-full object-contain", compact ? "h-20" : "h-28")}
         />
       ) : (
         // The surface disc on the sunken panel: the same round icon plate the

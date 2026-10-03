@@ -49,6 +49,10 @@ export function ClubFollowButton({ club }: { club: Club }) {
     },
   });
 
+  // The check pops after the reader's own tap has followed the club, never
+  // because the list of followed clubs arrived after the page opened.
+  const justFollowed = mutation.isSuccess && mutation.variables === true && following;
+
   return (
     <button
       type="button"
@@ -68,7 +72,11 @@ export function ClubFollowButton({ club }: { club: Club }) {
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-on-club)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
       )}
     >
-      {following ? <Check aria-hidden /> : <Plus aria-hidden />}
+      {following ? (
+        <Check aria-hidden className={justFollowed ? "pop" : undefined} />
+      ) : (
+        <Plus aria-hidden />
+      )}
       {following ? t("news.following") : t("news.follow")}
       {/* "Suivre" alone does not say what is followed. */}
       <span className="sr-only">{` ${tr(club.name)}`}</span>

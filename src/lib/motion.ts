@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { flushSync } from "react-dom";
 
 /**
  * Shared helpers for the app's motion (docs/engineering/MOTION_PLAN.md).
@@ -271,22 +272,42 @@ export function useJustChanged<T>(value: T, holdMs = 700): boolean {
 }
 
 /**
+ * Whether a flag has just turned on: it is on now, was off before, and the
+ * data behind it was already loaded on both sides of the change. A value that
+ * arrives from the server a moment after the page opens (a saved pick, the
+ * chips an account holds) goes from "off, still loading" to "on" without the
+ * reader doing anything, and that is not something to celebrate.
+ */
+export function turnedOnNow(
+  previous: boolean,
+  flag: boolean,
+  ready: boolean,
+  wasReady: boolean,
+): boolean {
+  return ready && wasReady && flag && !previous;
+}
+
+/**
  * True for `holdMs` after `flag` turns from false to true, and never on the
  * first render: a card that is already saved, or a result that is already in,
- * when the page opens does not celebrate. False under reduced motion.
+ * when the page opens does not celebrate. Pass `ready` as false while the data
+ * behind the flag is still loading, so its arrival is not mistaken for a
+ * change. False under reduced motion.
  */
-export function useJustTurnedOn(flag: boolean, holdMs = 900): boolean {
+export function useJustTurnedOn(flag: boolean, holdMs = 900, ready = true): boolean {
   const [on, setOn] = useState(false);
   const previous = useRef(flag);
+  const wasReady = useRef(ready);
 
   useEffect(() => {
-    const turnedOn = flag && !previous.current;
+    const fire = turnedOnNow(previous.current, flag, ready, wasReady.current);
     previous.current = flag;
-    if (!turnedOn || prefersReducedMotion()) return;
+    wasReady.current = ready;
+    if (!fire || prefersReducedMotion()) return;
     setOn(true);
     const timer = setTimeout(() => setOn(false), holdMs);
     return () => clearTimeout(timer);
-  }, [flag, holdMs]);
+  }, [flag, holdMs, ready]);
 
   return on;
 }
@@ -439,4 +460,45 @@ export function useArrivals(ids: readonly string[]): ReadonlySet<string> {
   }, [signature]);
 
   return arrived;
+}
+
+/**
+ * Runs a change to the whole page (a theme, a language) through the browser's
+ * view transition, so the old page cross-fades into the new one instead of
+ * flashing. Falls back to just running `update` where there is no view
+ * transition, and under reduced motion. `update` is flushed at once, because
+ * the browser takes its "after" picture as soon as the callback returns.
+ */
+export function withViewTransition(update: () => void): void {
+  if (
+    typeof document === "undefined" ||
+    prefersReducedMotion() ||
+    typeof document.startViewTransition !== "function"
+  ) {
+    update();
+    return;
+  }
+  document.startViewTransition(() => {
+    flushSync(update);
+  });
+}
+
+/**
+ * How far through an article the reader is, 0 to 1: nothing while the article
+ * is still below the fold (its top at the foot of the screen), everything once
+ * its end has gone off the top.
+ */
+export function readingProgress(
+  rectTop: number,
+  rectHeight: number,
+  viewportHeight: number,
+): number {
+  const span = rectHeight + viewportHeight;
+  if (span <= 0) return 0;
+  return Math.min(1, Math.max(0, (viewportHeight - rectTop) / span));
+}
+
+/** How far a hero picture lags behind the page as it scrolls: a fifth of the scroll, at most `max` px. */
+export function parallaxShift(scrollY: number, max = 48): number {
+  return Math.min(max, Math.max(0, scrollY) * 0.2);
 }

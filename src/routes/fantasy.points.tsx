@@ -1,4 +1,4 @@
-import { AnimatedNumber } from "@/components/common/AnimatedNumber";
+import { AnimatedNumber, PopOnChange } from "@/components/common/AnimatedNumber";
 import pointsPendingArt from "@/assets/illustrations/points-pending.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -192,7 +192,7 @@ function PointsBody() {
         key={id}
         player={p}
         club={clubOf(p.clubId)}
-        sub={pts === null ? none : String(pts)}
+        sub={pts === null ? none : <PopOnChange value={pts}>{String(pts)}</PopOnChange>}
         captain={id === captainId}
         vice={id === viceId && id !== captainId}
         size={size}
