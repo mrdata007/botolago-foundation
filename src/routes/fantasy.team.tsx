@@ -7,7 +7,13 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { findClub } from "@/components/fpl/club-lookup";
-import { countdownText, formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline";
+import {
+  countdownText,
+  deadlineUrgency,
+  formatDeadline,
+  useDeadlineCountdown,
+  type DeadlineUrgency,
+} from "@/components/fpl/deadline";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { FplChipsRow } from "@/components/fpl/FplChipsRow";
@@ -95,11 +101,13 @@ function PickTeamPage() {
 }
 
 /** "1j 13h 59min", spelled exactly as Home's gameweek countdown (`countdownText`). */
-function useCountdownText(deadlineIso: string | undefined): string | null {
+function useCountdownText(
+  deadlineIso: string | undefined,
+): { text: string; urgency: DeadlineUrgency } | null {
   const { t } = useI18n();
   const left = useDeadlineCountdown(deadlineIso);
   if (!left || left.passed) return null;
-  return countdownText(left, t);
+  return { text: countdownText(left, t), urgency: deadlineUrgency(left) };
 }
 
 function PickTeamBody() {
@@ -471,8 +479,15 @@ function PickTeamBody() {
   const deadlineSub: ReactNode =
     !deadlineLocked && countdown ? (
       <span className="inline-flex items-center gap-1">
-        <Clock3 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span className={ui.text.tabular}>{countdown}</span>
+        <Clock3
+          className={cn(
+            "h-3.5 w-3.5 shrink-0",
+            countdown.urgency === "soon" && "deadline-soon",
+            countdown.urgency === "now" && "deadline-now",
+          )}
+          aria-hidden
+        />
+        <span className={ui.text.tabular}>{countdown.text}</span>
       </span>
     ) : gameweek.status ? (
       <GameweekStatusText

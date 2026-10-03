@@ -1140,6 +1140,22 @@ html[dir="rtl"] .lucide-arrow-left {
   transition-timing-function: var(--ease-settle) !important;
 }
 
+/* A player brought into a slot: drops in and settles. */
+@keyframes swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@utility swap-in {
+  animation: swap-in var(--duration-sheet) var(--ease-settle) both;
+}
+
 /* A number that just went up or down: a green or red wash that fades out. */
 @keyframes flash-up {
   from {

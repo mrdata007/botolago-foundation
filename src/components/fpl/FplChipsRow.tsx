@@ -1,8 +1,15 @@
 import type { ChipKey, ChipState } from "@/lib/fantasy-engine";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useJustTurnedOn } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { FplChipInfo } from "./FplChipInfo";
+
+/** A shine that sweeps across a chip once, the moment it becomes active. */
+function ChipShine({ active }: { active: boolean }) {
+  const justOn = useJustTurnedOn(active, 1000);
+  return justOn ? <span aria-hidden className="shine absolute inset-0 rounded-full" /> : null;
+}
 
 export interface FplChipView {
   key: ChipKey;
@@ -85,6 +92,7 @@ export function FplChipsRow({
               ui.shadow.card,
             )}
           >
+            <ChipShine active={chip.state === "active"} />
             <span
               className={cn(
                 "whitespace-nowrap",
