@@ -272,22 +272,42 @@ export function useJustChanged<T>(value: T, holdMs = 700): boolean {
 }
 
 /**
+ * Whether a flag has just turned on: it is on now, was off before, and the
+ * data behind it was already loaded on both sides of the change. A value that
+ * arrives from the server a moment after the page opens (a saved pick, the
+ * chips an account holds) goes from "off, still loading" to "on" without the
+ * reader doing anything, and that is not something to celebrate.
+ */
+export function turnedOnNow(
+  previous: boolean,
+  flag: boolean,
+  ready: boolean,
+  wasReady: boolean,
+): boolean {
+  return ready && wasReady && flag && !previous;
+}
+
+/**
  * True for `holdMs` after `flag` turns from false to true, and never on the
  * first render: a card that is already saved, or a result that is already in,
- * when the page opens does not celebrate. False under reduced motion.
+ * when the page opens does not celebrate. Pass `ready` as false while the data
+ * behind the flag is still loading, so its arrival is not mistaken for a
+ * change. False under reduced motion.
  */
-export function useJustTurnedOn(flag: boolean, holdMs = 900): boolean {
+export function useJustTurnedOn(flag: boolean, holdMs = 900, ready = true): boolean {
   const [on, setOn] = useState(false);
   const previous = useRef(flag);
+  const wasReady = useRef(ready);
 
   useEffect(() => {
-    const turnedOn = flag && !previous.current;
+    const fire = turnedOnNow(previous.current, flag, ready, wasReady.current);
     previous.current = flag;
-    if (!turnedOn || prefersReducedMotion()) return;
+    wasReady.current = ready;
+    if (!fire || prefersReducedMotion()) return;
     setOn(true);
     const timer = setTimeout(() => setOn(false), holdMs);
     return () => clearTimeout(timer);
-  }, [flag, holdMs]);
+  }, [flag, holdMs, ready]);
 
   return on;
 }

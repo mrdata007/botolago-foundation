@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import { useOptionalAuth } from "@/auth/AuthProvider";
 import { UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { useJustTurnedOn } from "@/lib/motion";
 import { rememberReminder, replaceReminders, useHasReminder } from "@/lib/match-reminders";
 import {
   loadMyMatchReminders,
@@ -41,12 +40,18 @@ export function MatchReminderBell({ fixtureId }: { fixtureId: string }) {
   const auth = useOptionalAuth();
   const userId = auth?.status === "authenticated" && auth.user ? auth.user.id : null;
   const on = useHasReminder(userId, fixtureId);
-  // The bell rings once when the reminder has just been switched on.
-  const justOn = useJustTurnedOn(on);
   useEffect(() => {
     if (userId) syncRemindersOnce(userId);
   }, [userId]);
   const [pending, setPending] = useState(false);
+  // The bell rings once after the reader's own tap switches a reminder on, never
+  // because saved reminders were read in after the page opened.
+  const [ringing, setRinging] = useState(false);
+  useEffect(() => {
+    if (!ringing) return;
+    const timer = setTimeout(() => setRinging(false), 900);
+    return () => clearTimeout(timer);
+  }, [ringing]);
 
   const toggle = async (account: string) => {
     const enable = !on;
@@ -54,6 +59,7 @@ export function MatchReminderBell({ fixtureId }: { fixtureId: string }) {
     try {
       await setMyMatchReminder(fixtureId, enable);
       rememberReminder(account, fixtureId, enable);
+      setRinging(enable);
       if (!enable) {
         toast(t("reminders.toast.off"));
         return;
@@ -99,7 +105,7 @@ export function MatchReminderBell({ fixtureId }: { fixtureId: string }) {
       onClick={onClick}
     >
       {on ? (
-        <BellRing aria-hidden className={justOn ? "wiggle" : undefined} />
+        <BellRing aria-hidden className={ringing ? "wiggle" : undefined} />
       ) : (
         <Bell aria-hidden />
       )}

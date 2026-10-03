@@ -599,7 +599,11 @@ function PickTeamBody() {
       </div>
 
       <div className={cn("pt-3", ui.space.gutter)}>
-        <FplChipsRow chips={chipViews} onSelect={deadlineLocked ? undefined : onChipSelect} />
+        <FplChipsRow
+          chips={chipViews}
+          onSelect={deadlineLocked ? undefined : onChipSelect}
+          settled={!owned.isLoading}
+        />
         {chipsState.active &&
         activeChipName &&
         !pendingChip &&

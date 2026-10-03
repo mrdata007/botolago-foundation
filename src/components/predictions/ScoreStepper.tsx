@@ -1,5 +1,5 @@
 import { Minus, Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { MAX_STEPPER_GOALS } from "@/backend/predictions/contracts";
 import { ui } from "@/components/ui-kit";
@@ -31,7 +31,15 @@ export function ScoreStepper({
   const { t } = useI18n();
   // The number rolls in from the direction of the tap.
   const [direction, setDirection] = useState<1 | -1>(1);
-  const rolled = useJustChanged(value, 300);
+  const changed = useJustChanged(value, 300);
+  // Only a tap rolls the number; a saved pick arriving from the server does not.
+  const [tapped, setTapped] = useState(false);
+  useEffect(() => {
+    if (!tapped) return;
+    const timer = setTimeout(() => setTapped(false), 500);
+    return () => clearTimeout(timer);
+  }, [tapped]);
+  const rolled = changed && tapped;
   const button = cn(
     "inline-grid place-items-center",
     ui.space.tap,
@@ -56,6 +64,7 @@ export function ScoreStepper({
         disabled={disabled || value === 0}
         onClick={() => {
           setDirection(-1);
+          setTapped(true);
           onStep(-1);
         }}
       >
@@ -80,6 +89,7 @@ export function ScoreStepper({
         disabled={disabled || value === MAX_STEPPER_GOALS}
         onClick={() => {
           setDirection(1);
+          setTapped(true);
           onStep(1);
         }}
       >

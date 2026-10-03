@@ -11,6 +11,7 @@ import {
   readingProgress,
   tiltAngles,
   tickedMinute,
+  turnedOnNow,
   flipOffsets,
   prefersReducedMotion,
   tokenMs,
@@ -263,5 +264,26 @@ describe("parallaxShift", () => {
 
   it("does nothing above the top (rubber-banding)", () => {
     expect(parallaxShift(-80)).toBe(0);
+  });
+});
+
+describe("turnedOnNow", () => {
+  it("fires when a loaded flag goes from off to on", () => {
+    expect(turnedOnNow(false, true, true, true)).toBe(true);
+  });
+
+  it("does not fire for a flag that was already on, or is off", () => {
+    expect(turnedOnNow(true, true, true, true)).toBe(false);
+    expect(turnedOnNow(false, false, true, true)).toBe(false);
+    expect(turnedOnNow(true, false, true, true)).toBe(false);
+  });
+
+  it("does not fire while the data is still loading", () => {
+    expect(turnedOnNow(false, true, false, false)).toBe(false);
+  });
+
+  it("does not fire on the render where the data has just arrived", () => {
+    // Off while loading, on the moment it loads: the reader did nothing.
+    expect(turnedOnNow(false, true, true, false)).toBe(false);
   });
 });

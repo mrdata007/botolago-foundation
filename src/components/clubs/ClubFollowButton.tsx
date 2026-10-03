@@ -6,7 +6,6 @@ import { showStepUpNotice } from "@/auth/step-up-notice";
 import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { useJustTurnedOn } from "@/lib/motion";
 import {
   FOLLOWED_TEAM_IDS_QUERY_KEY,
   followService,
@@ -34,8 +33,6 @@ export function ClubFollowButton({ club }: { club: Club }) {
   const queryClient = useQueryClient();
   const followedQ = useQuery(followedTeamIdsQuery(user?.id ?? null));
   const following = followedQ.data?.includes(club.id) ?? false;
-  // The check pops when the club has just been followed, not when the page opens on it.
-  const justFollowed = useJustTurnedOn(following);
   const mutation = useMutation({
     mutationFn: (follow: boolean) =>
       follow ? followService.followTeam(club.id) : followService.unfollowTeam(club.id),
@@ -51,6 +48,10 @@ export function ClubFollowButton({ club }: { club: Club }) {
       else toast.error(t("state.error"));
     },
   });
+
+  // The check pops after the reader's own tap has followed the club, never
+  // because the list of followed clubs arrived after the page opened.
+  const justFollowed = mutation.isSuccess && mutation.variables === true && following;
 
   return (
     <button

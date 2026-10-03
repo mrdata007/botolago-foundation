@@ -44,6 +44,7 @@ export function FixturePredictionCard({
   scored,
   notCounted = false,
   saved,
+  savedReady = true,
   className,
   onStep,
 }: {
@@ -61,6 +62,11 @@ export function FixturePredictionCard({
    * never on the tap itself.
    */
   saved?: ScorePair | null;
+  /**
+   * False while the server's copy is still being read, so a saved pick that
+   * arrives after the page opens is not taken for one the reader just made.
+   */
+  savedReady?: boolean;
   /** Extra layout from the host, e.g. centring when a deck makes the card taller. */
   className?: string;
   onStep: (side: "home" | "away", delta: 1 | -1) => void;
@@ -73,11 +79,15 @@ export function FixturePredictionCard({
 
   // A signed-in pick is "locked in" once the server holds exactly it.
   const confirmed = Boolean(saved && pick && saved.home === pick.home && saved.away === pick.away);
-  const justSaved = useJustTurnedOn(confirmed);
+  const justSaved = useJustTurnedOn(confirmed, 900, savedReady);
   // A result that arrives while the page is open celebrates once; one that was
   // already in when the page opened does not.
   const scoredKind = fixture.final && fixture.result ? (scored?.kind ?? null) : null;
-  const justScored = useJustTurnedOn(scoredKind === "exact" || scoredKind === "outcome");
+  const justScored = useJustTurnedOn(
+    scoredKind === "exact" || scoredKind === "outcome",
+    900,
+    savedReady,
+  );
 
   if (fixture.final && fixture.result) {
     return (
