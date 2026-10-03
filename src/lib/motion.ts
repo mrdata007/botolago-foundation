@@ -462,3 +462,23 @@ export function withViewTransition(update: () => void): void {
     flushSync(update);
   });
 }
+
+/**
+ * How far through an article the reader is, 0 to 1: nothing while the article
+ * is still below the fold (its top at the foot of the screen), everything once
+ * its end has gone off the top.
+ */
+export function readingProgress(
+  rectTop: number,
+  rectHeight: number,
+  viewportHeight: number,
+): number {
+  const span = rectHeight + viewportHeight;
+  if (span <= 0) return 0;
+  return Math.min(1, Math.max(0, (viewportHeight - rectTop) / span));
+}
+
+/** How far a hero picture lags behind the page as it scrolls: a fifth of the scroll, at most `max` px. */
+export function parallaxShift(scrollY: number, max = 48): number {
+  return Math.min(max, Math.max(0, scrollY) * 0.2);
+}

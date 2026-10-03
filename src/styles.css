@@ -1156,6 +1156,22 @@ html[dir="rtl"] .lucide-arrow-left {
   animation: swap-in var(--duration-sheet) var(--ease-settle) both;
 }
 
+/* An illustration arriving once: it eases up, settles and stays. */
+@keyframes drift-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@utility drift-in {
+  animation: drift-in var(--duration-hero) var(--ease-settle) both;
+}
+
 /* A number that just went up or down: a green or red wash that fades out. */
 @keyframes flash-up {
   from {

@@ -1224,7 +1224,7 @@ export function UiStatePanel({
             aria-hidden
             loading="lazy"
             decoding="async"
-            className="mx-auto mb-3 h-28 w-auto max-w-full object-contain"
+            className="drift-in mx-auto mb-3 h-28 w-auto max-w-full object-contain"
           />
         ) : isError ? (
           <AlertTriangle className="mx-auto h-7 w-7 text-[color:var(--ui-negative)]" aria-hidden />
