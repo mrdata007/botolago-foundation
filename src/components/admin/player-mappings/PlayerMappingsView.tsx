@@ -79,6 +79,11 @@ export interface PlayerMappingsViewProps {
    * offered, and every action still goes through the reviewed backend.
    */
   readonly bulkManifest?: unknown;
+  /**
+   * The frozen Flashscore evidence batch, offered beside the Sofascore one under the same
+   * conditions (and only while the Sofascore panel is not open). Same panel, same reviewed backend.
+   */
+  readonly flashscoreManifest?: unknown;
   /** A starting point, for a static render and for tests. */
   readonly initial?: {
     readonly view?: QueueView;
@@ -88,6 +93,7 @@ export interface PlayerMappingsViewProps {
     readonly options?: readonly AppPlayerOption[];
     readonly previews?: ReadonlyMap<string, RowPreview>;
     readonly bulk?: boolean;
+    readonly flashscoreBulk?: boolean;
     readonly bulkPanel?: Pick<
       import("./BulkMappingPanel").BulkMappingPanelProps,
       "initial"
@@ -110,6 +116,7 @@ export function PlayerMappingsView({
   actions,
   onReload,
   bulkManifest,
+  flashscoreManifest,
   initial,
 }: PlayerMappingsViewProps) {
   const copy = getPlayerMappingCopy(lang);
@@ -119,6 +126,8 @@ export function PlayerMappingsView({
   const [selection, setSelection] = useState<Selection>(initial?.selection ?? null);
   const hasBulk = bulkManifest !== undefined && bulkManifest !== null;
   const [showBulk, setShowBulk] = useState(initial?.bulk ?? false);
+  const hasFlashscoreBulk = flashscoreManifest !== undefined && flashscoreManifest !== null;
+  const [showFlashscoreBulk, setShowFlashscoreBulk] = useState(initial?.flashscoreBulk ?? false);
   // What the last successful execution wrote, kept on screen after its panel is gone.
   const [executedNotice, setExecutedNotice] = useState<string | null>(null);
   const lastOpened = useRef<string | null>(null);
@@ -254,6 +263,23 @@ export function PlayerMappingsView({
             </UiButton>
           </div>
         )}
+        {proposalsEnabled &&
+          viewer.canManage &&
+          hasFlashscoreBulk &&
+          data &&
+          !showBulk &&
+          !showFlashscoreBulk && (
+            <div className="mt-3">
+              <UiButton
+                size="sm"
+                variant="outline"
+                onClick={() => setShowFlashscoreBulk(true)}
+                data-testid="bulk-open-flashscore"
+              >
+                {getBulkCopy(lang).flashscore.open(bulkRowCount(flashscoreManifest))}
+              </UiButton>
+            </div>
+          )}
       </header>
       {executedNotice && (
         <div data-testid="mapping-execute-result">
@@ -302,6 +328,22 @@ export function PlayerMappingsView({
   const ready = state.data;
   if (ready.candidates.length === 0)
     return wrapper(<AdminEmptyState testId="mapping-empty">{copy.empty}</AdminEmptyState>);
+
+  if (showFlashscoreBulk && !showBulk && proposalsEnabled && viewer.canManage && hasFlashscoreBulk)
+    return wrapper(
+      <BulkMappingPanel
+        kind="flashscore"
+        lang={lang}
+        copy={copy}
+        data={ready}
+        repository={repository}
+        context={context}
+        rawManifest={flashscoreManifest}
+        onReload={onReload}
+        onClose={() => setShowFlashscoreBulk(false)}
+        initial={initial?.bulkPanel}
+      />,
+    );
 
   if (showBulk && proposalsEnabled && viewer.canManage && hasBulk)
     return wrapper(

@@ -1,6 +1,7 @@
 import type { CandidateDto, ProposalDto } from "../mapping-contracts";
-import { APPROVAL_VALIDITY_HOURS, BULK_REASONS, type BulkRowState } from "./contract";
-import type { BulkManifest, ManifestRow } from "./manifest";
+import { APPROVAL_VALIDITY_HOURS, type BulkRowState } from "./contract";
+import type { BulkManifestBase, BulkProfile, BulkRowBase } from "./profile";
+import { sofascoreProfile } from "./sofascore-profile";
 
 export interface RowStateInfo {
   readonly state: BulkRowState;
@@ -11,17 +12,19 @@ export interface RowStateInfo {
 
 const OPEN = new Set(["pending", "approved", "position_disagreement", "stale_evidence"]);
 
-/** The proposal this batch made for a row: same candidate, same target, its own tier reason. */
-export function batchProposalFor(
-  row: ManifestRow,
+/** The proposal this batch made for a row: same candidate, same target, its own group's reason. */
+export function batchProposalFor<R extends BulkRowBase>(
+  row: R,
   proposals: readonly ProposalDto[],
+  profile: BulkProfile<R> = sofascoreProfile as unknown as BulkProfile<R>,
 ): ProposalDto | null {
+  const reason = profile.reasonOf(profile.groupOf(row));
   const mine = proposals.filter(
     (p) =>
       p.kind === "map" &&
-      p.sofascoreCandidateId === row.candidateId &&
+      p[profile.candidateField] === row.candidateId &&
       p.appPlayerId === row.appPlayerId &&
-      p.reason === BULK_REASONS[row.tier],
+      p.reason === reason,
   );
   if (mine.length === 0) return null;
   // An open or executed one wins over a closed one; otherwise the latest.
@@ -36,11 +39,12 @@ export const approvalIsOld = (proposal: Pick<ProposalDto, "decidedAt">, now: Dat
   proposal.decidedAt !== null &&
   now.getTime() - new Date(proposal.decidedAt).getTime() > APPROVAL_VALIDITY_HOURS * 3_600_000;
 
-export function deriveRowState(
-  row: ManifestRow,
+export function deriveRowState<R extends BulkRowBase>(
+  row: R,
   candidate: CandidateDto | undefined,
   proposals: readonly ProposalDto[],
   now: Date,
+  profile: BulkProfile<R> = sofascoreProfile as unknown as BulkProfile<R>,
 ): RowStateInfo {
   const info = (
     state: BulkRowState,
@@ -48,7 +52,7 @@ export function deriveRowState(
     proposalId: string | null = null,
   ) => ({ state, code, proposalId }) satisfies RowStateInfo;
   if (!candidate) return info("ERROR", "candidate_not_found");
-  const proposal = batchProposalFor(row, proposals);
+  const proposal = batchProposalFor(row, proposals, profile);
 
   if (proposal) {
     if (proposal.status === "executed") return info("EXECUTED", null, proposal.id);
@@ -102,18 +106,30 @@ export function deriveRowState(
   return info("NOT_PROPOSED");
 }
 
-export function deriveAllRowStates(
-  manifest: Pick<BulkManifest, "rows">,
+export function deriveAllRowStates<R extends BulkRowBase>(
+  manifest: Pick<BulkManifestBase<R>, "rows">,
   candidates: readonly CandidateDto[],
   proposals: readonly ProposalDto[],
   now: Date,
+  profile: BulkProfile<R> = sofascoreProfile as unknown as BulkProfile<R>,
 ): ReadonlyMap<string, RowStateInfo> {
   const byId = new Map(candidates.map((c) => [c.id, c]));
   return new Map(
-    manifest.rows.map((row) => [
-      row.candidateId,
-      deriveRowState(row, byId.get(row.candidateId), proposals, now),
-    ]),
+    manifest.rows.map((row) => {
+      const derived = deriveRowState(row, byId.get(row.candidateId), proposals, now, profile);
+      // A row that has not executed yet shows what its own evidence now says (for a Flashscore
+      // row: its supporting mapping). Anything already executed stays executed.
+      const refusal =
+        profile.inspect && ["NOT_PROPOSED", "PROPOSED", "APPROVED"].includes(derived.state)
+          ? profile.inspect(row, { candidates, proposals })
+          : null;
+      return [
+        row.candidateId,
+        refusal
+          ? { state: refusal.state, code: refusal.code, proposalId: derived.proposalId }
+          : derived,
+      ];
+    }),
   );
 }
 

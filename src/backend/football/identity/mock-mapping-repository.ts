@@ -101,6 +101,7 @@ const refuse = (index: number, code: string) => ({ index, ok: false as const, co
 const byId = <T extends { id: string }>(a: T, b: T) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
 export class InMemoryPlayerMappingRepository implements PlayerMappingRepository {
+  private executionClock = 0;
   readonly mappings: MockMappingRow[] = [];
   private readonly candidates: MockCandidate[] = [];
   private readonly proposals: MockProposal[] = [];
@@ -852,7 +853,17 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
         return { ok: false as const, code, status: code };
       }
       const d = p.dto;
+      // What the database records on the proposal: the row(s) written, as they are after the write.
+      let written: Record<string, unknown> | null = null;
+      const snapshotOf = (m: MockMappingRow) => ({
+        mappingId: m.id,
+        provider: m.provider,
+        externalId: m.externalId,
+        appPlayerId: m.appPlayerId,
+        active: m.active,
+      });
       if (d.kind === "map") {
+        const rows: Record<string, unknown>[] = [];
         for (const id of p.candidates) {
           const c = this.candidate(id);
           const row: MockMappingRow = {
@@ -863,9 +874,11 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
             active: true,
           };
           this.mappings.push(row);
+          rows.push(snapshotOf(row));
           c.status = "mapped";
           c.existingMappingId = row.id;
         }
+        written = { rows };
       } else if (d.kind === "ignore" || d.kind === "reverse_ignore") {
         this.candidate(p.candidates[0]!).status = d.kind === "ignore" ? "ignored" : "unmapped";
       } else {
@@ -881,12 +894,18 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
             c.existingMappingId = c.externalId === row.externalId ? row.id : null;
           }
         }
+        written = snapshotOf(row);
       }
+      // A clock that only moves forward, so "the last write to a row" is well defined.
+      this.executionClock += 1;
       Object.assign(d, {
         status: "executed",
         effectiveStatus: "executed",
         executedBy: me,
-        executedAt: "now",
+        executedAt: new Date(
+          Date.UTC(2026, 9, 3, 8, 0, 0) + this.executionClock * 1000,
+        ).toISOString(),
+        executedAfter: written,
       });
       return { ok: true as const, id: d.id, status: "executed" };
     });

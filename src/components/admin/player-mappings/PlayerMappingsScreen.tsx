@@ -4,6 +4,7 @@ import type { PlayerMappingRepository } from "@/backend/football/identity/mappin
 import { PLAYER_MAPPING_PROPOSALS_ENABLED } from "@/lib/feature-flags";
 import { BULK_MANIFEST } from "./bulk-manifest";
 import type { Lang } from "./copy";
+import { FLASHSCORE_BULK_MANIFEST } from "./flashscore-manifest";
 import { PlayerMappingsView } from "./PlayerMappingsView";
 import { createMappingActions, useQueueData } from "./use-player-mappings";
 
@@ -21,6 +22,7 @@ export function PlayerMappingsScreen({
   lang,
   proposalsEnabled = PLAYER_MAPPING_PROPOSALS_ENABLED,
   bulkManifest = BULK_MANIFEST,
+  flashscoreManifest = FLASHSCORE_BULK_MANIFEST,
 }: {
   repository: PlayerMappingRepository;
   actorId: string;
@@ -29,6 +31,8 @@ export function PlayerMappingsScreen({
   proposalsEnabled?: boolean;
   /** The frozen batch manifest. Defaults to the committed production one; the sample page passes its own. */
   bulkManifest?: unknown;
+  /** The frozen Flashscore evidence batch manifest. Pass null to hide its entry (the sample page does). */
+  flashscoreManifest?: unknown;
 }) {
   const context = useMemo<RepositoryContext>(
     () => ({ actorId, requestId: globalThis.crypto.randomUUID() }),
@@ -54,6 +58,7 @@ export function PlayerMappingsScreen({
       actions={actions}
       onReload={reload}
       bulkManifest={bulkManifest}
+      flashscoreManifest={flashscoreManifest}
     />
   );
 }
