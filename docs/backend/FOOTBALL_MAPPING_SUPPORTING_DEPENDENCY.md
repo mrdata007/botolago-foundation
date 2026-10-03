@@ -96,7 +96,7 @@ Flashscore players on its own.
 
 ## Evidence (local, disposable database; CI's `database-quality` job is the authority)
 
-- `supabase/tests/database/football_player_mapping_supporting_dependency.test.sql`: 77
+- `supabase/tests/database/football_player_mapping_supporting_dependency.test.sql`: 81
   assertions on the real functions: valid success, wrong target, forged and omitted fields,
   prefix-only provenance, deactivated / retargeted / review-state-changed after approval,
   changed outside the workflow with the old marker, direct execute, stale fingerprint,
