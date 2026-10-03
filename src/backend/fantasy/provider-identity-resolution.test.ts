@@ -170,10 +170,10 @@ describe("resolving a Sofascore identity against the whole catalogue", () => {
     expect(none.classification).toBe("CANONICAL_PLAYER_NOT_FOUND");
     expect(none.missingEvidence.join(" ")).toMatch(/Not found by this matcher/);
     expect(none.missingEvidence.join(" ")).toMatch(/does not show he does not exist/);
-    // A pool player of another position cannot be the one.
-    expect(run(candidate(), read([]), pool(3, "null", "G")).classification).toBe(
-      "CANONICAL_PLAYER_NOT_FOUND",
-    );
+    // A club player of another position still cannot be ruled out: position is metadata that may disagree.
+    const otherPosition = run(candidate(), read([]), pool(3, "null", "G"));
+    expect(otherPosition.classification).toBe("MAPPING_EVIDENCE_INSUFFICIENT");
+    expect(otherPosition.possibleTargetsWithMissingDob).toBe(3);
   });
 
   test("a missing or placeholder provider date cannot search the catalogue at all", () => {

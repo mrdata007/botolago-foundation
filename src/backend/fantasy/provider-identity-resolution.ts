@@ -149,10 +149,10 @@ export function resolveSofascoreIdentity(input: {
 
   const matches = read.wideMatches;
   const unmappedClub = pool.filter((p) => p.team === read.team);
-  const missingDobPool = unmappedClub.filter(
-    (p) =>
-      (p.dob === "null" || p.dob === "jan1") && (read.obsPos === null || p.pos === read.obsPos),
-  );
+  // Position is metadata the provider and the catalogue may disagree about (five of the seven
+  // identified players do), so it cannot rule a club player out: every unmapped club player with a
+  // missing or placeholder catalogue birth date stays a possible target.
+  const missingDobPool = unmappedClub.filter((p) => p.dob === "null" || p.dob === "jan1");
 
   if (matches.length === 0) {
     if (missingDobPool.length > 0) {
@@ -162,7 +162,7 @@ export function resolveSofascoreIdentity(input: {
         code: "APP_DOB_MISSING_FOR_POSSIBLE_TARGETS",
         possibleTargetsWithMissingDob: missingDobPool.length,
         missingEvidence: [
-          `No app player in the whole catalogue has his exact birth date; ${missingDobPool.length} unmapped club player(s) of his position have no usable birth date in the catalogue, so a person among them cannot be proven or excluded. Needs a catalogue birth date for those players, or another structured signal that is not a shirt number alone.`,
+          `No app player in the whole catalogue has his exact birth date; ${missingDobPool.length} unmapped club player(s) have no usable birth date in the catalogue, so a person among them cannot be proven or excluded. Needs a catalogue birth date for those players, or another structured signal that is not a shirt number alone.`,
         ],
       };
     }
@@ -172,7 +172,7 @@ export function resolveSofascoreIdentity(input: {
       code: "NOT_FOUND_BY_THIS_MATCHER",
       possibleTargetsWithMissingDob: 0,
       missingEvidence: [
-        "Not found by this matcher: no app player has his exact birth date and no unmapped club player of his position lacks one. He may be a new registration absent from the catalogue, or the catalogue's date may be wrong. This does not show he does not exist, and no player may be created from it.",
+        "Not found by this matcher: no app player has his exact birth date and no unmapped club player lacks one. He may be a new registration absent from the catalogue, or the catalogue's date may be wrong. This does not show he does not exist, and no player may be created from it.",
       ],
     };
   }
