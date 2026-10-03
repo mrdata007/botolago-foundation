@@ -2030,6 +2030,7 @@ export const ar = {
   "pepites.matches.goals_short": "{n} هدف",
   "pepites.matches.assists_short": "{n} تم",
   "pepites.meta_title": "جواهر — أفضل 10 لشباب البطولة الاحترافية | BotolaGO",
+  "pepites.home.heading": "جواهر — أفضل 10 لشباب البطولة الاحترافية",
   "pepites.meta_description":
     "أفضل اللاعبين دون 23 سنة في البطولة الاحترافية: أفضل 10 الأسبوع، الترتيب الكامل وطريقة الحساب.",
   "pepites.tab.top": "أفضل 10",

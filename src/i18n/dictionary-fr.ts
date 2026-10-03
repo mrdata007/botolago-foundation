@@ -2153,6 +2153,7 @@ export const fr = {
   "pepites.matches.goals_short": "{n}B",
   "pepites.matches.assists_short": "{n}PD",
   "pepites.meta_title": "Pépites — le Top 10 des jeunes de Botola Pro | BotolaGO",
+  "pepites.home.heading": "Pépites — le Top 10 des jeunes de Botola Pro",
   "pepites.meta_description":
     "Les meilleurs joueurs de moins de 23 ans de Botola Pro : le Top 10 de la semaine, le classement complet et la méthode.",
   "pepites.tab.top": "Top 10",

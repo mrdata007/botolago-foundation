@@ -181,15 +181,18 @@ export function PepitesBeforeFirstEdition({
   firstRound,
   pointer,
   footer,
+  heading,
 }: {
   previous: PreviousSeason;
   firstRound: number;
   pointer: Extract<VersionResponse, { available: true }>;
   footer: ReactNode;
+  heading?: string;
 }) {
   const { t, lang } = useI18n();
   return (
     <PepitesShell
+      heading={heading}
       hero={
         <ShortBand>
           <h2

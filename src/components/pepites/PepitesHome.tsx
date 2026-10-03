@@ -96,6 +96,7 @@ function HomeChips({
  */
 export function PepitesHome() {
   const { t, lang } = useI18n();
+  const heading = t("pepites.home.heading");
   const [filter, setFilter] = useState<HomeFilter>(null);
   const viewer = usePepitesViewer();
   const pointerQuery = useVersionPointer(viewer);
@@ -126,7 +127,7 @@ export function PepitesHome() {
   }
   if (!pointer?.available) {
     return (
-      <PepitesShell>
+      <PepitesShell heading={heading}>
         <PepitesComingSoon />
       </PepitesShell>
     );
@@ -191,6 +192,7 @@ export function PepitesHome() {
     const title = t("pepites.home.week_title").replace("{n}", formatNumber(edition.week, lang));
     return (
       <PepitesShell
+        heading={heading}
         hero={
           leader ? (
             <TopTenHero
@@ -256,12 +258,13 @@ export function PepitesHome() {
         firstRound={firstRound}
         pointer={pointer}
         footer={footer}
+        heading={heading}
       />
     );
   }
 
   return (
-    <PepitesShell>
+    <PepitesShell heading={heading}>
       {pointer.preview ? <PepitesPreviewBanner /> : null}
       <PepitesRevealBanner pointer={pointer} />
       <PepitesEmptyState />

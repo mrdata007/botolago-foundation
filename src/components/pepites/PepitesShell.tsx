@@ -20,6 +20,7 @@ export function PepitesShell({
   children,
   className,
   wide = false,
+  heading,
 }: {
   hero?: ReactNode;
   /** `night`: the whole page is night (the player's matches, Figma 04). */
@@ -27,6 +28,12 @@ export function PepitesShell({
   children: ReactNode;
   className?: string;
   wide?: boolean;
+  /**
+   * The page's main heading, for a page whose band shows none: read by
+   * screen readers and search engines, not drawn (the band's own title is
+   * the visible one).
+   */
+  heading?: string;
 }) {
   return (
     <AppShell
@@ -51,6 +58,7 @@ export function PepitesShell({
       }
     >
       <div className={cn("flex flex-col gap-4 pt-3", className)} data-testid="pepites-page">
+        {heading ? <h1 className="sr-only">{heading}</h1> : null}
         {children}
       </div>
     </AppShell>
