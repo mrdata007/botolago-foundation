@@ -58,6 +58,14 @@ describe("staging rehearsal of the supporting-dependency guard", () => {
     expect(runner).toContain("staging differs after the rehearsal");
   });
 
+  it("holds the scheduled jobs before it writes anything, as the production script does", () => {
+    expect(runner).toContain("app_private.hold_scheduled_jobs()");
+    expect(runner).toContain("e0ff799389c935e3844df2620b53ae87");
+    expect(runner.indexOf("perform app_private.hold_scheduled_jobs();")).toBeLessThan(
+      runner.indexOf("POST_SQL_HEAD = "),
+    );
+  });
+
   it("refuses any project but staging", () => {
     expect(runner).toContain('STAGING_REF = "srdrflfrfpwixsllveid"');
     expect(runner).toContain("staging project-ref guard failed");

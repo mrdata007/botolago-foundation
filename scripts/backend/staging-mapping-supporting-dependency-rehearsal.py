@@ -78,6 +78,16 @@ begin
       and state in ('active', 'idle in transaction', 'idle in transaction (aborted)')) then
     raise exception 'stop: another database session is working on staging right now (one writer at a time)';
   end if;
+  -- Scheduled jobs (pg_cron) are database writers the workflow lock cannot see: take the shared
+  -- scheduled-job lock before anything is written, exactly as the production script does.
+  if to_regprocedure('app_private.hold_scheduled_jobs()') is null
+    or md5(pg_get_functiondef('app_private.hold_scheduled_jobs()'::regprocedure)) is distinct from 'e0ff799389c935e3844df2620b53ae87' then
+    raise exception 'stop: app_private.hold_scheduled_jobs is not the reviewed text';
+  end if;
+  perform app_private.hold_scheduled_jobs();
+  if exists (select 1 from app.fantasy_gameweeks where status = 'finalizing') then
+    raise exception 'stop: a Fantasy gameweek is finalizing on staging right now';
+  end if;
 end
 $stg_pre$;
 """
