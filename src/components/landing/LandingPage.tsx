@@ -17,6 +17,7 @@ import {
 import stadiumBand from "@/assets/brand/home-band-stadium.webp";
 import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
 import { useAuth } from "@/auth/AuthProvider";
+import type { AuthStatus } from "@/services/auth-types";
 import { Logo } from "@/components/brand/Logo";
 import { joinDeadlineToShow, joinTarget } from "@/components/fantasy/fantasy-hub-layout";
 import { formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline";
@@ -110,9 +111,17 @@ export function LandingPage({
     staleTime: 5 * 60_000,
   });
 
+  // The funnel counts visitors without an account, the audience that can
+  // go on to sign up: once the session says so, once per mount. A manager
+  // opening `/jouer` is not a landing view (the events carry no audience to
+  // filter on afterwards).
+  const viewTracked = useRef(false);
+  const measured = signedOutStatus(status);
   useEffect(() => {
+    if (!measured || viewTracked.current) return;
+    viewTracked.current = true;
     track("landing_view");
-  }, []);
+  }, [measured]);
 
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const Heading = headingLevel === 1 ? "h1" : "h2";
@@ -562,6 +571,11 @@ function tierName(tier: PublicPrizeDto["tier"], t: (key: TranslationKey) => stri
   }
 }
 
+/** A visitor without an account: the audience the sign-up funnel counts. */
+function signedOutStatus(status: AuthStatus): boolean {
+  return status === "anonymous" || status === "guest";
+}
+
 /** The page's one primary action, in its state's words; the same everywhere. */
 function PrimaryAction({
   cta,
@@ -575,6 +589,7 @@ function PrimaryAction({
   size?: "sm" | "md";
 }) {
   const { t } = useI18n();
+  const { status } = useAuth();
   if (cta.kind === "pending") {
     // The button's place, kept: the label arrives with the state.
     return (
@@ -602,7 +617,9 @@ function PrimaryAction({
       variant="gradient"
       size={size}
       onClick={() => {
-        if (cta.kind === "create") track(event);
+        // The funnel's step: a visitor without an account heading for the
+        // builder. A signed-in reader's tap is not one (see `landing_view`).
+        if (cta.kind === "create" && signedOutStatus(status)) track(event);
         onLeave?.();
       }}
       data-testid={`landing-cta-${event.replace("landing_cta_", "")}`}

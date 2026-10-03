@@ -53,6 +53,15 @@ describe("sign-up funnel events", () => {
     expect(source).toContain('if (otpType === "signup") track("signup_verified");');
   });
 
+  test("onboarding is counted for a first setup, not for a later profile edit", () => {
+    const source = code("src/routes/auth.profile-setup.tsx");
+    expect(source).toContain("const firstSetup = user?.profileComplete === false;");
+    expect(source).toContain('if (firstSetup) track("profile_setup_complete");');
+    expect(source.indexOf("const firstSetup")).toBeLessThan(
+      source.indexOf("authService.completeProfile("),
+    );
+  });
+
   test("a team is counted on the server's confirmation, not on the draft", () => {
     const source = code("src/routes/fantasy.create.tsx");
     const ok = source.indexOf("if (res.ok) {");
@@ -62,12 +71,15 @@ describe("sign-up funnel events", () => {
     expect(fired - ok).toBeLessThan(200);
   });
 
-  test("the landing page counts only the 'create' action, by placement", () => {
+  test("the landing page counts visitors without an account, and only the 'create' action", () => {
     const source = code("src/components/landing/LandingPage.tsx");
-    expect(source).toContain('if (cta.kind === "create") track(event);');
+    expect(source).toContain('if (cta.kind === "create" && signedOutStatus(status)) track(event);');
     for (const placement of ["header", "hero", "final", "sticky"]) {
       expect(source).toContain(`event="landing_cta_${placement}"`);
     }
     expect(source).toContain('track("landing_view")');
+    // Visitors without an account only: a manager on /jouer is not in the funnel.
+    expect(source).toContain('return status === "anonymous" || status === "guest";');
+    expect(source).toMatch(/if \(!measured \|\| viewTracked\.current\) return;/);
   });
 });

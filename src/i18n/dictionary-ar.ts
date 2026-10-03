@@ -2270,6 +2270,15 @@ export const ar = {
   "pepites.share.whatsapp": "إرسال عبر واتساب",
   "pepites.share.copy": "نسخ الرابط",
   "pepites.share.copy_failed": "تعذّر نسخ الرابط.",
+  // The pitch demo's welcome screen (demo/, `WelcomeScreen`); the app
+  // itself opens on the landing page instead.
+  "welcome.title": "مرحبًا بك في BotolaGO",
+  "welcome.description": "الأخبار والمباريات والفانتازي: تابع كرة القدم المغربية في مكان واحد.",
+  "welcome.cta_primary": "استكشف BotolaGO",
+  "welcome.secondary_prompt": "لديك حساب بالفعل؟",
+  "welcome.cta_secondary": "تسجيل الدخول",
+  "welcome.cta_guest": "المتابعة كضيف",
+  "welcome.guest_hint": "استكشف BotolaGO دون حساب. بعض الميزات ستبقى محدودة.",
   // The landing page for new visitors (src/components/landing).
   "landing.meta_title": "فانتازي البطولة الاحترافية مجاناً — BotolaGO",
   "landing.meta_description":

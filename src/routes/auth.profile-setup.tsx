@@ -114,6 +114,10 @@ function ProfileSetupPage() {
 
   const finish = async () => {
     if (submitting) return;
+    // This screen is also the profile editor (the profile page links here),
+    // so only an account finishing its first setup is the funnel's
+    // "onboarding complete"; read before the save makes it complete.
+    const firstSetup = user?.profileComplete === false;
     setSubmitting(true);
     if (chosenLang !== lang) setLanguage(chosenLang);
     const res = await authService.completeProfile({
@@ -156,7 +160,7 @@ function ProfileSetupPage() {
     }
     setSubmitting(false);
     refresh();
-    track("profile_setup_complete");
+    if (firstSetup) track("profile_setup_complete");
     toast.success(t("auth.setup.success"));
     navigate({ to: next });
   };

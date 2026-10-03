@@ -2401,6 +2401,17 @@ export const fr = {
   "pepites.share.whatsapp": "Envoyer sur WhatsApp",
   "pepites.share.copy": "Copier le lien",
   "pepites.share.copy_failed": "Le lien n'a pas pu être copié.",
+  // The pitch demo's welcome screen (demo/, `WelcomeScreen`); the app
+  // itself opens on the landing page instead.
+  "welcome.title": "Bienvenue sur BotolaGO",
+  "welcome.description":
+    "Actualités, matchs et Fantasy : suivez le football marocain au même endroit.",
+  "welcome.cta_primary": "Explorer BotolaGO",
+  "welcome.secondary_prompt": "Vous avez déjà un compte ?",
+  "welcome.cta_secondary": "Se connecter",
+  "welcome.cta_guest": "Continuer en invité",
+  "welcome.guest_hint":
+    "Découvrez BotolaGO sans compte. Certaines fonctionnalités resteront limitées.",
   // The landing page for new visitors (src/components/landing).
   "landing.meta_title": "Fantasy Botola Pro gratuite — BotolaGO",
   "landing.meta_description":

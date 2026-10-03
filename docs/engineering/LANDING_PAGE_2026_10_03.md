@@ -59,14 +59,14 @@ deadline under the button is the backend's enrolment gameweek
 Seline, names only (no properties, no identifiers), production on
 botolago.com only, as before.
 
-| Step                 | Event                                                 | Fires when                                                                |
-| -------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------- |
-| Landing seen         | `landing_view` (+ the `/jouer` page view)             | the page mounts                                                           |
-| Primary action       | `landing_cta_header` / `_hero` / `_final` / `_sticky` | "Créer mon équipe" is tapped (not "Voir mon équipe")                      |
-| Sign-up started      | `signup_submitted`                                    | the server accepted the registration                                      |
-| Sign-up completed    | `signup_verified`                                     | the e-mail code was accepted, or a `type=signup` e-mail link was verified |
-| Onboarding completed | `profile_setup_complete`                              | profile setup saved                                                       |
-| First squad saved    | `fantasy_team_created`                                | `saveTeam` returned ok on `/fantasy/create`                               |
+| Step                 | Event                                                 | Fires when                                                                                           |
+| -------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Landing seen         | `landing_view` (+ the `/jouer` page view)             | the page is shown to a visitor without an account (anonymous or device guest), once per mount        |
+| Primary action       | `landing_cta_header` / `_hero` / `_final` / `_sticky` | a visitor without an account taps "Créer mon équipe" (not "Voir mon équipe", not a signed-in reader) |
+| Sign-up started      | `signup_submitted`                                    | the server accepted the registration                                                                 |
+| Sign-up completed    | `signup_verified`                                     | the e-mail code was accepted, or a `type=signup` e-mail link was verified                            |
+| Onboarding completed | `profile_setup_complete`                              | a new account's first profile setup is saved (not a later edit from the profile page)                |
+| First squad saved    | `fantasy_team_created`                                | `saveTeam` returned ok on `/fantasy/create`                                                          |
 
 Funnel to watch: `landing_view` → any `landing_cta_*` → `signup_submitted` →
 `signup_verified` → `profile_setup_complete` → `fantasy_team_created`.
