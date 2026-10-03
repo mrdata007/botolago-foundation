@@ -85,3 +85,65 @@ export function clubShortCode(
   if (trimmed) return trimmed.toUpperCase();
   return clubInitials(shortName);
 }
+
+/**
+ * A longer, still readable code for a club whose short code collided with
+ * another club's. "RCA Zemamra" is shown as "RCA" by `clubInitials` (two
+ * words, so the first three letters), which is also Raja's real code. Keeping
+ * the leading all-capitals word and adding the initial of the next one gives
+ * "RCAZ", the abbreviation that club writes itself. Otherwise the initials of
+ * every word, or the first four letters.
+ */
+function longerClubCode(shortName: string): string[] {
+  const words = shortName.split(NON_LETTER).filter(Boolean);
+  const candidates: string[] = [];
+  const [first, second] = words;
+  if (first && second && first.length >= 3 && first === first.toUpperCase()) {
+    candidates.push(compact(first + second.slice(0, 1)).slice(0, 5));
+  }
+  const initials = words.map((word) => compact(word).slice(0, 1)).join("");
+  if (initials.length >= 3) candidates.push(initials.slice(0, 4));
+  candidates.push(compact(shortName).slice(0, 4));
+  return candidates;
+}
+
+/**
+ * The short code of every club in a list, with no two clubs sharing one.
+ *
+ * A club with its own `code` always keeps it. Where several clubs would show
+ * the same letters, the ones without a code of their own get a longer
+ * variant (see `longerClubCode`). If nothing distinct can be built, the
+ * shared code stays: a repeated code is better than an invented one.
+ */
+export function uniqueClubShortCodes(
+  teams: readonly {
+    readonly id: string;
+    readonly code?: string | null;
+    readonly shortName?: string | null;
+  }[],
+): Map<string, string> {
+  const codes = new Map<string, string>();
+  const hasOwnCode = (team: (typeof teams)[number]) => (team.code ?? "").trim() !== "";
+  for (const team of teams) codes.set(team.id, clubShortCode(team.code, team.shortName));
+
+  const taken = new Set(codes.values());
+  const members = new Map<string, typeof teams>();
+  for (const team of teams) {
+    const code = codes.get(team.id) ?? "";
+    if (code) members.set(code, [...(members.get(code) ?? []), team]);
+  }
+  for (const [code, group] of members) {
+    if (group.length < 2) continue;
+    for (const team of group) {
+      if (hasOwnCode(team)) continue;
+      const replacement = longerClubCode(team.shortName ?? "").find(
+        (candidate) => candidate.length >= 3 && candidate !== code && !taken.has(candidate),
+      );
+      if (replacement) {
+        codes.set(team.id, replacement);
+        taken.add(replacement);
+      }
+    }
+  }
+  return codes;
+}

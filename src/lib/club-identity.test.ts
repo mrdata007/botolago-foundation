@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import { clubInitials, clubShortCode, rowClubName } from "@/lib/club-identity";
+import {
+  clubInitials,
+  clubShortCode,
+  rowClubName,
+  uniqueClubShortCodes,
+} from "@/lib/club-identity";
 
 /**
  * BG-0111 — the pitch fixture plate rendered "(D)" with no opponent because
@@ -72,5 +77,52 @@ describe("rowClubName", () => {
     expect(rowClubName("RCA Zemamra", "Renaissance Club Athletic Zemamra")).toBe("RCA Zemamra");
     expect(rowClubName("FUS Rabat", "FUS Rabat")).toBe("FUS Rabat");
     expect(rowClubName("الوداد", "الوداد الرياضي")).toBe("الوداد");
+  });
+});
+
+describe("uniqueClubShortCodes", () => {
+  // Real production shapes: Raja carries the code "RCA"; Zemamra carries none
+  // and its French short name is "RCA Zemamra", which used to come out as "RCA".
+  const raja = { id: "raja", code: "RCA", shortName: "Raja Casablanca" };
+  const zemamra = { id: "zemamra", code: null, shortName: "RCA Zemamra" };
+
+  test("gives the club without a code a distinct one when letters collide", () => {
+    const codes = uniqueClubShortCodes([raja, zemamra]);
+    expect(codes.get("raja")).toBe("RCA");
+    expect(codes.get("zemamra")).toBe("RCAZ");
+  });
+
+  test("is the same whichever order the clubs arrive in", () => {
+    const codes = uniqueClubShortCodes([zemamra, raja]);
+    expect(codes.get("raja")).toBe("RCA");
+    expect(codes.get("zemamra")).toBe("RCAZ");
+  });
+
+  test("never touches a club that has its own code", () => {
+    const codes = uniqueClubShortCodes([
+      { id: "a", code: "FUS", shortName: "FUS Rabat" },
+      { id: "b", code: null, shortName: "Wydad Casablanca" },
+    ]);
+    expect(codes.get("a")).toBe("FUS");
+    expect(codes.get("b")).toBe("WYD");
+  });
+
+  test("leaves a shared code alone when nothing distinct can be built", () => {
+    const codes = uniqueClubShortCodes([
+      { id: "a", code: "ABC", shortName: "A" },
+      { id: "b", code: "ABC", shortName: "B" },
+    ]);
+    expect(codes.get("a")).toBe("ABC");
+    expect(codes.get("b")).toBe("ABC");
+  });
+
+  test("ends with no repeated code across a whole league", () => {
+    const codes = uniqueClubShortCodes([
+      raja,
+      zemamra,
+      { id: "wac", code: "WCA", shortName: "WCA" },
+      { id: "far", code: "ASFAR", shortName: "FAR Rabat" },
+    ]);
+    expect(new Set(codes.values()).size).toBe(codes.size);
   });
 });

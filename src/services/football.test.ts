@@ -9,6 +9,7 @@ import {
   hasLeagueTable,
   inPlayFixtures,
   presentFootballClub,
+  presentFootballClubs,
   selectFootballDataMode,
   toMatch,
 } from "./football";
@@ -80,6 +81,17 @@ describe("Football frontend repository cutover", () => {
       "https://botolago-test.supabase.co/storage/v1/object/public/football-media/football/teams/1001/crest.png",
     );
     expect(club.crestPlaceholder).toBe(team.code);
+  });
+
+  test("no two clubs in a list share the letters on their crest", async () => {
+    const repository = new MockFootballRepository();
+    const base = (await repository.getHomeMatches("fr", 1, context))[0]!.homeTeam;
+    const raja = { ...base, id: "raja", code: "RCA", shortName: "Raja Casablanca" };
+    const zemamra = { ...base, id: "zemamra", code: "", shortName: "RCA Zemamra" };
+
+    const clubs = presentFootballClubs([raja, zemamra]);
+
+    expect(clubs.map((club) => club.crestPlaceholder)).toEqual(["RCA", "RCAZ"]);
   });
 
   test("match detail page exposes lineups without fabricating data when the provider has none", async () => {
