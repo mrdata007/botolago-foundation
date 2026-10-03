@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { AnimatedNumber } from "@/components/common/AnimatedNumber";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import {
   ui,
@@ -16,6 +17,7 @@ import {
   UiTR,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useFlip } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { LeagueStanding } from "@/types/fantasy";
@@ -69,6 +71,13 @@ export function LeagueTable({
       )
     : standings;
 
+  // Rows glide to their new places when a refresh re-orders the league. A
+  // search narrows the list rather than re-ordering it, so it does not slide.
+  const tableRef = useFlip<HTMLDivElement>(
+    filtered.map((s) => s.managerId),
+    q.trim(),
+  );
+
   const movementLabels = {
     up: t("fantasy.rank.up"),
     down: t("fantasy.rank.down"),
@@ -76,7 +85,7 @@ export function LeagueTable({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" ref={tableRef}>
       {/* No leading magnifier: `UiInput` has no adornment slot, and faking one
           with a negative margin breaks the moment the field grows. Recorded as
           a kit request; `type="search"` plus the label carries the meaning. */}
@@ -126,7 +135,7 @@ export function LeagueTable({
                 const isMe = !!meId && s.managerId === meId;
                 const club = crestFor(s);
                 return (
-                  <UiTR key={s.managerId} highlighted={isMe}>
+                  <UiTR key={s.managerId} flipKey={s.managerId} highlighted={isMe}>
                     <UiTD numeric strong>
                       {nf.format(s.rank)}
                     </UiTD>
@@ -177,11 +186,11 @@ export function LeagueTable({
                     </UiTD>
                     {compact ? null : (
                       <UiTD numeric className={ui.tone.muted}>
-                        {nf.format(s.gameweekScore)}
+                        <AnimatedNumber value={s.gameweekScore} format={nf.format} />
                       </UiTD>
                     )}
                     <UiTD numeric strong>
-                      {nf.format(s.totalScore)}
+                      <AnimatedNumber value={s.totalScore} format={nf.format} />
                     </UiTD>
                     <UiTD numeric>
                       <UiRankMovement

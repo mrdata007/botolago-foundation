@@ -27,7 +27,7 @@ const buttonVariants = cva(
     "rounded-[var(--ui-radius-control)] text-[length:var(--ui-text-body)] [font-weight:var(--ui-weight-body)]",
     "transition-[background-color,color,box-shadow,transform,opacity] duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--ui-page)]",
-    "active:translate-y-px active:duration-[var(--duration-tap)]",
+    "active:scale-[0.97] active:duration-[var(--duration-tap)]",
     "disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed",
     "aria-busy:opacity-80 aria-busy:pointer-events-none",
     "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",

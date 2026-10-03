@@ -39,6 +39,7 @@ import { PepitesShell } from "./PepitesShell";
 import {
   FactsStrip,
   GoMark,
+  FillBar,
   Headshot,
   MonoLine,
   NightBand,
@@ -56,6 +57,8 @@ import {
   usePepitesViewer,
   useVersionPointer,
 } from "./use-pepites";
+import { TiltFrame } from "./TiltFrame";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 export type PlayerTab = "overview" | "matches" | "stats";
 
@@ -358,14 +361,16 @@ function PlayerHero({
         </div>
         <div className="mt-2 flex items-end justify-between gap-3">
           {photoUrl ? (
-            <img
-              src={photoUrl}
-              alt=""
-              loading="eager"
-              decoding="async"
-              className="size-[150px] rounded-[20px] object-cover"
-              data-testid="pepites-player-photo"
-            />
+            <TiltFrame>
+              <img
+                src={photoUrl}
+                alt=""
+                loading="eager"
+                decoding="async"
+                className="size-[150px] rounded-[20px] object-cover"
+                data-testid="pepites-player-photo"
+              />
+            </TiltFrame>
           ) : (
             <PepitesShirt player={player} number={rank} className="h-[140px] w-[150px]" />
           )}
@@ -428,7 +433,9 @@ function PlayerHero({
         <div className="self-stretch">
           <BackToPepites className="mb-3" />
           {photoUrl ? (
-            <img src={photoUrl} alt="" className="h-[290px] w-[280px] rounded-2xl object-cover" />
+            <TiltFrame>
+              <img src={photoUrl} alt="" className="h-[290px] w-[280px] rounded-2xl object-cover" />
+            </TiltFrame>
           ) : (
             <PepitesShirt player={player} number={rank} className="h-[290px] w-[280px]" />
           )}
@@ -983,15 +990,11 @@ function BreakthroughCard({
                     {formatCount(minutes, lang)} {lang === "ar" ? "د" : "′"}
                   </bdi>
                 </div>
-                <div className="h-2.5 rounded bg-[color:var(--pepites-seg-empty)]">
-                  <div
-                    className={cn(
-                      "h-full rounded",
-                      energy ? pp.energyFill : "bg-[color:var(--pepites-muted)]",
-                    )}
-                    style={{ width: `${(minutes / maximum) * 100}%` }}
-                  />
-                </div>
+                <FillBar
+                  percent={(minutes / maximum) * 100}
+                  className="h-2.5 rounded bg-[color:var(--pepites-seg-empty)]"
+                  fillClassName={energy ? pp.energyFill : "bg-[color:var(--pepites-muted)]"}
+                />
               </div>
             ))}
           </div>
@@ -1292,10 +1295,9 @@ function PlayerMatches({
 function matchDate(iso: string): string {
   const date = new Date(iso);
   if (!Number.isFinite(date.getTime())) return "";
-  const parts = new Intl.DateTimeFormat("en-GB", {
+  const parts = moroccoDateTimeFormat("en-GB", {
     day: "2-digit",
     month: "2-digit",
-    timeZone: "Africa/Casablanca",
   }).formatToParts(date);
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
   return `${get("day")}.${get("month")}`;

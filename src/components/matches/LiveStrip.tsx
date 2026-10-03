@@ -6,6 +6,7 @@ import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
 import { useI18n } from "@/i18n/provider";
 import { clubMatchPalettes } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
+import { FlipScore, TickingMinute } from "./FlipScore";
 import { useLiveMatches } from "./use-live-matches";
 
 /**
@@ -113,16 +114,22 @@ export function LiveStrip() {
                 {/* Three flex children in a container that follows the page
                     direction, so home is on the right in Arabic. */}
                 <span className={cn("flex items-center gap-1", ui.score.row)}>
-                  <bdi>{hs}</bdi>
+                  <FlipScore value={hs} />
                   <span aria-hidden>–</span>
-                  <bdi>{as}</bdi>
+                  <FlipScore value={as} />
                 </span>
                 <span>{away.crestPlaceholder}</span>
                 <span
                   aria-hidden
                   className="live-breathe h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--ui-live)]"
                 />
-                {minute && <bdi className={ui.text.tabular}>{minute}</bdi>}
+                {match.minute ? (
+                  <TickingMinute
+                    minute={match.minute}
+                    running={match.status === "live"}
+                    className={ui.text.tabular}
+                  />
+                ) : null}
               </Link>
             </li>
           );

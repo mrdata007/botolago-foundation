@@ -34,9 +34,10 @@ import type {
   RenderedEmail,
   RoundPreviewPayload,
 } from "./notification-email-types.ts";
+import { MOROCCO_TIME_ZONE, shiftToMorocco } from "./morocco-time.ts";
 
 /** The zone times are shown in when a delivery carries none (or an invalid one). */
-export const DEFAULT_EMAIL_TIME_ZONE = "Africa/Casablanca";
+export const DEFAULT_EMAIL_TIME_ZONE = MOROCCO_TIME_ZONE;
 
 /**
  * The competition calendar. A fixture whose time is not confirmed carries the
@@ -44,7 +45,7 @@ export const DEFAULT_EMAIL_TIME_ZONE = "Africa/Casablanca";
  * calendar, so it is read there rather than in the reader's zone, where a
  * placeholder midnight would land on the previous day west of Greenwich.
  */
-const COMPETITION_TIME_ZONE = "Africa/Casablanca";
+const COMPETITION_TIME_ZONE = MOROCCO_TIME_ZONE;
 
 /**
  * Brand colours as hex, converted from the oklch tokens in src/styles.css
@@ -188,37 +189,51 @@ function parseInstant(value: string): Date | null {
   return Number.isFinite(instant.getTime()) ? instant : null;
 }
 
+/**
+ * Morocco's clock is the application's own rule, not the runtime's time-zone
+ * data (they differ from 2026-09-20): the instant is shifted and formatted as
+ * UTC. Any other zone is left to `Intl`.
+ */
+function zoned(instant: Date, timeZone: string): { instant: Date; timeZone: string } {
+  return timeZone === MOROCCO_TIME_ZONE
+    ? { instant: shiftToMorocco(instant), timeZone: "UTC" }
+    : { instant, timeZone };
+}
+
 /** "21:00" — 24-hour clock, Latin digits. */
 export function formatTime(instant: Date, lang: EmailLanguage, timeZone: string): string {
+  const at = zoned(instant, timeZone);
   return new Intl.DateTimeFormat(intlLocale(lang), {
-    timeZone,
+    timeZone: at.timeZone,
     hour: "2-digit",
     minute: "2-digit",
     hourCycle: "h23",
     numberingSystem: "latn",
-  }).format(instant);
+  }).format(at.instant);
 }
 
 /** "samedi 26 septembre" / "السبت، 26 شتنبر". */
 export function formatDay(instant: Date, lang: EmailLanguage, timeZone: string): string {
+  const at = zoned(instant, timeZone);
   return new Intl.DateTimeFormat(intlLocale(lang), {
-    timeZone,
+    timeZone: at.timeZone,
     weekday: "long",
     day: "numeric",
     month: "long",
     numberingSystem: "latn",
-  }).format(instant);
+  }).format(at.instant);
 }
 
 function dayKey(instant: Date, timeZone: string): string {
   const parts: Record<string, string> = {};
+  const at = zoned(instant, timeZone);
   const format = new Intl.DateTimeFormat("en-US", {
-    timeZone,
+    timeZone: at.timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
-  for (const part of format.formatToParts(instant)) parts[part.type] = part.value;
+  for (const part of format.formatToParts(at.instant)) parts[part.type] = part.value;
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
 

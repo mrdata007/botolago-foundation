@@ -1,3 +1,4 @@
+import { AnimatedNumber, PopOnChange } from "@/components/common/AnimatedNumber";
 import pointsPendingArt from "@/assets/illustrations/points-pending.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -37,6 +38,7 @@ import {
 import { FORMATIONS, type FormationKey, type SquadPlayer } from "@/types/fantasy";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
+import { pointsUnit } from "@/lib/points-unit";
 
 export const Route = createFileRoute("/fantasy/points")({
   head: () => fantasyHead("points"),
@@ -181,7 +183,7 @@ function PointsBody() {
     }
     return b.totalPoints;
   };
-  const card = (id: string) => {
+  const card = (id: string, size?: "md" | "sm") => {
     const p = playerOf(id);
     if (!p) return <div key={id} />;
     const pts = pointsFor(id);
@@ -190,9 +192,10 @@ function PointsBody() {
         key={id}
         player={p}
         club={clubOf(p.clubId)}
-        sub={pts === null ? none : String(pts)}
+        sub={pts === null ? none : <PopOnChange value={pts}>{String(pts)}</PopOnChange>}
         captain={id === captainId}
         vice={id === viceId && id !== captainId}
+        size={size}
       />
     );
   };
@@ -200,7 +203,7 @@ function PointsBody() {
     startingIds
       .filter((id) => posOf(id) === pos)
       .slice(0, limit)
-      .map(card);
+      .map((id) => card(id));
   const benchLabels = benchIds.map((id, index) =>
     index === 0 ? t("fpl.gkp") : `${index}. ${t(`player.pos.${posOf(id) ?? "DEF"}` as never)}`,
   );
@@ -288,8 +291,8 @@ function PointsBody() {
         items={[
           {
             label: t("fpl.points"),
-            value: total ?? none,
-            unit: total === null ? undefined : t("fantasy.points.abbr"),
+            value: total === null ? none : <AnimatedNumber value={total} format={String} />,
+            unit: total === null ? undefined : pointsUnit(total, t),
             sub: statusLabel ? (
               <span className={cn("inline-flex items-center gap-1.5", ui.text.label)}>
                 {gwStatus === "live" ? (
@@ -331,7 +334,7 @@ function PointsBody() {
         <FplPitch
           className="mx-[var(--ui-gutter)] mt-3"
           rows={[row("GK", 1), row("DEF", cfg.DEF), row("MID", cfg.MID), row("FWD", cfg.FWD)]}
-          bench={benchIds.map(card)}
+          bench={benchIds.map((id) => card(id, "sm"))}
           benchLabels={benchLabels}
         />
       ) : (
@@ -418,7 +421,7 @@ function PointsBody() {
               label: `GW${gw}`,
               render: (p) => {
                 const pts = pointsFor(p.id);
-                return pts === null ? none : `${pts}${t("fantasy.points.abbr")}`;
+                return pts === null ? none : `${pts}${pointsUnit(pts, t)}`;
               },
               // The column a reader came for: the heavy step of the ramp,
               // not the off-token `font-extrabold` it used to carry.

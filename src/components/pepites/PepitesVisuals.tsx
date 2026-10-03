@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import type { PepitesPlayerCard } from "@/backend/pepites/contracts";
 import { useI18n } from "@/i18n/provider";
+import { useRevealOnView } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import {
@@ -236,9 +237,12 @@ export function Seg10Bar({
   className?: string;
   label?: string;
 }) {
-  const lit = segments(value);
+  const [ref, reveal] = useRevealOnView<HTMLDivElement>();
+  // Empty while waiting to be seen, then lit one segment after another.
+  const lit = reveal === "armed" ? 0 : segments(value);
   return (
     <div
+      ref={ref}
       role={label ? "img" : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
@@ -249,10 +253,14 @@ export function Seg10Bar({
           key={colour}
           className={cn(
             "h-full flex-1 rounded-[1.5px] [transform:skewX(-20deg)] rtl:[transform:skewX(20deg)]",
+            "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
             index >= lit &&
               (tone === "light" ? "bg-[color:var(--pepites-seg-empty)]" : "bg-white/15"),
           )}
-          style={index < lit ? { backgroundColor: colour } : undefined}
+          style={{
+            ...(index < lit ? { backgroundColor: colour } : null),
+            transitionDelay: reveal === "played" ? `${index * 45}ms` : undefined,
+          }}
         />
       ))}
     </div>
@@ -450,10 +458,14 @@ export function ScoreRing({
   const stroke = size * 0.08;
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const share = typeof score === "number" ? Math.max(0, Math.min(100, score)) / 100 : 0;
+  const [revealRef, reveal] = useRevealOnView<HTMLDivElement>();
+  const share =
+    typeof score === "number" && reveal !== "armed" ? Math.max(0, Math.min(100, score)) / 100 : 0;
+  const hasScore = typeof score === "number" && score > 0;
   const gradientId = `pepites-ring-${size}`;
   return (
     <div
+      ref={revealRef}
       className="relative inline-flex shrink-0 items-center justify-center"
       style={{ width: size, height: size }}
       data-testid={testId}
@@ -474,8 +486,9 @@ export function ScoreRing({
           stroke="rgb(255 255 255 / 0.11)"
           strokeWidth={stroke}
         />
-        {share > 0 ? (
+        {hasScore ? (
           <circle
+            className="transition-[stroke-dasharray] duration-[var(--duration-hero)] ease-[var(--ease-emphasized)]"
             cx={size / 2}
             cy={size / 2}
             r={radius}
@@ -500,6 +513,33 @@ export function ScoreRing({
           {label}
         </span>
       </span>
+    </div>
+  );
+}
+
+/**
+ * A horizontal fill bar (`percent` of its track) that grows from the inline
+ * start the first time it is scrolled into view.
+ */
+export function FillBar({
+  percent,
+  className,
+  fillClassName,
+}: {
+  percent: number;
+  className?: string;
+  fillClassName?: string;
+}) {
+  const [ref, reveal] = useRevealOnView<HTMLDivElement>();
+  return (
+    <div ref={ref} className={className}>
+      <div
+        className={cn(
+          "h-full rounded transition-[width] duration-[var(--duration-hero)] ease-[var(--ease-emphasized)]",
+          fillClassName,
+        )}
+        style={{ width: reveal === "armed" ? "0%" : `${percent}%` }}
+      />
     </div>
   );
 }

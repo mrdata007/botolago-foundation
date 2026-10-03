@@ -5,6 +5,7 @@ import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { ui, UiPlayerPlate } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
+import { useJustChanged, useJustTurnedOn } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
@@ -21,7 +22,18 @@ import { plateName } from "./plate-name";
  * letter in a light ring, the vice its inverse — a surface disc with the brand
  * letter in a navy ring. Every colour is a token that flips with the theme.
  */
-function RoleMarker({ letter, title, tone }: { letter: string; title: string; tone: "c" | "v" }) {
+function RoleMarker({
+  letter,
+  title,
+  tone,
+  fresh = false,
+}: {
+  letter: string;
+  title: string;
+  tone: "c" | "v";
+  /** Just given: the marker pops in. */
+  fresh?: boolean;
+}) {
   return (
     <span
       aria-hidden
@@ -32,6 +44,7 @@ function RoleMarker({ letter, title, tone }: { letter: string; title: string; to
         ui.text.micro,
         "[font-weight:var(--ui-weight-heavy)]",
         "ring-2",
+        fresh && "pop",
         tone === "c"
           ? cn(ui.surface.inkPlain, "ring-[color:var(--ui-on-ink-plain)]")
           : cn("bg-[color:var(--ui-surface)]", ui.tone.ink, "ring-[color:var(--ui-ink)]"),
@@ -61,6 +74,7 @@ export function FplPlayerCard({
   vice,
   highlighted,
   dimmed,
+  noMatch,
   onClick,
   onRemove,
   removeLabel,
@@ -84,6 +98,8 @@ export function FplPlayerCard({
   vice?: boolean;
   highlighted?: boolean;
   dimmed?: boolean;
+  /** The player's club has no match this gameweek: a "!" badge on the shirt. */
+  noMatch?: boolean;
   onClick?: () => void;
   onRemove?: () => void;
   removeLabel?: string;
@@ -91,15 +107,21 @@ export function FplPlayerCard({
   size?: "md" | "sm";
 }) {
   const { tr, t } = useI18n();
+  // The armband just passed to this player (not on first show): a gold ring
+  // opens around the shirt and the "C" pops.
+  const newCaptain = useJustTurnedOn(Boolean(captain));
+  // A different player in the same slot (a transfer): the new one drops in.
+  const arrived = useJustChanged(player.id, 600);
   const fullName = tr(player.name);
   // The surname — and in Arabic "عطية الله", not a bare "الله" (plate-name.ts).
   const shortName = plateName(fullName);
   const kit = getKitForClub(club, player.kitPattern);
   const doubtful = player.status === "doubtful";
   const flagged = player.status !== "available";
-  // The board's shirts: 34px on the pitch, 30px on the bench strip.
-  const jersey = size === "md" ? 34 : 30;
+  // The board's shirts: 42px on the pitch, 34px on the bench strip.
+  const jersey = size === "md" ? 42 : 34;
 
+  const noMatchText = t("fantasy.hub.no_match");
   const role = captain
     ? `, ${t("fantasy.captain_full")}`
     : vice
@@ -122,8 +144,8 @@ export function FplPlayerCard({
       sub={sub ?? " "}
       state={highlighted ? "selected" : doubtful ? "doubtful" : "default"}
       onClick={onClick}
-      ariaLabel={`${fullName}${club ? `, ${tr(club.shortName)}` : ""}${role}`}
-      className={cn(dimmed && "opacity-45", className)}
+      ariaLabel={`${fullName}${club ? `, ${tr(club.shortName)}` : ""}${role}${noMatch ? `, ${noMatchText}` : ""}`}
+      className={cn(dimmed && "opacity-45", arrived && "swap-in", className)}
       visual={
         // The marker rides inside the visual so it is placed against the
         // shirt, not against the 76px plate. The shirt keeps the club's name
@@ -136,8 +158,19 @@ export function FplPlayerCard({
             imageUrl={player.jerseyImageUrl}
             ariaLabel={club ? tr(club.shortName) : undefined}
           />
+          {newCaptain ? (
+            <span
+              aria-hidden
+              className="captain-ring pointer-events-none absolute inset-0 rounded-full"
+            />
+          ) : null}
           {captain ? (
-            <RoleMarker letter={t("fantasy.captain")} title={t("fantasy.captain_full")} tone="c" />
+            <RoleMarker
+              letter={t("fantasy.captain")}
+              title={t("fantasy.captain_full")}
+              tone="c"
+              fresh={newCaptain}
+            />
           ) : vice ? (
             <RoleMarker letter={t("fantasy.vice")} title={t("fantasy.vice_full")} tone="v" />
           ) : null}
@@ -197,6 +230,24 @@ export function FplPlayerCard({
             aria-hidden
           >
             <AlertTriangle className="h-3 w-3" />
+          </span>
+        ) : noMatch ? (
+          // "!" for a club with no match: the same caution badge as an
+          // availability flag, with the word for it as the title.
+          <span
+            className={cn(
+              "grid h-5 w-5 place-items-center",
+              ui.radius.full,
+              "bg-[color:var(--ui-caution)]",
+              ui.tone.onCaution,
+              ui.text.micro,
+              "[font-weight:var(--ui-weight-heavy)]",
+              "shadow-[var(--ui-shadow-card)]",
+            )}
+            title={noMatchText}
+            aria-hidden
+          >
+            !
           </span>
         ) : undefined
       }

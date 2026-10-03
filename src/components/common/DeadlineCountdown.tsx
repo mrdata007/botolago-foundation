@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useI18n } from "@/i18n/provider";
 import { Clock } from "lucide-react";
 import { ui, UiPill } from "@/components/ui-kit";
-import { countdownText, useDeadlineCountdown } from "@/components/fpl/deadline";
+import { countdownText, deadlineUrgency, useDeadlineCountdown } from "@/components/fpl/deadline";
 import { cn } from "@/lib/utils";
 
 /**
@@ -48,7 +48,14 @@ export function DeadlineCountdown({
 
   return (
     <UiPill tone="action" className="max-w-full">
-      <Clock className="h-4 w-4 shrink-0" aria-hidden />
+      <Clock
+        className={cn(
+          "h-4 w-4 shrink-0",
+          left && deadlineUrgency(left) === "soon" && "deadline-soon",
+          left && deadlineUrgency(left) === "now" && "deadline-now",
+        )}
+        aria-hidden
+      />
       {label ? (
         <>
           <span className="min-w-0 truncate">{label}</span>

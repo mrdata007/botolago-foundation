@@ -1,3 +1,4 @@
+import { MOROCCO_TIME_ZONE, moroccoParts } from "../../lib/morocco-time";
 import { NotificationError } from "./errors";
 
 export interface QuietHoursInput {
@@ -9,6 +10,12 @@ export interface QuietHoursInput {
 }
 
 function localMinutes(at: Date, timezone: string): number {
+  // Morocco's clock is the application's own rule, not the runtime's tz data
+  // (they differ from 2026-09-20: a server and a browser would disagree).
+  if (timezone === MOROCCO_TIME_ZONE) {
+    const wall = moroccoParts(at);
+    return wall.hour * 60 + wall.minute;
+  }
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
     hour: "2-digit",

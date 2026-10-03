@@ -1,8 +1,8 @@
 import { useI18n } from "@/i18n/provider";
-import { AlertTriangle, Loader2, Inbox, WifiOff } from "lucide-react";
+import { AlertTriangle, Inbox, WifiOff } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { ui, UiButton } from "@/components/ui-kit";
+import { ui, UiButton, UiSkeleton } from "@/components/ui-kit";
 
 /**
  * Loading / empty / error / offline states, in the Option A register.
@@ -22,16 +22,14 @@ import { ui, UiButton } from "@/components/ui-kit";
 
 export function LoadingState({ label }: { label?: string }) {
   const { t } = useI18n();
+  // Shapes where the content will be, not a spinner: the page fills in
+  // instead of swapping. The words stay for screen readers.
   return (
-    <div
-      role="status"
-      className={cn("flex items-center justify-center gap-2 py-8", ui.text.body, ui.tone.muted)}
-    >
-      <Loader2
-        className={cn("h-4 w-4 animate-spin motion-reduce:animate-none", ui.tone.ink)}
-        aria-hidden
-      />
-      <span>{label ?? t("state.loading")}</span>
+    <div role="status" aria-busy="true" className="space-y-3 py-6">
+      <span className="sr-only">{label ?? t("state.loading")}</span>
+      <UiSkeleton className="h-12" />
+      <UiSkeleton className="h-24" />
+      <UiSkeleton className="h-12" />
     </div>
   );
 }
@@ -69,7 +67,7 @@ export function EmptyState({
           aria-hidden
           loading="lazy"
           decoding="async"
-          className={cn("w-auto max-w-full object-contain", compact ? "h-20" : "h-28")}
+          className={cn("drift-in w-auto max-w-full object-contain", compact ? "h-20" : "h-28")}
         />
       ) : (
         // The surface disc on the sunken panel: the same round icon plate the

@@ -22,14 +22,16 @@ function inZone(zone: string, instants: string[]): string[] {
   return JSON.parse(proc.stdout.toString()) as string[];
 }
 
-// Around each change of greeting in Casablanca on 26 September 2026 (UTC+1).
+// Around each change of greeting in Casablanca on 12 September 2026, before Morocco
+// moved to UTC+0 all year (UTC+1), so the offset is not zero and the test can tell a
+// wrong zone from a right one.
 const INSTANTS = [
-  "2026-09-26T10:59:00Z", // 11:59 in Casablanca
-  "2026-09-26T11:00:00Z", // 12:00
-  "2026-09-26T16:59:00Z", // 17:59
-  "2026-09-26T17:00:00Z", // 18:00
-  "2026-09-26T22:59:00Z", // 23:59
-  "2026-09-26T23:00:00Z", // 00:00 the next day
+  "2026-09-12T10:59:00Z", // 11:59 in Casablanca
+  "2026-09-12T11:00:00Z", // 12:00
+  "2026-09-12T16:59:00Z", // 17:59
+  "2026-09-12T17:00:00Z", // 18:00
+  "2026-09-12T22:59:00Z", // 23:59
+  "2026-09-12T23:00:00Z", // 00:00 the next day
 ];
 const EXPECTED = ["morning", "afternoon", "afternoon", "evening", "evening", "morning"];
 
@@ -45,22 +47,36 @@ describe("greetingPart", () => {
   });
 });
 
+describe("greetingPart after Morocco moved to UTC+0", () => {
+  it("reads Casablanca as UTC from 2026-09-20", () => {
+    const after = [
+      "2026-10-03T11:59:00Z",
+      "2026-10-03T12:00:00Z",
+      "2026-10-03T17:59:00Z",
+      "2026-10-03T18:00:00Z",
+      "2026-10-03T23:59:00Z",
+      "2026-10-04T00:00:00Z",
+    ];
+    expect(after.map((at) => greetingPart(new Date(at)))).toEqual(EXPECTED);
+  });
+});
+
 describe("advanceGreetingClock", () => {
-  const morning = new Date("2026-09-26T09:00:00Z"); // 10:00 in Casablanca
+  const morning = new Date("2026-09-12T09:00:00Z"); // 10:00 in Casablanca
 
   it("keeps the moment while the greeting and the date read the same", () => {
-    expect(advanceGreetingClock(morning, new Date("2026-09-26T10:59:00Z"))).toBe(morning);
+    expect(advanceGreetingClock(morning, new Date("2026-09-12T10:59:00Z"))).toBe(morning);
   });
 
   it("moves on at noon, at 18:00 and at midnight in Casablanca", () => {
-    for (const at of ["2026-09-26T11:00:00Z", "2026-09-26T17:00:00Z", "2026-09-26T23:00:00Z"]) {
+    for (const at of ["2026-09-12T11:00:00Z", "2026-09-12T17:00:00Z", "2026-09-12T23:00:00Z"]) {
       const now = new Date(at);
       expect(advanceGreetingClock(morning, now)).toBe(now);
     }
   });
 
   it("moves on to a new day even at the same part of it", () => {
-    const nextMorning = new Date("2026-09-27T09:00:00Z");
+    const nextMorning = new Date("2026-09-13T09:00:00Z");
     expect(advanceGreetingClock(morning, nextMorning)).toBe(nextMorning);
   });
 });

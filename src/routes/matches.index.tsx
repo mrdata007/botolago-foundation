@@ -28,12 +28,14 @@ import { ui, UiCard, UiChip, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { isSameMatchDay, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
-import { matchRounds } from "@/lib/match-days";
+import { matchRounds, nextMatchDayAfter } from "@/lib/match-days";
 import { unavailableHeaders } from "@/lib/page-availability";
 import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Match } from "@/types/domain";
+import { staggerStyle } from "@/lib/motion";
 
 const MATCHES_TITLE = "Matches Botola Pro — scores en direct | BotolaGO";
 const MATCHES_DESCRIPTION =
@@ -194,6 +196,16 @@ function MatchesPage() {
   // the band names the day the server rendered as the server named it.
   const todayDate = useMemo(() => dateFromKey(today), [today]);
 
+  // The fixtures still to come (the Home page's own query, so one request
+  // serves both): they say which day to open on and what to point an empty
+  // day at.
+  const upcomingQ = useQuery({
+    queryKey: ["football", "home-matches", lang],
+    queryFn: () => footballService.getHomeMatches(lang),
+    enabled: seasonsQ.isSuccess,
+  });
+  const nextDay = nextMatchDayAfter(upcomingQ.data?.matches ?? [], matchDay);
+
   const dayQuery = matchDayQuery(matchDay, lang, selectedSeason?.id);
   const matchesQ = useQuery({
     ...dayQuery,
@@ -281,6 +293,15 @@ function MatchesPage() {
 
   const totalDay = dayCounts.live + dayCounts.upcoming + dayCounts.finished;
 
+  const nextDayLabel = useMemo(() => {
+    if (!nextDay) return null;
+    return moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    }).format(matchDayFromKey(nextDay));
+  }, [nextDay, lang]);
+
   const visibleByBucket = useMemo(() => {
     const buckets: Record<"live" | "upcoming" | "finished", Match[]> = {
       live: [],
@@ -323,19 +344,14 @@ function MatchesPage() {
   const failed = seasonsQ.isLoadingError || matchesQ.isLoadingError;
 
   const rows = (list: readonly Match[]) =>
-    list.map((m) => {
+    list.map((m, index) => {
       const home = clubById(m.homeClubId);
       const away = clubById(m.awayClubId);
       if (!home || !away) return null;
       return (
-        <MatchCard
-          key={m.id}
-          match={m}
-          home={home}
-          away={away}
-          variant="list"
-          listGameweek={dayGameweek}
-        />
+        <div key={m.id} className="enter-rise stagger min-w-0" style={staggerStyle(index)}>
+          <MatchCard match={m} home={home} away={away} variant="list" listGameweek={dayGameweek} />
+        </div>
       );
     });
 
@@ -399,6 +415,22 @@ function MatchesPage() {
         <div className="mt-4">
           <EmptyState illustration={noMatchesArt}>
             {t("matches.section.no_matches_today")}
+            {nextDay && nextDayLabel ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDay(clampMatchDay(nextDay, selectedSeason));
+                }}
+                className={cn(
+                  ui.text.bodyStrong,
+                  ui.tone.ink,
+                  ui.focus,
+                  "min-h-[var(--ui-tap-min)]",
+                )}
+              >
+                {t("matches.empty.next").replace("{date}", nextDayLabel)} →
+              </button>
+            ) : null}
           </EmptyState>
         </div>
       )}

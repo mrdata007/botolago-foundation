@@ -80,7 +80,7 @@ export function LeaguesPanel() {
                     "flex items-center justify-between gap-3 p-3",
                     ui.surface.card,
                     ui.focus,
-                    "transition-transform duration-[var(--duration-tap)] active:translate-y-px",
+                    "press-tile",
                   )}
                 >
                   <span className="flex min-w-0 flex-col gap-1">

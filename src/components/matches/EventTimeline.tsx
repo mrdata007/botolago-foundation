@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { ArrowDownUp, CircleAlert, HeartPulse } from "lucide-react";
 import type { MatchLineupDto } from "@/backend/football/contracts";
 import { EmptyState } from "@/components/common/States";
-import { ui } from "@/components/ui-kit";
+import { ui, UiChip } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
@@ -61,7 +61,12 @@ export function EventTimeline({
   /** The half-time score, when the provider has recorded one: "MI-TEMPS · 1 – 1". */
   halfTime?: { home: number; away: number };
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  // "Moments forts": substitutions are hidden by default, and one tap shows
+  // them (the same switch, off). The count is the full match's, not the
+  // visible list's.
+  const [highlights, setHighlights] = useState(true);
+  const substitutionCount = events.filter((event) => event.type === "substitution").length;
 
   // Events already on screen at first render appear as they are; one that
   // arrives later, on a live refresh, fades in and opens (`event-enter`) so
@@ -89,15 +94,14 @@ export function EventTimeline({
   // half-time rule (so it shows during the break too); without one, the rule
   // goes before the first second-half event. Other boundaries are dropped:
   // the rule and the header's status already say where the match is.
-  const halfTimeEnd = events.find(
-    (event) => event.type === "period_end" && event.minute === 45,
-  )?.id;
+  const pool = highlights ? events.filter((event) => event.type !== "substitution") : events;
+  const halfTimeEnd = pool.find((event) => event.type === "period_end" && event.minute === 45)?.id;
   const firstSecondHalf = halfTimeEnd
     ? undefined
-    : events.find((event) => event.minute > 45 && !PERIOD_TYPES.has(event.type))?.id;
-  const shown = events.filter((event) => !PERIOD_TYPES.has(event.type) || event.id === halfTimeEnd);
+    : pool.find((event) => event.minute > 45 && !PERIOD_TYPES.has(event.type))?.id;
+  const shown = pool.filter((event) => !PERIOD_TYPES.has(event.type) || event.id === halfTimeEnd);
 
-  if (shown.length === 0) {
+  if (events.length === 0 || (shown.length === 0 && substitutionCount === 0)) {
     return <EmptyState>{noEventsMessage(phase, t)}</EmptyState>;
   }
 
@@ -108,45 +112,84 @@ export function EventTimeline({
   );
 
   return (
-    <ol className="grid gap-2.5">
-      {shown.map((event) => {
-        if (event.id === halfTimeEnd) {
+    <>
+      {substitutionCount > 0 ? (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <UiChip selected={highlights} onClick={() => setHighlights((on) => !on)}>
+            {t("matches.timeline.highlights")}
+          </UiChip>
+          {highlights ? (
+            <button
+              type="button"
+              onClick={() => setHighlights(false)}
+              className={cn("min-h-[var(--ui-tap-min)] px-1", ui.text.meta, ui.tone.ink, ui.focus)}
+            >
+              {showSubstitutionsLabel(substitutionCount, lang, t)}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      <ol className="grid gap-2.5">
+        {shown.map((event) => {
+          if (event.id === halfTimeEnd) {
+            return (
+              <li key={event.id}>
+                <HalfTimeDivider score={halfTime} />
+              </li>
+            );
+          }
+          const isEntering = entering.has(event.id);
           return (
-            <li key={event.id}>
-              <HalfTimeDivider score={halfTime} />
+            <li key={event.id} className="contents">
+              {event.id === firstSecondHalf && <HalfTimeDivider score={halfTime} />}
+              <div
+                className={cn(isEntering && "event-enter")}
+                onAnimationEnd={(animation) => {
+                  if (isEntering && animation.target === animation.currentTarget) settle(event.id);
+                }}
+              >
+                <div className={cn(isEntering && "min-h-0 overflow-hidden")}>
+                  <EventRow
+                    event={event}
+                    club={event.side === "home" ? home : event.side === "away" ? away : undefined}
+                    palette={
+                      event.side === "home"
+                        ? palettes.home
+                        : event.side === "away"
+                          ? palettes.away
+                          : undefined
+                    }
+                    nameOf={(id) => (id ? names.get(id) : undefined)}
+                  />
+                </div>
+              </div>
             </li>
           );
-        }
-        const isEntering = entering.has(event.id);
-        return (
-          <li key={event.id} className="contents">
-            {event.id === firstSecondHalf && <HalfTimeDivider score={halfTime} />}
-            <div
-              className={cn(isEntering && "event-enter")}
-              onAnimationEnd={(animation) => {
-                if (isEntering && animation.target === animation.currentTarget) settle(event.id);
-              }}
-            >
-              <div className={cn(isEntering && "min-h-0 overflow-hidden")}>
-                <EventRow
-                  event={event}
-                  club={event.side === "home" ? home : event.side === "away" ? away : undefined}
-                  palette={
-                    event.side === "home"
-                      ? palettes.home
-                      : event.side === "away"
-                        ? palettes.away
-                        : undefined
-                  }
-                  nameOf={(id) => (id ? names.get(id) : undefined)}
-                />
-              </div>
-            </div>
-          </li>
-        );
-      })}
-    </ol>
+        })}
+      </ol>
+    </>
   );
+}
+
+/** "Afficher les 4 remplacements" / "إظهار 4 تبديلات", each form its own literal key. */
+function showSubstitutionsLabel(
+  n: number,
+  lang: "fr" | "ar",
+  t: (key: TranslationKey) => string,
+): string {
+  let rule = new Intl.PluralRules(lang === "ar" ? "ar" : "fr").select(n);
+  // The one and two keys spell their number out; French also files 0 under
+  // "one". They are for exactly 1 and 2.
+  if ((rule === "one" && n !== 1) || (rule === "two" && n !== 2)) rule = "other";
+  const template =
+    rule === "one"
+      ? t("matches.timeline.show_subs_one")
+      : rule === "two"
+        ? t("matches.timeline.show_subs_two")
+        : rule === "few"
+          ? t("matches.timeline.show_subs_few")
+          : t("matches.timeline.show_subs_other");
+  return template.replace("{n}", String(n));
 }
 
 /** "MI-TEMPS" between two hairlines, with the half-time score when there is
@@ -219,61 +262,37 @@ function typeLabel(t: (key: TranslationKey) => string, type: MatchEvent["type"])
 }
 
 /**
- * The 36px disc that says what happened. A goal is the club's own fill; a
- * card is its colour on a matching tint; a substitution the club colour on
- * the club tint; anything else a quiet sunken disc.
+ * The small icon that says what happened, inline beside the player's name on
+ * the team's own side. A goal is the ball; a card is the card itself; a
+ * substitution the swap arrows; anything else a quiet glyph.
  */
-function EventDisc({ event }: { event: MatchEvent }) {
-  const frame = cn("grid h-9 w-9 shrink-0 place-items-center", ui.radius.full);
-  const glyph = "h-4.5 w-4.5";
+function EventGlyph({ event }: { event: MatchEvent }) {
+  const glyph = "h-4.5 w-4.5 shrink-0";
   if (GOAL_EVENT_TYPES.has(event.type)) {
-    return (
-      <span aria-hidden className={cn(frame, ui.club.fill, ui.club.ring)}>
-        <BallIcon className={glyph} />
-      </span>
-    );
+    return <BallIcon className={cn(glyph, ui.tone.club)} />;
   }
   if (CARD_TYPES.has(event.type)) {
-    const yellow = event.type === "yellow_card";
     return (
       <span
         aria-hidden
         className={cn(
-          frame,
-          yellow
-            ? "bg-[color:color-mix(in_oklab,var(--ui-caution)_24%,var(--ui-surface))]"
-            : "bg-[color:color-mix(in_oklab,var(--ui-live)_14%,var(--ui-surface))]",
+          "h-4 w-3 shrink-0",
+          ui.radius.tight,
+          event.type === "yellow_card"
+            ? "bg-[color:var(--ui-caution)]"
+            : "bg-[color:var(--ui-live)]",
         )}
-      >
-        <span
-          className={cn(
-            "h-4 w-3",
-            ui.radius.tight,
-            yellow ? "bg-[color:var(--ui-caution)]" : "bg-[color:var(--ui-live)]",
-          )}
-        />
-      </span>
+      />
     );
   }
   if (event.type === "substitution") {
-    return (
-      <span aria-hidden className={cn(frame, ui.club.tint, ui.tone.club)}>
-        <ArrowDownUp className={glyph} />
-      </span>
-    );
+    return <ArrowDownUp aria-hidden className={cn(glyph, ui.tone.club)} />;
   }
-  return (
-    <span aria-hidden className={cn(frame, ui.surface.sunken, ui.tone.muted)}>
-      {event.type === "var" ? (
-        <CircleAlert className={glyph} />
-      ) : event.type === "injury" ? (
-        <HeartPulse className={glyph} />
-      ) : (
-        // A missed penalty: the ball, quiet.
-        <BallIcon className={glyph} />
-      )}
-    </span>
-  );
+  if (event.type === "var") return <CircleAlert aria-hidden className={cn(glyph, ui.tone.muted)} />;
+  if (event.type === "injury")
+    return <HeartPulse aria-hidden className={cn(glyph, ui.tone.muted)} />;
+  // A missed penalty: the ball, quiet.
+  return <BallIcon className={cn(glyph, ui.tone.muted)} />;
 }
 
 function EventRow({
@@ -324,36 +343,64 @@ function EventRow({
 
   const away = event.side === "away";
   const text = (
-    <div className={cn("min-w-0 flex-1", away && "text-end")}>
+    <div className={cn("min-w-0", away && "text-end")}>
       <p className={cn("break-words", ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}>
         {player ? `${label} · ${player}` : label}
       </p>
       {sub ? <p className={cn("break-words", ui.text.meta, ui.tone.muted)}>{sub}</p> : null}
     </div>
   );
-  const minute = <Minute event={event} className={ui.tone.club} />;
-  const disc = <EventDisc event={event} />;
+  // The minute sits in a pill in the middle of the column: navy for a goal
+  // or a penalty, light grey for a card and everything else.
+  const decisive = GOAL_EVENT_TYPES.has(event.type);
+  const pill = (
+    <span
+      className={cn(
+        "inline-flex items-center justify-center px-2.5 py-1",
+        ui.radius.full,
+        decisive ? ui.surface.inkPlain : ui.surface.sunken,
+      )}
+    >
+      <Minute event={event} />
+    </span>
+  );
+  // The icon beside the name, on the team's side: first for home, last for away.
+  const side = (
+    <div className={cn("flex min-w-0 items-center gap-2", away && "justify-end")}>
+      {away ? (
+        <>
+          {text}
+          <EventGlyph event={event} />
+        </>
+      ) : (
+        <>
+          <EventGlyph event={event} />
+          {text}
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div
       {...clubStyle(palette)}
       className={cn(
-        "flex items-center gap-2.5 px-3.5 py-3",
+        "grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2.5 px-3.5 py-3",
         ui.surface.card,
         away ? ui.edge.end : ui.edge.start,
       )}
     >
       {away ? (
         <>
-          {minute}
-          {text}
-          {disc}
+          <span />
+          {pill}
+          {side}
         </>
       ) : (
         <>
-          {disc}
-          {text}
-          {minute}
+          {side}
+          {pill}
+          <span />
         </>
       )}
     </div>

@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import type { Language } from "@/types/domain";
 
 /**
  * A gameweek deadline, formatted on the competition's own calendar.
  *
- * `timeZone: MATCH_TIME_ZONE` is the whole point (BG-0100): without it the
+ * Pinning the competition's calendar is the whole point (BG-0100): without it the
  * formatter follows the viewer's browser, and the deadline disagrees with every
  * kickoff on the screen for anyone outside Morocco. The hub, Pick Team, the
  * squad builder and the transfer confirmation each spelled this formatter out
@@ -18,13 +18,12 @@ export function formatDeadline(
   lang: Language,
   options: { weekday?: "short" | "long" } = {},
 ): string {
-  return new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+  return moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     ...(options.weekday ? { weekday: options.weekday } : {}),
     day: "numeric",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: MATCH_TIME_ZONE,
   }).format(new Date(deadlineIso));
 }
 
@@ -52,6 +51,20 @@ export function deadlineCountdown(deadlineIso: string, now: number): DeadlineCou
     minutes: Math.floor((left % 3_600_000) / 60_000),
     passed: false,
   };
+}
+
+export type DeadlineUrgency = "calm" | "soon" | "now";
+
+/**
+ * How pressing a deadline is: `calm` with an hour or more to go, `soon` under
+ * an hour (the clock breathes), `now` in the last minute (it ticks). Only for
+ * a deadline that has not passed.
+ */
+export function deadlineUrgency(
+  left: Pick<DeadlineCountdown, "days" | "hours" | "minutes">,
+): DeadlineUrgency {
+  if (left.days > 0 || left.hours > 0) return "calm";
+  return left.minutes < 1 ? "now" : "soon";
 }
 
 /**
@@ -87,4 +100,49 @@ export function useDeadlineCountdown(
     return () => window.clearInterval(id);
   }, [deadlineIso]);
   return deadlineIso && now !== null ? deadlineCountdown(deadlineIso, now) : null;
+}
+
+export interface DeadlineParts {
+  /** Whole hours left, days included: 71 hours, not "2 days 23 hours". */
+  hours: number;
+  minutes: number;
+  seconds: number;
+  passed: boolean;
+}
+
+/**
+ * What is left before a deadline as hours, minutes and seconds (the Fantasy
+ * header's three tiles). `null` for a date that does not parse.
+ */
+export function deadlineParts(deadlineIso: string, now: number): DeadlineParts | null {
+  const target = Date.parse(deadlineIso);
+  if (Number.isNaN(target)) return null;
+  const left = target - now;
+  if (left <= 0) return { hours: 0, minutes: 0, seconds: 0, passed: true };
+  return {
+    hours: Math.floor(left / 3_600_000),
+    minutes: Math.floor((left % 3_600_000) / 60_000),
+    seconds: Math.floor((left % 60_000) / 1000),
+    passed: false,
+  };
+}
+
+/**
+ * `deadlineParts`, re-read every second. `null` until mounted, for the reason
+ * `useDeadlineCountdown` gives: the server and the hydrating browser read two
+ * clocks. Stops ticking once the deadline has passed.
+ */
+export function useSecondCountdown(deadlineIso: string | null | undefined): DeadlineParts | null {
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    if (!deadlineIso) return;
+    setNow(Date.now());
+    const id = window.setInterval(() => {
+      const current = Date.now();
+      setNow(current);
+      if (Date.parse(deadlineIso) <= current) window.clearInterval(id);
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [deadlineIso]);
+  return deadlineIso && now !== null ? deadlineParts(deadlineIso, now) : null;
 }

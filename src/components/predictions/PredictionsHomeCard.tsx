@@ -44,12 +44,7 @@ export function PredictionsHomeCard() {
   return (
     <Link
       to="/pronostics"
-      className={cn(
-        "flex items-center gap-3 p-4",
-        ui.surface.card,
-        ui.focus,
-        "transition-transform duration-[var(--duration-tap)] active:translate-y-px",
-      )}
+      className={cn("flex items-center gap-3 p-4", ui.surface.card, ui.focus, "press-tile")}
       data-testid="home-predictions-card"
     >
       <span
@@ -66,7 +61,7 @@ export function PredictionsHomeCard() {
           {t("predictions.title")} ·{" "}
           {t("predictions.round.name").replace("{n}", String(journee.number))}
         </span>
-        <span className={cn("truncate", ui.text.meta, ui.tone.muted)}>
+        <span className={cn(ui.text.meta, ui.tone.muted)}>
           {uid
             ? t("predictions.progress")
                 .replace("{done}", formatNumber(done, lang))

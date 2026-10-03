@@ -5,16 +5,15 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
-import {
-  isKickoffDateUnconfirmed,
-  isKickoffTimeUnconfirmed,
-  MATCH_TIME_ZONE,
-} from "@/lib/match-kickoff";
+import { isKickoffDateUnconfirmed, isKickoffTimeUnconfirmed } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
 import type { MatchEvent } from "@/services/match-live";
 import type { Club, Match } from "@/types/domain";
+import { useJustTurnedOn, useTickingMinute } from "@/lib/motion";
 import { BallIcon } from "./BallIcon";
+import { FlipScore } from "./FlipScore";
 import { GOAL_EVENT_TYPES } from "./goal-moment";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /** The navy status pill under the score box, in the live pill's shape. */
 const STATUS_PILL = cn(
@@ -69,14 +68,16 @@ export function MatchScoreHeader({
 }) {
   const { t, tr, lang } = useI18n();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
+  // The minute keeps ticking between refreshes (at most one ahead of the data).
+  const liveMinute = useTickingMinute(match.minute, match.status === "live");
+  // The match ended while the page was open: the final score settles, the FT pill pops.
+  const justFinished = useJustTurnedOn(match.status === "finished");
   const kickoff = new Date(match.kickoff);
-  const timeFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+  const timeFmt = moroccoDateTimeFormat(locale, {
     hour: "2-digit",
     minute: "2-digit",
   }).format(kickoff);
-  const dateFmt = new Intl.DateTimeFormat(locale, {
-    timeZone: MATCH_TIME_ZONE,
+  const dateFmt = moroccoDateTimeFormat(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -145,13 +146,19 @@ export function MatchScoreHeader({
             <div
               aria-live={isLive ? "polite" : undefined}
               aria-atomic="true"
-              className={cn("px-4 py-1", ui.surface.scorebox, ui.radius.card, ui.shadow.lifted)}
+              className={cn(
+                "px-4 py-1",
+                ui.surface.scorebox,
+                ui.radius.card,
+                ui.shadow.lifted,
+                justFinished && "settle",
+              )}
             >
               <span className="sr-only">{scoreA11y}</span>
               <span aria-hidden className={cn("flex items-center gap-3", ui.score.hero)}>
-                <bdi>{hs}</bdi>
+                <FlipScore value={hs} />
                 <span>–</span>
-                <bdi>{as}</bdi>
+                <FlipScore value={as} />
               </span>
             </div>
           ) : isScheduled ? (
@@ -180,12 +187,14 @@ export function MatchScoreHeader({
 
           {isLive ? (
             <>
-              <UiLivePill size="md" minute={match.minute} />
+              <UiLivePill size="md" minute={liveMinute} />
               {/* The page refreshes itself while live; said once, quietly. */}
               <span className="sr-only">{t("matches.detail.live_updating")}</span>
             </>
           ) : isFinished ? (
-            <span className={cn(STATUS_PILL, ui.surface.inkPlain)}>{t("matches.status.ft")}</span>
+            <span className={cn(STATUS_PILL, ui.surface.inkPlain, justFinished && "pop")}>
+              {t("matches.status.ft")}
+            </span>
           ) : isScheduled ? (
             <span className={cn(STATUS_PILL, ui.surface.inkPlain)}>
               {t("matches.status.scheduled")}
@@ -209,7 +218,7 @@ export function MatchScoreHeader({
         <div aria-hidden className="flex h-1.25 bg-[color:var(--ui-rule)]">
           <span
             className="bg-[color:var(--ui-live)] transition-[width] duration-[var(--duration-sheet)] ease-[var(--ease-standard)]"
-            style={{ width: `${Math.min(100, (elapsed / 90) * 100)}%` }}
+            style={{ width: `${Math.min(100, (Math.max(elapsed, liveMinute ?? 0) / 90) * 100)}%` }}
           />
         </div>
       )}
@@ -261,8 +270,11 @@ export function MatchScoreHeader({
 
 /**
  * One half of the split: the club's fill, its crest as a surface disc, the
- * name in the display face and the city. The inner padding (64px on the
- * seam side) is the room the score box takes over the seam.
+ * name in the display face and the city, all against the half's OUTER edge
+ * (the home half's inline start, the away half's inline end), so the score
+ * box over the seam never covers a name. The name is at most 104px wide and
+ * wraps between words onto as many lines as it needs: it is never cut. The
+ * inner padding (64px on the seam side) is the room the score box takes.
  */
 function TeamHalf({
   club,
@@ -279,21 +291,16 @@ function TeamHalf({
     <div
       {...clubStyle(palette)}
       className={cn(
-        "flex min-w-0 flex-1 flex-col items-center justify-center gap-2 py-12",
+        "flex min-w-0 flex-1 flex-col justify-center gap-2 py-12",
         ui.club.fill,
-        side === "home" ? "pe-16 ps-3" : "pe-3 ps-16",
+        side === "home" ? "items-start pe-16 ps-4 text-start" : "items-end pe-4 ps-16 text-end",
       )}
     >
       <ClubCrest club={club} palette={palette} size="lg" tone="inverse" loading="eager" />
-      <p
-        className={cn(
-          "line-clamp-2 max-w-full break-words text-center text-balance",
-          ui.display.teamLg,
-        )}
-      >
+      <p className={cn("max-w-[6.5rem] break-words text-balance", ui.display.teamLg)}>
         {tr(club.name)}
       </p>
-      {city ? <p className={cn("max-w-full truncate", ui.text.label)}>{city}</p> : null}
+      {city ? <p className={cn("max-w-[6.5rem]", ui.text.label)}>{city}</p> : null}
     </div>
   );
 }

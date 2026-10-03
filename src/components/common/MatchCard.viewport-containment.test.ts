@@ -6,8 +6,9 @@ import ts from "typescript";
 // (`<div className="grid gap-2">` on Home, on all three Matches sections and
 // on the Match detail "other matches" list). A grid's implicit `auto` track is
 // sized to the largest item's content-based minimum, and the club-name spans
-// inside the card are `truncate`, i.e. `white-space: nowrap` -- so the card's
-// minimum is the full, untruncated club name. `min-w-0` on the *inner* name
+// inside the card were `truncate`, i.e. `white-space: nowrap` -- so the card's
+// minimum was the full, untruncated club name. (The names now wrap, but the
+// card still pins `min-w-0` on its root.) `min-w-0` on the *inner* name
 // columns only relaxes their own flex minimum; it does not stop that minimum
 // propagating out into the grid track, which then grows past the page gutter.
 //
@@ -88,14 +89,15 @@ describe("MatchCard viewport containment", () => {
     expect(className).not.toMatch(/\b(min-)?w-(max|fit)\b/);
   });
 
-  it("keeps the club-name columns shrinkable and their names truncating", () => {
-    // Home side and away side. Without `min-w-0` here the columns refuse to
-    // shrink below their content inside a 366px card; without `truncate` the
-    // name has no way to give ground at all.
+  it("keeps the stacked team lines shrinkable and never cuts a name", () => {
+    // Each team line and the grid holding them. Without `min-w-0` here the
+    // lines refuse to shrink below their content inside a 366px card. The
+    // names wrap between words instead of ending in an ellipsis, so there is
+    // no `truncate` left to find.
     const literals = classLiterals(tree);
-    expect(literals).toContain("flex min-w-0 flex-1 items-center gap-2");
-    expect(literals).toContain("flex min-w-0 flex-1 items-center justify-end gap-2");
-    expect(literals.match(/\btruncate\b/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
+    expect(literals).toContain("flex min-w-0 items-center gap-2");
+    expect(literals).toContain("grid min-w-0 items-center");
+    expect(literals).not.toMatch(/\btruncate\b/);
   });
 
   it("uses logical direction utilities only, so Arabic mirrors", () => {

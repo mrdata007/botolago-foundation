@@ -233,6 +233,17 @@ export interface NotificationRepository {
   dismiss(id: string, archive: boolean, context: RepositoryContext): Promise<void>;
 }
 
+/**
+ * "Remind me" on one match. The server keeps it as a match subscription; the
+ * reminder reaches the inbox (and e-mail) about an hour before kick-off, for
+ * accounts that have e-mail notifications on.
+ */
+export interface NotificationSubscriptionRepository {
+  setMatchReminder(fixtureId: string, enabled: boolean, context: RepositoryContext): Promise<void>;
+  /** The matches the account has an enabled reminder on. */
+  listMatchReminders(context: RepositoryContext): Promise<readonly string[]>;
+}
+
 export interface NotificationPreferenceRepository {
   get(context: RepositoryContext): Promise<NotificationPreferencesDto>;
   update(

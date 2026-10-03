@@ -393,7 +393,9 @@ export const BASELINES: Baselines = {
   // Pronostics (BG-0146): every new `predictions.*` key has a literal call
   // site, and the league page's two confirmation dialogs give
   // `common.confirm` and `common.cancel` their first ones. 257 - 2 = 255.
-  W3: 255,
+  // Fantasy deadline card: its "Mon équipe" button is the first literal call
+  // site of `fantasy.tab.team`, which nothing referenced. 255 - 1 = 254.
+  W3: 254,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

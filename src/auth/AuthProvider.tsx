@@ -190,3 +190,12 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 }
+
+/**
+ * The auth state, or `null` outside an `AuthProvider`. For chrome that must
+ * keep rendering where there is no provider (a server-rendered page in a
+ * test); a screen that needs the account uses `useAuth`.
+ */
+export function useOptionalAuth() {
+  return useContext(AuthContext);
+}

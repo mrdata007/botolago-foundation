@@ -65,6 +65,7 @@ import { followedTeamIdsQuery } from "@/services/follows";
 import { footballService } from "@/services/football";
 import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import type { Club, FantasySummary } from "@/types/domain";
+import { pointsUnit } from "@/lib/points-unit";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -348,7 +349,7 @@ function AuthenticatedProfile({
                     "relative flex min-h-28 min-w-0 flex-col items-center justify-end gap-2 px-2 pb-3 pt-8 text-center",
                     ui.surface.card,
                     ui.edge.blockEnd,
-                    "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+                    "press-tile",
                   )}
                 >
                   {favorite ? (
@@ -583,7 +584,7 @@ function IdentityCard({
               aria-hidden
               className={cn("shrink-0", ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}
             >
-              {t("fantasy.points.abbr")}
+              {pointsUnit(summary.totalPoints, t)}
             </span>
             <span className="sr-only">{t("fpl.points")}</span>
           </span>

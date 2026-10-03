@@ -227,6 +227,8 @@
   --ease-standard: cubic-bezier(0.2, 0.7, 0.2, 1);
   --ease-emphasized: cubic-bezier(0.2, 0.9, 0.1, 1);
   --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  /* Arrives, overshoots a hair and settles: sheets and toasts. */
+  --ease-settle: cubic-bezier(0.22, 1.1, 0.36, 1);
 
   --duration-tap: 120ms;
   --duration-quick: 180ms;
@@ -850,16 +852,456 @@ html[dir="rtl"] .lucide-arrow-left {
   --shimmer-to: left;
 }
 
-/* Unified press-feedback for interactive tiles/cards. */
+/* Unified press-feedback for interactive tiles/cards: a touch of lift under
+   a mouse (never on a touch screen, where hover sticks after a tap), and a
+   small sink while pressed. `transform` only, so it never moves the layout. */
 @utility press-tile {
   transition:
     transform var(--duration-tap) var(--ease-standard),
     box-shadow var(--duration-quick) var(--ease-standard),
     background-color var(--duration-quick) var(--ease-standard);
 }
+@media (hover: hover) {
+  .press-tile:hover {
+    transform: translateY(-1px);
+  }
+}
 .press-tile:active {
-  transform: translateY(1px);
+  transform: translateY(1px) scale(0.985);
   box-shadow: var(--shadow-subtle);
+}
+
+/* An item that appears: a fade and an 8px rise. `both` holds it hidden through
+   its delay and visible after; reduced motion (below) cuts the duration and
+   the delay, so it simply appears. */
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility enter-rise {
+  animation: enter-rise var(--duration-route) var(--ease-decelerate) both;
+}
+
+/* A list's items arrive one after another: set `--i` to the item's index. The
+   first eight step 40ms apart; a longer list shares the last step, so a long
+   list never makes its tail wait. */
+@utility stagger {
+  animation-delay: calc(min(var(--i, 0), 7) * 40ms);
+}
+
+/* A badge or tick that lands: a quick overshoot. */
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@utility pop {
+  animation: pop var(--duration-sheet) var(--ease-emphasized) both;
+}
+
+/* The tab bar's newly active icon: a small bounce, with no fade, so the icon
+   is never hidden if the bar is drawn again part-way through. */
+@keyframes tab-pop {
+  0% {
+    transform: scale(0.82);
+  }
+  55% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@utility tab-pop {
+  animation: tab-pop var(--duration-sheet) var(--ease-emphasized) both;
+}
+
+/* A live score that changes: the new figure drops in from above. The old one
+   is not drawn again, so this is the whole effect. */
+@keyframes score-flip {
+  from {
+    opacity: 0;
+    transform: translateY(-60%) scale(1.15);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@utility score-flip {
+  display: inline-block;
+  animation: score-flip var(--duration-sheet) var(--ease-emphasized) both;
+}
+
+/* A card that has just been saved: a small settle, as if pressed in. */
+@keyframes settle {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.985);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@utility settle {
+  animation: settle var(--duration-sheet) var(--ease-standard) both;
+}
+
+/* A pick that scored: a soft ring that opens and fades. An exact score rings
+   twice and wider. Reduced motion cuts it to one instant frame. */
+@keyframes glow-hit {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--ui-positive) 55%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 10px color-mix(in oklab, var(--ui-positive) 0%, transparent);
+  }
+}
+
+@utility glow-hit {
+  animation: glow-hit 900ms var(--ease-decelerate) 1;
+}
+
+@utility glow-exact {
+  animation: glow-hit 900ms var(--ease-decelerate) 2;
+}
+
+/* The new captain: a gold ring opens around the shirt and fades. */
+@keyframes captain-ring {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--ui-caution) 85%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 16px color-mix(in oklab, var(--ui-caution) 0%, transparent);
+  }
+}
+
+@utility captain-ring {
+  animation: captain-ring 900ms var(--ease-decelerate) 1 both;
+}
+
+/* One confetti piece: each sets --dx, --dy and --rot for where it ends. */
+@keyframes confetti-fly {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot));
+  }
+}
+
+@utility confetti-piece {
+  animation: confetti-fly 1100ms var(--ease-decelerate) both;
+}
+
+/* A reveal card turning over: it starts face down (its back towards the
+   reader) and turns to its front. Needs a `perspective` on its parent and
+   `backface-visibility: hidden` on both faces. Under reduced motion the
+   duration is cut to almost nothing, so the front is simply there. */
+@keyframes card-flip {
+  from {
+    transform: rotateY(180deg);
+  }
+  to {
+    transform: rotateY(0deg);
+  }
+}
+
+@utility card-flip {
+  transform-style: preserve-3d;
+  animation: card-flip 650ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* A figure that changes by a tap: the new one rolls in from the direction of
+   the change (up for +, down for -). */
+@keyframes roll-up {
+  from {
+    opacity: 0;
+    transform: translateY(70%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes roll-down {
+  from {
+    opacity: 0;
+    transform: translateY(-70%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility roll-up {
+  display: inline-block;
+  animation: roll-up var(--duration-quick) var(--ease-emphasized) both;
+}
+
+@utility roll-down {
+  display: inline-block;
+  animation: roll-down var(--duration-quick) var(--ease-emphasized) both;
+}
+
+/* A step of a flow arriving: it slides in from the reading side. */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--vt-dir, 1) * 28px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@utility step-in {
+  animation: step-in var(--duration-sheet) var(--ease-decelerate) both;
+}
+
+/* A deadline close at hand: the clock breathes (under an hour), then ticks
+   once a second (under a minute). */
+@keyframes deadline-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes deadline-tick {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.22);
+  }
+}
+
+@utility deadline-soon {
+  animation: deadline-breathe 2.4s ease-in-out infinite;
+}
+
+@utility deadline-now {
+  animation: deadline-tick 1s ease-out infinite;
+}
+
+/* A one-off shine across a pill (a chip just switched on). Travels with the
+   reading direction, like `shimmer`. */
+@utility shine {
+  --shine-to: right;
+  pointer-events: none;
+  background-image: linear-gradient(
+    to var(--shine-to),
+    transparent 0%,
+    color-mix(in oklab, white 60%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  animation: shimmer-sweep 900ms var(--ease-standard) 1 both;
+}
+
+[dir="rtl"] .shine {
+  --shine-to: left;
+}
+
+/* Sheets and toasts arrive with the shared settle: a hair of overshoot. */
+[data-sonner-toaster] [data-sonner-toast] {
+  transition-timing-function: var(--ease-settle) !important;
+}
+
+/* A player brought into a slot: drops in and settles. */
+@keyframes swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@utility swap-in {
+  animation: swap-in var(--duration-sheet) var(--ease-settle) both;
+}
+
+/* An illustration arriving once: it eases up, settles and stays. */
+@keyframes drift-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@utility drift-in {
+  animation: drift-in var(--duration-hero) var(--ease-settle) both;
+}
+
+/* A number that just went up or down: a green or red wash that fades out. */
+@keyframes flash-up {
+  from {
+    background-color: color-mix(in oklab, var(--ui-positive) 28%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@keyframes flash-down {
+  from {
+    background-color: color-mix(in oklab, var(--ui-negative) 28%, transparent);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+@utility flash-up {
+  animation: flash-up 1s var(--ease-standard) both;
+}
+
+@utility flash-down {
+  animation: flash-down 1s var(--ease-standard) both;
+}
+
+/* The bell, when something new arrives: one small shake. */
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  20% {
+    transform: rotate(-14deg);
+  }
+  40% {
+    transform: rotate(12deg);
+  }
+  60% {
+    transform: rotate(-8deg);
+  }
+  80% {
+    transform: rotate(4deg);
+  }
+}
+
+@utility wiggle {
+  transform-origin: 50% 10%;
+  animation: wiggle var(--duration-hero) var(--ease-standard) 1;
+}
+
+/* ------------------------------------------------------------------ */
+/* Page transitions                                                   */
+/* src/lib/page-transition.ts picks the kind per navigation. The page  */
+/* is the `root` group; the bottom bar is held still in its own group  */
+/* (`bottom-nav`). --vt-dir is +1 left-to-right and -1 right-to-left, */
+/* so a page arrives from the reading side in Arabic too. No          */
+/* transition runs under reduced motion: the router asks first, and   */
+/* the rule at the end of this block is the belt to that braces.      */
+/* ------------------------------------------------------------------ */
+:root {
+  --vt-dir: 1;
+}
+:root[dir="rtl"] {
+  --vt-dir: -1;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duration-route);
+  animation-timing-function: var(--ease-standard);
+}
+
+@keyframes vt-out-forward {
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--vt-dir) * -16px));
+  }
+}
+@keyframes vt-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--vt-dir) * 24px));
+  }
+}
+@keyframes vt-out-back {
+  to {
+    opacity: 0;
+    transform: translateX(calc(var(--vt-dir) * 16px));
+  }
+}
+@keyframes vt-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--vt-dir) * -24px));
+  }
+}
+
+:root:active-view-transition-type(forward)::view-transition-old(root) {
+  animation-name: vt-out-forward;
+}
+:root:active-view-transition-type(forward)::view-transition-new(root) {
+  animation-name: vt-in-forward;
+}
+:root:active-view-transition-type(back)::view-transition-old(root) {
+  animation-name: vt-out-back;
+}
+:root:active-view-transition-type(back)::view-transition-new(root) {
+  animation-name: vt-in-back;
+}
+
+/* The bottom bar is the same bar on both sides: show only the new one, at
+   once, so nothing cross-fades or doubles. (Its pill slides by itself.) */
+::view-transition-old(bottom-nav) {
+  display: none;
+}
+::view-transition-new(bottom-nav) {
+  animation: none;
+}
+::view-transition-group(bottom-nav) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 
 /* Live dot — a slow fade in and out, 1.5s a cycle (after premierleague.com).
@@ -976,7 +1418,9 @@ html[dir="rtl"] .lucide-arrow-left {
     animation: none !important;
     background-image: none !important;
   }
-  .live-breathe {
+  .live-breathe,
+  .deadline-soon,
+  .deadline-now {
     animation: none !important;
   }
 }
@@ -1191,6 +1635,7 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-row-min: 3rem; /* list row / full-width control height */
   --ui-column-max: 480px; /* the phone canvas, mobile-first single column */
   --ui-content-max: 672px; /* the reading column: long-form copy, a wide table */
+  --ui-desktop-max: 82.5rem; /* 1320px: the desktop canvas, three columns with 24px gaps */
 
   /* ---- Surfaces (light) ------------------------------------------ */
   --ui-page: oklch(0.975 0.004 250);

@@ -21,6 +21,8 @@ export const SITEMAP_STATIC_PATHS = [
   "/matches/standings",
   "/clubs",
   "/fantasy",
+  // The landing page: what Fantasy is, for a visitor who has never played.
+  "/jouer",
   "/fantasy/players",
   "/fantasy/top-players",
   "/fantasy/fixtures",

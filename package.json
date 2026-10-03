@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
+    "test:timezone-parity": "bun tests/timezone-parity/run.ts",
     "test:legal": "bun test src/content/legal/legal-content.test.ts",
     "legal:gate": "bun scripts/qa/legal-placeholder-gate.ts",
     "test:e2e": "playwright test",
@@ -36,7 +37,11 @@
     "backend:db:stop": "supabase stop --no-backup",
     "backend:db:reset": "supabase db reset --local",
     "backend:db:test": "supabase test db --local supabase/tests/database",
-    "backend:db:lint": "supabase db lint --local --schema app,api,app_private --level warning --fail-on error"
+    "backend:db:lint": "supabase db lint --local --schema app,api,app_private --level warning --fail-on error",
+    "demo:dev": "vite --config demo/vite.config.ts",
+    "demo:build": "bun demo/scripts/build.ts",
+    "demo:publish": "bun demo/scripts/build.ts --into-public",
+    "demo:typecheck": "tsc --noEmit -p demo/tsconfig.json"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -70,9 +75,9 @@
     "@supabase/supabase-js": "^2.110.7",
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-query": "^5.101.1",
-    "@tanstack/react-router": "^1.170.16",
-    "@tanstack/react-start": "^1.168.26",
-    "@tanstack/router-plugin": "^1.168.18",
+    "@tanstack/react-router": "^1.170.41",
+    "@tanstack/react-start": "1.168.60",
+    "@tanstack/router-plugin": "^1.168.42",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

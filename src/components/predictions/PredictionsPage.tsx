@@ -7,6 +7,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import {
   ui,
+  UiBadge,
   UiButton,
   UiCard,
   UiEmptyState,
@@ -37,6 +38,7 @@ import {
   type Pick,
   type RoundSeed,
 } from "./use-predictions-round";
+import { staggerStyle } from "@/lib/motion";
 
 export type PredictionsTab = "predict" | "board" | "leagues";
 
@@ -154,31 +156,6 @@ export function PredictionsPage({
         rounds={round.rounds}
         onChange={onRoundChange}
       />
-      <p
-        className={cn("-mt-2 text-center", ui.text.meta, ui.tone.muted)}
-        data-testid="predictions-progress"
-      >
-        {/* Each half keeps to one line: a wrap falls between them, never
-            before the French " : ". */}
-        <span className="whitespace-nowrap">
-          {openWithoutPick > 0
-            ? remainingLabel(openWithoutPick, lang, t)
-            : done > 0
-              ? t("predictions.all_done")
-              : null}
-        </span>
-        {journee.nextLockAt ? (
-          <>
-            {openWithoutPick > 0 || done > 0 ? " · " : null}
-            <span className="whitespace-nowrap">
-              {t("predictions.next_lock").replace(
-                "{when}",
-                formatLockMoment(journee.nextLockAt, lang),
-              )}
-            </span>
-          </>
-        ) : null}
-      </p>
 
       {tab === "leagues" ? (
         <LeaguesPanel />
@@ -187,9 +164,48 @@ export function PredictionsPage({
           roundNumber={journee.number}
           uid={model.uid}
           guestPoints={model.uid ? null : guestPoints(fixtures, picks)}
+          onPredict={() => onTabChange("predict")}
         />
       ) : (
         <>
+          {journee.state !== "completed" ? (
+            <button
+              type="button"
+              onClick={() => setRulesOpen(true)}
+              className={cn(
+                "flex min-h-[var(--ui-tap-min)] flex-wrap items-center justify-center gap-2 rounded-full",
+                ui.focus,
+              )}
+            >
+              <UiBadge tone="positive">{t("predictions.rules.chip_exact")}</UiBadge>
+              <UiBadge tone="outline">{t("predictions.rules.chip_outcome")}</UiBadge>
+            </button>
+          ) : null}
+          <p
+            className={cn("text-center", ui.text.meta, ui.tone.muted)}
+            data-testid="predictions-progress"
+          >
+            {/* Each half keeps to one line: a wrap falls between them, never
+                before the French " : ". */}
+            <span className="whitespace-nowrap">
+              {openWithoutPick > 0
+                ? remainingLabel(openWithoutPick, lang, t)
+                : done > 0
+                  ? t("predictions.all_done")
+                  : null}
+            </span>
+            {journee.nextLockAt ? (
+              <>
+                {openWithoutPick > 0 || done > 0 ? " · " : null}
+                <span className="whitespace-nowrap">
+                  {t("predictions.next_lock").replace(
+                    "{when}",
+                    formatLockMoment(journee.nextLockAt, lang),
+                  )}
+                </span>
+              </>
+            ) : null}
+          </p>
           {!model.uid && !model.guestPersistent ? (
             <UiCard padding="sm" testId="predictions-storage-blocked">
               <p className={ui.text.meta}>{t("predictions.guest.storage_blocked")}</p>
@@ -208,6 +224,8 @@ export function PredictionsPage({
                   open={isFixtureOpen(fixture, now)}
                   scored={scoreOf(fixture)}
                   notCounted={!model.uid && guest.state.notCounted.includes(fixture.id)}
+                  saved={model.uid ? (model.mine.get(fixture.id) ?? null) : undefined}
+                  savedReady={!model.uid || model.mineQuery.isSuccess}
                   onStep={(side, delta) => {
                     const next = nextPick(picks.get(fixture.id) ?? null, side, delta);
                     if (next) model.setPick(fixture, next);
@@ -326,7 +344,15 @@ function DayGroups({
           <h2 className={cn(ui.text.label, ui.tone.muted)}>
             {formatDayHeading(group.first, lang)}
           </h2>
-          {group.fixtures.map((fixture) => children(fixture))}
+          {group.fixtures.map((fixture, index) => (
+            <div
+              key={fixture.id}
+              className="enter-rise stagger min-w-0"
+              style={staggerStyle(index)}
+            >
+              {children(fixture)}
+            </div>
+          ))}
         </section>
       ))}
     </div>

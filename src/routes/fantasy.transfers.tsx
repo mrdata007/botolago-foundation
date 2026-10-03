@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ConfettiBurst } from "@/components/fantasy/ConfettiBurst";
 import { toast } from "sonner";
 
 import { showStepUpNotice } from "@/auth/step-up-notice";
@@ -12,6 +13,7 @@ import { PlayerActionSheet } from "@/components/fpl/PlayerActionSheet";
 import { SquadBuilderScreen, type BuilderSlot } from "@/components/fpl/SquadBuilderScreen";
 import { TransferConfirmScreen } from "@/components/fpl/TransferConfirmScreen";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import { useNextFixtures } from "@/components/fpl/useNextFixtures";
 import { UiHeader } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
@@ -30,7 +32,7 @@ import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import { applyConfirmedTransfers, previewTransfers } from "@/services/transfers-service";
-import type { FantasyPlayer } from "@/types/fantasy";
+import { SQUAD_RULES, type FantasyPlayer } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/transfers")({
   head: () => fantasyHead("transfers"),
@@ -80,6 +82,8 @@ function TransfersBody() {
   const navigate = useNavigate({ from: "/fantasy/transfers" });
   const screen = useFantasyScreen();
   const owned = useFantasyOwned();
+  // Counts confirmed transfers, so each one gets its own confetti burst.
+  const [burst, setBurst] = useState(0);
   const isCloud = owned.source === "cloud";
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     minimumFractionDigits: 1,
@@ -90,6 +94,7 @@ function TransfersBody() {
   const players = screen.players;
   const clubs = screen.clubs;
   const gameweek = screen.gameweek;
+  const fixtures = useNextFixtures(clubs, gameweek?.number ?? null, screen.phase === "ready");
 
   const chipsState: ChipsState = isCloud
     ? (owned.snapshot?.lifecycle.chips ?? { active: null, used: [] })
@@ -539,6 +544,7 @@ function TransfersBody() {
         );
         if (res.ok) {
           toast.success(t("fpl.transfers_confirmed"));
+          setBurst((count) => count + 1);
           setOutIds([]);
           setInIds([]);
           setConfirming(false);
@@ -582,6 +588,7 @@ function TransfersBody() {
       });
       await qc.invalidateQueries({ queryKey: ["owned-fantasy"] });
       toast.success(t("fpl.transfers_confirmed"));
+      setBurst((count) => count + 1);
       setOutIds([]);
       setInIds([]);
       setConfirming(false);
@@ -651,6 +658,31 @@ function TransfersBody() {
    * With three from a club already and none of them in this player's position,
    * no legal swap exists and the row is blocked up front.
    */
+  // For the picker: the clubs with no match this round (null while the round's
+  // fixtures are not known), the club counts the three-per-club note reads,
+  // and the squad's value for the budget bar.
+  const noMatchClubIds = (() => {
+    const playing = fixtures.playingClubIds;
+    if (!playing) return null;
+    return new Set(clubs.map((club) => club.id).filter((id) => !playing.has(id)));
+  })();
+  const clubCountsFor = (excluding: ReadonlyArray<string | null | undefined>) => {
+    const counts = new Map<string, number>();
+    for (const id of squadIdsAfter) {
+      if (excluding.includes(id)) continue;
+      const clubId = playerOf(id)?.clubId;
+      if (clubId) counts.set(clubId, (counts.get(clubId) ?? 0) + 1);
+    }
+    return counts;
+  };
+  const squadValue = squadIdsAfter.reduce((sum, id) => sum + (playerOf(id)?.price ?? 0), 0);
+  const pickerBudgetCard = {
+    total: SQUAD_RULES.budget,
+    teamValue: squadValue,
+    freeTransfers: team.freeTransfers,
+    hitPoints: SQUAD_RULES.transferHitPoints,
+  };
+
   const clubLimitForIncoming = (player: FantasyPlayer) => {
     const sameClub = squadIdsAfter.filter((id) => playerOf(id)?.clubId === player.clubId);
     if (sameClub.length < 3) return false;
@@ -659,6 +691,7 @@ function TransfersBody() {
 
   return (
     <>
+      {burst > 0 ? <ConfettiBurst key={burst} /> : null}
       <SquadBuilderScreen
         title={t("fpl.transfers")}
         kicker={t("fantasy.title")}
@@ -761,6 +794,11 @@ function TransfersBody() {
           currentPlayerId={pickerCurrentIn}
           onPick={onPick}
           onClose={() => setPickerFor(null)}
+          replacing={{ player: pickerOut, soldPrice: pickerOut.price }}
+          budget={pickerBudgetCard}
+          noMatchClubIds={noMatchClubIds}
+          gameweek={gameweek?.number ?? null}
+          clubCounts={clubCountsFor([pickerFor, pickerCurrentIn])}
         />
       ) : pickerAny ? (
         <AddPlayerScreen
@@ -771,6 +809,10 @@ function TransfersBody() {
           disabledIds={squadIdsAfter}
           onPick={onPickIncoming}
           onClose={() => setPickerAny(false)}
+          budget={pickerBudgetCard}
+          noMatchClubIds={noMatchClubIds}
+          gameweek={gameweek?.number ?? null}
+          clubCounts={clubCountsFor([])}
         />
       ) : null}
 

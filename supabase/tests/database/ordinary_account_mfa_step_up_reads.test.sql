@@ -191,6 +191,7 @@ returns table (name text, statement text) language sql stable as $$
     ('api.list_my_notifications', 'select api.list_my_notifications()'),
     ('api.my_notification_unread_count', 'select api.my_notification_unread_count()'),
     ('api.list_my_notification_devices', 'select api.list_my_notification_devices()'),
+    ('api.list_my_match_reminders', 'select api.list_my_match_reminders()'),
     ('api.news_saved_articles', 'select api.news_saved_articles()'),
     ('api.fantasy_hub', 'select api.fantasy_hub(''fr'')'),
     ('api.get_my_fantasy_team', format('select api.get_my_fantasy_team(%L)', pg_temp.id(6))),
@@ -360,6 +361,13 @@ create function pg_temp.unguarded_api_functions() returns text[] language sql st
          'admin_revoke_role', 'admin_save_fantasy_prize', 'admin_save_fantasy_prize_settings',
          'admin_set_fantasy_prize_flag', 'admin_set_fantasy_prize_winner_status',
          'admin_shorten_role_expiry', 'admin_suspend_staff', 'admin_unban_user',
+         'admin_football_mapping_add_position_note', 'admin_football_mapping_app_player_options',
+         'admin_football_mapping_cancel', 'admin_football_mapping_decide', 'admin_football_mapping_execute',
+         'admin_football_mapping_get_candidate', 'admin_football_mapping_get_proposal',
+         'admin_football_mapping_get_provider_mapping',
+         'admin_football_mapping_list_candidates', 'admin_football_mapping_list_proposals',
+         'admin_football_mapping_propose', 'admin_football_mapping_refresh_evidence',
+         'admin_football_mapping_reviewer_availability',
          'editorial_convert_imported_story', 'editorial_create_draft', 'editorial_get_article',
          'editorial_list_revisions', 'editorial_list_stories', 'editorial_register_media',
          'editorial_schedule_health', 'editorial_set_placement', 'editorial_soft_delete_story',
@@ -397,8 +405,8 @@ select extensions.is(
    where n.nspname = 'api'
      and p.prosrc ~ 'perform app_private\.assert_mfa_step_up\(\);'
      and has_function_privilege('authenticated', p.oid, 'execute')),
-  75,
-  'the 50 functions of point 5, the two account-deletion functions, the two Pépites weekly email functions (20260926110100), the Pépites error report and 16 staff functions (20260926120000), the photo upload paths (20260926130000), the two admin lists (20260926140000) and following a player (20260926150000) run it'
+  76,
+  'the 50 functions of point 5, the two account-deletion functions, the two Pépites weekly email functions (20260926110100), the Pépites error report and 16 staff functions (20260926120000), the photo upload paths (20260926130000), the two admin lists (20260926140000), following a player (20260926150000) and the match-reminders read (20261002110000) run it'
 );
 select extensions.is(pg_temp.unguarded_api_relations(), '{}'::text[],
   'every api view a signed-in session can read refuses without the step-up, and no other api relation but live scores is readable');

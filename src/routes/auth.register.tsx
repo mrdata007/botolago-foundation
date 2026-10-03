@@ -34,6 +34,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { markWelcomeDone } from "@/lib/welcome";
 import { authNextSearch } from "@/lib/auth-callback";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/auth/register")({
   head: () => ({ meta: [{ title: "Créer un compte — BotolaGO" }] }),
@@ -131,6 +132,9 @@ function RegisterPage() {
       else setErrors({ form: "auth.error.generic" });
       return;
     }
+    // The account exists and waits for its e-mail code: the funnel's
+    // "sign-up started", counted once the server accepted it.
+    track("signup_submitted");
     toast.success(t("auth.success.register"));
     navigate({ to: "/auth/verify", search: { email: res.data!.email, next } });
   };

@@ -140,32 +140,20 @@ export function FantasyGuestIntro({
         </div>
       ) : (
         <>
-          {audience === "signed_out" ? (
-            // Named "Créer mon équipe" and opening the sign-in page: the note
-            // under it is its description, so a screen reader hears where it
-            // goes before following it.
-            <UiLinkButton
-              to="/auth/login"
-              search={{ next: GUEST_CREATE_NEXT }}
-              variant="gradient"
-              className="mt-4"
-              aria-describedby={signInNoteId}
-              data-testid="fantasy-intro-create"
-            >
-              <Plus className="h-5 w-5" aria-hidden />
-              {t("fantasy.create.title")}
-            </UiLinkButton>
-          ) : (
-            <UiLinkButton
-              to="/fantasy/create"
-              variant="gradient"
-              className="mt-4"
-              data-testid="fantasy-intro-create"
-            >
-              <Plus className="h-5 w-5" aria-hidden />
-              {t("fantasy.create.title")}
-            </UiLinkButton>
-          )}
+          {/* Both audiences go straight to the builder: a visitor composes the
+              team first, and an account is asked for only when they press
+              "Enregistrer". The note under the button says so, for the one
+              audience it is news to (`aria-describedby`). */}
+          <UiLinkButton
+            to={GUEST_CREATE_NEXT}
+            variant="gradient"
+            className="mt-4"
+            aria-describedby={audience === "signed_out" ? signInNoteId : undefined}
+            data-testid="fantasy-intro-create"
+          >
+            <Plus className="h-5 w-5" aria-hidden />
+            {t("fantasy.create.title")}
+          </UiLinkButton>
           {audience === "signed_out" ? (
             <p
               id={signInNoteId}

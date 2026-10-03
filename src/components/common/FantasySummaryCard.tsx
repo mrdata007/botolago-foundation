@@ -1,10 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import createTeamArt from "@/assets/illustrations/create-team.webp";
+import { AnimatedNumber } from "@/components/common/AnimatedNumber";
 import type { FantasySummary } from "@/types/domain";
 import { useI18n } from "@/i18n/provider";
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+import { pointsUnit } from "@/lib/points-unit";
 
 /**
  * Home's Fantasy card (Option A, A-Home): the action gradient, one link.
@@ -31,7 +33,7 @@ const CARD = cn(
   "flex min-w-0 items-center gap-4 px-5 py-6",
   ui.radius.sheet,
   "text-[color:var(--ui-ink-deep)]",
-  "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
+  "press-tile",
   ui.focus,
 );
 const GRADIENT = { backgroundImage: "var(--ui-grad-action)" } as const;
@@ -70,14 +72,19 @@ export function FantasySummaryCard({ summary }: { summary: FantasySummary }) {
               "[font-weight:var(--ui-weight-strong)]",
             )}
           >
-            {t("fpl.rank")} <bdi className={ui.text.tabular}>{rank}</bdi>
+            {t("fpl.rank")}{" "}
+            <bdi className={ui.text.tabular}>
+              <AnimatedNumber value={summary.overallRank ?? 0} format={nf.format} better="lower" />
+            </bdi>
           </span>
         )}
       </span>
       <span aria-hidden className="flex shrink-0 items-baseline gap-1">
-        <bdi className={ui.score.hero}>{points}</bdi>
+        <bdi className={ui.score.hero}>
+          <AnimatedNumber value={summary.gameweekPoints} format={nf.format} />
+        </bdi>
         <span className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}>
-          {t("fantasy.points.abbr")}
+          {pointsUnit(summary.gameweekPoints, t)}
         </span>
       </span>
     </Link>
@@ -97,9 +104,11 @@ export function FantasyCreateCard({
   return (
     <Link to={canCreate ? "/fantasy/create" : "/fantasy"} className={CARD} style={GRADIENT}>
       <span className="min-w-0 flex-1">
-        <span className={cn("block truncate", ui.text.label)}>{plain(t("home.fantasy_hub"))}</span>
+        {/* The call to action wraps onto a second line rather than ending in
+            an ellipsis: a button that cannot be read cannot be trusted. */}
+        <span className={cn("block", ui.text.label)}>{plain(t("home.fantasy_hub"))}</span>
         <span className={cn("mt-1 flex items-center gap-1", ui.display.section)}>
-          <span className="min-w-0 truncate">{title}</span>
+          <span className="min-w-0">{title}</span>
           <ChevronRight className="h-5 w-5 shrink-0" aria-hidden />
         </span>
       </span>

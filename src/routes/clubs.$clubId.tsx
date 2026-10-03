@@ -299,7 +299,7 @@ function ClubPage() {
 
   if (!validId || (clubQ.isError && isNotFound(clubQ.error))) {
     return (
-      <AppShell backgroundVariant="matches" topBar={bar}>
+      <AppShell hideBottomNav backgroundVariant="matches" topBar={bar}>
         <UiCard padding="lg" className="mt-8 text-center">
           <h1 className={cn(ui.display.section, ui.tone.default)}>{t("club.not_found_title")}</h1>
           <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("club.not_found_desc")}</p>
@@ -313,7 +313,7 @@ function ClubPage() {
 
   if (!club) {
     return (
-      <AppShell backgroundVariant="matches" topBar={bar}>
+      <AppShell hideBottomNav backgroundVariant="matches" topBar={bar}>
         {clubQ.isError ? (
           <div className="mt-8">
             <ErrorState onRetry={() => void clubQ.refetch()} />
@@ -338,7 +338,7 @@ function ClubPage() {
   };
 
   return (
-    <AppShell backgroundVariant="matches" topBar={bar}>
+    <AppShell hideBottomNav backgroundVariant="matches" topBar={bar}>
       <ClubHero
         club={club}
         headingId={headingId}

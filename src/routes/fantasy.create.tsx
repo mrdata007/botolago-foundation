@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { showStepUpNotice } from "@/auth/step-up-notice";
@@ -50,7 +51,7 @@ import { importDecisionService } from "@/services/fantasy-import-decision";
 import { classifyRepoError, runOwnedMutation } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyStateStore } from "@/services/fantasy-state";
-import type { FantasyPlayer, SquadPlayer } from "@/types/fantasy";
+import { SQUAD_RULES, type FantasyPlayer, type SquadPlayer } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/create")({
   head: () => fantasyHead("create"),
@@ -80,6 +81,14 @@ function isCreateDraft(v: unknown): v is CreateTeamDraft {
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
+/** The visitor's draft: the builder's own key for someone with no account yet. */
+const GUEST_DRAFT_KEY: FantasyDraftKey = {
+  uid: "__guest__",
+  teamId: "new",
+  baseVersion: 0,
+  kind: "create-team",
+};
+
 /**
  * First-time squad selection, reconstructed on the FPL "Transfers" composition
  * (FPL-002 with empty slots → FPL-003 Add Player → FPL-005 filled squad),
@@ -101,8 +110,10 @@ function CreateTeamBody() {
   const { t, lang } = useI18n();
   const nav = useNavigate();
   const qc = useQueryClient();
-  const { user } = useAuth();
-  const screen = useFantasyScreen({ needsTeam: false });
+  const { user, requireAuth } = useAuth();
+  // No `needsAuth`: a visitor builds a team first, and an account is asked for
+  // only when they press "Enregistrer".
+  const screen = useFantasyScreen({ needsTeam: false, needsAuth: false });
   const owned = useFantasyOwned();
   const isCloud = owned.source === "cloud";
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
@@ -118,6 +129,9 @@ function CreateTeamBody() {
   const draftKey = useMemo<FantasyDraftKey | null>(() => {
     if (owned.source === "local")
       return { uid: "__local__", teamId: "new", baseVersion: 0, kind: "create-team" };
+    // A visitor's draft lives on this device under its own key, and moves to
+    // the account's key once they sign in (see the restore below).
+    if (owned.source === "guest") return GUEST_DRAFT_KEY;
     if (!isCloud || !owned.userId) return null;
     return {
       uid: owned.userId,
@@ -135,8 +149,17 @@ function CreateTeamBody() {
   useEffect(() => {
     if (inited.current || !draftKey) return;
     const entry = fantasyDraftsStore.read<CreateTeamDraft>(draftKey);
+    // Signed in with no draft of their own: the one built as a visitor on this
+    // device is theirs now. It is taken once, and the visitor copy is removed.
+    const visitorEntry =
+      !entry && draftKey.uid !== GUEST_DRAFT_KEY.uid
+        ? fantasyDraftsStore.read<CreateTeamDraft>(GUEST_DRAFT_KEY)
+        : null;
     if (entry && isCreateDraft(entry.payload)) setDraft(entry.payload);
-    else
+    else if (visitorEntry && isCreateDraft(visitorEntry.payload)) {
+      setDraft(visitorEntry.payload);
+      fantasyDraftsStore.remove(GUEST_DRAFT_KEY);
+    } else
       setDraft(
         initCreateDraft(
           user?.displayName?.trim() ? `${user.displayName.trim().split(" ")[0]} FC` : "",
@@ -212,6 +235,20 @@ function CreateTeamBody() {
   const activeSlotPlayer = playerOf(activeSlot?.playerId ?? null);
   const pickerBank = round1(summary.bankRemaining + (activeSlotPlayer?.price ?? 0));
   const takenIds = draft.slots.map((s) => s.playerId).filter(Boolean) as string[];
+  // For the picker's budget bar and its "Club 3/3" note.
+  const clubCountsFor = (excludingId: string | null) => {
+    const counts = new Map<string, number>();
+    for (const id of takenIds) {
+      if (id === excludingId) continue;
+      const clubId = playerOf(id)?.clubId;
+      if (clubId) counts.set(clubId, (counts.get(clubId) ?? 0) + 1);
+    }
+    return counts;
+  };
+  const builderBudget = {
+    total: SQUAD_RULES.budget,
+    teamValue: round1(SQUAD_RULES.budget - summary.bankRemaining),
+  };
 
   /**
    * The three-per-club count `placeInto` runs, exposed so the picker can show
@@ -259,6 +296,12 @@ function CreateTeamBody() {
 
   const save = async () => {
     if (!validation.ok || saving || !draftKey) return;
+    // A visitor: the draft is already kept on this device; the account is asked
+    // for now, and the draft comes back with them.
+    if (owned.source === "guest") {
+      requireAuth(() => undefined, { reason: t("fantasy.create.sign_in_reason") });
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
@@ -296,6 +339,8 @@ function CreateTeamBody() {
         },
       );
       if (res.ok) {
+        // Counted on the server's confirmation only, never on a draft.
+        track("fantasy_team_created");
         if (owned.userId) importDecisionService.markImported(owned.userId);
         toast.success(t("fantasy.create.success"));
         await owned.reload();
@@ -406,6 +451,11 @@ function CreateTeamBody() {
                 {t(saveError)}
               </UiAlert>
             ) : null}
+            {owned.source === "guest" ? (
+              <p className={cn("mt-3", ui.text.meta, ui.tone.muted)} data-testid="guest-draft-note">
+                {t("fantasy.create.guest_note")}
+              </p>
+            ) : null}
             <UiButton
               type="submit"
               variant="gradient"
@@ -492,6 +542,8 @@ function CreateTeamBody() {
               : undefined
           }
           onClose={() => setPickerSlot(null)}
+          budget={builderBudget}
+          clubCounts={clubCountsFor(activeSlot.playerId)}
         />
       ) : pickerAny ? (
         <AddPlayerScreen
@@ -506,6 +558,8 @@ function CreateTeamBody() {
           disabledIds={takenIds}
           onPick={onPickAny}
           onClose={() => setPickerAny(false)}
+          budget={builderBudget}
+          clubCounts={clubCountsFor(null)}
         />
       ) : null}
 

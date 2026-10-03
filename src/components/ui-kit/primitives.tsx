@@ -24,7 +24,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Link, useRouter } from "@tanstack/react-router";
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, Info, Loader2, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, Info, X } from "lucide-react";
 import type {
   AnchorHTMLAttributes,
   AriaAttributes,
@@ -40,7 +40,8 @@ import type {
   TextareaHTMLAttributes,
   ThHTMLAttributes,
 } from "react";
-import { useId, useRef } from "react";
+import { isValidElement, useId, useRef } from "react";
+import { staggerStyle } from "@/lib/motion";
 
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -83,7 +84,7 @@ export function UiScreen({
   raised = false,
 }: {
   children: ReactNode;
-  width?: "column" | "content" | "wide";
+  width?: "column" | "content" | "wide" | "desktop";
   className?: string;
   /** Reserve clearance for the fixed bottom navigation. */
   bottomNav?: boolean;
@@ -98,6 +99,9 @@ export function UiScreen({
         width === "column" && "max-w-[var(--ui-column-max)]",
         width === "content" && "max-w-2xl",
         width === "wide" && "max-w-5xl",
+        // A phone keeps the reading column, a tablet opens to 896px, and from
+        // 1024px the page takes the 1320px desktop canvas.
+        width === "desktop" && "max-w-2xl md:max-w-4xl lg:max-w-[var(--ui-desktop-max)]",
         bottomNav ? "pb-28 md:pb-12" : "pb-8",
         "pt-4 md:pt-6",
         raised &&
@@ -140,6 +144,7 @@ export function UiHeader({
   children,
   tone = "surface",
   sticky = false,
+  wide = false,
   className,
 }: {
   /**
@@ -158,6 +163,8 @@ export function UiHeader({
   leading?: ReactNode;
   trailing?: ReactNode;
   children?: ReactNode;
+  /** Follow a desktop-width page (1320px) from 1024px up. */
+  wide?: boolean;
   tone?: "gradient" | "ink" | "surface";
   sticky?: boolean;
   className?: string;
@@ -189,7 +196,13 @@ export function UiHeader({
           column (672px less the gutters), so on a wide screen Back and the
           actions sit over the column's edges, not the window's. Inside a
           narrower frame the cap never binds. */}
-      <div className="mx-auto w-full max-w-[calc(var(--ui-content-max)_-_2*var(--ui-gutter))]">
+      <div
+        className={cn(
+          "mx-auto w-full max-w-[calc(var(--ui-content-max)_-_2*var(--ui-gutter))]",
+          // A desktop-width page: the bar's content follows it from 1024px.
+          wide && "lg:max-w-[calc(var(--ui-desktop-max)_-_2*var(--ui-gutter))]",
+        )}
+      >
         {/* Centring: the two `1fr` tracks are equal whenever the title fits
             between two flanks as wide as the wider one, so every such title is
             centred on the bar. A title too wide for that slot (at 390px beside
@@ -504,11 +517,7 @@ export function UiCard({
         padding === "sm" && "p-3",
         padding === "md" && "p-4",
         padding === "lg" && "p-5",
-        interactive &&
-          cn(
-            "transition-transform duration-[var(--duration-tap)] ease-[var(--ease-standard)] active:translate-y-px",
-            ui.focus,
-          ),
+        interactive && cn("press-tile", ui.focus),
         className,
       )}
     >
@@ -770,7 +779,10 @@ export function UiSegmented<T extends string>({
             disabled={option.disabled}
             onClick={() => onChange(option.value)}
             className={cn(
-              "truncate px-2 transition-colors disabled:opacity-50",
+              // A label wraps onto a second line rather than ending in an
+              // ellipsis ("Mes pronostics" at 375px); the tab stays 44px tall
+              // and grows only when it has to.
+              "px-2 py-1 text-center leading-tight transition-colors disabled:opacity-50",
               pill ? ui.radius.full : ui.radius.segment,
               size === "md"
                 ? cn("min-h-[var(--ui-tap-min)]", ui.text.meta)
@@ -897,7 +909,8 @@ export function UiTabs<T extends string>({
                 : ui.tone.muted,
             )}
           >
-            <span className="truncate">{option.label}</span>
+            {/* Wraps rather than ending in an ellipsis ("Mes pronostics" at 375px). */}
+            <span className="min-w-0 text-center leading-tight">{option.label}</span>
           </button>
         );
       })}
@@ -1190,16 +1203,7 @@ export function UiStatePanel({
         data-testid={testId}
         className={cn("py-6", className)}
       >
-        <div
-          className={cn(
-            "mx-auto mb-4 flex items-center justify-center gap-2",
-            ui.text.meta,
-            ui.tone.muted,
-          )}
-        >
-          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
-          {t("state.loading")}
-        </div>
+        <span className="sr-only">{t("state.loading")}</span>
         <div className="space-y-3">
           <UiSkeleton className="h-12" />
           <UiSkeleton className="h-24" />
@@ -1220,7 +1224,7 @@ export function UiStatePanel({
             aria-hidden
             loading="lazy"
             decoding="async"
-            className="mx-auto mb-3 h-28 w-auto max-w-full object-contain"
+            className="drift-in mx-auto mb-3 h-28 w-auto max-w-full object-contain"
           />
         ) : isError ? (
           <AlertTriangle className="mx-auto h-7 w-7 text-[color:var(--ui-negative)]" aria-hidden />
@@ -1444,6 +1448,8 @@ export function UiSheet({
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
             "data-[state=open]:duration-[var(--duration-sheet)] data-[state=closed]:duration-[var(--duration-quick)]",
+            // Arrives with a hair of overshoot and settles; leaves plainly.
+            "data-[state=open]:ease-[var(--ease-settle)] data-[state=closed]:ease-[var(--ease-standard)]",
             className,
           )}
         >
@@ -1901,15 +1907,19 @@ export function UiTR({
   highlighted = false,
   onClick,
   className,
+  flipKey,
 }: {
   children: ReactNode;
   /** "This row is you" in a standings table. */
   highlighted?: boolean;
   onClick?: () => void;
   className?: string;
+  /** A stable id for the row: with `useFlip` on the table, it slides when it moves. */
+  flipKey?: string;
 }) {
   return (
     <tr
+      data-flip-key={flipKey}
       onClick={onClick}
       className={cn(
         ui.rule.block,
@@ -2374,12 +2384,28 @@ export function UiPitchSurface({
 
         <div className="relative flex flex-col gap-3 px-1 pb-4 pt-3">
           {rows.map((row, rowIndex) => (
-            <div key={rowIndex} className="flex items-start justify-evenly gap-1">
-              {row.map((slot, slotIndex) => (
-                <div key={slotIndex} className="min-w-0 shrink grow-0 basis-[76px] sm:basis-[84px]">
-                  {slot}
-                </div>
-              ))}
+            // The lines arrive one after another, goalkeeper first. A row is
+            // keyed by its place, so a swap never replays it.
+            <div
+              key={rowIndex}
+              className="enter-rise stagger flex items-start justify-evenly gap-1"
+              style={staggerStyle(rowIndex)}
+            >
+              {row.map((slot, slotIndex) => {
+                // A player card carries its player's id as its React key; the
+                // slot wears it as `data-flip-key`, so `useFlip` on the pitch
+                // can slide a swapped player to the new place.
+                const flipKey = isValidElement(slot) && slot.key != null ? String(slot.key) : null;
+                return (
+                  <div
+                    key={flipKey ?? slotIndex}
+                    data-flip-key={flipKey ?? undefined}
+                    className="min-w-0 shrink grow-0 basis-[76px] sm:basis-[84px]"
+                  >
+                    {slot}
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>
@@ -2388,11 +2414,11 @@ export function UiPitchSurface({
       {bench && bench.length > 0 ? (
         <div
           className={cn(
-            "relative px-2 pb-3 pt-2",
+            "enter-rise stagger relative px-2 pb-3 pt-2",
             benchHighlighted &&
               "outline outline-2 -outline-offset-2 outline-[color:var(--ui-accent-sky)]",
           )}
-          style={{ background: "var(--ui-pitch-bench)" }}
+          style={{ background: "var(--ui-pitch-bench)", ...staggerStyle(rows.length) }}
         >
           {benchLabels ? (
             <div className="mb-1 flex items-start justify-evenly gap-1">
@@ -2411,11 +2437,18 @@ export function UiPitchSurface({
             </div>
           ) : null}
           <div className="flex items-start justify-evenly gap-1">
-            {bench.map((slot, index) => (
-              <div key={index} className="w-[76px] shrink-0 sm:w-[84px]">
-                {slot}
-              </div>
-            ))}
+            {bench.map((slot, index) => {
+              const flipKey = isValidElement(slot) && slot.key != null ? String(slot.key) : null;
+              return (
+                <div
+                  key={flipKey ?? index}
+                  data-flip-key={flipKey ?? undefined}
+                  className="w-[76px] shrink-0 sm:w-[84px]"
+                >
+                  {slot}
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : null}

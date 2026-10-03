@@ -54,6 +54,24 @@ on:
         description: Optional, raises the 15-value limit for enums (at most 80), for lists of statistic names.
         type: string
         required: false
+      corroborate_pairs:
+        description: >-
+          Optional JSON array of Sofascore/Flashscore player pairs, e.g.
+          [{"m":"17132481","s":"1140820","f":"8AYnWqxg"}] (Sofascore match id, Sofascore player id,
+          Flashscore player id). Runs the read-only date-of-birth corroboration instead: one Sofascore
+          lineups request per distinct match and one Flashscore player request per distinct player,
+          at most 32 in total, each fetched once and never retried. Prints one state per pair
+          (AGREE, DISAGREE, NO_SIGNAL_*) and request counts, NEVER a date, a name or a payload.
+        type: string
+        required: false
+      collect_squads:
+        description: >-
+          Run the read-only squad candidate collector instead (32 requests: one squad per club per
+          provider, 16 clubs). Prints ONE sanitized evidence document: counts and states only, never
+          a name, a date or a raw payload. No database access.
+        type: boolean
+        default: false
+        required: false
 
 permissions:
   contents: read
@@ -73,7 +91,7 @@ jobs:
         with:
           bun-version: 1.3.14
       - name: Probe
-        if: ${{ inputs.paths != '' }}
+        if: ${{ inputs.paths != '' && !inputs.collect_squads && inputs.corroborate_pairs == '' }}
         env:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
           FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
@@ -93,6 +111,19 @@ jobs:
             [ -n "$spec" ] && rows+=("--rows=$spec")
           done <<< "$ROWS"
           printf '%s\n' "$PATHS" | grep . | tr '\n' '\0' | xargs -0 bun scripts/backend/provider-probe.ts "$PROVIDER" --shape ${ENUMS:+"--enum=$ENUMS"} ${ENUM_MAX:+"--enum-max=$ENUM_MAX"} ${KEYS:+"--keys=$KEYS"} "${rows[@]}"
+      - name: Collect squad candidate evidence (read-only)
+        if: ${{ inputs.collect_squads }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
+        run: bun scripts/backend/provider-squad-collector.ts
+      - name: Corroborate player identity by date of birth (read-only, sanitized)
+        if: ${{ inputs.corroborate_pairs != '' }}
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          FLASHSCORE_RAPIDAPI_HOST: ${{ vars.FLASHSCORE_RAPIDAPI_HOST }}
+          PAIRS: ${{ inputs.corroborate_pairs }}
+        run: bun scripts/backend/provider-identity-corroboration.ts
       - name: Build trimmed fixtures
         if: ${{ inputs.fixtures != '' }}
         env:

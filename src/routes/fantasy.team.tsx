@@ -7,7 +7,13 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { findClub } from "@/components/fpl/club-lookup";
-import { countdownText, formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline";
+import {
+  countdownText,
+  deadlineUrgency,
+  formatDeadline,
+  useDeadlineCountdown,
+  type DeadlineUrgency,
+} from "@/components/fpl/deadline";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { FplChipsRow } from "@/components/fpl/FplChipsRow";
@@ -34,13 +40,15 @@ import {
   type ChipsState,
 } from "@/lib/fantasy-engine";
 import { reslotForFormation, swapSquadMembers } from "@/lib/reslot";
+import { startersWithoutMatch, suggestNoMatchSwap } from "@/lib/no-match-swap";
+import { NoMatchBanner } from "@/components/fantasy/NoMatchBanner";
 import { validateTeam } from "@/lib/team-validation";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
-import { FORMATIONS, type FormationKey, type SquadPlayer } from "@/types/fantasy";
+import { FORMATIONS, SQUAD_RULES, type FormationKey, type SquadPlayer } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/team")({
   head: () => fantasyHead("team"),
@@ -93,15 +101,17 @@ function PickTeamPage() {
 }
 
 /** "1j 13h 59min", spelled exactly as Home's gameweek countdown (`countdownText`). */
-function useCountdownText(deadlineIso: string | undefined): string | null {
+function useCountdownText(
+  deadlineIso: string | undefined,
+): { text: string; urgency: DeadlineUrgency } | null {
   const { t } = useI18n();
   const left = useDeadlineCountdown(deadlineIso);
   if (!left || left.passed) return null;
-  return countdownText(left, t);
+  return { text: countdownText(left, t), urgency: deadlineUrgency(left) };
 }
 
 function PickTeamBody() {
-  const { t, lang } = useI18n();
+  const { t, tr, lang } = useI18n();
   const qc = useQueryClient();
   const { user } = useAuth();
   const screen = useFantasyScreen();
@@ -424,7 +434,19 @@ function PickTeamBody() {
   const bench = squad.filter((s) => s.slot >= 12).sort((a, b) => a.slot - b.slot);
   const rowFor = (pos: string, limit: number) =>
     xi.filter((s) => posOf(s.playerId) === pos).slice(0, limit);
-  const card = (s: SquadPlayer) => {
+  // Clubs with a match this gameweek; null while its fixtures are not known.
+  const playing = fixtures.playingClubIds;
+  const noMatchStarters = startersWithoutMatch(squad, players, playing);
+  const noMatchSwap = suggestNoMatchSwap({ squad, players, playingClubIds: playing, formation });
+  const noMatchPlayer = noMatchStarters[0] ? playerOf(noMatchStarters[0]) : undefined;
+  const swapInPlayer = noMatchSwap ? playerOf(noMatchSwap.inId) : undefined;
+  const clubCounts = new Map<string, number>();
+  for (const place of squad) {
+    const clubId = playerOf(place.playerId)?.clubId;
+    if (clubId) clubCounts.set(clubId, (clubCounts.get(clubId) ?? 0) + 1);
+  }
+  const clubLimitOk = [...clubCounts.values()].every((n) => n <= SQUAD_RULES.maxPerClub);
+  const card = (s: SquadPlayer, size?: "md" | "sm") => {
     const p = playerOf(s.playerId);
     if (!p) return <div key={s.playerId} />;
     return (
@@ -436,7 +458,9 @@ function PickTeamBody() {
         captain={!!s.isCaptain}
         vice={!!s.isViceCaptain}
         highlighted={selectedId === s.playerId}
+        noMatch={playing !== null && !playing.has(p.clubId)}
         onClick={() => onCardTap(s.playerId)}
+        size={size}
       />
     );
   };
@@ -455,8 +479,15 @@ function PickTeamBody() {
   const deadlineSub: ReactNode =
     !deadlineLocked && countdown ? (
       <span className="inline-flex items-center gap-1">
-        <Clock3 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        <span className={ui.text.tabular}>{countdown}</span>
+        <Clock3
+          className={cn(
+            "h-3.5 w-3.5 shrink-0",
+            countdown.urgency === "soon" && "deadline-soon",
+            countdown.urgency === "now" && "deadline-now",
+          )}
+          aria-hidden
+        />
+        <span className={ui.text.tabular}>{countdown.text}</span>
       </span>
     ) : gameweek.status ? (
       <GameweekStatusText
@@ -527,8 +558,52 @@ function PickTeamBody() {
       />
       <FplStatBar hero items={stripItems} />
 
+      <div className={cn("grid gap-2 pt-3", ui.space.gutter)}>
+        <ul className="flex flex-wrap gap-1.5" data-testid="team-facts">
+          {[
+            formation,
+            t("fantasy.team.chip_bank").replace("{n}", nf.format(team.bank)),
+            `${t("fantasy.team.chip_club_limit").replace("{n}", whole.format(SQUAD_RULES.maxPerClub))} ${clubLimitOk ? "✓" : "!"}`,
+          ].map((chip) => (
+            <li
+              key={chip}
+              className={cn(
+                "px-2.5 py-1",
+                ui.radius.full,
+                ui.surface.sunken,
+                ui.text.meta,
+                ui.text.tabular,
+                "[font-weight:var(--ui-weight-strong)]",
+              )}
+            >
+              <bdi>{chip}</bdi>
+            </li>
+          ))}
+        </ul>
+        {noMatchPlayer && !deadlineLocked ? (
+          <NoMatchBanner
+            name={tr(noMatchPlayer.name)}
+            gameweek={gameweek.number}
+            swap={
+              noMatchSwap && swapInPlayer
+                ? {
+                    inName: tr(swapInPlayer.name),
+                    formation: noMatchSwap.formation,
+                    formationChanged: noMatchSwap.formationChanged,
+                  }
+                : undefined
+            }
+            onApply={noMatchSwap ? () => applyLocal(noMatchSwap.squad) : undefined}
+          />
+        ) : null}
+      </div>
+
       <div className={cn("pt-3", ui.space.gutter)}>
-        <FplChipsRow chips={chipViews} onSelect={deadlineLocked ? undefined : onChipSelect} />
+        <FplChipsRow
+          chips={chipViews}
+          onSelect={deadlineLocked ? undefined : onChipSelect}
+          settled={!owned.isLoading}
+        />
         {chipsState.active &&
         activeChipName &&
         !pendingChip &&
@@ -562,12 +637,12 @@ function PickTeamBody() {
         <FplPitch
           className="mx-[var(--ui-gutter)] mt-3"
           rows={[
-            rowFor("GK", 1).map(card),
-            rowFor("DEF", cfg.DEF).map(card),
-            rowFor("MID", cfg.MID).map(card),
-            rowFor("FWD", cfg.FWD).map(card),
+            rowFor("GK", 1).map((s) => card(s)),
+            rowFor("DEF", cfg.DEF).map((s) => card(s)),
+            rowFor("MID", cfg.MID).map((s) => card(s)),
+            rowFor("FWD", cfg.FWD).map((s) => card(s)),
           ]}
-          bench={bench.map(card)}
+          bench={bench.map((s) => card(s, "sm"))}
           benchLabels={benchLabels}
           benchHighlighted={activeBenchBoost}
         />

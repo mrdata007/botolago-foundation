@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { isValidElement, type ReactNode } from "react";
 
 import { ui, UiPitchSurface } from "@/components/ui-kit";
+import { useFlip } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -42,8 +43,16 @@ export function FplPitch({
   benchHighlighted?: boolean;
   className?: string;
 }) {
+  // Swapping two players slides each to the other's place. A player card's React
+  // key is its player's id, so the order of those keys is what changed.
+  const order = [...rows.flat(), ...(bench ?? [])].map((slot) =>
+    isValidElement(slot) && slot.key != null ? String(slot.key) : "",
+  );
+  const pitchRef = useFlip<HTMLDivElement>(order);
+
   return (
     <div
+      ref={pitchRef}
       className={cn(
         "overflow-hidden",
         ui.radius.sheet,

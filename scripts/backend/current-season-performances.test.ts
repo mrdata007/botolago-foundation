@@ -1502,6 +1502,7 @@ describe("lineup participation evidence", () => {
       externalPlayerId: "200",
       externalTeamId: "10",
       role: "substitute",
+      positionId: null,
       officialMinutes: null,
       scoringStatisticTypeIds: [],
       unknownStatisticTypeIds: [],
@@ -1515,12 +1516,30 @@ describe("lineup participation evidence", () => {
       externalPlayerId: "201",
       externalTeamId: "20",
       role: "substitute",
+      positionId: null,
       officialMinutes: 0,
       scoringStatisticTypeIds: [],
       unknownStatisticTypeIds: [],
       zeroStatisticTypeIds: [52, 57, 79, 83, 84, 85, 88, 112, 113, 119, 324],
       eventTypeIds: [],
     });
+  });
+
+  test("the provider's position id is carried as sent, and a missing or unusable one stays null", async () => {
+    for (const [sent, expected] of [
+      [25, 25],
+      [27, 27],
+      [undefined, null],
+      [null, null],
+      [0, null],
+      [-3, null],
+      ["25", null],
+      [2.5, null],
+    ] as const) {
+      const payload = bench();
+      (payload.data.lineups[indexOf(HOME_BENCH)] as Record<string, unknown>).position_id = sent;
+      expect((await factsOf(payload)).positionId).toBe(expected);
+    }
   });
 
   test("a starter is reported as a starter, with his minutes", async () => {
@@ -1651,6 +1670,7 @@ describe("lineup participation evidence", () => {
         "externalPlayerId",
         "externalTeamId",
         "officialMinutes",
+        "positionId",
         "role",
         "scoringStatisticTypeIds",
         "unknownStatisticTypeIds",

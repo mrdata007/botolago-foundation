@@ -9,6 +9,7 @@ import { useI18n } from "@/i18n/provider";
 import { clubFixtures, clubResults } from "@/lib/club-season";
 import type { Club, Match } from "@/types/domain";
 import type { SectionData } from "./ClubOverview";
+import { staggerStyle } from "@/lib/motion";
 
 /**
  * A club's season, match by match (A-Club, "Matchs"): what is still to be
@@ -59,11 +60,15 @@ export function ClubMatchList({
   }
 
   const rows = (items: readonly Match[]) =>
-    items.map((match) => {
+    items.map((match, index) => {
       const home = clubById(match.homeClubId);
       const away = clubById(match.awayClubId);
       if (!home || !away) return null;
-      return <MatchCard key={match.id} match={match} home={home} away={away} variant="list" />;
+      return (
+        <div key={match.id} className="enter-rise stagger min-w-0" style={staggerStyle(index)}>
+          <MatchCard match={match} home={home} away={away} variant="list" />
+        </div>
+      );
     });
 
   return (

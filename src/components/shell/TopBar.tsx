@@ -13,24 +13,38 @@
 
 import { Link, useRouterState } from "@tanstack/react-router";
 
-import { UserRound } from "lucide-react";
+import { Search, UserRound } from "lucide-react";
+import { useState } from "react";
 
 import { Logo } from "@/components/brand/Logo";
-import { ui, UiIconLinkButton } from "@/components/ui-kit";
+import { ui, UiIconButton, UiIconLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { PEPITES_PROMOTED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
+import { GlobalSearch } from "./GlobalSearch";
+import { NotificationBell } from "./NotificationBell";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { isPrimaryRouteActive, primaryNavItems } from "./primary-nav";
 
-export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
+export function TopBar({
+  trailing,
+  wide = false,
+}: {
+  trailing?: React.ReactNode;
+  /** From 1024px, open the bar to the desktop canvas and add the search field. */
+  wide?: boolean;
+}) {
   const { t } = useI18n();
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <header className={cn("sticky top-0 z-30", ui.surface.bar, ui.rule.block, ui.safe.top, "pb-2")}>
       <div
         className={cn(
-          "mx-auto flex items-center gap-3 md:max-w-[var(--ui-content-max)]",
+          "mx-auto flex items-center gap-3",
+          wide
+            ? "md:max-w-[var(--ui-content-max)] lg:max-w-[var(--ui-desktop-max)]"
+            : "md:max-w-[var(--ui-content-max)]",
           ui.space.gutter,
           "min-h-[var(--ui-tap-min)]",
         )}
@@ -41,8 +55,21 @@ export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
 
         <PrimaryNavLinks />
 
+        {wide ? <GlobalSearch className="hidden w-64 lg:block" /> : null}
+
         <div className="ms-auto flex items-center gap-2 md:ms-0">
           {trailing}
+          {wide ? (
+            <UiIconButton
+              className="lg:hidden"
+              aria-label={t("nav.search.label")}
+              aria-expanded={searchOpen}
+              onClick={() => setSearchOpen((open) => !open)}
+            >
+              <Search aria-hidden />
+            </UiIconButton>
+          ) : null}
+          <NotificationBell />
           <LanguageSwitcher />
           {/* Pépites takes Profil's slot in the bar once promoted, so the
               profile moves here. */}
@@ -53,6 +80,11 @@ export function TopBar({ trailing }: { trailing?: React.ReactNode }) {
           ) : null}
         </div>
       </div>
+      {wide && searchOpen ? (
+        <div className={cn("mx-auto pt-2 lg:hidden", ui.space.gutter)}>
+          <GlobalSearch autoFocus />
+        </div>
+      ) : null}
     </header>
   );
 }
