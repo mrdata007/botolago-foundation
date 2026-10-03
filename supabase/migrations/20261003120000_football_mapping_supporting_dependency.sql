@@ -229,7 +229,9 @@ begin
       'id', m.id, 'provider', m.provider_name, 'entityType', m.entity_type::text,
       'externalId', m.external_id, 'appPlayerId', m.internal_entity_id, 'active', m.active,
       'manuallyCorrected', m.manually_corrected, 'correctedBy', m.corrected_by,
-      'correctedAt', m.corrected_at, 'correctionReason', m.correction_reason,
+      -- Written out in UTC: jsonb prints a timestamptz in the SESSION's time zone, and a digest must not depend on it.
+      'correctedAt', to_char(m.corrected_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+      'correctionReason', m.correction_reason,
       'sourceVersion', m.source_version, 'reviewed', v_reviewed,
       'provenanceProposalId', case when v_reviewed then v_pid end)));
 end;

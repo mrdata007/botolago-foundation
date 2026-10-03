@@ -202,6 +202,13 @@ select extensions.is(pg_temp.get('r1')::jsonb ->> 'reviewProvenance', 'executed_
 select extensions.is((select array_agg(k order by k) from jsonb_object_keys(pg_temp.get('r1')::jsonb) k),
   array['active','appPlayerId','correctedAt','entityType','externalId','manuallyCorrected','mappingId','provenanceProposalId','provider','reviewProvenance','reviewed','sourceVersion','stateDigest','updatedAt'],
   '2.5 only the fields the review needs: no name, no birth date, no secret, no other row');
+-- The state digest must not depend on the session's time zone (a timestamp prints in the session zone).
+set local time zone 'Pacific/Auckland';
+select pg_temp.put('dig_auckland', api.admin_football_mapping_get_provider_mapping('sofascore', 'S1') ->> 'stateDigest');
+set local time zone 'America/Los_Angeles';
+select pg_temp.put('dig_la', api.admin_football_mapping_get_provider_mapping('sofascore', 'S1') ->> 'stateDigest');
+set local time zone 'UTC';
+select extensions.is(pg_temp.get('dig_auckland'), pg_temp.get('dig_la'), '2.5b the state digest is the same in any session time zone');
 select extensions.is(api.admin_football_mapping_get_provider_mapping('sofascore', 'NO-SUCH-ID'), null, '2.6 an id with no mapping reads as null');
 select extensions.throws_ok($$select api.admin_football_mapping_get_provider_mapping('sportsmonks', 'x')$$, 'PT400', 'invalid_filter', '2.7 only the two reviewed providers can be asked for');
 select pg_temp.act('nobody');
