@@ -161,10 +161,11 @@ describe("REAL PAYLOADS: before (no mapping input) and after (mapping-aware), se
 });
 
 describe("REAL PAYLOADS: Flashscore bridge suggestions", () => {
-  const set = buildBridgeReviewSet(
-    loaded.map(({ data }) => data),
-    snapshot,
-  );
+  const linked = loaded.map(({ m, data }) => ({
+    link: { sofascoreFixtureId: m.sofascoreId, flashscoreFixtureId: m.flashscoreId },
+    ...data,
+  }));
+  const set = buildBridgeReviewSet(linked, snapshot);
 
   test("one consolidated review set over the seven matches", () => {
     expect(set.summary.flashscoreEntriesAppeared).toBe(218);
@@ -175,7 +176,8 @@ describe("REAL PAYLOADS: Flashscore bridge suggestions", () => {
       no_event_alignment_shirt_only: 126,
       sofascore_partner_not_reviewed: 53,
     });
-    expect(set.summary.crossFixtureConflicts).toEqual([]);
+    expect(set.conflicts).toEqual([]);
+    expect(set.rejectedFixtures).toEqual([]);
   });
 
   test("every suggestion rests on a reviewed Sofascore mapping and a counted event, and no goalkeeper is bridged", () => {
@@ -185,8 +187,10 @@ describe("REAL PAYLOADS: Flashscore bridge suggestions", () => {
           (e) => e.mappingId === s.sofascoreMapping.mappingId && e.appPlayerId === s.appPlayerId,
         ),
       ).toBe(true);
-      expect(s.events.length).toBeGreaterThan(0);
-      expect(s.shirtAgrees || s.events.length >= 2).toBe(true);
+      for (const e of s.evidence) {
+        expect(e.events.length).toBeGreaterThan(0);
+        expect(e.shirtAgrees || e.events.length >= 2).toBe(true);
+      }
       expect(s.priority).not.toContain("goalkeeper");
     }
   });
@@ -226,5 +230,36 @@ describe("REAL PAYLOADS: Flashscore bridge suggestions", () => {
       reviewedIdentities: hypothetical,
     });
     expect(dhjAfter.mode).toBe("review");
+  });
+});
+
+describe("REAL PAYLOADS: the bridge refuses two unrelated matches", () => {
+  test("Sofascore of one match with Flashscore of another is never bridged, however the events fall", () => {
+    const [a, b] = loaded;
+    if (!a || !b) throw new Error("missing fixtures");
+    const crossed = buildBridgeReviewSet(
+      [
+        {
+          link: { sofascoreFixtureId: a.m.sofascoreId, flashscoreFixtureId: b.m.flashscoreId },
+          sofascore: a.data.sofascore,
+          flashscore: b.data.flashscore,
+        },
+      ],
+      snapshot,
+    );
+    expect(crossed.suggestions).toEqual([]);
+    expect(crossed.rejectedFixtures).toHaveLength(1);
+  });
+
+  test("all seven committed pairs verify as the same finished match", () => {
+    const all = buildBridgeReviewSet(
+      loaded.map(({ m, data }) => ({
+        link: { sofascoreFixtureId: m.sofascoreId, flashscoreFixtureId: m.flashscoreId },
+        ...data,
+      })),
+      snapshot,
+    );
+    expect(all.rejectedFixtures).toEqual([]);
+    expect(all.summary.flashscoreEntriesAppeared).toBe(218);
   });
 });

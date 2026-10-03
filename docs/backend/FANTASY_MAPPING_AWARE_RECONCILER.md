@@ -118,6 +118,20 @@ What-if (hypothetical Flashscore mappings made from the 33; these are NOT mappin
 would leave review and become `incomplete` with 13 players held back. DHJ-CODM would stay in
 review, because five of its scorers have no reviewed Sofascore mapping.
 
+Bridge rules added after review:
+
+- **Same verified match only.** Each pair of payloads must be the linked fixture (ids from the
+  committed `matches.json`), both finished, the same final score, the same kickoff, and goal
+  lists that add up on each side. Similarly timed events from two arbitrary matches are never
+  aligned.
+- **Distinct events only.** Two copies of one incident count once, never as corroboration.
+- **Goalkeeper disagreement, both directions.** If both providers give a known position and
+  exactly one says goalkeeper, there is no bridge (and the reconciler holds the player back). A
+  missing position proves nothing.
+- **Same Flashscore id and same app player in several matches** is ONE suggestion carrying each
+  match's evidence. **One Flashscore id suggested for two app players**, or **two Flashscore ids
+  for one app player**, is a CONFLICT: neither is suggested and the input order decides nothing.
+
 Confidence limits, stated on every suggestion: one finished match, both providers can be wrong in
 the same way, it shows who the player is and nothing about club, position or participation, and a
 person must review it before it is anything.

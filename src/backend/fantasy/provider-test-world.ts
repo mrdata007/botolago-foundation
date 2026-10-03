@@ -23,10 +23,23 @@ export interface Spec {
   /** Goals as [side, minute, sofascore shirt, flashscore shirt]. */
   goals?: readonly (readonly [MatchSide, number, number, number])[];
   names?: (provider: Provider, side: MatchSide, shirt: number) => string;
+  /** Provider fixture ids (default S-FIX and F-FIX). */
+  sofascoreFixtureId?: string;
+  flashscoreFixtureId?: string;
+  /** Prefix for the provider player ids, to make two matches use different ids. */
+  sofaIdPrefix?: string;
+  flashIdPrefix?: string;
+  kickoffAt?: string;
 }
 
-export const sid = (side: MatchSide, shirt: number) => `s-${side[0]}${shirt}`;
-export const fid = (side: MatchSide, shirt: number) => `f-${side[0]}${shirt}`;
+/** The match pair a spec describes, as the bridge's verified link. */
+export const linkOf = (spec: Spec = {}) => ({
+  sofascoreFixtureId: spec.sofascoreFixtureId ?? "S-FIX",
+  flashscoreFixtureId: spec.flashscoreFixtureId ?? "F-FIX",
+});
+
+export const sid = (side: MatchSide, shirt: number, prefix = "") => `${prefix}s-${side[0]}${shirt}`;
+export const fid = (side: MatchSide, shirt: number, prefix = "") => `${prefix}f-${side[0]}${shirt}`;
 export const DEFAULT_SHIRTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 
 function lineup(
@@ -66,7 +79,10 @@ export function build(spec: Spec = {}): {
       minute,
       addedMinutes: null,
       player: {
-        externalId: provider === "sofascore" ? sid(side, sShirt) : fid(side, fShirt),
+        externalId:
+          provider === "sofascore"
+            ? sid(side, sShirt, spec.sofaIdPrefix)
+            : fid(side, fShirt, spec.flashIdPrefix),
         name: "n",
       },
       assist: null,
@@ -81,8 +97,11 @@ export function build(spec: Spec = {}): {
   ): ProviderMatchData => ({
     summary: {
       provider,
-      externalId: provider === "sofascore" ? "S-FIX" : "F-FIX",
-      kickoffAt: "2026-10-01T10:00:00.000Z",
+      externalId:
+        provider === "sofascore"
+          ? (spec.sofascoreFixtureId ?? "S-FIX")
+          : (spec.flashscoreFixtureId ?? "F-FIX"),
+      kickoffAt: spec.kickoffAt ?? "2026-10-01T10:00:00.000Z",
       finished: true,
       homeName: "H",
       awayName: "A",
@@ -94,7 +113,10 @@ export function build(spec: Spec = {}): {
     incidents: incidents(provider),
     statistics: [],
   });
-  return { sofascore: data("sofascore", sid), flashscore: data("flashscore", fid) };
+  return {
+    sofascore: data("sofascore", (side, shirt) => sid(side, shirt, spec.sofaIdPrefix)),
+    flashscore: data("flashscore", (side, shirt) => fid(side, shirt, spec.flashIdPrefix)),
+  };
 }
 
 export const row = (

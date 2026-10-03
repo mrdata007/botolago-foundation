@@ -28,7 +28,6 @@
  * position, whether he took part, or that any event is right.
  */
 import type {
-  LineupPosition,
   MatchSide,
   PerformanceIncident,
   PerformanceLineupPlayer,
@@ -37,6 +36,7 @@ import {
   CARD_TOLERANCE_MINUTES,
   GOAL_ORDER_TOLERANCE_MINUTES,
   SUBSTITUTION_TOLERANCE_MINUTES,
+  keeperConflict,
 } from "./provider-matching";
 import type { ProviderMatchData } from "./provider-reconciler";
 import { indexReviewedIdentities, type ReviewedIdentitySnapshot } from "./reviewed-identities";
@@ -73,7 +73,8 @@ export type BridgeUnresolvedReason =
   | "ambiguous_candidates"
   | "contradicting_event"
   | "position_conflict"
-  | "app_player_claimed_twice";
+  | "app_player_claimed_twice"
+  | "fixture_not_verified";
 
 export interface BridgeFixtureRef {
   readonly sofascoreFixtureId: string;
@@ -91,15 +92,23 @@ export type BridgePriority =
   | "in_locked_squad"
   | "blocks_fixture";
 
+/** What one verified match contributes to a suggestion. */
+export interface BridgeFixtureEvidence {
+  readonly fixture: BridgeFixtureRef;
+  readonly shirtAgrees: boolean;
+  /** Distinct events only: copies of one incident are counted once. */
+  readonly events: readonly BridgeEvent[];
+  readonly priority: readonly BridgePriority[];
+}
+
 export interface BridgeSuggestion {
   readonly flashscoreId: string;
   readonly sofascoreId: string;
   readonly appPlayerId: string;
   /** The reviewed Sofascore mapping row (and version) the suggestion rests on. */
   readonly sofascoreMapping: { readonly mappingId: string; readonly version: string | null };
-  readonly fixture: BridgeFixtureRef;
-  readonly shirtAgrees: boolean;
-  readonly events: readonly BridgeEvent[];
+  /** One entry per verified match, in a stable order. */
+  readonly evidence: readonly BridgeFixtureEvidence[];
   readonly priority: readonly BridgePriority[];
   /** What this evidence cannot show. Always non-empty. */
   readonly confidenceLimits: readonly string[];
@@ -116,25 +125,49 @@ export interface BridgeUnresolved {
   readonly detail: string;
 }
 
+/** The match pair, confirmed from committed evidence, that the bridge may be used for. */
+export interface BridgeFixtureLink {
+  readonly sofascoreFixtureId: string;
+  readonly flashscoreFixtureId: string;
+}
+
 export interface BridgeFixtureInput {
+  readonly link: BridgeFixtureLink;
   readonly sofascore: ProviderMatchData;
   readonly flashscore: ProviderMatchData;
   /** Locked-squad app player ids, for ranking only. */
   readonly lockedSquadAppPlayerIds?: ReadonlySet<string>;
 }
 
+/**
+ * Two identities that cannot both be right. Neither is suggested, and no winner
+ * is chosen, so the result never depends on the order the matches were given in.
+ */
+export interface BridgeConflict {
+  readonly kind: "flashscore_id_two_app_players" | "app_player_two_flashscore_ids";
+  readonly flashscoreIds: readonly string[];
+  readonly appPlayerIds: readonly string[];
+  readonly fixtures: readonly BridgeFixtureRef[];
+}
+
+export interface BridgeRejectedFixture {
+  readonly link: BridgeFixtureLink;
+  readonly reasons: readonly string[];
+}
+
 export interface BridgeReviewSet {
   readonly snapshotDigest: string;
   readonly suggestions: readonly BridgeSuggestion[];
+  readonly conflicts: readonly BridgeConflict[];
   readonly unresolved: readonly BridgeUnresolved[];
+  readonly rejectedFixtures: readonly BridgeRejectedFixture[];
   readonly summary: {
     readonly flashscoreEntriesAppeared: number;
     readonly suggested: number;
+    readonly conflicts: number;
     readonly unresolved: number;
     readonly unresolvedByReason: Readonly<Record<string, number>>;
     readonly suggestionsByPriority: Readonly<Record<string, number>>;
-    /** Flashscore ids suggested in more than one fixture or for more than one app player. */
-    readonly crossFixtureConflicts: readonly string[];
   };
 }
 
@@ -142,6 +175,13 @@ const LIMITS: readonly string[] = [
   "Evidence from one finished match only; no second match confirms it.",
   "Both providers' data can be wrong in the same way; this is not an independent third source.",
   "Shows who the player is, not his club on the match date, his position, or that his events are right.",
+  "A person must review it; it is not a mapping until proposed, approved and executed.",
+];
+
+const LIMITS_MULTI: readonly string[] = [
+  "Evidence from more than one finished match, all read from the same two providers.",
+  "Both providers' data can be wrong in the same way; this is not an independent third source.",
+  "Shows who the player is, not his club on a match date, his position, or that his events are right.",
   "A person must review it; it is not a mapping until proposed, approved and executed.",
 ];
 
@@ -295,19 +335,96 @@ function alignSubstitutions(
   return out;
 }
 
-const positionConflict = (s: PerformanceLineupPlayer, f: PerformanceLineupPlayer) => {
-  const a: LineupPosition | null = s.position;
-  const b: LineupPosition | null = f.position;
-  // Flashscore marks keepers only some of the time: its silence proves nothing.
-  return b === "G" && a !== null && a !== "G";
+/** Kickoff times of one match, as the two providers give them, may differ by at most this. */
+const KICKOFF_TOLERANCE_MS = 3 * 60 * 60 * 1000;
+
+/**
+ * Whether these two payloads are the same finished match, from evidence the
+ * bridge can check: the confirmed link ids, both finished, the same final
+ * score, the same kickoff, and incident lists that add up to that score on each
+ * side. A team or player name is never used. Events from two arbitrary matches
+ * that happen to be similarly timed fail this and are never aligned.
+ */
+export function verifyBridgeFixture(input: BridgeFixtureInput): string[] {
+  const { sofascore: sofa, flashscore: flash, link } = input;
+  const reasons: string[] = [];
+  if (sofa.summary.externalId !== link.sofascoreFixtureId) {
+    reasons.push("The Sofascore payload is not the linked Sofascore fixture.");
+  }
+  if (flash.summary.externalId !== link.flashscoreFixtureId) {
+    reasons.push("The Flashscore payload is not the linked Flashscore fixture.");
+  }
+  if (!sofa.summary.finished || !flash.summary.finished) {
+    reasons.push("A provider does not report the match as finished.");
+  }
+  const { homeScore, awayScore } = sofa.summary;
+  if (
+    homeScore === null ||
+    awayScore === null ||
+    homeScore !== flash.summary.homeScore ||
+    awayScore !== flash.summary.awayScore
+  ) {
+    reasons.push("The two providers do not give the same final score.");
+  } else {
+    for (const [name, data] of [
+      ["Sofascore", sofa],
+      ["Flashscore", flash],
+    ] as const) {
+      for (const side of ["home", "away"] as const) {
+        const goals = data.incidents.filter((i) => GOAL_KINDS.has(i.kind) && i.side === side);
+        if (goals.length !== (side === "home" ? homeScore : awayScore)) {
+          reasons.push(`${name}'s ${side} goals do not add up to the final score.`);
+        }
+      }
+    }
+  }
+  const kickoffs = [Date.parse(sofa.summary.kickoffAt), Date.parse(flash.summary.kickoffAt)];
+  if (
+    kickoffs.some((t) => Number.isNaN(t)) ||
+    Math.abs((kickoffs[0] ?? 0) - (kickoffs[1] ?? 0)) > KICKOFF_TOLERANCE_MS
+  ) {
+    reasons.push("The two providers do not give the same kickoff.");
+  }
+  return reasons;
+}
+
+/** One event aligned from one real incident however many times it was listed. */
+const eventKey = (e: BridgeEvent) => JSON.stringify([e.signal, e.sofascore, e.flashscore]);
+
+const distinct = (events: readonly BridgeEvent[]): BridgeEvent[] => {
+  const seen = new Map<string, BridgeEvent>();
+  for (const e of events) if (!seen.has(eventKey(e))) seen.set(eventKey(e), e);
+  return [...seen.values()].sort((a, b) => (eventKey(a) < eventKey(b) ? -1 : 1));
 };
 
-/** Bridge suggestions for ONE finished match. */
+interface FixtureCandidate {
+  readonly flashscoreId: string;
+  readonly sofascoreId: string;
+  readonly appPlayerId: string;
+  readonly mapping: { readonly mappingId: string; readonly version: string | null };
+  readonly evidence: BridgeFixtureEvidence;
+}
+
+/** Bridge candidates for ONE finished match, or the reasons it cannot be used. */
 export function bridgeFixture(
   input: BridgeFixtureInput,
   snapshot: ReviewedIdentitySnapshot,
-): { suggestions: BridgeSuggestion[]; unresolved: BridgeUnresolved[]; appeared: number } {
+): {
+  candidates: FixtureCandidate[];
+  unresolved: BridgeUnresolved[];
+  appeared: number;
+  rejected: BridgeRejectedFixture | null;
+} {
   const { sofascore: sofa, flashscore: flash } = input;
+  const problems = verifyBridgeFixture(input);
+  if (problems.length > 0) {
+    return {
+      candidates: [],
+      unresolved: [],
+      appeared: 0,
+      rejected: { link: input.link, reasons: problems },
+    };
+  }
   const index = indexReviewedIdentities(snapshot);
   const sId = sofa.summary.externalId;
   const fId = flash.summary.externalId;
@@ -320,7 +437,6 @@ export function bridgeFixture(
   ];
 
   const sofaById = new Map(sofa.lineups.players.map((p) => [p.externalId, p]));
-  const flashById = new Map(flash.lineups.players.map((p) => [p.externalId, p]));
   const cameOn = new Set(
     flash.incidents
       .filter((i) => i.kind === "substitution" && i.playerIn?.externalId)
@@ -328,15 +444,19 @@ export function bridgeFixture(
   );
 
   // Events per (sofascore id, flashscore id), and every partner an entry was aligned to.
-  const pairEvents = new Map<string, BridgeEvent[]>();
+  const rawPairEvents = new Map<string, BridgeEvent[]>();
   const sPartners = new Map<string, Set<string>>();
   const fPartners = new Map<string, Set<string>>();
   for (const a of alignments) {
     const key = `${a.sId}|${a.fId}`;
-    pairEvents.set(key, [...(pairEvents.get(key) ?? []), a.event]);
+    rawPairEvents.set(key, [...(rawPairEvents.get(key) ?? []), a.event]);
     sPartners.set(a.sId, (sPartners.get(a.sId) ?? new Set()).add(a.fId));
     fPartners.set(a.fId, (fPartners.get(a.fId) ?? new Set()).add(a.sId));
   }
+  // Two copies of one incident are one event, never corroboration of each other.
+  const pairEvents = new Map<string, BridgeEvent[]>(
+    [...rawPairEvents.entries()].map(([key, events]) => [key, distinct(events)]),
+  );
 
   const shirtCount = (list: readonly PerformanceLineupPlayer[], side: MatchSide, shirt: number) =>
     list.filter((p) => p.side === side && p.shirtNumber === shirt).length;
@@ -367,9 +487,8 @@ export function bridgeFixture(
       .filter((x): x is string => Boolean(x)),
   );
 
-  const suggestions: BridgeSuggestion[] = [];
+  const candidates: FixtureCandidate[] = [];
   const unresolved: BridgeUnresolved[] = [];
-  const claimed = new Map<string, string>(); // app player id -> flashscore id
   const flashAppeared = flash.lineups.players.filter((p) => p.starter || cameOn.has(p.externalId));
 
   for (const f of flashAppeared) {
@@ -379,9 +498,9 @@ export function bridgeFixture(
       side: f.side,
     };
     // Every Sofascore entry that has some signal with f: an aligned event or the shirt.
-    const candidates = new Set<string>(fPartners.get(f.externalId) ?? []);
-    for (const s of sofa.lineups.players) if (shirtAgrees(s, f)) candidates.add(s.externalId);
-    const sameSide = [...candidates].filter((id) => sofaById.get(id)?.side === f.side);
+    const found = new Set<string>(fPartners.get(f.externalId) ?? []);
+    for (const s of sofa.lineups.players) if (shirtAgrees(s, f)) found.add(s.externalId);
+    const sameSide = [...found].filter((id) => sofaById.get(id)?.side === f.side).sort();
 
     const baseTags: BridgePriority[] = [];
     if (flashGoalScorers.has(f.externalId)) baseTags.push("scorer");
@@ -401,7 +520,7 @@ export function bridgeFixture(
         flashscoreId: f.externalId,
         fixture,
         reason,
-        alternatives: [...sameSide].sort(),
+        alternatives: sameSide,
         events,
         priority: tags,
         detail,
@@ -446,8 +565,8 @@ export function bridgeFixture(
       );
       continue;
     }
-    if (positionConflict(s, f)) {
-      fail("position_conflict", "Flashscore marks a goalkeeper where Sofascore does not.", events);
+    if (keeperConflict(s, f)) {
+      fail("position_conflict", "The providers disagree about whether he is a goalkeeper.", events);
       continue;
     }
     if (!agrees && events.length < 2) {
@@ -469,30 +588,44 @@ export function bridgeFixture(
     }
     const tags: BridgePriority[] = [...baseTags];
     if (squad.has(entry.appPlayerId)) tags.push("in_locked_squad");
-    const claimedBy = claimed.get(entry.appPlayerId);
-    if (claimedBy !== undefined && claimedBy !== f.externalId) {
-      fail(
-        "app_player_claimed_twice",
-        "Another Flashscore entry is already suggested for this app player in this fixture.",
-        events,
-        tags,
-      );
-      continue;
-    }
-    claimed.set(entry.appPlayerId, f.externalId);
-    suggestions.push({
+    candidates.push({
       flashscoreId: f.externalId,
       sofascoreId: sid,
       appPlayerId: entry.appPlayerId,
-      sofascoreMapping: { mappingId: entry.mappingId, version: entry.version },
-      fixture,
-      shirtAgrees: agrees,
-      events,
-      priority: tags,
-      confidenceLimits: LIMITS,
+      mapping: { mappingId: entry.mappingId, version: entry.version },
+      evidence: { fixture, shirtAgrees: agrees, events, priority: tags },
     });
   }
-  return { suggestions, unresolved, appeared: flashAppeared.length };
+
+  // Two Flashscore entries for one app player in one match: neither is chosen
+  // (the first in the list is not more right than the second).
+  const byApp = new Map<string, FixtureCandidate[]>();
+  for (const c of candidates) byApp.set(c.appPlayerId, [...(byApp.get(c.appPlayerId) ?? []), c]);
+  const kept: FixtureCandidate[] = [];
+  for (const group of byApp.values()) {
+    if (group.length === 1) {
+      kept.push(...group);
+      continue;
+    }
+    for (const c of group) {
+      unresolved.push({
+        flashscoreId: c.flashscoreId,
+        fixture: c.evidence.fixture,
+        reason: "app_player_claimed_twice",
+        alternatives: [c.sofascoreId],
+        events: c.evidence.events,
+        priority: c.evidence.priority,
+        detail:
+          "More than one Flashscore entry in this match is supported for the same app player.",
+      });
+    }
+  }
+  return {
+    candidates: kept.sort((a, b) => (a.flashscoreId < b.flashscoreId ? -1 : 1)),
+    unresolved,
+    appeared: flashAppeared.length,
+    rejected: null,
+  };
 }
 
 const tally = (items: readonly string[]) => {
@@ -501,42 +634,129 @@ const tally = (items: readonly string[]) => {
   return Object.fromEntries(Object.entries(out).sort(([a], [b]) => (a < b ? -1 : 1)));
 };
 
-/** ONE consolidated review set over several finished matches. */
+const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+const refKey = (r: BridgeFixtureRef) =>
+  `${r.sofascoreFixtureId}|${r.flashscoreFixtureId}|${r.side}`;
+
+/**
+ * ONE consolidated review set over several finished matches.
+ *
+ * The same Flashscore id suggested for the same app player in more than one
+ * match is one suggestion with every match's evidence. A Flashscore id suggested
+ * for two app players, or two Flashscore ids for one app player, is a conflict:
+ * neither side is suggested and the input order decides nothing.
+ */
 export function buildBridgeReviewSet(
   fixtures: readonly BridgeFixtureInput[],
   snapshot: ReviewedIdentitySnapshot,
 ): BridgeReviewSet {
-  const suggestions: BridgeSuggestion[] = [];
+  const all: FixtureCandidate[] = [];
   const unresolved: BridgeUnresolved[] = [];
+  const rejectedFixtures: BridgeRejectedFixture[] = [];
   let appeared = 0;
   for (const fixture of fixtures) {
     const one = bridgeFixture(fixture, snapshot);
-    suggestions.push(...one.suggestions);
+    all.push(...one.candidates);
     unresolved.push(...one.unresolved);
     appeared += one.appeared;
+    if (one.rejected) {
+      rejectedFixtures.push(one.rejected);
+      unresolved.push({
+        flashscoreId: "",
+        fixture: {
+          sofascoreFixtureId: fixture.link.sofascoreFixtureId,
+          flashscoreFixtureId: fixture.link.flashscoreFixtureId,
+          side: "home",
+        },
+        reason: "fixture_not_verified",
+        alternatives: [],
+        events: [],
+        priority: [],
+        detail: one.rejected.reasons.join(" "),
+      });
+    }
   }
-  // The same Flashscore id suggested for two different app players, or twice from
-  // two fixtures, is a conflict a reviewer must see first.
-  const apps = new Map<string, Set<string>>();
-  for (const s of suggestions) {
-    apps.set(s.flashscoreId, (apps.get(s.flashscoreId) ?? new Set()).add(s.appPlayerId));
+
+  const appsOfFlash = new Map<string, Set<string>>();
+  const flashesOfApp = new Map<string, Set<string>>();
+  for (const c of all) {
+    appsOfFlash.set(
+      c.flashscoreId,
+      (appsOfFlash.get(c.flashscoreId) ?? new Set()).add(c.appPlayerId),
+    );
+    flashesOfApp.set(
+      c.appPlayerId,
+      (flashesOfApp.get(c.appPlayerId) ?? new Set()).add(c.flashscoreId),
+    );
   }
-  const counts = tally(suggestions.map((s) => s.flashscoreId));
-  const crossFixtureConflicts = [...apps.entries()]
-    .filter(([id, set]) => set.size > 1 || (counts[id] ?? 0) > 1)
-    .map(([id]) => id)
-    .sort();
+  const badFlash = new Set([...appsOfFlash].filter(([, s]) => s.size > 1).map(([k]) => k));
+  const badApp = new Set([...flashesOfApp].filter(([, s]) => s.size > 1).map(([k]) => k));
+
+  const conflicts: BridgeConflict[] = [];
+  for (const id of [...badFlash].sort()) {
+    conflicts.push({
+      kind: "flashscore_id_two_app_players",
+      flashscoreIds: [id],
+      appPlayerIds: [...(appsOfFlash.get(id) ?? [])].sort(),
+      fixtures: all
+        .filter((c) => c.flashscoreId === id)
+        .map((c) => c.evidence.fixture)
+        .sort((a, b) => cmp(refKey(a), refKey(b))),
+    });
+  }
+  for (const app of [...badApp].sort()) {
+    conflicts.push({
+      kind: "app_player_two_flashscore_ids",
+      flashscoreIds: [...(flashesOfApp.get(app) ?? [])].sort(),
+      appPlayerIds: [app],
+      fixtures: all
+        .filter((c) => c.appPlayerId === app)
+        .map((c) => c.evidence.fixture)
+        .sort((a, b) => cmp(refKey(a), refKey(b))),
+    });
+  }
+
+  // Merge what is left: same Flashscore id and same app player, across matches.
+  const merged = new Map<string, FixtureCandidate[]>();
+  for (const c of all) {
+    if (badFlash.has(c.flashscoreId) || badApp.has(c.appPlayerId)) continue;
+    const key = `${c.flashscoreId}|${c.appPlayerId}`;
+    merged.set(key, [...(merged.get(key) ?? []), c]);
+  }
+  const suggestions: BridgeSuggestion[] = [...merged.values()]
+    .map((group) => {
+      const first = group[0] as FixtureCandidate;
+      const evidence = group
+        .map((c) => c.evidence)
+        .sort((a, b) => cmp(refKey(a.fixture), refKey(b.fixture)));
+      return {
+        flashscoreId: first.flashscoreId,
+        sofascoreId: first.sofascoreId,
+        appPlayerId: first.appPlayerId,
+        sofascoreMapping: first.mapping,
+        evidence,
+        priority: [...new Set(evidence.flatMap((e) => e.priority))].sort(),
+        confidenceLimits: evidence.length > 1 ? LIMITS_MULTI : LIMITS,
+      };
+    })
+    .sort((a, b) => cmp(a.flashscoreId, b.flashscoreId));
+
+  const sortedUnresolved = [...unresolved].sort(
+    (a, b) => cmp(a.flashscoreId, b.flashscoreId) || cmp(refKey(a.fixture), refKey(b.fixture)),
+  );
   return {
     snapshotDigest: snapshot.digest,
     suggestions,
-    unresolved,
+    conflicts,
+    unresolved: sortedUnresolved,
+    rejectedFixtures,
     summary: {
       flashscoreEntriesAppeared: appeared,
       suggested: suggestions.length,
-      unresolved: unresolved.length,
-      unresolvedByReason: tally(unresolved.map((u) => u.reason)),
+      conflicts: conflicts.length,
+      unresolved: sortedUnresolved.length,
+      unresolvedByReason: tally(sortedUnresolved.map((u) => u.reason)),
       suggestionsByPriority: tally(suggestions.flatMap((s) => s.priority)),
-      crossFixtureConflicts,
     },
   };
 }

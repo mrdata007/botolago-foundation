@@ -310,6 +310,33 @@ describe("SYNTHETIC: a mapping settles identity and nothing else", () => {
     ).toBe(true);
   });
 
+  test("the keeper disagreement is caught the other way round too (Sofascore keeper, Flashscore outfield)", async () => {
+    const data = build();
+    const mark = (provider: "sofascore" | "flashscore", id: string, position: "G" | "D") => ({
+      ...data[provider],
+      lineups: {
+        ...data[provider].lineups,
+        players: data[provider].lineups.players.map((p) =>
+          p.externalId === id ? { ...p, position } : p,
+        ),
+      },
+    });
+    const snap = await snapshot([
+      row("sofascore", sid("home", 5), X),
+      row("flashscore", fid("home", 5), X),
+    ]);
+    const r = reconcileMatch({
+      observedAt: OBSERVED_AT,
+      sofascore: mark("sofascore", sid("home", 5), "G"),
+      flashscore: mark("flashscore", fid("home", 5), "D"),
+      reviewedIdentities: snap,
+    });
+    expect(find(r, "home", 5)?.mode).toBe("incomplete");
+    expect(
+      r.discrepancies.some((d) => d.code === "position_conflict" && d.level === "player"),
+    ).toBe(true);
+  });
+
   test("a reviewed pair is recorded as reviewed_mapping, not as a shirt-only pairing", async () => {
     const spec: Spec = {
       shirts: { "flashscore.home": [1, 2, 3, 4, 5, 6, 7, 8, 19, 10, 11] },

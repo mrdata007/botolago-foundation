@@ -617,7 +617,7 @@ export function reconcileMatch(input: ReconcileInput): ReconcileResult {
       note(
         "position_conflict",
         "player",
-        "Flashscore marks him a goalkeeper and Sofascore does not; his position-dependent fields are held back.",
+        "The providers disagree about whether he is a goalkeeper; his position-dependent fields are held back.",
         where,
       );
     } else if (position === "G") {

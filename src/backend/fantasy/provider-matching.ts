@@ -123,8 +123,8 @@ export interface Person {
   /** Set when only this provider's lineup supplies the player. */
   readonly only: "sofascore" | "flashscore" | null;
   /**
-   * Flashscore marks a goalkeeper where Sofascore gives a known outfield
-   * position. Identity can be settled by a reviewed mapping and this still
+   * The providers disagree about whether he is a goalkeeper (both give a known
+   * position and exactly one says goalkeeper). Identity can be settled by a reviewed mapping and this still
    * stands: which provider is right about the position is not known, so
    * position-dependent scoring is held back for this player.
    */
@@ -145,11 +145,19 @@ const SIDES = ["home", "away"] as const;
 export const keyOfFlash = (id: string) => `f:${id}`;
 
 /**
- * Flashscore marks keepers only some of the time, so its silence proves nothing;
- * its keeper marker against a known Sofascore outfield position does.
+ * The two providers disagree about whether the player is a goalkeeper: both give
+ * a known position and exactly one of them says goalkeeper. Checked in both
+ * directions. A missing position proves nothing: Flashscore marks keepers only
+ * some of the time, so its silence never counts against a Sofascore keeper.
  */
-const keeperConflict = (s: PerformanceLineupPlayer, f: PerformanceLineupPlayer | null) =>
-  f !== null && f.position === "G" && s.position !== null && s.position !== "G";
+export const keeperConflict = (
+  a: PerformanceLineupPlayer,
+  b: PerformanceLineupPlayer | null,
+): boolean =>
+  b !== null &&
+  a.position !== null &&
+  b.position !== null &&
+  (a.position === "G") !== (b.position === "G");
 
 const within = (a: number, b: number, tolerance: number) => Math.abs(a - b) <= tolerance;
 
@@ -248,7 +256,7 @@ export function resolveIdentity(
           note(
             "position_conflict",
             "info",
-            `Shirt ${shirt}: Flashscore says goalkeeper, Sofascore does not.`,
+            `Shirt ${shirt}: the providers disagree about whether he is a goalkeeper.`,
             { side, shirtNumber: shirt },
           );
         } else shirtPairs.set(sp[0].externalId, fp[0].externalId);
