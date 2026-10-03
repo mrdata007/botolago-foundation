@@ -63,6 +63,16 @@ select app_private.notification_email_configure('off', null, null, true);
 ## Not changed
 
 The Fantasy tick (`app_private.fantasy_automation_settings.lifecycle_tick_enabled`)
-is still off, paused by the same 22:24 operation. Turning it back on after a week
-lets it catch up on calendar sync and gameweek transitions at once, so it is
-left for the owner to decide.
+is still off. It was switched off by the same 22:24 operation, but since then
+the GW1 scoring and player-mapping work has relied on it being off: the records
+of 1–3 October list "lifecycle tick off" as a precondition, and
+`APPLIED_2026_10_03_FLASHSCORE_SUPPORTING_DEPENDENCY_GUARD.md` lists
+"activating automation" as a separate owner decision. None of those records
+depends on the live refresh being off.
+
+Read-only state at 21:30 UTC: GW1 `provisional` (moved by hand on 1 October,
+partial points published), GW2 `scheduled` with its deadline (2 October
+14:30 UTC) already passed and never opened. The tick only advances gameweeks
+that are `open` past their deadline, `locked` or `live`, so switching it on now
+would not move either gameweek; it would run the calendar sync only. GW2 opens
+once GW1 is finalized, which is the manual work still in progress.
