@@ -894,6 +894,21 @@ export async function buildWorklist(input: WorklistInput): Promise<Worklist> {
   }
   rows.push(...flashRows.values());
 
+  // A target in someone's locked Fantasy squad ranks the row; it changes no class.
+  for (let i = 0; i < rows.length; i += 1) {
+    const r = rows[i] as WorklistRow;
+    const partnerApp = r.supportingMappings[0]
+      ? index.entryOf("sofascore", r.supportingMappings[0].externalId)?.appPlayerId
+      : null;
+    const app = r.targetAppPlayerId ?? partnerApp ?? null;
+    if (app !== null && input.lockedSquadAppPlayerIds.has(app)) {
+      rows[i] = {
+        ...r,
+        priority: [...r.priority, "in_locked_squad"].sort() as WorklistRow["priority"],
+      };
+    }
+  }
+
   const sorted = rows.sort((a, b) =>
     a.provider === b.provider
       ? a.externalId < b.externalId
