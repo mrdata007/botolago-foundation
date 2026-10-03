@@ -147,6 +147,7 @@ function SampleHarness() {
           lang={lang}
           proposalsEnabled={search.writes === "1"}
           bulkManifest={bulk ? bulk.manifest : null}
+          flashscoreManifest={null}
         />
       </div>
     </div>

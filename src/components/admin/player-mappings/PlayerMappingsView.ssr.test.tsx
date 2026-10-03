@@ -336,6 +336,36 @@ describe("the comparison", () => {
     has(html, "Non fournie par ce fournisseur");
   });
 
+  test("a Flashscore candidate offers no proposal here: the database needs its supporting Sofascore mapping, which only the batch screen carries", async () => {
+    const { world, candidates } = await fixture();
+    const target = candidates.find((c) => c.provider === "flashscore" && c.status === "unmapped")!;
+    const options = await loadOptions(world.repository, target, "club", proposer);
+    const html = render({
+      state: ready({ candidates }),
+      proposalsEnabled: true,
+      repository: world.repository,
+      initial: { selection: { kind: "candidate", id: target.id }, options },
+    });
+    has(html, 'data-testid="mapping-flashscore-needs-support"');
+    has(html, "rapprochement Sofascore déjà contrôlé");
+    lacks(html, 'data-testid="mapping-propose-trigger"');
+    lacks(html, 'data-testid="mapping-option-select"');
+  });
+
+  test("a Sofascore candidate still offers it", async () => {
+    const { world, candidates } = await fixture();
+    const target = candidates.find((c) => c.provider === "sofascore" && c.status === "unmapped")!;
+    const options = await loadOptions(world.repository, target, "club", proposer);
+    const html = render({
+      state: ready({ candidates }),
+      proposalsEnabled: true,
+      repository: world.repository,
+      initial: { selection: { kind: "candidate", id: target.id }, options },
+    });
+    lacks(html, 'data-testid="mapping-flashscore-needs-support"');
+    has(html, 'data-testid="mapping-propose-trigger"');
+  });
+
   test("an incomplete squad is explained, and no option is lowered for it", async () => {
     const { world, candidates } = await fixture();
     const target = candidates.find((c) => c.flags.includes("INCOMPLETE_PROVIDER_SQUAD"))!;

@@ -1,0 +1,118 @@
+[
+ {
+  "basis": "incident",
+  "reason": "Batch-reviewed Flashscore identity for the concurrency checks.",
+  "signals": {
+   "flashscore": {
+    "dob": "no_signal",
+    "club": "match",
+    "flags": [],
+    "shirt": "match",
+    "position": "match",
+    "dobReason": "app_missing",
+    "observationCount": 1,
+    "providerPosition": "G",
+    "registeredTeamDisagreement": false
+   }
+  },
+  "evidence": {
+   "refs": [
+    {
+     "source": "reviewed_sofascore_mapping",
+     "mappingId": "06318ee3-6aa7-406a-a1c2-35715f552563",
+     "sofascoreId": "S12"
+    }
+   ],
+   "candidates": [
+    {
+     "provider": "flashscore",
+     "externalId": "F12",
+     "candidateId": "33fa5519-1c57-4b43-8f13-31e608e33df8",
+     "observationCount": 1
+    }
+   ],
+   "refsDigest": "1f7d6fdd8b60806a4a21c6ec947ef786a93bacc0bf98b0297af6158c1edd027a",
+   "supporting": {
+    "active": true,
+    "provider": "sofascore",
+    "reviewed": true,
+    "mappingId": "06318ee3-6aa7-406a-a1c2-35715f552563",
+    "externalId": "S12",
+    "appPlayerId": "a1000000-0000-4000-8000-000000000012",
+    "stateDigest": "5e98db9cb0ace5b99af56c3f925eb6a9c8c4178811f730b6224bbb9544186a54",
+    "evidenceClass": "F1_REVIEWED_SOFASCORE_EVENTS",
+    "reviewProvenance": "executed_proposal",
+    "provenanceProposalId": "918cd822-955c-4313-80ee-05e24fbdb2d6"
+   },
+   "appPlayerId": "a1000000-0000-4000-8000-000000000012"
+  },
+  "appPlayerId": "a1000000-0000-4000-8000-000000000012",
+  "fingerprint": "13e6e3f3f49461261caaf808baa2325c05239daf4a98cccf33b9d50a4cd284df",
+  "candidateRevisions": {
+   "flashscore": 2
+  },
+  "sofascoreExternalId": null,
+  "flashscoreExternalId": "F12",
+  "positionDisagreement": false,
+  "sofascoreCandidateId": null,
+  "flashscoreCandidateId": "33fa5519-1c57-4b43-8f13-31e608e33df8"
+ },
+ {
+  "basis": "incident",
+  "reason": "Batch-reviewed Flashscore identity for the concurrency checks.",
+  "signals": {
+   "flashscore": {
+    "dob": "no_signal",
+    "club": "match",
+    "flags": [],
+    "shirt": "match",
+    "position": "match",
+    "dobReason": "app_missing",
+    "observationCount": 1,
+    "providerPosition": "G",
+    "registeredTeamDisagreement": false
+   }
+  },
+  "evidence": {
+   "refs": [
+    {
+     "source": "reviewed_sofascore_mapping",
+     "mappingId": "0ac0a064-41a6-4e49-83e7-50038d4d3ed4",
+     "sofascoreId": "S16"
+    }
+   ],
+   "candidates": [
+    {
+     "provider": "flashscore",
+     "externalId": "F16",
+     "candidateId": "9a9683db-57ea-46fc-a0be-bb1845a80311",
+     "observationCount": 1
+    }
+   ],
+   "refsDigest": "ed9f3770cbcddf71c2539996d0ef3c0a4a0f22bb9f55d1ec74e6f14bd90ab2ae",
+   "supporting": {
+    "active": true,
+    "provider": "sofascore",
+    "reviewed": true,
+    "mappingId": "0ac0a064-41a6-4e49-83e7-50038d4d3ed4",
+    "externalId": "S16",
+    "appPlayerId": "a1000000-0000-4000-8000-000000000016",
+    "stateDigest": "b5fbacaef7168028624f057f1c25f378215f0cc092920dbe72f8c906c1ca1a04",
+    "evidenceClass": "F1_REVIEWED_SOFASCORE_EVENTS",
+    "reviewProvenance": "executed_proposal",
+    "provenanceProposalId": "fb3cefd2-1176-4195-a82d-4288f78fffa6"
+   },
+   "appPlayerId": "a1000000-0000-4000-8000-000000000016"
+  },
+  "appPlayerId": "a1000000-0000-4000-8000-000000000016",
+  "fingerprint": "b93b8d83e91da4dd740996e8e76cf6f5da406760a0b9e9d0730153fc6887d2a7",
+  "candidateRevisions": {
+   "flashscore": 2
+  },
+  "sofascoreExternalId": null,
+  "flashscoreExternalId": "F16",
+  "positionDisagreement": false,
+  "sofascoreCandidateId": null,
+  "flashscoreCandidateId": "9a9683db-57ea-46fc-a0be-bb1845a80311"
+ }
+]

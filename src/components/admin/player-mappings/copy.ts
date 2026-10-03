@@ -138,6 +138,8 @@ export interface PlayerMappingCopy {
     readonly done: string;
     readonly alreadyProposed: string;
     readonly notUnmapped: string;
+    /** A Flashscore identity rests on a reviewed Sofascore mapping, which the database requires and reads itself. */
+    readonly flashscoreNeedsSupport: string;
   };
   readonly proposal: {
     readonly title: string;
@@ -431,6 +433,8 @@ const fr: PlayerMappingCopy = {
     done: "Proposition créée. Un autre relecteur qualifié doit maintenant l’examiner.",
     alreadyProposed: "Ce candidat a déjà une proposition en cours.",
     notUnmapped: "Seul un candidat non rapproché peut recevoir une proposition.",
+    flashscoreNeedsSupport:
+      "Une identité Flashscore s’appuie sur un rapprochement Sofascore déjà contrôlé, que la base de données exige et relit elle-même. Elle se propose depuis l’écran du lot Flashscore, qui porte ce rapprochement.",
   },
   proposal: {
     title: "Proposition",
@@ -565,6 +569,22 @@ const fr: PlayerMappingCopy = {
     invalid_filter: "Filtre invalide.",
     invalid_decision: "Décision invalide.",
     idempotency_conflict: "Cette opération a déjà été envoyée avec un contenu différent.",
+    supporting_dependency_required:
+      "Une identité Flashscore doit s’appuyer sur un rapprochement Sofascore déjà contrôlé : indiquez-le.",
+    supporting_dependency_invalid: "La classe de preuve indiquée n’est pas valide.",
+    supporting_dependency_not_applicable:
+      "Cette proposition ne prend pas de rapprochement Sofascore de soutien.",
+    supporting_mapping_missing: "Le rapprochement Sofascore de soutien n’existe pas.",
+    supporting_mapping_not_sofascore:
+      "Le rapprochement de soutien doit être un rapprochement Sofascore.",
+    supporting_mapping_inactive: "Le rapprochement Sofascore de soutien n’est plus actif.",
+    supporting_mapping_unreviewed:
+      "Le rapprochement Sofascore de soutien n’a pas été fait par le circuit contrôlé.",
+    supporting_mapping_target_mismatch:
+      "Le rapprochement Sofascore de soutien pointe vers un autre joueur.",
+    supporting_mapping_changed:
+      "Le rapprochement Sofascore de soutien a changé depuis l’approbation : actualisez la proposition.",
+    evidence_refs_required: "Des références de preuve sont requises.",
     mapping_unavailable: "Le service de rapprochement est indisponible.",
   },
   clubLabel,
@@ -763,6 +783,8 @@ const ar: PlayerMappingCopy = {
     done: "أُنشئ الاقتراح. على مراجع مؤهَّل آخر أن يفحصه الآن.",
     alreadyProposed: "لهذا المرشَّح اقتراح قيد النظر بالفعل.",
     notUnmapped: "لا يمكن اقتراح مطابقة إلا لمرشَّح غير مطابَق.",
+    flashscoreNeedsSupport:
+      "تستند هوية Flashscore إلى ربط Sofascore تمت مراجعته، وتشترطه قاعدة البيانات وتقرؤه بنفسها. تُقترح من شاشة دفعة Flashscore التي تحمل هذا الربط.",
   },
   proposal: {
     title: "الاقتراح",
@@ -890,6 +912,17 @@ const ar: PlayerMappingCopy = {
     invalid_filter: "مرشِّح غير صالح.",
     invalid_decision: "قرار غير صالح.",
     idempotency_conflict: "أُرسلت هذه العملية سابقًا بمحتوى مختلف.",
+    supporting_dependency_required:
+      "يجب أن تستند هوية Flashscore إلى ربط Sofascore تمت مراجعته: حدّده.",
+    supporting_dependency_invalid: "فئة الدليل المذكورة غير صالحة.",
+    supporting_dependency_not_applicable: "هذا الاقتراح لا يأخذ ربط Sofascore داعمًا.",
+    supporting_mapping_missing: "ربط Sofascore الداعم غير موجود.",
+    supporting_mapping_not_sofascore: "يجب أن يكون الربط الداعم ربطًا من Sofascore.",
+    supporting_mapping_inactive: "ربط Sofascore الداعم لم يعد نشطًا.",
+    supporting_mapping_unreviewed: "ربط Sofascore الداعم لم يتم عبر المسار المراجَع.",
+    supporting_mapping_target_mismatch: "ربط Sofascore الداعم يشير إلى لاعب آخر.",
+    supporting_mapping_changed: "تغيّر ربط Sofascore الداعم منذ الموافقة: حدّث الاقتراح.",
+    evidence_refs_required: "مراجع الدليل مطلوبة.",
     mapping_unavailable: "خدمة المطابقة غير متاحة.",
   },
   clubLabel,

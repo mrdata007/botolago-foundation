@@ -5,10 +5,17 @@ import {
   type BulkPhase,
   type BulkRowState,
 } from "@/backend/football/identity/bulk-mapping/contract";
+import { FLASHSCORE_CONTRACT_VERSION } from "@/backend/football/identity/bulk-mapping/flashscore-contract";
+import {
+  verifyFlashscoreManifest,
+  type FlashscoreManifest,
+} from "@/backend/football/identity/bulk-mapping/flashscore-manifest";
+import { flashscoreProfile } from "@/backend/football/identity/bulk-mapping/flashscore-profile";
 import {
   verifyManifest,
   type BulkManifest,
 } from "@/backend/football/identity/bulk-mapping/manifest";
+import type { BulkRowBase, PhaseSnapshot } from "@/backend/football/identity/bulk-mapping/profile";
 import {
   countStates,
   deriveAllRowStates,
@@ -19,14 +26,30 @@ import {
   type PhaseResult,
   type RowOutcome,
 } from "@/backend/football/identity/bulk-mapping/runner";
+import { sofascoreProfile } from "@/backend/football/identity/bulk-mapping/sofascore-profile";
 import type { PlayerMappingRepository } from "@/backend/football/identity/mapping-repository";
 import { mapMappingError } from "@/backend/football/identity/mapping-errors";
 import { mapWithConcurrency } from "@/backend/football/identity/review-queue";
 import type { QueueData } from "./use-player-mappings";
 
+export type BulkKind = "sofascore" | "flashscore";
+
+/** A verified manifest of either batch; `contractVersion` tells them apart. */
+export type AnyBulkManifest = BulkManifest | FlashscoreManifest;
+
+export const isFlashscoreManifest = (manifest: AnyBulkManifest): manifest is FlashscoreManifest =>
+  manifest.contractVersion === FLASHSCORE_CONTRACT_VERSION;
+
+type Verdict =
+  | { readonly ok: true; readonly manifest: AnyBulkManifest }
+  | { readonly ok: false; readonly problems: readonly string[] };
+
+const verifyFor = (kind: BulkKind, raw: unknown): Promise<Verdict> =>
+  kind === "flashscore" ? verifyFlashscoreManifest(raw) : verifyManifest(raw);
+
 export type ManifestState =
   | { readonly status: "checking" }
-  | { readonly status: "ok"; readonly manifest: BulkManifest }
+  | { readonly status: "ok"; readonly manifest: AnyBulkManifest }
   | { readonly status: "bad"; readonly problems: readonly string[] };
 
 /** Rows a local outcome may speak for when the database shows nothing worse. */
@@ -52,6 +75,8 @@ export interface DisplayNames {
  * here is what this session just did, for the codes it saw.
  */
 export function useBulkBatch(input: {
+  /** Which frozen batch this is. Selects the verifier and the profile. Default: sofascore. */
+  readonly kind?: BulkKind;
   readonly rawManifest: unknown;
   readonly repository: PlayerMappingRepository | null;
   readonly context: RepositoryContext;
@@ -61,13 +86,14 @@ export function useBulkBatch(input: {
   readonly initialNames?: DisplayNames;
 }) {
   const { rawManifest, repository, context, data, onReload } = input;
+  const kind: BulkKind = input.kind ?? "sofascore";
   const [manifestState, setManifestState] = useState<ManifestState>(
     input.initialManifest ?? { status: "checking" },
   );
   useEffect(() => {
     if (input.initialManifest) return;
     let cancelled = false;
-    verifyManifest(rawManifest).then((verdict) => {
+    verifyFor(kind, rawManifest).then((verdict) => {
       if (!cancelled)
         setManifestState(
           verdict.ok
@@ -78,17 +104,18 @@ export function useBulkBatch(input: {
     return () => {
       cancelled = true;
     };
-  }, [rawManifest, input.initialManifest]);
+  }, [kind, rawManifest, input.initialManifest]);
 
-  const manifest = manifestState.status === "ok" ? manifestState.manifest : null;
+  const manifest: AnyBulkManifest | null =
+    manifestState.status === "ok" ? manifestState.manifest : null;
   const [selected, setSelected] = useState<ReadonlySet<string>>(() =>
     input.initialManifest?.status === "ok"
-      ? new Set(input.initialManifest.manifest.rows.map((r) => r.candidateId))
+      ? new Set<string>(input.initialManifest.manifest.rows.map((r) => r.candidateId))
       : new Set(),
   );
   useEffect(() => {
     // Default selection: every row of the verified manifest.
-    if (manifest) setSelected(new Set(manifest.rows.map((r) => r.candidateId)));
+    if (manifest) setSelected(new Set<string>(manifest.rows.map((r) => r.candidateId)));
   }, [manifest]);
 
   const [session, setSession] = useState<ReadonlyMap<string, RowOutcome>>(new Map());
@@ -97,26 +124,68 @@ export function useBulkBatch(input: {
 
   const contextRef = useRef(context);
   contextRef.current = context;
-  const runner = useMemo(
-    () =>
-      repository && manifest
-        ? createBulkRunner(
-            {
-              repository,
-              context: () => ({
-                actorId: contextRef.current.actorId,
-                requestId: globalThis.crypto.randomUUID(),
-              }),
-            },
-            manifest,
-          )
-        : null,
-    [repository, manifest],
-  );
+  const runner = useMemo(() => {
+    if (!repository || !manifest) return null;
+    const deps = {
+      repository,
+      context: () => ({
+        actorId: contextRef.current.actorId,
+        requestId: globalThis.crypto.randomUUID(),
+      }),
+    };
+    return isFlashscoreManifest(manifest)
+      ? createBulkRunner(deps, manifest, flashscoreProfile)
+      : createBulkRunner(deps, manifest, sofascoreProfile);
+  }, [repository, manifest]);
+
+  // The actual mapping rows a Flashscore batch rests on, read from the database whenever the queue
+  // reloads (display only: the phases read them again, and the database enforces the dependency).
+  const [supportingReads, setSupportingReads] = useState<
+    PhaseSnapshot["providerMappings"] | undefined
+  >(undefined);
+  useEffect(() => {
+    if (!repository || !manifest || !isFlashscoreManifest(manifest) || !data) {
+      setSupportingReads(undefined);
+      return;
+    }
+    let cancelled = false;
+    flashscoreProfile
+      .loadSupporting?.(
+        {
+          repository,
+          context: () => ({
+            actorId: contextRef.current.actorId,
+            requestId: globalThis.crypto.randomUUID(),
+          }),
+        },
+        manifest.rows,
+      )
+      .then(
+        (reads) => {
+          if (!cancelled) setSupportingReads(reads);
+        },
+        () => {
+          if (!cancelled) setSupportingReads(undefined);
+        },
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, [repository, manifest, data]);
 
   const rowStates = useMemo<ReadonlyMap<string, RowStateInfo>>(() => {
     if (!manifest || !data) return new Map();
-    const derived = deriveAllRowStates(manifest, data.candidates, data.proposals, new Date());
+    const now = new Date();
+    const derived = isFlashscoreManifest(manifest)
+      ? deriveAllRowStates(
+          manifest,
+          data.candidates,
+          data.proposals,
+          now,
+          flashscoreProfile,
+          supportingReads,
+        )
+      : deriveAllRowStates(manifest, data.candidates, data.proposals, now, sofascoreProfile);
     const merged = new Map(derived);
     for (const [id, outcome] of session) {
       const db = derived.get(id);
@@ -128,12 +197,12 @@ export function useBulkBatch(input: {
         });
     }
     return merged;
-  }, [manifest, data, session]);
+  }, [manifest, data, session, supportingReads]);
 
   const counts = useMemo(() => countStates(rowStates), [rowStates]);
   const inState = useCallback(
     (state: BulkRowState) =>
-      (manifest?.rows ?? []).filter(
+      (manifest?.rows ?? ([] as readonly BulkRowBase[])).filter(
         (r) => selected.has(r.candidateId) && rowStates.get(r.candidateId)?.state === state,
       ).length,
     [manifest, selected, rowStates],
@@ -149,7 +218,9 @@ export function useBulkBatch(input: {
   }, []);
   const setAll = useCallback(
     (on: boolean) =>
-      setSelected(on && manifest ? new Set(manifest.rows.map((r) => r.candidateId)) : new Set()),
+      setSelected(
+        on && manifest ? new Set<string>(manifest.rows.map((r) => r.candidateId)) : new Set(),
+      ),
     [manifest],
   );
 
@@ -185,18 +256,21 @@ export function useBulkBatch(input: {
   useEffect(() => {
     if (!repository || !manifest || input.initialNames) return;
     let cancelled = false;
-    void mapWithConcurrency(manifest.rows, 4, async (row) => {
+    void mapWithConcurrency<BulkRowBase, void>(manifest.rows, 4, async (row) => {
       let name: string | null = null;
-      try {
-        const options = await repository.listMappingCandidatesForAppPlayer(
-          row.candidateId,
-          row.appTeamId,
-          200,
-          { actorId: contextRef.current.actorId, requestId: globalThis.crypto.randomUUID() },
-        );
-        name = options.find((o) => o.appPlayerId === row.appPlayerId)?.displayName ?? null;
-      } catch {
-        name = null;
+      // A row with no team has no club to list under: its name stays "—".
+      if (row.appTeamId !== null) {
+        try {
+          const options = await repository.listMappingCandidatesForAppPlayer(
+            row.candidateId,
+            row.appTeamId,
+            200,
+            { actorId: contextRef.current.actorId, requestId: globalThis.crypto.randomUUID() },
+          );
+          name = options.find((o) => o.appPlayerId === row.appPlayerId)?.displayName ?? null;
+        } catch {
+          name = null;
+        }
       }
       if (!cancelled)
         setNames((current) => ({

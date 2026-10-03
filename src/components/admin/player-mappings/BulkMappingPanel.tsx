@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type { BulkPhase, BulkRowState } from "@/backend/football/identity/bulk-mapping/contract";
+import { flashscoreProfile } from "@/backend/football/identity/bulk-mapping/flashscore-profile";
+import { proposeCallCount } from "@/backend/football/identity/bulk-mapping/runner";
 import type { PlayerMappingRepository } from "@/backend/football/identity/mapping-repository";
 import { AdminNotice } from "@/components/admin/AdminSurfaces";
 import { ui, UiBadge, UiButton, UiInput } from "@/components/ui-kit";
@@ -8,7 +10,13 @@ import { cn } from "@/lib/utils";
 import { getBulkCopy } from "./bulk-copy";
 import type { PlayerMappingCopy } from "./copy";
 import { AdminDatum, NameText, ProviderBadge } from "./parts";
-import { useBulkBatch, type DisplayNames, type ManifestState } from "./use-bulk-batch";
+import {
+  isFlashscoreManifest,
+  useBulkBatch,
+  type BulkKind,
+  type DisplayNames,
+  type ManifestState,
+} from "./use-bulk-batch";
 import type { QueueData } from "./use-player-mappings";
 import type { Lang } from "./copy";
 
@@ -43,6 +51,8 @@ export interface BulkMappingPanelProps {
   readonly repository: PlayerMappingRepository | null;
   readonly context: RepositoryContext;
   readonly rawManifest: unknown;
+  /** Which frozen batch to show. Default: the completed Sofascore batch. */
+  readonly kind?: BulkKind;
   readonly onReload: () => void;
   readonly onClose: () => void;
   /** A starting point, for a static render and for tests. */
@@ -63,12 +73,15 @@ export function BulkMappingPanel({
   repository,
   context,
   rawManifest,
+  kind = "sofascore",
   onReload,
   onClose,
   initial,
 }: BulkMappingPanelProps) {
   const b = getBulkCopy(lang);
+  const f = b.flashscore;
   const batch = useBulkBatch({
+    kind,
     rawManifest,
     repository,
     context,
@@ -78,10 +91,59 @@ export function BulkMappingPanel({
     initialNames: initial?.names,
   });
   const { manifestState, manifest } = batch;
+  // The verified manifest tells which batch it is; each branch below sees its own row type.
+  const flashManifest = manifest && isFlashscoreManifest(manifest) ? manifest : null;
+  const sofaManifest = manifest && !isFlashscoreManifest(manifest) ? manifest : null;
+  const isFlashscore = flashManifest !== null || (manifest === null && kind === "flashscore");
+  const proposeCalls = flashManifest
+    ? proposeCallCount(
+        flashscoreProfile,
+        flashManifest.rows.filter((r) => batch.selected.has(r.candidateId)),
+      )
+    : 0;
   const candidates = useMemo(() => new Map((data?.candidates ?? []).map((c) => [c.id, c])), [data]);
   const mappedNow = (data?.candidates ?? []).filter((c) => c.status === "mapped").length;
   const approvedCount = batch.inState("APPROVED");
   const selfApprovalAllowed = data?.availability.selfApprovalAllowed ?? false;
+
+  const selectCell = (row: { candidateId: string; externalId: string }) => (
+    <td className="p-2">
+      <input
+        type="checkbox"
+        checked={batch.selected.has(row.candidateId)}
+        onChange={() => batch.toggle(row.candidateId)}
+        aria-label={`${b.table.select} ${row.externalId}`}
+        disabled={batch.running !== null}
+        data-testid="bulk-row-select"
+      />
+    </td>
+  );
+  const targetCell = (row: { appPlayerId: string }) => {
+    const appName = batch.names.appPlayer.get(row.appPlayerId);
+    return (
+      <td className="p-2">
+        <NameText>{appName === undefined ? b.table.loadingName : (appName ?? "—")}</NameText>
+        <br />
+        <AdminDatum className={cn(ui.text.meta, ui.tone.muted)}>{row.appPlayerId}</AdminDatum>
+      </td>
+    );
+  };
+  const stateCell = (row: { candidateId: string }) => {
+    const info = batch.rowStates.get(row.candidateId);
+    const state = info?.state ?? "NOT_PROPOSED";
+    return (
+      <td className="p-2">
+        <UiBadge tone={STATE_TONE[state]}>
+          <span data-row-state={state}>{b.states[state]}</span>
+        </UiBadge>
+        {info?.code && HELD_STATES.includes(state) && (
+          <p className={cn("mt-0.5", ui.text.meta, ui.tone.muted)} data-testid="bulk-row-code">
+            {info.code}
+          </p>
+        )}
+      </td>
+    );
+  };
 
   return (
     <section className="grid gap-4" data-testid="bulk-panel" dir={copy.dir} lang={lang}>
@@ -91,19 +153,25 @@ export function BulkMappingPanel({
         </UiButton>
       </div>
       <header className="grid gap-2">
-        <h3 className={cn(ui.text.bodyStrong, ui.tone.default)}>{b.title}</h3>
-        <p className={cn("max-w-prose", ui.text.secondary, ui.tone.muted)}>{b.intro}</p>
+        <h3 className={cn(ui.text.bodyStrong, ui.tone.default)}>
+          {isFlashscore ? f.title : b.title}
+        </h3>
+        <p className={cn("max-w-prose", ui.text.secondary, ui.tone.muted)}>
+          {isFlashscore ? f.intro : b.intro}
+        </p>
         <ul
           className={cn("list-disc ps-5", ui.text.secondary, ui.tone.muted)}
           data-testid="bulk-rules"
         >
-          {b.rules.map((rule) => (
+          {(isFlashscore ? f.rules : b.rules).map((rule) => (
             <li key={rule}>{rule}</li>
           ))}
         </ul>
-        <AdminNotice tone="info" role="status" testId="bulk-flashscore">
-          {b.flashscoreExcluded}
-        </AdminNotice>
+        {!isFlashscore && (
+          <AdminNotice tone="info" role="status" testId="bulk-flashscore">
+            {b.flashscoreExcluded}
+          </AdminNotice>
+        )}
         <AdminNotice tone="alert" role="status" testId="bulk-no-auto">
           {b.noAutoNext}
         </AdminNotice>
@@ -122,19 +190,54 @@ export function BulkMappingPanel({
         {manifest && (
           <>
             <p className={cn(ui.text.secondary, ui.tone.default)}>
-              {b.population(
-                manifest.population.total,
-                manifest.population.tierA,
-                manifest.population.tierB,
-              )}
+              {flashManifest
+                ? f.population(
+                    flashManifest.population.total,
+                    flashManifest.population.f1,
+                    flashManifest.population.f2,
+                    flashManifest.population.heldBack,
+                  )
+                : sofaManifest &&
+                  b.population(
+                    sofaManifest.population.total,
+                    sofaManifest.population.tierA,
+                    sofaManifest.population.tierB,
+                  )}
             </p>
             <p className={cn(ui.text.meta, ui.tone.muted)}>
               {b.manifestHash} : <AdminDatum>{manifest.manifestSha256}</AdminDatum>
             </p>
-            <p className={cn(ui.text.meta, ui.tone.muted)}>{b.manifestOk}</p>
+            <p className={cn(ui.text.meta, ui.tone.muted)}>
+              {flashManifest ? f.manifestOk : b.manifestOk}
+            </p>
           </>
         )}
       </div>
+
+      {flashManifest && (
+        <AdminNotice tone="alert" role="status" testId="bulk-held-back">
+          <strong className="block">
+            {f.heldBack.heading(
+              flashManifest.population.heldBack,
+              flashManifest.population.reviewSet,
+            )}
+          </strong>
+          <span className="block">{f.heldBack.note}</span>
+          {flashManifest.heldBack.length > 0 && (
+            <details className="mt-1" data-testid="bulk-held-back-list">
+              <summary className="cursor-pointer">{f.heldBack.listHeading}</summary>
+              <ul className="mt-1 list-disc ps-5">
+                {flashManifest.heldBack.map((held) => (
+                  <li key={held.candidateId} data-testid="bulk-held-back-row">
+                    <AdminDatum>{held.externalId}</AdminDatum> · {f.classShort[held.evidenceClass]}{" "}
+                    · <AdminDatum>{held.codes.join(", ")}</AdminDatum>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+        </AdminNotice>
+      )}
 
       {manifest && (
         <>
@@ -186,10 +289,13 @@ export function BulkMappingPanel({
 
           <div className="overflow-x-auto" data-testid="bulk-table-wrap">
             <table
-              className="w-full min-w-[60rem] border-collapse text-start"
+              className={cn(
+                "w-full border-collapse text-start",
+                flashManifest ? "min-w-[68rem]" : "min-w-[60rem]",
+              )}
               data-testid="bulk-table"
             >
-              <caption className="sr-only">{b.title}</caption>
+              <caption className="sr-only">{isFlashscore ? f.title : b.title}</caption>
               <thead>
                 <tr className={cn(ui.text.label, ui.tone.muted)}>
                   <th scope="col" className="p-2 text-start">
@@ -199,26 +305,45 @@ export function BulkMappingPanel({
                     {b.table.provider} <span className="font-normal">({b.table.displayOnly})</span>
                   </th>
                   <th scope="col" className="p-2 text-start">
-                    {b.table.providerId}
+                    {isFlashscore ? f.table.providerId : b.table.providerId}
                   </th>
-                  <th scope="col" className="p-2 text-start">
-                    {b.table.club}
-                  </th>
-                  <th scope="col" className="p-2 text-start">
-                    {b.table.position}
-                  </th>
-                  <th scope="col" className="p-2 text-start">
-                    {b.table.dob}
-                  </th>
-                  <th scope="col" className="p-2 text-start">
-                    {b.table.shirt}
-                  </th>
-                  <th scope="col" className="p-2 text-start">
-                    {b.table.sportsMonks}
-                  </th>
-                  <th scope="col" className="p-2 text-start">
-                    {b.table.tier}
-                  </th>
+                  {isFlashscore ? (
+                    <>
+                      <th scope="col" className="p-2 text-start">
+                        {f.table.supportingId}
+                      </th>
+                      <th scope="col" className="p-2 text-start">
+                        {b.table.club}
+                      </th>
+                      <th scope="col" className="p-2 text-start">
+                        {f.table.evidenceClass}
+                      </th>
+                      <th scope="col" className="p-2 text-start">
+                        {f.table.evidence}
+                      </th>
+                    </>
+                  ) : (
+                    <>
+                      <th scope="col" className="p-2 text-start">
+                        {b.table.club}
+                      </th>
+                      <th scope="col" className="p-2 text-start">
+                        {b.table.position}
+                      </th>
+                      <th scope="col" className="p-2 text-start">
+                        {b.table.dob}
+                      </th>
+                      <th scope="col" className="p-2 text-start">
+                        {b.table.shirt}
+                      </th>
+                      <th scope="col" className="p-2 text-start">
+                        {b.table.sportsMonks}
+                      </th>
+                      <th scope="col" className="p-2 text-start">
+                        {b.table.tier}
+                      </th>
+                    </>
+                  )}
                   <th scope="col" className="p-2 text-start">
                     {b.table.target} <span className="font-normal">({b.table.displayOnly})</span>
                   </th>
@@ -228,11 +353,9 @@ export function BulkMappingPanel({
                 </tr>
               </thead>
               <tbody>
-                {manifest.rows.map((row) => {
+                {sofaManifest?.rows.map((row) => {
                   const candidate = candidates.get(row.candidateId);
-                  const info = batch.rowStates.get(row.candidateId);
-                  const state = info?.state ?? "NOT_PROPOSED";
-                  const appName = batch.names.appPlayer.get(row.appPlayerId);
+                  const state = batch.rowStates.get(row.candidateId)?.state ?? "NOT_PROPOSED";
                   const observation = candidate?.observations[0];
                   return (
                     <tr
@@ -243,16 +366,7 @@ export function BulkMappingPanel({
                       data-tier={row.tier}
                       data-state={state}
                     >
-                      <td className="p-2">
-                        <input
-                          type="checkbox"
-                          checked={batch.selected.has(row.candidateId)}
-                          onChange={() => batch.toggle(row.candidateId)}
-                          aria-label={`${b.table.select} ${row.externalId}`}
-                          disabled={batch.running !== null}
-                          data-testid="bulk-row-select"
-                        />
-                      </td>
+                      {selectCell(row)}
                       <td className="p-2">
                         <ProviderBadge provider="sofascore" copy={copy} />{" "}
                         <NameText>{candidate?.displayName ?? "—"}</NameText>
@@ -268,28 +382,55 @@ export function BulkMappingPanel({
                       </td>
                       <td className="p-2">{b.table.yes}</td>
                       <td className="p-2">{row.tier}</td>
+                      {targetCell(row)}
+                      {stateCell(row)}
+                    </tr>
+                  );
+                })}
+                {flashManifest?.rows.map((row) => {
+                  const candidate = candidates.get(row.candidateId);
+                  const state = batch.rowStates.get(row.candidateId)?.state ?? "NOT_PROPOSED";
+                  const observation = candidate?.observations[0];
+                  const { evidence } = row;
+                  return (
+                    <tr
+                      key={row.candidateId}
+                      className="border-t border-[color:var(--ui-border)] align-top"
+                      data-testid="bulk-row"
+                      data-candidate-id={row.candidateId}
+                      data-class={row.evidenceClass}
+                      data-state={state}
+                    >
+                      {selectCell(row)}
                       <td className="p-2">
-                        <NameText>
-                          {appName === undefined ? b.table.loadingName : (appName ?? "—")}
-                        </NameText>
-                        <br />
-                        <AdminDatum className={cn(ui.text.meta, ui.tone.muted)}>
-                          {row.appPlayerId}
-                        </AdminDatum>
+                        <ProviderBadge provider="flashscore" copy={copy} />{" "}
+                        <NameText>{candidate?.displayName ?? "—"}</NameText>
                       </td>
                       <td className="p-2">
-                        <UiBadge tone={STATE_TONE[state]}>
-                          <span data-row-state={state}>{b.states[state]}</span>
-                        </UiBadge>
-                        {info?.code && HELD_STATES.includes(state) && (
-                          <p
-                            className={cn("mt-0.5", ui.text.meta, ui.tone.muted)}
-                            data-testid="bulk-row-code"
-                          >
-                            {info.code}
-                          </p>
-                        )}
+                        <AdminDatum>{row.externalId}</AdminDatum>
                       </td>
+                      <td className="p-2" data-testid="bulk-row-supporting">
+                        <AdminDatum>{row.supporting.externalId}</AdminDatum>
+                      </td>
+                      <td className="p-2">{copy.clubLabel(observation?.clubKey ?? null)}</td>
+                      <td className="p-2" data-testid="bulk-row-class">
+                        {f.classShort[row.evidenceClass]}
+                      </td>
+                      <td className="p-2" data-testid="bulk-row-evidence">
+                        <ul className="grid gap-0.5">
+                          <li>
+                            {evidence.shirt === "agree"
+                              ? f.evidence.shirtAgrees
+                              : f.evidence.shirtNoAgreement}
+                          </li>
+                          <li>{f.evidence.events(evidence.alignedEventCount)}</li>
+                          {evidence.dateCorroboration === "AGREE" && (
+                            <li>{f.evidence.birthDateAgrees}</li>
+                          )}
+                        </ul>
+                      </td>
+                      {targetCell(row)}
+                      {stateCell(row)}
                     </tr>
                   );
                 })}
@@ -339,6 +480,14 @@ export function BulkMappingPanel({
                   }
                   onRun={() => void batch.run(phase)}
                 >
+                  {phase === "propose" && flashManifest && (
+                    <p
+                      className={cn(ui.text.secondary, ui.tone.default)}
+                      data-testid="bulk-propose-calls"
+                    >
+                      {f.proposeCalls(proposeCalls)}
+                    </p>
+                  )}
                   {phase === "execute" && (
                     <dl className="grid gap-1" data-testid="bulk-execute-summary">
                       <p className={cn(ui.text.label, ui.tone.muted)}>{b.executeSummary.heading}</p>

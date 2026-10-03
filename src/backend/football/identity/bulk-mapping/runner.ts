@@ -4,22 +4,15 @@ import { mapMappingError } from "../mapping-errors";
 import type { PlayerMappingRepository } from "../mapping-repository";
 import { loadAllCandidates, loadAllProposals, mapWithConcurrency } from "../review-queue";
 import { deterministicUuid } from "./canonical";
-import {
-  BULK_APPROVAL_REASON,
-  BULK_REASONS,
-  MAX_PROPOSE_PER_CALL,
-  type BulkPhase,
-  type BulkRowState,
-  type BulkTier,
-} from "./contract";
-import type { BulkManifest, ManifestRow } from "./manifest";
+import { MAX_PROPOSE_PER_CALL, type BulkPhase, type BulkRowState } from "./contract";
+import type { BulkManifestBase, BulkProfile, BulkRowBase } from "./profile";
 import {
   approvalIsOld,
   batchProposalFor,
   deriveAllRowStates,
   type RowStateInfo,
 } from "./row-state";
-import { revalidateRow } from "./revalidate";
+import { sofascoreProfile } from "./sofascore-profile";
 
 export interface BulkDeps {
   readonly repository: PlayerMappingRepository;
@@ -61,17 +54,36 @@ const SESSION_CODES = new Set([
   "approver_no_longer_qualified",
 ]);
 
-export const bulkKey = (manifest: Pick<BulkManifest, "manifestSha256">, ...parts: string[]) =>
+export const bulkKey = (manifest: Pick<BulkManifestBase, "manifestSha256">, ...parts: string[]) =>
   deterministicUuid([manifest.manifestSha256, ...parts].join("|"));
 
 /** Everything a phase starts from: every candidate and every proposal, read now. */
-export async function loadSnapshot(deps: BulkDeps) {
+export async function loadSnapshot<R extends BulkRowBase>(
+  deps: BulkDeps,
+  profile?: BulkProfile<R>,
+  rows: readonly R[] = [],
+) {
   const context = deps.context();
   const [candidates, proposals] = await Promise.all([
     loadAllCandidates(deps.repository, {}, context),
     loadAllProposals(deps.repository, null, context),
   ]);
-  return { candidates, proposals };
+  // The mapping rows the batch rests on (if any), read from the database now, never remembered.
+  let providerMappings:
+    | Awaited<ReturnType<NonNullable<BulkProfile<R>["loadSupporting"]>>>
+    | undefined;
+  if (profile?.loadSupporting) {
+    try {
+      providerMappings = await profile.loadSupporting(deps, rows);
+    } catch (error) {
+      // A refused session stops everything. Anything else (the read function missing on a database that
+      // does not have the migration, a network error) only means "not read": each row's own check reads
+      // again before anything is sent, and fails on its own.
+      if (SESSION_CODES.has(mapMappingError(error).code)) throw error;
+      providerMappings = undefined;
+    }
+  }
+  return { candidates, proposals, providerMappings };
 }
 
 const asOutcome = (
@@ -117,6 +129,26 @@ async function refineAlreadyMapped(deps: BulkDeps, candidateId: string): Promise
   }
 }
 
+/**
+ * "Already open" after a lost answer means OUR proposal landed; after a race it means
+ * someone else's did. Only the first is progress: a foreign open proposal is a conflict.
+ */
+async function openProposalIsOurs<R extends BulkRowBase>(
+  deps: BulkDeps,
+  row: R,
+  profile: BulkProfile<R>,
+): Promise<boolean> {
+  try {
+    const context = deps.context();
+    const candidate = await deps.repository.getMappingCandidate(row.candidateId, context);
+    if (!candidate.openProposalId) return false;
+    const proposal = await deps.repository.getMappingProposal(candidate.openProposalId, context);
+    return batchProposalFor(row, [proposal], profile) !== null;
+  } catch {
+    return false;
+  }
+}
+
 async function outcomeForCode(
   deps: BulkDeps,
   candidateId: string,
@@ -134,11 +166,30 @@ const chunk = <T>(items: readonly T[], size: number): T[][] => {
   return out;
 };
 
-const selectedRows = (manifest: BulkManifest, selected: ReadonlySet<string>) =>
-  manifest.rows.filter((r) => selected.has(r.candidateId));
+const selectedRows = <R extends BulkRowBase>(
+  manifest: BulkManifestBase<R>,
+  selected: ReadonlySet<string>,
+) => manifest.rows.filter((r) => selected.has(r.candidateId));
+
+const defaultProfile = <R extends BulkRowBase>() => sofascoreProfile as unknown as BulkProfile<R>;
+
+/**
+ * How many propose calls the selected rows need: one set of calls per reason group, at
+ * most 25 rows to a call. Derived from the selection, never a fixed number.
+ */
+export function proposeCallCount<R extends BulkRowBase>(
+  profile: BulkProfile<R>,
+  rows: readonly R[],
+): number {
+  return profile.groups.reduce(
+    (n, group) =>
+      n + Math.ceil(rows.filter((r) => profile.groupOf(r) === group).length / MAX_PROPOSE_PER_CALL),
+    0,
+  );
+}
 
 /** Rows left as found (not in this phase's state) are reported with their real state, untouched. */
-function untouched(row: ManifestRow, info: RowStateInfo | undefined): RowOutcome {
+function untouched(row: BulkRowBase, info: RowStateInfo | undefined): RowOutcome {
   return asOutcome(
     row.candidateId,
     info?.state ?? "ERROR",
@@ -150,22 +201,30 @@ function untouched(row: ManifestRow, info: RowStateInfo | undefined): RowOutcome
 
 /* ------------------------------------------------------------------ PROPOSE */
 
-export async function runPropose(
+export async function runPropose<R extends BulkRowBase = BulkRowBase>(
   deps: BulkDeps,
-  manifest: BulkManifest,
+  manifest: BulkManifestBase<R>,
   selected: ReadonlySet<string>,
   hooks: PhaseHooks = {},
+  profile: BulkProfile<R> = defaultProfile<R>(),
 ): Promise<PhaseResult> {
   const now = (deps.now ?? (() => new Date()))();
-  const snapshot = await loadSnapshot(deps);
-  const states = deriveAllRowStates(manifest, snapshot.candidates, snapshot.proposals, now);
+  const snapshot = await loadSnapshot(deps, profile, manifest.rows);
+  const states = deriveAllRowStates(
+    manifest,
+    snapshot.candidates,
+    snapshot.proposals,
+    now,
+    profile,
+    snapshot.providerMappings,
+  );
   const outcomes = new Map<string, RowOutcome>();
   const emit = (o: RowOutcome) => {
     outcomes.set(o.candidateId, o);
     hooks.onRow?.(o);
   };
 
-  const todo: ManifestRow[] = [];
+  const todo: R[] = [];
   for (const row of selectedRows(manifest, selected)) {
     const info = states.get(row.candidateId);
     if (info?.state === "NOT_PROPOSED") todo.push(row);
@@ -173,12 +232,12 @@ export async function runPropose(
   }
 
   // 1. Re-check every row against the database; a row that moved is skipped, never replaced.
-  const ready: ManifestRow[] = [];
+  const ready: R[] = [];
   let aborted: PhaseResult["aborted"] = null;
   await mapWithConcurrency(todo, 4, async (row) => {
     if (aborted || hooks.signal?.aborted) return;
     try {
-      const verdict = await revalidateRow(deps.repository, row, deps.context());
+      const verdict = await profile.revalidate(deps, row, snapshot);
       if (verdict.ok) ready.push(row);
       else emit(asOutcome(row.candidateId, verdict.state, verdict.code, null, false));
     } catch (error) {
@@ -190,24 +249,19 @@ export async function runPropose(
   if (aborted) return { phase: "propose", outcomes: [...outcomes.values()], aborted };
 
   // 2. The reviewed backend takes at most 100 per call, and one reason per call: so one
-  //    bounded set of calls per tier, in manifest order.
-  for (const tier of ["A", "B"] as const satisfies readonly BulkTier[]) {
+  //    bounded set of calls per reason group, in manifest order.
+  for (const group of profile.groups) {
     const rows = ready
-      .filter((r) => r.tier === tier)
+      .filter((r) => profile.groupOf(r) === group)
       .sort((a, b) => (a.candidateId < b.candidateId ? -1 : 1));
     for (const part of chunk(rows, MAX_PROPOSE_PER_CALL)) {
       if (hooks.signal?.aborted) break;
-      const items: ProposeItem[] = part.map((row) => ({
-        kind: "map",
-        sofascoreCandidateId: row.candidateId,
-        appPlayerId: row.appPlayerId,
-        basis: "manual",
-      }));
+      const items: ProposeItem[] = part.map((row) => profile.proposeItem(row));
       try {
-        const key = await bulkKey(manifest, "propose", tier, ...part.map((r) => r.candidateId));
+        const key = await bulkKey(manifest, "propose", group, ...part.map((r) => r.candidateId));
         const result = await deps.repository.proposeMappings(
           items,
-          BULK_REASONS[tier],
+          profile.reasonOf(group),
           key,
           deps.context(),
         );
@@ -217,7 +271,8 @@ export async function runPropose(
             emit(asOutcome(row.candidateId, "ERROR", "no_result_for_row", null, false));
           } else if (!item.ok) {
             emit(
-              item.code === "proposal_already_open"
+              item.code === "proposal_already_open" &&
+                (await openProposalIsOurs(deps, row, profile))
                 ? asOutcome(row.candidateId, "PROPOSED", item.code, null, false)
                 : await outcomeForCode(deps, row.candidateId, item.code, null),
             );
@@ -253,15 +308,23 @@ export async function runPropose(
 
 /* ------------------------------------------------------------------ APPROVE */
 
-export async function runApprove(
+export async function runApprove<R extends BulkRowBase = BulkRowBase>(
   deps: BulkDeps,
-  manifest: BulkManifest,
+  manifest: BulkManifestBase<R>,
   selected: ReadonlySet<string>,
   hooks: PhaseHooks = {},
+  profile: BulkProfile<R> = defaultProfile<R>(),
 ): Promise<PhaseResult> {
   const now = (deps.now ?? (() => new Date()))();
-  const snapshot = await loadSnapshot(deps);
-  const states = deriveAllRowStates(manifest, snapshot.candidates, snapshot.proposals, now);
+  const snapshot = await loadSnapshot(deps, profile, manifest.rows);
+  const states = deriveAllRowStates(
+    manifest,
+    snapshot.candidates,
+    snapshot.proposals,
+    now,
+    profile,
+    snapshot.providerMappings,
+  );
   const outcomes = new Map<string, RowOutcome>();
   const emit = (o: RowOutcome) => {
     outcomes.set(o.candidateId, o);
@@ -277,13 +340,13 @@ export async function runApprove(
       continue;
     }
     if (aborted || hooks.signal?.aborted) continue;
-    const proposal = batchProposalFor(row, snapshot.proposals)!;
+    const proposal = batchProposalFor(row, snapshot.proposals, profile)!;
     try {
       const result = await deps.repository.decideMappingProposal(
         {
           proposalId: proposal.id,
           decision: "approve",
-          reason: BULK_APPROVAL_REASON,
+          reason: profile.approvalReason,
           // The fingerprint the manifest froze, which the proposal was just shown to carry.
           fingerprint: row.expectedFingerprint,
         },
@@ -310,11 +373,12 @@ export async function runApprove(
 /* ------------------------------------------------------------------ EXECUTE */
 
 /** Re-reads one approved proposal and its candidate; null when it may be executed. */
-async function executeBlocker(
+async function executeBlocker<R extends BulkRowBase>(
   deps: BulkDeps,
-  row: ManifestRow,
+  row: R,
   proposalId: string,
   now: Date,
+  profile: BulkProfile<R>,
 ): Promise<RowOutcome | null> {
   const context = deps.context();
   const fresh: ProposalDto = await deps.repository.getMappingProposal(proposalId, context);
@@ -339,18 +403,29 @@ async function executeBlocker(
     return block("PROVIDER_ID_ALREADY_MAPPED", "already_mapped");
   if (candidate.evidenceRevision !== row.evidenceRevision)
     return block("STALE_EVIDENCE", "evidence_revision_changed");
+  // The row's own supporting evidence, from fresh reads, once more before the write.
+  const extra = await profile.beforeExecute?.(deps, row);
+  if (extra && !extra.ok) return block(extra.state, extra.code);
   return null;
 }
 
-export async function runExecute(
+export async function runExecute<R extends BulkRowBase = BulkRowBase>(
   deps: BulkDeps,
-  manifest: BulkManifest,
+  manifest: BulkManifestBase<R>,
   selected: ReadonlySet<string>,
   hooks: PhaseHooks = {},
+  profile: BulkProfile<R> = defaultProfile<R>(),
 ): Promise<PhaseResult> {
   const now = (deps.now ?? (() => new Date()))();
-  const snapshot = await loadSnapshot(deps);
-  const states = deriveAllRowStates(manifest, snapshot.candidates, snapshot.proposals, now);
+  const snapshot = await loadSnapshot(deps, profile, manifest.rows);
+  const states = deriveAllRowStates(
+    manifest,
+    snapshot.candidates,
+    snapshot.proposals,
+    now,
+    profile,
+    snapshot.providerMappings,
+  );
   const outcomes = new Map<string, RowOutcome>();
   const emit = (o: RowOutcome) => {
     outcomes.set(o.candidateId, o);
@@ -368,7 +443,7 @@ export async function runExecute(
     }
     if (aborted || hooks.signal?.aborted) continue;
     try {
-      const blocker = await executeBlocker(deps, row, info.proposalId, now);
+      const blocker = await executeBlocker(deps, row, info.proposalId, now, profile);
       if (blocker) {
         emit(blocker);
         continue;
@@ -412,7 +487,11 @@ export interface BulkRunner {
  * Across reloads, deterministic idempotency keys and the database-derived row states
  * give the same guarantee.
  */
-export function createBulkRunner(deps: BulkDeps, manifest: BulkManifest): BulkRunner {
+export function createBulkRunner<R extends BulkRowBase = BulkRowBase>(
+  deps: BulkDeps,
+  manifest: BulkManifestBase<R>,
+  profile: BulkProfile<R> = defaultProfile<R>(),
+): BulkRunner {
   let inFlight: { phase: BulkPhase; promise: Promise<PhaseResult> } | null = null;
   return {
     get busy() {
@@ -424,7 +503,7 @@ export function createBulkRunner(deps: BulkDeps, manifest: BulkManifest): BulkRu
         return Promise.reject(new Error("another_phase_is_running"));
       }
       const fn = phase === "propose" ? runPropose : phase === "approve" ? runApprove : runExecute;
-      const promise = fn(deps, manifest, selected, hooks).finally(() => {
+      const promise = fn(deps, manifest, selected, hooks, profile).finally(() => {
         inFlight = null;
       });
       inFlight = { phase, promise };

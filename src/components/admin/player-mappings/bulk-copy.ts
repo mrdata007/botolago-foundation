@@ -2,7 +2,37 @@ import {
   MAX_PROPOSE_PER_CALL,
   type BulkRowState,
 } from "@/backend/football/identity/bulk-mapping/contract";
+import type { FlashscoreEvidenceClass } from "@/backend/football/identity/bulk-mapping/flashscore-contract";
 import type { Lang } from "./copy";
+
+/** The words of the Flashscore evidence batch. Plain and short; names are never evidence. */
+export interface FlashscoreBulkCopy {
+  readonly open: (count: number) => string;
+  readonly title: string;
+  readonly intro: string;
+  readonly rules: readonly string[];
+  readonly manifestOk: string;
+  readonly population: (total: number, f1: number, f2: number, heldBack: number) => string;
+  readonly heldBack: {
+    readonly heading: (heldBack: number, reviewSet: number) => string;
+    readonly note: string;
+    readonly listHeading: string;
+  };
+  readonly classShort: Record<FlashscoreEvidenceClass, string>;
+  readonly table: {
+    readonly providerId: string;
+    readonly supportingId: string;
+    readonly evidenceClass: string;
+    readonly evidence: string;
+  };
+  readonly evidence: {
+    readonly shirtAgrees: string;
+    readonly shirtNoAgreement: string;
+    readonly events: (n: number) => string;
+    readonly birthDateAgrees: string;
+  };
+  readonly proposeCalls: (calls: number) => string;
+}
 
 export interface BulkCopy {
   readonly open: (count: number) => string;
@@ -69,6 +99,7 @@ export interface BulkCopy {
     readonly refresh: string;
   };
   readonly tierLabel: Record<"A" | "B", string>;
+  readonly flashscore: FlashscoreBulkCopy;
 }
 
 const frStates: Record<BulkRowState, string> = {
@@ -83,6 +114,46 @@ const frStates: Record<BulkRowState, string> = {
   APPROVAL_EXPIRED: "Approbation expirée",
   HELD: "En attente (retenu)",
   ERROR: "Erreur",
+};
+
+const frFlashscore: FlashscoreBulkCopy = {
+  open: (count) => `Lot Flashscore (${count})`,
+  title: "Lot contrôlé d'identités Flashscore",
+  intro:
+    "Un seul lot, figé et vérifié, d'identifiants Flashscore. Chaque identifiant s'appuie sur un joueur Sofascore déjà associé et révisé, et sur des matchs terminés. Chaque ligne garde sa propre proposition, sa propre empreinte, sa propre approbation et son propre événement d'audit. Rien n'est associé avant l'action EXÉCUTER.",
+  rules: [
+    "Le joueur Sofascore lié doit déjà avoir une association active et révisée vers le même joueur de l'app.",
+    "Classe F1 : mêmes événements de match alignés (but, passe, carton, remplacement), avec un maillot concordant ou au moins deux événements.",
+    "Classe F2 : même maillot et dates de naissance concordantes entre les deux fournisseurs. C'est un recoupement, pas une preuve.",
+    "Un nom ne décide rien : il n'est affiché qu'à titre indicatif.",
+  ],
+  manifestOk: "Manifeste vérifié : empreintes, ordre, aucun doublon, aucun nom ni date.",
+  population: (total, f1, f2, heldBack) =>
+    `${total} lignes · F1 : ${f1} · F2 : ${f2} · retenues : ${heldBack}`,
+  heldBack: {
+    heading: (heldBack, reviewSet) =>
+      `${heldBack} ligne(s) sur ${reviewSet} du lot revu sont RETENUES : elles ne font pas partie de ce lot.`,
+    note: "Elles ne seront ni proposées, ni approuvées, ni exécutées ici. Leur sort se règle à part.",
+    listHeading: "Voir les lignes retenues",
+  },
+  classShort: {
+    F1_REVIEWED_SOFASCORE_EVENTS: "F1 · événements",
+    F2_REVIEWED_SOFASCORE_SHIRT_DOB: "F2 · maillot + naissance",
+  },
+  table: {
+    providerId: "ID Flashscore",
+    supportingId: "ID Sofascore lié",
+    evidenceClass: "Classe",
+    evidence: "Preuves",
+  },
+  evidence: {
+    shirtAgrees: "Maillot concordant",
+    shirtNoAgreement: "Maillot sans accord",
+    events: (n) => `${n} événement(s) aligné(s)`,
+    birthDateAgrees: "Dates de naissance concordantes",
+  },
+  proposeCalls: (calls) =>
+    `La sélection actuelle demande ${calls} appel(s) de proposition (une raison par classe, ${MAX_PROPOSE_PER_CALL} lignes au plus par appel).`,
 };
 
 const fr: BulkCopy = {
@@ -179,6 +250,7 @@ const fr: BulkCopy = {
     refresh: "Actualiser depuis la base",
   },
   tierLabel: { A: "A (maillot + SportsMonks)", B: "B (SportsMonks, maillot sans signal)" },
+  flashscore: frFlashscore,
 };
 
 const ar: BulkCopy = {
@@ -255,6 +327,45 @@ const ar: BulkCopy = {
   },
   selfApprovalOff: "لا يسمح الخادم بموافقة المشغّل نفسه: موافقة الدفعة معطّلة.",
   tierLabel: { A: "A (قميص + SportsMonks)", B: "B (SportsMonks، القميص بلا إشارة)" },
+  flashscore: {
+    open: (count) => `دفعة Flashscore (${count})`,
+    title: "دفعة مضبوطة لهويات Flashscore",
+    intro:
+      "دفعة واحدة مجمّدة ومتحقَّق منها لمعرّفات Flashscore. يستند كل معرّف إلى لاعب Sofascore مربوط ومراجَع مسبقًا وإلى مباريات منتهية. لكل سطر اقتراحه وبصمته وموافقته وحدث تدقيقه. لا يُربط شيء قبل إجراء التنفيذ.",
+    rules: [
+      "يجب أن يكون للاعب Sofascore المرتبط ربط فعّال ومراجَع بنفس لاعب التطبيق.",
+      "الفئة F1: أحداث مباراة متطابقة (هدف، تمريرة حاسمة، بطاقة، تبديل) مع قميص متطابق أو حدثين على الأقل.",
+      "الفئة F2: القميص نفسه وتاريخا الميلاد متطابقان لدى المزوّدين. هذا تعزيز وليس إثباتًا.",
+      "الاسم لا يقرّر شيئًا: يُعرض للإشارة فقط.",
+    ],
+    manifestOk: "تم التحقق من البيان: البصمات والترتيب وعدم التكرار وخلوه من الأسماء والتواريخ.",
+    population: (total, f1, f2, heldBack) =>
+      `${total} سطرًا · F1: ${f1} · F2: ${f2} · محجوبة: ${heldBack}`,
+    heldBack: {
+      heading: (heldBack, reviewSet) =>
+        `${heldBack} سطرًا من ${reviewSet} في المجموعة المراجَعة محجوبة: ليست جزءًا من هذه الدفعة.`,
+      note: "لن تُقترح ولن يُوافَق عليها ولن تُنفَّذ هنا. يُعالج أمرها على حدة.",
+      listHeading: "عرض الأسطر المحجوبة",
+    },
+    classShort: {
+      F1_REVIEWED_SOFASCORE_EVENTS: "F1 · أحداث",
+      F2_REVIEWED_SOFASCORE_SHIRT_DOB: "F2 · قميص + ميلاد",
+    },
+    table: {
+      providerId: "معرّف Flashscore",
+      supportingId: "معرّف Sofascore المرتبط",
+      evidenceClass: "الفئة",
+      evidence: "الأدلة",
+    },
+    evidence: {
+      shirtAgrees: "القميص متطابق",
+      shirtNoAgreement: "القميص غير متطابق",
+      events: (n) => `${n} حدث متطابق`,
+      birthDateAgrees: "تاريخا الميلاد متطابقان",
+    },
+    proposeCalls: (calls) =>
+      `يتطلب التحديد الحالي ${calls} استدعاء اقتراح (سبب واحد لكل فئة، و${MAX_PROPOSE_PER_CALL} سطرًا كحد أقصى للاستدعاء).`,
+  },
 };
 
 export const getBulkCopy = (lang: string): BulkCopy => (lang === "ar" ? ar : fr);
