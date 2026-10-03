@@ -1,4 +1,4 @@
-import { Check, Lock } from "lucide-react";
+import { Check, Lock, Target, X } from "lucide-react";
 import type { ReactNode } from "react";
 
 import type { PredictionFixtureDto, ResultKind, ScorePair } from "@/backend/predictions/contracts";
@@ -95,7 +95,12 @@ export function FixturePredictionCard({
         padding="sm"
         testId={`prediction-${fixture.id}`}
         className={cn(
-          "flex flex-col gap-1.5",
+          "flex flex-col gap-1.5 border-s-4",
+          scoredKind === "exact"
+            ? "border-s-[color:var(--ui-positive)]"
+            : scoredKind === "outcome"
+              ? "border-s-[color:var(--ui-ink-fg)]"
+              : "border-s-[color:var(--ui-rule)]",
           justScored && (scoredKind === "exact" ? "glow-exact" : "glow-hit"),
           className,
         )}
@@ -114,6 +119,13 @@ export function FixturePredictionCard({
               tone={scored.points === 3 ? "positive" : scored.points === 1 ? "action" : "neutral"}
               className={cn("ms-auto", justScored && "pop")}
             >
+              {scoredKind === "exact" ? (
+                <Target className="me-1 h-3.5 w-3.5" aria-hidden />
+              ) : scoredKind === "outcome" ? (
+                <Check className="me-1 h-3.5 w-3.5" aria-hidden />
+              ) : scoredKind === "miss" ? (
+                <X className="me-1 h-3.5 w-3.5" aria-hidden />
+              ) : null}
               <bdi>+{scored.points}</bdi>
             </UiBadge>
           ) : null}
@@ -137,7 +149,14 @@ export function FixturePredictionCard({
     <UiCard
       padding="sm"
       testId={`prediction-${fixture.id}`}
-      className={cn("flex flex-col gap-2", justSaved && "settle", className)}
+      className={cn(
+        "flex flex-col gap-2",
+        open &&
+          pick &&
+          "ring-2 ring-[color:color-mix(in_oklab,var(--ui-positive)_45%,transparent)]",
+        justSaved && "settle",
+        className,
+      )}
     >
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
         <div className="flex min-w-0 items-center gap-2">
@@ -148,7 +167,7 @@ export function FixturePredictionCard({
         </div>
         <span className={cn("text-center", ui.text.meta, ui.tone.muted)}>
           {fixture.live ? (
-            <ScoreLine score={fixture.live} className={ui.text.bodyStrong} />
+            <ScoreLine score={fixture.live} className={ui.score.row} />
           ) : fixture.kickoffConfirmed ? (
             <bdi>{formatKickoffTime(fixture.kickoffAt, lang)}</bdi>
           ) : (
@@ -173,7 +192,7 @@ export function FixturePredictionCard({
               testId={`prediction-${fixture.id}-home`}
             />
           </div>
-          <span aria-hidden className={cn(ui.tone.faint)}>
+          <span aria-hidden className={cn(ui.score.row, ui.tone.faint)}>
             –
           </span>
           <div className="flex items-center gap-1 justify-self-end">
@@ -203,15 +222,20 @@ export function FixturePredictionCard({
         </div>
       )}
       {open && pick ? (
-        <p className={cn("inline-flex items-center gap-1", ui.text.micro, ui.tone.muted)}>
-          <Check className={cn("h-3.5 w-3.5", justSaved && "pop")} aria-hidden />
-          {fixture.kickoffConfirmed
-            ? t("predictions.fixture.until").replace(
-                "{time}",
-                formatKickoffTime(fixture.kickoffAt, lang),
-              )
-            : t("predictions.fixture.time_tbc")}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+          <UiBadge tone="positive" className="gap-1 !px-2 !py-0.5">
+            <Check className={cn("h-3.5 w-3.5", justSaved && "pop")} aria-hidden />
+            {t("predictions.fixture.picked")}
+          </UiBadge>
+          <span className={cn(ui.text.micro, ui.tone.muted)}>
+            {fixture.kickoffConfirmed
+              ? t("predictions.fixture.until").replace(
+                  "{time}",
+                  formatKickoffTime(fixture.kickoffAt, lang),
+                )
+              : t("predictions.fixture.time_tbc")}
+          </span>
+        </div>
       ) : null}
       {notCounted ? (
         <p className={cn(ui.text.micro, ui.tone.muted)}>{t("predictions.result.not_counted")}</p>
