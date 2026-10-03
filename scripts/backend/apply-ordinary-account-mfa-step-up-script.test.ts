@@ -298,10 +298,11 @@ describe(`apply-${VERSION}-ordinary-account-mfa-step-up.sql`, () => {
       "or (not f.prosecdef and f.oid not in (select oid from applies_step_up)))",
     );
     // Staff RPCs are excused by name, and only while they call a staff check
-    // (51 console and newsroom RPCs, plus the 12 player-mapping RPCs of 20261001161000).
+    // (51 console and newsroom RPCs, plus the 12 player-mapping RPCs of 20261001161000 and the
+    // mapping read of 20261003120000).
     const staff = [...functions.matchAll(/'((?:admin|editorial)_[a-z_0-9]+)'/g)].map((m) => m[1]);
-    expect(staff).toHaveLength(63);
-    expect(new Set(staff).size).toBe(63);
+    expect(staff).toHaveLength(64);
+    expect(new Set(staff).size).toBe(64);
     expect(functions).toContain(
       "and not (f.statements ~ 'app_private\\.(admin_assert_permission|admin_assert_principal|has_editorial_role)\\('\n       and f.proname = any (array[",
     );
