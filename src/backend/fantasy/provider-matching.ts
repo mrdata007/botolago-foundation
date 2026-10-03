@@ -12,6 +12,12 @@ import type {
   PerformanceLineupPlayer,
   PerformanceLineups,
 } from "../football/provider/performance-contracts";
+import {
+  toAppliedMapping,
+  type AppliedMapping,
+  type IdentityStatus,
+  type ReviewedIdentityIndex,
+} from "./reviewed-identities";
 
 /** How far apart two providers' minutes for the same card, penalty or substitution may be. */
 export const CARD_TOLERANCE_MINUTES = 5;
@@ -42,6 +48,10 @@ export type DiscrepancyCode =
   | "ambiguous_shirt"
   | "position_conflict"
   | "identity_linked_by_goal"
+  | "identity_reviewed_overrides_shirt"
+  | "identity_mapping_conflict"
+  | "identity_side_conflict"
+  | "duplicate_canonical_identity"
   | "assist_conflict"
   | "assist_unmatched"
   | "assist_unconfirmed"
@@ -81,7 +91,12 @@ export interface UnmatchedPlayer {
   readonly starter: boolean;
   /** Shown to a human reviewer only. Never used to decide a match. */
   readonly displayName: string;
-  readonly reason: "no_counterpart" | "ambiguous_shirt" | "position_conflict" | "no_shirt_number";
+  readonly reason:
+    | "no_counterpart"
+    | "ambiguous_shirt"
+    | "position_conflict"
+    | "no_shirt_number"
+    | "mapped_to_different_players";
 }
 
 /**
@@ -93,8 +108,11 @@ export interface UnmatchedPlayer {
  *   incident, so nothing can be attributed to them wrongly.
  * - `single_source`: the other provider's lineup is clearly broken and this
  *   provider's lineup is used alone for the player.
+ * - `reviewed_mapping`: both provider ids are reviewed mappings of the same app
+ *   player. Neither the shirt number nor an incident paired them. (Their events
+ *   are checked separately, exactly as for any other pair.)
  */
-export type Basis = "incident" | "shirt" | "single_source";
+export type Basis = "incident" | "shirt" | "single_source" | "reviewed_mapping";
 
 export interface Person {
   /** The Sofascore id when the player is in the Sofascore lineup, else `f:` + the Flashscore id. */
@@ -104,11 +122,42 @@ export interface Person {
   readonly flash: PerformanceLineupPlayer | null;
   /** Set when only this provider's lineup supplies the player. */
   readonly only: "sofascore" | "flashscore" | null;
+  /**
+   * The providers disagree about whether he is a goalkeeper (both give a known
+   * position and exactly one says goalkeeper). Identity can be settled by a reviewed mapping and this still
+   * stands: which provider is right about the position is not known, so
+   * position-dependent scoring is held back for this player.
+   */
+  readonly positionConflict: boolean;
+  /**
+   * Where the identity stands. Without a reviewed-identity input every pair is
+   * `unreviewed_legacy` and every single-source player `single_source_unreviewed`.
+   */
+  readonly status: IdentityStatus;
+  /** The canonical app player, only when the reviewed mappings establish it. */
+  readonly appPlayerId: string | null;
+  /** The mapping rows (id and version) this person's identity used. */
+  readonly applied: readonly AppliedMapping[];
 }
 
 export const opposite = (side: MatchSide): MatchSide => (side === "home" ? "away" : "home");
 const SIDES = ["home", "away"] as const;
 export const keyOfFlash = (id: string) => `f:${id}`;
+
+/**
+ * The two providers disagree about whether the player is a goalkeeper: both give
+ * a known position and exactly one of them says goalkeeper. Checked in both
+ * directions. A missing position proves nothing: Flashscore marks keepers only
+ * some of the time, so its silence never counts against a Sofascore keeper.
+ */
+export const keeperConflict = (
+  a: PerformanceLineupPlayer,
+  b: PerformanceLineupPlayer | null,
+): boolean =>
+  b !== null &&
+  a.position !== null &&
+  b.position !== null &&
+  (a.position === "G") !== (b.position === "G");
 
 const within = (a: number, b: number, tolerance: number) => Math.abs(a - b) <= tolerance;
 
@@ -155,7 +204,12 @@ function startersOf(lineups: PerformanceLineups, side: MatchSide) {
  *    Only with `linkIdentityByGoal` (off by default, a decision for the owner)
  *    does the goal itself pair them, if the two providers time it within
  *    `GOAL_LINK_TOLERANCE_MINUTES`; the shirt pairing that this contradicts is
- *    dropped.
+ *    dropped. It never pairs two entries whose reviewed mappings are different
+ *    app players.
+ *    With a reviewed-identity input (`reviewed`), step 1 is preceded by the
+ *    reviewed pairs: two entries mapped to the same app player are paired
+ *    whatever their shirt numbers, and two entries mapped to different app
+ *    players are never paired by any weaker signal.
  * 3. A side whose lineup is clearly broken (not 11 starters) is replaced, for
  *    that side, by the other provider's lineup.
  */
@@ -166,6 +220,7 @@ export function resolveIdentity(
   flashGoals: readonly PerformanceIncident[],
   note: Note,
   linkIdentityByGoal = false,
+  reviewed: ReviewedIdentityIndex | null = null,
 ): Identity {
   const sofaById = new Map(sofa.players.map((p) => [p.externalId, p]));
   const flashById = new Map(flash.players.map((p) => [p.externalId, p]));
@@ -195,19 +250,88 @@ export function resolveIdentity(
           shirtNumber: shirt,
         });
       } else if (sp[0] && fp[0]) {
-        // Flashscore marks keepers only some of the time, so its silence proves
-        // nothing; its keeper marker against a known outfield position does.
-        if (fp[0].position === "G" && sp[0].position !== null && sp[0].position !== "G") {
+        if (keeperConflict(sp[0], fp[0])) {
           blocked.set(`sofascore:${sp[0].externalId}`, "position_conflict");
           blocked.set(`flashscore:${fp[0].externalId}`, "position_conflict");
           note(
             "position_conflict",
             "info",
-            `Shirt ${shirt}: Flashscore says goalkeeper, Sofascore does not.`,
+            `Shirt ${shirt}: the providers disagree about whether he is a goalkeeper.`,
             { side, shirtNumber: shirt },
           );
         } else shirtPairs.set(sp[0].externalId, fp[0].externalId);
       }
+    }
+  }
+
+  // ---- 1b. reviewed identities -------------------------------------------------
+  // A reviewed mapping settles who is who without the shirt number. It overrides
+  // a shirt pairing it contradicts, and it vetoes a shirt pairing between two
+  // entries reviewed as different people. An entry with no mapping is not
+  // touched: it keeps the legacy rules and is labelled unreviewed.
+  const appOf = (p: PerformanceLineupPlayer) =>
+    reviewed?.appPlayerOf(p.provider, p.externalId) ?? null;
+  const mappedApart = (sId: string, fId: string) => {
+    const a = reviewed?.appPlayerOf("sofascore", sId) ?? null;
+    const b = reviewed?.appPlayerOf("flashscore", fId) ?? null;
+    return a !== null && b !== null && a !== b;
+  };
+  if (reviewed) {
+    const holders = new Map<string, PerformanceLineupPlayer[]>();
+    for (const p of [...sofa.players, ...flash.players]) {
+      const app = appOf(p);
+      if (app !== null) holders.set(app, [...(holders.get(app) ?? []), p]);
+    }
+    for (const app of [...holders.keys()].sort()) {
+      const list = holders.get(app) ?? [];
+      const ss = list.filter((p) => p.provider === "sofascore");
+      const ff = list.filter((p) => p.provider === "flashscore");
+      const s = ss[0];
+      const f = ff[0];
+      if (ss.length > 1 || ff.length > 1) {
+        note(
+          "duplicate_canonical_identity",
+          "fixture",
+          "One app player is the reviewed identity of more than one lineup entry of the same provider.",
+          { side: list[0]?.side ?? null },
+        );
+      } else if (s && f && s.side !== f.side) {
+        note(
+          "identity_side_conflict",
+          "fixture",
+          "The providers put one reviewed app player on opposite sides of the fixture.",
+          { side: s.side },
+        );
+      } else if (s && f) {
+        for (const [sKey, fKey] of [...shirtPairs.entries()]) {
+          if ((sKey === s.externalId) !== (fKey === f.externalId)) {
+            shirtPairs.delete(sKey);
+            note(
+              "identity_reviewed_overrides_shirt",
+              "info",
+              "A reviewed mapping contradicts a shirt-number pairing; the reviewed identity wins.",
+              { side: s.side },
+            );
+          }
+        }
+        shirtPairs.set(s.externalId, f.externalId);
+        blocked.delete(`sofascore:${s.externalId}`);
+        blocked.delete(`flashscore:${f.externalId}`);
+      }
+    }
+    // Two entries reviewed as different people are never paired by shirt number.
+    for (const [sKey, fKey] of [...shirtPairs.entries()]) {
+      if (!mappedApart(sKey, fKey)) continue;
+      shirtPairs.delete(sKey);
+      blocked.set(`sofascore:${sKey}`, "mapped_to_different_players");
+      blocked.set(`flashscore:${fKey}`, "mapped_to_different_players");
+      const side = sofaById.get(sKey)?.side ?? null;
+      note(
+        "identity_mapping_conflict",
+        "player",
+        "Two lineup entries with the same shirt number are reviewed mappings of different app players, so they are not paired.",
+        { side, shirtNumber: sofaById.get(sKey)?.shirtNumber ?? null },
+      );
     }
   }
 
@@ -261,6 +385,7 @@ export function resolveIdentity(
       const fFree = fPartner === null || !flashLinked.has(fId);
       if (
         linkIdentityByGoal &&
+        !mappedApart(sId, fId) &&
         within(s.minute, f.minute, GOAL_LINK_TOLERANCE_MINUTES) &&
         sFree &&
         fFree
@@ -308,6 +433,29 @@ export function resolveIdentity(
     reason: blocked.get(`${p.provider}:${p.externalId}`) ?? fallback,
   });
   const fallbackSides = new Map<MatchSide, "sofascore" | "flashscore">();
+  const describe = (
+    sp: PerformanceLineupPlayer | null,
+    fp: PerformanceLineupPlayer | null,
+    only: Person["only"],
+  ): Pick<Person, "status" | "appPlayerId" | "applied"> => {
+    const sEntry = sp ? (reviewed?.entryOf("sofascore", sp.externalId) ?? null) : null;
+    const fEntry = fp ? (reviewed?.entryOf("flashscore", fp.externalId) ?? null) : null;
+    const applied = [sEntry, fEntry].flatMap((e) => (e ? [toAppliedMapping(e)] : []));
+    if (only) {
+      const entry = sEntry ?? fEntry;
+      return entry
+        ? { status: "reviewed_single_source", appPlayerId: entry.appPlayerId, applied }
+        : { status: "single_source_unreviewed", appPlayerId: null, applied };
+    }
+    if (sEntry && fEntry && sEntry.appPlayerId === fEntry.appPlayerId) {
+      return { status: "reviewed_pair", appPlayerId: sEntry.appPlayerId, applied };
+    }
+    return {
+      status: sEntry || fEntry ? "partially_reviewed" : "unreviewed_legacy",
+      appPlayerId: null,
+      applied,
+    };
+  };
   for (const side of SIDES) {
     const sStart = startersOf(sofa, side);
     const fStart = startersOf(flash, side);
@@ -334,16 +482,27 @@ export function resolveIdentity(
     }
     for (const p of sofa.players.filter((x) => x.side === side)) {
       const partner = pairs.get(p.externalId);
-      if (partner)
+      if (partner) {
+        const flashEntry = flashById.get(partner) ?? null;
         people.push({
           key: p.externalId,
           side,
           sofa: p,
-          flash: flashById.get(partner) ?? null,
+          flash: flashEntry,
           only: null,
+          positionConflict: keeperConflict(p, flashEntry),
+          ...describe(p, flashEntry, null),
         });
-      else if (sole === "sofascore" && !blocked.has(`sofascore:${p.externalId}`)) {
-        people.push({ key: p.externalId, side, sofa: p, flash: null, only: "sofascore" });
+      } else if (sole === "sofascore" && !blocked.has(`sofascore:${p.externalId}`)) {
+        people.push({
+          key: p.externalId,
+          side,
+          sofa: p,
+          flash: null,
+          only: "sofascore",
+          positionConflict: false,
+          ...describe(p, null, "sofascore"),
+        });
       } else unmatched.push(miss(p, "no_counterpart"));
     }
     for (const p of flash.players.filter((x) => x.side === side)) {
@@ -355,8 +514,41 @@ export function resolveIdentity(
           sofa: null,
           flash: p,
           only: "flashscore",
+          positionConflict: false,
+          ...describe(null, p, "flashscore"),
         });
       } else unmatched.push(miss(p, "no_counterpart"));
+    }
+  }
+
+  // One app player appears in at most one reconciled record per fixture. The
+  // lineup fallback can otherwise produce the same person twice (once paired, once
+  // from the other lineup alone); two records of him would score him twice.
+  if (reviewed) {
+    const owner = new Map<string, string>();
+    const duplicate = (side: MatchSide | null) =>
+      note(
+        "duplicate_canonical_identity",
+        "fixture",
+        "One reviewed app player comes out as more than one record in this fixture.",
+        { side },
+      );
+    for (const person of people) {
+      const apps = new Set(
+        [person.sofa, person.flash].flatMap((p) => {
+          const app = p ? appOf(p) : null;
+          return app === null ? [] : [app];
+        }),
+      );
+      for (const app of apps) {
+        const held = owner.get(app);
+        if (held !== undefined && held !== person.key) duplicate(person.side);
+        else owner.set(app, person.key);
+      }
+    }
+    for (const u of unmatched) {
+      const app = reviewed.appPlayerOf(u.provider, u.providerId);
+      if (app !== null && owner.has(app)) duplicate(u.side);
     }
   }
 

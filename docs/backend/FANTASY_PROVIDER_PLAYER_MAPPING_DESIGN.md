@@ -83,6 +83,8 @@ time. Production only through the owner-run path.
 
 ### Step D: the reconciler takes the mapping as input
 
+Status: built, not merged or activated; see `FANTASY_MAPPING_AWARE_RECONCILER.md`.
+
 `ReconcileInput` gains an optional `identity` map: provider id to app player id, for
 both providers. With it:
 
