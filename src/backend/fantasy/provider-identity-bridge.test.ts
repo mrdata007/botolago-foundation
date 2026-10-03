@@ -476,6 +476,62 @@ describe("SYNTHETIC: the bridge is used only for the same verified match", () =>
     ).toContain("do not add up");
   });
 
+  test("an own goal (an unknown incident) is covered: the match is still verified", async () => {
+    const own = {
+      provider: "sofascore" as const,
+      kind: "unknown" as const,
+      side: "home" as const,
+      minute: 50,
+      addedMinutes: null,
+      player: null,
+      assist: null,
+      playerIn: null,
+      playerOut: null,
+      rawType: "goal",
+      rawClass: "ownGoal",
+    };
+    // Home score 2: one known goal plus one own goal, listed by both providers.
+    const withOwn = (d: ReturnType<typeof match>) => ({
+      ...d,
+      sofascore: {
+        ...d.sofascore,
+        summary: { ...d.sofascore.summary, homeScore: 2 },
+        incidents: [...d.sofascore.incidents, own],
+      },
+      flashscore: {
+        ...d.flashscore,
+        summary: { ...d.flashscore.summary, homeScore: 2 },
+        incidents: [...d.flashscore.incidents, { ...own, provider: "flashscore" as const }],
+      },
+    });
+    const data = withOwn(match(spec, cardPair(9, 9)));
+    expect(bridgeFixture(data, await snapFor()).rejected).toBeNull();
+    // Too many known goals for the score is still refused, and so is a missing own goal.
+    expect(
+      await rejected((d) => ({
+        ...d,
+        sofascore: {
+          ...d.sofascore,
+          summary: { ...d.sofascore.summary, homeScore: 0 },
+          incidents: d.sofascore.incidents,
+        },
+        flashscore: { ...d.flashscore, summary: { ...d.flashscore.summary, homeScore: 0 } },
+      })),
+    ).toContain("do not add up");
+    const missing = match(spec, cardPair(9, 9));
+    const noOwn = {
+      ...missing,
+      sofascore: { ...missing.sofascore, summary: { ...missing.sofascore.summary, homeScore: 2 } },
+      flashscore: {
+        ...missing.flashscore,
+        summary: { ...missing.flashscore.summary, homeScore: 2 },
+      },
+    };
+    expect(bridgeFixture(noOwn, await snapFor()).rejected?.reasons.join(" ")).toContain(
+      "do not add up",
+    );
+  });
+
   test("a refused match shows in the consolidated set and contributes no suggestion", async () => {
     const bad = match({ ...spec, sofascoreFixtureId: "S-OTHER" }, cardPair(9, 9));
     const set = buildBridgeReviewSet([{ ...bad, link: linkOf(spec) }], await snapFor());

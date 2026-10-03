@@ -370,11 +370,22 @@ export function verifyBridgeFixture(input: BridgeFixtureInput): string[] {
       ["Sofascore", sofa],
       ["Flashscore", flash],
     ] as const) {
+      // An own goal raises the benefiting side's score but is not a goal or
+      // penalty_goal incident: both adapters return it as `unknown`. So the known
+      // goals for a side can never exceed its score, and any shortfall must be
+      // covered by `unknown` incidents (each own goal is one). Requiring exact
+      // equality would reject every finished match that contains one.
+      let shortfall = 0;
+      let tooMany = false;
       for (const side of ["home", "away"] as const) {
+        const score = side === "home" ? homeScore : awayScore;
         const goals = data.incidents.filter((i) => GOAL_KINDS.has(i.kind) && i.side === side);
-        if (goals.length !== (side === "home" ? homeScore : awayScore)) {
-          reasons.push(`${name}'s ${side} goals do not add up to the final score.`);
-        }
+        if (goals.length > score) tooMany = true;
+        else shortfall += score - goals.length;
+      }
+      const unknowns = data.incidents.filter((i) => i.kind === "unknown").length;
+      if (tooMany || shortfall > unknowns) {
+        reasons.push(`${name}'s goals do not add up to the final score.`);
       }
     }
   }
