@@ -27,6 +27,11 @@ No production write was made, and none is needed to review this. Replaces nothin
 - An inactive or unreviewed mapping is not used.
 - One app player appears at most once per fixture: a duplicate, or the same app player on
   opposite sides, sends the fixture to review. Nothing is scored.
+- A reviewed pair is recorded with its own basis, `reviewed_mapping`, not as a shirt-only pairing.
+- A reviewed pair keeps a position conflict (Flashscore says goalkeeper, Sofascore says outfield):
+  the player stays paired, but saves and penalties saved are unknown and he is held back.
+- IDENTITY_RESOLVED is false if any appeared player could not be paired, or any mapping conflict,
+  side conflict or duplicate exists, even when every id is mapped.
 - A mapping says who a player is. It does not say his club that day, his position, whether he
   took part, or that an event is right: those still come from the match evidence, unchanged.
 - No canonical player and no mapping is created as a side effect.
@@ -42,7 +47,7 @@ derived from shots on target), clean sheets, goals conceded, ratings (display on
 Historical payloads captured 2026-10-01: this validates those payloads only, not a fresh
 provider check. Snapshot: 191 active reviewed Sofascore player mappings, digest
 `e9dfc4059f8252a8a5faf014982004c97bc0c690724c6a633df2cac28fbc7874`, read from production on
-2026-10-03 (committed as `tests/fixtures/identity/reviewed-player-mappings-2026-10-03.json`,
+2026-10-03 (the replay script requires `--captured-at` for raw query output so the snapshot is never stamped with the payload time; committed as `tests/fixtures/identity/reviewed-player-mappings-2026-10-03.json`,
 ids only).
 
 | Match               | Sofascore appeared / reviewed | Flashscore appeared / reviewed | Before              | After | Held back | IDENTITY | EVENTS | SCORING |

@@ -439,7 +439,13 @@ export function reconcileMatch(input: ReconcileInput): ReconcileResult {
       subs.outAt.has(key) ||
       assists.credited.has(key);
     if (usedInIncident && !only) confirmed.add(key);
-    const basis: Basis = only ? "single_source" : usedInIncident ? "incident" : "shirt";
+    const basis: Basis = only
+      ? "single_source"
+      : person.status === "reviewed_pair"
+        ? "reviewed_mapping"
+        : usedInIncident
+          ? "incident"
+          : "shirt";
     if (basis === "shirt") extraRefs.push("identity:shirt-only");
 
     // goals, own goals
@@ -603,7 +609,18 @@ export function reconcileMatch(input: ReconcileInput): ReconcileResult {
     } else set("penaltiesMissed", missedEvents?.pairs.length ?? 0, "verified", source);
 
     // goalkeeper-only fields
-    if (position === "G") {
+    if (person.positionConflict) {
+      // A reviewed mapping settles who he is, not his position: one provider says
+      // goalkeeper, the other says outfield. Nothing keeper-specific is scored.
+      unknown("saves", "sofascore");
+      unknown("penaltiesSaved", source);
+      note(
+        "position_conflict",
+        "player",
+        "Flashscore marks him a goalkeeper and Sofascore does not; his position-dependent fields are held back.",
+        where,
+      );
+    } else if (position === "G") {
       const saves = sofascore.lineups.fullCoverage ? (sofa?.stats?.saves ?? null) : null;
       if (saves !== null) set("saves", saves, "verified", "sofascore");
       // A keeper who never came on made no saves, and the lineups say so.
@@ -636,7 +653,7 @@ export function reconcileMatch(input: ReconcileInput): ReconcileResult {
       started,
       stats,
       evidence: proof,
-      mode: playerMode(stats, proof, position),
+      mode: playerMode(stats, proof, person.positionConflict ? "G" : position),
       rating: sofa?.stats?.rating ?? null,
     });
   }

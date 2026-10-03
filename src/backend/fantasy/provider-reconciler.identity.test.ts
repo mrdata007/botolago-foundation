@@ -278,6 +278,54 @@ describe("SYNTHETIC: one app player at most once per fixture", () => {
 });
 
 describe("SYNTHETIC: a mapping settles identity and nothing else", () => {
+  test("a reviewed pair keeps a goalkeeper-versus-outfield position conflict and holds the player back", async () => {
+    const data = build();
+    const marked = (provider: "sofascore" | "flashscore", id: string, position: "G" | "D") => ({
+      ...data[provider],
+      lineups: {
+        ...data[provider].lineups,
+        players: data[provider].lineups.players.map((p) =>
+          p.externalId === id ? { ...p, position } : p,
+        ),
+      },
+    });
+    const snap = await snapshot([
+      row("sofascore", sid("home", 5), X),
+      row("flashscore", fid("home", 5), X),
+    ]);
+    const r = reconcileMatch({
+      observedAt: OBSERVED_AT,
+      sofascore: marked("sofascore", sid("home", 5), "D"),
+      flashscore: marked("flashscore", fid("home", 5), "G"),
+      reviewedIdentities: snap,
+    });
+    const player = find(r, "home", 5);
+    expect(player?.identityStatus).toBe("reviewed_pair");
+    expect(player?.evidence.saves?.state).toBe("unknown");
+    expect(player?.evidence.penaltiesSaved?.state).toBe("unknown");
+    expect(player?.mode).toBe("incomplete");
+    expect(r.heldBack).toBeGreaterThan(0);
+    expect(
+      r.discrepancies.some((d) => d.code === "position_conflict" && d.level === "player"),
+    ).toBe(true);
+  });
+
+  test("a reviewed pair is recorded as reviewed_mapping, not as a shirt-only pairing", async () => {
+    const spec: Spec = {
+      shirts: { "flashscore.home": [1, 2, 3, 4, 5, 6, 7, 8, 19, 10, 11] },
+    };
+    const snap = await snapshot([
+      row("sofascore", sid("home", 9), X),
+      row("flashscore", fid("home", 19), X),
+    ]);
+    const player = find(run(spec, snap), "home", 9);
+    expect(player?.identity).toBe("reviewed_mapping");
+    expect(player?.evidence.goals?.references).not.toContain("identity:shirt-only");
+    expect(player?.evidence.goals?.references).toContain("identity-status:reviewed_pair");
+    // Without the mapping the same two entries are not paired at all.
+    expect(find(run(spec), "home", 9)).toBeUndefined();
+  });
+
   test("a mapped player the providers disagree about starting stays held back", async () => {
     const data = build();
     const flashscore: ProviderMatchData = {

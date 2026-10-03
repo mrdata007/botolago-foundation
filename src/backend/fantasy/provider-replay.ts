@@ -23,6 +23,13 @@ import {
 import type { ReviewedIdentitySnapshot } from "./reviewed-identities";
 import type { MatchSide } from "../football/provider/performance-contracts";
 
+/** Discrepancies that are about WHO a player is, not about what happened. */
+const IDENTITY_CONFLICT_CODES: ReadonlySet<string> = new Set([
+  "identity_mapping_conflict",
+  "identity_side_conflict",
+  "duplicate_canonical_identity",
+]);
+
 export interface ReplayInput {
   readonly observedAt: string;
   readonly sofascore: ProviderMatchData;
@@ -194,10 +201,13 @@ export function replayFixture(input: ReplayInput): FixtureReplay {
   const afterSummary = summarize(after, appearedIds);
   // Identity is resolved only when every player who appeared, on either provider,
   // is a reviewed identity. A shirt-number pairing is a suggestion, never this.
+  const identityConflicts = after.discrepancies.filter((d) => IDENTITY_CONFLICT_CODES.has(d.code));
   const identityResolved =
     coverage.sofascore.appearedUnresolvedIds.length === 0 &&
     coverage.flashscore.appearedUnresolvedIds.length === 0 &&
-    afterSummary.duplicateCanonicalIdentities === 0;
+    identityConflicts.length === 0 &&
+    // Every id may be mapped and still be unpaired (mapped to different people).
+    afterSummary.unmatchedAppeared === 0;
   const eventsReconciled = after.mode !== "review";
   const scoringReady = (after.mode === "full" || after.mode === "simple") && after.heldBack === 0;
   const stages: StageVerdict = {
@@ -220,7 +230,17 @@ export function replayFixture(input: ReplayInput): FixtureReplay {
       `IDENTITY: ${flashGap} Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet).`,
     );
   }
-  for (const message of afterSummary.fixtureBlockers) blockers.push(`EVENTS: ${message}`);
+  for (const d of identityConflicts) blockers.push(`IDENTITY: ${d.message}`);
+  if (afterSummary.unmatchedAppeared > 0) {
+    blockers.push(
+      `IDENTITY: ${afterSummary.unmatchedAppeared} player(s) who appeared could not be paired across the providers.`,
+    );
+  }
+  for (const d of after.discrepancies) {
+    if (d.level === "fixture" && !IDENTITY_CONFLICT_CODES.has(d.code)) {
+      blockers.push(`EVENTS: ${d.message}`);
+    }
+  }
   if (eventsReconciled && after.heldBack > 0) {
     blockers.push(
       `EVIDENCE: ${after.heldBack} player(s) held back (${

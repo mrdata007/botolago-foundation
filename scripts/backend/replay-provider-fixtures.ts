@@ -2,10 +2,12 @@
  * LOCAL, READ-ONLY replay of the seven committed finished matches against a
  * reviewed-mapping snapshot, before and after the mapping-aware reconciler.
  *
- *   bun scripts/backend/replay-provider-fixtures.ts --mappings rows.json [--out report.json]
+ *   bun scripts/backend/replay-provider-fixtures.ts --mappings rows.json \
+ *     --captured-at <ISO time the rows were read> [--out report.json]
  *
  * `rows.json` is the output of `scripts/backend/football-reviewed-mapping-snapshot.sql`
- * (one consistent read). This script opens no database connection, makes no
+ * (one consistent read; --captured-at is then required). The committed fixture
+ * carries its own capture time. This script opens no database connection, makes no
  * network call and writes nothing but the optional --out file.
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -57,10 +59,15 @@ async function main() {
     | { capturedAt?: string; rows: MappingRowInput[] };
   // Either the raw output of the snapshot SQL, or the committed fixture's typed rows.
   const rows = Array.isArray(parsed) ? rowsFromSql(parsed) : parsed.rows;
+  // The snapshot's capture time is when the rows were READ, never the time the
+  // provider payloads were captured. A raw SQL array carries no time of its own.
   const capturedAt =
-    arg("--captured-at") ??
-    (Array.isArray(parsed) ? undefined : parsed.capturedAt) ??
-    COMMITTED_OBSERVED_AT;
+    arg("--captured-at") ?? (Array.isArray(parsed) ? undefined : parsed.capturedAt);
+  if (!capturedAt) {
+    throw new Error(
+      "--captured-at <ISO time the mapping rows were read> is required for raw SQL rows",
+    );
+  }
   const snapshot = await buildReviewedIdentitySnapshot(rows, capturedAt);
   const fixtures = COMMITTED_GW1_MATCHES.map((m) => ({
     key: m.key,

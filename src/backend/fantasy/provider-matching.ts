@@ -108,8 +108,11 @@ export interface UnmatchedPlayer {
  *   incident, so nothing can be attributed to them wrongly.
  * - `single_source`: the other provider's lineup is clearly broken and this
  *   provider's lineup is used alone for the player.
+ * - `reviewed_mapping`: both provider ids are reviewed mappings of the same app
+ *   player. Neither the shirt number nor an incident paired them. (Their events
+ *   are checked separately, exactly as for any other pair.)
  */
-export type Basis = "incident" | "shirt" | "single_source";
+export type Basis = "incident" | "shirt" | "single_source" | "reviewed_mapping";
 
 export interface Person {
   /** The Sofascore id when the player is in the Sofascore lineup, else `f:` + the Flashscore id. */
@@ -119,6 +122,13 @@ export interface Person {
   readonly flash: PerformanceLineupPlayer | null;
   /** Set when only this provider's lineup supplies the player. */
   readonly only: "sofascore" | "flashscore" | null;
+  /**
+   * Flashscore marks a goalkeeper where Sofascore gives a known outfield
+   * position. Identity can be settled by a reviewed mapping and this still
+   * stands: which provider is right about the position is not known, so
+   * position-dependent scoring is held back for this player.
+   */
+  readonly positionConflict: boolean;
   /**
    * Where the identity stands. Without a reviewed-identity input every pair is
    * `unreviewed_legacy` and every single-source player `single_source_unreviewed`.
@@ -133,6 +143,13 @@ export interface Person {
 export const opposite = (side: MatchSide): MatchSide => (side === "home" ? "away" : "home");
 const SIDES = ["home", "away"] as const;
 export const keyOfFlash = (id: string) => `f:${id}`;
+
+/**
+ * Flashscore marks keepers only some of the time, so its silence proves nothing;
+ * its keeper marker against a known Sofascore outfield position does.
+ */
+const keeperConflict = (s: PerformanceLineupPlayer, f: PerformanceLineupPlayer | null) =>
+  f !== null && f.position === "G" && s.position !== null && s.position !== "G";
 
 const within = (a: number, b: number, tolerance: number) => Math.abs(a - b) <= tolerance;
 
@@ -225,9 +242,7 @@ export function resolveIdentity(
           shirtNumber: shirt,
         });
       } else if (sp[0] && fp[0]) {
-        // Flashscore marks keepers only some of the time, so its silence proves
-        // nothing; its keeper marker against a known outfield position does.
-        if (fp[0].position === "G" && sp[0].position !== null && sp[0].position !== "G") {
+        if (keeperConflict(sp[0], fp[0])) {
           blocked.set(`sofascore:${sp[0].externalId}`, "position_conflict");
           blocked.set(`flashscore:${fp[0].externalId}`, "position_conflict");
           note(
@@ -467,6 +482,7 @@ export function resolveIdentity(
           sofa: p,
           flash: flashEntry,
           only: null,
+          positionConflict: keeperConflict(p, flashEntry),
           ...describe(p, flashEntry, null),
         });
       } else if (sole === "sofascore" && !blocked.has(`sofascore:${p.externalId}`)) {
@@ -476,6 +492,7 @@ export function resolveIdentity(
           sofa: p,
           flash: null,
           only: "sofascore",
+          positionConflict: false,
           ...describe(p, null, "sofascore"),
         });
       } else unmatched.push(miss(p, "no_counterpart"));
@@ -489,6 +506,7 @@ export function resolveIdentity(
           sofa: null,
           flash: p,
           only: "flashscore",
+          positionConflict: false,
           ...describe(null, p, "flashscore"),
         });
       } else unmatched.push(miss(p, "no_counterpart"));
