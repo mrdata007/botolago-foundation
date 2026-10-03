@@ -61,6 +61,23 @@ describe("inventedScores", () => {
     expect(inventedScores(recap, article("Victoire 2 à 1, deux à un, 2 مقابل 1"))).toEqual([]);
     expect(inventedScores(recap, article("Coup d'envoi à 20:00 puis 9:05"))).toEqual([]);
   });
+  it("lets a news roundup repeat a score its source stories state, but not others", () => {
+    const news: ContentJob = {
+      kind: "news_report",
+      fixtureId: null,
+      news: [
+        {
+          editionId: "e1",
+          title: "Le Raja s'impose 2-1 face au Wydad",
+          excerpt: "Une victoire importante.",
+          sourceName: "Outlet",
+          sourceUrl: "https://example.test/a",
+        },
+      ],
+    };
+    expect(inventedScores(news, article("Le Raja gagne 2-1 selon Outlet"))).toEqual([]);
+    expect(inventedScores(news, article("Le Raja gagne 4-0"))).toEqual(["4-0"]);
+  });
   it("reads Arabic-Indic digits and ignores dates and clock times", () => {
     expect(inventedScores(recap, article("x", "فاز الفريق ٤-٠"))).toEqual(["4-0"]);
     expect(inventedScores(recap, article("Le 2026-10-03 à 20:00 le match"))).toEqual([]);

@@ -249,6 +249,16 @@ export function inventedScores(job: ContentJob, article: GeneratedArticle): stri
   const allowed = new Set<string>();
   collectScorePairs(job.facts, allowed);
   collectScorePairs(job.recentResults, allowed);
+  // A news roundup or blog may repeat a score that the supplied stories state.
+  const sourceText = normalizeScoreText(
+    (job.news ?? []).map((item) => `${item.title}\n${item.excerpt}`).join("\n"),
+  );
+  for (const pattern of SCORE_PATTERNS) {
+    for (const match of sourceText.matchAll(pattern)) {
+      allowed.add(`${match[1]}-${match[2]}`);
+      allowed.add(`${match[2]}-${match[1]}`);
+    }
+  }
   const found = new Set<string>();
   for (const language of LANGUAGES) {
     const { title, summary, paragraphs } = article[language];
