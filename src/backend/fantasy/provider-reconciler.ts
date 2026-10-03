@@ -28,6 +28,15 @@
  * - On a limited-coverage Sofascore match, `goalAssist: 0` is unknown, not
  *   zero. Assists are filled from Flashscore.
  * - Sofascore ratings are display only.
+ * - Reviewed identities (optional input `reviewedIdentities`): a read-only
+ *   snapshot of the active, human-reviewed player mappings. Two entries mapped
+ *   to the same app player are paired whatever their shirt numbers; entries
+ *   mapped to different app players are never paired by a weaker signal; a pair
+ *   with one mapped and one unmapped entry is NOT a reviewed identity (it keeps
+ *   the legacy pairing and is labelled `partially_reviewed`). A mapping settles
+ *   who a player is and nothing else: not his club on the day, his position,
+ *   whether he played, or whether an event is right. Without the input the
+ *   result is what it was before, with every pair labelled `unreviewed_legacy`.
  */
 import type {
   LineupPosition,
@@ -45,6 +54,12 @@ import type {
   ScoringField,
 } from "./adaptive-scoring";
 import type { FantasyPosition } from "./contracts";
+import {
+  indexReviewedIdentities,
+  type AppliedMapping,
+  type IdentityStatus,
+  type ReviewedIdentitySnapshot,
+} from "./reviewed-identities";
 import {
   CARD_TOLERANCE_MINUTES,
   MISSED_PENALTY_TOLERANCE_MINUTES,
@@ -85,6 +100,13 @@ export interface ReconcileInput {
    * providers genuinely disagreeing about who scored, so it is the owner's call.
    */
   readonly linkIdentityByGoal?: boolean;
+  /**
+   * The active reviewed mappings, `(provider, external player id) -> app player id`,
+   * read by a separate reader. Read-only: the reconciler never writes it, never
+   * creates a mapping or a player from it, and states the snapshot it used in
+   * the result and in every evidence reference.
+   */
+  readonly reviewedIdentities?: ReviewedIdentitySnapshot;
 }
 
 export type PlayerMode = "full" | "simple" | "incomplete";
@@ -98,6 +120,12 @@ export interface ReconciledPlayer {
   readonly flashscoreId: string | null;
   /** What the pairing of the two providers' entries rests on. */
   readonly identity: Basis;
+  /** Whether a person reviewed this identity; legacy pairs are suggestions only. */
+  readonly identityStatus: IdentityStatus;
+  /** The canonical app player, only when the reviewed mappings establish it; else null. */
+  readonly appPlayerId: string | null;
+  /** The mapping rows (id and version) behind this player's identity. */
+  readonly appliedMappings: readonly AppliedMapping[];
   readonly position: LineupPosition | null;
   readonly started: boolean;
   /** Only fields that were established. A missing field is unknown, not zero. */
@@ -127,6 +155,12 @@ export interface ReconcileResult {
   readonly players: readonly ReconciledPlayer[];
   readonly unmatched: readonly UnmatchedPlayer[];
   readonly discrepancies: readonly Discrepancy[];
+  /** Which reviewed-mapping snapshot this result used; null when none was given. */
+  readonly mappingSnapshot: {
+    readonly digest: string;
+    readonly capturedAt: string;
+    readonly entries: number;
+  } | null;
 }
 
 const TOLERANCE_MINUTES = 2;
@@ -174,6 +208,16 @@ export function reconcileMatch(input: ReconcileInput): ReconcileResult {
       field: where.field ?? null,
     });
   };
+  const reviewedIndex = input.reviewedIdentities
+    ? indexReviewedIdentities(input.reviewedIdentities)
+    : null;
+  const mappingSnapshot: ReconcileResult["mappingSnapshot"] = input.reviewedIdentities
+    ? {
+        digest: input.reviewedIdentities.digest,
+        capturedAt: input.reviewedIdentities.capturedAt,
+        entries: input.reviewedIdentities.entries.length,
+      }
+    : null;
   const review = (unmatched: readonly UnmatchedPlayer[] = []): ReconcileResult => ({
     mode: "review",
     scorableMode: null,
@@ -181,6 +225,7 @@ export function reconcileMatch(input: ReconcileInput): ReconcileResult {
     players: [],
     unmatched,
     discrepancies,
+    mappingSnapshot,
   });
 
   const { sofascore, flashscore } = input;
@@ -269,6 +314,7 @@ export function reconcileMatch(input: ReconcileInput): ReconcileResult {
     flashGoals,
     note,
     input.linkIdentityByGoal === true,
+    reviewedIndex,
   );
   if (discrepancies.some((d) => d.level === "fixture")) return review(identity.unmatched);
 
@@ -368,6 +414,13 @@ export function reconcileMatch(input: ReconcileInput): ReconcileResult {
     };
     const fallback = identity.fallbackSides.get(side);
     if (fallback) extraRefs.push(`lineup-fallback-side:${side}:${fallback}`);
+    if (input.reviewedIdentities) {
+      extraRefs.push(`mapping-snapshot:sha256:${input.reviewedIdentities.digest}`);
+      for (const m of person.applied) {
+        extraRefs.push(`mapping:${m.provider}:${m.externalId}:${m.mappingId}`);
+      }
+      extraRefs.push(`identity-status:${person.status}`);
+    }
     if (only) {
       extraRefs.push(
         `lineup-used-alone:${only}:${side}`,
@@ -386,7 +439,13 @@ export function reconcileMatch(input: ReconcileInput): ReconcileResult {
       subs.outAt.has(key) ||
       assists.credited.has(key);
     if (usedInIncident && !only) confirmed.add(key);
-    const basis: Basis = only ? "single_source" : usedInIncident ? "incident" : "shirt";
+    const basis: Basis = only
+      ? "single_source"
+      : person.status === "reviewed_pair"
+        ? "reviewed_mapping"
+        : usedInIncident
+          ? "incident"
+          : "shirt";
     if (basis === "shirt") extraRefs.push("identity:shirt-only");
 
     // goals, own goals
@@ -550,7 +609,18 @@ export function reconcileMatch(input: ReconcileInput): ReconcileResult {
     } else set("penaltiesMissed", missedEvents?.pairs.length ?? 0, "verified", source);
 
     // goalkeeper-only fields
-    if (position === "G") {
+    if (person.positionConflict) {
+      // A reviewed mapping settles who he is, not his position: one provider says
+      // goalkeeper, the other says outfield. Nothing keeper-specific is scored.
+      unknown("saves", "sofascore");
+      unknown("penaltiesSaved", source);
+      note(
+        "position_conflict",
+        "player",
+        "The providers disagree about whether he is a goalkeeper; his position-dependent fields are held back.",
+        where,
+      );
+    } else if (position === "G") {
       const saves = sofascore.lineups.fullCoverage ? (sofa?.stats?.saves ?? null) : null;
       if (saves !== null) set("saves", saves, "verified", "sofascore");
       // A keeper who never came on made no saves, and the lineups say so.
@@ -576,11 +646,14 @@ export function reconcileMatch(input: ReconcileInput): ReconcileResult {
       sofascoreId: sofa?.externalId ?? null,
       flashscoreId: flash?.externalId ?? null,
       identity: basis,
+      identityStatus: person.status,
+      appPlayerId: person.appPlayerId,
+      appliedMappings: person.applied,
       position,
       started,
       stats,
       evidence: proof,
-      mode: playerMode(stats, proof, position),
+      mode: playerMode(stats, proof, person.positionConflict ? "G" : position),
       rating: sofa?.stats?.rating ?? null,
     });
   }
@@ -613,6 +686,7 @@ export function reconcileMatch(input: ReconcileInput): ReconcileResult {
     players,
     unmatched: identity.unmatched,
     discrepancies,
+    mappingSnapshot,
   };
 }
 
