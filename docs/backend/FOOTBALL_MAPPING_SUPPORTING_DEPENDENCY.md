@@ -43,7 +43,7 @@ A version label alone proves nothing: a hand-written row with the right-looking 
 - Returns only: mapping id, provider, entity type, external id, canonical app-player id,
   active, manually-corrected flag, `reviewed` and where that came from (`reviewProvenance`,
   `provenanceProposalId`), corrected-at, source version, updated-at, and a `stateDigest`
-  (a fingerprint over every identity-relevant field, not over `last_seen_at`/`updated_at`).
+  (a fingerprint over every identity-relevant field, not over `last_seen_at`/`updated_at`; timestamps are written out in UTC, so it does not depend on the session's time zone).
   No names, no birth dates, no secrets, no other rows.
 - Permission: the same staff read as the other mapping reads (staff sign-in, second factor,
   recent sign-in, and the football operations or mapping permission). Granted to the
@@ -96,7 +96,7 @@ Flashscore players on its own.
 
 ## Evidence (local, disposable database; CI's `database-quality` job is the authority)
 
-- `supabase/tests/database/football_player_mapping_supporting_dependency.test.sql`: 76
+- `supabase/tests/database/football_player_mapping_supporting_dependency.test.sql`: 77
   assertions on the real functions: valid success, wrong target, forged and omitted fields,
   prefix-only provenance, deactivated / retargeted / review-state-changed after approval,
   changed outside the workflow with the old marker, direct execute, stale fingerprint,
