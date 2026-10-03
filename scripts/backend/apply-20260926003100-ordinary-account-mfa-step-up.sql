@@ -4757,6 +4757,7 @@ begin
          'admin_football_mapping_add_position_note', 'admin_football_mapping_app_player_options',
          'admin_football_mapping_cancel', 'admin_football_mapping_decide', 'admin_football_mapping_execute',
          'admin_football_mapping_get_candidate', 'admin_football_mapping_get_proposal',
+        'admin_football_mapping_get_provider_mapping',
          'admin_football_mapping_list_candidates', 'admin_football_mapping_list_proposals',
          'admin_football_mapping_propose', 'admin_football_mapping_refresh_evidence',
          'admin_football_mapping_reviewer_availability',

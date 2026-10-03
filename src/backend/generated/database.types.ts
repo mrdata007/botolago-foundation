@@ -346,6 +346,10 @@ export type Database = {
         Args: { p_proposal_id: string }
         Returns: Json
       }
+      admin_football_mapping_get_provider_mapping: {
+        Args: { p_external_id: string; p_provider: string }
+        Returns: Json
+      }
       admin_football_mapping_list_candidates: {
         Args: {
           p_after?: string
