@@ -11,6 +11,8 @@ import {
   isProviderOutage,
   manualRunExitCode,
 } from "./current-season-performances";
+import { createHash } from "node:crypto";
+import { evidenceDigest, type VerifiedUnusedException } from "./verified-unused-exceptions";
 import { SportsMonksProbeError } from "./sportsmonks-production-probe";
 
 function fixture(id = 9001) {
@@ -1751,5 +1753,402 @@ describe("lineup participation evidence", () => {
     expect(Object.keys(coverage).filter((key) => !COVERAGE_KEYS.includes(key))).toEqual([
       "adaptiveFieldEvidence",
     ]);
+  });
+});
+
+// The owner-approved exception, importer side: only the exact players an approved
+// allowlist entry names, only on a one-fixture run, only while the provider's facts
+// still show them unused, and only if the database leaves out exactly those players.
+describe("scoped verified-unused exception", () => {
+  const PREFLIGHT = Buffer.from("the reviewed preflight record");
+  const PREFLIGHT_SHA = createHash("sha256").update(PREFLIGHT).digest("hex");
+  const entry = (patch: Partial<VerifiedUnusedException> = {}): VerifiedUnusedException => ({
+    fixtureExternalId: "9001",
+    externalPlayerId: "200",
+    status: "approved",
+    preflightRecord: "docs/production/preflight.md",
+    preflightSha256: PREFLIGHT_SHA,
+    approvedBy: "owner",
+    approvedAt: "2026-10-01T15:00:00Z",
+    ...patch,
+  });
+  const readPreflightRecord = () => PREFLIGHT;
+  const indexOf = (playerId: number) => 22 + (playerId - 200);
+  /** Bench players 200 (club 10) and 201 (club 20), both unused: 200 with no statistics at all. */
+  const bench = () => {
+    const payload = withBench(fixture(), 2);
+    for (const playerId of [200, 201]) {
+      const lineup = payload.data.lineups[indexOf(playerId)]!;
+      lineup.details = lineup.details.filter((detail) => detail.type_id !== 118);
+    }
+    payload.data.lineups[indexOf(200)]!.details = [];
+    return payload;
+  };
+  const run = async (options: {
+    allowlist: VerifiedUnusedException[];
+    only?: string | null;
+    mode?: "ingest" | "diagnose";
+    adaptive?: boolean;
+    payload?: () => ReturnType<typeof fixture>;
+    ingest?: (fixtureId: string) => RpcAnswer | undefined;
+    read?: (path: string) => Uint8Array;
+  }) => {
+    const { client, calls, received } = batchClient({
+      items: [{ externalFixtureId: "9001" }],
+      ingest: options.ingest,
+    });
+    const wrapped = options.adaptive
+      ? {
+          schema: (name: "api") => ({
+            rpc: async (rpcName: string, args: Record<string, unknown>) => {
+              const answer = await client.schema(name).rpc(rpcName, args);
+              return rpcName === "football_current_performance_fixture_batch"
+                ? { ...answer, data: { ...(answer.data as object), adaptive: true } }
+                : answer;
+            },
+          }),
+        }
+      : client;
+    const result = (await runCurrentPerformanceBatch(
+      wrapped,
+      "t",
+      null,
+      async () => (options.payload ?? bench)(),
+      {
+        ...(options.only === null ? {} : { onlyFixtureExternalId: options.only ?? "9001" }),
+        ...(options.mode ? { mode: options.mode } : {}),
+        verifiedUnusedAllowlist: options.allowlist,
+        readPreflightRecord: options.read ?? readPreflightRecord,
+      },
+    )) as unknown as {
+      verdict: string;
+      fixtures: Array<Record<string, unknown>>;
+      incomplete: Array<Record<string, unknown>>;
+    };
+    const ingest = received.find((args) => "p_rows" in args);
+    return { result, calls, ingest };
+  };
+  const leftOut = (ids: unknown, active = 23): RpcAnswer => ({
+    data: {
+      active,
+      reconciled: true,
+      scoringStatisticsComplete: true,
+      sourceVersion: `sportsmonks-current-fixture:${"c".repeat(64)}`,
+      ...(ids === undefined ? {} : { excludedVerifiedUnusedUnmapped: ids }),
+    },
+    error: null,
+  });
+  /** The ordinary 22 starters under fixture id 19874711, with no 38227322 in the lineup. */
+  const bench19874711 = () => fixture(19874711);
+  const facts200 = {
+    externalPlayerId: "200",
+    externalTeamId: "10",
+    role: "substitute" as const,
+    officialMinutes: null,
+    scoringStatisticTypeIds: [],
+    unknownStatisticTypeIds: [],
+    zeroStatisticTypeIds: [],
+    eventTypeIds: [],
+  };
+
+  test("an approved entry is declared on a one-fixture run: that player only, with his digests", async () => {
+    const { result, ingest } = await run({
+      allowlist: [entry()],
+      ingest: () => leftOut(["200"]),
+    });
+    const coverage = ingest!.p_coverage as Record<string, unknown>;
+    // 201 is just as unused, but nobody approved him: he is not declared.
+    expect(coverage.verifiedUnusedSubstitutes).toEqual([
+      {
+        fixtureExternalId: "9001",
+        externalPlayerId: "200",
+        externalTeamId: "10",
+        role: "substitute",
+        officialMinutes: null,
+        scoringStatisticTypeIds: [],
+        unknownStatisticTypeIds: [],
+        eventTypeIds: [],
+        zeroStatisticTypeIds: [],
+        evidenceDigest: evidenceDigest("9001", facts200),
+        preflightDigest: PREFLIGHT_SHA,
+      },
+    ]);
+    // The rows are untouched: the database removes his row, never this script.
+    expect((ingest!.p_rows as unknown[]).length).toBe(24);
+    expect(result).toMatchObject({
+      verdict: "pass",
+      fixtures: [
+        {
+          fixtureExternalId: "9001",
+          players: 23,
+          excludedVerifiedUnusedUnmapped: [
+            {
+              externalPlayerId: "200",
+              evidenceDigest: evidenceDigest("9001", facts200),
+              preflightDigest: PREFLIGHT_SHA,
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  test("the limit is on the approved list: eight unused substitutes, one approved", async () => {
+    const payload = () => {
+      const base = withBench(fixture(), 8);
+      for (let index = 0; index < 8; index += 1) {
+        const lineup = base.data.lineups[22 + index]!;
+        lineup.details = lineup.details.filter((detail) => detail.type_id !== 118);
+      }
+      return base;
+    };
+    const { result, ingest } = await run({
+      allowlist: [entry()],
+      payload,
+      ingest: () => leftOut(["200"], 29),
+    });
+    expect(
+      (ingest!.p_coverage as { verifiedUnusedSubstitutes: unknown[] }).verifiedUnusedSubstitutes,
+    ).toHaveLength(1);
+    expect(result.verdict).toBe("pass");
+  });
+
+  test("a PROPOSED entry is never declared", async () => {
+    const { ingest } = await run({
+      allowlist: [entry({ status: "proposed", approvedBy: null, approvedAt: null })],
+    });
+    expect("verifiedUnusedSubstitutes" in (ingest!.p_coverage as object)).toBe(false);
+  });
+
+  test("an entry for another fixture or another player is never declared", async () => {
+    for (const patch of [{ fixtureExternalId: "9002" }, { externalPlayerId: "201" }]) {
+      const { ingest } = await run({
+        allowlist: [entry(patch)],
+        ingest: () => (patch.externalPlayerId ? leftOut(["201"]) : undefined),
+      });
+      if (patch.fixtureExternalId)
+        expect("verifiedUnusedSubstitutes" in (ingest!.p_coverage as object)).toBe(false);
+    }
+  });
+
+  test("a page or an orchestrator pass never declares, whatever the allowlist holds", async () => {
+    for (const mode of [undefined, "ingest" as const]) {
+      const { ingest } = await run({ allowlist: [entry()], only: null, ...(mode ? { mode } : {}) });
+      expect("verifiedUnusedSubstitutes" in (ingest!.p_coverage as object)).toBe(false);
+    }
+  });
+
+  test("an approved player the provider now shows with minutes stops the fixture, writing nothing", async () => {
+    const payload = () => {
+      const base = bench();
+      base.data.lineups[indexOf(200)]!.details = [
+        {
+          id: 1,
+          fixture_id: 9001,
+          lineup_id: 50,
+          player_id: 200,
+          team_id: 10,
+          type_id: 119,
+          data: { value: 12 },
+        },
+      ];
+      return base;
+    };
+    const { result, ingest, calls } = await run({ allowlist: [entry()], payload });
+    expect(ingest).toBeUndefined();
+    expect(calls).toEqual(["football_current_performance_fixture_batch"]);
+    expect(result.verdict).toBe("incomplete");
+    expect(result.incomplete[0]).toMatchObject({
+      stage: "validation",
+      code: "verified_unused_scope_not_verified",
+      diagnostic: {
+        fixtureExternalId: "9001",
+        externalPlayerId: "200",
+        shortfalls: ["official_minutes_above_zero"],
+      },
+    });
+  });
+
+  test("an approved player who appears in a match event stops the fixture", async () => {
+    const payload = () => {
+      const base = bench();
+      (base.data as unknown as { events: unknown[] }).events = [
+        { id: 1, fixture_id: 9001, type_id: 19, participant_id: 10, player_id: 200, minute: 80 },
+      ];
+      return base;
+    };
+    const { result, ingest } = await run({ allowlist: [entry()], payload });
+    expect(ingest).toBeUndefined();
+    expect(result.incomplete[0]).toMatchObject({
+      code: "verified_unused_scope_not_verified",
+      diagnostic: { shortfalls: ["named_by_a_match_event"] },
+    });
+  });
+
+  test("an approved player who is not in the lineup stops the fixture", async () => {
+    const { result, ingest } = await run({ allowlist: [entry({ externalPlayerId: "999" })] });
+    expect(ingest).toBeUndefined();
+    expect(result.incomplete[0]).toMatchObject({
+      code: "verified_unused_scope_not_verified",
+      diagnostic: { shortfalls: ["not_in_the_lineup"] },
+    });
+  });
+
+  test("a preflight record that changed since review, or cannot be read, stops the fixture", async () => {
+    const changed = await run({
+      allowlist: [entry()],
+      read: () => Buffer.from("edited after review"),
+    });
+    expect(changed.ingest).toBeUndefined();
+    expect(changed.result.incomplete[0]).toMatchObject({
+      code: "preflight_record_changed_since_review",
+    });
+    const missing = await run({
+      allowlist: [entry()],
+      read: () => {
+        throw new Error("ENOENT");
+      },
+    });
+    expect(missing.ingest).toBeUndefined();
+    expect(missing.result.incomplete[0]).toMatchObject({ code: "preflight_record_unreadable" });
+  });
+
+  test("an approved exception under adaptive scoring is not declared and stops the fixture", async () => {
+    // Under adaptive scoring an incomplete fixture is reported through the existing gap
+    // call (which this stand-in answers as "not certified"); it is never ingested.
+    const { result, ingest } = await run({
+      allowlist: [entry()],
+      adaptive: true,
+      ingest: () => ({ data: { certified: false }, error: null }),
+    });
+    expect(ingest).toBeUndefined();
+    expect(result.incomplete[0]).toMatchObject({
+      code: "verified_unused_not_supported_under_adaptive",
+    });
+  });
+
+  test("the result must name exactly the players that were declared", async () => {
+    for (const answer of [["201"], [], ["200", "201"], ["200", "200"], "200", [200], undefined]) {
+      const { result } = await run({ allowlist: [entry()], ingest: () => leftOut(answer) });
+      expect(result.verdict).toBe("incomplete");
+      expect(result.incomplete[0]).toMatchObject({
+        stage: "database",
+        code: "current_performance_reconciliation_failed",
+      });
+    }
+  });
+
+  test("a database that leaves someone out when nobody was declared is refused", async () => {
+    // The row count is right (24), so only the unexpected exclusion is wrong.
+    const { result } = await run({ allowlist: [], ingest: () => leftOut(["200"], 24) });
+    expect(result.verdict).toBe("incomplete");
+    expect(result.incomplete[0]).toMatchObject({
+      code: "current_performance_reconciliation_failed",
+    });
+  });
+
+  test("the row count must follow: declared and left out, 23 of 24", async () => {
+    const { result } = await run({ allowlist: [entry()], ingest: () => leftOut(["200"], 24) });
+    expect(result.verdict).toBe("incomplete");
+  });
+
+  test("a refusal from the database keeps its stable code and the fixture unwritten", async () => {
+    const { result } = await run({
+      allowlist: [entry()],
+      ingest: () => ({
+        data: null,
+        error: { code: "55000", message: "VERIFIED_UNUSED_EXCEPTION_PRECONDITION_FAILED" },
+      }),
+    });
+    expect(result.verdict).toBe("incomplete");
+    expect(result.incomplete[0]).toMatchObject({
+      stage: "database",
+      code: "current_performance_rpc_failed",
+    });
+  });
+
+  test("diagnose reports every entry for the fixture, any status, and writes nothing", async () => {
+    const { result, calls, ingest } = await run({
+      mode: "diagnose",
+      allowlist: [
+        entry(),
+        entry({ externalPlayerId: "201", status: "proposed", approvedBy: null, approvedAt: null }),
+      ],
+    });
+    expect(ingest).toBeUndefined();
+    expect(calls).toEqual(["football_current_performance_fixture_batch"]);
+    expect(result.verdict).toBe("pass");
+    expect(result.fixtures[0]!.verifiedUnusedScope).toEqual([
+      {
+        externalPlayerId: "200",
+        status: "approved",
+        qualifies: true,
+        evidenceDigest: evidenceDigest("9001", facts200),
+        preflightRecordMatchesReview: true,
+      },
+      {
+        externalPlayerId: "201",
+        status: "proposed",
+        qualifies: true,
+        evidenceDigest: evidenceDigest("9001", {
+          ...facts200,
+          externalPlayerId: "201",
+          externalTeamId: "20",
+          officialMinutes: 0,
+          zeroStatisticTypeIds: [52, 57, 79, 83, 84, 85, 88, 112, 113, 119, 324],
+        }),
+        preflightRecordMatchesReview: true,
+      },
+    ]);
+  });
+
+  test("diagnose says so when an entry would not qualify or its record changed, and does not fail", async () => {
+    const { result } = await run({
+      mode: "diagnose",
+      allowlist: [entry({ externalPlayerId: "100" })],
+      read: () => Buffer.from("edited"),
+    });
+    expect(result.verdict).toBe("pass");
+    expect(result.fixtures[0]!.verifiedUnusedScope).toEqual([
+      {
+        externalPlayerId: "100",
+        status: "approved",
+        qualifies: false,
+        shortfalls: [
+          "not_a_substitute",
+          "official_minutes_above_zero",
+          "scoring_statistic_with_a_value",
+        ],
+        preflightRecordMatchesReview: false,
+      },
+    ]);
+  });
+
+  test("a one-fixture run with no option reads the committed allowlist: 711 is only proposed", async () => {
+    const { client, calls } = batchClient({ items: [{ externalFixtureId: "19874711" }] });
+    const result = (await runCurrentPerformanceBatch(
+      client,
+      "t",
+      null,
+      async () => bench19874711(),
+      { onlyFixtureExternalId: "19874711", mode: "diagnose" },
+    )) as unknown as { fixtures: Array<{ verifiedUnusedScope?: Array<Record<string, unknown>> }> };
+    expect(calls).toEqual(["football_current_performance_fixture_batch"]);
+    expect(result.fixtures[0]!.verifiedUnusedScope).toEqual([
+      expect.objectContaining({
+        externalPlayerId: "38227322",
+        status: "proposed",
+        qualifies: false,
+        shortfalls: ["not_in_the_lineup"],
+        preflightRecordMatchesReview: true,
+      }),
+    ]);
+  });
+
+  test("without an entry the ingest call is what it always was", async () => {
+    const { ingest } = await run({ allowlist: [] });
+    const normalized = await normalizeCurrentFinishedFixture(bench(), 9001);
+    expect(ingest!.p_rows).toEqual(normalized.rows);
+    expect(ingest!.p_coverage).toEqual(normalized.coverage);
   });
 });
