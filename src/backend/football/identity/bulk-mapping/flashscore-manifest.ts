@@ -8,23 +8,27 @@ import {
   FLASHSCORE_FORBIDDEN_KEYS,
   FLASHSCORE_REASONS,
 } from "./flashscore-contract";
-import { mapProposalFingerprint } from "./fingerprint";
+import { jsonbFingerprint, mapProposalFingerprint } from "./fingerprint";
 import type { BulkManifestBase, BulkRowBase } from "./profile";
 
 const uuid = z.string().uuid();
 const hex64 = z.string().regex(/^[a-f0-9]{64}$/);
 const isoTimestamp = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/);
-const version = z.string().regex(/^football_player_mapping:[0-9a-f-]{36}$/);
 
-/** The Sofascore mapping a Flashscore row rests on: row, target, state and version, frozen. */
+/**
+ * The Sofascore mapping a Flashscore row rests on, as the DATABASE read it when the manifest was
+ * cut: the row, its target, the executed proposal whose audit record makes it reviewed, and the
+ * state digest the database computed over the row. The database reads the same row again at
+ * propose, at approval and inside the executing transaction, and refuses on any difference.
+ */
 const supportingSchema = z
   .object({
     provider: z.literal("sofascore"),
     externalId: z.string().min(1),
-    candidateId: uuid,
     mappingId: uuid,
     appPlayerId: uuid,
-    version,
+    provenanceProposalId: uuid,
+    stateDigest: hex64,
     state: z.literal("active_reviewed"),
   })
   .strict();
@@ -135,7 +139,7 @@ const heldBackSchema = z
 
 export const flashscoreManifestSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     contractVersion: z.literal(FLASHSCORE_CONTRACT_VERSION),
     environment: z.literal("production-v2"),
     population: z.object({
@@ -164,6 +168,17 @@ export type UnhashedFlashscoreManifest = Omit<FlashscoreManifest, "manifestSha25
 export const asBulkRow = (row: FlashscoreRow): BulkRowBase & FlashscoreRow => row;
 export const asBulkManifest = (m: FlashscoreManifest): BulkManifestBase<FlashscoreRow> => m;
 
+function sortKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortKeys);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([k, v]) => [k, sortKeys(v)]),
+    );
+  return value;
+}
+
 const byCandidate = (a: FlashscoreRow, b: FlashscoreRow) =>
   a.candidateId < b.candidateId ? -1 : a.candidateId > b.candidateId ? 1 : 0;
 
@@ -175,7 +190,7 @@ export async function buildFlashscoreManifest(
   const sorted = [...rows].sort(byCandidate);
   const held = [...heldBack].sort((x, y) => (x.candidateId < y.candidateId ? -1 : 1));
   const unhashed: UnhashedFlashscoreManifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     contractVersion: FLASHSCORE_CONTRACT_VERSION,
     environment: "production-v2",
     population: {
@@ -328,6 +343,40 @@ export async function verifyFlashscoreManifest(
     if (row.auditReason !== FLASHSCORE_REASONS[row.evidenceClass])
       problems.push(`reasons: ${row.candidateId} the audit reason is not its class's wording`);
     problems.push(...classProblems(row));
+    // The dependency block the database stores in the evidence (and so in the fingerprint) must be
+    // exactly this row's supporting binding and evidence references.
+    const stored = (row.fingerprintInputs.evidence as Record<string, unknown>).supporting as
+      | Record<string, unknown>
+      | undefined;
+    const sup = row.supporting;
+    const expectedBlock = {
+      mappingId: sup.mappingId,
+      provider: sup.provider,
+      externalId: sup.externalId,
+      appPlayerId: sup.appPlayerId,
+      active: true,
+      reviewed: true,
+      reviewProvenance: "executed_proposal",
+      provenanceProposalId: sup.provenanceProposalId,
+      stateDigest: sup.stateDigest,
+      evidenceClass: row.evidenceClass,
+    };
+    if (JSON.stringify(sortKeys(stored)) !== JSON.stringify(sortKeys(expectedBlock)))
+      problems.push(
+        `inputs: ${row.candidateId} the stored dependency block is not its supporting binding`,
+      );
+    const refs = (row.fingerprintInputs.evidence as Record<string, unknown>).refs;
+    if (JSON.stringify(refs) !== JSON.stringify(flashscoreEvidenceRefs(row)))
+      problems.push(
+        `inputs: ${row.candidateId} the evidence references are not the ones the proposal carries`,
+      );
+    if (
+      (row.fingerprintInputs.evidence as Record<string, unknown>).refsDigest !==
+      (await jsonbFingerprint(flashscoreEvidenceRefs(row)))
+    )
+      problems.push(
+        `inputs: ${row.candidateId} the evidence-reference digest does not follow from the references`,
+      );
     if (recompute) {
       const i = row.fingerprintInputs;
       const again = await mapProposalFingerprint({

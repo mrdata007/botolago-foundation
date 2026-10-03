@@ -2,6 +2,7 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import { loadAllProposals } from "../review-queue";
 import type { MockSeedCandidate } from "../mock-mapping-repository";
 import { canonicalJson, sha256Hex } from "./canonical";
+import { jsonbFingerprint } from "./fingerprint";
 import {
   FLASHSCORE_BASIS,
   FLASHSCORE_REASONS,
@@ -135,7 +136,12 @@ export async function prepareFlashBatch(
   await runExecute(deps, sofaManifest, everyone, {}, sofascoreProfile);
 
   // 2. Fingerprints for the Flashscore items, from a clean copy.
-  const oracle = newRepo(fw.world, { actor, allowSelfApproval: true });
+  // The same reviewed Sofascore mappings (the database reads them for every Flashscore proposal).
+  const oracle = newRepo(fw.world, {
+    actor,
+    allowSelfApproval: true,
+    mappings: repo.mappings.map((m) => ({ ...m })),
+  });
   const proposals = await loadAllProposals(repo, "executed", context);
   const candidates = await Promise.all(
     sofaManifest.rows.map(async (r) => ({
@@ -149,13 +155,14 @@ export async function prepareFlashBatch(
     const evidenceClass = fw.classOf(i);
     const sofaRow = candidates[i - 1]!;
     const proposal = proposals.find((p) => p.sofascoreCandidateId === sofaRow.row.candidateId)!;
+    const actual = (await repo.getProviderMapping("sofascore", sofaRow.row.externalId, context))!;
     const supporting = {
       provider: "sofascore" as const,
       externalId: sofaRow.row.externalId,
-      candidateId: sofaRow.row.candidateId,
       mappingId: sofaRow.candidate.existingMappingId!,
       appPlayerId: playerId(i),
-      version: `football_player_mapping:${proposal.id}`,
+      provenanceProposalId: proposal.id,
+      stateDigest: actual.stateDigest,
       state: "active_reviewed" as const,
     };
     const fixtures = [
@@ -192,6 +199,8 @@ export async function prepareFlashBatch(
           appPlayerId: playerId(i),
           basis: FLASHSCORE_BASIS[evidenceClass],
           evidenceRefs: flashscoreEvidenceRefs(base),
+          evidenceClass,
+          supportingMappingId: supporting.mappingId,
         },
       ],
       reason,
@@ -226,7 +235,31 @@ export async function prepareFlashBatch(
         flashscoreExternalId: `F${i}`,
         appPlayerId: playerId(i),
         candidateRevisions: { flashscore: flashCandidate.evidenceRevision },
-        evidence: {},
+        evidence: {
+          candidates: [
+            {
+              provider: "flashscore",
+              externalId: `F${i}`,
+              candidateId: flashCandidateUuid(i),
+              observationCount: 1,
+            },
+          ],
+          appPlayerId: playerId(i),
+          supporting: {
+            mappingId: supporting.mappingId,
+            provider: supporting.provider,
+            externalId: supporting.externalId,
+            appPlayerId: supporting.appPlayerId,
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: supporting.provenanceProposalId,
+            stateDigest: supporting.stateDigest,
+            evidenceClass,
+          },
+          refsDigest: await jsonbFingerprint(flashscoreEvidenceRefs(base)),
+          refs: flashscoreEvidenceRefs(base),
+        },
         signals: {},
         positionDisagreement: false,
       },

@@ -3,15 +3,15 @@ begin;
 select extensions.no_plan();
 select set_config('app.environment', 'test', true);
 
--- The Flashscore evidence batch against the REAL database functions, on a synthetic world. No
--- migration is involved: the batch reuses propose (<= 25 items a call, one reason a call), approve
--- and execute, one proposal at a time, exactly like the completed Sofascore batch. Each Flashscore
--- row rests on a Sofascore mapping that already exists, so the Sofascore side is first mapped through
--- the real reviewed flow (which is what leaves the audit trail the client reads back).
+-- The Flashscore evidence batch against the REAL database functions, on a synthetic world. The batch
+-- reuses propose (<= 25 items a call, one reason a call), approve and execute, one proposal at a time,
+-- exactly like the completed Sofascore batch. Each Flashscore row rests on a Sofascore mapping that
+-- already exists, so the Sofascore side is first mapped through the real reviewed flow.
 --
--- What the database itself does NOT do, and the client therefore must (and is tested to): re-check
--- that the supporting Sofascore mapping is still active, still on the same player and still at the
--- same version. Section 6 pins that fact so a future change to it shows up here.
+-- The database itself enforces that dependency (migration 20261003120000): every Flashscore-only
+-- proposal names its supporting Sofascore mapping and evidence class; the server reads that row, stores
+-- its state in the fingerprinted evidence, and refuses to propose, approve or execute when it is
+-- missing, inactive, unreviewed or on another player. Section 6 asserts that refusal.
 
 create temporary table stash (k text primary key, v text);
 create function pg_temp.put(p_key text, p_value text) returns void language sql as
@@ -88,7 +88,7 @@ select api.football_mapping_record_observations(jsonb_agg(jsonb_build_object(
   'appTeamId', 'e4000000-0000-4000-8000-' || lpad(club::text, 12, '0'), 'squadCompleteness', 'COMPLETE',
   'registeredTeamDisagreement', false, 'shirtNumber', shirt, 'positionSignal', pos, 'dobState', 'valid',
   'birthDate', dob::text, 'dobJanuary1', false, 'displayName', 'Provider Name ' || i)))
-from world where i <= 60;
+from world where i <= 62;
 -- Flashscore candidates: no birth date, observed from a squad list.
 select api.football_mapping_record_observations(jsonb_agg(jsonb_build_object(
   'provider', 'flashscore', 'externalPlayerId', 'F' || i, 'providerTeamId', 'FT' || club, 'clubKey', 'flash-club-' || club,
@@ -99,7 +99,7 @@ select api.football_mapping_record_observations(jsonb_agg(jsonb_build_object(
   'dobState', 'missing', 'displayName', 'Flash Name ' || i)))
 from world;
 
-select extensions.is((select count(*)::int from app_private.football_player_mapping_candidates), 122, '0.1 60 + 62 candidates');
+select extensions.is((select count(*)::int from app_private.football_player_mapping_candidates), 124, '0.1 62 + 62 candidates');
 
 -- Baselines.
 create function pg_temp.world_parts() returns jsonb language sql as $$
@@ -128,7 +128,7 @@ select api.admin_football_mapping_propose(
   'Seed the Sofascore side of the test world, second part.', gen_random_uuid());
 select api.admin_football_mapping_propose(
   (select jsonb_agg(jsonb_build_object('kind', 'map', 'sofascoreCandidateId', c.id, 'appPlayerId', ('a1000000-0000-4000-8000-' || lpad(substr(c.external_id, 2), 12, '0')), 'basis', 'manual') order by c.id)
-   from app_private.football_player_mapping_candidates c where c.provider_name = 'sofascore' and substr(c.external_id, 2)::int between 51 and 60),
+   from app_private.football_player_mapping_candidates c where c.provider_name = 'sofascore' and substr(c.external_id, 2)::int between 51 and 62),
   'Seed the Sofascore side of the test world, third part.', gen_random_uuid());
 create function pg_temp.approve_and_execute_all() returns void language plpgsql as $$
 declare p record;
@@ -143,8 +143,8 @@ begin
 end;
 $$;
 select pg_temp.approve_and_execute_all();
-select extensions.is((select count(*)::int from app_private.football_provider_mappings where provider_name = 'sofascore' and active and source_version like 'football_player_mapping:%'), 60,
-  '1.1 60 reviewed Sofascore mappings exist, each stamped by its own proposal');
+select extensions.is((select count(*)::int from app_private.football_provider_mappings where provider_name = 'sofascore' and active and source_version like 'football_player_mapping:%'), 62,
+  '1.1 62 reviewed Sofascore mappings exist, each stamped by its own proposal');
 select pg_temp.put('sofa_digest', (select md5(string_agg(m::text, ',' order by m.id)) from app_private.football_provider_mappings m where m.provider_name = 'sofascore'));
 select pg_temp.put('world_parts', pg_temp.world_parts()::text);
 
@@ -163,9 +163,14 @@ create function pg_temp.refs(p_i integer, p_cls text) returns jsonb language sql
       'mappingId', (select m.id from app_private.football_provider_mappings m where m.provider_name = 'sofascore' and m.external_id = 'S' || p_i)),
     jsonb_build_object('source', 'finished_match', 'evidenceClass', p_cls || '_CLASS', 'sofascoreFixture', '1000' || (p_i % 3), 'flashscoreFixture', 'FX' || (p_i % 3)))
 $$;
+create function pg_temp.klass(p_cls text) returns text language sql as $$
+  select case p_cls when 'F1' then 'F1_REVIEWED_SOFASCORE_EVENTS' else 'F2_REVIEWED_SOFASCORE_SHIRT_DOB' end $$;
+create function pg_temp.supporting(p_i integer) returns uuid language sql as $$
+  select m.id from app_private.football_provider_mappings m where m.provider_name = 'sofascore' and m.external_id = 'S' || p_i $$;
 create function pg_temp.item(p_i integer, p_cls text) returns jsonb language sql as $$
   select jsonb_build_object('kind', 'map', 'flashscoreCandidateId', c.id,
-    'appPlayerId', 'a1000000-0000-4000-8000-' || lpad(p_i::text, 12, '0'), 'basis', pg_temp.basis(p_cls), 'evidenceRefs', pg_temp.refs(p_i, p_cls))
+    'appPlayerId', 'a1000000-0000-4000-8000-' || lpad(p_i::text, 12, '0'), 'basis', pg_temp.basis(p_cls), 'evidenceRefs', pg_temp.refs(p_i, p_cls),
+    'evidenceClass', pg_temp.klass(p_cls), 'supportingMappingId', pg_temp.supporting(p_i))
   from app_private.football_player_mapping_candidates c where c.provider_name = 'flashscore' and c.external_id = 'F' || p_i
 $$;
 create function pg_temp.items(p_cls text) returns jsonb language sql as $$
@@ -176,7 +181,7 @@ $$;
 create function pg_temp.expected(p_i integer, p_cls text) returns text language sql as $$
   with c as (
     select k.id as cand, 'a1000000-0000-4000-8000-' || lpad(p_i::text, 12, '0') as tgt,
-      app_private.football_mapping_compute('map', null, k.id, null, null, ('a1000000-0000-4000-8000-' || lpad(p_i::text, 12, '0'))::uuid, null, null) as v
+      app_private.football_mapping_compute('map', null, k.id, null, null, ('a1000000-0000-4000-8000-' || lpad(p_i::text, 12, '0'))::uuid, null, null, null, pg_temp.klass(p_cls), pg_temp.supporting(p_i), pg_temp.refs(p_i, p_cls)) as v
     from app_private.football_player_mapping_candidates k where k.provider_name = 'flashscore' and k.external_id = 'F' || p_i)
   select app_private.admin_payload_fingerprint(jsonb_build_object(
     'kind', 'map', 'sofascoreCandidateId', null, 'flashscoreCandidateId', c.cand,
@@ -216,7 +221,7 @@ select extensions.is((select count(*)::int from app_private.football_player_mapp
   '2.8 each carries its class wording and basis, and a Flashscore proposal never mentions a SportsMonks or Tier claim');
 select extensions.is((select count(*)::int from app_private.football_player_mapping_proposals where flashscore_candidate_id is not null and (reason ~* 'sportsmonks|tier [ab]')), 0,
   '2.8b (the wording is checked, not assumed)');
-select extensions.is((select count(*)::int from app_private.admin_audit_events where action = 'football.mapping_proposed') , 60 + 40, '2.9 one audit event per proposal');
+select extensions.is((select count(*)::int from app_private.admin_audit_events where action = 'football.mapping_proposed') , 62 + 40, '2.9 one audit event per proposal');
 select extensions.is((select count(*)::int from app_private.football_provider_mappings where provider_name = 'flashscore'), 0, '2.10 PROPOSE maps nothing');
 
 -- The backend's own holds: a position disagreement is parked for a note; the club mismatch is flagged.
@@ -295,7 +300,7 @@ select extensions.is((select count(*)::int from app_private.football_provider_ma
   '4.3 exactly 38 reviewed Flashscore mapping rows exist, each from its own proposal');
 select extensions.is((select count(*)::int from app_private.football_player_mapping_candidates where provider_name = 'flashscore' and status = 'mapped' and existing_mapping_id is not null), 38 + 1,
   '4.4 38 executed + the one candidate whose id someone else mapped are mapped; nobody else');
-select extensions.is((select count(*)::int from app_private.admin_audit_events where action = 'football.mapping_executed'), 60 + 38, '4.5 one execution audit event per mapping');
+select extensions.is((select count(*)::int from app_private.admin_audit_events where action = 'football.mapping_executed'), 62 + 38, '4.5 one execution audit event per mapping');
 
 -- ===========================================================================
 -- 5. Invariance: nothing the batch is not about moved
@@ -327,11 +332,11 @@ select pg_temp.put('re_mapping', (select id::text from app_private.football_prov
 select pg_temp.put('off', api.admin_football_mapping_propose(jsonb_build_array(
   jsonb_build_object('kind', 'deactivate', 'providerName', 'sofascore', 'mappingId', pg_temp.get('off_mapping'))), 'Deactivate a supporting mapping for the test.', gen_random_uuid())::text);
 select pg_temp.put('re', api.admin_football_mapping_propose(jsonb_build_array(
-  jsonb_build_object('kind', 'replace', 'providerName', 'sofascore', 'mappingId', pg_temp.get('re_mapping'), 'newAppPlayerId', 'a1000000-0000-4000-8000-000000000061')), 'Retarget a supporting mapping for the test.', gen_random_uuid())::text);
+  jsonb_build_object('kind', 'replace', 'providerName', 'sofascore', 'mappingId', pg_temp.get('re_mapping'), 'newAppPlayerId', 'a1000000-0000-4000-8000-000000000063')), 'Retarget a supporting mapping for the test.', gen_random_uuid())::text);
 select pg_temp.approve_and_execute_all();
 select extensions.is((select (executed_after ->> 'active')::boolean from app_private.football_player_mapping_proposals where id = (pg_temp.get('off')::jsonb -> 'proposals' -> 0 ->> 'id')::uuid), false,
   '6.4 a deactivation records the row as it is afterwards (inactive), by mapping id');
-select extensions.is((select executed_after ->> 'appPlayerId' from app_private.football_player_mapping_proposals where id = (pg_temp.get('re')::jsonb -> 'proposals' -> 0 ->> 'id')::uuid), 'a1000000-0000-4000-8000-000000000061',
+select extensions.is((select executed_after ->> 'appPlayerId' from app_private.football_player_mapping_proposals where id = (pg_temp.get('re')::jsonb -> 'proposals' -> 0 ->> 'id')::uuid), 'a1000000-0000-4000-8000-000000000063',
   '6.5 a retarget records the new player');
 select extensions.is((select status from app_private.football_player_mapping_candidates where provider_name = 'sofascore' and external_id = 'S50'), 'unmapped',
   '6.6 the Sofascore candidate reads "unmapped" once its mapping is inactive (the client reads exactly this)');
@@ -342,16 +347,21 @@ select extensions.is((select status from app_private.football_player_mapping_can
 select extensions.isnt((select source_version from app_private.football_provider_mappings where id = pg_temp.get('re_mapping')::uuid),
   'football_player_mapping:' || (select id::text from app_private.football_player_mapping_proposals where sofascore_candidate_id = (select id from app_private.football_player_mapping_candidates where external_id = 'S49') and kind = 'map' and status = 'executed'),
   '6.9 and the retargeted row carries a NEW version stamp');
--- The fact the client exists to cover: the database does not look at the supporting mapping when a Flashscore
--- proposal executes. F50's supporting mapping (S50) is inactive now; the proposal still goes through. (If a future
--- migration adds that check, this test should change with it.)
+-- The database now enforces the dependency: F50's supporting mapping (S50) is inactive, so the Flashscore
+-- proposal for it is refused at propose, with a stable reason, and nothing is created.
 select pg_temp.act('a');
-select pg_temp.put('f50', api.admin_football_mapping_propose(jsonb_build_array(pg_temp.item(50, 'F2')), pg_temp.reason('F2'), gen_random_uuid())::text);
-select api.admin_football_mapping_decide((pg_temp.get('f50')::jsonb -> 'proposals' -> 0 ->> 'id')::uuid, 'approve', 'Approved for the test.',
-  pg_temp.get('f50')::jsonb -> 'proposals' -> 0 ->> 'fingerprint', false, gen_random_uuid());
-select api.admin_football_mapping_execute((pg_temp.get('f50')::jsonb -> 'proposals' -> 0 ->> 'id')::uuid, gen_random_uuid());
-select extensions.is((select status from app_private.football_player_mapping_proposals where id = (pg_temp.get('f50')::jsonb -> 'proposals' -> 0 ->> 'id')::uuid), 'executed',
-  '6.10 the database executes a Flashscore proposal whose supporting mapping is inactive: the client re-check is the only guard, which is why it exists');
+select extensions.is((api.admin_football_mapping_propose(jsonb_build_array(pg_temp.item(50, 'F2')), pg_temp.reason('F2'), gen_random_uuid()) -> 'proposals' -> 0 ->> 'code'),
+  'supporting_mapping_inactive',
+  '6.10 a Flashscore proposal whose supporting Sofascore mapping is inactive is refused by the database (the old expectation that it goes through is gone)');
+select extensions.is((select count(*)::int from app_private.football_player_mapping_proposals where flashscore_candidate_id = (select id from app_private.football_player_mapping_candidates where external_id = 'F50')), 0,
+  '6.11 and no proposal was created');
+select extensions.is((select count(*)::int from app_private.football_provider_mappings where provider_name = 'flashscore' and external_id = 'F50'), 0,
+  '6.12 and no Flashscore mapping was written');
+-- Retargeted (S49 now on another player): the proposal for player 49 is refused as well (the row was rewritten through the reviewed flow, so
+-- it is reviewed again, but it no longer resolves to the proposed player).
+select extensions.is((api.admin_football_mapping_propose(jsonb_build_array(pg_temp.item(49, 'F2')), pg_temp.reason('F2'), gen_random_uuid()) -> 'proposals' -> 0 ->> 'code'),
+  'supporting_mapping_target_mismatch',
+  '6.13 a supporting mapping that now resolves to another player is refused');
 
 -- ===========================================================================
 -- 7. A session without the second factor or a recent sign-in changes nothing

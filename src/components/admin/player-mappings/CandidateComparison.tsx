@@ -106,8 +106,15 @@ export function CandidateComparison({
   const selectedSignals = selected ? readOptionSignals(selected.signals) : null;
   const visible = showAll ? options : options.slice(0, INITIAL_OPTIONS);
 
+  // A Flashscore identity cannot be proposed from here: the database requires the reviewed Sofascore
+  // mapping it rests on, and this form has none to give (the Flashscore batch screen carries it).
+  const flashscoreNeedsSupport = candidate.provider === "flashscore";
   const canPropose =
-    writesEnabled && viewer.canManage && candidate.status === "unmapped" && openProposal === null;
+    writesEnabled &&
+    viewer.canManage &&
+    candidate.status === "unmapped" &&
+    openProposal === null &&
+    !flashscoreNeedsSupport;
 
   return (
     <section
@@ -361,6 +368,18 @@ export function CandidateComparison({
           openProposal === null &&
           candidate.status !== "unmapped" && (
             <p className={cn(ui.text.secondary, ui.tone.muted)}>{copy.propose.notUnmapped}</p>
+          )}
+        {writesEnabled &&
+          viewer.canManage &&
+          openProposal === null &&
+          candidate.status === "unmapped" &&
+          flashscoreNeedsSupport && (
+            <p
+              className={cn(ui.text.secondary, ui.tone.muted)}
+              data-testid="mapping-flashscore-needs-support"
+            >
+              {copy.propose.flashscoreNeedsSupport}
+            </p>
           )}
         {canPropose && (
           <>

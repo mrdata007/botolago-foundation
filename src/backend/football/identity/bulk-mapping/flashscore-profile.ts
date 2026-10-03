@@ -1,5 +1,5 @@
-import type { CandidateDto, ProposalDto } from "../mapping-contracts";
-import { loadAllProposals, loadOptions, readOptionSignals } from "../review-queue";
+import type { CandidateDto, ProposalDto, ProviderMappingDto } from "../mapping-contracts";
+import { loadOptions, mapWithConcurrency, readOptionSignals } from "../review-queue";
 import type { BulkRowState } from "./contract";
 import {
   FLASHSCORE_APPROVAL_REASON,
@@ -10,25 +10,26 @@ import {
 } from "./flashscore-contract";
 import { flashscoreEvidenceRefs, type FlashscoreRow } from "./flashscore-manifest";
 import type { BulkProfile, PhaseSnapshot, ProfileDeps, Revalidation } from "./profile";
-import { checkSupportingMapping } from "./supporting-mapping";
+import { checkSupportingMapping, providerMappingKey } from "./supporting-mapping";
 
 const refuse = (state: BulkRowState, code: string): Revalidation => ({ ok: false, state, code });
 
 const OPEN = new Set(["pending", "approved", "position_disagreement", "stale_evidence"]);
 
 /**
- * The supporting Sofascore mapping, checked against the data in hand: the Sofascore
- * candidate record and every executed proposal. Pure.
+ * The supporting Sofascore mapping, checked against the actual mapping row the database reports
+ * (api.admin_football_mapping_get_provider_mapping), read now. Pure over that one read.
  */
-function supportingFrom(row: FlashscoreRow, snapshot: PhaseSnapshot): Revalidation {
-  const candidate = snapshot.candidates.find((c) => c.id === row.supporting.candidateId);
-  const verdict = checkSupportingMapping(
-    row.supporting,
-    candidate,
-    snapshot.proposals.filter((p) => p.status === "executed"),
-  );
+function supportingFrom(
+  row: FlashscoreRow,
+  current: ProviderMappingDto | null | undefined,
+): Revalidation {
+  const verdict = checkSupportingMapping(row.supporting, current);
   return verdict.ok ? verdict : refuse(verdict.state, verdict.code);
 }
+
+const readSupporting = (deps: ProfileDeps, row: FlashscoreRow) =>
+  deps.repository.getProviderMapping("sofascore", row.supporting.externalId, deps.context());
 
 /** Another proposal, open or executed, already holds this target for this provider or this id. */
 function claimedByAnother(row: FlashscoreRow, snapshot: PhaseSnapshot): Revalidation | null {
@@ -96,29 +97,14 @@ async function revalidate(
     }
   }
 
-  // The supporting Sofascore mapping: same row, still active, still this player, same version.
-  const supportingCandidate = await deps.repository.getMappingCandidate(
-    row.supporting.candidateId,
-    context,
-  );
-  const fresh: PhaseSnapshot = {
-    candidates: [
-      ...snapshot.candidates.filter((c) => c.id !== supportingCandidate.id),
-      supportingCandidate,
-    ],
-    proposals: snapshot.proposals,
-  };
-  return supportingFrom(row, fresh);
+  // The supporting Sofascore mapping, read from the database now: same row, still active, still
+  // reviewed, still this player, same state. (The database checks it again on its own.)
+  return supportingFrom(row, await readSupporting(deps, row));
 }
 
-/** Immediately before one execution: fresh reads of the supporting mapping, never the phase snapshot. */
+/** Immediately before one execution: a fresh read of the supporting mapping, never the phase snapshot. */
 async function beforeExecute(deps: ProfileDeps, row: FlashscoreRow): Promise<Revalidation> {
-  const context = deps.context();
-  const [supportingCandidate, executed] = await Promise.all([
-    deps.repository.getMappingCandidate(row.supporting.candidateId, context),
-    loadAllProposals(deps.repository, "executed", context),
-  ]);
-  return supportingFrom(row, { candidates: [supportingCandidate], proposals: executed });
+  return supportingFrom(row, await readSupporting(deps, row));
 }
 
 export const flashscoreProfile: BulkProfile<FlashscoreRow> = {
@@ -134,21 +120,35 @@ export const flashscoreProfile: BulkProfile<FlashscoreRow> = {
     appPlayerId: row.appPlayerId,
     basis: FLASHSCORE_BASIS[row.evidenceClass],
     evidenceRefs: flashscoreEvidenceRefs(row),
+    // The database requires, and reads for itself, the Sofascore mapping this row rests on.
+    evidenceClass: row.evidenceClass,
+    supportingMappingId: row.supporting.mappingId,
   }),
   revalidate,
   beforeExecute,
+  async loadSupporting(deps, rows) {
+    const reads = await mapWithConcurrency(rows, 4, async (row) => {
+      const mapping = await readSupporting(deps, row);
+      return [providerMappingKey("sofascore", row.supporting.externalId), mapping] as const;
+    });
+    return new Map(reads);
+  },
   inspect: (row, snapshot) => {
-    const verdict = supportingFrom(row, snapshot);
+    const key = providerMappingKey("sofascore", row.supporting.externalId);
+    // Not read yet (a screen still loading): say nothing; the phases read it again anyway.
+    if (!snapshot.providerMappings?.has(key)) return null;
+    const verdict = supportingFrom(row, snapshot.providerMappings.get(key));
     return verdict.ok ? null : { state: verdict.state, code: verdict.code };
   },
 };
 
 /**
  * The same supporting-mapping check, for ONE proposal executed outside the bulk runner (the
- * ordinary proposal queue). The reviewed backend does not look at the supporting Sofascore
- * mapping, so every execution path in this client re-reads it first. A Flashscore proposal for a
- * candidate the manifest covers is checked whatever its reason says; one the manifest does not
- * cover has no supporting binding to check and is left to the backend. Returns the refusal, or null.
+ * ordinary proposal queue): an early warning from a fresh read of the actual mapping row. The
+ * database enforces the dependency on its own (propose, approve and execute all refuse), so
+ * this is never the guard; it only tells the person before they press. A Flashscore proposal for
+ * a candidate the manifest covers is checked whatever its reason says; one the manifest does not
+ * cover has no binding to compare and is left to the database. Returns the refusal, or null.
  */
 export async function guardFlashscoreExecute(
   deps: ProfileDeps,

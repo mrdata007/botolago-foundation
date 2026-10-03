@@ -58,13 +58,32 @@ export const bulkKey = (manifest: Pick<BulkManifestBase, "manifestSha256">, ...p
   deterministicUuid([manifest.manifestSha256, ...parts].join("|"));
 
 /** Everything a phase starts from: every candidate and every proposal, read now. */
-export async function loadSnapshot(deps: BulkDeps) {
+export async function loadSnapshot<R extends BulkRowBase>(
+  deps: BulkDeps,
+  profile?: BulkProfile<R>,
+  rows: readonly R[] = [],
+) {
   const context = deps.context();
   const [candidates, proposals] = await Promise.all([
     loadAllCandidates(deps.repository, {}, context),
     loadAllProposals(deps.repository, null, context),
   ]);
-  return { candidates, proposals };
+  // The mapping rows the batch rests on (if any), read from the database now, never remembered.
+  let providerMappings:
+    | Awaited<ReturnType<NonNullable<BulkProfile<R>["loadSupporting"]>>>
+    | undefined;
+  if (profile?.loadSupporting) {
+    try {
+      providerMappings = await profile.loadSupporting(deps, rows);
+    } catch (error) {
+      // A refused session stops everything. Anything else (the read function missing on a database that
+      // does not have the migration, a network error) only means "not read": each row's own check reads
+      // again before anything is sent, and fails on its own.
+      if (SESSION_CODES.has(mapMappingError(error).code)) throw error;
+      providerMappings = undefined;
+    }
+  }
+  return { candidates, proposals, providerMappings };
 }
 
 const asOutcome = (
@@ -190,13 +209,14 @@ export async function runPropose<R extends BulkRowBase = BulkRowBase>(
   profile: BulkProfile<R> = defaultProfile<R>(),
 ): Promise<PhaseResult> {
   const now = (deps.now ?? (() => new Date()))();
-  const snapshot = await loadSnapshot(deps);
+  const snapshot = await loadSnapshot(deps, profile, manifest.rows);
   const states = deriveAllRowStates(
     manifest,
     snapshot.candidates,
     snapshot.proposals,
     now,
     profile,
+    snapshot.providerMappings,
   );
   const outcomes = new Map<string, RowOutcome>();
   const emit = (o: RowOutcome) => {
@@ -296,13 +316,14 @@ export async function runApprove<R extends BulkRowBase = BulkRowBase>(
   profile: BulkProfile<R> = defaultProfile<R>(),
 ): Promise<PhaseResult> {
   const now = (deps.now ?? (() => new Date()))();
-  const snapshot = await loadSnapshot(deps);
+  const snapshot = await loadSnapshot(deps, profile, manifest.rows);
   const states = deriveAllRowStates(
     manifest,
     snapshot.candidates,
     snapshot.proposals,
     now,
     profile,
+    snapshot.providerMappings,
   );
   const outcomes = new Map<string, RowOutcome>();
   const emit = (o: RowOutcome) => {
@@ -396,13 +417,14 @@ export async function runExecute<R extends BulkRowBase = BulkRowBase>(
   profile: BulkProfile<R> = defaultProfile<R>(),
 ): Promise<PhaseResult> {
   const now = (deps.now ?? (() => new Date()))();
-  const snapshot = await loadSnapshot(deps);
+  const snapshot = await loadSnapshot(deps, profile, manifest.rows);
   const states = deriveAllRowStates(
     manifest,
     snapshot.candidates,
     snapshot.proposals,
     now,
     profile,
+    snapshot.providerMappings,
   );
   const outcomes = new Map<string, RowOutcome>();
   const emit = (o: RowOutcome) => {

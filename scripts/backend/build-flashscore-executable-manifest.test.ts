@@ -12,10 +12,10 @@ import {
 const root = resolve(import.meta.dir, "../..");
 const text = (path: string) => readFileSync(resolve(root, path), "utf8");
 const READ = JSON.parse(
-  text("tests/fixtures/identity/gw1-flashscore-production-read-2026-10-03.json"),
+  text("tests/fixtures/identity/gw1-flashscore-production-read-v2-2026-10-03.json"),
 ) as ProductionRead;
 const committed = JSON.parse(
-  text("docs/production/manifests/gw1-flashscore-executable.manifest.json"),
+  text("docs/production/manifests/gw1-flashscore-executable.v2.manifest.json"),
 ) as { manifestSha256: string };
 
 const row = (
@@ -34,6 +34,10 @@ describe("the executable Flashscore manifest builder", () => {
     expect(sql).not.toMatch(
       /\b(insert|update|delete|drop|alter|truncate|create|grant|revoke|call)\b\s/i,
     );
+    // Production has not applied the migration: the read computes the supporting state with plain
+    // SELECTs and never calls a function that only exists after it.
+    expect(sql).not.toMatch(/football_mapping_supporting_(state|dependency)|get_provider_mapping/);
+    expect(sql).toMatch(/app_private\.football_provider_mappings/);
     // 53 rows go in, in candidate order, with no name.
     expect((sql.match(/::uuid,2,'/g) ?? []).length).toBe(53);
     expect(sql).not.toMatch(/display_?name|full_?name/i);
@@ -94,8 +98,44 @@ describe("the executable Flashscore manifest builder", () => {
     expect(built.manifest.rows).toHaveLength(41);
   });
 
+  test("a supporting mapping the database does not read as active, reviewed and on the same player drops the row", async () => {
+    const mutate = (patch: Record<string, unknown>) => ({
+      ...READ,
+      rows: READ.rows.map((r, i) =>
+        i === 1 ? { ...r, supporting: { ...r.supporting, ...patch } } : r,
+      ),
+    });
+    const id = READ.rows[1]!.candidateId;
+    for (const patch of [
+      { reviewed: false },
+      { active: false },
+      { appPlayerId: "00000000-0000-4000-8000-000000000001" },
+      { provenanceProposalId: null },
+    ]) {
+      const built = await buildFromRead(mutate(patch) as ProductionRead);
+      expect(built.dropped).toEqual([{ candidateId: id, why: "supporting_mapping_does_not_hold" }]);
+    }
+  });
+
+  test("the fingerprint follows the supporting state: another digest, another fingerprint", async () => {
+    const base = await buildFromRead(READ);
+    const edited: ProductionRead = {
+      ...READ,
+      rows: READ.rows.map((r, i) =>
+        i === 1 ? { ...r, supporting: { ...r.supporting, stateDigest: "f".repeat(64) } } : r,
+      ),
+    };
+    const changed = await buildFromRead(edited);
+    const id = READ.rows[1]!.candidateId;
+    const a = base.manifest.rows.find((r) => r.candidateId === id);
+    const b = changed.manifest.rows.find((r) => r.candidateId === id);
+    if (a && b) expect(b.expectedFingerprint).not.toBe(a.expectedFingerprint);
+    expect(changed.manifest.manifestSha256).not.toBe(base.manifest.manifestSha256);
+  });
+
   test("any claim, open proposal or changed supporting mapping in the read makes the whole run refuse", async () => {
     for (const key of [
+      "supporting_unreviewed",
       "claimed_for_flashscore",
       "open_proposal",
       "supporting_inactive",

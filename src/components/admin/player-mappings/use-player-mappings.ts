@@ -243,6 +243,10 @@ export function createMappingActions(
   };
   return {
     async propose(candidate, appPlayerId, reason) {
+      // The database refuses a Flashscore-only proposal without its supporting Sofascore mapping.
+      // This path has none to give: say so here instead of sending a call that cannot succeed.
+      if (candidate.provider === "flashscore")
+        throw mapMappingError({ message: "supporting_dependency_required" });
       const result = await repository.proposeMappings(
         [
           {

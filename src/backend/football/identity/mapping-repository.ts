@@ -5,6 +5,7 @@ import {
   candidateSchema,
   proposalSchema,
   proposeResultSchema,
+  providerMappingSchema,
   reviewerAvailabilitySchema,
   transitionResultSchema,
   type AppPlayerOption,
@@ -13,6 +14,7 @@ import {
   type ProposalDto,
   type ProposeItem,
   type ProposeResult,
+  type ProviderMappingDto,
   type ReviewerAvailability,
   type TransitionResult,
 } from "./mapping-contracts";
@@ -32,6 +34,16 @@ export interface PlayerMappingRepository {
     context: RepositoryContext,
   ): Promise<readonly CandidateDto[]>;
   getMappingCandidate(candidateId: string, context: RepositoryContext): Promise<CandidateDto>;
+  /**
+   * The ACTUAL provider mapping row (null when there is none), read by the database from its own
+   * table: identity, target, active, whether it was reviewed (computed from the audit record, never
+   * from a version label), and a state digest. The one read every supporting-mapping check uses.
+   */
+  getProviderMapping(
+    provider: "sofascore" | "flashscore",
+    externalId: string,
+    context: RepositoryContext,
+  ): Promise<ProviderMappingDto | null>;
   /** App players ranked by agreement for one candidate. Ranks; never filters on position. */
   listMappingCandidatesForAppPlayer(
     candidateId: string,
@@ -174,6 +186,17 @@ function parse<T>(schema: { parse(value: unknown): T }, value: unknown): T {
   }
 }
 
+/** The dependency fields travel only when set, so a Sofascore item's payload is exactly what it always was. */
+function dependencyOf(item: {
+  readonly evidenceClass?: string;
+  readonly supportingMappingId?: string;
+}): Record<string, unknown> {
+  return {
+    ...(item.evidenceClass ? { evidenceClass: item.evidenceClass } : {}),
+    ...(item.supportingMappingId ? { supportingMappingId: item.supportingMappingId } : {}),
+  };
+}
+
 function toRpcItem(item: ProposeItem): Record<string, unknown> {
   switch (item.kind) {
     case "map":
@@ -184,6 +207,7 @@ function toRpcItem(item: ProposeItem): Record<string, unknown> {
         appPlayerId: item.appPlayerId,
         basis: item.basis ?? "manual",
         evidenceRefs: item.evidenceRefs ?? [],
+        ...dependencyOf(item),
       };
     case "replace":
     case "reactivate":
@@ -193,6 +217,8 @@ function toRpcItem(item: ProposeItem): Record<string, unknown> {
         mappingId: item.mappingId,
         newExternalId: item.newExternalId ?? null,
         newAppPlayerId: item.newAppPlayerId ?? null,
+        ...(item.evidenceRefs ? { evidenceRefs: item.evidenceRefs } : {}),
+        ...dependencyOf(item),
       };
     case "deactivate":
       return { kind: "deactivate", providerName: item.providerName, mappingId: item.mappingId };
@@ -249,6 +275,19 @@ export class SupabasePlayerMappingRepository implements PlayerMappingRepository 
       context,
     );
     return parse(candidateSchema, data);
+  }
+
+  async getProviderMapping(
+    provider: "sofascore" | "flashscore",
+    externalId: string,
+    context: RepositoryContext,
+  ) {
+    const data = await this.call(
+      "admin_football_mapping_get_provider_mapping",
+      { p_provider: provider, p_external_id: externalId },
+      context,
+    );
+    return data === null || data === undefined ? null : parse(providerMappingSchema, data);
   }
 
   async listMappingCandidatesForAppPlayer(

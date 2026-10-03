@@ -82,6 +82,16 @@ export const MAPPING_ERROR_CODES = [
   "invalid_filter",
   "invalid_decision",
   "idempotency_conflict",
+  "supporting_dependency_required",
+  "supporting_dependency_invalid",
+  "supporting_dependency_not_applicable",
+  "supporting_mapping_missing",
+  "supporting_mapping_not_sofascore",
+  "supporting_mapping_inactive",
+  "supporting_mapping_unreviewed",
+  "supporting_mapping_target_mismatch",
+  "supporting_mapping_changed",
+  "evidence_refs_required",
   "mapping_unavailable",
 ] as const;
 export type MappingErrorCode = (typeof MAPPING_ERROR_CODES)[number];
@@ -103,7 +113,28 @@ export const ITEM_REFUSAL_CODES = [
   "already_ignored",
   "not_ignored",
   "ignore_refused_id_in_lineup",
+  "supporting_dependency_required",
+  "supporting_dependency_invalid",
+  "supporting_dependency_not_applicable",
+  "supporting_mapping_missing",
+  "supporting_mapping_not_sofascore",
+  "supporting_mapping_inactive",
+  "supporting_mapping_unreviewed",
+  "supporting_mapping_target_mismatch",
+  "supporting_mapping_changed",
+  "evidence_refs_required",
 ] as const;
+
+/**
+ * The two evidence classes a Flashscore proposal may rest on: both name a reviewed Sofascore mapping
+ * that the database reads itself (migration 20261003120000). The class is a label; the database
+ * validates the mapping, not the match evidence.
+ */
+export const SUPPORTING_EVIDENCE_CLASSES = [
+  "F1_REVIEWED_SOFASCORE_EVENTS",
+  "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+] as const;
+export type SupportingEvidenceClass = (typeof SUPPORTING_EVIDENCE_CLASSES)[number];
 
 const uuid = z.string().uuid();
 const isoDate = z.string().min(10);
@@ -143,6 +174,30 @@ export const candidateSchema = z.object({
   openProposalId: uuid.nullable(),
 });
 export type CandidateDto = z.infer<typeof candidateSchema>;
+
+/**
+ * The actual provider mapping row, as the database reads it (api.admin_football_mapping_get_provider_mapping).
+ * `reviewed` is computed by the database from the row's flags AND the audit record of the executed
+ * proposal that wrote it: a version label alone never makes a row reviewed. No name, no birth date.
+ */
+export const providerMappingSchema = z.object({
+  mappingId: uuid,
+  provider: z.enum(MAPPING_PROVIDERS),
+  entityType: z.literal("player"),
+  externalId: z.string(),
+  appPlayerId: uuid,
+  active: z.boolean(),
+  manuallyCorrected: z.boolean(),
+  reviewed: z.boolean(),
+  reviewProvenance: z.enum(["executed_proposal", "none"]),
+  provenanceProposalId: uuid.nullable(),
+  correctedAt: nullableString,
+  sourceVersion: nullableString,
+  updatedAt: z.string(),
+  /** Over every identity-relevant field; changes whenever the row changes what it means. */
+  stateDigest: z.string().regex(/^[a-f0-9]{64}$/),
+});
+export type ProviderMappingDto = z.infer<typeof providerMappingSchema>;
 
 export const proposalSchema = z.object({
   id: uuid,
@@ -241,6 +296,12 @@ export type ProposeItem =
       readonly basis?: BasisInput;
       /** References only (fixture ids, incident kinds, minutes). A name key is refused. */
       readonly evidenceRefs?: readonly Record<string, string | number>[];
+      /**
+       * A Flashscore-only proposal MUST name the reviewed Sofascore mapping it rests on and its
+       * evidence class: the database reads that row itself and refuses the proposal without it.
+       */
+      readonly evidenceClass?: SupportingEvidenceClass;
+      readonly supportingMappingId?: string;
     }
   | {
       readonly kind: "replace" | "reactivate";
@@ -248,6 +309,10 @@ export type ProposeItem =
       readonly mappingId: string;
       readonly newExternalId?: string;
       readonly newAppPlayerId?: string;
+      /** Required when the mapping is a Flashscore one (against the player it will have afterwards). */
+      readonly evidenceClass?: SupportingEvidenceClass;
+      readonly supportingMappingId?: string;
+      readonly evidenceRefs?: readonly Record<string, string | number>[];
     }
   | {
       readonly kind: "deactivate";

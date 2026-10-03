@@ -1,6 +1,6 @@
 import type { CandidateDto, ProposalDto } from "../mapping-contracts";
 import { APPROVAL_VALIDITY_HOURS, type BulkRowState } from "./contract";
-import type { BulkManifestBase, BulkProfile, BulkRowBase } from "./profile";
+import type { BulkManifestBase, BulkProfile, BulkRowBase, PhaseSnapshot } from "./profile";
 import { sofascoreProfile } from "./sofascore-profile";
 
 export interface RowStateInfo {
@@ -112,6 +112,7 @@ export function deriveAllRowStates<R extends BulkRowBase>(
   proposals: readonly ProposalDto[],
   now: Date,
   profile: BulkProfile<R> = sofascoreProfile as unknown as BulkProfile<R>,
+  providerMappings?: PhaseSnapshot["providerMappings"],
 ): ReadonlyMap<string, RowStateInfo> {
   const byId = new Map(candidates.map((c) => [c.id, c]));
   return new Map(
@@ -121,7 +122,7 @@ export function deriveAllRowStates<R extends BulkRowBase>(
       // row: its supporting mapping). Anything already executed stays executed.
       const refusal =
         profile.inspect && ["NOT_PROPOSED", "PROPOSED", "APPROVED"].includes(derived.state)
-          ? profile.inspect(row, { candidates, proposals })
+          ? profile.inspect(row, { candidates, proposals, providerMappings })
           : null;
       return [
         row.candidateId,
