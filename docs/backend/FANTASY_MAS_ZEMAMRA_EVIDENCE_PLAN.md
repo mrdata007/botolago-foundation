@@ -71,6 +71,16 @@ I re-read the seven candidates: all `unmapped`, evidence revision 2, no proposal
 
 The existing workflow holds the five position proposals until someone records a note and acknowledges the difference. Nothing was recorded.
 
+**The discrepancy notes, exact text (10 to 500 characters each; facts only, no name, no date).** Each is the note the owner would record for that proposal, and nothing here has been recorded.
+
+| Sofascore id                          | Note                                                                                                                                                                                                                                                    |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 544156, 1140961, 1525325, 1919299     | `Provider lists this player as a midfielder; the catalogue lists a forward. This link maps the identity only. It changes no canonical or Fantasy position, club, price or locked lineup. The difference is acknowledged, not resolved.`                 |
+| 1096751                               | The same note, then: `The second provider (SportsMonks) changed its own birth date for this player between its 27 September and 1 October observations; the later value matches neither the catalogue nor Sofascore. Two of three sources still agree.` |
+| 919340, 1182110 (no note is required) | For the reason field only: `The provider's match-day shirt differs from the catalogue's squad shirt; the position agrees. This link maps the identity only and changes nothing in the catalogue or in Fantasy.`                                         |
+
+The five position cases are `544156`, `1096751`, `1140961`, `1525325` and `1919299`: the provider's position (midfielder) differs from the catalogue's (forward). The two shirt-only cases are `919340` and `1182110`.
+
 **What a link leaves alone.** A mapping writes only the workflow tables and the provider mapping row (I read the functions: no `app.*` table is written). So it moves no player's Fantasy club, position, price, locked-lineup association or historical scoring. The state before the link, read now:
 
 | Sofascore id | Fantasy club | Fantasy position | Price | Squads holding him | Locked GW1 lineups holding him |
