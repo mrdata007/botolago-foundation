@@ -172,7 +172,10 @@ export function PredictionsPage({
             <button
               type="button"
               onClick={() => setRulesOpen(true)}
-              className={cn("flex flex-wrap justify-center gap-2 rounded-full", ui.focus)}
+              className={cn(
+                "flex min-h-[var(--ui-tap-min)] flex-wrap items-center justify-center gap-2 rounded-full",
+                ui.focus,
+              )}
             >
               <UiBadge tone="positive">{t("predictions.rules.chip_exact")}</UiBadge>
               <UiBadge tone="outline">{t("predictions.rules.chip_outcome")}</UiBadge>
