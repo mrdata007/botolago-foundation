@@ -86,6 +86,7 @@ const SYSTEM_PROMPT = [
   "not in the facts. If a detail is not supplied, leave it out. Do not guess.",
   "For news and blog pieces, put every claim in your own words and credit the",
   "outlet by name when you rely on it; never copy sentences from an excerpt.",
+  "Write any score as digits with a hyphen, like 2-1, never in words.",
   "Write in clear, neutral, engaging journalistic prose. Plain text only: no",
   "markdown, no HTML, no lists, no emoji.",
   "Reply with a single JSON object and nothing else, in this exact shape:",
@@ -186,23 +187,77 @@ function collectScorePairs(value: unknown, into: Set<string>): void {
   for (const child of Object.values(value)) collectScorePairs(child, into);
 }
 
+const NUMBER_WORDS: readonly (readonly [string, number])[] = [
+  // French
+  ["zéro", 0],
+  ["zero", 0],
+  ["une", 1],
+  ["un", 1],
+  ["deux", 2],
+  ["trois", 3],
+  ["quatre", 4],
+  ["cinq", 5],
+  ["six", 6],
+  ["sept", 7],
+  ["huit", 8],
+  ["neuf", 9],
+  // Arabic
+  ["صفر", 0],
+  ["واحد", 1],
+  ["اثنان", 2],
+  ["اثنين", 2],
+  ["ثلاثة", 3],
+  ["ثلاث", 3],
+  ["أربعة", 4],
+  ["اربعة", 4],
+  ["أربع", 4],
+  ["خمسة", 5],
+  ["خمس", 5],
+  ["ستة", 6],
+  ["سبعة", 7],
+  ["ثمانية", 8],
+  ["تسعة", 9],
+];
+
+/** Digits in either script, and spelled-out 0-9 in French and Arabic, as plain 0-9. */
+function normalizeScoreText(text: string): string {
+  let out = westernDigits(text).toLowerCase();
+  for (const [word, value] of NUMBER_WORDS) {
+    out = out.replace(
+      new RegExp(`(?<![\\p{L}\\p{N}])${word}(?![\\p{L}\\p{N}])`, "gu"),
+      String(value),
+    );
+  }
+  return out;
+}
+
+// "3-0", "3 – 0", "3 à 0", "٣ مقابل ٠", "3 إلى 0", and "3:0" (a single-digit
+// second number, so clock times such as 20:00 or 9:05 are never read as scores).
+const SCORE_PATTERNS: readonly RegExp[] = [
+  /(?<![\d:/.-])(\d{1,2})(?:\s*[-–—]\s*|\s+(?:à|مقابل|إلى|الى)\s+)(\d{1,2})(?![\d:/.-])/gu,
+  /(?<![\d:/.-])(\d{1,2})\s*:\s*(\d)(?![\d:])/gu,
+];
+
 /**
- * Every "N-N" in the text must be a score that is in the supplied facts, in
- * either order. This does not prove the article is true; it stops the most
- * embarrassing failure -- an invented scoreline -- from reaching the site.
+ * Every score written in the text must be one in the supplied facts, in either
+ * order. Scores are recognised however they are written (digits, French "à",
+ * Arabic "مقابل", colons, spelled-out numbers). This does not prove the
+ * article is true; it stops the most embarrassing failure -- an invented
+ * scoreline -- from reaching the site.
  */
 export function inventedScores(job: ContentJob, article: GeneratedArticle): string[] {
   const allowed = new Set<string>();
   collectScorePairs(job.facts, allowed);
   collectScorePairs(job.recentResults, allowed);
   const found = new Set<string>();
-  const pattern = /(?<![\d:/.-])(\d{1,2})\s*[-–]\s*(\d{1,2})(?![\d:/.-])/g;
   for (const language of LANGUAGES) {
     const { title, summary, paragraphs } = article[language];
-    const text = westernDigits([title, summary, ...paragraphs].join("\n"));
-    for (const match of text.matchAll(pattern)) {
-      const pair = `${match[1]}-${match[2]}`;
-      if (!allowed.has(pair)) found.add(pair);
+    const text = normalizeScoreText([title, summary, ...paragraphs].join("\n"));
+    for (const pattern of SCORE_PATTERNS) {
+      for (const match of text.matchAll(pattern)) {
+        const pair = `${match[1]}-${match[2]}`;
+        if (!allowed.has(pair)) found.add(pair);
+      }
     }
   }
   return [...found];
@@ -449,26 +504,27 @@ export async function handleAiContentRequest(
       continue;
     }
     const sourceIds = (job.news ?? []).map((item) => item.editionId);
-    let storyId: string | null = null;
     try {
-      for (const language of LANGUAGES) {
+      const editions = LANGUAGES.map((language) => {
         const html = renderBodyHtml(language, article[language], job.news);
-        const result = (await rpc(deps.client, "service_ai_content_publish", {
-          p_kind: job.kind,
-          p_fixture_id: job.fixtureId,
-          p_story_id: storyId,
-          p_language: language,
-          p_slug: slugFor(job.kind, language, now(), randomHex()),
-          p_title: article[language].title,
-          p_summary: article[language].summary,
-          p_body_html: html,
-          p_reading_time_minutes: readingTimeMinutes(html),
-          p_source_edition_ids: sourceIds,
-          p_model: model,
-          p_sanitizer_version: SANITIZER_VERSION,
-        })) as { storyId?: string };
-        storyId = result.storyId ?? storyId;
-      }
+        return {
+          language,
+          slug: slugFor(job.kind, language, now(), randomHex()),
+          title: article[language].title,
+          summary: article[language].summary,
+          bodyHtml: html,
+          readingTimeMinutes: readingTimeMinutes(html),
+        };
+      });
+      // One call, one transaction: both languages go live together or not at all.
+      await rpc(deps.client, "service_ai_content_publish", {
+        p_kind: job.kind,
+        p_fixture_id: job.fixtureId,
+        p_editions: editions,
+        p_source_edition_ids: sourceIds,
+        p_model: model,
+        p_sanitizer_version: SANITIZER_VERSION,
+      });
       summary.published += 1;
     } catch (error) {
       summary.failed += 1;

@@ -1671,18 +1671,12 @@ export type Database = {
       service_ai_content_plan: { Args: never; Returns: Json }
       service_ai_content_publish: {
         Args: {
-          p_body_html: string
+          p_editions: Json
           p_fixture_id: string
           p_kind: string
-          p_language: string
           p_model: string
-          p_reading_time_minutes: number
           p_sanitizer_version: string
-          p_slug: string
           p_source_edition_ids: string[]
-          p_story_id: string
-          p_summary: string
-          p_title: string
         }
         Returns: Json
       }

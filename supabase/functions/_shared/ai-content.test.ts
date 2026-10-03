@@ -50,6 +50,17 @@ describe("inventedScores", () => {
   it("flags a score that is not in the facts", () => {
     expect(inventedScores(recap, article("Une victoire 3-0 écrasante"))).toEqual(["3-0"]);
   });
+  it("catches scores written in French, Arabic, colon and spelled-out forms", () => {
+    expect(inventedScores(recap, article("Ils s'imposent 3 à 0"))).toEqual(["3-0"]);
+    expect(inventedScores(recap, article("x", "فاز الفريق ٣ مقابل ٠"))).toEqual(["3-0"]);
+    expect(inventedScores(recap, article("Score final 4:0 au stade"))).toEqual(["4-0"]);
+    expect(inventedScores(recap, article("Une victoire trois à zéro"))).toEqual(["3-0"]);
+    expect(inventedScores(recap, article("x", "انتهت بنتيجة ثلاثة إلى صفر"))).toEqual(["3-0"]);
+  });
+  it("allows the real score in those forms, and ignores clock times", () => {
+    expect(inventedScores(recap, article("Victoire 2 à 1, deux à un, 2 مقابل 1"))).toEqual([]);
+    expect(inventedScores(recap, article("Coup d'envoi à 20:00 puis 9:05"))).toEqual([]);
+  });
   it("reads Arabic-Indic digits and ignores dates and clock times", () => {
     expect(inventedScores(recap, article("x", "فاز الفريق ٤-٠"))).toEqual(["4-0"]);
     expect(inventedScores(recap, article("Le 2026-10-03 à 20:00 le match"))).toEqual([]);
@@ -188,11 +199,9 @@ describe("handleAiContentRequest", () => {
     });
     expect(await response.json()).toMatchObject({ published: 1, rejected: 0, notified: 1 });
     const publishes = calls.filter((c) => c.name === "service_ai_content_publish");
-    expect(publishes.map((c) => (c.args as { p_language: string }).p_language)).toEqual([
-      "fr",
-      "ar",
-    ]);
-    expect((publishes[1].args as { p_story_id: string }).p_story_id).toBe("story-1");
+    expect(publishes).toHaveLength(1);
+    const editions = (publishes[0].args as { p_editions: { language: string }[] }).p_editions;
+    expect(editions.map((e) => e.language)).toEqual(["fr", "ar"]);
     expect(sent.some((s) => s.url.includes("resend"))).toBe(true);
     expect(calls.find((c) => c.name === "service_ai_content_record_notice")?.args).toMatchObject({
       p_sent: true,

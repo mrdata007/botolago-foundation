@@ -314,18 +314,15 @@ begin
 end;
 $$;
 
--- Stores one language edition of an article as published. A second language
--- of the same article passes the story id returned by the first.
+-- Stores BOTH language editions of one article as published, in this single
+-- call, so either both are live or neither is: a failure on the second edition
+-- rolls the first back with it. p_editions is a JSON array of exactly two
+-- objects, one for 'fr' and one for 'ar', each with slug, title, summary,
+-- bodyHtml and readingTimeMinutes.
 create or replace function api.service_ai_content_publish(
   p_kind text,
   p_fixture_id uuid,
-  p_story_id uuid,
-  p_language text,
-  p_slug text,
-  p_title text,
-  p_summary text,
-  p_body_html text,
-  p_reading_time_minutes integer,
+  p_editions jsonb,
   p_source_edition_ids uuid[],
   p_model text,
   p_sanitizer_version text
@@ -339,27 +336,32 @@ as $$
 declare
   settings app_private.ai_content_settings%rowtype;
   ai_publisher app.publishers%rowtype;
-  target_story_id uuid := p_story_id;
+  target_story_id uuid;
   target_edition_id uuid;
   latest_taxonomy_id uuid;
   used integer;
+  edition jsonb;
+  edition_language text;
+  edition_html text;
+  edition_slug text;
+  edition_title text;
+  edition_summary text;
+  edition_minutes integer;
+  published_ids uuid[] := '{}';
 begin
   if not app_private.is_service_request() then
     raise exception using errcode = '42501', message = 'ai_content_service_role_required';
   end if;
   if p_kind not in ('match_preview', 'match_recap', 'news_report', 'blog')
-    or p_language not in ('fr', 'ar')
-    or p_slug !~ '^[a-z0-9]+(?:-[a-z0-9]+)*$' or char_length(p_slug) > 160
-    or p_title is null or p_title <> btrim(p_title) or char_length(p_title) not between 5 and 220
-    or p_summary is null or p_summary <> btrim(p_summary) or char_length(p_summary) not between 10 and 1000
     or p_sanitizer_version <> 'ai-content-v1'
-    or p_reading_time_minutes not between 1 and 60
-    or char_length(p_body_html) not between 200 and 20000
-    or p_body_html ~* '<[[:space:]]*(script|iframe|object|embed|style|form|input|button|textarea|select|meta|link|img)([[:space:]>])'
-    or p_body_html ~* 'on[a-z]+[[:space:]]*='
-    or p_body_html ~* '(javascript|data[[:space:]]*:[[:space:]]*text/html)[[:space:]]*:'
     or (p_kind in ('match_preview', 'match_recap')) <> (p_fixture_id is not null)
     or p_model is null or char_length(p_model) not between 1 and 100
+    or p_editions is null or jsonb_typeof(p_editions) <> 'array'
+    or jsonb_array_length(p_editions) <> 2
+    or (select count(distinct e ->> 'language') from jsonb_array_elements(p_editions) e) <> 2
+    or exists (
+      select 1 from jsonb_array_elements(p_editions) e where (e ->> 'language') not in ('fr', 'ar')
+    )
   then
     raise exception using errcode = '22023', message = 'ai_content_invalid_article';
   end if;
@@ -376,33 +378,20 @@ begin
     raise exception using errcode = 'P0002', message = 'ai_content_fixture_not_found';
   end if;
 
-  if target_story_id is null then
-    select count(distinct story_id) into used
-    from app_private.ai_content_articles
-    where created_at > statement_timestamp() - interval '24 hours';
-    if used >= settings.max_articles_per_day then
-      raise exception using errcode = '53400', message = 'ai_content_daily_cap_reached';
-    end if;
-    select * into ai_publisher from app.publishers where slug = 'botolago-ai' and active;
-    if not found then
-      raise exception using errcode = 'P0002', message = 'ai_content_publisher_missing';
-    end if;
-    insert into app.stories (origin, original_language, publisher_id)
-    values ('manual', p_language::app.language_code, ai_publisher.id)
-    returning id into target_story_id;
-  elsif not exists (select 1 from app_private.ai_content_articles where story_id = target_story_id) then
-    -- A story id is only accepted when it is an AI story of ours.
-    raise exception using errcode = 'P0002', message = 'ai_content_story_not_found';
+  select count(distinct story_id) into used
+  from app_private.ai_content_articles
+  where created_at > statement_timestamp() - interval '24 hours';
+  if used >= settings.max_articles_per_day then
+    raise exception using errcode = '53400', message = 'ai_content_daily_cap_reached';
   end if;
 
-  insert into app.article_editions (
-    story_id, language, slug, title, summary, body_format, body_source, body_html,
-    status, visibility, published_at, reading_time_minutes, sanitizer_version
-  ) values (
-    target_story_id, p_language::app.language_code, p_slug, p_title, p_summary,
-    'rich_text', null, p_body_html, 'published', 'public', statement_timestamp(),
-    p_reading_time_minutes, p_sanitizer_version
-  ) returning id into target_edition_id;
+  select * into ai_publisher from app.publishers where slug = 'botolago-ai' and active;
+  if not found then
+    raise exception using errcode = 'P0002', message = 'ai_content_publisher_missing';
+  end if;
+  insert into app.stories (origin, original_language, publisher_id)
+  values ('manual', 'fr', ai_publisher.id)
+  returning id into target_story_id;
 
   select id into latest_taxonomy_id from app.taxonomies
   where taxonomy_type = 'category' and slug = 'latest' and active;
@@ -412,14 +401,44 @@ begin
     on conflict (story_id, taxonomy_id) do nothing;
   end if;
 
-  insert into app_private.ai_content_articles (
-    article_edition_id, story_id, kind, fixture_id, language, source_edition_ids, model
-  ) values (
-    target_edition_id, target_story_id, p_kind, p_fixture_id, p_language::app.language_code,
-    coalesce(p_source_edition_ids, '{}'), p_model
-  );
+  for edition in select e from jsonb_array_elements(p_editions) e loop
+    edition_language := edition ->> 'language';
+    edition_slug := edition ->> 'slug';
+    edition_title := edition ->> 'title';
+    edition_summary := edition ->> 'summary';
+    edition_html := edition ->> 'bodyHtml';
+    edition_minutes := (edition ->> 'readingTimeMinutes')::integer;
+    if edition_slug is null or edition_slug !~ '^[a-z0-9]+(?:-[a-z0-9]+)*$' or char_length(edition_slug) > 160
+      or edition_title is null or edition_title <> btrim(edition_title) or char_length(edition_title) not between 5 and 220
+      or edition_summary is null or edition_summary <> btrim(edition_summary) or char_length(edition_summary) not between 10 and 1000
+      or edition_minutes is null or edition_minutes not between 1 and 60
+      or edition_html is null or char_length(edition_html) not between 200 and 20000
+      or edition_html ~* '<[[:space:]]*(script|iframe|object|embed|style|form|input|button|textarea|select|meta|link|img)([[:space:]>])'
+      or edition_html ~* 'on[a-z]+[[:space:]]*='
+      or edition_html ~* '(javascript|data[[:space:]]*:[[:space:]]*text/html)[[:space:]]*:'
+    then
+      raise exception using errcode = '22023', message = 'ai_content_invalid_article';
+    end if;
 
-  return jsonb_build_object('storyId', target_story_id, 'articleId', target_edition_id);
+    insert into app.article_editions (
+      story_id, language, slug, title, summary, body_format, body_source, body_html,
+      status, visibility, published_at, reading_time_minutes, sanitizer_version
+    ) values (
+      target_story_id, edition_language::app.language_code, edition_slug, edition_title,
+      edition_summary, 'rich_text', null, edition_html, 'published', 'public',
+      statement_timestamp(), edition_minutes, p_sanitizer_version
+    ) returning id into target_edition_id;
+
+    insert into app_private.ai_content_articles (
+      article_edition_id, story_id, kind, fixture_id, language, source_edition_ids, model
+    ) values (
+      target_edition_id, target_story_id, p_kind, p_fixture_id, edition_language::app.language_code,
+      coalesce(p_source_edition_ids, '{}'), p_model
+    );
+    published_ids := published_ids || target_edition_id;
+  end loop;
+
+  return jsonb_build_object('storyId', target_story_id, 'articleIds', to_jsonb(published_ids));
 exception when unique_violation then
   raise exception using errcode = '23505', message = 'ai_content_already_published';
 end;
@@ -473,13 +492,13 @@ $$;
 
 revoke all on function api.service_ai_content_plan() from public, anon, authenticated;
 revoke all on function api.service_ai_content_publish(
-  text, uuid, uuid, text, text, text, text, text, integer, uuid[], text, text
+  text, uuid, jsonb, uuid[], text, text
 ) from public, anon, authenticated;
 revoke all on function api.service_ai_content_pending_notices() from public, anon, authenticated;
 revoke all on function api.service_ai_content_record_notice(uuid[], boolean) from public, anon, authenticated;
 grant execute on function api.service_ai_content_plan() to service_role;
 grant execute on function api.service_ai_content_publish(
-  text, uuid, uuid, text, text, text, text, text, integer, uuid[], text, text
+  text, uuid, jsonb, uuid[], text, text
 ) to service_role;
 grant execute on function api.service_ai_content_pending_notices() to service_role;
 grant execute on function api.service_ai_content_record_notice(uuid[], boolean) to service_role;
