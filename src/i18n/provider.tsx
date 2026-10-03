@@ -15,6 +15,7 @@ import { INITIAL_LANGUAGE_STATE, languageNotice, languageReducer } from "./langu
 import { LanguageLoadNotice } from "./language-load-notice";
 import { retryableImport } from "./retryable-import";
 import { useSplashDone } from "@/lib/launch-sequence";
+import { withViewTransition } from "@/lib/motion";
 import type { Language, LocalizedString } from "@/types/domain";
 
 const STORAGE_KEY = "botolago.language";
@@ -146,7 +147,10 @@ function LanguageProvider({ children }: { children: ReactNode }) {
         /* ignore */
       }
       const ready = isReady(l);
-      dispatch({ type: "chosen", lang: l, ready });
+      // A language that is already loaded cross-fades in; one still being
+      // downloaded switches when it arrives, as before.
+      if (ready) withViewTransition(() => dispatch({ type: "chosen", lang: l, ready }));
+      else dispatch({ type: "chosen", lang: l, ready });
       if (!ready) fetchDictionary(l);
     },
     [fetchDictionary],

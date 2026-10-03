@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { flashClass, useChangeFlash, useCountUp } from "@/lib/motion";
+import { flashClass, useChangeFlash, useCountUp, useJustChanged } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -48,4 +48,18 @@ export function FlashOnChange({
   return (
     <span className={cn(flash && ["rounded-sm", flash], className) || undefined}>{children}</span>
   );
+}
+
+/** A small figure (a player's points) that pops when its value changes while the page is open. */
+export function PopOnChange({
+  value,
+  children,
+  className,
+}: {
+  value: number | string | null | undefined;
+  children: ReactNode;
+  className?: string;
+}) {
+  const changed = useJustChanged(value);
+  return <span className={cn(changed && "pop", className) || undefined}>{children}</span>;
 }

@@ -9,7 +9,7 @@ import { isKickoffDateUnconfirmed, isKickoffTimeUnconfirmed } from "@/lib/match-
 import { cn } from "@/lib/utils";
 import type { MatchEvent } from "@/services/match-live";
 import type { Club, Match } from "@/types/domain";
-import { useTickingMinute } from "@/lib/motion";
+import { useJustTurnedOn, useTickingMinute } from "@/lib/motion";
 import { BallIcon } from "./BallIcon";
 import { FlipScore } from "./FlipScore";
 import { GOAL_EVENT_TYPES } from "./goal-moment";
@@ -70,6 +70,8 @@ export function MatchScoreHeader({
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   // The minute keeps ticking between refreshes (at most one ahead of the data).
   const liveMinute = useTickingMinute(match.minute, match.status === "live");
+  // The match ended while the page was open: the final score settles, the FT pill pops.
+  const justFinished = useJustTurnedOn(match.status === "finished");
   const kickoff = new Date(match.kickoff);
   const timeFmt = moroccoDateTimeFormat(locale, {
     hour: "2-digit",
@@ -144,7 +146,13 @@ export function MatchScoreHeader({
             <div
               aria-live={isLive ? "polite" : undefined}
               aria-atomic="true"
-              className={cn("px-4 py-1", ui.surface.scorebox, ui.radius.card, ui.shadow.lifted)}
+              className={cn(
+                "px-4 py-1",
+                ui.surface.scorebox,
+                ui.radius.card,
+                ui.shadow.lifted,
+                justFinished && "settle",
+              )}
             >
               <span className="sr-only">{scoreA11y}</span>
               <span aria-hidden className={cn("flex items-center gap-3", ui.score.hero)}>
@@ -184,7 +192,9 @@ export function MatchScoreHeader({
               <span className="sr-only">{t("matches.detail.live_updating")}</span>
             </>
           ) : isFinished ? (
-            <span className={cn(STATUS_PILL, ui.surface.inkPlain)}>{t("matches.status.ft")}</span>
+            <span className={cn(STATUS_PILL, ui.surface.inkPlain, justFinished && "pop")}>
+              {t("matches.status.ft")}
+            </span>
           ) : isScheduled ? (
             <span className={cn(STATUS_PILL, ui.surface.inkPlain)}>
               {t("matches.status.scheduled")}

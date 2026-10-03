@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { Trophy } from "lucide-react";
 import { useState } from "react";
 
 import type { LeaderboardScope, OpenLeaderboardDto } from "@/backend/predictions/contracts";
@@ -35,11 +36,14 @@ export function PredictionsLeaderboard({
   roundNumber,
   uid,
   guestPoints,
+  onPredict,
 }: {
   roundNumber: number;
   uid: string | null;
   /** A visitor's points on this phone for the journée, when they have some. */
   guestPoints: number | null;
+  /** Sends the reader back to the picking tab from the empty board. */
+  onPredict: () => void;
 }) {
   const { t, lang } = useI18n();
   const [scope, setScope] = useState<LeaderboardScope>("round");
@@ -113,7 +117,19 @@ export function PredictionsLeaderboard({
       ) : board.isError ? (
         <UiErrorState onRetry={() => void board.refetch()} />
       ) : rows.length === 0 ? (
-        <UiEmptyState title={t("predictions.board.empty")} />
+        <UiEmptyState
+          title={
+            <span className="flex flex-col items-center gap-2 pb-3">
+              <Trophy className="h-7 w-7" aria-hidden />
+              {t("predictions.board.empty")}
+            </span>
+          }
+          action={
+            <UiButton variant="ink" onClick={onPredict}>
+              {t("predictions.board.empty_cta")}
+            </UiButton>
+          }
+        />
       ) : (
         <UiCard padding="none" className="overflow-hidden">
           <UiTable caption={t("predictions.tab.board")}>

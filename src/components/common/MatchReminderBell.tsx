@@ -44,6 +44,14 @@ export function MatchReminderBell({ fixtureId }: { fixtureId: string }) {
     if (userId) syncRemindersOnce(userId);
   }, [userId]);
   const [pending, setPending] = useState(false);
+  // The bell rings once after the reader's own tap switches a reminder on, never
+  // because saved reminders were read in after the page opened.
+  const [ringing, setRinging] = useState(false);
+  useEffect(() => {
+    if (!ringing) return;
+    const timer = setTimeout(() => setRinging(false), 900);
+    return () => clearTimeout(timer);
+  }, [ringing]);
 
   const toggle = async (account: string) => {
     const enable = !on;
@@ -51,6 +59,7 @@ export function MatchReminderBell({ fixtureId }: { fixtureId: string }) {
     try {
       await setMyMatchReminder(fixtureId, enable);
       rememberReminder(account, fixtureId, enable);
+      setRinging(enable);
       if (!enable) {
         toast(t("reminders.toast.off"));
         return;
@@ -95,7 +104,11 @@ export function MatchReminderBell({ fixtureId }: { fixtureId: string }) {
       disabled={pending}
       onClick={onClick}
     >
-      {on ? <BellRing aria-hidden /> : <Bell aria-hidden />}
+      {on ? (
+        <BellRing aria-hidden className={ringing ? "wiggle" : undefined} />
+      ) : (
+        <Bell aria-hidden />
+      )}
     </UiIconButton>
   );
 }

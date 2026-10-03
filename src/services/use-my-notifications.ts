@@ -25,6 +25,11 @@ function useSignedInUserId(): string | null {
 
 /** The bell's count: asked only for a signed-in account, keyed by that account. */
 export function useUnreadNotificationCount(): number {
+  return useUnreadNotificationState().count;
+}
+
+/** The bell's count, and whether it has been read yet (false while the first read is on its way). */
+export function useUnreadNotificationState(): { count: number; ready: boolean } {
   const userId = useSignedInUserId();
   const query = useQuery({
     queryKey: [...MY_NOTIFICATIONS_QUERY_KEY, "unread", userId],
@@ -34,7 +39,7 @@ export function useUnreadNotificationCount(): number {
     refetchInterval: UNREAD_REFRESH_MS,
     refetchIntervalInBackground: false,
   });
-  return query.data ?? 0;
+  return { count: query.data ?? 0, ready: query.isSuccess };
 }
 
 /** The inbox, newest first, a page at a time. */

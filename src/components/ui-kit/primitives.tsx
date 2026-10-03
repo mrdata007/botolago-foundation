@@ -1224,7 +1224,7 @@ export function UiStatePanel({
             aria-hidden
             loading="lazy"
             decoding="async"
-            className="mx-auto mb-3 h-28 w-auto max-w-full object-contain"
+            className="drift-in mx-auto mb-3 h-28 w-auto max-w-full object-contain"
           />
         ) : isError ? (
           <AlertTriangle className="mx-auto h-7 w-7 text-[color:var(--ui-negative)]" aria-hidden />
@@ -1448,6 +1448,8 @@ export function UiSheet({
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
             "data-[state=open]:duration-[var(--duration-sheet)] data-[state=closed]:duration-[var(--duration-quick)]",
+            // Arrives with a hair of overshoot and settles; leaves plainly.
+            "data-[state=open]:ease-[var(--ease-settle)] data-[state=closed]:ease-[var(--ease-standard)]",
             className,
           )}
         >

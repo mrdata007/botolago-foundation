@@ -10,7 +10,8 @@ import { Search } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 
 import { useI18n } from "@/i18n/provider";
-import { searchEntries, type SearchEntry } from "@/lib/global-search";
+import { highlightParts, searchEntries, type SearchEntry } from "@/lib/global-search";
+import { staggerStyle } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
@@ -151,15 +152,27 @@ export function GlobalSearch({
                   go(entry);
                 }}
                 onMouseEnter={() => setActive(index)}
+                style={staggerStyle(index)}
                 className={cn(
-                  "flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3",
+                  "enter-rise stagger flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3",
                   ui.radius.control,
                   ui.text.meta,
                   index === active && "bg-[color:var(--ui-surface-sunken)]",
                 )}
               >
                 <span className="min-w-0 truncate [font-weight:var(--ui-weight-heavy)]">
-                  {entry.label}
+                  {highlightParts(entry.label, text).map((part, position) =>
+                    part.match ? (
+                      <mark
+                        key={position}
+                        className="rounded-[2px] bg-[color:color-mix(in_oklab,var(--ui-accent-spring)_50%,transparent)] text-inherit"
+                      >
+                        {part.text}
+                      </mark>
+                    ) : (
+                      <span key={position}>{part.text}</span>
+                    ),
+                  )}
                 </span>
                 <span className={cn("shrink-0", ui.tone.muted)}>
                   {entry.hint ? `${entry.hint} · ` : ""}

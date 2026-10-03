@@ -1,6 +1,7 @@
 import { AlertTriangle, Check, CloudOff, Loader2, ShieldAlert, Smartphone } from "lucide-react";
 
 import { ui, UiButton } from "@/components/ui-kit";
+import { useJustTurnedOn } from "@/lib/motion";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "./predictions-copy";
@@ -26,10 +27,13 @@ export function PredictionsStickyBar({
   onSignUp: () => void;
 }) {
   const { t, lang } = useI18n();
+  const complete = total > 0 && done >= total;
+  const justCompleted = useJustTurnedOn(complete);
+  const percent = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
   return (
     <>
       {/* Room for the bar, so the last match can scroll clear of it. */}
-      <div aria-hidden className="h-[var(--ui-row-min)]" />
+      <div aria-hidden className="h-[4.5rem]" />
       <div
         className={cn(
           "fixed inset-x-0 bottom-[var(--bottomnav-h)] z-40 pb-2.5 md:bottom-0 md:pb-4",
@@ -41,18 +45,36 @@ export function PredictionsStickyBar({
           role="status"
           data-testid="predictions-bar"
           className={cn(
-            "flex min-h-[var(--ui-tap-min)] items-center justify-between gap-3 px-4 py-2",
+            "relative flex min-h-[var(--ui-tap-min)] items-center justify-between gap-3 overflow-hidden px-4 py-2",
+            justCompleted && "settle",
             ui.radius.full,
             ui.surface.card,
             ui.shadow.lifted,
           )}
         >
-          <span className={cn(ui.text.bodyStrong, ui.text.tabular)}>
+          <span
+            className={cn("inline-flex items-center gap-1.5", ui.text.bodyStrong, ui.text.tabular)}
+          >
+            {complete ? (
+              <Check
+                className={cn("h-4 w-4 text-[color:var(--ui-positive)]", justCompleted && "pop")}
+                aria-hidden
+              />
+            ) : null}
             {t("predictions.progress")
               .replace("{done}", formatNumber(done, lang))
               .replace("{total}", formatNumber(total, lang))}
           </span>
           <SaveIndicator state={state} onRetry={onRetry} onSignUp={onSignUp} />
+          <span
+            aria-hidden
+            data-testid="predictions-bar-fill"
+            className={cn(
+              "absolute inset-x-0 bottom-0 h-1 origin-left transition-transform duration-500 ease-out motion-reduce:transition-none rtl:origin-right",
+              complete ? "bg-[color:var(--ui-positive)]" : "bg-[color:var(--ui-ink-fg)]",
+            )}
+            style={{ transform: `scaleX(${percent / 100})` }}
+          />
         </div>
       </div>
     </>

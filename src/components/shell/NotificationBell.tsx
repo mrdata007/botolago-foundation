@@ -8,7 +8,7 @@ import { UiIconLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useChangeFlash } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { useUnreadNotificationCount } from "@/services/use-my-notifications";
+import { useUnreadNotificationState } from "@/services/use-my-notifications";
 
 /** The badge says "9+" past nine: the exact number is for the inbox. */
 export function bellBadgeText(count: number): string {
@@ -22,11 +22,12 @@ export function NotificationBell() {
 
 function SignedInBell() {
   const { t } = useI18n();
-  const unread = useUnreadNotificationCount();
+  const { count: unread, ready } = useUnreadNotificationState();
   // Something new arrived while the page was open: the bell shakes once and the
-  // badge pops. Not on first show, not when the count goes down, not with
+  // badge pops. Not on first show, not when the first read of the count lands
+  // (unknown to a number is not "more"), not when it goes down, not with
   // reduced motion.
-  const arrived = useChangeFlash(unread) === "up";
+  const arrived = useChangeFlash(ready ? unread : undefined) === "up";
   return (
     <span className="relative inline-flex">
       <UiIconLinkButton

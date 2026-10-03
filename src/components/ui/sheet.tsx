@@ -38,7 +38,7 @@ const sheetVariants = cva(
     "fixed z-50 gap-4 p-6 shadow-[var(--shadow-dialog)]",
     "bg-[color:var(--background-elevated)] text-foreground",
     "border border-[color:var(--border-subtle)]",
-    "transition ease-[var(--ease-emphasized)]",
+    "transition data-[state=open]:ease-[var(--ease-settle)] data-[state=closed]:ease-[var(--ease-standard)]",
     "data-[state=open]:animate-in data-[state=closed]:animate-out",
     "data-[state=open]:duration-[var(--duration-sheet)] data-[state=closed]:duration-[var(--duration-quick)]",
   ].join(" "),
