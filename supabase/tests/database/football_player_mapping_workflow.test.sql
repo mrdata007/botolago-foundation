@@ -420,7 +420,11 @@ select extensions.ok((select o -> 'signals' -> 'flags' from jsonb_array_elements
 select pg_temp.mkplayer('incomplete-player', 'defender', '1993-03-03', 'e4000000-0000-4000-8000-000000000001', 4);
 select pg_temp.record(pg_temp.obs('flashscore', 'F-INCOMPLETE', 'FT-9', jsonb_build_object('squadCompleteness', 'INCOMPLETE_PROVIDER_SQUAD',
   'positionSignal', 'D', 'shirtNumber', 4)));
+-- (A Flashscore-only proposal now needs a reviewed Sofascore mapping to rest on: see the supporting-dependency
+-- test. This pairing is proposed together with its Sofascore identity, which rests on nothing outside itself.)
+select pg_temp.record(pg_temp.obs('sofascore', 'S-INCOMPLETE', 'T-100', '{"positionSignal":"D","shirtNumber":4}'));
 select pg_temp.put('incomplete', (pg_temp.propose('a', jsonb_build_array(jsonb_build_object('kind', 'map',
+  'sofascoreCandidateId', pg_temp.cid('sofascore', 'S-INCOMPLETE'),
   'flashscoreCandidateId', pg_temp.cid('flashscore', 'F-INCOMPLETE'), 'appPlayerId', (select id from app.players where slug = 'incomplete-player'))))
   -> 'proposals' -> 0 ->> 'id'));
 select extensions.ok((select signals -> 'flashscore' -> 'flags' from app_private.football_player_mapping_proposals
