@@ -6,8 +6,8 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 /**
- * − n + for one team's goals (plan §8): 44px targets, the number in the score
- * face inside its own `<bdi>`, "–" until the first tap. The row follows the
+ * − n + for one team's goals (plan §8): 44px targets, the number in a boxed
+ * score face inside its own `<bdi>`, an empty dashed box until the first tap. The row follows the
  * reading direction, so it mirrors in Arabic; the + and − glyphs do not.
  *
  * Not a number field on purpose: the keyboard would cover half the screen,
@@ -41,7 +41,7 @@ export function ScoreStepper({
     <div
       role="group"
       aria-label={t("predictions.stepper.group").replace("{team}", team)}
-      className="flex items-center gap-1.5"
+      className="flex items-center gap-0.5"
       data-testid={testId}
     >
       <button
@@ -55,7 +55,14 @@ export function ScoreStepper({
       </button>
       <output
         aria-live="polite"
-        className={cn("w-7 text-center", ui.score.row, ui.text.tabular)}
+        className={cn(
+          "grid h-11 w-8 place-items-center rounded-xl border-2",
+          ui.score.md,
+          ui.text.tabular,
+          value === null
+            ? cn("border-dashed border-[color:var(--ui-rule)] bg-transparent", ui.tone.faint)
+            : "border-solid border-[color:var(--ui-ink-fg)] bg-[color:var(--ui-surface)]",
+        )}
         data-testid={testId ? `${testId}-value` : undefined}
       >
         <bdi>{value === null ? "–" : value}</bdi>
