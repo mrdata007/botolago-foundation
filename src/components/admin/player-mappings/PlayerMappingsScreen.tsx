@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type { PlayerMappingRepository } from "@/backend/football/identity/mapping-repository";
 import { PLAYER_MAPPING_PROPOSALS_ENABLED } from "@/lib/feature-flags";
+import { BULK_MANIFEST } from "./bulk-manifest";
 import type { Lang } from "./copy";
 import { PlayerMappingsView } from "./PlayerMappingsView";
 import { createMappingActions, useQueueData } from "./use-player-mappings";
@@ -19,12 +20,15 @@ export function PlayerMappingsScreen({
   canManage,
   lang,
   proposalsEnabled = PLAYER_MAPPING_PROPOSALS_ENABLED,
+  bulkManifest = BULK_MANIFEST,
 }: {
   repository: PlayerMappingRepository;
   actorId: string;
   canManage: boolean;
   lang: Lang;
   proposalsEnabled?: boolean;
+  /** The frozen batch manifest. Defaults to the committed production one; the sample page passes its own. */
+  bulkManifest?: unknown;
 }) {
   const context = useMemo<RepositoryContext>(
     () => ({ actorId, requestId: globalThis.crypto.randomUUID() }),
@@ -49,6 +53,7 @@ export function PlayerMappingsScreen({
       context={context}
       actions={actions}
       onReload={reload}
+      bulkManifest={bulkManifest}
     />
   );
 }

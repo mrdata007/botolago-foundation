@@ -570,3 +570,87 @@ test.describe("the sample page is development-only", () => {
     expect(response.status()).toBeLessThan(500);
   });
 });
+
+/**
+ * The controlled bulk batch, in a real browser, on SAMPLE data only: a small
+ * production-shaped world (24 eligible rows, 14 Tier A and 10 Tier B) and its frozen
+ * manifest, all in memory. Three separate actions, each behind its own typed phrase.
+ */
+const BULK = "scale=small&writes=1&selfapprove=1&bulk=1";
+
+async function openBulk(page: Page, language: "fr" | "ar") {
+  await initializeLanguage(page, language);
+  await gotoHydrated(page, `/dev/player-mappings-sample?lang=${language}&${BULK}`, language);
+  await expect(page.getByTestId("bulk-open")).toBeVisible();
+  await page.getByTestId("bulk-open").click();
+  await expect(page.getByTestId("bulk-panel")).toBeVisible();
+  await expect(page.getByTestId("bulk-row")).toHaveCount(24);
+}
+
+const stateCount = (page: Page, state: string) =>
+  page.locator(`[data-testid="bulk-row"][data-state="${state}"]`).count();
+
+test.describe("the controlled bulk batch", () => {
+  test("PROPOSE, APPROVE, EXECUTE are three separate typed actions; a deselected row is left alone", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1100, height: 900 });
+    await openBulk(page, "fr");
+    await expect(page.getByTestId("bulk-manifest")).toContainText(/[0-9a-f]{64}/);
+
+    // Every action is disabled until its own phrase is typed; nothing has run.
+    for (const phase of ["propose", "approve", "execute"])
+      await expect(page.getByTestId(`bulk-run-${phase}`)).toBeDisabled();
+    expect(await stateCount(page, "NOT_PROPOSED")).toBe(24);
+
+    // Deselect two rows: they leave the batch and nothing else about them changes.
+    const boxes = page.getByTestId("bulk-row-select");
+    await boxes.nth(0).uncheck();
+    await boxes.nth(1).uncheck();
+    await expect(page.getByTestId("bulk-selected-count")).toContainText("22");
+
+    // 1. PROPOSE. Approve and execute stay unavailable (nothing proposed yet).
+    await page.getByTestId("bulk-input-propose").fill("PROPOSE_REVIEWED_BATCH");
+    await page.getByTestId("bulk-run-propose").click();
+    await expect(page.getByTestId("bulk-result")).toBeVisible();
+    await expect.poll(() => stateCount(page, "PROPOSED")).toBe(22);
+    expect(await stateCount(page, "NOT_PROPOSED")).toBe(2);
+    expect(await mappingCount(page).catch(() => 0)).toBe(0);
+    await expect(page.getByTestId("bulk-run-execute")).toBeDisabled();
+
+    // 2. APPROVE: still nothing is mapped.
+    await page.getByTestId("bulk-input-approve").fill("APPROVE_REVIEWED_BATCH");
+    await page.getByTestId("bulk-run-approve").click();
+    await expect.poll(() => stateCount(page, "APPROVED")).toBe(22);
+    await expect(page.getByTestId("bulk-sum-approved")).toContainText("22");
+    await expect(page.getByTestId("bulk-run-execute")).toBeDisabled();
+
+    // 3. EXECUTE: only now does anything map.
+    await page.getByTestId("bulk-input-execute").fill("EXECUTE_APPROVED_BATCH");
+    await page.getByTestId("bulk-run-execute").click();
+    await expect.poll(() => stateCount(page, "EXECUTED")).toBe(22);
+    expect(await stateCount(page, "NOT_PROPOSED")).toBe(2);
+    await expect(page.getByTestId("bulk-run-execute")).toBeDisabled();
+  });
+
+  for (const lang of ["fr", "ar"] as const) {
+    test(`a phone (390px) shows the batch screen without the page running off it, in ${lang}`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await openBulk(page, lang);
+      await expectNothingOffScreen(page, "[data-testid=bulk-panel]", { scrollRails: true });
+      await page.screenshot({ path: testInfo.outputPath(`bulk-${lang}-phone.png`) });
+    });
+  }
+
+  test("Arabic is laid out right to left and shows the same three actions", async ({ page }) => {
+    await page.setViewportSize({ width: 1100, height: 900 });
+    await openBulk(page, "ar");
+    await expect(page.getByTestId("bulk-panel")).toHaveAttribute("dir", "rtl");
+    for (const phase of ["propose", "approve", "execute"])
+      await expect(page.getByTestId(`bulk-phase-${phase}`)).toBeVisible();
+    // The typed phrase stays Latin and left to right.
+    await expect(page.getByTestId("bulk-input-propose")).toHaveAttribute("dir", "ltr");
+  });
+});

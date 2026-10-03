@@ -26,6 +26,8 @@ type Search = {
   scale?: "small";
   /** `1`: the proposal switch is on, so the write controls are drawn. */
   writes?: "1";
+  /** `1`: a small production-shaped batch (frozen manifest included) for the bulk screen. */
+  bulk?: "1";
 };
 
 export const Route = createFileRoute("/dev/player-mappings-sample")({
@@ -38,6 +40,7 @@ export const Route = createFileRoute("/dev/player-mappings-sample")({
     ...(String(search.selfapprove) === "1" ? { selfapprove: "1" as const } : {}),
     ...(search.scale === "small" ? { scale: "small" as const } : {}),
     ...(String(search.writes) === "1" ? { writes: "1" as const } : {}),
+    ...(String(search.bulk) === "1" ? { bulk: "1" as const } : {}),
   }),
   beforeLoad: () => {
     if (!import.meta.env.DEV) throw notFound();
@@ -51,7 +54,37 @@ function SampleHarness() {
   const search = Route.useSearch();
   const lang = search.lang ?? "fr";
   const [seat, setSeat] = useState<Seat>("proposer");
-  const repository = useMemo(() => {
+  const [bulk, setBulk] = useState<{
+    repository: InMemoryPlayerMappingRepository;
+    manifest: unknown;
+  } | null>(null);
+  useEffect(() => {
+    if (search.bulk !== "1") return;
+    let cancelled = false;
+    // Loaded only for this sample: a small production-shaped world and its frozen manifest.
+    void import("@/backend/football/identity/bulk-mapping/test-world").then(async (w) => {
+      const world = w.buildWorld({
+        tierA: 14,
+        tierB: 10,
+        flashscore: 6,
+        noExactDob: 5,
+        january1Provider: 2,
+      });
+      const manifest = await w.oracleManifest(world, SAMPLE_ACTORS.proposer);
+      const repo = new InMemoryPlayerMappingRepository({
+        candidates: world.candidates,
+        appPlayers: world.appPlayers,
+        allowSelfApproval: true,
+        qualifiedActors: [SAMPLE_ACTORS.proposer],
+      });
+      if (!cancelled) setBulk({ repository: repo, manifest });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [search.bulk]);
+
+  const sampleRepository = useMemo(() => {
     const world = buildSampleWorld(
       search.scale === "small" ? { sofascore: 36, flashscore: 28 } : {},
     );
@@ -65,6 +98,7 @@ function SampleHarness() {
           : [SAMPLE_ACTORS.proposer, SAMPLE_ACTORS.approver],
     });
   }, [search.scale, search.reviewers, search.selfapprove]);
+  const repository = bulk?.repository ?? sampleRepository;
 
   // Development only: lets a browser test change what the session carries (AAL2, a recent
   // sign-in) while the screen is open. The route does not exist outside a development server.
@@ -80,6 +114,8 @@ function SampleHarness() {
   }, [repository]);
 
   const actorId = seat === "approver" ? SAMPLE_ACTORS.approver : SAMPLE_ACTORS.proposer;
+  // The bulk sample waits for its own world: nothing else is drawn until it is ready.
+  if (search.bulk === "1" && !bulk) return <div data-testid="sample-bulk-loading" />;
   return (
     <div className={cn("min-h-dvh", ui.surface.page)} dir={lang === "ar" ? "rtl" : "ltr"}>
       <div className="mx-auto w-full max-w-4xl px-4 py-4">
@@ -110,6 +146,7 @@ function SampleHarness() {
           canManage={seat !== "reader"}
           lang={lang}
           proposalsEnabled={search.writes === "1"}
+          bulkManifest={bulk ? bulk.manifest : null}
         />
       </div>
     </div>
