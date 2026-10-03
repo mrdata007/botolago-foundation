@@ -4,7 +4,8 @@ import { ANALYTICS_ENABLED } from "@/lib/feature-flags";
 /**
  * Audience measurement (BG-0146, plan §11): Seline, chosen by the owner on
  * 2026-09-25 in place of Plausible. No cookie and no identifier on the phone,
- * hosted in the EU. Page views, and five Pronostics events sent by name only:
+ * hosted in the EU. Page views, five Pronostics events and the sign-up funnel's events
+ * (landing → account → first saved team), all sent by name only:
  * no properties, no identifiers.
  *
  * The script is told not to count pages on its own (`data-auto-page-view`
@@ -57,7 +58,22 @@ export type AnalyticsEvent =
   /** A guest taps "Créer mon compte" anywhere in Pronostics. */
   | "pronostics_signup_click"
   /** Any share: the journée, or a league's invite link. */
-  | "pronostics_share";
+  | "pronostics_share"
+  /** The landing page was shown (at `/jouer`, or at `/` to a first-time visitor). */
+  | "landing_view"
+  /** "Créer mon équipe" tapped on the landing page, one event per placement. */
+  | "landing_cta_header"
+  | "landing_cta_hero"
+  | "landing_cta_final"
+  | "landing_cta_sticky"
+  /** The registration form was accepted: an account now waits for its e-mail code. */
+  | "signup_submitted"
+  /** The e-mail was confirmed: the registration is complete. */
+  | "signup_verified"
+  /** A new account finished its profile setup. */
+  | "profile_setup_complete"
+  /** The server confirmed a first Fantasy team was saved (not a draft). */
+  | "fantasy_team_created";
 
 type Seline = { track: (event: string) => void; page: (path: string) => void };
 

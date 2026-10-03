@@ -14,6 +14,7 @@ import { authService, IS_MOCK_AUTH, type AuthStatus } from "@/services/auth";
 import { AssuranceRetry } from "@/auth/AssuranceRetry";
 import { secondFactorStep } from "@/auth/second-factor";
 import { cleanAuthCallbackUrl, sanitizeAuthCallbackNext } from "@/lib/auth-callback";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/auth/callback")({
   head: () => ({ meta: [{ title: "Connexion — BotolaGO" }] }),
@@ -141,6 +142,10 @@ function CallbackPage() {
           });
           if (vErr) throw vErr;
           handled = true;
+          // A registration confirmed by its e-mail link. (A PKCE `code` link
+          // cannot tell a sign-up from a sign-in, so it is not counted here;
+          // `profile_setup_complete` covers every new account.)
+          if (otpType === "signup") track("signup_verified");
           if (otpType === "recovery" && next === "/") {
             // Land on update-password so the user completes the reset -- after
             // the one-time code, for an account that has one.

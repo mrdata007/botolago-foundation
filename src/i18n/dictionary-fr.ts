@@ -1290,16 +1290,6 @@ export const fr = {
   "fantasy.top.gw_pick": "Choisir une journée",
   "fantasy.tab.top": "Top 5",
 
-  "welcome.title": "Bienvenue sur BotolaGO",
-  "welcome.description":
-    "Actualités, matchs et Fantasy : suivez le football marocain au même endroit.",
-  "welcome.cta_primary": "Explorer BotolaGO",
-  "welcome.secondary_prompt": "Vous avez déjà un compte ?",
-  "welcome.cta_secondary": "Se connecter",
-  "welcome.cta_guest": "Continuer en invité",
-  "welcome.guest_hint":
-    "Découvrez BotolaGO sans compte. Certaines fonctionnalités resteront limitées.",
-
   "auth.brand_tagline": "Le football marocain, réuni.",
   "auth.back": "Retour",
   "auth.email": "Adresse e-mail",
@@ -1520,7 +1510,6 @@ export const fr = {
   "auth.success.login": "Connexion réussie",
   "auth.success.register": "Compte créé. Vérifiez votre e-mail.",
   "auth.success.verify": "Compte vérifié",
-  "auth.success.guest": "Vous naviguez en tant qu'invité",
   "auth.success.signed_out": "Déconnexion réussie",
 
   "profile.guest_badge": "Invité",
@@ -2412,4 +2401,89 @@ export const fr = {
   "pepites.share.whatsapp": "Envoyer sur WhatsApp",
   "pepites.share.copy": "Copier le lien",
   "pepites.share.copy_failed": "Le lien n'a pas pu être copié.",
+  // The pitch demo's welcome screen (demo/, `WelcomeScreen`); the app
+  // itself opens on the landing page instead.
+  "welcome.title": "Bienvenue sur BotolaGO",
+  "welcome.description":
+    "Actualités, matchs et Fantasy : suivez le football marocain au même endroit.",
+  "welcome.cta_primary": "Explorer BotolaGO",
+  "welcome.secondary_prompt": "Vous avez déjà un compte ?",
+  "welcome.cta_secondary": "Se connecter",
+  "welcome.cta_guest": "Continuer en invité",
+  "welcome.guest_hint":
+    "Découvrez BotolaGO sans compte. Certaines fonctionnalités resteront limitées.",
+  // The landing page for new visitors (src/components/landing).
+  "landing.meta_title": "Fantasy Botola Pro gratuite — BotolaGO",
+  "landing.meta_description":
+    "Composez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée. Jeu gratuit.",
+  "landing.sign_in": "Se connecter",
+  "landing.kicker": "Fantasy Botola Pro · Gratuit",
+  "landing.title_1": "Vous connaissez la Botola.",
+  "landing.title_2": "À vous de jouer.",
+  "landing.lede":
+    "Composez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.",
+  "landing.cta_discover": "Découvrir le jeu",
+  "landing.cta_how": "Comment ça marche",
+  "landing.cta_note":
+    "Composez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.",
+  "landing.join_by": "Pour jouer dès la Journée {n}, enregistrez votre équipe avant le",
+  "landing.demo_badge": "Démonstration",
+  "landing.demo_label": "Démonstration d’un effectif sur le terrain",
+  "landing.demo_caption":
+    "Touchez un joueur pour lui donner le brassard : ses points comptent double.",
+  "landing.demo_make_captain": "Nommer capitaine : {player}",
+  "landing.demo_captain_now": "{player} est votre capitaine.",
+  "landing.how_title": "Trois gestes à chaque journée",
+  "landing.step1_title": "Composez votre effectif",
+  "landing.step1_body":
+    "{size} joueurs de Botola Pro, un budget de {budget} M et {max} joueurs au maximum par club.",
+  "landing.step1_positions": "2 gardiens · 5 défenseurs · 5 milieux · 3 attaquants",
+  "landing.step2_title": "Choisissez votre capitaine",
+  "landing.step2_body":
+    "Avant la date limite, alignez votre onze et donnez le brassard : les points du capitaine comptent double.",
+  "landing.step3_title": "Marquez des points, grimpez au classement",
+  "landing.step3_body":
+    "Vos joueurs marquent des points selon leurs vrais matchs : temps de jeu, buts, passes décisives, cages inviolées.",
+  "landing.scoring_label": "Extrait du barème",
+  "landing.scoring_goal_mid": "But d’un milieu",
+  "landing.scoring_assist": "Passe décisive",
+  "landing.scoring_clean_sheet": "Cage inviolée d’un défenseur",
+  "landing.points_value": "{n} pts",
+  "landing.why_title": "Pourquoi vous allez revenir",
+  "landing.why1_title": "Les joueurs que vous suivez déjà",
+  "landing.why1_body":
+    "Uniquement des joueurs de Botola Pro : votre équipe se joue sur les matchs que vous regardez.",
+  "landing.why2_title": "Des ligues entre amis",
+  "landing.why2_body":
+    "Créez une ligue privée, partagez son code et comparez vos scores à chaque journée.",
+  "landing.why3_title": "Une nouvelle chance à chaque journée",
+  "landing.why3_body":
+    "Transferts, onze et capitaine se règlent de nouveau avant chaque date limite.",
+  "landing.prizes_title": "Des lots pour les meilleurs managers",
+  "landing.prizes_body": "Les lots en jeu cette saison, attribués selon le règlement :",
+  "landing.prizes_link": "Voir les lots et le règlement",
+  "landing.browse_title": "Pas encore prêt ?",
+  "landing.browse_body": "Matchs, résultats et classement restent ouverts à tous, sans compte.",
+  "landing.browse_cta": "Voir les matchs",
+  "landing.faq_title": "Questions fréquentes",
+  "landing.faq_free_q": "C’est vraiment gratuit ?",
+  "landing.faq_free_a": "Oui. BotolaGO Fantasy est un jeu gratuit : aucun achat, aucun pari.",
+  "landing.faq_late_q": "La saison a commencé : puis-je encore jouer ?",
+  "landing.faq_late_a":
+    "Oui. Une équipe créée maintenant entre dans la prochaine journée ouverte et marque des points à partir de celle-ci.",
+  "landing.faq_points_q": "Comment marque-t-on des points ?",
+  "landing.faq_points_a":
+    "Selon les vrais matchs de vos joueurs : temps de jeu, buts, passes décisives, cages inviolées… Les cartons et les buts contre son camp font perdre des points, et votre capitaine compte double.",
+  "landing.faq_account_q": "Faut-il un compte ?",
+  "landing.faq_account_a":
+    "Pour composer votre équipe, non. Pour l’enregistrer et entrer au classement, oui : un compte gratuit, avec une adresse e-mail à confirmer.",
+  "landing.faq_deadline_q": "Jusqu’à quand puis-je modifier mon équipe ?",
+  "landing.faq_deadline_a":
+    "Chaque journée a une date limite, 90 minutes avant le premier coup d’envoi. Ensuite, l’équipe est verrouillée jusqu’à la fin de la journée.",
+  "landing.faq_rules": "Lire le règlement complet",
+  "landing.faq_help": "Centre d’aide",
+  "landing.final_title": "Votre équipe vous attend.",
+  "landing.final_body":
+    "Choisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.",
+  "landing.cta_pending": "Chargement",
 } as const satisfies Record<string, string>;

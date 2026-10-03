@@ -1,9 +1,16 @@
 import { unavailableHeaders } from "@/lib/page-availability";
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
-import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { CircleDot, Bell, Gem, Newspaper, Shield, Target, Trophy, UserRound } from "lucide-react";
 
 import { newsService } from "@/services/news";
@@ -50,7 +57,6 @@ import {
   StandingsRowSkeleton,
   SkeletonList,
 } from "@/components/common/Skeletons";
-import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
 import { ui, UiCard, UiChip } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { bandGameweek } from "@/lib/band-gameweek";
@@ -61,7 +67,6 @@ import { NextMatchPick } from "@/components/home/NextMatchPick";
 import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
 import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { useAuth } from "@/auth/AuthProvider";
-import { authService } from "@/services/auth";
 import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
 import { useSplashDone } from "@/lib/launch-sequence";
 import { cn } from "@/lib/utils";
@@ -172,50 +177,78 @@ function useGreeting(now: Date) {
   return t("home.greeting_evening");
 }
 
+/**
+ * The landing page, as its own chunk: most readers of `/` are signed in or
+ * returning and never see it, so they no longer download it (about 33 KB of
+ * script before compression: the page, the demonstration pitch's shirts, the
+ * prize catalog's client). One loader, so the preload below and `lazy` share
+ * the same request.
+ */
+const loadLanding = () => import("@/components/landing/LandingPage");
+const LandingPage = lazy(() =>
+  loadLanding().then(
+    (module) => ({ default: module.LandingPage }),
+    // A chunk that fails to load (a deploy mid-visit, a dropped connection)
+    // leaves the newcomer on Home rather than on an error page.
+    () => ({ default: (_: { onLeave?: () => void }) => <HomeContent /> }),
+  ),
+);
+
+/**
+ * While the chunk arrives: the landing hero's own ground, nothing else. Home
+ * in its place went on loading and moving under the splash (CLS 0.10 measured
+ * with it as the fallback, against 0.006 without); an empty dark screen has
+ * nothing to move, and the hero paints over it in the same colour.
+ */
+function LandingFallback() {
+  return <div aria-busy className="min-h-[100dvh] bg-[color:var(--ui-ink-deep)]" />;
+}
+
 function HomePage() {
-  const navigate = useNavigate();
   const { status } = useAuth();
-  const { t, isHydrated, hasChosen } = useI18n();
+  const { isHydrated } = useI18n();
+  const splashDone = useSplashDone();
 
   // Read localStorage only after mount so SSR and first client render match.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  // Leaving the landing page by any of its links is the welcome: from then on
+  // `/` opens on Home, also when that link was the logo, back to `/`.
+  const [left, setLeft] = useState(false);
+  const leave = () => {
+    markWelcomeDone();
+    setLeft(true);
+  };
 
-  // An arrival dialog, so it waits for the launch sequence like the prize
-  // welcome (src/lib/launch-sequence.ts): never under the splash, never
-  // beside the language chooser.
-  const launchDone = useSplashDone() && isHydrated && hasChosen;
-  const showWelcome = mounted && launchDone && status === "anonymous" && !hasWelcomed();
+  // A first visit without an account gets the landing page in Home's place:
+  // what the game is, why play, and one way in. It used to be a welcome
+  // dialog of three buttons, two of which did the same thing, over a Home
+  // that a newcomer could not yet read.
+  //
+  // It waits for the splash (src/lib/launch-sequence.ts), under which nothing
+  // is seen, and not for the language chooser: the chooser opens over the
+  // landing page rather than over a Home that is about to be replaced.
+  // The server always renders Home — it knows no session — so a crawler, and
+  // every returning reader, gets Home's content and links (audit 2026-09-24,
+  // P1-2). A signed-in reader, a guest and anyone who has been welcomed
+  // before never see the landing page here; `/jouer` is its own address.
+  const showLanding =
+    mounted && splashDone && isHydrated && status === "anonymous" && !left && !hasWelcomed();
 
-  // The welcome screen covers the home page instead of replacing it. It used
-  // to replace it, so a first visit -- and every crawler, which always visits
-  // for the first time -- found a page with no content and no links (audit
-  // 2026-09-24, P1-2). Behind the dialog the page is inert.
-  return (
-    <>
-      <div inert={showWelcome}>
-        <HomeContent />
-      </div>
-      {showWelcome && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("welcome.title")}
-          // Above the page's bars (z-30, z-40), below the first-launch
-          // language chooser and other dialogs (z-50), as when it was the page.
-          className="fixed inset-0 z-[45] overflow-y-auto"
-        >
-          <WelcomeScreen
-            onSignIn={() => navigate({ to: "/auth/login" })}
-            onGuest={async () => {
-              await authService.continueAsGuest();
-              markWelcomeDone();
-              toast.success(t("auth.success.guest"));
-            }}
-          />
-        </div>
-      )}
-    </>
+  // Fetched as soon as the session says this is a first visit without an
+  // account — while the splash still plays — so the page is ready when the
+  // splash leaves.
+  const firstVisit = mounted && status === "anonymous" && !left && !hasWelcomed();
+  useEffect(() => {
+    if (firstVisit) void loadLanding();
+  }, [firstVisit]);
+
+  return showLanding ? (
+    <Suspense fallback={<LandingFallback />}>
+      <LandingPage onLeave={leave} />
+    </Suspense>
+  ) : (
+    <HomeContent />
   );
 }
 

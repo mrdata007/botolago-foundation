@@ -1,3 +1,4 @@
+import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
@@ -14,14 +15,19 @@ import { SQUAD_RULES } from "@/types/fantasy";
 export function FantasyRuleChips({ deadline }: { deadline?: string }) {
   const { t, lang } = useI18n();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
+  // A deadline already gone is not one to play for: the chip went on saying
+  // "Date limite : jeu. 24 sept." into October while the gameweek it named
+  // was being played. It leaves on the first tick after the deadline.
+  const passed = useDeadlineCountdown(deadline)?.passed === true;
   const nf = new Intl.NumberFormat(locale);
-  const when = deadline
-    ? moroccoDateTimeFormat(locale, {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-      }).format(new Date(deadline))
-    : null;
+  const when =
+    deadline && !passed
+      ? moroccoDateTimeFormat(locale, {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+        }).format(new Date(deadline))
+      : null;
   const chips = [
     t("home.fantasy_chip_players").replace("{n}", nf.format(SQUAD_RULES.totalSize)),
     t("home.fantasy_chip_budget").replace("{n}", nf.format(SQUAD_RULES.budget)),
