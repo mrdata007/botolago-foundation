@@ -8,10 +8,10 @@ The completed Sofascore batch (189 rows) proved the tool. This is the same tool,
 
 A Flashscore row rests on a **Sofascore mapping that is already active and reviewed**, plus what the two providers say about the same finished match:
 
-| Class | Evidence | Proposal reason (stored with each proposal) |
-|---|---|---|
-| `F1_REVIEWED_SOFASCORE_EVENTS` (24 rows) | Aligned match events (goal, assist, card, substitution) between the Flashscore id and the reviewed Sofascore player, and an agreeing shirt number, or at least two distinct aligned events | `FLASHSCORE_REASONS.F1…` in `flashscore-contract.ts` |
-| `F2_REVIEWED_SOFASCORE_SHIRT_DOB` (18 rows) | Same shirt number in the same match, and the birth date Flashscore reports agrees with the one Sofascore reports for that player (corroboration, never proof) | `FLASHSCORE_REASONS.F2…` |
+| Class                                       | Evidence                                                                                                                                                                                   | Proposal reason (stored with each proposal)          |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `F1_REVIEWED_SOFASCORE_EVENTS` (24 rows)    | Aligned match events (goal, assist, card, substitution) between the Flashscore id and the reviewed Sofascore player, and an agreeing shirt number, or at least two distinct aligned events | `FLASHSCORE_REASONS.F1…` in `flashscore-contract.ts` |
+| `F2_REVIEWED_SOFASCORE_SHIRT_DOB` (18 rows) | Same shirt number in the same match, and the birth date Flashscore reports agrees with the one Sofascore reports for that player (corroboration, never proof)                              | `FLASHSCORE_REASONS.F2…`                             |
 
 Neither wording mentions a tier, SportsMonks, or a comparison with the canonical app's birth date: this evidence has none of those. The two providers are not an independent third source; every manifest row records that as a limitation.
 
@@ -19,20 +19,20 @@ Neither wording mentions a tier, SportsMonks, or a comparison with the canonical
 
 `docs/production/manifests/gw1-flashscore-executable.manifest.json` (+ `.sha256`; the same content is embedded as `flashscore-manifest.ts` for the screen). It is a **separate** file from the historical review manifests, which are kept unchanged beside it (`4c3d2294…` original, `a885c765…` corrected).
 
-* 42 executable rows (24 + 18), cut from the 53 Flashscore rows of the corrected review set. No row was added.
-* Each row binds: candidate id and evidence revision; Flashscore id; the exact canonical target; the supporting Sofascore id, mapping row id, target, active/reviewed state and version stamp; the fixtures (ids, kickoff, and a digest of each provider's payload set); the class facts; the database's own signals; a digest of the row's evidence; limitations; the class's audit reason; and the proposal fingerprint the database computes for it.
-* Capture times and digests: provider responses (historical, 2026-10-01), mapping snapshot, candidate records, birth-date corroboration, and the one production read that checked every row (`readAt` in `sources`).
-* No names, no birth dates. Verification refuses a name key, a calendar date, a duplicate candidate / Flashscore id / target / supporting mapping, a class whose facts do not support it, and any fingerprint that does not follow from the row's own inputs (recomputed with the same rule the database uses; reproduced 189 of 189 against the Sofascore batch's real fingerprints).
+- 42 executable rows (24 + 18), cut from the 53 Flashscore rows of the corrected review set. No row was added.
+- Each row binds: candidate id and evidence revision; Flashscore id; the exact canonical target; the supporting Sofascore id, mapping row id, target, active/reviewed state and version stamp; the fixtures (ids, kickoff, and a digest of each provider's payload set); the class facts; the database's own signals; a digest of the row's evidence; limitations; the class's audit reason; and the proposal fingerprint the database computes for it.
+- Capture times and digests: provider responses (historical, 2026-10-01), mapping snapshot, candidate records, birth-date corroboration, and the one production read that checked every row (`readAt` in `sources`).
+- No names, no birth dates. Verification refuses a name key, a calendar date, a duplicate candidate / Flashscore id / target / supporting mapping, a class whose facts do not support it, and any fingerprint that does not follow from the row's own inputs (recomputed with the same rule the database uses; reproduced 189 of 189 against the Sofascore batch's real fingerprints).
 
 ### Held back (11 rows)
 
 The database's own signals for these contradict the catalogue, so they are **not** executable. They are listed in the manifest (`heldBack`) with ids and codes, and the screen shows them. Nothing was substituted for them.
 
-| Code | Rows | Why held |
-|---|---|---|
-| `POSITION_DISAGREEMENT` | 6 (one also has a shirt difference) | The backend parks such a proposal for a position note and an explicit acknowledgement; this batch carries neither. |
-| `CLUB_CONTEXT_MISMATCH` | 1 | Flashscore observes the player at a different club than the catalogue's. A club change needs dated evidence. |
-| `SHIRT_DIFFERENCE` | 4 (+1 above) | The squad-list shirt differs from the catalogue's. The Sofascore batch excluded shirt conflicts under the same bar. |
+| Code                    | Rows                                | Why held                                                                                                            |
+| ----------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `POSITION_DISAGREEMENT` | 6 (one also has a shirt difference) | The backend parks such a proposal for a position note and an explicit acknowledgement; this batch carries neither.  |
+| `CLUB_CONTEXT_MISMATCH` | 1                                   | Flashscore observes the player at a different club than the catalogue's. A club change needs dated evidence.        |
+| `SHIRT_DIFFERENCE`      | 4 (+1 above)                        | The squad-list shirt differs from the catalogue's. The Sofascore batch excluded shirt conflicts under the same bar. |
 
 Adding any of these later is an owner decision, row by row, with its own note: it is not a manifest edit.
 
@@ -40,12 +40,14 @@ Adding any of these later is an owner decision, row by row, with its own note: i
 
 Before any proposal, from the database:
 
-* the candidate is unmapped, has no open proposal, is the same Flashscore id at the same evidence revision, and was observed at the same club;
-* neither the Flashscore id nor the target is claimed for Flashscore, by an executed or an open proposal (both directions; nothing is chosen by order);
-* the database's signals for the target are still clean (club and position agree, shirt agrees or gives no signal, no flag);
-* **the supporting Sofascore mapping is still the same row, still active, still on the same canonical player, at the same version.**
+- the candidate is unmapped, has no open proposal, is the same Flashscore id at the same evidence revision, and was observed at the same club;
+- neither the Flashscore id nor the target is claimed for Flashscore, by an executed or an open proposal (both directions; nothing is chosen by order);
+- the database's signals for the target are still clean (club and position agree, shirt agrees or gives no signal, no flag);
+- **the supporting Sofascore mapping is still the same row, still active, still on the same canonical player, at the same version.**
 
-The supporting mapping is checked again, from fresh reads, **immediately before each execution**. The reviewed backend re-checks everything about the Flashscore side at propose, approve and execute; it does not look at the supporting Sofascore mapping (a database test pins that fact).
+The supporting mapping is checked again, from fresh reads, **immediately before each execution**, on both paths this screen offers: the batch's execute action and the ordinary proposal queue's execute button (a Flashscore proposal for a manifest row opened there gets the same check and is refused as `stale_evidence`). The reviewed backend re-checks everything about the Flashscore side at propose, approve and execute; it does not look at the supporting Sofascore mapping (a database test pins that fact).
+
+**The check lives in the client, not in the database.** A call to the execute function that does not go through this screen is not covered. Enforcing it inside the reviewed execute transaction would be a database migration; that is the owner's decision and is not part of this change.
 
 ### How the supporting mapping is read, and the gap
 
@@ -81,6 +83,6 @@ Stop and investigate (do not retry) if the session is refused (sign-in, second f
 
 ## Tests that stand behind it
 
-* `bulk-mapping/flashscore-batch.test.ts`: manifest tampering (class, basis, reason, target, hash, order, duplicates, names, dates); call grouping and the 25-per-call limit; a supporting mapping deactivated or retargeted before propose and again after approval; stale evidence; an id or target claimed by someone else, before and between the re-check and the call; a tampered fingerprint; an expired session; a lost answer; single-operator mode; row state derived from the database after a reload; the Sofascore mappings unchanged; only reviewed calls made.
-* `bulk-mapping/supporting-mapping.test.ts`, `fingerprint.test.ts`, `flashscore-manifest.real.test.ts` (the committed manifest against the committed fixtures).
-* `supabase/tests/database/football_player_mapping_flashscore_batch.test.sql`: the real database functions on a synthetic world: every proposal fingerprint equals the manifest computation; bounded calls; backend collision refusals per item; claimed id and target mid-batch with one failing row leaving the rest intact; the Sofascore mapping rows, players, memberships, Fantasy tables, scoring snapshots, automation settings and cron jobs byte-for-byte unchanged; the audit shape the client reads; the database's lack of a supporting-mapping check; an aal1 session refused. CI's `database-quality` job is the authority for these.
+- `bulk-mapping/flashscore-batch.test.ts`: manifest tampering (class, basis, reason, target, hash, order, duplicates, names, dates); call grouping and the 25-per-call limit; a supporting mapping deactivated or retargeted before propose and again after approval; stale evidence; an id or target claimed by someone else, before and between the re-check and the call; a tampered fingerprint; an expired session; a lost answer; single-operator mode; row state derived from the database after a reload; the Sofascore mappings unchanged; only reviewed calls made.
+- `bulk-mapping/supporting-mapping.test.ts`, `fingerprint.test.ts`, `flashscore-manifest.real.test.ts` (the committed manifest against the committed fixtures).
+- `supabase/tests/database/football_player_mapping_flashscore_batch.test.sql`: the real database functions on a synthetic world: every proposal fingerprint equals the manifest computation; bounded calls; backend collision refusals per item; claimed id and target mid-batch with one failing row leaving the rest intact; the Sofascore mapping rows, players, memberships, Fantasy tables, scoring snapshots, automation settings and cron jobs byte-for-byte unchanged; the audit shape the client reads; the database's lack of a supporting-mapping check; an aal1 session refused. CI's `database-quality` job is the authority for these.

@@ -4,7 +4,8 @@ import { MappingError } from "../mapping-errors";
 import { loadAllCandidates, loadAllProposals } from "../review-queue";
 import { MAX_PROPOSE_PER_CALL } from "./contract";
 import { FLASHSCORE_REASONS } from "./flashscore-contract";
-import { flashscoreProfile } from "./flashscore-profile";
+import { createMappingActions } from "@/components/admin/player-mappings/use-player-mappings";
+import { flashscoreProfile, guardFlashscoreExecute } from "./flashscore-profile";
 import {
   verifyFlashscoreManifest,
   type FlashscoreManifest,
@@ -463,6 +464,49 @@ describe("Flashscore bulk phases", () => {
       "supporting_mapping_not_active",
     );
     expect(states.get(batch.manifest.rows[1]!.candidateId)?.state).toBe("NOT_PROPOSED");
+  });
+});
+
+describe("executing one Flashscore proposal outside the bulk runner", () => {
+  test("the ordinary queue's execute re-checks the supporting mapping too: refused when it changed, allowed when it did not", async () => {
+    const batch = await prepareFlashBatch(buildFlashWorld({ f1: 2, f2: 2 }));
+    await batch.run("propose");
+    await batch.run("approve");
+    const proposals = await loadAllProposals(batch.repo, null, ownerContext());
+    const proposalOf = (row: FlashscoreRow) =>
+      proposals.find((p) => p.flashscoreCandidateId === row.candidateId)!;
+    const guard = (proposal: Parameters<typeof guardFlashscoreExecute>[2]) =>
+      guardFlashscoreExecute(batch.deps, batch.manifest.rows, proposal);
+    const actions = createMappingActions(batch.repo, () => ownerContext(), { guardExecute: guard });
+
+    const changed = batch.manifest.rows[0]!;
+    const fine = batch.manifest.rows[1]!;
+    await deactivate(batch, changed);
+    await expect(actions.execute(proposalOf(changed))).rejects.toMatchObject({
+      code: "stale_evidence",
+    });
+    expect(batch.repo.snapshotMappings().some((m) => m.provider === "flashscore")).toBe(false);
+
+    await actions.execute(proposalOf(fine));
+    const flash = batch.repo.snapshotMappings().filter((m) => m.provider === "flashscore");
+    expect(flash).toHaveLength(1);
+    expect(flash[0]!.appPlayerId).toBe(fine.appPlayerId);
+  });
+
+  test("a proposal the manifest does not cover, and one that is not a Flashscore map, are left to the backend", async () => {
+    const batch = await prepareFlashBatch(buildFlashWorld({ f1: 1, f2: 1 }));
+    const guard = (p: Parameters<typeof guardFlashscoreExecute>[2]) =>
+      guardFlashscoreExecute(batch.deps, batch.manifest.rows, p);
+    expect(
+      await guard({ kind: "map", flashscoreCandidateId: "99999999-9999-4999-8999-999999999999" }),
+    ).toBeNull();
+    expect(await guard({ kind: "map", flashscoreCandidateId: null })).toBeNull();
+    expect(
+      await guard({
+        kind: "deactivate",
+        flashscoreCandidateId: batch.manifest.rows[0]!.candidateId,
+      }),
+    ).toBeNull();
   });
 });
 

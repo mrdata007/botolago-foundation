@@ -6,6 +6,8 @@ import { BULK_MANIFEST } from "./bulk-manifest";
 import type { Lang } from "./copy";
 import { FLASHSCORE_BULK_MANIFEST } from "./flashscore-manifest";
 import { PlayerMappingsView } from "./PlayerMappingsView";
+import { flashscoreManifestSchema } from "@/backend/football/identity/bulk-mapping/flashscore-manifest";
+import { guardFlashscoreExecute } from "@/backend/football/identity/bulk-mapping/flashscore-profile";
 import { createMappingActions, useQueueData } from "./use-player-mappings";
 
 /**
@@ -39,14 +41,19 @@ export function PlayerMappingsScreen({
     [actorId],
   );
   const { state, reload } = useQueueData(repository, context);
-  const actions = useMemo(
-    () =>
-      createMappingActions(repository, () => ({
-        actorId,
-        requestId: globalThis.crypto.randomUUID(),
-      })),
-    [repository, actorId],
-  );
+  // A Flashscore batch proposal executed from the ordinary queue gets the same supporting-mapping
+  // re-check as one executed from the batch screen: the database does not make that check.
+  const flashscoreRows = useMemo(() => {
+    const parsed = flashscoreManifestSchema.safeParse(flashscoreManifest);
+    return parsed.success ? parsed.data.rows : [];
+  }, [flashscoreManifest]);
+  const actions = useMemo(() => {
+    const context = () => ({ actorId, requestId: globalThis.crypto.randomUUID() });
+    return createMappingActions(repository, context, {
+      guardExecute: (proposal) =>
+        guardFlashscoreExecute({ repository, context }, flashscoreRows, proposal),
+    });
+  }, [repository, actorId, flashscoreRows]);
   return (
     <PlayerMappingsView
       lang={lang}
