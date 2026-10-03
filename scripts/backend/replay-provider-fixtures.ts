@@ -52,11 +52,15 @@ export const rowsFromSql = (rows: readonly SqlRow[]): MappingRowInput[] =>
 async function main() {
   const file = arg("--mappings");
   if (!file) throw new Error("--mappings <rows.json> is required");
-  const raw = JSON.parse(readFileSync(file, "utf8")) as SqlRow[];
-  const rows = rowsFromSql(
-    raw.map((r) => ({ ...r, provider_name: r.provider_name ?? "sofascore" })),
-  );
-  const capturedAt = arg("--captured-at") ?? COMMITTED_OBSERVED_AT;
+  const parsed = JSON.parse(readFileSync(file, "utf8")) as
+    | SqlRow[]
+    | { capturedAt?: string; rows: MappingRowInput[] };
+  // Either the raw output of the snapshot SQL, or the committed fixture's typed rows.
+  const rows = Array.isArray(parsed) ? rowsFromSql(parsed) : parsed.rows;
+  const capturedAt =
+    arg("--captured-at") ??
+    (Array.isArray(parsed) ? undefined : parsed.capturedAt) ??
+    COMMITTED_OBSERVED_AT;
   const snapshot = await buildReviewedIdentitySnapshot(rows, capturedAt);
   const fixtures = COMMITTED_GW1_MATCHES.map((m) => ({
     key: m.key,
