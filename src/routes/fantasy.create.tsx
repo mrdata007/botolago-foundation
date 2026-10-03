@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { showStepUpNotice } from "@/auth/step-up-notice";
@@ -338,6 +339,8 @@ function CreateTeamBody() {
         },
       );
       if (res.ok) {
+        // Counted on the server's confirmation only, never on a draft.
+        track("fantasy_team_created");
         if (owned.userId) importDecisionService.markImported(owned.userId);
         toast.success(t("fantasy.create.success"));
         await owned.reload();

@@ -31,6 +31,7 @@ import type { Language } from "@/types/domain";
 import type { NotificationPreferences } from "@/services/auth";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { authNextSearch } from "@/lib/auth-callback";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/auth/profile-setup")({
   head: () => ({ meta: [{ title: "Personnalisez votre profil — BotolaGO" }] }),
@@ -155,6 +156,7 @@ function ProfileSetupPage() {
     }
     setSubmitting(false);
     refresh();
+    track("profile_setup_complete");
     toast.success(t("auth.setup.success"));
     navigate({ to: next });
   };

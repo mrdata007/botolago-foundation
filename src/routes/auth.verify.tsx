@@ -12,6 +12,7 @@ import { authService, IS_MOCK_AUTH } from "@/services/auth";
 import { markWelcomeDone } from "@/lib/welcome";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { authNextSearch } from "@/lib/auth-callback";
+import { track } from "@/lib/analytics";
 
 export const Route = createFileRoute("/auth/verify")({
   head: () => ({ meta: [{ title: "Vérification — BotolaGO" }] }),
@@ -56,6 +57,8 @@ function VerifyPage() {
       return;
     }
     markWelcomeDone();
+    // The code was accepted: the registration is complete.
+    track("signup_verified");
     toast.success(t("auth.success.verify"));
     navigate({ to: "/auth/profile-setup", search: { next } });
   };
