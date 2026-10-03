@@ -20,6 +20,7 @@ import { SplashScreen } from "@/components/splash/SplashScreen";
 import { SPLASH_INIT_SCRIPT } from "@/components/splash/launch-splash";
 import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
 import { markSplashDone } from "@/lib/launch-sequence";
+import { installNativeShell } from "@/lib/native-shell";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
@@ -211,7 +212,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "BotolaGO — Actualités, matchs et Fantasy du football marocain" },
       {
         name: "description",
@@ -314,6 +315,8 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   // Visitors' errors reach api.report_client_errors (production builds only).
   useEffect(() => installClientErrorSink(), []);
+  // Inside the phone app only: Android back button follows page history.
+  useEffect(() => installNativeShell(), []);
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>

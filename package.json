@@ -41,9 +41,19 @@
     "demo:dev": "vite --config demo/vite.config.ts",
     "demo:build": "bun demo/scripts/build.ts",
     "demo:publish": "bun demo/scripts/build.ts --into-public",
-    "demo:typecheck": "tsc --noEmit -p demo/tsconfig.json"
+    "demo:typecheck": "tsc --noEmit -p demo/tsconfig.json",
+    "cap:add:android": "cap add android",
+    "cap:add:ios": "cap add ios",
+    "cap:sync": "cap sync",
+    "cap:android": "cap sync android && cap open android",
+    "cap:ios": "cap sync ios && cap open ios"
   },
   "dependencies": {
+    "@capacitor/android": "^7",
+    "@capacitor/app": "^7",
+    "@capacitor/core": "^7",
+    "@capacitor/ios": "^7",
+    "@capacitor/splash-screen": "^7",
     "@hookform/resolvers": "^5.2.2",
     "@lovable.dev/mcp-js": "^0.23.0",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -101,6 +111,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7",
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "2.23.1",
     "@playwright/test": "^1.61.1",
