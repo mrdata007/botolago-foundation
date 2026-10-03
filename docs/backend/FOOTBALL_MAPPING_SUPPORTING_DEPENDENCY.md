@@ -122,12 +122,21 @@ Flashscore players on its own.
 
 ## Staging
 
-Staging (`srdrflfrfpwixsllveid`) has migrations `20261001150000`, `…160000`, `…161000` only. Its
-`admin_football_mapping_execute` is the text from before the single-approver switch
-(`20261002100000`), so this migration's built-in check refuses to apply there. That is the
-check working. Production's six functions match the reviewed text exactly. Rehearsal on
-staging therefore needs `20261002100000` first, then this migration, in one rolled-back
-transaction.
+Staging (`srdrflfrfpwixsllveid`) has migrations `20261001150000`, `…160000`, `…161000` only. It has no
+single-approver switch (`20261002100000`), so its `admin_football_mapping_execute` is an earlier text than
+production's, and this migration's built-in check refuses to apply there. That is the check working.
+Production's six functions match the reviewed text exactly. Staging holds no mappings and no proposals.
+
+What was done on staging, read-only or rolled back, never committed: the schema and function texts were
+read; the single-approver prerequisite's tables and trigger were applied inside a transaction that was
+rolled back (it ran cleanly); two attempts to run the prerequisite plus this migration in one rolled-back
+transaction through the available SQL tool each hit that tool's 60-second client limit. After each,
+staging was re-read: no new column, table or function, no open transaction, function texts unchanged.
+
+**Not rehearsed on staging:** the full prerequisite + this migration in one transaction. Do it with the
+owner's own database tooling (one transaction, ending in a deliberate error that carries the checks out)
+before any production apply. What backs it meanwhile: every migration applies cleanly in order on a fresh
+local database, and the preflight refuses a database that is not at the reviewed state.
 
 ## Production
 
