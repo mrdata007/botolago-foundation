@@ -1,0 +1,211 @@
+{
+  "note": "Sanitized results of two read-only runs of the 'Provider probe' workflow (corroborate_pairs): the two providers' birth dates compared inside the run; only the state is kept. No date, timestamp, name or payload. 28 provider requests in total (run 1: 1 Sofascore + 7 Flashscore; run 2: 6 Sofascore + 14 Flashscore), none failed, none retried.",
+  "observedAt": "2026-10-03T07:16:51.000Z",
+  "runs": [
+    {
+      "runId": "37105728275",
+      "requests": {
+        "sofascore": 1,
+        "flashscore": 7
+      }
+    },
+    {
+      "runId": "37105800631",
+      "requests": {
+        "sofascore": 6,
+        "flashscore": 14
+      }
+    }
+  ],
+  "results": [
+    {
+      "sofascoreFixtureId": "17132481",
+      "sofascorePlayerId": "1140820",
+      "flashscorePlayerId": "8AYnWqxg",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132481",
+      "sofascorePlayerId": "919329",
+      "flashscorePlayerId": "Gdld376S",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132481",
+      "sofascorePlayerId": "1103558",
+      "flashscorePlayerId": "QyNjhw1F",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132481",
+      "sofascorePlayerId": "1140935",
+      "flashscorePlayerId": "Q1Q3etwS",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132481",
+      "sofascorePlayerId": "970766",
+      "flashscorePlayerId": "Qou7UAOb",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132481",
+      "sofascorePlayerId": "1140922",
+      "flashscorePlayerId": "SnhcX8Di",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132481",
+      "sofascorePlayerId": "1004426",
+      "flashscorePlayerId": "zk4gW2UK",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "16958238",
+      "sofascorePlayerId": "1004249",
+      "flashscorePlayerId": "0Q2O9YaL",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "16958236",
+      "sofascorePlayerId": "1920270",
+      "flashscorePlayerId": "6cwv6kvA",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "16958239",
+      "sofascorePlayerId": "1401604",
+      "flashscorePlayerId": "8Wpl5TyG",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132480",
+      "sofascorePlayerId": "1107604",
+      "flashscorePlayerId": "EuEfpDyB",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "16958239",
+      "sofascorePlayerId": "1401595",
+      "flashscorePlayerId": "Q9pOwskm",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "16958238",
+      "sofascorePlayerId": "1463237",
+      "flashscorePlayerId": "bRIP5a57",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132472",
+      "sofascorePlayerId": "970630",
+      "flashscorePlayerId": "hIlAyesq",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "16958239",
+      "sofascorePlayerId": "1525328",
+      "flashscorePlayerId": "hUeu7ybK",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132482",
+      "sofascorePlayerId": "1140796",
+      "flashscorePlayerId": "jPg1q6AQ",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132480",
+      "sofascorePlayerId": "879777",
+      "flashscorePlayerId": "CQehl7o7",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132480",
+      "sofascorePlayerId": "1597137",
+      "flashscorePlayerId": "IiPLx3S7",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132480",
+      "sofascorePlayerId": "1004521",
+      "flashscorePlayerId": "OdVQ5I9B",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132480",
+      "sofascorePlayerId": "975173",
+      "flashscorePlayerId": "lnuqEiTC",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    },
+    {
+      "sofascoreFixtureId": "17132480",
+      "sofascorePlayerId": "1140857",
+      "flashscorePlayerId": "ruVnjhb0",
+      "dob": "AGREE",
+      "sofascoreState": "valid",
+      "flashscoreState": "valid",
+      "flashscoreFormat": "unix_seconds"
+    }
+  ]
+}
