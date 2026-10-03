@@ -42,7 +42,9 @@ export function PlayerMappingsScreen({
   );
   const { state, reload } = useQueueData(repository, context);
   // A Flashscore batch proposal executed from the ordinary queue gets the same supporting-mapping
-  // re-check as one executed from the batch screen: the database does not make that check.
+  // re-check as one executed from the batch screen: a fresh read of the actual mapping row, shown
+  // before the person presses. The database enforces the dependency on its own (propose, approve and
+  // execute); this read is the early warning, and when it cannot be made nothing is executed.
   const flashscoreRows = useMemo(() => {
     const parsed = flashscoreManifestSchema.safeParse(flashscoreManifest);
     return parsed.success ? parsed.data.rows : [];
