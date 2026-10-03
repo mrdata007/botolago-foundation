@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { searchEntries, type SearchEntry } from "./global-search";
+import { highlightParts, searchEntries, type SearchEntry } from "./global-search";
 
 const entries: SearchEntry[] = [
   { kind: "club", id: "wac", label: "Wydad AC", hint: "Casablanca" },
@@ -27,5 +27,47 @@ describe("searchEntries", () => {
   });
   test("respects the limit", () => {
     expect(searchEntries(entries, "a", 2)).toHaveLength(2);
+  });
+});
+
+describe("highlightParts", () => {
+  test("picks out the letters typed, ignoring capitals and accents", () => {
+    expect(highlightParts("Élouasti", "elo")).toEqual([
+      { text: "Élo", match: true },
+      { text: "uasti", match: false },
+    ]);
+  });
+
+  test("finds a match in the middle of a name", () => {
+    expect(highlightParts("Wydad AC", "dad")).toEqual([
+      { text: "Wy", match: false },
+      { text: "dad", match: true },
+      { text: " AC", match: false },
+    ]);
+  });
+
+  test("gives the label whole when the query is not in it, or is empty", () => {
+    expect(highlightParts("Raja CA", "zzz")).toEqual([{ text: "Raja CA", match: false }]);
+    expect(highlightParts("Raja CA", "  ")).toEqual([{ text: "Raja CA", match: false }]);
+  });
+
+  test("works for Arabic names", () => {
+    const parts = highlightParts("الوداد", "ود");
+    expect(parts.some((part) => part.match && part.text === "ود")).toBe(true);
+    expect(parts.map((part) => part.text).join("")).toBe("الوداد");
+  });
+
+  test("always gives back the label unchanged when joined", () => {
+    for (const [label, query] of [
+      ["Mohamed Ali", "ali"],
+      ["Étoile", "TOI"],
+      ["Wydad", "d"],
+    ] as const) {
+      expect(
+        highlightParts(label, query)
+          .map((part) => part.text)
+          .join(""),
+      ).toBe(label);
+    }
   });
 });

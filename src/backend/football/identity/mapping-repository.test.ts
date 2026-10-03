@@ -62,6 +62,86 @@ const proposalDto = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
+const mappingRow = (over: Record<string, unknown> = {}) => ({
+  mappingId: ID,
+  provider: "sofascore",
+  entityType: "player",
+  externalId: "S1",
+  appPlayerId: ID,
+  active: true,
+  manuallyCorrected: true,
+  reviewed: true,
+  reviewProvenance: "executed_proposal",
+  provenanceProposalId: ID,
+  correctedAt: "2026-10-03T08:00:00Z",
+  sourceVersion: `football_player_mapping:${ID}`,
+  updatedAt: "2026-10-03T08:00:00Z",
+  stateDigest: FP,
+  ...over,
+});
+
+describe("the actual provider mapping read", () => {
+  test("calls only the one staff function, by provider and id, and parses the row", async () => {
+    const { calls, repo } = fake(mappingRow());
+    const got = await repo.getProviderMapping("sofascore", "S1", ctx());
+    expect(calls).toEqual([
+      {
+        name: "admin_football_mapping_get_provider_mapping",
+        args: { p_provider: "sofascore", p_external_id: "S1" },
+      },
+    ]);
+    expect(got?.reviewed).toBe(true);
+    expect(got?.stateDigest).toBe(FP);
+  });
+  test("no row is null, not an error", async () => {
+    expect(await fake(null).repo.getProviderMapping("sofascore", "NOPE", ctx())).toBeNull();
+  });
+  test("a malformed row is refused, never trusted", async () => {
+    await expect(
+      fake(mappingRow({ stateDigest: "short" })).repo.getProviderMapping("sofascore", "S1", ctx()),
+    ).rejects.toThrow();
+    await expect(
+      fake(mappingRow({ reviewProvenance: "version_label" })).repo.getProviderMapping(
+        "sofascore",
+        "S1",
+        ctx(),
+      ),
+    ).rejects.toThrow();
+  });
+  test("needs a signed-in staff actor, like every read", async () => {
+    await expect(
+      fake(mappingRow()).repo.getProviderMapping("sofascore", "S1", ctx(null)),
+    ).rejects.toThrow();
+  });
+  test("a Flashscore proposal item carries its supporting mapping and class; a Sofascore item carries neither key", async () => {
+    const { calls, repo } = fake({ batchId: ID, proposals: [] });
+    await repo.proposeMappings(
+      [
+        {
+          kind: "map",
+          flashscoreCandidateId: ID,
+          appPlayerId: ID,
+          basis: "incident",
+          evidenceRefs: [{ source: "x" }],
+          evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          supportingMappingId: ID,
+        },
+        { kind: "map", sofascoreCandidateId: ID, appPlayerId: ID },
+      ],
+      "A reason long enough.",
+      crypto.randomUUID(),
+      ctx(),
+    );
+    const items = calls[0]!.args.p_items as Record<string, unknown>[];
+    expect(items[0]).toMatchObject({
+      evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+      supportingMappingId: ID,
+    });
+    expect("evidenceClass" in items[1]!).toBe(false);
+    expect("supportingMappingId" in items[1]!).toBe(false);
+  });
+});
+
 describe("the Supabase adapter", () => {
   test("proposeMappings sends the batch to the one propose function with the idempotency key", async () => {
     const { calls, repo } = fake({
@@ -335,6 +415,7 @@ describe("the Supabase adapter", () => {
       new Set([
         "admin_football_mapping_list_candidates",
         "admin_football_mapping_get_candidate",
+        "admin_football_mapping_get_provider_mapping",
         "admin_football_mapping_app_player_options",
         "admin_football_mapping_list_proposals",
         "admin_football_mapping_get_proposal",

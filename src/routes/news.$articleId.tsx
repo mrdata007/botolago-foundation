@@ -25,6 +25,7 @@ import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
 import { clubStyle } from "@/lib/club-palette";
 import { MediaImage } from "@/components/common/FailureAwareImage";
+import { HeroParallax, ReadingProgress } from "@/components/common/ReadingProgress";
 import { ArticleHeroFallback } from "@/components/common/ArticleHeroFallback";
 import { crestStyle } from "@/components/common/club-crest-style";
 import { readTimeLabel } from "@/lib/read-time";
@@ -311,6 +312,7 @@ function ArticlePage() {
     >
       {/* The reader's pull-quote rules (see `article-reading.ts`). */}
       <style>{PULL_QUOTE_CSS}</style>
+      <ReadingProgress />
 
       {/* Edge to edge on a phone: out of the screen gutter, and up over the
           column's top padding (UiScreen's pt-4, md:pt-6), to meet the bar. */}
@@ -318,23 +320,25 @@ function ArticlePage() {
         {/* Hero image — outside the <article>, whose `figure img` is the body's own */}
         <figure>
           <div className="relative aspect-[2/1] md:aspect-[16/7]">
-            <MediaImage
-              src={heroUrl}
-              alt={article.hero?.alt ?? article.title}
-              fallback={gradientTokenForId(article.id)}
-              // Same branded plate the cards use (BG-0076): a reader who taps a
-              // hero-less card must not land on a second empty block.
-              placeholder={
-                <ArticleHeroFallback
-                  category={article.primaryCategory?.slug}
-                  headline={article.title}
-                />
-              }
-              loading="eager"
-              fetchPriority="high"
-              frame={{ sizes: FULL_COLUMN_SIZES, ratio: 2, mdRatio: 16 / 7 }}
-              className="absolute inset-0 animate-in fade-in duration-500"
-            />
+            <HeroParallax>
+              <MediaImage
+                src={heroUrl}
+                alt={article.hero?.alt ?? article.title}
+                fallback={gradientTokenForId(article.id)}
+                // Same branded plate the cards use (BG-0076): a reader who taps a
+                // hero-less card must not land on a second empty block.
+                placeholder={
+                  <ArticleHeroFallback
+                    category={article.primaryCategory?.slug}
+                    headline={article.title}
+                  />
+                }
+                loading="eager"
+                fetchPriority="high"
+                frame={{ sizes: FULL_COLUMN_SIZES, ratio: 2, mdRatio: 16 / 7 }}
+                className="absolute inset-0 animate-in fade-in duration-500"
+              />
+            </HeroParallax>
             <span aria-hidden className="absolute inset-0" style={HERO_SCRIM} />
           </div>
           {/* The sheet's overlap would cover a caption under the photo, so the
@@ -352,6 +356,7 @@ function ArticlePage() {
 
         {/* The article — the sheet (continued) */}
         <article
+          data-reading-article=""
           lang={contentLanguage}
           dir={contentDir}
           data-club={colour?.["data-club"]}

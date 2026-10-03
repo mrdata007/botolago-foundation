@@ -1,11 +1,13 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
   type ImgHTMLAttributes,
   type ReactNode,
 } from "react";
+import { prefersReducedMotion } from "@/lib/motion";
 import { responsiveMedia, type PhotoFrame, type ResponsiveMediaSource } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
@@ -30,9 +32,15 @@ function ImageAttempt({
   decoding = "async",
   loading = "lazy",
   onFailed,
+  className,
+  onLoad,
   ...props
 }: ImageProps) {
   const [failed, setFailed] = useState(false);
+  // A picture still on its way when the page is ready waits invisible and fades
+  // in as it arrives. One that is already there (the server's, the browser's
+  // cache) is shown as it is, so nothing is hidden if scripts never run.
+  const [arrival, setArrival] = useState<"shown" | "waiting" | "arrived">("shown");
   // `srcSet` holds resized copies of `src` (see `responsiveMedia`). If they
   // fail -- the image service is off in this environment -- the next try drops
   // them and loads `src` itself, and only that failing removes the picture.
@@ -44,6 +52,11 @@ function ImageAttempt({
   // Once mounted, an image that already shows as broken is asked for again:
   // a real failure then fires `error` anew. One that loaded, or is still
   // loading, is left alone.
+  useLayoutEffect(() => {
+    const image = imageRef.current;
+    if (image && !image.complete && !prefersReducedMotion()) setArrival("waiting");
+  }, []);
+
   useEffect(() => {
     const image = imageRef.current;
     if (!image?.complete || image.naturalWidth > 0) return;
@@ -58,6 +71,16 @@ function ImageAttempt({
     <img
       {...props}
       ref={imageRef}
+      className={cn(
+        className,
+        arrival !== "shown" &&
+          "transition-opacity duration-[var(--duration-route)] ease-[var(--ease-standard)]",
+        arrival === "waiting" && "opacity-0",
+      )}
+      onLoad={(event) => {
+        setArrival((was) => (was === "waiting" ? "arrived" : was));
+        onLoad?.(event);
+      }}
       src={src}
       srcSet={useCopies ? srcSet : undefined}
       sizes={useCopies ? sizes : undefined}

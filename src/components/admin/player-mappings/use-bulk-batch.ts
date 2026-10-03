@@ -15,7 +15,7 @@ import {
   verifyManifest,
   type BulkManifest,
 } from "@/backend/football/identity/bulk-mapping/manifest";
-import type { BulkRowBase } from "@/backend/football/identity/bulk-mapping/profile";
+import type { BulkRowBase, PhaseSnapshot } from "@/backend/football/identity/bulk-mapping/profile";
 import {
   countStates,
   deriveAllRowStates,
@@ -138,11 +138,53 @@ export function useBulkBatch(input: {
       : createBulkRunner(deps, manifest, sofascoreProfile);
   }, [repository, manifest]);
 
+  // The actual mapping rows a Flashscore batch rests on, read from the database whenever the queue
+  // reloads (display only: the phases read them again, and the database enforces the dependency).
+  const [supportingReads, setSupportingReads] = useState<
+    PhaseSnapshot["providerMappings"] | undefined
+  >(undefined);
+  useEffect(() => {
+    if (!repository || !manifest || !isFlashscoreManifest(manifest) || !data) {
+      setSupportingReads(undefined);
+      return;
+    }
+    let cancelled = false;
+    flashscoreProfile
+      .loadSupporting?.(
+        {
+          repository,
+          context: () => ({
+            actorId: contextRef.current.actorId,
+            requestId: globalThis.crypto.randomUUID(),
+          }),
+        },
+        manifest.rows,
+      )
+      .then(
+        (reads) => {
+          if (!cancelled) setSupportingReads(reads);
+        },
+        () => {
+          if (!cancelled) setSupportingReads(undefined);
+        },
+      );
+    return () => {
+      cancelled = true;
+    };
+  }, [repository, manifest, data]);
+
   const rowStates = useMemo<ReadonlyMap<string, RowStateInfo>>(() => {
     if (!manifest || !data) return new Map();
     const now = new Date();
     const derived = isFlashscoreManifest(manifest)
-      ? deriveAllRowStates(manifest, data.candidates, data.proposals, now, flashscoreProfile)
+      ? deriveAllRowStates(
+          manifest,
+          data.candidates,
+          data.proposals,
+          now,
+          flashscoreProfile,
+          supportingReads,
+        )
       : deriveAllRowStates(manifest, data.candidates, data.proposals, now, sofascoreProfile);
     const merged = new Map(derived);
     for (const [id, outcome] of session) {
@@ -155,7 +197,7 @@ export function useBulkBatch(input: {
         });
     }
     return merged;
-  }, [manifest, data, session]);
+  }, [manifest, data, session, supportingReads]);
 
   const counts = useMemo(() => countStates(rowStates), [rowStates]);
   const inState = useCallback(

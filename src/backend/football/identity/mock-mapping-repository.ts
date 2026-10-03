@@ -11,6 +11,7 @@ import {
   type ProposalDto,
   type ProposeItem,
   type ProposeResult,
+  type ProviderMappingDto,
   type ReviewerAvailability,
   type TransitionResult,
 } from "./mapping-contracts";
@@ -30,6 +31,21 @@ export interface MockMappingRow {
   externalId: string;
   appPlayerId: string;
   active: boolean;
+  /**
+   * The proposal that wrote this row through the reviewed flow, with what it wrote. A row is
+   * "reviewed" only while it still matches that record: a row edited by hand, or seeded without
+   * one, is not (as in the database, where a version label alone proves nothing).
+   */
+  writtenBy?: {
+    readonly proposalId: string;
+    readonly externalId: string;
+    readonly appPlayerId: string;
+    readonly active: boolean;
+  };
+  /** Seed a row as already reviewed (its record is the proposal id given). */
+  reviewedBy?: string;
+  /** Counts the reviewed writes to this row. */
+  rev?: number;
 }
 export interface MockAppPlayer {
   readonly id: string;
@@ -139,7 +155,19 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
     this.allowSelfApproval = seed.allowSelfApproval ?? false;
     this.qualified = new Set(seed.qualifiedActors ?? []);
     this.appPlayers = [...(seed.appPlayers ?? [])];
-    this.mappings.push(...(seed.mappings ?? []).map((m) => ({ ...m })));
+    this.mappings.push(
+      ...(seed.mappings ?? []).map((m) => ({
+        ...m,
+        writtenBy: m.reviewedBy
+          ? {
+              proposalId: m.reviewedBy,
+              externalId: m.externalId,
+              appPlayerId: m.appPlayerId,
+              active: m.active,
+            }
+          : m.writtenBy,
+      })),
+    );
     for (const built of seed.candidates ?? []) {
       this.candidates.push({
         id: built.id ?? uuid(),
@@ -274,6 +302,93 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
       .sort(byId)
       .slice(0, Math.min(Math.max(limit, 1), PAGE_CAP))
       .map((c) => this.dto(c));
+  }
+
+  /** The state of one mapping row, as the database reports it. `reviewed` follows the audit record, never a label. */
+  private stateOf(row: MockMappingRow): ProviderMappingDto {
+    const w = row.writtenBy;
+    const reviewed =
+      !!w &&
+      w.externalId === row.externalId &&
+      w.appPlayerId === row.appPlayerId &&
+      w.active === row.active;
+    return {
+      mappingId: row.id,
+      provider: row.provider,
+      entityType: "player",
+      externalId: row.externalId,
+      appPlayerId: row.appPlayerId,
+      active: row.active,
+      manuallyCorrected: !!w,
+      reviewed,
+      reviewProvenance: reviewed ? "executed_proposal" : "none",
+      provenanceProposalId: reviewed ? w!.proposalId : null,
+      correctedAt: w ? "2026-10-03T08:00:00.000Z" : null,
+      sourceVersion: w ? `football_player_mapping:${w.proposalId}` : null,
+      updatedAt: "2026-10-03T08:00:00.000Z",
+      stateDigest: sha({
+        id: row.id,
+        provider: row.provider,
+        externalId: row.externalId,
+        appPlayerId: row.appPlayerId,
+        active: row.active,
+        reviewed,
+        proposal: reviewed ? w!.proposalId : null,
+        rev: row.rev ?? 0,
+      }),
+    };
+  }
+
+  async getProviderMapping(
+    provider: "sofascore" | "flashscore",
+    externalId: string,
+    context: RepositoryContext,
+  ) {
+    this.actor(context);
+    const row = this.mappings.find((m) => m.provider === provider && m.externalId === externalId);
+    return row ? this.stateOf(row) : null;
+  }
+
+  /**
+   * The database's dependency rule for a Flashscore identity: the supporting row is read here, not
+   * taken from the caller. Same order of refusals, same codes.
+   */
+  private dependencyOf(
+    evidenceClass: string | undefined,
+    supportingMappingId: string | undefined,
+    target: string,
+  ): { ok: true; supporting: Record<string, unknown> } | { ok: false; code: string } {
+    if (!evidenceClass || !supportingMappingId)
+      return { ok: false, code: "supporting_dependency_required" };
+    if (
+      evidenceClass !== "F1_REVIEWED_SOFASCORE_EVENTS" &&
+      evidenceClass !== "F2_REVIEWED_SOFASCORE_SHIRT_DOB"
+    )
+      return { ok: false, code: "supporting_dependency_invalid" };
+    const row = this.mappings.find((m) => m.id === supportingMappingId);
+    if (!row) return { ok: false, code: "supporting_mapping_missing" };
+    if (row.provider !== "sofascore")
+      return { ok: false, code: "supporting_mapping_not_sofascore" };
+    if (!row.active) return { ok: false, code: "supporting_mapping_inactive" };
+    const state = this.stateOf(row);
+    if (!state.reviewed) return { ok: false, code: "supporting_mapping_unreviewed" };
+    if (row.appPlayerId !== target)
+      return { ok: false, code: "supporting_mapping_target_mismatch" };
+    return {
+      ok: true,
+      supporting: {
+        mappingId: state.mappingId,
+        provider: state.provider,
+        externalId: state.externalId,
+        appPlayerId: state.appPlayerId,
+        active: true,
+        reviewed: true,
+        reviewProvenance: state.reviewProvenance,
+        provenanceProposalId: state.provenanceProposalId,
+        stateDigest: state.stateDigest,
+        evidenceClass,
+      },
+    };
   }
 
   async getMappingCandidate(candidateId: string, context: RepositoryContext) {
@@ -435,6 +550,13 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
     let candidateIds: string[] = [];
     let positionDisagreement = false;
     const dto: Partial<ProposalDto> = {};
+    const evidenceClass = "evidenceClass" in item ? item.evidenceClass : undefined;
+    const supportingMappingId =
+      "supportingMappingId" in item ? item.supportingMappingId : undefined;
+    const refs = "evidenceRefs" in item ? (item.evidenceRefs ?? []) : [];
+    const carriesDependency = evidenceClass !== undefined || supportingMappingId !== undefined;
+    if (carriesDependency && refs.length === 0) return refuse(index, "evidence_refs_required");
+    let supporting: Record<string, unknown> | null = null;
     if (item.kind === "map") {
       const ids = [item.sofascoreCandidateId, item.flashscoreCandidateId].filter(
         (v): v is string => !!v,
@@ -466,6 +588,12 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
         )
       )
         return refuse(index, "identity_conflict");
+      if (item.flashscoreCandidateId && !item.sofascoreCandidateId) {
+        // A Flashscore-only proposal rests on a Sofascore mapping the repository reads itself.
+        const dep = this.dependencyOf(evidenceClass, supportingMappingId, item.appPlayerId);
+        if (!dep.ok) return refuse(index, dep.code);
+        supporting = dep.supporting;
+      } else if (carriesDependency) return refuse(index, "supporting_dependency_not_applicable");
       positionDisagreement =
         new Set(positions).size > 1 ||
         (!!player.position && positions.some((pos) => pos !== player.position));
@@ -487,6 +615,7 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
       const id = item.sofascoreCandidateId ?? item.flashscoreCandidateId;
       if (!id || (item.sofascoreCandidateId && item.flashscoreCandidateId))
         return refuse(index, "invalid_proposal");
+      if (carriesDependency) return refuse(index, "supporting_dependency_not_applicable");
       const c = this.candidates.find((candidate) => candidate.id === id);
       if (!c) return refuse(index, "candidate_not_found");
       if (openOn((p) => p.candidates.includes(id))) return refuse(index, "proposal_already_open");
@@ -524,6 +653,18 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
         holds(row.provider, (m) => m.appPlayerId === newPlayer && m.id !== row.id)
       )
         return refuse(index, "already_mapped");
+      if (
+        row.provider === "flashscore" &&
+        (item.kind === "replace" || item.kind === "reactivate")
+      ) {
+        const dep = this.dependencyOf(
+          evidenceClass,
+          supportingMappingId,
+          newPlayer ?? row.appPlayerId,
+        );
+        if (!dep.ok) return refuse(index, dep.code);
+        supporting = dep.supporting;
+      } else if (carriesDependency) return refuse(index, "supporting_dependency_not_applicable");
       Object.assign(dto, {
         providerName: row.provider,
         mappingId: row.id,
@@ -538,6 +679,7 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
         basis: "manual",
       });
     }
+    if (supporting) dto.evidence = { supporting, refsDigest: sha(refs), refs };
     const id = uuid();
     const payload = { ...dto, kind: item.kind, reason, positionDisagreement };
     const proposal: ProposalDto = {
@@ -733,6 +875,23 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
 
   /** A change in the world since the proposal: another human's ignore, or a row that took the identity. */
   private conflictOf(p: MockProposal): string | null {
+    const stored = p.dto.evidence.supporting as Record<string, unknown> | undefined;
+    if (stored) {
+      // The supporting mapping is read again now, as the database does at approval and execution.
+      const target =
+        p.dto.kind === "map"
+          ? p.dto.appPlayerId!
+          : (p.dto.newAppPlayerId ??
+            this.mappings.find((m) => m.id === p.dto.mappingId)?.appPlayerId ??
+            "");
+      const now = this.dependencyOf(
+        stored.evidenceClass as string,
+        stored.mappingId as string,
+        target,
+      );
+      if (!now.ok) return now.code;
+      if (sha(now.supporting) !== sha(stored)) return "supporting_mapping_changed";
+    }
     // The evidence the proposal was made on has moved: execution re-validates and holds it.
     if (p.candidates.some((id) => (this.evidenceBumps.get(id) ?? 0) !== (p.revisions[id] ?? 0)))
       return "stale_evidence";
@@ -797,9 +956,8 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
     }
     const code = this.conflictOf(p);
     if (code) {
-      p.dto.status = p.dto.effectiveStatus = code as ProposalDto["status"];
-      this.release(p);
-      return { ok: false, code, status: code };
+      const status = this.hold(p, code);
+      return { ok: false, code, status };
     }
     if (p.dto.positionDisagreement && !input.positionDisagreementAcknowledged)
       throw new MappingError(
@@ -814,6 +972,16 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
       decisionReason: input.reason,
     });
     return { ok: true, id: p.dto.id, status: "approved" };
+  }
+
+  /** A refusal is remembered as a held status; a reason that is not a status is held as stale evidence, with its code. */
+  private hold(p: MockProposal, code: string): ProposalDto["status"] {
+    const statuses = ["stale_evidence", "identity_conflict", "already_mapped"];
+    const status = (statuses.includes(code) ? code : "stale_evidence") as ProposalDto["status"];
+    p.dto.status = p.dto.effectiveStatus = status;
+    p.dto.holdCode = code;
+    this.release(p);
+    return status;
   }
 
   private release(p: MockProposal) {
@@ -848,9 +1016,8 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
         throw new MappingError("fingerprint_mismatch", "The proposal changed.");
       const code = this.conflictOf(p);
       if (code) {
-        p.dto.status = p.dto.effectiveStatus = code as ProposalDto["status"];
-        this.release(p);
-        return { ok: false as const, code, status: code };
+        const status = this.hold(p, code);
+        return { ok: false as const, code, status };
       }
       const d = p.dto;
       // What the database records on the proposal: the row(s) written, as they are after the write.
@@ -872,6 +1039,13 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
             externalId: c.externalId,
             appPlayerId: d.appPlayerId!,
             active: true,
+            rev: 1,
+            writtenBy: {
+              proposalId: d.id,
+              externalId: c.externalId,
+              appPlayerId: d.appPlayerId!,
+              active: true,
+            },
           };
           this.mappings.push(row);
           rows.push(snapshotOf(row));
@@ -888,6 +1062,13 @@ export class InMemoryPlayerMappingRepository implements PlayerMappingRepository 
         if (d.newAppPlayerId) row.appPlayerId = d.newAppPlayerId;
         if (d.kind === "deactivate") row.active = false;
         if (d.kind === "reactivate") row.active = true;
+        row.rev = (row.rev ?? 0) + 1;
+        row.writtenBy = {
+          proposalId: d.id,
+          externalId: row.externalId,
+          appPlayerId: row.appPlayerId,
+          active: row.active,
+        };
         for (const c of this.candidates.filter((x) => x.provider === row.provider)) {
           if (c.existingMappingId === row.id || c.externalId === row.externalId) {
             c.status = row.active && c.externalId === row.externalId ? "mapped" : "unmapped";

@@ -9,7 +9,7 @@
  * Nothing here decides who is mapped: the manifest does, and the reviewed backend
  * (propose, approve, execute) still checks every row on its own.
  */
-export const FLASHSCORE_CONTRACT_VERSION = "player-mapping-bulk-flashscore-v1";
+export const FLASHSCORE_CONTRACT_VERSION = "player-mapping-bulk-flashscore-v2";
 
 export const FLASHSCORE_EVIDENCE_CLASSES = [
   "F1_REVIEWED_SOFASCORE_EVENTS",

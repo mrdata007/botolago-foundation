@@ -5,7 +5,7 @@ import { useI18n } from "@/i18n/provider";
 import { ClubCrest } from "./ClubCrest";
 import { FlipScore } from "@/components/matches/FlipScore";
 import { LiveProgress } from "@/components/matches/LiveProgress";
-import { useTickingMinute } from "@/lib/motion";
+import { useJustTurnedOn, useTickingMinute } from "@/lib/motion";
 import { MatchReminderBell } from "./MatchReminderBell";
 import { cn } from "@/lib/utils";
 import { ui, UiBadge, UiLivePill } from "@/components/ui-kit";
@@ -127,6 +127,8 @@ export function MatchCard({
   const isHero = variant === "hero";
   // The minute keeps ticking between data refreshes (at most one ahead).
   const liveMinute = useTickingMinute(match.minute, status === "live");
+  // A match that ends while the list is open: its "FT" pops once.
+  const justFinished = useJustTurnedOn(status === "finished");
 
   const timeFmt = moroccoDateTimeFormat(locale, {
     hour: "2-digit",
@@ -219,12 +221,20 @@ export function MatchCard({
             ui.radius.full,
             ui.surface.inkPlain,
             ui.text.label,
+            justFinished && "pop",
           )}
         >
           {t("matches.status.ft")}
         </span>
       ) : (
-        <span className={cn(ui.text.micro, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}>
+        <span
+          className={cn(
+            ui.text.micro,
+            "[font-weight:var(--ui-weight-strong)]",
+            ui.tone.muted,
+            justFinished && "pop",
+          )}
+        >
           {t("matches.status.ft")}
         </span>
       );

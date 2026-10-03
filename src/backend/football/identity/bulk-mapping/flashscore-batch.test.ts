@@ -15,7 +15,7 @@ import { buildFlashWorld, flashCandidateUuid, prepareFlashBatch } from "./flashs
 import { canonicalJson, sha256Hex } from "./canonical";
 import { countStates, deriveAllRowStates } from "./row-state";
 import { createBulkRunner, proposeCallCount, runApprove, runExecute, runPropose } from "./runner";
-import { ownerContext, playerId } from "./test-world";
+import { candidateUuid, ownerContext, playerId } from "./test-world";
 
 /** Records every backend call by name, and lets a test intercept one. */
 function spy(
@@ -227,6 +227,7 @@ describe("Flashscore bulk phases", () => {
       "decideMappingProposal",
       "executeMappingProposal",
       "getMappingCandidate",
+      "getProviderMapping",
       "getMappingProposal",
       "listMappingCandidates",
       "listMappingProposals",
@@ -242,7 +243,7 @@ describe("Flashscore bulk phases", () => {
     const r = await runPropose(batch.deps, batch.manifest, batch.all, {}, flashscoreProfile);
     const held = r.outcomes.find((o) => o.candidateId === victim.candidateId)!;
     expect(held.state).toBe("STALE_EVIDENCE");
-    expect(held.code).toBe("supporting_mapping_not_active");
+    expect(held.code).toBe("supporting_mapping_inactive");
     expect(r.outcomes.filter((o) => o.state === "PROPOSED")).toHaveLength(7);
     // No proposal exists for the held row.
     const proposals = await loadAllProposals(batch.repo, null, ownerContext());
@@ -256,7 +257,7 @@ describe("Flashscore bulk phases", () => {
     const r = await runPropose(batch.deps, batch.manifest, batch.all, {}, flashscoreProfile);
     const held = r.outcomes.find((o) => o.candidateId === victim.candidateId)!;
     expect(held.state).toBe("STALE_EVIDENCE");
-    expect(held.code).toBe("supporting_mapping_retargeted");
+    expect(held.code).toBe("supporting_mapping_target_mismatch");
     expect(r.outcomes.filter((o) => o.state === "PROPOSED")).toHaveLength(5);
   });
 
@@ -271,8 +272,8 @@ describe("Flashscore bulk phases", () => {
     const r = await batch.run("execute");
     const code = (id: string) => r.outcomes.find((o) => o.candidateId === id)!;
     expect(code(deactivated.candidateId).state).toBe("STALE_EVIDENCE");
-    expect(code(deactivated.candidateId).code).toBe("supporting_mapping_not_active");
-    expect(code(retargeted.candidateId).code).toBe("supporting_mapping_retargeted");
+    expect(code(deactivated.candidateId).code).toBe("supporting_mapping_inactive");
+    expect(code(retargeted.candidateId).code).toBe("supporting_mapping_target_mismatch");
     expect(r.outcomes.filter((o) => o.state === "EXECUTED")).toHaveLength(4);
     // The two blocked rows never produced a Flashscore mapping.
     const flash = batch.repo.snapshotMappings().filter((m) => m.provider === "flashscore");
@@ -297,14 +298,7 @@ describe("Flashscore bulk phases", () => {
     const first = batch.manifest.rows[0]!;
     const second = batch.manifest.rows[1]!;
     const stray = await batch.repo.proposeMappings(
-      [
-        {
-          kind: "map",
-          flashscoreCandidateId: second.candidateId,
-          appPlayerId: playerId(8),
-          basis: "manual",
-        },
-      ],
+      [await supportedItem(batch, second.candidateId, 8)],
       "Hand-made proposal for another player.",
       crypto.randomUUID(),
       ctx,
@@ -320,6 +314,8 @@ describe("Flashscore bulk phases", () => {
   test("an id claimed between the re-check and the call: only that row fails, the rest are untouched", async () => {
     const batch = await prepareFlashBatch(buildFlashWorld({ f1: 4, f2: 0 }));
     const target = batch.manifest.rows[1]!;
+    // The stray proposal below is legal on its own terms: its target has a reviewed Sofascore mapping.
+    const strayItemForTarget = await supportedItem(batch, target.candidateId, 7);
     let claimed = false;
     const s = spy(batch.repo, {
       proposeMappings: async () => {
@@ -327,14 +323,7 @@ describe("Flashscore bulk phases", () => {
         claimed = true;
         // Someone else proposes this row's candidate onto another player just before our call lands.
         await batch.repo.proposeMappings(
-          [
-            {
-              kind: "map",
-              flashscoreCandidateId: target.candidateId,
-              appPlayerId: playerId(7),
-              basis: "manual",
-            },
-          ],
+          [strayItemForTarget],
           "Claimed by someone else.",
           crypto.randomUUID(),
           ownerContext(),
@@ -459,9 +448,10 @@ describe("Flashscore bulk phases", () => {
       await loadAllProposals(batch.repo, null, ownerContext()),
       new Date(),
       flashscoreProfile,
+      await flashscoreProfile.loadSupporting!(batch.deps, batch.manifest.rows),
     );
     expect(states.get(batch.manifest.rows[0]!.candidateId)?.code).toBe(
-      "supporting_mapping_not_active",
+      "supporting_mapping_inactive",
     );
     expect(states.get(batch.manifest.rows[1]!.candidateId)?.state).toBe("NOT_PROPOSED");
   });
@@ -512,6 +502,32 @@ describe("executing one Flashscore proposal outside the bulk runner", () => {
 
 type Batch = Awaited<ReturnType<typeof prepareFlashBatch>>;
 
+/**
+ * A legal hand-made Flashscore proposal onto player `n`: first maps player n's Sofascore identity
+ * through the reviewed flow (so the dependency the database requires exists), then returns the item.
+ */
+async function supportedItem(batch: Batch, flashscoreCandidateId: string, n: number) {
+  const ctx = ownerContext();
+  const sofa = await batch.repo.getMappingCandidate(candidateUuid(n), ctx);
+  if (sofa.existingMappingId === null)
+    await viaReviewedFlow(batch, {
+      kind: "map",
+      sofascoreCandidateId: candidateUuid(n),
+      appPlayerId: playerId(n),
+      basis: "manual",
+    });
+  const mapping = (await batch.repo.getProviderMapping("sofascore", sofa.externalId, ctx))!;
+  return {
+    kind: "map" as const,
+    flashscoreCandidateId,
+    appPlayerId: playerId(n),
+    basis: "incident" as const,
+    evidenceRefs: [{ source: "reviewed_sofascore_mapping", mappingId: mapping.mappingId }],
+    evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS" as const,
+    supportingMappingId: mapping.mappingId,
+  };
+}
+
 /** Deactivates a row's supporting Sofascore mapping through the reviewed flow (propose, approve, execute). */
 async function deactivate(batch: Batch, row: FlashscoreRow) {
   await viaReviewedFlow(batch, {
@@ -556,3 +572,230 @@ async function viaReviewedFlow(
   const done = await batch.repo.executeMappingProposal(first.id, crypto.randomUUID(), ctx);
   if (!done.ok) throw new Error(`execute refused: ${done.code}`);
 }
+
+describe("the dependency on the supporting mapping, as the database enforces it (stand-in repository, same refusals)", () => {
+  const propose = (batch: Batch, item: Record<string, unknown>) =>
+    batch.repo.proposeMappings(
+      [item as never],
+      "A proposal made without the batch tool.",
+      crypto.randomUUID(),
+      ownerContext(),
+    );
+  const codeOf = async (batch: Batch, item: Record<string, unknown>) => {
+    const r = await propose(batch, item);
+    const first = r.proposals[0]!;
+    return first.ok ? "ok" : first.code;
+  };
+  const base = (batch: Batch) => {
+    const row = batch.manifest.rows[0]!;
+    return {
+      row,
+      item: {
+        kind: "map",
+        flashscoreCandidateId: row.candidateId,
+        appPlayerId: row.appPlayerId,
+        basis: "incident",
+        evidenceRefs: [{ source: "reviewed_sofascore_mapping" }],
+        evidenceClass: row.evidenceClass,
+        supportingMappingId: row.supporting.mappingId,
+      },
+    };
+  };
+
+  test("every proposal the batch sends names its supporting mapping and class; none is sent without", async () => {
+    const batch = await prepareFlashBatch(buildFlashWorld({ f1: 3, f2: 3 }));
+    const s = spy(batch.repo);
+    await runPropose(
+      { repository: s.proxy, context: batch.deps.context },
+      batch.manifest,
+      batch.all,
+      {},
+      flashscoreProfile,
+    );
+    const sent = s.seen
+      .filter((c) => c.name === "proposeMappings")
+      .flatMap(
+        (c) =>
+          c.args[0] as {
+            flashscoreCandidateId: string;
+            evidenceClass: string;
+            supportingMappingId: string;
+          }[],
+      );
+    expect(sent).toHaveLength(6);
+    for (const item of sent) {
+      const row = batch.manifest.rows.find((r) => r.candidateId === item.flashscoreCandidateId)!;
+      expect(item.evidenceClass).toBe(row.evidenceClass);
+      expect(item.supportingMappingId).toBe(row.supporting.mappingId);
+    }
+  });
+
+  test("a Flashscore-only proposal without the dependency is refused, whoever asks: nothing is created", async () => {
+    const batch = await prepareFlashBatch(buildFlashWorld({ f1: 2, f2: 2 }));
+    const { row, item } = base(batch);
+    const bare = { ...item } as Record<string, unknown>;
+    delete bare.evidenceClass;
+    delete bare.supportingMappingId;
+    expect(await codeOf(batch, bare)).toBe("supporting_dependency_required");
+    expect(await codeOf(batch, { ...item, supportingMappingId: undefined })).toBe(
+      "supporting_dependency_required",
+    );
+    expect(await codeOf(batch, { ...item, evidenceClass: undefined })).toBe(
+      "supporting_dependency_required",
+    );
+    expect(await codeOf(batch, { ...item, evidenceClass: "F9_MADE_UP" })).toBe(
+      "supporting_dependency_invalid",
+    );
+    const proposals = await loadAllProposals(batch.repo, null, ownerContext());
+    expect(proposals.some((p) => p.flashscoreCandidateId === row.candidateId)).toBe(false);
+  });
+
+  test("a made-up, wrong-provider, wrong-player or label-only supporting mapping is refused with its own code", async () => {
+    const batch = await prepareFlashBatch(buildFlashWorld({ f1: 3, f2: 3 }));
+    const { row, item } = base(batch);
+    expect(
+      await codeOf(batch, { ...item, supportingMappingId: "99999999-9999-4999-8999-999999999999" }),
+    ).toBe("supporting_mapping_missing");
+    // another row's supporting mapping belongs to another player
+    const other = batch.manifest.rows[1]!;
+    expect(await codeOf(batch, { ...item, supportingMappingId: other.supporting.mappingId })).toBe(
+      "supporting_mapping_target_mismatch",
+    );
+    // a hand-made row with the right-looking label and no audit record behind it is not reviewed
+    const handMade = batch.repo.mappings.find((m) => m.id === row.supporting.mappingId)!;
+    const saved = handMade.writtenBy;
+    handMade.writtenBy = undefined;
+    expect(await codeOf(batch, item)).toBe("supporting_mapping_unreviewed");
+    // ... and so does one edited by hand after the reviewed write (the record no longer matches)
+    handMade.writtenBy = saved;
+    handMade.externalId = "EDITED-BY-HAND";
+    expect(await codeOf(batch, item)).toBe("supporting_mapping_unreviewed");
+    handMade.externalId = row.supporting.externalId;
+    expect(await codeOf(batch, item)).toBe("ok");
+  });
+
+  test("the dependency is not accepted where it does not apply", async () => {
+    const batch = await prepareFlashBatch(buildFlashWorld({ f1: 2, f2: 2 }));
+    const { row, item } = base(batch);
+    // an ignore, or a Sofascore proposal, never carries it
+    expect(
+      await codeOf(batch, {
+        kind: "ignore",
+        flashscoreCandidateId: row.candidateId,
+        evidenceClass: row.evidenceClass,
+        supportingMappingId: row.supporting.mappingId,
+        evidenceRefs: [{ source: "x" }],
+      }),
+    ).toBe("supporting_dependency_not_applicable");
+    expect(await codeOf(batch, { ...item, evidenceRefs: [] })).toBe("evidence_refs_required");
+  });
+
+  test("approved, then the supporting mapping breaks: the repository itself holds the execution, with or without the client guard", async () => {
+    const batch = await prepareFlashBatch(buildFlashWorld({ f1: 2, f2: 2 }));
+    await batch.run("propose");
+    await batch.run("approve");
+    const row = batch.manifest.rows[0]!;
+    await deactivate(batch, row);
+    // no client guard at all: the ordinary queue's actions with no guardExecute
+    const proposals = await loadAllProposals(batch.repo, null, ownerContext());
+    const proposal = proposals.find((p) => p.flashscoreCandidateId === row.candidateId)!;
+    const result = await batch.repo.executeMappingProposal(
+      proposal.id,
+      crypto.randomUUID(),
+      ownerContext(),
+    );
+    expect(result).toMatchObject({ ok: false, code: "supporting_mapping_inactive" });
+    expect(
+      batch.repo
+        .snapshotMappings()
+        .some((m) => m.provider === "flashscore" && m.externalId === row.externalId),
+    ).toBe(false);
+  });
+
+  test("a supporting mapping changed and restored through the reviewed flow is a new state: the old approval is refused", async () => {
+    const batch = await prepareFlashBatch(buildFlashWorld({ f1: 2, f2: 2 }));
+    await batch.run("propose");
+    await batch.run("approve");
+    const row = batch.manifest.rows[0]!;
+    await deactivate(batch, row);
+    await viaReviewedFlow(batch, {
+      kind: "reactivate",
+      providerName: "sofascore",
+      mappingId: row.supporting.mappingId,
+    });
+    const now = (await batch.repo.getProviderMapping(
+      "sofascore",
+      row.supporting.externalId,
+      ownerContext(),
+    ))!;
+    expect(now.active && now.reviewed).toBe(true);
+    // The client's early warning sees the new state ...
+    const verdict = await guardFlashscoreExecute(batch.deps, batch.manifest.rows, {
+      kind: "map",
+      flashscoreCandidateId: row.candidateId,
+    });
+    expect(verdict?.code).toBe("supporting_mapping_changed");
+    // ... and so does the repository (standing in for the database).
+    const proposals = await loadAllProposals(batch.repo, null, ownerContext());
+    const proposal = proposals.find((p) => p.flashscoreCandidateId === row.candidateId)!;
+    const result = await batch.repo.executeMappingProposal(
+      proposal.id,
+      crypto.randomUUID(),
+      ownerContext(),
+    );
+    expect(result).toMatchObject({ ok: false, code: "supporting_mapping_changed" });
+  });
+
+  test("one refused row leaves the others usable", async () => {
+    const batch = await prepareFlashBatch(buildFlashWorld({ f1: 3, f2: 3 }));
+    await batch.run("propose");
+    await batch.run("approve");
+    await deactivate(batch, batch.manifest.rows[2]!);
+    const result = await runExecute(batch.deps, batch.manifest, batch.all, {}, flashscoreProfile);
+    expect(result.outcomes.filter((o) => o.state === "EXECUTED")).toHaveLength(5);
+    expect(result.outcomes.filter((o) => o.state === "STALE_EVIDENCE")).toHaveLength(1);
+  });
+
+  test("the ordinary queue cannot propose a Flashscore identity: it has no supporting mapping to give", async () => {
+    const batch = await prepareFlashBatch(buildFlashWorld({ f1: 1, f2: 1 }));
+    const actions = createMappingActions(batch.repo, () => ownerContext());
+    const candidate = await batch.repo.getMappingCandidate(
+      batch.manifest.rows[0]!.candidateId,
+      ownerContext(),
+    );
+    await expect(
+      actions.propose(
+        candidate,
+        batch.manifest.rows[0]!.appPlayerId,
+        "A reason that is long enough.",
+      ),
+    ).rejects.toMatchObject({ code: "supporting_dependency_required" });
+    const proposals = await loadAllProposals(batch.repo, null, ownerContext());
+    expect(proposals.some((p) => p.flashscoreCandidateId !== null)).toBe(false);
+  });
+
+  test("against a database without the migration (no read function) every row stops before anything is sent", async () => {
+    const batch = await prepareFlashBatch(buildFlashWorld({ f1: 2, f2: 2 }));
+    const s = spy(batch.repo, {
+      getProviderMapping: () => {
+        throw new MappingError("mapping_unavailable", "function does not exist");
+      },
+    });
+    const r = await runPropose(
+      { repository: s.proxy, context: batch.deps.context },
+      batch.manifest,
+      batch.all,
+      {},
+      flashscoreProfile,
+    );
+    expect(r.outcomes.every((o) => o.state === "ERROR" && o.code === "mapping_unavailable")).toBe(
+      true,
+    );
+    expect(s.seen.some((c) => c.name === "proposeMappings")).toBe(false);
+    expect((await loadAllProposals(batch.repo, null, ownerContext())).length).toBe(
+      (await loadAllProposals(batch.repo, null, ownerContext())).filter(
+        (p) => p.sofascoreCandidateId !== null,
+      ).length,
+    );
+  });
+});

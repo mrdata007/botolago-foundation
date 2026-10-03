@@ -5,7 +5,7 @@ import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { ui, UiPlayerPlate } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
-import { useJustTurnedOn } from "@/lib/motion";
+import { useJustChanged, useJustTurnedOn } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
@@ -110,6 +110,8 @@ export function FplPlayerCard({
   // The armband just passed to this player (not on first show): a gold ring
   // opens around the shirt and the "C" pops.
   const newCaptain = useJustTurnedOn(Boolean(captain));
+  // A different player in the same slot (a transfer): the new one drops in.
+  const arrived = useJustChanged(player.id, 600);
   const fullName = tr(player.name);
   // The surname — and in Arabic "عطية الله", not a bare "الله" (plate-name.ts).
   const shortName = plateName(fullName);
@@ -143,7 +145,7 @@ export function FplPlayerCard({
       state={highlighted ? "selected" : doubtful ? "doubtful" : "default"}
       onClick={onClick}
       ariaLabel={`${fullName}${club ? `, ${tr(club.shortName)}` : ""}${role}${noMatch ? `, ${noMatchText}` : ""}`}
-      className={cn(dimmed && "opacity-45", className)}
+      className={cn(dimmed && "opacity-45", arrived && "swap-in", className)}
       visual={
         // The marker rides inside the visual so it is placed against the
         // shirt, not against the 76px plate. The shirt keeps the club's name

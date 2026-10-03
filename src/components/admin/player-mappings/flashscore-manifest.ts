@@ -6,8 +6,8 @@
  * offering anything. Do not edit by hand.
  */
 export const FLASHSCORE_BULK_MANIFEST: unknown = {
-  schemaVersion: 1,
-  contractVersion: "player-mapping-bulk-flashscore-v1",
+  schemaVersion: 2,
+  contractVersion: "player-mapping-bulk-flashscore-v2",
   environment: "production-v2",
   population: {
     total: 42,
@@ -32,8 +32,8 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
     candidateRecordsSha256: "b9ff88ba5f33a4cd729055033c8ff3914ce60f3aed72fa2a19b11f8172006e88",
     corroborationObservedAt: "2026-10-03T07:16:51.000Z",
     corroborationSha256: "0bd0dd8c8d42d84faf2fe65e1e79118af1947e020ead47203a387e6922ce8e3f",
-    productionReadAt: "2026-10-03T08:23:50.017Z",
-    productionReadSha256: "0575b84d58a3128021fde4b6a0088941c4c57204c7f937272aea8d356574a6f2",
+    productionReadAt: "2026-10-03T10:41:48.200Z",
+    productionReadSha256: "39f3a12b4eb5a9baf7b52fd30fb71cc74595a03317ff89dafe0ada5359201503",
     originalManifestSha256: "4c3d2294e9122b1cd4793854714db6f10bbaf0d083b6b53391b8813f11cb0576",
     correctedManifestSha256: "a885c7657da78a2f45fb5127c23925a480b4fbc9dc679f49196fe0a6cef4c60f",
   },
@@ -52,10 +52,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1004521",
-        candidateId: "7f30cde3-40d1-43b3-9b47-ed1f24cde30a",
         mappingId: "fc97c14d-b3d9-499f-ad29-e588cb9956df",
         appPlayerId: "abef5d77-c69c-49bd-8cc4-8896972e60e7",
-        version: "football_player_mapping:790c7e24-c77a-4bb7-ae15-f5dd731beeac",
+        provenanceProposalId: "790c7e24-c77a-4bb7-ae15-f5dd731beeac",
+        stateDigest: "53ac67bf639c65f22db12cfde247e427af1315bcf22286d1609b3c748fa634f4",
         state: "active_reviewed",
       },
       fixtures: [
@@ -80,7 +80,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "97bfda7e10b07f2512a2ae20e074b5468ed9b8763fb0c314ad47f6cb5854a28b",
+      evidenceSha256: "1642cb8d1b29957bc1aa4fa4aa6f69f0d45ed18855aa22dabe5dec3a028eb102",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -107,6 +107,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "abef5d77-c69c-49bd-8cc4-8896972e60e7",
+          supporting: {
+            mappingId: "fc97c14d-b3d9-499f-ad29-e588cb9956df",
+            provider: "sofascore",
+            externalId: "1004521",
+            appPlayerId: "abef5d77-c69c-49bd-8cc4-8896972e60e7",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "790c7e24-c77a-4bb7-ae15-f5dd731beeac",
+            stateDigest: "53ac67bf639c65f22db12cfde247e427af1315bcf22286d1609b3c748fa634f4",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "829f74d50dd65eb038c13f130b8f7930072279c365924feaee8613e35ac0d482",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -136,7 +149,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "cc10080278dec7f0690a1793c93c5407f8ab440c22b4ccc92b57f0a15d07db2d",
+      expectedFingerprint: "a70bf5f6084a1b1465d498ce2aaa5baae871138080d31a81f09acb6bd2b0da76",
     },
     {
       candidateId: "0445bc4c-826a-42bf-8a46-35fc96ba0234",
@@ -152,10 +165,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "919761",
-        candidateId: "ed3c74eb-16f2-4247-8ccb-28cfc1e46405",
         mappingId: "5e9e7b98-0db0-42f3-b8c5-bfb403ad0e3a",
         appPlayerId: "34c9d2a8-2746-4fe4-9fc0-8ee62a48069d",
-        version: "football_player_mapping:c1d97fb5-5fd7-431d-a12d-ccec4269dc8e",
+        provenanceProposalId: "c1d97fb5-5fd7-431d-a12d-ccec4269dc8e",
+        stateDigest: "7641683fce71db25c818b0d7be04466d2bda3b6044d4d5ca7bb02af912891072",
         state: "active_reviewed",
       },
       fixtures: [
@@ -180,7 +193,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "59e12661fd3373f62460d8fa1f1a357967ff13e75007339ec4d68f6d565ab246",
+      evidenceSha256: "929c0b2317340bf386d03771fbd43e2f8e9ab13711e945d0b51756033cc6c2ff",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -208,6 +221,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "34c9d2a8-2746-4fe4-9fc0-8ee62a48069d",
+          supporting: {
+            mappingId: "5e9e7b98-0db0-42f3-b8c5-bfb403ad0e3a",
+            provider: "sofascore",
+            externalId: "919761",
+            appPlayerId: "34c9d2a8-2746-4fe4-9fc0-8ee62a48069d",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "c1d97fb5-5fd7-431d-a12d-ccec4269dc8e",
+            stateDigest: "7641683fce71db25c818b0d7be04466d2bda3b6044d4d5ca7bb02af912891072",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "a131edd9bbd7a82a50084c12c1f08c4665a8f61c1ec9000b370d8460bcd4ebef",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -237,7 +263,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "56435640cad26a98103671a1dfb53f1b365d171d860eacef9f6a60971b5b4def",
+      expectedFingerprint: "b00c9f9e5df9a4d433a1455dbd39636f33853890688d43c7d0ba643b8bf5ecb3",
     },
     {
       candidateId: "0545e957-4746-4f7d-ab74-b4ac6aa669dc",
@@ -253,10 +279,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1013197",
-        candidateId: "6a1ddd5d-2b41-4ce3-bbfa-d50258dca100",
         mappingId: "312c6d40-c25b-4e38-8cc8-6a394cde46a6",
         appPlayerId: "bb028b7d-db09-4ddb-a53e-92193f28e6a3",
-        version: "football_player_mapping:01fcd71d-9853-4e32-8e19-eb0863b7084d",
+        provenanceProposalId: "01fcd71d-9853-4e32-8e19-eb0863b7084d",
+        stateDigest: "8785dc544df9fdea4258a428ec9eb6a99605ac7b637406619860bc2aefc3efe3",
         state: "active_reviewed",
       },
       fixtures: [
@@ -281,7 +307,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "1b6c4d915a752f60ec7cded58a829fc9a66e3d0fdec50387e84fb5ff746517d9",
+      evidenceSha256: "ddc0cc363260256680f724566962cd89d66a3e4518a48d61dd9d3d50986ecc79",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -309,6 +335,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "bb028b7d-db09-4ddb-a53e-92193f28e6a3",
+          supporting: {
+            mappingId: "312c6d40-c25b-4e38-8cc8-6a394cde46a6",
+            provider: "sofascore",
+            externalId: "1013197",
+            appPlayerId: "bb028b7d-db09-4ddb-a53e-92193f28e6a3",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "01fcd71d-9853-4e32-8e19-eb0863b7084d",
+            stateDigest: "8785dc544df9fdea4258a428ec9eb6a99605ac7b637406619860bc2aefc3efe3",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "188cbca3eeccdc46f87ef4c6d8e07dde439fd2551449e98734e425a4ee0ec687",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -338,7 +377,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "f611fc769ce5b1c970f046b79e9da8e98826caf3851fcf91cb98180088f535e8",
+      expectedFingerprint: "7611b36a9b7ee07a6301da4755f0b51de7d0c92793de75dc85bc5570b62fcbdf",
     },
     {
       candidateId: "15353542-16aa-4a27-8938-051934a35ee2",
@@ -354,10 +393,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "970761",
-        candidateId: "4c88730e-7241-43fa-831c-14e86e0e1022",
         mappingId: "141a0216-2ce1-4f56-a119-703c5f5a5a8a",
         appPlayerId: "91e5fd67-3e36-4706-ba0c-a3a09be0b2ae",
-        version: "football_player_mapping:adfed9bd-3c02-4286-aff9-0c3b6fb5fd6f",
+        provenanceProposalId: "adfed9bd-3c02-4286-aff9-0c3b6fb5fd6f",
+        stateDigest: "7b9cffc9c5538767ca1a554abc5490691769d3691ab10893f3103a6a540db4b7",
         state: "active_reviewed",
       },
       fixtures: [
@@ -382,7 +421,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "6380933752a330106f876314bd24e2cf17b72a7e3f5113a9433e831f89d9d11e",
+      evidenceSha256: "0587f12f0d9b5d0548d9e0dfaf3e9524064895c09efa7f3e1ec414e6c874e5e6",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -410,6 +449,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "91e5fd67-3e36-4706-ba0c-a3a09be0b2ae",
+          supporting: {
+            mappingId: "141a0216-2ce1-4f56-a119-703c5f5a5a8a",
+            provider: "sofascore",
+            externalId: "970761",
+            appPlayerId: "91e5fd67-3e36-4706-ba0c-a3a09be0b2ae",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "adfed9bd-3c02-4286-aff9-0c3b6fb5fd6f",
+            stateDigest: "7b9cffc9c5538767ca1a554abc5490691769d3691ab10893f3103a6a540db4b7",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "3a5a9ba14af06a86a7f4f302283956a103a54a3823d6cc25729860fa8d40ecf0",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -439,7 +491,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "46d70a693ae8a646b929d0ca0b994cf618172b85e7c97e4f2f9879f40c896b7c",
+      expectedFingerprint: "7ea5a5f63477209858639c344a2d1c0a692f08b2c88de41c8423e8c7a7f36d5a",
     },
     {
       candidateId: "161175de-3a8d-4bd0-9a02-ea1eccd365c1",
@@ -455,10 +507,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1140796",
-        candidateId: "cc89c85d-a20f-460c-a7ed-f4a56ad34453",
         mappingId: "48db2f75-03ca-4ab1-9c44-1fec84e183f9",
         appPlayerId: "f9112452-900d-4518-a9b2-6f7dcf1ed075",
-        version: "football_player_mapping:5f53e456-45d0-4c82-831b-e834191f79d1",
+        provenanceProposalId: "5f53e456-45d0-4c82-831b-e834191f79d1",
+        stateDigest: "3e6f48c773d234b45bc3c00a2d9455854131e27fbb9db334e008c1d99e62cf06",
         state: "active_reviewed",
       },
       fixtures: [
@@ -483,7 +535,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "5691acddb59ff20fe8cccdc8ec359a6c8d77c48aa25d2b0911b4f6db65714783",
+      evidenceSha256: "bbb9ec5171df0d38298abdac2a51b029032d6416a81829cc4cdc255039b13ced",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -510,6 +562,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "f9112452-900d-4518-a9b2-6f7dcf1ed075",
+          supporting: {
+            mappingId: "48db2f75-03ca-4ab1-9c44-1fec84e183f9",
+            provider: "sofascore",
+            externalId: "1140796",
+            appPlayerId: "f9112452-900d-4518-a9b2-6f7dcf1ed075",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "5f53e456-45d0-4c82-831b-e834191f79d1",
+            stateDigest: "3e6f48c773d234b45bc3c00a2d9455854131e27fbb9db334e008c1d99e62cf06",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "23762f40acf1615655e23ff877cb2fa4080168f0c0dbf9960ed3c9306e026d64",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -539,7 +604,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "65f231d5d740de5926fd59d6b594e95b82853c9c5031ea31b22f7476d8ae3cff",
+      expectedFingerprint: "fb4e31a422df7380405eec4c472cb41bc888bbd37737184e332e36fe5eb3cd50",
     },
     {
       candidateId: "195fbd4d-a27e-44ca-a606-d09c7a37cfe6",
@@ -555,10 +620,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "919697",
-        candidateId: "03ec6679-466c-4dc3-b9df-7c8650d86f21",
         mappingId: "98e7cc24-191e-4a68-8d21-6883e670d6f7",
         appPlayerId: "d719e8c6-e166-44a7-8601-220281488e8f",
-        version: "football_player_mapping:1de302b1-c0cb-459e-b1fa-6eac1b83aedb",
+        provenanceProposalId: "1de302b1-c0cb-459e-b1fa-6eac1b83aedb",
+        stateDigest: "418e4b8f5dac21663347d6b5a90b2aa58e2137fa5f159426826a912d4acea88f",
         state: "active_reviewed",
       },
       fixtures: [
@@ -583,7 +648,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "2504b150acbd8766d9a7f45cff8a0c2680116baf51fafe3f4c3fcbe4ab13e0ee",
+      evidenceSha256: "660e660283e5c7705dd4186a59c9b14a83bbc6854e6901d9618aaada325a21b9",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -611,6 +676,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "d719e8c6-e166-44a7-8601-220281488e8f",
+          supporting: {
+            mappingId: "98e7cc24-191e-4a68-8d21-6883e670d6f7",
+            provider: "sofascore",
+            externalId: "919697",
+            appPlayerId: "d719e8c6-e166-44a7-8601-220281488e8f",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "1de302b1-c0cb-459e-b1fa-6eac1b83aedb",
+            stateDigest: "418e4b8f5dac21663347d6b5a90b2aa58e2137fa5f159426826a912d4acea88f",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "41ce0724e47046b0c32790dea6669c0550ffc3325bcc0c732558b9426fa99f1f",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -640,7 +718,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "d21c0d32973d1109a7b818cbc96dc66097d67ef10c3e5f2560dc6fdb3808ebcc",
+      expectedFingerprint: "1a2b3fc18792aca68a7c05054803cebbc7d327e7b04ad253c96d37597c2b523a",
     },
     {
       candidateId: "1b870bba-9d7f-4516-9b61-3ff649bd9ad5",
@@ -656,10 +734,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1095732",
-        candidateId: "713844a5-229e-4294-9160-89e425d085b7",
         mappingId: "1af8a6d4-7f50-41c4-8786-a27bf690cd4e",
         appPlayerId: "26934f44-83b5-4dbe-90d7-7895b59d3434",
-        version: "football_player_mapping:aaf56f04-9bb4-44b9-823f-08626cb2d7f8",
+        provenanceProposalId: "aaf56f04-9bb4-44b9-823f-08626cb2d7f8",
+        stateDigest: "f1aedd08759502ef5804df0d173bd0ce42c515d948f0960be00758cb6ebccddb",
         state: "active_reviewed",
       },
       fixtures: [
@@ -684,7 +762,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "311d7099d998944afb63d33127ec03960375a14feb986068099aa37b2cf00239",
+      evidenceSha256: "ce13f59a4d4400c4729c6bfa7652ffcfd670e42f15a46b8b3c8672366b2ca8f8",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -712,6 +790,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "26934f44-83b5-4dbe-90d7-7895b59d3434",
+          supporting: {
+            mappingId: "1af8a6d4-7f50-41c4-8786-a27bf690cd4e",
+            provider: "sofascore",
+            externalId: "1095732",
+            appPlayerId: "26934f44-83b5-4dbe-90d7-7895b59d3434",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "aaf56f04-9bb4-44b9-823f-08626cb2d7f8",
+            stateDigest: "f1aedd08759502ef5804df0d173bd0ce42c515d948f0960be00758cb6ebccddb",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "6aba7b7e3d26ab2cfe4a6ee0e99b92e6c321c4ebb92b2d402e5ea94207dd0488",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -741,7 +832,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "3bb37a086ab07a95cc218d63de8d15c5579786e846be031a003f101a1f4f6bb5",
+      expectedFingerprint: "bf3082010e8251fbca6ef4f57d382c2fc693742b1b45ecb1ecb130817426ef5c",
     },
     {
       candidateId: "21018b35-4543-4733-b68e-fae5959dc1d2",
@@ -757,10 +848,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1597137",
-        candidateId: "cce3609a-740d-45db-bcb3-6cf4ad603b48",
         mappingId: "5a7c6f6a-9734-414e-aafa-3162001d94f2",
         appPlayerId: "ad870b3c-784b-402b-b0ca-d3441f798f40",
-        version: "football_player_mapping:e2fd8b1f-f3ca-4797-8994-e25fb20ec58a",
+        provenanceProposalId: "e2fd8b1f-f3ca-4797-8994-e25fb20ec58a",
+        stateDigest: "b796de4b8782d909ff15fbb2c2b2b16ee6eed7e525e9a7ca334f4582c125671d",
         state: "active_reviewed",
       },
       fixtures: [
@@ -785,7 +876,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "0fedfdfc6e136b07ebe6fde2152a6904a0f0e40183287718ebb6c5e87f260def",
+      evidenceSha256: "54355088a935ae2d155f9a281ade4616b67ef804435d64be552d3b2ad67b0669",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -812,6 +903,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "ad870b3c-784b-402b-b0ca-d3441f798f40",
+          supporting: {
+            mappingId: "5a7c6f6a-9734-414e-aafa-3162001d94f2",
+            provider: "sofascore",
+            externalId: "1597137",
+            appPlayerId: "ad870b3c-784b-402b-b0ca-d3441f798f40",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "e2fd8b1f-f3ca-4797-8994-e25fb20ec58a",
+            stateDigest: "b796de4b8782d909ff15fbb2c2b2b16ee6eed7e525e9a7ca334f4582c125671d",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "30bd283dc92105a1680aed2a9ed1d668e3fca6b257e841d737665445b7c7ad8e",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -841,7 +945,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "0e0b5774f6c5630fbc19327eac72bc367d6a324111c9aa06f85dca6ccca54362",
+      expectedFingerprint: "805a3301f856097934df9f83ae694b5688c1b0ff57f647ff96406f9566344ba6",
     },
     {
       candidateId: "25dbe1e3-2922-4754-be58-4aeb993c8c7f",
@@ -857,10 +961,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "919474",
-        candidateId: "ff0db55e-2cf4-450a-bbcb-6686024d02e8",
         mappingId: "eee1a47c-39fa-4519-8861-964909aa65ed",
         appPlayerId: "88c9eaa2-15cc-46f9-987f-368c577cf6ee",
-        version: "football_player_mapping:50627a24-c952-4859-bb0e-6d0f674c1240",
+        provenanceProposalId: "50627a24-c952-4859-bb0e-6d0f674c1240",
+        stateDigest: "25062f41f93b9a2bcd49a93187930deebac07c9276a477bdaf3b42edfa718ea3",
         state: "active_reviewed",
       },
       fixtures: [
@@ -885,7 +989,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "35ca8357aeecfe7b00202513f878124f33947f976cedce0fc88d8536cf6f2a99",
+      evidenceSha256: "0cabd4e772d71d1ab00b113020e2422db8d89019dbe09529329ee21b88c048d4",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -913,6 +1017,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "88c9eaa2-15cc-46f9-987f-368c577cf6ee",
+          supporting: {
+            mappingId: "eee1a47c-39fa-4519-8861-964909aa65ed",
+            provider: "sofascore",
+            externalId: "919474",
+            appPlayerId: "88c9eaa2-15cc-46f9-987f-368c577cf6ee",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "50627a24-c952-4859-bb0e-6d0f674c1240",
+            stateDigest: "25062f41f93b9a2bcd49a93187930deebac07c9276a477bdaf3b42edfa718ea3",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "1c13a2bf897ed49246fe845a90a1ace1e7e2f95900404772f0aa06efff121412",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -942,7 +1059,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "d2a9ba9df3b21d0b18e71b7502f27ff760538f725ae63bcfcb1747eded72d434",
+      expectedFingerprint: "01c277c88eae0d04411e044f27666be545d869ddc43bd1d094be98e67cfa280d",
     },
     {
       candidateId: "2a5ccf9f-0c7f-4784-b15b-03ba232fa3d7",
@@ -958,10 +1075,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1392556",
-        candidateId: "b9cce41c-3f99-440e-ad14-bc5e9cfea0fd",
         mappingId: "de3060fd-4174-412f-aacc-11e60c0551cf",
         appPlayerId: "095172ef-d13d-4d7c-b707-3648d70314cc",
-        version: "football_player_mapping:5731a98c-1f51-4c19-a670-f5d3ba824167",
+        provenanceProposalId: "5731a98c-1f51-4c19-a670-f5d3ba824167",
+        stateDigest: "4ab30b40e789f161f7bd304ef19f816c2566c2ffe7952c602fe61ab4e1db9562",
         state: "active_reviewed",
       },
       fixtures: [
@@ -986,7 +1103,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "dc0745a7ca7577e5c6458c03c65f6414296eeeb982e373df284b0a79bc5eacb8",
+      evidenceSha256: "4c9106f93adb4c5b6b89d898b5b3d9bfb0fe115ed772e304eedbe6e4e508a7b2",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -1014,6 +1131,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "095172ef-d13d-4d7c-b707-3648d70314cc",
+          supporting: {
+            mappingId: "de3060fd-4174-412f-aacc-11e60c0551cf",
+            provider: "sofascore",
+            externalId: "1392556",
+            appPlayerId: "095172ef-d13d-4d7c-b707-3648d70314cc",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "5731a98c-1f51-4c19-a670-f5d3ba824167",
+            stateDigest: "4ab30b40e789f161f7bd304ef19f816c2566c2ffe7952c602fe61ab4e1db9562",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "2b4428188a425e89a7075b15e5d2ddd5ce469c03af8479877259992454eadebf",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -1043,7 +1173,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "ab7a412430c7c09e8ea719c913ad2ca12dc10010384183ae98138ae0a8985655",
+      expectedFingerprint: "464d70afc0f9b7d28e350a53d1cb12e4b3a6e1373b93ea620b5be822f344ac2d",
     },
     {
       candidateId: "2f92ae9c-7e2e-4a55-b4d4-29b34650b68e",
@@ -1059,10 +1189,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1004426",
-        candidateId: "209e4e3b-e5da-4b8f-a71c-b0e836ae2d0a",
         mappingId: "5e1cef54-3f46-4590-beb4-026bdcf5942c",
         appPlayerId: "94fb5964-bbde-438c-998d-3859e2f86f85",
-        version: "football_player_mapping:71ae8766-b3ef-427d-a9af-d4b8015d24da",
+        provenanceProposalId: "71ae8766-b3ef-427d-a9af-d4b8015d24da",
+        stateDigest: "51341274097313439e7248e20313f9fe9028a4e3d1bfa94c742dd324a9952e15",
         state: "active_reviewed",
       },
       fixtures: [
@@ -1087,7 +1217,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "ed5cecf84750b36a3ee3d2b1a1ac303bf9b63235d4a97e16a9cc91a4c692c896",
+      evidenceSha256: "160ba9d872d427b31cd03aff28ae0b8cde76d5d93c25b7e0e415852a36fbdef3",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -1114,6 +1244,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "94fb5964-bbde-438c-998d-3859e2f86f85",
+          supporting: {
+            mappingId: "5e1cef54-3f46-4590-beb4-026bdcf5942c",
+            provider: "sofascore",
+            externalId: "1004426",
+            appPlayerId: "94fb5964-bbde-438c-998d-3859e2f86f85",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "71ae8766-b3ef-427d-a9af-d4b8015d24da",
+            stateDigest: "51341274097313439e7248e20313f9fe9028a4e3d1bfa94c742dd324a9952e15",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "5336a24f5cf83b5982c9fb098d1d8d7a762eee9e7bde411feee46e4abc1b80f6",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -1143,7 +1286,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "acdfa0f943303c375539a89fc6253f711c81247eb2d475e2fc53a45045536060",
+      expectedFingerprint: "e86b8b6ab603bc88a8573a802eef9d071b95a9244238736921bea3827ded1314",
     },
     {
       candidateId: "31d6a952-cd3d-4f14-ace1-a15076f18ccc",
@@ -1159,10 +1302,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "787448",
-        candidateId: "34b390da-58b6-4e4e-91aa-5a01cc37159b",
         mappingId: "f6349fd5-f331-4d83-9d2a-bb4810fc1d75",
         appPlayerId: "97ffa238-8d2e-4e5e-84ad-341703787ba6",
-        version: "football_player_mapping:f1e72c24-4965-4a94-8bb8-81fe40a9f97a",
+        provenanceProposalId: "f1e72c24-4965-4a94-8bb8-81fe40a9f97a",
+        stateDigest: "2edf65f6e1c76073c248218b4f49b284cdf1e441f8c0eeb98e09c3aca6b2003e",
         state: "active_reviewed",
       },
       fixtures: [
@@ -1187,7 +1330,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "86d2e5441a8952e4eee91c46a6f75882e4e5a4f9de0e71b5534e05f904013e36",
+      evidenceSha256: "b0965aa7629fb9262609490318550cb38dec8900abf732e942bd95bc60ca0dc0",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -1215,6 +1358,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "97ffa238-8d2e-4e5e-84ad-341703787ba6",
+          supporting: {
+            mappingId: "f6349fd5-f331-4d83-9d2a-bb4810fc1d75",
+            provider: "sofascore",
+            externalId: "787448",
+            appPlayerId: "97ffa238-8d2e-4e5e-84ad-341703787ba6",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "f1e72c24-4965-4a94-8bb8-81fe40a9f97a",
+            stateDigest: "2edf65f6e1c76073c248218b4f49b284cdf1e441f8c0eeb98e09c3aca6b2003e",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "a4df2a7421505e14980804b68c8d917e45108e1abf0d5e0e7e81645b48a38a2a",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -1244,7 +1400,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "15159835025e7329198102398503689e135298542292264dae03c377d4eed0fa",
+      expectedFingerprint: "4e588ca6dc91c34b88233cd38bb70601e050694e79c48fab1746239e72ee229c",
     },
     {
       candidateId: "335a5d1a-6f32-437a-a168-4385a0feb079",
@@ -1260,10 +1416,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1632211",
-        candidateId: "63087d90-9405-4076-a67a-5b5950e2e0db",
         mappingId: "d2cddba1-7a90-467c-9420-8eb65e849821",
         appPlayerId: "13573551-f2e6-4bc2-a13c-77edb43a4f8a",
-        version: "football_player_mapping:a834022c-c6d5-467c-abe0-0c4a16ec5461",
+        provenanceProposalId: "a834022c-c6d5-467c-abe0-0c4a16ec5461",
+        stateDigest: "5ed1795ae9bda083167e30d70ec6c477e1f433e5b5386018a106a59dfff5da18",
         state: "active_reviewed",
       },
       fixtures: [
@@ -1288,7 +1444,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "57035babcfe01559069c73f6e05e1c42493a1fd86d43fd715387d79c08e200ca",
+      evidenceSha256: "4461bb42d55fc3369185da7893441d7390d691f8b3bf408065c5b15afcdc2007",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -1316,6 +1472,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "13573551-f2e6-4bc2-a13c-77edb43a4f8a",
+          supporting: {
+            mappingId: "d2cddba1-7a90-467c-9420-8eb65e849821",
+            provider: "sofascore",
+            externalId: "1632211",
+            appPlayerId: "13573551-f2e6-4bc2-a13c-77edb43a4f8a",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "a834022c-c6d5-467c-abe0-0c4a16ec5461",
+            stateDigest: "5ed1795ae9bda083167e30d70ec6c477e1f433e5b5386018a106a59dfff5da18",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "7bc44f8e99634be0e9f8c58dd2fc29d93736f961a0eb9c84d6f04a62f755d46d",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -1345,7 +1514,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "8d7f4e1bcead671c4508e9f89aa1ac0bf3b13ca76b38bf30eac5abacdb8a436e",
+      expectedFingerprint: "7f1be770b39b8d7132792ee901fe5ba186a918ec873b71a333edc068122a25d8",
     },
     {
       candidateId: "339be4a7-6275-41cb-96ca-1252f505341d",
@@ -1361,10 +1530,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "2161836",
-        candidateId: "cc72d611-0b4f-482f-9bec-35500fef01a2",
         mappingId: "bb50e95d-2d55-468d-9839-582d6001cdcc",
         appPlayerId: "af26ed6a-c39a-438e-8ec8-dd81cf902087",
-        version: "football_player_mapping:b8d18da2-e0a9-45cf-a641-1730222bab29",
+        provenanceProposalId: "b8d18da2-e0a9-45cf-a641-1730222bab29",
+        stateDigest: "c84ad7e9d0e96fb59662f137ad1d7ccfd002ecb04c9c2f70ac4d4164e9752324",
         state: "active_reviewed",
       },
       fixtures: [
@@ -1389,7 +1558,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "4587a8201b776479879c4815e894e3f7fba1400a1f67758b7e2f14787a9b6408",
+      evidenceSha256: "286d5ad199e66962ec718159f9f5e2fab8c67b18f5090c76bd56e62ba281af98",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -1417,6 +1586,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "af26ed6a-c39a-438e-8ec8-dd81cf902087",
+          supporting: {
+            mappingId: "bb50e95d-2d55-468d-9839-582d6001cdcc",
+            provider: "sofascore",
+            externalId: "2161836",
+            appPlayerId: "af26ed6a-c39a-438e-8ec8-dd81cf902087",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "b8d18da2-e0a9-45cf-a641-1730222bab29",
+            stateDigest: "c84ad7e9d0e96fb59662f137ad1d7ccfd002ecb04c9c2f70ac4d4164e9752324",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "0f9bd1f6741c031792644b6c743482ab073a01a809d1a8ee3ef493fe9438af0e",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -1446,7 +1628,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "0449ca6df44e5f2f67612bae03a6285bd88c4af03fd39b12a04955db5c2d12f3",
+      expectedFingerprint: "6f50330e02328cf1b10f62f1e78c407a2c7c269cc2eee272d3c3fea3adfad996",
     },
     {
       candidateId: "3934c963-69c1-4492-8774-5e98803c4754",
@@ -1462,10 +1644,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1103558",
-        candidateId: "479c6dd1-c0fd-467f-8720-df39c36273bf",
         mappingId: "c4126839-f12a-402d-8f85-21fa12994edc",
         appPlayerId: "009def78-8b05-46db-a6ca-286a9bd26124",
-        version: "football_player_mapping:52206f1a-d1e2-45de-9b41-2f591311dc1c",
+        provenanceProposalId: "52206f1a-d1e2-45de-9b41-2f591311dc1c",
+        stateDigest: "e0b8f24c691f8f18d4eb0408f6ac10d2691bf389077447b98881d0374856bd75",
         state: "active_reviewed",
       },
       fixtures: [
@@ -1490,7 +1672,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "ab0c127d7866c997b2d5902d47fa23f7fa1dc4f4adba096cfc5e3b90202e3f71",
+      evidenceSha256: "09eaa2a0e60a6183672990199314128cac57391e1ef54657e167cee34dc597c3",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -1517,6 +1699,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "009def78-8b05-46db-a6ca-286a9bd26124",
+          supporting: {
+            mappingId: "c4126839-f12a-402d-8f85-21fa12994edc",
+            provider: "sofascore",
+            externalId: "1103558",
+            appPlayerId: "009def78-8b05-46db-a6ca-286a9bd26124",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "52206f1a-d1e2-45de-9b41-2f591311dc1c",
+            stateDigest: "e0b8f24c691f8f18d4eb0408f6ac10d2691bf389077447b98881d0374856bd75",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "078cabee291278a7ac8a5addd375be03658c94e910a20eab1f3c917770f2eff8",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -1546,7 +1741,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "d789d3258e5d382b696bef0c56a5309ee0ff105124c02fabfcc154040a10b9c7",
+      expectedFingerprint: "ae4cefbdb7da9abec35184e1e1edabb5abd717e8455d5072100251b5583c7bd8",
     },
     {
       candidateId: "3ede02e0-e8a0-4bba-824f-f23973e5e5d4",
@@ -1562,10 +1757,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1463237",
-        candidateId: "a6d5dbec-2a4b-4a0a-ae12-86c3c90ba9e2",
         mappingId: "dfee1db4-90ba-44fa-a066-f226ecdbf465",
         appPlayerId: "6c565bcf-cb72-40de-bfd8-32ccd0a000ee",
-        version: "football_player_mapping:e9045995-a553-4e3a-919c-62f300df2eda",
+        provenanceProposalId: "e9045995-a553-4e3a-919c-62f300df2eda",
+        stateDigest: "38b0632aa09e7649024fcbd0722aeb58897660a09a95e116c95b7700e3d560fb",
         state: "active_reviewed",
       },
       fixtures: [
@@ -1590,7 +1785,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "e7a5615d13c79826cb45e70e45e8c70ac2248e6eba15ee9daafc65286c53810c",
+      evidenceSha256: "d1bbf54da0192f6d3a3722b930476e23ac19322d4ed92aa8b196820bf8809028",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -1617,6 +1812,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "6c565bcf-cb72-40de-bfd8-32ccd0a000ee",
+          supporting: {
+            mappingId: "dfee1db4-90ba-44fa-a066-f226ecdbf465",
+            provider: "sofascore",
+            externalId: "1463237",
+            appPlayerId: "6c565bcf-cb72-40de-bfd8-32ccd0a000ee",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "e9045995-a553-4e3a-919c-62f300df2eda",
+            stateDigest: "38b0632aa09e7649024fcbd0722aeb58897660a09a95e116c95b7700e3d560fb",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "8a74be76fcdf6e7d8555a27289b96c521b99a6e206e52417c84957ac125e3830",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -1646,7 +1854,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "993d87fe113c4b4af5123c1a0d4a7dac0fbf44d7555c283081aedd4f080afd5c",
+      expectedFingerprint: "e82df59d33c9ea04457a36dfdb4aa3cf3a434e48ab75dee296133da2250911db",
     },
     {
       candidateId: "42be5c26-6d59-4b5d-8439-71145d24a25b",
@@ -1662,10 +1870,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "975173",
-        candidateId: "03412545-6d55-4ad6-8daf-3e0b01be8915",
         mappingId: "7f054c05-4f99-432b-9639-ad3df4e1d840",
         appPlayerId: "8ca146d7-7535-4b56-8ee7-f31f7ccb7bc5",
-        version: "football_player_mapping:19e44ce9-1e15-4d13-9d6d-df61cbb84268",
+        provenanceProposalId: "19e44ce9-1e15-4d13-9d6d-df61cbb84268",
+        stateDigest: "a092750255b9fd233b40c904e0223ca4000e3f2ea8ea0c5b1f5ea916463ff0e4",
         state: "active_reviewed",
       },
       fixtures: [
@@ -1690,7 +1898,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "69f32ce8b2fa950fc3aef490cf1aea2bf78e0e5e6da455813367442f902abeae",
+      evidenceSha256: "aa3add9bd898190220604c9db26c7eeb0517e90ff204e4356254c11099f7573e",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -1717,6 +1925,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "8ca146d7-7535-4b56-8ee7-f31f7ccb7bc5",
+          supporting: {
+            mappingId: "7f054c05-4f99-432b-9639-ad3df4e1d840",
+            provider: "sofascore",
+            externalId: "975173",
+            appPlayerId: "8ca146d7-7535-4b56-8ee7-f31f7ccb7bc5",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "19e44ce9-1e15-4d13-9d6d-df61cbb84268",
+            stateDigest: "a092750255b9fd233b40c904e0223ca4000e3f2ea8ea0c5b1f5ea916463ff0e4",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "b92ff51d000d8a32d65fb5e12f56227df9e4c84ecca4384a8efc697ff086721f",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -1746,7 +1967,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "737596fde3a6b57d37b53c7b1707b5ef50772eb3d8bd0a392cbbbd26ecbe2c52",
+      expectedFingerprint: "9ae2a66cd177eb84bb760eaa1f502d23427fc08457b9a52864c0bf1c488a5f79",
     },
     {
       candidateId: "4710c6a8-d03d-40d3-baa8-5e91f7f74d72",
@@ -1762,10 +1983,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "895127",
-        candidateId: "62f62ba6-80d2-4440-a88c-137f4ed08b86",
         mappingId: "1ff64f42-3f95-4426-ac8b-2a59ac816d21",
         appPlayerId: "7f383d28-2a44-406a-89f9-697418d5b266",
-        version: "football_player_mapping:8ce68c47-84dd-45ab-bf80-1eee4e97bc7e",
+        provenanceProposalId: "8ce68c47-84dd-45ab-bf80-1eee4e97bc7e",
+        stateDigest: "74599e51e2c657f174bddcbd35f5753aa40616d0e30938dd2fa936d616f217b1",
         state: "active_reviewed",
       },
       fixtures: [
@@ -1790,7 +2011,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "10c0c31a8b6e8a099a0780fac658128e2052628094053675b0d75ef6e0146e43",
+      evidenceSha256: "ecd6cd8f001ae1105c4200094310ad388ff053b5642e2a8b1bfc2fc2898b5675",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -1818,6 +2039,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "7f383d28-2a44-406a-89f9-697418d5b266",
+          supporting: {
+            mappingId: "1ff64f42-3f95-4426-ac8b-2a59ac816d21",
+            provider: "sofascore",
+            externalId: "895127",
+            appPlayerId: "7f383d28-2a44-406a-89f9-697418d5b266",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "8ce68c47-84dd-45ab-bf80-1eee4e97bc7e",
+            stateDigest: "74599e51e2c657f174bddcbd35f5753aa40616d0e30938dd2fa936d616f217b1",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "cb5e0c8073a1fb134b3600e0001bda1f30af54f7a5d443751bed3ec5342d2593",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -1847,7 +2081,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "a975cbeef7b395f0ad655091621ea3ce2c835bc908630b7a465b576d584524cd",
+      expectedFingerprint: "b4e0f54ed43e139dcde81b46de331c73fe03a7ab2ecb448bb24e77b4aa22ed6c",
     },
     {
       candidateId: "49789f71-23b1-4cad-b29e-08bbfc31f39a",
@@ -1863,10 +2097,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "970630",
-        candidateId: "d174d479-a93c-4ca4-b969-1276791a4196",
         mappingId: "3fd09f97-8568-48b7-a0ae-109270cf0ed7",
         appPlayerId: "726e252d-4021-4f0e-a6a3-3e3f5b3bb132",
-        version: "football_player_mapping:3d932030-4c8d-4b4d-a34d-bb25f06c93e3",
+        provenanceProposalId: "3d932030-4c8d-4b4d-a34d-bb25f06c93e3",
+        stateDigest: "c14c3da97196223bfe695dc3678ab143c54c5d0fb9e8e8e96e09e248d4df002e",
         state: "active_reviewed",
       },
       fixtures: [
@@ -1891,7 +2125,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "843ff34229f33d029a45b370b88f8b52e5d9190cdad1232c4d1d4a3f78133702",
+      evidenceSha256: "4573e27a857900c1317a68452e6aa90ae71c66adb0dd25224ac1e63424b02499",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -1918,6 +2152,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "726e252d-4021-4f0e-a6a3-3e3f5b3bb132",
+          supporting: {
+            mappingId: "3fd09f97-8568-48b7-a0ae-109270cf0ed7",
+            provider: "sofascore",
+            externalId: "970630",
+            appPlayerId: "726e252d-4021-4f0e-a6a3-3e3f5b3bb132",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "3d932030-4c8d-4b4d-a34d-bb25f06c93e3",
+            stateDigest: "c14c3da97196223bfe695dc3678ab143c54c5d0fb9e8e8e96e09e248d4df002e",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "1db8aacf7158805ed3a7be8a779e41aefdb3f45fd10018cce97cdfb9489f5ef8",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -1947,7 +2194,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "9a12833b1737a0e1a83c2352eb20292073c9183d7dd27310c7288420d5b1cd1f",
+      expectedFingerprint: "af8164ead4055153d5d9c4ff13fc93d0edcfc2720fc74a65b6e562448517403e",
     },
     {
       candidateId: "4d407670-ef27-4c86-b1cb-47ede04cb053",
@@ -1963,10 +2210,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1525328",
-        candidateId: "9142da9d-2e13-420d-b5d8-69762d588361",
         mappingId: "9d7eb75d-1b7d-4a52-a316-16a9745b90f3",
         appPlayerId: "2c7173d9-9aec-44e5-b7f1-cec3f0989e81",
-        version: "football_player_mapping:638f4fe5-527a-4075-be95-b89c13b797b2",
+        provenanceProposalId: "638f4fe5-527a-4075-be95-b89c13b797b2",
+        stateDigest: "7b3c92053a560ee6f487739b89a6c1d7aa3d4103f89c20d615dee47bd6fdcd91",
         state: "active_reviewed",
       },
       fixtures: [
@@ -1991,7 +2238,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "4aebd1f335f74fb198fc9339c0230e63def858c1c479294b37c3dfe77793b003",
+      evidenceSha256: "548e552569e5add2c24103b819f7bba66cdcba5f2dc2f63dbcd4ed9c41dc7cdd",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -2018,6 +2265,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "2c7173d9-9aec-44e5-b7f1-cec3f0989e81",
+          supporting: {
+            mappingId: "9d7eb75d-1b7d-4a52-a316-16a9745b90f3",
+            provider: "sofascore",
+            externalId: "1525328",
+            appPlayerId: "2c7173d9-9aec-44e5-b7f1-cec3f0989e81",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "638f4fe5-527a-4075-be95-b89c13b797b2",
+            stateDigest: "7b3c92053a560ee6f487739b89a6c1d7aa3d4103f89c20d615dee47bd6fdcd91",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "3d9f56e9e5303a993b0aa292a790486b46512ec7d04592b50a03008a3e188736",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -2047,7 +2307,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "46a52c03bd5af6a1b1c3bc0ddf16f83d9064d540e6a9ae7f0fd04698479e91d7",
+      expectedFingerprint: "b8bc8398efba4ebe1888faf7fb72d640a318cde81b5cb0c09102d49ad14bc77a",
     },
     {
       candidateId: "5e478ebe-0bd7-4326-8bfe-ff03c495e4a1",
@@ -2063,10 +2323,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1545316",
-        candidateId: "1b53a373-16bc-47b7-80c5-d3e472c49625",
         mappingId: "4e677ca0-69a4-412e-a9b7-1a48dbffd119",
         appPlayerId: "b99cd2a8-dea8-4257-8d1d-44879408bba3",
-        version: "football_player_mapping:94005936-935f-425b-9ceb-c281029abc76",
+        provenanceProposalId: "94005936-935f-425b-9ceb-c281029abc76",
+        stateDigest: "29f540e7ecb842035a04e0a27d67b0f835830755c3e020da8ea53e9757de8bbd",
         state: "active_reviewed",
       },
       fixtures: [
@@ -2091,7 +2351,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "eac8f48abd5654ec49cd39fe9ca218093ab8dc84703f67e5f0f3db1ed5d7885b",
+      evidenceSha256: "33782b42d0f86e82cd82e9936ed4a0c87b96b01aaf9e5b2681e0ba497068b7c9",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -2119,6 +2379,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "b99cd2a8-dea8-4257-8d1d-44879408bba3",
+          supporting: {
+            mappingId: "4e677ca0-69a4-412e-a9b7-1a48dbffd119",
+            provider: "sofascore",
+            externalId: "1545316",
+            appPlayerId: "b99cd2a8-dea8-4257-8d1d-44879408bba3",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "94005936-935f-425b-9ceb-c281029abc76",
+            stateDigest: "29f540e7ecb842035a04e0a27d67b0f835830755c3e020da8ea53e9757de8bbd",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "9b50ae1c0d97a7b46a3c971fc8c7f949aaf0aa76013e0ea7145f9db425535065",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -2148,7 +2421,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "57e0d302c007ac43b48f0f28f945fe8b4cbe64f5a4276a67b6b8a030702e2a7a",
+      expectedFingerprint: "8bcc36e742888a18246b4fc7f3d7b034d9856093582d2f62e091eccbc7cb78ba",
     },
     {
       candidateId: "672177e6-4ca4-4b45-a08f-50fe3754b9c8",
@@ -2164,10 +2437,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "981300",
-        candidateId: "3e04007f-85c9-4218-8cb7-232ac18255b2",
         mappingId: "fe56cb44-b323-4f81-93a1-5ddef1dad2f2",
         appPlayerId: "f9931712-b5b4-4141-9383-d509b8b1d03d",
-        version: "football_player_mapping:c3c5c446-d770-46c8-8323-7b157340901e",
+        provenanceProposalId: "c3c5c446-d770-46c8-8323-7b157340901e",
+        stateDigest: "ddc3d1bb3adcb44dd914b98ce02913544e98274c52cfb146361da481295db400",
         state: "active_reviewed",
       },
       fixtures: [
@@ -2192,7 +2465,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "3d9cd3306176503dfaae2ada93693f30c21eb58bf252c2058f26af5ff2ff41d7",
+      evidenceSha256: "8b27b7b6d153dcb8812e642ceb7472420d5e14219d7c715d58321eb777b78521",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -2220,6 +2493,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "f9931712-b5b4-4141-9383-d509b8b1d03d",
+          supporting: {
+            mappingId: "fe56cb44-b323-4f81-93a1-5ddef1dad2f2",
+            provider: "sofascore",
+            externalId: "981300",
+            appPlayerId: "f9931712-b5b4-4141-9383-d509b8b1d03d",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "c3c5c446-d770-46c8-8323-7b157340901e",
+            stateDigest: "ddc3d1bb3adcb44dd914b98ce02913544e98274c52cfb146361da481295db400",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "12c6418605728b6b63c7be7aafb6f1f17f8f6754941e3b17cc4a00be93aeca6a",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -2249,7 +2535,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "fb87b99cfd0d9eecb206291dcf65e5f4a11b8b8cff42fe80fb6e1d00552d24ef",
+      expectedFingerprint: "12758d4d9ec6a9d7b6515f1edc612055836eca789a1c387782958675daf34bb6",
     },
     {
       candidateId: "71b8a919-746c-46e7-ae79-c55c44823bd6",
@@ -2265,10 +2551,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "970766",
-        candidateId: "3fc4cc1d-5c6b-4953-9bd3-85709c2bc02a",
         mappingId: "270ea9fe-87fa-4354-ab85-9e415078af91",
         appPlayerId: "8dd1387a-5d76-4dc1-a906-575f8e08289d",
-        version: "football_player_mapping:b00354dc-3730-4e4d-a8c3-535bb9ffd084",
+        provenanceProposalId: "b00354dc-3730-4e4d-a8c3-535bb9ffd084",
+        stateDigest: "758eeb94ba381a20c9ecd45a8d29db43df17b457f9ed4c568fdbe471fcb42162",
         state: "active_reviewed",
       },
       fixtures: [
@@ -2293,7 +2579,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "f32807349d5672a93925efcb4f05a5b10c561abc2dc06a89c478c6fac2f62230",
+      evidenceSha256: "101c92456c2d258d19275ca58b728ab119c13c579a4bd121818a80fbda9d60c6",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -2320,6 +2606,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "8dd1387a-5d76-4dc1-a906-575f8e08289d",
+          supporting: {
+            mappingId: "270ea9fe-87fa-4354-ab85-9e415078af91",
+            provider: "sofascore",
+            externalId: "970766",
+            appPlayerId: "8dd1387a-5d76-4dc1-a906-575f8e08289d",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "b00354dc-3730-4e4d-a8c3-535bb9ffd084",
+            stateDigest: "758eeb94ba381a20c9ecd45a8d29db43df17b457f9ed4c568fdbe471fcb42162",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "5e18d0dd514c37314d5aa56b195db90f32db44058044c85a0a5236a3d2e7dc18",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -2349,7 +2648,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "ab44ef4f27f971674e5c44cef0230b9994e4218229276b77dca3023e17fd1448",
+      expectedFingerprint: "49ad64e23c39710397dc4d3d2a75356a86cc057baa86f601624569fbfddbb369",
     },
     {
       candidateId: "7297213f-b439-43e3-b84a-3d1742d57d8c",
@@ -2365,10 +2664,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1140857",
-        candidateId: "4a107a75-92c8-4417-8df4-5e1370dec566",
         mappingId: "67631e84-5621-4f52-9abc-26856e24f1a5",
         appPlayerId: "d054ce48-bfc3-4c69-a131-001912c9e8eb",
-        version: "football_player_mapping:d63d26db-3d1b-4ce7-b083-816325a505bb",
+        provenanceProposalId: "d63d26db-3d1b-4ce7-b083-816325a505bb",
+        stateDigest: "89f0918563e901a7be601a6c753f523bfa9e5bcc781d28d64c5570c991345b46",
         state: "active_reviewed",
       },
       fixtures: [
@@ -2393,7 +2692,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "a816eef9ae73c4ee4a913b68b7a2190d762a256b732f3cbbc2e610aa129a2ffc",
+      evidenceSha256: "c8241f563478157c7daa010c0ceb4c83e718dd74925ea481b36e24d279780e88",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -2420,6 +2719,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "d054ce48-bfc3-4c69-a131-001912c9e8eb",
+          supporting: {
+            mappingId: "67631e84-5621-4f52-9abc-26856e24f1a5",
+            provider: "sofascore",
+            externalId: "1140857",
+            appPlayerId: "d054ce48-bfc3-4c69-a131-001912c9e8eb",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "d63d26db-3d1b-4ce7-b083-816325a505bb",
+            stateDigest: "89f0918563e901a7be601a6c753f523bfa9e5bcc781d28d64c5570c991345b46",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "c0ae1bd43f0bd6f9337cedd5b10751ed272c74ae5d61abd0454762d5ad714db6",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -2449,7 +2761,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "39a41b9894e4cf8cf06aa253c2be9970746a54f9dd1c12b16920ed7bc9ace4e2",
+      expectedFingerprint: "6543da2117eb514b21e558fe535abf1d982f71245a2fa067a662f745ad765b5a",
     },
     {
       candidateId: "75107848-6090-4783-bfe2-9d953be442c9",
@@ -2465,10 +2777,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1140943",
-        candidateId: "e9eea0e3-87b6-4ec4-8076-86f1a6aa8cca",
         mappingId: "62e7ec80-b9a7-4b5c-9484-40aeeacd2079",
         appPlayerId: "9c04eb34-f71c-4469-acfd-2ce662d20f18",
-        version: "football_player_mapping:a111b6f3-507a-4b2a-9061-771ef3eaab55",
+        provenanceProposalId: "a111b6f3-507a-4b2a-9061-771ef3eaab55",
+        stateDigest: "bd45d21da3ac305180ae5e2e0c88940c769bd8d9e3a2e163011a7c9ab5ec75cc",
         state: "active_reviewed",
       },
       fixtures: [
@@ -2493,7 +2805,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "d269ee15c1dbd1c8cb3cdd16bbb92de0406479d665fb1d7c4452c4375edb5768",
+      evidenceSha256: "c53a16a68e375cd8ecfdf0534bfd6baf55756b1bc63177396c535dbac09012e2",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -2521,6 +2833,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "9c04eb34-f71c-4469-acfd-2ce662d20f18",
+          supporting: {
+            mappingId: "62e7ec80-b9a7-4b5c-9484-40aeeacd2079",
+            provider: "sofascore",
+            externalId: "1140943",
+            appPlayerId: "9c04eb34-f71c-4469-acfd-2ce662d20f18",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "a111b6f3-507a-4b2a-9061-771ef3eaab55",
+            stateDigest: "bd45d21da3ac305180ae5e2e0c88940c769bd8d9e3a2e163011a7c9ab5ec75cc",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "076eb210e7b1e6bbc44057d6f1b6762b5721f97262640d5d04b11d2c0f2c5a91",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -2550,7 +2875,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "fbc11ce7d1590e9c46fea02ceae7c1d592034d824389772eb0f038a821af16c6",
+      expectedFingerprint: "d637d908e03d6037927976cb199f1e4f09077bcc4b7c301ef4f5a7cc45db689c",
     },
     {
       candidateId: "7d68a953-d275-452d-a2c0-5287f5a8136d",
@@ -2566,10 +2891,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1107604",
-        candidateId: "fba90830-7917-4a9f-820d-1f02994062f3",
         mappingId: "6154f1bd-9c26-46a6-b49f-fa0749b6b70c",
         appPlayerId: "07ed1779-e5db-4e2f-81a1-6233e0c32b41",
-        version: "football_player_mapping:d10c03bc-bd7b-40e1-832f-0784f03b8123",
+        provenanceProposalId: "d10c03bc-bd7b-40e1-832f-0784f03b8123",
+        stateDigest: "2238b3de5f209c2fa7c642e8cf2006799c67ec2ef9d3b999432421026436b60c",
         state: "active_reviewed",
       },
       fixtures: [
@@ -2594,7 +2919,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "92bbdf2b7796ea75571d3b063bdc1e30a55c92391eba078aee30a8b9ad3f1fde",
+      evidenceSha256: "e72b2a97b63c3d42536df7236f93232c6ec9ca1fb40c7a43a1bebdacc8554f40",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -2621,6 +2946,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "07ed1779-e5db-4e2f-81a1-6233e0c32b41",
+          supporting: {
+            mappingId: "6154f1bd-9c26-46a6-b49f-fa0749b6b70c",
+            provider: "sofascore",
+            externalId: "1107604",
+            appPlayerId: "07ed1779-e5db-4e2f-81a1-6233e0c32b41",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "d10c03bc-bd7b-40e1-832f-0784f03b8123",
+            stateDigest: "2238b3de5f209c2fa7c642e8cf2006799c67ec2ef9d3b999432421026436b60c",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "a54ee6cc4bcd59c237898a6ab558f534eadb1fe723740c36519f0ba8788dff05",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -2650,7 +2988,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "3a069b2b770b7c78eea4fa579b695fc115bfc0de22593fb8aa8bc2c0224c3dfe",
+      expectedFingerprint: "59e5d222c0721e408677805344c7643520a002b94413a6a5c61e5f19cf29cdd1",
     },
     {
       candidateId: "81bd858c-0629-47b7-8a00-ac108ed5cb10",
@@ -2666,10 +3004,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "919712",
-        candidateId: "c76d5964-44c2-4d84-a91d-e275be9d299a",
         mappingId: "9359ee2f-4321-40b7-be79-56c60c6e84d1",
         appPlayerId: "887f057a-57d0-49c8-851b-d0241be9ed27",
-        version: "football_player_mapping:f953ff7e-04c9-4651-917d-e2a9020ba111",
+        provenanceProposalId: "f953ff7e-04c9-4651-917d-e2a9020ba111",
+        stateDigest: "9efac45cd3f38acd70ed1b0ababfb86861486285e0a9112564de2c2f0ed7263b",
         state: "active_reviewed",
       },
       fixtures: [
@@ -2694,7 +3032,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "2dfbad8296d93646b11746d33a81ce9add5f322e8ba8cd0f383243c7848fe478",
+      evidenceSha256: "1f9d2de6eaf6d2bcc604f289940c0e88ff4ae491a14c6dc02d57f69c30a8ee52",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -2722,6 +3060,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "887f057a-57d0-49c8-851b-d0241be9ed27",
+          supporting: {
+            mappingId: "9359ee2f-4321-40b7-be79-56c60c6e84d1",
+            provider: "sofascore",
+            externalId: "919712",
+            appPlayerId: "887f057a-57d0-49c8-851b-d0241be9ed27",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "f953ff7e-04c9-4651-917d-e2a9020ba111",
+            stateDigest: "9efac45cd3f38acd70ed1b0ababfb86861486285e0a9112564de2c2f0ed7263b",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "ce6b4dc7389633b32c526e935461508981bf82ab74555a72a358c279f1dda401",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -2751,7 +3102,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "7b32e733737ff0de2bd52eba5d407beda0d88498689ea1a2401553458d1863af",
+      expectedFingerprint: "e68bc0e527301779e608b24e675873a404635a22e226ef97d74c7c236ee5537c",
     },
     {
       candidateId: "85eaec52-0e62-44c5-8d58-3a6a6a64dbb9",
@@ -2767,10 +3118,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1920270",
-        candidateId: "e549a227-3a74-45c4-b258-0ac5543dce8c",
         mappingId: "fde26ab6-9095-4aa1-acd2-b1dca974b9f4",
         appPlayerId: "f7374a2a-384c-4f26-9777-384f4999ed75",
-        version: "football_player_mapping:fb77cf6c-01bb-4242-80a2-92dc9ea824a7",
+        provenanceProposalId: "fb77cf6c-01bb-4242-80a2-92dc9ea824a7",
+        stateDigest: "214e9dd5dd7a88d12111ba4cc5e184d9a1e1364f9bfd99b4665fcdaf110fe93c",
         state: "active_reviewed",
       },
       fixtures: [
@@ -2795,7 +3146,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "db097225856afcd6b52a452a81fdc4606325e46bd1e16245a024f1eebd4b9a36",
+      evidenceSha256: "ebe0d6b75a33c43d535fe8dade7e9376c5ea76622becdf94f6e4f2dfd66262ad",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -2822,6 +3173,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "f7374a2a-384c-4f26-9777-384f4999ed75",
+          supporting: {
+            mappingId: "fde26ab6-9095-4aa1-acd2-b1dca974b9f4",
+            provider: "sofascore",
+            externalId: "1920270",
+            appPlayerId: "f7374a2a-384c-4f26-9777-384f4999ed75",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "fb77cf6c-01bb-4242-80a2-92dc9ea824a7",
+            stateDigest: "214e9dd5dd7a88d12111ba4cc5e184d9a1e1364f9bfd99b4665fcdaf110fe93c",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "4da499c492ff39fca9475e261916bf3b264fc86eb5dceabe4fb59ebd8490e482",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -2851,7 +3215,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "0dea639b86e2d2b591f537bb71c67f2f89b650c014fc586587bfc955c6aca797",
+      expectedFingerprint: "89d9fe3d29f037ba80bb638a60d015da157575a82754b37a30cfa3e698f845a0",
     },
     {
       candidateId: "91905755-4126-43e6-8b06-c1030502d483",
@@ -2867,10 +3231,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "2178617",
-        candidateId: "4da7eae4-bc97-42a8-b99f-610571f0694b",
         mappingId: "ace8e903-e30a-475a-8e07-d200464169df",
         appPlayerId: "9285f7bb-cc04-4701-994f-36ae5f1955f4",
-        version: "football_player_mapping:8e75af44-d7ae-4e6d-aae0-6bc7e665e2e1",
+        provenanceProposalId: "8e75af44-d7ae-4e6d-aae0-6bc7e665e2e1",
+        stateDigest: "f8cb96d466b934f523f1c7072f3bf477470ffe7b26def473f6b8b321efdb0e02",
         state: "active_reviewed",
       },
       fixtures: [
@@ -2895,7 +3259,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "0ab23263ebe3d84d162b6719112a3aca2aabbb38c8427cdebcb35612ea5ee565",
+      evidenceSha256: "3fb82cfdfc431cab9d46e760ff0583048895aa6a08fae06478c05a45bffd2267",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -2923,6 +3287,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "9285f7bb-cc04-4701-994f-36ae5f1955f4",
+          supporting: {
+            mappingId: "ace8e903-e30a-475a-8e07-d200464169df",
+            provider: "sofascore",
+            externalId: "2178617",
+            appPlayerId: "9285f7bb-cc04-4701-994f-36ae5f1955f4",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "8e75af44-d7ae-4e6d-aae0-6bc7e665e2e1",
+            stateDigest: "f8cb96d466b934f523f1c7072f3bf477470ffe7b26def473f6b8b321efdb0e02",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "9cb6145919de9a5a4bb2ea6f15fb725531df5cef620680002dc14bfcc5d84fe6",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -2952,7 +3329,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "867caf052c2e4e32d6803e214faf70003321ba30a42f1452b5d431e3c0cb2bfc",
+      expectedFingerprint: "9b383550cf475d36c6c413e04edef95e6573618ae7afa89261adc8a2d7864b14",
     },
     {
       candidateId: "938e0bf6-3352-48c3-899d-e8f9f59ac8f6",
@@ -2968,10 +3345,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1140820",
-        candidateId: "0fe35359-4568-41de-b7fe-9dab731bb9bc",
         mappingId: "ac8d59b8-9deb-4491-b64b-6364ea976b70",
         appPlayerId: "55db263a-4636-467b-8e2f-fd7d909779a5",
-        version: "football_player_mapping:3a3f4438-1c61-4391-8033-b44d20095edd",
+        provenanceProposalId: "3a3f4438-1c61-4391-8033-b44d20095edd",
+        stateDigest: "216d3ea9e834ea52c058e615d2555a30299455acfd42e37e59e873e6805b3212",
         state: "active_reviewed",
       },
       fixtures: [
@@ -2996,7 +3373,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "25636322806a7cbcac0d96b8a79a8b805ad3170cb9017077860d8d5b1617af39",
+      evidenceSha256: "76e225dc11060c38ca93456e8521a4a817639b0e10d82102360f76bb5ccdca36",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -3023,6 +3400,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "55db263a-4636-467b-8e2f-fd7d909779a5",
+          supporting: {
+            mappingId: "ac8d59b8-9deb-4491-b64b-6364ea976b70",
+            provider: "sofascore",
+            externalId: "1140820",
+            appPlayerId: "55db263a-4636-467b-8e2f-fd7d909779a5",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "3a3f4438-1c61-4391-8033-b44d20095edd",
+            stateDigest: "216d3ea9e834ea52c058e615d2555a30299455acfd42e37e59e873e6805b3212",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "199210ba43786d782ad0c9def97cec3a5a9274090f1d18bc196620472022fe45",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -3052,7 +3442,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "38630f7fcf986315dbb3c4e5716d4f133bd61477b65df72264cdbf80ff4390de",
+      expectedFingerprint: "4d20dde4b9ea6b95937df909e3945aa8ef412964a5898d25e56ab04ae45e3d82",
     },
     {
       candidateId: "95a5c8d2-564a-42e1-9f28-47097d4f4892",
@@ -3068,10 +3458,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "970606",
-        candidateId: "6a6cb0fe-af65-4891-af1d-bd31f4b133d5",
         mappingId: "305885e7-cecf-466b-ae14-48bf9e1f72c8",
         appPlayerId: "2d8e936b-9bbf-46de-b673-91b913b24d13",
-        version: "football_player_mapping:94a6d7f9-2fa9-4fe9-873c-eb0d399d7bb7",
+        provenanceProposalId: "94a6d7f9-2fa9-4fe9-873c-eb0d399d7bb7",
+        stateDigest: "c1650db382b6f6906304cce6d8ead7142388439fdc33fa28764d6fead7bd71d4",
         state: "active_reviewed",
       },
       fixtures: [
@@ -3096,7 +3486,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "41f87015454dfb5abf7fd98a4fe85b3b5c4de09138231f354f5e4c35a0c085fc",
+      evidenceSha256: "1feda8e1510e8ce743b7145ef6ac9d23d2a0e9bc2f0ad2936277a8b444b5b095",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -3124,6 +3514,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "2d8e936b-9bbf-46de-b673-91b913b24d13",
+          supporting: {
+            mappingId: "305885e7-cecf-466b-ae14-48bf9e1f72c8",
+            provider: "sofascore",
+            externalId: "970606",
+            appPlayerId: "2d8e936b-9bbf-46de-b673-91b913b24d13",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "94a6d7f9-2fa9-4fe9-873c-eb0d399d7bb7",
+            stateDigest: "c1650db382b6f6906304cce6d8ead7142388439fdc33fa28764d6fead7bd71d4",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "0e32ffa442b37545477c8214a0361e4050d329ef40598eeca7c8b2af08ffa0db",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -3153,7 +3556,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "6c6bbbea9d7c7a4becc440e6311539ced047a44ff855ad974319d3571f14d40e",
+      expectedFingerprint: "8d10e41e623e7818da698a2eaf2ec4749d44bf4de83635518e8e6b0ae098635f",
     },
     {
       candidateId: "9816977b-1be2-449c-9758-d2c324189515",
@@ -3169,10 +3572,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1140927",
-        candidateId: "c41da91a-13d5-422b-bcc7-95d386c2fa58",
         mappingId: "bac33a85-e719-460d-b723-98f2fa66beb5",
         appPlayerId: "a7dbe8e4-4a3f-4c46-8d4c-96bb37516760",
-        version: "football_player_mapping:37614deb-9691-4dbf-84d1-f00ec2942078",
+        provenanceProposalId: "37614deb-9691-4dbf-84d1-f00ec2942078",
+        stateDigest: "e4dad462114107529f7a46a89e1bd362368ae27fd3518788f852ab44c2276bbf",
         state: "active_reviewed",
       },
       fixtures: [
@@ -3197,7 +3600,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "7b87037e03d17f662ee0c2464108de5a259e8d1f812240aa6c9e9a2d28a9d1e4",
+      evidenceSha256: "a4a1c9837bd5243678e7d4bcab7298db2f9c40fc9f580feabae0ac7c7fa56966",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -3225,6 +3628,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "a7dbe8e4-4a3f-4c46-8d4c-96bb37516760",
+          supporting: {
+            mappingId: "bac33a85-e719-460d-b723-98f2fa66beb5",
+            provider: "sofascore",
+            externalId: "1140927",
+            appPlayerId: "a7dbe8e4-4a3f-4c46-8d4c-96bb37516760",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "37614deb-9691-4dbf-84d1-f00ec2942078",
+            stateDigest: "e4dad462114107529f7a46a89e1bd362368ae27fd3518788f852ab44c2276bbf",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "c92dc502fd621a12a3eb2435fa04c3a723cb028f123ed152922f0ad0ef8cff15",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -3254,7 +3670,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "1442fffe5fbd86ebcde2055c4d2108148c6d0e601d8128c118d001c123bd43cd",
+      expectedFingerprint: "f9a63469cb53109c730ef919da5a58898c4b8d436bd075704319afbfb2a3d9c7",
     },
     {
       candidateId: "aa568fac-f1a2-421e-94fc-3528e98c9beb",
@@ -3270,10 +3686,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1004249",
-        candidateId: "11c8bbc7-c9e3-4350-a20f-4518ea60ed3c",
         mappingId: "feebb152-c33b-4759-84f9-489be6f81931",
         appPlayerId: "c3818d6f-3e94-4a5e-8247-970c85b29822",
-        version: "football_player_mapping:7626060f-ac42-4804-aea7-14a781e026a6",
+        provenanceProposalId: "7626060f-ac42-4804-aea7-14a781e026a6",
+        stateDigest: "f96d05ece7c0d457292212a2ade3edb1eb1608f9522a81634b034c4ad2bdf416",
         state: "active_reviewed",
       },
       fixtures: [
@@ -3298,7 +3714,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "cb77e9d30b23b1fc8ae7bab472bbb2cb4f6ad89c882f3b2a5f1072909947485b",
+      evidenceSha256: "e18d81f9f10bd3d75879577019c610bfeace9ee2d9f0f9ce19fce1cd8f2124bd",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -3325,6 +3741,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "c3818d6f-3e94-4a5e-8247-970c85b29822",
+          supporting: {
+            mappingId: "feebb152-c33b-4759-84f9-489be6f81931",
+            provider: "sofascore",
+            externalId: "1004249",
+            appPlayerId: "c3818d6f-3e94-4a5e-8247-970c85b29822",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "7626060f-ac42-4804-aea7-14a781e026a6",
+            stateDigest: "f96d05ece7c0d457292212a2ade3edb1eb1608f9522a81634b034c4ad2bdf416",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "1ccd19579608edaf012a3af5086eeafd391232c08c9435ad3af64bd9bae606de",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -3354,7 +3783,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "bbe8a251da3a1e102373f2b5b5c998f10428774d097e8f7847358aecdf72c8b1",
+      expectedFingerprint: "ea3405d289c1651e1ca39b404f6fa92a5e5868547377fb9c80d0eed66939faaa",
     },
     {
       candidateId: "aff0e584-d5ef-4853-9731-e49a66468989",
@@ -3370,10 +3799,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1919290",
-        candidateId: "3d25dd5e-8ed8-4c0f-9b6f-ffc54a507458",
         mappingId: "c5b470ff-331b-43be-9d5d-ea2bb829e113",
         appPlayerId: "287be0a2-631e-4cb8-856d-c052128ad06c",
-        version: "football_player_mapping:77e34252-f967-46f2-95a9-59029418502a",
+        provenanceProposalId: "77e34252-f967-46f2-95a9-59029418502a",
+        stateDigest: "071fd569e60b35ca13ee3d5b1c634489f58c23bfecea96ecb7a8b0203b995ebb",
         state: "active_reviewed",
       },
       fixtures: [
@@ -3398,7 +3827,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "2e50e31fcb48df51f7f1b159954481a1cc2512b4924b2524135304ae569b5046",
+      evidenceSha256: "9f6162febe21feec03475ed1525c1f9a932eaae5bea9978c89eb6040b7064595",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -3426,6 +3855,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "287be0a2-631e-4cb8-856d-c052128ad06c",
+          supporting: {
+            mappingId: "c5b470ff-331b-43be-9d5d-ea2bb829e113",
+            provider: "sofascore",
+            externalId: "1919290",
+            appPlayerId: "287be0a2-631e-4cb8-856d-c052128ad06c",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "77e34252-f967-46f2-95a9-59029418502a",
+            stateDigest: "071fd569e60b35ca13ee3d5b1c634489f58c23bfecea96ecb7a8b0203b995ebb",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "1200acc0fc33d8885d2b048488e87640952fcf65dc5124c2ac423091efddbd1c",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -3455,7 +3897,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "47c46220442837b8c6c77d1b8dd350a63a09d4f31d872cf147796a4953c45e46",
+      expectedFingerprint: "e1056587657887711a6e3a54771742f1aefd6afc7b0d21124e024bcb3cd2a8a7",
     },
     {
       candidateId: "ba158221-1ac4-4d3a-bb3a-76d015dd66bc",
@@ -3471,10 +3913,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "919329",
-        candidateId: "872f12f7-425c-4d20-99c7-98dcf7d6f393",
         mappingId: "2162b043-cb0a-43c5-b12b-359299053437",
         appPlayerId: "7ab491d5-7f2b-4057-b56d-109ed615e63b",
-        version: "football_player_mapping:010e0d7b-0e67-4be2-845c-4518bd2e9d69",
+        provenanceProposalId: "010e0d7b-0e67-4be2-845c-4518bd2e9d69",
+        stateDigest: "5970a5051de2134d8b0075812b1aad0f2f030cc954e20a8a88224f8872445410",
         state: "active_reviewed",
       },
       fixtures: [
@@ -3499,7 +3941,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "ade515cfe6b06645293de53658223076f1bb7f6984a6580bb9759a0e0155f7a2",
+      evidenceSha256: "d9e163425cd8e91d7cea6f01cb45722446241ba4ff7a6cc23c26316d8f9b1684",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -3526,6 +3968,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "7ab491d5-7f2b-4057-b56d-109ed615e63b",
+          supporting: {
+            mappingId: "2162b043-cb0a-43c5-b12b-359299053437",
+            provider: "sofascore",
+            externalId: "919329",
+            appPlayerId: "7ab491d5-7f2b-4057-b56d-109ed615e63b",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "010e0d7b-0e67-4be2-845c-4518bd2e9d69",
+            stateDigest: "5970a5051de2134d8b0075812b1aad0f2f030cc954e20a8a88224f8872445410",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "67d87ebefb10f5c8620f487e7f5be494af14d3cb4f2e959a7a3c30c0fdeb7e3d",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -3555,7 +4010,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "e46945e22c73bdcec7b517d0ba575fba5d39be64129d694910166d2fc6d0a348",
+      expectedFingerprint: "46d6aa939bace8693689d9264045e352fbc652939713a7b2dba174ffdafae99b",
     },
     {
       candidateId: "c5214585-d111-45a4-a395-51b244b270dc",
@@ -3571,10 +4026,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "879777",
-        candidateId: "be448a26-1a9e-43b5-80c0-43be89b62e24",
         mappingId: "0626ce80-d32e-43e2-bd55-4f72497c53d1",
         appPlayerId: "a43c3048-d8a4-46a3-ab52-5d0315c07b0f",
-        version: "football_player_mapping:c846f946-8575-4666-abf9-4cbbc0b0d584",
+        provenanceProposalId: "c846f946-8575-4666-abf9-4cbbc0b0d584",
+        stateDigest: "048321dda0234d9c267fe2e686b21ccc0b05d0233e47a6d6796e594e4967d4ba",
         state: "active_reviewed",
       },
       fixtures: [
@@ -3599,7 +4054,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "73712cfa54c62e2619b2f2678df82e972621a70416b69d7d9de36ec92b67224a",
+      evidenceSha256: "d6eea2d477867b3ae29ef9c330fa78a42d37095b97ed39e50b07129e019d4266",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -3626,6 +4081,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "a43c3048-d8a4-46a3-ab52-5d0315c07b0f",
+          supporting: {
+            mappingId: "0626ce80-d32e-43e2-bd55-4f72497c53d1",
+            provider: "sofascore",
+            externalId: "879777",
+            appPlayerId: "a43c3048-d8a4-46a3-ab52-5d0315c07b0f",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "c846f946-8575-4666-abf9-4cbbc0b0d584",
+            stateDigest: "048321dda0234d9c267fe2e686b21ccc0b05d0233e47a6d6796e594e4967d4ba",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "3333c0de446b34e3e68dc687b75754d9959f4e79e25d8db2de268acceec2c726",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -3655,7 +4123,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "da885cab38d529f734367211f93e7740b474270dd6fea36601e054f19ba91f8d",
+      expectedFingerprint: "9539c9747f2407e4df24684511d80dac8cff62ea4bb6aaf02e38bc9d1632a4f7",
     },
     {
       candidateId: "d53e2549-e2f7-4033-8773-9bc865359c5b",
@@ -3671,10 +4139,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1177366",
-        candidateId: "638d87c4-4f6e-4607-b77e-18b9dd4db55f",
         mappingId: "910ec653-7073-4a6f-aeb2-f79ccb86b24f",
         appPlayerId: "d5f53ee6-0ad8-4042-9461-e19b3be81f6b",
-        version: "football_player_mapping:a73938e5-3ab5-480c-bb90-b266e3a15bd0",
+        provenanceProposalId: "a73938e5-3ab5-480c-bb90-b266e3a15bd0",
+        stateDigest: "3a672ed0e5b3365410b3b2d674c07821b24aba00afb0d15a807bf2c881825e4f",
         state: "active_reviewed",
       },
       fixtures: [
@@ -3699,7 +4167,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "98ee4f6643995496ec60fa951ea28fee6ffe2b0cd99cc4439d985b72aa96ab97",
+      evidenceSha256: "a7184709b3f808227cd916e0fc6d20796ab9d108dab518630f6be33bcc85b469",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -3727,6 +4195,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "d5f53ee6-0ad8-4042-9461-e19b3be81f6b",
+          supporting: {
+            mappingId: "910ec653-7073-4a6f-aeb2-f79ccb86b24f",
+            provider: "sofascore",
+            externalId: "1177366",
+            appPlayerId: "d5f53ee6-0ad8-4042-9461-e19b3be81f6b",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "a73938e5-3ab5-480c-bb90-b266e3a15bd0",
+            stateDigest: "3a672ed0e5b3365410b3b2d674c07821b24aba00afb0d15a807bf2c881825e4f",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "a59d548ce90226a07528b4ce50b1607430081a4f08d93886436add3adb8b3efd",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -3756,7 +4237,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "cb49e4722954128c7566fd4d19d1915bed2ef42f9dbfb46ab3ab4a18f21c5996",
+      expectedFingerprint: "01b0c550280cc755e28edc9f867d774adf8194b04d560a5aad66ff4b2195280c",
     },
     {
       candidateId: "d7b1f1b3-1f76-44d7-a6a7-cee4e774e2b7",
@@ -3772,10 +4253,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "919677",
-        candidateId: "f70878e3-eb1c-4215-b5f3-9db786757ae5",
         mappingId: "d8c2bd21-206d-44cd-8991-ee2bede69d14",
         appPlayerId: "b2bf23cb-59e7-4aab-ba81-cd0c13eb153b",
-        version: "football_player_mapping:cc049da6-55b6-4ff1-a893-1b35f15fe9ba",
+        provenanceProposalId: "cc049da6-55b6-4ff1-a893-1b35f15fe9ba",
+        stateDigest: "39a066013f422aa8c9937da629cf521c8d204afe72d7562d97400d10014d77ae",
         state: "active_reviewed",
       },
       fixtures: [
@@ -3800,7 +4281,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "no_signal",
       },
-      evidenceSha256: "3049c258a5aec604ef57867fd735343d1c7e8c2b0bfcd7c4fb3cd0438380939f",
+      evidenceSha256: "a7e09b9bd566e08ca986e071ce6fbc0ba92fcaa3e270c7aea5682e51625053f9",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -3828,6 +4309,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "b2bf23cb-59e7-4aab-ba81-cd0c13eb153b",
+          supporting: {
+            mappingId: "d8c2bd21-206d-44cd-8991-ee2bede69d14",
+            provider: "sofascore",
+            externalId: "919677",
+            appPlayerId: "b2bf23cb-59e7-4aab-ba81-cd0c13eb153b",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "cc049da6-55b6-4ff1-a893-1b35f15fe9ba",
+            stateDigest: "39a066013f422aa8c9937da629cf521c8d204afe72d7562d97400d10014d77ae",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "45f6329dc632e02e3c9eaa7c6b42488111bbae84930e69387382cdedc0034487",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -3857,7 +4351,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "316a29702c43f4274d310427eaa2e7c9a6b930c30adb9c623cb3f1a8f01d4899",
+      expectedFingerprint: "118f4a28e5f1eba989d2a869472339e5fb0c24fca7efe547d140acfda6c822d1",
     },
     {
       candidateId: "df0205ba-1bc5-4a34-a8e6-70d0242c4cf7",
@@ -3873,10 +4367,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1401595",
-        candidateId: "e2d95feb-1fe9-45ba-ae8f-4ed93562bf94",
         mappingId: "4e7c0346-b4c3-4ee2-bd33-310e3a29e07e",
         appPlayerId: "11e78c3d-fca0-4b89-80ab-5cc4b1564e90",
-        version: "football_player_mapping:24cbf204-90d7-4f4a-915c-bc79f7b9d186",
+        provenanceProposalId: "24cbf204-90d7-4f4a-915c-bc79f7b9d186",
+        stateDigest: "b298a67fbb172c69da23f206814376ed196f8791d2d44f939426fe5f10b60b48",
         state: "active_reviewed",
       },
       fixtures: [
@@ -3901,7 +4395,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "b6e4e72b57170be00916089064788ee481d702c28a969ea95adc15606f410d38",
+      evidenceSha256: "33a1cbc3d5c12fc9eb2aa7aa443b3a6e14b362078ec82f38dc51f27110f4d9a7",
       limitations: [
         "Evidence from finished matches read from the same two providers; not a third independent source.",
         "Shows who the player is, not his club on a match date, his position, or that his events are right.",
@@ -3928,6 +4422,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "11e78c3d-fca0-4b89-80ab-5cc4b1564e90",
+          supporting: {
+            mappingId: "4e7c0346-b4c3-4ee2-bd33-310e3a29e07e",
+            provider: "sofascore",
+            externalId: "1401595",
+            appPlayerId: "11e78c3d-fca0-4b89-80ab-5cc4b1564e90",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "24cbf204-90d7-4f4a-915c-bc79f7b9d186",
+            stateDigest: "b298a67fbb172c69da23f206814376ed196f8791d2d44f939426fe5f10b60b48",
+            evidenceClass: "F2_REVIEWED_SOFASCORE_SHIRT_DOB",
+          },
+          refsDigest: "52a06227ec38cd9dc172424c4afe2cc772d8ce8de2b9b2186a78be4b20ef9b14",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -3957,7 +4464,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "55c43561b5ea3a27714389b7999758e17e5df9086c9c09fc85bae4c031c254a6",
+      expectedFingerprint: "a953b63662c05a2332ecd9ae64b20193ee201411ae7f3aa20a8bc31d16ae78d1",
     },
     {
       candidateId: "f44655be-2dfd-4a6d-be7f-f6ed1b515f6a",
@@ -3973,10 +4480,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1095727",
-        candidateId: "c269e2e0-b86c-422a-aec8-e6186ded0a84",
         mappingId: "4c2fe468-6c12-4a35-9597-cd1e62c77aec",
         appPlayerId: "7cb65cb6-e9a5-401f-9045-f5ba6bde3e42",
-        version: "football_player_mapping:30ceb6b4-8ed4-4cd5-9bea-8cbf2afdfb22",
+        provenanceProposalId: "30ceb6b4-8ed4-4cd5-9bea-8cbf2afdfb22",
+        stateDigest: "32aa962f461129229397042d561a8fb83aa465f8c7c7f2382289744fb8fb5371",
         state: "active_reviewed",
       },
       fixtures: [
@@ -4001,7 +4508,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "3f098785c6b41a3f20d5cfa729406b1ef68cb2c405277cabfc966dcca64835da",
+      evidenceSha256: "a69edae3d0d90043ce9dd26cbe1f63e224098adb5b9b66f34cd558c227135205",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -4029,6 +4536,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "7cb65cb6-e9a5-401f-9045-f5ba6bde3e42",
+          supporting: {
+            mappingId: "4c2fe468-6c12-4a35-9597-cd1e62c77aec",
+            provider: "sofascore",
+            externalId: "1095727",
+            appPlayerId: "7cb65cb6-e9a5-401f-9045-f5ba6bde3e42",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "30ceb6b4-8ed4-4cd5-9bea-8cbf2afdfb22",
+            stateDigest: "32aa962f461129229397042d561a8fb83aa465f8c7c7f2382289744fb8fb5371",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "f4a5e2e0e832459ca6b3c65512a3856bb1f94be201db1bf788f9fe994e4b8eaa",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -4058,7 +4578,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "cf467360b5fd60a822f50c5d341f3d91ae5784ed9f767e87ae69d64d59a30ce0",
+      expectedFingerprint: "e2ea050a14f45578a4a724853bac8cc9b20fd225c05b15c677078f3445333428",
     },
     {
       candidateId: "fde76ef4-1645-4bb6-84da-dd0af721df03",
@@ -4074,10 +4594,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1823726",
-        candidateId: "d5702548-994a-40b1-b05a-ac33527e794b",
         mappingId: "b10af4ba-8ddf-477a-8495-7844f1fa405b",
         appPlayerId: "0bff79be-b852-48d0-9688-355d43841fcb",
-        version: "football_player_mapping:bc3f4866-2f52-49e2-93a0-7a8a41882f37",
+        provenanceProposalId: "bc3f4866-2f52-49e2-93a0-7a8a41882f37",
+        stateDigest: "0f8bcae2b03bcb3de8bbca9eccf4fee18b28827420fe5893d17b7915aaccc92a",
         state: "active_reviewed",
       },
       fixtures: [
@@ -4102,7 +4622,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "2d1d125f46252dac253b2ee4f6ef3c393df9ce98bc5411864cd39b36a446cca1",
+      evidenceSha256: "fcad33eb40829474344aaf9b4800bbffae9088e52b4bafbfb192d0f7b6a3fbbb",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -4130,6 +4650,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "0bff79be-b852-48d0-9688-355d43841fcb",
+          supporting: {
+            mappingId: "b10af4ba-8ddf-477a-8495-7844f1fa405b",
+            provider: "sofascore",
+            externalId: "1823726",
+            appPlayerId: "0bff79be-b852-48d0-9688-355d43841fcb",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "bc3f4866-2f52-49e2-93a0-7a8a41882f37",
+            stateDigest: "0f8bcae2b03bcb3de8bbca9eccf4fee18b28827420fe5893d17b7915aaccc92a",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "1ff5b534725bd485301fcc12fa178f7f2984b3327fffe047cd99d18e65dc61f8",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -4159,7 +4692,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "ddbfe522f8aa3408eb70bb39b6bde28c3ec89d4eddde81c617dac6ec09469119",
+      expectedFingerprint: "f6a464da848b108cecce34c24bc5075d1ca594006b2a7dd19c86b6b49cb749aa",
     },
     {
       candidateId: "fee903bc-6aff-49d2-be42-b671d39cf86c",
@@ -4175,10 +4708,10 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       supporting: {
         provider: "sofascore",
         externalId: "1140806",
-        candidateId: "c7ea81ac-7e0a-4f19-a218-ea93f4359c6e",
         mappingId: "aabebc86-aec4-467c-886e-6e6f60b13e99",
         appPlayerId: "e0bba0c4-6caf-4b08-8cc3-25af8c655dbc",
-        version: "football_player_mapping:20abf14e-2afd-42f5-ad81-0e272512e510",
+        provenanceProposalId: "20abf14e-2afd-42f5-ad81-0e272512e510",
+        stateDigest: "80537854ea3d46405fd2bfab06f1407876f1d033dc12eb7f39fc26ed2ae4f6f5",
         state: "active_reviewed",
       },
       fixtures: [
@@ -4203,7 +4736,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         position: "match",
         shirt: "match",
       },
-      evidenceSha256: "4fad973e5d4a62552a02f678f331eaf1195dca7c2275fb8c494dbd85c2adc64d",
+      evidenceSha256: "acf0e28ac9a0e66b7f6a62fa0e06c871b202f7cb4df9d6edbec4c20594213d12",
       limitations: [
         "Evidence from one finished match only; no second match confirms it.",
         "Both providers' data can be wrong in the same way; this is not an independent third source.",
@@ -4231,6 +4764,19 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
             },
           ],
           appPlayerId: "e0bba0c4-6caf-4b08-8cc3-25af8c655dbc",
+          supporting: {
+            mappingId: "aabebc86-aec4-467c-886e-6e6f60b13e99",
+            provider: "sofascore",
+            externalId: "1140806",
+            appPlayerId: "e0bba0c4-6caf-4b08-8cc3-25af8c655dbc",
+            active: true,
+            reviewed: true,
+            reviewProvenance: "executed_proposal",
+            provenanceProposalId: "20abf14e-2afd-42f5-ad81-0e272512e510",
+            stateDigest: "80537854ea3d46405fd2bfab06f1407876f1d033dc12eb7f39fc26ed2ae4f6f5",
+            evidenceClass: "F1_REVIEWED_SOFASCORE_EVENTS",
+          },
+          refsDigest: "14b1c1d6b35686951daa1b27cfad83c49250c08b3d4270a6ec7f1ecefa1167dd",
           refs: [
             {
               source: "reviewed_sofascore_mapping",
@@ -4260,7 +4806,7 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
         },
         positionDisagreement: false,
       },
-      expectedFingerprint: "3f1c413fbffed927a1ecec241337ef743b0d4c83df7de7cb9c162604a622bdea",
+      expectedFingerprint: "78d30cfa6d1e6ccca56fcc59fc0e5ac7c5454d1baa297342e399aa59c1abdc98",
     },
   ],
   heldBack: [
@@ -4331,5 +4877,5 @@ export const FLASHSCORE_BULK_MANIFEST: unknown = {
       codes: ["POSITION_DISAGREEMENT"],
     },
   ],
-  manifestSha256: "524290909f25e4f145f84b4ab670162a859c859e17b410d1cb623a027681a5e8",
+  manifestSha256: "f2eef95dd199244ca6c48e9a2e0595a39a6bc2e534e7455a41467c7dba17a286",
 };

@@ -6,7 +6,7 @@ import { sha256Hex } from "./canonical";
  * so a proposal's fingerprint can be recomputed here from its own inputs and checked against the
  * one a manifest froze. Nothing in a proposal is non-ASCII (ids, codes, fixed wording).
  */
-function jsonbText(value: unknown): string {
+export function jsonbText(value: unknown): string {
   if (value === null || value === undefined) return "null";
   if (typeof value === "string") return JSON.stringify(value);
   if (typeof value === "number" || typeof value === "boolean") return String(value);
@@ -16,6 +16,9 @@ function jsonbText(value: unknown): string {
   );
   return `{${entries.map(([k, v]) => `${JSON.stringify(k)}: ${jsonbText(v)}`).join(", ")}}`;
 }
+
+/** The database's `admin_payload_fingerprint` of any jsonb value (used for the evidence-reference digest). */
+export const jsonbFingerprint = (value: unknown): Promise<string> => sha256Hex(jsonbText(value));
 
 export interface MapProposalInputs {
   readonly sofascoreCandidateId: string | null;

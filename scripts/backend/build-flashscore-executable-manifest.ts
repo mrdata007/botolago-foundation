@@ -9,6 +9,16 @@
  *      Run it against production; save its single JSON result to a file.
  *   2. `--production-read <file> [--write]` builds, verifies and (with --write) writes the manifest.
  *
+ * VERSION 2 (this file). The database now enforces that a Flashscore mapping rests on a reviewed
+ * Sofascore mapping (migration 20261003120000) and reads that mapping row itself. A manifest therefore
+ * freezes, for every row, the state of its supporting mapping AS THE DATABASE WOULD READ IT, and a
+ * proposal fingerprint that includes that state. The production read below replicates the database's
+ * own computation of that state with plain SELECTs (production has not applied the migration, and
+ * nothing here writes); the fingerprint is then recomputed offline with the same function the Sofascore
+ * batch's 189 fingerprints were reproduced with, and checked against a golden vector produced by the
+ * real database functions. The version 1 manifest (docs/production/manifests/
+ * gw1-flashscore-executable.manifest.json, hash 524290909f25...) is kept as it was, unchanged.
+ *
  * The 53 rows are the Flashscore rows the corrected worklist marks READY. No row is added, and a
  * row that no longer qualifies is dropped with a reason (never replaced). The historical review
  * manifests are not touched.
@@ -22,6 +32,10 @@ import {
   verifyFlashscoreManifest,
   type FlashscoreRow,
 } from "../../src/backend/football/identity/bulk-mapping/flashscore-manifest";
+import {
+  jsonbFingerprint,
+  mapProposalFingerprint,
+} from "../../src/backend/football/identity/bulk-mapping/fingerprint";
 import {
   canonicalJson,
   sha256Hex,
@@ -49,7 +63,10 @@ const arg = (name: string) => {
 
 export const CORROBORATION_PATH = "tests/fixtures/identity/gw1-dob-corroboration-2026-10-03.json";
 export const CANDIDATES_PATH = "tests/fixtures/identity/gw1-flashscore-candidates-2026-10-03.json";
+/** Version 2. Version 1 (docs/production/manifests/gw1-flashscore-executable.manifest.json) is historical and untouched. */
 export const EXECUTABLE_MANIFEST_PATH =
+  "docs/production/manifests/gw1-flashscore-executable.v2.manifest.json";
+export const HISTORICAL_V1_MANIFEST_PATH =
   "docs/production/manifests/gw1-flashscore-executable.manifest.json";
 /** The same manifest as a module the screen imports (it verifies the hash and shape before offering anything). */
 export const EXECUTABLE_MANIFEST_MODULE_PATH =
@@ -63,8 +80,22 @@ export interface ProductionRead {
   readonly rows: readonly {
     readonly candidateId: string;
     readonly appTeamId: string | null;
-    readonly supportingCandidateId: string;
     readonly evidenceRevision: number;
+    readonly ok: boolean;
+    /** What the (old) compute function produced for the pairing: candidates and target only. */
+    readonly evidence: Record<string, unknown>;
+    /** The supporting Sofascore mapping as the database's own supporting-state computation reads it. */
+    readonly supporting: {
+      readonly mappingId: string;
+      readonly provider: string;
+      readonly externalId: string;
+      readonly appPlayerId: string;
+      readonly active: boolean;
+      readonly reviewed: boolean;
+      readonly reviewProvenance: string;
+      readonly provenanceProposalId: string | null;
+      readonly stateDigest: string;
+    };
     readonly positionDisagreement: boolean;
     readonly signals: {
       readonly club: string;
@@ -74,7 +105,6 @@ export interface ProductionRead {
       readonly observationCount: number;
       readonly registeredTeamDisagreement: boolean;
     } & Record<string, unknown>;
-    readonly fingerprint: string;
   }[];
 }
 
@@ -136,7 +166,56 @@ export async function readyFlashscoreRows() {
   return { built, rows };
 }
 
-/** ONE read-only statement: whether every row still holds, and the exact fingerprint each proposal would get. */
+/**
+ * The supporting Sofascore mapping's state, computed with plain SELECTs exactly as
+ * app_private.football_mapping_supporting_state(id) computes it (migration 20261003120000): the row's
+ * review state comes from its flags AND the audit record of the executed proposal that wrote it, never
+ * from a version label; the digest covers every identity-relevant field. Written for the case where the
+ * function does not exist yet (production). `scripts/db/` parity check: run against a database that has
+ * the migration, the two outputs must be identical for every row (see the manifest runbook).
+ */
+export const SUPPORTING_STATE_SQL = (rowAlias: string) => `(
+    select jsonb_build_object(
+      'mappingId', ${rowAlias}.id, 'provider', ${rowAlias}.provider_name, 'entityType', ${rowAlias}.entity_type::text,
+      'externalId', ${rowAlias}.external_id, 'appPlayerId', ${rowAlias}.internal_entity_id, 'active', ${rowAlias}.active,
+      'manuallyCorrected', ${rowAlias}.manually_corrected, 'reviewed', x.reviewed,
+      'reviewProvenance', case when x.reviewed then 'executed_proposal' else 'none' end,
+      'provenanceProposalId', case when x.reviewed then x.pid end,
+      'stateDigest', app_private.admin_payload_fingerprint(jsonb_build_object(
+        'id', ${rowAlias}.id, 'provider', ${rowAlias}.provider_name, 'entityType', ${rowAlias}.entity_type::text,
+        'externalId', ${rowAlias}.external_id, 'appPlayerId', ${rowAlias}.internal_entity_id, 'active', ${rowAlias}.active,
+        'manuallyCorrected', ${rowAlias}.manually_corrected, 'correctedBy', ${rowAlias}.corrected_by,
+        'correctedAt', to_char(${rowAlias}.corrected_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+        'correctionReason', ${rowAlias}.correction_reason,
+        'sourceVersion', ${rowAlias}.source_version, 'reviewed', x.reviewed,
+        'provenanceProposalId', case when x.reviewed then x.pid end)))
+    from (
+      select
+        case when ${rowAlias}.source_version like 'football_player_mapping:%'
+              and substr(${rowAlias}.source_version, 25) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+             then substr(${rowAlias}.source_version, 25)::uuid end as pid
+    ) v
+    cross join lateral (
+      select v.pid as pid,
+        (${rowAlias}.manually_corrected and ${rowAlias}.corrected_by is not null and ${rowAlias}.corrected_at is not null
+          and ${rowAlias}.correction_reason is not null and v.pid is not null
+          and exists (
+            select 1 from app_private.football_player_mapping_proposals pr
+            join app_private.staff_principals sp on sp.id = pr.decided_by
+            where pr.id = v.pid and pr.status = 'executed'
+              and sp.auth_user_id = ${rowAlias}.corrected_by and pr.reason = ${rowAlias}.correction_reason
+              and exists (
+                select 1 from jsonb_array_elements(
+                  case when jsonb_typeof(pr.executed_after -> 'rows') = 'array' then pr.executed_after -> 'rows'
+                       else jsonb_build_array(pr.executed_after) end) w
+                where w ->> 'mappingId' = ${rowAlias}.id::text and w ->> 'provider' = ${rowAlias}.provider_name
+                  and w ->> 'externalId' = ${rowAlias}.external_id
+                  and w ->> 'appPlayerId' = ${rowAlias}.internal_entity_id::text
+                  and (w ->> 'active')::boolean = ${rowAlias}.active))) as reviewed
+    ) x
+  )`;
+
+/** ONE read-only statement: whether every row still holds, and the supporting mapping's state as the database reads it. */
 export async function readSql(): Promise<string> {
   const { rows } = await readyFlashscoreRows();
   const q = (v: string) => `'${v.replace(/'/g, "''")}'`;
@@ -168,7 +247,8 @@ m as (
   from m0 join reasons r on r.cls = m0.cls
 ),
 c as (
-  select m.*, app_private.football_mapping_compute('map', null, m.cand, null, null, m.tgt, null, null) as v
+  select m.*, app_private.football_mapping_compute('map', null, m.cand, null, null, m.tgt, null, null) as v,
+    (select ${SUPPORTING_STATE_SQL("sx")} from app_private.football_provider_mappings sx where sx.id = m.smap) as ss
   from m
 ), checks as (
   select
@@ -189,6 +269,7 @@ c as (
     count(*) filter (where s.active is not true) as supporting_inactive,
     count(*) filter (where s.internal_entity_id <> c.tgt) as supporting_retargeted,
     count(*) filter (where s.source_version <> c.sver) as supporting_version_changed,
+    count(*) filter (where coalesce((c.ss ->> 'reviewed')::boolean, false) is not true) as supporting_unreviewed,
     count(*) filter (where s.external_id <> c.sext) as supporting_id_changed,
     count(*) filter (where not exists (select 1 from app.players p where p.id = c.tgt and p.active)) as target_inactive,
     count(*) filter (where not coalesce((c.v ->> 'ok')::boolean, false)) as compute_refused,
@@ -207,23 +288,12 @@ select jsonb_build_object(
       'candidateId', c.cand,
       'appTeamId', (select (array_agg(o.app_team_id))[1] from app_private.football_player_mapping_observations o
                     where o.candidate_id = c.cand),
-      'supportingCandidateId', (select sc.id from app_private.football_player_mapping_candidates sc
-                    where sc.provider_name = 'sofascore' and sc.external_id = c.sext),
       'evidenceRevision', (c.v -> 'candidateRevisions' ->> 'flashscore')::int,
       'ok', coalesce((c.v ->> 'ok')::boolean, false),
       'evidence', c.v -> 'evidence',
+      'supporting', c.ss,
       'signals', c.v -> 'signals' -> 'flashscore',
-      'positionDisagreement', (c.v ->> 'positionDisagreement')::boolean,
-      'fingerprint', app_private.admin_payload_fingerprint(jsonb_build_object(
-        'kind', 'map', 'sofascoreCandidateId', null, 'flashscoreCandidateId', c.cand,
-        'sofascoreExternalId', c.v ->> 'sofascoreExternalId', 'flashscoreExternalId', c.v ->> 'flashscoreExternalId',
-        'providerName', c.v ->> 'providerName', 'mappingId', null, 'appPlayerId', c.tgt,
-        'newExternalId', null, 'newAppPlayerId', null,
-        'expectedBefore', nullif(c.v -> 'expectedBefore', 'null'::jsonb),
-        'basis', c.basis, 'evidence', (c.v -> 'evidence') || jsonb_build_object('refs', c.refs),
-        'signals', c.v -> 'signals', 'candidateRevisions', c.v -> 'candidateRevisions',
-        'positionDisagreement', (c.v ->> 'positionDisagreement')::boolean,
-        'positionNote', null, 'reason', c.reason))
+      'positionDisagreement', (c.v ->> 'positionDisagreement')::boolean
     ) order by c.cand) from c)
 );
 `;
@@ -242,6 +312,7 @@ const HOLDS = [
   "supporting_inactive",
   "supporting_retargeted",
   "supporting_version_changed",
+  "supporting_unreviewed",
   "supporting_id_changed",
   "target_inactive",
   "compute_refused",
@@ -317,15 +388,69 @@ export async function buildFromRead(read: ProductionRead) {
         flashscoreSourceSha256: payloadDigest("flashscore", match.flashscoreId),
       };
     });
+    // The supporting mapping, as the database reads it: it must be the row the review named, active,
+    // reviewed by the audit record (not by a label), and on exactly the player the row maps to.
+    const sup = got.supporting;
+    if (
+      !sup ||
+      sup.mappingId !== s.mappingId ||
+      sup.externalId !== s.externalId ||
+      sup.provider !== "sofascore" ||
+      sup.appPlayerId !== row.targetAppPlayerId ||
+      !sup.active ||
+      !sup.reviewed ||
+      !sup.provenanceProposalId
+    ) {
+      dropped.push({ candidateId: row.candidateId!, why: "supporting_mapping_does_not_hold" });
+      continue;
+    }
     const supporting = {
       provider: "sofascore" as const,
       externalId: s.externalId,
-      candidateId: got.supportingCandidateId,
       mappingId: s.mappingId,
       appPlayerId: row.targetAppPlayerId!,
-      version: s.version as string,
+      provenanceProposalId: sup.provenanceProposalId,
+      stateDigest: sup.stateDigest,
       state: "active_reviewed" as const,
     };
+    const refs = flashscoreEvidenceRefs({
+      evidenceClass: cls,
+      supporting: { externalId: s.externalId, mappingId: s.mappingId },
+      fixtures: row.fixtures,
+    });
+    // What the database's evidence for this proposal will be: its pairing evidence (read now, from the
+    // unchanged part of the computation), plus the dependency block and the digest of the references.
+    const dependencyEvidence = {
+      ...got.evidence,
+      supporting: {
+        mappingId: supporting.mappingId,
+        provider: supporting.provider,
+        externalId: supporting.externalId,
+        appPlayerId: supporting.appPlayerId,
+        active: true,
+        reviewed: true,
+        reviewProvenance: sup.reviewProvenance,
+        provenanceProposalId: supporting.provenanceProposalId,
+        stateDigest: supporting.stateDigest,
+        evidenceClass: cls,
+      },
+      refsDigest: await jsonbFingerprint(refs),
+      refs,
+    };
+    const signals = { flashscore: got.signals };
+    const expectedFingerprint = await mapProposalFingerprint({
+      sofascoreCandidateId: null,
+      flashscoreCandidateId: row.candidateId!,
+      sofascoreExternalId: null,
+      flashscoreExternalId: row.externalId,
+      appPlayerId: row.targetAppPlayerId!,
+      basis: FLASHSCORE_BASIS[cls],
+      evidence: dependencyEvidence,
+      signals,
+      candidateRevisions: { flashscore: row.candidateRevision! },
+      positionDisagreement: false,
+      reason: FLASHSCORE_REASONS[cls],
+    });
     const evidence = evidenceFacts(row);
     out.push({
       candidateId: row.candidateId!,
@@ -356,26 +481,11 @@ export async function buildFromRead(read: ProductionRead) {
         flashscoreExternalId: row.externalId,
         appPlayerId: row.targetAppPlayerId!,
         candidateRevisions: { flashscore: row.candidateRevision! },
-        evidence: {
-          candidates: [
-            {
-              provider: "flashscore",
-              externalId: row.externalId,
-              candidateId: row.candidateId!,
-              observationCount: got.signals.observationCount,
-            },
-          ],
-          appPlayerId: row.targetAppPlayerId!,
-          refs: flashscoreEvidenceRefs({
-            evidenceClass: cls,
-            supporting: { externalId: s.externalId, mappingId: s.mappingId },
-            fixtures: row.fixtures,
-          }),
-        },
-        signals: { flashscore: got.signals },
+        evidence: dependencyEvidence,
+        signals,
         positionDisagreement: false,
       },
-      expectedFingerprint: got.fingerprint,
+      expectedFingerprint,
     });
   }
   const manifest = await buildFlashscoreManifest(
@@ -400,8 +510,21 @@ export async function buildFromRead(read: ProductionRead) {
   return { manifest, dropped, summaryHolds, built, heldBack };
 }
 
+/**
+ * Run this against a database that HAS the migration (never production, which does not): for every
+ * Sofascore mapping row, the database's own supporting-state function and the plain-SELECT computation
+ * the production read uses must agree on every field they share. The output is `rows|same|reviewed`;
+ * `rows` and `same` must be equal.
+ */
+export const PARITY_SQL = `select count(*) as rows,
+  count(*) filter (where (app_private.football_mapping_supporting_state(s.id) - 'correctedAt' - 'sourceVersion' - 'updatedAt') is not distinct from ${SUPPORTING_STATE_SQL("s")}) as same,
+  count(*) filter (where (app_private.football_mapping_supporting_state(s.id) ->> 'reviewed')::boolean) as reviewed
+from app_private.football_provider_mappings s where s.provider_name = 'sofascore';`;
+
 if (import.meta.main) {
-  if (process.argv.includes("--print-sql")) {
+  if (process.argv.includes("--print-parity-sql")) {
+    console.log(PARITY_SQL);
+  } else if (process.argv.includes("--print-sql")) {
     console.log(await readSql());
   } else {
     const file = arg("--production-read");

@@ -1,5 +1,10 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
-import type { CandidateDto, ProposalDto, ProposeItem } from "../mapping-contracts";
+import type {
+  CandidateDto,
+  ProposalDto,
+  ProposeItem,
+  ProviderMappingDto,
+} from "../mapping-contracts";
 import type { PlayerMappingRepository } from "../mapping-repository";
 import type { BulkRowState } from "./contract";
 
@@ -22,6 +27,11 @@ export interface BulkManifestBase<R extends BulkRowBase = BulkRowBase> {
 export interface PhaseSnapshot {
   readonly candidates: readonly CandidateDto[];
   readonly proposals: readonly ProposalDto[];
+  /**
+   * The actual mapping rows the batch's rows rest on, read now (see `loadSupporting`), keyed
+   * `provider:externalId`. Absent for a batch that rests on none; a missing key means "not read".
+   */
+  readonly providerMappings?: ReadonlyMap<string, ProviderMappingDto | null>;
 }
 
 export type Revalidation =
@@ -61,6 +71,14 @@ export interface BulkProfile<R extends BulkRowBase = BulkRowBase> {
    * candidate re-read the runner always does is all the batch needs.
    */
   beforeExecute?(deps: ProfileDeps, row: R): Promise<Revalidation>;
+  /**
+   * Reads, from the database, the mapping rows the batch's rows rest on (one read each, a few at a
+   * time). Absent for a batch that rests on none.
+   */
+  loadSupporting?(
+    deps: ProfileDeps,
+    rows: readonly R[],
+  ): Promise<ReadonlyMap<string, ProviderMappingDto | null>>;
   /**
    * A refusal the row's resting state should show even before any phase runs (for example
    * its supporting mapping changed). Pure, over the data the screen already holds.

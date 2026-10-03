@@ -2,6 +2,7 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import {
   InMemoryPlayerMappingRepository,
   type MockAppPlayer,
+  type MockMappingRow,
   type MockSeedCandidate,
 } from "../mock-mapping-repository";
 import { loadAllCandidates, loadAllProposals, readOptionSignals } from "../review-queue";
@@ -188,11 +189,17 @@ export const PRODUCTION_SHAPE: WorldSpec = {
 
 export const newRepo = (
   world: World,
-  extra: { allowSelfApproval?: boolean; actor?: string } = {},
+  extra: {
+    allowSelfApproval?: boolean;
+    actor?: string;
+    /** Mapping rows that already exist (with their review record), e.g. a copy of another repository's. */
+    mappings?: readonly MockMappingRow[];
+  } = {},
 ) =>
   new InMemoryPlayerMappingRepository({
     candidates: world.candidates,
     appPlayers: world.appPlayers,
+    mappings: extra.mappings,
     qualifiedActors: [extra.actor ?? OWNER],
     allowSelfApproval: extra.allowSelfApproval ?? true,
   });

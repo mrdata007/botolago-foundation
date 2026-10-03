@@ -53,6 +53,20 @@ export function deadlineCountdown(deadlineIso: string, now: number): DeadlineCou
   };
 }
 
+export type DeadlineUrgency = "calm" | "soon" | "now";
+
+/**
+ * How pressing a deadline is: `calm` with an hour or more to go, `soon` under
+ * an hour (the clock breathes), `now` in the last minute (it ticks). Only for
+ * a deadline that has not passed.
+ */
+export function deadlineUrgency(
+  left: Pick<DeadlineCountdown, "days" | "hours" | "minutes">,
+): DeadlineUrgency {
+  if (left.days > 0 || left.hours > 0) return "calm";
+  return left.minutes < 1 ? "now" : "soon";
+}
+
 /**
  * The countdown as the product writes it, to the minute: "1j 13h 59min". The
  * day part drops out on the last day rather than reading "0j". One spelling
