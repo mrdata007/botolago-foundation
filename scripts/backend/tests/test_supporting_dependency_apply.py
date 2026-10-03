@@ -313,6 +313,97 @@ class Decisions(unittest.TestCase):
         self.assertNotIn("while ", source.split("def decide")[1].split("def main")[0])
 
 
+class AmbiguousResponses(unittest.TestCase):
+    """A timeout or a lost connection does not say what happened to the transaction: the request may still be
+    running in the database and commit after the first read. Polling decides, and the apply is never resent."""
+
+    def flow(self, snapshots, response, checks_factory=None):
+        sent: list[str] = []
+        reads: list[int] = []
+        queue = list(snapshots)
+
+        def query(sql: str, read_only: bool):
+            if sql.lstrip().startswith("with m as"):
+                if checks_factory:
+                    return checks_factory()
+                return [{"checks": GOOD_CHECKS}]
+            reads.append(1)
+            value = queue.pop(0) if len(queue) > 1 else queue[0]
+            if isinstance(value, Exception):
+                raise value
+            return [{"snapshot": value}]
+
+        def send(payload: str):
+            sent.append(payload)
+            return response
+
+        outcome, evidence = A.decide(query, send, "PAYLOAD", "SNAP", "with m as (select 1)", pause=0)
+        return outcome, evidence, sent, len(reads)
+
+    def busy(self, before: dict, sessions: int) -> dict:
+        return dict(before, busy_sessions=sessions)
+
+    def test_an_unchanged_state_while_the_request_may_still_run_is_not_a_rollback(self) -> None:
+        before = make_before()
+        outcome, evidence, sent, _ = self.flow(
+            [before, self.busy(before, 1)], (None, "timed out", "transport"))
+        self.assertEqual((outcome, len(sent)), (A.OUT_UNVERIFIED, 1))
+        self.assertIn("may still be running", evidence["problems"][0])
+
+    def test_it_is_a_rollback_only_once_the_database_has_been_quiet_twice(self) -> None:
+        before = make_before()
+        outcome, evidence, sent, reads = self.flow(
+            [before, self.busy(before, 1), self.busy(before, 1), before, before], (504, "gateway timeout", ""))
+        self.assertEqual((outcome, len(sent)), (A.OUT_FAILED, 1))
+        self.assertGreaterEqual(reads, 5)
+        self.assertTrue(evidence["settled_after_ambiguous_response"])
+
+    def test_a_commit_that_lands_after_the_client_gave_up_is_found_and_verified(self) -> None:
+        before = make_before()
+        outcome, evidence, sent, _ = self.flow(
+            [before, self.busy(before, 1), self.busy(before, 1), apply_expected(before)], (None, "reset", "transport"))
+        self.assertEqual((outcome, len(sent)), (A.OUT_OK, 1))
+        self.assertTrue(evidence["warnings"])
+
+    def test_a_definitive_database_error_does_not_wait(self) -> None:
+        before = make_before()
+        outcome, _, sent, reads = self.flow(
+            [before, self.busy(before, 1)], (400, "ERROR: stop: postflight failed", ""))
+        self.assertEqual((outcome, len(sent), reads), (A.OUT_FAILED, 1, 2))
+
+    def test_any_other_server_error_is_treated_as_ambiguous(self) -> None:
+        self.assertEqual(A.classify_response(500, "internal error", ""), "gateway_timeout_or_unavailable")
+        self.assertEqual(A.classify_response(400, "ERROR: stop: x", ""), "script_stop_guard")
+        self.assertEqual(A.classify_response(400, "ERROR: 57014 canceling statement", ""), "database_statement_timeout")
+
+    def test_the_post_commit_read_is_retried_like_the_snapshots(self) -> None:
+        before = make_before()
+        calls = {"n": 0}
+
+        def flaky():
+            calls["n"] += 1
+            if calls["n"] < 3:
+                raise A.ApplyError("transient")
+            return [{"checks": GOOD_CHECKS}]
+
+        outcome, _, _, _ = self.flow(
+            [before, apply_expected(before)], (200, "Applied. The Flashscore supporting-dependency guard is installed.", ""),
+            checks_factory=flaky)
+        self.assertEqual((outcome, calls["n"]), (A.OUT_OK, 3))
+
+    def test_a_post_commit_read_that_never_works_needs_review(self) -> None:
+        before = make_before()
+
+        def broken():
+            raise A.ApplyError("down")
+
+        outcome, evidence, _, _ = self.flow(
+            [before, apply_expected(before)], (200, "Applied. The Flashscore supporting-dependency guard is installed.", ""),
+            checks_factory=broken)
+        self.assertEqual(outcome, A.OUT_REVIEW)
+        self.assertTrue(any("post-commit checks" in p for p in evidence["problems"]))
+
+
 class RehearsalWorkflowsStayRehearsalOnly(unittest.TestCase):
     def test_no_rehearsal_workflow_can_commit(self) -> None:
         for name in ("production-mapping-supporting-dependency-rehearsal.yml",

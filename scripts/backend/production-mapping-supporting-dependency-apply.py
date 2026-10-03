@@ -519,7 +519,7 @@ def classify_response(status: int | None, body: str, kind: str) -> str:
         return "database_lock_timeout"
     if status in (401, 403):
         return "api_refused_authorisation"
-    if status in (408, 502, 503, 504):
+    if status is not None and (status in (408, 502, 503, 504) or status >= 500):
         return "gateway_timeout_or_unavailable"
     if "stop:" in body:
         return "script_stop_guard"
@@ -544,9 +544,43 @@ def read_snapshot(query: QueryFn, sql: str, attempts: int = 3, pause: float = 4.
     raise ApplyError(f"snapshot_failed: {last}")
 
 
-def read_checks(query: QueryFn, sql: str) -> dict[str, Any]:
-    value = query(sql, True)[0]["checks"]
-    return value if isinstance(value, dict) else json.loads(value)
+def read_checks(query: QueryFn, sql: str, attempts: int = 3, pause: float = 4.0) -> dict[str, Any]:
+    """The post-commit verification read is repeatable too: a transient failure must not turn a good commit
+    into a review (the one-shot workflow cannot simply be run again once the migration exists)."""
+    last: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            value = query(sql, True)[0]["checks"]
+            return value if isinstance(value, dict) else json.loads(value)
+        except (ApplyError, ValueError, KeyError, IndexError, TypeError) as exc:
+            last = exc
+            if attempt + 1 < attempts:
+                time.sleep(pause)
+    raise ApplyError(f"post-commit checks failed after {attempts} reads: {last}")
+
+
+# An answer that does not say what happened to the transaction: the request may still be running in the
+# database after the client stopped waiting. (A database error, a statement or lock timeout, and a refused
+# authorisation are definitive: the transaction did not commit.)
+AMBIGUOUS_RESPONSES = {"transport_error_no_answer", "gateway_timeout_or_unavailable"}
+SETTLE_POLLS = 8
+SETTLE_PAUSE = 15.0
+
+
+def settle(query: QueryFn, snap_sql: str, after: dict[str, Any], pause: float) -> tuple[dict[str, Any], bool]:
+    """After an ambiguous answer an unchanged snapshot does not prove a rollback: the apply may still be
+    running and commit later. Keep reading until the migration is recorded, or no other session has been
+    working on two consecutive reads while production still equals the pre-state. Returns (snapshot, settled)."""
+    quiet = 0
+    for poll in range(SETTLE_POLLS):
+        if after.get("history_has_guard") == 1:
+            return after, True
+        quiet = quiet + 1 if after.get("busy_sessions") == 0 else 0
+        if quiet >= 2:
+            return after, True
+        time.sleep(pause)
+        after = read_snapshot(query, snap_sql, pause=pause)
+    return after, after.get("history_has_guard") == 1
 
 
 def decide(
@@ -582,12 +616,23 @@ def decide(
     except ApplyError as exc:
         evidence["after_read_error"] = str(exc)
         return OUT_UNVERIFIED, evidence
+    if response in AMBIGUOUS_RESPONSES and after.get("history_has_guard") == 0:
+        try:
+            after, settled = settle(query, snap_sql, after, SETTLE_PAUSE if pause else 0)
+        except ApplyError as exc:
+            evidence["after_read_error"] = str(exc)
+            return OUT_UNVERIFIED, evidence
+        evidence["settled_after_ambiguous_response"] = settled
+        if not settled:
+            evidence["after"] = after
+            evidence["problems"] = ["the apply request may still be running in the database"]
+            return OUT_UNVERIFIED, evidence
     evidence["after"] = after
 
     if after.get("history_has_guard") == 1:
         problems = verify_post(before, after)
         try:
-            checks = read_checks(query, checks_sql)
+            checks = read_checks(query, checks_sql, pause=pause)
             evidence["post_checks"] = checks
             problems += verify_post_checks(checks, after)
         except (ApplyError, ValueError, KeyError, IndexError, TypeError) as exc:
