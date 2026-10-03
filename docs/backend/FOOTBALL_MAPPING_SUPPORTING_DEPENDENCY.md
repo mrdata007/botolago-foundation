@@ -167,7 +167,7 @@ queue's execute button also stops, because its early-warning read cannot be made
   Preflight refuses an already or partly applied state, any change to the six replaced functions, the
   reviewed history, constraints, triggers, indexes, grants and row level security, an open proposal,
   a Flashscore mapping, a busy session, and single-operator mode being off. The migration's `DROP
-  FUNCTION` is plain: no CASCADE, no rename, no switched-off trigger.
+FUNCTION` is plain: no CASCADE, no rename, no switched-off trigger.
 - **What it proves inside the transaction** (all read-only on production data): the nine functions are the
   reviewed text with the reviewed grants; the old nine-argument compute function is gone, the
   twelve-argument one is the only one and no legacy copy remains; existing grants, constraints, triggers,
