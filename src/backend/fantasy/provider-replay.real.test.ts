@@ -122,7 +122,7 @@ describe("REAL PAYLOADS: before (no mapping input) and after (mapping-aware), se
       ["touargaFus", 40, 30, 12],
       ["dhjCodm", 40, 32, 12],
       ["wacTemara", 39, 31, 8],
-      ["tiznitTanger", 39, 28, 9],
+      ["tiznitTanger", 39, 30, 10],
       ["masZemamra", 39, 31, 9],
       ["tetouanBerkane", 40, 31, 18],
       ["kacmHusa", 40, 32, 14],
@@ -131,7 +131,7 @@ describe("REAL PAYLOADS: before (no mapping input) and after (mapping-aware), se
       (n, r) => n + r.coverage.sofascore.appearedUnresolvedIds.length,
       0,
     );
-    expect(unresolved).toBe(133);
+    expect(unresolved).toBe(134);
   });
 
   test("pairs that exist are labelled partially reviewed or unreviewed, never reviewed pairs", () => {

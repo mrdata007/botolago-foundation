@@ -84,4 +84,29 @@ describe("SYNTHETIC: corroboration collector", () => {
     const text = JSON.stringify(report);
     expect(text).not.toMatch(/1995|803174400|06-15/);
   });
+
+  test("a permitted long numeric provider id does not trip the date guard", async () => {
+    const long: PairInput[] = [{ m: "1234567890123", s: "1234567890", f: "fa" }];
+    const calls: string[] = [];
+    const report = await runCorroboration({
+      pairs: long,
+      now: NOW,
+      fetchProvider: async (provider, path) => {
+        calls.push(path);
+        if (provider === "sofascore") {
+          return {
+            status: 200,
+            body: {
+              home: { players: [{ player: { id: 1234567890, dateOfBirthTimestamp: DOB } }] },
+              away: { players: [] },
+            },
+          };
+        }
+        return { status: 200, body: { DATA: { BIRTHDAY_TIME: "1995-06-15" } } };
+      },
+    });
+    expect(report.results[0]).toMatchObject({ dob: "AGREE", sofascorePlayerId: "1234567890" });
+    // The ids are printed; the date still never is.
+    expect(JSON.stringify(report)).not.toMatch(/1995|803174400/);
+  });
 });

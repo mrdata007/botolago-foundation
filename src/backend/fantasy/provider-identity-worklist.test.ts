@@ -380,3 +380,35 @@ describe("SYNTHETIC: manifest, hypothetical rows, ranking", () => {
     expect(ranked.map((r) => r.key)).toEqual(["ready", "fewIdsButHeldBack", "review"]);
   });
 });
+
+describe("SYNTHETIC: already-reviewed and already-claimed Flashscore identities are not new work", () => {
+  test("a Flashscore id that already has a reviewed mapping gets no row", async () => {
+    const f = carded();
+    const w = await buildWorklist(
+      await input({
+        fixtures: [f],
+        snapshot: await snapshot([
+          row("sofascore", sid("home", 5), X),
+          row("flashscore", fid("home", 5), X),
+        ]),
+      }),
+    );
+    expect(find(w, "flashscore", fid("home", 5))).toBeUndefined();
+    // And the hypothetical snapshot still builds (no duplicate_external_id).
+    await expect(
+      hypotheticalSnapshot((await input({ fixtures: [f] })).snapshot, w),
+    ).resolves.toBeDefined();
+  });
+
+  test("a candidate that is not unmapped is a CONFLICT, never READY", async () => {
+    const f = carded();
+    const base = await input({ fixtures: [f] });
+    const w = await buildWorklist({
+      ...base,
+      flashCandidates: base.flashCandidates.map((c) =>
+        c.externalId === fid("home", 5) ? { ...c, status: "mapped" } : c,
+      ),
+    });
+    expect(find(w, "flashscore", fid("home", 5))?.classification).toBe("CONFLICT");
+  });
+});

@@ -160,3 +160,28 @@ dependency row was refused. Fingerprints stay server-computed; the owner still p
 
 Not done and not authorised here: any proposal, approval or mapping; candidate or observation population; production
 ingestion or scoring; GW1 finalisation; automation.
+
+## Correction: who is accounted for (appearance coverage)
+
+The first worklist selected only players who started or were named in a substitution-in incident. It now uses one
+shared classification (`provider-appearances.ts`, also read by the replay and the bridge) so that no unresolved
+identity disappears because a feed is incomplete. Kept apart, never inferred from one another:
+
+| Evidence                              | Meaning                                                                                   | Participation state                                       |
+| ------------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| STARTER                               | lineup says he started                                                                    | VERIFIED (CONTRADICTORY if recorded minutes are 0)        |
+| SUBSTITUTED_IN                        | a substitution incident brings him on                                                     | VERIFIED (CONTRADICTORY if recorded minutes are 0)        |
+| MINUTES_WITHOUT_SUBSTITUTION_INCIDENT | positive recorded minutes, no substitution incident                                       | VERIFIED, with the feed gap shown                         |
+| BENCH_INCIDENT_ONLY                   | non-starter, no substitution, no minutes, named in a goal, assist, card or missed penalty | **UNKNOWN** (a card can be shown to an unused substitute) |
+| INCIDENT_ONLY_NOT_IN_LINEUP           | an incident names an id no lineup lists                                                   | **UNKNOWN**; no lineup entry is invented; never ready     |
+
+There is no "did not play" state: a failed request, missing statistics or a missing incident can at most leave
+participation UNKNOWN. The replay's identity and participation stages stay false while any bench-incident,
+incident-only or contradictory identity is unresolved.
+
+Effect on the real payloads: **353 identities (was 351)**: one Flashscore id named by an incident but absent from a
+lineup (DHJ–CODM, no candidate record) and one Tiznit Sofascore player with recorded minutes but no substitution
+incident (no candidate record). Ready rows are unchanged: **54 (53 Flashscore, 1 Sofascore)**. The first manifest
+(hash `4c3d2294…0576`) is kept unchanged as historical evidence; the corrected one is
+`gw1-identity-evidence-2026-10-03.corrected.manifest.json` (hash in its `.sha256`). Flashscore identities that already
+have a reviewed mapping, or whose candidate is not unmapped, are not new work.

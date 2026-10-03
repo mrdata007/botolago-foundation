@@ -25,6 +25,15 @@ import {
 import { probe } from "./provider-probe";
 
 export const MAX_REQUESTS = 32;
+const ID_KEYS: ReadonlySet<string> = new Set([
+  "sofascoreFixtureId",
+  "sofascorePlayerId",
+  "flashscorePlayerId",
+  "id",
+  "m",
+  "s",
+  "f",
+]);
 
 export interface PairInput {
   /** Sofascore match id, Sofascore player id, Flashscore player id. */
@@ -124,8 +133,11 @@ export async function runCorroboration(options: {
     results,
     summary,
   };
-  // The last line of defence: nothing that looks like a date may be printed.
-  assertNoDates(JSON.stringify(report));
+  // The last line of defence: nothing that looks like a date may be printed. Provider ids are
+  // permitted identifiers (a long numeric id is not a timestamp), so they are masked before the check.
+  assertNoDates(
+    JSON.stringify(report, (key, value) => (ID_KEYS.has(key) ? "id" : (value as unknown))),
+  );
   return report;
 }
 

@@ -26,10 +26,7 @@
  * presented as reviewed.
  */
 import { canonicalJson, sha256Hex } from "../football/identity/bulk-mapping/canonical";
-import type {
-  MatchSide,
-  PerformanceLineupPlayer,
-} from "../football/provider/performance-contracts";
+import type { MatchSide } from "../football/provider/performance-contracts";
 import {
   bridgeFixture,
   buildBridgeReviewSet,
@@ -37,6 +34,7 @@ import {
   type BridgePriority,
   type BridgeUnresolved,
 } from "./provider-identity-bridge";
+import { classifyAppearances, type AppearanceRecord } from "./provider-appearances";
 import type { CorroborationResult } from "./provider-identity-corroboration";
 import {
   buildReviewedIdentitySnapshot,
@@ -70,6 +68,7 @@ export interface FlashCandidateRow {
   readonly rev: number;
   readonly club: string | null;
   readonly complete: string | null;
+  readonly openProposal?: boolean;
 }
 
 /** The structured, name-free eligibility signals read for an unmapped Sofascore candidate. */
@@ -156,6 +155,8 @@ export interface WorklistRow {
   readonly missingEvidence: readonly string[];
   readonly reasons: readonly string[];
   readonly affects: readonly Affects[];
+  /** How he is evidenced to have taken part. Never "did not play": at most UNKNOWN. */
+  readonly participation: ParticipationSummary;
   readonly priority: readonly (BridgePriority | "starter")[];
   /** Present on READY rows only: a factual audit reason, no name. */
   readonly proposedAuditReason: string | null;
@@ -188,11 +189,8 @@ const LIMITS_F: readonly string[] = [
 const short = async (text: string) => (await sha256Hex(text)).slice(0, 24);
 
 interface Appearance {
-  readonly player: PerformanceLineupPlayer;
+  readonly record: AppearanceRecord;
   readonly fixture: FixtureReference;
-  readonly scoring: boolean;
-  readonly assist: boolean;
-  readonly carded: boolean;
 }
 
 function appearances(
@@ -200,36 +198,16 @@ function appearances(
   provider: "sofascore" | "flashscore",
 ): Appearance[] {
   const data = provider === "sofascore" ? fixture.sofascore : fixture.flashscore;
-  const cameOn = new Set(
-    data.incidents
-      .filter((i) => i.kind === "substitution" && i.playerIn?.externalId)
-      .map((i) => i.playerIn?.externalId as string),
-  );
-  const ids = (pick: (i: (typeof data.incidents)[number]) => string | null | undefined) =>
-    new Set(data.incidents.map(pick).filter((x): x is string => Boolean(x)));
-  const scorers = ids((i) =>
-    i.kind === "goal" || i.kind === "penalty_goal" ? i.player?.externalId : null,
-  );
-  const assisters = ids((i) => i.assist?.externalId);
-  const carded = ids((i) =>
-    i.kind === "yellow_card" || i.kind === "second_yellow" || i.kind === "red_card"
-      ? i.player?.externalId
-      : null,
-  );
-  return data.lineups.players
-    .filter((p) => p.starter || cameOn.has(p.externalId))
-    .map((p) => ({
-      player: p,
-      fixture: {
-        sofascoreFixtureId: fixture.link.sofascoreFixtureId,
-        flashscoreFixtureId: fixture.link.flashscoreFixtureId,
-        kickoffAt: fixture.sofascore.summary.kickoffAt,
-        side: p.side,
-      },
-      scoring: scorers.has(p.externalId),
-      assist: assisters.has(p.externalId),
-      carded: carded.has(p.externalId),
-    }));
+  return classifyAppearances(data, provider).map((record) => ({
+    record,
+    fixture: {
+      sofascoreFixtureId: fixture.link.sofascoreFixtureId,
+      flashscoreFixtureId: fixture.link.flashscoreFixtureId,
+      kickoffAt: fixture.sofascore.summary.kickoffAt,
+      // An id no lineup lists has the side its incident gives; never an invented lineup entry.
+      side: record.side ?? "home",
+    },
+  }));
 }
 
 type Identity = {
@@ -244,10 +222,10 @@ function identitiesOf(fixtures: readonly BridgeFixtureInput[]): Identity[] {
   for (const fixture of fixtures) {
     for (const provider of ["sofascore", "flashscore"] as const) {
       for (const a of appearances(fixture, provider)) {
-        const key = `${provider}:${a.player.externalId}`;
+        const key = `${provider}:${a.record.externalId}`;
         const existing = map.get(key);
         if (existing) existing.appearances.push(a);
-        else map.set(key, { provider, externalId: a.player.externalId, appearances: [a] });
+        else map.set(key, { provider, externalId: a.record.externalId, appearances: [a] });
       }
     }
   }
@@ -265,14 +243,42 @@ function identitiesOf(fixtures: readonly BridgeFixtureInput[]): Identity[] {
 function tagsOf(identity: Identity): (BridgePriority | "starter")[] {
   const tags = new Set<BridgePriority | "starter">();
   for (const a of identity.appearances) {
-    if (a.scoring) tags.add("scorer");
-    if (a.assist) tags.add("assister");
-    if (a.carded) tags.add("carded");
-    if (a.player.position === "G") tags.add("goalkeeper");
-    if (a.player.starter) tags.add("starter");
-    else tags.add("substituted");
+    if (a.record.scorer) tags.add("scorer");
+    if (a.record.assister) tags.add("assister");
+    if (a.record.carded) tags.add("carded");
+    if (a.record.lineup?.position === "G") tags.add("goalkeeper");
+    if (a.record.evidence === "STARTER") tags.add("starter");
+    else if (a.record.evidence === "SUBSTITUTED_IN") tags.add("substituted");
   }
   return [...tags].sort();
+}
+
+/** How the identity's participation is evidenced, over every match he appears in. */
+export interface ParticipationSummary {
+  readonly evidence: readonly string[];
+  /** The worst state over his matches: CONTRADICTORY, else UNKNOWN, else VERIFIED. */
+  readonly state: "VERIFIED" | "CONTRADICTORY" | "UNKNOWN";
+  readonly discrepancies: readonly string[];
+  /** True when no lineup lists him in any match (an incident names an id nobody lists). */
+  readonly incidentOnly: boolean;
+  /** Named in a goal, assist, card or missed penalty: points depend on this identity. */
+  readonly scoringRelevant: boolean;
+}
+
+function participationOf(identity: Identity): ParticipationSummary {
+  const records = identity.appearances.map((a) => a.record);
+  const states = new Set(records.map((r) => r.state));
+  return {
+    evidence: [...new Set(records.map((r) => r.evidence))].sort(),
+    state: states.has("CONTRADICTORY")
+      ? "CONTRADICTORY"
+      : states.has("UNKNOWN")
+        ? "UNKNOWN"
+        : "VERIFIED",
+    discrepancies: [...new Set(records.flatMap((r) => r.discrepancies))].sort(),
+    incidentOnly: records.every((r) => r.lineup === null),
+    scoringRelevant: records.some((r) => r.scoringRelevant),
+  };
 }
 
 const affectsOf = (tags: readonly string[]): Affects[] => {
@@ -456,6 +462,7 @@ export async function buildWorklist(input: WorklistInput): Promise<Worklist> {
       externalId: identity.externalId,
       fixtures: fixtureRefs(identity),
       affects: affectsOf(tags),
+      participation: participationOf(identity),
       priority: tags,
       supportingMappings: [] as WorklistRow["supportingMappings"],
       dependsOn: [] as string[],
@@ -553,6 +560,7 @@ export async function buildWorklist(input: WorklistInput): Promise<Worklist> {
       candidateRevision: cand?.rev ?? null,
       fixtures: fixtureRefs(identity),
       affects: affectsOf(tags),
+      participation: participationOf(identity),
       priority: tags,
     };
     const row = async (
@@ -570,6 +578,43 @@ export async function buildWorklist(input: WorklistInput): Promise<Worklist> {
       proposedAuditReason: null,
       ...over,
     });
+
+    // An identity that already has a reviewed Flashscore mapping is not new work.
+    if (index.entryOf("flashscore", id)) continue;
+    if (cand && (cand.status !== "unmapped" || cand.openProposal === true)) {
+      flashRows.set(
+        id,
+        await row({
+          classification: "CONFLICT",
+          evidenceClass: "NONE",
+          evidence: { candidateStatus: cand.status },
+          reasons: ["The candidate is already mapped, ignored, or has an open proposal."],
+        }),
+      );
+      continue;
+    }
+    // An incident names an id that no lineup lists. No lineup entry is invented for him:
+    // there is no side, shirt or position to pair on, so nothing here can be proposed.
+    if (base.participation.incidentOnly) {
+      flashRows.set(
+        id,
+        await row({
+          classification: cand ? "INSUFFICIENT_EVIDENCE" : "CANDIDATE_RECORD_MISSING",
+          evidenceClass: "NONE",
+          evidence: { lineup: "absent", participation: base.participation.state },
+          reasons: ["An incident names this id but no lineup lists it."],
+          missingEvidence: [
+            "A lineup entry (side, shirt number) for this id, or another structured signal tying it to a Sofascore id.",
+            ...(cand
+              ? []
+              : [
+                  "A candidate record for this Flashscore id (none exists; this task creates none).",
+                ]),
+          ],
+        }),
+      );
+      continue;
+    }
 
     if (conflictedFlash.has(id) || conflictCandidates.has(id)) {
       flashRows.set(

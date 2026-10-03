@@ -8,7 +8,11 @@
  */
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
-import { buildEvidence, MANIFEST_PATH } from "../../../scripts/backend/build-gw1-identity-evidence";
+import {
+  buildEvidence,
+  MANIFEST_PATH,
+  ORIGINAL_MANIFEST_PATH,
+} from "../../../scripts/backend/build-gw1-identity-evidence";
 
 const CORROBORATION = "tests/fixtures/identity/gw1-dob-corroboration-2026-10-03.json";
 const built = await buildEvidence({ corroborationPath: CORROBORATION });
@@ -21,14 +25,14 @@ const get = (key: string) => {
 };
 
 describe("REAL PAYLOADS: the worklist and the sealed manifest", () => {
-  test("351 identities, deduplicated by provider id, classified by the five classes", () => {
-    expect(built.worklist.counts.identitiesTotal).toBe(351);
+  test("353 identities, deduplicated by provider id, classified by the five classes", () => {
+    expect(built.worklist.counts.identitiesTotal).toBe(353);
     expect(built.worklist.counts.byProviderAndClass).toEqual({
-      "flashscore|CANDIDATE_RECORD_MISSING": 19,
+      "flashscore|CANDIDATE_RECORD_MISSING": 20,
       "flashscore|INSUFFICIENT_EVIDENCE": 146,
       "flashscore|READY_FOR_BATCH_REVIEW": 53,
       "sofascore|AMBIGUOUS": 2,
-      "sofascore|CANDIDATE_RECORD_MISSING": 11,
+      "sofascore|CANDIDATE_RECORD_MISSING": 12,
       "sofascore|CONFLICT": 40,
       "sofascore|INSUFFICIENT_EVIDENCE": 79,
       "sofascore|READY_FOR_BATCH_REVIEW": 1,
@@ -84,11 +88,22 @@ describe("REAL PAYLOADS: the worklist and the sealed manifest", () => {
     expect(f2.filter((r) => r.priority.includes("goalkeeper"))).toHaveLength(8);
   });
 
-  test("the sealed manifest on disk is the one this code builds, and its hash is deterministic", () => {
+  test("the corrected manifest on disk is the one this code builds, and its hash is deterministic", () => {
     const onDisk = JSON.parse(disk(MANIFEST_PATH)) as unknown;
     expect(onDisk).toEqual(JSON.parse(built.sealed.text));
     expect(disk(MANIFEST_PATH.replace(/\.json$/, ".sha256")).trim()).toBe(built.sealed.sha256);
     expect(built.sealed.sha256).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  test("the ORIGINAL manifest is preserved unchanged as historical evidence", async () => {
+    const { canonicalJson, sha256Hex } =
+      await import("../football/identity/bulk-mapping/canonical");
+    const reported = "4c3d2294e9122b1cd4793854714db6f10bbaf0d083b6b53391b8813f11cb0576";
+    expect(disk(ORIGINAL_MANIFEST_PATH.replace(/\.json$/, ".sha256")).trim()).toBe(reported);
+    // Recomputed from the file's own content (whitespace does not matter to the canonical hash).
+    expect(await sha256Hex(canonicalJson(JSON.parse(disk(ORIGINAL_MANIFEST_PATH))))).toBe(reported);
+    // And it is not the corrected one: the appearance coverage correction changed the counts.
+    expect(built.sealed.sha256).not.toBe(reported);
   });
 
   test("the manifest carries no name, no birth date and says it is review-only", () => {
@@ -144,7 +159,7 @@ describe("REAL PAYLOADS: current (A) against HYPOTHETICAL (B, not production-rev
     tiznitTanger: {
       a: ["incomplete", 3],
       b: ["incomplete", 3],
-      sofaUnres: 19,
+      sofaUnres: 20,
       flashA: 31,
       flashB: 27,
     },

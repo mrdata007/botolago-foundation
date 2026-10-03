@@ -40,8 +40,12 @@ const arg = (name: string) => {
 };
 const DIR = "tests/fixtures/identity/";
 
-export const MANIFEST_PATH =
+/** The first manifest, kept unchanged as historical evidence (it predates the appearance-coverage correction). */
+export const ORIGINAL_MANIFEST_PATH =
   "docs/production/manifests/gw1-identity-evidence-2026-10-03.manifest.json";
+/** The corrected manifest: same inputs, appearance coverage corrected. */
+export const MANIFEST_PATH =
+  "docs/production/manifests/gw1-identity-evidence-2026-10-03.corrected.manifest.json";
 
 export async function buildEvidence(options: { corroborationPath?: string } = {}) {
   const mappings = read<{ capturedAt: string; rows: MappingRowInput[] }>(
@@ -56,10 +60,14 @@ export async function buildEvidence(options: { corroborationPath?: string } = {}
   const squads = read<{ squads: Record<string, number> }>(
     `${DIR}fantasy-squad-app-players-2026-10-03.json`,
   );
-  const corroboration =
-    options.corroborationPath && existsSync(resolve(root, options.corroborationPath))
-      ? read<{ observedAt: string; results: CorroborationResult[] }>(options.corroborationPath)
-      : null;
+  // An explicitly requested file that is missing is an error: silently proceeding without it
+  // would change the READY classifications (and overwrite the sealed manifest) without notice.
+  if (options.corroborationPath && !existsSync(resolve(root, options.corroborationPath))) {
+    throw new Error(`--corroboration file not found: ${options.corroborationPath}`);
+  }
+  const corroboration = options.corroborationPath
+    ? read<{ observedAt: string; results: CorroborationResult[] }>(options.corroborationPath)
+    : null;
   const locked = new Set(Object.keys(squads.squads));
   const snapshot = await buildReviewedIdentitySnapshot(mappings.rows, mappings.capturedAt);
   const loaded = COMMITTED_GW1_MATCHES.map((m) => ({ m, data: loadCommittedMatch(m) }));
