@@ -87,11 +87,31 @@ Everything above is a hypothesis until there is post-release data.
 - FR and AR at 320, 390, 768 and 1440: no horizontal overflow, no console
   errors, RTL mirrored, one H1, focus visible, no running animation under
   reduced motion, no tap target under 44px.
-- Production build against the stub backend, 390×844, 4× CPU, throttled
-  network, 5 runs, medians — first visit to `/`:
-  before (welcome dialog) LCP 5944 ms, CLS 0.261; after (landing) LCP 2060 ms,
-  CLS 0.006; JS +41 KB. `/jouer`: LCP 2048 ms, CLS 0.042. Stub data, not
-  production.
+- Production build against the stub backend (`tests/e2e/built-output-*`),
+  390×844, 4× CPU, throttled network, 5 runs each, medians. Local lab
+  measurements, not production Core Web Vitals:
+
+  | Page                         | `main` LCP / CLS | branch LCP / CLS |
+  | ---------------------------- | ---------------- | ---------------- |
+  | `/` first visit, splash      | 5980 ms / 0.310  | 2088 ms / 0.006  |
+  | `/` first visit, no splash   | 5896 ms / 0.315  | 2188 ms / 0.006  |
+  | `/` returning visitor (Home) | 2064 ms / 0.266  | 2072 ms / 0.257  |
+  | `/jouer`                     | —                | 2044 ms / 0.062  |
+
+  Script on `/` (gzip, every chunk the page loads): first visit 433 → 448 KB
+  (+15 KB: `LandingPage` 5.8, `JerseyVisual` 2.0, the prize client and its
+  schemas about 3, icons and helpers); returning visitor 433 → 435 KB (+2 KB, the
+  new French copy in the dictionary chunk).
+
+## Loading
+
+The landing page is its own chunk on `/` (`lazy`), so signed-in and returning
+readers do not download it. A first visit without an account starts the
+download as soon as the session resolves, while the splash plays; until it
+arrives the screen is the hero's dark ground (Home as the fallback measured
+CLS 0.10 — it kept loading and moving underneath). A chunk that fails to load
+falls back to Home. `/jouer` imports the page directly; the route is already
+its own chunk.
 
 ## Not verified
 

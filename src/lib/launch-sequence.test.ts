@@ -41,7 +41,14 @@ describe("arrival dialogs wait for the launch sequence", () => {
     expect(source).toMatch(
       /const showLanding =\s*mounted &&\s*splashDone &&\s*isHydrated &&\s*status === "anonymous" &&\s*!left &&\s*!hasWelcomed\(\);/,
     );
-    expect(source).toContain("showLanding ? <LandingPage onLeave={leave} /> : <HomeContent />");
+    expect(source).toMatch(
+      /showLanding \? \(\s*<Suspense fallback=\{<LandingFallback \/>\}>\s*<LandingPage onLeave=\{leave\} \/>\s*<\/Suspense>\s*\) : \(\s*<HomeContent \/>\s*\)/,
+    );
+    // Its own chunk: a signed-in or returning reader does not download it.
+    expect(source).not.toContain('import { LandingPage } from "@/components/landing/LandingPage"');
+    expect(source).toContain(
+      'const loadLanding = () => import("@/components/landing/LandingPage");',
+    );
     expect(source).not.toContain('role="dialog"');
   });
 });
