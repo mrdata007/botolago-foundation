@@ -41,8 +41,9 @@ MANIFEST = "docs/production/manifests/gw1-flashscore-executable.v2.manifest.json
 MANIFEST_FILE_SHA256 = "c5a335ec20755534acb3ac75c9dbc4ae8e35df1d4919dcebdefd63ae3dc88c50"
 MANIFEST_IDENTITY_SHA256 = "f2eef95dd199244ca6c48e9a2e0595a39a6bc2e534e7455a41467c7dba17a286"
 
+# Two objects joined with ||: Postgres allows at most 100 arguments (50 pairs) to jsonb_build_object.
 SNAPSHOT_SQL = """
-select jsonb_build_object(
+select (jsonb_build_object(
   'history_rows', (select count(*) from supabase_migrations.schema_migrations),
   'history_has_guard', (select count(*) from supabase_migrations.schema_migrations where version = '20261003120000'),
   'latest_version', (select max(version) from supabase_migrations.schema_migrations),
@@ -68,7 +69,9 @@ select jsonb_build_object(
   'f_map_trig', (select md5(string_agg(tgname || '=' || pg_get_triggerdef(oid), '|' order by tgname)) from pg_catalog.pg_trigger where tgrelid = 'app_private.football_provider_mappings'::regclass and not tgisinternal),
   'f_prop_idx', (select md5(string_agg(indexname || '=' || indexdef, '|' order by indexname)) from pg_catalog.pg_indexes where schemaname = 'app_private' and tablename = 'football_player_mapping_proposals' and indexname <> 'football_player_mapping_proposals_supporting_idx'),
   'f_rel', (select md5(string_agg(c.relname || ':' || coalesce(c.relacl::text, '') || ':' || c.relrowsecurity::text || ':' || c.relforcerowsecurity::text, '|' order by c.relname)) from pg_catalog.pg_class c where c.relnamespace = 'app_private'::regnamespace and c.relname in ('football_provider_mappings', 'football_player_mapping_proposals', 'football_player_mapping_candidates', 'football_player_mapping_observations', 'football_mapping_settings')),
-  'f_fn_acl', (select md5(string_agg(p.oid::regprocedure::text || ':' || coalesce(p.proacl::text, 'null'), '|' order by p.oid::regprocedure::text)) from pg_catalog.pg_proc p where p.pronamespace in ('api'::regnamespace, 'app_private'::regnamespace) and p.proname like '%football_mapping%' and p.proname not in ('football_mapping_compute', 'football_mapping_supporting_state', 'football_mapping_supporting_dependency', 'admin_football_mapping_get_provider_mapping')),
+  'f_fn_acl', (select md5(string_agg(p.oid::regprocedure::text || ':' || coalesce(p.proacl::text, 'null'), '|' order by p.oid::regprocedure::text)) from pg_catalog.pg_proc p where p.pronamespace in ('api'::regnamespace, 'app_private'::regnamespace) and p.proname like '%football_mapping%' and p.proname not in ('football_mapping_compute', 'football_mapping_supporting_state', 'football_mapping_supporting_dependency', 'admin_football_mapping_get_provider_mapping'))
+) || jsonb_build_object(
+
   'mapping_rows', (select count(*) from app_private.football_provider_mappings),
   'mapping_digest', (select md5(coalesce(string_agg(m::text, '|' order by m.id), '')) from app_private.football_provider_mappings m),
   'sofascore_active', (select count(*) from app_private.football_provider_mappings where provider_name = 'sofascore' and active),
@@ -98,7 +101,7 @@ select jsonb_build_object(
   'busy_sessions', (select count(*) from pg_stat_activity where backend_type = 'client backend' and pid <> pg_backend_pid() and state in ('active','idle in transaction','idle in transaction (aborted)')),
   'finalizing_gameweeks', (select count(*) from app.fantasy_gameweeks where status = 'finalizing'),
   'lifecycle_tick_enabled', (select count(*) from app_private.fantasy_automation_settings where lifecycle_tick_enabled)
-) as snapshot
+)) as snapshot
 """
 
 # Facts that must be identical before and after. busy_sessions is a live read, not a state.

@@ -167,6 +167,14 @@ describe("supporting-dependency guard rehearsal runner", () => {
     expect(runner).toContain(`MANIFEST_IDENTITY_SHA256 = "${manifest.manifestSha256}"`);
   });
 
+  it("builds its snapshot as two joined objects (Postgres allows 50 pairs per jsonb_build_object)", () => {
+    expect(runner).toContain(") || jsonb_build_object(");
+    const sql = runner.slice(runner.indexOf('SNAPSHOT_SQL = """'), runner.indexOf("COMPARE_KEYS"));
+    const keys = sql.match(/^ {2}'[a-z_0-9]+', /gm) ?? [];
+    expect(keys.length).toBeGreaterThan(50);
+    expect(keys.length).toBeLessThanOrEqual(100);
+  });
+
   it("can only rehearse: no commit path and the script is never edited", () => {
     expect(runner).toContain("rollback;");
     expect(runner).toContain("active commit;");
