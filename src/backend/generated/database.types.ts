@@ -1667,6 +1667,23 @@ export type Database = {
         }
         Returns: Json
       }
+      service_ai_content_pending_notices: { Args: never; Returns: Json }
+      service_ai_content_plan: { Args: never; Returns: Json }
+      service_ai_content_publish: {
+        Args: {
+          p_editions: Json
+          p_fixture_id: string
+          p_kind: string
+          p_model: string
+          p_sanitizer_version: string
+          p_source_edition_ids: string[]
+        }
+        Returns: Json
+      }
+      service_ai_content_record_notice: {
+        Args: { p_ids: string[]; p_sent: boolean }
+        Returns: undefined
+      }
       service_apply_current_player_list: {
         Args: { p_expected_plan_digest: string; p_observation_id: string }
         Returns: Json

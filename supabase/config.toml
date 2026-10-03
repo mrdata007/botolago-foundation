@@ -407,6 +407,13 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/ops-alert-email/index.ts"
 
+# AI-written Botola Pro 1 content (app_private.ai_content_tick). Same
+# scheduler-token check as ops-alert-email; the feature ships switched off.
+[functions.ai-content-generate]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ai-content-generate/index.ts"
+
 # The List-Unsubscribe target mail providers POST to (RFC 8058 one-click). It
 # carries no credentials by design; the per-email token is the authority and
 # it can only turn email off.
