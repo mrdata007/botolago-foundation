@@ -1994,6 +1994,10 @@ export type Database = {
         }
         Returns: Database["app"]["Enums"]["notification_delivery_status"]
       }
+      service_record_reconciled_fantasy_observation: {
+        Args: { p_dry_run?: boolean; p_fixture_id: string; p_request: Json }
+        Returns: Json
+      }
       service_release_email_deliveries: {
         Args: { p_delivery_ids: string[]; p_retry_at: string }
         Returns: number
