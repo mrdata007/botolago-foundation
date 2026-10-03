@@ -410,6 +410,31 @@ select extensions.is((select evidence_class is null and supporting_mapping_id is
   from app_private.football_player_mapping_proposals where sofascore_candidate_id = (select id from app_private.football_player_mapping_candidates where external_id = 'S20')), true,
   '8.7 it carries no dependency (it rests on nothing outside its own transaction)');
 
+-- A combined proposal is not a way round the dependency: it is allowed only while BOTH identities are new.
+-- Reusing an already-mapped Sofascore candidate, or a player a Sofascore mapping already holds, is refused.
+select pg_temp.put('props_before_combined', (select count(*)::text from app_private.football_player_mapping_proposals));
+select extensions.is((api.admin_football_mapping_propose(jsonb_build_array(
+    jsonb_build_object('kind', 'map', 'sofascoreCandidateId', (select id from app_private.football_player_mapping_candidates where external_id = 'S13'),
+      'flashscoreCandidateId', (select id from app_private.football_player_mapping_candidates where external_id = 'F19'),
+      'appPlayerId', 'a1000000-0000-4000-8000-000000000013', 'basis', 'manual')),
+  'Combined, reusing an already-mapped Sofascore candidate.', gen_random_uuid()) -> 'proposals' -> 0 ->> 'code'), 'already_mapped',
+  '8.8 a combined proposal that reuses an already-mapped Sofascore candidate is refused');
+select extensions.is((api.admin_football_mapping_propose(jsonb_build_array(
+    jsonb_build_object('kind', 'map', 'sofascoreCandidateId', (select id from app_private.football_player_mapping_candidates where external_id = 'S19'),
+      'flashscoreCandidateId', (select id from app_private.football_player_mapping_candidates where external_id = 'F19'),
+      'appPlayerId', 'a1000000-0000-4000-8000-000000000014', 'basis', 'manual')),
+  'Combined, onto a player a Sofascore mapping already holds.', gen_random_uuid()) -> 'proposals' -> 0 ->> 'code'), 'already_mapped',
+  '8.9 a combined proposal onto a player that already has a Sofascore mapping is refused');
+select extensions.is((api.admin_football_mapping_propose(jsonb_build_array(
+    jsonb_build_object('kind', 'map', 'sofascoreCandidateId', (select id from app_private.football_player_mapping_candidates where external_id = 'S13'),
+      'flashscoreCandidateId', (select id from app_private.football_player_mapping_candidates where external_id = 'F19'),
+      'appPlayerId', 'a1000000-0000-4000-8000-000000000013', 'basis', 'manual',
+      'evidenceClass', 'F1_REVIEWED_SOFASCORE_EVENTS', 'supportingMappingId', pg_temp.mapping_of(13), 'evidenceRefs', pg_temp.refs(13))),
+  'Combined, claiming the dependency of the mapping it reuses.', gen_random_uuid()) -> 'proposals' -> 0 ->> 'ok')::boolean, false,
+  '8.10 and naming that mapping as its dependency does not get it through either');
+select extensions.is((select count(*)::text from app_private.football_player_mapping_proposals), pg_temp.get('props_before_combined'),
+  '8.11 none of those refusals created a proposal');
+
 -- ===========================================================================
 -- 9. Invariance
 -- ===========================================================================
