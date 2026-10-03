@@ -38,6 +38,7 @@ import {
   SUBSTITUTION_TOLERANCE_MINUTES,
   keeperConflict,
 } from "./provider-matching";
+import { classifyAppearances } from "./provider-appearances";
 import type { ProviderMatchData } from "./provider-reconciler";
 import { indexReviewedIdentities, type ReviewedIdentitySnapshot } from "./reviewed-identities";
 
@@ -448,12 +449,6 @@ export function bridgeFixture(
   ];
 
   const sofaById = new Map(sofa.lineups.players.map((p) => [p.externalId, p]));
-  const cameOn = new Set(
-    flash.incidents
-      .filter((i) => i.kind === "substitution" && i.playerIn?.externalId)
-      .map((i) => i.playerIn?.externalId as string),
-  );
-
   // Events per (sofascore id, flashscore id), and every partner an entry was aligned to.
   const rawPairEvents = new Map<string, BridgeEvent[]>();
   const sPartners = new Map<string, Set<string>>();
@@ -500,7 +495,11 @@ export function bridgeFixture(
 
   const candidates: FixtureCandidate[] = [];
   const unresolved: BridgeUnresolved[] = [];
-  const flashAppeared = flash.lineups.players.filter((p) => p.starter || cameOn.has(p.externalId));
+  // Every Flashscore player with a lineup entry and some evidence he is in play: a starter, brought
+  // on, or named in a scoring incident. An id no lineup lists has no side or shirt to pair on.
+  const flashAppeared = classifyAppearances(flash, "flashscore").flatMap((r) =>
+    r.lineup ? [r.lineup] : [],
+  );
 
   for (const f of flashAppeared) {
     const fixture: BridgeFixtureRef = {

@@ -20,6 +20,7 @@ import {
   type ProviderMatchData,
   type ReconcileResult,
 } from "./provider-reconciler";
+import { classifyAppearances } from "./provider-appearances";
 import type { ReviewedIdentitySnapshot } from "./reviewed-identities";
 import type { MatchSide } from "../football/provider/performance-contracts";
 
@@ -55,15 +56,46 @@ export interface ProviderIdentityCoverage {
   readonly appearedReviewed: number;
   /** Provider ids of entries who appeared and are NOT reviewed. */
   readonly appearedUnresolvedIds: readonly string[];
+  /** Not a starter and no substitution, but named in a card, goal, assist or missed penalty. Participation UNKNOWN. */
+  readonly benchIncidentUnresolvedIds: readonly string[];
+  /** Ids an incident names that no lineup lists. No lineup entry is invented. */
+  readonly incidentOnlyUnresolvedIds: readonly string[];
+  /** Participation evidence contradicts itself (e.g. a starter with 0 recorded minutes). */
+  readonly contradictoryParticipationIds: readonly string[];
+  /** Positive recorded minutes but no substitution-in incident: the incident feed is incomplete. */
+  readonly substitutionFeedIncompleteIds: readonly string[];
+  readonly appearedUnresolvedStarters: number;
+  /** Unresolved players who came on from the bench: their minutes depend on an unresolved identity. */
+  readonly appearedUnresolvedSubstitutes: number;
+  /** Unresolved players named in a goal, assist, card or missed penalty: points depend on them. */
+  readonly unresolvedWithScoringIncidents: number;
 }
 
 export interface StageVerdict {
+  /** IDENTITIES_RESOLVED: every player who appeared is a reviewed identity on both providers. */
   readonly identityResolved: boolean;
+  /** EVENTS_RECONCILED: the providers' goals, cards and substitutions agree enough not to send the match to review. */
   readonly eventsReconciled: boolean;
+  /**
+   * PARTICIPATION_ESTABLISHED: minutes, goals conceded and clean sheet are verified for every
+   * player, nobody who appeared is unpaired, and no substitution or timeline disagrees.
+   */
+  readonly participationEstablished: boolean;
+  /** SCORING_FIELDS_READY: the reconciler scores the match (full or simple) and holds nobody back. */
+  readonly scoringFieldsReady: boolean;
+  /** Same as `scoringFieldsReady`; kept for the earlier three-stage report. */
   readonly scoringReady: boolean;
-  /** All three. Nothing weaker is ingestion-ready. */
+  /** All four. A legacy full or simple result alone is never ingestion-ready. */
   readonly ingestionReady: boolean;
 }
+
+/** Discrepancies that mean a player's time on the pitch is not established. */
+const PARTICIPATION_CODES: ReadonlySet<string> = new Set([
+  "timeline_disagrees",
+  "substitution_mismatch",
+  "participation_ambiguous",
+  "minutes_mismatch",
+]);
 
 export interface ResultSummary {
   readonly mode: ReconcileResult["mode"];
@@ -143,38 +175,56 @@ function coverageOf(
   data: ProviderMatchData,
   provider: "sofascore" | "flashscore",
   snapshot: ReviewedIdentitySnapshot,
-  cameOn: ReadonlySet<string>,
 ): ProviderIdentityCoverage {
   const reviewedIds = new Set(
     snapshot.entries.filter((e) => e.provider === provider).map((e) => e.externalId),
   );
   const players = data.lineups.players;
-  const appeared = players.filter((p) => p.starter || cameOn.has(`${provider}:${p.externalId}`));
+  const records = classifyAppearances(data, provider);
+  // Accounted for as having taken part: a starter, brought on, or positive recorded minutes.
+  const appeared = records.filter(
+    (r) =>
+      r.lineup !== null &&
+      (r.evidence === "STARTER" ||
+        r.evidence === "SUBSTITUTED_IN" ||
+        r.evidence === "MINUTES_WITHOUT_SUBSTITUTION_INCIDENT"),
+  );
+  const unresolved = appeared.filter((r) => !reviewedIds.has(r.externalId));
+  const ids = (list: readonly { externalId: string }[]) => list.map((r) => r.externalId).sort();
+  const unresolvedOf = (kind: string) =>
+    records.filter((r) => r.evidence === kind && !reviewedIds.has(r.externalId));
+  const allUnresolved = records.filter((r) => !reviewedIds.has(r.externalId));
   return {
     entries: players.length,
     appeared: appeared.length,
     reviewed: players.filter((p) => reviewedIds.has(p.externalId)).length,
-    appearedReviewed: appeared.filter((p) => reviewedIds.has(p.externalId)).length,
-    appearedUnresolvedIds: appeared
-      .filter((p) => !reviewedIds.has(p.externalId))
-      .map((p) => p.externalId)
-      .sort(),
+    appearedReviewed: appeared.filter((r) => reviewedIds.has(r.externalId)).length,
+    appearedUnresolvedIds: ids(unresolved),
+    benchIncidentUnresolvedIds: ids(unresolvedOf("BENCH_INCIDENT_ONLY")),
+    incidentOnlyUnresolvedIds: ids(unresolvedOf("INCIDENT_ONLY_NOT_IN_LINEUP")),
+    contradictoryParticipationIds: ids(allUnresolved.filter((r) => r.state === "CONTRADICTORY")),
+    substitutionFeedIncompleteIds: ids(unresolvedOf("MINUTES_WITHOUT_SUBSTITUTION_INCIDENT")),
+    appearedUnresolvedStarters: unresolved.filter((r) => r.lineup?.starter).length,
+    appearedUnresolvedSubstitutes: unresolved.filter((r) => !r.lineup?.starter).length,
+    unresolvedWithScoringIncidents: allUnresolved.filter((r) => r.scoringRelevant).length,
   };
 }
 
-const cameOnSet = (data: ProviderMatchData, provider: "sofascore" | "flashscore") =>
+/** Ids accounted for as having taken part, with the provider, for the unpaired-appearance count. */
+const participantIds = (data: ProviderMatchData, provider: "sofascore" | "flashscore") =>
   new Set(
-    data.incidents
-      .filter((i) => i.kind === "substitution" && i.playerIn?.externalId)
-      .map((i) => `${provider}:${i.playerIn?.externalId}`),
+    classifyAppearances(data, provider)
+      .filter((r) => r.state !== "UNKNOWN")
+      .map((r) => `${provider}:${r.externalId}`),
   );
 
 export function replayFixture(input: ReplayInput): FixtureReplay {
   const { sofascore, flashscore, snapshot, observedAt } = input;
   const base = { observedAt, sofascore, flashscore };
-  const sofaCame = cameOnSet(sofascore, "sofascore");
-  const flashCame = cameOnSet(flashscore, "flashscore");
-  const appearedIds = new Set([...sofaCame, ...flashCame]);
+  const appearedIds = new Set([
+    ...participantIds(sofascore, "sofascore"),
+    ...participantIds(flashscore, "flashscore"),
+  ]);
   const before = reconcileMatch(base);
   const after = reconcileMatch({ ...base, reviewedIdentities: snapshot });
 
@@ -194,8 +244,8 @@ export function replayFixture(input: ReplayInput): FixtureReplay {
     }
   }
   const coverage = {
-    sofascore: coverageOf(sofascore, "sofascore", snapshot, sofaCame),
-    flashscore: coverageOf(flashscore, "flashscore", snapshot, flashCame),
+    sofascore: coverageOf(sofascore, "sofascore", snapshot),
+    flashscore: coverageOf(flashscore, "flashscore", snapshot),
   };
 
   const afterSummary = summarize(after, appearedIds);
@@ -205,16 +255,43 @@ export function replayFixture(input: ReplayInput): FixtureReplay {
   const identityResolved =
     coverage.sofascore.appearedUnresolvedIds.length === 0 &&
     coverage.flashscore.appearedUnresolvedIds.length === 0 &&
+    // An unresolved identity does not vanish because the substitution feed is incomplete:
+    // a bench card, or an id no lineup lists, still has points that depend on it.
+    [coverage.sofascore, coverage.flashscore].every(
+      (c) =>
+        c.benchIncidentUnresolvedIds.length === 0 &&
+        c.incidentOnlyUnresolvedIds.length === 0 &&
+        c.contradictoryParticipationIds.length === 0,
+    ) &&
     identityConflicts.length === 0 &&
     // Every id may be mapped and still be unpaired (mapped to different people).
     afterSummary.unmatchedAppeared === 0;
   const eventsReconciled = after.mode !== "review";
   const scoringReady = (after.mode === "full" || after.mode === "simple") && after.heldBack === 0;
+  const participationEstablished =
+    eventsReconciled &&
+    afterSummary.unmatchedAppeared === 0 &&
+    !after.discrepancies.some((d) => PARTICIPATION_CODES.has(d.code)) &&
+    [coverage.sofascore, coverage.flashscore].every(
+      (c) =>
+        c.contradictoryParticipationIds.length === 0 &&
+        c.substitutionFeedIncompleteIds.length === 0 &&
+        c.benchIncidentUnresolvedIds.length === 0,
+    ) &&
+    after.players.every(
+      (p) =>
+        p.evidence.minutes?.state === "verified" &&
+        p.evidence.goalsConceded?.state === "verified" &&
+        p.evidence.cleanSheet?.state === "verified",
+    );
   const stages: StageVerdict = {
     identityResolved,
     eventsReconciled,
+    participationEstablished,
+    scoringFieldsReady: scoringReady,
     scoringReady,
-    ingestionReady: identityResolved && eventsReconciled && scoringReady,
+    ingestionReady:
+      identityResolved && eventsReconciled && participationEstablished && scoringReady,
   };
 
   const blockers: string[] = [];
@@ -229,6 +306,31 @@ export function replayFixture(input: ReplayInput): FixtureReplay {
     blockers.push(
       `IDENTITY: ${flashGap} Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet).`,
     );
+  }
+  for (const [name, c] of [
+    ["Sofascore", coverage.sofascore],
+    ["Flashscore", coverage.flashscore],
+  ] as const) {
+    if (c.benchIncidentUnresolvedIds.length > 0) {
+      blockers.push(
+        `IDENTITY: ${c.benchIncidentUnresolvedIds.length} ${name} bench player(s) named in a scoring incident have no reviewed mapping (participation unknown).`,
+      );
+    }
+    if (c.incidentOnlyUnresolvedIds.length > 0) {
+      blockers.push(
+        `IDENTITY: ${c.incidentOnlyUnresolvedIds.length} ${name} id(s) named by an incident are in no lineup and have no reviewed mapping.`,
+      );
+    }
+    if (c.contradictoryParticipationIds.length > 0) {
+      blockers.push(
+        `PARTICIPATION: ${c.contradictoryParticipationIds.length} ${name} player(s) have contradictory participation evidence.`,
+      );
+    }
+    if (c.substitutionFeedIncompleteIds.length > 0) {
+      blockers.push(
+        `PARTICIPATION: ${c.substitutionFeedIncompleteIds.length} ${name} player(s) have recorded minutes but no substitution incident.`,
+      );
+    }
   }
   for (const d of identityConflicts) blockers.push(`IDENTITY: ${d.message}`);
   if (afterSummary.unmatchedAppeared > 0) {
