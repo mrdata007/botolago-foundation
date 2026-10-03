@@ -412,7 +412,9 @@ export function bridgeFixture(
       continue;
     }
     // Event-supported candidates; a shirt-only candidate has no event behind it.
-    const supported = sameSide.filter((id) => (pairEvents.get(`${id}|${f.externalId}`) ?? []).length > 0);
+    const supported = sameSide.filter(
+      (id) => (pairEvents.get(`${id}|${f.externalId}`) ?? []).length > 0,
+    );
     const shirtOnly = sameSide.filter((id) => !supported.includes(id));
     if (supported.length === 0) {
       fail(
@@ -469,7 +471,12 @@ export function bridgeFixture(
     if (squad.has(entry.appPlayerId)) tags.push("in_locked_squad");
     const claimedBy = claimed.get(entry.appPlayerId);
     if (claimedBy !== undefined && claimedBy !== f.externalId) {
-      fail("app_player_claimed_twice", "Another Flashscore entry is already suggested for this app player in this fixture.", events, tags);
+      fail(
+        "app_player_claimed_twice",
+        "Another Flashscore entry is already suggested for this app player in this fixture.",
+        events,
+        tags,
+      );
       continue;
     }
     claimed.set(entry.appPlayerId, f.externalId);

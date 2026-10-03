@@ -15,7 +15,11 @@
  * - SCORING_READY: the reconciler scores the match and holds nobody back.
  * Ingestion is reliable only when all three hold.
  */
-import { reconcileMatch, type ProviderMatchData, type ReconcileResult } from "./provider-reconciler";
+import {
+  reconcileMatch,
+  type ProviderMatchData,
+  type ReconcileResult,
+} from "./provider-reconciler";
 import type { ReviewedIdentitySnapshot } from "./reviewed-identities";
 import type { MatchSide } from "../football/provider/performance-contracts";
 
@@ -117,8 +121,12 @@ function summarize(result: ReconcileResult, appearedIds: ReadonlySet<string>): R
       (u) => u.starter || appearedIds.has(`${u.provider}:${u.providerId}`),
     ).length,
     discrepancyCounts: count(result.discrepancies, (d) => `${d.level}:${d.code}`),
-    fixtureBlockers: result.discrepancies.filter((d) => d.level === "fixture").map((d) => d.message),
-    unknownFields: Object.fromEntries(Object.entries(unknownFields).sort(([a], [b]) => (a < b ? -1 : 1))),
+    fixtureBlockers: result.discrepancies
+      .filter((d) => d.level === "fixture")
+      .map((d) => d.message),
+    unknownFields: Object.fromEntries(
+      Object.entries(unknownFields).sort(([a], [b]) => (a < b ? -1 : 1)),
+    ),
     statusCounts: count(result.players, (p) => p.identityStatus),
     duplicateCanonicalIdentities: duplicates.length,
   };
@@ -191,8 +199,7 @@ export function replayFixture(input: ReplayInput): FixtureReplay {
     coverage.flashscore.appearedUnresolvedIds.length === 0 &&
     afterSummary.duplicateCanonicalIdentities === 0;
   const eventsReconciled = after.mode !== "review";
-  const scoringReady =
-    (after.mode === "full" || after.mode === "simple") && after.heldBack === 0;
+  const scoringReady = (after.mode === "full" || after.mode === "simple") && after.heldBack === 0;
   const stages: StageVerdict = {
     identityResolved,
     eventsReconciled,
@@ -216,9 +223,11 @@ export function replayFixture(input: ReplayInput): FixtureReplay {
   for (const message of afterSummary.fixtureBlockers) blockers.push(`EVENTS: ${message}`);
   if (eventsReconciled && after.heldBack > 0) {
     blockers.push(
-      `EVIDENCE: ${after.heldBack} player(s) held back (${Object.entries(afterSummary.unknownFields)
-        .map(([f, n]) => `${f} unknown for ${n}`)
-        .join(", ") || "unpaired players"}).`,
+      `EVIDENCE: ${after.heldBack} player(s) held back (${
+        Object.entries(afterSummary.unknownFields)
+          .map(([f, n]) => `${f} unknown for ${n}`)
+          .join(", ") || "unpaired players"
+      }).`,
     );
   }
 
