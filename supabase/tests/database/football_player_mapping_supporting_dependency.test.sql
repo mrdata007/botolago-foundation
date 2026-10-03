@@ -199,7 +199,7 @@ select extensions.is((pg_temp.get('r1')::jsonb ->> 'mappingId')::uuid, pg_temp.m
 select extensions.is((pg_temp.get('r1')::jsonb ->> 'appPlayerId'), 'a1000000-0000-4000-8000-000000000001', '2.2 with its canonical player');
 select extensions.is(((pg_temp.get('r1')::jsonb ->> 'active')::boolean and (pg_temp.get('r1')::jsonb ->> 'reviewed')::boolean), true, '2.3 active and reviewed (computed, not read off a prefix)');
 select extensions.is(pg_temp.get('r1')::jsonb ->> 'reviewProvenance', 'executed_proposal', '2.4 the review provenance is an executed proposal');
-select extensions.is((select array_agg(k order by k) from jsonb_object_keys(pg_temp.get('r1')::jsonb) k),
+select extensions.is((select array_agg(k order by k collate "C") from jsonb_object_keys(pg_temp.get('r1')::jsonb) k),
   array['active','appPlayerId','correctedAt','entityType','externalId','manuallyCorrected','mappingId','provenanceProposalId','provider','reviewProvenance','reviewed','sourceVersion','stateDigest','updatedAt'],
   '2.5 only the fields the review needs: no name, no birth date, no secret, no other row');
 -- The state digest must not depend on the session's time zone (a timestamp prints in the session zone).
