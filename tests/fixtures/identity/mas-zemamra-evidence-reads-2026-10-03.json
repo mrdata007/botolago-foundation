@@ -1,0 +1,1280 @@
+{
+  "note": "Read-only production reads (tkewgajrljbwgwedqsxn) for the Maghreb Fes - Zemamra evidence plan. Ids, flags, codes and counts only: no name and no date (a date is a state such as valid, null, jan1, equal, differs). 'legacy' = the catalogue value was typed or imported before provenance existed (migration 20260926060000 seeded it as 'legacy', the lowest priority). SportsMonks (SM) data is the stored current-player-list observations (8 rows taken between 25 September and 1 October 2026: 16 club squads each, plus lineups).",
+  "readAt": "2026-10-03T10:18:44Z",
+  "project": "tkewgajrljbwgwedqsxn",
+  "state": {
+    "sofascoreActiveMappings": 191,
+    "mappingProposalsTotal": 191,
+    "mappingProposalsOpen": 0
+  },
+  "match": {
+    "sofascoreFixtureId": "17132481",
+    "sportsmonksFixtureId": "19874711",
+    "appFixtureId": "432db163-ee21-4bfa-b2ea-199105ff2758",
+    "appHomeTeamId": "0257feb3-4c16-431d-a58b-5faf060576ad",
+    "appAwayTeamId": "dc6fb819-6f3e-4584-ad73-7d567e80d32c",
+    "kickoffEpochSeconds": 1790532000,
+    "kickoffEqualsAppFixture": true,
+    "appLineupRows": 0,
+    "appPerformanceRows": 0,
+    "gameweek": {
+      "sequence": 1,
+      "status": "provisional",
+      "deadlinePassed": true,
+      "lineups": 6,
+      "lockedLineups": 6,
+      "fixtureAssigned": true
+    }
+  },
+  "canonical": [
+    {
+      "sofascoreExt": "1096751",
+      "appPlayerId": "18a56065-bd3c-42a4-a36e-314123f145d1",
+      "role": "identified",
+      "catalogueDobState": "set",
+      "catalogueDobLineage": "legacy",
+      "position": "forward",
+      "fantasy": {
+        "fantasyPlayerId": "79090e3d-9167-45c4-bca8-c6848913e8c6",
+        "footballTeamId": "0257feb3-4c16-431d-a58b-5faf060576ad",
+        "positionCode": "FWD",
+        "price": "7.20",
+        "status": "available",
+        "active": true
+      },
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 1,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 0,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "1140961",
+      "appPlayerId": "9be4bcf8-4e0d-4e76-a630-3c120e1c903d",
+      "role": "identified",
+      "catalogueDobState": "set",
+      "catalogueDobLineage": "legacy",
+      "position": "forward",
+      "fantasy": {
+        "fantasyPlayerId": "3099845a-1c55-49d6-a371-668d0d226d17",
+        "footballTeamId": "0257feb3-4c16-431d-a58b-5faf060576ad",
+        "positionCode": "FWD",
+        "price": "6.60",
+        "status": "available",
+        "active": true
+      },
+      "squadsOpen": 3,
+      "lockedLineups": 2,
+      "gw1PointsRows": 1,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 26,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "1182110",
+      "appPlayerId": "8711cce0-3af4-49a9-9035-fabe7dd528bc",
+      "role": "identified",
+      "catalogueDobState": "set",
+      "catalogueDobLineage": "legacy",
+      "position": "defender",
+      "fantasy": {
+        "fantasyPlayerId": "c90a8588-8fa8-4f29-91c8-fdaf86a9ee25",
+        "footballTeamId": "0257feb3-4c16-431d-a58b-5faf060576ad",
+        "positionCode": "DEF",
+        "price": "5.10",
+        "status": "available",
+        "active": true
+      },
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 1,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 6,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "1525325",
+      "appPlayerId": "50a8ea2c-9559-46d5-8cf3-0da879aabb0b",
+      "role": "identified",
+      "catalogueDobState": "set",
+      "catalogueDobLineage": "legacy",
+      "position": "forward",
+      "fantasy": {
+        "fantasyPlayerId": "90e07233-2bad-47c8-b2ed-23d50f25ad51",
+        "footballTeamId": "dc6fb819-6f3e-4584-ad73-7d567e80d32c",
+        "positionCode": "FWD",
+        "price": "7.20",
+        "status": "available",
+        "active": true
+      },
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 1,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 0,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "1919299",
+      "appPlayerId": "508e12ad-306c-45e2-b71d-45c0ba6f0f2b",
+      "role": "identified",
+      "catalogueDobState": "set",
+      "catalogueDobLineage": "legacy",
+      "position": "forward",
+      "fantasy": {
+        "fantasyPlayerId": "3c5aca65-258d-4529-b79f-ce3d2d31f6fd",
+        "footballTeamId": "0257feb3-4c16-431d-a58b-5faf060576ad",
+        "positionCode": "FWD",
+        "price": "7.20",
+        "status": "available",
+        "active": true
+      },
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 1,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 0,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "544156",
+      "appPlayerId": "cdda738e-7b3b-4de7-922c-3cff32f55f8e",
+      "role": "identified",
+      "catalogueDobState": "set",
+      "catalogueDobLineage": "legacy",
+      "position": "forward",
+      "fantasy": {
+        "fantasyPlayerId": "356c27a6-a2d5-41f0-afdc-b211c84fc62c",
+        "footballTeamId": "0257feb3-4c16-431d-a58b-5faf060576ad",
+        "positionCode": "FWD",
+        "price": "11.00",
+        "status": "available",
+        "active": true
+      },
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 1,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 28,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "919340",
+      "appPlayerId": "924c59cd-afdb-4c05-a49a-58a985b79d70",
+      "role": "identified",
+      "catalogueDobState": "set",
+      "catalogueDobLineage": "legacy",
+      "position": "midfielder",
+      "fantasy": {
+        "fantasyPlayerId": "698f7cb6-c0e8-4801-b852-14db9a3b5d1a",
+        "footballTeamId": "dc6fb819-6f3e-4584-ad73-7d567e80d32c",
+        "positionCode": "MID",
+        "price": "9.30",
+        "status": "available",
+        "active": true
+      },
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 1,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 22,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "2161842",
+      "appPlayerId": "63b9a8cf-0e90-4075-8616-41bb1e810ece",
+      "role": "membership",
+      "catalogueDobState": "set",
+      "catalogueDobLineage": "legacy",
+      "position": "midfielder",
+      "fantasy": null,
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 0,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 24,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "1213241",
+      "appPlayerId": "88076e6e-67fb-405b-a051-4624dff1e19a",
+      "role": "membership",
+      "catalogueDobState": "set",
+      "catalogueDobLineage": "legacy",
+      "position": "midfielder",
+      "fantasy": {
+        "fantasyPlayerId": "df17f9bd-fba5-43fd-a013-bea79c4a3950",
+        "footballTeamId": "7b2e23bc-450f-4eb2-9926-4add1a5386e7",
+        "positionCode": "MID",
+        "price": "6.90",
+        "status": "available",
+        "active": true
+      },
+      "squadsOpen": 3,
+      "lockedLineups": 2,
+      "gw1PointsRows": 1,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 5,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "919753",
+      "appPlayerId": "31b4f6f8-0b17-4d87-8c27-399ca096699e",
+      "role": "hypothesis",
+      "catalogueDobState": "set",
+      "catalogueDobLineage": "legacy",
+      "position": "goalkeeper",
+      "fantasy": {
+        "fantasyPlayerId": "8cf9bc48-c491-4882-9899-098c73eae0bc"
+      },
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 1,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 23,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "1866448",
+      "appPlayerId": "83d9f725-077b-4db4-8b49-6fedff80e05c",
+      "role": "hypothesis",
+      "catalogueDobState": "null",
+      "catalogueDobLineage": null,
+      "position": "defender",
+      "fantasy": null,
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 0,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 0,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "1939981",
+      "appPlayerId": "60958299-7077-41ea-9268-9a3ac6f2b7c2",
+      "role": "sm-anchored",
+      "catalogueDobState": "null",
+      "catalogueDobLineage": null,
+      "position": "forward",
+      "fantasy": null,
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 0,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 0,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "1528418",
+      "appPlayerId": "6cd0cc61-bcd4-476c-98df-747bd5809ef9",
+      "role": "sm-anchored",
+      "catalogueDobState": "null",
+      "catalogueDobLineage": null,
+      "position": "midfielder",
+      "fantasy": {
+        "fantasyPlayerId": "f518baf5-4b3c-450f-b701-65b40694eb3c"
+      },
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 1,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 20,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "2150417",
+      "appPlayerId": "378fc432-eaed-40d1-bf43-84f0b1791685",
+      "role": "sm-anchored",
+      "catalogueDobState": "null",
+      "catalogueDobLineage": null,
+      "position": "forward",
+      "fantasy": {
+        "fantasyPlayerId": "ae19e00a-4bb7-4812-b9dd-ee8c1c0be736"
+      },
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 1,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 26,
+      "performanceRowsThisFixture": 0
+    },
+    {
+      "sofascoreExt": "1525293",
+      "appPlayerId": "e961626d-424d-4bfd-9603-396fe4abe96e",
+      "role": "sm-anchored",
+      "catalogueDobState": "set",
+      "catalogueDobLineage": "legacy",
+      "position": "defender",
+      "fantasy": {
+        "fantasyPlayerId": "2c1d89c6-772e-4e65-8847-6ca8eca03dbb"
+      },
+      "squadsOpen": 0,
+      "lockedLineups": 0,
+      "gw1PointsRows": 1,
+      "gw1ProvisionalPointsSum": 0,
+      "performanceRowsTotal": 25,
+      "performanceRowsThisFixture": 0
+    }
+  ],
+  "smLineup": [
+    {
+      "team": "F",
+      "position": "D",
+      "shirt": 15,
+      "smId": "37317120",
+      "appPlayerId": "8dd1387a-5d76-4dc1-a906-575f8e08289d",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": ["970766"],
+      "sofascoreCandidatesWithSameDate": ["970766"]
+    },
+    {
+      "team": "F",
+      "position": "D",
+      "shirt": 20,
+      "smId": "37603794",
+      "appPlayerId": "8711cce0-3af4-49a9-9035-fabe7dd528bc",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["1182110"]
+    },
+    {
+      "team": "F",
+      "position": "D",
+      "shirt": 21,
+      "smId": "37561341",
+      "appPlayerId": "009def78-8b05-46db-a6ca-286a9bd26124",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": ["1103558"],
+      "sofascoreCandidatesWithSameDate": ["1103558", "1401595"]
+    },
+    {
+      "team": "F",
+      "position": "D",
+      "shirt": 22,
+      "smId": "37348938",
+      "appPlayerId": "0a1f6bcf-662a-4e6b-9af8-587112842ab3",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": []
+    },
+    {
+      "team": "F",
+      "position": "D",
+      "shirt": 27,
+      "smId": "37662297",
+      "appPlayerId": "27509072-16c4-426c-8a68-2b286617af8e",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": ["1095729"],
+      "sofascoreCandidatesWithSameDate": ["1095729"]
+    },
+    {
+      "team": "F",
+      "position": "D",
+      "shirt": 5,
+      "smId": "37308654",
+      "appPlayerId": "94fb5964-bbde-438c-998d-3859e2f86f85",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": ["1004426"],
+      "sofascoreCandidatesWithSameDate": ["1004426", "1525328"]
+    },
+    {
+      "team": "F",
+      "position": "F",
+      "shirt": 14,
+      "smId": "37944517",
+      "appPlayerId": "378fc432-eaed-40d1-bf43-84f0b1791685",
+      "smDate": "valid",
+      "vsCatalogue": "catalogue_null",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["2150417"]
+    },
+    {
+      "team": "F",
+      "position": "F",
+      "shirt": 17,
+      "smId": "37771199",
+      "appPlayerId": "508e12ad-306c-45e2-b71d-45c0ba6f0f2b",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["1919299"]
+    },
+    {
+      "team": "F",
+      "position": "F",
+      "shirt": 23,
+      "smId": "38227320",
+      "appPlayerId": null,
+      "smDate": "valid",
+      "vsCatalogue": "no_player",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["2776312"]
+    },
+    {
+      "team": "F",
+      "position": "F",
+      "shirt": 26,
+      "smId": "37552712",
+      "appPlayerId": "18a56065-bd3c-42a4-a36e-314123f145d1",
+      "smDate": "valid",
+      "vsCatalogue": "differs",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": []
+    },
+    {
+      "team": "F",
+      "position": "F",
+      "shirt": 7,
+      "smId": "37556305",
+      "appPlayerId": "9be4bcf8-4e0d-4e76-a630-3c120e1c903d",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["1140961"]
+    },
+    {
+      "team": "F",
+      "position": "F",
+      "shirt": 9,
+      "smId": "289101",
+      "appPlayerId": "7f383d28-2a44-406a-89f9-697418d5b266",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": ["895127"],
+      "sofascoreCandidatesWithSameDate": ["895127"]
+    },
+    {
+      "team": "F",
+      "position": "G",
+      "shirt": 12,
+      "smId": "38210599",
+      "appPlayerId": "a93d2b4f-7110-491d-876f-ca958e526ca6",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": ["1845576"],
+      "sofascoreCandidatesWithSameDate": ["1845576"]
+    },
+    {
+      "team": "F",
+      "position": "G",
+      "shirt": 16,
+      "smId": "301814",
+      "appPlayerId": "55db263a-4636-467b-8e2f-fd7d909779a5",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": ["1140820"],
+      "sofascoreCandidatesWithSameDate": ["1140820"]
+    },
+    {
+      "team": "F",
+      "position": "M",
+      "shirt": 10,
+      "smId": "529756",
+      "appPlayerId": "46712caf-eac8-4b0c-a714-b00e691ebd53",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": ["940226"],
+      "sofascoreCandidatesWithSameDate": ["940226"]
+    },
+    {
+      "team": "F",
+      "position": "M",
+      "shirt": 19,
+      "smId": "62179",
+      "appPlayerId": "cdda738e-7b3b-4de7-922c-3cff32f55f8e",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["544156"]
+    },
+    {
+      "team": "F",
+      "position": "M",
+      "shirt": 29,
+      "smId": "37529510",
+      "appPlayerId": "bfd155a8-c760-4990-a7f8-32217e5314e4",
+      "smDate": "valid",
+      "vsCatalogue": "differs",
+      "sofascoreMapped": ["1140935"],
+      "sofascoreCandidatesWithSameDate": []
+    },
+    {
+      "team": "F",
+      "position": "M",
+      "shirt": 31,
+      "smId": "37947940",
+      "appPlayerId": "63b9a8cf-0e90-4075-8616-41bb1e810ece",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["2161842"]
+    },
+    {
+      "team": "F",
+      "position": "M",
+      "shirt": 6,
+      "smId": "37720114",
+      "appPlayerId": "b99cd2a8-dea8-4257-8d1d-44879408bba3",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": ["1545316"],
+      "sofascoreCandidatesWithSameDate": ["1008035", "1545316"]
+    },
+    {
+      "team": "F",
+      "position": "M",
+      "shirt": 8,
+      "smId": "37656034",
+      "appPlayerId": "7ab491d5-7f2b-4057-b56d-109ed615e63b",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": ["919329"],
+      "sofascoreCandidatesWithSameDate": ["919329"]
+    },
+    {
+      "team": "Z",
+      "position": "D",
+      "shirt": 14,
+      "smId": "37758313",
+      "appPlayerId": "83d9f725-077b-4db4-8b49-6fedff80e05c",
+      "smDate": "null",
+      "vsCatalogue": "catalogue_null",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": []
+    },
+    {
+      "team": "Z",
+      "position": "D",
+      "shirt": 3,
+      "smId": "37659115",
+      "appPlayerId": "ae0ab01c-f1b3-4f7e-b573-561cbb5be5dd",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": ["1457867"],
+      "sofascoreCandidatesWithSameDate": ["1457867", "2228620"]
+    },
+    {
+      "team": "Z",
+      "position": "D",
+      "shirt": 4,
+      "smId": "37317081",
+      "appPlayerId": "5d842171-112e-48a3-90e9-e89ccaa55688",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": ["1140922"],
+      "sofascoreCandidatesWithSameDate": ["1140922"]
+    },
+    {
+      "team": "Z",
+      "position": "D",
+      "shirt": 97,
+      "smId": "37714454",
+      "appPlayerId": "e961626d-424d-4bfd-9603-396fe4abe96e",
+      "smDate": "valid",
+      "vsCatalogue": "differs",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["1525293"]
+    },
+    {
+      "team": "Z",
+      "position": "F",
+      "shirt": 18,
+      "smId": "38227313",
+      "appPlayerId": null,
+      "smDate": "valid",
+      "vsCatalogue": "no_player",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["2776292"]
+    },
+    {
+      "team": "Z",
+      "position": "F",
+      "shirt": 20,
+      "smId": "38227314",
+      "appPlayerId": null,
+      "smDate": "jan1",
+      "vsCatalogue": "no_player",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": []
+    },
+    {
+      "team": "Z",
+      "position": "F",
+      "shirt": 31,
+      "smId": "37317039",
+      "appPlayerId": "924c59cd-afdb-4c05-a49a-58a985b79d70",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["919340"]
+    },
+    {
+      "team": "Z",
+      "position": "F",
+      "shirt": 7,
+      "smId": "37714310",
+      "appPlayerId": "50a8ea2c-9559-46d5-8cf3-0da879aabb0b",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["1525325"]
+    },
+    {
+      "team": "Z",
+      "position": "F",
+      "shirt": 77,
+      "smId": "37780256",
+      "appPlayerId": "60958299-7077-41ea-9268-9a3ac6f2b7c2",
+      "smDate": "valid",
+      "vsCatalogue": "catalogue_null",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["1939981"]
+    },
+    {
+      "team": "Z",
+      "position": "F",
+      "shirt": 9,
+      "smId": "37701584",
+      "appPlayerId": "6cd0cc61-bcd4-476c-98df-747bd5809ef9",
+      "smDate": "valid",
+      "vsCatalogue": "catalogue_null",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["1528418"]
+    },
+    {
+      "team": "Z",
+      "position": "G",
+      "shirt": 1,
+      "smId": "29378699",
+      "appPlayerId": "31b4f6f8-0b17-4d87-8c27-399ca096699e",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": []
+    },
+    {
+      "team": "Z",
+      "position": "G",
+      "shirt": 22,
+      "smId": "37317068",
+      "appPlayerId": "7fadf7f2-51f1-4bdf-87b1-69e378c85274",
+      "smDate": "valid",
+      "vsCatalogue": "catalogue_null",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["1008634"]
+    },
+    {
+      "team": "Z",
+      "position": "M",
+      "shirt": 10,
+      "smId": "37682060",
+      "appPlayerId": "95f1238d-54f0-4afa-a1e2-9da17a067581",
+      "smDate": "valid",
+      "vsCatalogue": "equal",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": []
+    },
+    {
+      "team": "Z",
+      "position": "M",
+      "shirt": 11,
+      "smId": "38227321",
+      "appPlayerId": null,
+      "smDate": "null",
+      "vsCatalogue": "no_player",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": []
+    },
+    {
+      "team": "Z",
+      "position": "M",
+      "shirt": 13,
+      "smId": "38227310",
+      "appPlayerId": null,
+      "smDate": "valid",
+      "vsCatalogue": "no_player",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["1177366", "2776291"]
+    },
+    {
+      "team": "Z",
+      "position": "M",
+      "shirt": 16,
+      "smId": "37574426",
+      "appPlayerId": null,
+      "smDate": "valid",
+      "vsCatalogue": "no_player",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": ["1213241"]
+    },
+    {
+      "team": "Z",
+      "position": "M",
+      "shirt": 30,
+      "smId": "37759312",
+      "appPlayerId": null,
+      "smDate": "null",
+      "vsCatalogue": "no_player",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": []
+    },
+    {
+      "team": "Z",
+      "position": "M",
+      "shirt": 6,
+      "smId": "37772948",
+      "appPlayerId": "1e22e6db-d57c-4b0f-aa51-cddcc82daf6c",
+      "smDate": "jan1",
+      "vsCatalogue": "differs",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": []
+    },
+    {
+      "team": "Z",
+      "position": null,
+      "shirt": 21,
+      "smId": "38227322",
+      "appPlayerId": null,
+      "smDate": "null",
+      "vsCatalogue": "no_player",
+      "sofascoreMapped": [],
+      "sofascoreCandidatesWithSameDate": []
+    }
+  ],
+  "smCross": {
+    "1004523": {
+      "matches": [],
+      "nSofascoreSameDate": 3,
+      "note": "provider date is a 1 January placeholder"
+    },
+    "1096751": {
+      "matches": [
+        {
+          "smId": "37552712",
+          "appPlayerId": "18a56065-bd3c-42a4-a36e-314123f145d1",
+          "vsCatalogue": "equal",
+          "smTeam": "F",
+          "matchesSmLatest": false
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "1140961": {
+      "matches": [
+        {
+          "smId": "37556305",
+          "appPlayerId": "9be4bcf8-4e0d-4e76-a630-3c120e1c903d",
+          "vsCatalogue": "equal",
+          "smTeam": "F",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "1182110": {
+      "matches": [
+        {
+          "smId": "37603794",
+          "appPlayerId": "8711cce0-3af4-49a9-9035-fabe7dd528bc",
+          "vsCatalogue": "equal",
+          "smTeam": "F",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "1213241": {
+      "matches": [
+        {
+          "smId": "37574426",
+          "appPlayerId": null,
+          "vsCatalogue": "no_player",
+          "smTeam": "Z",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "1525293": {
+      "matches": [
+        {
+          "smId": "37714454",
+          "appPlayerId": "e961626d-424d-4bfd-9603-396fe4abe96e",
+          "vsCatalogue": "differs",
+          "smTeam": "Z",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "1525325": {
+      "matches": [
+        {
+          "smId": "37714310",
+          "appPlayerId": "50a8ea2c-9559-46d5-8cf3-0da879aabb0b",
+          "vsCatalogue": "equal",
+          "smTeam": "Z",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "1528418": {
+      "matches": [
+        {
+          "smId": "37701584",
+          "appPlayerId": "6cd0cc61-bcd4-476c-98df-747bd5809ef9",
+          "vsCatalogue": "catalogue_null",
+          "smTeam": "Z",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "1894253": {
+      "matches": [],
+      "nSofascoreSameDate": 1
+    },
+    "1919276": {
+      "matches": [],
+      "nSofascoreSameDate": 1
+    },
+    "1919299": {
+      "matches": [
+        {
+          "smId": "37771199",
+          "appPlayerId": "508e12ad-306c-45e2-b71d-45c0ba6f0f2b",
+          "vsCatalogue": "equal",
+          "smTeam": "F",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "1939981": {
+      "matches": [
+        {
+          "smId": "37780256",
+          "appPlayerId": "60958299-7077-41ea-9268-9a3ac6f2b7c2",
+          "vsCatalogue": "catalogue_null",
+          "smTeam": "Z",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "2150417": {
+      "matches": [
+        {
+          "smId": "37944517",
+          "appPlayerId": "378fc432-eaed-40d1-bf43-84f0b1791685",
+          "vsCatalogue": "catalogue_null",
+          "smTeam": "F",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "2161842": {
+      "matches": [
+        {
+          "smId": "37947940",
+          "appPlayerId": "63b9a8cf-0e90-4075-8616-41bb1e810ece",
+          "vsCatalogue": "equal",
+          "smTeam": "F",
+          "matchesSmLatest": true
+        },
+        {
+          "smId": "38227319",
+          "appPlayerId": null,
+          "vsCatalogue": "no_player",
+          "smTeam": "F",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "2776291": {
+      "matches": [
+        {
+          "smId": "38209165",
+          "appPlayerId": "d5f53ee6-0ad8-4042-9461-e19b3be81f6b",
+          "vsCatalogue": "equal",
+          "smTeam": "other",
+          "matchesSmLatest": true
+        },
+        {
+          "smId": "38227310",
+          "appPlayerId": null,
+          "vsCatalogue": "no_player",
+          "smTeam": "Z",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 2
+    },
+    "2776292": {
+      "matches": [
+        {
+          "smId": "38227313",
+          "appPlayerId": null,
+          "vsCatalogue": "no_player",
+          "smTeam": "Z",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "2790099": {
+      "matches": [],
+      "nSofascoreSameDate": 0,
+      "note": "provider date is missing"
+    },
+    "2790119": {
+      "matches": [],
+      "nSofascoreSameDate": 1
+    },
+    "544156": {
+      "matches": [
+        {
+          "smId": "62179",
+          "appPlayerId": "cdda738e-7b3b-4de7-922c-3cff32f55f8e",
+          "vsCatalogue": "equal",
+          "smTeam": "F",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    },
+    "919340": {
+      "matches": [
+        {
+          "smId": "37317039",
+          "appPlayerId": "924c59cd-afdb-4c05-a49a-58a985b79d70",
+          "vsCatalogue": "equal",
+          "smTeam": "Z",
+          "matchesSmLatest": true
+        }
+      ],
+      "nSofascoreSameDate": 1
+    }
+  },
+  "smRevisions": [
+    {
+      "smId": "37317162",
+      "appPlayerId": "90869451-b533-47b4-81fa-6db6672b5afc",
+      "earlierEqualsCatalogue": true,
+      "latestEqualsCatalogue": false,
+      "sofascoreCandidatesWithEarlierDate": 1,
+      "sofascoreCandidatesWithLatestDate": 0
+    },
+    {
+      "smId": "37529510",
+      "appPlayerId": "bfd155a8-c760-4990-a7f8-32217e5314e4",
+      "earlierEqualsCatalogue": true,
+      "latestEqualsCatalogue": false,
+      "sofascoreCandidatesWithEarlierDate": 1,
+      "sofascoreCandidatesWithLatestDate": 0
+    },
+    {
+      "smId": "37552712",
+      "appPlayerId": "18a56065-bd3c-42a4-a36e-314123f145d1",
+      "earlierEqualsCatalogue": true,
+      "latestEqualsCatalogue": false,
+      "sofascoreCandidatesWithEarlierDate": 1,
+      "sofascoreCandidatesWithLatestDate": 0
+    },
+    {
+      "smId": "37714454",
+      "appPlayerId": "e961626d-424d-4bfd-9603-396fe4abe96e",
+      "earlierEqualsCatalogue": true,
+      "latestEqualsCatalogue": false,
+      "sofascoreCandidatesWithEarlierDate": 0,
+      "sofascoreCandidatesWithLatestDate": 1
+    }
+  ],
+  "pool12": [
+    {
+      "appPlayerId": "027db878-76ca-4636-8525-b083c94b99aa",
+      "club": "F",
+      "catalogueDob": "null",
+      "position": "G",
+      "smMappingActive": true,
+      "smId": null,
+      "smEntries": 0,
+      "smValidEntries": 0,
+      "smNullEntries": 0,
+      "smDistinctValidDates": 0,
+      "smInMatchLineup": false,
+      "sofascoreIdsWithSameSmDate": [],
+      "note": null,
+      "attributeObservations": 0,
+      "pepitesSnapshotHasDate": false
+    },
+    {
+      "appPlayerId": "31373eab-620b-437f-8e00-de64bd947d31",
+      "club": "F",
+      "catalogueDob": "null",
+      "position": "F",
+      "smMappingActive": true,
+      "smId": "37694656",
+      "smEntries": 7,
+      "smValidEntries": 4,
+      "smNullEntries": 3,
+      "smDistinctValidDates": 1,
+      "smInMatchLineup": false,
+      "sofascoreIdsWithSameSmDate": [],
+      "note": "SM gives the date in 4 of 7 entries and null in 3; never two different dates",
+      "attributeObservations": 0,
+      "pepitesSnapshotHasDate": false
+    },
+    {
+      "appPlayerId": "378fc432-eaed-40d1-bf43-84f0b1791685",
+      "club": "F",
+      "catalogueDob": "null",
+      "position": "F",
+      "smMappingActive": true,
+      "smId": "37944517",
+      "smEntries": 5,
+      "smValidEntries": 5,
+      "smNullEntries": 0,
+      "smDistinctValidDates": 1,
+      "smInMatchLineup": true,
+      "sofascoreIdsWithSameSmDate": ["2150417"],
+      "note": null,
+      "attributeObservations": 0,
+      "pepitesSnapshotHasDate": false
+    },
+    {
+      "appPlayerId": "6cd0cc61-bcd4-476c-98df-747bd5809ef9",
+      "club": "F",
+      "catalogueDob": "null",
+      "position": "M",
+      "smMappingActive": true,
+      "smId": "37701584",
+      "smEntries": 5,
+      "smValidEntries": 5,
+      "smNullEntries": 0,
+      "smDistinctValidDates": 1,
+      "smInMatchLineup": true,
+      "sofascoreIdsWithSameSmDate": ["1528418"],
+      "note": "SM lists him for Zemamra on the match day; the catalogue has him active at Maghreb Fes",
+      "attributeObservations": 0,
+      "pepitesSnapshotHasDate": false
+    },
+    {
+      "appPlayerId": "6e098f0c-71cd-42bd-a200-37a56e11cb7b",
+      "club": "F",
+      "catalogueDob": "null",
+      "position": "G",
+      "smMappingActive": true,
+      "smId": null,
+      "smEntries": 0,
+      "smValidEntries": 0,
+      "smNullEntries": 0,
+      "smDistinctValidDates": 0,
+      "smInMatchLineup": false,
+      "sofascoreIdsWithSameSmDate": [],
+      "note": null,
+      "attributeObservations": 0,
+      "pepitesSnapshotHasDate": false
+    },
+    {
+      "appPlayerId": "ba5850ab-287a-4a90-ba0d-8b60c2f54b3c",
+      "club": "F",
+      "catalogueDob": "null",
+      "position": "D",
+      "smMappingActive": true,
+      "smId": null,
+      "smEntries": 0,
+      "smValidEntries": 0,
+      "smNullEntries": 0,
+      "smDistinctValidDates": 0,
+      "smInMatchLineup": false,
+      "sofascoreIdsWithSameSmDate": [],
+      "note": null,
+      "attributeObservations": 0,
+      "pepitesSnapshotHasDate": false
+    },
+    {
+      "appPlayerId": "469b5717-e05e-4c7d-942a-a2e7757a5595",
+      "club": "Z",
+      "catalogueDob": "null",
+      "position": "M",
+      "smMappingActive": true,
+      "smId": null,
+      "smEntries": 0,
+      "smValidEntries": 0,
+      "smNullEntries": 0,
+      "smDistinctValidDates": 0,
+      "smInMatchLineup": false,
+      "sofascoreIdsWithSameSmDate": [],
+      "note": null,
+      "attributeObservations": 0,
+      "pepitesSnapshotHasDate": false
+    },
+    {
+      "appPlayerId": "5c9288e3-3ece-43bc-82cd-ffc927853870",
+      "club": "Z",
+      "catalogueDob": "null",
+      "position": "F",
+      "smMappingActive": true,
+      "smId": null,
+      "smEntries": 0,
+      "smValidEntries": 0,
+      "smNullEntries": 0,
+      "smDistinctValidDates": 0,
+      "smInMatchLineup": false,
+      "sofascoreIdsWithSameSmDate": [],
+      "note": null,
+      "attributeObservations": 0,
+      "pepitesSnapshotHasDate": false
+    },
+    {
+      "appPlayerId": "7fadf7f2-51f1-4bdf-87b1-69e378c85274",
+      "club": "Z",
+      "catalogueDob": "null",
+      "position": "G",
+      "smMappingActive": true,
+      "smId": "37317068",
+      "smEntries": 5,
+      "smValidEntries": 5,
+      "smNullEntries": 0,
+      "smDistinctValidDates": 1,
+      "smInMatchLineup": true,
+      "sofascoreIdsWithSameSmDate": ["1008634"],
+      "note": "1008634 is the unused substitute goalkeeper, not one of the 22",
+      "attributeObservations": 0,
+      "pepitesSnapshotHasDate": false
+    },
+    {
+      "appPlayerId": "d56483a5-54af-4374-b166-841d5ae33642",
+      "club": "Z",
+      "catalogueDob": "null",
+      "position": "D",
+      "smMappingActive": true,
+      "smId": null,
+      "smEntries": 0,
+      "smValidEntries": 0,
+      "smNullEntries": 0,
+      "smDistinctValidDates": 0,
+      "smInMatchLineup": false,
+      "sofascoreIdsWithSameSmDate": [],
+      "note": null,
+      "attributeObservations": 0,
+      "pepitesSnapshotHasDate": false
+    },
+    {
+      "appPlayerId": "da57009b-388e-4d28-9378-187bebc988c2",
+      "club": "Z",
+      "catalogueDob": "null",
+      "position": "M",
+      "smMappingActive": true,
+      "smId": null,
+      "smEntries": 0,
+      "smValidEntries": 0,
+      "smNullEntries": 0,
+      "smDistinctValidDates": 0,
+      "smInMatchLineup": false,
+      "sofascoreIdsWithSameSmDate": [],
+      "note": null,
+      "attributeObservations": 0,
+      "pepitesSnapshotHasDate": false
+    },
+    {
+      "appPlayerId": "e5aebe61-2157-43e7-b1ab-928e4280507e",
+      "club": "Z",
+      "catalogueDob": "jan1",
+      "position": "D",
+      "smMappingActive": true,
+      "smId": null,
+      "smEntries": 0,
+      "smValidEntries": 0,
+      "smNullEntries": 0,
+      "smDistinctValidDates": 0,
+      "smInMatchLineup": false,
+      "sofascoreIdsWithSameSmDate": [],
+      "note": null,
+      "attributeObservations": 1,
+      "pepitesSnapshotHasDate": true,
+      "attributeObservationSource": "legacy (the placeholder itself)"
+    }
+  ],
+  "membership": {
+    "2161842": {
+      "appPlayerId": "63b9a8cf-0e90-4075-8616-41bb1e810ece",
+      "smId": "37947940",
+      "catalogueActiveMembershipAtObservedClub": false,
+      "catalogueActiveMembershipAnywhere": false,
+      "catalogueLastMembershipClubIsNotTheObservedClub": true,
+      "catalogueLastMembershipClosedBeforeMatch": true,
+      "performanceRowsAtOtherClub": 24,
+      "performanceRowsAtOtherClubAppeared": 22,
+      "lastPerformanceBeforeMatch": true,
+      "smMatchLineupClub": "F",
+      "smMatchLineupShirtEqualsSofascoreMatchShirt": true,
+      "smFirstSeenInClubSquadAfterMatchDay": true,
+      "smSecondIdWithSameDateAtFes": "38227319",
+      "fantasyPlayer": false
+    },
+    "1213241": {
+      "appPlayerId": "88076e6e-67fb-405b-a051-4624dff1e19a",
+      "smIdOfCanonicalPlayer": "37603706",
+      "smIdOfCanonicalPlayerInAnyStoredObservation": false,
+      "absenceIsNotEvidence": true,
+      "catalogueActiveMembershipClub": "RSB Berkane",
+      "catalogueSeasonMembershipCreatedBeforeMatch": true,
+      "catalogueMembershipStartIsTheSeasonDefault": true,
+      "performanceRowsAtCatalogueClub": 5,
+      "lastPerformanceBeforeMatch": true,
+      "smSecondIdWithSameDate": "37574426",
+      "smSecondIdMatchLineupClub": "Z",
+      "smSecondIdMappedToAppPlayer": false,
+      "smSecondIdShirtEqualsSofascoreMatchShirt": true,
+      "fantasyPlayerClubIsCatalogueClub": true
+    }
+  },
+  "coverage": [
+    {
+      "club": "maghreb-fes",
+      "catalogueActive": 37,
+      "inSmSquad": 26,
+      "notInSmSquad": 11
+    },
+    {
+      "club": "cr-khemis-zemamra",
+      "catalogueActive": 40,
+      "inSmSquad": 18,
+      "notInSmSquad": 22
+    },
+    {
+      "club": "rsb-berkane",
+      "catalogueActive": 36,
+      "inSmSquad": 29,
+      "notInSmSquad": 7
+    }
+  ],
+  "smUnmapped": {
+    "F": {
+      "count": 5,
+      "valid": 5,
+      "jan1": 0,
+      "null": 0
+    },
+    "Z": {
+      "count": 16,
+      "valid": 9,
+      "jan1": 4,
+      "null": 3
+    },
+    "validDateSharedWithAnAppPlayer": 7,
+    "validDateSharedWithNoAppPlayer": 7
+  }
+}
