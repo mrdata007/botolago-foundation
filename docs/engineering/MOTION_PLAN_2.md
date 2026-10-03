@@ -1,6 +1,6 @@
 # Motion plan, round 2: fourteen more animations
 
-Status: **in progress.** Follows `MOTION_PLAN.md` (all of round 1 is live) and
+Status: **all fourteen built (three batches); not yet merged.** Follows `MOTION_PLAN.md` (all of round 1 is live) and
 uses the same toolkit (`src/lib/motion.ts`, the utilities in `src/styles.css`)
 and the same rules: reduced motion respected in CSS and in every JS-driven
 effect, RTL-aware, `transform` and `opacity` only, the server render shows the
@@ -44,6 +44,24 @@ Built in three batches, one pull request each.
     the hero picture drifts a little as you scroll.
 14. **Search.** Results fade in one after another and the letters you typed are
     highlighted (accents ignored).
+
+## Notes from building
+
+- **Theme cross-fade (4):** dark mode is switched off in the product
+  (`DARK_MODE_ENABLED = false`), so the theme cross-fade only runs when it is
+  on. The language switch is the live case: a language that is already loaded
+  cross-fades through one view transition (checked: Arabic to French flips the
+  direction inside it); one still downloading switches when it arrives, as before.
+- **Points arriving (8):** the pitch lines already drop in row by row; the new
+  part is that a player's points pop whenever they change while the screen is
+  open (a live gameweek).
+- **Onboarding (11):** the welcome screen already had its own entrance
+  animations; the new motion is the Fantasy first-run steps (slide in, one bar
+  that fills).
+- **Article (13):** the progress line stays under reduced motion (it is the
+  scroll position drawn as a line); the hero parallax does not. News is
+  switched off on the test backend, so the article effects were checked on a
+  scratch page.
 
 ## Out of scope
 
