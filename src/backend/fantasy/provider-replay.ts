@@ -55,15 +55,38 @@ export interface ProviderIdentityCoverage {
   readonly appearedReviewed: number;
   /** Provider ids of entries who appeared and are NOT reviewed. */
   readonly appearedUnresolvedIds: readonly string[];
+  readonly appearedUnresolvedStarters: number;
+  /** Unresolved players who came on from the bench: their minutes depend on an unresolved identity. */
+  readonly appearedUnresolvedSubstitutes: number;
+  /** Unresolved players named in a goal, assist, card or missed penalty: points depend on them. */
+  readonly unresolvedWithScoringIncidents: number;
 }
 
 export interface StageVerdict {
+  /** IDENTITIES_RESOLVED: every player who appeared is a reviewed identity on both providers. */
   readonly identityResolved: boolean;
+  /** EVENTS_RECONCILED: the providers' goals, cards and substitutions agree enough not to send the match to review. */
   readonly eventsReconciled: boolean;
+  /**
+   * PARTICIPATION_ESTABLISHED: minutes, goals conceded and clean sheet are verified for every
+   * player, nobody who appeared is unpaired, and no substitution or timeline disagrees.
+   */
+  readonly participationEstablished: boolean;
+  /** SCORING_FIELDS_READY: the reconciler scores the match (full or simple) and holds nobody back. */
+  readonly scoringFieldsReady: boolean;
+  /** Same as `scoringFieldsReady`; kept for the earlier three-stage report. */
   readonly scoringReady: boolean;
-  /** All three. Nothing weaker is ingestion-ready. */
+  /** All four. A legacy full or simple result alone is never ingestion-ready. */
   readonly ingestionReady: boolean;
 }
+
+/** Discrepancies that mean a player's time on the pitch is not established. */
+const PARTICIPATION_CODES: ReadonlySet<string> = new Set([
+  "timeline_disagrees",
+  "substitution_mismatch",
+  "participation_ambiguous",
+  "minutes_mismatch",
+]);
 
 export interface ResultSummary {
   readonly mode: ReconcileResult["mode"];
@@ -150,15 +173,21 @@ function coverageOf(
   );
   const players = data.lineups.players;
   const appeared = players.filter((p) => p.starter || cameOn.has(`${provider}:${p.externalId}`));
+  const unresolved = appeared.filter((p) => !reviewedIds.has(p.externalId));
+  const scoring = new Set<string>();
+  for (const i of data.incidents) {
+    if (i.kind === "substitution") continue;
+    for (const ref of [i.player, i.assist]) if (ref?.externalId) scoring.add(ref.externalId);
+  }
   return {
     entries: players.length,
     appeared: appeared.length,
     reviewed: players.filter((p) => reviewedIds.has(p.externalId)).length,
     appearedReviewed: appeared.filter((p) => reviewedIds.has(p.externalId)).length,
-    appearedUnresolvedIds: appeared
-      .filter((p) => !reviewedIds.has(p.externalId))
-      .map((p) => p.externalId)
-      .sort(),
+    appearedUnresolvedIds: unresolved.map((p) => p.externalId).sort(),
+    appearedUnresolvedStarters: unresolved.filter((p) => p.starter).length,
+    appearedUnresolvedSubstitutes: unresolved.filter((p) => !p.starter).length,
+    unresolvedWithScoringIncidents: unresolved.filter((p) => scoring.has(p.externalId)).length,
   };
 }
 
@@ -210,11 +239,24 @@ export function replayFixture(input: ReplayInput): FixtureReplay {
     afterSummary.unmatchedAppeared === 0;
   const eventsReconciled = after.mode !== "review";
   const scoringReady = (after.mode === "full" || after.mode === "simple") && after.heldBack === 0;
+  const participationEstablished =
+    eventsReconciled &&
+    afterSummary.unmatchedAppeared === 0 &&
+    !after.discrepancies.some((d) => PARTICIPATION_CODES.has(d.code)) &&
+    after.players.every(
+      (p) =>
+        p.evidence.minutes?.state === "verified" &&
+        p.evidence.goalsConceded?.state === "verified" &&
+        p.evidence.cleanSheet?.state === "verified",
+    );
   const stages: StageVerdict = {
     identityResolved,
     eventsReconciled,
+    participationEstablished,
+    scoringFieldsReady: scoringReady,
     scoringReady,
-    ingestionReady: identityResolved && eventsReconciled && scoringReady,
+    ingestionReady:
+      identityResolved && eventsReconciled && participationEstablished && scoringReady,
   };
 
   const blockers: string[] = [];
