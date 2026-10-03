@@ -1,4 +1,4 @@
-import type { CandidateDto } from "../mapping-contracts";
+import type { CandidateDto, ProposalDto } from "../mapping-contracts";
 import { loadAllProposals, loadOptions, readOptionSignals } from "../review-queue";
 import type { BulkRowState } from "./contract";
 import {
@@ -142,3 +142,22 @@ export const flashscoreProfile: BulkProfile<FlashscoreRow> = {
     return verdict.ok ? null : { state: verdict.state, code: verdict.code };
   },
 };
+
+/**
+ * The same supporting-mapping check, for ONE proposal executed outside the bulk runner (the
+ * ordinary proposal queue). The reviewed backend does not look at the supporting Sofascore
+ * mapping, so every execution path in this client re-reads it first. A Flashscore proposal for a
+ * candidate the manifest covers is checked whatever its reason says; one the manifest does not
+ * cover has no supporting binding to check and is left to the backend. Returns the refusal, or null.
+ */
+export async function guardFlashscoreExecute(
+  deps: ProfileDeps,
+  rows: readonly FlashscoreRow[],
+  proposal: Pick<ProposalDto, "kind" | "flashscoreCandidateId">,
+): Promise<{ readonly state: BulkRowState; readonly code: string } | null> {
+  if (proposal.kind !== "map" || proposal.flashscoreCandidateId === null) return null;
+  const row = rows.find((r) => r.candidateId === proposal.flashscoreCandidateId);
+  if (!row) return null;
+  const verdict = await beforeExecute(deps, row);
+  return verdict.ok ? null : { state: verdict.state, code: verdict.code };
+}

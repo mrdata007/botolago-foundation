@@ -217,6 +217,14 @@ export interface MappingActions {
 export function createMappingActions(
   repository: PlayerMappingRepository,
   context: () => RepositoryContext,
+  options: {
+    /**
+     * An extra check immediately before one execution, from fresh reads. A refusal is raised as
+     * `stale_evidence`. (The Flashscore batch's supporting-mapping re-check: the database does not
+     * make it, so it must happen on every path that executes.)
+     */
+    readonly guardExecute?: (proposal: ProposalDto) => Promise<{ readonly code: string } | null>;
+  } = {},
 ): MappingActions {
   const key = () => globalThis.crypto.randomUUID();
   // One idempotency key per proposal for the life of this screen: a double press
@@ -293,6 +301,7 @@ export function createMappingActions(
         });
       if (fresh.fingerprint !== proposal.fingerprint)
         throw mapMappingError({ message: "fingerprint_mismatch" });
+      if (await options.guardExecute?.(fresh)) throw mapMappingError({ message: "stale_evidence" });
       // The database re-checks everything again (staff, AAL2, recent sign-in,
       // the fingerprint of the stored row, the evidence) and writes exactly once.
       assertOk(
