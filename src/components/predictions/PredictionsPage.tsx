@@ -225,6 +225,7 @@ export function PredictionsPage({
                   scored={scoreOf(fixture)}
                   notCounted={!model.uid && guest.state.notCounted.includes(fixture.id)}
                   saved={model.uid ? (model.mine.get(fixture.id) ?? null) : undefined}
+                  savedReady={!model.uid || model.mineQuery.isSuccess}
                   onStep={(side, delta) => {
                     const next = nextPick(picks.get(fixture.id) ?? null, side, delta);
                     if (next) model.setPick(fixture, next);

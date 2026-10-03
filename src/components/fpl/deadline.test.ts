@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { deadlineCountdown, deadlineParts, formatDeadline } from "./deadline";
+import { deadlineCountdown, deadlineParts, deadlineUrgency, formatDeadline } from "./deadline";
 
 const DEADLINE = "2026-09-24T18:30:00Z";
 const at = (iso: string) => Date.parse(iso);
@@ -85,5 +85,21 @@ describe("deadlineParts", () => {
 
   test("is null for a date that does not parse", () => {
     expect(deadlineParts("not a date", now)).toBeNull();
+  });
+});
+
+describe("deadlineUrgency", () => {
+  test("is calm with an hour or more to go", () => {
+    expect(deadlineUrgency({ days: 2, hours: 3, minutes: 10 })).toBe("calm");
+    expect(deadlineUrgency({ days: 0, hours: 1, minutes: 0 })).toBe("calm");
+  });
+
+  test("is soon in the last hour", () => {
+    expect(deadlineUrgency({ days: 0, hours: 0, minutes: 59 })).toBe("soon");
+    expect(deadlineUrgency({ days: 0, hours: 0, minutes: 1 })).toBe("soon");
+  });
+
+  test("is now in the last minute", () => {
+    expect(deadlineUrgency({ days: 0, hours: 0, minutes: 0 })).toBe("now");
   });
 });

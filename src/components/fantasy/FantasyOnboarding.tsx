@@ -41,20 +41,26 @@ const STORAGE = "botolago.fantasy.onboarded";
  * meaning to restate it with.
  */
 function StepDots({ count, current }: { count: number; current: number }) {
+  // One bar that fills a step further each time, from the inline start.
   return (
-    <div className="mt-1 flex gap-1" aria-hidden>
-      {Array.from({ length: count }, (_, i) => (
-        <span
-          key={i}
-          className={cn("h-1.5 w-6 transition-colors", ui.radius.full)}
-          style={{
-            backgroundColor:
-              i === current
-                ? "var(--ui-ink-fg)"
-                : "color-mix(in oklab, var(--ui-on-surface-muted) 30%, transparent)",
-          }}
-        />
-      ))}
+    <div
+      className={cn("mt-1 h-1.5 w-20 overflow-hidden", ui.radius.full)}
+      style={{
+        backgroundColor: "color-mix(in oklab, var(--ui-on-surface-muted) 30%, transparent)",
+      }}
+      aria-hidden
+    >
+      <div
+        className={cn(
+          "h-full w-full ltr:origin-left rtl:origin-right",
+          "transition-transform duration-[var(--duration-sheet)] ease-[var(--ease-emphasized)]",
+          ui.radius.full,
+        )}
+        style={{
+          backgroundColor: "var(--ui-ink-fg)",
+          transform: `scaleX(${(current + 1) / Math.max(1, count)})`,
+        }}
+      />
     </div>
   );
 }
@@ -127,18 +133,22 @@ export function FantasyOnboarding() {
       }
     >
       <div className="flex flex-col items-center gap-3 text-center">
-        <span
-          className={cn(
-            "grid h-14 w-14 shrink-0 place-items-center",
-            ui.radius.control,
-            "text-[color:var(--ui-ink-deep)]",
-          )}
-          style={{ backgroundImage: "var(--ui-grad-action)" }}
-          aria-hidden
-        >
-          <Icon className="h-7 w-7" />
-        </span>
-        <div className={cn(ui.text.section, ui.tone.default)}>{t(steps[step].titleKey)}</div>
+        {/* Each step slides in from the reading side (not the first, which the
+            modal itself brings in). */}
+        <div key={step} className={cn("flex flex-col items-center gap-3", step > 0 && "step-in")}>
+          <span
+            className={cn(
+              "grid h-14 w-14 shrink-0 place-items-center",
+              ui.radius.control,
+              "text-[color:var(--ui-ink-deep)]",
+            )}
+            style={{ backgroundImage: "var(--ui-grad-action)" }}
+            aria-hidden
+          >
+            <Icon className="h-7 w-7" />
+          </span>
+          <div className={cn(ui.text.section, ui.tone.default)}>{t(steps[step].titleKey)}</div>
+        </div>
         <StepDots count={steps.length} current={step} />
       </div>
     </UiModal>
