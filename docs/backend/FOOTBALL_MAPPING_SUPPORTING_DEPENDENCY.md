@@ -191,6 +191,6 @@ FUNCTION` is plain: no CASCADE, no rename, no switched-off trigger.
 
 ## Production
 
-Authorised to read and prepare, and to rehearse in a transaction that rolls back. Applying this migration
-to production for real is a separate owner decision (see `RELEASE_ACTIVATION_MIGRATION_RUNBOOK.md`).
-Nothing here maps anyone.
+Applied on 2026-10-03 (run `37129695639`, commit `72704156`) and verified separately. See
+`docs/production/APPLIED_2026_10_03_FLASHSCORE_SUPPORTING_DEPENDENCY_GUARD.md`.
+Nothing here maps anyone; the 42 mappings are a separate owner decision.
