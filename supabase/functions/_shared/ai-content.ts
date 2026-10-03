@@ -102,8 +102,7 @@ const KIND_BRIEF: Record<ContentKind, string> = {
     "Write a match report on the finished game using the final score, the half-time score and any penalty shoot-out score as supplied, and nothing else about how the game went.",
   news_report:
     "Write one news roundup of the Botola Pro 1 that reports what the supplied stories say, crediting each outlet by name.",
-  blog:
-    "Write an opinion-style blog post for fans about the current Botola Pro 1 picture, grounded only in the supplied stories and results. Make clear it is commentary.",
+  blog: "Write an opinion-style blog post for fans about the current Botola Pro 1 picture, grounded only in the supplied stories and results. Make clear it is commentary.",
 };
 
 export function buildUserMessage(job: ContentJob): string {
@@ -248,7 +247,11 @@ export function renderBodyHtml(
 }
 
 function readingTimeMinutes(html: string): number {
-  const words = html.replace(/<[^>]*>/g, " ").trim().split(/\s+/u).filter(Boolean).length;
+  const words = html
+    .replace(/<[^>]*>/g, " ")
+    .trim()
+    .split(/\s+/u)
+    .filter(Boolean).length;
   return Math.min(60, Math.max(1, Math.ceil(words / 220)));
 }
 
@@ -309,7 +312,8 @@ export function renderOwnerEmail(
   appUrl: string,
 ): { subject: string; text: string } {
   const lines = notices.map(
-    (n) => `- [${n.kind} / ${n.language.toUpperCase()}] ${n.title}\n  ${appUrl}/news/${encodeURIComponent(n.slug)}`,
+    (n) =>
+      `- [${n.kind} / ${n.language.toUpperCase()}] ${n.title}\n  ${appUrl}/news/${encodeURIComponent(n.slug)}`,
   );
   const subject =
     notices.length === 1
@@ -396,7 +400,10 @@ export async function handleAiContentRequest(
   const now = deps.now ?? (() => new Date());
   const randomHex =
     deps.randomHex ??
-    (() => Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => b.toString(16).padStart(2, "0")).join(""));
+    (() =>
+      Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) =>
+        b.toString(16).padStart(2, "0"),
+      ).join(""));
   const summary = { published: 0, rejected: 0, failed: 0, notified: 0 };
 
   // Owed emails first: a pause or an earlier failure never hides a live article.

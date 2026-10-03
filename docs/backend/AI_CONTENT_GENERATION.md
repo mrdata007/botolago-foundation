@@ -13,12 +13,12 @@ Every 30 minutes pg_cron wakes the function. It asks the database what is worth
 writing, has Claude write from the supplied facts only, checks the result,
 publishes it, then emails the owner.
 
-| Kind | Written when | Facts given to the model |
-| --- | --- | --- |
-| `match_recap` | A match finished in the last 24h | Teams, final / half-time / penalty score |
-| `match_preview` | A match kicks off in 2–30h | Teams, kickoff, each side's last 5 results |
-| `news_report` | 3+ fresh ingested stories (last 12h) | Headline, excerpt, outlet name |
-| `blog` | At most every 3 days, 3+ fresh stories | Same stories + last 10 results |
+| Kind            | Written when                           | Facts given to the model                   |
+| --------------- | -------------------------------------- | ------------------------------------------ |
+| `match_recap`   | A match finished in the last 24h       | Teams, final / half-time / penalty score   |
+| `match_preview` | A match kicks off in 2–30h             | Teams, kickoff, each side's last 5 results |
+| `news_report`   | 3+ fresh ingested stories (last 12h)   | Headline, excerpt, outlet name             |
+| `blog`          | At most every 3 days, 3+ fresh stories | Same stories + last 10 results             |
 
 ## Safeguards
 

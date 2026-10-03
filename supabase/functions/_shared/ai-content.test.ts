@@ -43,7 +43,9 @@ describe("parseGenerated", () => {
 
 describe("inventedScores", () => {
   it("allows the real score in either order and the half-time score", () => {
-    expect(inventedScores(recap, article("Victoire 2-1 (mi-temps 1-0), soit 1–2 pour eux"))).toEqual([]);
+    expect(
+      inventedScores(recap, article("Victoire 2-1 (mi-temps 1-0), soit 1–2 pour eux")),
+    ).toEqual([]);
   });
   it("flags a score that is not in the facts", () => {
     expect(inventedScores(recap, article("Une victoire 3-0 écrasante"))).toEqual(["3-0"]);
@@ -56,10 +58,25 @@ describe("inventedScores", () => {
 
 describe("renderBodyHtml", () => {
   it("escapes model text and only links https sources from the database", () => {
-    const text = { ...lang("Titre de test valide"), paragraphs: ["<script>alert(1)</script> " + "x".repeat(100)] };
+    const text = {
+      ...lang("Titre de test valide"),
+      paragraphs: ["<script>alert(1)</script> " + "x".repeat(100)],
+    };
     const html = renderBodyHtml("fr", text, [
-      { editionId: "e1", title: "t", excerpt: "e", sourceName: "Le <b>Matin</b>", sourceUrl: "https://example.test/a" },
-      { editionId: "e2", title: "t", excerpt: "e", sourceName: "Bad", sourceUrl: "javascript:alert(1)" },
+      {
+        editionId: "e1",
+        title: "t",
+        excerpt: "e",
+        sourceName: "Le <b>Matin</b>",
+        sourceUrl: "https://example.test/a",
+      },
+      {
+        editionId: "e2",
+        title: "t",
+        excerpt: "e",
+        sourceName: "Bad",
+        sourceUrl: "javascript:alert(1)",
+      },
     ]);
     expect(html).not.toContain("<script");
     expect(html).toContain("&lt;script&gt;");
@@ -74,14 +91,31 @@ describe("prompt and email", () => {
     const message = buildUserMessage({
       kind: "news_report",
       fixtureId: null,
-      news: [{ editionId: "e", title: "T", excerpt: "X", sourceName: "Outlet", sourceUrl: "https://secret.test/x" }],
+      news: [
+        {
+          editionId: "e",
+          title: "T",
+          excerpt: "X",
+          sourceName: "Outlet",
+          sourceUrl: "https://secret.test/x",
+        },
+      ],
     });
     expect(message).toContain("Outlet");
     expect(message).not.toContain("secret.test");
   });
   it("builds a subject and a pause instruction", () => {
     const mail = renderOwnerEmail(
-      [{ id: "1", kind: "blog", language: "fr", title: "Un titre", slug: "ai-blog-fr-1", model: "m" }],
+      [
+        {
+          id: "1",
+          kind: "blog",
+          language: "fr",
+          title: "Un titre",
+          slug: "ai-blog-fr-1",
+          model: "m",
+        },
+      ],
       "https://botolago.com",
     );
     expect(mail.subject).toBe("[BotolaGO AI] Published: Un titre");
@@ -101,7 +135,14 @@ function fakeClient(plan: unknown, calls: { name: string; args: unknown }[]): Em
             service_ai_content_plan: plan,
             service_ai_content_publish: { storyId: "story-1", articleId: "a" },
             service_ai_content_pending_notices: [
-              { id: "n1", kind: "match_recap", language: "fr", title: "Titre", slug: "s", model: "m" },
+              {
+                id: "n1",
+                kind: "match_recap",
+                language: "fr",
+                title: "Titre",
+                slug: "s",
+                model: "m",
+              },
             ],
             service_ops_alert_email_target: "owner@example.test",
             service_ai_content_record_notice: null,
@@ -113,15 +154,23 @@ function fakeClient(plan: unknown, calls: { name: string; args: unknown }[]): Em
   } as unknown as EmailRpcClient;
 }
 
-const env = { ANTHROPIC_API_KEY: "sk-ant-test-0123456789abcdef", RESEND_API_KEY: "re_test_0123456789abcdef" };
+const env = {
+  ANTHROPIC_API_KEY: "sk-ant-test-0123456789abcdef",
+  RESEND_API_KEY: "re_test_0123456789abcdef",
+};
 const request = () =>
-  new Request("https://x.test/", { method: "POST", headers: { "x-botolago-scheduler-token": TOKEN } });
+  new Request("https://x.test/", {
+    method: "POST",
+    headers: { "x-botolago-scheduler-token": TOKEN },
+  });
 
 function fetchStub(reply: unknown, sent: { url: string }[]): typeof fetch {
   return (async (url: string) => {
     sent.push({ url });
     if (String(url).includes("anthropic")) {
-      return new Response(JSON.stringify({ content: [{ type: "text", text: JSON.stringify(reply) }] }));
+      return new Response(
+        JSON.stringify({ content: [{ type: "text", text: JSON.stringify(reply) }] }),
+      );
     }
     return new Response(JSON.stringify({ id: "mail" }));
   }) as unknown as typeof fetch;
@@ -139,10 +188,15 @@ describe("handleAiContentRequest", () => {
     });
     expect(await response.json()).toMatchObject({ published: 1, rejected: 0, notified: 1 });
     const publishes = calls.filter((c) => c.name === "service_ai_content_publish");
-    expect(publishes.map((c) => (c.args as { p_language: string }).p_language)).toEqual(["fr", "ar"]);
+    expect(publishes.map((c) => (c.args as { p_language: string }).p_language)).toEqual([
+      "fr",
+      "ar",
+    ]);
     expect((publishes[1].args as { p_story_id: string }).p_story_id).toBe("story-1");
     expect(sent.some((s) => s.url.includes("resend"))).toBe(true);
-    expect(calls.find((c) => c.name === "service_ai_content_record_notice")?.args).toMatchObject({ p_sent: true });
+    expect(calls.find((c) => c.name === "service_ai_content_record_notice")?.args).toMatchObject({
+      p_sent: true,
+    });
   });
 
   it("does not publish an article with an invented score", async () => {
@@ -169,7 +223,10 @@ describe("handleAiContentRequest", () => {
 
   it("rejects a wrong scheduler token", async () => {
     const response = await handleAiContentRequest(
-      new Request("https://x.test/", { method: "POST", headers: { "x-botolago-scheduler-token": "nope" } }),
+      new Request("https://x.test/", {
+        method: "POST",
+        headers: { "x-botolago-scheduler-token": "nope" },
+      }),
       { environment: env, client: fakeClient(null, []) },
     );
     expect(response.status).toBe(401);
