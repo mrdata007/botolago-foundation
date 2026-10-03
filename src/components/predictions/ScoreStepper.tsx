@@ -1,8 +1,10 @@
 import { Minus, Plus } from "lucide-react";
+import { useState } from "react";
 
 import { MAX_STEPPER_GOALS } from "@/backend/predictions/contracts";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useJustChanged } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -27,6 +29,9 @@ export function ScoreStepper({
   testId?: string;
 }) {
   const { t } = useI18n();
+  // The number rolls in from the direction of the tap.
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const rolled = useJustChanged(value, 300);
   const button = cn(
     "inline-grid place-items-center",
     ui.space.tap,
@@ -49,7 +54,10 @@ export function ScoreStepper({
         className={button}
         aria-label={t("predictions.stepper.decrease").replace("{team}", team)}
         disabled={disabled || value === 0}
-        onClick={() => onStep(-1)}
+        onClick={() => {
+          setDirection(-1);
+          onStep(-1);
+        }}
       >
         <Minus aria-hidden />
       </button>
@@ -58,14 +66,22 @@ export function ScoreStepper({
         className={cn("w-7 text-center", ui.score.row, ui.text.tabular)}
         data-testid={testId ? `${testId}-value` : undefined}
       >
-        <bdi>{value === null ? "–" : value}</bdi>
+        <bdi
+          key={value ?? "none"}
+          className={rolled ? (direction === 1 ? "roll-up" : "roll-down") : undefined}
+        >
+          {value === null ? "–" : value}
+        </bdi>
       </output>
       <button
         type="button"
         className={button}
         aria-label={t("predictions.stepper.increase").replace("{team}", team)}
         disabled={disabled || value === MAX_STEPPER_GOALS}
-        onClick={() => onStep(1)}
+        onClick={() => {
+          setDirection(1);
+          onStep(1);
+        }}
       >
         <Plus aria-hidden />
       </button>

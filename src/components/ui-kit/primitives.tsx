@@ -1448,6 +1448,8 @@ export function UiSheet({
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
             "data-[state=open]:duration-[var(--duration-sheet)] data-[state=closed]:duration-[var(--duration-quick)]",
+            // Arrives with a hair of overshoot and settles; leaves plainly.
+            "data-[state=open]:ease-[var(--ease-settle)] data-[state=closed]:ease-[var(--ease-standard)]",
             className,
           )}
         >

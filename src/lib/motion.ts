@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { flushSync } from "react-dom";
 
 /**
  * Shared helpers for the app's motion (docs/engineering/MOTION_PLAN.md).
@@ -439,4 +440,25 @@ export function useArrivals(ids: readonly string[]): ReadonlySet<string> {
   }, [signature]);
 
   return arrived;
+}
+
+/**
+ * Runs a change to the whole page (a theme, a language) through the browser's
+ * view transition, so the old page cross-fades into the new one instead of
+ * flashing. Falls back to just running `update` where there is no view
+ * transition, and under reduced motion. `update` is flushed at once, because
+ * the browser takes its "after" picture as soon as the callback returns.
+ */
+export function withViewTransition(update: () => void): void {
+  if (
+    typeof document === "undefined" ||
+    prefersReducedMotion() ||
+    typeof document.startViewTransition !== "function"
+  ) {
+    update();
+    return;
+  }
+  document.startViewTransition(() => {
+    flushSync(update);
+  });
 }

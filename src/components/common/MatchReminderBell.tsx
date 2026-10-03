@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useOptionalAuth } from "@/auth/AuthProvider";
 import { UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useJustTurnedOn } from "@/lib/motion";
 import { rememberReminder, replaceReminders, useHasReminder } from "@/lib/match-reminders";
 import {
   loadMyMatchReminders,
@@ -40,6 +41,8 @@ export function MatchReminderBell({ fixtureId }: { fixtureId: string }) {
   const auth = useOptionalAuth();
   const userId = auth?.status === "authenticated" && auth.user ? auth.user.id : null;
   const on = useHasReminder(userId, fixtureId);
+  // The bell rings once when the reminder has just been switched on.
+  const justOn = useJustTurnedOn(on);
   useEffect(() => {
     if (userId) syncRemindersOnce(userId);
   }, [userId]);
@@ -95,7 +98,11 @@ export function MatchReminderBell({ fixtureId }: { fixtureId: string }) {
       disabled={pending}
       onClick={onClick}
     >
-      {on ? <BellRing aria-hidden /> : <Bell aria-hidden />}
+      {on ? (
+        <BellRing aria-hidden className={justOn ? "wiggle" : undefined} />
+      ) : (
+        <Bell aria-hidden />
+      )}
     </UiIconButton>
   );
 }

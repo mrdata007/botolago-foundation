@@ -27,6 +27,7 @@ import {
 } from "react";
 
 import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
+import { withViewTransition } from "@/lib/motion";
 
 import {
   DARK_MEDIA_QUERY,
@@ -103,7 +104,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [choice, isHydrated]);
 
   const setChoice = useCallback((next: ThemeChoice) => {
-    setChoiceState(next);
+    // The page cross-fades into the new theme rather than flashing.
+    withViewTransition(() => setChoiceState(next));
     writeStoredTheme(next);
   }, []);
 
