@@ -171,6 +171,20 @@ describe("LandingPlayersToWatch", () => {
     expect(html).not.toContain("0 pts");
   });
 
+  it("holds its place with skeletons until the visitor scrolls near it", async () => {
+    let fetched = false;
+    const html = await render(<LandingPlayersToWatch heading="h2" />, (client) => {
+      client.getQueryCache().subscribe((event) => {
+        if (event.type === "updated" && event.query.queryKey[0] === "fantasy-players") {
+          fetched = true;
+        }
+      });
+    });
+    expect(html).toContain('data-testid="landing-players"');
+    expect(html).toMatch(/shimmer|animate-pulse|skeleton/i);
+    expect(fetched).toBe(false);
+  });
+
   it("is not drawn at all without a player", async () => {
     const html = await render(<LandingPlayersToWatch heading="h2" />, (client) => {
       client.setQueryData(["fantasy-players"], []);

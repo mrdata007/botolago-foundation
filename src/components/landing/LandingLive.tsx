@@ -1,16 +1,18 @@
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { MatchCard } from "@/components/common/MatchCard";
 import { MatchCardSkeleton } from "@/components/common/Skeletons";
 import { PlayerPhoto } from "@/components/common/PlayerPhoto";
 import { clubLabel, findClub } from "@/components/fantasy/club-identity";
+import { useOnLiveMatchEnd } from "@/components/matches/use-live-matches";
 import { ui, UiCard, UiSkeleton } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { defaultSeason, footballService } from "@/services/football";
@@ -39,10 +41,15 @@ export function LandingBotolaNow({
   onLeave?: () => void;
 }) {
   const { t, tr, lang } = useI18n();
+  const queryClient = useQueryClient();
 
+  // Same cadence as Home: keeps refreshing while a match is live or about to
+  // kick off, so the score a visitor reads here is not frozen.
   const matchesQ = useQuery({
     queryKey: ["football", "home-matches", lang],
     queryFn: () => footballService.getHomeMatches(lang),
+    refetchInterval: (query) => matchesRefetchInterval(query.state.data?.matches, Date.now()),
+    refetchIntervalInBackground: false,
   });
   const seasonsQ = useQuery({
     queryKey: ["football", "seasons", lang],
@@ -53,6 +60,10 @@ export function LandingBotolaNow({
     queryKey: ["football", "standings", season?.id, lang],
     queryFn: () => footballService.getStandings(season!, lang),
     enabled: season !== undefined,
+  });
+  // A match that ends while the page is open moves the table: read it again.
+  useOnLiveMatchEnd(() => {
+    void queryClient.invalidateQueries({ queryKey: ["football", "standings"] });
   });
 
   // Live first, then what is still to come: four rows at most.
@@ -240,9 +251,15 @@ export function LandingPlayersToWatch({
     maximumFractionDigits: 1,
   });
 
+  // The whole player list is a heavy read, and this block sits far down the
+  // page: it is fetched only once the visitor scrolls near it (its skeleton
+  // holds the place until then). Already in the cache, it shows at once.
+  const sectionRef = useRef<HTMLElement>(null);
+  const near = useNearViewport(sectionRef);
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
+    enabled: near,
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
@@ -264,6 +281,7 @@ export function LandingPlayersToWatch({
 
   return (
     <section
+      ref={sectionRef}
       aria-labelledby="landing-players"
       className={cn("mx-auto w-full max-w-6xl pb-12 lg:pb-16", ui.space.gutter)}
       data-testid="landing-players"
@@ -339,6 +357,31 @@ export function LandingPlayersToWatch({
       </ul>
     </section>
   );
+}
+
+/** How far below the screen a block starts loading: about two phone screens. */
+const NEAR_VIEWPORT_MARGIN = "1200px 0px";
+
+/** True once the element is on screen or within `NEAR_VIEWPORT_MARGIN` of it. */
+function useNearViewport(ref: RefObject<HTMLElement | null>): boolean {
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    if (near) return;
+    const element = ref.current;
+    if (!element || typeof IntersectionObserver === "undefined") {
+      setNear(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) setNear(true);
+      },
+      { rootMargin: NEAR_VIEWPORT_MARGIN },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref, near]);
+  return near;
 }
 
 function BlockHeader({
