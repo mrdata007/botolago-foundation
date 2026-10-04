@@ -47,9 +47,12 @@ begin
   if exists (select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled) then
     raise exception 'stop: the Fantasy lifecycle tick is on -- pause it first with select app_private.fantasy_automation_configure(false);';
   end if;
+  -- Any run not finished blocks: a recent one, and an older one whose
+  -- backend is still alive (a record left behind by a crash does not).
   if exists (select 1 from cron.job_run_details run
     where run.status not in ('succeeded', 'failed')
-      and run.start_time > statement_timestamp() - interval '15 minutes') then
+      and (run.start_time > statement_timestamp() - interval '15 minutes'
+        or exists (select 1 from pg_stat_activity activity where activity.pid = run.job_pid))) then
     raise exception 'stop: a scheduled (pg_cron) job is running right now -- nothing was saved; run this again in a minute';
   end if;
   if md5(pg_get_functiondef('api.ingest_current_player_fixture_performance(text,text,text,jsonb,jsonb,timestamptz)'::regprocedure))
