@@ -1,7 +1,7 @@
 import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
 import { MatchCard } from "@/components/common/MatchCard";
@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 import { isSameMatchDay, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
-import { matchRounds, nextMatchDayAfter } from "@/lib/match-days";
+import { latestResultDayBefore, matchRounds, nextMatchDayAfter } from "@/lib/match-days";
 import { unavailableHeaders } from "@/lib/page-availability";
 import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -323,14 +323,34 @@ function MatchesPage() {
 
   const totalDay = dayCounts.live + dayCounts.upcoming + dayCounts.finished;
 
-  const nextDayLabel = useMemo(() => {
-    if (!nextDay) return null;
-    return moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+  // `isPending`, not `isLoading`: the day's query waits for the seasons, and
+  // a query that is waiting has no data but is not loading either.
+  const loading = seasonsQ.isPending || matchesQ.isPending;
+  // A read that failed with nothing to show for it. A refresh that fails (a
+  // poll during a live match, a return to the tab) keeps the rows it had and
+  // the next one tries again: an error card over rows that still stand would
+  // say they are wrong.
+  const failed = seasonsQ.isLoadingError || matchesQ.isLoadingError;
+
+  // From a day with nothing on it, the way on: the next fixtures (the Home
+  // page's own query, above) and the latest results. The results come from the
+  // season's fixture list, read only for a day that is empty.
+  const resultDaysQ = useQuery({
+    queryKey: ["football", "season-result-days", selectedSeason?.id ?? "none", lang],
+    queryFn: ({ signal }) => footballService.getSeasonResultDays(selectedSeason!, lang, signal),
+    enabled: !loading && !failed && totalDay === 0 && selectedSeason !== undefined,
+    staleTime: 5 * 60_000,
+  });
+  const resultsDay = latestResultDayBefore(resultDaysQ.data ?? [], matchDay);
+
+  const dayLabel = (day: string) =>
+    moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
       weekday: "short",
       day: "numeric",
       month: "short",
-    }).format(matchDayFromKey(nextDay));
-  }, [nextDay, lang]);
+    }).format(matchDayFromKey(day));
+  const nextDayLabel = nextDay ? dayLabel(nextDay) : null;
+  const resultsDayLabel = resultsDay ? dayLabel(resultsDay) : null;
 
   const visibleByBucket = useMemo(() => {
     const buckets: Record<"live" | "upcoming" | "finished", Match[]> = {
@@ -363,15 +383,6 @@ function MatchesPage() {
     ...(filter === "all" || filter === "upcoming" ? visibleByBucket.upcoming : []),
   ];
   const results = filter === "all" || filter === "finished" ? visibleByBucket.finished : [];
-
-  // `isPending`, not `isLoading`: the day's query waits for the seasons, and
-  // a query that is waiting has no data but is not loading either.
-  const loading = seasonsQ.isPending || matchesQ.isPending;
-  // A read that failed with nothing to show for it. A refresh that fails (a
-  // poll during a live match, a return to the tab) keeps the rows it had and
-  // the next one tries again: an error card over rows that still stand would
-  // say they are wrong.
-  const failed = seasonsQ.isLoadingError || matchesQ.isLoadingError;
 
   const rows = (list: readonly Match[]) =>
     list.map((m, index) => {
@@ -434,6 +445,7 @@ function MatchesPage() {
       {failed && (
         <div className="mt-4">
           <ErrorState
+            message={t("state.error_matches")}
             onRetry={() => {
               void seasonsQ.refetch();
               if (seasonsQ.isSuccess) void matchesQ.refetch();
@@ -443,22 +455,28 @@ function MatchesPage() {
       )}
       {!loading && !failed && totalDay === 0 && (
         <div className="mt-4">
-          <EmptyState illustration={noMatchesArt}>
+          {/* Nothing is scheduled that day: not a failure, so no retry. The
+              way on is to what does exist: the next fixtures and the latest
+              results, each only when there is one. */}
+          <EmptyState
+            compact
+            illustration={noMatchesArt}
+            action={
+              <>
+                {nextDay && nextDayLabel ? (
+                  <DayLink onClick={() => selectDay(nextDay)}>
+                    {t("matches.empty.next").replace("{date}", nextDayLabel)}
+                  </DayLink>
+                ) : null}
+                {resultsDay && resultsDayLabel ? (
+                  <DayLink onClick={() => selectDay(resultsDay)}>
+                    {t("matches.empty.results").replace("{date}", resultsDayLabel)}
+                  </DayLink>
+                ) : null}
+              </>
+            }
+          >
             {t("matches.section.no_matches_today")}
-            {nextDay && nextDayLabel ? (
-              <button
-                type="button"
-                onClick={() => selectDay(nextDay)}
-                className={cn(
-                  ui.text.bodyStrong,
-                  ui.tone.ink,
-                  ui.focus,
-                  "min-h-[var(--ui-tap-min)]",
-                )}
-              >
-                {t("matches.empty.next").replace("{date}", nextDayLabel)} →
-              </button>
-            ) : null}
           </EmptyState>
         </div>
       )}
@@ -511,6 +529,19 @@ function MatchesPage() {
       {/* An intentional spacer so the last card clears the bottom nav shadow. */}
       <div className="h-6" aria-hidden />
     </AppShell>
+  );
+}
+
+/** A way on from an empty day: the day it names, as a text button with an arrow. */
+function DayLink({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(ui.text.bodyStrong, ui.tone.ink, ui.focus, "min-h-[var(--ui-tap-min)]")}
+    >
+      {children} →
+    </button>
   );
 }
 

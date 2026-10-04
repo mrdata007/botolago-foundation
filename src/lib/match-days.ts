@@ -91,6 +91,22 @@ export function nextMatchDayAfter(
 }
 
 /**
+ * The latest day before `dayKey` that has a result, or null when there is
+ * none: where "Derniers résultats" leads from a day with nothing on it.
+ * `resultDays` are competition-day keys in any order.
+ */
+export function latestResultDayBefore(
+  resultDays: readonly string[],
+  dayKey: string,
+): string | null {
+  let latest: string | null = null;
+  for (const day of resultDays) {
+    if (day < dayKey && (latest === null || day > latest)) latest = day;
+  }
+  return latest;
+}
+
+/**
  * The days narrowed to matches that involve a followed club; a day left with
  * no match is dropped. An empty `followedIds` keeps nothing.
  */

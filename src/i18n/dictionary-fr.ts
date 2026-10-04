@@ -237,6 +237,7 @@ export const fr = {
   "matches.section.finished": "Résultats",
   "matches.section.no_matches_today": "Aucun match programmé à cette date.",
   "matches.empty.next": "Prochains matchs : {date}",
+  "matches.empty.results": "Derniers résultats : {date}",
   "matches.section.no_live": "Aucun match en direct pour le moment.",
   "matches.section.no_upcoming": "Aucun match à venir.",
   "matches.section.no_finished": "Aucun résultat pour l'instant.",
@@ -411,7 +412,7 @@ export const fr = {
   "fantasy.availability.registration_closed.title":
     "Les inscriptions sont fermées pour cette journée",
   "fantasy.availability.registration_closed.body":
-    "Vous pourrez créer votre équipe à l’ouverture d’une prochaine journée. Les résultats et les classements restent consultables dans les onglets Fantasy.",
+    "Vous pourrez créer votre équipe à l’ouverture d’une prochaine journée. En attendant, parcourez les joueurs et le calendrier des matchs.",
   "fantasy.subtitle": "Votre équipe, votre {accent}stratégie{/accent}.",
   "fantasy.team": "Équipe",
   "fantasy.total_points": "Points totaux",
@@ -768,9 +769,16 @@ export const fr = {
   "profile.language": "Langue de l'application",
   "profile.followed_clubs": "Clubs suivis",
 
+  "home.upcoming_empty": "Aucun match programmé dans les prochains jours.",
+  "home.mine_empty": "Aucun match de vos clubs sur cette période.",
+  "home.results_link": "Voir les derniers résultats",
+  "home.calendar_link": "Ouvrir le calendrier",
   "state.loading": "Chargement…",
   "state.empty": "Aucun contenu disponible.",
   "state.error": "Une erreur est survenue.",
+  "state.unavailable": "Information indisponible pour le moment.",
+  "state.error_matches":
+    "Impossible de charger les matchs. Vérifiez votre connexion, puis réessayez.",
   "state.offline": "Vous êtes hors ligne. Les données peuvent être obsolètes.",
   "state.retry": "Réessayer",
   "state.go_home": "Retour à l'accueil",

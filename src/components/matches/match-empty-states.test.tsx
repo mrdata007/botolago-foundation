@@ -14,7 +14,10 @@ import { toMatch } from "@/services/football";
 import type { Club, Language, Match } from "@/types/domain";
 import { EventTimeline } from "./EventTimeline";
 import { LineupsView } from "./LineupsView";
+import { EmptyState, ErrorState } from "@/components/common/States";
+import { MatchDataState } from "./MatchDataState";
 import {
+  isDataUnavailable,
   matchDataPhase,
   noEventsMessage,
   noLineupsMessage,
@@ -340,6 +343,94 @@ describe("the match page", () => {
     for (const panel of ["EventTimeline", "StatComparison", "LineupsView"]) {
       const element = route.match(new RegExp(`<${panel}\\b[^>]*?/>`))?.[0] ?? "";
       expect([panel, /\bphase=\{phase\}/.test(element)]).toEqual([panel, true]);
+    }
+  });
+});
+
+describe("empty, unavailable and failed are three different things (batch 4)", () => {
+  const phases: MatchDataPhase[] = [
+    "upcoming",
+    "awaiting",
+    "live",
+    "finished",
+    "unreported",
+    "postponed",
+    "called_off",
+  ];
+
+  test("data still expected is an empty panel; data that will not come is an unavailable one", () => {
+    expect(phases.filter((phase) => !isDataUnavailable(phase))).toEqual([
+      "upcoming",
+      "awaiting",
+      "live",
+    ]);
+    expect(phases.filter(isDataUnavailable)).toEqual([
+      "finished",
+      "unreported",
+      "postponed",
+      "called_off",
+    ]);
+  });
+
+  test("the panels draw the two differently, and neither offers a retry", () => {
+    const expected = inFrench(<MatchDataState phase="upcoming" message="Pas encore" />);
+    const unavailable = inFrench(<MatchDataState phase="finished" message="Indisponible" />);
+    // A crossed-out glyph for the unavailable one, the inbox for the empty one.
+    expect(unavailable).toContain("lucide-circle-slash");
+    expect(unavailable).not.toContain("lucide-inbox");
+    expect(expected).toContain("lucide-inbox");
+    expect(expected).not.toContain("lucide-circle-slash");
+    for (const html of [expected, unavailable]) {
+      expect(html).not.toContain("<button");
+      expect(html).not.toContain(dictionaries.fr["state.retry"]);
+    }
+  });
+
+  test("a failed read is the only one with a retry, and it says what failed", () => {
+    const failed = inFrench(
+      <ErrorState message={dictionaries.fr["state.error_matches"]} onRetry={() => {}} />,
+    );
+    expect(failed).toContain(dictionaries.fr["state.retry"]);
+    expect(failed).toContain("Impossible de charger les matchs");
+    // Without a way to retry there is no button to press.
+    expect(inFrench(<ErrorState />)).not.toContain("<button");
+  });
+
+  test("an empty day can lead on to what exists, and says nothing is wrong", () => {
+    const html = inFrench(
+      <EmptyState action={<a href="/matches?date=2026-10-01">Derniers résultats</a>}>
+        Aucun match programmé à cette date.
+      </EmptyState>,
+    );
+    expect(html).toContain('href="/matches?date=2026-10-01"');
+    expect(html).not.toContain(dictionaries.fr["state.error"]);
+  });
+
+  test("the generic empty-content line is not what a football screen says", () => {
+    const read = (file: string) => readFileSync(join(import.meta.dir, "../../..", file), "utf8");
+    const home = read("src/routes/index.tsx");
+    expect(home).toContain('t("home.upcoming_empty")');
+    expect(home).toContain('t("home.mine_empty")');
+    // What is left of it on Home is the news rail's (hidden at launch).
+    expect(home.match(/t\("state\.empty"\)/g)).toHaveLength(1);
+    expect(read("src/routes/matches.index.tsx")).not.toContain('t("state.empty")');
+  });
+
+  test("every new line exists in French and in Arabic", () => {
+    for (const key of [
+      "state.unavailable",
+      "state.error_matches",
+      "matches.empty.results",
+      "home.upcoming_empty",
+      "home.mine_empty",
+      "home.results_link",
+      "home.calendar_link",
+      "standings.details_show",
+      "standings.details_hide",
+      "predictions.match.round_link",
+    ] as const) {
+      expect(dictionaries.fr[key]).toBeTruthy();
+      expect(dictionaries.ar[key]).toMatch(/[؀-ۿ]/);
     }
   });
 });
