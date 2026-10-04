@@ -44,10 +44,10 @@ const MANIFEST = `<?xml version="1.0" encoding="utf-8"?>
 const BUILD_GRADLE = `apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.botolago.app"
+    namespace = "botolago.com"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.botolago.app"
+        applicationId "botolago.com"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -221,7 +221,7 @@ const PBXPROJ = `/* Begin XCBuildConfiguration section */
 				);
 				MARKETING_VERSION = 1.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) \\"-D\\" \\"COCOAPODS\\" \\"-DDEBUG\\"";
-				PRODUCT_BUNDLE_IDENTIFIER = com.botolago.app;
+				PRODUCT_BUNDLE_IDENTIFIER = botolago.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_VERSION = 5.0;
@@ -242,7 +242,7 @@ const PBXPROJ = `/* Begin XCBuildConfiguration section */
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.botolago.app;
+				PRODUCT_BUNDLE_IDENTIFIER = botolago.com;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;

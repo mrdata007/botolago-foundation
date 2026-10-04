@@ -491,7 +491,7 @@ async function apnsSetup(
   const credentials: ApnsCredentials = {
     keyId: "ABC123DEFG",
     teamId: "TEAM123456",
-    bundleId: "com.botolago.app",
+    bundleId: "botolago.com",
     privateKey: keys.pem,
     environment: options.environment ?? "production",
   };
@@ -509,13 +509,13 @@ describe("APNs credentials", () => {
   const good = {
     APNS_KEY_ID: "ABC123DEFG",
     APNS_TEAM_ID: "TEAM123456",
-    APNS_BUNDLE_ID: "com.botolago.app",
+    APNS_BUNDLE_ID: "botolago.com",
     APNS_KEY_P8: pemBlock("abc"),
   };
   it("reads the secrets, production by default", () => {
     expect(parseApnsCredentials(good)).toMatchObject({
       environment: "production",
-      bundleId: "com.botolago.app",
+      bundleId: "botolago.com",
     });
     expect(parseApnsCredentials({ ...good, APNS_ENVIRONMENT: "Sandbox" }).environment).toBe(
       "sandbox",
@@ -552,7 +552,7 @@ describe("ApnsProvider", () => {
     expect(jwt.valid).toBe(true);
     expect(jwt.header).toEqual({ alg: "ES256", typ: "JWT", kid: "ABC123DEFG" });
     expect(jwt.claims).toEqual({ iss: "TEAM123456", iat: NOW / 1000 });
-    expect(headers["apns-topic"]).toBe("com.botolago.app");
+    expect(headers["apns-topic"]).toBe("botolago.com");
     expect(headers["apns-push-type"]).toBe("alert");
     expect(headers["apns-priority"]).toBe("10");
     expect(headers["apns-id"]).toBe("11111111-1111-4111-8111-111111111111");
@@ -708,7 +708,7 @@ describe("ApnsProvider", () => {
       {
         keyId: "ABC123DEFG",
         teamId: "TEAM123456",
-        bundleId: "com.botolago.app",
+        bundleId: "botolago.com",
         privateKey: "PRIVATE KEY nope",
         environment: "production",
       },

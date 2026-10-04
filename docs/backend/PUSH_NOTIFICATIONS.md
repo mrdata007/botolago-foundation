@@ -49,7 +49,7 @@ function's reply names it under `unconfigured`.
 | `APNS_KEY_P8`              | The contents of the Apple push key (.p8) (Apple Developer → Keys, with Apple Push Notifications service ticked; downloadable once)                                      |
 | `APNS_KEY_ID`              | That key's 10-character id                                                                                                                                              |
 | `APNS_TEAM_ID`             | The Apple developer team id (10 characters)                                                                                                                             |
-| `APNS_BUNDLE_ID`           | The app's bundle id: Apple's `apns-topic`                                                                                                                               |
+| `APNS_BUNDLE_ID`           | The app's bundle id (`botolago.com`): Apple's `apns-topic`                                                                                                              |
 | `APNS_ENVIRONMENT`         | Optional: `production` (default) or `sandbox`. A development build's token only works against `sandbox`                                                                 |
 
 Never commit these, paste them in chat, or log them. The code never logs a key,

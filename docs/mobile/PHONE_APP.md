@@ -57,17 +57,21 @@ when you press **Start new build**: nothing starts on a push. Nothing is release
 ### One-time set-up
 
 You need the Apple Developer account and the Firebase project you already made the
-push keys in. The app id is `com.botolago.app` (it is in `capacitor.config.ts` and
-`codemagic.yaml`; all three must agree).
+push keys in. The app id is **`botolago.com`**, the App ID registered at Apple. It
+must be the same everywhere it appears: the App ID at Apple, `capacitor.config.ts`,
+`codemagic.yaml` (a test checks those two agree), the sender's `APNS_BUNDLE_ID`
+secret (`botolago.com`, Apple's push topic) and, for Android, the package name
+Firebase has for the Android app. (A second App ID, `com.botolago.app`, also exists
+at Apple. Nothing here uses it; leave it or delete it.)
 
 **At Apple (developer.apple.com and appstoreconnect.apple.com)**
 
-1. Certificates, Identifiers & Profiles, Identifiers: open `com.botolago.app` (create
+1. Certificates, Identifiers & Profiles, Identifiers: open `botolago.com` (create
    it as an explicit App ID if it is missing) and make sure **Push Notifications** is
    ticked. Save. Without this the build's signing has no push permission and the
    phone never gets an address.
 2. App Store Connect, Apps, **+ New App**: iOS, name BotolaGO, primary language
-   French, bundle id `com.botolago.app`, any SKU. Codemagic can only upload to an app
+   French, bundle id `botolago.com`, any SKU. Codemagic can only upload to an app
    that exists.
 3. App Store Connect, Users and Access, Integrations, App Store Connect API, **Team
    Keys**, **+**: name it "Codemagic", access **App Manager**. Download the `.p8`
@@ -89,7 +93,9 @@ push keys in. The app id is `com.botolago.app` (it is in `capacitor.config.ts` a
 **Firebase (console.firebase.google.com)**
 
 7. Project settings, Your apps: the Android app must exist with the package name
-   `com.botolago.app` (add it if not). Download its `google-services.json`.
+   `botolago.com` (add it if not: a package name cannot be changed afterwards, so if
+   the Android app there has another name, add a second Android app with this one).
+   Download the `google-services.json` of that app.
 8. Turn that file into one line of text, then save it as a **secure** variable at
    Codemagic: in the app's **Environment variables**, in a group named exactly
    `botolago_mobile`, a variable named exactly `GOOGLE_SERVICES_JSON_BASE64`.

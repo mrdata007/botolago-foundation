@@ -83,7 +83,7 @@ workflows:
       ios_signing:
         distribution_type: app_store
         # The app id of capacitor.config.ts (a test checks they agree).
-        bundle_identifier: com.botolago.app
+        bundle_identifier: botolago.com
       xcode: latest
       node: 22.20.0
       vars:

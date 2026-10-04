@@ -20,7 +20,7 @@ const PRODUCTION_URL = "https://botolago.com";
 const serverUrl = process.env.CAPACITOR_SERVER_URL?.trim() || PRODUCTION_URL;
 
 const config: CapacitorConfig = {
-  appId: "com.botolago.app",
+  appId: "botolago.com",
   appName: "BotolaGO",
   // Only holds the page shown when the site cannot be reached (see errorPath).
   webDir: "mobile/www",

@@ -12,13 +12,13 @@ import {
 
 const PBXPROJ = `\t\t\t\tCURRENT_PROJECT_VERSION = 1;
 \t\t\t\tMARKETING_VERSION = 1.0;
-\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = com.botolago.app;
+\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = botolago.com;
 \t\t\t\tCURRENT_PROJECT_VERSION = 1;
 \t\t\t\tMARKETING_VERSION = 1.0;
 `;
 const GRADLE = `android {
     defaultConfig {
-        applicationId "com.botolago.app"
+        applicationId "botolago.com"
         versionCode 1
         versionName "1.0"
     }
@@ -49,7 +49,7 @@ describe("the iPhone project", () => {
     expect(built.match(/MARKETING_VERSION = 1\.0;/g)).toHaveLength(2);
     const versioned = setPbxprojVersion(PBXPROJ, "42", "1.2.0");
     expect(versioned.match(/MARKETING_VERSION = 1\.2\.0;/g)).toHaveLength(2);
-    expect(versioned).toContain("PRODUCT_BUNDLE_IDENTIFIER = com.botolago.app;");
+    expect(versioned).toContain("PRODUCT_BUNDLE_IDENTIFIER = botolago.com;");
   });
 
   test("is the same when run again with the same numbers", () => {
@@ -68,7 +68,7 @@ describe("the Android project", () => {
     expect(setGradleVersion(GRADLE, "42")).toContain("versionCode 42\n");
     expect(setGradleVersion(GRADLE, "42")).toContain('versionName "1.0"');
     expect(setGradleVersion(GRADLE, "42", "1.2.0")).toContain('versionName "1.2.0"');
-    expect(setGradleVersion(GRADLE, "42", "1.2.0")).toContain('applicationId "com.botolago.app"');
+    expect(setGradleVersion(GRADLE, "42", "1.2.0")).toContain('applicationId "botolago.com"');
   });
 
   test("is the same when run again", () => {
