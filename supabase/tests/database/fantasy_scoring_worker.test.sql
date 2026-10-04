@@ -145,6 +145,14 @@ values(pg_temp.scoring_id(4010),pg_temp.scoring_id(9),pg_temp.scoring_id(8),'own
 select api.service_recalculate_fantasy_rankings(pg_temp.scoring_id(5),pg_temp.scoring_id(6),pg_temp.scoring_id(4010),2);
 select extensions.throws_ok($$select api.service_complete_fantasy_gameweek(pg_temp.scoring_id(6),2)$$,'PT409','fantasy_rankings_incomplete','active league also requires both gameweek and season rankings');
 select api.service_recalculate_fantasy_rankings(pg_temp.scoring_id(5),null,pg_temp.scoring_id(4010),2);
+-- A switched-off league is never ranked (the league page lists active ones),
+-- so a membership left in one must not block completion.
+insert into app.fantasy_leagues(id,fantasy_season_id,owner_user_id,name,visibility,active,member_count)
+values(pg_temp.scoring_id(4011),pg_temp.scoring_id(5),pg_temp.scoring_id(8),'Switched-off Test League','public',true,1);
+insert into app.fantasy_league_memberships(league_id,fantasy_team_id,user_id,role,status)
+values(pg_temp.scoring_id(4011),pg_temp.scoring_id(9),pg_temp.scoring_id(8),'owner','active');
+update app.fantasy_leagues set active=false where id=pg_temp.scoring_id(4011);
+select extensions.ok(not (api.service_fantasy_scoring_league_page(pg_temp.scoring_id(6),null,100)->'leagueIds') ? pg_temp.scoring_id(4011)::text,'the worker does not rank a switched-off league');
 select extensions.is(api.service_complete_fantasy_gameweek(pg_temp.scoring_id(6),2)->>'finalized','true','only complete scoring, rollover and ranking pipeline marks gameweek final');
 select extensions.is(api.service_complete_fantasy_gameweek(pg_temp.scoring_id(6),2)->>'stableResult','true','completion retry is a no-op');
 select extensions.is((select count(*)::integer from app.fantasy_player_gameweek_points where gameweek_id=pg_temp.scoring_id(6) and final_points=2 and finalized_at is not null),66,'finalization publishes final player points for every verified player');

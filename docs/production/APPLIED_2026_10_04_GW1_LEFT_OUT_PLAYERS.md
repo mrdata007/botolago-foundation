@@ -114,3 +114,29 @@ inactive test league created 2026-09-23, so that league is never ranked and the 
 pass. Not related to the GW1 football data.
 
 A retry must use calculation version **20** (a `finalizing` gameweek does not re-prepare).
+
+## Completion fix applied; GW1 finalized
+
+Owner: "Go with option 1, fix the check and finish GW1".
+
+| Time (UTC) | Step                                                                                                                                                  | Result                                                                                                                                                       |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 07:22      | Merged PR #330 at `60d8af25` (CI green incl. database-quality; Codex no findings)                                                                     | main `166977b8`                                                                                                                                              |
+| 07:23      | Live refresh paused; tick off; nothing in flight                                                                                                      |                                                                                                                                                              |
+| 07:23      | `apply-20261004140000-fantasy-completion-skips-inactive-leagues.sql` (statements of the main file; migration sha256 checked by the script), rehearsal | "Rehearsal passed"; re-read: not recorded, function md5 still `77537675…`                                                                                    |
+| 07:24      | Same with `commit;`                                                                                                                                   | "Applied"; history row; function md5 `b0a24c74…` (the reviewed new version); service role only                                                               |
+| 07:28      | `fantasy-manual-worker.yml` run 37185871150 (commit `166977b8`, GW1, calculation version 20)                                                          | GW1 **finalized** 07:28:27; then failed at GW2 preparation, `fantasy_next_gameweek_not_openable` (GW2's deadline, 2026-10-02 14:30, has passed), as expected |
+| 07:29      | Live refresh restored                                                                                                                                 |                                                                                                                                                              |
+
+Checked after:
+
+- GW1 `finalized`, points `final`, calculation version 20. Final scores 10, 8, 8, 6, 6, 5 (unchanged
+  from the first run). Gameweek and overall rankings 1-6.
+- Postwork recorded complete (07:28:28): price pass over the catalogue, no price changed;
+  finalized notifications enqueued (in-app only; e-mail mode `off`).
+- Prize "Recharge mobile + maillot d'un club de la Botola" (gameweek tier, 500 MAD): winner
+  "Les Lions" (`f8e8a444`, 8 points; tie with `327d3570` broken by fewer transfers), status
+  `pending` (staff verification before payment). "ak47 FC" (`84e5a704`, 10 points) was skipped
+  with reason `staff`, as the prize rules require.
+- GW2 untouched: `scheduled`, lock version 1, its one lineup from 2026-09-25. Step 5 (GW2
+  carry-over) has to deal with its past deadline.
