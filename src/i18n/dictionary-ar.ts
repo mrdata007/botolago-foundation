@@ -87,6 +87,7 @@ export const ar = {
   "home.explore": "استكشف {accent}بوتولاجو{/accent}",
   "home.view_all": "عرض الكل",
   "home.view_fantasy_team": "عرض فريقي",
+  "home.my_clubs.last_result": "آخر نتيجة",
   "home.sr_title": "BotolaGO — أخبار ومباريات وفانتازي كرة القدم المغربية",
 
   "news.title": "الأخبار",

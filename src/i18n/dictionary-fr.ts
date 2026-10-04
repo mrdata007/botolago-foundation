@@ -93,6 +93,7 @@ export const fr = {
   "home.explore": "Explorer {accent}BotolaGO{/accent}",
   "home.view_all": "Tout voir",
   "home.view_fantasy_team": "Voir mon équipe",
+  "home.my_clubs.last_result": "Dernier résultat",
   // The home page's sr-only <h1>. The French is the page's <title>, which is
   // what the server renders and a crawler reads.
   "home.sr_title": "BotolaGO — Actualité, matchs et Fantasy du football marocain",
