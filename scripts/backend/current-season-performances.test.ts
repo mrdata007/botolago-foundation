@@ -1676,8 +1676,9 @@ describe("lineup participation evidence", () => {
       ]);
   });
 
-  // Ingestion is exactly what it was: the database is called with the rows and the
-  // coverage the normalizer always produced, and nothing else.
+  // Ingestion is what it was: the database is called with the rows and the
+  // coverage the normalizer always produced, plus the request for the
+  // left-out rule (20261004120000), and nothing else.
   const COVERAGE_KEYS = [
     "absentStatisticsCountedAsZero",
     "anonymousStarterRows",
@@ -1721,10 +1722,13 @@ describe("lineup participation evidence", () => {
         "p_season_external_id",
       ]);
       expect(ingest[0]!.p_rows).toEqual(normalized.rows);
-      expect(ingest[0]!.p_coverage).toEqual(normalized.coverage);
+      expect(ingest[0]!.p_coverage).toEqual({
+        ...normalized.coverage,
+        leaveOutUnplacedUnheld: true,
+      });
       expect(Object.keys(ingest[0]!.p_coverage as object).sort()).toContain("validPlayerRows");
       for (const key of Object.keys(ingest[0]!.p_coverage as object))
-        expect(COVERAGE_KEYS).toContain(key);
+        expect([...COVERAGE_KEYS, "leaveOutUnplacedUnheld"]).toContain(key);
       expect(JSON.stringify(ingest[0])).not.toMatch(/participation|verifiedUnused|eventTypeIds/);
       expect(result).toMatchObject({ verdict: "pass", fixturesProcessed: 1 });
       // The evidence of an ingest run has no participation field either.
@@ -1751,5 +1755,170 @@ describe("lineup participation evidence", () => {
     expect(Object.keys(coverage).filter((key) => !COVERAGE_KEYS.includes(key))).toEqual([
       "adaptiveFieldEvidence",
     ]);
+  });
+});
+
+// Owner decision 2026-10-03 (GW1 recovery): skip what cannot change anyone's points.
+describe("goals from the provider's own events", () => {
+  /** Home wins 3-1; who scored is set by the test, events and statistics separately. */
+  function match(events: Array<Record<string, unknown>>, credited: Record<number, number>) {
+    const payload = withScore(fixture(), 3, 1);
+    for (const [index, goals] of Object.entries(credited))
+      setDetail(payload, Number(index), 52, goals);
+    return { data: { ...payload.data, events } };
+  }
+  const goal = (id: number, side: number, player: number, typeId = 14) => ({
+    id,
+    fixture_id: 9001,
+    participant_id: side,
+    type_id: typeId,
+    player_id: player,
+    minute: 10 * id,
+  });
+  const events = [goal(1, 10, 100, 16), goal(2, 10, 101), goal(3, 10, 102), goal(4, 20, 111)];
+  test("19874706's shape: one goal too many in the statistics, the events add up", async () => {
+    const result = await normalizeCurrentFinishedFixture(
+      match(events, { 0: 1, 1: 1, 2: 1, 3: 1, 11: 1 }),
+      9001,
+    );
+    expect(result.rows.slice(0, 4).map((player) => player.goals)).toEqual([1, 1, 1, 0]);
+    expect(result.coverage).toMatchObject({ goalsFromMatchEvents: 1 });
+  });
+  test("19874709's shape: one goal short, two events name the same scorer", async () => {
+    const twice = [goal(1, 10, 100, 16), goal(2, 10, 101), goal(3, 10, 101), goal(4, 20, 111)];
+    const result = await normalizeCurrentFinishedFixture(match(twice, { 0: 1, 1: 1, 11: 1 }), 9001);
+    expect(result.rows.slice(0, 2).map((player) => player.goals)).toEqual([1, 2]);
+    expect(result.coverage).toMatchObject({ goalsFromMatchEvents: 1 });
+  });
+  test("statistics that already add up are kept as they are", async () => {
+    const result = await normalizeCurrentFinishedFixture(
+      match(events, { 0: 1, 1: 1, 2: 1, 11: 1 }),
+      9001,
+    );
+    expect(result.coverage).not.toHaveProperty("goalsFromMatchEvents");
+  });
+  for (const [label, list] of [
+    ["the events do not add up either", events.slice(1)],
+    // The other events add up: only the own goal event stops the correction.
+    ["there is an own goal event", [...events, goal(5, 10, 111, 15)]],
+    ["an event names a player of the other side", [...events.slice(0, 3), goal(4, 20, 100)]],
+    ["an event names nobody in the lineup", [...events.slice(0, 3), goal(4, 20, 999)]],
+  ] as const)
+    test(`the fixture still waits when ${label}`, async () => {
+      await expect(
+        normalizeCurrentFinishedFixture(match([...list], { 0: 1, 1: 1, 2: 1, 3: 1, 11: 1 }), 9001),
+      ).rejects.toMatchObject({ code: "current_goal_totals_mismatch" });
+    });
+});
+
+describe("forwards whose goals conceded cannot be proved", () => {
+  /** Lost 1-3; home starter 0 left after 62 minutes with no departure on record. */
+  function shortened(positionId: number | null) {
+    const payload = withScore(fixture(), 1, 3);
+    setDetail(payload, 0, 119, 62);
+    setDetail(payload, 0, 52, 1);
+    setDetail(payload, 11, 52, 3);
+    payload.data.lineups[0]!.details = payload.data.lineups[0]!.details.filter(
+      (detail) => detail.type_id !== 88,
+    );
+    (payload.data.lineups[0] as Record<string, unknown>).position_id = positionId;
+    return payload;
+  }
+  test("a forward takes the side's total and no clean sheet, and is named for the database", async () => {
+    const result = await normalizeCurrentFinishedFixture(shortened(27), 9001);
+    expect(result.rows[0]).toMatchObject({ minutes: 62, goalsConceded: 3, cleanSheets: 0 });
+    expect(result.coverage).toMatchObject({ defensiveUnknownForwards: ["100"] });
+  });
+  for (const positionId of [24, 25, 26, null])
+    test(`any other position still waits (position ${positionId})`, async () => {
+      await expect(
+        normalizeCurrentFinishedFixture(shortened(positionId), 9001),
+      ).rejects.toMatchObject({ code: "current_defensive_statistics_incomplete" });
+    });
+});
+
+describe("left-out players and owner decisions", () => {
+  test("only approved decisions for the fixture are sent, with the rule", async () => {
+    const { client, received } = batchClient({ items: [{ externalFixtureId: "9001" }] });
+    await runCurrentPerformanceBatch(client, "t", null, async () => fixture(), {
+      ownerDecisions: [
+        {
+          fixtureExternalId: "9001",
+          kind: "heldPlayerNotInSquad",
+          fantasyPlayerId: "7aadc3e9-0166-49c1-8646-262b302358e3",
+          status: "approved",
+        },
+        {
+          fixtureExternalId: "9001",
+          kind: "placeAtFixtureClub",
+          externalPlayerId: "404731",
+          externalTeamId: "270260",
+          status: "proposed",
+        },
+        {
+          fixtureExternalId: "9002",
+          kind: "placeAtFixtureClub",
+          externalPlayerId: "404731",
+          externalTeamId: "270260",
+          status: "approved",
+        },
+      ],
+    });
+    const coverage = received.find((args) => "p_rows" in args)!.p_coverage as Record<
+      string,
+      unknown
+    >;
+    expect(coverage).toMatchObject({
+      leaveOutUnplacedUnheld: true,
+      heldPlayersNotInSquad: ["7aadc3e9-0166-49c1-8646-262b302358e3"],
+    });
+    expect(coverage).not.toHaveProperty("placeAtFixtureClub");
+  });
+  test("rows left out by the database reconcile, and are reported", async () => {
+    const { client } = batchClient({
+      items: [{ externalFixtureId: "9001" }],
+      ingest: () => ({
+        data: {
+          active: 19,
+          leftOut: 3,
+          placedAtFixtureClub: 1,
+          reconciled: true,
+          scoringStatisticsComplete: true,
+          sourceVersion: `sportsmonks-current-fixture:${"b".repeat(64)}`,
+        },
+        error: null,
+      }),
+    });
+    const result = await runCurrentPerformanceBatch(client, "t", null, async () => fixture(), {
+      ownerDecisions: [],
+    });
+    expect(result).toMatchObject({
+      verdict: "pass",
+      fixtures: [{ fixtureExternalId: "9001", players: 19, leftOut: 3, placedAtFixtureClub: 1 }],
+    });
+  });
+  test("a left-out count that does not reconcile is a failure", async () => {
+    for (const leftOut of [3, -1, 1.5, "3"]) {
+      const { client } = batchClient({
+        items: [{ externalFixtureId: "9001" }],
+        ingest: () => ({
+          data: {
+            active: 22,
+            leftOut,
+            reconciled: true,
+            scoringStatisticsComplete: true,
+            sourceVersion: `sportsmonks-current-fixture:${"b".repeat(64)}`,
+          },
+          error: null,
+        }),
+      });
+      const result = await runCurrentPerformanceBatch(client, "t", null, async () => fixture(), {
+        ownerDecisions: [],
+      });
+      expect(result).toMatchObject({
+        verdict: "incomplete",
+        incomplete: [{ stage: "database", code: "current_performance_reconciliation_failed" }],
+      });
+    }
   });
 });

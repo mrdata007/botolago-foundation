@@ -1,4 +1,9 @@
 import { collectAdaptiveEvidence } from "./adaptive-performance-evidence";
+import {
+  loadOwnerDecisions,
+  ownerDecisionCoverage,
+  type OwnerDecision,
+} from "./current-fixture-owner-decisions";
 import { createClient } from "@supabase/supabase-js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -94,6 +99,48 @@ const WHOLE_MATCH_MINUTES = 90;
 const SEASON = 28647;
 /** Provider event type ids that put a goal on the board: goal, own goal, penalty. */
 const GOAL_EVENT_TYPES = [14, 15, 16];
+/** SportsMonks lineup `position_id` of an attacker (24 goalkeeper, 25 defender, 26 midfielder). */
+const ATTACKER_POSITION = 27;
+/**
+ * Who scored, from the provider's own goal events, when they add up to the
+ * final score of both sides: a goal (14) or penalty (16) event per goal, each
+ * naming a lineup player of the side it counts for. Null when they do not, or
+ * when there is an own goal (15) anywhere, which events alone cannot settle.
+ */
+function goalsFromMatchEvents(
+  fixture: Row,
+  rows: ReadonlyArray<{ externalPlayerId: string; externalTeamId: string; ownGoals: number }>,
+  goalsFor: Map<number, number>,
+): Map<string, number> | null {
+  if (!Array.isArray(fixture.events)) return null;
+  if (rows.some((player) => player.ownGoals > 0)) return null;
+  const scorers = new Map<string, number>();
+  const perSide = new Map<number, number>();
+  for (const raw of fixture.events) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+    const event = raw as Row;
+    if (event.type_id === 15) return null;
+    if (event.type_id !== 14 && event.type_id !== 16) continue;
+    const side = event.participant_id as number;
+    if (
+      !Number.isSafeInteger(side) ||
+      !goalsFor.has(side) ||
+      !Number.isSafeInteger(event.player_id)
+    )
+      return null;
+    const scorer = String(event.player_id);
+    if (
+      !rows.some(
+        (player) => player.externalPlayerId === scorer && player.externalTeamId === String(side),
+      )
+    )
+      return null;
+    scorers.set(scorer, (scorers.get(scorer) ?? 0) + 1);
+    perSide.set(side, (perSide.get(side) ?? 0) + 1);
+  }
+  for (const [side, goals] of goalsFor) if ((perSide.get(side) ?? 0) !== goals) return null;
+  return scorers;
+}
 /** Numbers only: id, type, side, scorer id (when the provider gave one) and minute. */
 function goalEventSummary(fixture: Row): Row[] {
   if (!Array.isArray(fixture.events)) return [];
@@ -563,9 +610,17 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
       });
   }
   const boundaries = starterConcessionBoundary(fixture, expectedFixtureId, goalsFor);
+  const providerPosition = new Map(
+    participation.map((entry) => [entry.externalPlayerId, entry.positionId]),
+  );
   let goalsConcededFromTimeline = 0;
   let goalsConcededFromFinalScore = 0;
-  const rows: PerformanceRow[] = normalized.rows.map((player) => {
+  // Owner decision 2026-10-03: a forward scores nothing for a clean sheet or
+  // goals conceded, so when his cannot be proved he takes the side's total
+  // (no clean sheet) instead of holding the fixture. The database checks he
+  // is a forward (20261004120000).
+  const defensiveUnknownForwards: string[] = [];
+  let rows: PerformanceRow[] = normalized.rows.map((player) => {
     // Type88 is goals conceded while the player was on the pitch, when
     // SportsMonks has it; the final score bounds it and decides it for a
     // starter with 90 minutes. Type194 is a team/season aggregate and is
@@ -576,14 +631,23 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
       player.started &&
       boundary !== undefined &&
       boundary.lastGoal < Math.min(boundary.firstDeparture, player.minutes);
-    if (
+    const concededUnknown =
       player.started &&
       player.minutes >= 60 &&
       player.minutes < 90 &&
       conceded > 0 &&
       !explicitConceded.has(player.externalPlayerId) &&
-      !timelineProvesConceded
-    )
+      !timelineProvesConceded;
+    if (concededUnknown && providerPosition.get(player.externalPlayerId) === ATTACKER_POSITION) {
+      defensiveUnknownForwards.push(player.externalPlayerId);
+      return {
+        ...player,
+        ...optionalValues.get(player.externalPlayerId)!,
+        goalsConceded: conceded,
+        cleanSheets: 0,
+      };
+    }
+    if (concededUnknown)
       fail("current_defensive_statistics_incomplete", {
         fixtureExternalId: String(expectedFixtureId),
         playerExternalId: player.externalPlayerId,
@@ -620,6 +684,31 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
   // an otherwise green coverage row would let the gameweek award wrong points.
   // The database's scoring snapshot checks this independently, including for
   // fixtures imported before this validation was deployed.
+  const attributedTo = (teamId: number) => {
+    const opponentId = [...teamIds].find((candidate) => candidate !== teamId)!;
+    return rows.reduce(
+      (sum, player) =>
+        sum +
+        (player.externalTeamId === String(teamId) ? player.goals : 0) +
+        (player.externalTeamId === String(opponentId) ? player.ownGoals : 0),
+      0,
+    );
+  };
+  // Owner decision 2026-10-03: when the per-player goal statistics disagree
+  // with the final score but the provider's own goal events add up to it,
+  // the events say who scored (19874706 credits one goal too many, 19874709
+  // one too few).
+  let goalsFromEvents = 0;
+  const fromEvents = [...teamIds].some((teamId) => attributedTo(teamId) !== goalsFor.get(teamId))
+    ? goalsFromMatchEvents(fixture, rows, goalsFor)
+    : null;
+  if (fromEvents)
+    rows = rows.map((player) => {
+      const goals = fromEvents.get(player.externalPlayerId) ?? 0;
+      if (goals === player.goals) return player;
+      goalsFromEvents += 1;
+      return { ...player, goals };
+    });
   for (const teamId of teamIds) {
     const opponentId = [...teamIds].find((candidate) => candidate !== teamId)!;
     const attributed = rows.reduce(
@@ -666,6 +755,10 @@ export async function normalizeCurrentFinishedFixture(payload: unknown, expected
       absentStatisticsCountedAsZero: absentAsZero,
       goalsConcededFromFinalScore,
       ...(goalsConcededFromTimeline > 0 ? { goalsConcededFromTimeline } : {}),
+      // Rows whose goals the match events corrected, and forwards whose goals
+      // conceded are the side's total: both part of the source version.
+      ...(goalsFromEvents > 0 ? { goalsFromMatchEvents: goalsFromEvents } : {}),
+      ...(defensiveUnknownForwards.length ? { defensiveUnknownForwards } : {}),
       cleanSheetSource: "official_minutes_and_on_pitch_goals_conceded",
       goalkeeperStatistics: "explicit_value_or_null_canonical_position_checked_in_database",
     },
@@ -800,6 +893,8 @@ export type CurrentPerformanceBatchOptions = {
    * first listed; the rest of the page is neither fetched nor written.
    */
   onlyFixtureExternalId?: string | null;
+  /** The reviewed owner decisions (current-fixture-owner-decisions.json); tests supply their own. */
+  ownerDecisions?: OwnerDecision[];
 };
 
 export async function runCurrentPerformanceBatch(
@@ -972,6 +1067,7 @@ export async function runCurrentPerformanceBatch(
 
   const fixtures: Row[] = [];
   const observedAt = new Date().toISOString();
+  const ownerDecisions = options.ownerDecisions ?? loadOwnerDecisions();
   for (const fixture of normalized) {
     try {
       const result = row(
@@ -980,16 +1076,27 @@ export async function runCurrentPerformanceBatch(
           p_season_external_id: String(SEASON),
           p_fixture_external_id: fixture.fixtureExternalId,
           p_rows: fixture.rows,
+          // Owner decision 2026-10-03: a lineup player the catalogue cannot
+          // place is left out when no Fantasy team holds him; the database
+          // decides and refuses whatever could change someone's points.
           p_coverage:
             batch.adaptive === true
               ? { ...fixture.coverage, adaptiveFieldEvidence: fixture.adaptiveFieldEvidence }
-              : fixture.coverage,
+              : {
+                  ...fixture.coverage,
+                  leaveOutUnplacedUnheld: true,
+                  ...ownerDecisionCoverage(ownerDecisions, fixture.fixtureExternalId),
+                },
           p_observed_at: observedAt,
         }),
         "result",
       );
+      const leftOut = result.leftOut ?? 0;
       if (
-        result.active !== fixture.rows.length ||
+        typeof leftOut !== "number" ||
+        !Number.isSafeInteger(leftOut) ||
+        leftOut < 0 ||
+        result.active !== fixture.rows.length - leftOut ||
         result.reconciled !== true ||
         (result.scoringStatisticsComplete !== true && result.adaptive !== true) ||
         typeof result.sourceVersion !== "string" ||
@@ -1006,6 +1113,10 @@ export async function runCurrentPerformanceBatch(
       fixtures.push({
         fixtureExternalId: fixture.fixtureExternalId,
         players: result.active,
+        ...(leftOut > 0 ? { leftOut } : {}),
+        ...(typeof result.placedAtFixtureClub === "number" && result.placedAtFixtureClub > 0
+          ? { placedAtFixtureClub: result.placedAtFixtureClub }
+          : {}),
         sourceVersion: result.sourceVersion,
         coverage: fixture.coverage,
         ...(fixture.unnamedRows.length ? { unnamedRows: fixture.unnamedRows } : {}),
