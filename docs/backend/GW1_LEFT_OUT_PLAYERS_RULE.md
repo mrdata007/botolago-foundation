@@ -76,7 +76,7 @@ finalization. The read-only diagnose run will show it.
   no clean sheet, and the database checks he is a forward.
 - Accepts `active = rows − leftOut` from the database and reports both.
 
-The earlier one-substitute exception (`20261001130000`, never applied anywhere)
+The earlier one-substitute exception (`20261001130000`, only on a draft branch, never applied)
 is removed: the general rule covers both no-position substitutes.
 
 ## Evidence
