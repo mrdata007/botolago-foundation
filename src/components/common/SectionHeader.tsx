@@ -107,7 +107,7 @@ export function SectionHeaderLink({
         ui.text.meta,
         "[font-weight:var(--ui-weight-heavy)]",
         ui.tone.ink,
-        "transition-colors duration-[var(--duration-quick)] hover:bg-[color:var(--ui-surface-sunken)]",
+        "transition-colors duration-[var(--duration-quick)] hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
         ui.focus,
         className,
       )}

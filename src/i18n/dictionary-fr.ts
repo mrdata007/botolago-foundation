@@ -2452,6 +2452,8 @@ export const fr = {
   "landing.step2_title": "Choisissez votre capitaine",
   "landing.step2_body":
     "Avant la date limite, alignez votre onze et donnez le brassard : les points du capitaine comptent double.",
+  "landing.step2_example":
+    "Exemple : votre capitaine marque {n} pts, il vous en rapporte {double}.",
   "landing.step3_title": "Marquez des points, grimpez au classement",
   "landing.step3_body":
     "Vos joueurs marquent des points selon leurs vrais matchs : temps de jeu, buts, passes décisives, cages inviolées.",
@@ -2476,6 +2478,19 @@ export const fr = {
   "landing.browse_title": "Pas encore prêt ?",
   "landing.browse_body": "Matchs, résultats et classement restent ouverts à tous, sans compte.",
   "landing.browse_cta": "Voir les matchs",
+  "landing.now_kicker": "En ce moment",
+  "landing.now_title": "La Botola Pro, journée après journée",
+  "landing.now_matches": "Les matchs",
+  "landing.now_matches_link": "Tout le calendrier",
+  "landing.now_table": "Le classement",
+  "landing.now_table_link": "Classement complet",
+  "landing.players_title": "Les joueurs à suivre",
+  "landing.players_body_points": "Ceux qui rapportent le plus de points cette saison.",
+  "landing.players_body_owned": "Les plus choisis par les managers.",
+  "landing.players_owned": "{n} % des équipes",
+  "landing.players_link": "Tous les joueurs",
+  "landing.faq_body": "Tout ce qu'il faut savoir avant de composer votre équipe.",
+  "landing.team_note": "Votre équipe est en jeu : suivez ses points journée après journée.",
   "landing.faq_title": "Questions fréquentes",
   "landing.faq_free_q": "C’est vraiment gratuit ?",
   "landing.faq_free_a": "Oui. BotolaGO Fantasy est un jeu gratuit : aucun achat, aucun pari.",

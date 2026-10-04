@@ -164,7 +164,7 @@ export function PrimaryNavLinks({ tone = "surface" }: { tone?: "surface" | "nigh
                       // BG-0083: the hover used to write `--ui-ink`, a FILL,
                       // as the text colour — 1.25:1 on a dark surface. The
                       // foreground a hover moves to is the full-strength one.
-                      "hover:bg-[color:var(--ui-surface-sunken)] hover:text-[color:var(--ui-on-surface)]",
+                      "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)] hover:text-[color:var(--ui-on-surface)]",
                     ),
             )}
           >

@@ -273,13 +273,18 @@ function iconButtonPaint(variant: UiIconButtonVariant) {
       ),
     variant === "ink" && cn(ui.surface.inkPlain, ui.focus),
     variant === "ghost" &&
-      cn("bg-transparent hover:bg-[color:var(--ui-surface-sunken)]", ui.tone.ink, ui.focus),
+      cn(
+        "bg-transparent hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
+        ui.tone.ink,
+        ui.focus,
+      ),
     "disabled:cursor-not-allowed disabled:opacity-50",
   );
 }
 
 const ICON_BUTTON_FRAME = cn(
-  "inline-grid shrink-0 place-items-center transition-[filter,opacity,background-color]",
+  // `press`: gives under the finger, and owns the transitions.
+  "press inline-grid shrink-0 place-items-center",
   "[&_svg]:h-5 [&_svg]:w-5 [&_svg]:shrink-0",
   ui.space.tap,
   ui.radius.full,
@@ -607,7 +612,8 @@ function buttonClass(
           ui.text.meta,
           "[font-weight:var(--ui-weight-heavy)]",
         ),
-    "transition-[filter,opacity] disabled:cursor-not-allowed",
+    // `press`: gives under the finger, and owns the transitions.
+    "press disabled:cursor-not-allowed",
     // The primary call to action is the one button lifted off the page. A
     // disabled one lies flat again, so it does not read as armed.
     variant === "gradient" &&
@@ -1002,7 +1008,7 @@ export function UiChip({
         ui.text.meta,
         "[font-weight:var(--ui-weight-strong)]",
         ui.focus,
-        "transition-colors",
+        "press",
         selected ? cn(ui.surface.inkPlain, "shadow-[var(--ui-shadow-card)]") : ui.surface.sunken,
         className,
       )}

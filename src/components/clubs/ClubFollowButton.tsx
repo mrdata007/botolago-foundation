@@ -65,7 +65,7 @@ export function ClubFollowButton({ club }: { club: Club }) {
         ui.radius.full,
         ui.text.meta,
         "[font-weight:var(--ui-weight-heavy)]",
-        "transition-[filter,opacity] disabled:opacity-60",
+        "press disabled:opacity-60",
         following
           ? cn(ui.club.inverse, ui.shadow.card)
           : cn("bg-[color:color-mix(in_srgb,var(--ui-on-club)_16%,transparent)]", ui.tone.onClub),

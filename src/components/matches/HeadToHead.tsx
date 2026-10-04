@@ -343,7 +343,7 @@ function MeetingRow({
         aria-label={label}
         className={cn(
           "grid min-h-[var(--ui-row-min)] grid-cols-[0.25rem_minmax(0,1fr)_auto_minmax(0,1fr)_0.25rem] items-center gap-2",
-          "transition-colors duration-[var(--duration-quick)] hover:bg-[color:var(--ui-surface-sunken)]",
+          "transition-colors duration-[var(--duration-quick)] hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
           ui.focus,
           "focus-visible:ring-inset focus-visible:ring-offset-0",
         )}

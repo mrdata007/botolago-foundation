@@ -87,7 +87,7 @@ export function SavedButton({
       aria-pressed={saved}
       className={cn(
         "inline-flex items-center justify-center gap-1 px-3 transition-colors",
-        "hover:bg-[color:var(--ui-surface-sunken)]",
+        "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
         ui.space.tap,
         ui.radius.full,
         ui.text.meta,
