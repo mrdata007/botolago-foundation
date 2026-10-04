@@ -216,6 +216,18 @@ function coloursOf(club?: Club) {
  * Arabic with the marks that keep the sign on the figure's side) — as the
  * players list writes it — rather than a figure with "%" glued on.
  */
+/**
+ * A per-gameweek count the source may not report. Unknown is the same en dash
+ * used for unknown form; a real 0 stays 0.
+ */
+function countOrNone(
+  nf: Intl.NumberFormat,
+  value: number | null,
+  t: (key: TranslationKey) => string,
+) {
+  return value === null ? t("fantasy.stat.none") : nf.format(value);
+}
+
 function percent(nf: Intl.NumberFormat, value: number) {
   return new Intl.NumberFormat(nf.resolvedOptions().locale, {
     style: "percent",
@@ -281,11 +293,15 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
 
       <div className="p-4">
         <dl className="grid grid-cols-4">
-          <HeroStat label={t("fantasy.top.goals")} value={nf.format(top.goals)} />
-          <HeroStat label={t("fantasy.top.assists")} value={nf.format(top.assists)} divided />
+          <HeroStat label={t("fantasy.top.goals")} value={countOrNone(nf, top.goals, t)} />
+          <HeroStat
+            label={t("fantasy.top.assists")}
+            value={countOrNone(nf, top.assists, t)}
+            divided
+          />
           <HeroStat
             label={t("fantasy.top.clean_sheets")}
-            value={nf.format(top.cleanSheets)}
+            value={countOrNone(nf, top.cleanSheets, t)}
             divided
           />
           <HeroStat label={t("fantasy.top.minutes")} value={nf.format(top.minutes)} divided />
@@ -454,13 +470,14 @@ function RankedPlayerRow({ entry, first, tr, t, nf }: CardProps & { first: boole
             )}
           >
             <span>
-              <b className={ui.stat.sm}>{nf.format(top.goals)}</b> {t("fantasy.top.goals")}
+              <b className={ui.stat.sm}>{countOrNone(nf, top.goals, t)}</b> {t("fantasy.top.goals")}
             </span>
             <span>
-              <b className={ui.stat.sm}>{nf.format(top.assists)}</b> {t("fantasy.top.assists")}
+              <b className={ui.stat.sm}>{countOrNone(nf, top.assists, t)}</b>{" "}
+              {t("fantasy.top.assists")}
             </span>
             <span>
-              <b className={ui.stat.sm}>{nf.format(top.cleanSheets)}</b>{" "}
+              <b className={ui.stat.sm}>{countOrNone(nf, top.cleanSheets, t)}</b>{" "}
               {t("fantasy.top.clean_sheets")}
             </span>
             <span>

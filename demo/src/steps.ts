@@ -44,8 +44,8 @@ export const DEMO_STEPS: DemoStep[] = [
     path: "/fantasy/create",
     title: { fr: "Vos 11 joueurs", en: "Pick your 11" },
     lead: {
-      fr: "Les vrais effectifs 2026/27 de la Botola Pro : 603 joueurs, 16 clubs. Un budget de 80 M, trois joueurs au plus par club, et un capitaine dont les points comptent double.",
-      en: "The real 2026/27 Botola Pro squads: 603 players across 16 clubs. An 80M budget, at most three players per club, and a captain whose points count double.",
+      fr: "Les vrais effectifs 2026/27 de la Botola Pro : 603 joueurs, 16 clubs. Cette démo est simplifiée : 11 joueurs et un budget de 80 M (le jeu complet se joue à 15 joueurs et 100 M). Trois joueurs au plus par club, et un capitaine dont les points comptent double.",
+      en: "The real 2026/27 Botola Pro squads: 603 players across 16 clubs. This demo is simplified: 11 players and an 80M budget (the full game uses 15 players and 100M). At most three players per club, and a captain whose points count double.",
     },
     tip: {
       fr: "Touchez un maillot vide pour choisir un joueur, ou « Compléter l’équipe » pour aller vite. Touchez ensuite un joueur pour le nommer capitaine.",

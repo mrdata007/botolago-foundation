@@ -568,6 +568,7 @@ export const fr = {
   "fantasy.points.gameweek": "Journée",
   "fantasy.points.bench": "Points du banc",
   "fantasy.points.total": "Total",
+  "fantasy.points.how_scored": "Comment les points sont calculés",
   "fantasy.points.status.provisional": "Provisoire",
   "fantasy.points.status.live": "En direct",
   "fantasy.points.status.final": "Définitif",
@@ -706,6 +707,9 @@ export const fr = {
   "fantasy.rules.scoring": "Barème de points",
   "fantasy.rules.scoring_desc":
     "But d'un attaquant : 4 pts, milieu : 5 pts, défenseur ou gardien : 6 pts. Cage inviolée : 4 pts (D/GK).",
+  "fantasy.rules.policy_title": "Comment les points sont validés",
+  "fantasy.rules.provisional_desc":
+    "Pendant une journée, les points affichés sont provisoires et peuvent encore changer. Ils deviennent définitifs une fois la journée validée. Si une erreur de données est corrigée ensuite, les points et le classement sont mis à jour.",
   "fantasy.rules.tiebreak": "Départages",
   "fantasy.rules.tiebreak_desc":
     "En cas d'égalité de points, la meilleure place revient au manager qui a perdu le moins de points en transferts, puis qui a fait le moins de transferts, puis qui a le meilleur score à la dernière journée, puis dont l'équipe a été créée le plus tôt.",

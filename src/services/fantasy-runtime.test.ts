@@ -190,3 +190,16 @@ describe("every player-stat surface renders the dash for a null form", () => {
     });
   }
 });
+
+describe("top players of the week: unknown goals, assists and clean sheets", () => {
+  test("the runtime reports them as unknown, not as literal zeros", () => {
+    const source = readFileSync(join(ROOT, "src/services/fantasy-runtime.ts"), "utf8");
+    expect(source).not.toMatch(/\b(goals|assists|cleanSheets): 0,/);
+  });
+
+  test("the top-players screen never formats them without the dash branch", () => {
+    const source = readFileSync(join(ROOT, "src/routes/fantasy.top-players.tsx"), "utf8");
+    expect(source).not.toMatch(/format\(top\.(goals|assists|cleanSheets)\)/);
+    expect(source).toContain("countOrNone(nf, top.goals, t)");
+  });
+});
