@@ -35,3 +35,8 @@ bound (`excluded_incomplete_rows <= 20`, `valid_player_rows >= 22`), kept by the
 ## Not attempted
 
 19874710 (needs the Zniti decision, approved). The GW1 worker. GW2.
+
+## Later the same morning
+
+- 06:4x: owner: "raise the limit and import 710". Live refresh paused; 19874710 ingested (27 placed incl. 404731 at 270260 by the owner decision: 90 min, 2 conceded; 13 left out; forward rule for 37550342); live refresh restored. GW1 ready: 705, 706, 707, 708, 710, 711; pending 709.
+- Limit change opened as PR #328 (`20261004130000`).
