@@ -42,38 +42,51 @@ export function PredictionsHomeCard() {
   const done = mine.data?.items.length ?? 0;
 
   return (
+    // A container, so the card lays itself out by its own width: in the 340px
+    // desktop column (and on a phone) "Pronostiquer" beside the text squeezed
+    // the title onto two lines and the progress onto three, so below 26rem the
+    // call to action takes its own line under the text.
     <Link
       to="/pronostics"
-      className={cn("flex items-center gap-3 p-4", ui.surface.card, ui.focus, "press-tile")}
+      className={cn("block p-4 @container", ui.surface.card, ui.focus, "press-tile")}
       data-testid="home-predictions-card"
     >
-      <span
-        className={cn(
-          "grid h-10 w-10 shrink-0 place-items-center",
-          ui.radius.full,
-          ui.surface.inkPlain,
-        )}
-      >
-        <Target className="h-5 w-5" aria-hidden />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className={ui.text.bodyStrong}>
-          {t("predictions.title")} ·{" "}
-          {t("predictions.round.name").replace("{n}", String(journee.number))}
+      <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <span
+          className={cn(
+            "grid h-10 w-10 shrink-0 place-items-center",
+            ui.radius.full,
+            ui.surface.inkPlain,
+          )}
+        >
+          <Target className="h-5 w-5" aria-hidden />
         </span>
-        <span className={cn(ui.text.meta, ui.tone.muted)}>
-          {uid
-            ? t("predictions.progress")
-                .replace("{done}", formatNumber(done, lang))
-                .replace("{total}", formatNumber(total, lang))
-            : t("predictions.home.guest_line")}
-          {uid && journee.nextLockAt
-            ? ` · ${t("predictions.next_lock").replace("{when}", formatLockMoment(journee.nextLockAt, lang))}`
-            : null}
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className={ui.text.bodyStrong}>
+            {t("predictions.title")} ·{" "}
+            {t("predictions.round.name").replace("{n}", String(journee.number))}
+          </span>
+          <span className={cn(ui.text.meta, ui.tone.muted)}>
+            {uid
+              ? t("predictions.progress")
+                  .replace("{done}", formatNumber(done, lang))
+                  .replace("{total}", formatNumber(total, lang))
+              : t("predictions.home.guest_line")}
+            {uid && journee.nextLockAt
+              ? ` · ${t("predictions.next_lock").replace("{when}", formatLockMoment(journee.nextLockAt, lang))}`
+              : null}
+          </span>
         </span>
-      </span>
-      <span className={cn("shrink-0", ui.text.bodyStrong, ui.tone.ink)}>
-        {t("predictions.home.cta")}
+        <span
+          className={cn(
+            "basis-full ps-[3.25rem] @min-[26rem]:basis-auto @min-[26rem]:ps-0",
+            "shrink-0",
+            ui.text.bodyStrong,
+            ui.tone.ink,
+          )}
+        >
+          {t("predictions.home.cta")}
+        </span>
       </span>
     </Link>
   );

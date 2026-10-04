@@ -721,30 +721,36 @@ function HomeContent() {
 
             {fantasyReady ? <FantasyRuleChips deadline={gwQ.data?.deadline} /> : null}
 
-            {fantasyReady && source !== "guest" && (
-              <div className="mt-3">
-                {alertsQ.isError || playersQ.isError ? null : alertsQ.data && playersQ.data ? (
-                  alertsQ.data.length > 0 && (
-                    <>
-                      <div className="mb-1.5 inline-flex items-center gap-1.5">
-                        <Bell className={cn("h-3.5 w-3.5 shrink-0", ui.tone.ink)} aria-hidden />
-                        {/* `home.fantasy_alerts` carries `{accent}` markers, so
+            {/* Only when there is something to show: an empty wrapper still
+            carried its margin, a stray gap above the Pronostics card. */}
+            {fantasyReady &&
+              source !== "guest" &&
+              !alertsQ.isError &&
+              !playersQ.isError &&
+              !(alertsQ.data && playersQ.data && alertsQ.data.length === 0) && (
+                <div className="mt-3">
+                  {alertsQ.isError || playersQ.isError ? null : alertsQ.data && playersQ.data ? (
+                    alertsQ.data.length > 0 && (
+                      <>
+                        <div className="mb-1.5 inline-flex items-center gap-1.5">
+                          <Bell className={cn("h-3.5 w-3.5 shrink-0", ui.tone.ink)} aria-hidden />
+                          {/* `home.fantasy_alerts` carries `{accent}` markers, so
                         it must go through <Trans> — rendered raw it prints
                         the literal markers on screen. */}
-                        <Trans
-                          text={t("home.fantasy_alerts")}
-                          className={cn(ui.text.label, ui.tone.muted)}
-                          accentClassName={ui.tone.ink}
-                        />
-                      </div>
-                      <FantasyAlertList alerts={alertsQ.data} players={playersQ.data} />
-                    </>
-                  )
-                ) : (
-                  <SkeletonList count={1}>{() => <AlertRowSkeleton />}</SkeletonList>
-                )}
-              </div>
-            )}
+                          <Trans
+                            text={t("home.fantasy_alerts")}
+                            className={cn(ui.text.label, ui.tone.muted)}
+                            accentClassName={ui.tone.ink}
+                          />
+                        </div>
+                        <FantasyAlertList alerts={alertsQ.data} players={playersQ.data} />
+                      </>
+                    )
+                  ) : (
+                    <SkeletonList count={1}>{() => <AlertRowSkeleton />}</SkeletonList>
+                  )}
+                </div>
+              )}
           </Section>
           {/* Pronostics (BG-0146), right after the matches: shown once promoted,
           and it hides itself while the game is off in the database. */}
