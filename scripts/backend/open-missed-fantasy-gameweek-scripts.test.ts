@@ -86,4 +86,16 @@ describe("open-missed-fantasy-gameweek.sql", () => {
     expect(use).toContain("calculation constant bigint := 20;");
     expect(occurrences(use, "app_private.fantasy_open_missed_gameweek(")).toBe(1);
   });
+
+  test("a repeat after the lifecycle moved the gameweek on still checks out", () => {
+    expect(use).toContain(
+      "not in ('open', 'locked', 'live', 'provisional', 'finalizing', 'finalized')",
+    );
+    expect(use).not.toMatch(/where id = next_id\) <> 'open'/);
+  });
+
+  test("tells the operator to put back what was paused", () => {
+    expect(use).toContain("select app_private.fantasy_automation_configure(true);");
+    expect(use).toContain("app_private.notification_email_configure(<mode>, null, null, true);");
+  });
 });

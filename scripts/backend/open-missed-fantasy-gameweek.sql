@@ -21,7 +21,16 @@
 --   Run the WHOLE file. As shipped it is a REHEARSAL (rolled back; "Rehearsal
 --   passed"). Change `rollback;` near the bottom to `commit;` and run again
 --   ("Opened"). A failed check stops it with nothing saved; do not edit a check
---   to make it pass. Running it again after it opened changes nothing.
+--   to make it pass. Running it again after it opened changes nothing, also
+--   once the lifecycle has moved the gameweek on (locked, live, ...).
+--
+-- AFTERWARDS
+--   Put back what you paused, as AGENTS.md says: the live refresh
+--   (select app_private.notification_email_configure(<mode>, null, null, true);)
+--   and, if it was on before, the Fantasy tick
+--   (select app_private.fantasy_automation_configure(true);). Until the tick
+--   or the manual worker makes its next pass, the gameweek stays open with
+--   its deadline past: nobody can change a lineup, and nothing is scored.
 -- ============================================================================
 
 begin;
@@ -42,21 +51,30 @@ begin
   result := app_private.fantasy_open_missed_gameweek(previous_id, next_id, calculation, reason);
   raise notice 'open_missed: %', result;
 
-  if (select status from app.fantasy_gameweeks where id = next_id) <> 'open' then
-    problems := problems || 'the gameweek is not open'::text;
+  -- Open now, or already moved on by the lifecycle when this is a repeat.
+  if (select status from app.fantasy_gameweeks where id = next_id)
+      not in ('open', 'locked', 'live', 'provisional', 'finalizing', 'finalized')
+    or not exists (select 1 from app_private.fantasy_gameweek_progressions journal
+      where journal.previous_gameweek_id = previous_id and journal.next_gameweek_id = next_id
+        and journal.opened_at is not null) then
+    problems := problems || 'the gameweek is not opened'::text;
   end if;
-  if exists (select 1 from app.fantasy_teams team
-    join app.fantasy_gameweeks gameweek on gameweek.id = next_id
-    where team.fantasy_season_id = gameweek.fantasy_season_id and team.status = 'active'
-      and (team.current_gameweek_id is distinct from next_id
-        or not exists (select 1 from app.fantasy_lineups lineup
-          where lineup.fantasy_team_id = team.id and lineup.gameweek_id = next_id))) then
-    problems := problems || 'an active team has no lineup for the gameweek'::text;
-  end if;
-  if exists (select 1 from app.fantasy_lineups lineup
-    where lineup.gameweek_id = next_id
-      and (select count(*) from app.fantasy_lineup_players player where player.lineup_id = lineup.id) <> 15) then
-    problems := problems || 'a lineup is not 15 players'::text;
+  -- The opening run itself: every active team is on the gameweek with a full
+  -- lineup. (A repeat checks only the journal above: teams move on later.)
+  if not coalesce((result->>'alreadyOpened')::boolean, false) then
+    if exists (select 1 from app.fantasy_teams team
+      join app.fantasy_gameweeks gameweek on gameweek.id = next_id
+      where team.fantasy_season_id = gameweek.fantasy_season_id and team.status = 'active'
+        and (team.current_gameweek_id is distinct from next_id
+          or not exists (select 1 from app.fantasy_lineups lineup
+            where lineup.fantasy_team_id = team.id and lineup.gameweek_id = next_id))) then
+      problems := problems || 'an active team has no lineup for the gameweek'::text;
+    end if;
+    if exists (select 1 from app.fantasy_lineups lineup
+      where lineup.gameweek_id = next_id
+        and (select count(*) from app.fantasy_lineup_players player where player.lineup_id = lineup.id) <> 15) then
+      problems := problems || 'a lineup is not 15 players'::text;
+    end if;
   end if;
   if cardinality(problems) > 0 then
     raise exception 'stop: the opening did not check out: %', problems;
@@ -71,7 +89,9 @@ $open$;
 rollback;
 
 select case
-  when (select status from app.fantasy_gameweeks where id = 'd4324127-ce55-4943-973f-4cf2f9a12780') = 'open'
+  when exists (select 1 from app_private.fantasy_gameweek_progressions journal
+    where journal.previous_gameweek_id = '7fcb28c5-9b69-4591-bcda-437c6c961c5c'
+      and journal.next_gameweek_id = 'd4324127-ce55-4943-973f-4cf2f9a12780' and journal.opened_at is not null)
     then 'Opened. GW2 carries every GW1 lineup; the lifecycle locks them on its next pass.'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;
