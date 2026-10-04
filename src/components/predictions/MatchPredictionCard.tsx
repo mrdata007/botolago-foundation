@@ -10,7 +10,7 @@ import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { FixturePredictionCard } from "./FixturePredictionCard";
 import { MatchVoteCard } from "./MatchVoteCard";
-import { questionView } from "./match-votes";
+import { questionView, voteCardWorthShowing } from "./match-votes";
 import { SwipeDeck, type SwipeSlide } from "./SwipeDeck";
 import { useMatchVotes } from "./use-match-votes";
 import { isFixtureOpen, nextPick, usePredictionsRound } from "./use-predictions-round";
@@ -72,6 +72,7 @@ export function MatchPredictionCard({
     const open = matchVotes.open && isFixtureOpen(fixture, model.now);
     for (const entry of matchVotes.questions) {
       const view = questionView(entry, votes.uid ? null : (votes.phone[entry.question] ?? null));
+      if (!voteCardWorthShowing(view, open)) continue;
       slides.push({
         key: entry.question,
         node: (

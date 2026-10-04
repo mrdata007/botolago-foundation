@@ -114,6 +114,24 @@ describe("match page — design-system rules in source", () => {
   });
 });
 
+describe("match page — the order of the prediction and the tabs on a phone", () => {
+  const route = code("src/routes/matches.$matchId.tsx");
+
+  it("reads the order from the match's status, not from a literal", () => {
+    expect(route).toMatch(/predictionAfterTabs = predictionFollowsTabs\(match\.status\)/);
+  });
+
+  it("swaps the two blocks' phone order together, so neither lands on the other's slot", () => {
+    expect(route).toMatch(/predictionAfterTabs \? "order-2" : "order-1"/);
+    expect(route).toMatch(/predictionAfterTabs \? "order-1" : "order-2"/);
+  });
+
+  it("leaves the desktop columns where they were", () => {
+    expect(route).toContain("lg:col-start-3 lg:row-start-1 lg:mt-4");
+    expect(route).toContain("min-w-0 lg:col-span-2 lg:col-start-1 lg:row-start-1");
+  });
+});
+
 describe("match page — the Face-à-face table", () => {
   const route = code("src/routes/matches.$matchId.tsx");
   const classement = code("src/routes/matches.standings.tsx");
