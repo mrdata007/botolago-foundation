@@ -96,7 +96,9 @@ function CompactBar({
     <div
       inert={!shown}
       className={cn(
-        "absolute inset-0 overflow-hidden transition-opacity duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
+        // `@container`: the crests ask how wide the bar is in rem, which is
+        // what text size changes, rather than in pixels.
+        "@container absolute inset-0 overflow-hidden transition-opacity duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
         !shown && "pointer-events-none opacity-0",
       )}
     >
@@ -118,7 +120,17 @@ function CompactBar({
         {/* The same match as the big header, hidden from assistive tech:
             the header's score is the page's one live region. */}
         <div aria-hidden className="flex h-[var(--ui-tap-min)] items-center gap-2">
-          <ClubCrest club={home} palette={palettes.home} size="xs" tone="inverse" />
+          {/* The crests are the first thing to go when the bar runs out of room
+              (a large text size on a narrow phone): the two colours, the
+              score and the live pill still say which match this is, and the
+              share button stays on screen. */}
+          <ClubCrest
+            club={home}
+            palette={palettes.home}
+            size="xs"
+            tone="inverse"
+            className="@max-[17rem]:hidden"
+          />
           <div className="flex flex-col items-center gap-0.5">
             {showScore ? (
               <span
@@ -137,7 +149,13 @@ function CompactBar({
             ) : null}
             {isLive ? <UiLivePill minute={match.minute} /> : null}
           </div>
-          <ClubCrest club={away} palette={palettes.away} size="xs" tone="inverse" />
+          <ClubCrest
+            club={away}
+            palette={palettes.away}
+            size="xs"
+            tone="inverse"
+            className="@max-[17rem]:hidden"
+          />
         </div>
         <div {...clubStyle(palettes.away)}>
           {onShare ? (

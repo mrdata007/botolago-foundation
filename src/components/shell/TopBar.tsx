@@ -54,7 +54,9 @@ export function TopBar({
     <header className={cn("sticky top-0 z-30", ui.surface.bar, ui.rule.block, ui.safe.top, "pb-2")}>
       <div
         className={cn(
-          "mx-auto flex items-center gap-3",
+          // `@container`: what the bar can hold is asked in rem, which a larger
+          // text size changes, not in pixels (see the logo and the buttons).
+          "@container mx-auto flex items-center gap-3",
           wide
             ? "md:max-w-[var(--ui-content-max)] lg:max-w-[var(--ui-desktop-max)]"
             : "md:max-w-[var(--ui-content-max)]",
@@ -64,13 +66,19 @@ export function TopBar({
       >
         {/* The boards set the wordmark at about 21px against 44px controls:
             the bar is quiet and the page title under it is the loud line. */}
-        <Logo size="sm" />
+        {/* The wordmark while it fits beside the buttons (search, bell,
+            language, profile: four on a signed-in phone); below that — a
+            320px phone, or a large text size on a narrow one — the "GO" of the
+            same wordmark, which keeps the buttons on screen and the brand in
+            the bar. */}
+        <Logo size="sm" className="hidden @min-[20rem]:flex" />
+        <Logo variant="icon" className="shrink @min-[20rem]:hidden" />
 
         <PrimaryNavLinks />
 
         {wide ? <GlobalSearch className="hidden w-64 lg:block" /> : null}
 
-        <div className="ms-auto flex items-center gap-2 md:ms-0">
+        <div className="ms-auto flex items-center gap-2 @max-[20rem]:gap-1 md:ms-0">
           {trailing}
           <UiIconButton
             className={wide ? "lg:hidden" : undefined}
