@@ -3,6 +3,7 @@ import {
   loadOwnerDecisions,
   ownerDecisionCoverage,
   parseOwnerDecisions,
+  unnamedStarterNames,
 } from "./current-fixture-owner-decisions";
 
 const held = {
@@ -21,6 +22,16 @@ const placed = {
   status: "proposed",
   approvedBy: null,
   approvedOn: null,
+};
+const naming = {
+  fixtureExternalId: "19885594",
+  kind: "nameUnnamedStarter",
+  externalTeamId: "2846",
+  externalPlayerId: "37771847",
+  status: "approved",
+  evidence: "The one starter of the official team sheet without a provider id.",
+  approvedBy: "owner",
+  approvedOn: "2026-10-04",
 };
 const file = (...decisions: unknown[]) => JSON.stringify({ decisions });
 
@@ -47,6 +58,33 @@ describe("owner decisions for one fixture", () => {
       placeAtFixtureClub: [{ externalPlayerId: "404731", externalTeamId: "270260" }],
     });
   });
+  test("an approved unnamed starter naming is used for its fixture only; a proposed one is not", () => {
+    const decisions = parseOwnerDecisions(
+      file(
+        naming,
+        { ...naming, externalTeamId: "270260", status: "proposed", approvedBy: null },
+        { ...naming, fixtureExternalId: "19885595", externalPlayerId: "404731" },
+      ),
+    );
+    expect(decisions[0]).toEqual({
+      fixtureExternalId: "19885594",
+      kind: "nameUnnamedStarter",
+      externalPlayerId: "37771847",
+      externalTeamId: "2846",
+      status: "approved",
+    });
+    expect(unnamedStarterNames(decisions, "19885594")).toEqual([
+      { externalPlayerId: "37771847", externalTeamId: "2846" },
+    ]);
+    expect(unnamedStarterNames(decisions, "19885596")).toEqual([]);
+    // Applied by the importer to the payload, never sent as a decision key.
+    expect(ownerDecisionCoverage(decisions, "19885594")).toEqual({});
+    // The other kinds are not namings.
+    expect(unnamedStarterNames(parseOwnerDecisions(file(held, placed)), "19874709")).toEqual([]);
+  });
+  test("the reviewed file names no unnamed starter yet", () => {
+    expect(unnamedStarterNames(loadOwnerDecisions(), "19885594")).toEqual([]);
+  });
   for (const [label, entry] of [
     ["an approval without who and when", { ...held, approvedBy: null }],
     ["an unknown kind", { ...held, kind: "skipFixture" }],
@@ -54,6 +92,11 @@ describe("owner decisions for one fixture", () => {
     ["a malformed Fantasy id", { ...held, fantasyPlayerId: "7aadc3e9" }],
     ["a malformed provider id", { ...placed, externalPlayerId: "04731" }],
     ["a malformed fixture id", { ...placed, fixtureExternalId: "abc" }],
+    ["a naming without a club", { ...naming, externalTeamId: undefined }],
+    ["a naming with a numeric provider id", { ...naming, externalPlayerId: 37771847 }],
+    ["a naming with a leading zero", { ...naming, externalTeamId: "02846" }],
+    ["a naming approved without who", { ...naming, approvedBy: null }],
+    ["a naming with a Fantasy id instead", { ...naming, externalPlayerId: held.fantasyPlayerId }],
   ] as const)
     test(`refuses the whole file for ${label}`, () => {
       expect(() => parseOwnerDecisions(file(entry))).toThrow("owner_decisions_invalid");

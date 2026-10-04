@@ -10,6 +10,7 @@ import {
   currentPerformanceGuard,
   isProviderOutage,
   manualRunExitCode,
+  nameUnnamedStarters,
 } from "./current-season-performances";
 import { SportsMonksProbeError } from "./sportsmonks-production-probe";
 
@@ -1925,4 +1926,211 @@ describe("left-out players and owner decisions", () => {
       });
     }
   });
+});
+
+describe("owner-named unnamed starters", () => {
+  const NAMED = "37771847";
+  const decision = (externalTeamId = "10", externalPlayerId = NAMED) => ({
+    fixtureExternalId: "9001",
+    kind: "nameUnnamedStarter" as const,
+    externalPlayerId,
+    externalTeamId,
+    status: "approved" as const,
+  });
+  /** An unnamed row whose statistics SportsMonks did send, as for 19885594: no player_id anywhere. */
+  function unnamedWithStatistics(payload: ReturnType<typeof fixture>, index: number) {
+    const lineup = payload.data.lineups[index] as {
+      player_id: number | null;
+      details: Array<{ player_id: number | null }>;
+    };
+    lineup.player_id = null;
+    for (const detail of lineup.details) detail.player_id = null;
+  }
+  /** A home starter (index 4) unnamed with 89 minutes and a booking, an unnamed away starter and an unnamed home substitute. */
+  function payloadWithUnnamed() {
+    const payload = withBench(fixture(), 4);
+    setDetail(payload, 4, 119, 89);
+    setDetail(payload, 4, 84, 1);
+    unnamedWithStatistics(payload, 4);
+    unnamedRow(payload, 14); // away starter: another club, stays unnamed
+    unnamedRow(payload, 22); // home substitute: never named
+    return payload;
+  }
+  function refusal(run: () => unknown) {
+    try {
+      run();
+    } catch (error) {
+      return error as CurrentPerformanceError;
+    }
+    throw new Error("expected a refusal");
+  }
+
+  test("the club's one unnamed starter is scored exactly as if the provider had named him", async () => {
+    const payload = payloadWithUnnamed();
+    const naming = nameUnnamedStarters(payload, 9001, [decision()]);
+    expect(naming.named).toEqual([{ externalPlayerId: NAMED, externalTeamId: "10" }]);
+    // The provider's own payload is not changed.
+    expect(payload.data.lineups[4]!.player_id).toBeNull();
+    const given = payloadWithUnnamed();
+    given.data.lineups[4]!.player_id = Number(NAMED);
+    for (const detail of given.data.lineups[4]!.details) detail.player_id = Number(NAMED);
+    const named = await normalizeCurrentFinishedFixture(naming.payload, 9001);
+    expect(named).toEqual(await normalizeCurrentFinishedFixture(given, 9001));
+    expect(named.rows.find((player) => player.externalPlayerId === NAMED)).toMatchObject({
+      externalTeamId: "10",
+      started: true,
+      minutes: 89,
+      yellowCards: 1,
+      cleanSheets: 1,
+    });
+    const unnamed = await normalizeCurrentFinishedFixture(payload, 9001);
+    expect(unnamed.coverage.anonymousStarterRows).toBe(2);
+    expect(named.coverage).toMatchObject({
+      anonymousStarterRows: 1,
+      excludedIncompleteRows: unnamed.coverage.excludedIncompleteRows - 1,
+      starterRows: unnamed.coverage.starterRows + 1,
+    });
+    expect(named.rows).toHaveLength(unnamed.rows.length + 1);
+    // The away starter and the substitute stay unnamed.
+    expect(
+      named.unnamedRows.map((entry) => [entry.field, entry.role, entry.teamExternalId]),
+    ).toEqual([
+      ["data.lineups[14].player_id", "starter", "20"],
+      ["data.lineups[22].player_id", "substitute", "10"],
+    ]);
+  });
+
+  test("ingestion sends the named row and records the naming in the coverage", async () => {
+    const { client, received } = batchClient({ items: [{ externalFixtureId: "9001" }] });
+    const result = await runCurrentPerformanceBatch(
+      client,
+      "t",
+      null,
+      async () => payloadWithUnnamed(),
+      // Proposed decisions and other fixtures' are not applied.
+      {
+        ownerDecisions: [
+          decision(),
+          { ...decision("20"), status: "proposed" },
+          { ...decision("20"), fixtureExternalId: "9002" },
+        ],
+      },
+    );
+    expect(result).toMatchObject({ verdict: "pass", fixturesProcessed: 1 });
+    const ingest = received.find((args) => "p_rows" in args)!;
+    expect(
+      (ingest.p_rows as Array<Record<string, unknown>>).filter(
+        (player) => player.externalPlayerId === NAMED,
+      ),
+    ).toMatchObject([{ externalTeamId: "10", started: true, minutes: 89 }]);
+    expect(ingest.p_coverage).toMatchObject({
+      anonymousStarterRows: 1,
+      excludedIncompleteRows: 2,
+      namedUnnamedStarters: [{ externalPlayerId: NAMED, externalTeamId: "10" }],
+    });
+    // Diagnose builds the same facts.
+    const diagnosed = await runCurrentPerformanceBatch(
+      batchClient({ items: [{ externalFixtureId: "9001" }] }).client,
+      "t",
+      null,
+      async () => payloadWithUnnamed(),
+      { mode: "diagnose", ownerDecisions: [decision()] },
+    );
+    expect(diagnosed.verdict).toBe("pass");
+    const diagnosedCoverage: Record<string, unknown> = {
+      ...(diagnosed as { fixtures: Array<{ coverage: object }> }).fixtures[0]!.coverage,
+      leaveOutUnplacedUnheld: true,
+    };
+    expect(diagnosedCoverage).toEqual(ingest.p_coverage as Record<string, unknown>);
+  });
+
+  test("without an approved naming nothing changes and no naming is recorded", async () => {
+    const { client, received } = batchClient({ items: [{ externalFixtureId: "9001" }] });
+    await runCurrentPerformanceBatch(client, "t", null, async () => payloadWithUnnamed(), {
+      ownerDecisions: [{ ...decision(), status: "proposed" }],
+    });
+    const ingest = received.find((args) => "p_rows" in args)!;
+    expect(ingest.p_coverage).toMatchObject({ anonymousStarterRows: 2 });
+    expect(ingest.p_coverage).not.toHaveProperty("namedUnnamedStarters");
+    expect(JSON.stringify(ingest.p_rows)).not.toContain(NAMED);
+  });
+
+  for (const [label, prepare, names, unnamedStarters, alreadyInLineup] of [
+    [
+      "the club has no unnamed starter, only an unnamed substitute",
+      (payload: ReturnType<typeof fixture>) => unnamedRow(payload, 22),
+      [decision()],
+      0,
+      false,
+    ],
+    [
+      "the club has two unnamed starters",
+      (payload: ReturnType<typeof fixture>) => {
+        unnamedWithStatistics(payload, 4);
+        unnamedRow(payload, 5);
+      },
+      [decision()],
+      2,
+      false,
+    ],
+    [
+      "the unnamed starter is the other club's",
+      (payload: ReturnType<typeof fixture>) => unnamedWithStatistics(payload, 14),
+      [decision("10")],
+      0,
+      false,
+    ],
+    [
+      "the player is already a named starter",
+      (payload: ReturnType<typeof fixture>) => unnamedWithStatistics(payload, 4),
+      [decision("10", "105")],
+      1,
+      true,
+    ],
+    [
+      "the player is already on the bench of the other club",
+      (payload: ReturnType<typeof fixture>) => unnamedWithStatistics(payload, 4),
+      [decision("10", "201")],
+      1,
+      true,
+    ],
+    [
+      "a second naming for the same club finds no unnamed starter left",
+      (payload: ReturnType<typeof fixture>) => unnamedWithStatistics(payload, 4),
+      [decision(), decision("10", "37771848")],
+      0,
+      false,
+    ],
+  ] as const)
+    test(`refuses the fixture when ${label}, and writes nothing for it`, async () => {
+      const payload = withBench(fixture(), 4);
+      prepare(payload);
+      const error = refusal(() => nameUnnamedStarters(payload, 9001, names));
+      expect({ code: error.code, diagnostic: error.diagnostic }).toEqual({
+        code: "owner_decision_unnamed_starter_mismatch",
+        diagnostic: {
+          fixtureExternalId: "9001",
+          externalTeamId: names.at(-1)!.externalTeamId,
+          externalPlayerId: names.at(-1)!.externalPlayerId,
+          unnamedStarters,
+          alreadyInLineup,
+        },
+      });
+      const { client, calls } = batchClient({ items: [{ externalFixtureId: "9001" }] });
+      const result = await runCurrentPerformanceBatch(client, "t", null, async () => payload, {
+        ownerDecisions: [...names],
+      });
+      expect(calls).toEqual(["football_current_performance_fixture_batch"]);
+      expect(result).toMatchObject({
+        verdict: "incomplete",
+        fixturesProcessed: 0,
+        incomplete: [
+          {
+            fixtureExternalId: "9001",
+            stage: "validation",
+            code: "owner_decision_unnamed_starter_mismatch",
+          },
+        ],
+      });
+    });
 });
