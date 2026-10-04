@@ -43,6 +43,7 @@ import {
 import { useScrolledPast } from "@/components/matches/use-scrolled-past";
 import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { matchDayKey } from "@/lib/match-kickoff";
 import { useBackTo } from "@/lib/back-navigation";
 import { clubMatchPalettes } from "@/lib/club-palette";
 import { NEWS_ENABLED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
@@ -175,9 +176,6 @@ function MatchDetailPage() {
   const loaderData = isUnavailable(loaded) ? undefined : loaded;
   const navigate = useNavigate({ from: Route.fullPath });
   const { t, tr, lang } = useI18n();
-  // Articles and matches are the pages most often opened from a shared link,
-  // where there is no in-app entry to go back to; fall back to the listing.
-  const goBack = useBackTo("/matches");
   const [copied, setCopied] = useState(false);
   const headingId = useId();
   // The split header's element, which the bar watches to go compact.
@@ -212,6 +210,18 @@ function MatchDetailPage() {
 
   const match = detailQ.data?.match;
   const season = detailQ.data?.season;
+
+  // Articles and matches are the pages most often opened from a shared link,
+  // where there is no in-app entry to go back to. There, Retour goes to the
+  // calendar on this match's own day and season, not to today. From inside
+  // the app it steps back to the list as it was left (its day, chip and
+  // season are in its URL).
+  const goBack = useBackTo({
+    to: "/matches",
+    search: match
+      ? { ...(season ? { season: season.id } : {}), date: matchDayKey(new Date(match.kickoff)) }
+      : {},
+  });
 
   // The final whistle moves the "Face à face" tab's table. This page shows no
   // live strip, so it hears the whistle from its own reads of the match, in

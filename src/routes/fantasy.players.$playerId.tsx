@@ -31,6 +31,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { clubStyle } from "@/lib/club-palette";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { fantasyPlayerHead } from "@/lib/fantasy-meta";
+import { useBackTo } from "@/lib/back-navigation";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { upcomingFixtures } from "@/lib/upcoming-fixtures";
 import { cn } from "@/lib/utils";
@@ -109,6 +110,10 @@ function PlayerDetailPage() {
   const { playerId } = Route.useParams();
   const loaderData = Route.useLoaderData();
   const { t, tr, lang } = useI18n();
+  // A player is reached from the header search, a club's squad, the players
+  // list, a Fantasy screen or a shared link: Retour goes back to whichever of
+  // them it was, and a reader with no in-app history lands on the list.
+  const goBack = useBackTo("/fantasy/players");
   const nameId = useId();
   const watchlist = useWatchlist();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
@@ -147,7 +152,7 @@ function PlayerDetailPage() {
     <UiHeader
       kicker={t("nav.fantasy")}
       title={t("fpl.player")}
-      backTo="/fantasy/players"
+      onBack={goBack}
       trailing={
         p ? (
           <>

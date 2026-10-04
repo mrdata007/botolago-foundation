@@ -14,12 +14,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 
 import { Search, UserRound } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Logo } from "@/components/brand/Logo";
 import { ui, UiIconButton, UiIconLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { PEPITES_PROMOTED } from "@/lib/feature-flags";
+import { recallSearchQuery } from "@/lib/search-context";
 import { cn } from "@/lib/utils";
 import { GlobalSearch } from "./GlobalSearch";
 import { NotificationBell } from "./NotificationBell";
@@ -31,11 +32,23 @@ export function TopBar({
   wide = false,
 }: {
   trailing?: React.ReactNode;
-  /** From 1024px, open the bar to the desktop canvas and add the search field. */
+  /**
+   * From 1024px, open the bar to the desktop canvas and put the search field
+   * in it. Search itself does not depend on this: every bar has the search
+   * button, and a bar kept to the content column opens the field under it.
+   */
   wide?: boolean;
 }) {
   const { t } = useI18n();
   const [searchOpen, setSearchOpen] = useState(false);
+  // Back from a search result: the field is open again, holding the query
+  // (`GlobalSearch` restores it), and not focused, so no keyboard rises.
+  const [searchRestored, setSearchRestored] = useState(false);
+  useEffect(() => {
+    if (recallSearchQuery() === "") return;
+    setSearchOpen(true);
+    setSearchRestored(true);
+  }, []);
 
   return (
     <header className={cn("sticky top-0 z-30", ui.surface.bar, ui.rule.block, ui.safe.top, "pb-2")}>
@@ -59,16 +72,17 @@ export function TopBar({
 
         <div className="ms-auto flex items-center gap-2 md:ms-0">
           {trailing}
-          {wide ? (
-            <UiIconButton
-              className="lg:hidden"
-              aria-label={t("nav.search.label")}
-              aria-expanded={searchOpen}
-              onClick={() => setSearchOpen((open) => !open)}
-            >
-              <Search aria-hidden />
-            </UiIconButton>
-          ) : null}
+          <UiIconButton
+            className={wide ? "lg:hidden" : undefined}
+            aria-label={t("nav.search.label")}
+            aria-expanded={searchOpen}
+            onClick={() => {
+              setSearchRestored(false);
+              setSearchOpen((open) => !open);
+            }}
+          >
+            <Search aria-hidden />
+          </UiIconButton>
           <NotificationBell />
           <LanguageSwitcher />
           {/* Pépites takes Profil's slot in the bar once promoted, so the
@@ -80,9 +94,20 @@ export function TopBar({
           ) : null}
         </div>
       </div>
-      {wide && searchOpen ? (
-        <div className={cn("mx-auto pt-2 lg:hidden", ui.space.gutter)}>
-          <GlobalSearch autoFocus />
+      {/* Over the page, not in the bar's flow: `--topbar-h` is the height the
+          live strip and the filters stick under, so the bar cannot grow. */}
+      {searchOpen ? (
+        <div
+          className={cn(
+            "absolute inset-x-0 top-full z-10 pb-2 pt-2",
+            wide && "lg:hidden",
+            ui.surface.bar,
+            ui.rule.block,
+          )}
+        >
+          <div className={cn("mx-auto md:max-w-[var(--ui-content-max)]", ui.space.gutter)}>
+            <GlobalSearch autoFocus={!searchRestored} />
+          </div>
         </div>
       ) : null}
     </header>

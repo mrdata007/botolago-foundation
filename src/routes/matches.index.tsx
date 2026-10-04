@@ -1,7 +1,7 @@
 import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
 import { AppShell } from "@/components/shell/AppShell";
 import { MatchCard } from "@/components/common/MatchCard";
@@ -19,7 +19,7 @@ import {
   settleEndedMatches,
   withLiveReadings,
 } from "@/components/matches/match-day-query";
-import { validateMatchesSearch } from "@/components/matches/matches-search";
+import { validateCalendarSearch, type CalendarSearch } from "@/components/matches/matches-search";
 import { SeasonPicker } from "@/components/matches/SeasonPicker";
 import { useLiveMatches, useOnLiveMatchEnd } from "@/components/matches/use-live-matches";
 import { EmptyState, ErrorState } from "@/components/common/States";
@@ -42,8 +42,10 @@ const MATCHES_DESCRIPTION =
   "Suivez tous les matchs de la Botola Pro : scores en direct, calendrier, résultats et classement.";
 
 export const Route = createFileRoute("/matches/")({
-  // `?season=<id>`: the season the Classement tab was showing (matches-search.ts).
-  validateSearch: validateMatchesSearch,
+  // `?season=<id>`: the season the Classement tab was showing; `?date=` and
+  // `?status=`: the day and the chip the reader chose, so a match opened from
+  // the list and left with Retour comes back to the same list (matches-search.ts).
+  validateSearch: validateCalendarSearch,
   // The day's fixtures are in the server's HTML (see `@/lib/ssr-prefetch`):
   // the season the page opens on, then its opening day, within the render's
   // one deadline. The list used to wait for the browser to pick the season
@@ -168,14 +170,20 @@ function openingSeason(
  */
 function MatchesPage() {
   const { t, lang } = useI18n();
-  const { season: requestedSeasonId } = Route.useSearch();
+  // The router hands on the URL's own keys beside the validated ones, so a
+  // `?date=2026-02-31` it dropped from the validated search is still in what
+  // `useSearch` returns: validated again here, where the values are used.
+  const search = validateCalendarSearch(Route.useSearch());
+  const navigate = useNavigate({ from: Route.fullPath });
   const { today } = Route.useLoaderData();
-  // What the reader picked; `null` until they pick, which is the season and
-  // the day the page opens on. Worked out during render, not set by an
-  // effect after it, so the server's render already has them.
-  const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [filter, setFilter] = useState<StatusFilter>("all");
+  // The season, the day and the chip are the URL's, not this page's state: a
+  // match opened from the list is a new history entry, and Retour has to land
+  // on the list as it was left. Each is derived during render, so the server's
+  // render has them too. A choice replaces the entry (Retour leaves the page
+  // rather than stepping back through every day tapped) and keeps the scroll
+  // where it is.
+  const requestedSeasonId = search.season;
+  const filter: StatusFilter = search.status ?? "all";
 
   const seasonsQ = useQuery({
     queryKey: ["football", "seasons", lang],
@@ -187,10 +195,9 @@ function MatchesPage() {
   });
 
   const seasons = seasonsQ.data ?? EMPTY_SEASONS;
-  const selectedSeason =
-    seasons.find((season) => season.id === selectedSeasonId) ??
-    openingSeason(seasons, requestedSeasonId);
-  const matchDay = selectedDay ?? openingMatchDay(selectedSeason, today);
+  const selectedSeason = openingSeason(seasons, requestedSeasonId);
+  const openingDay = openingMatchDay(selectedSeason, today);
+  const matchDay = search.date ? clampMatchDay(search.date, selectedSeason) : openingDay;
   const selectedDate = useMemo(() => dateFromKey(matchDay), [matchDay]);
   // The date band's "today" is the loader's too, not this device's clock, so
   // the band names the day the server rendered as the server named it.
@@ -256,18 +263,41 @@ function MatchesPage() {
     [selectedSeason],
   );
 
+  const updateSearch = (change: Partial<CalendarSearch>) =>
+    void navigate({
+      search: (previous) => {
+        const next = { ...previous, ...change };
+        // What is only a default stays out of the URL, so its links stay clean.
+        return {
+          ...(next.season ? { season: next.season } : {}),
+          ...(next.date ? { date: next.date } : {}),
+          ...(next.status ? { status: next.status } : {}),
+        };
+      },
+      replace: true,
+      resetScroll: false,
+    });
+
   const handleSeasonChange = (seasonId: string) => {
     const season = seasons.find((item) => item.id === seasonId);
     if (!season) return;
-    setSelectedSeasonId(season.id);
-    // The new season's opening day.
-    setSelectedDay(null);
-    setFilter("all");
+    // The new season opens on its own day, with every chip off.
+    updateSearch({
+      season: season.isCurrent ? undefined : season.id,
+      date: undefined,
+      status: undefined,
+    });
   };
 
-  const handleDateChange = (date: Date) => {
-    setSelectedDay(clampMatchDay(matchDayKey(date), selectedSeason));
+  const selectDay = (day: string) => {
+    const clamped = clampMatchDay(day, selectedSeason);
+    updateSearch({ date: clamped === openingDay ? undefined : clamped });
   };
+
+  const handleDateChange = (date: Date) => selectDay(matchDayKey(date));
+
+  const setFilter = (next: StatusFilter) =>
+    updateSearch({ status: next === "all" ? undefined : next });
 
   const clubById = (id: string) => matchesQ.data?.clubs.find((club) => club.id === id);
 
@@ -418,9 +448,7 @@ function MatchesPage() {
             {nextDay && nextDayLabel ? (
               <button
                 type="button"
-                onClick={() => {
-                  setSelectedDay(clampMatchDay(nextDay, selectedSeason));
-                }}
+                onClick={() => selectDay(nextDay)}
                 className={cn(
                   ui.text.bodyStrong,
                   ui.tone.ink,
