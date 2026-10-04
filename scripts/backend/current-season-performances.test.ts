@@ -1735,7 +1735,7 @@ describe("lineup participation evidence", () => {
       expect(JSON.stringify(result)).not.toMatch(/participation/);
     });
 
-  test("adaptive ingestion sends the same coverage plus only the adaptive evidence", async () => {
+  test("adaptive ingestion sends the same coverage plus the adaptive evidence and the left-out rule", async () => {
     const { client, received } = batchClient({ items: [{ externalFixtureId: "9001" }] });
     const wrapped = {
       schema: (name: "api") => ({
@@ -1752,9 +1752,13 @@ describe("lineup participation evidence", () => {
       string,
       unknown
     >;
-    expect(Object.keys(coverage).filter((key) => !COVERAGE_KEYS.includes(key))).toEqual([
-      "adaptiveFieldEvidence",
-    ]);
+    // The batch flag is season-wide: a fixture of an earlier, non-adaptive
+    // gameweek still needs the rule, and the database decides per fixture.
+    expect(
+      Object.keys(coverage)
+        .filter((key) => !COVERAGE_KEYS.includes(key))
+        .sort(),
+    ).toEqual(["adaptiveFieldEvidence", "leaveOutUnplacedUnheld"]);
   });
 });
 
