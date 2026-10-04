@@ -230,7 +230,7 @@ function MatchRow({
   const home = clubById(match.homeClubId);
   const away = clubById(match.awayClubId);
   if (!home || !away) return null;
-  return <MatchCard match={match} home={home} away={away} variant={variant} />;
+  return <MatchCard match={match} home={home} away={away} variant={variant} showDate />;
 }
 
 /**

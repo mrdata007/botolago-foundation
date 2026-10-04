@@ -453,6 +453,34 @@ export const footballService = {
   },
 
   /**
+   * The days of a season on which a match has been played to the end, as
+   * competition-day keys, oldest first. For the empty states that point a
+   * reader at the latest results ("Derniers résultats : sam. 3 oct."): the
+   * same fixture list the table is worked out from, kept to the day of each
+   * finished match, so nothing but the days is held.
+   */
+  async getSeasonResultDays(
+    season: Pick<FootballSeason, "id" | "competitionId">,
+    language: FootballLanguage,
+    signal?: AbortSignal,
+  ): Promise<string[]> {
+    const fixtures = await getFootballRepository().getSeasonFixtures(
+      season.competitionId,
+      season.id,
+      language,
+      requestContext(signal),
+    );
+    const days = new Set<string>();
+    for (const fixture of fixtures) {
+      const match = toMatch(fixture);
+      if (match.status === "finished" && !Number.isNaN(Date.parse(match.kickoff))) {
+        days.add(matchDayKey(new Date(match.kickoff)));
+      }
+    }
+    return [...days].sort();
+  },
+
+  /**
    * The season's table: its fixtures and any stored table, read together (see
    * `buildStandings`). Every surface that shows a rank reads it here, under
    * `["football", "standings", seasonId, language]`: the Classement tab, Home,

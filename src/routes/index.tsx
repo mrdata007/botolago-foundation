@@ -73,9 +73,14 @@ import { cn } from "@/lib/utils";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { siteJsonLd } from "@/lib/structured-data";
-import { matchDayFromKey } from "@/lib/match-kickoff";
+import { matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
 import { advanceGreetingClock, greetingPart } from "@/lib/greeting";
-import { capitalizeFirst, groupByMatchDay, onlyFollowedClubs } from "@/lib/match-days";
+import {
+  capitalizeFirst,
+  groupByMatchDay,
+  latestResultDayBefore,
+  onlyFollowedClubs,
+} from "@/lib/match-days";
 import type { Match } from "@/types/domain";
 import stadiumBand from "@/assets/brand/home-band-stadium.webp";
 import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
@@ -387,6 +392,17 @@ function HomeContent() {
       ),
     [homeMatches, lang, t],
   );
+  // With no match to come, "À venir" points at the latest results instead of
+  // saying nothing: the season's fixture list, read only in that case.
+  const resultDaysQ = useQuery({
+    queryKey: ["football", "season-result-days", currentSeason?.id ?? "none", lang],
+    queryFn: ({ signal }) => footballService.getSeasonResultDays(currentSeason!, lang, signal),
+    enabled: matchesQ.isSuccess && upcomingDays.length === 0 && currentSeason != null,
+    staleTime: 5 * 60_000,
+  });
+  const lastResultDay = latestResultDayBefore(resultDaysQ.data ?? [], matchDayKey(now), {
+    inclusive: true,
+  });
   // The band names the Fantasy gameweek; before Fantasy has one (or for a
   // visitor it is not open to), the league round of the next fixture.
   const bandGameweekNumber = bandGameweek(
@@ -559,7 +575,27 @@ function HomeContent() {
               ) : matchesQ.isError ? (
                 <ErrorState onRetry={() => void matchesQ.refetch()} />
               ) : upcomingDays.length === 0 ? (
-                <EmptyState compact>{t("state.empty")}</EmptyState>
+                // Nothing scheduled, which is not a failure: say so in the
+                // competition's words, and lead on to the results.
+                <EmptyState
+                  compact
+                  action={
+                    <Link
+                      to="/matches"
+                      search={lastResultDay ? { date: lastResultDay } : {}}
+                      className={cn(
+                        ui.text.bodyStrong,
+                        ui.tone.ink,
+                        ui.focus,
+                        "inline-flex min-h-[var(--ui-tap-min)] items-center",
+                      )}
+                    >
+                      {lastResultDay ? t("home.results_link") : t("home.calendar_link")} →
+                    </Link>
+                  }
+                >
+                  {t("home.upcoming_empty")}
+                </EmptyState>
               ) : (
                 <div className="grid gap-4">
                   {upcomingDays.length > 1 || followedIds.length > 0 ? (
@@ -588,7 +624,7 @@ function HomeContent() {
                     </div>
                   ) : null}
                   {shownDays.length === 0 ? (
-                    <EmptyState compact>{t("state.empty")}</EmptyState>
+                    <EmptyState compact>{t("home.mine_empty")}</EmptyState>
                   ) : null}
                   {shownDays.map((day) => (
                     <div key={day.key} className="min-w-0">

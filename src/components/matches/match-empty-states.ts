@@ -147,3 +147,24 @@ export function noLineupsMessage(phase: MatchDataPhase, t: Translate): string {
       return t("matches.detail.no_data_called_off");
   }
 }
+
+/**
+ * Whether an empty panel is for data that is NOT AVAILABLE rather than not
+ * there yet. Before kick-off, and while the page is still checking, an empty
+ * panel is expected and says so (`EmptyState`); once the match is over, off,
+ * or the page has stopped checking, nothing is on its way, and the panel says
+ * the information is unavailable (`UnavailableState`) in a look of its own.
+ */
+export function isDataUnavailable(phase: MatchDataPhase): boolean {
+  switch (phase) {
+    case "upcoming":
+    case "awaiting":
+    case "live":
+      return false;
+    case "finished":
+    case "unreported":
+    case "postponed":
+    case "called_off":
+      return true;
+  }
+}

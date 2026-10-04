@@ -4,6 +4,7 @@ import type { MatchLineupDto } from "@/backend/football/contracts";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { compactClubName } from "@/lib/club-identity";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { isKickoffDateUnconfirmed, isKickoffTimeUnconfirmed } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
@@ -139,7 +140,7 @@ export function MatchScoreHeader({
             shares the name row, so a two-line name ("Maghreb Tétouan", any
             Arabic name) never runs under the box. `pt-11` is the halves'
             top padding less 4px, so the box clears the names below it. */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-center gap-2.5 pt-11">
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-center gap-2.5 pt-6">
           {showScore ? (
             // One polite announcement per score change: the sentence, not
             // the three glyphs, which are hidden from assistive tech.
@@ -224,12 +225,12 @@ export function MatchScoreHeader({
       )}
 
       {(hasScorers || showMeta) && (
-        <div className={cn("grid gap-2 px-4 pb-2 pt-3.5", ui.surface.bar, ui.rule.block)}>
+        <div className={cn("grid gap-1.5 px-4 py-2.5", ui.surface.bar, ui.rule.block)}>
           {hasScorers && <ScoreEvents events={events} lineups={lineups} />}
           {showMeta && (
             <div
               className={cn(
-                "flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pb-1.5 text-center",
+                "flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-center",
                 ui.text.meta,
                 ui.tone.muted,
               )}
@@ -272,9 +273,15 @@ export function MatchScoreHeader({
  * One half of the split: the club's fill, its crest as a surface disc, the
  * name in the display face and the city, all against the half's OUTER edge
  * (the home half's inline start, the away half's inline end), so the score
- * box over the seam never covers a name. The name is at most 104px wide and
- * wraps between words onto as many lines as it needs: it is never cut. The
- * inner padding (64px on the seam side) is the room the score box takes.
+ * box over the seam never covers a name. The inner padding (64px on the seam
+ * side) is the room the score box takes.
+ *
+ * The name is the club's recognisable short form when the full one is too long
+ * for the column ("Renaissance Sportive de Berkane" is "Renaissance Berkane"),
+ * set on at most two lines and broken only between words: a name is never cut
+ * in the middle of a word (a review at 390px saw "Renaissance" split in two).
+ * The full name stays in the page's heading and in the match's share text. The
+ * city is a quiet line under it, not a second heading.
  */
 function TeamHalf({
   club,
@@ -285,22 +292,38 @@ function TeamHalf({
   palette: ClubPalette;
   side: "home" | "away";
 }) {
-  const { tr } = useI18n();
+  const { tr, lang } = useI18n();
   const city = tr(club.city).trim();
+  const name = compactClubName(tr(club.name), lang);
   return (
     <div
       {...clubStyle(palette)}
       className={cn(
-        "flex min-w-0 flex-1 flex-col justify-center gap-2 py-12",
+        "flex min-w-0 flex-1 flex-col justify-center gap-1.5 py-6",
         ui.club.fill,
         side === "home" ? "items-start pe-16 ps-4 text-start" : "items-end pe-4 ps-16 text-end",
       )}
     >
       <ClubCrest club={club} palette={palette} size="lg" tone="inverse" loading="eager" />
-      <p className={cn("max-w-[6.5rem] break-words text-balance", ui.display.teamLg)}>
-        {tr(club.name)}
+      <p
+        className={cn(
+          "max-w-[6.5rem] text-balance [hyphens:none] [overflow-wrap:normal] [word-break:normal]",
+          ui.display.teamSm,
+        )}
+      >
+        {name}
       </p>
-      {city ? <p className={cn("max-w-[6.5rem]", ui.text.label)}>{city}</p> : null}
+      {city ? (
+        <p
+          className={cn(
+            "max-w-[6.5rem] truncate",
+            ui.text.micro,
+            "[font-weight:var(--ui-weight-strong)]",
+          )}
+        >
+          {city}
+        </p>
+      ) : null}
     </div>
   );
 }
