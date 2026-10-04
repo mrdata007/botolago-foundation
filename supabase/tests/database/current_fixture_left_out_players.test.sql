@@ -1,5 +1,6 @@
--- 20261004120000: a finished fixture is no longer held back by lineup players
--- the catalogue cannot place, when no Fantasy team holds any of them.
+-- 20261004120000 (and its limits, 20261004130000): a finished fixture is no
+-- longer held back by lineup players the catalogue cannot place, when no
+-- Fantasy team holds any of them.
 begin;
 select extensions.no_plan();
 
@@ -239,10 +240,39 @@ select extensions.throws_ok($$select pg_temp.ingest(pg_temp.rule('{"defensiveUnk
 select extensions.throws_ok($$select pg_temp.ingest(pg_temp.rule('{"defensiveUnknownForwards":["95023"]}'))$$,
   '22023', 'DEFENSIVE_UNKNOWN_NOT_FORWARD', 'nor a row that did not start');
 
--- 10. At most 20 rows left out in all, unnamed ones included.
+-- 10. Limits (20261004130000): up to 40 left-out rows, counted apart from the
+-- unnamed ones (still at most 20); at least 11 rows kept.
+reset role;
+update app_private.football_provider_mappings set active = false
+where provider_name = 'sportsmonks' and entity_type = 'player'
+  and external_id in ('95005', '95009', '95015', '95016', '95019', '95020', '95024');
+set local role service_role;
+select extensions.is(
+  (select jsonb_build_object('active', r -> 'active', 'leftOut', r -> 'leftOut')
+   from pg_temp.ingest(pg_temp.rule('{"lineupRowsSeen":43,"excludedIncompleteRows":18}')) r),
+  '{"active": 15, "leftOut": 10}', '28 rows left out in all (18 unnamed, 10 named) and 15 kept come in');
+reset role;
+select extensions.is(
+  (select jsonb_build_array(valid_player_rows, excluded_incomplete_rows, excluded_mapping_rows)
+   from app_private.historical_performance_fixture_coverage where fixture_id = pg_temp.uid('fixture')),
+  '[15, 28, 10]', 'coverage keeps fewer than 22 rows when the rest were left out');
+select extensions.lives_ok(
+  $$select app_private.fantasy_validate_scoring_document_v1(app_private.fantasy_scoring_input_document_v1(pg_temp.uid('gameweek')))$$,
+  'the scoring document accepts it');
+update app_private.football_provider_mappings set active = false
+where provider_name = 'sportsmonks' and entity_type = 'player'
+  and external_id in ('95002', '95003', '95004', '95013', '95014');
+set local role service_role;
+select extensions.throws_ok($$select pg_temp.ingest(pg_temp.rule())$$,
+  '22023', 'LEFT_OUT_ROWS_EXCEEDED', 'fewer than 11 rows kept stops the fixture');
 select extensions.throws_ok(
-  $$select pg_temp.ingest(pg_temp.rule('{"lineupRowsSeen":43,"excludedIncompleteRows":18}'))$$,
-  '22023', 'LEFT_OUT_ROWS_EXCEEDED', 'more than 20 rows left out in all stops the fixture');
+  $$select pg_temp.ingest(pg_temp.rule('{"lineupRowsSeen":46,"excludedIncompleteRows":21}'))$$,
+  '22023', 'CURRENT_PERFORMANCE_INCOMPLETE', 'unnamed rows keep their own bound of 20');
+reset role;
+update app_private.football_provider_mappings set active = true
+where provider_name = 'sportsmonks' and entity_type = 'player'
+  and external_id in ('95002', '95003', '95004', '95005', '95009', '95013', '95014', '95015', '95016', '95019', '95020', '95024');
+set local role service_role;
 -- 11. Declarations have one exact shape.
 select extensions.throws_ok(
   $$select pg_temp.ingest(pg_temp.rule('{"placeAtFixtureClub":[{"externalPlayerId":"95021","externalTeamId":"71002","x":1}]}'))$$,
