@@ -123,8 +123,8 @@ function ProfileSetupPage() {
       if (result === "ok") return;
       if (result === "mfa") showStepUpNotice(t);
       else if (result === "denied") toast.error(t("auth.setup.notif_push_denied"));
-      else if (result === "conflict") toast.error(t("auth.setup.notif_push_conflict"));
-      else if (result === "unavailable") toast.error(t("auth.setup.notif_push_unavailable"));
+      else if (result === "unavailable" || result === "conflict")
+        toast.error(t("auth.setup.notif_push_unavailable"));
       else toast.error(t("auth.error.generic"));
       return;
     }

@@ -125,7 +125,8 @@ export type EnableOutcome =
        * denied: the reader (or the phone's settings) said no.
        * unavailable: the phone gave no usable address (no network, or Google's
        *   or Apple's setup in the app is missing).
-       * conflict: this phone's address is held by another account.
+       * conflict: two registrations of the same address raced (a held address
+       *   normally just moves to whoever presents it); trying again works.
        * mfa: the account owes its second-factor code first.
        */
       readonly reason: "denied" | "unavailable" | "conflict" | "mfa" | "error";

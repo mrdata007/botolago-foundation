@@ -1479,8 +1479,6 @@ export const fr = {
     "Les notifications sont bloquées. Autorisez-les pour BotolaGO dans les réglages du téléphone, puis réessayez.",
   "auth.setup.notif_push_unavailable":
     "Impossible d’activer les alertes pour le moment. Vérifiez votre connexion et réessayez.",
-  "auth.setup.notif_push_conflict":
-    "Ce téléphone est encore lié à un autre compte. Déconnectez-le de l’autre compte, puis réessayez.",
   "auth.setup.language_confirm": "Langue par défaut",
   "auth.setup.skip": "Passer",
   "auth.setup.next": "Suivant",

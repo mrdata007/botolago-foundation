@@ -103,10 +103,14 @@ afterwards, or test from TestFlight.
 - **Registration is kept fresh**: while the account has push on, the phone's
   registration is renewed when the app starts and when it comes back to the front
   (at most every 30 minutes). It never prompts.
-- **Signing out lets this phone go**: its registration is deleted first, so the
-  next account on the phone can register the same address. It is best effort and
-  never holds a sign-out back. If another account still holds the address the app
-  says so ("Ce téléphone est encore lié à un autre compte").
+- **Signing out lets this phone go**: its registration is deleted first. It is
+  best effort and never holds a sign-out back. If it fails (offline), nothing is
+  lost: a phone's address belongs to whoever presents it (migration
+  `20261005140000`), so the next account to register on that phone takes the
+  address over, and the registration that held it is switched off (its history
+  stays; the move is in the operational audit as `notification_device_taken_over`,
+  without the address). The same happens after a reinstall, which gets a new
+  install id but, on iPhone, the same address.
 - **Tapping an alert opens its page** (the match, the Fantasy transfers). An
   alert received while the app is open is shown by the phone and refreshes the
   inbox. An alert whose page the app does not recognise opens nothing.

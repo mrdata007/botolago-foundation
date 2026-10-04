@@ -118,6 +118,21 @@ How goals are told and corrected (the owner's "option A"):
 
 Known limits, kept on purpose: a goal the sheet lists more than 8 minutes after it was stored, or while the scoreboard is behind for longer than that, is not told; a final score is not told for a match the app only learns finished long after the whistle; and a provider that deletes a goal and adds a replacement with a new key in the same refresh can produce a goal alert and a correction together.
 
+## Whose phone an address is
+
+A phone's push address is secret to the phone it was issued to, so whoever can
+present it is holding that phone. `api.register_my_notification_device` therefore
+**moves** an address already held by another registration (another account on the
+same phone, or the same account after a reinstall) instead of refusing it
+(`20261005140000`, `apply-20261005140000-notification-device-takeover.sql`). The
+registration that held it is switched off and loses the address, so nothing more is
+sent to it (a push already waiting for it is cancelled by the claim as
+`push_no_longer_eligible`); its delivery history stays, and the move is written to
+`app_private.notification_operational_audit` as `notification_device_taken_over`,
+saying whether it stayed within one account, never the address. `device_token_conflict`
+is now raised only for two requests racing for one address. The migration does not
+depend on the push switch; it can be applied at any time after the notification API.
+
 ## What the claim guarantees
 
 - **Off means off.** With the switch off a claim returns nothing and changes nothing.
