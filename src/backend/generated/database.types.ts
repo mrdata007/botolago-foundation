@@ -1774,6 +1774,10 @@ export type Database = {
         Args: { p_lease_seconds?: number; p_limit?: number }
         Returns: Json
       }
+      service_claim_push_deliveries: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
       service_complete_fantasy_gameweek: {
         Args: { p_calculation_version: number; p_gameweek_id: string }
         Returns: Json
@@ -2012,6 +2016,10 @@ export type Database = {
         Returns: Database["app"]["Enums"]["notification_delivery_status"]
       }
       service_release_email_deliveries: {
+        Args: { p_delivery_ids: string[]; p_retry_at: string }
+        Returns: number
+      }
+      service_release_push_deliveries: {
         Args: { p_delivery_ids: string[]; p_retry_at: string }
         Returns: number
       }
