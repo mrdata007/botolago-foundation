@@ -51,6 +51,8 @@ describe(`apply-${VERSION}-current-fixture-left-out-limit.sql`, () => {
       "migration 20261004120000 (the left-out rule) is not applied",
       "where lifecycle_tick_enabled) then",
       "if exists (select 1 from cron.job_run_details run",
+      // A long-running job blocks too, as long as its backend is alive.
+      "or exists (select 1 from pg_stat_activity activity where activity.pid = run.job_pid))) then",
       // Production's two definitions on 2026-10-04 after 20261004120000, measured there.
       "      <> 'f4e062c7a04e83a0220bd95b29984bdf'",
       "      <> '3e858d5f672a339509b5c3d257541cf1' then",
