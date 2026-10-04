@@ -21,6 +21,20 @@ export type OwnerDecision =
       externalPlayerId: string;
       externalTeamId: string;
       status: "proposed" | "approved" | "withdrawn";
+    }
+  | {
+      /**
+       * The one unnamed starter (provider `player_id` null) of this club in
+       * this fixture is this provider player, from the official team sheet.
+       * Applied by the importer before the fixture's rows are built; it never
+       * guesses, so anything but exactly one such starter, or a player already
+       * in the lineup, stops the fixture.
+       */
+      fixtureExternalId: string;
+      kind: "nameUnnamedStarter";
+      externalPlayerId: string;
+      externalTeamId: string;
+      status: "proposed" | "approved" | "withdrawn";
     };
 
 export class OwnerDecisionFileError extends Error {}
@@ -55,7 +69,7 @@ export function parseOwnerDecisions(text: string): OwnerDecision[] {
         status,
       };
     if (
-      entry.kind === "placeAtFixtureClub" &&
+      (entry.kind === "placeAtFixtureClub" || entry.kind === "nameUnnamedStarter") &&
       typeof entry.externalPlayerId === "string" &&
       providerId.test(entry.externalPlayerId) &&
       typeof entry.externalTeamId === "string" &&
@@ -78,7 +92,25 @@ export function loadOwnerDecisions(
   return parseOwnerDecisions(readFileSync(path, "utf8"));
 }
 
-/** The coverage keys for one fixture: approved decisions only, none when there are none. */
+/** Approved `nameUnnamedStarter` decisions of one fixture, in file order. */
+export function unnamedStarterNames(
+  decisions: OwnerDecision[],
+  fixtureExternalId: string,
+): Array<{ externalPlayerId: string; externalTeamId: string }> {
+  return decisions.flatMap((entry) =>
+    entry.kind === "nameUnnamedStarter" &&
+    entry.fixtureExternalId === fixtureExternalId &&
+    entry.status === "approved"
+      ? [{ externalPlayerId: entry.externalPlayerId, externalTeamId: entry.externalTeamId }]
+      : [],
+  );
+}
+
+/**
+ * The coverage keys for one fixture: approved decisions only, none when there
+ * are none. `nameUnnamedStarter` is not among them: the importer applies it to
+ * the provider payload and records what it named (`namedUnnamedStarters`).
+ */
 export function ownerDecisionCoverage(
   decisions: OwnerDecision[],
   fixtureExternalId: string,
