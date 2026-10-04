@@ -183,6 +183,12 @@ begin
     or progress.calculation_version <> p_calculation_version) then
     raise exception using errcode = 'PT409', message = 'idempotency_conflict';
   end if;
+  -- Opened while this call waited for the locks (a concurrent run, or the
+  -- normal opening): the same recorded outcome as a replay, nothing written.
+  if progress.opened_at is not null then
+    return jsonb_build_object('schemaVersion', 1, 'nextGameweekId', next_week.id,
+      'status', next_week.status, 'alreadyOpened', true);
+  end if;
   if previous.status <> 'finalized' or previous.scoring_input_version <> p_calculation_version
     or not exists (select 1 from app_private.fantasy_gameweek_postwork work
       where work.gameweek_id = previous.id and work.calculation_version = p_calculation_version
@@ -332,7 +338,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20261004150000, 'UTF8')), 'hex')
-    is distinct from '6e50bcbd9f988e568ce119a3c12ee184142743682f5baaed022f319b9f2d6fe7' then
+    is distinct from '076db56e0fc723d800da2162e82e00a8ca877a9172071b09e7a4718542844747' then
     raise exception 'stop: 20261004150000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 

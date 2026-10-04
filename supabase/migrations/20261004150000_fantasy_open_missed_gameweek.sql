@@ -121,6 +121,12 @@ begin
     or progress.calculation_version <> p_calculation_version) then
     raise exception using errcode = 'PT409', message = 'idempotency_conflict';
   end if;
+  -- Opened while this call waited for the locks (a concurrent run, or the
+  -- normal opening): the same recorded outcome as a replay, nothing written.
+  if progress.opened_at is not null then
+    return jsonb_build_object('schemaVersion', 1, 'nextGameweekId', next_week.id,
+      'status', next_week.status, 'alreadyOpened', true);
+  end if;
   if previous.status <> 'finalized' or previous.scoring_input_version <> p_calculation_version
     or not exists (select 1 from app_private.fantasy_gameweek_postwork work
       where work.gameweek_id = previous.id and work.calculation_version = p_calculation_version
