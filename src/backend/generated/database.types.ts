@@ -8214,6 +8214,7 @@ export type Database = {
         | "matchday_results"
         | "round_preview"
         | "pepites_weekly"
+        | "goal_cancelled"
       placement_scope: "global" | "competition" | "team" | "country"
       placement_type:
         | "home_lead"
@@ -8637,6 +8638,7 @@ export const Constants = {
         "matchday_results",
         "round_preview",
         "pepites_weekly",
+        "goal_cancelled",
       ],
       placement_scope: ["global", "competition", "team", "country"],
       placement_type: [

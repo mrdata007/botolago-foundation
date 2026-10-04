@@ -128,6 +128,7 @@ export const notificationEventTypeSchema = z.enum([
   "match_postponed",
   "match_cancelled",
   "followed_team_result",
+  "goal_cancelled",
   "deadline_24h",
   "deadline_1h",
   "team_incomplete",

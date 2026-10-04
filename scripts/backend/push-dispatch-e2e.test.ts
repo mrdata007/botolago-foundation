@@ -406,7 +406,8 @@ describe.skipIf(!DB_URL)("push dispatch against the real database functions", ()
       }>;
       expect(tick[0]!.result.dispatch).toBe("not_configured");
       expect(tick[0]!.result.errors).toEqual([]);
-      expect(tick[0]!.result.fanout).toMatchObject({ events: 1, queued: 3 });
+      // (The seed's hand-made goal event is in the count too, with nobody to reach.)
+      expect(tick[0]!.result.fanout).toMatchObject({ queued: 3 });
 
       const fcm = fakeProvider("fcm", () =>
         outcome("sent", { providerMessageId: "projects/p/messages/9" }),
@@ -458,6 +459,109 @@ describe.skipIf(!DB_URL)("push dispatch against the real database functions", ()
       )) as Array<{
         result: Record<string, unknown>;
       }>;
+      expect(again[0]!.result).toMatchObject({ dispatch: "not_needed", outcome: "idle" });
+    });
+  });
+
+  it("a goal and its cancellation: told to each phone, and the correction to the same phones", async () => {
+    await rolledBack(async (tx) => {
+      await seed(tx);
+      await tx.unsafe(
+        `delete from app.notification_deliveries where notification_id = '${IDS.notification}'`,
+      );
+      await seedMatchAhead(tx);
+      // The match is in its second half, club 1 ahead, and the sheet lists the goal.
+      await tx.unsafe(`
+        update app.fixtures set
+          kickoff_at = statement_timestamp() - interval '60 minutes', status = 'live_second_half',
+          period = 'second_half', minute = 62, home_score = 1, away_score = 0
+        where id = 'e7e50000-0000-4000-8000-000000000001';
+        insert into app.match_events (fixture_id, team_id, event_type, minute, added_time,
+          sequence_number, period, idempotency_key, provider_event_key, provider_updated_at, source_sequence)
+        values ('e7e50000-0000-4000-8000-000000000001', 'e7e40000-0000-4000-8000-000000000001',
+          'goal', 61, 0, 1, 'second_half', 'test:event:chain-1', 'chain-1', statement_timestamp(), 1);
+      `);
+
+      const tick = (await tx.unsafe(
+        "select app_private.notification_push_tick() as result",
+      )) as Array<{ result: Record<string, unknown> }>;
+      expect(tick[0]!.result.errors).toEqual([]);
+      expect(tick[0]!.result.pushPlan).toMatchObject({ planned: [{ type: "goal" }] });
+      expect(tick[0]!.result.fanout).toMatchObject({ users: 1, queued: 3 });
+
+      const fcm = fakeProvider("fcm", () =>
+        outcome("sent", { providerMessageId: "projects/p/messages/11" }),
+      );
+      const apns = fakeProvider("apns", () => outcome("sent", { providerMessageId: "apple-11" }));
+      const told = await runPushDispatch(config, {
+        environment: {},
+        client: rpcClient(tx),
+        providers: { fcm: fcm.provider, apns: apns.provider },
+      });
+      expect(told).toMatchObject({ claimed: 3, sent: 3, failed: 0, handedBack: 0 });
+      for (const seen of [...fcm.seen, ...apns.seen]) {
+        expect(seen).toMatchObject({
+          type: "goal",
+          language: "fr",
+          title: "But !",
+          body: "Chain Club 1 marque : Chain Club 1 1–0 Chain Club 2.",
+          deepLink: { target: "match_detail", entityId: "e7e50000-0000-4000-8000-000000000001" },
+        });
+        expect(seen.expiresInSeconds).toBeLessThanOrEqual(600);
+      }
+
+      // The goal is ruled out: the sheet drops it and the scoreboard agrees.
+      await tx.unsafe(`
+        delete from app.match_events where fixture_id = 'e7e50000-0000-4000-8000-000000000001';
+        update app.fixtures set home_score = 0, away_score = 0
+        where id = 'e7e50000-0000-4000-8000-000000000001';
+      `);
+      const second = (await tx.unsafe(
+        "select app_private.notification_push_tick() as result",
+      )) as Array<{ result: Record<string, unknown> }>;
+      expect(second[0]!.result.errors).toEqual([]);
+      expect(second[0]!.result.pushPlan).toMatchObject({ planned: [{ type: "goal_cancelled" }] });
+      expect(second[0]!.result.fanout).toMatchObject({ users: 1, queued: 3 });
+
+      const fcmAgain = fakeProvider("fcm", () =>
+        outcome("sent", { providerMessageId: "projects/p/messages/12" }),
+      );
+      const apnsAgain = fakeProvider("apns", () =>
+        outcome("sent", { providerMessageId: "apple-12" }),
+      );
+      const corrected = await runPushDispatch(config, {
+        environment: {},
+        client: rpcClient(tx),
+        providers: { fcm: fcmAgain.provider, apns: apnsAgain.provider },
+      });
+      expect(corrected).toMatchObject({ claimed: 3, sent: 3, failed: 0, handedBack: 0 });
+      for (const seen of [...fcmAgain.seen, ...apnsAgain.seen]) {
+        expect(seen).toMatchObject({
+          type: "goal_cancelled",
+          language: "fr",
+          title: "But annulé",
+          body: "Le but de Chain Club 1 dans Chain Club 1 – Chain Club 2 a été refusé.",
+          deepLink: { target: "match_detail", entityId: "e7e50000-0000-4000-8000-000000000001" },
+        });
+      }
+      expect([...fcmAgain.seen, ...apnsAgain.seen].map((seen) => seen.destination).sort()).toEqual(
+        [...fcm.seen, ...apns.seen].map((seen) => seen.destination).sort(),
+      );
+
+      // The reader's inbox has both, once each, and nothing is left to do.
+      const inbox = (await tx.unsafe(`
+        select notification.notification_type::text as type, count(*)::int as n
+        from app.notifications notification
+        where notification.user_id = '${IDS.user}' and notification.id <> '${IDS.notification}'
+        group by 1 order by 1
+      `)) as Array<Record<string, unknown>>;
+      expect(inbox).toEqual([
+        { type: "goal", n: 1 },
+        { type: "goal_cancelled", n: 1 },
+      ]);
+      const again = (await tx.unsafe(
+        "select app_private.notification_push_tick() as result",
+      )) as Array<{ result: Record<string, unknown> }>;
       expect(again[0]!.result).toMatchObject({ dispatch: "not_needed", outcome: "idle" });
     });
   });
