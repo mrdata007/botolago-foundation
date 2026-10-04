@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import type { MatchAbsenceDto, MatchLineupDto } from "@/backend/football/contracts";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { SectionHeader } from "@/components/common/SectionHeader";
-import { EmptyState } from "@/components/common/States";
+import { MatchDataState } from "./MatchDataState";
 import { ui, UiCard } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
@@ -90,7 +90,7 @@ export function LineupsView({
   if (!homeLineup && !awayLineup) {
     return (
       <div className="grid gap-4">
-        <EmptyState>{noLineupsMessage(phase, t)}</EmptyState>
+        <MatchDataState phase={phase} message={noLineupsMessage(phase, t)} />
         {absent}
       </div>
     );

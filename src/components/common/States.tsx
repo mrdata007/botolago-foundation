@@ -1,5 +1,5 @@
 import { useI18n } from "@/i18n/provider";
-import { AlertTriangle, Inbox, WifiOff } from "lucide-react";
+import { AlertTriangle, CircleSlash, Inbox, WifiOff } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { ui, UiButton, UiSkeleton } from "@/components/ui-kit";
@@ -17,7 +17,18 @@ import { ui, UiButton, UiSkeleton } from "@/components/ui-kit";
  * both on the page and inside cards (the Home fixtures card), and a white
  * card nested in a white card has no edge.
  *
- * The public props of every export are unchanged.
+ * Three situations, three looks, so a reader can tell them apart:
+ *
+ *   `EmptyState`       there is nothing to show YET OR NOW, and that is normal
+ *                      — no match scheduled that day, a match not started.
+ *                      An `action` can lead on to what does exist.
+ *   `UnavailableState` the information is not available and may never be — a
+ *                      finished match with no statistics. A crossed-out
+ *                      glyph, no retry: asking again will not produce it.
+ *   `ErrorState`       the request FAILED. The only one with a retry.
+ *
+ * The public props of the existing exports are unchanged; `action` and
+ * `message` are additions.
  */
 
 export function LoadingState({ label }: { label?: string }) {
@@ -34,20 +45,22 @@ export function LoadingState({ label }: { label?: string }) {
   );
 }
 
-export function EmptyState({
+/** The sunken panel the empty and unavailable states share. */
+function StatePanel({
+  glyph,
   children,
+  action,
   className,
   compact,
   illustration,
 }: {
-  children?: ReactNode;
+  glyph: ReactNode;
+  children: ReactNode;
+  action?: ReactNode;
   className?: string;
-  /** Reduces vertical padding for use inside compact rails. */
   compact?: boolean;
-  /** An optional spot illustration (image URL) in place of the inbox glyph. */
   illustration?: string;
 }) {
-  const { t } = useI18n();
   return (
     <div
       className={cn(
@@ -82,15 +95,84 @@ export function EmptyState({
           )}
           aria-hidden
         >
-          <Inbox className="h-5 w-5" aria-hidden />
+          {glyph}
         </div>
       )}
-      <span className="max-w-[28ch]">{children ?? t("state.empty")}</span>
+      <span className="max-w-[28ch]">{children}</span>
+      {action ? <div className="flex flex-col items-center gap-1">{action}</div> : null}
     </div>
   );
 }
 
-export function ErrorState({ onRetry }: { onRetry?: () => void }) {
+export function EmptyState({
+  children,
+  className,
+  compact,
+  illustration,
+  action,
+}: {
+  children?: ReactNode;
+  className?: string;
+  /** Reduces vertical padding for use inside compact rails. */
+  compact?: boolean;
+  /** An optional spot illustration (image URL) in place of the inbox glyph. */
+  illustration?: string;
+  /**
+   * Where to go from here: buttons or links to what does exist (the next match
+   * day, the latest results). Under the message, one per line.
+   */
+  action?: ReactNode;
+}) {
+  const { t } = useI18n();
+  return (
+    <StatePanel
+      glyph={<Inbox className="h-5 w-5" aria-hidden />}
+      action={action}
+      className={className}
+      compact={compact}
+      illustration={illustration}
+    >
+      {children ?? t("state.empty")}
+    </StatePanel>
+  );
+}
+
+/**
+ * The information is not available, and asking again will not change that: a
+ * finished match the provider sent no statistics for, a squad nobody has
+ * published. Not an error (nothing failed) and not an empty day (something was
+ * expected), so it has its own glyph and never a retry.
+ */
+export function UnavailableState({
+  children,
+  className,
+  compact,
+}: {
+  children?: ReactNode;
+  className?: string;
+  compact?: boolean;
+}) {
+  const { t } = useI18n();
+  return (
+    <StatePanel
+      glyph={<CircleSlash className="h-5 w-5" aria-hidden />}
+      className={className}
+      compact={compact}
+    >
+      {children ?? t("state.unavailable")}
+    </StatePanel>
+  );
+}
+
+export function ErrorState({
+  onRetry,
+  message,
+}: {
+  /** Shown as the retry button: only a request that failed has one. */
+  onRetry?: () => void;
+  /** What could not be loaded, in the page's words; the generic line when absent. */
+  message?: string;
+}) {
   const { t } = useI18n();
   return (
     <div
@@ -112,7 +194,7 @@ export function ErrorState({ onRetry }: { onRetry?: () => void }) {
         <AlertTriangle className="h-5 w-5" aria-hidden />
       </span>
       <span className={cn(ui.tone.default, "[font-weight:var(--ui-weight-strong)]")}>
-        {t("state.error")}
+        {message ?? t("state.error")}
       </span>
       {onRetry && (
         <UiButton variant="ink" size="sm" onClick={onRetry}>

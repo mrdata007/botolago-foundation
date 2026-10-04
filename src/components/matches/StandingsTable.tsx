@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { ChevronDown } from "lucide-react";
+import { useId, useState } from "react";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { clubLabel } from "@/components/fantasy/club-identity";
 import { ui } from "@/components/ui-kit";
@@ -42,10 +44,12 @@ const ZONES: readonly LeagueZone[] = ["champions_league", "confederation_cup", "
  * on every figure print the same rank, and carry a bar only when their whole
  * tie lies in the zone (`tableZones`); `StandingsNotes` says what that means.
  *
- * Built for 390px without a sideways scroll: the club column takes what the
- * figures leave and a long name wraps between words, onto two lines at most
- * in practice. Under 360px the won/drawn/lost columns step out — played,
- * goal difference and points stay.
+ * Built for 390px without a sideways scroll. On a phone (under 640px) the
+ * table keeps what is read at a glance — rank, club, played, goal difference
+ * and points — so an ordinary club name fits on one line. Won, drawn and lost
+ * are one press away ("Voir victoires, nuls, défaites", `aria-expanded`): they
+ * open as a line under each club's name, which costs the name no width at any
+ * phone size. From 640px every column is in the table.
  *
  * Each club's name opens its club page. `highlightClubId` tints the reader's
  * own club in its colours; `currentClubId` tints the club whose page the
@@ -77,7 +81,11 @@ export function StandingsTable({
   const figures = view !== "form";
   // The head row's type is `ui.text.label` on the `thead`: 12px, 800, uppercase.
   const head = "py-2";
-  const narrow = "max-[359px]:hidden";
+  // The won/drawn/lost columns are the wide screens'; a phone has them as a
+  // line under the club's name once asked (`detailed`).
+  const narrow = "max-sm:hidden";
+  const [detailed, setDetailed] = useState(false);
+  const tableId = useId();
   const zones = zoned ? tableZones(rows) : null;
   const shared = sharedPositions(rows);
   const comma = listSeparator(lang);
@@ -91,7 +99,7 @@ export function StandingsTable({
 
   return (
     <div className={cn("overflow-hidden", ui.surface.card)} ref={tableRef}>
-      <table className="w-full table-fixed border-collapse">
+      <table id={tableId} className="w-full table-fixed border-collapse">
         <caption className="sr-only">{caption}</caption>
         <colgroup>
           <col className="w-9" />
@@ -197,14 +205,40 @@ export function StandingsTable({
                     )}
                   >
                     <ClubCrest club={club} size="sm" />
-                    <span
-                      className={cn(
-                        "min-w-0 [font-weight:var(--ui-weight-strong)] leading-[var(--ui-leading-flat)]",
-                        ui.tone.default,
-                      )}
-                    >
-                      {clubLabel(club, tr)}
-                      {mine ? <span className="sr-only"> ({t("standings.your_club")})</span> : null}
+                    <span className="min-w-0">
+                      <span
+                        className={cn(
+                          "block [font-weight:var(--ui-weight-strong)] leading-[var(--ui-leading-flat)]",
+                          ui.tone.default,
+                        )}
+                      >
+                        {clubLabel(club, tr)}
+                        {mine ? (
+                          <span className="sr-only"> ({t("standings.your_club")})</span>
+                        ) : null}
+                      </span>
+                      {figures && detailed ? (
+                        <span
+                          className={cn(
+                            "mt-1 flex flex-wrap gap-x-2.5 sm:hidden",
+                            ui.text.micro,
+                            ui.tone.muted,
+                          )}
+                        >
+                          <span>
+                            {short(t("matches.table.won_short"), t("matches.table.won"))}{" "}
+                            <bdi className={ui.text.tabular}>{row.won}</bdi>
+                          </span>
+                          <span>
+                            {short(t("matches.table.drawn_short"), t("matches.table.drawn"))}{" "}
+                            <bdi className={ui.text.tabular}>{row.drawn}</bdi>
+                          </span>
+                          <span>
+                            {short(t("matches.table.lost_short"), t("matches.table.lost"))}{" "}
+                            <bdi className={ui.text.tabular}>{row.lost}</bdi>
+                          </span>
+                        </span>
+                      ) : null}
                     </span>
                   </Link>
                 </td>
@@ -229,6 +263,35 @@ export function StandingsTable({
           })}
         </tbody>
       </table>
+      {/* Phones only, and only for a table with figures: the won/drawn/lost
+          lines are one press away. */}
+      {figures ? (
+        <button
+          type="button"
+          aria-expanded={detailed}
+          aria-controls={tableId}
+          onClick={() => setDetailed((open) => !open)}
+          className={cn(
+            "flex w-full items-center justify-center gap-1.5 sm:hidden",
+            ui.space.tap,
+            ui.rule.blockStart,
+            ui.text.meta,
+            "[font-weight:var(--ui-weight-heavy)]",
+            ui.tone.ink,
+            ui.focus,
+            "focus-visible:ring-inset focus-visible:ring-offset-0",
+          )}
+        >
+          {detailed ? t("standings.details_hide") : t("standings.details_show")}
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              "h-4 w-4 transition-transform duration-[var(--duration-quick)]",
+              detailed && "rotate-180",
+            )}
+          />
+        </button>
+      ) : null}
     </div>
   );
 }

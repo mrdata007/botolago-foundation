@@ -85,3 +85,86 @@ export function clubShortCode(
   if (trimmed) return trimmed.toUpperCase();
   return clubInitials(shortName);
 }
+
+/**
+ * Words that say "this is a football club" and nothing about which one, in the
+ * full names the league publishes ("Wydad **Athletic Club**", "Renaissance
+ * **Sportive de** Berkane"): French, folded to lower-case without accents, and
+ * Arabic as written.
+ */
+const GENERIC_FR = new Set([
+  "club",
+  "association",
+  "sportive",
+  "sportif",
+  "football",
+  "athletic",
+  "athletique",
+  "riadi",
+  "sport",
+  "sports",
+  "de",
+  "du",
+  "des",
+  "la",
+  "le",
+  "les",
+  "et",
+]);
+const GENERIC_AR = new Set([
+  "نادي",
+  "الرياضي",
+  "الرياضية",
+  "رياضي",
+  "رياضية",
+  "لكرة",
+  "كرة",
+  "القدم",
+  "جمعية",
+  "الجمعية",
+]);
+
+/** The longest name, in letters, a narrow identity column carries whole. */
+export const CLUB_NAME_FIT = { fr: 16, ar: 14 } as const;
+
+function fold(word: string): string {
+  return word.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+/**
+ * A club's recognisable short name for a place too narrow for its full one: the
+ * generic words dropped, the distinctive ones kept in order. "Raja Club
+ * Athletic" is "Raja"; "Renaissance Sportive de Berkane" is "Renaissance
+ * Berkane"; "Maghreb Association Sportive de Fès" is "Maghreb Fès"; Arabic
+ * "الوداد الرياضي" is "الوداد".
+ *
+ * Past two words it keeps the first and the last. A name that already fits (`fit` letters, `CLUB_NAME_FIT` by default) is
+ * returned as it is, so "RS Berkane" and "AS FAR" are never touched, and so is
+ * a name with nothing generic to drop: the layout wraps those between words.
+ * It never returns an empty or one-letter name. The caller keeps the full name
+ * for assistive tech and for any place with room.
+ */
+export function compactClubName(
+  name: string,
+  language: "fr" | "ar",
+  fit: number = CLUB_NAME_FIT[language],
+): string {
+  const full = name.trim().replace(/\s+/g, " ");
+  if (full.length <= fit) return full;
+  const generic = language === "ar" ? GENERIC_AR : GENERIC_FR;
+  // "d'El Jadida" and "l'Olympique" lose the elided article, not the name.
+  const words = full
+    .replace(/(^|\s)[dDlL][’']/g, "$1")
+    .split(" ")
+    .filter((word) => (language === "ar" ? !generic.has(word) : !generic.has(fold(word))));
+  // Still three words and long: the first (the club's own name) and the last
+  // (its city) say which club it is, and a short particle stays with the city
+  // ("Difaâ Hassani El Jadida" is "Difaâ El Jadida").
+  if (words.length > 2 && words.join(" ").length > fit) {
+    const last = words[words.length - 1] ?? "";
+    const before = words[words.length - 2] ?? "";
+    words.splice(1, words.length - 1, ...(before.length <= 2 ? [before, last] : [last]));
+  }
+  const compact = words.join(" ");
+  return compact.length >= 2 && compact.length < full.length ? compact : full;
+}

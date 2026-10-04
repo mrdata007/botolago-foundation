@@ -24,8 +24,11 @@ export const GUEST_CREATE_NEXT = "/fantasy/create";
  * login page carries `next` on to registration and to Google / Apple.
  *
  * Registration closed is said in words where the button would be — the
- * builder would only refuse the team — and the rest of the explanation
- * stays, because it is still true.
+ * builder would only refuse the team. Then the card is only that notice
+ * (`FantasyGuestClosed`): short, so the hub's public shortcuts — the players,
+ * the fixtures, the matches, which a visitor can open without a team — are
+ * in the first screen beside the gameweek's status. The explanation is still
+ * true and stays, below those shortcuts (`FantasyGuestExplainer`).
  *
  * The order is for a phone: what the game is, then the button and the
  * deadline, then how it works. With the four points above it, the one call to
@@ -37,12 +40,7 @@ export const GUEST_CREATE_NEXT = "/fantasy/create";
  * compete with the splash, the language chooser or the prize welcome for
  * the visitor's first look.
  */
-export function FantasyGuestIntro({
-  audience,
-  joinBy,
-  registrationClosed,
-  prizes,
-}: {
+export function FantasyGuestIntro(props: {
   audience: "signed_out" | "no_team";
   /** The gameweek a team created now starts in, and its deadline (`joinTarget`). */
   joinBy: { number: number; deadline: string } | null;
@@ -50,40 +48,28 @@ export function FantasyGuestIntro({
   /** At least one prize is open, so the line about them is true. */
   prizes: boolean;
 }) {
+  return props.registrationClosed ? (
+    <FantasyGuestClosed audience={props.audience} />
+  ) : (
+    <OpenIntro {...props} />
+  );
+}
+
+/** The proposition while a team can still be created: the button, the deadline, how it works. */
+function OpenIntro({
+  audience,
+  joinBy,
+  prizes,
+}: {
+  audience: "signed_out" | "no_team";
+  joinBy: { number: number; deadline: string } | null;
+  prizes: boolean;
+}) {
   const { t, lang } = useI18n();
   const titleId = useId();
-  const howId = useId();
   const signInNoteId = useId();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const deadline = joinDeadlineToShow(joinBy, useDeadlineCountdown(joinBy?.deadline));
-
-  // Literal keys, one call each: the i18n gate reads them statically.
-  const points: Array<{
-    icon: ComponentType<{ className?: string }>;
-    title: string;
-    body: string;
-  }> = [
-    {
-      icon: Users,
-      title: t("fantasy.intro.squad_title").replace("{size}", nf.format(SQUAD_RULES.totalSize)),
-      body: t("fantasy.intro.squad_body"),
-    },
-    {
-      icon: Coins,
-      title: t("fantasy.intro.budget_title").replace("{budget}", nf.format(SQUAD_RULES.budget)),
-      body: t("fantasy.intro.budget_body").replace("{max}", nf.format(SQUAD_RULES.maxPerClub)),
-    },
-    {
-      icon: Star,
-      title: t("fantasy.intro.captain_title"),
-      body: t("fantasy.intro.captain_body"),
-    },
-    {
-      icon: Timer,
-      title: t("fantasy.intro.deadline_title"),
-      body: t("fantasy.intro.deadline_body"),
-    },
-  ];
 
   return (
     <section
@@ -126,62 +112,48 @@ export function FantasyGuestIntro({
           under 200px wide, which is eight lines for this lede. */}
       <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("fantasy.intro.lede")}</p>
 
-      {registrationClosed ? (
-        <div className={cn("mt-4 flex items-start gap-3 p-3", ui.radius.card, ui.surface.sunken)}>
-          <CalendarClock className={cn("mt-0.5 h-5 w-5 shrink-0", ui.tone.ink)} aria-hidden />
-          <div className="min-w-0">
-            <p className={cn(ui.text.bodyStrong, ui.tone.default)}>
-              {t("fantasy.availability.registration_closed.title")}
-            </p>
-            <p className={cn("mt-0.5", ui.text.secondary, ui.tone.muted)}>
-              {t("fantasy.availability.registration_closed.body")}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Both audiences go straight to the builder: a visitor composes the
+      <>
+        {/* Both audiences go straight to the builder: a visitor composes the
               team first, and an account is asked for only when they press
               "Enregistrer". The note under the button says so, for the one
               audience it is news to (`aria-describedby`). */}
-          <UiLinkButton
-            to={GUEST_CREATE_NEXT}
-            variant="gradient"
-            className="mt-4"
-            aria-describedby={audience === "signed_out" ? signInNoteId : undefined}
-            data-testid="fantasy-intro-create"
+        <UiLinkButton
+          to={GUEST_CREATE_NEXT}
+          variant="gradient"
+          className="mt-4"
+          aria-describedby={audience === "signed_out" ? signInNoteId : undefined}
+          data-testid="fantasy-intro-create"
+        >
+          <Plus className="h-5 w-5" aria-hidden />
+          {t("fantasy.create.title")}
+        </UiLinkButton>
+        {audience === "signed_out" ? (
+          <p
+            id={signInNoteId}
+            className={cn("mt-2 text-center text-balance", ui.text.meta, ui.tone.muted)}
           >
-            <Plus className="h-5 w-5" aria-hidden />
-            {t("fantasy.create.title")}
-          </UiLinkButton>
-          {audience === "signed_out" ? (
-            <p
-              id={signInNoteId}
-              className={cn("mt-2 text-center text-balance", ui.text.meta, ui.tone.muted)}
+            {t("fantasy.intro.sign_in_note")}
+          </p>
+        ) : null}
+        {deadline ? (
+          // Under the button, not above it: with Arabic's taller line
+          // height, these two lines above it would put the button at a
+          // 360×640 fold, by the tokens' arithmetic.
+          <p className={cn("mt-3", ui.text.secondary, ui.tone.muted)}>
+            {t("fantasy.intro.join_by").replace("{n}", nf.format(deadline.number))}{" "}
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5",
+                ui.text.bodyStrong,
+                ui.tone.default,
+              )}
             >
-              {t("fantasy.intro.sign_in_note")}
-            </p>
-          ) : null}
-          {deadline ? (
-            // Under the button, not above it: with Arabic's taller line
-            // height, these two lines above it would put the button at a
-            // 360×640 fold, by the tokens' arithmetic.
-            <p className={cn("mt-3", ui.text.secondary, ui.tone.muted)}>
-              {t("fantasy.intro.join_by").replace("{n}", nf.format(deadline.number))}{" "}
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1.5",
-                  ui.text.bodyStrong,
-                  ui.tone.default,
-                )}
-              >
-                <Timer className={cn("h-4 w-4 shrink-0", ui.tone.ink)} aria-hidden />
-                <bdi>{formatDeadline(deadline.deadline, lang, { weekday: "short" })}</bdi>
-              </span>
-            </p>
-          ) : null}
-        </>
-      )}
+              <Timer className={cn("h-4 w-4 shrink-0", ui.tone.ink)} aria-hidden />
+              <bdi>{formatDeadline(deadline.deadline, lang, { weekday: "short" })}</bdi>
+            </span>
+          </p>
+        ) : null}
+      </>
       {/* After the button, not before it: a reason to play, not a step on
           the way to the team. */}
       {prizes ? (
@@ -198,6 +170,47 @@ export function FantasyGuestIntro({
         </p>
       ) : null}
 
+      <HowItWorks />
+    </section>
+  );
+}
+
+/** The four points and the rules link: how the game works, for anyone who wants it. */
+function HowItWorks() {
+  const { t, lang } = useI18n();
+  const howId = useId();
+  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
+
+  // Literal keys, one call each: the i18n gate reads them statically.
+  const points: Array<{
+    icon: ComponentType<{ className?: string }>;
+    title: string;
+    body: string;
+  }> = [
+    {
+      icon: Users,
+      title: t("fantasy.intro.squad_title").replace("{size}", nf.format(SQUAD_RULES.totalSize)),
+      body: t("fantasy.intro.squad_body"),
+    },
+    {
+      icon: Coins,
+      title: t("fantasy.intro.budget_title").replace("{budget}", nf.format(SQUAD_RULES.budget)),
+      body: t("fantasy.intro.budget_body").replace("{max}", nf.format(SQUAD_RULES.maxPerClub)),
+    },
+    {
+      icon: Star,
+      title: t("fantasy.intro.captain_title"),
+      body: t("fantasy.intro.captain_body"),
+    },
+    {
+      icon: Timer,
+      title: t("fantasy.intro.deadline_title"),
+      body: t("fantasy.intro.deadline_body"),
+    },
+  ];
+
+  return (
+    <>
       <h3 id={howId} className={cn("mt-5", ui.text.label, ui.tone.muted)}>
         {t("fantasy.intro.how_title")}
       </h3>
@@ -205,7 +218,7 @@ export function FantasyGuestIntro({
         {points.map((point) => (
           <li key={point.title} className="flex items-start gap-3">
             {/* The rules page's gradient disc, with the rules page's icon
-                for the same rule. */}
+                  for the same rule. */}
             <span
               className={cn(
                 "grid h-9 w-9 shrink-0 place-items-center",
@@ -231,6 +244,83 @@ export function FantasyGuestIntro({
           {t("fpl.rules")}
         </UiLinkButton>
       </div>
+    </>
+  );
+}
+
+/**
+ * Registration is closed, said where the button would be and nothing more:
+ * what is closed, and what comes next. Under the gameweek's status, with the
+ * hub's public shortcuts right below it. A visitor has no team, squad or
+ * points here, and the copy does not suggest otherwise.
+ */
+function FantasyGuestClosed({ audience }: { audience: "signed_out" | "no_team" }) {
+  const { t } = useI18n();
+  const titleId = useId();
+  return (
+    <section
+      aria-labelledby={titleId}
+      className={cn("flex items-start gap-3 p-4", ui.surface.card)}
+      data-testid="fantasy-guest-intro"
+    >
+      <CalendarClock className={cn("mt-0.5 h-5 w-5 shrink-0", ui.tone.ink)} aria-hidden />
+      <div className="min-w-0">
+        <h2 id={titleId} className={cn("text-balance", ui.text.bodyStrong, ui.tone.default)}>
+          {t("fantasy.availability.registration_closed.title")}
+        </h2>
+        {audience === "no_team" ? (
+          <p
+            className={cn(
+              "mt-0.5",
+              ui.text.meta,
+              "[font-weight:var(--ui-weight-strong)]",
+              ui.tone.ink,
+            )}
+          >
+            {t("fpl.no_team_yet")}
+          </p>
+        ) : null}
+        <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
+          {t("fantasy.availability.registration_closed.body")}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * What the game is and how it works, for a visitor while registration is
+ * closed: the same explanation the open proposition carries, in a card of its
+ * own that the hub places below the shortcuts, since nothing in it is an
+ * action to take now.
+ */
+export function FantasyGuestExplainer({ prizes }: { prizes: boolean }) {
+  const { t } = useI18n();
+  const titleId = useId();
+  return (
+    <section
+      aria-labelledby={titleId}
+      className={cn("p-4", ui.surface.card)}
+      data-testid="fantasy-guest-explainer"
+    >
+      <h2 id={titleId} className={cn("text-balance", ui.display.section, ui.tone.default)}>
+        {t("fantasy.intro.title")}
+      </h2>
+      <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>{t("fantasy.intro.lede")}</p>
+      {prizes ? (
+        <p
+          className={cn(
+            "mt-3 flex items-center gap-2",
+            ui.text.meta,
+            "[font-weight:var(--ui-weight-strong)]",
+            ui.tone.default,
+          )}
+        >
+          <Trophy className={cn("h-4 w-4 shrink-0", ui.tone.ink)} aria-hidden />
+          {t("fantasy.intro.prizes")}
+        </p>
+      ) : null}
+      <HowItWorks />
     </section>
   );
 }

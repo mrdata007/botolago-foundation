@@ -2,7 +2,7 @@ import { useMemo, type CSSProperties } from "react";
 import type { MatchStatisticComparisonDto } from "@/backend/football/contracts";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { SectionHeader } from "@/components/common/SectionHeader";
-import { EmptyState } from "@/components/common/States";
+import { MatchDataState } from "./MatchDataState";
 import { ui, UiCard, UiLivePill } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
@@ -118,7 +118,7 @@ export function StatComparison({
       <section>
         {heading}
         {chart}
-        <EmptyState>{noStatsMessage(phase, t)}</EmptyState>
+        <MatchDataState phase={phase} message={noStatsMessage(phase, t)} />
       </section>
     );
   }

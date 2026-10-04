@@ -14,7 +14,7 @@ import { formatDeadline } from "@/components/fpl/deadline";
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 import { SQUAD_RULES } from "@/types/fantasy";
-import { FantasyGuestIntro, GUEST_CREATE_NEXT } from "./FantasyGuestIntro";
+import { FantasyGuestExplainer, FantasyGuestIntro, GUEST_CREATE_NEXT } from "./FantasyGuestIntro";
 
 /**
  * Audit 2026-09-25 (A16) — the Fantasy hub for a visitor without a team.
@@ -148,9 +148,42 @@ describe("FantasyGuestIntro — what the game is, before anything personal", () 
     expect(text(html)).toContain(escapeHtml(fr["fantasy.availability.registration_closed.title"]));
     expect(text(html)).toContain(escapeHtml(fr["fantasy.availability.registration_closed.body"]));
     expect(text(html)).not.toContain(escapeHtml(fr["fantasy.intro.join_by"].slice(0, 20)));
-    // The explanation and the rules stay: they are still true.
-    expect(text(html)).toContain(escapeHtml(fr["fantasy.intro.title"]));
-    expect(anchors(html).map(hrefOf)).toEqual(["/fantasy/rules"]);
+  });
+
+  it("is only that notice while registration is closed: the explanation moves below the hub's shortcuts", async () => {
+    const html = await render(intro({ registrationClosed: true, prizes: true }));
+    // Short: a heading and two lines, nothing to scroll past to reach the shortcuts.
+    expect(html).not.toContain("<ul");
+    expect(html).not.toContain("<h3");
+    expect(anchors(html)).toHaveLength(0);
+    expect(text(html)).not.toContain(escapeHtml(fr["fantasy.intro.how_title"]));
+    expect(text(html)).not.toContain(escapeHtml(fr["fantasy.intro.prizes"]));
+    // The explanation is still there for whoever wants it: its own card.
+    const explainer = await render(<FantasyGuestExplainer prizes />);
+    expect(text(explainer)).toContain(escapeHtml(fr["fantasy.intro.title"]));
+    expect(text(explainer)).toContain(escapeHtml(fr["fantasy.intro.lede"]));
+    expect(text(explainer)).toContain(escapeHtml(fr["fantasy.intro.prizes"]));
+    expect(explainer.match(/<li /g)).toHaveLength(4);
+    expect(anchors(explainer).map(hrefOf)).toEqual(["/fantasy/rules"]);
+    // And no call to action: nothing in it is a step to take now.
+    expect(createLink(explainer)).toBeUndefined();
+  });
+
+  it("promises a visitor no squad, points or ranking, and points at no tab that is not there", () => {
+    for (const lang of ["fr", "ar"] as const) {
+      const body = dictionaries[lang]["fantasy.availability.registration_closed.body"];
+      expect(body).not.toMatch(/onglet|تبويب/);
+      expect(body).not.toMatch(/résultats|classement|points|النتائج|الترتيب|النقاط/i);
+    }
+    // In step: the Arabic says the same thing as the French.
+    expect(ar["fantasy.availability.registration_closed.body"]).toMatch(/[؀-ۿ]/);
+  });
+
+  it("hub: the guest's shortcuts come before the explanation when registration is closed", () => {
+    const hub = code("src/routes/fantasy.index.tsx");
+    expect(hub).toContain("layout.intro !== null && gameweek?.enrolment === null");
+    expect(hub.indexOf("<ShortcutTiles />")).toBeGreaterThan(-1);
+    expect(hub.indexOf("<FantasyGuestExplainer")).toBeGreaterThan(hub.indexOf("<ShortcutTiles />"));
   });
 
   it("mentions prizes only when the catalog has one", async () => {
