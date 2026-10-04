@@ -6,7 +6,6 @@ import {
   formatVoteTotal,
   questionView,
   sharesVisible,
-  voteCardWorthShowing,
   votePercentages,
   withMyVote,
 } from "./match-votes";
@@ -115,27 +114,5 @@ describe("sharesVisible", () => {
     expect(sharesVisible(0)).toBe(false);
     expect(sharesVisible(19)).toBe(false);
     expect(sharesVisible(20)).toBe(true);
-  });
-});
-
-describe("voteCardWorthShowing", () => {
-  const view = (counts: { home: number; draw: number; away: number }, mine: "home" | null) =>
-    questionView({ question: "winner", counts, mine });
-
-  test("an open poll is always shown, even with no votes", () => {
-    expect(voteCardWorthShowing(view({ home: 0, draw: 0, away: 0 }, null), true)).toBe(true);
-  });
-
-  test("a closed poll with too few votes and no answer of the player's is dropped", () => {
-    expect(voteCardWorthShowing(view({ home: 5, draw: 2, away: 3 }, null), false)).toBe(false);
-    expect(voteCardWorthShowing(view({ home: 0, draw: 0, away: 0 }, null), false)).toBe(false);
-  });
-
-  test("a closed poll with enough votes for shares is kept", () => {
-    expect(voteCardWorthShowing(view({ home: 10, draw: 5, away: 5 }, null), false)).toBe(true);
-  });
-
-  test("a closed poll the player answered is kept, however few votes it has", () => {
-    expect(voteCardWorthShowing(view({ home: 1, draw: 0, away: 0 }, "home"), false)).toBe(true);
   });
 });

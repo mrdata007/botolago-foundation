@@ -76,7 +76,7 @@ function card(
   home: Club,
   away: Club,
   variant: MatchCardVariant = "list",
-  extra: { listGameweek?: number; extras?: MatchCardExtras } = {},
+  extra: { listGameweek?: number; showDate?: boolean; extras?: MatchCardExtras } = {},
 ) {
   return render(<MatchCard match={match} home={home} away={away} variant={variant} {...extra} />);
 }
@@ -291,5 +291,51 @@ describe("MatchCard (Option A) — source", () => {
   it("draws club colour only through the palette, never a literal", () => {
     expect(source).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|bg-white|text-white/);
     expect(source).toContain("clubMatchPalettes(home, away)");
+  });
+});
+
+describe("MatchCard — a day on rows of a list that mixes days (mobile UX refinements, batch 3)", () => {
+  it("prints the day of a result and of a fixture when asked, in the time column", async () => {
+    const finished = await card(
+      fixture({ status: "finished", homeScore: 2, awayScore: 0, kickoff: "2026-09-27T19:30:00Z" }),
+      FAR,
+      RAJA,
+      "list",
+      { showDate: true },
+    );
+    expect(finished).toContain("dim. 27 sept.");
+    const scheduled = await card(fixture(), FAR, RAJA, "list", { showDate: true });
+    expect(scheduled).toContain("jeu. 24 sept.");
+  });
+
+  it("leaves it off a list that is already grouped under a day", async () => {
+    const html = await card(
+      fixture({ status: "finished", homeScore: 2, awayScore: 0, kickoff: "2026-09-27T19:30:00Z" }),
+      FAR,
+      RAJA,
+    );
+    expect(html).not.toContain("27 sept.");
+  });
+
+  it("says the day in the finished row's name for assistive tech, which the visible text is hidden from", async () => {
+    const html = await card(
+      fixture({ status: "finished", homeScore: 2, awayScore: 0, kickoff: "2026-09-27T19:30:00Z" }),
+      FAR,
+      RAJA,
+      "list",
+      { showDate: true },
+    );
+    expect(html).toMatch(/aria-label="[^"]*— dim\. 27 sept\."/);
+  });
+
+  it("does not print a day for a match whose date is not confirmed", async () => {
+    const html = await card(
+      fixture({ status: "postponed", kickoff: "2026-09-24T00:00:00Z" }),
+      FAR,
+      RAJA,
+      "list",
+      { showDate: true },
+    );
+    expect(html).not.toContain("sept.");
   });
 });

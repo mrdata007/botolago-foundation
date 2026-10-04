@@ -253,7 +253,7 @@ function Extreme({
   return (
     <div className="min-w-0">
       <p className={cn("mb-1.5 mt-1", ui.text.label, ui.tone.muted)}>{label}</p>
-      <MatchCard match={match} home={home} away={away} variant="compact" />
+      <MatchCard match={match} home={home} away={away} variant="compact" showDate />
     </div>
   );
 }

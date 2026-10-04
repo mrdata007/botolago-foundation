@@ -122,15 +122,3 @@ export const MIN_VOTES_FOR_SHARES = 20;
 export function sharesVisible(total: number): boolean {
   return total >= MIN_VOTES_FOR_SHARES;
 }
-
-/**
- * Whether a vote card earns its place in the match page's deck. A poll that
- * can still be answered always does. A closed one does only if it has
- * something to show: enough votes for shares to mean something, or the
- * player's own answer. A closed poll with neither says "closed, not enough
- * votes yet" and nothing else, and after full time it only pushes the match's
- * events and stats further down the page.
- */
-export function voteCardWorthShowing(view: VoteQuestionView, open: boolean): boolean {
-  return open || sharesVisible(view.total) || view.mine !== null;
-}

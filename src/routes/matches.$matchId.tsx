@@ -35,7 +35,6 @@ import {
 import { MatchTopBar } from "@/components/matches/MatchTopBar";
 import { StatComparison } from "@/components/matches/StatComparison";
 import { matchDataPhase } from "@/components/matches/match-empty-states";
-import { predictionFollowsTabs } from "@/components/matches/match-layout";
 import {
   eventsWhenFresh,
   scoreCountsEveryGoal,
@@ -44,6 +43,7 @@ import {
 import { useScrolledPast } from "@/components/matches/use-scrolled-past";
 import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { matchDayKey } from "@/lib/match-kickoff";
 import { useBackTo } from "@/lib/back-navigation";
 import { clubMatchPalettes } from "@/lib/club-palette";
 import { NEWS_ENABLED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
@@ -176,9 +176,6 @@ function MatchDetailPage() {
   const loaderData = isUnavailable(loaded) ? undefined : loaded;
   const navigate = useNavigate({ from: Route.fullPath });
   const { t, tr, lang } = useI18n();
-  // Articles and matches are the pages most often opened from a shared link,
-  // where there is no in-app entry to go back to; fall back to the listing.
-  const goBack = useBackTo("/matches");
   const [copied, setCopied] = useState(false);
   const headingId = useId();
   // The split header's element, which the bar watches to go compact.
@@ -213,6 +210,18 @@ function MatchDetailPage() {
 
   const match = detailQ.data?.match;
   const season = detailQ.data?.season;
+
+  // Articles and matches are the pages most often opened from a shared link,
+  // where there is no in-app entry to go back to. There, Retour goes to the
+  // calendar on this match's own day and season, not to today. From inside
+  // the app it steps back to the list as it was left (its day, chip and
+  // season are in its URL).
+  const goBack = useBackTo({
+    to: "/matches",
+    search: match
+      ? { ...(season ? { season: season.id } : {}), date: matchDayKey(new Date(match.kickoff)) }
+      : {},
+  });
 
   // The final whistle moves the "Face à face" tab's table. This page shows no
   // live strip, so it hears the whistle from its own reads of the match, in
@@ -293,7 +302,6 @@ function MatchDetailPage() {
   }
 
   const isLive = match.status === "live";
-  const predictionAfterTabs = predictionFollowsTabs(match.status);
   // What an empty panel says: a finished match's missing data is not promised.
   // As of the query's own read, which the server and the first render share.
   const phase = matchDataPhase(match, detailQ.dataUpdatedAt);
@@ -337,6 +345,15 @@ function MatchDetailPage() {
     lineups.flatMap((lineup) =>
       lineup.players.map((player) => [player.id, player.displayName] as const),
     ),
+  );
+  // The prediction is the desktop column's, or the summary panel's on a phone.
+  const predictionInline = PRONOSTICS_PROMOTED && !wideLayout;
+  const prediction = (
+    <MatchPredictionCard
+      fixtureId={match.id}
+      roundNumber={match.gameweek > 0 ? match.gameweek : null}
+      placement="inline"
+    />
   );
   const goalClub = goal?.side === "home" ? home : goal?.side === "away" ? away : undefined;
 
@@ -388,21 +405,16 @@ function MatchDetailPage() {
         lineups={lineups}
       />
 
-      {/* Phone: the prediction, then the tabs, until the match is live; from
-          kickoff on the tabs come first and the prediction follows them (see
-          `predictionFollowsTabs`). Desktop (1024px up): the tabs and their
-          panel take two columns, the prediction a 340px column beside them,
-          and the summary shows the line-ups next to the timeline. */}
+      {/* Tabs straight after the match's identity, on every width. Desktop
+          (1024px up): the tabs and their panel take two columns and the
+          prediction a 340px column beside them. On a phone the prediction is
+          part of the summary panel instead (below), so the four tabs and the
+          start of the selected one are in the first screen. */}
       <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_340px] lg:items-start lg:gap-x-6">
         {/* Pronostics (BG-0146): the same prediction as /pronostics. A card, not
           a fifth tab (the four tabs are pinned). Shown once promoted. */}
-        {PRONOSTICS_PROMOTED && (
-          <div
-            className={cn(
-              predictionAfterTabs ? "order-2" : "order-1",
-              "lg:col-start-3 lg:row-start-1 lg:mt-4",
-            )}
-          >
+        {PRONOSTICS_PROMOTED && wideLayout && (
+          <div className="order-1 lg:col-start-3 lg:row-start-1 lg:mt-4">
             <MatchPredictionCard
               fixtureId={match.id}
               roundNumber={match.gameweek > 0 ? match.gameweek : null}
@@ -410,12 +422,7 @@ function MatchDetailPage() {
           </div>
         )}
 
-        <div
-          className={cn(
-            predictionAfterTabs ? "order-1" : "order-2",
-            "min-w-0 lg:col-span-2 lg:col-start-1 lg:row-start-1",
-          )}
-        >
+        <div className="order-2 min-w-0 lg:col-span-2 lg:col-start-1 lg:row-start-1">
           <MatchTabs
             active={tab}
             onChange={(key) =>
@@ -436,6 +443,12 @@ function MatchDetailPage() {
             {tab === "summary" && (
               <>
                 <h2 className="sr-only">{t("matches.detail.summary")}</h2>
+                {/* A match still to be played leads with the prediction: it is
+                    the one thing to do here. Once it is on, the timeline
+                    leads and the prediction follows it. */}
+                {predictionInline && match.status === "scheduled" ? (
+                  <div className="mb-4">{prediction}</div>
+                ) : null}
                 <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
                   <EventTimeline
                     events={live.events}
@@ -462,6 +475,9 @@ function MatchDetailPage() {
                     />
                   ) : null}
                 </div>
+                {predictionInline && match.status !== "scheduled" ? (
+                  <div className="mt-4">{prediction}</div>
+                ) : null}
               </>
             )}
 

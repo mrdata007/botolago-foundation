@@ -87,7 +87,9 @@ describe("match page — design-system rules in source", () => {
   it("the page takes no News data while the flag is off, and never strands a cold reader", () => {
     const route = code("src/routes/matches.$matchId.tsx");
     expect(route).toContain("{NEWS_ENABLED && related.length > 0 && (");
-    expect(route).toContain('useBackTo("/matches")');
+    // Retour steps back to the list as it was left; a cold arrival goes to the
+    // calendar on the match's own day.
+    expect(route).toMatch(/useBackTo\(\{\s*to: "\/matches"/);
     expect(route).not.toContain("history.back()");
   });
 
@@ -111,24 +113,6 @@ describe("match page — design-system rules in source", () => {
     // With its age, so a copy the router kept from an earlier visit is
     // refetched rather than trusted as fresh.
     expect(route).toMatch(/initialDataUpdatedAt: serverDetail \? loaderData\?\.fetchedAt/);
-  });
-});
-
-describe("match page — the order of the prediction and the tabs on a phone", () => {
-  const route = code("src/routes/matches.$matchId.tsx");
-
-  it("reads the order from the match's status, not from a literal", () => {
-    expect(route).toMatch(/predictionAfterTabs = predictionFollowsTabs\(match\.status\)/);
-  });
-
-  it("swaps the two blocks' phone order together, so neither lands on the other's slot", () => {
-    expect(route).toMatch(/predictionAfterTabs \? "order-2" : "order-1"/);
-    expect(route).toMatch(/predictionAfterTabs \? "order-1" : "order-2"/);
-  });
-
-  it("leaves the desktop columns where they were", () => {
-    expect(route).toContain("lg:col-start-3 lg:row-start-1 lg:mt-4");
-    expect(route).toContain("min-w-0 lg:col-span-2 lg:col-start-1 lg:row-start-1");
   });
 });
 
@@ -626,5 +610,63 @@ describe("match page — form chips", () => {
     expect(html).toContain("bg-[color:var(--ui-positive)] text-[color:var(--ui-on-positive)]");
     expect(html).toContain("bg-[color:var(--ui-negative)] text-[color:var(--ui-on-negative)]");
     expect(html).not.toContain("--ui-on-ink-plain");
+  });
+});
+
+describe("match page — long club names (mobile UX refinements, batch 2)", () => {
+  const raja = club("rca", "Raja Club Athletic", "Raja Club Athletic", "RCA", "Casablanca");
+  const berkane = club(
+    "rsb",
+    "Renaissance Sportive de Berkane",
+    "Renaissance Sportive de Berkane",
+    "RSB",
+    "Berkane",
+  );
+  const html = inFrench(
+    <MatchScoreHeader
+      match={{ ...live, homeClubId: "rca", awayClubId: "rsb" }}
+      home={raja}
+      away={berkane}
+      palettes={clubMatchPalettes(raja, berkane)}
+      elapsed={63}
+      headingId="h"
+    />,
+  );
+
+  it("shows the recognisable short name in the half and keeps the full one in the heading", () => {
+    expect(html).toMatch(/<h1 id="h"[^>]*>Raja Club Athletic vs Renaissance Sportive de Berkane</);
+    expect(html).toMatch(/>Raja<\/p>/);
+    expect(html).toMatch(/>Renaissance Berkane<\/p>/);
+  });
+
+  it("never lets a name break inside a word", () => {
+    const names = [...html.matchAll(/<p class="([^"]*)">(?:Raja|Renaissance Berkane)<\/p>/g)];
+    expect(names).toHaveLength(2);
+    for (const [, classes] of names) {
+      expect(classes).not.toContain("break-words");
+      expect(classes).toContain("[overflow-wrap:normal]");
+      expect(classes).toContain("[word-break:normal]");
+    }
+  });
+});
+
+describe("match page — tabs come straight after the identity (batch 2)", () => {
+  const route = code("src/routes/matches.$matchId.tsx");
+
+  it("puts the prediction in the summary panel on a phone, not above the tabs", () => {
+    const tabs = route.indexOf("<MatchTabs");
+    expect(tabs).toBeGreaterThan(route.indexOf("<MatchScoreHeader"));
+    // The desktop column's card is the only one drawn above the tabs; the
+    // phone's is a constant, placed in the panel below them.
+    const beforeTabs = route.slice(0, tabs);
+    expect(beforeTabs).toContain("PRONOSTICS_PROMOTED && wideLayout &&");
+    expect(beforeTabs.match(/\{prediction\}/g)).toBeNull();
+    expect(route).toContain('placement="inline"');
+    expect(route.indexOf("{prediction}")).toBeGreaterThan(tabs);
+  });
+
+  it("leads with the prediction only while the match is still to be played", () => {
+    expect(route).toContain('predictionInline && match.status === "scheduled"');
+    expect(route).toContain('predictionInline && match.status !== "scheduled"');
   });
 });
