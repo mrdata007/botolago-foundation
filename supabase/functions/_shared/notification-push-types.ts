@@ -76,6 +76,33 @@ export function threadId(delivery: ClaimedPushDelivery): string {
   return entityId ? `${target}:${entityId}` : delivery.type;
 }
 
+/**
+ * The Android notification channel an alert is shown in. The app creates these
+ * two channels when it starts (src/lib/push-channels.ts holds the same ids, and a
+ * test keeps the two files agreeing), as high-importance ones, so a goal appears
+ * on screen rather than only in the notification shade. A type with no channel
+ * here (nothing today) is shown in Firebase's default one. A channel the phone
+ * does not have yet falls back to that default too, so naming one is always safe.
+ */
+export const ANDROID_CHANNEL_MATCH = "match_alerts";
+export const ANDROID_CHANNEL_FANTASY = "fantasy_reminders";
+
+export function androidChannel(type: string): string | undefined {
+  switch (type) {
+    case "match_starting":
+    case "goal":
+    case "goal_cancelled":
+    case "full_time":
+    case "followed_team_result":
+      return ANDROID_CHANNEL_MATCH;
+    case "deadline_24h":
+    case "deadline_1h":
+      return ANDROID_CHANNEL_FANTASY;
+    default:
+      return undefined;
+  }
+}
+
 export function outcome(
   kind: PushSendOutcome["outcome"],
   fields: Partial<Omit<PushSendOutcome, "outcome">> = {},

@@ -1,6 +1,6 @@
 # Push notifications — the sending side
 
-Status: **the sending side is complete; nothing has reached a phone.**
+Status: **the sending side is complete and the app's web side is written; nothing has reached a phone.**
 All six moments (the kick-off reminder, the 1-hour and 24-hour Fantasy
 deadlines, the final score, goals, and the "goal cancelled" correction) can be
 queued for each phone and sent by the dispatcher, but the switch ships **off**,
@@ -33,7 +33,7 @@ Supabase secrets.
 
 Nothing reaches a phone until these are done:
 
-1. **The phone side**: asking permission, registering the token (`api.register_my_notification_device` exists), a Push switch in settings, opening an alert on the right page. This needs the Capacitor app shell.
+1. **The phone app**: the web side is written and tested (asking permission when the reader turns the Push switch on, registering the token, opening an alert on the right page; see `docs/mobile/PHONE_APP.md`), but the iPhone and Android projects have not been created, built or run on a phone, so no real token has ever been registered.
 2. **The privacy policy and store forms**: push is not yet in the policy's purposes, and phone tokens have no row in its retention table (`src/content/legal/documents.ts`).
 3. **Deploying the Edge Function** `notification-push-dispatch`, and the secrets below. Neither is done by merging the code.
 4. **The owner's read of the new wording.** The French and Arabic text of the 1-hour deadline, the goal (second edition) and the goal correction is new and written by the engineering side; have a native Arabic reader check it before push goes live (the texts are rows in `app.notification_templates`, so a change is a new version, not a deploy).
@@ -76,8 +76,8 @@ A moment from before the switch was turned on is never pushed late, so there is
 no burst when it is switched on. Go through the activation checklist in
 `NOTIFICATIONS_OPERATIONS_RUNBOOK.md` first, on staging.
 
-Real phones need the app shell and its token registration as well: until then
-the switch has nobody to send to.
+Real phones need the app (`docs/mobile/PHONE_APP.md`) and its token registration as
+well: until then the switch has nobody to send to.
 
 ## How an alert is created
 

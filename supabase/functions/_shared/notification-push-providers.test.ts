@@ -262,9 +262,34 @@ describe("FcmProvider", () => {
           entityId: "44444444-4444-4444-8444-444444444444",
           threadId: "match_detail:44444444-4444-4444-8444-444444444444",
         },
-        android: { priority: "HIGH", ttl: "600s" },
+        android: {
+          priority: "HIGH",
+          ttl: "600s",
+          notification: { channel_id: "match_alerts" },
+        },
       },
     });
+  });
+
+  it("shows each kind of alert in its Android channel, and names none for a kind it does not know", async () => {
+    const setup = await fcmSetup((call) =>
+      isTokenCall(call) ? googleToken() : json(200, { name: "projects/p/messages/1" }),
+    );
+    const androidOf = (call: { init: RequestInit }) =>
+      (JSON.parse(String(call.init.body)) as { message: { android: Record<string, unknown> } })
+        .message.android;
+    const expected: Array<[string, unknown]> = [
+      ["match_starting", { channel_id: "match_alerts" }],
+      ["goal", { channel_id: "match_alerts" }],
+      ["goal_cancelled", { channel_id: "match_alerts" }],
+      ["full_time", { channel_id: "match_alerts" }],
+      ["deadline_1h", { channel_id: "fantasy_reminders" }],
+      ["deadline_24h", { channel_id: "fantasy_reminders" }],
+      ["breaking_news", undefined],
+    ];
+    for (const [type] of expected) await setup.provider.send(delivery({ type }));
+    const sends = setup.calls.filter((call) => !isTokenCall(call));
+    expect(sends.map((call) => androidOf(call).notification)).toEqual(expected.map(([, c]) => c));
   });
 
   it("logs in once and reuses the login until shortly before it ends", async () => {

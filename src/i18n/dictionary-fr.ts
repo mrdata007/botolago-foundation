@@ -1472,6 +1472,15 @@ export const fr = {
   "auth.setup.notif_deadline_desc": "Date limite avant chaque journée.",
   "auth.setup.notif_email": "Recevoir par e-mail",
   "auth.setup.notif_email_desc": "Avant et après les matchs, et vos rappels Fantasy.",
+  "auth.setup.notif_push": "Alertes sur ce téléphone",
+  "auth.setup.notif_push_desc":
+    "Buts, résultats, coup d’envoi et date limite Fantasy, même quand l’appli est fermée.",
+  "auth.setup.notif_push_denied":
+    "Les notifications sont bloquées. Autorisez-les pour BotolaGO dans les réglages du téléphone, puis réessayez.",
+  "auth.setup.notif_push_unavailable":
+    "Impossible d’activer les alertes pour le moment. Vérifiez votre connexion et réessayez.",
+  "auth.setup.notif_push_conflict":
+    "Ce téléphone est encore lié à un autre compte. Déconnectez-le de l’autre compte, puis réessayez.",
   "auth.setup.language_confirm": "Langue par défaut",
   "auth.setup.skip": "Passer",
   "auth.setup.next": "Suivant",

@@ -11,6 +11,7 @@
 
 import { importSigningKey, signJwt } from "./notification-push-jwt.ts";
 import {
+  androidChannel,
   clip,
   outcome,
   PUSH_BODY_MAX,
@@ -202,6 +203,7 @@ export class FcmProvider implements PushProvider {
   async send(delivery: ClaimedPushDelivery): Promise<PushSendOutcome> {
     const started = this.now();
     const latency = () => Math.max(0, this.now() - started);
+    const channel = androidChannel(delivery.type);
     const message = {
       message: {
         token: delivery.destination,
@@ -219,6 +221,7 @@ export class FcmProvider implements PushProvider {
         android: {
           priority: "HIGH",
           ttl: `${Math.max(1, Math.floor(delivery.expiresInSeconds))}s`,
+          ...(channel ? { notification: { channel_id: channel } } : {}),
         },
       },
     };

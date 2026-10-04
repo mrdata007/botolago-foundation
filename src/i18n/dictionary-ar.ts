@@ -1383,6 +1383,15 @@ export const ar = {
   "auth.setup.notif_deadline_desc": "الموعد النهائي قبل كل جولة.",
   "auth.setup.notif_email": "استلام الإشعارات عبر البريد الإلكتروني",
   "auth.setup.notif_email_desc": "قبل المباريات وبعدها، وتذكيرات الفانتازي الخاصة بك.",
+  "auth.setup.notif_push": "تنبيهات على هذا الهاتف",
+  "auth.setup.notif_push_desc":
+    "الأهداف والنتائج وانطلاق المباريات والموعد النهائي للفانتازي، حتى عندما يكون التطبيق مغلقًا.",
+  "auth.setup.notif_push_denied":
+    "الإشعارات محظورة. اسمح بها لتطبيق BotolaGO من إعدادات الهاتف ثم حاول مرة أخرى.",
+  "auth.setup.notif_push_unavailable":
+    "تعذّر تفعيل التنبيهات حاليًا. تحقّق من اتصالك وحاول مرة أخرى.",
+  "auth.setup.notif_push_conflict":
+    "هذا الهاتف ما زال مرتبطًا بحساب آخر. اخرج من الحساب الآخر ثم حاول مرة أخرى.",
   "auth.setup.language_confirm": "اللغة الافتراضية",
   "auth.setup.skip": "تخطّي",
   "auth.setup.next": "التالي",
