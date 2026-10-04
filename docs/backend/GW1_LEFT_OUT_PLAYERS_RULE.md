@@ -91,6 +91,12 @@ is removed: the general rule covers both no-position substitutes.
   the lock check (database); the goal events, the forward-only condition, the own-goal
   stop and the left-out count (importer).
 - Importer tests: 82 + 9 pass.
+- Staging (`srdrflfrfpwixsllveid`, 2026-10-04): migration applied (recorded there as
+  `20261004050738`, the tool's own timestamp). The same 33 checks run against staging
+  in one transaction ended by a deliberate error: `{"ran": 33, "failed": 0}`. Afterwards
+  no test row remained (left-out table empty, no test mappings, competition or user).
+  Staging has no real GW1 data, so this proves the rule, not the five real fixtures:
+  that is what the read-only diagnose run in production is for.
 
 ## What the owner needs to approve for production, in order
 
