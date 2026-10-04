@@ -64,7 +64,7 @@ describe(`apply-${VERSION}-reconciled-provider-observations.sql`, () => {
     }
     // The result is checked against the definition a local database builds.
     expect(script).toContain("<> 'd5c60fc1a8b42f23e91c0db5e321a26d' then");
-    expect(script).toContain("<> 'cc22194f31f5060598050f5e56f97a69' then");
+    expect(script).toContain("<> '06104038065b147d0573bbc68f23cfe0' then");
   });
 
   test("the migration adds the source, the links table and a service-only wrapper", () => {

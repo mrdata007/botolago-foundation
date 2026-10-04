@@ -8,7 +8,7 @@ select set_config('app.environment', 'test', true);
 --   1 who may call it          2 dry run: every guard runs, nothing stays
 --   3 record, then retry       4 identities must be reviewed on both providers
 --   5 one provider match per fixture   6 facts only, never estimates
---   7 the recorder's own guards still apply    8 a reviewed correction still wins
+--   7 the recorder's own guards still apply    8 a reviewed correction still wins, and links nothing
 
 create temporary table stash (k text primary key, v text);
 create function pg_temp.put(p_key text, p_value text) returns void language sql as
@@ -277,6 +277,14 @@ select extensions.is((api.service_record_reconciled_fantasy_observation(pg_temp.
   (select jsonb_agg(jsonb_set(pg_temp.row(i), '{stats,yellowCards}', (case when i = 3 then '1' else '0' end)::jsonb) order by i) from generate_series(1, 22) i)))
   ->> 'reviewedOverride')::boolean, true, '8.1 after a reviewed correction, new provider facts do not replace it');
 select extensions.is(pg_temp.observations()::text, pg_temp.get('n8'), '8.2 and nothing new is stored');
+-- Links stand only with an observation: unlinked, the same refused facts leave no link behind.
+delete from app_private.football_provider_fixture_links where fixture_id = pg_temp.id('f0', 1);
+select extensions.is((api.service_record_reconciled_fantasy_observation(pg_temp.id('f0', 1), pg_temp.request(
+  (select jsonb_agg(jsonb_set(pg_temp.row(i), '{stats,yellowCards}', (case when i = 3 then '1' else '0' end)::jsonb) order by i) from generate_series(1, 22) i)))
+  ->> 'created')::boolean, false, '8.3 a provider match the correction outranks records nothing');
+select extensions.is((select count(*)::int from app_private.football_provider_fixture_links where fixture_id = pg_temp.id('f0', 1)), 0,
+  '8.4 and links nothing: a link stands only with an observation');
+select extensions.is(coalesce(current_setting('botolago.reconciled_ingestion', true), ''), '', '8.5 the internal flag is cleared');
 
 select * from extensions.finish();
 rollback;

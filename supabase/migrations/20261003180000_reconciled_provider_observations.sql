@@ -226,6 +226,13 @@ begin
         raise exception using errcode='PT409', message='reconciled_fixture_link_conflict'; end if;
       insert into app_private.football_provider_fixture_links(provider_name, external_fixture_id, fixture_id)
       values (v_provider, v_external, f.id) on conflict do nothing;
+      -- A concurrent call may have linked first (the insert waited for it and
+      -- was skipped): what is stored now must be exactly this pair.
+      if not exists(select 1 from app_private.football_provider_fixture_links
+                     where provider_name = v_provider and external_fixture_id = v_external and fixture_id = f.id)
+        or exists(select 1 from app_private.football_provider_fixture_links
+                   where provider_name = v_provider and fixture_id = f.id and external_fixture_id <> v_external) then
+        raise exception using errcode='PT409', message='reconciled_fixture_link_conflict'; end if;
     end loop;
 
     select count(*) into before_count from app_private.fantasy_fixture_observations where fixture_id = f.id;
@@ -243,8 +250,10 @@ begin
       'created', (select count(*) from app_private.fantasy_fixture_observations where fixture_id = f.id) > before_count,
       'latest', latest = (result->>'observationId')::bigint,
       'dryRun', p_dry_run);
-    if p_dry_run then
-      -- Every guard above and inside the recorder ran; now undo all of it.
+    if p_dry_run or not (result->>'created')::boolean then
+      -- Every guard above and inside the recorder ran; now undo all of it. With
+      -- nothing new recorded (the same facts again, or a reviewed correction
+      -- wins) the links are undone too: they stand only with an observation.
       raise exception using errcode='P0001', message='reconciled_dry_run_rollback';
     end if;
   exception when raise_exception then

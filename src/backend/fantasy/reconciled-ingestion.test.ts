@@ -133,6 +133,39 @@ describe("prepareReconciledObservation", () => {
     expect(p.blockers.map((b) => b.code)).toContain("identity_not_reviewed_pair");
   });
 
+  test("an unused substitute without a reviewed identity does not block, and is not sent", async () => {
+    const m = match();
+    const bench = <T extends ProviderMatchData>(d: T, id: string): T => ({
+      ...d,
+      lineups: {
+        ...d.lineups,
+        players: [
+          ...d.lineups.players,
+          {
+            ...d.lineups.players.find((p) => p.side === "away" && p.shirtNumber === 4)!,
+            externalId: id,
+            name: `${d.summary.provider} away 23`,
+            shirtNumber: 23,
+            position: "D",
+            starter: false,
+            stats: d.summary.provider === "sofascore" ? { minutesPlayed: 0 } : null,
+          },
+        ],
+      },
+    });
+    const p = await prepareReconciledObservation({
+      observedAt: OBSERVED_AT,
+      sofascore: bench(m.sofascore, sid("away", 23)),
+      flashscore: bench(m.flashscore, fid("away", 23)),
+      snapshot: await snapshot(mappingRows()),
+      binding,
+    });
+    expect(p.blockers).toEqual([]);
+    const req = p.request as ReconciledObservationRequest;
+    expect(req.payload.players).toHaveLength(22);
+    expect(canonicalJson(req)).not.toContain(sid("away", 23));
+  });
+
   test("providers that disagree on the final score are not sent", async () => {
     const p = await prepare({ flashScore: 2 });
     expect(p.request).toBeNull();

@@ -302,6 +302,13 @@ begin
         raise exception using errcode='PT409', message='reconciled_fixture_link_conflict'; end if;
       insert into app_private.football_provider_fixture_links(provider_name, external_fixture_id, fixture_id)
       values (v_provider, v_external, f.id) on conflict do nothing;
+      -- A concurrent call may have linked first (the insert waited for it and
+      -- was skipped): what is stored now must be exactly this pair.
+      if not exists(select 1 from app_private.football_provider_fixture_links
+                     where provider_name = v_provider and external_fixture_id = v_external and fixture_id = f.id)
+        or exists(select 1 from app_private.football_provider_fixture_links
+                   where provider_name = v_provider and fixture_id = f.id and external_fixture_id <> v_external) then
+        raise exception using errcode='PT409', message='reconciled_fixture_link_conflict'; end if;
     end loop;
 
     select count(*) into before_count from app_private.fantasy_fixture_observations where fixture_id = f.id;
@@ -319,8 +326,10 @@ begin
       'created', (select count(*) from app_private.fantasy_fixture_observations where fixture_id = f.id) > before_count,
       'latest', latest = (result->>'observationId')::bigint,
       'dryRun', p_dry_run);
-    if p_dry_run then
-      -- Every guard above and inside the recorder ran; now undo all of it.
+    if p_dry_run or not (result->>'created')::boolean then
+      -- Every guard above and inside the recorder ran; now undo all of it. With
+      -- nothing new recorded (the same facts again, or a reviewed correction
+      -- wins) the links are undone too: they stand only with an observation.
       raise exception using errcode='P0001', message='reconciled_dry_run_rollback';
     end if;
   exception when raise_exception then
@@ -342,7 +351,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20261003180000, 'UTF8')), 'hex')
-    is distinct from '8deeaba01dd2f39d8e8fbdfe6b977843e7dfff45579bec1aed9ac1263b205e6b' then
+    is distinct from 'd00dec4654a21f59f8b86e96ebbab3b81885ed0307b881c205769f5f0b25e7c3' then
     raise exception 'stop: 20261003180000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -360,7 +369,7 @@ begin
   if md5(pg_get_functiondef(recorder)) <> 'd5c60fc1a8b42f23e91c0db5e321a26d' then
     problems := problems || 'the observation recorder is not the reviewed new version'::text;
   end if;
-  if wrapper is null or md5(pg_get_functiondef(wrapper)) <> 'cc22194f31f5060598050f5e56f97a69' then
+  if wrapper is null or md5(pg_get_functiondef(wrapper)) <> '06104038065b147d0573bbc68f23cfe0' then
     problems := problems || 'the reconciled wrapper is missing or not the reviewed version'::text;
   end if;
   if (select pg_get_constraintdef(oid) from pg_constraint where conname = 'fantasy_fixture_observations_source_check')
