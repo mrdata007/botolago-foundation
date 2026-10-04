@@ -71,3 +71,21 @@ already imported).
 
 GW1 scoring document: ready 705, 706, 707, 708, 710, 711; pending 709. GW1 stays
 `provisional`; the worker was not run.
+
+## Enzo decision; 709 in, GW1 complete
+
+Owner: "Yes, score Enzo at Wydad and import 709".
+
+| Time (UTC) | Step                                                                                                                    | Result                                                                                                                                                                                              |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 07:06      | Merged PR #329 at `94dac903` (approved `placeAtFixtureClub` 37771847 at 2846 for 19874709; CI green, Codex no findings) | main `23333508`                                                                                                                                                                                     |
+| 07:06      | Live refresh paused; Fantasy tick off; no workflow, cron run or other query in flight                                   |                                                                                                                                                                                                     |
+| 07:06      | Ingest 19874709 (run 37184789838, commit `23333508`)                                                                    | **Accepted.** 14 placed (Enzo at Wydad by the decision), 25 left out; Belfada absence re-checked; score 1-3 = 1 placed goal + 3 left-out goals (one goal statistic corrected from the match events) |
+| 07:07      | Live refresh restored                                                                                                   |                                                                                                                                                                                                     |
+
+Checked after: coverage `accepted` (14 valid, 25 excluded by mapping, 0 unnamed); Enzo's row at
+Wydad Casablanca (started, 76 min, 2 conceded, no goal or assist); his club records unchanged.
+
+GW1 scoring document: **all seven fixtures ready**, no pending fixture, no pending player, and
+the validator reports no problem. 68 left-out rows recorded across GW1. GW1 stays
+`provisional`; the Fantasy worker has not been run (waiting on the owner).

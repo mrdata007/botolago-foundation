@@ -19,6 +19,16 @@
       "evidence": "Provider player 404731 (Fantasy goalkeeper held by 1 team as a GW1 starter) is the provider's starting goalkeeper of team 270260 in 19874710. Our only 2026/27 club record for him is at another club, carried over on 17 Sept without dated evidence. Placing his row at 270260 scores the match he played; his Fantasy club is not changed.",
       "approvedBy": "owner (mrdata007), in the Claude Code session",
       "approvedOn": "2026-10-04"
+    },
+    {
+      "fixtureExternalId": "19874709",
+      "kind": "placeAtFixtureClub",
+      "externalPlayerId": "37771847",
+      "externalTeamId": "2846",
+      "status": "approved",
+      "evidence": "Provider player 37771847 (Fantasy midfielder at CODM Meknès, held by 1 team as a GW1 starter, not captain) started for team 2846 (Wydad Casablanca) in 19874709. Our only 2026/27 club record for him is at CODM Meknès (from 24 Sept), and he is not on CODM's GW1 team sheet (19874710), so this is the one GW1 match he played. Placing his row at 2846 scores it; his Fantasy club is not changed.",
+      "approvedBy": "owner (mrdata007), in the Claude Code session",
+      "approvedOn": "2026-10-04"
     }
   ]
 }
