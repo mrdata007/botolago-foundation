@@ -39,6 +39,12 @@ describe("latestResultDayBefore", () => {
     expect(latestResultDayBefore(days, "2026-09-12")).toBeNull();
   });
 
+  test("inclusive counts the day itself, for Home when today's last match has just finished", () => {
+    expect(latestResultDayBefore(days, "2026-10-01", { inclusive: true })).toBe("2026-10-01");
+    expect(latestResultDayBefore(days, "2026-10-03", { inclusive: true })).toBe("2026-10-01");
+    expect(latestResultDayBefore(days, "2026-09-01", { inclusive: true })).toBeNull();
+  });
+
   test("is null when no result is behind the day, or there are none", () => {
     expect(latestResultDayBefore(days, "2026-09-01")).toBeNull();
     expect(latestResultDayBefore([], "2026-10-03")).toBeNull();

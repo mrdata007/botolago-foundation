@@ -47,6 +47,9 @@ test.describe("calendar", () => {
     // Any match row: from the list, so the entry in history is the calendar's.
     await page.locator('main a[href^="/matches/"]').first().click();
     await expect(page).toHaveURL(/\/matches\/[^/?]+/);
+    // The address changes before the page does, and the calendar has tabs of
+    // its own (Calendrier, Classement…): wait for the match page's.
+    await expect(page.getByRole("tab", { name: /résumé/i })).toBeVisible();
     const entriesBefore = await page.evaluate(() => history.length);
 
     // Changing tabs replaces the entry: it must not add one.

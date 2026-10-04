@@ -400,7 +400,9 @@ function HomeContent() {
     enabled: matchesQ.isSuccess && upcomingDays.length === 0 && currentSeason != null,
     staleTime: 5 * 60_000,
   });
-  const lastResultDay = latestResultDayBefore(resultDaysQ.data ?? [], matchDayKey(now));
+  const lastResultDay = latestResultDayBefore(resultDaysQ.data ?? [], matchDayKey(now), {
+    inclusive: true,
+  });
   // The band names the Fantasy gameweek; before Fantasy has one (or for a
   // visitor it is not open to), the league round of the next fixture.
   const bandGameweekNumber = bandGameweek(

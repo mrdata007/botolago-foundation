@@ -20,14 +20,21 @@ describe("the day's fixtures in the server's HTML (A10)", () => {
   const page = code("matches.index.tsx");
 
   it("has a loader that warms the seasons, then the opening day, for the server render", () => {
-    expect(page).toContain("loaderDeps: ({ search }) => ({ season: search.season })");
+    // The season and the day in the URL, validated like the page does: a
+    // `/matches?date=…` opened directly is rendered, and its availability
+    // decided, for that day, not for the one the season opens on.
+    expect(page).toContain("const { season, date } = validateCalendarSearch(search);");
+    expect(page).toContain("return { season, date };");
     expect(page).toMatch(/loader: \{[\s\S]*?handler: async \(\{ context, deps \}\) =>/);
     expect(page).toMatch(
       /prefetchForSsr\(queryClient, \[\s*\{\s*queryKey: \["football", "seasons", "fr"\]/,
     );
     expect(page).toContain("const season = openingSeason(seasons, deps.season);");
     expect(page).toMatch(
-      /prefetchForSsr\(queryClient, \[\s*matchDayQuery\(openingMatchDay\(season, today\), "fr", season\?\.id\),?\s*\]\)/,
+      /deps\.date\s*\? clampMatchDay\(deps\.date, season\)\s*: openingMatchDay\(season, today\)/,
+    );
+    expect(page).toMatch(
+      /prefetchForSsr\(queryClient, \[matchDayQuery\(day, "fr", season\?\.id\)\]\)/,
     );
   });
 

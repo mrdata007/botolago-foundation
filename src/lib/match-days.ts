@@ -94,14 +94,22 @@ export function nextMatchDayAfter(
  * The latest day before `dayKey` that has a result, or null when there is
  * none: where "Derniers résultats" leads from a day with nothing on it.
  * `resultDays` are competition-day keys in any order.
+ *
+ * `inclusive` counts `dayKey` itself: Home asks it for today, because the
+ * last match of the day may have just finished, leaving nothing to come and
+ * today's results as the newest there are. A calendar day that is empty has
+ * no results of its own, so it asks strictly before.
  */
 export function latestResultDayBefore(
   resultDays: readonly string[],
   dayKey: string,
+  { inclusive = false }: { inclusive?: boolean } = {},
 ): string | null {
   let latest: string | null = null;
   for (const day of resultDays) {
-    if (day < dayKey && (latest === null || day > latest)) latest = day;
+    if ((inclusive ? day <= dayKey : day < dayKey) && (latest === null || day > latest)) {
+      latest = day;
+    }
   }
   return latest;
 }

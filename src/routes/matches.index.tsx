@@ -53,7 +53,13 @@ export const Route = createFileRoute("/matches/")({
   // 2026-09-25, A10). A read that fails or runs late is left to the browser,
   // and the response says so: 503 with Retry-After (`ssrAvailability`,
   // `@/lib/page-availability`), never a 200 whose list is empty.
-  loaderDeps: ({ search }) => ({ season: search.season }),
+  // The season and the day in the URL, validated as the page validates them:
+  // the server prefetches the day the page will open on, so its HTML holds
+  // that day's fixtures and its 200 or 503 is about that read.
+  loaderDeps: ({ search }) => {
+    const { season, date } = validateCalendarSearch(search);
+    return { season, date };
+  },
   loader: {
     // A reader coming back to the page runs the loader again before it
     // shows, not behind a render of its last visit: that render would open
@@ -77,9 +83,10 @@ export const Route = createFileRoute("/matches/")({
       const seasons = queryClient.getQueryData<FootballSeason[]>(["football", "seasons", "fr"]);
       if (seasons) {
         const season = openingSeason(seasons, deps.season);
-        await prefetchForSsr(queryClient, [
-          matchDayQuery(openingMatchDay(season, today), "fr", season?.id),
-        ]);
+        // The same day the page works out: the one in the URL kept inside the
+        // season, else the day the season opens on.
+        const day = deps.date ? clampMatchDay(deps.date, season) : openingMatchDay(season, today);
+        await prefetchForSsr(queryClient, [matchDayQuery(day, "fr", season?.id)]);
       }
       // Both reads above count: every key `prefetchForSsr` was handed, the
       // day's `matchDayQuery` key included, has to have loaded. A season
