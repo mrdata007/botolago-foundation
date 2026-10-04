@@ -22,13 +22,15 @@ GW1 scoring document now: ready 705, 706, 707, 708, 711; pending 709, 710. GW1 s
 
 ## Why 709 stopped
 
-19874709 (MAS vs Zemamra). Provider lineup 39 rows:
+19874709 (Wydad Casablanca vs Widad Témara, 1-3; earlier notes, the 20261004130000 migration's
+comment and its apply script call it "MAS vs Zemamra" by mistake: that is 19874711, Maghreb Fès
+vs CR Khemis Zemamra. The club ids used everywhere were the right ones). Provider lineup 39 rows:
 
-- club 16938 (Zemamra): 19 rows, **none placeable** (13 no mapping, 6 mapped with no 2026/27 club record there);
-- club 2846 (MAS): 20 rows, 13 placed, 7 not placeable.
+- club 16938 (Widad Témara): 19 rows, **none placeable** (13 no mapping, 6 mapped with no 2026/27 club record there);
+- club 2846 (Wydad Casablanca): 20 rows, 13 placed, 7 not placeable.
 
 26 would be left out (limit 20) and 13 kept (minimum 22). Nobody's points depend on them:
-the only held player at Zemamra is Belfada (owner-confirmed absent), and the 7 held MAS
+the only held player at Widad Témara is Belfada (owner-confirmed absent), and the 7 held Wydad
 players are all mapped (4 in this lineup, placed). The limit is the coverage table's own
 bound (`excluded_incomplete_rows <= 20`, `valid_player_rows >= 22`), kept by the rule.
 
@@ -40,3 +42,32 @@ bound (`excluded_incomplete_rows <= 20`, `valid_player_rows >= 22`), kept by the
 
 - 06:4x: owner: "raise the limit and import 710". Live refresh paused; 19874710 ingested (27 placed incl. 404731 at 270260 by the owner decision: 90 min, 2 conceded; 13 left out; forward rule for 37550342); live refresh restored. GW1 ready: 705, 706, 707, 708, 710, 711; pending 709.
 - Limit change opened as PR #328 (`20261004130000`).
+
+## Raised limit applied; 709 stopped again
+
+| Time (UTC) | Step                                                                                                                                         | Result                                                                                                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 06:44      | Merged PR #328 at `b9538920` (CI green: database-quality, application-quality, Vercel review; Codex P1 on the cron guard fixed and resolved) | main `31a33877`                                                                                                                                                              |
+| 06:45      | Live refresh paused; no workflow, cron run or other query in flight                                                                          |                                                                                                                                                                              |
+| 06:45      | `apply-20261004130000-current-fixture-left-out-limit.sql` from main (sha256 of the file equal to the PR head's), rehearsal                   | "Rehearsal passed"; re-read: not recorded, both functions at their old md5, old constraints                                                                                  |
+| 06:45      | Same script with `commit;`                                                                                                                   | "Applied"; history row, new limits in the import, the scoring check and both constraints (validated against all 246 coverage rows), import callable by the service role only |
+| 06:46      | Ingest 19874709 (run 37183773443, commit `31a33877`)                                                                                         | **Refused, `LEFT_OUT_PLAYER_HELD`. Nothing written.** Stopped here.                                                                                                          |
+| 06:47      | Live refresh restored                                                                                                                        |                                                                                                                                                                              |
+
+### Why
+
+Provider 37771847, **Mouad Enzo**, started for Wydad Casablanca (2846) in 19874709. He is
+mapped, but the catalogue files him at CODM Meknès: club record CODM 2026-09-24..2027-06-30,
+Fantasy club CODM, MID, 7.3. With no Wydad record on match day he would be left out, and he is a
+GW1 **starter** in one locked lineup (`28ea2df1-…`, not captain), so the rule refused, as it
+should. He is not on CODM's GW1 team sheet (19874710), so he played one GW1 match, for Wydad.
+Same case as Zniti: scoring his 709 row at Wydad (`placeAtFixtureClub`, his Fantasy club
+unchanged) needs an owner decision.
+
+Earlier checks looked at held players whose Fantasy club is one of the two clubs, which is why
+he was missed. All other left-out mapped rows of 709 are held by nobody. Held GW1 players with
+no provider link anywhere: Belfada (approved absent) and Lahouizi (Amal Tiznit, 19874708,
+already imported).
+
+GW1 scoring document: ready 705, 706, 707, 708, 710, 711; pending 709. GW1 stays
+`provisional`; the worker was not run.
