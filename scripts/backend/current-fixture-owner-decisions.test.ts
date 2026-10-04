@@ -28,6 +28,12 @@ describe("owner decisions for one fixture", () => {
   test("the reviewed file parses", () => {
     expect(loadOwnerDecisions().length).toBeGreaterThan(0);
   });
+  test("19874709 carries both approved decisions of the reviewed file", () => {
+    expect(ownerDecisionCoverage(loadOwnerDecisions(), "19874709")).toEqual({
+      heldPlayersNotInSquad: ["7aadc3e9-0166-49c1-8646-262b302358e3"],
+      placeAtFixtureClub: [{ externalPlayerId: "37771847", externalTeamId: "2846" }],
+    });
+  });
   test("approved entries of the fixture only, by kind", () => {
     const decisions = parseOwnerDecisions(file(held, placed, { ...placed, status: "withdrawn" }));
     expect(ownerDecisionCoverage(decisions, "19874709")).toEqual({
