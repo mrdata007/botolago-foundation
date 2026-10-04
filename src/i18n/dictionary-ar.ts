@@ -1920,6 +1920,7 @@ export const ar = {
   "predictions.home.cta": "توقّع الآن",
   "predictions.match.title": "توقعك",
   "predictions.match.all_round": "توقّع كل مباريات الجولة",
+  "predictions.match.round_link": "عرض الجولة",
   "predictions.votes.deck": "توقعات المباراة",
   "predictions.votes.slide": "البطاقة {n} من {total}",
   "predictions.votes.cta": "صوّت!",

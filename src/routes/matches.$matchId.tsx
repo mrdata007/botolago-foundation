@@ -346,6 +346,15 @@ function MatchDetailPage() {
       lineup.players.map((player) => [player.id, player.displayName] as const),
     ),
   );
+  // The prediction is the desktop column's, or the summary panel's on a phone.
+  const predictionInline = PRONOSTICS_PROMOTED && !wideLayout;
+  const prediction = (
+    <MatchPredictionCard
+      fixtureId={match.id}
+      roundNumber={match.gameweek > 0 ? match.gameweek : null}
+      placement="inline"
+    />
+  );
   const goalClub = goal?.side === "home" ? home : goal?.side === "away" ? away : undefined;
 
   return (
@@ -396,13 +405,15 @@ function MatchDetailPage() {
         lineups={lineups}
       />
 
-      {/* Phone: the prediction, then the tabs. Desktop (1024px up): the tabs
-          and their panel take two columns, the prediction a 340px column
-          beside them, and the summary shows the line-ups next to the timeline. */}
+      {/* Tabs straight after the match's identity, on every width. Desktop
+          (1024px up): the tabs and their panel take two columns and the
+          prediction a 340px column beside them. On a phone the prediction is
+          part of the summary panel instead (below), so the four tabs and the
+          start of the selected one are in the first screen. */}
       <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_340px] lg:items-start lg:gap-x-6">
         {/* Pronostics (BG-0146): the same prediction as /pronostics. A card, not
           a fifth tab (the four tabs are pinned). Shown once promoted. */}
-        {PRONOSTICS_PROMOTED && (
+        {PRONOSTICS_PROMOTED && wideLayout && (
           <div className="order-1 lg:col-start-3 lg:row-start-1 lg:mt-4">
             <MatchPredictionCard
               fixtureId={match.id}
@@ -432,6 +443,12 @@ function MatchDetailPage() {
             {tab === "summary" && (
               <>
                 <h2 className="sr-only">{t("matches.detail.summary")}</h2>
+                {/* A match still to be played leads with the prediction: it is
+                    the one thing to do here. Once it is on, the timeline
+                    leads and the prediction follows it. */}
+                {predictionInline && match.status === "scheduled" ? (
+                  <div className="mb-4">{prediction}</div>
+                ) : null}
                 <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
                   <EventTimeline
                     events={live.events}
@@ -458,6 +475,9 @@ function MatchDetailPage() {
                     />
                   ) : null}
                 </div>
+                {predictionInline && match.status !== "scheduled" ? (
+                  <div className="mt-4">{prediction}</div>
+                ) : null}
               </>
             )}
 

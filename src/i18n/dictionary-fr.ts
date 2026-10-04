@@ -2040,6 +2040,7 @@ export const fr = {
   "predictions.home.cta": "Pronostiquer",
   "predictions.match.title": "Votre pronostic",
   "predictions.match.all_round": "Pronostiquer toute la journée",
+  "predictions.match.round_link": "Voir la journée",
   "predictions.votes.deck": "Pronostics du match",
   "predictions.votes.slide": "Carte {n} sur {total}",
   "predictions.votes.cta": "Votez\u00a0!",
