@@ -1,6 +1,8 @@
 # GW1 recovery: skip what cannot change anyone's points (roadmap step 4)
 
-**Status: built and tested; applied to staging only. Not applied to production.**
+**Status: applied to production on 2026-10-04 (with 20261004130000, the raised limits); GW1 and
+GW2 imported and finalized with it. Production record:
+[APPLIED_2026_10_04_GW1_LEFT_OUT_PLAYERS.md](../production/APPLIED_2026_10_04_GW1_LEFT_OUT_PLAYERS.md).**
 
 ## The owner's decision (2026-10-03)
 
