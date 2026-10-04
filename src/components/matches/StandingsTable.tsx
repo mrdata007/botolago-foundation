@@ -200,7 +200,7 @@ export function StandingsTable({
                     className={cn(
                       "-ms-1 flex min-h-[var(--ui-tap-min)] min-w-0 items-center gap-2 py-2.5 ps-1",
                       ui.radius.control,
-                      "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                      "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
                       ui.focus,
                     )}
                   >

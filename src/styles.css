@@ -800,6 +800,29 @@ html[dir="rtl"] .lucide-arrow-left {
     outline-offset: 2px;
     border-radius: 6px;
   }
+  /* Typesetting. Headings even out their lines instead of leaving one word
+     on the last ("Les inscriptions sont fermées pour cette / journée"), and
+     running text avoids a lone last word ("…remplacez avant la / deadline.").
+     The style longhands only, never the `text-wrap` shorthand: that one also
+     sets the wrap MODE, and would undo a `nowrap` a parent hands down.
+     Browsers without them lay out text as before. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap-style: balance;
+  }
+  p,
+  li,
+  dd,
+  figcaption,
+  blockquote {
+    text-wrap-style: pretty;
+  }
+  /* Selected text in the brand's spring accent rather than the browser's blue. */
+  ::selection {
+    background-color: color-mix(in oklab, var(--ui-accent-spring) 40%, transparent);
+  }
   /* Prevent horizontal overflow at narrow widths (320px+). */
   html,
   body {
@@ -869,6 +892,24 @@ html[dir="rtl"] .lucide-arrow-left {
 .press-tile:active {
   transform: translateY(1px) scale(0.985);
   box-shadow: var(--shadow-subtle);
+}
+
+/* Press feedback for every control a thumb presses: buttons, chips, icon
+   buttons, the bottom bar's items. A phone has no hover, so before this a tap
+   on most controls changed nothing until the next screen arrived, which reads
+   as lag. Now the control gives under the finger: a 3% sink and a touch
+   darker, back in 120ms on release. The individual `scale` property, not
+   `transform`, so a control that is also translated or rotated (a chevron, a
+   slid pill) keeps that transform. It owns the control's transitions, so a
+   control that uses it takes no other `transition-*` class. */
+@utility press {
+  transition-property: scale, filter, opacity, color, background-color, border-color, box-shadow;
+  transition-duration: var(--duration-tap);
+  transition-timing-function: var(--ease-standard);
+  &:active:not(:disabled, [aria-disabled="true"]) {
+    scale: 0.97;
+    filter: brightness(0.96);
+  }
 }
 
 /* An item that appears: a fade and an 8px rise. `both` holds it hidden through
@@ -1301,6 +1342,13 @@ html[dir="rtl"] .lucide-arrow-left {
   ::view-transition-old(*),
   ::view-transition-new(*) {
     animation: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The press still darkens; it no longer sinks. */
+  .press:active:not(:disabled, [aria-disabled="true"]) {
+    scale: none;
   }
 }
 
@@ -1822,7 +1870,11 @@ html[dir="rtl"] .lucide-arrow-left {
     );
 
   /* ---- Elevation: one shadow set, five steps -------------------- */
-  --ui-shadow-card: 0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 12%, transparent);
+  /* A card: a crisp contact edge under it, and a soft ambient layer that
+     gives it the depth of paper on the page rather than of a border. */
+  --ui-shadow-card:
+    0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 10%, transparent),
+    0 4px 14px -8px color-mix(in oklab, var(--ui-ink) 14%, transparent);
   --ui-shadow-raised: 0 -1px 0 0 color-mix(in oklab, var(--ui-ink) 8%, transparent);
   /* The one lifted step (Option A): the score box, a hero card, the primary
      call to action. A long soft drop, pulled in by the negative spread so it

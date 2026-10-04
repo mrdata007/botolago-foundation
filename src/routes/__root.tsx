@@ -195,7 +195,7 @@ function ErrorBody({ reset }: { reset: () => void }) {
               stateActionClass,
               "border border-current bg-transparent",
               ui.tone.ink,
-              "hover:bg-[color:var(--ui-surface-sunken)]",
+              "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
             )}
           >
             <Home className="h-4 w-4" aria-hidden />

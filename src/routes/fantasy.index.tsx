@@ -299,7 +299,7 @@ function ShortcutTiles() {
                 ui.text.meta,
                 "[font-weight:var(--ui-weight-heavy)]",
                 ui.tone.default,
-                "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
                 ui.focus,
               )}
             >
@@ -355,7 +355,7 @@ function MoreAboutSection() {
                   ui.space.row,
                   ui.text.bodyStrong,
                   ui.tone.default,
-                  "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                  "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
                   ui.focus,
                 )}
               >

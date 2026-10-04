@@ -793,7 +793,7 @@ function HomeContent() {
                     return (
                       <div
                         key={row.clubId}
-                        className="relative flex items-center gap-2.5 px-3.5 py-2 transition-colors hover:bg-[color:var(--ui-surface-sunken)]"
+                        className="relative flex items-center gap-2.5 px-3.5 py-2 transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]"
                       >
                         {zone ? (
                           <span

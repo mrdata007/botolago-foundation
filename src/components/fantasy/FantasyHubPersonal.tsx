@@ -321,7 +321,7 @@ function TransfersRow({ freeTransfers, bank }: { freeTransfers: number; bank: nu
         "mt-2 flex items-center gap-3 px-3 py-2.5",
         ui.surface.card,
         ui.space.row,
-        "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+        "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
         ui.focus,
       )}
     >

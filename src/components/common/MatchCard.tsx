@@ -76,7 +76,7 @@ export type MatchCardVariant = "row" | "list" | "compact" | "hero";
  *  into its corners), so the focus ring is drawn inside the row. */
 const LIST_FRAME = cn(
   "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
-  "hover:bg-[color:var(--ui-surface-sunken)]",
+  "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
   ui.focus,
   "focus-visible:ring-inset focus-visible:ring-offset-0",
 );

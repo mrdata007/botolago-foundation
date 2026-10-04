@@ -306,7 +306,7 @@ function LoginPage() {
                   ui.text.meta,
                   "[font-weight:var(--ui-weight-heavy)]",
                   ui.tone.ink,
-                  "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                  "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
                   ui.focus,
                 )}
               >

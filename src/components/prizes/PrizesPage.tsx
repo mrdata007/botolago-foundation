@@ -84,7 +84,7 @@ export function PrizesPage() {
           ui.space.row,
           ui.text.bodyStrong,
           ui.tone.default,
-          "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+          "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
           ui.focus,
         )}
         data-testid="prizes-terms-link"

@@ -352,7 +352,7 @@ function ProfileSetupPage() {
                     ui.focus,
                     active
                       ? cn("border-[color:var(--ui-club-edge)]", ui.club.tint)
-                      : "border-[color:var(--ui-rule)] hover:bg-[color:var(--ui-surface-sunken)]",
+                      : "border-[color:var(--ui-rule)] hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
                     // Last, so the 4px start edge is laid over the 1px border.
                     ui.edge.start,
                   )}
