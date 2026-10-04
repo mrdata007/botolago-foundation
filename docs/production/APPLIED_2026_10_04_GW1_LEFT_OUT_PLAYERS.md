@@ -89,3 +89,28 @@ Wydad Casablanca (started, 76 min, 2 conceded, no goal or assist); his club reco
 GW1 scoring document: **all seven fixtures ready**, no pending fixture, no pending player, and
 the validator reports no problem. 68 left-out rows recorded across GW1. GW1 stays
 `provisional`; the Fantasy worker has not been run (waiting on the owner).
+
+## GW1 Fantasy worker: stopped before completion
+
+Owner: "yes run the GW1 scorer".
+
+| Time (UTC) | Step                                                                                         | Result                                                                           |
+| ---------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 07:09      | Live refresh paused; tick off; nothing in flight. Before: 6 provisional results at calc 19   |                                                                                  |
+| 07:09      | `fantasy-manual-worker.yml` run 37184934088 (commit `23333508`, GW1, calculation version 19) | **Failed, `fantasy_rankings_incomplete`** in `service_complete_fantasy_gameweek` |
+| 07:10      | Live refresh restored                                                                        |                                                                                  |
+
+Where it stopped: the snapshot was sealed at calculation version **20** (chosen by
+`service_prepare_fantasy_live_scoring`); GW1 is `finalizing`; all 6 team results are `final`
+(8, 6, 10, 5, 6, 8 points); overall and gameweek rankings exist for all 6 teams (ranks 1-6), and
+for league "Les lions De Settat". GW1 is not `finalized`; prices, finalized notifications,
+prizes and GW2 preparation have not run; GW2 is still `scheduled`.
+
+Cause: a mismatch between two functions. `service_fantasy_scoring_league_page` lists only
+**active** leagues for ranking (`20260925090500`), but the completion check
+(`20260914200730`) requires league rankings for every **active membership**, whatever the
+league's state. Team `88c70be9` is an active member of "E2E Ligue tor4" (`1fdca6a8`), an
+inactive test league created 2026-09-23, so that league is never ranked and the check can never
+pass. Not related to the GW1 football data.
+
+A retry must use calculation version **20** (a `finalizing` gameweek does not re-prepare).
