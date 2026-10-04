@@ -188,6 +188,8 @@ export const fr = {
   "standings.zone.champions_league": "Ligue des champions CAF",
   "standings.zone.confederation_cup": "Coupe de la Confédération CAF",
   "standings.zone.relegation": "Relégation",
+  "standings.details_show": "Voir victoires, nuls, défaites",
+  "standings.details_hide": "Masquer victoires, nuls, défaites",
   "standings.legend": "Légende des couleurs du classement",
   "standings.your_club": "Votre club",
   "standings.points_one": "1 pt",

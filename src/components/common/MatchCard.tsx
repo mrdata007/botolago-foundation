@@ -99,6 +99,7 @@ export function MatchCard({
   away,
   variant = "row",
   listGameweek,
+  showDate = false,
   extras,
 }: {
   match: Match;
@@ -109,6 +110,13 @@ export function MatchCard({
    *  round keeps its "J. n" tag, so a list that spans two rounds never files
    *  a match under the wrong one. */
   listGameweek?: number;
+  /**
+   * Print the match's day above the time or the state. For a list that mixes
+   * days (a club's season), where each row has to say when it was or will be
+   * played; a list already grouped under a day (the calendar, Home) leaves it
+   * off rather than repeating the heading on every row.
+   */
+  showDate?: boolean;
   extras?: MatchCardExtras;
 }) {
   const { t, tr, lang } = useI18n();
@@ -162,6 +170,8 @@ export function MatchCard({
   const showRoundTag =
     variant === "compact" || (!isHero && match.gameweek > 0 && match.gameweek !== listGameweek);
 
+  // A row whose day is not printed is not dated: nothing to name or to say.
+  const dated = showDate && !isHero && !unconfirmedDate;
   const a11yLabel = (() => {
     const score = t("matches.a11y.score")
       .replace("{home}", tr(home.name))
@@ -175,7 +185,10 @@ export function MatchCard({
           : t("matches.a11y.live_minute").replace("{minute}", String(match.minute));
       return `${score} — ${state}`;
     }
-    if (isFinished) return `${score} — ${t("matches.a11y.status_finished")}`;
+    if (isFinished) {
+      const finished = `${score} — ${t("matches.a11y.status_finished")}`;
+      return dated ? `${finished} — ${weekdayFmt}` : finished;
+    }
     if (isScheduled) {
       return `${homeName} ${t("matches.vs")} ${awayName} — ${weekdayFmt} · ${unconfirmedTime ? t("matches.kickoff_unconfirmed") : t("matches.a11y.kickoff_at").replace("{time}", timeFmt)}`;
     }
@@ -338,6 +351,13 @@ export function MatchCard({
     <div className="grid grid-cols-[4px_6.25rem_minmax(0,1fr)_4px] items-stretch gap-x-3">
       <span {...clubStyle(pair.home)} className={ui.club.edgeFill} />
       <div className="flex min-w-0 flex-col items-center justify-center gap-1 py-3 text-center">
+        {dated ? (
+          <span
+            className={cn(ui.text.micro, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}
+          >
+            {weekdayFmt}
+          </span>
+        ) : null}
         {isLive || isFinished ? null : figure}
         {caption}
         {roundTag}

@@ -98,6 +98,37 @@ describe("StandingsTable", () => {
     expect(rows[15]).toContain("bg-[color:var(--ui-negative)]");
   });
 
+  test("on a phone keeps rank, club, played, goal difference and points; won/drawn/lost are asked for", () => {
+    // The columns the phone drops are the wide screens' (`max-sm:hidden`), and
+    // never the five it keeps.
+    const cols = html.split("<colgroup>")[1]!.split("</colgroup>")[0]!;
+    const hiddenOnPhone = [...cols.matchAll(/<col class="([^"]*)"/g)].map((col) =>
+      col[1]!.includes("max-sm:hidden"),
+    );
+    // Rank, played, won, drawn, lost, goal difference, points (the club column
+    // takes no class).
+    expect(hiddenOnPhone).toEqual([false, false, true, true, true, false, false]);
+    // One explicit control opens them; closed, no line of figures is drawn.
+    expect(html).toMatch(/<button[^>]*aria-expanded="false"[^>]*aria-controls="[^"]+"/);
+    expect(html).toContain("Voir victoires, nuls, défaites");
+    expect(html).not.toContain("Masquer victoires, nuls, défaites");
+    expect(html).not.toMatch(/sm:hidden[^"]*"><span><span aria-hidden="true">G<\/span>/);
+  });
+
+  test("the won/drawn/lost control exists in both languages, in step", () => {
+    expect(dictionaries.fr["standings.details_show"]).toBeTruthy();
+    expect(dictionaries.fr["standings.details_hide"]).toBeTruthy();
+    expect(dictionaries.ar["standings.details_show"]).toMatch(/[؀-ۿ]/);
+    expect(dictionaries.ar["standings.details_hide"]).toMatch(/[؀-ۿ]/);
+  });
+
+  test("the form view has nothing to expand, so it has no control", () => {
+    const form = inFrench(
+      <StandingsTable rows={overall} clubById={clubById} view="form" caption="Classement" />,
+    );
+    expect(form).not.toContain("aria-expanded");
+  });
+
   test("prints a club's name, not its code twice", () => {
     expect(html).toContain("Wydad Casablanca");
   });

@@ -177,6 +177,8 @@ export const ar = {
   "standings.zone.champions_league": "دوري أبطال إفريقيا",
   "standings.zone.confederation_cup": "كأس الكونفدرالية الإفريقية",
   "standings.zone.relegation": "الهبوط",
+  "standings.details_show": "عرض الفوز والتعادل والخسارة",
+  "standings.details_hide": "إخفاء الفوز والتعادل والخسارة",
   "standings.legend": "دليل ألوان الترتيب",
   "standings.your_club": "ناديك",
   "standings.points_one": "نقطة واحدة",

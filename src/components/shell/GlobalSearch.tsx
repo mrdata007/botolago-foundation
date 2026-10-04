@@ -181,13 +181,16 @@ export function GlobalSearch({
                 onMouseEnter={() => setActive(index)}
                 style={staggerStyle(index)}
                 className={cn(
-                  "enter-rise stagger flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3",
+                  // The name first, on its own lines, and what it is under it:
+                  // beside the name, the metadata took the width and the
+                  // player's name was the part that got cut.
+                  "enter-rise stagger flex min-h-11 cursor-pointer flex-col justify-center gap-0.5 px-3 py-2",
                   ui.radius.control,
                   ui.text.meta,
                   index === active && "bg-[color:var(--ui-surface-sunken)]",
                 )}
               >
-                <span className="min-w-0 truncate [font-weight:var(--ui-weight-heavy)]">
+                <span className="min-w-0 break-words [font-weight:var(--ui-weight-heavy)]">
                   {highlightParts(entry.label, text).map((part, position) =>
                     part.match ? (
                       <mark
@@ -201,7 +204,7 @@ export function GlobalSearch({
                     ),
                   )}
                 </span>
-                <span className={cn("shrink-0", ui.tone.muted)}>
+                <span className={cn("min-w-0 break-words", ui.text.micro, ui.tone.muted)}>
                   {entry.hint ? `${entry.hint} · ` : ""}
                   {entry.kind === "club" ? t("nav.search.club") : t("nav.search.player")}
                 </span>
