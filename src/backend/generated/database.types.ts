@@ -1213,6 +1213,17 @@ export type Database = {
         }
         Returns: Json
       }
+      ingest_current_player_fixture_performance_v2: {
+        Args: {
+          p_coverage: Json
+          p_fixture_external_id: string
+          p_observed_at: string
+          p_provider_name: string
+          p_rows: Json
+          p_season_external_id: string
+        }
+        Returns: Json
+      }
       ingest_football_catalog_entity: {
         Args: {
           p_entity: Json

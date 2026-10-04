@@ -1,0 +1,24 @@
+{
+  "about": "Owner decisions the current-season importer sends with one fixture (supabase/migrations/20261004120000_current_fixture_left_out_players.sql). Only entries with status \"approved\" are sent, and the database re-checks each one against the fixture (OWNER_DECISION_STALE when it no longer fits). Provider ids and Fantasy ids only.",
+  "decisions": [
+    {
+      "fixtureExternalId": "19874709",
+      "kind": "heldPlayerNotInSquad",
+      "fantasyPlayerId": "7aadc3e9-0166-49c1-8646-262b302358e3",
+      "status": "approved",
+      "evidence": "Fantasy midfielder held by 1 team (a GW1 starter, not captain) with no SportsMonks mapping. The stored 19874709 team sheet of his club (provider team 16938: 11 starters, 8 substitutes, all named) does not list him, so he did not play and scores 0 either way.",
+      "approvedBy": "owner (mrdata007), in the Claude Code session",
+      "approvedOn": "2026-10-04"
+    },
+    {
+      "fixtureExternalId": "19874710",
+      "kind": "placeAtFixtureClub",
+      "externalPlayerId": "404731",
+      "externalTeamId": "270260",
+      "status": "approved",
+      "evidence": "Provider player 404731 (Fantasy goalkeeper held by 1 team as a GW1 starter) is the provider's starting goalkeeper of team 270260 in 19874710. Our only 2026/27 club record for him is at another club, carried over on 17 Sept without dated evidence. Placing his row at 270260 scores the match he played; his Fantasy club is not changed.",
+      "approvedBy": "owner (mrdata007), in the Claude Code session",
+      "approvedOn": "2026-10-04"
+    }
+  ]
+}
