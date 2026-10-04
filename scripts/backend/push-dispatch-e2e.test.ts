@@ -214,6 +214,38 @@ function fakeProvider(
 
 const config = { batchSize: 50, budgetMs: 60_000, concurrency: 4 };
 
+/**
+ * A fan of club 1 with two phones and a match in half an hour, with email off
+ * (the database default): nothing exists yet but the match and the reader.
+ */
+async function seedMatchAhead(tx: Tx): Promise<void> {
+  await tx.unsafe(`
+    insert into app.countries (id, iso_alpha2, iso_alpha3)
+    values ('e7e00000-0000-4000-8000-000000000001', 'MA', 'MAR');
+    insert into app.competitions (id, slug, name, short_name, competition_type, country_id)
+    values ('e7e10000-0000-4000-8000-000000000001', 'push-chain-league', 'Push Chain League', 'PCL',
+      'league', 'e7e00000-0000-4000-8000-000000000001');
+    insert into app.seasons (id, competition_id, label, starts_on, ends_on, status, is_current)
+    values ('e7e20000-0000-4000-8000-000000000001', 'e7e10000-0000-4000-8000-000000000001',
+      'Chain season', current_date - 60, current_date + 200, 'active', true);
+    insert into app.rounds (id, season_id, round_number, name)
+    values ('e7e30000-0000-4000-8000-000000000001', 'e7e20000-0000-4000-8000-000000000001', 1, 'Round 1');
+    insert into app.teams (id, slug, name, short_name, code, country_id)
+    select ('e7e40000-0000-4000-8000-00000000000' || n)::uuid, 'push-chain-club-' || n,
+      'Chain Club ' || n, 'CC' || n, 'CC' || n, 'e7e00000-0000-4000-8000-000000000001'
+    from generate_series(1, 2) n;
+    insert into app.fixtures (id, competition_id, season_id, round_id, home_team_id, away_team_id,
+      kickoff_at, status, provider_updated_at, source_sequence)
+    values ('e7e50000-0000-4000-8000-000000000001', 'e7e10000-0000-4000-8000-000000000001',
+      'e7e20000-0000-4000-8000-000000000001', 'e7e30000-0000-4000-8000-000000000001',
+      'e7e40000-0000-4000-8000-000000000001', 'e7e40000-0000-4000-8000-000000000002',
+      statement_timestamp() + interval '30 minutes', 'not_started',
+      statement_timestamp() - interval '1 day', 1);
+    update app.user_preferences set favorite_team_id = 'e7e40000-0000-4000-8000-000000000001'
+    where user_id = '${IDS.user}';
+  `);
+}
+
 describe.skipIf(!DB_URL)("push dispatch against the real database functions", () => {
   it("sends what the database claims, and records what came of it", async () => {
     await rolledBack(async (tx) => {
@@ -354,6 +386,79 @@ describe.skipIf(!DB_URL)("push dispatch against the real database functions", ()
         `select count(*)::int as n from app.notification_deliveries where notification_id = '${IDS.notification}' and status = 'pending'`,
       )) as Array<{ n: number }>;
       expect(waiting[0]!.n).toBe(3);
+    });
+  });
+
+  it("the whole chain: the tick plans the moment, queues a push per phone, the sender sends them", async () => {
+    await rolledBack(async (tx) => {
+      await seed(tx);
+      // The seed queued a goal alert for each phone by hand; this test is
+      // about what the tick makes, so those start from nothing.
+      await tx.unsafe(
+        `delete from app.notification_deliveries where notification_id = '${IDS.notification}'`,
+      );
+      await seedMatchAhead(tx);
+
+      const tick = (await tx.unsafe(
+        "select app_private.notification_push_tick() as result",
+      )) as Array<{
+        result: Record<string, unknown>;
+      }>;
+      expect(tick[0]!.result.dispatch).toBe("not_configured");
+      expect(tick[0]!.result.errors).toEqual([]);
+      expect(tick[0]!.result.fanout).toMatchObject({ events: 1, queued: 3 });
+
+      const fcm = fakeProvider("fcm", () =>
+        outcome("sent", { providerMessageId: "projects/p/messages/9" }),
+      );
+      const apns = fakeProvider("apns", () => outcome("sent", { providerMessageId: "apple-9" }));
+      const summary = await runPushDispatch(config, {
+        environment: {},
+        client: rpcClient(tx),
+        providers: { fcm: fcm.provider, apns: apns.provider },
+      });
+      expect(summary).toMatchObject({ claimed: 3, sent: 3, failed: 0, handedBack: 0 });
+
+      // The kick-off reminder, as the database rendered it, reached each phone.
+      for (const seen of [...fcm.seen, ...apns.seen]) {
+        expect(seen).toMatchObject({
+          type: "match_starting",
+          language: "fr",
+          deepLink: { target: "match_detail", entityId: "e7e50000-0000-4000-8000-000000000001" },
+        });
+        expect(seen.title.length).toBeGreaterThan(0);
+        expect(seen.body.length).toBeGreaterThan(0);
+        expect(seen.expiresInSeconds).toBeLessThanOrEqual(1200);
+      }
+      expect(fcm.seen.map((seen) => seen.destination).sort()).toEqual([
+        "android-token-0000000001-abcdef",
+        "dead-token-0000000000003-abcdef",
+      ]);
+      expect(apns.seen.map((seen) => seen.destination)).toEqual(["ab".repeat(32)]);
+
+      const rows = (await tx.unsafe(`
+        select delivery.status::text as status, count(*)::int as n
+        from app.notification_deliveries delivery
+        join app.notifications notification on notification.id = delivery.notification_id
+        join app_private.notification_events event on event.id = notification.event_id
+        where event.event_type = 'match_starting' and delivery.channel = 'push'
+        group by 1
+      `)) as Array<Record<string, unknown>>;
+      expect(rows).toEqual([{ status: "sent", n: 3 }]);
+      const inbox = (await tx.unsafe(`
+        select count(*)::int as n from app.notifications notification
+        join app_private.notification_events event on event.id = notification.event_id
+        where event.event_type = 'match_starting' and notification.user_id = '${IDS.user}'
+      `)) as Array<{ n: number }>;
+      expect(inbox[0]!.n).toBe(1);
+
+      // Nothing is left: the next tick queues nothing and wakes nothing.
+      const again = (await tx.unsafe(
+        "select app_private.notification_push_tick() as result",
+      )) as Array<{
+        result: Record<string, unknown>;
+      }>;
+      expect(again[0]!.result).toMatchObject({ dispatch: "not_needed", outcome: "idle" });
     });
   });
 });
