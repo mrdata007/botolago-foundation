@@ -1,6 +1,8 @@
 # GW1 recovery: skip what cannot change anyone's points (roadmap step 4)
 
-**Status: built and tested; applied to staging only. Not applied to production.**
+**Status: applied to production on 2026-10-04 (with 20261004130000, the raised limits); GW1 and
+GW2 imported and finalized with it. Production record:
+[APPLIED_2026_10_04_GW1_LEFT_OUT_PLAYERS.md](../production/APPLIED_2026_10_04_GW1_LEFT_OUT_PLAYERS.md).**
 
 ## The owner's decision (2026-10-03)
 
@@ -114,11 +116,12 @@ is removed: the general rule covers both no-position substitutes.
 
 ## Raised limits (20261004130000, owner decision 2026-10-04)
 
-The first production pass stopped at 19874709 (MAS vs Zemamra): none of
-Zemamra's 19 lineup players is placeable and 7 of MAS's 20 are not either, so 26
+The first production pass stopped at 19874709 (Wydad Casablanca vs Widad Témara; the
+migration's comment calls it "MAS vs Zemamra" by mistake): none of Widad Témara's 19 lineup
+players is placeable and 7 of Wydad's 20 are not either, so 26
 rows would be left out and 13 kept, past the rule's limits (20 left out in all, 22
-kept). Nobody's points depend on them: the only held Zemamra player is the
-owner-confirmed absent one, and every held MAS player is mapped.
+kept). Nobody's points depend on them: the only held Widad Témara player is
+the owner-confirmed absent one, and every held Wydad player is mapped.
 
 The limits are now: up to 40 named rows left out, counted apart from the
 unnamed rows (which keep their own bound of 20); at least 11 rows kept, and kept
