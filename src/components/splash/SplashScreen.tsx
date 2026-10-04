@@ -88,28 +88,63 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
         }}
       />
 
-      {/* faint stadium arcs */}
+      {/* pitch markings that draw themselves in. `pathLength="1"` lets one
+          dash value mean "the whole line", whatever its real length. The
+          drawing is symmetric, so it reads the same in both directions. */}
       <svg
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.10]"
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.16]"
         viewBox="0 0 400 800"
         preserveAspectRatio="xMidYMid slice"
         aria-hidden="true"
       >
-        <g fill="none" stroke="white" strokeWidth="1">
-          <circle cx="200" cy="400" r="120" />
-          <circle cx="200" cy="400" r="200" />
-          <circle cx="200" cy="400" r="290" />
+        <g fill="none" stroke="white" strokeWidth="1.2" strokeLinecap="round">
+          {[
+            { r: 70, delay: 0 },
+            { r: 140, delay: 120 },
+            { r: 215, delay: 240 },
+            { r: 300, delay: 360 },
+          ].map(({ r, delay }) => (
+            <circle
+              key={r}
+              cx="200"
+              cy="400"
+              r={r}
+              pathLength={1}
+              strokeDasharray={1}
+              className="motion-safe:animate-[splash-draw_1100ms_cubic-bezier(0.22,1,0.36,1)_both]"
+              style={{ animationDelay: `${delay}ms` }}
+            />
+          ))}
+          <line
+            x1="-40"
+            y1="400"
+            x2="440"
+            y2="400"
+            pathLength={1}
+            strokeDasharray={1}
+            className="motion-safe:animate-[splash-draw_900ms_cubic-bezier(0.22,1,0.36,1)_100ms_both]"
+          />
         </g>
       </svg>
 
       <div className="relative flex flex-col items-center gap-5 px-8">
-        {/* glow behind the mark */}
+        {/* glow behind the mark, breathing gently */}
         <div
-          className="pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl"
+          className="pointer-events-none absolute -inset-x-10 -inset-y-14 rounded-full blur-2xl motion-safe:animate-[splash-breathe_2400ms_ease-in-out_infinite]"
           style={{
             background: "radial-gradient(closest-side, hsl(214 100% 75% / 0.45), transparent 75%)",
           }}
         />
+
+        {/* ripples spreading out from behind the mark, like a whistle */}
+        {[0, 450].map((delay) => (
+          <span
+            key={delay}
+            aria-hidden="true"
+            className="pointer-events-none absolute start-1/2 top-1/2 -ms-24 -mt-24 h-48 w-48 rounded-full border border-[hsl(214_100%_75%_/_0.5)] opacity-0 motion-safe:animate-[splash-ripple_1800ms_cubic-bezier(0.22,1,0.36,1)_both]"
+            style={{ animationDelay: `${delay + 250}ms` }}
+          />
+        ))}
 
         <div className="relative overflow-hidden motion-safe:animate-[splash-in_640ms_cubic-bezier(0.22,1,0.36,1)_both]">
           <img
