@@ -82,8 +82,26 @@ describe("owner decisions for one fixture", () => {
     // The other kinds are not namings.
     expect(unnamedStarterNames(parseOwnerDecisions(file(held, placed)), "19874709")).toEqual([]);
   });
-  test("the reviewed file names no unnamed starter yet", () => {
-    expect(unnamedStarterNames(loadOwnerDecisions(), "19885594")).toEqual([]);
+  test("the reviewed file carries the approved GW2 decisions", () => {
+    const decisions = loadOwnerDecisions();
+    expect(unnamedStarterNames(decisions, "19885594")).toEqual([
+      { externalPlayerId: "37771847", externalTeamId: "2846" },
+    ]);
+    expect(ownerDecisionCoverage(decisions, "19885594")).toEqual({
+      placeAtFixtureClub: [{ externalPlayerId: "37771847", externalTeamId: "2846" }],
+    });
+    expect(ownerDecisionCoverage(decisions, "19885590")).toEqual({
+      heldPlayersNotInSquad: ["fdea9c0e-1080-4951-883c-ea3b77460904"],
+    });
+    expect(ownerDecisionCoverage(decisions, "19885591")).toEqual({
+      heldPlayersNotInSquad: ["7aadc3e9-0166-49c1-8646-262b302358e3"],
+    });
+    expect(ownerDecisionCoverage(decisions, "19885595")).toEqual({
+      placeAtFixtureClub: [{ externalPlayerId: "404731", externalTeamId: "270260" }],
+    });
+    expect(ownerDecisionCoverage(decisions, "19885596")).toEqual({
+      placeAtFixtureClub: [{ externalPlayerId: "37666131", externalTeamId: "306" }],
+    });
   });
   for (const [label, entry] of [
     ["an approval without who and when", { ...held, approvedBy: null }],
