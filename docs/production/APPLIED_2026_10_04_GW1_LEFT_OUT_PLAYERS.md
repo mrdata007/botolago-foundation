@@ -207,3 +207,21 @@ Owner: "yes fix their club records", then "yes apply the full plan".
 Enzo (Wydad Casablanca, 7.3), Zniti (CODM Meknès, 6.1) and Knaidil (Raja Casablanca, 5.4): club
 record and Fantasy club now where they play; prices unchanged. Their per-match owner decisions are
 no longer needed for later matches.
+
+## Omission: Pépites was not paused
+
+AGENTS.md asks for `app_private.pepites_configure('off', null)` before a write to player
+performances or team memberships, and the previous mode restored afterwards. It was not done for
+any import window above, nor for the player list update. Production Pépites mode is `public`, and
+`pepites-tick` ran every 15 minutes throughout. Checked after (`app_private.pepites_job_log`,
+`cron.job_run_details`):
+
+- Every tick succeeded. The only ticks that wrote anything scored round 2, at 06:30, 07:15 and
+  08:45:01. The last GW2 performance row was written at 08:44:10 (the last import, run
+  37189863692, ended 08:44:13), so the latest round-2 score (08:45:01) was computed on all seven
+  matches and supersedes the two earlier ones, which ran before any GW2 statistics existed.
+- No tick wrote anything during the GW1 imports (no round-1 run logged today), nor after 08:45, so
+  none around the player list update.
+
+No harm found. Next time: pause Pépites with the live refresh and the Fantasy tick, and restore
+its mode (`public`) afterwards.
