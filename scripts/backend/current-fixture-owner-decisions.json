@@ -29,6 +29,64 @@
       "evidence": "Provider player 37771847 (Fantasy midfielder at CODM Meknès, held by 1 team as a GW1 starter, not captain) started for team 2846 (Wydad Casablanca) in 19874709. Our only 2026/27 club record for him is at CODM Meknès (from 24 Sept), and he is not on CODM's GW1 team sheet (19874710), so this is the one GW1 match he played. Placing his row at 2846 scores it; his Fantasy club is not changed.",
       "approvedBy": "owner (mrdata007), in the Claude Code session",
       "approvedOn": "2026-10-04"
+    },
+    {
+      "fixtureExternalId": "19885590",
+      "kind": "heldPlayerNotInSquad",
+      "fantasyPlayerId": "fdea9c0e-1080-4951-883c-ea3b77460904",
+      "status": "approved",
+      "evidence": "Youssef Lahouizi (Amal Tiznit goalkeeper, held by 1 team as a GW2 starter and captain) has no SportsMonks mapping. The stored 19885590 team sheet of Amal Tiznit lists 11 starters and 9 substitutes; he is not among them (the unlinked names are Nourddine Koumah, Abdellatif Ait Ouaarab, Popoola Sodiq and Omar Housni), and no GW2 team sheet names him. He did not play and scores 0.",
+      "approvedBy": "owner (mrdata007), in the Claude Code session",
+      "approvedOn": "2026-10-04"
+    },
+    {
+      "fixtureExternalId": "19885591",
+      "kind": "heldPlayerNotInSquad",
+      "fantasyPlayerId": "7aadc3e9-0166-49c1-8646-262b302358e3",
+      "status": "approved",
+      "evidence": "Yassine Belfada (Widad Témara midfielder, held by 1 team as a GW2 starter) has no SportsMonks mapping. The stored 19885591 team sheet of Widad Témara (11 starters, 9 substitutes) does not name him, nor does any GW2 team sheet. He did not play and scores 0.",
+      "approvedBy": "owner (mrdata007), in the Claude Code session",
+      "approvedOn": "2026-10-04"
+    },
+    {
+      "fixtureExternalId": "19885595",
+      "kind": "placeAtFixtureClub",
+      "externalPlayerId": "404731",
+      "externalTeamId": "270260",
+      "status": "approved",
+      "evidence": "Provider player 404731 (Anas Zniti, Fantasy goalkeeper held by 1 team as a GW2 starter) started in goal for team 270260 (CODM Meknès) in 19885595, as in 19874710. Our only 2026/27 club record for him is at RSB Berkane. Placing his row at 270260 scores the match he played; his Fantasy club is not changed.",
+      "approvedBy": "owner (mrdata007), in the Claude Code session",
+      "approvedOn": "2026-10-04"
+    },
+    {
+      "fixtureExternalId": "19885596",
+      "kind": "placeAtFixtureClub",
+      "externalPlayerId": "37666131",
+      "externalTeamId": "306",
+      "status": "approved",
+      "evidence": "Provider player 37666131 (Chams Eddine Knaidil, Fantasy defender at CODM Meknès held by 1 team as a GW2 starter) started for team 306 (Raja Casablanca) in 19885596; the stored team sheet lists him at #3 in Raja's starting XI. Our only 2026/27 club record for him is at CODM Meknès. Placing his row at 306 scores the match he played; his Fantasy club is not changed.",
+      "approvedBy": "owner (mrdata007), in the Claude Code session",
+      "approvedOn": "2026-10-04"
+    },
+    {
+      "fixtureExternalId": "19885594",
+      "kind": "nameUnnamedStarter",
+      "externalTeamId": "2846",
+      "externalPlayerId": "37771847",
+      "status": "approved",
+      "evidence": "The provider statistics of 19885594 have one Wydad Casablanca (2846) starter without a player id (89 minutes). The stored team sheet lists Mouad Enzo at #22 in Wydad's starting XI without a provider id, and the other 10 Wydad starters are all named in the statistics. Provider player 37771847 is Mouad Enzo (named by the provider in 19874709 for the same club).",
+      "approvedBy": "owner (mrdata007), in the Claude Code session",
+      "approvedOn": "2026-10-04"
+    },
+    {
+      "fixtureExternalId": "19885594",
+      "kind": "placeAtFixtureClub",
+      "externalPlayerId": "37771847",
+      "externalTeamId": "2846",
+      "status": "approved",
+      "evidence": "Provider player 37771847 (Mouad Enzo, Fantasy midfielder at CODM Meknès held by 1 team as a GW2 starter) started for Wydad Casablanca (2846) in 19885594 (named by the decision above), as in 19874709. Our only 2026/27 club record for him is at CODM Meknès. Placing his row at 2846 scores the match he played; his Fantasy club is not changed.",
+      "approvedBy": "owner (mrdata007), in the Claude Code session",
+      "approvedOn": "2026-10-04"
     }
   ]
 }

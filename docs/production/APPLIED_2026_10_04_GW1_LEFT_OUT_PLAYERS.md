@@ -167,3 +167,23 @@ Owner decisions approved 2026-10-04 ("yes approve all five"), PR #332:
 - 19885594: the one unnamed Wydad starter (89 min) is Mouad Enzo (#22 on the stored sheet without
   a provider id; the other 10 starters named): named 37771847 and placed at Wydad. Without it Enzo
   scores 0 and Paniagua and Meijers (held, not on the sheet) stay "participation unknown".
+
+## Step 5: GW2 finalized; Fantasy tick on
+
+| Time (UTC)  | Step                                                                                                                                | Result                                                                                                                                                                                    |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 08:3x       | Merged PR #332 at `3ceea2e9` (the `nameUnnamedStarter` decision kind and the six approved GW2 entries; CI green; Codex no findings) | main `1e0db2d7`                                                                                                                                                                           |
+| 08:3x       | Diagnose 19885594 (run 37189670627)                                                                                                 | The unnamed Wydad starter named 37771847 (`namedUnnamedStarters`); 0 anonymous starters; 3 unnamed substitutes left as they are                                                           |
+| 08:3x       | Live refresh paused; tick off; nothing in flight                                                                                    |                                                                                                                                                                                           |
+| 08:3x–08:43 | Ingest 19885590 … 19885596 one at a time (runs 37189705550 … 37189863692)                                                           | All 7 accepted. Placed at the match club: Enzo (Wydad, 89 min, clean sheet), Zniti (CODM, 90 min, 1 conceded), Knaidil (Raja, 62 min, clean sheet). Lahouizi and Belfada confirmed absent |
+| 08:44       | GW2 scoring document                                                                                                                | 7 fixtures ready, none pending, no pending player, validator reports no problem                                                                                                           |
+| 08:45       | `fantasy-manual-worker.yml` run 37189902100 (GW2, commit `1e0db2d7`)                                                                | **`finalized`**, calculation version 2, 7 teams; postwork complete; GW2 prize awarded; `nextGameweekStatus: not_staged` (round 3 not published yet)                                       |
+| 08:45       | Live refresh restored; `fantasy_automation_configure(true)`: the Fantasy lifecycle tick is on                                       |                                                                                                                                                                                           |
+
+GW2 final: ak47 FC 38, Imane MA 19, BG0090 Verif FC 9, QA Launch 0925 9, BotolaGO E2E XI 9, E2E Botola
+XI 8, Les Lions 4. Prize (gameweek tier): Imane MA (19 points, outright), `pending` staff
+verification; ak47 FC skipped (`staff`).
+
+Still off: the hourly GitHub orchestrator (`FANTASY_AUTOMATION_ENABLED`, a repository variable the
+owner sets). Until it is on, the tick creates GW3 once round 3 is published with a deadline still
+ahead, but nothing opens it, imports its statistics or scores it.

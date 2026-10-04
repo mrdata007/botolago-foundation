@@ -2,6 +2,7 @@ import { collectAdaptiveEvidence } from "./adaptive-performance-evidence";
 import {
   loadOwnerDecisions,
   ownerDecisionCoverage,
+  unnamedStarterNames,
   type OwnerDecision,
 } from "./current-fixture-owner-decisions";
 import { createClient } from "@supabase/supabase-js";
@@ -337,6 +338,72 @@ function unidentifiedLineupRow(lineup: Row, path: string): UnidentifiedLineupRow
       typeof minuteValue === "number" && Number.isSafeInteger(minuteValue) && minuteValue >= 0
         ? minuteValue
         : null,
+  };
+}
+
+/** A provider player the owner identified as one unnamed starter of a club. */
+export type UnnamedStarterName = { externalPlayerId: string; externalTeamId: string };
+
+/**
+ * Applies the approved `nameUnnamedStarter` owner decisions of one fixture to
+ * its provider payload, before anything is built from it: the club's one
+ * unnamed starter becomes that provider player, exactly as if SportsMonks had
+ * sent the id (on the lineup row and on its statistics that carry none), so
+ * his statistics are scored like any named row's. Unnamed substitutes are left
+ * as they are. Never a guess: when the club has no unnamed starter or more
+ * than one, or the player is already in the lineup, the fixture stops here and
+ * nothing is written for it. Returns a new payload; the one given is not changed.
+ */
+export function nameUnnamedStarters(
+  payload: unknown,
+  expectedFixtureId: number,
+  names: readonly UnnamedStarterName[],
+): { payload: unknown; named: UnnamedStarterName[] } {
+  if (!names.length) return { payload, named: [] };
+  const fixture = row(row(payload, "$").data, "data");
+  if (!Array.isArray(fixture.lineups)) fail("current_lineups_incomplete");
+  const lineups = fixture.lineups.map((raw, index) => row(raw, `data.lineups[${index}]`));
+  for (const name of names) {
+    const teamId = Number(name.externalTeamId);
+    const playerId = Number(name.externalPlayerId);
+    const starters = [...lineups.keys()].filter(
+      (index) =>
+        isUnidentified(lineups[index]!) &&
+        lineups[index]!.type_id === 11 &&
+        lineups[index]!.team_id === teamId,
+    );
+    const alreadyInLineup = lineups.some((lineup) => lineup.player_id === playerId);
+    if (starters.length !== 1 || alreadyInLineup)
+      fail("owner_decision_unnamed_starter_mismatch", {
+        fixtureExternalId: String(expectedFixtureId),
+        externalTeamId: name.externalTeamId,
+        externalPlayerId: name.externalPlayerId,
+        unnamedStarters: starters.length,
+        alreadyInLineup,
+      });
+    const index = starters[0]!;
+    const lineup = lineups[index]!;
+    lineups[index] = {
+      ...lineup,
+      player_id: playerId,
+      details: Array.isArray(lineup.details)
+        ? lineup.details.map((detail) =>
+            detail &&
+            typeof detail === "object" &&
+            !Array.isArray(detail) &&
+            isUnidentified(detail as Row)
+              ? { ...(detail as Row), player_id: playerId }
+              : detail,
+          )
+        : lineup.details,
+    };
+  }
+  return {
+    payload: { ...(payload as Row), data: { ...fixture, lineups } },
+    named: names.map((name) => ({
+      externalPlayerId: name.externalPlayerId,
+      externalTeamId: name.externalTeamId,
+    })),
   };
 }
 
@@ -977,6 +1044,9 @@ export async function runCurrentPerformanceBatch(
   const incomplete: IncompleteFixture[] = [];
   const normalized = [];
   let providerOutage = options.providerOutage ?? null;
+  // Read before any payload: an approved `nameUnnamedStarter` decision changes
+  // what is built from the payload, in diagnose as in ingest.
+  const ownerDecisions = options.ownerDecisions ?? loadOwnerDecisions();
   for (const fixture of listed) {
     if (providerOutage) {
       incomplete.push({ ...fixture, stage: "provider", code: providerOutage, attempted: false });
@@ -999,18 +1069,29 @@ export async function runCurrentPerformanceBatch(
       continue;
     }
     try {
-      const normalizedFixture = await normalizeCurrentFinishedFixture(
+      const naming = nameUnnamedStarters(
         payload,
+        Number(fixture.fixtureExternalId),
+        unnamedStarterNames(ownerDecisions, fixture.fixtureExternalId),
+      );
+      const normalizedFixture = await normalizeCurrentFinishedFixture(
+        naming.payload,
         Number(fixture.fixtureExternalId),
       );
       normalized.push({
         ...fixture,
         adaptiveFieldEvidence: collectAdaptiveEvidence(
-          payload,
+          naming.payload,
           new Date().toISOString(),
           normalizedFixture.rows,
         ),
         ...normalizedFixture,
+        // Which unnamed starter the owner named: part of the provider facts,
+        // so of the source version the database digests.
+        coverage: {
+          ...normalizedFixture.coverage,
+          ...(naming.named.length ? { namedUnnamedStarters: naming.named } : {}),
+        },
       });
     } catch (error) {
       incomplete.push({ ...fixture, stage: "validation", ...failure(error) });
@@ -1067,7 +1148,6 @@ export async function runCurrentPerformanceBatch(
 
   const fixtures: Row[] = [];
   const observedAt = new Date().toISOString();
-  const ownerDecisions = options.ownerDecisions ?? loadOwnerDecisions();
   for (const fixture of normalized) {
     try {
       const result = row(
