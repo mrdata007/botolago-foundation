@@ -1,6 +1,15 @@
 import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import { Link } from "@tanstack/react-router";
-import { ArrowDownUp, Bell, ChevronRight, Mail, Plus, Settings2, Shirt } from "lucide-react";
+import {
+  ArrowDownUp,
+  Bell,
+  ChevronRight,
+  Mail,
+  Plus,
+  Settings2,
+  Shirt,
+  Trophy,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
@@ -22,6 +31,7 @@ import { CreateLeagueInvite } from "./CreateLeagueInvite";
 import { FantasyGuestIntro } from "./FantasyGuestIntro";
 import { joinTarget, type FantasyHubLayout } from "./fantasy-hub-layout";
 import { pointsUnit } from "@/lib/points-unit";
+import { fantasyNextAction, nextActionLabel } from "@/services/fantasy-next-action";
 
 /**
  * The Fantasy hub's personal parts — the team card's place, "Mes ligues"
@@ -112,12 +122,33 @@ export function FantasyHubTeamArea({
         overallRank={summary?.overallRank ?? null}
         pending={summaryPending}
       />
-      <UiLinkButton to="/fantasy/team" variant="gradient" className="mt-3.5">
-        <Shirt className="h-5 w-5" aria-hidden />
-        {t("fpl.pick_team")}
-      </UiLinkButton>
+      <OwnerNextAction gameweek={gameweek} />
       <TransfersRow freeTransfers={team.freeTransfers} bank={team.bank} />
     </>
+  );
+}
+
+/**
+ * The owner's one primary action, from the shared next-action model: prepare
+ * the team before the deadline, follow the points while the round is played,
+ * the result once it is final, the next round as soon as it opens. The screen
+ * is `ready` here, so the season is open; only the owner branch is reached.
+ */
+function OwnerNextAction({ gameweek }: { gameweek: Gameweek | null }) {
+  const { t } = useI18n();
+  const action = fantasyNextAction({
+    availability: { kind: "ready", canCreate: false },
+    hasTeam: true,
+    gameweek,
+    now: Date.now(),
+  });
+  if (!("to" in action)) return null;
+  const Icon = action.to === "/fantasy/points" ? Trophy : Shirt;
+  return (
+    <UiLinkButton to={action.to} variant="gradient" className="mt-3.5">
+      <Icon className="h-5 w-5" aria-hidden />
+      {nextActionLabel(action.kind, t)}
+    </UiLinkButton>
   );
 }
 
