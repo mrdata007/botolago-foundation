@@ -1,7 +1,8 @@
-# Reconciled scoring ingestion (staging)
+# Reconciled scoring ingestion
 
-Status: **built and tested; not applied anywhere.** Migration `20261003180000` is not on
-staging or production. Nothing here scores, finalizes or publishes points.
+Status: **built and tested.** Migration `20261003180000` goes on production with the guarded
+script [`apply-20261003180000-reconciled-provider-observations.sql`](../../scripts/backend/apply-20261003180000-reconciled-provider-observations.sql)
+(owner decision 2026-10-04). Nothing here scores, finalizes or publishes points.
 
 ## What it does
 
