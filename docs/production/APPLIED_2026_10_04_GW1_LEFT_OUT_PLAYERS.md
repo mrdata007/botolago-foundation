@@ -191,3 +191,19 @@ be imported then, which are all in now. 08:5x: workflow re-enabled (`gh workflow
 manual dispatch (run 37191050070, commit `1e0db2d7`): verdict **ok** (provider refresh pass, no
 gameweek created or blocked, no fixture pending, no deadline warning). The hourly schedule
 (`12 * * * *`) runs from here; the Fantasy tick runs every 5 minutes (first run 08:50, succeeded).
+
+## Player list update (club records)
+
+Owner: "yes fix their club records", then "yes apply the full plan".
+
+| Time (UTC) | Step                                                                                                                                                           | Result                                                                                                                                                                                                                                   |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 09:08      | Observe (run 37191191938), fixtures 19885590–19885596                                                                                                          | Plan of 131 changes; Enzo skipped (`skip_ambiguous_club`: both squads list him; his GW2 lineup row had no provider id)                                                                                                                   |
+| 09:10      | Observe again (run 37191260745), adding 19874709                                                                                                               | Observation `f7536b11-…`, digest `facc4ca7…`: 132 changes (91 added, 22 joined, 5 linked, 14 moved, of which Enzo → Wydad, Zniti → CODM, Knaidil → Raja; Fantasy: 113 added, 14 moved); 2 skipped (no position); no club-limit violation |
+| 09:11      | Fantasy tick and live refresh paused; hourly orchestrator workflow disabled for the apply (GitHub's delayed 09:12 schedule had not started); nothing in flight |                                                                                                                                                                                                                                          |
+| 09:2x      | `apply-current-player-list.sql` rehearsal, then `commit;`                                                                                                      | "Not applied" (rehearsal), then "Applied": 132 changes, 14 old club records removed (kept in `current_player_list_updates`); the observation plans nothing more                                                                          |
+| 09:22      | Tick and live refresh restored; orchestrator workflow re-enabled                                                                                               | GW1 and GW2 unchanged (finalized; 13 final team results)                                                                                                                                                                                 |
+
+Enzo (Wydad Casablanca, 7.3), Zniti (CODM Meknès, 6.1) and Knaidil (Raja Casablanca, 5.4): club
+record and Fantasy club now where they play; prices unchanged. Their per-match owner decisions are
+no longer needed for later matches.
