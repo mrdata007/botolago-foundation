@@ -140,3 +140,30 @@ Checked after:
   with reason `staff`, as the prize rules require.
 - GW2 untouched: `scheduled`, lock version 1, its one lineup from 2026-09-25. Step 5 (GW2
   carry-over) has to deal with its past deadline.
+
+## Step 5: GW2 carried over (in progress)
+
+Owner: "go step 5". GW2 (`d4324127-…`, deadline 2026-10-02 14:30 UTC, 7 matches all finished) could
+not open: the normal opening refuses a passed deadline and started matches. GW3 does not exist
+yet: round 3 is not published by the provider (the season refresh runs every 10 minutes).
+
+| Time (UTC) | Step                                                                                                                                                         | Result                                                                                                                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 07:3x      | Read-only diagnose of the 7 GW2 matches (runs 37186029479, 37186058923)                                                                                      | All validate; unnamed rows: 19885594 (1 Wydad starter, 3 substitutes), 19885596 (1 substitute)                                                                                             |
+| 08:05      | Merged PR #331 at `3b6a9176` (owner-only `app_private.fantasy_open_missed_gameweek`; CI green; Codex P1/P2 and a Vercel concurrency note fixed and resolved) | main `5103809a`                                                                                                                                                                            |
+| 08:06      | Live refresh paused; tick off; nothing in flight                                                                                                             |                                                                                                                                                                                            |
+| 08:07      | Install script + GW2 opening, one transaction ended by a deliberate error (dry run)                                                                          | Install checks passed; GW2 opened; 6 lineups carried, each identical to GW1 (15 players, slots, captain, vice-captain); QA Launch 0925 kept its own GW2 lineup. Re-read: nothing persisted |
+| 08:07      | `apply-20261004150000-fantasy-open-missed-gameweek.sql` with `commit;`                                                                                       | "Applied"; no API role can call the tool                                                                                                                                                   |
+| 08:08      | `open-missed-fantasy-gameweek.sql` rehearsal, then `commit;`                                                                                                 | "Opened"; audit row `fantasy_gameweek.open_missed`                                                                                                                                         |
+| 08:09      | `fantasy-manual-worker.yml` run 37187989484 (GW2, commit `5103809a`)                                                                                         | `points_published` (no match statistics yet); GW2 `provisional`, 7/7 lineups locked, 7 assignments frozen                                                                                  |
+| 08:2x      | Read-only check of the GW2 team sheets against the locked lineups                                                                                            | 5 cases (below); live refresh restored                                                                                                                                                     |
+
+Owner decisions approved 2026-10-04 ("yes approve all five"), PR #332:
+
+- 19885590 Lahouizi (Amal Tiznit GK, starter and captain in 1 lineup, no mapping) and 19885591
+  Belfada: not on their clubs' stored team sheets, nor on any GW2 sheet: absent.
+- 19885595 Zniti at CODM; 19885596 Knaidil (CODM defender) started for Raja: placed at the
+  fixture club.
+- 19885594: the one unnamed Wydad starter (89 min) is Mouad Enzo (#22 on the stored sheet without
+  a provider id; the other 10 starters named): named 37771847 and placed at Wydad. Without it Enzo
+  scores 0 and Paniagua and Meijers (held, not on the sheet) stay "participation unknown".
