@@ -1,14 +1,4 @@
 import { collectAdaptiveEvidence } from "./adaptive-performance-evidence";
-import {
-  declarationFor,
-  entriesFor,
-  evidenceDigest,
-  loadAllowlist,
-  reviewedPreflightDigest,
-  unusedShortfalls,
-  VerifiedUnusedAllowlistError,
-  type VerifiedUnusedException,
-} from "./verified-unused-exceptions";
 import { createClient } from "@supabase/supabase-js";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -810,77 +800,7 @@ export type CurrentPerformanceBatchOptions = {
    * first listed; the rest of the page is neither fetched nor written.
    */
   onlyFixtureExternalId?: string | null;
-  /**
-   * The owner-reviewed allowlist of players who may be left out of this one
-   * fixture (verified-unused-exceptions.json). Read only on a one-fixture run;
-   * a page or an orchestrator pass never reads it, so it never changes them.
-   */
-  verifiedUnusedAllowlist?: VerifiedUnusedException[];
-  /** The preflight record's bytes by repository path (tests supply their own). */
-  readPreflightRecord?: (path: string) => Uint8Array;
 };
-
-type ExceptionScope = {
-  /** What each allowlist entry for this fixture shows, any status: ids, statuses and type ids only. */
-  report: Row[];
-  /** What the database is asked to leave out: approved entries whose provider facts hold. */
-  declarations: ReturnType<typeof declarationFor>[];
-  /** Set when an APPROVED entry cannot be honoured: the fixture is then not ingested. */
-  failure: { code: string; diagnostic?: Row } | null;
-};
-
-/**
- * Reads the allowlist entries of ONE fixture against the provider facts just
- * read for it. Only an approved entry whose facts still show an unused
- * substitute (and whose preflight record is the reviewed one) becomes a
- * declaration. An approved entry whose facts no longer hold stops the fixture:
- * the approval was for a world that is not the one the provider shows now.
- */
-function resolveExceptionScope(
-  fixtureExternalId: string,
-  participation: LineupParticipation[],
-  allowlist: VerifiedUnusedException[],
-  readPreflightRecord: ((path: string) => Uint8Array) | undefined,
-): ExceptionScope {
-  const scope: ExceptionScope = { report: [], declarations: [], failure: null };
-  for (const entry of entriesFor(allowlist, fixtureExternalId)) {
-    const facts = participation.find(
-      (player) => player.externalPlayerId === entry.externalPlayerId,
-    );
-    const shortfalls = unusedShortfalls(facts);
-    let preflightDigest: string | null = null;
-    let preflightProblem: string | null = null;
-    try {
-      preflightDigest = reviewedPreflightDigest(entry, readPreflightRecord);
-    } catch (error) {
-      preflightProblem =
-        error instanceof VerifiedUnusedAllowlistError ? error.code : "preflight_record_unreadable";
-    }
-    scope.report.push({
-      externalPlayerId: entry.externalPlayerId,
-      status: entry.status,
-      qualifies: shortfalls.length === 0,
-      ...(shortfalls.length ? { shortfalls } : {}),
-      ...(facts && shortfalls.length === 0
-        ? { evidenceDigest: evidenceDigest(fixtureExternalId, facts) }
-        : {}),
-      preflightRecordMatchesReview: preflightProblem === null,
-    });
-    if (entry.status !== "approved" || scope.failure) continue;
-    if (shortfalls.length)
-      scope.failure = {
-        code: "verified_unused_scope_not_verified",
-        diagnostic: { fixtureExternalId, externalPlayerId: entry.externalPlayerId, shortfalls },
-      };
-    else if (preflightProblem)
-      scope.failure = {
-        code: preflightProblem,
-        diagnostic: { fixtureExternalId, externalPlayerId: entry.externalPlayerId },
-      };
-    else scope.declarations.push(declarationFor(fixtureExternalId, facts!, preflightDigest!));
-  }
-  return scope;
-}
 
 export async function runCurrentPerformanceBatch(
   client: RpcClient,
@@ -895,16 +815,6 @@ export async function runCurrentPerformanceBatch(
     fail("invalid_fixture_cursor");
   if (only !== null && (afterFixtureExternalId !== null || !/^[1-9]\d{0,14}$/.test(only)))
     fail("invalid_canary_fixture");
-  // The allowlist is read only for a one-fixture run, and a broken file stops that run
-  // before any provider request or write.
-  let allowlist: VerifiedUnusedException[] = [];
-  if (only !== null) {
-    try {
-      allowlist = options.verifiedUnusedAllowlist ?? loadAllowlist();
-    } catch (error) {
-      fail(error instanceof VerifiedUnusedAllowlistError ? error.code : "allowlist_unreadable");
-    }
-  }
   // Provider ids below 2^53 (15 digits at most), so the arithmetic is exact.
   const cursor =
     only !== null ? (only === "1" ? null : String(Number(only) - 1)) : afterFixtureExternalId;
@@ -998,24 +908,6 @@ export async function runCurrentPerformanceBatch(
         payload,
         Number(fixture.fixtureExternalId),
       );
-      // The allowlist is empty unless this is a one-fixture run (it is read only then).
-      const scope = resolveExceptionScope(
-        fixture.fixtureExternalId,
-        normalizedFixture.participation,
-        allowlist,
-        options.readPreflightRecord,
-      );
-      // An approved exception that cannot be honoured stops this fixture's ingestion;
-      // a read-only diagnose reports it and goes on.
-      const blocked =
-        scope.failure ??
-        (batch.adaptive === true && scope.declarations.length > 0
-          ? { code: "verified_unused_not_supported_under_adaptive" }
-          : null);
-      if (blocked && !diagnose) {
-        incomplete.push({ ...fixture, stage: "validation", ...blocked });
-        continue;
-      }
       normalized.push({
         ...fixture,
         adaptiveFieldEvidence: collectAdaptiveEvidence(
@@ -1023,8 +915,6 @@ export async function runCurrentPerformanceBatch(
           new Date().toISOString(),
           normalizedFixture.rows,
         ),
-        verifiedUnusedScope: scope.report,
-        verifiedUnusedDeclarations: scope.declarations,
         ...normalizedFixture,
       });
     } catch (error) {
@@ -1074,11 +964,6 @@ export async function runCurrentPerformanceBatch(
         // which scoring-relevant statistics carry a value, which are unknown, which
         // are an explicit zero, and which match events name the player.
         participation: fixture.participation,
-        // The owner-approved exception entries for this fixture and what the provider's
-        // facts show for each (a one-fixture run only). Informational: nothing is written.
-        ...(fixture.verifiedUnusedScope.length
-          ? { verifiedUnusedScope: fixture.verifiedUnusedScope }
-          : {}),
       })),
       incomplete,
       ...page,
@@ -1098,32 +983,13 @@ export async function runCurrentPerformanceBatch(
           p_coverage:
             batch.adaptive === true
               ? { ...fixture.coverage, adaptiveFieldEvidence: fixture.adaptiveFieldEvidence }
-              : fixture.verifiedUnusedDeclarations.length > 0
-                ? {
-                    ...fixture.coverage,
-                    verifiedUnusedSubstitutes: fixture.verifiedUnusedDeclarations,
-                  }
-                : fixture.coverage,
+              : fixture.coverage,
           p_observed_at: observedAt,
         }),
         "result",
       );
-      // Exactly the players approved for this fixture, and nobody else, were left out.
-      const declaredIds = fixture.verifiedUnusedDeclarations.map(
-        (declaration) => declaration.externalPlayerId,
-      );
-      const left = result.excludedVerifiedUnusedUnmapped;
       if (
-        declaredIds.length === 0
-          ? left !== undefined
-          : !Array.isArray(left) ||
-            left.length !== declaredIds.length ||
-            new Set(left).size !== left.length ||
-            left.some((leftId) => !declaredIds.includes(leftId as string))
-      )
-        fail("current_performance_reconciliation_failed");
-      if (
-        result.active !== fixture.rows.length - declaredIds.length ||
+        result.active !== fixture.rows.length ||
         result.reconciled !== true ||
         (result.scoringStatisticsComplete !== true && result.adaptive !== true) ||
         typeof result.sourceVersion !== "string" ||
@@ -1143,17 +1009,6 @@ export async function runCurrentPerformanceBatch(
         sourceVersion: result.sourceVersion,
         coverage: fixture.coverage,
         ...(fixture.unnamedRows.length ? { unnamedRows: fixture.unnamedRows } : {}),
-        ...(declaredIds.length
-          ? {
-              excludedVerifiedUnusedUnmapped: fixture.verifiedUnusedDeclarations.map(
-                (declaration) => ({
-                  externalPlayerId: declaration.externalPlayerId,
-                  evidenceDigest: declaration.evidenceDigest,
-                  preflightDigest: declaration.preflightDigest,
-                }),
-              ),
-            }
-          : {}),
       });
     } catch (error) {
       incomplete.push({
