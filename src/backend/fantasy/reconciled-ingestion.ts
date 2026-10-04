@@ -164,12 +164,16 @@ export async function prepareReconciledObservation(
   const rows: ObservationRow[] = [];
   const seen = new Set<string>();
   for (const p of result.players) {
+    // A bench player who never came on scores nothing and is not sent, so his
+    // identity cannot hold the match back. Unknown minutes are not "did not play".
+    const didNotPlay = !p.started && p.stats.minutes === 0;
     if (
       p.identityStatus !== "reviewed_pair" ||
       p.appPlayerId === null ||
       p.sofascoreId === null ||
       p.flashscoreId === null
     ) {
+      if (didNotPlay) continue;
       block(
         "identity_not_reviewed_pair",
         `${p.side} shirt ${p.shirtNumber ?? "?"} is ${p.identityStatus}, not a reviewed identity on both providers.`,

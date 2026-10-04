@@ -1,4 +1,80 @@
--- Reconciled provider observations: the bridge from the Sofascore + Flashscore
+-- ============================================================================
+-- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
+-- Apply migration 20261003180000_reconciled_provider_observations (roadmap step 1): reconciled
+-- Sofascore + Flashscore matches become one more input of adaptive scoring,
+-- recorded through api.service_record_reconciled_fantasy_observation (service
+-- role only). It adds the source 'provider-reconciled', the table
+-- app_private.football_provider_fixture_links and the wrapper, and replaces
+-- api.service_record_fantasy_observation with the same function accepting that
+-- source only inside the wrapper. Nothing is scored or published by it.
+-- Owner decision 2026-10-04: "apply the step 1 migration to production".
+--
+-- HOW TO RUN
+--   Check nothing else is writing (AGENTS.md): no Fantasy worker run, the
+--   Fantasy tick off. Then run the WHOLE file. As shipped it is a REHEARSAL
+--   (rolled back; "Rehearsal passed"). Change `rollback;` near the bottom to
+--   `commit;` and run again ("Applied"). A failed check stops it with nothing
+--   saved; do not edit a check to make it pass.
+--
+-- WHAT IT DOES
+--   * refuses to run twice, while the Fantasy tick is on, while a pg_cron job
+--     is mid-run, where the table or the wrapper already exist, or where the
+--     observation recorder is not production's version (md5 of its definition,
+--     equal to a local database built from main without this migration);
+--   * records the migration file whole in supabase_migrations.schema_migrations
+--     and runs it from that record once its sha256 matches the repository file;
+--   * checks the result: both functions are exactly the reviewed versions (md5,
+--     measured on a local database built from the migrations), the source check
+--     accepts 'provider-reconciled', the new table forces row level security
+--     and no API role can read it, and only the service role can call the
+--     recorder and the wrapper.
+-- ============================================================================
+
+begin;
+
+set local lock_timeout = '5s';
+set local statement_timeout = '60s';
+
+do $hold$
+begin
+  lock table app_private.fantasy_fixture_observations in access exclusive mode;
+exception when lock_not_available then
+  raise exception 'stop: a scoring observation is being written right now -- nothing was saved; run this again when that has finished';
+end
+$hold$;
+
+do $preflight$
+begin
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261003180000') then
+    raise exception 'stop: migration 20261003180000 is already recorded as applied';
+  end if;
+  if exists (select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled) then
+    raise exception 'stop: the Fantasy lifecycle tick is on -- pause it first with select app_private.fantasy_automation_configure(false);';
+  end if;
+  -- Any run not finished blocks: a recent one, and an older one whose
+  -- backend is still alive (a record left behind by a crash does not).
+  if exists (select 1 from cron.job_run_details run
+    where run.status not in ('succeeded', 'failed')
+      and (run.start_time > statement_timestamp() - interval '15 minutes'
+        or exists (select 1 from pg_stat_activity activity where activity.pid = run.job_pid))) then
+    raise exception 'stop: a scheduled (pg_cron) job is running right now -- nothing was saved; run this again in a minute';
+  end if;
+  if to_regclass('app_private.football_provider_fixture_links') is not null
+    or to_regprocedure('api.service_record_reconciled_fantasy_observation(uuid,jsonb,boolean)') is not null then
+    raise exception 'stop: the provider fixture links table or the reconciled wrapper already exists';
+  end if;
+  if md5(pg_get_functiondef('api.service_record_fantasy_observation(uuid,jsonb,text)'::regprocedure))
+      <> '0e4852a0a3c35bc3332ebd891d2cdf8e' then
+    raise exception 'stop: the observation recorder is not the version this migration replaces';
+  end if;
+end
+$preflight$;
+
+insert into supabase_migrations.schema_migrations (version, name, statements)
+values (
+  '20261003180000',
+  'reconciled_provider_observations',
+  array[$bg_20261003180000_file$-- Reconciled provider observations: the bridge from the Sofascore + Flashscore
 -- reconciler to adaptive Fantasy scoring (docs/backend/RECONCILED_SCORING_INGESTION.md).
 --
 -- Nothing here scores, finalizes or changes a published point. A reconciled
@@ -265,3 +341,69 @@ begin
 end $$;
 revoke all on function api.service_record_reconciled_fantasy_observation(uuid, jsonb, boolean) from public, anon, authenticated;
 grant execute on function api.service_record_reconciled_fantasy_observation(uuid, jsonb, boolean) to service_role;
+$bg_20261003180000_file$]
+);
+
+do $apply$
+declare
+  part_20261003180000 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20261003180000'
+  );
+begin
+  if encode(sha256(convert_to(part_20261003180000, 'UTF8')), 'hex')
+    is distinct from 'd00dec4654a21f59f8b86e96ebbab3b81885ed0307b881c205769f5f0b25e7c3' then
+    raise exception 'stop: 20261003180000 is not the repository file byte for byte -- was this script cut short or changed?';
+  end if;
+
+  execute part_20261003180000;
+end
+$apply$;
+
+do $postflight$
+declare
+  problems text[] := '{}';
+  recorder constant regprocedure := 'api.service_record_fantasy_observation(uuid,jsonb,text)'::regprocedure;
+  wrapper regprocedure := to_regprocedure('api.service_record_reconciled_fantasy_observation(uuid,jsonb,boolean)');
+  fn regprocedure;
+begin
+  if md5(pg_get_functiondef(recorder)) <> 'd5c60fc1a8b42f23e91c0db5e321a26d' then
+    problems := problems || 'the observation recorder is not the reviewed new version'::text;
+  end if;
+  if wrapper is null or md5(pg_get_functiondef(wrapper)) <> '06104038065b147d0573bbc68f23cfe0' then
+    problems := problems || 'the reconciled wrapper is missing or not the reviewed version'::text;
+  end if;
+  if (select pg_get_constraintdef(oid) from pg_constraint where conname = 'fantasy_fixture_observations_source_check')
+      not like '%provider-reconciled%' then
+    problems := problems || 'the observation source check does not accept provider-reconciled'::text;
+  end if;
+  if not (select relrowsecurity and relforcerowsecurity from pg_class
+      where oid = 'app_private.football_provider_fixture_links'::regclass)
+    or has_table_privilege('anon', 'app_private.football_provider_fixture_links', 'select')
+    or has_table_privilege('authenticated', 'app_private.football_provider_fixture_links', 'select')
+    or has_table_privilege('service_role', 'app_private.football_provider_fixture_links', 'select') then
+    problems := problems || 'the provider fixture links table is readable by an API role or lacks forced RLS'::text;
+  end if;
+  foreach fn in array array_remove(array[recorder, wrapper], null) loop
+    if has_function_privilege('anon', fn, 'execute')
+      or has_function_privilege('authenticated', fn, 'execute')
+      or not has_function_privilege('service_role', fn, 'execute') then
+      problems := problems || ('callable by the wrong roles: ' || fn::text);
+    end if;
+  end loop;
+  if cardinality(problems) > 0 then
+    raise exception 'stop: the update did not check out: %', problems;
+  end if;
+end
+$postflight$;
+
+-- ---------------------------------------------------------------------------
+-- REHEARSAL: nothing is saved. To apply for real, change the next line to:
+--   commit;
+-- ---------------------------------------------------------------------------
+rollback;
+
+select case
+  when exists (select 1 from supabase_migrations.schema_migrations where version = '20261003180000')
+    then 'Applied. Reconciled observations can be recorded (nothing scored).'
+  else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
+end as result;
