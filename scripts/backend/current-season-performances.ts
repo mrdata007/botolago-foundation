@@ -1078,15 +1078,17 @@ export async function runCurrentPerformanceBatch(
           p_rows: fixture.rows,
           // Owner decision 2026-10-03: a lineup player the catalogue cannot
           // place is left out when no Fantasy team holds him; the database
-          // decides and refuses whatever could change someone's points.
-          p_coverage:
-            batch.adaptive === true
-              ? { ...fixture.coverage, adaptiveFieldEvidence: fixture.adaptiveFieldEvidence }
-              : {
-                  ...fixture.coverage,
-                  leaveOutUnplacedUnheld: true,
-                  ...ownerDecisionCoverage(ownerDecisions, fixture.fixtureExternalId),
-                },
+          // decides and refuses whatever could change someone's points. It is
+          // asked for on every fixture: `batch.adaptive` is season-wide, and
+          // the database decides per fixture whether adaptive scoring applies.
+          p_coverage: {
+            ...fixture.coverage,
+            leaveOutUnplacedUnheld: true,
+            ...ownerDecisionCoverage(ownerDecisions, fixture.fixtureExternalId),
+            ...(batch.adaptive === true
+              ? { adaptiveFieldEvidence: fixture.adaptiveFieldEvidence }
+              : {}),
+          },
           p_observed_at: observedAt,
         }),
         "result",
