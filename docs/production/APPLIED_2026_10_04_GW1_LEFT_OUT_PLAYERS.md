@@ -184,6 +184,10 @@ GW2 final: ak47 FC 38, Imane MA 19, BG0090 Verif FC 9, QA Launch 0925 9, BotolaG
 XI 8, Les Lions 4. Prize (gameweek tier): Imane MA (19 points, outright), `pending` staff
 verification; ak47 FC skipped (`staff`).
 
-Still off: the hourly GitHub orchestrator (`FANTASY_AUTOMATION_ENABLED`, a repository variable the
-owner sets). Until it is on, the tick creates GW3 once round 3 is published with a deadline still
-ahead, but nothing opens it, imports its statistics or scores it.
+The repository variable `FANTASY_AUTOMATION_ENABLED` was already `true` (owner), but the
+`fantasy-season-orchestrator.yml` workflow itself was `disabled_manually` since 2026-10-01 10:21 UTC:
+its last scheduled runs (to 2026-10-01 07:10) all ended `escalate` on the GW1 matches that could not
+be imported then, which are all in now. 08:5x: workflow re-enabled (`gh workflow enable`); one
+manual dispatch (run 37191050070, commit `1e0db2d7`): verdict **ok** (provider refresh pass, no
+gameweek created or blocked, no fixture pending, no deadline warning). The hourly schedule
+(`12 * * * *`) runs from here; the Fantasy tick runs every 5 minutes (first run 08:50, succeeded).
