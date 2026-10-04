@@ -1403,14 +1403,51 @@ html[dir="rtl"] .lucide-arrow-left {
   display: flex;
 }
 
-@keyframes splash-in {
+/* The wordmark pulling into focus as the ball lands. Nothing here names a
+   direction, so it plays the same in both scripts. */
+@keyframes splash-reveal {
   0% {
     opacity: 0;
-    transform: scale(0.97) translateY(6px);
+    filter: blur(14px);
+    transform: scale(1.07);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+/* Floodlights catching: `steps(1, end)` on the element holds each value until
+   the next keyframe, so this is a hard flicker rather than a fade. */
+@keyframes splash-lights {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  16% {
+    opacity: 0.15;
+  }
+  28% {
+    opacity: 0.9;
+  }
+  36% {
+    opacity: 0.4;
+  }
+  52%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes splash-pitch {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
   }
 }
 
@@ -1428,6 +1465,99 @@ html[dir="rtl"] .lucide-arrow-left {
   100% {
     transform: translateX(calc(420% * var(--splash-dir))) skewX(calc(-18deg * var(--splash-dir)));
     opacity: 0;
+  }
+}
+
+/* The ball. Sideways travel, height, fade and spin are separate animations on
+   nested elements (see SplashScreen.tsx); --splash-dir starts it from the
+   reading direction's leading side. It lands at 1000ms, hops once, and is
+   gone by 1600ms. */
+@keyframes splash-ball-x {
+  0% {
+    transform: translateX(calc(-60vw * var(--splash-dir)));
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes splash-ball-y {
+  0% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
+  }
+  31.25% {
+    transform: translateY(-170px);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.75, 0.4);
+  }
+  62.5% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
+  }
+  70.6% {
+    transform: translateY(-26px);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.75, 0.4);
+  }
+  78.75%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes splash-ball-fade {
+  0%,
+  84% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes splash-ball-spin {
+  0% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(calc(900deg * var(--splash-dir)));
+  }
+}
+
+@keyframes splash-trail {
+  0% {
+    opacity: 0;
+  }
+  20%,
+  80% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The ripple the landing sends across the turf: wide and flat, like a circle
+   seen along the ground. */
+@keyframes splash-ground-ripple {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.15, 0.04);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.6, 0.7);
+  }
+}
+
+@keyframes splash-breathe {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
   }
 }
 
