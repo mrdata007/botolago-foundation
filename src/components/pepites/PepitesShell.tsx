@@ -22,19 +22,12 @@ import { cn } from "@/lib/utils";
  * pages use (672px phone, 896px from 768px, 1320px from 1024px, and the
  * search field in the top bar from 1024px); pass the same `desktop` to the
  * band so its content lines up with the column underneath.
- *
- * DEPRECATED props, accepted only so the screens compile while they migrate
- * (the BG-0152 integration stage removes them): `hero` (read as
- * `pageHeader`), `wide` (read as `width="desktop"`) and `tone` (ignored: no
- * page is night any more).
  */
 export function PepitesShell({
   pageHeader,
   width,
   children,
   className,
-  hero,
-  wide,
 }: {
   /** The full-bleed band under the top bar: a title band or a detail header. */
   pageHeader?: ReactNode;
@@ -43,16 +36,9 @@ export function PepitesShell({
   children: ReactNode;
   /** Classes for the content column's flex stack (`gap-4` by default). */
   className?: string;
-  /** @deprecated Use `pageHeader`. */
-  hero?: ReactNode;
-  /** @deprecated Use `width="desktop"`. */
-  wide?: boolean;
-  /** @deprecated Ignored. */
-  tone?: "page" | "night";
 }) {
-  const desktop = (width ?? (wide ? "desktop" : "content")) === "desktop";
   return (
-    <AppShell contentWidth={desktop ? "desktop" : "compact"} pageHeader={pageHeader ?? hero}>
+    <AppShell contentWidth={width === "desktop" ? "desktop" : "compact"} pageHeader={pageHeader}>
       <div className={cn("flex flex-col gap-4", className)} data-testid="pepites-page">
         {children}
       </div>
