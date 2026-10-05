@@ -176,7 +176,9 @@ describe("ui-kit: theme correctness", () => {
     it(`${file} uses --ui-ink for fills only, never as a foreground (BG-0083)`, () => {
       const offenders = [
         ...read(file).matchAll(
-          /(?:text|placeholder|ring|caret|decoration)-\[color:var\(--ui-ink\)\]/g,
+          // `accent`, `outline`, `stroke` and `fill` too (BG-0149): the
+          // checkbox accent was navy on the dark surface and passed this.
+          /(?:text|placeholder|ring|caret|decoration|accent|outline|stroke|fill)-\[color:var\(--ui-ink\)\]/g,
         ),
       ].map((m) => m[0]);
       expect(offenders).toEqual([]);
