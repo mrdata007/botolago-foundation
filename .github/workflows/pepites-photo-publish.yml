@@ -1,0 +1,132 @@
+name: Publish approved player photos
+
+# Runs the Pépites photo storage job (scripts/backend/pepites-photo-job.ts,
+# PEPITES_ARCHITECTURE.md §3.3) against production, so the owner can publish
+# photos approved in /admin/pepites/donnees without a terminal.
+#
+# For each approved release (up to 20 per run) it makes the public 512 px WebP
+# from the private original (no camera, date or GPS data survives), uploads it
+# to `football-media` and publishes it through api.service_publish_player_photo,
+# which checks the rights again on the day; a refused release has its file
+# removed. It then deletes the files queued by revocation, expiry or
+# replacement. Run it again when more than 20 photos wait.
+#
+# One writer at a time (AGENTS.md): the `pepites-tick` pg_cron job writes
+# players, Pépites tables and photo-release expiry every 15 minutes, and the
+# concurrency group below cannot hold back a database cron job. So the run
+# pauses that cron job first (scripts/backend/pepites-tick-pause.ts), waits for
+# a tick already in flight, publishes, and restores the job's previous state in
+# an always-run step. It pauses the job rather than switching the Pépites mode
+# off, so readers keep seeing Pépites during the run.
+#
+# Guards follow the other production workflows: dispatch from main by the
+# owner only, the approved environment, one production writer at a time (the
+# shared concurrency group), the fixed project, a typed confirmation and no
+# re-runs. It has no `expected_commit` input on purpose: it is a routine
+# operator action pressed after every batch of approvals, it takes no input
+# that could widen what it does, and the database decides what may be
+# published. The key is masked and never printed; the job logs counts and
+# release ids only.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type PUBLISH_APPROVED_PHOTOS
+        required: true
+        type: string
+
+concurrency:
+  group: botolago-production-v2-mutation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish approved player photos
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.actor == 'mrdata007'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production-admin-activation
+    env:
+      CONFIRMATION: ${{ inputs.confirmation }}
+      PROJECT_REF: tkewgajrljbwgwedqsxn
+      SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+      SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
+    steps:
+      - name: Guard owner dispatch and the production target
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_RUN_ATTEMPT:-}" == "1" ]] || { echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"; exit 2; }
+          [[ "$CONFIRMATION" == "PUBLISH_APPROVED_PHOTOS" ]] || { echo "Type PUBLISH_APPROVED_PHOTOS to run."; exit 2; }
+          [[ "${SUPABASE_PRODUCTION_PROJECT_REF:-}" == "tkewgajrljbwgwedqsxn" ]] || { echo "Production project-ref guard failed."; exit 2; }
+          [[ "${SUPABASE_PRODUCTION_URL%/}" == "https://tkewgajrljbwgwedqsxn.supabase.co" ]] || { echo "Production URL guard failed."; exit 2; }
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Verify the exact job runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun install --frozen-lockfile
+          bun test scripts/backend/pepites-photo-job.test.ts scripts/backend/pepites-tick-pause.test.ts
+          bun run backend:secrets:check
+
+      - name: Pause the Pépites tick and wait for one in flight
+        id: pause
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "SUPABASE_ACCESS_TOKEN is missing from the environment."; exit 2; }
+          printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          bun scripts/backend/pepites-tick-pause.ts pause
+
+      - name: Publish approved photos and remove withdrawn ones
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_SECRET_KEY" || { echo "SUPABASE_SECRET_KEY is missing from the environment."; exit 2; }
+          printf '::add-mask::%s\n' "$SUPABASE_SECRET_KEY"
+          set +e
+          SUPABASE_URL="${SUPABASE_PRODUCTION_URL%/}" SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SECRET_KEY" \
+            bun scripts/backend/pepites-photo-job.ts > photo-job-result.json
+          status=$?
+          set -e
+          cat photo-job-result.json
+          {
+            echo "## Player photos"
+            jq -r '"- Published: \(.published)\n- Refused by the rights check: \(.refused | length)\n- Withdrawn files removed: \(.deleted)\n- Failed: \(.failed | length)"' photo-job-result.json \
+              || echo "- The job did not report a result (exit $status)."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      # Runs whatever happened above, as soon as the pause recorded the job's
+      # previous state: a failed or cancelled publish never leaves the tick off.
+      - name: Restore the Pépites tick
+        if: always() && steps.pause.outputs.previous_active != ''
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PREVIOUS_ACTIVE: ${{ steps.pause.outputs.previous_active }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          bun scripts/backend/pepites-tick-pause.ts resume "$PREVIOUS_ACTIVE"
