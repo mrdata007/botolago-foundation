@@ -5,6 +5,7 @@ shading, on a lit white plate, with a soft shadow under the mark.
 
 Source:  src/assets/brand/botolago-mark-color.svg (geometry is used unchanged)
 Output:  store-assets/app-icon/ (see the README there for what each file is for)
+         public/apple-touch-icon.png (the website's home-screen icon, 180x180)
 
     pip install pillow cairosvg numpy
     python3 scripts/brand/make-app-icons.py
@@ -157,6 +158,11 @@ def main():
     # and the light swooshes on top otherwise make it look low and right.
     ios = place_with_shadow(white_plate(1024), render(mark, 768), 496, 470).convert("RGB")
     save_png(ios, OUT / "ios/AppIcon-1024.png")
+
+    # The website's home-screen icon (what an iPhone shows after "Add to Home
+    # Screen"); it is also the Organization logo in src/lib/structured-data.ts,
+    # which states 180x180, so keep the size.
+    save_png(ios.resize((180, 180), Image.LANCZOS), ROOT / "public/apple-touch-icon.png")
 
     # Google Play listing: the same artwork as a 32-bit PNG, every pixel opaque.
     save_png(ios.resize((512, 512), Image.LANCZOS).convert("RGBA"), OUT / "android/play-store-icon-512.png")
