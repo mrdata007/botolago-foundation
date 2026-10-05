@@ -206,9 +206,13 @@ export interface TopPlayerOfWeek {
   rank: 1 | 2 | 3 | 4 | 5;
   gameweek: number;
   weeklyPoints: number;
-  goals: number;
-  assists: number;
-  cleanSheets: number;
+  /**
+   * `null` = the source does not report this statistic for the gameweek, so
+   * it is unknown. A real 0 stays 0. Never substitute 0 for unknown.
+   */
+  goals: number | null;
+  assists: number | null;
+  cleanSheets: number | null;
   minutes: number;
   price: number;
   ownershipPercent: number;

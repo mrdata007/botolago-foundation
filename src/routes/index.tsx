@@ -31,6 +31,7 @@ import { Trans } from "@/components/common/Trans";
 import { Section } from "@/components/common/Section";
 import { FantasyCreateCard, FantasySummaryCard } from "@/components/common/FantasySummaryCard";
 import { FantasyUnavailableState } from "@/components/fantasy/FantasyUnavailableState";
+import { fantasyNextAction } from "@/services/fantasy-next-action";
 import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -712,7 +713,15 @@ function HomeContent() {
                 }}
               />
             ) : summaryQ.data && gwQ.data ? (
-              <FantasySummaryCard summary={summaryQ.data} />
+              <FantasySummaryCard
+                summary={summaryQ.data}
+                action={fantasyNextAction({
+                  availability: availability.view,
+                  hasTeam: true,
+                  gameweek: gwQ.data,
+                  now: Date.now(),
+                })}
+              />
             ) : summaryQ.isSuccess && summaryQ.data === null ? (
               <FantasyCreateCard canCreate={canCreate} />
             ) : (

@@ -46,7 +46,7 @@ describe("Home (A-Home)", () => {
   });
 
   it("shows the Fantasy card and the create-a-team card, never an invented rank movement", () => {
-    expect(home).toContain("<FantasySummaryCard summary={summaryQ.data} />");
+    expect(home).toContain("summary={summaryQ.data}");
     expect(home).toContain("<FantasyCreateCard canCreate={canCreate} />");
     expect(home).not.toContain("previousRank");
   });

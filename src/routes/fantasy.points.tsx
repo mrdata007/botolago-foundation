@@ -1,6 +1,6 @@
 import { AnimatedNumber, PopOnChange } from "@/components/common/AnimatedNumber";
 import pointsPendingArt from "@/assets/illustrations/points-pending.webp";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -479,6 +479,17 @@ function PointsBody() {
               className="border-b-0"
             />
           </UiCard>
+          <Link
+            to="/fantasy/rules"
+            hash="scoring-policy"
+            className={cn(
+              "mt-2 inline-block underline underline-offset-2",
+              ui.text.meta,
+              ui.tone.muted,
+            )}
+          >
+            {t("fantasy.points.how_scored")}
+          </Link>
         </section>
       ) : null}
 

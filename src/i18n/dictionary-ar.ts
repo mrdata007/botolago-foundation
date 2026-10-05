@@ -462,6 +462,14 @@ export const ar = {
   "fantasy.rankings.jump_to_me": "انتقل إلى ترتيبي",
   "fantasy.rankings.no_team": "لا يوجد فريق بعد",
   "fantasy.rankings.no_team_desc": "أنشئ فريقك للدخول إلى الترتيب.",
+  "fantasy.next.create": "إنشاء فريقي",
+  "fantasy.next.explore": "استكشف اللاعبين",
+  "fantasy.next.prepare": "جهّز فريقي",
+  "fantasy.next.view_team": "عرض فريقي",
+  "fantasy.next.follow_points": "تابع نقاطي",
+  "fantasy.next.view_result": "عرض حصيلتي",
+  "fantasy.next.results": "عرض نتائجي",
+  "fantasy.next.retry": "أعد المحاولة",
   "fantasy.rankings.create_team": "إنشاء فريقي",
   "fantasy.rankings.no_rank_yet": "لا يوجد ترتيب بعد",
   "fantasy.rankings.no_rank_yet_desc": "فريقك مسجَّل. سيظهر ترتيبك بمجرد احتساب أول النقاط.",
@@ -547,6 +555,7 @@ export const ar = {
   "fantasy.points.gameweek": "الجولة",
   "fantasy.points.bench": "نقاط الاحتياط",
   "fantasy.points.total": "المجموع",
+  "fantasy.points.how_scored": "كيف تُحتسب النقاط",
   "fantasy.points.status.provisional": "مبدئية",
   "fantasy.points.status.live": "مباشرة",
   "fantasy.points.status.final": "نهائية",
@@ -678,6 +687,9 @@ export const ar = {
   "fantasy.rules.scoring": "نظام النقاط",
   "fantasy.rules.scoring_desc":
     "هدف مهاجم: 4 نقاط، وسط: 5 نقاط، مدافع أو حارس: 6 نقاط. شباك نظيفة: 4 نقاط (مدافع/حارس).",
+  "fantasy.rules.policy_title": "كيف يتم اعتماد النقاط",
+  "fantasy.rules.provisional_desc":
+    "خلال الجولة، تكون النقاط المعروضة مؤقتة وقد تتغير. تصبح نهائية بعد اعتماد الجولة. وإذا صُحّح خطأ في البيانات لاحقًا، تُحدَّث النقاط والترتيب.",
   "fantasy.rules.tiebreak": "الترجيح",
   "fantasy.rules.tiebreak_desc":
     "عند التعادل في النقاط، يتقدم من خسر أقل عدد من النقاط بسبب الانتقالات، ثم من أجرى أقل عدد من الانتقالات، ثم صاحب أعلى نقاط في آخر جولة، ثم صاحب الفريق الذي أُنشئ أولاً.",

@@ -482,6 +482,14 @@ export const fr = {
   "fantasy.rankings.jump_to_me": "Aller à ma position",
   "fantasy.rankings.no_team": "Pas encore d'équipe",
   "fantasy.rankings.no_team_desc": "Créez votre équipe pour entrer au classement.",
+  "fantasy.next.create": "Créer mon équipe",
+  "fantasy.next.explore": "Explorer les joueurs",
+  "fantasy.next.prepare": "Préparer mon équipe",
+  "fantasy.next.view_team": "Voir mon équipe",
+  "fantasy.next.follow_points": "Suivre mes points",
+  "fantasy.next.view_result": "Voir mon bilan",
+  "fantasy.next.results": "Voir mes résultats",
+  "fantasy.next.retry": "Réessayer",
   "fantasy.rankings.create_team": "Créer mon équipe",
   "fantasy.rankings.no_rank_yet": "Pas encore de classement",
   "fantasy.rankings.no_rank_yet_desc":
@@ -568,6 +576,7 @@ export const fr = {
   "fantasy.points.gameweek": "Journée",
   "fantasy.points.bench": "Points du banc",
   "fantasy.points.total": "Total",
+  "fantasy.points.how_scored": "Comment les points sont calculés",
   "fantasy.points.status.provisional": "Provisoire",
   "fantasy.points.status.live": "En direct",
   "fantasy.points.status.final": "Définitif",
@@ -706,6 +715,9 @@ export const fr = {
   "fantasy.rules.scoring": "Barème de points",
   "fantasy.rules.scoring_desc":
     "But d'un attaquant : 4 pts, milieu : 5 pts, défenseur ou gardien : 6 pts. Cage inviolée : 4 pts (D/GK).",
+  "fantasy.rules.policy_title": "Comment les points sont validés",
+  "fantasy.rules.provisional_desc":
+    "Pendant une journée, les points affichés sont provisoires et peuvent encore changer. Ils deviennent définitifs une fois la journée validée. Si une erreur de données est corrigée ensuite, les points et le classement sont mis à jour.",
   "fantasy.rules.tiebreak": "Départages",
   "fantasy.rules.tiebreak_desc":
     "En cas d'égalité de points, la meilleure place revient au manager qui a perdu le moins de points en transferts, puis qui a fait le moins de transferts, puis qui a le meilleur score à la dernière journée, puis dont l'équipe a été créée le plus tôt.",
