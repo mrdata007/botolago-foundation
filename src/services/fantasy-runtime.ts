@@ -23,6 +23,9 @@ import type {
   FantasyPlayerGameweekHistoryEntryDto,
   FantasyPlayerSeasonStatDto,
   FantasyPointsDto,
+  FantasyMyRecapPublicationDto,
+  FantasyPublicRecapDto,
+  FantasyRecapPublicationDto,
   FantasyTeamDto,
 } from "@/backend/fantasy/contracts";
 import type {
@@ -301,6 +304,11 @@ async function overallBoard(
   return { rows, myRank };
 }
 
+async function gameweekIdOf(seasonId: string, sequence: number): Promise<string | null> {
+  const gameweeks = await cloud.getGameweeks(seasonId, null, context());
+  return gameweeks.items.find((item) => item.sequence === sequence)?.id ?? null;
+}
+
 async function cloudTeam() {
   const current = await hub();
   if (!current.team) throw new Error("fantasy_team_not_found");
@@ -519,6 +527,31 @@ export const fantasyService = {
       gameweekSummary(gameweek.id),
     ]);
     return pointsDto(sequence, points, summary);
+  },
+  /**
+   * Fantasy R4 — the owner's public link for one gameweek's recap, and
+   * whether publishing is switched on. Mock mode has no server: off.
+   */
+  async getMyRecapPublication(sequence: number): Promise<FantasyMyRecapPublicationDto> {
+    if (mode() === "mock") return { publishEnabled: false, publication: null };
+    const current = await cloudTeam();
+    const gameweekId = await gameweekIdOf(current.hub.season.id, sequence);
+    if (!gameweekId) return { publishEnabled: false, publication: null };
+    return cloud.getMyGameweekRecapPublication(current.team.id, gameweekId, context());
+  },
+  async publishRecap(sequence: number, alias: string): Promise<FantasyRecapPublicationDto> {
+    const current = await cloudTeam();
+    const gameweekId = await gameweekIdOf(current.hub.season.id, sequence);
+    if (!gameweekId) throw new Error("fantasy_gameweek_not_found");
+    return cloud.publishGameweekRecap(current.team.id, gameweekId, alias.trim(), context());
+  },
+  async revokeRecap(publicId: string): Promise<void> {
+    return cloud.revokeGameweekRecap(publicId, context());
+  },
+  /** Anyone, signed in or not: the public projection, or null. */
+  async getPublicRecap(publicId: string): Promise<FantasyPublicRecapDto | null> {
+    if (mode() === "mock") return null;
+    return cloud.getPublicGameweekRecap(publicId, context());
   },
   /**
    * The season-to-date list of finished gameweeks.

@@ -472,6 +472,48 @@ export const fantasyTransferPreviewSchema = z.object({
 });
 export type FantasyTransferPreviewDto = z.infer<typeof fantasyTransferPreviewSchema>;
 
+/**
+ * Fantasy R4 — public gameweek recaps (20261005130000_fantasy_public_recaps).
+ * `publicId` is the link's only key: 22 base64url characters.
+ */
+export const publicRecapIdSchema = z.string().regex(/^[A-Za-z0-9_-]{22}$/);
+
+export const fantasyRecapPublicationSchema = z.object({
+  publicId: publicRecapIdSchema,
+  alias: z.string().min(2).max(40),
+  publishedAt: z.string(),
+});
+export type FantasyRecapPublicationDto = z.infer<typeof fantasyRecapPublicationSchema>;
+
+export const fantasyMyRecapPublicationSchema = z.object({
+  publishEnabled: z.boolean(),
+  publication: fantasyRecapPublicationSchema.nullable(),
+});
+export type FantasyMyRecapPublicationDto = z.infer<typeof fantasyMyRecapPublicationSchema>;
+
+/** The public projection: nothing about the account but the chosen alias. */
+export const fantasyPublicRecapSchema = z.object({
+  seasonName: z.string().nullable(),
+  gameweek: z.number().int().positive(),
+  alias: z.string(),
+  total: z.number().int(),
+  corrected: z.boolean(),
+  calculationVersion: z.coerce.number().int().positive(),
+  updatedAt: z.string(),
+  reconciled: z.boolean(),
+  transferHit: z.number().int().nonnegative(),
+  chipType: z.enum(FANTASY_CHIPS).nullable(),
+  captain: z
+    .object({
+      name: z.string().nullable(),
+      points: z.number().int(),
+      multiplier: z.coerce.number().positive(),
+      counted: z.number().int(),
+    })
+    .nullable(),
+});
+export type FantasyPublicRecapDto = z.infer<typeof fantasyPublicRecapSchema>;
+
 export const fantasyRulesSchema = z.object({
   adaptiveScoring: z
     .object({
@@ -683,6 +725,24 @@ export interface FantasyRepository {
     fantasyPlayerId: string,
     context: RepositoryContext,
   ): Promise<readonly FantasyPlayerGameweekHistoryEntryDto[]>;
+  /** Fantasy R4 — publish (or re-alias) the team's finalized gameweek recap. */
+  publishGameweekRecap(
+    teamId: string,
+    gameweekId: string,
+    alias: string,
+    context: RepositoryContext,
+  ): Promise<FantasyRecapPublicationDto>;
+  revokeGameweekRecap(publicId: string, context: RepositoryContext): Promise<void>;
+  getMyGameweekRecapPublication(
+    teamId: string,
+    gameweekId: string,
+    context: RepositoryContext,
+  ): Promise<FantasyMyRecapPublicationDto>;
+  /** Anyone: the public projection, or null for unknown, revoked or switched off. */
+  getPublicGameweekRecap(
+    publicId: string,
+    context: RepositoryContext,
+  ): Promise<FantasyPublicRecapDto | null>;
 }
 
 export interface PositionRule {

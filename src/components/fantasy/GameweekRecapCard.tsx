@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { ShareImageSheet, type ShareSheetEvent } from "@/components/common/ShareImageSheet";
 import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
@@ -9,7 +9,9 @@ import { cn } from "@/lib/utils";
 import { fantasyNextAction, nextActionLabel } from "@/services/fantasy-next-action";
 import type { GameweekRecap } from "@/services/gameweek-recap";
 import type { Gameweek } from "@/types/domain";
+import { publicRecapPath } from "@/lib/public-recap";
 import { renderRecapImage } from "./recap-image";
+import { RecapPublication } from "./RecapPublication";
 
 /** Isolates a run (a name, a figure) so an Arabic line keeps its order. */
 const iso = (value: string) => `⁨${value}⁩`;
@@ -43,12 +45,15 @@ export function GameweekRecapCard({
   nameOf,
   currentGameweek,
   onShowDetail,
+  allowPublish = true,
 }: {
   recap: GameweekRecap;
   nameOf: (playerId: string) => string;
   /** The season's current gameweek, for the next action. */
   currentGameweek: Gameweek | null;
   onShowDetail: () => void;
+  /** Offer the public link (R4). Off in tests that render without a server. */
+  allowPublish?: boolean;
 }) {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
@@ -107,9 +112,17 @@ export function GameweekRecapCard({
     now: Date.now(),
   });
 
-  const message = t("fantasy.recap.share_message")
+  // Once the manager has made the recap public, sharing sends that page;
+  // until then, the link is BotolaGO's Fantasy page and the message says so.
+  const [publicId, setPublicId] = useState<string | null>(null);
+  const message = (
+    publicId ? t("fantasy.recap.public.share_message") : t("fantasy.recap.share_message")
+  )
     .replace("{n}", iso(nf.format(recap.gameweek)))
     .replace("{points}", iso(withUnit(recap.total)));
+  const sharePath = publicId
+    ? `${publicRecapPath(publicId)}${lang === "ar" ? "?lang=ar" : ""}`
+    : "/fantasy";
 
   return (
     <UiCard as="section" className="mx-[var(--ui-gutter)] mt-3" testId="gameweek-recap">
@@ -131,7 +144,7 @@ export function GameweekRecapCard({
           imageAlt={t("fantasy.recap.image_alt").replace("{n}", nf.format(recap.gameweek))}
           renderKey={`${recap.gameweek}:${recap.calculationVersion}:${lang}`}
           message={message}
-          path="/fantasy"
+          path={sharePath}
           onEvent={(event) => track(SHARE_EVENTS[event])}
           render={() =>
             renderRecapImage({
@@ -172,6 +185,14 @@ export function GameweekRecapCard({
         <p className={cn("mt-2", ui.text.micro, ui.tone.muted)}>
           {t("fantasy.recap.finalized_at").replace("{date}", finalizedAt)}
         </p>
+      ) : null}
+
+      {allowPublish ? (
+        <RecapPublication
+          gameweek={recap.gameweek}
+          defaultAlias={recap.teamName}
+          onPublication={setPublicId}
+        />
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">

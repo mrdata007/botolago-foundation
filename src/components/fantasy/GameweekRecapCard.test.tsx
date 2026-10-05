@@ -56,6 +56,7 @@ const card = (recap: GameweekRecap) =>
       nameOf={(id) => names[id] ?? id}
       currentGameweek={null}
       onShowDetail={() => {}}
+      allowPublish={false}
     />,
   );
 
