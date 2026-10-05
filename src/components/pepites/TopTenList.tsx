@@ -194,10 +194,16 @@ export function LeaderboardRow({
         <PepitesPlayerPhoto player={player} size="md" />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex min-w-0 items-center gap-2">
+            {/* Wraps (two lines at most) rather than cutting the name beside
+                the movement mark. */}
             <PepitesName
               as="p"
               name={player.name}
-              className={cn("min-w-0 truncate", ui.text.bodyStrong, ui.tone.default)}
+              className={cn(
+                "line-clamp-2 min-w-0 text-balance break-words",
+                ui.text.bodyStrong,
+                ui.tone.default,
+              )}
             />
             <MovementMark movement={item.movement ?? null} />
           </div>
