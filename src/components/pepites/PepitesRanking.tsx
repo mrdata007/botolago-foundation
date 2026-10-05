@@ -55,7 +55,13 @@ import {
   usePepitesViewer,
   useVersionPointer,
 } from "./use-pepites";
-import { PepitesPlayerPhoto, PepitesShirt, RatingChip, Seg10Bar } from "./PepitesVisuals";
+import {
+  PepitesName,
+  PepitesPlayerPhoto,
+  PepitesShirt,
+  RatingChip,
+  Seg10Bar,
+} from "./PepitesVisuals";
 
 export const RANKING_PAGE_SIZE = 20;
 /** The age chip: 20 and under (Figma 01, "≤ 20 ans"). */
@@ -422,9 +428,10 @@ function RankingPodium({ rows }: { rows: readonly RankingRow[] }) {
             </span>
             <span className="flex flex-1 flex-col items-center gap-1 px-4 pb-4 pt-3 text-center">
               <PepitesShirt player={row} number={row.rank} className="h-24 w-26" />
-              <span className={cn("w-full truncate", ui.text.bodyStrong, ui.tone.default)}>
-                <bdi>{row.name}</bdi>
-              </span>
+              <PepitesName
+                name={row.name}
+                className={cn("w-full truncate text-center", ui.text.bodyStrong, ui.tone.default)}
+              />
               <span className={cn("w-full truncate", ui.text.meta, ui.tone.muted)}>
                 {[
                   row.team ? tr(row.team.shortName) : null,
@@ -513,10 +520,18 @@ const ROW = cn(
 
 /**
  * The phone table (Figma 02's columns: # · player · MIN · B/PD · NOTE ·
- * SCORE), `table-fixed` so the name truncates instead of pushing the score
- * off a 390px screen. The whole row opens the player; the link around the
- * photo and name is the row's keyboard and screen-reader target, and carries
- * `pepites-ranking-row` (the position is read inside it).
+ * SCORE), `table-fixed` so a long name cannot push the score off a 390px
+ * screen. The four figure columns are the 44px their sort buttons need and
+ * the score column only what "SCORE" needs, so the name keeps the rest; on
+ * a table under 384px (phones up to 414px) the photo gives its width to the
+ * name too, and shows from a 430px phone. A name that still does not fit
+ * wraps, balanced, onto a second line (the row grows past its 48px floor),
+ * and only a fourth line would be cut. The name takes its own direction
+ * (`PepitesName`), so a Latin name in an Arabic table keeps its first name
+ * and loses its end, never its start. The whole row opens the player; the
+ * link around the photo and name is the row's keyboard and screen-reader
+ * target, and carries `pepites-ranking-row` (the position is read inside
+ * it).
  */
 function RankingTable({
   rows,
@@ -530,7 +545,11 @@ function RankingTable({
   const { t, lang } = useI18n();
   const navigate = useNavigate();
   return (
-    <UiCard padding="none" testId="pepites-ranking" className="overflow-hidden md:hidden">
+    <UiCard
+      padding="none"
+      testId="pepites-ranking"
+      className="@container overflow-hidden md:hidden"
+    >
       <UiTable caption={t("pepites.ranking.title")} tableClassName="table-fixed">
         <UiTHead>
           <UiTR>
@@ -547,7 +566,7 @@ function RankingTable({
             <SortHeader sort="rating" active={sort} onSort={onSort} className="w-11">
               {t("pepites.table.rating")}
             </SortHeader>
-            <SortHeader sort="score" active={sort} onSort={onSort} className="w-16 pe-2">
+            <SortHeader sort="score" active={sort} onSort={onSort} className="w-14 pe-2">
               {t("pepites.table.score")}
             </SortHeader>
           </UiTR>
@@ -572,10 +591,17 @@ function RankingTable({
                   data-testid="pepites-ranking-row"
                   className={cn("flex min-w-0 items-center gap-1.5", ui.radius.control, ui.focus)}
                 >
-                  <PepitesPlayerPhoto player={row} size="xs" />
-                  <span className={cn("min-w-0 truncate", ui.text.meta, HEAVY, ui.tone.default)}>
-                    <bdi>{row.name}</bdi>
-                  </span>
+                  {/* Under a 384px table (phones to 414px) the photo gives its width to the name. */}
+                  <PepitesPlayerPhoto player={row} size="xs" className="@max-[24rem]:hidden" />
+                  <PepitesName
+                    name={row.name}
+                    className={cn(
+                      "line-clamp-3 min-w-0 text-balance break-words",
+                      ui.text.meta,
+                      HEAVY,
+                      ui.tone.default,
+                    )}
+                  />
                   {row.positionGroup ? (
                     <span className="sr-only">{positionLabel(row.positionGroup, t)}</span>
                   ) : null}
@@ -689,9 +715,10 @@ function DesktopRankingTable({
                 >
                   <PepitesPlayerPhoto player={row} size="xs" />
                   <span className="min-w-0 max-w-56">
-                    <span className={cn("block truncate", ui.text.meta, HEAVY, ui.tone.default)}>
-                      <bdi>{row.name}</bdi>
-                    </span>
+                    <PepitesName
+                      name={row.name}
+                      className={cn("block truncate", ui.text.meta, HEAVY, ui.tone.default)}
+                    />
                     {row.team ? (
                       <span className={cn("block truncate", ui.text.micro, ui.tone.muted)}>
                         {tr(row.team.name)}

@@ -49,6 +49,7 @@ import {
   TOP_SIZE,
   type DraftEntry,
 } from "./admin-format";
+import { PepitesName } from "../PepitesVisuals";
 
 const KEYS = {
   overview: ["pepites-admin", "overview"] as const,
@@ -544,9 +545,10 @@ function EditionEditor({
                             {player.rank ?? "—"}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <span className={cn("block truncate", ui.text.bodyStrong)}>
-                              {player.name}
-                            </span>
+                            <PepitesName
+                              name={player.name}
+                              className={cn("block truncate", ui.text.bodyStrong)}
+                            />
                             <span
                               className={cn(
                                 "flex flex-wrap items-center gap-x-2 gap-y-1",
@@ -615,9 +617,11 @@ function EditionEditor({
                   {/* The name stays the entry's first paragraph: the browser
                       suite reads it as such to check the order. */}
                   <div className="min-w-0 flex-1">
-                    <p className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}>
-                      {entry.name}
-                    </p>
+                    <PepitesName
+                      as="p"
+                      name={entry.name}
+                      className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}
+                    />
                     <p className={cn(ui.text.micro, ui.tone.muted)}>
                       {[
                         entry.team,

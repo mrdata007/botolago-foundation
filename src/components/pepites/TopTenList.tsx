@@ -16,7 +16,13 @@ import {
   teamAsClub,
   type TopTenItem,
 } from "./pepites-format";
-import { MovementMark, PepitesPlayerPhoto, PepitesShirt, Seg10Bar } from "./PepitesVisuals";
+import {
+  MovementMark,
+  PepitesName,
+  PepitesPlayerPhoto,
+  PepitesShirt,
+  Seg10Bar,
+} from "./PepitesVisuals";
 
 /** What the ranking knows about a player that the edition does not carry. */
 export type PlayerStats = Pick<RankingRow, "minutes" | "goals" | "assists" | "ratingAvg" | "ga90">;
@@ -188,9 +194,11 @@ export function LeaderboardRow({
         <PepitesPlayerPhoto player={player} size="md" />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex min-w-0 items-center gap-2">
-            <p className={cn("min-w-0 truncate", ui.text.bodyStrong, ui.tone.default)}>
-              <bdi>{player.name}</bdi>
-            </p>
+            <PepitesName
+              as="p"
+              name={player.name}
+              className={cn("min-w-0 truncate", ui.text.bodyStrong, ui.tone.default)}
+            />
             <MovementMark movement={item.movement ?? null} />
           </div>
           <p className={cn(ui.text.meta, ui.tone.muted, "[overflow-wrap:anywhere]")}>

@@ -119,6 +119,41 @@ export function RatingChip({
   );
 }
 
+/** A name written right to left: its first letter is Arabic or Hebrew. */
+function nameDirection(name: string): "ltr" | "rtl" {
+  const first = name.match(/\p{L}/u)?.[0];
+  return first && /[\p{Script=Arabic}\p{Script=Hebrew}]/u.test(first) ? "rtl" : "ltr";
+}
+
+/**
+ * A player's name in a box that may cut it (`truncate`, `line-clamp-*`).
+ * The box takes the NAME's direction, not the page's, so the ellipsis lands
+ * at the end of the name: in an Arabic row an inherited right-to-left box
+ * cut the start of "Baba Bello Ilou" and lost the first name ("… Bello
+ * Ilou"). The `dir` attribute also isolates the name, as a `<bdi>` would.
+ * The box still lines up with the row: a Latin name in an Arabic row sits
+ * at the inline end of its own (left-to-right) box, which is the right, the
+ * row's start. A caller's own alignment (`text-center`) wins.
+ */
+export function PepitesName({
+  name,
+  as: Tag = "span",
+  className,
+}: {
+  name: string;
+  as?: "span" | "p";
+  className?: string;
+}) {
+  const { lang } = useI18n();
+  const own = nameDirection(name);
+  const row = lang === "ar" ? "rtl" : "ltr";
+  return (
+    <Tag dir={own} className={cn(own === row ? "text-start" : "text-end", className)}>
+      {name}
+    </Tag>
+  );
+}
+
 /**
  * A Pépites player's photo as the kit's `PlayerPhoto` disc: the approved
  * photo when there is one, otherwise the silhouette in the club's shirt

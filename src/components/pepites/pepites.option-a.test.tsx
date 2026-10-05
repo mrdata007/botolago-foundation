@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/i18n/provider";
 
-import { MovementMark, RatingChip, Seg10Bar } from "./PepitesVisuals";
+import { MovementMark, PepitesName, RatingChip, Seg10Bar } from "./PepitesVisuals";
 
 /**
  * Pépites on the main design (BG-0152).
@@ -166,6 +166,15 @@ describe("Pépites — the screens are on the kit", () => {
       expect(source).not.toMatch(/["'`](?:DATA|VS|U23)["'`]/);
     });
 
+    it(`${file}: a name its box may cut keeps its own direction`, () => {
+      // A `truncate`d or clamped box around a `<bdi>` name inherits the
+      // page's direction, so in Arabic its ellipsis cut the START of a Latin
+      // name ("… Bello Ilou"). Such a name is a `PepitesName` (its own `dir`).
+      expect(source).not.toMatch(
+        /(?:truncate|line-clamp-\d)[^>]*>\s*<bdi>\s*\{[^}]*\b(?:name|playerName)\}/,
+      );
+    });
+
     it(`${file}: no control set below the 44px tap floor`, () => {
       // A minimum height exists to hold a floor; one under 44px holds none.
       expect(source).not.toMatch(new RegExp(String.raw`\bmin-h-${UNDER_TAP}\b`));
@@ -257,6 +266,21 @@ describe("Pépites — the shared glyphs on the kit", () => {
     const none = inFrench(<RatingChip rating={null} />);
     expect(none).not.toContain("data-band");
     expect(none).toContain("–");
+  });
+
+  it("prints a name in its own direction, the box aligned with the row", () => {
+    const latin = inFrench(<PepitesName name="Baba Bello Ilou" className="truncate" />);
+    expect(latin).toContain('dir="ltr"');
+    expect(latin).toContain("text-start");
+    expect(latin).toContain(">Baba Bello Ilou<");
+    // An Arabic name in a French row: its own direction, at the row's start.
+    const arabic = inFrench(<PepitesName name="يوسف" />);
+    expect(arabic).toContain('dir="rtl"');
+    expect(arabic).toContain("text-end");
+    // A caller's alignment wins.
+    expect(inFrench(<PepitesName name="M. Adjar" className="text-center" />)).not.toMatch(
+      /text-(?:start|end)/,
+    );
   });
 
   it("lights round(value / 10) of ten segments in the brand foreground, over the sunken track", () => {

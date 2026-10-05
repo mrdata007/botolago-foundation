@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 import { formatNumber, nextSeasonLabel, revealTime, scoreText } from "./pepites-format";
 import { PepitesPageTitle, PepitesShell } from "./PepitesShell";
+import { PepitesName } from "./PepitesVisuals";
 import { secondsUntil } from "./reveal";
 
 /**
@@ -186,9 +187,10 @@ export function PepitesBeforeFirstEdition({
               <span className={cn("w-6 shrink-0 text-center", ui.score.row, ui.tone.ink)}>
                 <bdi>{formatNumber(entry.rank, lang)}</bdi>
               </span>
-              <span className={cn("min-w-0 flex-1 truncate", ui.text.bodyStrong, ui.tone.default)}>
-                <bdi>{entry.player.name}</bdi>
-              </span>
+              <PepitesName
+                name={entry.player.name}
+                className={cn("min-w-0 flex-1 truncate", ui.text.bodyStrong, ui.tone.default)}
+              />
               {/* `ui.stat`: the score may be the "unranked" word, which the
                   digits-only score ramp must not carry. */}
               <span className={cn("shrink-0", ui.stat.md, ui.tone.ink)}>

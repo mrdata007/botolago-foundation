@@ -38,6 +38,7 @@ import {
 import { cn } from "@/lib/utils";
 import { pepitesService } from "@/services/pepites";
 
+import { PepitesName } from "../PepitesVisuals";
 import { adminDateTime, describeAdminError, problemLabel } from "./admin-format";
 
 export type DataTab = "desk" | "players" | "photos";
@@ -316,9 +317,10 @@ function DeskList({
                         ui.rule.block,
                       )}
                     >
-                      <span className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}>
-                        {issue.playerName ?? issue.entityId}
-                      </span>
+                      <PepitesName
+                        name={issue.playerName ?? issue.entityId}
+                        className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}
+                      />
                       <span className={cn(ui.text.meta, ui.tone.default)}>
                         {attributeLabel(issue.field, rtl)}
                       </span>
