@@ -165,6 +165,16 @@ export interface GameweekResult {
     chipType: "wildcard" | "free_hit" | "bench_boost" | "triple_captain" | null;
     incremental: boolean;
     finalized: boolean;
+    /** Starters' points as the server counted them (substitutions applied, no captain bonus). */
+    startingPoints: number;
+    /** The final score once finalized, else null; `totalPoints` falls back to the provisional one. */
+    finalScore: number | null;
+    /** The gameweek's lifecycle status; "corrected" after an authoritative correction. */
+    gameweekStatus: string;
+    /** The scoring calculation that produced these figures. */
+    calculationVersion: number;
+    /** When the server finalized this result (ISO), or null while it is not final. */
+    finalizedAt: string | null;
   };
   gameweek: number;
   totalPoints: number; // includes captain multiplier

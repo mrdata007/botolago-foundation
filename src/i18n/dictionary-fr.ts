@@ -715,6 +715,24 @@ export const fr = {
   "fantasy.rules.scoring": "Barème de points",
   "fantasy.rules.scoring_desc":
     "But d'un attaquant : 4 pts, milieu : 5 pts, défenseur ou gardien : 6 pts. Cage inviolée : 4 pts (D/GK).",
+  "fantasy.recap.title": "Ma journée BotolaGO",
+  "fantasy.recap.gameweek": "Journée {n}",
+  "fantasy.recap.final": "Résultat final",
+  "fantasy.recap.corrected": "Résultat corrigé",
+  "fantasy.recap.corrected_note":
+    "Ce résultat a été corrigé après sa première validation. Le total affiché est le total corrigé.",
+  "fantasy.recap.finalized_at": "Validé le {date}",
+  "fantasy.recap.captain": "Capitaine {name} : {formula}",
+  "fantasy.recap.captain_vice": "Vice-capitaine {name}, qui a repris le brassard : {formula}",
+  "fantasy.recap.hit": "Transferts supplémentaires : {n}",
+  "fantasy.recap.top": "{name} a rapporté le plus de points : {n}",
+  "fantasy.recap.unreconciled": "Le détail de ce total est disponible ci-dessous.",
+  "fantasy.recap.detail": "Voir le détail",
+  "fantasy.recap.share": "Partager ma journée",
+  "fantasy.recap.image_alt": "Image de ma journée {n} sur BotolaGO",
+  "fantasy.recap.share_message":
+    "Ma journée {n} sur Fantasy BotolaGO : {points}. Crée ton équipe sur BotolaGO :",
+  "fantasy.recap.footer": "botolago.com · Fantasy Botola Pro",
   "fantasy.rules.policy_title": "Comment les points sont validés",
   "fantasy.rules.provisional_desc":
     "Pendant une journée, les points affichés sont provisoires et peuvent encore changer. Ils deviennent définitifs une fois la journée validée. Si une erreur de données est corrigée ensuite, les points et le classement sont mis à jour.",

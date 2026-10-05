@@ -238,7 +238,7 @@ async function loadFonts(lang: Language) {
   );
 }
 
-function loadImage(url: string): Promise<HTMLImageElement | null> {
+export function loadImage(url: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const image = new Image();
     image.crossOrigin = "anonymous";
@@ -425,7 +425,7 @@ function goMark(
   }
 }
 
-function roundRect(
+export function roundRect(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -442,7 +442,7 @@ function roundRect(
   ctx.closePath();
 }
 
-async function toPng(canvas: HTMLCanvasElement): Promise<Blob> {
+export async function toPng(canvas: HTMLCanvasElement): Promise<Blob> {
   return await new Promise<Blob>((resolve, reject) => {
     try {
       canvas.toBlob(
@@ -455,7 +455,7 @@ async function toPng(canvas: HTMLCanvasElement): Promise<Blob> {
   });
 }
 
-function canvasOf(width: number, height: number, lang: Language) {
+export function canvasOf(width: number, height: number, lang: Language) {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
