@@ -1,0 +1,736 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-05T15:44:07.315Z",
+  "title": "Design System: BotolaGO",
+  "extensions": {
+    "colorMeta": {
+      "floodlight-navy": {
+        "role": "primary",
+        "displayName": "Floodlight Navy",
+        "canonical": "oklch(0.32 0.1 258)",
+        "tonalRamp": [
+          "oklch(0.15 0.1 258)",
+          "oklch(0.26 0.1 258)",
+          "oklch(0.37 0.1 258)",
+          "oklch(0.48 0.1 258)",
+          "oklch(0.59 0.1 258)",
+          "oklch(0.7 0.1 258)",
+          "oklch(0.82 0.1 258)",
+          "oklch(0.95 0.1 258)"
+        ],
+        "token": "--ui-ink / --ui-ink-fg"
+      },
+      "tunnel-navy": {
+        "role": "primary",
+        "displayName": "Tunnel Navy",
+        "canonical": "oklch(0.24 0.09 258)",
+        "tonalRamp": [
+          "oklch(0.15 0.09 258)",
+          "oklch(0.26 0.09 258)",
+          "oklch(0.37 0.09 258)",
+          "oklch(0.48 0.09 258)",
+          "oklch(0.59 0.09 258)",
+          "oklch(0.7 0.09 258)",
+          "oklch(0.82 0.09 258)",
+          "oklch(0.95 0.09 258)"
+        ],
+        "token": "--ui-ink-deep"
+      },
+      "fresh-turf": {
+        "role": "secondary",
+        "displayName": "Fresh Turf",
+        "canonical": "oklch(0.88 0.19 152)",
+        "tonalRamp": [
+          "oklch(0.15 0.19 152)",
+          "oklch(0.26 0.19 152)",
+          "oklch(0.37 0.19 152)",
+          "oklch(0.48 0.19 152)",
+          "oklch(0.59 0.19 152)",
+          "oklch(0.7 0.19 152)",
+          "oklch(0.82 0.19 152)",
+          "oklch(0.95 0.19 152)"
+        ],
+        "token": "--ui-accent-spring"
+      },
+      "matchday-sky": {
+        "role": "secondary",
+        "displayName": "Matchday Sky",
+        "canonical": "oklch(0.88 0.11 205)",
+        "tonalRamp": [
+          "oklch(0.15 0.11 205)",
+          "oklch(0.26 0.11 205)",
+          "oklch(0.37 0.11 205)",
+          "oklch(0.48 0.11 205)",
+          "oklch(0.59 0.11 205)",
+          "oklch(0.7 0.11 205)",
+          "oklch(0.82 0.11 205)",
+          "oklch(0.95 0.11 205)"
+        ],
+        "token": "--ui-accent-sky"
+      },
+      "terrace-mist": {
+        "role": "neutral",
+        "displayName": "Terrace Mist",
+        "canonical": "oklch(0.975 0.004 250)",
+        "tonalRamp": [
+          "oklch(0.15 0.004 250)",
+          "oklch(0.26 0.004 250)",
+          "oklch(0.37 0.004 250)",
+          "oklch(0.48 0.004 250)",
+          "oklch(0.59 0.004 250)",
+          "oklch(0.7 0.004 250)",
+          "oklch(0.82 0.004 250)",
+          "oklch(0.95 0.004 250)"
+        ],
+        "token": "--ui-page"
+      },
+      "home-shirt-white": {
+        "role": "neutral",
+        "displayName": "Home Shirt White",
+        "canonical": "oklch(1 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.26 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.48 0 0)",
+          "oklch(0.59 0 0)",
+          "oklch(0.7 0 0)",
+          "oklch(0.82 0 0)",
+          "oklch(0.95 0 0)"
+        ],
+        "token": "--ui-surface / --ui-scorebox"
+      },
+      "dugout-grey": {
+        "role": "neutral",
+        "displayName": "Dugout Grey",
+        "canonical": "oklch(0.93 0.006 250)",
+        "tonalRamp": [
+          "oklch(0.15 0.006 250)",
+          "oklch(0.26 0.006 250)",
+          "oklch(0.37 0.006 250)",
+          "oklch(0.48 0.006 250)",
+          "oklch(0.59 0.006 250)",
+          "oklch(0.7 0.006 250)",
+          "oklch(0.82 0.006 250)",
+          "oklch(0.95 0.006 250)"
+        ],
+        "token": "--ui-surface-sunken"
+      },
+      "chalk-line": {
+        "role": "neutral",
+        "displayName": "Chalk Line",
+        "canonical": "oklch(0.93 0.006 250)",
+        "tonalRamp": [
+          "oklch(0.15 0.006 250)",
+          "oklch(0.26 0.006 250)",
+          "oklch(0.37 0.006 250)",
+          "oklch(0.48 0.006 250)",
+          "oklch(0.59 0.006 250)",
+          "oklch(0.7 0.006 250)",
+          "oklch(0.82 0.006 250)",
+          "oklch(0.95 0.006 250)"
+        ],
+        "token": "--ui-rule"
+      },
+      "goal-line-grey": {
+        "role": "neutral",
+        "displayName": "Goal-Line Grey",
+        "canonical": "oklch(0.64 0.02 258)",
+        "tonalRamp": [
+          "oklch(0.15 0.02 258)",
+          "oklch(0.26 0.02 258)",
+          "oklch(0.37 0.02 258)",
+          "oklch(0.48 0.02 258)",
+          "oklch(0.59 0.02 258)",
+          "oklch(0.7 0.02 258)",
+          "oklch(0.82 0.02 258)",
+          "oklch(0.95 0.02 258)"
+        ],
+        "token": "--ui-rule-strong"
+      },
+      "scoreboard-black": {
+        "role": "neutral",
+        "displayName": "Scoreboard Black",
+        "canonical": "oklch(0.16 0.03 260)",
+        "tonalRamp": [
+          "oklch(0.15 0.03 260)",
+          "oklch(0.26 0.03 260)",
+          "oklch(0.37 0.03 260)",
+          "oklch(0.48 0.03 260)",
+          "oklch(0.59 0.03 260)",
+          "oklch(0.7 0.03 260)",
+          "oklch(0.82 0.03 260)",
+          "oklch(0.95 0.03 260)"
+        ],
+        "token": "--ui-on-surface"
+      },
+      "programme-grey": {
+        "role": "neutral",
+        "displayName": "Programme Grey",
+        "canonical": "oklch(0.45 0.02 258)",
+        "tonalRamp": [
+          "oklch(0.15 0.02 258)",
+          "oklch(0.26 0.02 258)",
+          "oklch(0.37 0.02 258)",
+          "oklch(0.48 0.02 258)",
+          "oklch(0.59 0.02 258)",
+          "oklch(0.7 0.02 258)",
+          "oklch(0.82 0.02 258)",
+          "oklch(0.95 0.02 258)"
+        ],
+        "token": "--ui-on-surface-muted"
+      },
+      "bench-grey": {
+        "role": "neutral",
+        "displayName": "Bench Grey",
+        "canonical": "oklch(0.555 0.02 258)",
+        "tonalRamp": [
+          "oklch(0.15 0.02 258)",
+          "oklch(0.26 0.02 258)",
+          "oklch(0.37 0.02 258)",
+          "oklch(0.48 0.02 258)",
+          "oklch(0.59 0.02 258)",
+          "oklch(0.7 0.02 258)",
+          "oklch(0.82 0.02 258)",
+          "oklch(0.95 0.02 258)"
+        ],
+        "token": "--ui-on-surface-faint"
+      },
+      "tunnel-scrim": {
+        "role": "neutral",
+        "displayName": "Tunnel Scrim",
+        "canonical": "color-mix(in oklab, oklch(0.16 0.03 260) 45%, transparent)",
+        "tonalRamp": [
+          "oklch(0.15 0.03 260)",
+          "oklch(0.26 0.03 260)",
+          "oklch(0.37 0.03 260)",
+          "oklch(0.48 0.03 260)",
+          "oklch(0.59 0.03 260)",
+          "oklch(0.7 0.03 260)",
+          "oklch(0.82 0.03 260)",
+          "oklch(0.95 0.03 260)"
+        ],
+        "token": "--ui-scrim"
+      },
+      "goal-green": {
+        "role": "status",
+        "displayName": "Goal Green",
+        "canonical": "oklch(0.52 0.14 150)",
+        "tonalRamp": [
+          "oklch(0.15 0.14 150)",
+          "oklch(0.26 0.14 150)",
+          "oklch(0.37 0.14 150)",
+          "oklch(0.48 0.14 150)",
+          "oklch(0.59 0.14 150)",
+          "oklch(0.7 0.14 150)",
+          "oklch(0.82 0.14 150)",
+          "oklch(0.95 0.14 150)"
+        ],
+        "token": "--ui-positive"
+      },
+      "relegation-magenta": {
+        "role": "status",
+        "displayName": "Relegation Magenta",
+        "canonical": "oklch(0.55 0.22 355)",
+        "tonalRamp": [
+          "oklch(0.15 0.22 355)",
+          "oklch(0.26 0.22 355)",
+          "oklch(0.37 0.22 355)",
+          "oklch(0.48 0.22 355)",
+          "oklch(0.59 0.22 355)",
+          "oklch(0.7 0.22 355)",
+          "oklch(0.82 0.22 355)",
+          "oklch(0.95 0.22 355)"
+        ],
+        "token": "--ui-negative"
+      },
+      "yellow-card-amber": {
+        "role": "status",
+        "displayName": "Yellow-Card Amber",
+        "canonical": "oklch(0.82 0.17 80)",
+        "tonalRamp": [
+          "oklch(0.15 0.17 80)",
+          "oklch(0.26 0.17 80)",
+          "oklch(0.37 0.17 80)",
+          "oklch(0.48 0.17 80)",
+          "oklch(0.59 0.17 80)",
+          "oklch(0.7 0.17 80)",
+          "oklch(0.82 0.17 80)",
+          "oklch(0.95 0.17 80)"
+        ],
+        "token": "--ui-caution"
+      },
+      "live-match-red": {
+        "role": "status",
+        "displayName": "Live-Match Red",
+        "canonical": "oklch(0.62 0.22 27)",
+        "tonalRamp": [
+          "oklch(0.15 0.22 27)",
+          "oklch(0.26 0.22 27)",
+          "oklch(0.37 0.22 27)",
+          "oklch(0.48 0.22 27)",
+          "oklch(0.59 0.22 27)",
+          "oklch(0.7 0.22 27)",
+          "oklch(0.82 0.22 27)",
+          "oklch(0.95 0.22 27)"
+        ],
+        "token": "--ui-live"
+      },
+      "mown-grass-light": {
+        "role": "status",
+        "displayName": "Mown Grass Light",
+        "canonical": "oklch(0.536 0.129 153)",
+        "tonalRamp": [
+          "oklch(0.15 0.129 153)",
+          "oklch(0.26 0.129 153)",
+          "oklch(0.37 0.129 153)",
+          "oklch(0.48 0.129 153)",
+          "oklch(0.59 0.129 153)",
+          "oklch(0.7 0.129 153)",
+          "oklch(0.82 0.129 153)",
+          "oklch(0.95 0.129 153)"
+        ],
+        "token": "--ui-lineup-turf-a"
+      },
+      "mown-grass-dark": {
+        "role": "status",
+        "displayName": "Mown Grass Dark",
+        "canonical": "oklch(0.502 0.122 152)",
+        "tonalRamp": [
+          "oklch(0.15 0.122 152)",
+          "oklch(0.26 0.122 152)",
+          "oklch(0.37 0.122 152)",
+          "oklch(0.48 0.122 152)",
+          "oklch(0.59 0.122 152)",
+          "oklch(0.7 0.122 152)",
+          "oklch(0.82 0.122 152)",
+          "oklch(0.95 0.122 152)"
+        ],
+        "token": "--ui-lineup-turf-b"
+      },
+      "logo-blue": {
+        "role": "brand-asset",
+        "displayName": "Logo Blue",
+        "canonical": "oklch(0.524 0.26 263)",
+        "tonalRamp": [
+          "oklch(0.15 0.26 263)",
+          "oklch(0.26 0.26 263)",
+          "oklch(0.37 0.26 263)",
+          "oklch(0.48 0.26 263)",
+          "oklch(0.59 0.26 263)",
+          "oklch(0.7 0.26 263)",
+          "oklch(0.82 0.26 263)",
+          "oklch(0.95 0.26 263)"
+        ],
+        "token": "logo SVG fill #0151fc (open decision vs Floodlight Navy)"
+      },
+      "pepites-night": {
+        "role": "sub-brand",
+        "displayName": "Pépites Night",
+        "canonical": "#070d24",
+        "tonalRamp": [
+          "oklch(0.15 0.05 270)",
+          "oklch(0.26 0.05 270)",
+          "oklch(0.37 0.05 270)",
+          "oklch(0.48 0.05 270)",
+          "oklch(0.59 0.05 270)",
+          "oklch(0.7 0.05 270)",
+          "oklch(0.82 0.05 270)",
+          "oklch(0.95 0.05 270)"
+        ],
+        "token": "--pepites-night"
+      },
+      "pepites-mint": {
+        "role": "sub-brand",
+        "displayName": "Pépites Mint",
+        "canonical": "#5de39b",
+        "tonalRamp": [
+          "oklch(0.15 0.16 155)",
+          "oklch(0.26 0.16 155)",
+          "oklch(0.37 0.16 155)",
+          "oklch(0.48 0.16 155)",
+          "oklch(0.59 0.16 155)",
+          "oklch(0.7 0.16 155)",
+          "oklch(0.82 0.16 155)",
+          "oklch(0.95 0.16 155)"
+        ],
+        "token": "--pepites-spring"
+      },
+      "pepites-sky": {
+        "role": "sub-brand",
+        "displayName": "Pépites Sky",
+        "canonical": "#7fd6f0",
+        "tonalRamp": [
+          "oklch(0.15 0.1 220)",
+          "oklch(0.26 0.1 220)",
+          "oklch(0.37 0.1 220)",
+          "oklch(0.48 0.1 220)",
+          "oklch(0.59 0.1 220)",
+          "oklch(0.7 0.1 220)",
+          "oklch(0.82 0.1 220)",
+          "oklch(0.95 0.1 220)"
+        ],
+        "token": "--pepites-sky"
+      },
+      "pepites-violet": {
+        "role": "sub-brand",
+        "displayName": "Pépites Violet",
+        "canonical": "#7c6cf0",
+        "tonalRamp": [
+          "oklch(0.15 0.18 285)",
+          "oklch(0.26 0.18 285)",
+          "oklch(0.37 0.18 285)",
+          "oklch(0.48 0.18 285)",
+          "oklch(0.59 0.18 285)",
+          "oklch(0.7 0.18 285)",
+          "oklch(0.82 0.18 285)",
+          "oklch(0.95 0.18 285)"
+        ],
+        "token": "--pepites-violet"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headline over a stadium band, a player's surname (Changa 800). A 112px mega step exists only for the goal takeover."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Hub page title in the white band under the top bar."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section headings."
+      },
+      "screen-title": {
+        "displayName": "Screen title",
+        "purpose": "Centred title in a detail screen header; 16px when both flanks hold controls."
+      },
+      "tab": {
+        "displayName": "Tab",
+        "purpose": "Tab labels; 800 when active."
+      },
+      "score-hero": {
+        "displayName": "Score hero",
+        "purpose": "Match header score plate, Fantasy card points. Never tabular; leading 1.1 in both languages."
+      },
+      "score-row": {
+        "displayName": "Score row",
+        "purpose": "Kickoff time or score in a list row, event minute, rank figure."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Rows, buttons, supporting copy. Arabic swaps to Noto Sans Arabic with leading 1.9."
+      },
+      "body-strong": {
+        "displayName": "Body strong",
+        "purpose": "Button labels and row titles."
+      },
+      "prose": {
+        "displayName": "Prose",
+        "purpose": "Long-form reading (rules, help, legal, articles); the only 400 weight. Arabic leading 2."
+      },
+      "secondary": {
+        "displayName": "Secondary",
+        "purpose": "Supporting copy and pills."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Meta lines and table cells."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Uppercase kickers, eyebrows, column heads, badges. Letter-spacing in French only."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "Bottom-nav labels and captions."
+      },
+      "stat-hero": {
+        "displayName": "Stat hero",
+        "purpose": "The one figure a screen is about, read as a column figure (tabular)."
+      },
+      "stat-sm": {
+        "displayName": "Stat small",
+        "purpose": "Dense table cells."
+      },
+      "pepites-mono": {
+        "displayName": "Pépites mono",
+        "purpose": "Pépites meta lines only; Latin-only face, Arabic falls back to Noto Sans Arabic."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card",
+        "value": "0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 10%, transparent), 0 4px 14px -8px color-mix(in oklab, var(--ui-ink) 14%, transparent)",
+        "purpose": "Every white card, the light button, the selected chip and segment, the Fantasy pitch."
+      },
+      {
+        "name": "raised",
+        "value": "0 -1px 0 0 color-mix(in oklab, var(--ui-ink) 8%, transparent)",
+        "purpose": "The bottom nav's top edge; hover on news row cards."
+      },
+      {
+        "name": "lifted",
+        "value": "0 14px 26px -16px color-mix(in oklab, var(--ui-ink-deep) 55%, transparent)",
+        "purpose": "The one raised step: score plate, hero match card, photo story cards, inverse crest, primary gradient button."
+      },
+      {
+        "name": "overlay",
+        "value": "0 -8px 24px -8px color-mix(in oklab, var(--ui-ink) 28%, transparent)",
+        "purpose": "Bottom sheets, modals, menus."
+      },
+      {
+        "name": "column",
+        "value": "0 18px 40px -18px rgba(20, 30, 60, 0.22), 0 6px 14px -6px rgba(20, 30, 60, 0.1)",
+        "purpose": "The raised phone column on desktop (sign-in, Fantasy). From the legacy layer; no dark value."
+      }
+    ],
+    "motion": [
+      {
+        "name": "duration-tap",
+        "value": "120ms",
+        "purpose": "Press feedback: scale 0.97 and brightness 0.96 on active controls."
+      },
+      {
+        "name": "duration-quick",
+        "value": "180ms",
+        "purpose": "Colour and background changes, sheet exit, modal zoom, compact match bar cross-fade."
+      },
+      {
+        "name": "duration-route",
+        "value": "260ms",
+        "purpose": "Page view transitions (slide from the reading side via --vt-dir, cross-fade); off under reduced motion."
+      },
+      {
+        "name": "duration-sheet",
+        "value": "320ms",
+        "purpose": "Bottom sheet entry, bottom-nav pill slide, live strip hide, photo zoom on story cards."
+      },
+      {
+        "name": "duration-hero",
+        "value": "420ms",
+        "purpose": "Hero-scale entrances."
+      },
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.2, 0.7, 0.2, 1)",
+        "purpose": "Default easing for state transitions."
+      },
+      {
+        "name": "ease-emphasized",
+        "value": "cubic-bezier(0.2, 0.9, 0.1, 1)",
+        "purpose": "The sliding bottom-nav pill."
+      },
+      {
+        "name": "ease-decelerate",
+        "value": "cubic-bezier(0, 0, 0.2, 1)",
+        "purpose": "Entrances that come to rest."
+      },
+      {
+        "name": "ease-settle",
+        "value": "cubic-bezier(0.22, 1.1, 0.36, 1)",
+        "purpose": "Bottom sheet entry; a small overshoot that settles."
+      },
+      {
+        "name": "stagger",
+        "value": "40ms per item, capped at index 7",
+        "purpose": "List rows rising in (enter-rise). Ships despite the older DESIGN_SYSTEM_V2 §2.6 ban."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "global clamp",
+        "purpose": "prefers-reduced-motion cuts every animation and transition, resets delays, stops loops and view transitions; JS effects check prefersReducedMotion()."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "max-width: 359px",
+        "purpose": "Bottom nav and matches chips tighten; top bar under 20rem (container query) swaps the wordmark for the GO mark."
+      },
+      {
+        "name": "sm",
+        "value": "640px",
+        "purpose": "Match header and date strip become 16px cards; section spacing 20px to 32px."
+      },
+      {
+        "name": "md",
+        "value": "768px",
+        "purpose": "Bottom nav gives way to top-bar links; Home two columns; desktop-width screens 896px; raised sign-in and Fantasy columns."
+      },
+      {
+        "name": "lg",
+        "value": "1024px",
+        "purpose": "1320px desktop canvas, matchday strip, search field in the top bar, three-column Home, match prediction rail."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button (action gradient)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The screen's main action: spring-to-sky gradient, Tunnel Navy label, the one lifted shadow.",
+      "html": "<button type='button' class='ds-btn-primary'>Continuer</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:3rem;padding:0 1rem;border:0;border-radius:9999px;font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);font-size:15px;font-weight:800;line-height:1.55;cursor:pointer;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1));width:100%;max-width:22rem;background-image:var(--ui-grad-action, linear-gradient(to bottom, oklch(0.88 0.19 152) 0%, oklch(0.88 0.11 205) 100%));color:var(--ui-ink-deep, oklch(0.24 0.09 258));box-shadow:var(--ui-shadow-lifted, 0 14px 26px -16px color-mix(in oklab, oklch(0.24 0.09 258) 55%, transparent))}.ds-btn-primary:active{scale:.97;filter:brightness(.96)}.ds-btn-primary:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-btn-primary:disabled{opacity:.45;box-shadow:none;cursor:not-allowed}"
+    },
+    {
+      "name": "Ink Button",
+      "kind": "button",
+      "refersTo": "button-ink",
+      "description": "Strong secondary action such as Réessayer: Floodlight Navy fill, white label.",
+      "html": "<button type='button' class='ds-btn-ink'>Réessayer</button>",
+      "css": ".ds-btn-ink{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:3rem;padding:0 1rem;border:0;border-radius:9999px;font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);font-size:15px;font-weight:800;line-height:1.55;cursor:pointer;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1));width:100%;max-width:22rem;background:var(--ui-ink, oklch(0.32 0.1 258));color:var(--ui-on-ink-plain, oklch(1 0 0))}.ds-btn-ink:active{scale:.97;filter:brightness(.96)}.ds-btn-ink:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-btn-ink:disabled{background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-on-surface-muted, oklch(0.45 0.02 258));cursor:not-allowed}"
+    },
+    {
+      "name": "Soft Button and Icon Button",
+      "kind": "button",
+      "refersTo": "button-soft",
+      "description": "The quiet everyday control: Dugout Grey capsule; the 44px round icon button in bars uses the same fill with a navy icon.",
+      "html": "<div class='ds-soft-row'><button type='button' class='ds-btn-soft'>Voir tout</button><button type='button' class='ds-icon-btn' aria-label='Rechercher'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.3-4.3'/></svg></button><button type='button' class='ds-icon-btn' aria-label='Langue'>FR</button><button type='button' class='ds-icon-btn' aria-label='Langue' lang='ar'>ع</button></div>",
+      "css": ".ds-soft-row{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}.ds-btn-soft{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:2.75rem;min-width:2.75rem;padding:0 .75rem;border:0;border-radius:9999px;font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);font-size:13px;font-weight:800;line-height:1.55;cursor:pointer;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1));background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-on-surface, oklch(0.16 0.03 260));white-space:nowrap}.ds-btn-soft:active,.ds-icon-btn:active{scale:.97;filter:brightness(.96)}.ds-btn-soft:focus-visible,.ds-icon-btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-icon-btn{display:inline-grid;place-items:center;width:2.75rem;height:2.75rem;border:0;border-radius:9999px;background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-ink-fg, oklch(0.32 0.1 258));font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);font-size:13px;font-weight:800;cursor:pointer;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1))}"
+    },
+    {
+      "name": "Filter Chips",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "44px capsules: Dugout Grey when off, Floodlight Navy with white text and the card shadow when selected.",
+      "html": "<div class='ds-chips' role='group' aria-label='Filtre'><button type='button' class='ds-chip' aria-pressed='true'>Tous</button><button type='button' class='ds-chip' aria-pressed='false'>En direct</button><button type='button' class='ds-chip' aria-pressed='false'>Terminés</button></div>",
+      "css": ".ds-chips{display:flex;gap:.5rem;flex-wrap:wrap}.ds-chip{display:inline-flex;align-items:center;justify-content:center;gap:.375rem;min-height:2.75rem;min-width:2.75rem;padding:.375rem .75rem;border:0;border-radius:9999px;background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-on-surface, oklch(0.16 0.03 260));font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);font-size:13px;font-weight:700;line-height:1.55;cursor:pointer;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1))}.ds-chip[aria-pressed='true']{background:var(--ui-ink, oklch(0.32 0.1 258));color:var(--ui-on-ink-plain, oklch(1 0 0));box-shadow:var(--ui-shadow-card, 0 1px 2px 0 color-mix(in oklab, oklch(0.32 0.1 258) 10%, transparent), 0 4px 14px -8px color-mix(in oklab, oklch(0.32 0.1 258) 14%, transparent))}.ds-chip:active{scale:.97;filter:brightness(.96)}.ds-chip:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "White 14px card on the light page with the hairline-weight card shadow; tappable cards rise 1px on hover.",
+      "html": "<a class='ds-card' href='#'><span class='ds-card__disc' aria-hidden='true'>◎</span><span class='ds-card__body'><span class='ds-card__title'>Pronostics · Journée 2</span><span class='ds-card__meta'>Devinez les scores de la journée en 1 minute</span><span class='ds-card__link'>Pronostiquer</span></span></a>",
+      "css": ".ds-card{display:flex;gap:.75rem;align-items:flex-start;max-width:22rem;padding:1rem;border-radius:14px;background:var(--ui-surface, oklch(1 0 0));color:var(--ui-on-surface, oklch(0.16 0.03 260));box-shadow:var(--ui-shadow-card, 0 1px 2px 0 color-mix(in oklab, oklch(0.32 0.1 258) 10%, transparent), 0 4px 14px -8px color-mix(in oklab, oklch(0.32 0.1 258) 14%, transparent));text-decoration:none;font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);transition:transform var(--duration-tap,120ms) var(--ease-standard,cubic-bezier(.2,.7,.2,1)),box-shadow var(--duration-quick,180ms) var(--ease-standard,cubic-bezier(.2,.7,.2,1))}@media (hover:hover){.ds-card:hover{transform:translateY(-1px)}}.ds-card:active{transform:translateY(1px) scale(.985)}.ds-card:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-card__disc{display:grid;place-items:center;flex-shrink:0;width:2.75rem;height:2.75rem;border-radius:9999px;background:var(--ui-ink, oklch(0.32 0.1 258));color:var(--ui-on-ink-plain, oklch(1 0 0));font-size:20px}.ds-card__body{display:flex;flex-direction:column;gap:.125rem;min-width:0}.ds-card__title{font-size:15px;font-weight:800;line-height:1.55}.ds-card__meta{font-size:14px;font-weight:600;line-height:1.55;color:var(--ui-on-surface-muted, oklch(0.45 0.02 258))}.ds-card__link{margin-top:.25rem;font-size:15px;font-weight:800;color:var(--ui-ink-fg, oklch(0.32 0.1 258))}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "White 44px field with 10px corners. Shown with the Goal-Line Grey edge the kit's guidance asks for; the shipped default border is the fainter hairline (an open inconsistency).",
+      "html": "<label class='ds-field'><span class='ds-field__label'>Nom de l'équipe</span><input class='ds-input' type='text' placeholder='Ex. Les Lions de l&#39;Atlas'></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:.375rem;max-width:22rem;font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif)}.ds-field__label{font-size:12px;font-weight:800;line-height:1.4;text-transform:uppercase;letter-spacing:.025em;color:var(--ui-on-surface-muted, oklch(0.45 0.02 258))}.ds-field__label:lang(ar){letter-spacing:normal}.ds-input{width:100%;min-height:2.75rem;padding:0 .75rem;border:1px solid var(--ui-rule-strong, oklch(0.64 0.02 258));border-radius:10px;background:var(--ui-surface, oklch(1 0 0));color:var(--ui-on-surface, oklch(0.16 0.03 260));font-family:inherit;font-size:15px;font-weight:600;line-height:1.55}.ds-input::placeholder{color:var(--ui-on-surface-faint, oklch(0.555 0.02 258))}.ds-input:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-input[aria-invalid='true']{border-color:var(--ui-negative, oklch(0.55 0.22 355))}"
+    },
+    {
+      "name": "Top Bar",
+      "kind": "nav",
+      "refersTo": "top-bar",
+      "description": "Sticky opaque white bar with a hairline and no shadow; wordmark at the start, round soft buttons at the end, round links from 768px with the active one navy.",
+      "html": "<header class='ds-topbar'><div class='ds-topbar__row'><a class='ds-topbar__logo' href='#' aria-label='BotolaGO' dir='ltr'>BOTOLA<span>GO</span></a><nav class='ds-topbar__nav' aria-label='Navigation principale'><a class='ds-topbar__link' href='#' aria-current='page'>Accueil</a><a class='ds-topbar__link' href='#'>Actualités</a><a class='ds-topbar__link' href='#'>Fantasy</a><a class='ds-topbar__link' href='#'>Matches</a><a class='ds-topbar__link' href='#'>Pépites</a></nav><div class='ds-topbar__actions'><button type='button' class='ds-topbar__btn' aria-label='Rechercher' aria-expanded='false'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.3-4.3'/></svg></button><a class='ds-topbar__btn' href='#' aria-label='Notifications'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9'/><path d='M10.3 21a1.94 1.94 0 0 0 3.4 0'/></svg></a><button type='button' class='ds-topbar__btn' aria-label='Langue'>FR</button><a class='ds-topbar__btn' href='#' aria-label='Profil'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='8' r='5'/><path d='M20 21a8 8 0 0 0-16 0'/></svg></a></div></div></header>",
+      "css": ".ds-topbar{position:sticky;top:0;z-index:30;background:var(--ui-surface, oklch(1 0 0));color:var(--ui-on-surface, oklch(0.16 0.03 260));border-bottom:1px solid var(--ui-rule, oklch(0.93 0.006 250));padding-top:.75rem;padding-bottom:.5rem;font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif)}.ds-topbar__row{container-type:inline-size;display:flex;align-items:center;gap:.75rem;margin-inline:auto;max-width:672px;min-height:2.75rem;padding-inline:1rem}.ds-topbar__logo{display:flex;align-items:center;height:1.25rem;color:#0151fc;font-family:var(--ui-font-display, Changa, Manrope, ui-sans-serif, system-ui, sans-serif);font-size:20px;font-weight:800;font-style:italic;letter-spacing:-.01em;text-decoration:none}.ds-topbar__nav{display:none;flex:1;min-width:0;align-items:center;justify-content:center;gap:.25rem}@container (min-width:36rem){.ds-topbar__nav{display:flex}}.ds-topbar__link{display:inline-flex;align-items:center;justify-content:center;min-height:2.75rem;min-width:2.75rem;padding-inline:1rem;border-radius:9999px;color:var(--ui-on-surface-muted, oklch(0.45 0.02 258));font-size:13px;font-weight:800;line-height:1.55;text-decoration:none;transition:color 150ms cubic-bezier(.4,0,.2,1),background-color 150ms cubic-bezier(.4,0,.2,1)}@media (hover:hover){.ds-topbar__link:not([aria-current='page']):hover{background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-on-surface, oklch(0.16 0.03 260))}}.ds-topbar__link[aria-current='page']{background:var(--ui-ink, oklch(0.32 0.1 258));color:var(--ui-on-ink-plain, oklch(1 0 0))}.ds-topbar__link:focus-visible,.ds-topbar__btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-topbar__actions{display:flex;align-items:center;gap:.5rem;margin-inline-start:auto}.ds-topbar__btn{display:inline-grid;place-items:center;flex-shrink:0;width:2.75rem;height:2.75rem;border:0;border-radius:9999px;background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-ink-fg, oklch(0.32 0.1 258));font-size:13px;font-weight:800;text-decoration:none;cursor:pointer;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1))}.ds-topbar__btn:active{scale:.97;filter:brightness(.96)}"
+    },
+    {
+      "name": "Bottom Nav",
+      "kind": "nav",
+      "refersTo": "bottom-nav-item",
+      "description": "Phone-only tab bar: five equal tabs, one action-gradient capsule (56×32) behind the active icon, heavy label plus aria-current carry the state.",
+      "html": "<nav class='ds-bottomnav' aria-label='Navigation principale'><div class='ds-bottomnav__row'><a class='ds-bottomnav__item' href='#' aria-current='page'><span class='ds-bottomnav__pill' aria-hidden='true'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8'/><path d='M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/></svg></span><span class='ds-bottomnav__label'>Accueil</span></a><a class='ds-bottomnav__item' href='#'><span class='ds-bottomnav__pill' aria-hidden='true'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2'/><path d='M18 14h-8'/><path d='M15 18h-5'/><path d='M10 6h8v4h-8V6Z'/></svg></span><span class='ds-bottomnav__label'>Actualités</span></a><a class='ds-bottomnav__item' href='#'><span class='ds-bottomnav__pill' aria-hidden='true'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M6 9H4.5a2.5 2.5 0 0 1 0-5H6'/><path d='M18 9h1.5a2.5 2.5 0 0 0 0-5H18'/><path d='M4 22h16'/><path d='M18 2H6v7a6 6 0 0 0 12 0V2Z'/></svg></span><span class='ds-bottomnav__label'>Fantasy</span></a><a class='ds-bottomnav__item' href='#'><span class='ds-bottomnav__pill' aria-hidden='true'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><rect width='18' height='18' x='3' y='4' rx='2'/><path d='M16 2v4'/><path d='M8 2v4'/><path d='M3 10h18'/></svg></span><span class='ds-bottomnav__label'>Matches</span></a><a class='ds-bottomnav__item' href='#'><span class='ds-bottomnav__pill' aria-hidden='true'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M6 3h12l4 6-10 13L2 9Z'/><path d='M11 3 8 9l4 13 4-13-3-6'/><path d='M2 9h20'/></svg></span><span class='ds-bottomnav__label'>Pépites</span></a></div></nav>",
+      "css": ".ds-bottomnav{background:var(--ui-surface, oklch(1 0 0));color:var(--ui-on-surface, oklch(0.16 0.03 260));border-top:1px solid var(--ui-rule, oklch(0.93 0.006 250));padding-top:.5rem;padding-bottom:.5rem;box-shadow:var(--ui-shadow-raised, 0 -1px 0 0 color-mix(in oklab, oklch(0.32 0.1 258) 8%, transparent));font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif)}.ds-bottomnav__row{display:flex;align-items:stretch;justify-content:space-between;max-width:42rem;margin-inline:auto;padding-inline:.5rem}.ds-bottomnav__item{display:flex;flex:1 1 0%;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;min-width:2.75rem;min-height:2.75rem;padding:.25rem .125rem;border-radius:14px;color:var(--ui-on-surface-muted, oklch(0.45 0.02 258));font-size:11px;font-weight:700;line-height:1.4;text-decoration:none;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1))}@media (hover:hover){.ds-bottomnav__item:not([aria-current='page']):hover{color:var(--ui-on-surface, oklch(0.16 0.03 260))}.ds-bottomnav__item:not([aria-current='page']):hover .ds-bottomnav__pill{background:var(--ui-surface-sunken, oklch(0.93 0.006 250))}}.ds-bottomnav__item:active{scale:.97;filter:brightness(.96)}.ds-bottomnav__item:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-bottomnav__item[aria-current='page']{color:var(--ui-on-surface, oklch(0.16 0.03 260));font-weight:800}.ds-bottomnav__pill{display:grid;place-items:center;width:3.5rem;height:2rem;border-radius:9999px;transition:background-color var(--duration-quick,180ms) var(--ease-standard,cubic-bezier(.2,.7,.2,1))}.ds-bottomnav__item[aria-current='page'] .ds-bottomnav__pill{background-image:var(--ui-grad-action, linear-gradient(to bottom, oklch(0.88 0.19 152) 0%, oklch(0.88 0.11 205) 100%));color:var(--ui-ink-deep, oklch(0.24 0.09 258))}.ds-bottomnav__label{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
+    },
+    {
+      "name": "Match Row",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Signature: a white match row with a 4px club-colour bar at each end (home at the inline start), kickoff in the Changa row step, winner at 800, loser muted. Club colours here are the kits-table values for Raja and Wydad.",
+      "html": "<a class='ds-match' href='#' aria-label='Raja CA 1, Wydad AC 0, terminé'><span class='ds-match__edge' style='--club:#0a8f3a' aria-hidden='true'></span><span class='ds-match__time' aria-hidden='true'>FT</span><span class='ds-match__teams' aria-hidden='true'><span class='ds-match__team is-win'><span class='ds-match__crest' style='--club:#0a8f3a'>R</span><span class='ds-match__name'>Raja CA</span><span class='ds-match__score'>1</span></span><span class='ds-match__team'><span class='ds-match__crest' style='--club:#c8102e'>W</span><span class='ds-match__name'>Wydad AC</span><span class='ds-match__score'>0</span></span></span><span class='ds-match__edge' style='--club:#c8102e' aria-hidden='true'></span></a>",
+      "css": ".ds-match{display:grid;grid-template-columns:4px 4.5rem minmax(0,1fr) 4px;column-gap:.75rem;align-items:stretch;max-width:24rem;min-height:4.5rem;border-radius:14px;overflow:hidden;background:var(--ui-surface, oklch(1 0 0));color:var(--ui-on-surface, oklch(0.16 0.03 260));box-shadow:var(--ui-shadow-card, 0 1px 2px 0 color-mix(in oklab, oklch(0.32 0.1 258) 10%, transparent), 0 4px 14px -8px color-mix(in oklab, oklch(0.32 0.1 258) 14%, transparent));text-decoration:none;font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);transition:transform var(--duration-tap,120ms) var(--ease-standard,cubic-bezier(.2,.7,.2,1))}@media (hover:hover){.ds-match:hover{transform:translateY(-1px)}}.ds-match:active{transform:translateY(1px) scale(.985)}.ds-match:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-match__edge{background:var(--club)}.ds-match__time{align-self:center;color:var(--ui-on-surface-muted, oklch(0.45 0.02 258));font-size:11px;font-weight:700;line-height:1.4}.ds-match__teams{display:flex;flex-direction:column;justify-content:center;gap:.375rem;padding-block:.75rem;padding-inline-end:.25rem}.ds-match__team{display:flex;align-items:center;gap:.5rem;color:var(--ui-on-surface-muted, oklch(0.45 0.02 258));font-size:14px;font-weight:700;line-height:1.55}.ds-match__team.is-win{color:var(--ui-on-surface, oklch(0.16 0.03 260));font-weight:800}.ds-match__crest{display:grid;place-items:center;flex-shrink:0;width:1.5rem;height:1.5rem;border-radius:9999px;background:var(--club);color:#fff;font-size:11px;font-weight:800;box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--club) 70%,black)}.ds-match__name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-match__score{font-family:var(--ui-font-display, Changa, Manrope, ui-sans-serif, system-ui, sans-serif);font-size:20px;line-height:1.1}"
+    },
+    {
+      "name": "Score Plate with Live Pill",
+      "kind": "custom",
+      "refersTo": "scorebox",
+      "description": "Signature: the match header's split club halves with a white score plate (14px, lifted shadow, Changa 52px in Tunnel Navy) and a navy live pill with the breathing red dot.",
+      "html": "<div class='ds-scorehead' role='img' aria-label='Raja CA 1, Wydad AC 0, en direct, 63e minute'><span class='ds-scorehead__half' style='--club:#0a8f3a'>Raja CA</span><span class='ds-scorehead__half ds-scorehead__half--away' style='--club:#c8102e'>Wydad AC</span><span class='ds-scorehead__center'><span class='ds-scorehead__plate'><span>1</span><span class='ds-scorehead__dash'>–</span><span>0</span></span><span class='ds-livepill'><span class='ds-livepill__dot'></span><bdi dir='ltr'>63’</bdi></span></span></div>",
+      "css": ".ds-scorehead{position:relative;display:grid;grid-template-columns:1fr 1fr;max-width:24rem;min-height:9rem;border-radius:16px;overflow:hidden;box-shadow:var(--ui-shadow-lifted, 0 14px 26px -16px color-mix(in oklab, oklch(0.24 0.09 258) 55%, transparent));font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif)}.ds-scorehead__half{display:flex;align-items:flex-end;padding:1rem;padding-inline-end:4rem;background:var(--club);color:#fff;font-family:var(--ui-font-display, Changa, Manrope, ui-sans-serif, system-ui, sans-serif);font-size:17px;font-weight:700;line-height:1.25}.ds-scorehead__half--away{justify-content:flex-end;text-align:end;padding-inline-end:1rem;padding-inline-start:4rem}.ds-scorehead__center{position:absolute;inset-inline:0;top:1rem;display:flex;flex-direction:column;align-items:center;gap:.5rem}.ds-scorehead__plate{display:flex;align-items:center;gap:.5rem;padding:.25rem 1rem;border-radius:14px;background:var(--ui-scorebox, oklch(1 0 0));color:var(--ui-ink-deep, oklch(0.24 0.09 258));box-shadow:var(--ui-shadow-lifted, 0 14px 26px -16px color-mix(in oklab, oklch(0.24 0.09 258) 55%, transparent));font-family:var(--ui-font-display, Changa, Manrope, ui-sans-serif, system-ui, sans-serif);font-size:52px;font-weight:800;line-height:1.1}.ds-scorehead__dash{font-size:40px}.ds-livepill{display:inline-flex;align-items:center;gap:.375rem;padding:.25rem .625rem;border-radius:9999px;background:var(--ui-ink, oklch(0.32 0.1 258));color:var(--ui-on-ink-plain, oklch(1 0 0));font-size:12px;font-weight:800;line-height:1.4;text-transform:uppercase;letter-spacing:.025em}.ds-livepill__dot{width:.5rem;height:.5rem;border-radius:9999px;background:var(--ui-live, oklch(0.62 0.22 27));animation:ds-breathe 1.5s ease-in-out infinite}@keyframes ds-breathe{50%{opacity:.35}}@media (prefers-reduced-motion:reduce){.ds-livepill__dot{animation:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Club colours under floodlights",
+    "overview": "BotolaGO looks like a Moroccan match night seen from the phone in your hand. A deep floodlight navy sets the brand. White surfaces read like the scoreboard and the team sheet. Each club's own colours arrive on the screen as data: in the edge of a match row, the disc of a crest, the two halves of a match header. Heavy Changa display type gives titles, team names and scores the voice of a stadium board. The interface around them stays quiet: one light page, white cards, hairlines and a single soft lift. The mood is bold, calm and local: bold in the type and the club colour, calm in the surfaces and the motion, local because French and Arabic are equal first languages and the clubs are Botola Pro clubs.\n\nThis is an operating app first. Supporters check a score, a table, a deadline or a team in a few seconds, on a 390px-wide phone, often outdoors. Density is high where the data is dense (standings, live scores, Fantasy lists), but nothing is smaller than a 44px tap target and nothing relies on colour alone. Arabic is not a translation layer: it has its own body face, taller line boxes, a fully mirrored layout and no letter-spacing. The one stylistic rejection the owner has confirmed is laying out standings as a grid of cards. Standings are real tables.\n\nMotion is short and physical: controls sink 3% under the finger, sheets settle in over 320ms, the active bottom-nav pill slides between tabs, and pages slide in from the reading side. All of it collapses under reduced motion. The detailed timings live in the sidecar and in the components below.\n\nThis file describes the system that ships today: Design System V2, look \"Option A: Club colours\", light theme only. It is a record of the incumbent design for refinement work, not a redesign brief.",
+    "keyCharacteristics": [
+      "Floodlight navy brand, white surfaces on a light grey page, and club colours supplied by data.",
+      "One spring-to-sky action gradient that marks the primary action and \"you are here\".",
+      "Changa display type at 800 for titles, team names and scores; Manrope (French) and Noto Sans Arabic (Arabic) for everything else.",
+      "Mostly flat: hairline-weight card shadows and one lifted step for the score plate, hero cards and the primary call to action.",
+      "Every pressed control is fully round; cards are 14px; sheets and feature cards 16px.",
+      "A 44px tap floor, 48px rows, and a 16px gutter at every width.",
+      "French and Arabic are equal: logical properties everywhere, Arabic leading instead of Arabic resizing, no Arabic letter-spacing."
+    ],
+    "rules": [
+      {
+        "name": "The Ink Is Paint Rule",
+        "body": "Floodlight Navy as a fill or border uses the fill token. Navy text and icons use the brand-foreground token, never the fill token. The two share a value today only because dark mode is off. A contract test enforces this.",
+        "section": "colors"
+      },
+      {
+        "name": "The Earned Gradient Rule",
+        "body": "The spring-to-sky gradient is the action colour: the primary button, the active bottom-nav pill, the deadline pill, progress, a selected Fantasy plate and the Fantasy promo card. Text on it is always Tunnel Navy, and the gradient is never used as a text colour.",
+        "section": "colors"
+      },
+      {
+        "name": "The Data Brings The Colour Rule",
+        "body": "Club colour enters a component only through the club palette functions, never as a hard-coded hex. A component that shows two clubs takes the resolved match palette, so that a clash is already fixed.",
+        "section": "colors"
+      },
+      {
+        "name": "The Leading Not Size Rule",
+        "body": "Arabic gets taller line boxes, never a different font size. The derivation and measurements are in [docs/qa/polish/README.md](docs/qa/polish/README.md).",
+        "section": "typography"
+      },
+      {
+        "name": "The No Arabic Tracking Rule",
+        "body": "Every letter-spacing applies in French only, and a global rule resets letter-spacing to normal in Arabic (BG-0069). Uppercase labels stay uppercase only where the script has case.",
+        "section": "typography"
+      },
+      {
+        "name": "The Two Kinds Of Number Rule",
+        "body": "Figures read down a column use the stat steps (Manrope, tabular). Standalone figures use the score steps (Changa, never tabular). A score is three separate pieces (home, dash, away) in a container that inherits the page direction, never one string inside a single direction-isolated span.",
+        "section": "typography"
+      },
+      {
+        "name": "The 800 Ceiling Rule",
+        "body": "Changa is never set at 900; its heaviest weight is 800.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Lift Rule",
+        "body": "Only the lifted shadow means \"raised\", and it belongs to the score plate, hero cards and the primary call to action. Everything else sits flat or on the card shadow. Do not invent new shadow values.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Flat Bars Rule",
+        "body": "The top bar is opaque white with a hairline and no shadow. A shell test pins this.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** build from the kit tokens and primitives in `src/components/ui-kit/` before writing a new class, and check DESIGN_SYSTEM_V2 §4 for an existing primitive.",
+      "**Do** use logical properties (start, end, inline, block) for every direction, and keyword directions for gradients.",
+      "**Do** keep every tap target at least 44px and every list row at least 48px.",
+      "**Do** make every button, chip, pill and icon button fully round, cards 14px and sheets 16px.",
+      "**Do** set text on the action gradient and on amber in Tunnel Navy, white on navy, green and magenta fills, and the club's computed on-colour on club fills.",
+      "**Do** bring club colour in only through the club palette, as 4px edges, crest discs or split halves.",
+      "**Do** use the stat steps for figures read down a column and the score steps for standalone scores, with each score as three pieces.",
+      "**Do** set long-form reading in the prose step (15px, 400, line height 1.7, or 2 in Arabic).",
+      "**Do** take every duration and easing from the motion tokens, and let reduced motion turn them off.",
+      "**Do** check every screen in French and Arabic, on a 390px phone and on desktop, before calling it done.",
+      "**Do** give every close and icon-only control a translated label (\"Fermer\" / \"إغلاق\")."
+    ],
+    "donts": [
+      "**Don't** lay out standings as a grid of cards. Standings are a real table with tabular figures.",
+      "**Don't** colour text or icons with the navy fill token; use the brand-foreground token.",
+      "**Don't** letter-space Arabic, and don't change Arabic font size to compensate for the script. Adjust line height.",
+      "**Don't** set Changa at 900 or give it tabular figures.",
+      "**Don't** use the Chalk Line hairline as the edge of an input or other control; control edges need Goal-Line Grey.",
+      "**Don't** print a score as one string inside a single direction-isolated span.",
+      "**Don't** add colour literals, new shadow values or legacy V1 tokens (frosted glass, the V1 electric blue, V1 shadows and radii) to product screens.",
+      "**Don't** design dark-mode variants or switch dark mode on without the owner's decision.",
+      "**Don't** change the logo or settle the brand-blue question inside a screen change.",
+      "**Don't** restyle Pépites to the kit, or the kit to Pépites. How far Design System V2 governs Pépites is an open decision."
+    ]
+  }
+}
