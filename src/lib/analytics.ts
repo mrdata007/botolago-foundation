@@ -59,6 +59,18 @@ export type AnalyticsEvent =
   | "pronostics_signup_click"
   /** Any share: the journée, or a league's invite link. */
   | "pronostics_share"
+  /** A finalized gameweek's recap was shown to its manager. */
+  | "fantasy_recap_view"
+  /** The recap picture was drawn in the share sheet (a preview, not a share). */
+  | "fantasy_recap_share_preview"
+  /** The recap picture was downloaded. */
+  | "fantasy_recap_share_download"
+  /** The system share sheet reported the recap picture sent (not opened, not cancelled). */
+  | "fantasy_recap_share_native"
+  /** WhatsApp was opened with the recap message: an intent, not a sent message. */
+  | "fantasy_recap_share_whatsapp"
+  /** The recap message and link were copied. */
+  | "fantasy_recap_share_copy"
   /** The landing page was shown (at `/jouer`, or at `/` to a first-time visitor). */
   | "landing_view"
   /** "Créer mon équipe" tapped on the landing page, one event per placement. */
