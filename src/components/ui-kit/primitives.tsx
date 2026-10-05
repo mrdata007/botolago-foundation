@@ -797,7 +797,7 @@ export function UiSegmented<T extends string>({
               ui.focus,
               active
                 ? pill
-                  ? ui.surface.inkPlain
+                  ? ui.surface.selected
                   : "bg-[color:var(--ui-surface)] text-[color:var(--ui-ink-fg)] shadow-[var(--ui-shadow-card)]"
                 : tone === "onGradient" && !pill
                   ? "text-[color:var(--ui-on-grad-header)]"
@@ -971,8 +971,10 @@ export function UiPill({
  * the chip drops `aria-pressed`, so it never announces both.
  *
  * Option A: fully round; unselected is the sunken pill in the default text
- * colour, selected the navy pill with white text (`ui.surface.inkPlain`,
- * 12.81:1) rather than the cyan on-ink.
+ * colour, selected the navy pill with white text (12.81:1) rather than the
+ * cyan on-ink. That is `ui.surface.selected`, which is the ink fill in light
+ * and the light brand foreground as a fill in dark, where navy on the sunken
+ * pill is 1.13:1 and selected chips read as unselected (BG-0149).
  */
 export function UiChip({
   children,
@@ -1009,7 +1011,7 @@ export function UiChip({
         "[font-weight:var(--ui-weight-strong)]",
         ui.focus,
         "press",
-        selected ? cn(ui.surface.inkPlain, "shadow-[var(--ui-shadow-card)]") : ui.surface.sunken,
+        selected ? cn(ui.surface.selected, "shadow-[var(--ui-shadow-card)]") : ui.surface.sunken,
         className,
       )}
     >

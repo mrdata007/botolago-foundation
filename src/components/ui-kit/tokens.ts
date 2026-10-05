@@ -112,6 +112,11 @@ export const UI_TOKENS = [
   "--ui-on-ink",
   "--ui-on-ink-plain",
   "--ui-on-ink-muted",
+  // the selected state (BG-0149): the ink fill in light, the light brand
+  // foreground as a fill in dark
+  "--ui-selected",
+  "--ui-on-selected",
+  "--ui-on-selected-muted",
   "--ui-on-grad-header",
   // the dark-mesh register (welcome, auth, first-launch chooser)
   "--ui-on-mesh",
@@ -205,6 +210,8 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-ink-fg",
   "--ui-on-ink",
   "--ui-on-ink-plain",
+  "--ui-selected",
+  "--ui-on-selected",
   "--ui-on-grad-header",
   "--ui-accent-spring",
   "--ui-accent-sky",
@@ -276,6 +283,8 @@ export const UI_DERIVED_TOKENS: readonly UiToken[] = [
   // The quieter foreground on an ink fill: plain on-ink mixed into the ink
   // itself, so it follows both.
   "--ui-on-ink-muted",
+  // The same mix on the selected fill.
+  "--ui-on-selected-muted",
   // Option A's pastel Fantasy turf: the two action-gradient stops over the
   // surface. All three flip, so the dark turf needs no second copy.
   "--ui-pitch-turf-a",
@@ -481,6 +490,8 @@ export const ui = {
     onInkPlain: "text-[color:var(--ui-on-ink-plain)]",
     /** The quieter line on an ink fill: a kicker or a label over a figure. */
     onInkMuted: "text-[color:var(--ui-on-ink-muted)]",
+    /** The quieter line on a selected fill (`ui.surface.selected`). */
+    onSelectedMuted: "text-[color:var(--ui-on-selected-muted)]",
     /** A gain written ON the action gradient; `positive` fails there. */
     onActionPositive: "text-[color:var(--ui-on-action-positive)]",
     /** Text on a club fill (`--ui-club`), measured per theme by the club palette. */
@@ -527,6 +538,14 @@ export const ui = {
     ink: "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink)]",
     /** An ink fill carrying plain (non-cyan) foreground. */
     inkPlain: "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink-plain)]",
+    /**
+     * A SELECTED, active or current control: the chosen chip, the active
+     * pill segment, the current nav link (BG-0149). Identical to `inkPlain`
+     * in light; in dark the ink fill disappears into the sunken track
+     * (1.13:1), so this flips to the light brand foreground as the fill.
+     * A band or status pill that is not a choice stays `inkPlain`.
+     */
+    selected: "bg-[color:var(--ui-selected)] text-[color:var(--ui-on-selected)]",
     /** Full-bleed bar: an opaque surface with a hairline rule, no glass. */
     bar: "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)]",
     /**

@@ -157,8 +157,9 @@ export function PrimaryNavLinks({ tone = "surface" }: { tone?: "surface" | "nigh
                   : "text-[color:var(--pepites-on-night-sub)] hover:text-[color:var(--pepites-on-night)]"
                 : active
                   ? // Selected is white on navy — the Option A selected
-                    // chip — not the cyan `ui.surface.ink`.
-                    ui.surface.inkPlain
+                    // chip — not the cyan `ui.surface.ink`; in dark, the
+                    // selected fill (BG-0149), since navy vanishes there.
+                    ui.surface.selected
                   : cn(
                       ui.tone.muted,
                       // BG-0083: the hover used to write `--ui-ink`, a FILL,

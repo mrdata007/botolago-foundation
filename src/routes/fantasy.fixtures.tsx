@@ -186,7 +186,7 @@ function FdrBody() {
       "min-h-[var(--ui-tap-min)]",
       ui.radius.full,
       ui.focus,
-      sort.key === key ? ui.surface.inkPlain : cn(ui.surface.sunken, ui.tone.muted),
+      sort.key === key ? ui.surface.selected : cn(ui.surface.sunken, ui.tone.muted),
     );
 
   return (

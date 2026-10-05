@@ -1879,6 +1879,17 @@ html[dir="rtl"] .lucide-arrow-left {
      navy strip. Mixed with the ink itself rather than with `transparent`,
      so it is one opaque colour: 8.37:1 on ink in light, 8.25 in dark. */
   --ui-on-ink-muted: color-mix(in srgb, var(--ui-on-ink-plain) 78%, var(--ui-ink));
+  /* The SELECTED state (BG-0149): a chosen chip, the active pill segment or
+     nav link, the chosen theme or language. In light it is exactly the ink
+     fill with plain foreground (`ui.surface.inkPlain`). In dark the ink fill
+     is a near-twin of the sunken track (1.13:1), so a selected control read as
+     unselected; there the selection is the light brand foreground as a fill,
+     carrying ink-deep text. Bands and status pills that are NOT a choice keep
+     the ink fill. */
+  --ui-selected: var(--ui-ink);
+  --ui-on-selected: var(--ui-on-ink-plain);
+  /* The quieter line on a selected fill, mixed like `--ui-on-ink-muted`. */
+  --ui-on-selected-muted: color-mix(in srgb, var(--ui-on-selected) 78%, var(--ui-selected));
   /* The foreground for the header/hero BAND. The band is light in the light
      theme and deep in the dark one, so unlike `--ui-ink-deep` (which sits on
      the action gradient, light in both themes) this one flips. */
@@ -2232,6 +2243,8 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-ink-fg: oklch(0.86 0.08 232);
   --ui-on-ink: oklch(0.88 0.11 205);
   --ui-on-ink-plain: oklch(0.97 0.01 250);
+  --ui-selected: var(--ui-ink-fg);
+  --ui-on-selected: var(--ui-ink-deep);
   --ui-on-grad-header: oklch(0.97 0.01 250);
 
   --ui-wash-home: oklch(0.7 0.14 256);

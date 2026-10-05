@@ -211,7 +211,7 @@ function AdminRoute() {
                 ui.text.meta,
                 "[font-weight:var(--ui-weight-strong)]",
                 ui.surface.sunken,
-                "data-[status=active]:bg-[color:var(--ui-ink)] data-[status=active]:text-[color:var(--ui-on-ink-plain)]",
+                "data-[status=active]:bg-[color:var(--ui-selected)] data-[status=active]:text-[color:var(--ui-on-selected)]",
                 "data-[status=active]:shadow-[var(--ui-shadow-card)]",
                 ui.focus,
               )}
