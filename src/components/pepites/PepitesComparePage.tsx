@@ -1,31 +1,31 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Plus, Search } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent, type Ref } from "react";
 import { toast } from "sonner";
 
 import type { PlayerResponse, PlayerStatsResponse, RankingRow } from "@/backend/pepites/contracts";
+import { SectionHeader } from "@/components/common/SectionHeader";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { UiSheet, ui } from "@/components/ui-kit";
+import { ui, UiButton, UiCard, UiInput, UiPlayerRow, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { clubStyle } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 
-import { pp, teamKit } from "./pepites-design";
 import {
-  formatCount,
   formatNumber,
   playerPhotoUrl,
   positionShort,
   scoreText,
+  teamAsClub,
 } from "./pepites-format";
 import {
   PepitesComingSoon,
   PepitesErrorState,
   PepitesLoadingState,
   PepitesPreviewBanner,
-  PepitesCard,
 } from "./PepitesParts";
-import { PepitesShell } from "./PepitesShell";
-import { Headshot, NightBand, PepitesShirt } from "./PepitesVisuals";
+import { PepitesDetailHeader, PepitesShell } from "./PepitesShell";
+import { PepitesPlayerPhoto, PepitesShirt } from "./PepitesVisuals";
 import {
   playerQueryOptions,
   playerStatsQueryOptions,
@@ -109,7 +109,7 @@ export function PepitesComparePage({
   secondId: string | null;
   onSelect: (side: Side, id: string) => void;
 }) {
-  const { t, tr, lang } = useI18n();
+  const { t, lang } = useI18n();
   const viewer = usePepitesViewer();
   const pointerQuery = useVersionPointer(viewer);
   const pointer = pointerQuery.data;
@@ -194,182 +194,149 @@ export function PepitesComparePage({
     onSelect(side, id);
     setPicker(null);
   };
-  const hero = (
-    <NightBand
-      glow={first?.player?.team ? teamKit(first.player.team).primary : null}
-      cut={25}
-      testId="pepites-compare-hero"
-    >
-      <div className="min-h-[265px] pb-11 pt-2">
-        <div className="flex items-center justify-between gap-2">
-          {firstId ? (
-            <Link
-              to="/pepites/joueur/$playerId"
-              params={{ playerId: firstId }}
-              className={cn("text-[13px] text-white", pp.heavy, ui.focusOnMesh)}
-            >
-              {t("pepites.compare.back")}
-            </Link>
-          ) : (
-            <Link
-              to="/pepites/classement"
-              className={cn("text-[13px] text-white", pp.heavy, ui.focusOnMesh)}
-            >
-              {t("pepites.compare.back")}
-            </Link>
-          )}
-          <span className={cn(pp.monoStrong, pp.onNightMeta, "text-[11px] leading-[1.4]")}>
-            {t("pepites.compare.title")}
-          </span>
-          <span className="w-12" aria-hidden />
-        </div>
-        <div className="mt-6 grid grid-cols-[1fr_44px_1fr] items-center gap-1 text-center">
-          <ComparePortrait
-            data={first}
-            side="a"
-            buttonRef={(button) => {
-              portraitButtons.current.a = button;
-            }}
-            onPick={(event) => openPicker("a", event.currentTarget)}
-          />
-          <span className={cn(pp.display, pp.energyText, "text-[30px]")}>VS</span>
-          <ComparePortrait
-            data={second}
-            side="b"
-            buttonRef={(button) => {
-              portraitButtons.current.b = button;
-            }}
-            onPick={(event) => openPicker("b", event.currentTarget)}
-          />
-        </div>
-      </div>
-    </NightBand>
-  );
+  // Back to the player the comparison started from, or to the ranking.
+  const backTo = firstId ? `/pepites/joueur/${encodeURIComponent(firstId)}` : "/pepites/classement";
 
   return (
-    <PepitesShell hero={hero}>
+    <PepitesShell
+      pageHeader={
+        <PepitesDetailHeader
+          backTo={backTo}
+          kicker={t("pepites.brand")}
+          title={t("pepites.compare.title")}
+        />
+      }
+    >
       {pointer.preview ? <PepitesPreviewBanner /> : null}
-      <div className="-mt-12 relative">
-        {firstQuery.isError || secondQuery.isError || firstStats.isError || secondStats.isError ? (
-          <PepitesErrorState
-            inline
-            onRetry={() => {
-              void firstQuery.refetch();
-              void secondQuery.refetch();
-              void firstStats.refetch();
-              void secondStats.refetch();
-            }}
-          />
-        ) : first && second && first.player && second.player ? (
-          <PepitesCard testId="pepites-compare-card">
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <h1 className={cn(pp.heavy, pp.text, "text-[12px]")}>
-                {t("pepites.compare.season")}
-              </h1>
-              <p className={cn(pp.mono, pp.muted, "text-[11px] leading-[1.4]")}>
-                {t("pepites.compare.scope")}
-              </p>
-            </div>
-            <div className="flex flex-col gap-3">
-              {compareValues(first, second, leftStats, rightStats).map((row) => {
-                const leftWins =
-                  row.left !== null &&
-                  row.right !== null &&
-                  ("lowerWins" in row ? row.left < row.right : row.left > row.right);
-                const rightWins =
-                  row.left !== null &&
-                  row.right !== null &&
-                  ("lowerWins" in row ? row.right < row.left : row.right > row.left);
-                const max = Math.max(row.left ?? 0, row.right ?? 0, 0.01);
-                const value = (n: number | null) =>
-                  n === null
-                    ? "–"
-                    : formatNumber(
-                        n,
-                        lang,
-                        row.key === "rating" || row.key === "form" || row.key === "score" ? 1 : 0,
-                      );
-                return (
-                  <div
-                    key={row.key}
-                    className="grid grid-cols-[35px_minmax(0,1fr)_74px_minmax(0,1fr)_35px] items-center gap-1"
-                    data-testid={`pepites-compare-${row.key}`}
-                  >
-                    <bdi
-                      className={cn(
-                        "text-end text-[12px] tabular-nums",
-                        leftWins ? "text-[#1b8f55]" : pp.muted,
-                      )}
-                    >
-                      {value(row.left)}
-                    </bdi>
-                    <div className="flex justify-end">
-                      <div
-                        className={cn(
-                          "h-2 rounded-sm",
-                          leftWins ? pp.energyFill : "bg-[color:var(--pepites-seg-empty)]",
-                        )}
-                        style={{ width: `${((row.left ?? 0) / max) * 100}%` }}
-                      />
-                    </div>
-                    <span className={cn(pp.bold, pp.text, "text-center text-[11px] leading-[1.4]")}>
-                      {compareRowLabel(row.key, t)}
-                    </span>
-                    <div
-                      className={cn(
-                        "h-2 rounded-sm",
-                        rightWins ? pp.energyFill : "bg-[color:var(--pepites-seg-empty)]",
-                      )}
-                      style={{ width: `${((row.right ?? 0) / max) * 100}%` }}
-                    />
-                    <bdi
-                      className={cn(
-                        "text-start text-[12px] tabular-nums",
-                        rightWins ? "text-[#1b8f55]" : pp.muted,
-                      )}
-                    >
-                      {value(row.right)}
-                    </bdi>
-                  </div>
-                );
-              })}
-            </div>
-            <button
-              type="button"
-              onClick={() => void share()}
-              className={cn(
-                "mt-5 min-h-10 w-full rounded-lg text-[13px]",
-                pp.energyFill,
-                pp.heavy,
-                pp.ink,
-                ui.focus,
-              )}
-              data-testid="pepites-compare-share"
-            >
-              {t("pepites.compare.share")}
-            </button>
-          </PepitesCard>
-        ) : (
-          <PepitesCard testId="pepites-compare-empty" className="text-center">
-            <p className={cn(pp.bold, pp.text, "text-[14px]")}>
-              {t("pepites.compare.choose_prompt")}
-            </p>
-            <button
-              type="button"
-              onClick={(event) => openPicker(first ? "b" : "a", event.currentTarget)}
-              className={cn(
-                "mt-3 min-h-10 rounded-full px-5",
-                pp.energyFill,
-                pp.heavy,
-                pp.ink,
-                ui.focus,
-              )}
-            >
-              {first ? t("pepites.compare.choose_second") : t("pepites.compare.choose_first")}
-            </button>
-          </PepitesCard>
-        )}
+      {/* The two players side by side, each a card that opens the picker;
+          "vs" between them. The grid follows the page direction, so the
+          first player stands at the inline start in both languages. */}
+      <div
+        className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-2"
+        data-testid="pepites-compare-cards"
+      >
+        <ComparePortrait
+          data={first}
+          side="a"
+          buttonRef={(button) => {
+            portraitButtons.current.a = button;
+          }}
+          onPick={(event) => openPicker("a", event.currentTarget)}
+        />
+        <span aria-hidden className={cn("self-center", ui.text.label, ui.tone.muted)}>
+          {t("common.vs")}
+        </span>
+        <ComparePortrait
+          data={second}
+          side="b"
+          buttonRef={(button) => {
+            portraitButtons.current.b = button;
+          }}
+          onPick={(event) => openPicker("b", event.currentTarget)}
+        />
       </div>
+      {firstQuery.isError || secondQuery.isError || firstStats.isError || secondStats.isError ? (
+        <PepitesErrorState
+          inline
+          onRetry={() => {
+            void firstQuery.refetch();
+            void secondQuery.refetch();
+            void firstStats.refetch();
+            void secondStats.refetch();
+          }}
+        />
+      ) : first && second && first.player && second.player ? (
+        <UiCard testId="pepites-compare-card">
+          <SectionHeader
+            title={t("pepites.compare.season")}
+            subtitle={t("pepites.compare.scope")}
+          />
+          {/* One grid for every row (each row a subgrid), so the figures, the
+              bars and the labels line up down the card. Each bar grows from
+              the label in the middle towards its player's side. */}
+          <div className="mt-2 grid grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)_auto] gap-x-2 gap-y-3">
+            {compareValues(first, second, leftStats, rightStats).map((row) => {
+              const leftWins =
+                row.left !== null &&
+                row.right !== null &&
+                ("lowerWins" in row ? row.left < row.right : row.left > row.right);
+              const rightWins =
+                row.left !== null &&
+                row.right !== null &&
+                ("lowerWins" in row ? row.right < row.left : row.right > row.left);
+              const max = Math.max(row.left ?? 0, row.right ?? 0, 0.01);
+              const value = (n: number | null) =>
+                n === null
+                  ? "–"
+                  : formatNumber(
+                      n,
+                      lang,
+                      row.key === "rating" || row.key === "form" || row.key === "score" ? 1 : 0,
+                    );
+              return (
+                <div
+                  key={row.key}
+                  className="col-span-5 grid grid-cols-subgrid items-center"
+                  data-testid={`pepites-compare-${row.key}`}
+                >
+                  <bdi
+                    className={cn(
+                      "text-end",
+                      ui.stat.sm,
+                      leftWins
+                        ? cn(ui.tone.positive, "[font-weight:var(--ui-weight-heavy)]")
+                        : ui.tone.muted,
+                    )}
+                  >
+                    {value(row.left)}
+                  </bdi>
+                  <div className="flex justify-end">
+                    <CompareBar share={(row.left ?? 0) / max} wins={leftWins} />
+                  </div>
+                  <span className={cn("text-center", ui.text.label, ui.tone.muted)}>
+                    {compareRowLabel(row.key, t)}
+                  </span>
+                  <div className="flex justify-start">
+                    <CompareBar share={(row.right ?? 0) / max} wins={rightWins} />
+                  </div>
+                  <bdi
+                    className={cn(
+                      "text-start",
+                      ui.stat.sm,
+                      rightWins
+                        ? cn(ui.tone.positive, "[font-weight:var(--ui-weight-heavy)]")
+                        : ui.tone.muted,
+                    )}
+                  >
+                    {value(row.right)}
+                  </bdi>
+                </div>
+              );
+            })}
+          </div>
+          <UiButton
+            variant="gradient"
+            className="mt-5"
+            onClick={() => void share()}
+            data-testid="pepites-compare-share"
+          >
+            {t("pepites.compare.share")}
+          </UiButton>
+        </UiCard>
+      ) : (
+        <UiCard testId="pepites-compare-empty" className="flex flex-col items-center gap-3">
+          <p className={cn("text-center", ui.text.bodyStrong, ui.tone.default)}>
+            {t("pepites.compare.choose_prompt")}
+          </p>
+          <UiButton
+            variant="gradient"
+            size="sm"
+            onClick={(event) => openPicker(first ? "b" : "a", event.currentTarget)}
+          >
+            {first ? t("pepites.compare.choose_second") : t("pepites.compare.choose_first")}
+          </UiButton>
+        </UiCard>
+      )}
       <PlayerPicker
         open={picker !== null}
         onOpenChange={(open) => {
@@ -404,6 +371,31 @@ export function PepitesComparePage({
   );
 }
 
+/**
+ * One comparison bar: `share` (0–1) of its half of the row. The winner's bar
+ * is the brand foreground, the other the sunken track colour, both on the
+ * track radius. Decorative: the figure beside it carries the value.
+ */
+function CompareBar({ share, wins }: { share: number; wins: boolean }) {
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "h-2",
+        ui.radius.track,
+        wins ? "bg-[color:var(--ui-ink-fg)]" : "bg-[color:var(--ui-surface-sunken)]",
+      )}
+      style={{ width: `${share * 100}%` }}
+    />
+  );
+}
+
+/**
+ * A player's side of the comparison: an interactive card that opens the
+ * picker. The photo (or the club shirt with the rank, or a "+" disc while
+ * the side is empty), the name, and club · age · rank. A chosen player's
+ * club colour runs along the card's base (`clubStyle` + `ui.edge.blockEnd`).
+ */
 function ComparePortrait({
   data,
   side,
@@ -418,38 +410,51 @@ function ComparePortrait({
   const { t, tr, lang } = useI18n();
   const player = data?.player;
   const photo = player ? playerPhotoUrl(player) : null;
+  const colours = player ? clubStyle(teamAsClub(player.team)) : null;
   return (
     <button
       type="button"
       onClick={onPick}
       ref={buttonRef}
+      data-club={colours?.["data-club"]}
+      style={colours?.style}
       className={cn(
-        "flex min-w-0 flex-col items-center gap-2 rounded-lg p-1 text-white",
-        ui.focusOnMesh,
+        // An interactive `UiCard` as a button: the card surface, the tile
+        // press and the focus ring.
+        ui.surface.card,
+        colours && ui.edge.blockEnd,
+        "press-tile flex min-w-0 flex-col items-center gap-2 p-3 text-center md:p-4",
+        ui.focus,
       )}
       data-testid={`pepites-compare-pick-${side}`}
     >
       {player ? (
         photo ? (
-          <img src={photo} alt="" className="size-[110px] rounded-xl object-cover" />
+          <PepitesPlayerPhoto player={player} size="xl" />
         ) : (
-          <PepitesShirt
-            player={player}
-            number={data?.score?.rank ?? null}
-            className="h-[110px] w-[112px]"
-          />
+          <PepitesShirt player={player} number={data?.score?.rank ?? null} className="h-24 w-24" />
         )
       ) : (
-        <span className="flex size-[110px] items-center justify-center rounded-xl border border-white/30 text-[24px]">
-          ＋
+        <span
+          aria-hidden
+          className={cn("grid size-24 place-items-center", ui.radius.full, ui.surface.sunken)}
+        >
+          <Plus className={cn("h-8 w-8", ui.tone.ink)} />
         </span>
       )}
-      <span className={cn(pp.display, "max-w-full truncate text-[16px]")}>
-        {player?.name ??
-          (side === "a" ? t("pepites.compare.choose_first") : t("pepites.compare.choose_second"))}
+      <span
+        className={cn(
+          "max-w-full text-balance [overflow-wrap:anywhere]",
+          player ? cn(ui.display.team, ui.tone.default) : cn(ui.text.bodyStrong, ui.tone.ink),
+        )}
+      >
+        <bdi>
+          {player?.name ??
+            (side === "a" ? t("pepites.compare.choose_first") : t("pepites.compare.choose_second"))}
+        </bdi>
       </span>
       {player ? (
-        <span className={cn(pp.mono, pp.onNightMeta, "text-[11px] leading-[1.4]")}>
+        <span className={cn("max-w-full", ui.text.meta, ui.tone.muted)}>
           {[
             player.team ? tr(player.team.shortName) : null,
             player.age
@@ -509,61 +514,54 @@ function PlayerPicker({
       title={t("pepites.compare.picker_title")}
       description={t("pepites.compare.picker_description")}
     >
-      <div className="p-4">
-        <input
+      {/* The search field stays in view while the list scrolls under it. */}
+      <div className={cn("sticky top-0 z-10 px-4 pb-3 pt-4", ui.surface.bar, ui.rule.block)}>
+        <UiInput
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={t("pepites.compare.search_placeholder")}
           aria-label={t("pepites.compare.search_placeholder")}
-          className="mb-3 h-10 w-full rounded-lg border px-3 text-[14px]"
+          leading={<Search aria-hidden className={cn("h-4 w-4", ui.tone.muted)} />}
         />
-        <ul className="max-h-[52dvh] overflow-y-auto">
-          {filtered.map((player) => (
-            <li key={player.id}>
-              <button
-                type="button"
-                data-testid="pepites-compare-option"
-                onClick={() => onChoose(player.id)}
-                className={cn(
-                  "flex min-h-[52px] w-full items-center gap-3 border-b text-start",
-                  ui.focus,
-                )}
-              >
-                <Headshot player={player} size={36} />
-                <span className="min-w-0 flex-1">
-                  <span className={cn(pp.heavy, pp.text, "block truncate text-[13px]")}>
-                    {player.name}
-                  </span>
-                  <span className={cn(pp.muted, "block text-[11px]")}>
-                    {player.team ? tr(player.team.shortName) : ""} ·{" "}
-                    {player.positionGroup ? positionShort(player.positionGroup, t) : ""}
-                  </span>
-                </span>
-                <bdi className={cn(pp.display, pp.ink, "text-[20px]")}>
-                  {scoreText(player.score, lang, "–")}
-                </bdi>
-              </button>
-            </li>
-          ))}
-        </ul>
+      </div>
+      <ul>
+        {filtered.map((player) => (
+          <li key={player.id} data-testid="pepites-compare-option">
+            <UiPlayerRow
+              onClick={() => onChoose(player.id)}
+              className="px-4"
+              visual={<PepitesPlayerPhoto player={player} size="md" />}
+              name={<bdi>{player.name}</bdi>}
+              meta={[
+                player.team ? tr(player.team.shortName) : null,
+                player.positionGroup ? positionShort(player.positionGroup, t) : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+              stats={[
+                {
+                  key: "score",
+                  value: <bdi>{scoreText(player.score, lang, "–")}</bdi>,
+                },
+              ]}
+            />
+          </li>
+        ))}
+      </ul>
+      <div className="flex flex-col gap-3 p-4">
         {hasMore && !term && !failed ? (
-          <button
-            type="button"
-            onClick={loadMore}
-            disabled={loading}
-            className={cn("mt-3 min-h-10 w-full rounded-lg", pp.ink, pp.heavy, ui.focus)}
-          >
+          <UiButton variant="soft" onClick={loadMore} disabled={loading}>
             {t("pepites.ranking.load_more")}
-          </button>
+          </UiButton>
         ) : null}
         {failed ? <PepitesErrorState inline onRetry={onRetry} /> : null}
         {!failed && (loading || (term && hasMore)) ? (
-          <p role="status" className={cn(pp.muted, "text-center text-[13px]")}>
+          <p role="status" className={cn("text-center", ui.text.secondary, ui.tone.muted)}>
             {t("state.loading")}
           </p>
         ) : !failed && !hasMore && filtered.length === 0 ? (
-          <p role="status" className={cn(pp.muted, "text-center text-[13px]")}>
+          <p role="status" className={cn("text-center", ui.text.secondary, ui.tone.muted)}>
             {t("pepites.compare.no_results")}
           </p>
         ) : null}
