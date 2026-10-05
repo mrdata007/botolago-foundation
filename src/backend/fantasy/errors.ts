@@ -31,6 +31,11 @@ export const FANTASY_ERROR_CODES = [
   "duplicate_membership",
   "ranking_unavailable",
   "idempotency_conflict",
+  // Fantasy R4 — public gameweek recaps.
+  "public_recap_disabled",
+  "public_recap_not_final",
+  "public_recap_alias_invalid",
+  "public_recap_not_found",
   "data_unavailable",
 ] as const;
 export type FantasyErrorCode = (typeof FANTASY_ERROR_CODES)[number];

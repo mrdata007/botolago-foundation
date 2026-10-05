@@ -8,6 +8,8 @@ import { NotificationError } from "@/backend/notifications/errors";
 import {
   selectNotificationsDataMode,
   setMyEmailNotifications,
+  setMyPushNotifications,
+  withChannel,
   withEmailChannel,
 } from "./notifications";
 
@@ -90,6 +92,34 @@ describe("e-mail notification switch", () => {
     const fake = recording(stored);
     const saved = await setMyEmailNotifications(true, fake.repository, context);
     expect(saved.channels.email).toBe(true);
+    expect(fake.writes).toHaveLength(0);
+  });
+});
+
+describe("push notification switch", () => {
+  test("withChannel changes the push channel and nothing else", () => {
+    const update = withChannel(stored, "push", true);
+    expect(update.channels).toEqual({ inApp: true, push: true, email: true });
+    expect({ ...update, channels: stored.channels }).toEqual({
+      ...withChannel(stored, "email", true),
+      channels: stored.channels,
+    });
+    expect(update).not.toHaveProperty("language");
+  });
+
+  test("re-reads the stored row before writing, so a newer category is kept", async () => {
+    const fake = recording(stored);
+    fake.replaceRow({ ...stored, categories: { ...stored.categories, fantasyDeadlines: true } });
+    const saved = await setMyPushNotifications(true, fake.repository, context);
+    expect(saved.channels).toEqual({ inApp: true, push: true, email: true });
+    expect(fake.writes).toHaveLength(1);
+    expect(fake.writes[0]!.input.categories.fantasyDeadlines).toBe(true);
+  });
+
+  test("writes nothing when the stored value already matches", async () => {
+    const fake = recording(stored);
+    const saved = await setMyPushNotifications(false, fake.repository, context);
+    expect(saved.channels.push).toBe(false);
     expect(fake.writes).toHaveLength(0);
   });
 });

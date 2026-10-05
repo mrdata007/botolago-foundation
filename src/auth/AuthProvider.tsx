@@ -13,6 +13,7 @@ import { useRouter } from "@tanstack/react-router";
 import { authService, type AuthSession, type AuthStatus, type AuthUser } from "@/services/auth";
 import { useI18n } from "@/i18n/provider";
 import { fetchAccountStanding, rememberSuspension } from "@/services/account-standing";
+import { releaseThisPhone } from "@/services/native-push-runtime";
 import {
   claimGuestPredictionsOnSignIn,
   sendGuestVotesOnSignIn,
@@ -158,6 +159,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const closePrompt = useCallback(() => setPrompt({ open: false }), []);
 
   const signOut = useCallback(async (opts?: { resetLocalData?: boolean }) => {
+    // In the phone app, this phone lets go of the account's push alerts first
+    // (it needs the session) so the next account on it can register. Bounded
+    // and best effort: nothing here can hold a sign-out back.
+    await releaseThisPhone(langRef.current);
     await authService.signOut(opts);
   }, []);
 

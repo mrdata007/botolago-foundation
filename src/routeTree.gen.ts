@@ -59,6 +59,7 @@ import { Route as FantasyRulesRouteImport } from './routes/fantasy.rules'
 import { Route as FantasyTeamRouteImport } from './routes/fantasy.team'
 import { Route as FantasyTopPlayersRouteImport } from './routes/fantasy.top-players'
 import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
+import { Route as JourneePublicIdRouteImport } from './routes/journee.$publicId'
 import { Route as MatchesIndexRouteImport } from './routes/matches.index'
 import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
 import { Route as MatchesStandingsRouteImport } from './routes/matches.standings'
@@ -342,6 +343,11 @@ const FantasyTransfersRoute = FantasyTransfersRouteImport.update({
   path: '/transfers',
   getParentRoute: () => FantasyRoute,
 } as any)
+const JourneePublicIdRoute = JourneePublicIdRouteImport.update({
+  id: '/journee/$publicId',
+  path: '/journee/$publicId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MatchesIndexRoute = MatchesIndexRouteImport.update({
   id: '/matches/',
   path: '/matches/',
@@ -547,6 +553,7 @@ export interface FileRoutesByFullPath {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
+  '/journee/$publicId': typeof JourneePublicIdRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
@@ -625,6 +632,7 @@ export interface FileRoutesByTo {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
+  '/journee/$publicId': typeof JourneePublicIdRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
@@ -708,6 +716,7 @@ export interface FileRoutesById {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
+  '/journee/$publicId': typeof JourneePublicIdRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
@@ -792,6 +801,7 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
+    | '/journee/$publicId'
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
@@ -870,6 +880,7 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
+    | '/journee/$publicId'
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
@@ -952,6 +963,7 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
+    | '/journee/$publicId'
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
@@ -1007,6 +1019,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ClubsClubIdRoute: typeof ClubsClubIdRoute
   DevPlayerMappingsSampleRoute: typeof DevPlayerMappingsSampleRoute
+  JourneePublicIdRoute: typeof JourneePublicIdRoute
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
   MatchesStandingsRoute: typeof MatchesStandingsRoute
   PrizesTermsRoute: typeof PrizesTermsRoute
@@ -1368,6 +1381,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/fantasy/transfers'
       preLoaderRoute: typeof FantasyTransfersRouteImport
       parentRoute: typeof FantasyRoute
+    }
+    '/journee/$publicId': {
+      id: '/journee/$publicId'
+      path: '/journee/$publicId'
+      fullPath: '/journee/$publicId'
+      preLoaderRoute: typeof JourneePublicIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/matches/': {
       id: '/matches/'
@@ -1829,6 +1849,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ClubsClubIdRoute: ClubsClubIdRoute,
   DevPlayerMappingsSampleRoute: DevPlayerMappingsSampleRoute,
+  JourneePublicIdRoute: JourneePublicIdRoute,
   MatchesMatchIdRoute: MatchesMatchIdRoute,
   MatchesStandingsRoute: MatchesStandingsRoute,
   PrizesTermsRoute: PrizesTermsRoute,

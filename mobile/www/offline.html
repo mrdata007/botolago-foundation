@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <title>BotolaGO</title>
+    <style>
+      :root {
+        --ink: #14213d;
+        --paper: #f6f7fb;
+        --accent: #14213d;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #eef1f8;
+          --paper: #0d1526;
+          --accent: #eef1f8;
+        }
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--paper);
+        color: var(--ink);
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      main {
+        box-sizing: border-box;
+        min-height: 100%;
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: 12px;
+        padding: 24px 16px;
+        text-align: center;
+      }
+      h1 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+      p {
+        margin: 0;
+        max-width: 28rem;
+        line-height: 1.5;
+      }
+      button {
+        margin-top: 8px;
+        min-height: 44px;
+        min-width: 44px;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--paper);
+        font: inherit;
+        font-weight: 600;
+      }
+      hr {
+        width: 3rem;
+        border: 0;
+        border-top: 1px solid currentColor;
+        opacity: 0.25;
+        margin: 12px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Connexion impossible</h1>
+      <p>BotolaGO n’a pas pu se connecter. Vérifiez votre connexion internet, puis réessayez.</p>
+      <hr />
+      <div dir="rtl" lang="ar">
+        <h1>تعذّر الاتصال</h1>
+        <p>لم يتمكن BotolaGO من الاتصال. تحقّق من اتصالك بالإنترنت ثم حاول مرة أخرى.</p>
+      </div>
+      <button type="button" onclick="window.location.replace('https://botolago.com')">
+        Réessayer · إعادة المحاولة
+      </button>
+    </main>
+  </body>
+</html>

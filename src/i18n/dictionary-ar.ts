@@ -87,6 +87,7 @@ export const ar = {
   "home.explore": "استكشف {accent}بوتولاجو{/accent}",
   "home.view_all": "عرض الكل",
   "home.view_fantasy_team": "عرض فريقي",
+  "home.my_clubs.last_result": "آخر نتيجة",
   "home.sr_title": "BotolaGO — أخبار ومباريات وفانتازي كرة القدم المغربية",
 
   "news.title": "الأخبار",
@@ -687,6 +688,30 @@ export const ar = {
   "fantasy.rules.scoring": "نظام النقاط",
   "fantasy.rules.scoring_desc":
     "هدف مهاجم: 4 نقاط، وسط: 5 نقاط، مدافع أو حارس: 6 نقاط. شباك نظيفة: 4 نقاط (مدافع/حارس).",
+  "fantasy.recap.public.title": "جعل جولتي عامة",
+  "fantasy.recap.public.explain":
+    "تعرض الصفحة العامة اسمك المستعار والجولة والمجموع والقائد وكلفة الانتقالات. ولا تعرض أبدًا بريدك الإلكتروني أو اسمك أو دورياتك أو فريقك القادم.",
+  "fantasy.recap.public.alias": "الاسم المستعار المعروض",
+  "fantasy.recap.public.publish": "إنشاء الرابط العام",
+  "fantasy.recap.public.live": "الرابط العام مفعّل",
+  "fantasy.recap.public.copy": "نسخ الرابط",
+  "fantasy.recap.public.revoke": "سحب الرابط",
+  "fantasy.recap.public.revoke_confirm": "تأكيد سحب الرابط",
+  "fantasy.recap.public.revoke_note":
+    "سحب الرابط يوقف الوصول إلى الصفحة على BotolaGO. أما الصور التي نُزّلت أو شوركت في مكان آخر فلا يمكن سحبها.",
+  "fantasy.recap.public.revoked": "تم سحب الرابط",
+  "fantasy.recap.public.alias_invalid": "يجب أن يتكون الاسم المستعار من 2 إلى 40 حرفًا.",
+  "fantasy.recap.public.share_message": "جولتي {n} في فانتازي BotolaGO: {points}. شاهد حصيلتي:",
+  "fantasy.recap.page.meta_title": "الجولة {n} · {points} · {alias} | BotolaGO",
+  "fantasy.recap.page.meta_title_generic": "حصيلة فانتازي على BotolaGO",
+  "fantasy.recap.page.meta_description": "حصيلة جولة في فانتازي البطولة الاحترافية على BotolaGO.",
+  "fantasy.recap.page.by": "حصيلة {alias}",
+  "fantasy.recap.page.revision": "نسخة الحساب {v} · حُدّثت في {date}",
+  "fantasy.recap.page.unavailable_title": "هذه الحصيلة غير متاحة",
+  "fantasy.recap.page.unavailable_body": "ربما سحب صاحبها الرابط.",
+  "fantasy.recap.page.cta_title": "دورك الآن",
+  "fantasy.recap.page.cta_body":
+    "كوّن فريقك من لاعبي البطولة الاحترافية وتحدَّ أصدقاءك جولة بعد جولة.",
   "fantasy.recap.title": "جولتي",
   "fantasy.recap.gameweek": "الجولة {n}",
   "fantasy.recap.final": "النتيجة النهائية",
@@ -1421,6 +1446,13 @@ export const ar = {
   "auth.setup.notif_deadline_desc": "الموعد النهائي قبل كل جولة.",
   "auth.setup.notif_email": "استلام الإشعارات عبر البريد الإلكتروني",
   "auth.setup.notif_email_desc": "قبل المباريات وبعدها، وتذكيرات الفانتازي الخاصة بك.",
+  "auth.setup.notif_push": "تنبيهات على هذا الهاتف",
+  "auth.setup.notif_push_desc":
+    "الأهداف والنتائج وانطلاق المباريات والموعد النهائي للفانتازي، حتى عندما يكون التطبيق مغلقًا.",
+  "auth.setup.notif_push_denied":
+    "الإشعارات محظورة. اسمح بها لتطبيق BotolaGO من إعدادات الهاتف ثم حاول مرة أخرى.",
+  "auth.setup.notif_push_unavailable":
+    "تعذّر تفعيل التنبيهات حاليًا. تحقّق من اتصالك وحاول مرة أخرى.",
   "auth.setup.language_confirm": "اللغة الافتراضية",
   "auth.setup.skip": "تخطّي",
   "auth.setup.next": "التالي",

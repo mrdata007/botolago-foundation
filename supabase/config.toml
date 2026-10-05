@@ -394,6 +394,14 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/notification-email-dispatch/index.ts"
 
+# Sends queued push notifications (Android through FCM, iPhone through APNs).
+# Same scheduler-token check as the email dispatcher; it claims nothing while
+# app_private.notification_push_settings is off, which is how it ships.
+[functions.notification-push-dispatch]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/notification-push-dispatch/index.ts"
+
 [functions.football-live-refresh]
 enabled = true
 verify_jwt = false

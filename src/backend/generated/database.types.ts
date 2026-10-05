@@ -1336,6 +1336,10 @@ export type Database = {
         Returns: boolean
       }
       match_votes: { Args: { p_fixture_id: string }; Returns: Json }
+      my_fantasy_gameweek_recap_publication: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
       my_notification_unread_count: {
         Args: { p_category?: Database["app"]["Enums"]["notification_category"] }
         Returns: number
@@ -1575,6 +1579,14 @@ export type Database = {
         }
         Returns: Json
       }
+      public_fantasy_gameweek_recap: {
+        Args: { p_public_id: string }
+        Returns: Json
+      }
+      publish_fantasy_gameweek_recap: {
+        Args: { p_alias: string; p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
       quarantine_historical_player_fixture_performance: {
         Args: {
           p_coverage: Json
@@ -1635,6 +1647,10 @@ export type Database = {
           p_source_version?: string
         }
         Returns: string
+      }
+      revoke_fantasy_gameweek_recap: {
+        Args: { p_public_id: string }
+        Returns: undefined
       }
       save_article: { Args: { p_article_edition_id: string }; Returns: Json }
       save_fantasy_lineup: {
@@ -1771,6 +1787,10 @@ export type Database = {
         Returns: Json
       }
       service_claim_notification_schedules: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
+      service_claim_push_deliveries: {
         Args: { p_lease_seconds?: number; p_limit?: number }
         Returns: Json
       }
@@ -2016,6 +2036,10 @@ export type Database = {
         Returns: Json
       }
       service_release_email_deliveries: {
+        Args: { p_delivery_ids: string[]; p_retry_at: string }
+        Returns: number
+      }
+      service_release_push_deliveries: {
         Args: { p_delivery_ids: string[]; p_retry_at: string }
         Returns: number
       }
@@ -4319,6 +4343,67 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      fantasy_public_recaps: {
+        Row: {
+          alias: string | null
+          fantasy_team_id: string
+          gameweek_id: string
+          id: string
+          public_id: string
+          published_at: string
+          revoked_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alias?: string | null
+          fantasy_team_id: string
+          gameweek_id: string
+          id?: string
+          public_id: string
+          published_at?: string
+          revoked_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alias?: string | null
+          fantasy_team_id?: string
+          gameweek_id?: string
+          id?: string
+          public_id?: string
+          published_at?: string
+          revoked_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_public_recaps_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_public_recaps_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_public_recaps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fantasy_ranking_tiebreak_rules: {
         Row: {
@@ -8210,6 +8295,7 @@ export type Database = {
         | "matchday_results"
         | "round_preview"
         | "pepites_weekly"
+        | "goal_cancelled"
       placement_scope: "global" | "competition" | "team" | "country"
       placement_type:
         | "home_lead"
@@ -8633,6 +8719,7 @@ export const Constants = {
         "matchday_results",
         "round_preview",
         "pepites_weekly",
+        "goal_cancelled",
       ],
       placement_scope: ["global", "competition", "team", "country"],
       placement_type: [
