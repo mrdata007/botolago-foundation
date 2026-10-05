@@ -13,8 +13,8 @@ import type { Gameweek } from "@/types/domain";
  *     `/fantasy/create` gates on, so a "create" action never leads into a
  *     closed builder);
  *   - `hasTeam` — whether this account owns a team;
- *   - `gameweek` — the current round's status and the next round's
- *     enrolment, for an owner.
+ *   - `gameweek` — the current round's status (for an owner) and the
+ *     enrolment round's deadline (for a new team).
  *
  * A finalized current round does not mean enrolment is closed, and a failed
  * request is never turned into "closed": it is `retry`.
@@ -30,7 +30,6 @@ export type FantasyNextActionKind =
   | "view_team"
   | "follow_points"
   | "view_result"
-  | "prepare_next"
   | "results";
 
 export type FantasyNextActionPath =
@@ -47,8 +46,8 @@ export type FantasyNextAction =
       to: FantasyNextActionPath;
       /**
        * The deadline the action is about, when one is known: the enrolment
-       * deadline for `create`, the current one for `prepare`, the next
-       * round's for `prepare_next`. Never invented.
+       * deadline for `create`, the current one for `prepare`. Never
+       * invented.
        */
       deadline: { number: number; at: string } | null;
     };
@@ -107,17 +106,12 @@ export function fantasyNextAction({
     case "finalizing":
       return { kind: "follow_points", to: "/fantasy/points", deadline: null };
     case "finalized":
-    case "corrected": {
-      const next = gameweek.enrolment;
-      if (next && next.number !== gameweek.number && future(next.deadline, now)) {
-        return {
-          kind: "prepare_next",
-          to: "/fantasy/team",
-          deadline: { number: next.number, at: next.deadline },
-        };
-      }
+    case "corrected":
+      // Not "prepare the next round", even when enrolment already names it:
+      // the team editor follows the current gameweek, and stays locked until
+      // the lifecycle opens the next one. Once it does, the current gameweek
+      // is "open" and the action becomes "prepare".
       return { kind: "view_result", to: "/fantasy/points", deadline: null };
-    }
     case "locked":
     case "cancelled":
       return { kind: "view_team", to: "/fantasy/team", deadline: null };
@@ -160,8 +154,6 @@ export function nextActionLabel(
       return t("fantasy.next.follow_points");
     case "view_result":
       return t("fantasy.next.view_result");
-    case "prepare_next":
-      return t("fantasy.next.prepare_next");
     case "results":
       return t("fantasy.next.results");
   }

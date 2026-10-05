@@ -468,7 +468,6 @@ export const ar = {
   "fantasy.next.view_team": "عرض فريقي",
   "fantasy.next.follow_points": "تابع نقاطي",
   "fantasy.next.view_result": "عرض حصيلتي",
-  "fantasy.next.prepare_next": "جهّز الجولة القادمة",
   "fantasy.next.results": "عرض نتائجي",
   "fantasy.next.retry": "أعد المحاولة",
   "fantasy.rankings.create_team": "إنشاء فريقي",

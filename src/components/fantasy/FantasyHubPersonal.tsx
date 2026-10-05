@@ -131,7 +131,8 @@ export function FantasyHubTeamArea({
 /**
  * The owner's one primary action, from the shared next-action model: prepare
  * the team before the deadline, follow the points while the round is played,
- * the result once it is final, the next round as soon as it opens. The screen
+ * the result once it is final, and "prepare" again once the next round is
+ * current (the team editor unlocks only then). The screen
  * is `ready` here, so the season is open; only the owner branch is reached.
  */
 function OwnerNextAction({ gameweek }: { gameweek: Gameweek | null }) {

@@ -109,29 +109,21 @@ describe("fantasyNextAction — owner", () => {
     }
   });
 
-  test("final with the next round open: prepare next, even if the current round is closed", () => {
-    expect(
-      run({
-        hasTeam: true,
-        availability: ready(true),
-        gameweek: gw("finalized", {
-          deadline: PAST,
-          enrolment: { id: "n", number: 8, deadline: LATER },
+  test("final with the next round already staged: still the result, never a locked editor", () => {
+    // The team editor follows the current gameweek, whose deadline has passed;
+    // it only unlocks once the lifecycle makes the next round current.
+    for (const deadline of [LATER, PAST]) {
+      expect(
+        run({
+          hasTeam: true,
+          availability: ready(true),
+          gameweek: gw("finalized", {
+            deadline: PAST,
+            enrolment: { id: "n", number: 8, deadline },
+          }),
         }),
-      }),
-    ).toEqual({ kind: "prepare_next", to: "/fantasy/team", deadline: { number: 8, at: LATER } });
-  });
-
-  test("next round's deadline already passed: view result, not prepare next", () => {
-    expect(
-      run({
-        hasTeam: true,
-        gameweek: gw("finalized", {
-          deadline: PAST,
-          enrolment: { id: "n", number: 8, deadline: PAST },
-        }),
-      }).kind,
-    ).toBe("view_result");
+      ).toEqual({ kind: "view_result", to: "/fantasy/points", deadline: null });
+    }
   });
 
   test("closed season: results; no gameweek: view team", () => {

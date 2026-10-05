@@ -488,7 +488,6 @@ export const fr = {
   "fantasy.next.view_team": "Voir mon équipe",
   "fantasy.next.follow_points": "Suivre mes points",
   "fantasy.next.view_result": "Voir mon bilan",
-  "fantasy.next.prepare_next": "Préparer la prochaine journée",
   "fantasy.next.results": "Voir mes résultats",
   "fantasy.next.retry": "Réessayer",
   "fantasy.rankings.create_team": "Créer mon équipe",
