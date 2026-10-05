@@ -2,100 +2,121 @@
 
 <!-- impeccable:product-schema 1 -->
 
+How this record was made: on 2026-10-05 the repository's docs, code and production `APPLIED_*`
+records were read (no database was queried), and the public site was checked with plain
+unauthenticated requests. The owner then answered four questions and gave a short brief. Product facts
+taken from those are marked "owner, 2026-10-05"; the fourth answer is a workflow setting and is not
+recorded here. Facts inferred from the repository are labelled as inferred, and anything still open is
+marked **Unknown**. Status that changes week to week (gameweeks, switches, counts) lives in
+[docs/product/PRODUCT_CONTEXT_2026-10-05.md](docs/product/PRODUCT_CONTEXT_2026-10-05.md), together
+with the evidence behind the feature-status lines here.
+
 ## Platform
 
 web
 
-BotolaGO is a mobile-first web app served from https://botolago.com. It is rendered on the server, in
-French and Arabic. The owner plans to distribute it later through a Capacitor wrapper. That work has
-not started: as of 2026-10-05 the repository has no Capacitor or native project, no web manifest and
-no service worker. A wrapper around this website does not make its design language native, so the
-platform stays `web` until the owner decides otherwise.
+BotolaGO is a mobile-first web app served from https://botolago.com, with an interface in French and
+Arabic. The server renders every page in French (`<html lang="fr" dir="ltr">`). A reader's Arabic
+choice is stored in the browser and applied after the page loads, so Arabic readers see a French first
+paint (`docs/engineering/LANGUAGE_URLS.md`).
 
-How this record was made: on 2026-10-05 the repository's docs, code and production records were read,
-and the public site was checked with plain unauthenticated requests. The owner then answered four
-questions; those answers are marked "owner, 2026-10-05". Anything still open is marked **Unknown**.
-Status that changes week to week (gameweeks, switches, counts) lives in
-[docs/product/PRODUCT_CONTEXT_2026-10-05.md](docs/product/PRODUCT_CONTEXT_2026-10-05.md), together
-with the evidence behind each line here.
+The owner plans to distribute the app later through a Capacitor wrapper. That work has not started:
+as of 2026-10-05 the repository has no Capacitor or native project, no web manifest and no service
+worker. A wrapper around this website does not make its design language native, so the platform stays
+`web` until the owner decides otherwise.
 
 ## Users
 
 **Primary (owner, 2026-10-05): fans first, and Fantasy grows from there.** The core user is a Moroccan
-football supporter, at home or abroad, who follows the Botola Pro. They check scores, results,
-fixtures, the table and club news, mostly on a phone and around each round of matches (the
-_journée_). Fantasy is the main thing BotolaGO wants these fans to sign up for. The free games
-(Fantasy, Pronostics and Pépites) are built on the same match data the fans already come to read.
+football supporter, at home or abroad, who follows the Botola Pro and checks scores, results and the
+table. The product also serves them fixtures and club news. Fantasy is the main thing BotolaGO wants
+these fans to sign up for. The free games (Fantasy and Pronostics) and the Pépites under-23 ranking
+are built on the same match data the fans already come to read.
 
 - **Language:** French and Arabic readers in roughly equal numbers (owner's estimate, 2026-10-05). The
   repository holds no measured split. Neither language is secondary.
-- **Jobs, in the order they happen:**
+- **Jobs, in priority order (owner, 2026-10-05; not measured):**
   1. See what is on today, follow a match live, and check the result and the table. No account is
      needed.
   2. Read Botola news and follow a club.
   3. Build a Fantasy squad, pick a captain, make transfers before each deadline, and compare against
      friends in private leagues.
   4. Predict scores (Pronostics) and follow young players (Pépites).
-- **Secondary audiences:** BotolaGO staff use the `/admin` console (MFA-protected): news CMS, user
-  moderation, prizes, Pépites data and player mapping. In practice this is the owner. Partners and
-  sponsors see the pitch demo at `/demo`, which runs on sample data.
-- **Unknown:** age profile, device mix, the share of users abroad, and the number of real (non-test)
-  users. The repository has no user research, personas or traffic data. Real use is at a very early
-  stage: the Fantasy rounds scored so far include several test accounts.
+- **Secondary audiences (inferred from the code, not confirmed by the owner):**
+  - BotolaGO staff use the `/admin` console (MFA-protected): news CMS, user moderation, prizes, Pépites
+    data and player mapping. In practice this is the owner.
+  - Partners and sponsors see the pitch demo at `/demo`, which runs on sample data.
+- **Unknown:**
+  - whether fans mostly use a phone, and whether their use clusters around each round of matches (the
+    _journée_);
+  - their age profile, device mix and the share of users abroad;
+  - the number of real (non-test) users.
+
+  The repository has no user research, personas or traffic data. Real use is at a very early stage:
+  the Fantasy rounds scored so far include several test accounts.
 
 ## Product Purpose
 
-BotolaGO puts the Botola Pro in one place, in French and Arabic, and adds free games built on the
-same live data:
+BotolaGO puts the Botola Pro in one place, in French and Arabic:
 
 - live scores, results, fixtures and the table;
 - clubs and licensed news;
-- Fantasy, Pronostics (score predictions) and Pépites (an under-23 ranking).
+- free games built on the same data, Fantasy and Pronostics (score predictions);
+- Pépites, an under-23 player ranking.
 
 Success means supporters come back every _journée_, both to follow the matches and to play. The main
 conversion is creating a Fantasy team and managing it actively. This purpose is stated in
-`docs/seo/BOTOLAGO_SEO_OPERATING_SYSTEM.md` (Module 2) and was confirmed by the owner on 2026-10-05.
+`docs/seo/BOTOLAGO_SEO_OPERATING_SYSTEM.md` (Outcome and Module 2; Pépites was added later) and was
+confirmed by the owner on 2026-10-05.
 
 ## Positioning
 
 BotolaGO goes deep on one league, in two languages, with the games tied to the match data. The
-documented strategy is not to out-publish generic score sites. In French search those are Flashscore,
-Sofascore, FRMF and L'Équipe. BotolaGO aims to win on three things:
+documented strategy (`docs/seo/BOTOLAGO_SEO_OPERATING_SYSTEM.md`, Outcome) is not to out-publish
+established score sites. Generic French results are dominated by Flashscore, Sofascore, FRMF,
+L'Équipe and similar authorities. BotolaGO aims to win on three things:
 
 1. the most useful Botola Pro match, table, club and player pages in both French and Arabic;
 2. the clearest Botola Pro Fantasy game;
-3. original reporting, always credited.
+3. original, attributable reporting, with licensed reporting always credited to its source.
 
-What a neighbouring product could not truthfully copy today:
+What sets BotolaGO apart today (no competitor review in the repository confirms that others lack these):
 
-- Fantasy and Pronostics are free and use only Botola Pro players and matches. There is no purchase
-  and no betting, and real prizes come from the operator.
-- Arabic is a first-class language rather than a mirrored afterthought.
-- Fantasy scoring comes only from official provider data and is computed in the database.
+- **Free play.** Fantasy and Pronostics are free and use only Botola Pro players and matches, with no
+  purchase and no betting. Fantasy prizes are real and come from the operator, Go Sports
+  Technologies. Pronostics has no prizes.
+- **Arabic throughout.** The whole interface is translated into Arabic with right-to-left layout, and
+  most news editions are Arabic. On the server Arabic is not yet equal: pages render French first, and
+  only articles have Arabic URLs.
+- **Official scoring data.** Fantasy points come only from official provider data and are computed on
+  the server, never in the browser.
 
 The Fantasy game is deliberately modelled on Fantasy Premier League, screen by screen (see
 `BOTOLAGO_FPL_SCREEN_MATRIX.md`). It wears BotolaGO's identity, not FPL's.
 
-**Unknown:** no Search Console or traffic data exists yet to validate this positioning.
+**Unknown:** the repository holds no Search Console or traffic data to validate this positioning.
+Seline analytics has run on botolago.com since 2026-09-25, but what it shows is not recorded here. The
+SEO plan (26 Sept) says Search Console was not connected to its project.
 
 ## Operating Context
 
 - **The rhythm is the _journée_.** 2026/27 is a 16-club Botola Pro season. The league publishes
-  fixtures one round at a time, so a Fantasy gameweek can only be set up once the data provider has
-  published that round. This creates gaps when new Fantasy teams cannot be created.
+  fixtures only a round or two ahead (in the owner's account, one matchday at a time). A Fantasy
+  gameweek can only be set up once the data provider has published that round, which creates gaps
+  when new Fantasy teams cannot be created.
   - The Fantasy deadline is 90 minutes before the round's first kick-off.
   - Pronostics locks each match at its own kick-off.
 - **Morocco time everywhere.** Match and deadline times are shown in Morocco time (`Africa/Casablanca`)
-  by an app-owned clock. That clock treats Morocco as UTC+0 all year from 2026-09-20, citing a decree
-  in `src/lib/morocco-time.ts`. **Unknown:** the decree has not been checked outside the code.
-- **Phone first.**
-  - The design width is 390px. Tests cover 320–1440px in French and Arabic.
-  - Below 768px a bottom tab bar holds Accueil, Actualités, Fantasy, Matches and Pépites, with
-    Profile in the top bar.
-  - Pronostics lives inside Matches.
+  by an app-owned clock. That clock treats Morocco as UTC+0 all year from 2026-09-20; its legal source
+  is cited only in `src/lib/morocco-time.ts`. **Unknown:** that source has not been checked outside the
+  code.
+- **Phone first.** Browser tests cover phone to desktop widths in French and Arabic. The main sections
+  are Accueil, Actualités, Fantasy, Matches and Pépites, plus Profile. Pronostics lives inside Matches.
 - **Language.**
-  - A first visit asks the reader to choose French or Arabic. The choice is stored on that device only.
-  - The server always renders French first, and Arabic switches in after the page loads.
+  - A first visit asks the reader to choose French or Arabic.
+  - The interface language is stored on that device only (browser storage). An account also records
+    the language in use at sign-up or profile setup, and notifications use that one.
+  - The server renders French first, and Arabic switches in after the page loads.
   - There are no `/ar` URLs; they are planned in `docs/engineering/LANGUAGE_URLS.md`, not built.
   - News articles are the exception: each language edition has its own URL.
 - **Accounts are optional until saving.**
@@ -103,15 +124,25 @@ The Fantasy game is deliberately modelled on Fantasy Premier League, screen by s
   - A Fantasy squad and Pronostics picks can be made as a guest; they are stored on the phone.
   - Saving, ranking and leagues need a free account: email and password, confirmed by an emailed code.
   - The Terms limit accounts to adults (18+), but sign-up does not check age.
-- **Sharing goes through WhatsApp first.** Share sheets offer native share, WhatsApp and copy.
+- **WhatsApp is the named share channel.**
+  - The invite, Pronostics, Pépites and gameweek-recap share sheets offer the phone's share sheet, a
+    WhatsApp button and copy link.
+  - Image sheets add a download when the phone cannot share a file.
+  - Article, match, club and Fantasy player pages offer only the phone's share sheet or copy link.
 - **Data sources.**
-  - SportsMonks provides fixtures, live scores, events, lineups and statistics.
-  - Sofascore and Flashscore, via RapidAPI, provide Fantasy player data and identity mapping.
+  - SportsMonks provides fixtures, live scores, events, lineups, squads and statistics. That includes
+    the Fantasy player list and the player statistics that scored Fantasy GW1 and GW2.
+  - Sofascore and Flashscore (via RapidAPI) are being brought in as Fantasy's player-data sources
+    (owner decision, 2026-10-01). On 2026-10-03 production held 191 reviewed Sofascore player identity
+    mappings and no Flashscore mappings. The reconciled scoring path is built but has no production
+    record. **Unknown:** whether it has been applied since.
   - ElBotola licensed its Botola Pro article archive.
-- **One owner runs it.** The owner (GitHub `mrdata007`) makes product decisions and approves every
-  production database write. The owner also publishes the frontend by hand from Lovable: a merge to
-  `main` is not a deployment. The repository syncs to Lovable, so published git history must never be
-  rewritten.
+- **One owner runs it.**
+  - The owner (GitHub `mrdata007`) makes product decisions and approves every manual production
+    database write (migrations and guarded scripts). Once switched on, scheduled jobs (the database
+    ticks and the hourly Fantasy orchestrator) write by themselves.
+  - The owner publishes the frontend by hand from Lovable: a merge to `main` is not a deployment.
+  - The repository syncs to Lovable, so published git history must never be rewritten.
 
 ## Capabilities and Constraints
 
@@ -125,8 +156,8 @@ production evidence is in the dated snapshot.
   - a computed table labelled provisional or unofficial;
   - a 16-club directory and club pages, and following a club.
 - **News:**
-  - a licensed ElBotola archive, mostly in Arabic, credited "Source : ElBotola" with a link to each
-    original;
+  - a licensed ElBotola archive, mostly in Arabic. French editions are credited "Source : ElBotola"
+    and Arabic ones "المصدر: البطولة", each with a link to the original;
   - an editorial CMS in `/admin`.
   - The archive import runs only when someone starts it.
 - **Fantasy** (rules: `docs/backend/FANTASY_RULES_V1.md`):
@@ -135,12 +166,18 @@ production evidence is in the dated snapshot.
     for each extra;
   - Wildcard ×2, Free Hit, Bench Boost and Triple Captain;
   - private leagues joined by invite code, global rankings, and a private gameweek recap.
-- **Prizes:** a gameweek prize, a monthly prize and a season prize, all provided by Go Sports
-  Technologies. Winners are ID-checked, and staff teams are excluded.
+- **Prizes,** all provided by Go Sports Technologies; winners are ID-checked and staff teams are
+  excluded:
+  - a gameweek prize;
+  - a "monthly" prize, labelled "Lot du mois" but awarded per block of 4 gameweeks rather than per
+    calendar month;
+  - a season prize.
 - **Pronostics:** free score predictions scoring 3 points for the exact score and 1 for the right
   outcome. It has round and season boards, and mini-leagues that share Fantasy league codes.
-- **Pépites:** an under-23 Botola Pro ranking with a weekly Top 10, player pages, a method page and a
-  comparison page.
+- **Pépites:** an under-23 Botola Pro ranking, with player pages, a method page and a comparison page.
+  - On 2026-10-05 it shows the 2025/26 final ranking.
+  - The weekly Top 10, chosen by the editors, is built. The first 2026/27 edition comes only after
+    round 3, and none had been published at the last record.
 - **Other:** the landing page (`/jouer`, also shown at `/` to first-time signed-out visitors); optional
   two-step sign-in; account-deletion requests; cookieless analytics (Seline).
 
@@ -149,12 +186,16 @@ production evidence is in the dated snapshot.
 - **Email notifications:** mode `off` at the last record (2026-10-04). As a result, the match reminder
   bell, the Fantasy deadline and recap emails, and the Pépites weekly email send nothing. The in-app
   inbox very probably receives nothing either. Some interface copy still promises these reminders.
-- **Dark mode:** built, but switched off.
-- **Fantasy Cup, public leagues and head-to-head leagues:** the screens and copy exist, but no backend
-  path works.
+- **Dark mode:** the theme machinery is built but switched off. Fantasy has no dark version yet
+  (BG-0084, queued).
+- **Fantasy Cup and public leagues:** the screens and copy exist, but no backend path works.
+  Head-to-head leagues appear only as a disabled option, with copy saying they will come later.
 - **Google and Apple sign-in:** the buttons render, but the providers were last recorded as not enabled
   in Supabase. **Unknown:** whether they work now.
 - **AI-written articles and GNews ingestion:** both are switched off or dormant.
+- **Other built but unused pieces:** a deadline-first home layout (`HOME_DEADLINE_FIRST = false`), and
+  several Fantasy components that nothing mounts (FantasyOnboarding, LeagueTable, Pitch and others;
+  full list in the dated snapshot). Their copy has not been checked against ruleset v1.
 
 **Planned only, not built:**
 
@@ -163,16 +204,22 @@ production evidence is in the dated snapshot.
 - the Morocco national-team section;
 - Fantasy advice guides;
 - server-made share cards;
-- sponsor placements, which appear only in the pitch demo.
+- sponsor placements such as "gameweek presented by" and "leaderboard presented by", which appear
+  only in the pitch demo. (A per-prize sponsor credit — name and logo, "Offert par …" — is already
+  built into `/prizes` and `/admin/prizes`, but unused: Go Sports Technologies provides every prize.)
 
 **Constraints future work must keep:**
 
 - **Refinement, not redesign** (owner, 2026-10-05). Keep the brand identity, working features, business
   rules and frontend stack. The stack is TanStack Start, React 19, Vite, Tailwind CSS v4, Radix/shadcn,
   and Supabase. It is scaffolded from Lovable and kept in sync with it.
-- **Game logic is proven and lives in the database.** This covers Fantasy squad rules, transfers,
-  chips, the gameweek lifecycle, scoring and league membership. The interface may present it but must
-  not reimplement it, and the browser never recomputes points.
+- **Game logic runs on the server, never in the browser.**
+  - The database enforces Fantasy squad rules, transfers, chips and league membership.
+  - Scoring and finalisation run in a server-side worker (`scripts/backend/fantasy-lifecycle-runner.ts`)
+    against a sealed database snapshot, and the database checks and stores the results.
+  - The browser keeps a copy of the squad limits only to guide guest squad building.
+  - New interface work may present this logic but must not reimplement it, and the browser never
+    computes a signed-in manager's points.
 - **Data honesty.**
   - Show only what the data carries. An unknown value is a dash, never 0.
   - Never show a probable XI. Label provisional tables and points as provisional.
@@ -183,10 +230,16 @@ production evidence is in the dated snapshot.
   names identify; they never imply official status.
 - **Image and content rights.**
   - No player photos without a signed release.
-  - Club crests come from the provider; two are placeholder shields.
+  - Club crests come from SportsMonks and are cleared for in-app display (owner, 2026-09-23,
+    `docs/backend/FOOTBALL_OPERATIONS_RUNBOOK.md`); the landing page shows them. At the last record
+    (BG-0135, open), one current club (Amal Tiznit) and one former club (Yacoub El Mansour) carried the
+    provider's placeholder shield. **Unknown:** whether crests may appear in share images, marketing
+    or store listings. Today's share images use club discs and initials instead.
   - There is no Botola Pro competition logo.
+  - The Pépites data provider's licence lets its photos and logos identify players inside the app
+    only: never in promotion or share images (`docs/engineering/PEPITES_PLAN.md`). The same licence
+    forbids presenting its data as official.
   - Licensed news must keep its credit and link.
-  - Provider photos and logos never appear in promotion or share images.
 - **Production data** changes only through the reviewed path in `CLAUDE.md`.
 
 **Terminology:**
@@ -194,13 +247,15 @@ production evidence is in the dated snapshot.
 - _Journée_ / الجولة: a round, and a Fantasy gameweek; columns read "J.14".
 - _Date limite_: the Fantasy deadline.
 - _Manager_: a Fantasy player; the Arabic copy uses مدرب.
-- _Joker_: Wildcard; Free Hit and Bench Boost stay in English.
+- **Chips:** in French, _Joker_ (Wildcard) and _Triple Capitaine_, while Free Hit and Bench Boost stay
+  in English. Arabic translates all four: الورقة الحرة, القائد الثلاثي, الضربة الحرة, تعزيز الاحتياط.
 - _Lots à gagner_: prizes.
 - _Pronostics_ / التوقعات.
 - _Pépites_ / جواهر; the Arabic Top 10 label is not settled (أفضل 10 vs توب 10).
-- _Botola Pro Inwi_: the league as the interface names it.
+- _Botola Pro_ in running copy. _Botola Pro Inwi_ / البطولة الاحترافية إنوي appears only as the
+  competition label on match, club and standings headers.
 - _Provisoire_: provisional.
-- "Matches" (nav) vs "matchs" (page copy) is an open inconsistency in French.
+- "Matches" vs "Matchs" is an open inconsistency in French.
 
 **Open product decisions (Unknown):**
 
@@ -208,23 +263,30 @@ production evidence is in the dated snapshot.
   client);
 - when email notifications switch on;
 - whether the Fantasy Cup and public leagues will be built or removed;
-- which language-URL plan is adopted;
+- whether language URLs are adopted, and if so which shape (`/ar` beside unprefixed French, or `/fr`
+  and `/ar` namespaces);
 - the canonical brand blue: the logo file uses `#0151fc`, while the interface's brand token is a deeper
   navy;
-- whether an Arabic-script form of the brand name exists.
+- whether an Arabic-script form of the brand name is sanctioned.
 
 ## Brand Commitments
 
-- **Name:** "BotolaGO": capital B, lower-case "otola", upper-case "GO". It stays in Latin script in
-  both languages, by an explicit rule in `src/i18n/i18n-allowlist.ts`. In headings that name the
-  product, the wordmark image replaces the typed word (`src/components/brand/BrandedText.tsx`).
+- **Name:** "BotolaGO": capital B, lower-case "otola", upper-case "GO".
+  - The `app.name` key stays in Latin script in both languages; `src/i18n/i18n-allowlist.ts` annotates
+    it as deliberately identical.
+  - One Arabic string (`home.explore`, `src/i18n/dictionary-ar.ts`) types the Arabic-script form
+    بوتولاجو. **Unknown:** whether that form is sanctioned (see Open product decisions).
+  - In the section headings that use `src/components/brand/BrandedText.tsx` (a handful of call
+    sites), the wordmark image replaces the typed word. Page titles and some other headings keep the
+    typed word.
 - **Assets:**
   - wordmark and "GO" mark SVGs in colour and light versions (`src/assets/brand/`);
   - `public/favicon.png`, `public/apple-touch-icon.png` and `public/og-image.jpg`.
 - **Sub-brands:**
   - BotolaGO Fantasy;
   - Pronostics;
-  - Pépites, the first "BotolaGO Data" product, which keeps its own look inside BotolaGO.
+  - Pépites, which keeps its own look inside BotolaGO. The Pépites plan names it the first "BotolaGO
+    Data" product; that label exists only in plan documents, not in the product.
 - **Taglines in use:**
   - "Actualité & Fantasy du football marocain" / "أخبار وفانتازي كرة القدم المغربية";
   - "Le football marocain, réuni." / "كرة القدم المغربية، في مكان واحد.";
@@ -239,16 +301,18 @@ production evidence is in the dated snapshot.
   - French should sound native to Moroccan football coverage, and Arabic is written or reviewed as
     Arabic, not translated literally.
 - **Visual identity is incumbent and authoritative.** It is "Design System V2", currently the look
-  called Option A "Club colours". It is documented in `docs/engineering/DESIGN_SYSTEM_V2.md` and
-  implemented in `src/styles.css` and `src/components/ui-kit/`. The Fantasy section is its declared
-  source of truth. This record does not restate it, and there is no `DESIGN.md` yet.
+  called Option A "Club colours". It is documented in `docs/engineering/DESIGN_SYSTEM_V2.md` (which
+  trails the code on a few points; see the snapshot, section 7) and implemented in `src/styles.css`
+  and `src/components/ui-kit/`. This record does not restate it, and there is no `DESIGN.md` yet.
 - **Operator:** Go Sports Technologies (a company being formed), Agadir, Morocco; contact
   support@botolago.com.
 
 ## Evidence on Hand
 
 - **Real data:**
-  - live 2026/27 Botola Pro data, plus the 2024/25 and 2025/26 seasons;
+  - live 2026/27 Botola Pro data;
+  - historical 2024/25 and 2025/26 data, uneven in completeness: mainly per-player performance rows
+    (see `docs/engineering/PEPITES_HISTORICAL_DATA_REPAIR.md`);
   - about 15,690 licensed ElBotola article editions, mostly Arabic. The newest was dated
     23 September 2026 when checked on 2026-10-05.
 - **Product rules and texts:**
@@ -256,10 +320,11 @@ production evidence is in the dated snapshot.
   - the Terms and Privacy Policy in `src/content/legal/documents.ts`;
   - the voice and audience brief in `docs/seo/BOTOLAGO_SEO_OPERATING_SYSTEM.md`.
 - **Production records:**
-  - `docs/production/APPLIED_*` files, which are dated and the strongest evidence of what is live;
+  - `docs/production/APPLIED_*` files. Each is dated, and the latest is the strongest evidence of what
+    is live;
   - QA captures in `docs/qa/fpl-screens/` and `docs/qa/polish/`.
-- **Imagery** in `src/assets/` (night-stadium photography and object renders). **Unknown:** who made it
-  and under what licence; no record exists.
+- **Imagery** in `src/assets/`: stadium photography at night, golden hour and daytime, plus object
+  renders. **Unknown:** who made it and under what licence; no record exists.
 - **Pitch demo** at `/demo`. Its managers and matches are invented; it is a demonstration, never
   evidence of use.
 - **Absent, and must not be fabricated:**
@@ -270,9 +335,9 @@ production evidence is in the dated snapshot.
   - a brand guideline document;
   - published prize winners. None were verified at the last record.
 - **Stale sources to treat with care.** Several plans predate what shipped, notably
-  `docs/engineering/LAUNCH_LEDGER.yaml` (last updated 2026-09-21), the Pépites plan documents and
-  `.lovable/plan.md`. The snapshot lists the conflicts found. Dated `APPLIED_*` records and the code win
-  over plans.
+  `docs/engineering/LAUNCH_LEDGER.yaml` (its `updated:` header reads 2026-09-21, though entries run to
+  2026-09-26), the Pépites plan documents and `.lovable/plan.md`. The snapshot lists the conflicts
+  found. The latest dated `APPLIED_*` record and the code win over plans.
 
 ## Product Principles
 
@@ -282,27 +347,34 @@ production evidence is in the dated snapshot.
    mirror mode or an afterthought. A change is not done until it works in both.
 3. **Nothing invented.** Show only what the data and the system actually deliver. Label what is
    provisional, show unknowns as unknown, and keep sources visible.
-4. **Free, fair and independent.** No money at stake and no betting look. The rules come from the
-   database, and nothing implies official league status.
+4. **Free, fair and independent.** No money at stake and no betting look. Game rules are enforced on
+   the server, and nothing implies official league status.
 5. **Refine, don't replace.** Improve within the existing identity, features, rules and stack; a
    redesign needs the owner's explicit decision.
 
 ## Accessibility & Inclusion
 
-What the design system and tests already enforce:
+What the design system and tests already cover:
 
-- AA-level contrast, measured: 4.5:1 for text and 3:1 for control edges.
-- A 44px minimum tap target and visible focus rings.
-- `prefers-reduced-motion` respected for all motion.
-- Alt text on images, and names on icon-only buttons.
-- Arabic as a first-class right-to-left language:
+- **Contrast:** AA-level thresholds (4.5:1 for text, 3:1 for control edges). They are measured per
+  token in the design system and test-enforced for computed club colours (`src/lib/club-palette.test.ts`).
+  No automated app-wide contrast check exists.
+- **Tap targets and focus:** a 44px tap floor for kit controls (`--ui-tap-min`), and visible focus
+  rings (`ui.focus`). Known exceptions: the carousel dot buttons in News and Pronostics are 24 × 32px.
+- **Reduced motion:** `prefers-reduced-motion` is respected for CSS animations and transitions through
+  one global block in `src/styles.css`, and in components that check it (for example GoalMoment and
+  TiltFrame). Known gap: five JavaScript smooth scrolls do not check it.
+- **Images and buttons:** alt text on images, and names on icon-only buttons (a source test).
+- **Arabic as a right-to-left language:**
   - logical (start/end) layout only;
   - directional icons mirrored once;
   - arrow-key navigation follows the reading direction;
-  - no letter-spacing, italics or slanting on Arabic text.
-- Western (Latin) digits in both languages, with numbers and codes kept left-to-right inside Arabic
-  lines.
-- Match times always in Morocco time.
+  - no letter-spacing on Arabic text (contract-tested).
+  - Italics and slants are kept Latin-only by convention in components. Known gap: `.editorial-body em`
+    (`src/styles.css`) italicises emphasis in Arabic article bodies.
+- **Numbers:** Western (Latin) digits in both languages, with numbers and codes kept left-to-right
+  inside Arabic lines.
+- **Time:** match times always in Morocco time.
 
 Known gaps (**Unknown** whether intended):
 
