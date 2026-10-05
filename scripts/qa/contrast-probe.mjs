@@ -159,6 +159,14 @@ const NOMINATE = (all) => {
   // Covered texts, and what covered them; HIDDEN reads it once the page is
   // done and keeps the ones no stop ever uncovered.
   const covered = (window.__contrastProbeCovered ??= new Map());
+  const srOnly = (el) => {
+    for (let a = el; a && a !== document.body; a = a.parentElement) {
+      const r = a.getBoundingClientRect();
+      if ((r.width <= 1 || r.height <= 1) && getComputedStyle(a).overflow !== "visible")
+        return true;
+    }
+    return false;
+  };
   const vw = document.documentElement.clientWidth;
   const vh = window.innerHeight;
   const where = (el) => {
@@ -223,10 +231,10 @@ const NOMINATE = (all) => {
     const el = node.parentElement;
     if (!el || el.closest("script, style, noscript, template, title")) continue;
     if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
-    // Screen-reader-only text: a 1px clipped box that paints nothing, whose
-    // Range still reports the full width of the words.
-    const own = el.getBoundingClientRect();
-    if (own.width <= 1 || own.height <= 1) continue;
+    // Screen-reader-only text: inside a 1px clipped box that paints nothing
+    // (on the element or an ancestor — the match page's text lineup is a
+    // whole `sr-only` section), whose Range still reports the words' width.
+    if (srOnly(el)) continue;
     const range = document.createRange();
     range.selectNodeContents(node);
     const lines = [...range.getClientRects()].filter((r) => r.width >= 2 && r.height >= 4);
