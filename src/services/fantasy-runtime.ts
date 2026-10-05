@@ -35,6 +35,7 @@ import type {
   TopPlayerOfWeek,
 } from "@/types/fantasy";
 import type { FantasyAlert, FantasySummary, Gameweek, Player } from "@/types/domain";
+import { resolveMediaUrl } from "@/lib/media";
 
 const cloud = new SupabaseFantasyRepository();
 const context = (): RepositoryContext => ({ actorId: null, requestId: crypto.randomUUID() });
@@ -73,6 +74,9 @@ export function playerDto(dto: FantasyPlayerDto, stat?: FantasyPlayerSeasonStatD
     form: stat ? stat.form : null,
     ownership: stat?.ownershipPercent ?? 0,
     status,
+    // The release's public path starts with the `football/` namespace, which
+    // the resolver maps to the `football-media` bucket.
+    photoUrl: dto.photo ? (resolveMediaUrl({ storagePath: dto.photo.storagePath }) ?? null) : null,
   };
 }
 
