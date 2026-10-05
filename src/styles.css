@@ -2087,6 +2087,24 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-on-fdr-3: oklch(0.2 0.02 260);
   --ui-on-fdr-4: oklch(1 0 0);
   --ui-on-fdr-5: oklch(1 0 0);
+
+  /* A player's match rating (Pépites), 1 worst → 5 best, on the FDR scale
+     read BACKWARDS: rating 5 is FDR 1 (green), rating 1 is FDR 5 (deep
+     magenta). Aliases, not new colours, so the rating chip gets the FDR
+     scale's dark values and its measured foregrounds for free. They are
+     DERIVED (tokens.ts), so they are not redeclared under `.dark`. The
+     price of sharing one palette: a recolour of the FDR scale recolours
+     the ratings too. Bands: `ratingBand()` in src/components/pepites. */
+  --ui-rating-1: var(--ui-fdr-5);
+  --ui-rating-2: var(--ui-fdr-4);
+  --ui-rating-3: var(--ui-fdr-3);
+  --ui-rating-4: var(--ui-fdr-2);
+  --ui-rating-5: var(--ui-fdr-1);
+  --ui-on-rating-1: var(--ui-on-fdr-5);
+  --ui-on-rating-2: var(--ui-on-fdr-4);
+  --ui-on-rating-3: var(--ui-on-fdr-3);
+  --ui-on-rating-4: var(--ui-on-fdr-2);
+  --ui-on-rating-5: var(--ui-on-fdr-1);
 }
 
 /* ---- The Arabic leading adjustment (BG-0124) ----------------------
