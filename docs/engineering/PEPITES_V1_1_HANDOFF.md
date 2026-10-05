@@ -1,5 +1,18 @@
 # Pépites: handoff for finishing Compare, Follow, Stats and desktop layouts
 
+> **Visual direction superseded, 2026-10-05 (owner decision; BG-0152).**
+> The feature scope and the standing constraints below are unchanged; only
+> the look is. Pépites now looks like the rest of BotolaGO and is built on the main kit (Design System V2:
+> `src/components/ui-kit`, the `--ui-*` tokens; see
+> `docs/engineering/DESIGN_SYSTEM_V2.md`, "Pépites is built on the kit").
+> The visual tokens recorded here are retired from the screens: the night
+> palette and night band, the energy gradient, IBM Plex Mono, the slant, the
+> ghost numbers, the segment and rating hex colours, the shadows and the
+> pixel sizes. What still applies: the screens' content and order, the copy,
+> the Arabic terminology and the digit rules. The share images keep
+> this drawing until a follow-up redraws them. The visual notes are kept as
+> a historical record.
+
 Written for whoever (human or agent, "codex" from here on) picks this up next.
 The owner asked, after the v1 launch review: **"do not leave those out,
 implement them as well"**, meaning: Compare, player Follow, the "+Fantasy"
@@ -25,7 +38,7 @@ re-deriving anything already decided.
   finishing work — do not carry over a name that isn't accurate).
 - PR bodies end with the Claude Code footer only if a Claude agent opens
   them; adapt attribution to whichever agent actually does the work.
-- No model identifiers in code, comments, or commit *subjects* — trailers
+- No model identifiers in code, comments, or commit _subjects_ — trailers
   only.
 
 ## 1. Branch stack (as pushed)
@@ -140,6 +153,7 @@ files, and the **whole** `supabase/tests/database` suite: **104 files,
 (9 tests, includes the new repository tests).
 
 **Not yet done on this branch:**
+
 - No frontend UI reads any of this yet (that starts in §4/§5 below).
 - No PR opened.
 - The architecture doc's §6.2 table wording could use one more pass for
@@ -252,7 +266,7 @@ incomplete — none of this has been typechecked, linted, or tested yet.
    currently renders `<BackToRanking />` and
    `<PepitesPlayerShareButton data={data} />` side by side
    (`justify-between`). Add `<PepitesFollowButton playerId={playerId}
-   playerName={player.name} />` there too — decide the exact layout (a
+playerName={player.name} />` there too — decide the exact layout (a
    third item in that flex row is cramped on a 390px screen; consider a
    two-row header: back link alone on row 1, follow+share grouped
    `justify-end` on row 2, or shrink the share button to icon-only and
@@ -270,10 +284,10 @@ incomplete — none of this has been typechecked, linted, or tested yet.
    `playerStatsQueryOptions(viewer, version, playerId)` in
    `PepitesPlayerPage` alongside the existing `player` query (same
    `enabled` condition: `pointer?.available === true && version !==
-   null`). Render the Fantasy button **only when `fantasyPlayerId` is
+null`). Render the Fantasy button **only when `fantasyPlayerId` is
    non-null** (don't show it for a player the Fantasy game doesn't
    list) — a plain `<Link to="/fantasy/transfers" search={{ player:
-   stats.fantasyPlayerId }}>` styled as the Figma primary gradient pill,
+stats.fantasyPlayerId }}>` styled as the Figma primary gradient pill,
    label `t("pepites.player.fantasy_button")`. Figma places it near the
    tabs row (`figma-spec.md` §1: Button at (262,400,120,38)) — so most
    likely a `justify-between` wrapper around `<PlayerTabs .../>` with
