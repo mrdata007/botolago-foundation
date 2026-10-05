@@ -149,3 +149,35 @@ writer, re-measure it after both have stopped before you report it. A number
 taken mid-race is not evidence.
 
 Production writes additionally follow the production rules in `CLAUDE.md`.
+
+## Screen refinement work
+
+The owner set these rules on 2026-10-05 for any change that refines an existing
+screen. Product context is in [`PRODUCT.md`](PRODUCT.md). The visual system is
+in [`docs/engineering/DESIGN_SYSTEM_V2.md`](docs/engineering/DESIGN_SYSTEM_V2.md)
+and the code.
+
+1. **Approved scope only.** Screen work starts when the owner approves a
+   specific scope. Setup, audits, critiques and reviews stay read-only and
+   never change interface code.
+2. **Straight in code.** Build directly in code, not from a generated picture.
+   `.impeccable/config.json` records this as `"buildPath": "code"`.
+3. **Inspect first, then write it down.** Before the first edit, inspect the
+   existing screen and write down three things in the draft pull request
+   description or in a brief committed on the branch:
+   - what must be preserved;
+   - the specific improvements being made;
+   - the visual and functional acceptance criteria.
+4. **One feature branch per approved scope.**
+5. **Validate before asking for review:**
+   - before/after screenshots;
+   - checks at mobile and desktop widths;
+   - French and Arabic checks, including right-to-left layout;
+   - the relevant existing tests.
+
+   Measure the way `CLAUDE.md` (Evidence) describes.
+
+6. **Preserve BotolaGO's identity and business logic.** Fantasy rules, scoring,
+   the gameweek lifecycle and the other game rules stay as they are.
+7. **Draft pull request, then wait.** Open a draft pull request for review. Do
+   not merge it or publish it in Lovable without the owner's approval.
