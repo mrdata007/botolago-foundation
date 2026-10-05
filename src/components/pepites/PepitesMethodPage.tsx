@@ -1,20 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { ui, UiBackButton, UiKeyValueRow } from "@/components/ui-kit";
+import { ui, UiCard, UiKeyValueRow } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 import { formatNumber } from "./pepites-format";
-import { pp } from "./pepites-design";
 import {
-  PepitesCard,
   PepitesComingSoon,
   PepitesErrorState,
   PepitesLoadingState,
   PepitesPreviewBanner,
 } from "./PepitesParts";
-import { MonoLine, NightBand } from "./PepitesVisuals";
-import { PepitesShell } from "./PepitesShell";
+import { PepitesPageTitle, PepitesShell } from "./PepitesShell";
 import { methodologyQueryOptions, usePepitesViewer, useVersionPointer } from "./use-pepites";
 
 function numberAt(
@@ -105,21 +102,16 @@ export function PepitesMethodPage() {
     },
   ];
 
-  const hero = (
-    <NightBand cut={26}>
-      <div className="flex flex-col gap-2 pb-12 pt-3">
-        <MonoLine>{t("pepites.hero.kicker_short")}</MonoLine>
-        <h1 className={cn(pp.display, pp.lean, "text-[30px] leading-[1.1] text-white")}>
-          {t("pepites.method.title")}
-        </h1>
-      </div>
-    </NightBand>
-  );
   return (
-    <PepitesShell hero={hero}>
-      <UiBackButton to="/pepites" />
+    <PepitesShell
+      pageHeader={
+        <PepitesPageTitle backTo="/pepites" title={t("pepites.method.title")}>
+          <p className={cn(ui.text.meta, ui.tone.muted)}>{t("pepites.hero.kicker_short")}</p>
+        </PepitesPageTitle>
+      }
+    >
       {data.preview ? <PepitesPreviewBanner /> : null}
-      <PepitesCard testId="pepites-method">
+      <UiCard testId="pepites-method">
         <div className="flex flex-col gap-4">
           <p className={ui.text.body}>
             {lang === "ar" ? methodology.descriptionAr : methodology.descriptionFr}
@@ -130,13 +122,13 @@ export function PepitesMethodPage() {
               <p className={cn(ui.text.meta, ui.tone.muted)}>{section.body}</p>
             </section>
           ))}
-          <p className={cn(ui.text.micro, ui.tone.faint)}>
+          <p className={cn(ui.text.micro, ui.tone.muted)}>
             {t("pepites.method.version").replace("{v}", methodology.version)}
           </p>
         </div>
-      </PepitesCard>
+      </UiCard>
       {coverage ? (
-        <PepitesCard testId="pepites-coverage">
+        <UiCard testId="pepites-coverage">
           <h2 className={cn(ui.text.bodyStrong, "mb-1")}>{t("pepites.coverage.title")}</h2>
           <p className={cn(ui.text.meta, ui.tone.muted, "mb-2")}>
             {t("pepites.coverage.as_of").replace("{round}", formatNumber(coverage.asOfRound, lang))}
@@ -171,7 +163,7 @@ export function PepitesMethodPage() {
               value={<bdi>{percent(coverage.heightCoverage)}</bdi>}
             />
           ) : null}
-        </PepitesCard>
+        </UiCard>
       ) : null}
     </PepitesShell>
   );
