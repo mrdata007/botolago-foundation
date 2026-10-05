@@ -1548,6 +1548,34 @@ tasks:
       and light --ui-ink-fg are the same colour -- so the substitution is safe and invisible
       now, and is what makes those files theme-correct when DARK_MODE_ENABLED flips.
 
+  BG-0150:
+    title: Directional icons point the reading way in Arabic, and six that flipped twice no longer do
+    area: design
+    severity: P2
+    user_impact: >
+      In Arabic, 36 of the 68 directional icons on fourteen screens pointed the French way:
+      the Prizes terms chevron and the Pépites "full ranking" and back chevrons flipped twice,
+      and sign in, the help mark, trend, sort and the News tab were never mirrored at all.
+    owner: Chief
+    state: RUNNING # implemented on claude/rtl-icon-mirroring (brief, fix, tests); draft PR awaits the owner's review
+    depends_on: [BG-0129]
+    brief: docs/engineering/tasks/BG-0150/screen-brief.md
+    evidence:
+      - "one unlayered rule, styles.css: html[dir=rtl] :is(13 lucide CANONICAL classes) { transform: scaleX(-1) } -- chevron and arrow left/right, log-in, log-out, undo-2, trending-up, the two sort icons, circle-question-mark (CircleHelp renders that name), file-text, newspaper. Clocks, refresh/retry, play, checkmarks, search, slashes, swap arrows and share stay as drawn (Material bidirectionality, Google's mirror list, Apple HIG)"
+      - "removed the six double flips that set scale/rotate on top of the rule's transform: rtl:-scale-x-100 at PepitesHome:158, PepitesRanking:152 and :224, PepitesPlayerPage:285, DeadlineStrip:60; rtl:rotate-180 at PrizesPage:104; plus the two latent rtl rotations in the unused ui/calendar.tsx. The Pépites chart flip and the photo flips stay"
+      - "measured in Chromium on the dev server, 14 routes x fr/ar x 390/1440, every rendered svg.lucide with its own and every ancestor's transform/scale/rotate composed: Arabic before 68 directional icons, 32 correct and 36 wrong (28 never mirrored, 8 double-flipped: Prizes and three Pépites pages at both widths); Arabic after 68 of 68 with transform matrix(-1,0,0,1,0,0) and no scale or rotate, 256 of 256 others untouched; French 324 of 324 untouched before and after; getScreenCTM agrees on all 648"
+      - "all 117 icons the app imports, rendered by the repo's lucide-react and injected into a live page under the real stylesheet: Arabic after flips exactly the 15 expected components (incl. LogOut, Undo2, FileText, which no anonymous page shows), French flips none"
+      - "screenshots: the 28 French before/after pairs are pixel-identical; the 28 Arabic pairs differ only in icon-sized regions; icon set and bounding boxes identical on all 56 page/language/width combinations"
+      - "ui-kit.contract.test.ts +19 tests: the :is() list equals MIRRORED and is the only lucide selector; each listed component renders its canonical class; 13 deliberately unmirrored icons render none of them; no lucide JSX tag in src/**/*.tsx (362 found) carries an rtl: scale/rotate, and no rtl: variant rotates descendant svgs. Run against main's six files it names all eight flips"
+    note: >
+      DeadlineStrip and the second PepitesRanking back link did not render on any anonymous page
+      during the run, so they are covered by the source test and the injected render rather
+      than by a page measurement.
+
+      Not icons and left alone: literal "→" text arrows in Home's results link
+      (index.tsx:614), matches.index.tsx:550, PepitesRanking.tsx:247 and
+      PepitesPlayerPage.tsx:823 still point right in Arabic.
+
   BG-0130:
     title: MatchTabs clips "Compositions" below about 370px
     area: design
