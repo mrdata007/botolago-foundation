@@ -1350,6 +1350,38 @@ tasks:
       letters are the legible identity and it ships as crest AND code. Crest alone needs
       about 20px, i.e. a taller band. Raised BG-0128.
 
+  BG-0152:
+    title: Pépites on the main design -- the night look retired, every screen built from the kit
+    area: design
+    severity: P2
+    user_impact: >
+      Pépites looked like a second app inside BotolaGO: night bands with a slanted cut, an
+      energy gradient, mono meta lines, slanted names, its own top bar and 26px chips. The
+      owner decided on 2026-10-05 that it must look like the rest of the app, light and dark,
+      French and Arabic.
+    owner: Chief
+    state: RUNNING # implemented on claude/pepites-main-design (brief, foundation, six screen lanes, integration); draft PR awaits the owner's review
+    depends_on: []
+    brief: docs/engineering/tasks/BG-0152/screen-brief.md
+    evidence:
+      - "scope: /pepites, /pepites/classement, /pepites/joueur/$playerId, /pepites/semaine/$n, /pepites/methode, /pepites/comparer, /pepites/revelation, /admin/pepites, /admin/pepites/donnees; routes, data, scoring, copy and every e2e test id kept"
+      - "kit: the default AppShell and global TopBar at every width (PepitesTopBar and the TopBar night tone deleted), UiPageTitle/UiHeader bands, UiChip filters, UiTabs, the UiTable family, UiStatePanel/UiEmptyState/UiErrorState/UiSkeleton, UiAlert, UiStatBlock, UiRankMovement, PlayerPhoto; the admin desks on the admin console classes"
+      - "rating colours: --ui-rating-1..5 and --ui-on-rating-1..5 are derived aliases of the FDR scale read backwards (tokens.ts next to the FDR tokens; ui-kit.contract.test.ts pins the aliasing)"
+      - "deleted with nothing left reading them: GoMark, NightBand, EnergyStreak, MonoLine, FilterChip, FactsStrip, the Headshot alias, PepitesCard, TiltFrame, pp and SEGMENT_COLOURS, the --pepites-* tokens with their RTL and .dark remaps, .pepites-night-band. Kept: card-flip (the reveal turns its card) and the IBM Plex Mono @font-face (the share-image canvas names it)"
+      - "src/components/pepites/pepites.option-a.test.tsx: the kit's source rules on every Pépites screen file (31 files) plus the old layer kept deleted and three glyphs on rendered markup, 251 tests; the same rules run against main's Pépites sources fail 63"
+      - "i18n: pepites.title and pepites.compare.back orphaned with the night layer, deleted from fr and ar; common.vs gained its first call site; W3 254 -> 253, W1/W2/W4 unchanged"
+      - "pepites-compare-cards is the compare card's yellow-and-red cards row (pepites-compare-${row.key}); the brief first read it as missing and a lane copied it onto the portraits' container, which failed the Follow/Stats/Compare journey in strict mode; the copy is removed, the e2e test is unchanged"
+      - "tests/e2e/pepites.e2e.ts on a sample-data dev server like CI's (VITE_PEPITES_PREVIEW=1, no .env, port 5212): 26 passed, 0 failed, after the compare fix (the first run had 23 passed: the two compare journeys above, and the suite's first test on the cold server, which passed on its own rerun and in the full rerun). tests/e2e/anonymous.acceptance.e2e.ts on the same server: 16 passed"
+    note: >
+      Pépites now has no look of its own, so DESIGN_SYSTEM_V2.md gained a "Pépites is built on
+      the kit" section, and the Figma notes and the v1.1 handoff carry superseded banners: their
+      visual tokens are retired, their copy, Arabic terminology and digit rules still apply.
+    remaining:
+      - "follow-up: redraw the share images (share-image.ts) and the Fantasy recap image (recap-image.ts, which imports its helpers) in the main look; then the IBM Plex Mono @font-face and public/fonts/ibm-plex-mono-* can go"
+      - ".github/workflows/backend-quality.yml:79 still says Pépites is off in every build (it has been on since 2026-09-27); lanes may not edit workflows"
+      - "src/lib/motion.ts tiltAngles has no caller now that TiltFrame is gone (its own tests still pass)"
+      - "merging with BG-0150: both branches edit the Pépites chevrons, and BG-0150's allowlist of Arabic-only flips names the Pépites chart flip this branch removes"
+
   BG-0123:
     title: src/services/fantasy-cloud-repo.ts is an unreachable repository calling four RPCs that exist in no schema
     area: frontend
