@@ -2456,10 +2456,11 @@ html[dir="rtl"] .lucide-arrow-left {
    on the wrapper. Used by the public article page and by the CMS
    preview, so that what an editor previews is what a reader gets.
 
-   Everything derives from `currentColor` rather than a theme token:
-   the reader page follows the light/dark theme while the Admin console
-   is always dark, and a token-based colour would be invisible on one
-   of them.
+   Everything derives from `currentColor` rather than a theme token, so
+   the body takes whatever text colour its container sets: the reader
+   page and the CMS preview both follow the light/dark theme today (the
+   Admin console stopped being always dark with BG-0144), and a body
+   dropped onto any other surface still reads.
 
    Logical properties throughout (margin-inline, padding-inline-start,
    border-inline-start) so an Arabic article mirrors correctly.

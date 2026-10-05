@@ -194,8 +194,10 @@ the snapshot) was not checked against the live site.
 - **Email notifications:** mode `off` at the last record (2026-10-04). As a result, the match reminder
   bell, the Fantasy deadline and recap emails, and the Pépites weekly email send nothing. The in-app
   inbox very probably receives nothing either. Some interface copy still promises these reminders.
-- **Dark mode:** the theme machinery is built but switched off. Fantasy has no dark version yet
-  (BG-0084, queued).
+- **Dark mode:** switched on in the code by owner decision on 2026-10-05 (BG-0149), not yet live: it
+  reaches botolago.com only once that change is merged and published. It follows the phone's setting
+  by default, and Profil > Apparence offers Clair, Sombre and Système. Fantasy has its dark version
+  (BG-0084, closed on measurement). In dark the logo is the all-white wordmark.
 - **Fantasy Cup and public leagues:** the screens and copy exist, but no backend path works.
   Head-to-head leagues appear only as a disabled option, with copy saying they will come later.
 - **Google and Apple sign-in:** the buttons render, but the providers were last recorded as not enabled

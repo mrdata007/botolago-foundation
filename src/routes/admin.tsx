@@ -45,8 +45,9 @@ export const Route = createFileRoute("/admin")({
  * `--ui-*` tokens, so taking that class off is what moved the whole console
  * -- the CMS and the security pages alike -- onto the product's look; the
  * one surface on literal greys, `AdminFunctionalRoute`, is on the kit now
- * too. With dark mode off in the product (`DARK_MODE_ENABLED`), this is the
- * light theme; if it is ever switched on, the console follows it.
+ * too. It follows the product's theme: light, or dark since dark mode was
+ * switched on (BG-0149, `DARK_MODE_ENABLED`), with the white wordmark and
+ * the selected fill (`--ui-selected`) on the current section's chip.
  *
  * The content column, the top bar and the section row share one width, so
  * the wordmark, the first chip and the page title line up on a wide screen.
