@@ -3,6 +3,18 @@
  *
  *   PROBE_BASE=http://127.0.0.1:4377 node scripts/qa/contrast-probe.mjs
  *   PROBE_ROUTES=/matches,/fantasy node …
+ *   PROBE_LANGS=fr,ar PROBE_WIDTHS=390,1440 node …
+ *   PROBE_THEME=system node …    # dark through the phone setting (see below)
+ *
+ * Behind a CA-terminating proxy (this sandbox), pass the proxy CA's SPKI pin
+ * so the page's own Supabase calls succeed instead of measuring a page that
+ * has only its server-rendered data:
+ *
+ *   PROBE_CHROMIUM_SPKI_ALLOW=<base64 sha256 of the CA's SubjectPublicKeyInfo>
+ *
+ * It mirrors E2E_CHROMIUM_SPKI_ALLOW in playwright.config.ts: exactly that
+ * key is trusted and verification stays on for every other authority. Never
+ * `--ignore-certificate-errors`.
  *
  * Start your own server on your own port; 4173 is shared between worktrees
  * here and a run against another agent's tree measures the wrong product.
@@ -55,6 +67,7 @@ const ROUTES = (
   .map((r) => r.trim())
   .filter(Boolean);
 const LANGS = (process.env.PROBE_LANGS ?? "fr").split(",");
+const WIDTHS = (process.env.PROBE_WIDTHS ?? "390").split(",").map(Number);
 
 /** Pass 1: nominate suspects by compositing ancestor background-colours. */
 const NOMINATE = () => {
@@ -211,118 +224,158 @@ const VERIFY = async (src) => {
 };
 
 /**
- * PROBE_THEME=dark measures the DARK token set.
+ * PROBE_THEME picks the theme measured.
  *
- * The class has to go on AFTER hydration, not in an init script. An init
- * script that adds `dark` to <html> looks like it works and does not: the
- * server sends `<html class="">`, hydration replaces the attribute, and the
- * class is gone by the time anything is painted. Measured that way the dark
- * theme came back "27 measurements, 0 below AA" — a clean bill of health for a
- * theme that was never applied. `applyTheme` therefore sets it after the page
- * has settled and ASSERTS that a token actually changed value; a run that
- * cannot prove the theme is on exits rather than reporting a false pass.
+ *   light   (default) the light theme.
+ *   system  the phone set to dark (`colorScheme: "dark"`), nothing stored —
+ *           the path a visitor actually takes since dark mode shipped
+ *           (BG-0149): the inline head script applies the theme before first
+ *           paint. The run asserts `<html>` carries `dark` after load.
+ *   dark    adds the class by hand AFTER hydration. Kept for a build with
+ *           DARK_MODE_ENABLED off, where only the token set can be measured.
  *
- * This measures the token set. It does not claim the feature is on for users:
- * the theme provider stays inert while DARK_MODE_ENABLED is false.
+ * Why "dark" adds the class after hydration and not in an init script: an
+ * init script that adds `dark` to <html> looks like it works and does not —
+ * the server sends `<html class="">`, hydration replaces the attribute, and
+ * the class is gone by the time anything is painted. Measured that way the
+ * dark theme came back "27 measurements, 0 below AA", a clean bill of health
+ * for a theme that was never applied.
+ *
+ * Either dark mode ASSERTS that a token actually changed value (`--ui-page`
+ * against the same page with the class off); a run that cannot prove the
+ * theme is on exits rather than reporting a false pass.
  */
-const THEME = process.env.PROBE_THEME === "dark" ? "dark" : "light";
+const THEME = ["dark", "system"].includes(process.env.PROBE_THEME)
+  ? process.env.PROBE_THEME
+  : "light";
 
 const applyTheme = async (page) => {
-  if (THEME !== "dark") return;
-  const changed = await page.evaluate(() => {
-    const read = () =>
-      getComputedStyle(document.documentElement).getPropertyValue("--ui-page").trim();
+  if (THEME === "light") return;
+  const changed = await page.evaluate((theme) => {
+    const root = document.documentElement;
+    const read = () => getComputedStyle(root).getPropertyValue("--ui-page").trim();
+    if (theme === "system") {
+      // The head script put the class there; prove it, then prove it matters.
+      const applied = root.classList.contains("dark");
+      root.classList.remove("dark");
+      const before = read();
+      root.classList.add("dark");
+      return { applied, before, after: read() };
+    }
     const before = read();
-    document.documentElement.classList.add("dark");
-    return { before, after: read() };
-  });
+    root.classList.add("dark");
+    return { applied: true, before, after: read() };
+  }, THEME);
+  if (!changed.applied) {
+    console.error(
+      "contrast-probe: PROBE_THEME=system, but <html> has no `dark` class on a dark phone.\n" +
+        "The pre-paint theme script did not apply the theme (is DARK_MODE_ENABLED on?).",
+    );
+    process.exit(2);
+  }
   if (changed.before === changed.after) {
     console.error(
-      `contrast-probe: PROBE_THEME=dark did not change --ui-page (${changed.before}).\n` +
+      `contrast-probe: PROBE_THEME=${THEME} did not change --ui-page (${changed.before}).\n` +
         "The dark class is not taking effect, so any result would be the light theme wearing a dark label.",
     );
     process.exit(2);
   }
 };
 
-const browser = await chromium.launch();
+const SPKI = process.env.PROBE_CHROMIUM_SPKI_ALLOW;
+const browser = await chromium.launch(
+  SPKI ? { args: [`--ignore-certificate-errors-spki-list=${SPKI}`] } : {},
+);
 let checked = 0;
 const failures = [];
 
-for (const lang of LANGS) {
-  const ctx = await browser.newContext({
-    viewport: { width: 390, height: 900 },
-    deviceScaleFactor: 2,
-  });
-  await ctx.addInitScript((l) => {
-    try {
-      localStorage.setItem("botolago.language", l);
-    } catch {
-      /* blocked storage: the language chooser appears and the run is discarded */
-    }
-  }, lang);
-  const page = await ctx.newPage();
-  for (const route of ROUTES) {
-    await page.goto(BASE + route, { waitUntil: "domcontentloaded" }).catch(() => {});
-    await page.waitForTimeout(Number(process.env.PROBE_SETTLE ?? 1300));
-    await applyTheme(page);
-    // Wait for entrance animations to FINISH rather than guessing a delay.
-    // The welcome screen fades its content in over 700ms after hydration, and
-    // a screenshot taken mid-fade contains no glyph pixels at all — the box is
-    // pure backdrop. Measured that way, "Bienvenue sur BotolaGO" came back at
-    // 1.27:1 against a real value of 15.03:1: a confident failure on text that
-    // had simply not been painted yet. `getAnimations()` is the exact signal,
-    // and the timeout below is a cap for infinite ones (the live pulse, the
-    // shimmer), not a delay.
-    await page
-      .waitForFunction(
-        () =>
-          document
-            .getAnimations()
-            .every(
-              (a) =>
-                a.playState !== "running" ||
-                Number.isFinite(a.effect?.getTiming?.().iterations) === false,
-            ),
-        null,
-        { timeout: 3000 },
-      )
-      .catch(() => {});
-    const { suspects, unresolved } = await page.evaluate(NOMINATE);
-    let confirmed = 0;
-    let unmeasured = 0;
-    for (const s of suspects) {
-      checked++;
-      const shot = await page
-        .screenshot({ clip: { x: s.x, y: s.y, width: s.width, height: s.height } })
-        .catch(() => null);
-      if (!shot) continue;
-      const measured = await page.evaluate(
-        VERIFY,
-        "data:image/png;base64," + shot.toString("base64"),
+for (const lang of LANGS)
+  for (const width of WIDTHS) {
+    const ctx = await browser.newContext({
+      viewport: { width, height: 900 },
+      deviceScaleFactor: width < 768 ? 2 : 1,
+      colorScheme: THEME === "system" ? "dark" : "light",
+    });
+    await ctx.addInitScript((l) => {
+      try {
+        localStorage.setItem("botolago.language", l);
+        // Past the welcome screen, the prize welcome and the launch splash,
+        // as tests/e2e/support.ts does, so the route itself is measured.
+        localStorage.setItem("botolago.welcomed", "1");
+        localStorage.setItem("botolago.prizes.welcome.v1", "1");
+        sessionStorage.setItem("botolago.splashShown", "1");
+      } catch {
+        /* blocked storage: the language chooser appears and the run is discarded */
+      }
+    }, lang);
+    const page = await ctx.newPage();
+    for (const route of ROUTES) {
+      await page.goto(BASE + route, { waitUntil: "domcontentloaded" }).catch(() => {});
+      // Hydrated (the i18n provider writes data-lang), then a settle for data.
+      await page
+        .waitForFunction((l) => document.documentElement.dataset.lang === l, lang, {
+          timeout: 30_000,
+        })
+        .catch(() => {});
+      await page.waitForTimeout(Number(process.env.PROBE_SETTLE ?? 1300));
+      await applyTheme(page);
+      // Wait for entrance animations to FINISH rather than guessing a delay.
+      // The welcome screen fades its content in over 700ms after hydration, and
+      // a screenshot taken mid-fade contains no glyph pixels at all — the box is
+      // pure backdrop. Measured that way, "Bienvenue sur BotolaGO" came back at
+      // 1.27:1 against a real value of 15.03:1: a confident failure on text that
+      // had simply not been painted yet. `getAnimations()` is the exact signal,
+      // and the timeout below is a cap for infinite ones (the live pulse, the
+      // shimmer), not a delay.
+      await page
+        .waitForFunction(
+          () =>
+            document
+              .getAnimations()
+              .every(
+                (a) =>
+                  a.playState !== "running" ||
+                  Number.isFinite(a.effect?.getTiming?.().iterations) === false,
+              ),
+          null,
+          { timeout: 3000 },
+        )
+        .catch(() => {});
+      const { suspects, unresolved } = await page.evaluate(NOMINATE);
+      let confirmed = 0;
+      let unmeasured = 0;
+      for (const s of suspects) {
+        checked++;
+        const shot = await page
+          .screenshot({ clip: { x: s.x, y: s.y, width: s.width, height: s.height } })
+          .catch(() => null);
+        if (!shot) continue;
+        const measured = await page.evaluate(
+          VERIFY,
+          "data:image/png;base64," + shot.toString("base64"),
+        );
+        if (measured === null) {
+          unmeasured++;
+          continue;
+        }
+        if (measured < s.floor) {
+          confirmed++;
+          failures.push({ lang, width, route, ...s, measured: +measured.toFixed(2) });
+        }
+      }
+      console.log(
+        `${lang} ${width} ${route}: ${suspects.length} nominated (${unresolved} on a gradient),` +
+          ` ${confirmed} confirmed below AA, ${unmeasured} too sparse to judge`,
       );
-      if (measured === null) {
-        unmeasured++;
-        continue;
-      }
-      if (measured < s.floor) {
-        confirmed++;
-        failures.push({ lang, route, ...s, measured: +measured.toFixed(2) });
-      }
     }
-    console.log(
-      `${lang} ${route}: ${suspects.length} nominated (${unresolved} on a gradient),` +
-        ` ${confirmed} confirmed below AA, ${unmeasured} too sparse to judge`,
-    );
+    await ctx.close();
   }
-  await ctx.close();
-}
 await browser.close();
 
 console.log(`\n${THEME} theme: ${checked} pixel measurements, ${failures.length} below AA`);
 for (const f of failures) {
   console.log(
-    `  ${f.measured}:1 (floor ${f.floor}) ${f.lang} ${f.route} "${f.text}" — ${f.reason}`,
+    `  ${f.measured}:1 (floor ${f.floor}) ${f.lang} ${f.width} ${f.route} "${f.text}" — ${f.reason}`,
   );
 }
 process.exit(0);
