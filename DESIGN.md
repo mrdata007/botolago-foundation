@@ -52,6 +52,11 @@ typography:
     fontSize: "16px"
     fontWeight: 600
     lineHeight: 1.25
+  tab-active:
+    fontFamily: "Changa, Manrope, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "16px"
+    fontWeight: 800
+    lineHeight: 1.25
   score-hero:
     fontFamily: "Changa, Manrope, ui-sans-serif, system-ui, sans-serif"
     fontSize: "52px"
@@ -92,11 +97,32 @@ typography:
     fontWeight: 800
     lineHeight: 1.4
     letterSpacing: "0.025em"
+  meta-strong:
+    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 700
+    lineHeight: 1.55
+  meta-heavy:
+    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 800
+    lineHeight: 1.55
   micro:
     fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "11px"
     fontWeight: 600
     lineHeight: 1.4
+  micro-strong:
+    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "11px"
+    fontWeight: 700
+    lineHeight: 1.4
+  micro-heavy:
+    fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "11px"
+    fontWeight: 800
+    lineHeight: 1.4
+    letterSpacing: "0.025em"
   stat-hero:
     fontFamily: "Manrope, Inter, ui-sans-serif, system-ui, sans-serif"
     fontSize: "30px"
@@ -182,14 +208,14 @@ components:
   chip:
     backgroundColor: "{colors.dugout-grey}"
     textColor: "{colors.scoreboard-black}"
-    typography: "{typography.meta}"
+    typography: "{typography.meta-strong}"
     rounded: "{rounded.full}"
     height: "44px"
     padding: "6px 12px"
   chip-selected:
     backgroundColor: "{colors.floodlight-navy}"
     textColor: "{colors.home-shirt-white}"
-    typography: "{typography.meta}"
+    typography: "{typography.meta-strong}"
     rounded: "{rounded.full}"
     height: "44px"
     padding: "6px 12px"
@@ -200,6 +226,12 @@ components:
     rounded: "{rounded.full}"
     padding: "4px 12px"
   live-pill:
+    backgroundColor: "{colors.floodlight-navy}"
+    textColor: "{colors.home-shirt-white}"
+    typography: "{typography.micro-heavy}"
+    rounded: "{rounded.full}"
+    padding: "2px 8px"
+  live-pill-md:
     backgroundColor: "{colors.floodlight-navy}"
     textColor: "{colors.home-shirt-white}"
     typography: "{typography.label}"
@@ -218,16 +250,22 @@ components:
     height: "48px"
   tab-active:
     textColor: "{colors.scoreboard-black}"
-    typography: "{typography.tab}"
+    typography: "{typography.tab-active}"
     height: "48px"
   segmented-track:
     backgroundColor: "{colors.dugout-grey}"
     rounded: "{rounded.track}"
   segmented-option-active:
+    backgroundColor: "{colors.home-shirt-white}"
+    textColor: "{colors.floodlight-navy}"
+    rounded: "{rounded.segment}"
+  segmented-pill-track:
+    backgroundColor: "{colors.home-shirt-white}"
+    rounded: "{rounded.full}"
+  segmented-pill-option-active:
     backgroundColor: "{colors.floodlight-navy}"
     textColor: "{colors.home-shirt-white}"
-    rounded: "{rounded.segment}"
-    height: "44px"
+    rounded: "{rounded.full}"
   top-bar:
     backgroundColor: "{colors.home-shirt-white}"
     textColor: "{colors.scoreboard-black}"
@@ -235,17 +273,17 @@ components:
   nav-link-active:
     backgroundColor: "{colors.floodlight-navy}"
     textColor: "{colors.home-shirt-white}"
-    typography: "{typography.meta}"
+    typography: "{typography.meta-heavy}"
     rounded: "{rounded.full}"
     height: "44px"
     padding: "0 16px"
   bottom-nav-item:
     textColor: "{colors.programme-grey}"
-    typography: "{typography.micro}"
+    typography: "{typography.micro-strong}"
     size: "44px"
   bottom-nav-item-active:
     textColor: "{colors.scoreboard-black}"
-    typography: "{typography.micro}"
+    typography: "{typography.micro-heavy}"
   bottom-nav-pill:
     textColor: "{colors.tunnel-navy}"
     rounded: "{rounded.full}"
@@ -295,7 +333,7 @@ This file describes the system that ships today: Design System V2, look "Option 
 
 **Which source wins.** The code is the authority: `src/styles.css`, `src/components/ui-kit/tokens.ts` and `src/components/ui-kit/primitives.tsx`, held together by the ui-kit contract test (`src/components/ui-kit/ui-kit.contract.test.ts`). This file comes next. [docs/engineering/DESIGN_SYSTEM_V2.md](docs/engineering/DESIGN_SYSTEM_V2.md) stays the detailed technical reference, with the drift noted below. Product context, voice and terminology are in [PRODUCT.md](PRODUCT.md) and are not repeated here.
 
-**Still authoritative in DESIGN_SYSTEM_V2.md:** §1 (rules 1 to 6); §2.1 to §2.2; the §2.3 colour tables (light and dark values match the code line for line); §2.3a; §2.4 (it lacks the 672px and 1320px widths given under Layout); §2.5; §4's Frame, Controls, Overlays, Data, Fantasy, Badge and States tables; §5; §6. From §2.6 only the duration table and the reduced-motion paragraph still hold. From §4 Shell, only the AppShell, PageBackground, ClubCrest, LiveStrip, SectionHeader and States entries still hold. Pépites token values are in [docs/engineering/pepites-v1.1-figma-notes/figma-spec.md](docs/engineering/pepites-v1.1-figma-notes/figma-spec.md) §0, §8 and §9.
+**Still authoritative in DESIGN_SYSTEM_V2.md:** §1 (rules 1 to 6); §2.1 to §2.2 (they lack the 400 prose step, and §2.1 still lists the meta step for tab labels, which are now Changa 16px); the §2.3 colour tables (the values match the code, except that the scrim is mixed from the text colour rather than the navy fill); §2.3a; §2.4 (it lacks the 672px and 1320px widths given under Layout); §2.5; §4's Frame (it lacks the desktop screen width and the wide header option), Controls, Overlays, Data, Fantasy, Badge and States tables; §5; §6. From §2.6 only the duration values and the reduced-motion clamp still hold; those same passages also say there is no animated route change and ban stagger, which are out of date. From §4 Shell, only the AppShell, PageBackground, ClubCrest, LiveStrip, SectionHeader and States entries still hold. Pépites token values are in [docs/engineering/pepites-v1.1-figma-notes/figma-spec.md](docs/engineering/pepites-v1.1-figma-notes/figma-spec.md) §0, §8 and §9.
 
 **Out of date in DESIGN_SYSTEM_V2.md (do not follow):**
 
@@ -323,7 +361,7 @@ A floodlit navy and white base, one spring-to-sky action gradient used with inte
 
 ### Primary
 
-- **Floodlight Navy**: the brand. As a fill it paints ink buttons, selected chips and segments, the active desktop nav link, live and status pills, the notification badge and the banner strip. As a foreground it colours brand text, icons, links ("Tout voir", "Pronostiquer") and the focus ring. The code keeps these two jobs in two tokens that share this value in the light theme: a fill token (`--ui-ink`) and a brand-foreground token (`--ui-ink-fg`).
+- **Floodlight Navy**: the brand. As a fill it paints ink buttons, selected chips, the active option of pill-style segmented controls, the active desktop nav link, live and status pills, the notification badge and the banner strip. As a foreground it colours brand text, icons, links ("Tout voir", "Pronostiquer") and the focus ring. The code keeps these two jobs in two tokens that share this value in the light theme: a fill token (`--ui-ink`) and a brand-foreground token (`--ui-ink-fg`).
 - **Tunnel Navy**: the deeper navy. It is the text colour on the action gradient and on amber, the digits in the white score plate, the Fantasy plate's figure band, and the base of the dark photo bands (the matches date strip, the landing hero) and of the scrim on photo cards.
 
 ### Secondary
@@ -342,7 +380,7 @@ A floodlit navy and white base, one spring-to-sky action gradient used with inte
 - **Home Shirt White**: cards, bars, sheets and the score plate.
 - **Dugout Grey**: recessed surfaces: segmented tracks, table heads, unselected chips, soft buttons, hover and pressed washes, skeletons.
 - **Chalk Line**: the 1px hairline between rows and under bars. It is for dividers only. The source rates it about 1.2:1 **[Unverified]**, too faint to mark a control's edge.
-- **Goal-Line Grey**: a control boundary that must be seen, such as an input outline or an empty stepper box. The source states 3:1 or better on white and on the page **[Unverified]**.
+- **Goal-Line Grey**: a control boundary that must be seen, such as the outline of the Fantasy player search field. The source states 3:1 or better on white and on the page **[Unverified]**.
 - **Scoreboard Black**: default text and icons.
 - **Programme Grey**: secondary copy, inactive tabs and nav labels; the most-used text tone in the product.
 - **Bench Grey**: placeholders and disabled copy.
@@ -359,11 +397,11 @@ A floodlit navy and white base, one spring-to-sky action gradient used with inte
 
 ### Sub-brand: Pépites
 
-- **Pépites Night**, **Pépites Mint**, **Pépites Sky** and **Pépites Violet**: Pépites (جواهر in Arabic), the young-player data section, keeps its own look. It uses night bands with a slanted bottom edge, an "energy" gradient from mint through sky to violet, and IBM Plex Mono meta lines. Its palette also includes a page, an ink, text, muted, hairline and a five-step rating scale, written as hex values from its Figma spec. Only `src/components/pepites/` reads them.
+- **Pépites Night**, **Pépites Mint**, **Pépites Sky** and **Pépites Violet**: Pépites (جواهر in Arabic), the young-player data section, keeps its own look. It uses night bands with a slanted bottom edge, an "energy" gradient from mint through sky to violet, and IBM Plex Mono meta lines. Its palette also includes a page, an ink, text, muted, hairline and a five-step rating scale, written as hex values from its Figma spec. Only `src/components/pepites/` and the top bar's night tone read them.
 
 ### Named Rules
 
-**The Ink Is Paint Rule.** Floodlight Navy as a fill or border uses the fill token. Navy text and icons use the brand-foreground token, never the fill token. The two share a value today only because dark mode is off. A contract test enforces this.
+**The Ink Is Paint Rule.** Floodlight Navy as a fill or border uses the fill token. Navy text and icons use the brand-foreground token, never the fill token. The two share a value today only because dark mode is off. A contract test enforces this inside the kit only.
 
 **The Earned Gradient Rule.** The spring-to-sky gradient is the action colour: the primary button, the active bottom-nav pill, the deadline pill, progress, a selected Fantasy plate and the Fantasy promo card. Text on it is always Tunnel Navy, and the gradient is never used as a text colour.
 
@@ -371,16 +409,16 @@ A floodlit navy and white base, one spring-to-sky action gradient used with inte
 
 ### Inconsistencies and open decisions
 
-- **[Inconsistent]** Option A moved selected and ink-filled controls from cyan text to white text. Cyan on navy survives in four places: the banner strip, the notification badge, the Fantasy shirt marker and the admin icon tile.
+- **[Inconsistent]** Option A moved selected and ink-filled controls from cyan text to white text. Cyan on navy survives in the banner strip, the notification badge, the Fantasy shirt marker, the admin icon tile and the landing hero (its kicker, second title line and timer icon).
 - **[Inconsistent]** The legacy V1 layer is still declared. Two pieces of it still render:
   - The browser focus outline on anything not built on the kit uses the V1 electric blue (oklch(0.62 0.19 256)), not the navy focus ring.
   - The toast notifications use V1 frosted glass.
-- **[Inconsistent]** Pépites writes its palette as hex values, with about 71 literal white classes, outside the kit tokens.
+- **[Inconsistent]** Pépites writes its palette as hex values, with about 100 literal white classes, outside the kit tokens.
 - **[Open decision]** Brand blue. Both colour logo files fill Logo Blue (#0151fc, about oklch(0.524 0.26 263), also a stop in the News gradients), and so do the new app and home-screen icons (`store-assets/app-icon/`, generated by `scripts/brand/make-app-icons.py`). The interface brand is Floodlight Navy. Do not change either inside a screen change.
 - **[Open decision]** Dark mode.
   - Every themed colour token has a dark value, contract-tested, but dark mode is switched off (`DARK_MODE_ENABLED=false`) until ledger item BG-0084 closes. That item's evidence no longer matches the code.
   - Fantasy's dark-mode contrast is **[Unverified]**.
-  - The desktop column shadow and the toasts have no dark version.
+  - The desktop column shadow, which the toasts also use, has no dark version.
   - Do not design dark variants or enable the switch.
 - **[Open decision]** The product has two different "night" colours: Tunnel Navy on the landing hero and the date strip, and Pépites Night.
 
@@ -394,12 +432,12 @@ A floodlit navy and white base, one spring-to-sky action gradient used with inte
 
 ### Hierarchy
 
-Sizes are fixed pixel steps at every width; nothing scales with the viewport.
+The kit's sizes are fixed pixel steps at every width. Two places scale with the viewport: Pépites sets some sizes with viewport-based clamps, and the landing headline grows 1.4× from 1024px.
 
 - **Display** (Changa 800): the hero headline, such as "JOURNÉE 2" over the stadium band, or a player's surname. A 112px "mega" step exists for the goal takeover's "BUT !" only.
 - **Headline** (Changa 800): the hub page title under the top bar (Matches, Actualités, Fantasy, Clubs, Pronostics).
 - **Title** (Changa 800): section headings such as "À venir".
-- **Team names** (Changa 700): 22, 19 and 17px steps for team names on story cards, the hero match card and the match header.
+- **Team and story steps** (Changa 700): 22, 19 and 17px, for photo story headlines, team names on the hero match card (19px) and on the match header (17px).
 - **Screen title** (Changa 800): the centred title in a detail screen's header. It drops to 16px when controls sit on both sides of it.
 - **Tab** (Changa 600, 800 when active): tab labels on the match page, the club page and similar.
 - **Score** (Changa, never tabular): standalone figures.
@@ -408,10 +446,10 @@ Sizes are fixed pixel steps at every width; nothing scales with the viewport.
   - Digits only. Arabic uses Latin digits.
 - **Body** (Manrope 600): rows, buttons and supporting copy.
   - Body strong (800) is for button labels and row titles.
-  - Secondary is a 14px step and meta a 13px step.
+  - Secondary is a 14px step and meta a 13px step. Meta is set at 700 on chips and at 800 on small buttons and desktop nav links.
 - **Prose** (Manrope 400): long-form reading such as the rules, help answers, legal pages and article bodies. It is the only step at 400.
 - **Label** (Manrope 800, uppercase): kickers, eyebrows, column heads and badges. It is letter-spaced in French only.
-- **Micro** (Manrope 600): bottom-nav labels and captions.
+- **Micro** (Manrope 600): captions. Bottom-nav labels use it at 700 (800 when active), and the small live pill at 800 in uppercase.
 - **Stat** (Manrope, tabular figures, -0.01em in French only): figures that are read down a column, such as table cells, totals and summary tiles. The steps are 30 and 22 (900), 17 (800) and 13 (700).
 
 **Arabic line heights.** These are the Arabic values for the steps above. French values are in the frontmatter.
@@ -453,6 +491,7 @@ Sizes are fixed pixel steps at every width; nothing scales with the viewport.
 **Breakpoints** (Tailwind defaults, no overrides):
 
 - **Below 360px.** The bottom nav and the matches chip rows tighten. When the top bar is narrower than 20rem, the wordmark gives way to the GO mark.
+- **640px (sm).** The match header and the date strip become 16px cards, section spacing grows from 20px to 32px, and the standings won, drawn and lost columns return.
 - **768px (md).** The bottom nav disappears and its destinations become round links in the top bar. Home moves to two columns. Desktop-width screens widen to 896px. Sign-in screens float as a raised column with 28px corners.
 - **1024px (lg).** The 1320px canvas, the matchday strip under the top bar, a search field built into the top bar, three-column Home and the match prediction rail.
 - **1440px.** Nothing changes. It is only a test width.
@@ -482,24 +521,24 @@ Sizes are fixed pixel steps at every width; nothing scales with the viewport.
 - **Home team first.** The home team always sits at the inline start, so match rows and score headers mirror without special cases.
 - **Icons.** Four icons mirror in Arabic: the left and right chevrons and arrows. **[Open decision]** Other directional icons (log in, log out, undo, forward, share, trending) do not mirror, and whether they should is undecided.
 - **Forced left-to-right.** Codes, formations, emails, URLs and one-time-code fields stay left-to-right. Names and sums use Unicode isolates.
-- **Directions in effects.** Gradients use keyword directions. Anything with a physical direction (the club-stripe angle, page-transition slides, skeleton shimmer, the Pépites energy gradient and its night band) flips through a direction variable.
+- **Directions in effects.** Gradients use keyword directions. Anything with a physical direction flips in Arabic: the club-stripe angle, page-transition slides and skeleton shimmer through direction variables, and the Pépites energy gradient and night band through their own right-to-left rules.
 
 ### Inconsistencies
 
-- **[Inconsistent]** The 672px column is written as a literal width in three places instead of the reading-column token.
+- **[Inconsistent]** The 672px column is often written as a literal width (`max-w-2xl`) instead of the reading-column token.
 - **[Inconsistent]** Two different ways of centring an absolutely placed element are in use.
 - **[Inconsistent]** Carousel dot buttons in News and Pronostics are 24×32px, under the 44px floor.
-- **[Inconsistent]** JavaScript smooth scrolling does not check reduced motion. A helper that does exists, and only the admin editor uses it.
-- **[Inconsistent]** Two Pépites chevrons add a second mirror on top of the global one, so they point the wrong way in Arabic.
+- **[Inconsistent]** Most JavaScript smooth scrolls do not check reduced motion. Only the admin editor checks it, inline; the shared reduced-motion helper in `src/lib/motion.ts` is not used for scrolling.
+- **[Inconsistent]** Four Pépites chevrons add a second mirror on top of the global one, so they point the wrong way in Arabic.
 - **[Unverified]** An Arabic article opened from the French interface is an Arabic subtree in a French page. The Arabic font switch is keyed to the page, so the body may fall back to a system Arabic face.
 
 ## Elevation & Depth
 
-Mostly flat, with one soft lift. The page is flat. Cards separate from it with a crisp contact edge and a faint ambient shadow, so they read as paper on the page rather than as a border. Exactly one shadow step means "raised": the lifted shadow, a long soft drop under the score plate, hero match cards, photo lead stories and the primary gradient button. Bars stay flat. The top bar has only a hairline. The bottom nav has a one-pixel upward shadow line. Sheets, modals and menus carry the overlay shadow over the navy scrim. Product surfaces are opaque. Frosted glass appears only in the legacy toasts **[Inconsistent]**. The "glass" icon buttons on photo bands and club-colour blocks are a plain 16% tint with no blur.
+Mostly flat, with one soft lift. The page is flat. Cards separate from it with a crisp contact edge and a faint ambient shadow, so they read as paper on the page rather than as a border. Exactly one shadow step means "raised": the lifted shadow, a long soft drop under the score plate, hero match cards, photo lead stories and the primary gradient button. Bars stay flat. The top bar has only a hairline. The bottom nav has a one-pixel upward shadow line. Sheets, modals and menus carry the overlay shadow over the navy scrim. Product surfaces are opaque. Background blur appears in three places: the legacy toasts **[Inconsistent]**, the Save button on news photo cards, and the scrim behind the first-launch language chooser. The "glass" icon buttons on photo bands and club-colour blocks are a plain 16% tint with no blur.
 
 ### Shadow Vocabulary
 
-- **Card** (`box-shadow: 0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 10%, transparent), 0 4px 14px -8px color-mix(in oklab, var(--ui-ink) 14%, transparent)`): every white card, the light button, the selected chip and segment, the Fantasy pitch.
+- **Card** (`box-shadow: 0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 10%, transparent), 0 4px 14px -8px color-mix(in oklab, var(--ui-ink) 14%, transparent)`): every white card, the light button, the selected chip, the active segment, the pill-style segmented track, the Fantasy pitch.
 - **Raised** (`box-shadow: 0 -1px 0 0 color-mix(in oklab, var(--ui-ink) 8%, transparent)`): the bottom nav's top edge and the hover state of news row cards.
 - **Lifted** (`box-shadow: 0 14px 26px -16px color-mix(in oklab, var(--ui-ink-deep) 55%, transparent)`): the one raised step. It goes under the score plate, the hero match card, photo story cards, the inverse crest disc and the primary gradient button.
 - **Overlay** (`box-shadow: 0 -8px 24px -8px color-mix(in oklab, var(--ui-ink) 28%, transparent)`): bottom sheets, modals and menus.
@@ -516,7 +555,7 @@ Mostly flat, with one soft lift. The page is flat. Cards separate from it with a
 A soft, rounded geometry with a strict, named radius set:
 
 - **Tight (4px):** form cells, fixture difficulty squares, micro tags and card glyphs.
-- **Control (6px):** alerts, skeletons, menu rows and banners.
+- **Control (6px):** alerts, skeletons and menu rows.
 - **Segment (8px):** the selected segment and the Fantasy plate bands.
 - **Track (10px):** segmented-control tracks, inputs, menus and thumbnails.
 - **Card (14px):** every card and list group.
@@ -525,7 +564,7 @@ A soft, rounded geometry with a strict, named radius set:
 
 **Fully round is the control shape.** Every button, chip, pill, badge, icon button, desktop nav link, season picker and Pronostics stepper button is a full capsule or circle. The ui-kit contract test pins the card radius and the round controls.
 
-**Discs carry identity.** Every crest, player photo and kit is a circle (28, 32, 40 or 56px; player photos also 96px). An inner edge ring keeps a white kit visible on a white card. A player with no photo gets a silhouette shirt in club colour.
+**Discs carry identity.** Every crest and player photo is a circle (usually 28, 32, 40 or 56px; 24px in match rows; player photos also 96px). An inner edge ring keeps a white kit visible on a white card. A player with no photo gets a silhouette shirt in club colour. Fantasy kits are drawn as shirts, set in a grey disc in lists.
 
 **Edges carry club colour.** 4px bars sit on the inline start and end edges: club colours on match rows, a club or category colour on the start edge of news row cards, and zone colours on the start edge of standings rows.
 
@@ -542,11 +581,11 @@ The feel is rounded, confident and quiet: full capsules, heavy labels, flat whit
 - **Shape:** fully round (9999px). A full-size button spans the width at 48px with 16px side padding. A small button is inline, at least 44px on both axes, with 12px padding and a 13px label at 800.
 - **Primary (gradient):** the spring-to-sky gradient with a Tunnel Navy label and the lifted shadow, for the screen's main action.
 - **Ink:** Floodlight Navy fill with a white label, for a strong secondary action such as "Réessayer".
-- **Light:** white with a navy label and the card shadow, for use on coloured or photo backgrounds.
+- **Light:** white with a navy label and the card shadow.
 - **Soft:** a Dugout Grey fill, the quiet everyday button.
 - **Outline / Ghost:** navy text on transparent, outline with a current-colour 1px border.
 - **Destructive:** Relegation Magenta fill with a white label.
-- **On photo bands:** soft, outline and ghost buttons switch to a translucent white tint with white text, and a white focus ring.
+- **On the dark mesh:** a mesh tone gives soft and outline buttons a translucent white tint (ghost stays transparent), with white text and a white focus ring. Only the demo welcome screen uses it today; photo bands use glass icon buttons.
 - **Press / Focus:** on press the control sinks to 97% scale and 96% brightness over 120ms. Focus draws a 2px navy ring offset by 2px over the page colour. Disabled gradient buttons fade to 45% and lose their shadow. Disabled ink and destructive buttons turn grey.
 
 ### Icon buttons
@@ -558,7 +597,7 @@ A 44px circle. **Soft** (Dugout Grey with a navy icon) is the default in bars: s
 - **Chips** (filters, day pickers): a 44px capsule. Unselected chips are Dugout Grey. Selected chips are Floodlight Navy with white text and the card shadow, marked as pressed or current for screen readers.
 - **Pills** (14px at 800): navy, grey or gradient capsules for short facts. The Fantasy deadline is a gradient pill with a clock icon, a label and a countdown such as "1j 13h 59min".
 - **Badges** (12px uppercase label): neutral grey, outlined, gradient, and status badges (a green or magenta tint with matching text; caution is solid amber with Tunnel Navy text).
-- **Live pill:** a navy capsule with a small breathing Live-Match Red dot and its label. It appears on match rows, on Pronostics cards and in the match header.
+- **Live pill:** a navy capsule with a small breathing Live-Match Red dot and its label. The small size (11px at 800, uppercase) appears on match rows and Pronostics cards; a medium size uses the label step.
 
 ### Cards / Containers
 
@@ -582,7 +621,7 @@ A 44px circle. **Soft** (Dugout Grey with a navy icon) is the default in bars: s
 ### Tabs and segmented controls
 
 - **Tabs:** a full-width white row with a hairline under it. Labels are Changa 16px; inactive tabs are Programme Grey. The active tab turns Scoreboard Black at 800 with a 4px bar along its bottom edge, navy by default and the club's colour on the match page. Arrow keys follow the reading direction.
-- **Segmented:** a Dugout Grey track with 10px corners. The active option is Floodlight Navy with white text, on an 8px segment, or on a white capsule with the card shadow in the pill variant.
+- **Segmented:** a Dugout Grey track with 10px corners, where the active option is a white 8px segment with navy text and the card shadow. In the pill variant the track is a white capsule with the card shadow, and the active option is a Floodlight Navy capsule with white text.
 
 ### Navigation
 
@@ -605,12 +644,12 @@ A 44px circle. **Soft** (Dugout Grey with a navy icon) is the default in bars: s
 
 - **Rows:** 48px minimum with a hairline at the block end. Settings and navigation rows start with a 36px grey icon disc holding an 18px navy icon, and end with a muted chevron that mirrors in Arabic.
 - **Tables (standings and other ranked data):** real HTML tables inside a white card.
-  - Heads are Dugout Grey in the uppercase label style. Numeric cells are end-aligned stat figures. Points use the 17px stat step.
+  - Heads are Dugout Grey in the uppercase label style. Figures are centred in the 13px stat step; points are end-aligned in the 17px stat step.
   - Club cells are 44px links with crest discs.
   - 4px zone bars at the row's start edge are explained in a legend: African Champions League in navy, Confederation Cup in green, relegation in magenta.
   - Form cells are 4px-radius squares with a letter: green for a win (V), grey for a draw (N), magenta for a loss (D).
   - Under 640px, the won, drawn and lost columns fold behind a toggle.
-  - A highlighted row ("this is you") gets a 12% navy tint.
+  - The row of your club, or of the club whose page you are on, takes that club's own tint.
 - **[Inconsistent]** The standings table builds its own table instead of composing the kit's table pieces.
 - **[Inconsistent]** The icon-disc row is hand-built in Profile and the Fantasy hub, with small differences between the copies.
 
@@ -633,7 +672,7 @@ A 44px circle. **Soft** (Dugout Grey with a navy icon) is the default in bars: s
 ### Match row (signature)
 
 - **Layout:** a white card row with a 4px club-colour bar at each end: home at the inline start, away at the inline end.
-- **Kickoff column:** the kickoff time in the 20px score step, a live pill, or "FT" in muted micro type.
+- **Kickoff column:** the kickoff time in the 20px score step, a live pill, or "Terminé" / "انتهت" in muted micro type at 700.
 - **Teams:** two stacked lines, each a 24px crest and the club name. The winner is at 800 in full colour; the loser is at 700 and muted.
 - **Scores:** at the end of each team line.
 - **Hero variant (Home):** splits the card into the two club colours with a white score plate over the seam.
@@ -650,7 +689,7 @@ A 44px circle. **Soft** (Dugout Grey with a navy icon) is the default in bars: s
 
 - **Lead and image cards:** a 16px photo card with the lifted shadow and a navy scrim. It carries a Changa headline in white and a club-colour pill ("À la une").
 - **Row cards:** white, with a 4px club or category edge at the inline start, an 88×68px thumbnail with 10px corners, a 15px/800 title and a muted meta line.
-- **Hover:** titles dim slightly and photos zoom to 105% over 320ms.
+- **Hover:** titles dim slightly and photos zoom over 320ms (to 103% on photo cards, 105% on row thumbnails).
 
 ### Fantasy pitch and player plate (signature)
 

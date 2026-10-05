@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-05T15:44:07.315Z",
+  "generatedAt": "2026-10-05T16:00:21.356Z",
   "title": "Design System: BotolaGO",
   "extensions": {
     "colorMeta": {
@@ -408,7 +408,11 @@
       },
       "tab": {
         "displayName": "Tab",
-        "purpose": "Tab labels; 800 when active."
+        "purpose": "Inactive tab labels."
+      },
+      "tab-active": {
+        "displayName": "Tab active",
+        "purpose": "The active tab label, over a 4px bar in navy or the club colour."
       },
       "score-hero": {
         "displayName": "Score hero",
@@ -442,9 +446,25 @@
         "displayName": "Label",
         "purpose": "Uppercase kickers, eyebrows, column heads, badges. Letter-spacing in French only."
       },
+      "meta-strong": {
+        "displayName": "Meta strong",
+        "purpose": "Chip labels (13px at 700)."
+      },
+      "meta-heavy": {
+        "displayName": "Meta heavy",
+        "purpose": "Small buttons and desktop nav links (13px at 800)."
+      },
       "micro": {
         "displayName": "Micro",
-        "purpose": "Bottom-nav labels and captions."
+        "purpose": "Captions."
+      },
+      "micro-strong": {
+        "displayName": "Micro strong",
+        "purpose": "Inactive bottom-nav labels (11px at 700)."
+      },
+      "micro-heavy": {
+        "displayName": "Micro heavy",
+        "purpose": "Active bottom-nav label; small live pill (uppercase, letter-spaced in French only)."
       },
       "stat-hero": {
         "displayName": "Stat hero",
@@ -463,7 +483,7 @@
       {
         "name": "card",
         "value": "0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 10%, transparent), 0 4px 14px -8px color-mix(in oklab, var(--ui-ink) 14%, transparent)",
-        "purpose": "Every white card, the light button, the selected chip and segment, the Fantasy pitch."
+        "purpose": "Every white card, the light button, the selected chip, the active segment, the pill-style segmented track, the Fantasy pitch."
       },
       {
         "name": "raised",
@@ -552,7 +572,7 @@
       {
         "name": "sm",
         "value": "640px",
-        "purpose": "Match header and date strip become 16px cards; section spacing 20px to 32px."
+        "purpose": "Match header and date strip become 16px cards; section spacing 20px to 32px; standings won/drawn/lost columns return."
       },
       {
         "name": "md",
@@ -636,14 +656,14 @@
       "kind": "card",
       "refersTo": "card",
       "description": "Signature: a white match row with a 4px club-colour bar at each end (home at the inline start), kickoff in the Changa row step, winner at 800, loser muted. Club colours here are the kits-table values for Raja and Wydad.",
-      "html": "<a class='ds-match' href='#' aria-label='Raja CA 1, Wydad AC 0, terminé'><span class='ds-match__edge' style='--club:#0a8f3a' aria-hidden='true'></span><span class='ds-match__time' aria-hidden='true'>FT</span><span class='ds-match__teams' aria-hidden='true'><span class='ds-match__team is-win'><span class='ds-match__crest' style='--club:#0a8f3a'>R</span><span class='ds-match__name'>Raja CA</span><span class='ds-match__score'>1</span></span><span class='ds-match__team'><span class='ds-match__crest' style='--club:#c8102e'>W</span><span class='ds-match__name'>Wydad AC</span><span class='ds-match__score'>0</span></span></span><span class='ds-match__edge' style='--club:#c8102e' aria-hidden='true'></span></a>",
+      "html": "<a class='ds-match' href='#' aria-label='Raja CA 1, Wydad AC 0, terminé'><span class='ds-match__edge' style='--club:#0a8f3a' aria-hidden='true'></span><span class='ds-match__time' aria-hidden='true'>Terminé</span><span class='ds-match__teams' aria-hidden='true'><span class='ds-match__team is-win'><span class='ds-match__crest' style='--club:#0a8f3a'>R</span><span class='ds-match__name'>Raja CA</span><span class='ds-match__score'>1</span></span><span class='ds-match__team'><span class='ds-match__crest' style='--club:#c8102e'>W</span><span class='ds-match__name'>Wydad AC</span><span class='ds-match__score'>0</span></span></span><span class='ds-match__edge' style='--club:#c8102e' aria-hidden='true'></span></a>",
       "css": ".ds-match{display:grid;grid-template-columns:4px 4.5rem minmax(0,1fr) 4px;column-gap:.75rem;align-items:stretch;max-width:24rem;min-height:4.5rem;border-radius:14px;overflow:hidden;background:var(--ui-surface, oklch(1 0 0));color:var(--ui-on-surface, oklch(0.16 0.03 260));box-shadow:var(--ui-shadow-card, 0 1px 2px 0 color-mix(in oklab, oklch(0.32 0.1 258) 10%, transparent), 0 4px 14px -8px color-mix(in oklab, oklch(0.32 0.1 258) 14%, transparent));text-decoration:none;font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);transition:transform var(--duration-tap,120ms) var(--ease-standard,cubic-bezier(.2,.7,.2,1))}@media (hover:hover){.ds-match:hover{transform:translateY(-1px)}}.ds-match:active{transform:translateY(1px) scale(.985)}.ds-match:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-match__edge{background:var(--club)}.ds-match__time{align-self:center;color:var(--ui-on-surface-muted, oklch(0.45 0.02 258));font-size:11px;font-weight:700;line-height:1.4}.ds-match__teams{display:flex;flex-direction:column;justify-content:center;gap:.375rem;padding-block:.75rem;padding-inline-end:.25rem}.ds-match__team{display:flex;align-items:center;gap:.5rem;color:var(--ui-on-surface-muted, oklch(0.45 0.02 258));font-size:14px;font-weight:700;line-height:1.55}.ds-match__team.is-win{color:var(--ui-on-surface, oklch(0.16 0.03 260));font-weight:800}.ds-match__crest{display:grid;place-items:center;flex-shrink:0;width:1.5rem;height:1.5rem;border-radius:9999px;background:var(--club);color:#fff;font-size:11px;font-weight:800;box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--club) 70%,black)}.ds-match__name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-match__score{font-family:var(--ui-font-display, Changa, Manrope, ui-sans-serif, system-ui, sans-serif);font-size:20px;line-height:1.1}"
     },
     {
       "name": "Score Plate with Live Pill",
       "kind": "custom",
       "refersTo": "scorebox",
-      "description": "Signature: the match header's split club halves with a white score plate (14px, lifted shadow, Changa 52px in Tunnel Navy) and a navy live pill with the breathing red dot.",
+      "description": "Signature: the match header's split club halves with a white score plate (14px, lifted shadow, Changa 52px in Tunnel Navy) and a navy live pill (medium size) with the breathing red dot.",
       "html": "<div class='ds-scorehead' role='img' aria-label='Raja CA 1, Wydad AC 0, en direct, 63e minute'><span class='ds-scorehead__half' style='--club:#0a8f3a'>Raja CA</span><span class='ds-scorehead__half ds-scorehead__half--away' style='--club:#c8102e'>Wydad AC</span><span class='ds-scorehead__center'><span class='ds-scorehead__plate'><span>1</span><span class='ds-scorehead__dash'>–</span><span>0</span></span><span class='ds-livepill'><span class='ds-livepill__dot'></span><bdi dir='ltr'>63’</bdi></span></span></div>",
       "css": ".ds-scorehead{position:relative;display:grid;grid-template-columns:1fr 1fr;max-width:24rem;min-height:9rem;border-radius:16px;overflow:hidden;box-shadow:var(--ui-shadow-lifted, 0 14px 26px -16px color-mix(in oklab, oklch(0.24 0.09 258) 55%, transparent));font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif)}.ds-scorehead__half{display:flex;align-items:flex-end;padding:1rem;padding-inline-end:4rem;background:var(--club);color:#fff;font-family:var(--ui-font-display, Changa, Manrope, ui-sans-serif, system-ui, sans-serif);font-size:17px;font-weight:700;line-height:1.25}.ds-scorehead__half--away{justify-content:flex-end;text-align:end;padding-inline-end:1rem;padding-inline-start:4rem}.ds-scorehead__center{position:absolute;inset-inline:0;top:1rem;display:flex;flex-direction:column;align-items:center;gap:.5rem}.ds-scorehead__plate{display:flex;align-items:center;gap:.5rem;padding:.25rem 1rem;border-radius:14px;background:var(--ui-scorebox, oklch(1 0 0));color:var(--ui-ink-deep, oklch(0.24 0.09 258));box-shadow:var(--ui-shadow-lifted, 0 14px 26px -16px color-mix(in oklab, oklch(0.24 0.09 258) 55%, transparent));font-family:var(--ui-font-display, Changa, Manrope, ui-sans-serif, system-ui, sans-serif);font-size:52px;font-weight:800;line-height:1.1}.ds-scorehead__dash{font-size:40px}.ds-livepill{display:inline-flex;align-items:center;gap:.375rem;padding:.25rem .625rem;border-radius:9999px;background:var(--ui-ink, oklch(0.32 0.1 258));color:var(--ui-on-ink-plain, oklch(1 0 0));font-size:12px;font-weight:800;line-height:1.4;text-transform:uppercase;letter-spacing:.025em}.ds-livepill__dot{width:.5rem;height:.5rem;border-radius:9999px;background:var(--ui-live, oklch(0.62 0.22 27));animation:ds-breathe 1.5s ease-in-out infinite}@keyframes ds-breathe{50%{opacity:.35}}@media (prefers-reduced-motion:reduce){.ds-livepill__dot{animation:none}}"
     }
@@ -663,7 +683,7 @@
     "rules": [
       {
         "name": "The Ink Is Paint Rule",
-        "body": "Floodlight Navy as a fill or border uses the fill token. Navy text and icons use the brand-foreground token, never the fill token. The two share a value today only because dark mode is off. A contract test enforces this.",
+        "body": "Floodlight Navy as a fill or border uses the fill token. Navy text and icons use the brand-foreground token, never the fill token. The two share a value today only because dark mode is off. A contract test enforces this inside the kit only.",
         "section": "colors"
       },
       {
