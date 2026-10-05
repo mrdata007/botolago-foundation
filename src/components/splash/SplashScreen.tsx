@@ -251,7 +251,11 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           />
         </span>
 
-        {/* The landing: a ripple flattened onto the turf, at the ball's spot. */}
+        {/* The landing: a ripple flattened onto the turf, at the ball's spot.
+            `forwards`, not `both`: `both` would apply the first keyframe
+            (opacity 0.75) during the delay, so the rings sat faintly under
+            the line from the first frame. Before the delay ends, `opacity-0`
+            keeps them hidden; the last keyframe keeps them hidden after. */}
         {[0, 160].map((delay) => (
           <span
             key={delay}
@@ -259,7 +263,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
             className="pointer-events-none absolute bottom-[-96px] start-1/2 -ms-24 h-48 w-48"
           >
             <span
-              className="block h-full w-full rounded-full border border-[hsl(214_100%_78%_/_0.6)] opacity-0 motion-safe:animate-[splash-ground-ripple_1100ms_cubic-bezier(0.22,1,0.36,1)_both]"
+              className="block h-full w-full rounded-full border border-[hsl(214_100%_78%_/_0.6)] opacity-0 motion-safe:animate-[splash-ground-ripple_1100ms_cubic-bezier(0.22,1,0.36,1)_forwards]"
               style={{ animationDelay: `${1000 + delay}ms` }}
             />
           </span>
