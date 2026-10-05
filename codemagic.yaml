@@ -1,0 +1,118 @@
+# Cloud builds of the BotolaGO phone app, on Codemagic (https://codemagic.io).
+#
+# Why a cloud build: an iPhone app can only be built on a Mac. This does it on
+# Codemagic's, so nobody needs one. Everything it needs to know is in this
+# repository; what it must not know (Apple's key, the Android keystore,
+# Firebase's file) is kept in Codemagic's own settings. docs/mobile/PHONE_APP.md
+# says, step by step, what to set up there before the first build.
+#
+# The app is a native shell around the live site (capacitor.config.ts), so these
+# builds do NOT build the website: they create the iPhone and Android projects
+# (`cap add`), finish them (scripts/mobile/prepare-native.mjs), number the build,
+# and build.
+#
+# Builds start only when someone presses "Start new build" in Codemagic: nothing
+# here triggers on a push. Nothing here releases anything to the public either:
+#   ios      uploads the build to App Store Connect, where it appears in TestFlight
+#            for your own team (internal testers). It is NOT submitted for Apple's
+#            review and NOT released.
+#   android  makes a signed .apk (to install on a phone) and .aab (for Google Play)
+#            and keeps them as downloads. It does NOT publish to Google Play.
+
+definitions:
+  # The version people see; the build number is Codemagic's, increasing each build.
+  versions: &versions
+    APP_VERSION: "1.0.0"
+  steps:
+    install_dependencies: &install_dependencies
+      name: Install dependencies
+      script: |
+        npm install --global bun
+        bun install --frozen-lockfile
+
+workflows:
+  android:
+    name: BotolaGO Android
+    max_build_duration: 60
+    # The Mac machine, because it is the one Codemagic's free monthly minutes cover.
+    instance_type: mac_mini_m2
+    environment:
+      # Codemagic > Teams > Code signing identities > Android keystores, with this reference name.
+      android_signing:
+        - botolago_keystore
+      # Codemagic > Teams > Global variables and secrets (or the app's Environment variables),
+      # a group with this name holding the secure variable GOOGLE_SERVICES_JSON_BASE64.
+      groups:
+        - botolago_mobile
+      java: 21
+      node: 22.20.0
+      vars:
+        <<: *versions
+    scripts:
+      - *install_dependencies
+      - name: Create the Android project and finish it
+        script: |
+          : "${GOOGLE_SERVICES_JSON_BASE64:?GOOGLE_SERVICES_JSON_BASE64 is not set: see docs/mobile/PHONE_APP.md}"
+          npx cap add android
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+          bun run mobile:prepare
+          bun run mobile:check
+      - name: Number the build
+        script: bun scripts/mobile/set-build-number.mjs "$BUILD_NUMBER" --version "$APP_VERSION"
+      - name: Copy the app's settings into the project
+        script: npx cap sync android
+      - name: Set the Android SDK location
+        script: echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Build the signed apk and aab
+        script: |
+          cd android
+          ./gradlew assembleRelease bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab
+
+  ios:
+    name: BotolaGO iPhone
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    integrations:
+      # Codemagic > Teams > Integrations > Developer Portal: an App Store Connect API key
+      # saved under this name.
+      app_store_connect: botolago_app_store_connect
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        # The app id of capacitor.config.ts (a test checks they agree).
+        bundle_identifier: com.botolago.app
+      xcode: latest
+      node: 22.20.0
+      vars:
+        <<: *versions
+        XCODE_PROJECT: ios/App/App.xcodeproj
+        XCODE_SCHEME: App
+    scripts:
+      - *install_dependencies
+      - name: Create the iPhone project and finish it
+        script: |
+          npx cap add ios
+          bun run mobile:prepare
+      - name: Number the build
+        script: bun scripts/mobile/set-build-number.mjs "$BUILD_NUMBER" --version "$APP_VERSION"
+      - name: Copy the app's settings into the project
+        script: npx cap sync ios
+      - name: Set up code signing in the Xcode project
+        script: xcode-project use-profiles --project "$XCODE_PROJECT"
+      - name: Build the ipa
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        # Upload only: it shows up in TestFlight for your own team. Not sent to Apple's review.
+        submit_to_testflight: false
+        submit_to_app_store: false

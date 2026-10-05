@@ -88,16 +88,17 @@ export function loadMyNotificationPreferences(): Promise<NotificationPreferences
 }
 
 /**
- * `current` with only the e-mail channel changed, in the full-replacement
- * shape `update_my_notification_preferences` takes.
+ * `current` with only one channel changed, in the full-replacement shape
+ * `update_my_notification_preferences` takes.
  */
-export function withEmailChannel(
+export function withChannel(
   current: NotificationPreferencesDto,
-  email: boolean,
+  channel: "email" | "push",
+  enabled: boolean,
 ): NotificationPreferenceUpdate {
   return {
     notificationsEnabled: current.notificationsEnabled,
-    channels: { ...current.channels, email },
+    channels: { ...current.channels, [channel]: enabled },
     categories: { ...current.categories },
     timezone: current.timezone,
     quietHours: { ...current.quietHours },
@@ -106,22 +107,53 @@ export function withEmailChannel(
   };
 }
 
+/** `current` with only the e-mail channel changed. */
+export function withEmailChannel(
+  current: NotificationPreferencesDto,
+  email: boolean,
+): NotificationPreferenceUpdate {
+  return withChannel(current, "email", email);
+}
+
 /**
- * Turns notification e-mails on or off for the signed-in account.
+ * Turns one channel on or off for the signed-in account.
  *
  * The update RPC replaces every preference at once, so this reads the stored
  * row immediately before writing rather than trusting a cached copy: the
  * Fantasy reminder and the three category switches are saved through the
  * profile, and a stale copy would quietly put them back.
  */
-export async function setMyEmailNotifications(
+async function setMyChannel(
+  channel: "email" | "push",
+  enabled: boolean,
+  repository: NotificationPreferenceRepository,
+  context: RepositoryContext,
+): Promise<NotificationPreferencesDto> {
+  const current = await repository.get(context);
+  if (current.channels[channel] === enabled) return current;
+  return repository.update(withChannel(current, channel, enabled), current.language, context);
+}
+
+/** Turns notification e-mails on or off for the signed-in account. */
+export function setMyEmailNotifications(
   enabled: boolean,
   repository: NotificationPreferenceRepository = getNotificationRepositories().preferences,
   context: RepositoryContext = notificationContext(),
 ): Promise<NotificationPreferencesDto> {
-  const current = await repository.get(context);
-  if (current.channels.email === enabled) return current;
-  return repository.update(withEmailChannel(current, enabled), current.language, context);
+  return setMyChannel("email", enabled, repository, context);
+}
+
+/**
+ * Turns push alerts on or off for the signed-in account (every phone it has
+ * registered). Registering or releasing this phone is the caller's job: this
+ * only saves the account's choice.
+ */
+export function setMyPushNotifications(
+  enabled: boolean,
+  repository: NotificationPreferenceRepository = getNotificationRepositories().preferences,
+  context: RepositoryContext = notificationContext(),
+): Promise<NotificationPreferencesDto> {
+  return setMyChannel("push", enabled, repository, context);
 }
 
 /** The one-click unsubscribe link from a notification e-mail. Works signed out. */

@@ -45,3 +45,7 @@ __pycache__/
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+
+# Firebase client configs: per-project files placed at build time, not committed (docs/mobile/PHONE_APP.md)
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist

@@ -1774,6 +1774,10 @@ export type Database = {
         Args: { p_lease_seconds?: number; p_limit?: number }
         Returns: Json
       }
+      service_claim_push_deliveries: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
       service_complete_fantasy_gameweek: {
         Args: { p_calculation_version: number; p_gameweek_id: string }
         Returns: Json
@@ -2016,6 +2020,10 @@ export type Database = {
         Returns: Json
       }
       service_release_email_deliveries: {
+        Args: { p_delivery_ids: string[]; p_retry_at: string }
+        Returns: number
+      }
+      service_release_push_deliveries: {
         Args: { p_delivery_ids: string[]; p_retry_at: string }
         Returns: number
       }
@@ -8210,6 +8218,7 @@ export type Database = {
         | "matchday_results"
         | "round_preview"
         | "pepites_weekly"
+        | "goal_cancelled"
       placement_scope: "global" | "competition" | "team" | "country"
       placement_type:
         | "home_lead"
@@ -8633,6 +8642,7 @@ export const Constants = {
         "matchday_results",
         "round_preview",
         "pepites_weekly",
+        "goal_cancelled",
       ],
       placement_scope: ["global", "competition", "team", "country"],
       placement_type: [

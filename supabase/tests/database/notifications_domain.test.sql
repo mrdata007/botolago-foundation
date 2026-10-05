@@ -223,14 +223,18 @@ select set_config(
   'request.jwt.claims',
   '{"sub":"15000000-0000-4000-8000-000000000002","role":"authenticated"}', true
 );
-select extensions.throws_ok(
-  $$select api.register_my_notification_device(
-      'browser-device-0002', 'web', 'fixture', 'private-fixture-token-00000001',
-      'ar', 'Africa/Casablanca', '1.0.0'
-    )$$,
-  'PT409', 'device_token_conflict',
-  'a destination cannot be reassigned across users'
+-- The address is secret to the phone it was issued to, so whoever presents it
+-- holds that phone: the registration moves to them (20261005140000; its own test
+-- is device_token_takeover.test.sql) and the first account's is switched off.
+select extensions.is(
+  api.register_my_notification_device(
+    'browser-device-0002', 'web', 'fixture', 'private-fixture-token-00000001',
+    'ar', 'Africa/Casablanca', '1.0.0'
+  ) ->> 'enabled',
+  'true',
+  'a destination presented by another account moves to it'
 );
+
 select extensions.is(
   jsonb_array_length(api.list_my_notifications() -> 'items'),
   0,
@@ -239,9 +243,16 @@ select extensions.is(
 reset role;
 
 select extensions.is(
+  (select enabled::text || '/' || (invalidated_at is not null)::text
+   from app.device_registrations where id = current_setting('test.device_id')::uuid),
+  'false/true',
+  'and the account that held the destination is switched off'
+);
+
+select extensions.is(
   (select count(*)::integer from app_private.notification_operational_audit
    where event_type in ('notification_preferences_updated', 'notification_device_registered')),
-  2,
+  3,
   'sensitive preferences and device registration produce append-only audit events'
 );
 
