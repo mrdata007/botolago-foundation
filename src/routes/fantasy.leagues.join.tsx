@@ -2,6 +2,7 @@ import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { isMfaStepUpError } from "@/backend/auth/step-up";
@@ -73,9 +74,9 @@ function JoinLeagueBody() {
   const [joined, setJoined] = useState<{ id: string; name: string } | null>(null);
   const [scoring, setScoring] = useState<"classic" | "h2h">("classic");
 
-  // Arriving from a Pronostics invite link (one league, two games): the code
-  // this tab holds fills the field, so nobody has to retype it. Read after
-  // mount: the server render has no tab storage.
+  // Arriving from an invite link (one league, two games): the code this device
+  // holds fills the field, so nobody has to retype it. Joining is still the
+  // manager's own tap. Read after mount: the server render has no storage.
   useEffect(() => {
     const pending = pendingInviteCode();
     if (pending) setCode((current) => current || pending);
@@ -97,12 +98,21 @@ function JoinLeagueBody() {
     setBusy(true);
     setInvalid(false);
     try {
-      await fantasyService.joinLeague(code.trim());
+      const result = await fantasyService.joinLeague(code.trim());
       clearPendingInvite();
       await qc.invalidateQueries({ queryKey: key("leagues", "private") });
+      // The league the server says was joined, not the list's last entry: an
+      // already-member join, or a league created since, would name another.
       const leagues = await fantasyService.getLeagues("private");
-      const league = leagues[leagues.length - 1];
-      setJoined(league ? { id: league.id, name: league.name } : { id: "", name: code.trim() });
+      const league =
+        (result.leagueId && leagues.find((item) => item.id === result.leagueId)) ||
+        (result.leagueId ? null : leagues[leagues.length - 1]);
+      if (!result.joined) toast.info(t("predictions.leagues.already_member"));
+      setJoined(
+        league
+          ? { id: league.id, name: league.name }
+          : { id: result.leagueId ?? "", name: code.trim() },
+      );
     } catch (error) {
       // Refused until the one-time code is in: the invite code typed is not
       // wrong, so the field is not marked "Code invalide". The notice says
