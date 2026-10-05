@@ -762,19 +762,82 @@ describe("ui-kit: directional icons mirror once in Arabic (BG-0150)", () => {
     return tags;
   };
 
-  /** An `rtl:` scale or rotate on the icon itself composes with the rule. */
-  const ICON_FLIP = /(?:^|[\s"'`{])(rtl:(?:[^\s"'`:]+:)*-?(?:scale|rotate)-[^\s"'`]*)/;
-  /** An `rtl:` variant that reaches into descendant svgs to scale or rotate them. */
-  const DESCENDANT_FLIP = /(?:^|[\s"'`{])(rtl:[^\s"'`]*svg[^\s"'`]*:-?(?:scale|rotate)-[^\s"'`]*)/g;
+  /**
+   * Tailwind class tokens in source text. A bracketed segment, with one level
+   * of nesting, may hold quotes, colons and parens, so `[[dir=rtl]_&]:…`,
+   * `[&:dir(rtl)]:…` and `rtl:[transform:scaleX(-1)]` each stay one token.
+   */
+  const CLASS_TOKEN = /(?:\[(?:[^[\]\s]|\[[^[\]\s]*\])*\]|[^\s"'`{}[\]()<>,;=])+/g;
 
+  /** A token's variants and utility, split at the colons outside brackets. */
+  const parseToken = (token: string) => {
+    const variants: string[] = [];
+    let depth = 0;
+    let start = 0;
+    for (let index = 0; index < token.length; index += 1) {
+      const char = token[index];
+      if (char === "[" || char === "(") depth += 1;
+      else if (char === "]" || char === ")") depth -= 1;
+      else if (char === ":" && depth === 0) {
+        variants.push(token.slice(start, index));
+        start = index + 1;
+      }
+    }
+    return { variants, utility: token.slice(start).replace(/^!|!$/g, "") };
+  };
+
+  /** `rtl` itself, or an arbitrary variant that selects on the Arabic direction. */
+  const isRtlVariant = (variant: string) =>
+    variant === "rtl" || /dir=["']?rtl\b|:dir\(rtl\)/.test(variant);
+
+  /** Sets `scale` or `rotate`, or a `transform` that scales or rotates. */
+  const isFlipUtility = (utility: string) =>
+    /^-?(?:scale|rotate)-/.test(utility) ||
+    /^\[(?:scale|rotate):/.test(utility) ||
+    /^(?:\[transform:|transform-\[).*(?:scale|rotate|matrix)/i.test(utility);
+
+  /**
+   * Every class that scales or rotates only in Arabic, wherever `rtl` sits in
+   * the variant chain (`md:rtl:-scale-x-100`) and however the direction is
+   * spelled (`[[dir=rtl]_&]:`, `[&:dir(rtl)]:`).
+   */
+  const rtlFlips = (text: string) =>
+    (text.match(CLASS_TOKEN) ?? []).filter((token) => {
+      const { variants, utility } = parseToken(token);
+      return variants.some(isRtlVariant) && isFlipUtility(utility);
+    });
+
+  /** Flips on a lucide tag itself, and flips whose variants reach into descendant svgs. */
   const flipsIn = (code: string) => {
     const tags = openingTags(code, lucideLocals(code));
-    const onIcons = tags.flatMap(({ name, attrs }) => {
-      const hit = attrs.match(ICON_FLIP)?.[1];
-      return hit ? [`<${name} ${hit}>`] : [];
-    });
-    const descendant = [...code.matchAll(DESCENDANT_FLIP)].map((m) => m[1]);
+    const onIcons = tags.flatMap(({ name, attrs }) =>
+      rtlFlips(attrs).map((hit) => `<${name} ${hit}>`),
+    );
+    const descendant = rtlFlips(code).filter((token) =>
+      parseToken(token).variants.some((variant) => /svg|lucide/.test(variant)),
+    );
     return { tags: tags.length, offenders: [...onIcons, ...descendant] };
+  };
+
+  /**
+   * Every Arabic-only scale or rotate in src, by file. None is on an icon. The
+   * lucide tag scan cannot see an icon passed in as a prop (`<Icon …>` for
+   * `icon={Newspaper}` on Home's discovery tiles) or one styled through a
+   * shared class string; a flip on either still lands in this list and fails
+   * until someone decides it belongs.
+   */
+  const RTL_TRANSFORMS_ALLOWED: Readonly<Record<string, readonly string[]>> = {
+    // Stadium and crowd photos face the reading direction.
+    "components/common/PhotoPageHeader.tsx": ["rtl:-scale-x-100"],
+    "components/landing/LandingPage.tsx": ["rtl:-scale-x-100"],
+    "components/matches/DateStrip.tsx": ["rtl:-scale-x-100"],
+    "components/shell/PageBackground.tsx": ["md:rtl:-scale-x-100"],
+    "routes/fantasy.profile.tsx": ["rtl:-scale-x-100"],
+    "routes/index.tsx": ["rtl:-scale-x-100"],
+    // The Pépites rating chart, a hand-drawn svg, runs in reading order.
+    "components/pepites/PepitesPlayerPage.tsx": ["rtl:-scale-x-100"],
+    // The goal caption's slant leans with the script (its French twin is ltr:-rotate-[4deg]).
+    "components/matches/GoalMoment.tsx": ["rtl:rotate-[4deg]"],
   };
 
   it("the flip detector catches the shapes that shipped, and not a photo", () => {
@@ -798,6 +861,61 @@ describe("ui-kit: directional icons mirror once in Arabic (BG-0150)", () => {
         "rtl:**:[.rdp-button\\_next>svg]:rotate-180",
       ],
     });
+  });
+
+  it("the flip detector finds rtl behind other variants and the [dir=rtl] spellings", () => {
+    const sample = [
+      'import { ArrowRight } from "lucide-react";',
+      '<ArrowRight className="size-4 md:rtl:-scale-x-100" />',
+      '<ArrowRight className="[[dir=rtl]_&]:-scale-x-100" />',
+      '<ArrowRight className="[&:dir(rtl)]:rotate-180" />',
+      "<ArrowRight className={`hover:rtl:!rotate-180`} />",
+      '<ArrowRight className="rtl:[transform:scaleX(-1)] rtl:[scale:-1_1]" />',
+      '<span className="[&_svg]:rtl:rotate-180 rtl:[&>svg]:-scale-x-100" />',
+      // Not Arabic-only flips: a skew, a French-only tilt, a flip in both languages.
+      '<ArrowRight className="rtl:[transform:skewX(20deg)] ltr:-rotate-[4deg] -scale-x-100" />',
+    ].join("\n");
+    expect(flipsIn(sample)).toEqual({
+      tags: 6,
+      offenders: [
+        "<ArrowRight md:rtl:-scale-x-100>",
+        "<ArrowRight [[dir=rtl]_&]:-scale-x-100>",
+        "<ArrowRight [&:dir(rtl)]:rotate-180>",
+        "<ArrowRight hover:rtl:!rotate-180>",
+        "<ArrowRight rtl:[transform:scaleX(-1)]>",
+        "<ArrowRight rtl:[scale:-1_1]>",
+        "[&_svg]:rtl:rotate-180",
+        "rtl:[&>svg]:-scale-x-100",
+      ],
+    });
+  });
+
+  it("the source-wide scan sees a flip on an icon passed in as a prop", () => {
+    const code = [
+      "function Tile({ icon: Icon }: { icon: LucideIcon }) {",
+      '  return <Icon className={cn("size-5", "rtl:-scale-x-100")} aria-hidden />;',
+      "}",
+    ].join("\n");
+    // `Icon` is not imported from lucide-react, so the tag scan cannot know it is one…
+    expect(flipsIn(code)).toEqual({ tags: 0, offenders: [] });
+    // …so the source-wide allowlist test is what catches it.
+    expect(rtlFlips(code)).toEqual(["rtl:-scale-x-100"]);
+  });
+
+  it("scales or rotates nothing in Arabic beyond the allowlisted photos, chart and goal caption", () => {
+    const srcDir = join(ROOT, "src");
+    const files = (readdirSync(srcDir, { recursive: true }) as string[])
+      .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
+      .sort();
+    const found = files.flatMap((file) =>
+      rtlFlips(stripComments(readFileSync(join(srcDir, file), "utf8"))).map(
+        (token) => `${file}: ${token}`,
+      ),
+    );
+    const allowed = Object.entries(RTL_TRANSFORMS_ALLOWED).flatMap(([file, tokens]) =>
+      tokens.map((token) => `${file}: ${token}`),
+    );
+    expect(found.sort()).toEqual(allowed.sort());
   });
 
   it("no lucide icon in src carries an rtl: flip of its own", () => {

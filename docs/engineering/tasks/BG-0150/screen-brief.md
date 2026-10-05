@@ -44,8 +44,9 @@ from lucide-react was rendered and classified.
 - French renders exactly as before: no icon is flipped when `dir="ltr"`.
 - The photo flips (`rtl:-scale-x-100` on the stadium images in `index.tsx`,
   `fantasy.profile.tsx`, `PageBackground.tsx`, `PhotoPageHeader.tsx`,
-  `LandingPage.tsx`, `DateStrip.tsx`) and the Pépites rating chart flip
-  (`PepitesPlayerPage.tsx:1135`) are not icons and stay.
+  `LandingPage.tsx`, `DateStrip.tsx`), the Pépites rating chart flip
+  (`PepitesPlayerPage.tsx:1135`) and the goal caption's Arabic tilt
+  (`GoalMoment.tsx:183`) are not icons and stay.
 - Icon size, colour, position, spacing and hover behaviour are unchanged; the
   only property that changes is the horizontal direction of the glyph.
 - No copy, routing, data, Fantasy rule, scoring or gameweek logic changes. The
@@ -65,14 +66,18 @@ from lucide-react was rendered and classified.
    point the reading way in Arabic: the Home deadline strip, the Prizes terms
    link, the Pépites "full ranking" link and the three Pépites back links.
 3. The two latent RTL rotations in `ui/calendar.tsx` are removed.
-4. Three contract tests in `src/components/ui-kit/ui-kit.contract.test.ts`
+4. Contract tests in `src/components/ui-kit/ui-kit.contract.test.ts`
    pin the behaviour so it cannot drift back:
    - the selector list in `styles.css` equals a `MIRRORED` constant;
    - every mirrored lucide component still renders the class the rule targets
      (a lucide upgrade that renames an icon fails the test instead of silently
      un-mirroring it);
    - no lucide icon anywhere in `src/**/*.tsx` carries `rtl:-scale-x-100`,
-     `rtl:rotate-180` or an `rtl:**:[…svg]:rotate…` class.
+     `rtl:rotate-180` or an `rtl:**:[…svg]:rotate…` class, including behind
+     another variant (`md:rtl:`) or spelled `[[dir=rtl]_&]:` / `[&:dir(rtl)]:`;
+   - every Arabic-only scale or rotate anywhere in `src` is on an allowlist
+     (the photos, the chart and the goal caption above), which also catches a
+     flip on an icon passed in as a prop, such as Home's `<Icon>` tiles.
 
 ## Acceptance criteria (visual and functional)
 
