@@ -93,7 +93,19 @@ describe("loadPlannedMatch", () => {
     expect(m.flashscore.incidents).toBeDefined();
   });
   test("live refuses to start without the provider settings, before any request", async () => {
-    await expect(loadPlannedMatch("live", entry, {})).rejects.toThrow();
-    await expect(loadPlannedMatch("live", entry, { RAPIDAPI_KEY: "k" })).rejects.toThrow();
+    const realFetch = globalThis.fetch;
+    let requests = 0;
+    globalThis.fetch = (() => {
+      requests += 1;
+      return Promise.reject(new Error("no request expected"));
+    }) as unknown as typeof fetch;
+    try {
+      await expect(loadPlannedMatch("live", entry, {})).rejects.toThrow();
+      // The Sofascore settings are complete; only the Flashscore host is missing.
+      await expect(loadPlannedMatch("live", entry, { RAPIDAPI_KEY: "k" })).rejects.toThrow();
+      expect(requests).toBe(0);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   });
 });

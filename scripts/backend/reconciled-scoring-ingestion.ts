@@ -137,8 +137,11 @@ export async function loadPlannedMatch(
   env: Record<string, string | undefined> = process.env,
 ): Promise<{ sofascore: ProviderMatchData; flashscore: ProviderMatchData }> {
   if (source === "committed") return loadCommittedMatch(entry);
-  const sofascore = await createSofascorePerformanceProvider(env).getMatch(entry.sofascoreId);
-  const flashscore = await createFlashscorePerformanceProvider(env).getMatch(entry.flashscoreId);
+  // Build both providers first, so a missing setting fails before any quota is spent.
+  const sofascoreProvider = createSofascorePerformanceProvider(env);
+  const flashscoreProvider = createFlashscorePerformanceProvider(env);
+  const sofascore = await sofascoreProvider.getMatch(entry.sofascoreId);
+  const flashscore = await flashscoreProvider.getMatch(entry.flashscoreId);
   return { sofascore, flashscore };
 }
 
