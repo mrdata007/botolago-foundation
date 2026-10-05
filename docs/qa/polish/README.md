@@ -249,6 +249,27 @@ them.
 So pass 1 only ever _nominates_; every nomination is re-measured from rendered
 pixels, and only pass 2's number is reported.
 
+Two more were found during BG-0149, when an independent all-text probe was run
+beside this one on the dark theme. Both were about coverage rather than about
+the arithmetic, which is why a clean result had hidden them:
+
+5. **Measuring text nobody can see.** A club crest's fallback initials ("AMA")
+   sit under the crest image, which covers them with an opaque plate. Pass 2
+   measured the image and reported 1.82:1 and 1.27:1 on `/clubs/<id>`: four
+   failures on text that is never on screen. A text now counts only if the
+   topmost element at the centre of its first line is its own element (or a
+   descendant or an ancestor), hit-tested with `pointer-events` forced on, and
+   only if `checkVisibility()` passes. `PROBE_LIST_HIDDEN=1` lists what was
+   skipped and what covered it.
+6. **Measuring only part of the page.** Pass 1 skipped any element with child
+   elements, so a button with an icon beside its label was never measured, and
+   a suspect below the first screen was clipped to nothing by the viewport
+   screenshot and silently dropped. The probe now walks text nodes (each one's
+   own Range box), scrolls a screen at a time (`PROBE_MAX_SCREENS`), waits for
+   the network to go idle before it starts (at 1300ms `/fantasy/players` was
+   still an empty page), and `PROBE_ALL=1` measures every visible text from
+   pixels instead of only pass 1's nominations.
+
 **After:** 7 routes × 2 languages, **168 pixel measurements, 0 below AA** — and
 that includes all 78 gradient-backed elements pass 1 cannot judge, which
 independently agrees with BG-0118's own 978-sample sweep.
