@@ -1504,13 +1504,18 @@ html[dir="rtl"] .lucide-arrow-left {
   }
 }
 
+/* Once the ball has settled (the hop ends at 1260ms), it sinks into the
+   ground line: the element scales about its bottom edge, which sits on the
+   line, so shrinking it draws the ball down into it. */
 @keyframes splash-ball-fade {
   0%,
-  84% {
+  80% {
     opacity: 1;
+    transform: scale(1);
   }
   100% {
     opacity: 0;
+    transform: scale(0.3);
   }
 }
 
@@ -1523,16 +1528,35 @@ html[dir="rtl"] .lucide-arrow-left {
   }
 }
 
-@keyframes splash-trail {
+/* The ball's tail: in as the ball comes on screen, and gone by the landing
+   (1000ms), before its dots catch the ball up on the landing spot. */
+@keyframes splash-tail {
   0% {
     opacity: 0;
   }
-  20%,
-  80% {
-    opacity: 0.9;
+  10%,
+  70% {
+    opacity: 1;
+  }
+  92%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The ground line flaring as the ball lands on it. */
+@keyframes splash-flare {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.4);
+  }
+  18% {
+    opacity: 1;
+    transform: scaleX(1.15);
   }
   100% {
     opacity: 0;
+    transform: scaleX(1.6);
   }
 }
 
