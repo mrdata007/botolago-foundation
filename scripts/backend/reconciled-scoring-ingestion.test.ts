@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   databaseGuard,
   exitCodeOf,
+  loadPlannedMatch,
   parsePlan,
   PRODUCTION_PROJECT_REF,
   RECORD_CONFIRMATION,
@@ -81,5 +82,18 @@ describe("exitCodeOf", () => {
   test("local mode is judged on what was prepared", () => {
     expect(exitCodeOf(null, [{ request: {} } as never])).toBe(0);
     expect(exitCodeOf(null, [{ request: null } as never])).toBe(2);
+  });
+});
+
+describe("loadPlannedMatch", () => {
+  const entry = { sofascoreId: "17132481", flashscoreId: "W81WOcb5" };
+  test("committed reads the saved payloads and needs no provider settings", async () => {
+    const m = await loadPlannedMatch("committed", entry, {});
+    expect(m.sofascore.lineups).toBeDefined();
+    expect(m.flashscore.incidents).toBeDefined();
+  });
+  test("live refuses to start without the provider settings, before any request", async () => {
+    await expect(loadPlannedMatch("live", entry, {})).rejects.toThrow();
+    await expect(loadPlannedMatch("live", entry, { RAPIDAPI_KEY: "k" })).rejects.toThrow();
   });
 });

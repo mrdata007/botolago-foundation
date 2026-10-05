@@ -88,8 +88,15 @@ bun scripts/backend/reconciled-scoring-ingestion.ts --plan plan.json \
   person.
 - **`rows.json`:** the output of `football-reviewed-mapping-snapshot.sql`, read from the same
   database the run writes to.
-- **Provider data:** the committed historical payloads only. The script makes no provider
-  call.
+- **Provider data (`--source`):**
+  - `committed` (default): the committed historical payloads. No provider call.
+  - `live`: downloads each match from Sofascore and Flashscore through the approved adapters
+    (4 requests per provider per match, against the monthly quotas). Needs `RAPIDAPI_KEY` and
+    `FLASHSCORE_RAPIDAPI_HOST`. `--observed-at` defaults to now. The staging-only rule for
+    the database modes is unchanged. A match that is not finished or whose providers
+    disagree is blocked by the same checks as before.
+  - Not yet run against the real providers: the live path is tested only for refusing to start
+    without settings.
 - **Database modes:** need `SUPABASE_URL` and `SUPABASE_SECRET_KEY`, and **refuse the
   production project**.
 - **`record`:** also needs `RECONCILED_INGESTION_CONFIRMATION=RECORD_RECONCILED_OBSERVATIONS_ON_STAGING`.
