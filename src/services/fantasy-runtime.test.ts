@@ -99,6 +99,36 @@ describe("playerDto merges the season aggregate instead of hardcoding zeros", ()
   });
 });
 
+describe("playerDto carries the approved photo", () => {
+  const path =
+    "football/players/00000000-0000-4000-8000-000000000002/00000000-0000-4000-8000-000000000009.webp";
+
+  test("an approved photo becomes the public URL of its derivative", () => {
+    const before = process.env.SUPABASE_URL;
+    process.env.SUPABASE_URL ||= "https://example.supabase.co";
+    try {
+      const player = playerDto(poolPlayer({ photo: { storagePath: path } }), stat());
+      expect(player.photoUrl).toEndWith(`/storage/v1/object/public/football-media/${path}`);
+    } finally {
+      if (before === undefined) delete process.env.SUPABASE_URL;
+      else process.env.SUPABASE_URL = before;
+    }
+  });
+
+  test("no photo, or a list from before the migration, means the silhouette", () => {
+    expect(playerDto(poolPlayer({ photo: null }), stat()).photoUrl).toBeNull();
+    expect(playerDto(poolPlayer(), stat()).photoUrl).toBeNull();
+  });
+
+  test("a path outside the public media namespaces is never turned into a URL", () => {
+    const player = playerDto(
+      poolPlayer({ photo: { storagePath: "players/x/release-1.pdf" } }),
+      stat(),
+    );
+    expect(player.photoUrl).toBeNull();
+  });
+});
+
 describe("form: no gameweek scored is not the same fact as scored nothing", () => {
   test("null survives the mapper untouched", () => {
     // Production today: zero scored gameweeks, so the RPC sends null for every
