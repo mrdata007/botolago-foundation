@@ -1,6 +1,6 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
--- Apply migration 20261005130000_push_remaining_alerts: the other four push
+-- Apply migration 20261005135000_push_remaining_alerts: the other four push
 -- moments (the 1-hour Fantasy deadline, the final score, goals, and the
 -- "goal cancelled" correction). It adds their text in French and Arabic (and a
 -- second edition of the goal text that names the match), the planner that
@@ -68,8 +68,8 @@ begin
   if to_regclass('supabase_migrations.schema_migrations') is null then
     raise exception 'stop: supabase_migrations.schema_migrations does not exist -- is this the BotolaGO database?';
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261005130000') then
-    raise exception 'stop: migration 20261005130000 is already recorded as applied';
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261005135000') then
+    raise exception 'stop: migration 20261005135000 is already recorded as applied';
   end if;
   if to_regclass('app_private.notification_push_settings') is null
     or to_regprocedure('api.service_claim_push_deliveries(integer,integer)') is null then
@@ -140,13 +140,13 @@ end
 $preflight$;
 
 -- ---------------------------------------------------------------------------
--- Migration 20261005130000, exactly as in the repository, into the history
+-- Migration 20261005135000, exactly as in the repository, into the history
 -- ---------------------------------------------------------------------------
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20261005130000',
+  '20261005135000',
   'push_remaining_alerts',
-  array[$bg_20261005130000_file$-- Push alerts, the remaining moments, migration 2 of 2.
+  array[$bg_20261005135000_file$-- Push alerts, the remaining moments, migration 2 of 2.
 --
 -- Steps 1 and 2 (20261005100000, 20261005110000) gave push the two moments email
 -- already plans: the kick-off reminder and the 24-hour Fantasy deadline. This
@@ -989,7 +989,7 @@ comment on function app_private.notification_push_plan(timestamptz) is
   'Plans the moments only push uses: the 1-hour Fantasy deadline, the final score and goals of matches someone follows, and the correction when a told goal is ruled out. Writes events only; sends nothing.';
 comment on function app_private.notification_push_tick() is
   'Every minute: plans the kick-off and deadline moments when email will not, plans push''s own moments (goals, results, the 1-hour deadline), queues push deliveries for them, and wakes notification-push-dispatch when something can be sent. Returns at once while push is off.';
-$bg_20261005130000_file$]
+$bg_20261005135000_file$]
 );
 
 -- ---------------------------------------------------------------------------
@@ -997,16 +997,16 @@ $bg_20261005130000_file$]
 -- ---------------------------------------------------------------------------
 do $apply$
 declare
-  part_20261005130000 text := (
-    select statements[1] from supabase_migrations.schema_migrations where version = '20261005130000'
+  part_20261005135000 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20261005135000'
   );
 begin
-  if encode(sha256(convert_to(part_20261005130000, 'UTF8')), 'hex')
+  if encode(sha256(convert_to(part_20261005135000, 'UTF8')), 'hex')
     is distinct from '315ca2cd070c48a86a0ef5cf1990f4136183d8e6851775847e020f3ac32522b3' then
-    raise exception 'stop: 20261005130000 is not the repository file byte for byte -- was this script cut short or changed?';
+    raise exception 'stop: 20261005135000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
-  execute part_20261005130000;
+  execute part_20261005135000;
 end
 $apply$;
 
@@ -1075,7 +1075,7 @@ begin
   if job_count <> 1 then
     problems := problems || 'the notification-push-tick job is not scheduled once a minute'::text;
   end if;
-  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261005130000') then
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261005135000') then
     problems := problems || 'history row missing'::text;
   end if;
 
@@ -1137,7 +1137,7 @@ $postflight$;
 rollback;
 
 select case
-  when exists (select 1 from supabase_migrations.schema_migrations where version = '20261005130000')
+  when exists (select 1 from supabase_migrations.schema_migrations where version = '20261005135000')
     then 'Applied. Goals, results and the 1-hour deadline can now be planned and queued; push is still OFF.'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;

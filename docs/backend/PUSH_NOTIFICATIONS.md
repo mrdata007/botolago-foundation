@@ -27,7 +27,7 @@ Supabase secrets.
 | Step 1: the claim (migration and production script)     | `supabase/migrations/20261005100000_push_delivery_claim.sql`, `scripts/backend/apply-20261005100000-push-delivery-claim.sql`           |
 | Step 2: the fan-out and tick (migration and script)     | `supabase/migrations/20261005110000_push_fanout_and_tick.sql`, `scripts/backend/apply-20261005110000-push-fanout-and-tick.sql`         |
 | Step 3a: the `goal_cancelled` type, alone               | `supabase/migrations/20261005120000_push_goal_cancelled_type.sql`, `scripts/backend/apply-20261005120000-push-goal-cancelled-type.sql` |
-| Step 3b: the other moments, their text and rules        | `supabase/migrations/20261005130000_push_remaining_alerts.sql`, `scripts/backend/apply-20261005130000-push-remaining-alerts.sql`       |
+| Step 3b: the other moments, their text and rules        | `supabase/migrations/20261005135000_push_remaining_alerts.sql`, `scripts/backend/apply-20261005135000-push-remaining-alerts.sql`       |
 
 ## What does not exist yet
 
@@ -59,7 +59,7 @@ a device token, a title or a body; its reply carries counts only.
 
 In this order. Each step is safe on its own; nothing is sent until the last.
 
-1. Merge the branch. Rehearse, then apply, in this order, `apply-20261005100000-push-delivery-claim.sql`, `apply-20261005110000-push-fanout-and-tick.sql`, `apply-20261005120000-push-goal-cancelled-type.sql` and `apply-20261005130000-push-remaining-alerts.sql`. Each ships as a rehearsal. Each refuses to run before the ones it builds on are **saved** (the last one needs the type script committed, because a new enum value cannot be used in the transaction that adds it), and the fan-out and remaining-alerts scripts refuse to run while push is on.
+1. Merge the branch. Rehearse, then apply, in this order, `apply-20261005100000-push-delivery-claim.sql`, `apply-20261005110000-push-fanout-and-tick.sql`, `apply-20261005120000-push-goal-cancelled-type.sql` and `apply-20261005135000-push-remaining-alerts.sql`. Each ships as a rehearsal. Each refuses to run before the ones it builds on are **saved** (the last one needs the type script committed, because a new enum value cannot be used in the transaction that adds it), and the fan-out and remaining-alerts scripts refuse to run while push is on.
 2. Deploy the Edge Function `notification-push-dispatch` and set its secrets (below).
 3. Check the tick knows where to wake the function. If email was configured it already does. If not:
    `select app_private.notification_push_set_functions_url('https://<project>.supabase.co/functions/v1');`

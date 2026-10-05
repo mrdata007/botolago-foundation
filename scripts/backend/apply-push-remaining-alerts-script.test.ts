@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * The guarded script that puts 20261005130000 (the remaining push moments: the
+ * The guarded script that puts 20261005135000 (the remaining push moments: the
  * 1-hour deadline, results, goals and their correction) on production. Like the
  * other apply scripts, it records the migration file whole in the history and
  * runs that record only after its sha256 matches the repository file, so the
@@ -19,7 +19,7 @@ const read = (path: string) => readFileSync(join(root, path), "utf8");
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
-const VERSION = "20261005130000";
+const VERSION = "20261005135000";
 const NAME = "push_remaining_alerts";
 const script = read(`scripts/backend/apply-${VERSION}-push-remaining-alerts.sql`);
 const migration = read(`supabase/migrations/${VERSION}_${NAME}.sql`);

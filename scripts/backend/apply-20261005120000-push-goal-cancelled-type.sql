@@ -5,7 +5,7 @@
 -- type of the correction sent when a goal that was told is later ruled out. It
 -- is added on its own because a new enum value cannot be used in the
 -- transaction that adds it; the migration that uses it is the next script,
--- apply-20261005130000-push-remaining-alerts.sql, run AFTER this one is saved.
+-- apply-20261005135000-push-remaining-alerts.sql, run AFTER this one is saved.
 --
 -- WHEN
 --   After the pull request that adds this file is merged. Any quiet moment; not
@@ -74,7 +74,7 @@ values (
   array[$bg_20261005120000_file$-- Push alerts, the remaining moments, migration 1 of 2: the "goal cancelled"
 -- notification type, alone. A new enum value cannot be used in the
 -- transaction that adds it, so its text, its place in the push rules and the
--- planner that creates it are in the next migration (20261005130000).
+-- planner that creates it are in the next migration (20261005135000).
 --
 -- The type is for the correction that follows a goal alert when the goal is
 -- later ruled out (a VAR decision): the phone that was told "goal" is told it
@@ -94,7 +94,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20261005120000, 'UTF8')), 'hex')
-    is distinct from '3134b7f3605630541b29a5a4d3dab6634eedef5b574cfa3e036011e02dfd37b5' then
+    is distinct from '04dd32f7025310ff086caa7f4664d39c642e657f7eb0dba08ff2c7d1a2bacbc3' then
     raise exception 'stop: 20261005120000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
@@ -139,6 +139,6 @@ rollback;
 
 select case
   when exists (select 1 from supabase_migrations.schema_migrations where version = '20261005120000')
-    then 'Applied. goal_cancelled is a notification type. Run apply-20261005130000-push-remaining-alerts.sql next.'
+    then 'Applied. goal_cancelled is a notification type. Run apply-20261005135000-push-remaining-alerts.sql next.'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;
