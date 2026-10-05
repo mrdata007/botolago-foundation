@@ -245,6 +245,7 @@ as $$
 declare
   target app.fantasy_public_recaps;
 begin
+  perform app_private.assert_mfa_step_up();
   if (select auth.uid()) is null then
     raise exception using errcode = 'PT401', message = 'authentication_required';
   end if;
