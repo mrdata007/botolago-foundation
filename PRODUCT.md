@@ -288,7 +288,9 @@ the snapshot) was not checked against the live site.
 - whether language URLs are adopted, and if so which shape (`/ar` beside unprefixed French, or `/fr`
   and `/ar` namespaces);
 - the canonical brand blue: the logo file uses `#0151fc`, while the interface's brand token is a deeper
-  navy;
+  navy. Recommended on 2026-10-05, awaiting the owner's confirmation: two blues with two jobs (Logo
+  Blue for brand assets only, the navy for the interface, the white logo in dark mode); see
+  `DESIGN.md` (Colors);
 - whether an Arabic-script form of the brand name is sanctioned.
 
 ## Brand Commitments
@@ -325,7 +327,8 @@ the snapshot) was not checked against the live site.
 - **Visual identity is incumbent and authoritative.** It is "Design System V2", currently the look
   called Option A "Club colours". It is documented in `docs/engineering/DESIGN_SYSTEM_V2.md` (which
   trails the code on a few points; see the snapshot, section 7) and implemented in `src/styles.css`
-  and `src/components/ui-kit/`. This record does not restate it, and there is no `DESIGN.md` yet.
+  and `src/components/ui-kit/`, and summarised for agents in `DESIGN.md`. This record does not restate
+  it.
 - **Operator:** Go Sports Technologies (a company being formed), Agadir, Morocco; contact
   support@botolago.com.
 

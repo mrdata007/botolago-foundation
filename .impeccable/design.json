@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-05T16:00:21.356Z",
+  "generatedAt": "2026-10-05T21:17:37.536Z",
   "title": "Design System: BotolaGO",
   "extensions": {
     "colorMeta": {
@@ -683,7 +683,7 @@
     "rules": [
       {
         "name": "The Ink Is Paint Rule",
-        "body": "Floodlight Navy as a fill or border uses the fill token. Navy text and icons use the brand-foreground token, never the fill token. The two share a value today only because dark mode is off. A contract test enforces this inside the kit only.",
+        "body": "Floodlight Navy as a fill or border uses the fill token. Navy text and icons use the brand-foreground token, never the fill token. The two share a value in the light theme. In dark the foreground token is a light blue, so the split matters as soon as dark mode is on. A contract test enforces this inside the kit only.",
         "section": "colors"
       },
       {
@@ -748,9 +748,9 @@
       "**Don't** use the Chalk Line hairline as the edge of an input or other control; control edges need Goal-Line Grey.",
       "**Don't** print a score as one string inside a single direction-isolated span.",
       "**Don't** add colour literals, new shadow values or legacy V1 tokens (frosted glass, the V1 electric blue, V1 shadows and radii) to product screens.",
-      "**Don't** design dark-mode variants or switch dark mode on without the owner's decision.",
-      "**Don't** change the logo or settle the brand-blue question inside a screen change.",
-      "**Don't** restyle Pépites to the kit, or the kit to Pépites. How far Design System V2 governs Pépites is an open decision."
+      "**Don't** build a screen that only works in light. Dark mode is decided ([PR #356](https://github.com/mrdata007/botolago-foundation/pull/356)); use kit tokens that carry dark values.",
+      "**Don't** change the logo or paint interface elements in Logo Blue. The brand-blue recommendation awaits the owner's confirmation.",
+      "**Don't** add Pépites-only styling (night bands, the energy gradient, mono lines, slant, its own palette). Pépites is moving onto the kit ([PR #357](https://github.com/mrdata007/botolago-foundation/pull/357))."
     ]
   }
 }

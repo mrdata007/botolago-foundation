@@ -329,6 +329,7 @@ This file describes the system that ships today: Design System V2, look "Option 
 
 - **[Inconsistent]**: the code does more than one thing, or departs from its own rule.
 - **[Open decision]**: the owner has not decided. Do not settle it inside a screen change.
+- **[Decided]**: the owner has decided and the change is in a draft pull request, not yet on main. Until it merges, the surrounding text still describes what ships.
 - **[Unverified]**: inferred from source or quoted from a code comment, not measured or rendered.
 
 **Which source wins.** The code is the authority: `src/styles.css`, `src/components/ui-kit/tokens.ts` and `src/components/ui-kit/primitives.tsx`, held together by the ui-kit contract test (`src/components/ui-kit/ui-kit.contract.test.ts`). This file comes next. [docs/engineering/DESIGN_SYSTEM_V2.md](docs/engineering/DESIGN_SYSTEM_V2.md) stays the detailed technical reference, with the drift noted below. Product context, voice and terminology are in [PRODUCT.md](PRODUCT.md) and are not repeated here.
@@ -354,6 +355,17 @@ Also out of date: the status lines of `MOTION_PLAN.md` and `MOTION_PLAN_2.md`, `
 - **Tests.** `bun test src/components/ui-kit/` ran during this pass: 175 pass, 0 fail.
 - **Not re-measured.** Contrast ratios and pixel heights quoted from code comments, which are marked [Unverified] where they matter.
 - **Not committed.** The screenshots.
+
+### Owner decisions (2026-10-05)
+
+The owner settled the questions this file first recorded as open. Each change is on its own branch with a draft pull request. None is merged yet, so the sections below still describe what ships today, marked **[Decided]** where a decision applies.
+
+- **Dark mode: on, following the phone's setting.** Anyone whose phone is set to dark sees dark at once, and Profile > Apparence offers Clair, Sombre and Système. The same change turns the logo white on dark, puts the toasts on kit colours and fixes the remaining dark-mode defects ([PR #356](https://github.com/mrdata007/botolago-foundation/pull/356)).
+- **Pépites: looks like the rest of the app.** Its night bands, energy gradient, mono lines, slant and own palette go, and it is rebuilt on the kit. Its share images are a later step ([PR #357](https://github.com/mrdata007/botolago-foundation/pull/357)).
+- **Arabic icons: directional icons mirror.** Chevrons and arrows already do. Sign in, sign out, undo, trend, sort, the question mark and icons that draw lines of text join them. Clocks, refresh, play, checkmarks, search, slashes, swap arrows and share stay as drawn. Six icons that were flipped twice are fixed ([PR #353](https://github.com/mrdata007/botolago-foundation/pull/353)).
+- **App screen edges: `viewport-fit=cover`.** In the phone app the site reaches the screen edges, with safe-area padding wherever a bar would otherwise sit under the status bar, the home indicator or a landscape notch ([PR #354](https://github.com/mrdata007/botolago-foundation/pull/354)).
+- **Fantasy menu lists: removed.** There is no Fantasy sub-navigation; the hub-and-back pattern stays ([PR #355](https://github.com/mrdata007/botolago-foundation/pull/355)).
+- **Brand blue: a recommendation awaiting the owner's confirmation.** Two blues with two jobs: Logo Blue stays the colour of the brand assets and never becomes an interface colour, and Floodlight Navy stays the interface brand. In dark mode the logo uses its all-white files. The evidence is under Colors.
 
 ## Colors
 
@@ -397,11 +409,12 @@ A floodlit navy and white base, one spring-to-sky action gradient used with inte
 
 ### Sub-brand: Pépites
 
+- **[Decided]** Pépites will look like the rest of the app ([PR #357](https://github.com/mrdata007/botolago-foundation/pull/357)). Until that merges, this is what ships.
 - **Pépites Night**, **Pépites Mint**, **Pépites Sky** and **Pépites Violet**: Pépites (جواهر in Arabic), the young-player data section, keeps its own look. It uses night bands with a slanted bottom edge, an "energy" gradient from mint through sky to violet, and IBM Plex Mono meta lines. Its palette also includes a page, an ink, text, muted, hairline and a five-step rating scale, written as hex values from its Figma spec. Only `src/components/pepites/` and the top bar's night tone read them.
 
 ### Named Rules
 
-**The Ink Is Paint Rule.** Floodlight Navy as a fill or border uses the fill token. Navy text and icons use the brand-foreground token, never the fill token. The two share a value today only because dark mode is off. A contract test enforces this inside the kit only.
+**The Ink Is Paint Rule.** Floodlight Navy as a fill or border uses the fill token. Navy text and icons use the brand-foreground token, never the fill token. The two share a value in the light theme. In dark the foreground token is a light blue, so the split matters as soon as dark mode is on. A contract test enforces this inside the kit only.
 
 **The Earned Gradient Rule.** The spring-to-sky gradient is the action colour: the primary button, the active bottom-nav pill, the deadline pill, progress, a selected Fantasy plate and the Fantasy promo card. Text on it is always Tunnel Navy, and the gradient is never used as a text colour.
 
@@ -412,15 +425,18 @@ A floodlit navy and white base, one spring-to-sky action gradient used with inte
 - **[Inconsistent]** Option A moved selected and ink-filled controls from cyan text to white text. Cyan on navy survives in the banner strip, the notification badge, the Fantasy shirt marker, the admin icon tile and the landing hero (its kicker, second title line and timer icon).
 - **[Inconsistent]** The legacy V1 layer is still declared. Two pieces of it still render:
   - The browser focus outline on anything not built on the kit uses the V1 electric blue (oklch(0.62 0.19 256)), not the navy focus ring.
-  - The toast notifications use V1 frosted glass.
+  - The toasts carry V1 frosted-glass classes, but Sonner's own styles override most of them, so they render as Sonner's default white box with 8px corners. The dark-mode pull request moves them onto kit colours ([PR #356](https://github.com/mrdata007/botolago-foundation/pull/356)).
 - **[Inconsistent]** Pépites writes its palette as hex values, with about 100 literal white classes, outside the kit tokens.
-- **[Open decision]** Brand blue. Both colour logo files fill Logo Blue (#0151fc, about oklch(0.524 0.26 263), also a stop in the News gradients), and so do the new app and home-screen icons (`store-assets/app-icon/`, generated by `scripts/brand/make-app-icons.py`). The interface brand is Floodlight Navy. Do not change either inside a screen change.
-- **[Open decision]** Dark mode.
+- **Brand blue: recommended, awaiting the owner's confirmation.** Both colour logo files fill Logo Blue (#0151fc, about oklch(0.524 0.26 263), also a stop in the News gradients), and so do the new app and home-screen icons (`store-assets/app-icon/`, generated by `scripts/brand/make-app-icons.py`). The interface brand is Floodlight Navy.
+  - **Recommendation: two blues, two jobs.** Logo Blue stays the colour of the logo, the app and home-screen icons, the favicon, store and marketing art, and the News gradient stop. It never becomes an interface token for text, fills or controls. Floodlight Navy stays the interface brand. In dark mode the logo switches to its all-white files.
+  - **Why.** Each blue already passes in its own job: Logo Blue measures 5.86:1 on white, and the navy 12.81:1, which is what lets one token serve as both text and fill. The two read as a bright and a deep member of one family, not as a mistake (a perceptual difference of 26, against the app's clash threshold of 10). Moving the interface to Logo Blue would drop the cyan-on-navy pairs to 4.25:1 and crowd the blue club colours. Recolouring the logo navy would change the owner's mark and leave it at 1.35:1 on the dark surface. Figures are computed from the colour values, not measured on screen.
+  - Do not change either blue inside a screen change.
+- **[Decided]** Dark mode: on, following the phone's setting ([PR #356](https://github.com/mrdata007/botolago-foundation/pull/356)). On main today:
   - Every themed colour token has a dark value, contract-tested, but dark mode is switched off (`DARK_MODE_ENABLED=false`) until ledger item BG-0084 closes. That item's evidence no longer matches the code.
-  - Fantasy's dark-mode contrast is **[Unverified]**.
+  - In dark, a selected chip or segment painted with the navy fill barely differs from the grey track (about 1.13:1, computed). The pull request adds a selected-state token with its own dark value.
+  - The logo's blue and black parts nearly vanish on the dark surface (2.95:1 and 1.21:1, computed). The pull request swaps in the white logo on dark.
   - The desktop column shadow, which the toasts also use, has no dark version.
-  - Do not design dark variants or enable the switch.
-- **[Open decision]** The product has two different "night" colours: Tunnel Navy on the landing hero and the date strip, and Pépites Night.
+- **[Decided]** The product has two different "night" colours today: Tunnel Navy on the landing hero and the date strip, and Pépites Night. Pépites Night goes with the Pépites restyle ([PR #357](https://github.com/mrdata007/botolago-foundation/pull/357)), leaving Tunnel Navy.
 
 ## Typography
 
@@ -512,14 +528,14 @@ The kit's sizes are fixed pixel steps at every width. Two places scale with the 
 - The top bar and the bottom nav never hide on scroll.
 - The live strip, a row of live-score pills under the top bar, is the only bar that hides. It hides while scrolling down past the first 80px and returns on any scroll up.
 - Safe areas use the device inset with a fallback (12px top, 8px bottom).
-- **[Open decision]** The viewport tag lacks `viewport-fit=cover`, so on iOS the fallbacks always apply. This depends on how the Capacitor app will load the site.
+- **[Decided]** `viewport-fit=cover` with safe-area fixes ([PR #354](https://github.com/mrdata007/botolago-foundation/pull/354)). On main today the viewport tag lacks it, so in the iOS app the fallbacks always apply.
 
 **French and Arabic.**
 
 - **Language switch.** The server always sends French, left-to-right HTML. The app switches `lang` and `dir` after it loads, and switches to Arabic once the Arabic text bundle has arrived. **[Unverified]** whether a returning Arabic reader sees a French flash on reload.
 - **Logical properties only.** Layout uses start, end, inline and block, never left or right. Source-scanning tests enforce this across the kit, the shell, legal pages and the match, club, Home and Fantasy screens. The Arabic captures mirror fully: the back pill sits on the right, the home team and its score sit on the right, and tab rows run right to left.
 - **Home team first.** The home team always sits at the inline start, so match rows and score headers mirror without special cases.
-- **Icons.** Four icons mirror in Arabic: the left and right chevrons and arrows. **[Open decision]** Other directional icons (log in, log out, undo, forward, share, trending) do not mirror, and whether they should is undecided.
+- **Icons.** Four icons mirror in Arabic today: the left and right chevrons and arrows. **[Decided]** ([PR #353](https://github.com/mrdata007/botolago-foundation/pull/353)): sign in, sign out, undo, trend, sort, the question mark and icons that draw lines of text will mirror too. Clocks, refresh, play, checkmarks, search, slashes, swap arrows and share stay as drawn.
 - **Forced left-to-right.** Codes, formations, emails, URLs and one-time-code fields stay left-to-right. Names and sums use Unicode isolates.
 - **Directions in effects.** Gradients use keyword directions. Anything with a physical direction flips in Arabic: the club-stripe angle, page-transition slides and skeleton shimmer through direction variables, and the Pépites energy gradient and night band through their own right-to-left rules.
 
@@ -529,12 +545,12 @@ The kit's sizes are fixed pixel steps at every width. Two places scale with the 
 - **[Inconsistent]** Two different ways of centring an absolutely placed element are in use.
 - **[Inconsistent]** Carousel dot buttons in News and Pronostics are 24×32px, under the 44px floor.
 - **[Inconsistent]** Most JavaScript smooth scrolls do not check reduced motion. Only the admin editor checks it, inline; the shared reduced-motion helper in `src/lib/motion.ts` is not used for scrolling.
-- **[Inconsistent]** Four Pépites chevrons add a second mirror on top of the global one, so they point the wrong way in Arabic.
+- **[Inconsistent]** Six icons add a second mirror on top of the global one, so they point the wrong way in Arabic: four Pépites chevrons, the Home deadline-strip chevron and the Prizes chevron. The icons pull request fixes all six ([PR #353](https://github.com/mrdata007/botolago-foundation/pull/353)).
 - **[Unverified]** An Arabic article opened from the French interface is an Arabic subtree in a French page. The Arabic font switch is keyed to the page, so the body may fall back to a system Arabic face.
 
 ## Elevation & Depth
 
-Mostly flat, with one soft lift. The page is flat. Cards separate from it with a crisp contact edge and a faint ambient shadow, so they read as paper on the page rather than as a border. Exactly one shadow step means "raised": the lifted shadow, a long soft drop under the score plate, hero match cards, photo lead stories and the primary gradient button. Bars stay flat. The top bar has only a hairline. The bottom nav has a one-pixel upward shadow line. Sheets, modals and menus carry the overlay shadow over the navy scrim. Product surfaces are opaque. Background blur appears in three places: the legacy toasts **[Inconsistent]**, the Save button on news photo cards, and the scrim behind the first-launch language chooser. The "glass" icon buttons on photo bands and club-colour blocks are a plain 16% tint with no blur.
+Mostly flat, with one soft lift. The page is flat. Cards separate from it with a crisp contact edge and a faint ambient shadow, so they read as paper on the page rather than as a border. Exactly one shadow step means "raised": the lifted shadow, a long soft drop under the score plate, hero match cards, photo lead stories and the primary gradient button. Bars stay flat. The top bar has only a hairline. The bottom nav has a one-pixel upward shadow line. Sheets, modals and menus carry the overlay shadow over the navy scrim. Product surfaces are opaque. Background blur appears in three places: the legacy toast classes **[Inconsistent]**, the Save button on news photo cards, and the scrim behind the first-launch language chooser. The "glass" icon buttons on photo bands and club-colour blocks are a plain 16% tint with no blur.
 
 ### Shadow Vocabulary
 
@@ -570,7 +586,7 @@ A soft, rounded geometry with a strict, named radius set:
 
 **Bands.** Stadium photo bands under a navy veil appear on the Home matchday hero, the matches date strip and the sign-in header. The date strip runs full-bleed on phones and becomes a 16px panel from 640px. Pépites night bands end in a slanted cut that rises toward the inline end and mirrors in Arabic.
 
-**[Inconsistent]** Some radii fall off the scale: the Pronostics score box (18px), the toasts (22px and the V1 large radius), the search-match highlight (2px) and Pépites' use of the V1 large radius. The legacy V1 radius scale is still declared beside the kit scale.
+**[Inconsistent]** Some radii fall off the scale: the Pronostics score box (18px), the toasts (their 22px class is overridden by Sonner's 8px default), the search-match highlight (2px) and Pépites' use of the V1 large radius. The legacy V1 radius scale is still declared beside the kit scale.
 
 ## Components
 
@@ -637,7 +653,7 @@ A 44px circle. **Soft** (Dugout Grey with a navy icon) is the default in bars: s
   - The active label turns Scoreboard Black at 800. Weight, colour and the current-page marker carry the state, because the pill alone is too faint: about 1.34:1 per the source **[Unverified]**.
   - The bar is about 76px tall in French and 82px in Arabic **[Unverified]**. It holds still during page transitions.
 - **Page transitions:** pages slide in from the reading side and cross-fade over 260ms. They are off under reduced motion.
-- **Fantasy:** no persistent Fantasy sub-navigation renders. The Fantasy hub leads on through cards, a 2×2 grid of shortcut tiles and icon rows. Inner screens use a header with a "Fantasy" kicker and a back link. **[Open decision]** Two Fantasy menu lists are defined and tested in the code but render nowhere. Whether a sub-navigation is planned is not recorded.
+- **Fantasy:** no persistent Fantasy sub-navigation renders. The Fantasy hub leads on through cards, a 2×2 grid of shortcut tiles and icon rows. Inner screens use a header with a "Fantasy" kicker and a back link. Two Fantasy menu lists are defined and tested in the code but render nowhere. **[Decided]** No Fantasy sub-navigation; the unused lists are removed ([PR #355](https://github.com/mrdata007/botolago-foundation/pull/355)).
 - **Pépites bar:** the same geometry in night tone. The active link is a white capsule with night text. It has no search and no bell.
 
 ### Lists and tables
@@ -728,6 +744,6 @@ A 44px circle. **Soft** (Dugout Grey with a navy icon) is the default in bars: s
 - **Don't** use the Chalk Line hairline as the edge of an input or other control; control edges need Goal-Line Grey.
 - **Don't** print a score as one string inside a single direction-isolated span.
 - **Don't** add colour literals, new shadow values or legacy V1 tokens (frosted glass, the V1 electric blue, V1 shadows and radii) to product screens.
-- **Don't** design dark-mode variants or switch dark mode on without the owner's decision.
-- **Don't** change the logo or settle the brand-blue question inside a screen change.
-- **Don't** restyle Pépites to the kit, or the kit to Pépites. How far Design System V2 governs Pépites is an open decision.
+- **Don't** build a screen that only works in light. Dark mode is decided ([PR #356](https://github.com/mrdata007/botolago-foundation/pull/356)); use kit tokens that carry dark values.
+- **Don't** change the logo or paint interface elements in Logo Blue. The brand-blue recommendation awaits the owner's confirmation.
+- **Don't** add Pépites-only styling (night bands, the energy gradient, mono lines, slant, its own palette). Pépites is moving onto the kit ([PR #357](https://github.com/mrdata007/botolago-foundation/pull/357)).
