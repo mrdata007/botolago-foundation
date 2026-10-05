@@ -35,7 +35,7 @@ export const SELINE_TOKEN = "041a77dce92a51b";
  * itself, so only the league ids fall through to `*` (one path segment).
  */
 export const SELINE_MASK_PATTERNS =
-  "[/pronostics/ligues/rejoindre, /pronostics/ligues/*, /fantasy/leagues/join, /fantasy/leagues/*]";
+  "[/pronostics/ligues/rejoindre, /pronostics/ligues/*, /fantasy/leagues/join, /fantasy/leagues/*, /journee/*]";
 /**
  * Keeps calls made before the script arrives; the script replays its `queue`
  * on load, then takes the name over.
@@ -71,6 +71,14 @@ export type AnalyticsEvent =
   | "fantasy_recap_share_whatsapp"
   /** The recap message and link were copied. */
   | "fantasy_recap_share_copy"
+  /** The manager published a public link to a gameweek recap. */
+  | "fantasy_recap_public_publish"
+  /** The manager revoked that public link. */
+  | "fantasy_recap_public_revoke"
+  /** A public recap page was shown with a recap on it. */
+  | "fantasy_recap_public_view"
+  /** "Créer mon équipe" (or the research action) tapped on a public recap page. */
+  | "fantasy_recap_public_cta"
   /** The landing page was shown (at `/jouer`, or at `/` to a first-time visitor). */
   | "landing_view"
   /** "Créer mon équipe" tapped on the landing page, one event per placement. */
@@ -112,6 +120,8 @@ export function track(event: AnalyticsEvent): void {
 const CAMPAIGN_PARAMS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const LEAGUE_PAGE = new RegExp(`^(/(?:pronostics/ligues|fantasy/leagues)/)${UUID}(?=/|$)`, "i");
+/** A public gameweek recap: its id is the link's key, never reported. */
+const PUBLIC_RECAP_PAGE = /^(\/journee\/)[A-Za-z0-9_-]+(?=\/|$)/;
 
 /** The path a page view reports, cleaned; null for a page that is not counted. */
 export function pageviewPath(href: string): string | null {
@@ -128,7 +138,8 @@ export function pageviewPath(href: string): string | null {
     if (value) kept.set(name, value);
   }
   const query = kept.toString();
-  return `${url.pathname.replace(LEAGUE_PAGE, "$1*")}${query ? `?${query}` : ""}`;
+  const path = url.pathname.replace(LEAGUE_PAGE, "$1*").replace(PUBLIC_RECAP_PAGE, "$1*");
+  return `${path}${query ? `?${query}` : ""}`;
 }
 
 /** A page view of the page on screen, its address cleaned first. */
