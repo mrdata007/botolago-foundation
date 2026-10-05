@@ -293,7 +293,10 @@ for (const lang of LANGS)
   for (const width of WIDTHS) {
     const ctx = await browser.newContext({
       viewport: { width, height: 900 },
-      deviceScaleFactor: width < 768 ? 2 : 1,
+      // 2x at every width: small glyphs (an 11px shirt number) rendered at
+      // 1x have too few solid ink pixels for pass 2 to find, and come back as
+      // false failures.
+      deviceScaleFactor: 2,
       colorScheme: THEME === "system" ? "dark" : "light",
     });
     await ctx.addInitScript((l) => {
@@ -360,7 +363,7 @@ for (const lang of LANGS)
         }
         if (measured < s.floor) {
           confirmed++;
-          failures.push({ lang, width, route, ...s, measured: +measured.toFixed(2) });
+          failures.push({ lang, viewport: width, route, ...s, measured: +measured.toFixed(2) });
         }
       }
       console.log(
@@ -375,7 +378,7 @@ await browser.close();
 console.log(`\n${THEME} theme: ${checked} pixel measurements, ${failures.length} below AA`);
 for (const f of failures) {
   console.log(
-    `  ${f.measured}:1 (floor ${f.floor}) ${f.lang} ${f.width} ${f.route} "${f.text}" — ${f.reason}`,
+    `  ${f.measured}:1 (floor ${f.floor}) ${f.lang} ${f.viewport} ${f.route} "${f.text}" — ${f.reason}`,
   );
 }
 process.exit(0);
