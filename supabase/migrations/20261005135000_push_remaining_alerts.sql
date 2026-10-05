@@ -266,16 +266,19 @@ begin
   end loop;
 
   -- 2. full_time: a match of the current season that finished moments ago, for
-  --    clubs someone follows. "Moments ago" is the row last changing in the
-  --    last 20 minutes, so a result found long after the match (a backfill) is
-  --    not announced.
+  --    clubs someone follows. "Moments ago" is the moment BotolaGO first saw
+  --    the final state (`finalized_at`, which ingestion sets once and never
+  --    moves) falling in the last 20 minutes, so a result found long after the
+  --    match (a backfill, or push switched on later) is not announced.
+  --    `updated_at` cannot say this: every scheduled refresh rewrites the row
+  --    and moves it, finished match or not.
   for candidate in
     select fixture.id
     from app.fixtures fixture
     join app.seasons season on season.id = fixture.season_id and season.is_current
     where fixture.status = 'finished'
       and fixture.kickoff_at > p_now - interval '6 hours'
-      and fixture.updated_at >= p_now - interval '20 minutes'
+      and fixture.finalized_at >= p_now - interval '20 minutes'
       and app_private.notification_push_fixture_followed(fixture.id)
     order by fixture.kickoff_at, fixture.id
   loop

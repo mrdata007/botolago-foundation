@@ -202,13 +202,19 @@ export async function switchOffThisPhone(deps: PushDeps): Promise<boolean> {
  * Signing out: this phone's registration is deleted so the next account on it
  * can register the same address, and the phone drops its address. Best effort
  * and bounded in time, because it must never hold a sign-out back.
+ *
+ * The two halves are independent. The phone drops its address even when the
+ * server half fails (a session that is no longer second-factor verified, no
+ * connection) or never answers: otherwise the old address would stay live on a
+ * phone the next person is about to use.
  */
 export async function forgetThisPhone(deps: PushDeps, timeoutMs = 4_000): Promise<void> {
-  const work = (async () => {
+  const server = (async () => {
     const id = await thisPhonesRegistrationId(deps);
     if (id) await deps.devices.unregister(id, deps.context());
-    await deps.plugin.unregister();
-  })().catch(() => undefined);
+  })();
+  const phone = Promise.resolve().then(() => deps.plugin.unregister());
+  const work = Promise.allSettled([server, phone]);
   let timer: ReturnType<typeof setTimeout> | undefined;
   await Promise.race([
     work,

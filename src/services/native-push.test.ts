@@ -343,6 +343,44 @@ describe("turning Push off and signing out", () => {
     await forgetThisPhone(deps(fakePlugin({}).plugin, hanging.repository), 30);
     expect(Date.now() - started).toBeLessThan(1000);
   });
+
+  test("the phone drops its address even when the server half fails", async () => {
+    // Listing fails (for instance a session no longer at the second factor).
+    const listFails = fakePlugin({});
+    const down = fakeDevices({ existing: [MINE] });
+    down.repository.list = async () => {
+      throw new Error("aal2_required");
+    };
+    await forgetThisPhone(deps(listFails.plugin, down.repository));
+    expect(listFails.calls).toEqual(["unregister"]);
+
+    // The registration is found but deleting it fails.
+    const deleteFails = fakePlugin({});
+    const refused = fakeDevices({ existing: [MINE] });
+    refused.repository.unregister = async () => {
+      throw new Error("timeout");
+    };
+    await forgetThisPhone(deps(deleteFails.plugin, refused.repository));
+    expect(deleteFails.calls).toEqual(["unregister"]);
+
+    // The server never answers: the phone has still dropped its address by the
+    // time the sign-out is let go.
+    const neverAnswers = fakePlugin({});
+    const hanging = fakeDevices({ existing: [MINE] });
+    hanging.repository.list = () => new Promise(() => undefined);
+    await forgetThisPhone(deps(neverAnswers.plugin, hanging.repository), 30);
+    expect(neverAnswers.calls).toEqual(["unregister"]);
+  });
+
+  test("the server half still runs when the phone's own unregister fails", async () => {
+    const phone = fakePlugin({});
+    phone.plugin.unregister = async () => {
+      throw new Error("native bridge gone");
+    };
+    const server = fakeDevices({ existing: [MINE] });
+    await forgetThisPhone(deps(phone.plugin, server.repository));
+    expect(server.unregistered).toEqual([MINE.id]);
+  });
 });
 
 describe("Android channels", () => {

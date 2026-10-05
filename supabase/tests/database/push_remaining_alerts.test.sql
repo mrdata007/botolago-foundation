@@ -71,11 +71,12 @@ from generate_series(1, 4) n;
 create function pg_temp.fixture(
   p_n integer, p_home integer, p_away integer, p_kickoff timestamptz, p_status text,
   p_minute integer, p_home_score integer, p_away_score integer,
-  p_updated timestamptz default statement_timestamp()
+  p_updated timestamptz default statement_timestamp(),
+  p_finalized timestamptz default null
 ) returns void language sql as $$
   insert into app.fixtures(id, competition_id, season_id, round_id, home_team_id, away_team_id,
     kickoff_at, status, period, minute, home_score, away_score,
-    provider_updated_at, source_sequence, updated_at)
+    provider_updated_at, source_sequence, updated_at, finalized_at)
   values (('e9500000-0000-4000-8000-' || lpad(p_n::text, 12, '0'))::uuid,
     'e9100000-0000-4000-8000-000000000001', 'e9200000-0000-4000-8000-000000000001',
     'e9300000-0000-4000-8000-000000000001',
@@ -85,7 +86,7 @@ create function pg_temp.fixture(
     (case p_status when 'finished' then 'post_match' when 'live_second_half' then 'second_half'
       when 'penalties' then 'penalties' else 'pre_match' end)::app.fixture_period,
     p_minute, p_home_score, p_away_score,
-    statement_timestamp() - interval '1 day', 1, p_updated)
+    statement_timestamp() - interval '1 day', 1, p_updated, p_finalized)
 $$;
 
 -- 1: club 1 v club 2, live, minute 62, 1-0.       2: club 1 v club 3, finished 2-1 moments ago.
@@ -93,18 +94,25 @@ $$;
 -- 5: club 1 v club 2, live minute 80, 1-0 (a backfilled goal from minute 20).
 -- 6: club 3 v club 4, live, nobody follows either.   7: club 1 v club 2, in the shoot-out, 1-1.
 select pg_temp.fixture(1, 1, 2, statement_timestamp() - interval '60 minutes', 'live_second_half', 62, 1, 0);
-select pg_temp.fixture(2, 1, 3, statement_timestamp() - interval '2 hours', 'finished', null, 2, 1);
+select pg_temp.fixture(2, 1, 3, statement_timestamp() - interval '2 hours', 'finished', null, 2, 1,
+  statement_timestamp(), statement_timestamp() - interval '1 minute');
 select pg_temp.fixture(3, 1, 3, statement_timestamp() - interval '2 hours', 'finished', null, 2, 1,
-  statement_timestamp() - interval '2 hours');
-select pg_temp.fixture(4, 1, 3, statement_timestamp() - interval '8 hours', 'finished', null, 0, 0);
+  statement_timestamp() - interval '2 hours', statement_timestamp() - interval '2 hours');
+select pg_temp.fixture(4, 1, 3, statement_timestamp() - interval '8 hours', 'finished', null, 0, 0,
+  statement_timestamp(), statement_timestamp() - interval '1 minute');
 select pg_temp.fixture(5, 1, 2, statement_timestamp() - interval '90 minutes', 'live_second_half', 80, 1, 0);
 select pg_temp.fixture(6, 3, 4, statement_timestamp() - interval '60 minutes', 'live_second_half', 62, 1, 0);
 select pg_temp.fixture(7, 1, 2, statement_timestamp() - interval '2 hours', 'penalties', 120, 1, 1);
 -- 12: club 3 v club 4, finished moments ago, nobody follows.
--- 13: club 1 v club 2, finished, kicked off five hours ago, last changed then.
-select pg_temp.fixture(12, 3, 4, statement_timestamp() - interval '2 hours', 'finished', null, 1, 0);
+-- 13: club 1 v club 2, finished, kicked off five hours ago, first seen as final then.
+-- 40: club 1 v club 3, finished, kicked off five hours ago and first seen as final three
+--     hours ago, its row rewritten a minute ago by the scheduled refresh.
+select pg_temp.fixture(12, 3, 4, statement_timestamp() - interval '2 hours', 'finished', null, 1, 0,
+  statement_timestamp(), statement_timestamp() - interval '1 minute');
 select pg_temp.fixture(13, 1, 2, statement_timestamp() - interval '5 hours', 'finished', null, 1, 0,
-  statement_timestamp() - interval '5 hours');
+  statement_timestamp() - interval '5 hours', statement_timestamp() - interval '5 hours');
+select pg_temp.fixture(40, 1, 3, statement_timestamp() - interval '5 hours', 'finished', null, 1, 0,
+  statement_timestamp() - interval '1 minute', statement_timestamp() - interval '3 hours');
 
 create function pg_temp.goal(
   p_fixture integer, p_key text, p_team integer, p_minute integer,
@@ -321,7 +329,13 @@ select extensions.is(
      'push:full_time:e9500000-0000-4000-8000-000000000004',
      'push:full_time:e9500000-0000-4000-8000-000000000012')),
   0,
-  'a result last changed two hours ago, one from eight hours ago and one nobody follows are not'
+  'a result first seen as final two hours ago, one from eight hours ago and one nobody follows are not'
+);
+select extensions.is(
+  (select count(*)::integer from app_private.notification_events
+   where deduplication_key = 'push:full_time:e9500000-0000-4000-8000-000000000040'),
+  0,
+  'a result first seen as final three hours ago is not, even though the refresh has just rewritten its row'
 );
 
 -- ---------------------------------------------------------------------------
@@ -414,7 +428,8 @@ select extensions.is(
 -- The tick plans push's own moments, and only while push is on
 -- ---------------------------------------------------------------------------
 select app_private.notification_push_configure('off');
-select pg_temp.fixture(10, 1, 3, statement_timestamp() - interval '2 hours', 'finished', null, 3, 0);
+select pg_temp.fixture(10, 1, 3, statement_timestamp() - interval '2 hours', 'finished', null, 3, 0,
+  statement_timestamp(), statement_timestamp() - interval '1 minute');
 select extensions.is(app_private.notification_push_tick() ->> 'outcome', 'off', 'switched off, the tick does nothing');
 select extensions.is(
   pg_temp.events('push:full_time:e9500000-0000-4000-8000-00000000000%'), 1,
