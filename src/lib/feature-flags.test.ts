@@ -301,7 +301,7 @@ describe("PRONOSTICS_ENABLED / PRONOSTICS_PROMOTED", () => {
     ["src/lib/sitemap.ts", "...(PRONOSTICS_PROMOTED ?"],
     ["src/routes/index.tsx", "{PRONOSTICS_PROMOTED && ("],
     ["src/components/matches/MatchesTabs.tsx", "...(PRONOSTICS_PROMOTED"],
-    ["src/routes/matches.$matchId.tsx", "{PRONOSTICS_PROMOTED && ("],
+    ["src/routes/matches.$matchId.tsx", "{PRONOSTICS_PROMOTED && wideLayout && ("],
     ["src/routes/fantasy.leagues.$leagueId.tsx", "...(PRONOSTICS_PROMOTED"],
   ])("%s gates its entry point on PRONOSTICS_PROMOTED", (file, needle) => {
     const source = stripComments(read(file));

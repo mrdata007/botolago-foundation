@@ -116,7 +116,7 @@ export function LanguageLoadNotice({
               "whitespace-nowrap text-center",
               ui.text.meta,
               "[font-weight:var(--ui-weight-heavy)]",
-              "transition-[filter,opacity]",
+              "press",
               ui.surface.inkPlain,
               retrying && "cursor-progress",
             )}
@@ -133,11 +133,11 @@ export function LanguageLoadNotice({
           type="button"
           onClick={onClose}
           className={cn(
-            "inline-grid shrink-0 place-items-center transition-[filter,opacity,background-color]",
+            "press inline-grid shrink-0 place-items-center",
             "[&_svg]:h-5 [&_svg]:w-5 [&_svg]:shrink-0",
             ui.space.tap,
             ui.radius.full,
-            "bg-transparent hover:bg-[color:var(--ui-surface-sunken)]",
+            "bg-transparent hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
             ui.tone.ink,
             ui.focus,
           )}

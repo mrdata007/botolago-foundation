@@ -35,6 +35,7 @@ import { prizesService } from "@/services/prizes";
 import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import { SQUAD_RULES } from "@/types/fantasy";
 import { DemoPitch } from "./DemoPitch";
+import { LandingBotolaNow, LandingPlayersToWatch } from "./LandingLive";
 import { landingCta, type LandingCta } from "./landing-cta";
 
 /**
@@ -286,6 +287,11 @@ export function LandingPage({
       </section>
 
       {/* ---------------------------------------------------------- */}
+      {/* The Botola right now: this round's matches and the table     */}
+      {/* ---------------------------------------------------------- */}
+      <LandingBotolaNow heading={Sub} onLeave={onLeave} />
+
+      {/* ---------------------------------------------------------- */}
       {/* How it works: three steps, each with the thing it is about   */}
       {/* ---------------------------------------------------------- */}
       <section
@@ -342,6 +348,12 @@ export function LandingPage({
               </span>
               <Fact>{t("home.fantasy_chip_captain")}</Fact>
             </div>
+            {/* The rule, worked through once: what the armband does to a score. */}
+            <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>
+              {t("landing.step2_example")
+                .replace("{n}", nf.format(6))
+                .replace("{double}", nf.format(12))}
+            </p>
           </Step>
           <Step
             n={3}
@@ -369,6 +381,11 @@ export function LandingPage({
       </section>
 
       {/* ---------------------------------------------------------- */}
+      {/* The players worth picking                                    */}
+      {/* ---------------------------------------------------------- */}
+      <LandingPlayersToWatch heading={Sub} onLeave={onLeave} />
+
+      {/* ---------------------------------------------------------- */}
       {/* Why come back, and the prizes when there are open ones      */}
       {/* ---------------------------------------------------------- */}
       <section
@@ -394,6 +411,11 @@ export function LandingPage({
               <Reason icon={Trophy} title={t("landing.why2_title")} body={t("landing.why2_body")} />
               <Reason icon={Repeat} title={t("landing.why3_title")} body={t("landing.why3_body")} />
             </ul>
+            {/* With the prizes in the column beside it, the guest way in sits
+                under the reasons: the column is not left half empty. */}
+            {prizes.data && prizes.data.length > 0 ? (
+              <BrowseInvite heading={SubSub} onLeave={onLeave} className="mt-8" />
+            ) : null}
           </div>
 
           {prizes.data && prizes.data.length > 0 ? (
@@ -452,51 +474,58 @@ export function LandingPage({
       {/* ---------------------------------------------------------- */}
       <section
         aria-labelledby={faqId}
-        className={cn("mx-auto w-full max-w-3xl py-12 lg:py-16", ui.space.gutter)}
+        className={cn(
+          // From 1024px the title and the links sit beside the questions,
+          // rather than a narrow column in the middle of an empty width.
+          "mx-auto grid w-full max-w-6xl gap-x-12 py-12 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:py-16",
+          ui.space.gutter,
+        )}
       >
-        <Sub id={faqId} className={cn("text-balance", ui.display.title)}>
-          {t("landing.faq_title")}
-        </Sub>
-        <div className="mt-6 divide-y divide-[color:var(--ui-rule)] border-y border-[color:var(--ui-rule)]">
-          <Faq q={t("landing.faq_free_q")} a={t("landing.faq_free_a")} />
-          <Faq q={t("landing.faq_late_q")} a={t("landing.faq_late_a")} />
-          <Faq q={t("landing.faq_points_q")} a={t("landing.faq_points_a")} />
-          <Faq q={t("landing.faq_account_q")} a={t("landing.faq_account_a")} />
-          <Faq q={t("landing.faq_deadline_q")} a={t("landing.faq_deadline_a")} />
+        <div className="min-w-0">
+          <Sub id={faqId} className={cn("text-balance", ui.display.title)}>
+            {t("landing.faq_title")}
+          </Sub>
+          <p className={cn("mt-2", ui.text.prose, ui.tone.muted)}>{t("landing.faq_body")}</p>
         </div>
-        <div className="mt-4 flex flex-wrap gap-x-6">
-          <Link
-            to="/fantasy/rules"
-            onClick={onLeave}
-            className={cn(
-              "inline-flex items-center gap-1.5",
-              ui.space.tap,
-              ui.text.bodyStrong,
-              ui.tone.ink,
-              ui.focus,
-            )}
-          >
-            {t("landing.faq_rules")}
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-          <Link
-            to="/fantasy/help"
-            onClick={onLeave}
-            className={cn(
-              "inline-flex items-center gap-1.5",
-              ui.space.tap,
-              ui.text.bodyStrong,
-              ui.tone.ink,
-              ui.focus,
-            )}
-          >
-            {t("landing.faq_help")}
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
+        <div className="min-w-0">
+          <div className="mt-6 divide-y divide-[color:var(--ui-rule)] border-y border-[color:var(--ui-rule)] lg:mt-0">
+            <Faq q={t("landing.faq_free_q")} a={t("landing.faq_free_a")} />
+            <Faq q={t("landing.faq_late_q")} a={t("landing.faq_late_a")} />
+            <Faq q={t("landing.faq_points_q")} a={t("landing.faq_points_a")} />
+            <Faq q={t("landing.faq_account_q")} a={t("landing.faq_account_a")} />
+            <Faq q={t("landing.faq_deadline_q")} a={t("landing.faq_deadline_a")} />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-x-6">
+            <Link
+              to="/fantasy/rules"
+              onClick={onLeave}
+              className={cn(
+                "inline-flex items-center gap-1.5",
+                ui.space.tap,
+                ui.text.bodyStrong,
+                ui.tone.ink,
+                ui.focus,
+              )}
+            >
+              {t("landing.faq_rules")}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link
+              to="/fantasy/help"
+              onClick={onLeave}
+              className={cn(
+                "inline-flex items-center gap-1.5",
+                ui.space.tap,
+                ui.text.bodyStrong,
+                ui.tone.ink,
+                ui.focus,
+              )}
+            >
+              {t("landing.faq_help")}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
         </div>
-        {prizes.data && prizes.data.length > 0 ? (
-          <BrowseInvite heading={SubSub} onLeave={onLeave} className="mt-10" />
-        ) : null}
       </section>
 
       {/* ---------------------------------------------------------- */}
@@ -645,7 +674,32 @@ function HeroStateLine({
 }) {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
-  if (cta.kind === "pending" || cta.kind === "team") return null;
+  if (cta.kind === "pending") {
+    // Two quiet bars where the lines will be, so the room kept for them is
+    // never an empty band while the session and the gameweek arrive.
+    return (
+      <div aria-hidden className="mt-4 grid max-w-md gap-2.5">
+        <span
+          className={cn("block h-3.5 w-full bg-[color:var(--ui-mesh-glass)]", ui.radius.full)}
+        />
+        <span className={cn("block h-3.5 w-2/3 bg-[color:var(--ui-mesh-glass)]", ui.radius.full)} />
+      </div>
+    );
+  }
+  if (cta.kind === "team") {
+    return (
+      <p
+        className={cn(
+          "mt-4 flex max-w-md items-start gap-2",
+          ui.text.secondary,
+          ui.tone.onMeshMuted,
+        )}
+      >
+        <Trophy className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        <span>{t("landing.team_note")}</span>
+      </p>
+    );
+  }
   if (cta.kind === "discover") {
     return (
       <p
@@ -696,7 +750,7 @@ function Step({
   const { lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   return (
-    <li className="flex min-w-0 flex-col">
+    <li className="flex h-full min-w-0 flex-col">
       <div className="flex items-center gap-3">
         <span
           aria-hidden
@@ -713,7 +767,16 @@ function Step({
       </div>
       <H className={cn("mt-4", ui.display.teamSm)}>{title}</H>
       <p className={cn("mt-2", ui.text.prose, ui.tone.muted)}>{body}</p>
-      <div className={cn("mt-4 p-4", ui.radius.card, ui.surface.sunken)}>{children}</div>
+      {/* `flex-1`: the three boxes end on one line, however short their content. */}
+      <div
+        className={cn(
+          "mt-4 flex flex-1 flex-col justify-center p-4",
+          ui.radius.card,
+          ui.surface.sunken,
+        )}
+      >
+        {children}
+      </div>
     </li>
   );
 }

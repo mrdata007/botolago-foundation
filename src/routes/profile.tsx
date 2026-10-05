@@ -101,7 +101,7 @@ const ROW = cn("flex w-full items-center gap-3 px-4 py-2 text-start", ui.space.r
 const ROW_RULE = ui.rule.blockStart;
 
 const ROW_INTERACTIVE = cn(
-  "transition-colors duration-[var(--duration-quick)] hover:bg-[color:var(--ui-surface-sunken)]",
+  "transition-colors duration-[var(--duration-quick)] hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
   // The card clips its children (`overflow-hidden`), which would cut an outer
   // ring in half, so the focus ring is drawn inside the row — in the brand
   // foreground, which is what `ui.focus` draws everywhere else.

@@ -75,7 +75,7 @@ export function PlayerActionSheet({
     ui.text.body,
     "[font-weight:var(--ui-weight-heavy)]",
     ui.tone.default,
-    "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+    "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
     ui.focus,
   );
   const disc = (tone: "ink" | "negative") =>

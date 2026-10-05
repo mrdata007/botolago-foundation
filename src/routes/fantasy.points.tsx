@@ -1,11 +1,12 @@
 import { AnimatedNumber, PopOnChange } from "@/components/common/AnimatedNumber";
 import pointsPendingArt from "@/assets/illustrations/points-pending.webp";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { SectionHeader } from "@/components/common/SectionHeader";
+import { GameweekRecapCard } from "@/components/fantasy/GameweekRecapCard";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
 import { findClub } from "@/components/fpl/club-lookup";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
@@ -30,6 +31,7 @@ import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
+import { buildGameweekRecap } from "@/services/gameweek-recap";
 import {
   buildPointsViewModel,
   buildServerPointsViewModel,
@@ -267,6 +269,8 @@ function PointsBody() {
     return player ? tr(player.name) : id;
   };
   const captainName = captainId ? nameOf(captainId) : none;
+  // "Ma journée": finalized server results only (never mock, never provisional).
+  const recap = isCloud ? buildGameweekRecap(resultQ.data, team.teamName) : null;
 
   return (
     <>
@@ -281,6 +285,20 @@ function PointsBody() {
         />
       </UiHeader>
 
+      {recap ? (
+        <GameweekRecapCard
+          recap={recap}
+          nameOf={(id) => {
+            const player = playerOf(id);
+            return player ? tr(player.name) : null;
+          }}
+          currentGameweek={screen.gameweek}
+          onShowDetail={() => {
+            setView("list");
+            document.getElementById("points-detail")?.scrollIntoView({ behavior: "smooth" });
+          }}
+        />
+      ) : null}
       {resultQ.data?.authoritative?.incremental && (
         <p className={cn("mx-[var(--ui-gutter)] my-3", ui.text.meta, ui.tone.muted)}>
           {t("fantasy.scoring.incrementalPolicy")}
@@ -313,7 +331,7 @@ function PointsBody() {
         ]}
       />
 
-      <div className={cn("pt-3", ui.space.gutter)}>
+      <div id="points-detail" className={cn("scroll-mt-20 pt-3", ui.space.gutter)}>
         <UiSegmented
           variant="pill"
           value={view}
@@ -479,6 +497,17 @@ function PointsBody() {
               className="border-b-0"
             />
           </UiCard>
+          <Link
+            to="/fantasy/rules"
+            hash="scoring-policy"
+            className={cn(
+              "mt-2 inline-block underline underline-offset-2",
+              ui.text.meta,
+              ui.tone.muted,
+            )}
+          >
+            {t("fantasy.points.how_scored")}
+          </Link>
         </section>
       ) : null}
 

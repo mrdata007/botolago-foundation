@@ -28,6 +28,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { reportOperationalError } from "@/lib/operational-errors";
+import { pendingInvite } from "@/components/predictions/leagues/invite-link";
 import { cn } from "@/lib/utils";
 import {
   computeSummary,
@@ -344,7 +345,11 @@ function CreateTeamBody() {
         if (owned.userId) importDecisionService.markImported(owned.userId);
         toast.success(t("fantasy.create.success"));
         await owned.reload();
-        void nav({ to: "/fantasy/team" });
+        // Came from a Fantasy league invite: back to the join form, where the
+        // code waits and the manager taps "Rejoindre" themselves.
+        void nav({
+          to: pendingInvite()?.game === "fantasy" ? "/fantasy/leagues/join" : "/fantasy/team",
+        });
         return;
       }
       // The real refusal goes to the operational log (code only, no squad or

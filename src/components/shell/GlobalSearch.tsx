@@ -7,11 +7,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { useI18n } from "@/i18n/provider";
 import { highlightParts, searchEntries, type SearchEntry } from "@/lib/global-search";
 import { staggerStyle } from "@/lib/motion";
+import { recallSearchQuery, rememberSearchQuery } from "@/lib/search-context";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
@@ -32,6 +33,30 @@ export function GlobalSearch({
   const [armed, setArmed] = useState(false);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Back from a result this field was left through: the same query, with its
+  // results showing. After mount rather than in the initial state, so a page
+  // loaded cold (whose history entry may carry a query too) hydrates the
+  // server's empty field.
+  useEffect(() => {
+    const remembered = recallSearchQuery();
+    if (remembered === "") return;
+    setText(remembered);
+    setArmed(true);
+    setOpen(true);
+  }, []);
+
+  // A restored list is open without the field being focused, so no blur will
+  // close it: a press anywhere else does.
+  useEffect(() => {
+    if (!open) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [open]);
 
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
@@ -68,6 +93,8 @@ export function GlobalSearch({
   const showPanel = open && text.trim() !== "";
 
   const go = (entry: SearchEntry) => {
+    // Written to the entry being left, so Retour brings the query back.
+    rememberSearchQuery(text);
     setOpen(false);
     setText("");
     if (entry.kind === "club")
@@ -76,7 +103,7 @@ export function GlobalSearch({
   };
 
   return (
-    <div className={cn("relative", className)} role="search">
+    <div ref={rootRef} className={cn("relative", className)} role="search">
       <Search
         aria-hidden
         className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--ui-on-surface-muted)]"
@@ -154,13 +181,16 @@ export function GlobalSearch({
                 onMouseEnter={() => setActive(index)}
                 style={staggerStyle(index)}
                 className={cn(
-                  "enter-rise stagger flex min-h-11 cursor-pointer items-center justify-between gap-3 px-3",
+                  // The name first, on its own lines, and what it is under it:
+                  // beside the name, the metadata took the width and the
+                  // player's name was the part that got cut.
+                  "enter-rise stagger flex min-h-11 cursor-pointer flex-col justify-center gap-0.5 px-3 py-2",
                   ui.radius.control,
                   ui.text.meta,
                   index === active && "bg-[color:var(--ui-surface-sunken)]",
                 )}
               >
-                <span className="min-w-0 truncate [font-weight:var(--ui-weight-heavy)]">
+                <span className="min-w-0 break-words [font-weight:var(--ui-weight-heavy)]">
                   {highlightParts(entry.label, text).map((part, position) =>
                     part.match ? (
                       <mark
@@ -174,7 +204,7 @@ export function GlobalSearch({
                     ),
                   )}
                 </span>
-                <span className={cn("shrink-0", ui.tone.muted)}>
+                <span className={cn("min-w-0 break-words", ui.text.micro, ui.tone.muted)}>
                   {entry.hint ? `${entry.hint} · ` : ""}
                   {entry.kind === "club" ? t("nav.search.club") : t("nav.search.player")}
                 </span>

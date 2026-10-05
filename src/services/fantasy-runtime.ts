@@ -35,6 +35,7 @@ import type {
   TopPlayerOfWeek,
 } from "@/types/fantasy";
 import type { FantasyAlert, FantasySummary, Gameweek, Player } from "@/types/domain";
+import { resolveMediaUrl } from "@/lib/media";
 
 const cloud = new SupabaseFantasyRepository();
 const context = (): RepositoryContext => ({ actorId: null, requestId: crypto.randomUUID() });
@@ -73,6 +74,9 @@ export function playerDto(dto: FantasyPlayerDto, stat?: FantasyPlayerSeasonStatD
     form: stat ? stat.form : null,
     ownership: stat?.ownershipPercent ?? 0,
     status,
+    // The release's public path starts with the `football/` namespace, which
+    // the resolver maps to the `football-media` bucket.
+    photoUrl: dto.photo ? (resolveMediaUrl({ storagePath: dto.photo.storagePath }) ?? null) : null,
   };
 }
 
@@ -142,6 +146,11 @@ function pointsDto(
       chipType: dto.result.chipType,
       incremental: dto.incrementalScoring === true,
       finalized: dto.pointsState === "final",
+      startingPoints: dto.result.startingPoints,
+      finalScore: dto.result.finalScore,
+      gameweekStatus: dto.gameweekStatus,
+      calculationVersion: dto.result.calculationVersion,
+      finalizedAt: dto.result.finalizedAt,
     },
     gameweek: sequence,
     totalPoints: dto.result.finalScore ?? dto.result.provisionalScore,
@@ -612,9 +621,11 @@ export const fantasyService = {
         rank: (index + 1) as 1 | 2 | 3 | 4 | 5,
         gameweek,
         weeklyPoints: player.points,
-        goals: 0,
-        assists: 0,
-        cleanSheets: 0,
+        // `fantasy_top_players` reports points and minutes only. Goals,
+        // assists and clean sheets are unknown here, not zero.
+        goals: null,
+        assists: null,
+        cleanSheets: null,
         minutes: player.minutesPlayed,
         price: pooled?.price ?? 0,
         ownershipPercent: pooled?.ownership ?? 0,
@@ -658,15 +669,30 @@ export const fantasyService = {
     forgetSharedFantasyHub();
     return { id: result.leagueId, code: result.inviteCode };
   },
-  async joinLeague(code: string): Promise<void> {
+  /**
+   * Joins by invite code. The server answers which league it was and whether
+   * this team was already in it (`joined: false`), so callers never have to
+   * guess the league from the list. `leagueId` is null only when an older
+   * server answers nothing usable.
+   */
+  async joinLeague(code: string): Promise<{ leagueId: string | null; joined: boolean }> {
     if (mode() === "mock") {
       const { leaguesStore } = await import("./leagues-store");
-      leaguesStore.join(code);
-      return;
+      const league = leaguesStore.join(code);
+      return { leagueId: league.id, joined: true };
     }
     const current = await cloudTeam();
-    await cloud.joinLeague(current.team.id, code, crypto.randomUUID(), context());
+    const result = (await cloud.joinLeague(
+      current.team.id,
+      code,
+      crypto.randomUUID(),
+      context(),
+    )) as { leagueId?: unknown; joined?: unknown } | null;
     forgetSharedFantasyHub();
+    return {
+      leagueId: typeof result?.leagueId === "string" ? result.leagueId : null,
+      joined: result?.joined !== false,
+    };
   },
   async leaveLeague(leagueId: string): Promise<void> {
     if (mode() === "mock") {

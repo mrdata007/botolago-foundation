@@ -915,8 +915,8 @@ function PhotoReleases({ rtl, canCorrect }: { rtl: boolean; canCorrect: boolean 
       ) : null}
       <p className={cn(ui.text.meta, ui.tone.muted)}>
         {rtl
-          ? "بعد الموافقة، يُنشئ مسؤول التشغيل النسخة العامة (مهمة الصور) قبل أن تظهر."
-          : "Après l'approbation, l'opérateur lance la tâche des photos, qui crée la version publique avant qu'elle n'apparaisse."}
+          ? "بعد الموافقة، شغّل «Publish approved player photos» في GitHub Actions: تُنشئ النسخة العامة، ثم تظهر الصورة."
+          : "Après l'approbation, lancez « Publish approved player photos » dans GitHub Actions : il crée la version publique, puis la photo apparaît."}
       </p>
     </section>
   );

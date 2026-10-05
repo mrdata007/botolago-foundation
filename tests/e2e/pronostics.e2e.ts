@@ -253,29 +253,42 @@ for (const lang of ["fr", "ar"] as const) {
     await expectNothingOffScreen(page);
 
     // The link keeps the code after "#", and the page takes it out of sight.
-    await page.goto(`/pronostics/ligues/rejoindre#code=${code}`);
-    await page.waitForURL(/\/pronostics\/ligues\/[0-9a-f-]{36}$/);
+    // Opening it joins nothing: the signed-in reader taps "Rejoindre" first.
+    await page.goto(`/pronostics/ligues/rejoindre#code=${code}&game=predictions`);
+    const invite = page.getByTestId("predictions-invite");
+    await expect(invite).toContainText(copy(lang, "predictions.leagues.invite_explain"));
     expect(page.url()).not.toContain("#");
+    expect(new URL(page.url()).pathname).toBe("/pronostics/ligues/rejoindre");
+    await invite
+      .getByRole("button", { name: copy(lang, "predictions.leagues.invite_join_predictions") })
+      .click();
+    await page.waitForURL(/\/pronostics\/ligues\/[0-9a-f-]{36}$/);
     await expect(page.getByTestId("predictions-league-standings")).toBeVisible();
 
     await diagnostics.verify(testInfo);
   });
 
-  test(`${lang}: an invite link opened before signing up keeps the code for this tab only`, async ({
+  test(`${lang}: an invite link opened before signing up keeps the invite on the device, unjoined`, async ({
     page,
   }, testInfo) => {
     const diagnostics = observePage(page);
     await page.setViewportSize({ width: 390, height: 860 });
     await initializeLanguage(page, lang);
-    await page.goto(`/pronostics/ligues/rejoindre#code=${INVITE_CODE}`);
+    await page.goto(`/pronostics/ligues/rejoindre#code=${INVITE_CODE}&game=fantasy`);
     await expect(page.locator("html")).toHaveAttribute("data-lang", lang);
     await expect(page.getByTestId("predictions-invite")).toContainText(
       copy(lang, "predictions.leagues.invite_signup"),
     );
+    await expect(page.getByTestId("predictions-invite")).toContainText(
+      copy(lang, "predictions.leagues.invite_generic_fantasy"),
+    );
     expect(new URL(page.url()).hash).toBe("");
-    expect(
-      await page.evaluate(() => window.sessionStorage.getItem("botolago.predictions.invite")),
-    ).toBe(INVITE_CODE);
+    // Kept on the device (a day at most) so it survives the sign-up round
+    // trip, even in a new tab; versioned, with the game it was shared from.
+    const kept = await page.evaluate(() =>
+      window.localStorage.getItem("botolago.league-invite.v1"),
+    );
+    expect(JSON.parse(kept ?? "null")).toMatchObject({ v: 1, code: INVITE_CODE, game: "fantasy" });
     await expectNothingOffScreen(page);
 
     await diagnostics.verify(testInfo);

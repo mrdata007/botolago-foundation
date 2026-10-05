@@ -172,7 +172,8 @@ describe("the hub's personal parts, for each visitor", () => {
     expect(links).toContain("/fantasy/profile");
     expect(links).toContain("/fantasy/team");
     expect(links).toContain("/fantasy/transfers");
-    expect(text(html)).toContain(escapeHtml(fr["fpl.pick_team"]));
+    // Before the deadline the next action is preparing the team.
+    expect(text(html)).toContain(escapeHtml(fr["fantasy.next.prepare"]));
     expect(headings(html)).toEqual([
       escapeHtml(fr["fantasy.hub.my_leagues"]),
       escapeHtml(fr["fpl.general_leagues"]),

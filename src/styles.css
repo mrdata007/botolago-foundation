@@ -800,6 +800,29 @@ html[dir="rtl"] .lucide-arrow-left {
     outline-offset: 2px;
     border-radius: 6px;
   }
+  /* Typesetting. Headings even out their lines instead of leaving one word
+     on the last ("Les inscriptions sont fermées pour cette / journée"), and
+     running text avoids a lone last word ("…remplacez avant la / deadline.").
+     The style longhands only, never the `text-wrap` shorthand: that one also
+     sets the wrap MODE, and would undo a `nowrap` a parent hands down.
+     Browsers without them lay out text as before. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap-style: balance;
+  }
+  p,
+  li,
+  dd,
+  figcaption,
+  blockquote {
+    text-wrap-style: pretty;
+  }
+  /* Selected text in the brand's spring accent rather than the browser's blue. */
+  ::selection {
+    background-color: color-mix(in oklab, var(--ui-accent-spring) 40%, transparent);
+  }
   /* Prevent horizontal overflow at narrow widths (320px+). */
   html,
   body {
@@ -869,6 +892,24 @@ html[dir="rtl"] .lucide-arrow-left {
 .press-tile:active {
   transform: translateY(1px) scale(0.985);
   box-shadow: var(--shadow-subtle);
+}
+
+/* Press feedback for every control a thumb presses: buttons, chips, icon
+   buttons, the bottom bar's items. A phone has no hover, so before this a tap
+   on most controls changed nothing until the next screen arrived, which reads
+   as lag. Now the control gives under the finger: a 3% sink and a touch
+   darker, back in 120ms on release. The individual `scale` property, not
+   `transform`, so a control that is also translated or rotated (a chevron, a
+   slid pill) keeps that transform. It owns the control's transitions, so a
+   control that uses it takes no other `transition-*` class. */
+@utility press {
+  transition-property: scale, filter, opacity, color, background-color, border-color, box-shadow;
+  transition-duration: var(--duration-tap);
+  transition-timing-function: var(--ease-standard);
+  &:active:not(:disabled, [aria-disabled="true"]) {
+    scale: 0.97;
+    filter: brightness(0.96);
+  }
 }
 
 /* An item that appears: a fade and an 8px rise. `both` holds it hidden through
@@ -1304,6 +1345,13 @@ html[dir="rtl"] .lucide-arrow-left {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  /* The press still darkens; it no longer sinks. */
+  .press:active:not(:disabled, [aria-disabled="true"]) {
+    scale: none;
+  }
+}
+
 /* Live dot — a slow fade in and out, 1.5s a cycle (after premierleague.com).
    It replaced an expanding "ping" ring, which read as an alarm rather than
    the restrained urgency the live indicator is meant to carry. */
@@ -1355,14 +1403,51 @@ html[dir="rtl"] .lucide-arrow-left {
   display: flex;
 }
 
-@keyframes splash-in {
+/* The wordmark pulling into focus as the ball lands. Nothing here names a
+   direction, so it plays the same in both scripts. */
+@keyframes splash-reveal {
   0% {
     opacity: 0;
-    transform: scale(0.97) translateY(6px);
+    filter: blur(14px);
+    transform: scale(1.07);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+/* Floodlights catching: `steps(1, end)` on the element holds each value until
+   the next keyframe, so this is a hard flicker rather than a fade. */
+@keyframes splash-lights {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  16% {
+    opacity: 0.15;
+  }
+  28% {
+    opacity: 0.9;
+  }
+  36% {
+    opacity: 0.4;
+  }
+  52%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes splash-pitch {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
   }
 }
 
@@ -1380,6 +1465,127 @@ html[dir="rtl"] .lucide-arrow-left {
   100% {
     transform: translateX(calc(420% * var(--splash-dir))) skewX(calc(-18deg * var(--splash-dir)));
     opacity: 0;
+  }
+}
+
+/* The ball. Sideways travel, height, fade and spin are separate animations on
+   nested elements (see SplashScreen.tsx); --splash-dir starts it from the
+   reading direction's leading side. It lands at 1000ms, hops once, and is
+   gone by 1600ms. */
+@keyframes splash-ball-x {
+  0% {
+    transform: translateX(calc(-60vw * var(--splash-dir)));
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes splash-ball-y {
+  0% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
+  }
+  31.25% {
+    transform: translateY(-170px);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.75, 0.4);
+  }
+  62.5% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
+  }
+  70.6% {
+    transform: translateY(-26px);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.75, 0.4);
+  }
+  78.75%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Once the ball has settled (the hop ends at 1260ms), it sinks into the
+   ground line: the element scales about its bottom edge, which sits on the
+   line, so shrinking it draws the ball down into it. */
+@keyframes splash-ball-fade {
+  0%,
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+
+/* Two and a half turns, ending at rotate(0): the ball lands the way up it is
+   drawn, which is the logo's ball the way up it is in the wordmark. Spinning
+   from 0 to 900deg instead turns the same way at the same speed but lands it
+   upside down. */
+@keyframes splash-ball-spin {
+  0% {
+    transform: rotate(calc(-900deg * var(--splash-dir)));
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+
+/* The ball's tail: in as the ball comes on screen, and gone by the landing
+   (1000ms), before its dots catch the ball up on the landing spot. */
+@keyframes splash-tail {
+  0% {
+    opacity: 0;
+  }
+  10%,
+  70% {
+    opacity: 1;
+  }
+  92%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The ground line flaring as the ball lands on it. */
+@keyframes splash-flare {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.4);
+  }
+  18% {
+    opacity: 1;
+    transform: scaleX(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(1.6);
+  }
+}
+
+/* The ripple the landing sends across the turf: wide and flat, like a circle
+   seen along the ground. */
+@keyframes splash-ground-ripple {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.15, 0.04);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.6, 0.7);
+  }
+}
+
+@keyframes splash-breathe {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
   }
 }
 
@@ -1822,7 +2028,11 @@ html[dir="rtl"] .lucide-arrow-left {
     );
 
   /* ---- Elevation: one shadow set, five steps -------------------- */
-  --ui-shadow-card: 0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 12%, transparent);
+  /* A card: a crisp contact edge under it, and a soft ambient layer that
+     gives it the depth of paper on the page rather than of a border. */
+  --ui-shadow-card:
+    0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 10%, transparent),
+    0 4px 14px -8px color-mix(in oklab, var(--ui-ink) 14%, transparent);
   --ui-shadow-raised: 0 -1px 0 0 color-mix(in oklab, var(--ui-ink) 8%, transparent);
   /* The one lifted step (Option A): the score box, a hero card, the primary
      call to action. A long soft drop, pulled in by the negative spread so it

@@ -19,6 +19,7 @@ import { SectionHeader, SectionHeaderLink } from "@/components/common/SectionHea
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyHubRound } from "@/components/fantasy/FantasyHubRound";
 import { DeadlineCard } from "@/components/fantasy/DeadlineCard";
+import { FantasyGuestExplainer } from "@/components/fantasy/FantasyGuestIntro";
 import { deadlineChecklist } from "@/lib/deadline-checklist";
 import { PrizeWelcome } from "@/components/prizes/PrizeWelcome";
 import {
@@ -87,6 +88,10 @@ function FantasyHub() {
   const gameweek = screen.gameweek;
   const layout = fantasyHubLayout({ authStatus, source, phase: screen.phase, hasTeam: !!team });
   const hasTeam = layout.audience === "owner";
+  // A visitor without a team, with registration closed: the card under the
+  // gameweek is a short notice, the public shortcuts follow it at once, and
+  // the explanation of the game comes after them.
+  const closedGuest = layout.intro !== null && gameweek?.enrolment === null;
 
   // News is hidden at launch (owner decision — see `@/lib/feature-flags`), so
   // the hub's "News & Video" rail is not rendered and its feed is not fetched.
@@ -179,6 +184,12 @@ function FantasyHub() {
       ) : null}
 
       <ShortcutTiles />
+
+      {closedGuest ? (
+        <div className={cn("mt-4", ui.space.gutter)}>
+          <FantasyGuestExplainer prizes={(introPrizes.data?.length ?? 0) > 0} />
+        </div>
+      ) : null}
 
       {/* Personal: an overall rank, private leagues, a cup to qualify for.
           None of it can apply before there is a team. */}
@@ -288,7 +299,7 @@ function ShortcutTiles() {
                 ui.text.meta,
                 "[font-weight:var(--ui-weight-heavy)]",
                 ui.tone.default,
-                "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
                 ui.focus,
               )}
             >
@@ -344,7 +355,7 @@ function MoreAboutSection() {
                   ui.space.row,
                   ui.text.bodyStrong,
                   ui.tone.default,
-                  "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                  "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
                   ui.focus,
                 )}
               >

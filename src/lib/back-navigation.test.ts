@@ -17,6 +17,22 @@ describe("backDestination", () => {
   });
 });
 
+describe("backDestination with a fallback that carries a search", () => {
+  it("steps back through history, whatever the fallback is", () => {
+    // From inside the app Retour returns to the page as it was left: the
+    // calendar's day and chip, the club's tab, are in that entry's URL.
+    expect(backDestination(true, { to: "/matches", search: { date: "2026-09-27" } })).toEqual({
+      kind: "history",
+    });
+  });
+
+  it("sends a cold arrival to the fallback with its search", () => {
+    expect(
+      backDestination(false, { to: "/matches", search: { season: "s1", date: "2026-09-27" } }),
+    ).toEqual({ kind: "route", to: "/matches", search: { season: "s1", date: "2026-09-27" } });
+  });
+});
+
 describe("the back controls all use it", () => {
   // Three separate surfaces each called router.history.back() directly, and
   // each one stranded a reader who arrived by link. A fourth would too, so the
@@ -26,6 +42,10 @@ describe("the back controls all use it", () => {
     "src/components/auth/AuthShell.tsx",
     "src/routes/news.$articleId.tsx",
     "src/routes/matches.$matchId.tsx",
+    // Reached from the header search, a squad, a list or a shared link: a
+    // fixed `backTo` link sent every one of them to the players list.
+    "src/routes/fantasy.players.$playerId.tsx",
+    "src/routes/clubs.$clubId.tsx",
   ];
 
   it("leaves no bare history.back() on a page that can be opened cold", () => {
@@ -43,7 +63,9 @@ describe("the back controls all use it", () => {
     const tree = readFileSync(join(root, "src/routeTree.gen.ts"), "utf8");
     const fallbacks = SURFACES.flatMap((file) => {
       const source = readFileSync(join(root, file), "utf8");
-      return [...source.matchAll(/useBackTo\("([^"]+)"\)/g)].map((match) => match[1]);
+      return [...source.matchAll(/useBackTo\(\s*(?:\{\s*to: )?"([^"]+)"/g)].map(
+        (match) => match[1],
+      );
     });
     expect(fallbacks.length).toBe(SURFACES.length);
     for (const path of fallbacks) {

@@ -84,16 +84,6 @@ function RulesPage() {
       <h2 className={cn(ui.display.section, ui.tone.default)}>{t("fantasy.rules.title")}</h2>
       <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fantasy.rules.intro")}</p>
 
-      {rulesQ.data?.adaptiveScoring && (
-        <p className={cn("mt-4", ui.text.secondary, ui.tone.muted)}>
-          {t("fantasy.scoring.policy")}
-        </p>
-      )}
-      {rulesQ.data?.adaptiveScoring?.estimatesFinalForRankings && (
-        <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
-          {t("fantasy.scoring.estimatesPolicy")}
-        </p>
-      )}
       {rulesQ.isLoading ? (
         <UiStatePanel kind="loading" />
       ) : rulesQ.isError || !rulesQ.data ? (
@@ -146,6 +136,28 @@ function RulesPage() {
           </UiCard>
         ))}
       </div>
+
+      {/* The points screen links here (#scoring-policy). Provisional points
+          and corrections apply to every ruleset; the fixture policy and the
+          reviewed-estimates line only where the ruleset declares them. */}
+      <UiCard as="section" id="scoring-policy" className="mt-4 scroll-mt-20">
+        <h3 className={cn(ui.display.teamSm, ui.tone.default)}>
+          {t("fantasy.rules.policy_title")}
+        </h3>
+        <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
+          {t("fantasy.rules.provisional_desc")}
+        </p>
+        {rulesQ.data?.adaptiveScoring && (
+          <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
+            {t("fantasy.scoring.policy")}
+          </p>
+        )}
+        {rulesQ.data?.adaptiveScoring?.estimatesFinalForRankings && (
+          <p className={cn("mt-2", ui.text.secondary, ui.tone.muted)}>
+            {t("fantasy.scoring.estimatesPolicy")}
+          </p>
+        )}
+      </UiCard>
     </div>
   );
 }

@@ -46,7 +46,7 @@ describe("Home (A-Home)", () => {
   });
 
   it("shows the Fantasy card and the create-a-team card, never an invented rank movement", () => {
-    expect(home).toContain("<FantasySummaryCard summary={summaryQ.data} />");
+    expect(home).toContain("summary={summaryQ.data}");
     expect(home).toContain("<FantasyCreateCard canCreate={canCreate} />");
     expect(home).not.toContain("previousRank");
   });
@@ -127,12 +127,14 @@ describe("Classement (A-Standings)", () => {
   it("keeps the season a reader chose when they switch tabs, both ways", () => {
     const calendar = code("matches.index.tsx");
     const tabs = code("../components/matches/MatchesTabs.tsx");
-    for (const page of [calendar, standings]) {
-      expect(page).toContain("validateSearch: validateMatchesSearch");
-      expect(page).toContain("const { season: requestedSeasonId } = Route.useSearch();");
-    }
+    // The standings keep the season alone; the calendar also keeps the day and
+    // the chip (`validateCalendarSearch` extends the season's validator).
+    expect(standings).toContain("validateSearch: validateMatchesSearch");
+    expect(standings).toContain("const { season: requestedSeasonId } = Route.useSearch();");
     expect(standings).toContain("useState<string | null>(() => requestedSeasonId ?? null)");
-    expect(calendar).toContain("seasons.find((season) => season.id === requestedSeasonId)");
+    expect(calendar).toContain("validateSearch: validateCalendarSearch");
+    expect(calendar).toContain("const search = validateCalendarSearch(Route.useSearch());");
+    expect(calendar).toContain("openingSeason(seasons, requestedSeasonId)");
     expect(tabs).toContain("search: seasonSearch(season)");
   });
 

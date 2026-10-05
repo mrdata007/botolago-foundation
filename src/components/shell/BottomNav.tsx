@@ -169,7 +169,8 @@ export function BottomNav() {
                 ui.radius.card,
                 ui.text.micro,
                 ui.focus,
-                "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
+                // Gives under the finger, like every other control.
+                "press",
                 active
                   ? cn(ui.tone.default, "[font-weight:var(--ui-weight-heavy)]")
                   : cn(
@@ -199,7 +200,7 @@ export function BottomNav() {
                   "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
                   active
                     ? "text-[color:var(--ui-ink-deep)]"
-                    : "group-hover:bg-[color:var(--ui-surface-sunken)]",
+                    : "group-hover:bg-[color:var(--ui-surface-sunken)] group-active:bg-[color:var(--ui-surface-sunken)]",
                 )}
                 style={active && !slide ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
               >
