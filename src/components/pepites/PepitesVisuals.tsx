@@ -1,6 +1,3 @@
-import { Link } from "@tanstack/react-router";
-import type { CSSProperties, ReactNode } from "react";
-
 import type { Movement, PepitesPlayerCard } from "@/backend/pepites/contracts";
 import { PlayerPhoto, type PlayerPhotoSize } from "@/components/common/PlayerPhoto";
 import { ui, UiBadge, UiRankMovement } from "@/components/ui-kit";
@@ -9,7 +6,7 @@ import { useI18n } from "@/i18n/provider";
 import { useRevealOnView } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-import { pp, ratingBand, type RatingBand, segments, shirtName, teamKit } from "./pepites-design";
+import { ratingBand, type RatingBand, segments, shirtName, teamKit } from "./pepites-design";
 import { formatNumber, playerPhotoUrl, teamAsClub } from "./pepites-format";
 
 /**
@@ -19,211 +16,9 @@ import { formatNumber, playerPhotoUrl, teamAsClub } from "./pepites-format";
  * last week's movement. Data goes in; nothing here fetches.
  *
  * Every colour is a `--ui-*` token, so each glyph is right in `.dark` too.
- *
- * DEPRECATED, kept only so the screens still compile while they migrate
- * (the BG-0152 integration stage deletes them): `GoMark`, `NightBand`,
- * `EnergyStreak`, `MonoLine`, `FilterChip`, `FactsStrip` and the `Headshot`
- * alias. New code uses the kit instead: `UiPageTitle`/`UiHeader`, `UiChip`,
- * `UiStatBlock`, `ui.text.meta`, `PepitesPlayerPhoto`.
+ * Page furniture (titles, chips, figures, meta lines) is the kit's own:
+ * `UiPageTitle`/`UiHeader`, `UiChip`, `UiStatBlock`, `ui.text.meta`.
  */
-
-/** "GO · Pépites · DATA": the sub-brand mark, on night backgrounds. */
-export function GoMark() {
-  const { t } = useI18n();
-  return (
-    <Link
-      to="/pepites"
-      className="inline-flex items-center gap-1.5 rounded-[6px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--pepites-on-night)]"
-      aria-label={t("pepites.title")}
-      data-testid="pepites-gomark"
-    >
-      <span
-        aria-hidden
-        className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-[6px] bg-white"
-      >
-        <img
-          src="/favicon.png?v=2"
-          alt=""
-          width={20}
-          height={20}
-          draggable={false}
-          className="size-5 object-contain"
-        />
-      </span>
-      <span
-        aria-hidden
-        className={cn("text-[12px] text-[color:var(--pepites-on-night)]", pp.heavy)}
-      >
-        {t("pepites.brand")}
-      </span>
-      <span
-        aria-hidden
-        className={cn(
-          "rounded-[4px] px-[5px] py-[3px] text-[8px] leading-none text-[color:var(--pepites-night)] ltr:tracking-[0.14em]",
-          pp.energyFill,
-          pp.monoStrong,
-        )}
-      >
-        DATA
-      </span>
-    </Link>
-  );
-}
-
-/**
- * The night band: navy, cut on a slant at the bottom, with the club's glow
- * and a violet one, and an outlined number behind everything (the rank, or
- * how many players). Full-bleed; its content keeps the page column.
- */
-export function NightBand({
-  glow,
-  ghost,
-  cut = 32,
-  className,
-  children,
-  testId,
-  wide = false,
-}: {
-  /** The club colour behind the leader; none on pages without one. */
-  glow?: string | null;
-  ghost?: string | null;
-  /** How far the slant drops, in px, from the inline end to the inline start. */
-  cut?: number;
-  className?: string;
-  children: ReactNode;
-  testId?: string;
-  wide?: boolean;
-}) {
-  return (
-    <section
-      data-testid={testId}
-      // The slant (styles.css, `.pepites-night-band`) mirrors in Arabic.
-      className={cn("pepites-night-band relative isolate overflow-hidden", pp.night, className)}
-      style={{ "--pepites-cut": `${cut}px` } as CSSProperties}
-    >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -start-[50px] -top-[40px] -z-10 size-[150px] rounded-full bg-[color:var(--pepites-violet)] opacity-45 blur-[30px]"
-      />
-      {glow ? (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -end-[20px] top-[40px] -z-10 size-[220px] rounded-full opacity-75 blur-[30px]"
-          style={{ backgroundColor: glow }}
-        />
-      ) : null}
-      {ghost ? (
-        <span
-          aria-hidden
-          className={cn(
-            "pointer-events-none absolute -end-[10px] top-[10px] -z-10 select-none text-[clamp(150px,55vw,230px)] text-transparent",
-            pp.display,
-            pp.lean,
-          )}
-          style={{ WebkitTextStroke: "1.5px rgb(255 255 255 / 0.1)" }}
-        >
-          {ghost}
-        </span>
-      ) : null}
-      <div
-        className={cn(
-          "mx-auto w-full px-4",
-          wide ? "md:max-w-[1232px] md:px-4" : "md:max-w-[var(--ui-content-max)]",
-        )}
-      >
-        {children}
-      </div>
-    </section>
-  );
-}
-
-/** The energy streak under the hero figures. */
-export function EnergyStreak() {
-  return (
-    <div
-      aria-hidden
-      className={cn("h-[5px] w-[120px] -ms-6 [transform:skewX(-8deg)]", pp.energyFill)}
-    />
-  );
-}
-
-/** A mono meta line ("U23 · BOTOLA PRO · 2025-26"). */
-export function MonoLine({
-  children,
-  tone = "meta",
-  className,
-  testId,
-}: {
-  children: ReactNode;
-  tone?: "meta" | "sub" | "spring" | "muted";
-  className?: string;
-  testId?: string;
-}) {
-  return (
-    <p
-      data-testid={testId}
-      className={cn(
-        "text-[11px] leading-[1.4] ltr:tracking-[0.06em]",
-        tone === "sub" ? cn(pp.mono, "ltr:tracking-[0.04em]") : pp.monoStrong,
-        tone === "meta" && pp.onNightMeta,
-        tone === "sub" && pp.onNightSub,
-        tone === "spring" && pp.spring,
-        tone === "muted" && pp.muted,
-        className,
-      )}
-    >
-      {children}
-    </p>
-  );
-}
-
-/** FilterChip: 26px pill. `dark` sits on the night band. */
-export function FilterChip({
-  selected,
-  tone = "light",
-  children,
-  testId,
-  ...target
-}: {
-  selected: boolean;
-  tone?: "light" | "dark";
-  children: ReactNode;
-  testId?: string;
-} & (
-  | { onClick: () => void; to?: never; search?: never }
-  | { to: string; search?: Record<string, unknown>; onClick?: never }
-)) {
-  const className = cn(
-    "inline-flex h-[26px] shrink-0 items-center rounded-full border px-[11px] text-[11px] leading-none transition-colors",
-    pp.heavy,
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--pepites-violet)] focus-visible:ring-offset-1",
-    tone === "light"
-      ? selected
-        ? "border-[color:var(--pepites-ink)] bg-[color:var(--pepites-ink)] text-white dark:bg-[color:var(--ui-ink)]"
-        : "border-[color:var(--pepites-line)] bg-[color:var(--pepites-card)] text-[color:var(--pepites-ink)]"
-      : selected
-        ? "border-white bg-white text-[color:var(--pepites-night)]"
-        : "border-white/15 bg-white/10 text-white",
-  );
-  if (target.to) {
-    return (
-      <Link to={target.to} search={target.search} className={className} data-testid={testId}>
-        {children}
-      </Link>
-    );
-  }
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      onClick={target.onClick}
-      className={className}
-      data-testid={testId}
-    >
-      {children}
-    </button>
-  );
-}
 
 /** The ten segments of a `Seg10Bar`, by position. */
 const SEGMENT_INDEXES = Array.from({ length: 10 }, (_, index) => index);
@@ -354,25 +149,6 @@ export function PepitesPlayerPhoto({
 }
 
 /**
- * @deprecated Use `PepitesPlayerPhoto`. The old pixel sizes map onto the
- * kit's discs (20 → xs 28, 36 → sm 32, 44 → md 40); `missingDot` is ignored,
- * because the "photo missing" dot no longer shows on public screens. Kept
- * until the screens migrate.
- */
-export function Headshot({
-  player,
-  size = 36,
-}: {
-  player: Pick<PepitesPlayerCard, "name" | "team" | "photo">;
-  size?: 20 | 36 | 44;
-  missingDot?: boolean;
-}) {
-  return (
-    <PepitesPlayerPhoto player={player} size={size === 20 ? "xs" : size === 44 ? "md" : "sm"} />
-  );
-}
-
-/**
  * The shirt's hairline: the default text colour at a quarter strength, so a
  * white or yellow kit keeps its shape on a white card and a navy one on the
  * dark card.
@@ -438,35 +214,6 @@ export function PepitesShirt({
         </text>
       ) : null}
     </svg>
-  );
-}
-
-/** FactsStrip: four figures between two hairlines, on the night band. */
-export function FactsStrip({
-  facts,
-  testId,
-}: {
-  facts: ReadonlyArray<{ label: string; value: string }>;
-  testId?: string;
-}) {
-  return (
-    <dl data-testid={testId} className="flex border-y border-[color:var(--pepites-on-night-rule)]">
-      {facts.map((fact) => (
-        <div key={fact.label} className="flex min-w-0 flex-1 flex-col items-center gap-[3px] py-2">
-          <dd className={cn(pp.display, "order-1 text-[18px] text-white")}>
-            <bdi>{fact.value}</bdi>
-          </dd>
-          <dt
-            className={cn(
-              pp.mono,
-              "order-2 text-[10px] leading-[1.4] text-white/70 ltr:tracking-[0.04em]",
-            )}
-          >
-            {fact.label}
-          </dt>
-        </div>
-      ))}
-    </dl>
   );
 }
 
@@ -548,13 +295,10 @@ export function FillBar({
   percent,
   fill = "ink",
   className,
-  fillClassName,
 }: {
   percent: number;
   fill?: "ink" | "faint";
   className?: string;
-  /** @deprecated Pick a `fill`; kept until the screens migrate. */
-  fillClassName?: string;
 }) {
   const [ref, reveal] = useRevealOnView<HTMLDivElement>();
   return (
@@ -573,7 +317,6 @@ export function FillBar({
           fill === "faint"
             ? "bg-[color:var(--ui-on-surface-faint)]"
             : "bg-[color:var(--ui-ink-fg)]",
-          fillClassName,
         )}
         style={{ width: reveal === "armed" ? "0%" : `${percent}%` }}
       />

@@ -26,26 +26,6 @@ import { secondsUntil } from "./reveal";
  * `UiErrorState` / `UiSkeleton`, the banners `UiAlert`. No night band.
  */
 
-/**
- * A Pépites card: the kit's `UiCard` (white, 14px, the card shadow, 16px
- * padding). New code can use `UiCard` directly; this keeps the call sites.
- */
-export function PepitesCard({
-  children,
-  testId,
-  className,
-}: {
-  children: ReactNode;
-  testId?: string;
-  className?: string;
-}) {
-  return (
-    <UiCard testId={testId} className={className}>
-      {children}
-    </UiCard>
-  );
-}
-
 /** Pépites is not open to this reader (mode off, or staff-only). */
 export function PepitesComingSoon() {
   const { t } = useI18n();
