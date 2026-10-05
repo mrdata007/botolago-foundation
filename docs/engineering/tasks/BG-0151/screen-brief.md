@@ -91,6 +91,12 @@ Visual, measured from the page's layout boxes, not by eye:
   `/fantasy/rules`): the boxes of the top header and its row, `main`, the
   bottom navigation and every pinned bar match to within 0.5px; `body` padding
   is 0; a toast sits 16px from the top.
+- **Before vs after on desktop, no insets** (fr and ar, 1440x900; the same
+  seven routes plus `/fantasy/team`, and the sign-in `UiModal` opened on a club
+  page): the same boxes match to within 0.5px, a toast sits 16px from the top,
+  and the dialog opens in the same box with the same 88dvh height cap. Added
+  after review: the lane named phone sizes only, and the screen-work rules ask
+  for a desktop check as well.
 - **After, with emulated insets** (portrait: 47px top, 34px bottom; landscape:
   21px bottom, 47px each side):
   - the top bar's row starts at or below the top inset on every route, and no
@@ -104,7 +110,7 @@ Visual, measured from the page's layout boxes, not by eye:
 - **Before, with the same insets**, is recorded too, as the evidence of what
   `cover` alone would break.
 - Screens checked in French and Arabic (right to left), phone portrait and
-  landscape.
+  landscape, and desktop at 1440.
 
 Functional:
 
