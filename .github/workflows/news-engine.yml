@@ -1,0 +1,211 @@
+name: BotolaGO News Engine
+
+# The scheduler for the news engine. This workflow IS the production worker:
+# routine operation needs nothing else running anywhere.
+#
+# Modes:
+#   incremental     discovery through publication for due sources (every 30 min)
+#   reconciliation  a wider weekly sweep that catches anything the incremental
+#                   passes missed (Monday 03:20 UTC)
+#   backfill        controlled historical import, manual only
+#   status          read-only health snapshot, no writes
+#
+# Both schedules are gated on `vars.NEWS_ENGINE_SCHEDULE_ENABLED == 'true'`.
+# Until the owner sets that variable, nothing runs on a timer.
+
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Which job to run
+        required: true
+        default: status
+        type: choice
+        options:
+          - status
+          - incremental
+          - reconciliation
+          - backfill
+      confirmation:
+        description: Type RUN_NEWS_ENGINE
+        required: true
+        type: string
+      limit:
+        description: Maximum articles to process in this pass (1-200)
+        required: false
+        default: "25"
+        type: string
+      source:
+        description: Comma-separated source slugs
+        required: false
+        default: elbotola
+        type: string
+      language:
+        description: Comma-separated languages (ar,fr)
+        required: false
+        default: ar,fr
+        type: string
+      since:
+        description: Backfill lower bound, YYYY-MM-DD
+        required: false
+        type: string
+      until:
+        description: Backfill upper bound, YYYY-MM-DD
+        required: false
+        type: string
+      mode:
+        description: >-
+          dry-run performs every read and model call but no write;
+          review-only holds output as drafts; publish allows the
+          publication policy to auto-publish where it permits it.
+        required: true
+        default: review-only
+        type: choice
+        options:
+          - dry-run
+          - review-only
+          - publish
+  schedule:
+    # Incremental discovery twice an hour, offset off the hour so it does not
+    # collide with the Fantasy jobs.
+    - cron: "7,37 * * * *"
+    # Weekly reconciliation.
+    - cron: "20 3 * * 1"
+
+# Deliberately NOT the repo-wide `botolago-production-v2-mutation` group.
+#
+# The engine writes only to its own `app_private.news_engine_*` tables and to
+# the editorial article model, through its own service-role RPCs; it touches no
+# Fantasy table. Putting a twice-hourly job on the global mutation lock would
+# have it repeatedly block deadline-critical Fantasy work, which is the
+# opposite of the isolation this subsystem is supposed to provide.
+concurrency:
+  group: botolago-news-engine
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      ((github.event_name == 'workflow_dispatch' && github.actor == 'mrdata007') ||
+       (github.event_name == 'schedule' && vars.NEWS_ENGINE_SCHEDULE_ENABLED == 'true'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: newsroom
+    env:
+      NEWS_ENGINE_JOB: ${{ github.event_name == 'workflow_dispatch' && inputs.job || (github.event.schedule == '20 3 * * 1' && 'reconciliation' || 'incremental') }}
+      NEWS_ENGINE_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || vars.NEWS_ENGINE_SCHEDULED_MODE }}
+      NEWS_ENGINE_LIMIT: ${{ github.event_name == 'workflow_dispatch' && inputs.limit || '25' }}
+      NEWS_ENGINE_SOURCE: ${{ github.event_name == 'workflow_dispatch' && inputs.source || 'elbotola' }}
+      NEWS_ENGINE_LANGUAGE: ${{ github.event_name == 'workflow_dispatch' && inputs.language || 'ar,fr' }}
+      NEWS_ENGINE_SINCE: ${{ github.event_name == 'workflow_dispatch' && inputs.since || '' }}
+      NEWS_ENGINE_UNTIL: ${{ github.event_name == 'workflow_dispatch' && inputs.until || '' }}
+      CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.confirmation || 'RUN_NEWS_ENGINE' }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      SUPABASE_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
+      VITE_SUPABASE_PROJECT_ID: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+      SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+      NEWS_ENGINE_EXPECTED_PROJECT_REF: tkewgajrljbwgwedqsxn
+      NEWS_ENGINE_MODEL: ${{ vars.NEWS_ENGINE_MODEL }}
+
+    steps:
+      - name: Establish runtime guards
+        id: runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          for secret in "$ANTHROPIC_API_KEY" "$SUPABASE_SECRET_KEY"; do
+            if [[ -n "$secret" ]]; then printf '::add-mask::%s\n' "$secret"; fi
+          done
+          if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
+            echo "NEWS_ENGINE_ANTHROPIC_KEY_MISSING"; exit 2
+          fi
+          if [[ -z "${SUPABASE_SECRET_KEY:-}" ]]; then
+            echo "NEWS_ENGINE_SERVICE_KEY_MISSING"; exit 2
+          fi
+          if [[ "$CONFIRMATION" != "RUN_NEWS_ENGINE" ]]; then
+            echo "NEWS_ENGINE_CONFIRMATION_REQUIRED"; exit 2
+          fi
+          if [[ "$SUPABASE_PRODUCTION_PROJECT_REF" != "$NEWS_ENGINE_EXPECTED_PROJECT_REF" ]]; then
+            echo "NEWS_ENGINE_PROJECT_REF_MISMATCH"; exit 2
+          fi
+          if [[ "$SUPABASE_URL" != "https://${NEWS_ENGINE_EXPECTED_PROJECT_REF}.supabase.co" ]]; then
+            echo "NEWS_ENGINE_PROJECT_URL_MISMATCH"; exit 2
+          fi
+          runtime_dir="$RUNNER_TEMP/botolago-news-engine"
+          evidence_dir="$runtime_dir/evidence"
+          install -d -m 0700 "$runtime_dir" "$evidence_dir"
+          echo "NEWS_ENGINE_EVIDENCE_DIR=$runtime_dir" >> "$GITHUB_ENV"
+          echo "evidence_dir=$evidence_dir" >> "$GITHUB_OUTPUT"
+          echo "runtime_dir=$runtime_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the reviewed commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Verify engine guards before touching production
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun install --frozen-lockfile
+          bun test src/backend/news-engine scripts/backend/news-engine-run.test.ts
+          bun run backend:secrets:check
+
+      - name: Run the news engine
+        id: engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          flags=()
+          case "$NEWS_ENGINE_MODE" in
+            dry-run) flags+=(--dry-run) ;;
+            review-only) flags+=(--review-only) ;;
+            publish) flags+=(--publish) ;;
+            *) echo "NEWS_ENGINE_INVALID_MODE"; exit 2 ;;
+          esac
+          if [[ -n "${NEWS_ENGINE_SINCE:-}" ]]; then flags+=(--since "$NEWS_ENGINE_SINCE"); fi
+          if [[ -n "${NEWS_ENGINE_UNTIL:-}" ]]; then flags+=(--until "$NEWS_ENGINE_UNTIL"); fi
+          bun scripts/backend/news-engine-run.ts \
+            --job "$NEWS_ENGINE_JOB" \
+            --source "$NEWS_ENGINE_SOURCE" \
+            --language "$NEWS_ENGINE_LANGUAGE" \
+            --limit "$NEWS_ENGINE_LIMIT" \
+            "${flags[@]}"
+
+      - name: Verify evidence contains no credentials
+        id: evidence_scan
+        if: always()
+        shell: bash
+        run: python scripts/backend/phase7f-scan-sanitized-evidence.py "${{ steps.runtime.outputs.evidence_dir }}"
+
+      - name: Upload sanitized run evidence
+        if: always() && steps.evidence_scan.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: news-engine-${{ github.run_id }}
+          path: ${{ steps.runtime.outputs.evidence_dir }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove temporary runtime files
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          runtime_dir="${{ steps.runtime.outputs.runtime_dir }}"
+          if [[ -d "$runtime_dir" ]]; then
+            chmod -R u+w "$runtime_dir" || true
+            rm -rf -- "$runtime_dir"
+          fi

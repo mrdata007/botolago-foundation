@@ -1,5 +1,11 @@
 # News and Editorial operations runbook
 
+> Automated ingestion has moved to the news engine; see
+> `docs/production/NEWS_ENGINE_GO_LIVE.md`. The editorial workflow, roles and
+> read models described below are unchanged and still apply to engine output,
+> because generated articles use the same `app.article_editions` model as
+> hand-written ones.
+
 ElBotola metadata and hero-image discovery is documented separately in
 `ELBOTOLA_INTEGRATION.md`. BotolaGO's owner confirmed metadata/link and remote
 hero-image permission on 2026-08-03. It remains database-disabled,

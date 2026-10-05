@@ -1,4 +1,28 @@
-name: ElBotola news recovery and refresh
+name: ElBotola news recovery and refresh (RETIRED)
+
+# RETIRED — superseded by `.github/workflows/news-engine.yml`.
+#
+# This workflow ran the link-metadata adapter: it collected ElBotola headlines
+# and published them as link stubs under ElBotola's own byline. The news engine
+# replaces that entirely — it extracts facts and composes original BotolaGO
+# articles, and it owns the ElBotola source from now on.
+#
+# Its schedule has been removed, so it no longer runs on a timer. BG-0073 took
+# it off the timer first, for the News stand-down; this retires it for good, so
+# the restore note that removal left behind is gone rather than stale. The
+# manual trigger is kept only as a break-glass path while the engine proves
+# itself in production, and `vars.ELBOTOLA_SCHEDULE_ENABLED` no longer has any
+# effect: the job's `if` no longer reads it, and the one runtime guard that
+# still names it sits behind `GITHUB_EVENT_NAME == "schedule"`, which this
+# workflow can no longer produce.
+#
+# Deleting this file is the last step of
+# `docs/production/NEWS_ENGINE_GO_LIVE.md`, after the engine has completed a
+# clean production pass.
+#
+# Do not run this and the news engine against ElBotola at the same time. Both
+# write `app_private.news_source_articles` rows keyed on the same publisher and
+# external id, and the stub path would overwrite an engine article's mapping.
 
 on:
   workflow_dispatch:
@@ -19,20 +43,6 @@ on:
         options:
           - canary
           - refresh
-  # BG-0073 News stand-down: the schedule is removed while News is hidden for
-  # launch. api.news_ingest_provider_article no longer publishes anything, so a
-  # stray run is harmless - but there is no reason to keep crawling ElBotola for
-  # content nobody can read.
-  #
-  # To restore scheduled recovery, re-add below and set the repository variable
-  # ELBOTOLA_SCHEDULE_ENABLED to 'true' (the job's `if` and runtimeGuard in
-  # scripts/backend/elbotola-recovery.ts both still gate on it):
-  #
-  #   schedule:
-  #     - cron: "17 */6 * * *"
-  #
-  # workflow_dispatch is deliberately left intact so the owner can still run the
-  # canary or a manual refresh by hand.
 
 concurrency:
   group: botolago-production-v2-mutation
@@ -47,8 +57,8 @@ jobs:
     if: >-
       github.repository == 'mrdata007/botolago-foundation' &&
       github.ref == 'refs/heads/main' &&
-      ((github.event_name == 'workflow_dispatch' && github.actor == 'mrdata007') ||
-       (github.event_name == 'schedule' && vars.ELBOTOLA_SCHEDULE_ENABLED == 'true'))
+      github.event_name == 'workflow_dispatch' &&
+      github.actor == 'mrdata007'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production-admin-activation
