@@ -95,9 +95,10 @@ interface change during setup or a read-only audit.
 
 - **Language URLs** (`/ar/...` with hreflang): `docs/engineering/LANGUAGE_URLS.md`.
 - **Web push:** step 3 of `docs/engineering/PHASE5_ENGAGEMENT_PLAN.md`. That plan (2 Oct) puts native
-  iOS/Android out of scope, which the owner's Capacitor intent now reopens.
-- **Capacitor or any native wrapper:** stated by the owner on 2026-10-05; nothing exists in the
-  repository.
+  iOS/Android out of scope, which the owner's Capacitor intent now reopens (phone push was then
+  built on main; see section 8).
+- **Capacitor or any native wrapper:** stated by the owner on 2026-10-05; nothing existed in the
+  repository at the time of this check. Superseded the same day: see section 8.
 - **Morocco national-team section:** `docs/engineering/MOROCCO_NATIONAL_TEAM_PLAN.md`
   ("plan, not built").
 - **Other plans:**
@@ -200,3 +201,16 @@ its date and can be superseded by a later migration.
   blocks, photos and the mesh).
 - **Sign-up email:** ledger BG-0106/BG-0108 describe the stock Supabase sign-up email. The 2026-09-25
   audit shows mail from `noreply@botolago.com` in French and Arabic.
+
+## 8. Merged to `main` after the site check (later on 2026-10-05)
+
+Sections 1 to 7 describe the repository at `236afae`. This work was merged afterwards, up to `main` at
+`b6d91af`. None of it was checked against the live site.
+
+| Item                                  | Status in the repository                                                                                                                                                                                                                                                                 | Evidence                                                                               |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Phone app (Capacitor shell)           | The shell opens the live site; the offline page, the phone-side push code and a manual-only Codemagic cloud build are written; per the doc, "no build has ever been run and nothing has been tried on a real phone". This answers the section 5 question on how Capacitor loads the app. | `docs/mobile/PHONE_APP.md`; `capacitor.config.ts`; `codemagic.yaml`                    |
+| Push alerts, sending side             | Kick-off reminder, 1-hour and 24-hour Fantasy deadlines, final score, goals and "goal cancelled" can be queued per phone. The switch ships `off`, the dispatcher function is not deployed, and no phone can register yet. **Unknown:** whether the push migrations are applied.          | `docs/backend/PUSH_NOTIFICATIONS.md`                                                   |
+| Public gameweek recaps                | Opt-in public recap of a finalized gameweek at `/journee/<publicId>`. Both switches are off after the migration. **Unknown:** whether the migration is applied.                                                                                                                          | `docs/backend/FANTASY_PUBLIC_RECAPS.md`; `src/routes/journee.$publicId.tsx`            |
+| Home "Mes clubs" row, match-page tabs | A Home row with each favourite and followed club's next match; match pages open on their tabs once a match is live or finished.                                                                                                                                                          | `src/components/home/MyClubsRow.tsx`; git log of `main`                                |
+| Pépites photo publishing              | A GitHub Actions button publishes approved player photos, pausing the Pépites tick during the run.                                                                                                                                                                                       | `.github/workflows/pepites-photo-publish.yml`; `scripts/backend/pepites-tick-pause.ts` |

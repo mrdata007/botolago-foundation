@@ -20,9 +20,15 @@ Arabic. The server renders every page in French (`<html lang="fr" dir="ltr">`). 
 choice is stored in the browser and applied after the page loads, so Arabic readers see a French first
 paint (`docs/engineering/LANGUAGE_URLS.md`).
 
-The owner plans to distribute the app later through a Capacitor wrapper. That work has not started:
-as of 2026-10-05 the repository has no Capacitor or native project, no web manifest and no service
-worker. A wrapper around this website does not make its design language native, so the platform stays
+The owner plans to distribute the app through a Capacitor wrapper. Its groundwork was merged to
+`main` later on 2026-10-05 (`docs/mobile/PHONE_APP.md`):
+
+- a native shell that opens the live site (`capacitor.config.ts`);
+- push-alert code for the phone;
+- a Codemagic cloud build.
+
+No build has run and nothing has been tried on a phone. There is still no web manifest and no service
+worker. The shell shows the same website, so its design language is the web's, and the platform stays
 `web` until the owner decides otherwise.
 
 ## Users
@@ -148,7 +154,8 @@ SEO plan (26 Sept) says Search Console was not connected to its project.
 ## Capabilities and Constraints
 
 **Live on botolago.com.** The site served repository commit `236afae` on 2026-10-05. Per-feature
-production evidence is in the dated snapshot.
+production evidence is in the dated snapshot. Work merged to `main` after that check (section 8 of
+the snapshot) was not checked against the live site.
 
 - **Matches:**
   - a calendar and live scores (the server checks the provider every 2 minutes during play, and the
@@ -194,6 +201,12 @@ production evidence is in the dated snapshot.
 - **Google and Apple sign-in:** the buttons render, but the providers were last recorded as not enabled
   in Supabase. **Unknown:** whether they work now.
 - **AI-written articles and GNews ingestion:** both are switched off or dormant.
+- **Phone app and push alerts** (merged after the site check): the shell, the phone's push code and the
+  cloud build are in the repository, but no build has run. The push sending side ships with its switch
+  off and its dispatcher not deployed (`docs/backend/PUSH_NOTIFICATIONS.md`).
+- **Public gameweek recaps** at `/journee/<id>` (merged after the site check): built, with both
+  switches off after the migration (`docs/backend/FANTASY_PUBLIC_RECAPS.md`). **Unknown:** whether the
+  migration is applied in production.
 - **Other built but unused pieces:** a deadline-first home layout (`HOME_DEADLINE_FIRST = false`), and
   several Fantasy components that nothing mounts (FantasyOnboarding, LeagueTable, Pitch and others;
   full list in the dated snapshot). Their copy has not been checked against ruleset v1.
@@ -201,7 +214,7 @@ production evidence is in the dated snapshot.
 **Planned only, not built:**
 
 - language URLs (`/ar`);
-- web push and any native or Capacitor app;
+- web push for the website itself (the phone app's push is built but off, above);
 - the Morocco national-team section;
 - Fantasy advice guides;
 - server-made share cards;
@@ -268,8 +281,8 @@ production evidence is in the dated snapshot.
 
 **Open product decisions (Unknown):**
 
-- whether and when Capacitor ships, and how it would load the app (the remote site or a bundled
-  client);
+- when the phone app ships to the app stores (the shell loads the live site, per
+  `docs/mobile/PHONE_APP.md`);
 - when email notifications switch on;
 - whether the Fantasy Cup and public leagues will be built or removed;
 - whether language URLs are adopted, and if so which shape (`/ar` beside unprefixed French, or `/fr`
@@ -392,5 +405,5 @@ Known gaps (**Unknown** whether intended):
 - No screen-reader testing is recorded.
 - Arabic readers see a French first paint on full page loads.
 - Browser tests run in Chromium only; there is no Safari/WebKit or real-device coverage.
-- The viewport meta lacks `viewport-fit=cover`, which safe-area handling in a future Capacitor shell
-  would depend on.
+- The viewport meta lacks `viewport-fit=cover`, which safe-area handling inside the Capacitor shell
+  depends on.
