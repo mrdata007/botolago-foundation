@@ -245,6 +245,9 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-shadow-raised",
   "--ui-shadow-lifted",
   "--ui-shadow-overlay",
+  // Its light value is the legacy navy `--shadow-floating`, which has no dark
+  // counterpart; the dark one is a hairline ring plus a black drop.
+  "--ui-shadow-column",
   "--ui-pitch-bench",
   "--ui-pitch-line",
   "--ui-on-pitch",

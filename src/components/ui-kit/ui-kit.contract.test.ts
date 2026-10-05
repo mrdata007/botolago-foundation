@@ -209,8 +209,15 @@ describe("ui-kit: theme correctness", () => {
   });
 
   it("no colour-bearing --ui-* token is left without a dark story", () => {
+    // `var(--shadow-*)` and `rgba(`/`rgb(` count as colour: the legacy shadows
+    // are navy rgba with no dark value, and `--ui-shadow-column` aliased one
+    // for months with no dark counterpart because this check could not see it
+    // (BG-0149). Any legacy alias (`--brand-*`, `--shadow-*`) or literal
+    // colour inside a --ui-* token has to be themed or derived.
     const carriesColour = (value: string) =>
-      /oklch\(|oklab\(|color-mix\(|linear-gradient\(|radial-gradient\(|var\(--brand-/.test(value);
+      /oklch\(|oklab\(|color-mix\(|linear-gradient\(|radial-gradient\(|rgba?\(|hsla?\(|#[0-9a-f]{3,8}\b|var\(--brand-|var\(--shadow-/i.test(
+        value,
+      );
     const accounted = new Set<string>([...UI_THEMED_TOKENS, ...UI_DERIVED_TOKENS]);
     const orphans = [...rootDeclarations]
       .filter(([token, value]) => token.startsWith("--ui-") && carriesColour(value))

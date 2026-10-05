@@ -2293,6 +2293,11 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-shadow-raised: 0 -1px 0 0 color-mix(in oklab, oklch(1 0 0) 8%, transparent);
   --ui-shadow-lifted: 0 14px 26px -16px color-mix(in oklab, oklch(0 0 0) 75%, transparent);
   --ui-shadow-overlay: 0 -8px 24px -8px color-mix(in oklab, oklch(0 0 0) 70%, transparent);
+  /* The desktop phone column (and the search popover). The light value is a
+     navy drop, which vanishes on the dark page: here a hairline ring draws the
+     column's edge and a black drop keeps its height. */
+  --ui-shadow-column:
+    0 0 0 1px var(--ui-rule), 0 18px 40px -18px color-mix(in oklab, oklch(0 0 0) 70%, transparent);
 
   --ui-pitch-bench: var(--ui-surface);
   --ui-pitch-line: color-mix(in oklab, oklch(1 0 0) 72%, transparent);
