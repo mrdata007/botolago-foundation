@@ -27,6 +27,7 @@ import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { authService } from "@/services/auth";
 import { footballService } from "@/services/football";
 import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
+import { useNativePushSwitch } from "@/services/use-native-push";
 import type { Language } from "@/types/domain";
 import type { NotificationPreferences } from "@/services/auth";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -70,6 +71,10 @@ function ProfileSetupPage() {
   const { preferences: notificationPrefs, setEmailEnabled } = useMyNotificationPreferences();
   const [emailChoice, setEmailChoice] = useState<boolean | null>(null);
   const savedEmail = notificationPrefs?.channels.email;
+  // Push alerts exist only inside the phone app. Unlike e-mail they act at once:
+  // turning the switch on is when the phone asks permission, so the choice is
+  // not held back until "Terminer".
+  const push = useNativePushSwitch();
   const [chosenLang, setChosenLang] = useState<Language>(lang);
   const [submitting, setSubmitting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -110,6 +115,22 @@ function ProfileSetupPage() {
     const reader = new FileReader();
     reader.onload = () => setAvatar(String(reader.result));
     reader.readAsDataURL(f);
+  };
+
+  const onPushChange = async (next: boolean) => {
+    if (next) {
+      const result = await push.turnOn();
+      if (result === "ok") return;
+      if (result === "mfa") showStepUpNotice(t);
+      else if (result === "denied") toast.error(t("auth.setup.notif_push_denied"));
+      else if (result === "unavailable" || result === "conflict")
+        toast.error(t("auth.setup.notif_push_unavailable"));
+      else toast.error(t("auth.error.generic"));
+      return;
+    }
+    const result = await push.turnOff();
+    if (result === "mfa") showStepUpNotice(t);
+    else if (result === "error") toast.error(t("auth.error.generic"));
   };
 
   const finish = async () => {
@@ -412,6 +433,19 @@ function ProfileSetupPage() {
             hint={t("auth.setup.notif_email_desc")}
             className={cn("px-3 py-3", ui.space.row, ui.radius.card, ui.rule.all)}
           />
+
+          {/* Only in the phone app, where alerts can be delivered. Disabled
+              until the account's choice and the phone's permission are known. */}
+          {push.available && (
+            <UiCheckbox
+              checked={push.enabled}
+              disabled={!push.loaded || push.busy || submitting}
+              onChange={(e) => void onPushChange(e.target.checked)}
+              label={t("auth.setup.notif_push")}
+              hint={t("auth.setup.notif_push_desc")}
+              className={cn("px-3 py-3", ui.space.row, ui.radius.card, ui.rule.all)}
+            />
+          )}
 
           <div>
             <div id="setupLanguage" className={cn("mb-1.5", ui.text.label, ui.tone.muted)}>
