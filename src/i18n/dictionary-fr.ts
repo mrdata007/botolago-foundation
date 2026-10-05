@@ -93,6 +93,7 @@ export const fr = {
   "home.explore": "Explorer {accent}BotolaGO{/accent}",
   "home.view_all": "Tout voir",
   "home.view_fantasy_team": "Voir mon équipe",
+  "home.my_clubs.last_result": "Dernier résultat",
   // The home page's sr-only <h1>. The French is the page's <title>, which is
   // what the server renders and a crawler reads.
   "home.sr_title": "BotolaGO — Actualité, matchs et Fantasy du football marocain",
@@ -1537,6 +1538,13 @@ export const fr = {
   "auth.setup.notif_deadline_desc": "Date limite avant chaque journée.",
   "auth.setup.notif_email": "Recevoir par e-mail",
   "auth.setup.notif_email_desc": "Avant et après les matchs, et vos rappels Fantasy.",
+  "auth.setup.notif_push": "Alertes sur ce téléphone",
+  "auth.setup.notif_push_desc":
+    "Buts, résultats, coup d’envoi et date limite Fantasy, même quand l’appli est fermée.",
+  "auth.setup.notif_push_denied":
+    "Les notifications sont bloquées. Autorisez-les pour BotolaGO dans les réglages du téléphone, puis réessayez.",
+  "auth.setup.notif_push_unavailable":
+    "Impossible d’activer les alertes pour le moment. Vérifiez votre connexion et réessayez.",
   "auth.setup.language_confirm": "Langue par défaut",
   "auth.setup.skip": "Passer",
   "auth.setup.next": "Suivant",

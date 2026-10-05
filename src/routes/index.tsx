@@ -17,6 +17,9 @@ import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { HOME_DEADLINE_FIRST, PEPITES_PROMOTED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCard";
+import { MyClubsRow } from "@/components/home/MyClubsRow";
+import { homeClubs } from "@/components/home/my-clubs";
+import { findClub } from "@/components/fantasy/club-identity";
 import { footballService, type FootballSeason } from "@/services/football";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -418,6 +421,13 @@ function HomeContent() {
   // there only for a signed-in reader who follows at least one club.
   const followedQ = useQuery(followedTeamIdsQuery(user?.id ?? null));
   const followedIds = followedQ.data ?? [];
+  // "Mes clubs" cards: the favourite, then the followed clubs. Nothing for a
+  // reader signed out or with neither.
+  const myClubs = useMemo(() => {
+    const byId = new Map((clubsQ.data ?? []).map((club) => [club.id, club] as const));
+    const followed = (followedQ.data ?? []).flatMap((id) => byId.get(id) ?? []);
+    return homeClubs(findClub(clubsQ.data, user?.favoriteClubId), followed);
+  }, [clubsQ.data, followedQ.data, user?.favoriteClubId]);
   const [mineOnly, setMineOnly] = useState(false);
   const listDays = mineOnly ? onlyFollowedClubs(upcomingDays, followedIds) : upcomingDays;
   const activeDay = listDays.some((day) => day.key === dayFilter) ? dayFilter : "all";
@@ -558,12 +568,22 @@ function HomeContent() {
           )}
         </div>
         <div className="contents md:flex md:flex-col lg:min-w-0 md:order-2 lg:order-1">
-          {(matchesQ.isError || upcomingDays.length > 0 || homeMatches.length === 0) && (
+          {(matchesQ.isError ||
+            upcomingDays.length > 0 ||
+            homeMatches.length === 0 ||
+            myClubs.length > 0) && (
             <Section className="order-3 lg:mt-0">
               <SectionHeader
                 as="h3"
                 title={t("matches.section.upcoming")}
                 action={<ViewAllLink to="/matches" />}
+              />
+              <MyClubsRow
+                tiles={myClubs}
+                season={currentSeason}
+                seasonReady={seasonsQ.isSuccess}
+                standings={standingsQ.data?.overall ?? []}
+                clubById={clubById}
               />
               {matchesQ.isPending ? (
                 <UiCard

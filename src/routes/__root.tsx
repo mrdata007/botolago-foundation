@@ -22,6 +22,7 @@ import { FirstLaunchLanguage } from "@/components/shell/FirstLaunchLanguage";
 import { markSplashDone } from "@/lib/launch-sequence";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
+import { NativePushBridge } from "@/components/native/NativePushBridge";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
 import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
 import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
@@ -324,6 +325,7 @@ function RootComponent() {
               <AuthPromptDialog />
               <AuthModeBadge />
               <Toaster />
+              <NativePushBridge />
               {ANALYTICS_ACTIVE && <AnalyticsPageviews />}
             </FantasyOwnedProvider>
           </AuthProvider>

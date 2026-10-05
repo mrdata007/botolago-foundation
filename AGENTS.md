@@ -149,3 +149,42 @@ writer, re-measure it after both have stopped before you report it. A number
 taken mid-race is not evidence.
 
 Production writes additionally follow the production rules in `CLAUDE.md`.
+
+## Screen work
+
+The owner set these rules on 2026-10-05 for all future approved screen work,
+including any change that refines an existing screen. Product context is in
+[`PRODUCT.md`](PRODUCT.md). The visual system is in
+[`docs/engineering/DESIGN_SYSTEM_V2.md`](docs/engineering/DESIGN_SYSTEM_V2.md)
+and the code.
+
+1. **Approved scope only.** These rules apply once the owner has approved the
+   screen work. They do not authorise any interface change during setup or a
+   read-only audit.
+2. **Straight in code.** Build directly in code, not from a generated picture.
+   `.impeccable/config.json` records this as `"buildPath": "code"`.
+3. **Inspect first, then write it down.** Before the first edit, inspect the
+   existing screen and write down three things in a brief committed on the
+   branch before any interface change (copy it into the draft pull request
+   description later):
+   - what must be preserved;
+   - the specific improvements being made;
+   - the visual and functional acceptance criteria.
+4. **Separate feature branch.** Implement the approved scope on its own
+   feature branch.
+5. **Validate before asking for review:**
+   - before/after screenshots;
+   - mobile and desktop checks;
+   - French and Arabic checks, including right-to-left layout;
+   - the relevant existing tests.
+
+   Measure the way `CLAUDE.md` (Evidence) describes.
+
+6. **Preserve BotolaGO's identity and business logic.** Fantasy rules, scoring,
+   the gameweek lifecycle and every other business rule stay as they are, and
+   so does the brand identity.
+7. **Draft pull request, then wait.** Open a draft pull request for review. Do
+   not merge it or deploy it without the owner's approval. Deploying covers
+   every path in [`docs/operations/DEPLOYMENT.md`](docs/operations/DEPLOYMENT.md):
+   Publish in Lovable for the website, applying migrations, deploying Edge
+   Functions, and merging to `main`, which sets GitHub Actions running.
