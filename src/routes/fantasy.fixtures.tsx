@@ -177,7 +177,15 @@ function FdrBody() {
     sort.key === key && sort.dir === "desc" ? (
       <ArrowDownWideNarrow className="h-4 w-4" aria-hidden />
     ) : (
-      <ArrowUpNarrowWide className={cn("h-4 w-4", sort.key !== key && "opacity-50")} aria-hidden />
+      // An unsorted column's glyph is dimmed. At half opacity it measured
+      // 2.89:1 on the dark sunken button (BG-0149), under the 3:1 a control's
+      // only graphic needs, so dark drops the dimming: the selected fill on
+      // the sorted column already marks the difference. (Light, unchanged
+      // here, measures 2.2:1: a pre-existing light defect, reported.)
+      <ArrowUpNarrowWide
+        className={cn("h-4 w-4", sort.key !== key && "opacity-50 dark:opacity-100")}
+        aria-hidden
+      />
     );
 
   const sortButtonClass = (key: SortKey) =>
