@@ -16,8 +16,9 @@
 #   ios      uploads the build to App Store Connect, where it appears in TestFlight
 #            for your own team (internal testers). It is NOT submitted for Apple's
 #            review and NOT released.
-#   android  makes a signed .apk (to install on a phone) and .aab (for Google Play)
-#            and keeps them as downloads. It does NOT publish to Google Play.
+#   android  makes a test .apk (to install on a phone) and keeps it as a download.
+#            For now it is signed with Android's automatic test key, so no keystore
+#            is needed; it is not for Google Play. It does NOT publish anything.
 
 definitions:
   # The version people see; the build number is Codemagic's, increasing each build.
@@ -37,9 +38,12 @@ workflows:
     # The Mac machine, because it is the one Codemagic's free monthly minutes cover.
     instance_type: mac_mini_m2
     environment:
-      # Codemagic > Teams > Code signing identities > Android keystores, with this reference name.
-      android_signing:
-        - botolago_keystore
+      # Signing is off for now: the build makes a test apk. To make the Google Play
+      # build, upload the keystore in Codemagic > Teams > Code signing identities >
+      # Android keystores with the reference name botolago_keystore, add it back here as
+      #   android_signing:
+      #     - botolago_keystore
+      # and build `assembleRelease bundleRelease` instead of `assembleDebug`.
       # Codemagic > Teams > Global variables and secrets (or the app's Environment variables),
       # a group with this name holding the secure variable GOOGLE_SERVICES_JSON_BASE64.
       groups:
@@ -63,13 +67,12 @@ workflows:
         script: npx cap sync android
       - name: Set the Android SDK location
         script: echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-      - name: Build the signed apk and aab
+      - name: Build the test apk
         script: |
           cd android
-          ./gradlew assembleRelease bundleRelease
+          ./gradlew assembleDebug
     artifacts:
       - android/app/build/outputs/**/*.apk
-      - android/app/build/outputs/**/*.aab
 
   ios:
     name: BotolaGO iPhone
