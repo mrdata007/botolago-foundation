@@ -45,7 +45,12 @@ export function GameweekRecapCard({
   onShowDetail,
 }: {
   recap: GameweekRecap;
-  nameOf: (playerId: string) => string;
+  /**
+   * A player's display name, or null when the active player list no longer
+   * carries them (a player made inactive after the gameweek). A line that
+   * would need an unknown name is left out, never shown with an id.
+   */
+  nameOf: (playerId: string) => string | null;
   /** The season's current gameweek, for the next action. */
   currentGameweek: Gameweek | null;
   onShowDetail: () => void;
@@ -63,7 +68,8 @@ export function GameweekRecapCard({
   }`;
 
   const lines: string[] = [];
-  if (recap.captain) {
+  const captainName = recap.captain ? nameOf(recap.captain.playerId) : null;
+  if (recap.captain && captainName) {
     const template = recap.captain.viceTookOver
       ? t("fantasy.recap.captain_vice")
       : t("fantasy.recap.captain");
@@ -71,9 +77,7 @@ export function GameweekRecapCard({
     const formula = `${ltr(
       `${nf.format(points)} × ${nf.format(multiplier)} = ${nf.format(counted)}`,
     )} ${pointsUnit(counted, t)}`;
-    lines.push(
-      template.replace("{name}", iso(nameOf(recap.captain.playerId))).replace("{formula}", formula),
-    );
+    lines.push(template.replace("{name}", iso(captainName)).replace("{formula}", formula));
   }
   if (recap.transferHit > 0) {
     lines.push(
@@ -83,10 +87,11 @@ export function GameweekRecapCard({
       ),
     );
   }
-  if (recap.topContributor) {
+  const topName = recap.topContributor ? nameOf(recap.topContributor.playerId) : null;
+  if (recap.topContributor && topName) {
     lines.push(
       t("fantasy.recap.top")
-        .replace("{name}", iso(nameOf(recap.topContributor.playerId)))
+        .replace("{name}", iso(topName))
         .replace("{n}", iso(withUnit(recap.topContributor.counted))),
     );
   }
