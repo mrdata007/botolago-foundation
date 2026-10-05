@@ -1,6 +1,39 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import {
+  ArrowDownUp,
+  ArrowDownWideNarrow,
+  ArrowLeft,
+  ArrowLeftRight,
+  ArrowRight,
+  ArrowRightLeft,
+  ArrowUpNarrowWide,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronLeftIcon,
+  ChevronRight,
+  ChevronRightIcon,
+  CircleHelp,
+  Clock,
+  FileText,
+  Loader2,
+  LogIn,
+  LogOut,
+  type LucideIcon,
+  Newspaper,
+  Play,
+  RefreshCw,
+  RotateCcw,
+  ScrollText,
+  Search,
+  Share2,
+  TrendingUp,
+  Undo2,
+} from "lucide-react";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { UI_DERIVED_TOKENS, UI_THEMED_TOKENS, UI_TOKENS, ui } from "./tokens";
 
@@ -575,6 +608,213 @@ describe("ui-kit: the shared background mesh is direction-neutral", () => {
     for (const token of mirrored) {
       expect(rootDeclarations.has(token) || css.includes(`${token}:`)).toBe(true);
     }
+  });
+});
+
+describe("ui-kit: directional icons mirror once in Arabic (BG-0150)", () => {
+  /**
+   * One unlayered rule in styles.css flips every directional lucide icon under
+   * `html[dir="rtl"]`. Two things broke it before and neither failed a check:
+   *
+   *   - Six icons also carried `rtl:-scale-x-100` or `rtl:rotate-180`. Those
+   *     set the separate `scale`/`rotate` properties, which compose with the
+   *     rule's `transform`, so the icon flipped twice and pointed the French
+   *     way in Arabic.
+   *   - The rule keys on class names, and lucide renders its CANONICAL name,
+   *     not the imported one (`CircleHelp` renders
+   *     `.lucide-circle-question-mark`). A lucide upgrade that renames an icon
+   *     — help-circle became circle-help became circle-question-mark — would
+   *     silently stop it mirroring.
+   *
+   * Keys are the canonical class suffixes; values are every lucide-react
+   * export the app uses that renders that class.
+   */
+  const MIRRORED: Readonly<Record<string, readonly LucideIcon[]>> = {
+    "chevron-left": [ChevronLeft, ChevronLeftIcon],
+    "chevron-right": [ChevronRight, ChevronRightIcon],
+    "arrow-left": [ArrowLeft],
+    "arrow-right": [ArrowRight],
+    "log-in": [LogIn],
+    "log-out": [LogOut],
+    "undo-2": [Undo2],
+    "trending-up": [TrendingUp],
+    "arrow-down-wide-narrow": [ArrowDownWideNarrow],
+    "arrow-up-narrow-wide": [ArrowUpNarrowWide],
+    "circle-question-mark": [CircleHelp],
+    "file-text": [FileText],
+    newspaper: [Newspaper],
+  };
+
+  /** Deliberately drawn the same in both languages (see the styles.css comment). */
+  const NOT_MIRRORED: readonly LucideIcon[] = [
+    ArrowDownUp,
+    ArrowLeftRight,
+    ArrowRightLeft,
+    Check,
+    ChevronDown,
+    Clock,
+    Loader2,
+    Play,
+    RefreshCw,
+    RotateCcw,
+    ScrollText,
+    Search,
+    Share2,
+  ];
+
+  const lucideClasses = (Icon: LucideIcon) => {
+    const markup = renderToStaticMarkup(createElement(Icon));
+    const classAttr = markup.match(/<svg[^>]*\sclass="([^"]*)"/)?.[1] ?? "";
+    return classAttr.split(/\s+/).filter(Boolean);
+  };
+
+  const cssCode = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const rules = [...cssCode.matchAll(/html\[dir="rtl"\]\s*:is\(([^)]*)\)\s*\{([^}]*)\}/g)];
+
+  it("states the mirror list once, as one unlayered :is() rule that only flips", () => {
+    expect(rules.length).toBe(1);
+    const [rule] = rules;
+    expect(rule[2].replace(/\s+/g, " ").trim()).toBe("transform: scaleX(-1);");
+    // Unlayered and outside any at-rule: brace depth 0 where the rule starts.
+    const before = cssCode.slice(0, rule.index);
+    const depth = (before.match(/\{/g)?.length ?? 0) - (before.match(/\}/g)?.length ?? 0);
+    expect(depth).toBe(0);
+  });
+
+  it("mirrors exactly the MIRRORED classes", () => {
+    const selectors = (rules[0]?.[1] ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const malformed = selectors.filter((s) => !/^\.lucide-[a-z0-9-]+$/.test(s));
+    expect(malformed).toEqual([]);
+    expect(selectors.map((s) => s.slice(".lucide-".length)).sort()).toEqual(
+      Object.keys(MIRRORED).sort(),
+    );
+  });
+
+  it("names no lucide class anywhere else in the stylesheet", () => {
+    // A second rule elsewhere is how the list drifts into two lists.
+    const mentions = [...cssCode.matchAll(/\.lucide-[a-z0-9-]+/g)].length;
+    expect(mentions).toBe(Object.keys(MIRRORED).length);
+  });
+
+  for (const [name, icons] of Object.entries(MIRRORED)) {
+    it(`every component listed for .lucide-${name} still renders that class`, () => {
+      for (const Icon of icons) {
+        expect({ icon: Icon.displayName, classes: lucideClasses(Icon) }).toEqual({
+          icon: Icon.displayName,
+          classes: expect.arrayContaining([`lucide-${name}`]),
+        });
+      }
+    });
+  }
+
+  it("leaves the deliberately unmirrored icons out of the rule", () => {
+    const mirrored = new Set(Object.keys(MIRRORED).map((name) => `lucide-${name}`));
+    const offenders = NOT_MIRRORED.flatMap((Icon) =>
+      lucideClasses(Icon)
+        .filter((cls) => mirrored.has(cls))
+        .map((cls) => `${Icon.displayName}: ${cls}`),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  /** Local names bound to lucide-react icons in one file: imports and `const X = Icon;`. */
+  const lucideLocals = (code: string) => {
+    const names = new Set<string>();
+    for (const m of code.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']lucide-react["']/g)) {
+      for (const part of m[1].split(",")) {
+        const spec = part.trim();
+        if (!spec || spec.startsWith("type ")) continue;
+        const parts = spec.split(/\s+as\s+/);
+        names.add(parts[parts.length - 1].trim());
+      }
+    }
+    for (const m of code.matchAll(/\bconst\s+([A-Z]\w*)\s*=\s*([A-Z]\w*)\s*;/g)) {
+      if (names.has(m[2])) names.add(m[1]);
+    }
+    return names;
+  };
+
+  /** The attribute text of every `<Name …>` opening tag, braces and strings respected. */
+  const openingTags = (code: string, names: Set<string>) => {
+    const tags: { name: string; attrs: string }[] = [];
+    for (const m of code.matchAll(/<([A-Z]\w*)(?=[\s/>])/g)) {
+      if (!names.has(m[1])) continue;
+      let index = (m.index ?? 0) + m[0].length;
+      let depth = 0;
+      let quote: string | null = null;
+      const start = index;
+      while (index < code.length) {
+        const char = code[index];
+        if (quote) {
+          if (char === "\\") index += 1;
+          else if (char === quote) quote = null;
+        } else if (char === '"' || char === "'" || char === "`") quote = char;
+        else if (char === "{") depth += 1;
+        else if (char === "}") depth -= 1;
+        else if (char === ">" && depth === 0) break;
+        index += 1;
+      }
+      tags.push({ name: m[1], attrs: code.slice(start, index) });
+    }
+    return tags;
+  };
+
+  /** An `rtl:` scale or rotate on the icon itself composes with the rule. */
+  const ICON_FLIP = /(?:^|[\s"'`{])(rtl:(?:[^\s"'`:]+:)*-?(?:scale|rotate)-[^\s"'`]*)/;
+  /** An `rtl:` variant that reaches into descendant svgs to scale or rotate them. */
+  const DESCENDANT_FLIP = /(?:^|[\s"'`{])(rtl:[^\s"'`]*svg[^\s"'`]*:-?(?:scale|rotate)-[^\s"'`]*)/g;
+
+  const flipsIn = (code: string) => {
+    const tags = openingTags(code, lucideLocals(code));
+    const onIcons = tags.flatMap(({ name, attrs }) => {
+      const hit = attrs.match(ICON_FLIP)?.[1];
+      return hit ? [`<${name} ${hit}>`] : [];
+    });
+    const descendant = [...code.matchAll(DESCENDANT_FLIP)].map((m) => m[1]);
+    return { tags: tags.length, offenders: [...onIcons, ...descendant] };
+  };
+
+  it("the flip detector catches the shapes that shipped, and not a photo", () => {
+    const sample = [
+      'import { ChevronLeft, ChevronRight as Next, type LucideIcon } from "lucide-react";',
+      "const Back = ChevronLeft;",
+      '<Next className="size-4 rtl:-scale-x-100" aria-hidden />',
+      "<Back",
+      "  onClick={() => (a > b ? go() : null)}",
+      '  className={cn("h-5 w-5", "rtl:rotate-180")}',
+      "/>",
+      "<DayPicker className={String.raw`rtl:**:[.rdp-button\\_next>svg]:rotate-180`} />",
+      '<img className="object-cover rtl:-scale-x-100" alt="" />',
+      '<ChevronLeft className="size-4" aria-hidden />',
+    ].join("\n");
+    expect(flipsIn(sample)).toEqual({
+      tags: 3,
+      offenders: [
+        "<Next rtl:-scale-x-100>",
+        "<Back rtl:rotate-180>",
+        "rtl:**:[.rdp-button\\_next>svg]:rotate-180",
+      ],
+    });
+  });
+
+  it("no lucide icon in src carries an rtl: flip of its own", () => {
+    const srcDir = join(ROOT, "src");
+    const files = (readdirSync(srcDir, { recursive: true }) as string[])
+      .filter((file) => file.endsWith(".tsx"))
+      .sort();
+    let tags = 0;
+    const offenders: string[] = [];
+    for (const file of files) {
+      const found = flipsIn(stripComments(readFileSync(join(srcDir, file), "utf8")));
+      tags += found.tags;
+      offenders.push(...found.offenders.map((hit) => `${file}: ${hit}`));
+    }
+    // The scan has to be finding icons for "no offenders" to mean anything.
+    expect(tags).toBeGreaterThan(200);
+    expect(offenders).toEqual([]);
   });
 });
 
