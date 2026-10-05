@@ -256,10 +256,12 @@ the arithmetic, which is why a clean result had hidden them:
 5. **Measuring text nobody can see.** A club crest's fallback initials ("AMA")
    sit under the crest image, which covers them with an opaque plate. Pass 2
    measured the image and reported 1.82:1 and 1.27:1 on `/clubs/<id>`: four
-   failures on text that is never on screen. A text now counts only if the
-   topmost element at the centre of its first line is its own element (or a
-   descendant or an ancestor), hit-tested with `pointer-events` forced on, and
-   only if `checkVisibility()` passes. `PROBE_LIST_HIDDEN=1` lists what was
+   failures on text that is never on screen. A text now counts only if nothing
+   that paints (an image, an SVG, a background, a fill at least 30% opaque)
+   sits above the centre of its first line, hit-tested with `pointer-events`
+   forced on, and only if `checkVisibility()` passes. "Topmost element" alone
+   is not the test: a card's transparent stretched link sits above every text
+   in the card and hides none of it. `PROBE_LIST_HIDDEN=1` lists what was
    skipped and what covered it.
 6. **Measuring only part of the page.** Pass 1 skipped any element with child
    elements, so a button with an icon beside its label was never measured, and

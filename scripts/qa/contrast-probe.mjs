@@ -68,13 +68,14 @@
  *   3. TEXT NOBODY CAN SEE. The club crest's fallback initials ("AMA") sit
  *      UNDER the crest image, which covers them with an opaque plate. Pass 2
  *      measured the image and reported 1.82:1 and 1.27:1 — four failures on
- *      text that is never on screen. A text now counts only if the topmost
- *      element at the centre of its first line is its own element, one of its
- *      descendants or one of its ancestors (hit-tested with pointer-events
- *      forced on, so a `pointer-events: none` label is not mistaken for
- *      hidden), and only if `checkVisibility()` passes (no `opacity: 0` or
- *      `visibility: hidden` anywhere above it). Text covered by a sticky bar
- *      at one stop is tried again at the next.
+ *      text that is never on screen. A text now counts only if nothing that
+ *      PAINTS sits above the centre of its first line (an image, an SVG, a
+ *      background, a fill at least 30% opaque; a transparent stretched link
+ *      over a card is not cover), hit-tested with pointer-events forced on so
+ *      a `pointer-events: none` layer is seen, and only if
+ *      `checkVisibility()` passes (no `opacity: 0` or `visibility: hidden`
+ *      anywhere above it). Text covered by a sticky bar at one stop is tried
+ *      again at the next.
  *
  * Horizontally scrolled rails are measured only as far as they are on screen.
  */
@@ -175,10 +176,42 @@ const NOMINATE = (all) => {
   };
   // Hit-test with pointer-events forced on: a label drawn with
   // `pointer-events: none` over something else is visible, but
-  // elementFromPoint would look straight through it.
+  // elementsFromPoint would look straight through it.
   const force = document.createElement("style");
   force.textContent = "*, *::before, *::after { pointer-events: auto !important; }";
   document.head.append(force);
+  const opacityOf = (e) => {
+    let o = 1;
+    for (let a = e; a; a = a.parentElement) o *= parseFloat(getComputedStyle(a).opacity) || 0;
+    return o;
+  };
+  const alpha = (css) => {
+    g.clearRect(0, 0, 1, 1);
+    g.fillStyle = "rgba(0,0,0,0)";
+    g.fillStyle = css;
+    g.fillRect(0, 0, 1, 1);
+    return g.getImageData(0, 0, 1, 1).data[3] / 255;
+  };
+  // Does this element put paint over what is under it? A transparent box
+  // does not: a card's stretched link (`absolute inset-0`) sits on top of
+  // every text in the card and hides none of it.
+  const paints = (e) => {
+    if (opacityOf(e) < 0.05) return false;
+    if (/^(IMG|VIDEO|CANVAS|IFRAME|PICTURE)$/.test(e.tagName)) return true;
+    if (e instanceof SVGGraphicsElement) return true;
+    const cs = getComputedStyle(e);
+    return cs.backgroundImage !== "none" || alpha(cs.backgroundColor) >= 0.3;
+  };
+  // The first element above the text that paints over it, or null. The walk
+  // stops at the text's own element, one of its descendants or one of its
+  // ancestors: nothing below that can cover it.
+  const coveredBy = (el, x, y) => {
+    for (const e of document.elementsFromPoint(x, y)) {
+      if (e === el || el.contains(e) || e.contains(el)) return null;
+      if (paints(e)) return e;
+    }
+    return null;
+  };
 
   const suspects = [];
   let unresolved = 0;
@@ -190,6 +223,10 @@ const NOMINATE = (all) => {
     const el = node.parentElement;
     if (!el || el.closest("script, style, noscript, template, title")) continue;
     if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+    // Screen-reader-only text: a 1px clipped box that paints nothing, whose
+    // Range still reports the full width of the words.
+    const own = el.getBoundingClientRect();
+    if (own.width <= 1 || own.height <= 1) continue;
     const range = document.createRange();
     range.selectNodeContents(node);
     const lines = [...range.getClientRects()].filter((r) => r.width >= 2 && r.height >= 4);
@@ -198,14 +235,11 @@ const NOMINATE = (all) => {
     // Fully on screen at this stop, or wait for a later one.
     if (box.top < 0 || box.left < 0 || box.bottom > vh || box.right > vw) continue;
     const first = lines[0];
-    const hit = document.elementFromPoint(
-      first.left + first.width / 2,
-      first.top + first.height / 2,
-    );
-    if (!hit || !(hit === el || el.contains(hit) || hit.contains(el))) {
+    const cover = coveredBy(el, first.left + first.width / 2, first.top + first.height / 2);
+    if (cover) {
       // Covered: under an image, a sticky bar, a sheet. Not seen yet, so a
       // later stop that uncovers it still measures it.
-      if (!covered.has(node)) covered.set(node, `"${text.slice(0, 26)}" under ${where(hit ?? el)}`);
+      if (!covered.has(node)) covered.set(node, `"${text.slice(0, 26)}" under ${where(cover)}`);
       continue;
     }
     seen.add(node);
