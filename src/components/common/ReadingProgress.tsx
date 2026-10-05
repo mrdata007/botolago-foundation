@@ -39,7 +39,12 @@ export function ReadingProgress() {
   }, []);
 
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px]">
+    // At the bottom of the status bar in the phone app (BG-0151); the inset
+    // is 0 in a browser, so the bar stays on the top edge there.
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-x-0 top-[env(safe-area-inset-top,0px)] z-[60] h-[3px]"
+    >
       <div
         ref={bar}
         className="h-full w-full ltr:origin-left rtl:origin-right"

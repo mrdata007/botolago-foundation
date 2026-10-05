@@ -568,14 +568,16 @@ export function LandingPage({
       </section>
 
       {/* A phone's way in once the hero's button has scrolled away. There is
-          no bottom navigation on this page for it to cover. */}
+          no bottom navigation on this page for it to cover. One bottom
+          padding, the larger of the home-indicator inset and 12px: it used to
+          be `ui.safe.bottom` followed by `pb-3`, and class merging kept only
+          the later `pb-3`, so the inset was never applied (BG-0151). */}
       <div
         aria-hidden={!showSticky}
         inert={!showSticky}
         className={cn(
           "fixed inset-x-0 bottom-0 z-30 border-t border-[color:var(--ui-mesh-rule)] bg-[color:var(--ui-ink-deep)] px-[var(--ui-gutter)] pt-3 sm:hidden",
-          ui.safe.bottom,
-          "pb-3 transition-[transform,visibility] duration-300 ease-out motion-reduce:transition-none",
+          "pb-[max(env(safe-area-inset-bottom),0.75rem)] transition-[transform,visibility] duration-300 ease-out motion-reduce:transition-none",
           showSticky ? "visible translate-y-0" : "invisible translate-y-full",
         )}
         data-testid="landing-sticky-cta"

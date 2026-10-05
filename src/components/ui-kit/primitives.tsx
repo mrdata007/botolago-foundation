@@ -1526,7 +1526,11 @@ export function UiModal({
         <UiScrim />
         <Dialog.Content
           className={cn(
-            "fixed inset-0 z-50 m-auto flex h-fit max-h-[88dvh] w-[min(100%-2rem,26rem)] flex-col overflow-hidden",
+            // The height cap also keeps a very tall dialog off the status bar
+            // and the home indicator in the phone app (BG-0151): 2rem shorter
+            // than the room between the two insets, centred on the screen.
+            // With no insets it is 88dvh, as before, on any screen over 267px.
+            "fixed inset-0 z-50 m-auto flex h-fit max-h-[min(88dvh,calc(100dvh_-_env(safe-area-inset-top,0px)_-_env(safe-area-inset-bottom,0px)_-_2rem))] w-[min(100%-2rem,26rem)] flex-col overflow-hidden",
             "rounded-[var(--ui-radius-sheet)]",
             ui.surface.overlay,
             "data-[state=open]:animate-in data-[state=closed]:animate-out",

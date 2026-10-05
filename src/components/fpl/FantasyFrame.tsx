@@ -83,9 +83,25 @@ export function FantasyFrame({
       {topBar === "always" ? (
         <TopBar />
       ) : (
-        <div className="hidden md:contents">
-          <TopBar />
-        </div>
+        <>
+          <div className="hidden md:contents">
+            <TopBar />
+          </div>
+          {/* STATUS BAR (BG-0151) — on a phone the inner screen's `UiHeader`
+              does not stick, so in the app (`viewport-fit=cover`, transparent
+              status bar) scrolled content would pass under the clock. This
+              strip is exactly as tall as the status bar, in the header's own
+              surface, and stays there; the zero-height sticky host takes no
+              room in the flow. 0px tall in a browser. */}
+          <div aria-hidden className="pointer-events-none sticky top-0 z-30 h-0 md:hidden">
+            <div
+              className={cn(
+                "absolute inset-x-0 top-0 h-[env(safe-area-inset-top,0px)]",
+                ui.surface.bar,
+              )}
+            />
+          </div>
+        </>
       )}
       <main
         className={cn(

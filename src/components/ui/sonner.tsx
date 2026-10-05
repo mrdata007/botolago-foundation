@@ -21,7 +21,21 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       className="toaster group"
       position="top-center"
-      offset={16}
+      // 16px below the status bar in the phone app (`viewport-fit=cover`,
+      // BG-0151); the inset is 0 in a browser, so 16px from the top there.
+      // `mobileOffset` too: below 600px sonner reads that set, not `offset`.
+      offset={{
+        top: "calc(env(safe-area-inset-top, 0px) + 16px)",
+        right: 16,
+        bottom: 16,
+        left: 16,
+      }}
+      mobileOffset={{
+        top: "calc(env(safe-area-inset-top, 0px) + 16px)",
+        right: 16,
+        bottom: 16,
+        left: 16,
+      }}
       duration={3600}
       gap={8}
       containerAriaLabel={t("toast.region")}

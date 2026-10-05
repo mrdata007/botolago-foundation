@@ -212,7 +212,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      // `viewport-fit=cover`: the phone app's web view fills the screen, and only
+      // with `cover` do iOS and Capacitor's Android SystemBars report the real
+      // safe-area insets that `ui.safe.*` and `--topbar-h` pad by. Every inset
+      // is 0 on a screen without one, so nothing moves there (BG-0151).
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "BotolaGO — Actualités, matchs et Fantasy du football marocain" },
       {
         name: "description",

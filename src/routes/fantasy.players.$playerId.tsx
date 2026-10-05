@@ -418,9 +418,10 @@ function PlayerDetailPage() {
             Arabic). "Comparer" opens the players list with this player already
             picked for comparison; "Recruter" opens the transfer flow, as it
             does on the top players screen — bringing a player in always means
-            choosing who goes out first. */}
+            choosing who goes out first. The bottom padding is the larger of
+            the home-indicator inset and 12px (BG-0151). */}
         <div
-          className="sticky bottom-0 z-20 mt-2 flex gap-2.5 px-4 pb-3 pt-6"
+          className="sticky bottom-0 z-20 mt-2 flex gap-2.5 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-6"
           style={
             {
               backgroundImage:
