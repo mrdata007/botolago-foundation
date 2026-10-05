@@ -246,14 +246,52 @@ syntax, `xcode: latest`, the machine type), signing, the upload to App Store
 Connect, Apple's and Google's servers, real tokens, real delivery, and any
 real phone. The stand-in for Capacitor's bridge is not Apple or Google.
 
+## Screen edges: notch, status bar and home indicator
+
+The shell draws the site under the status bar and the home indicator (iPhone) or
+the system bars (Android 15 and later), and the site pads itself clear of them.
+That works only because the site's viewport meta says `viewport-fit=cover`
+(`src/routes/__root.tsx`, BG-0151). Without it, iOS reports every
+`env(safe-area-inset-*)` as 0, so the site's safe-area padding never switches on,
+and Capacitor's Android `SystemBars` keeps the page boxed in.
+
+What pads itself by the insets:
+
+- the top bar and every screen header (`ui.safe.top`), the bottom navigation and
+  sheets (`ui.safe.bottom`), and the bars placed under or above them
+  (`--topbar-h`, `--bottomnav-h`);
+- the bottom bars that do not sit above the navigation (the Fantasy player
+  page's actions, the bars that drop to the bottom edge from 768px wide, the
+  Landing page's button), toasts, the reading-progress bar and centred dialogs;
+- on Fantasy inner screens, a strip exactly as tall as the status bar, so
+  scrolled content does not show under the clock;
+- in landscape, the page itself (`body`), padded on both sides by the larger side
+  inset, so content keeps clear of the notch.
+
+Every inset is 0 in an ordinary browser window, so the website does not change
+there. `capacitor.config.ts` also sets `SystemBars.initialViewportFitValueHint:
+"cover"`, an Android-only hint that avoids a jump on first paint. Like any change
+to that file it needs a new native build; the site changes reach the app on
+Publish.
+
+This was checked only in Chromium with emulated insets. To check on the first
+builds, in French and Arabic: a notched or Dynamic Island iPhone in portrait and
+landscape, an iPad, and an Android 15+ phone with WebView 140 or later and one
+with an older WebView. Known to need a later change: the status bar's text colour
+follows the phone's light or dark setting, not the page, so it can be dark over
+the dark top bands of the sign-in, welcome and Landing screens; and the Pépites
+reveal's bottom padding, which belongs to the Pépites restyle. The iPhone app
+allows landscape and iPad (Capacitor's template defaults); whether to lock it to
+portrait is an open question.
+
 ## Still open before a store submission
 
 Not part of the push work, and not done here: Google's sign-in is refused inside a
 web view and sign-in links open in the system browser, so the app needs its own
 sign-in redirect handling; real account deletion with a stated timeline and
 confirmation; the prize terms; removing test clubs and Gameweek state from
-production data; the share-link origin; `viewport-fit=cover` for iPhone notches;
-the privacy policy and store forms (push is not yet in the policy's purposes, and
+production data; the share-link origin; checking the screen edges on real phones
+(see "Screen edges" above); the privacy policy and store forms (push is not yet in the policy's purposes, and
 phone tokens have no row in its retention table); and Apple's rule against thin web
 wrappers (the app must offer more than the website: push alerts count, and should
 be demonstrable to the reviewer).

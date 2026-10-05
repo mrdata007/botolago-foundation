@@ -405,5 +405,7 @@ Known gaps (**Unknown** whether intended):
 - No screen-reader testing is recorded.
 - Arabic readers see a French first paint on full page loads.
 - Browser tests run in Chromium only; there is no Safari/WebKit or real-device coverage.
-- The viewport meta lacks `viewport-fit=cover`, which safe-area handling inside the Capacitor shell
-  depends on.
+- Decided 2026-10-05 (BG-0151): the viewport meta now carries `viewport-fit=cover`, which
+  safe-area handling inside the Capacitor shell depends on, with the safe-area fixes it needs.
+  It is checked only in Chromium with emulated insets; how it looks on a real notched iPhone, an
+  iPad and an Android 15+ phone is not yet checked.

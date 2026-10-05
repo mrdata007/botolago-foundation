@@ -472,7 +472,21 @@ for `rounded-lg` (the legacy `--radius`) for a card.
 
 - `ui.focus` — the one focus ring, drawn in `--ui-ink-fg` so it is visible in
   both themes. Put it on every interactive element you build.
-- `ui.safe.top` / `ui.safe.bottom` — safe-area padding.
+- `ui.safe.top` / `ui.safe.bottom` — safe-area padding:
+  `max(env(safe-area-inset-*), fallback)`, so a screen without insets keeps the
+  fallback. The insets are live because the viewport meta says
+  `viewport-fit=cover` (BG-0151); without it iOS reports them as 0. A bar pinned
+  to the bottom edge pads by the inset itself — `ui.safe.bottom`, or
+  `pb-[max(env(safe-area-inset-bottom),<its own padding>)]` when its padding is
+  not 0.5rem — and never as `ui.safe.bottom` followed by another `pb-*` in the
+  same `cn()`, which merging drops (the Landing button lost its inset that way).
+  `safe-area.test.ts` checks every `fixed`/`sticky` `bottom-0`. Two treatments
+  live outside the kit: `body` is padded on both sides by the larger side inset
+  (`styles.css`), a letterbox that keeps landscape content clear of the notch
+  without touching `--ui-gutter`; and `FantasyFrame`'s inner screens, whose
+  `UiHeader` does not stick, carry a sticky strip exactly as tall as the status
+  bar in `ui.surface.bar`, so scrolled content does not show under the clock.
+  Both are 0px in a browser.
 - `ui.rule.block` / `.blockStart` / `.inline` / `.all` — hairline dividers on
   logical edges; `ui.rule.strong` — a ≥ 3:1 control boundary.
 - `ui.shadow.card` / `.raised` / `.lifted` / `.overlay` — the elevation set.

@@ -1463,6 +1463,33 @@ tasks:
       before it gave a right one (82 findings, then 62, then 13, now 0), and that history is
       the reason to open an element before believing a count.
 
+  BG-0151:
+    title: viewport-fit=cover, with the safe-area fixes it needs (phone app status bar, home indicator, notch)
+    area: design
+    severity: P1
+    user_impact: >
+      In the phone app the web view fills the screen. Without viewport-fit=cover, iOS reports
+      every safe-area inset as 0, so the top bar would sit under the clock and the bottom
+      navigation on the home indicator; Capacitor's Android SystemBars keeps the page boxed in.
+    owner: Chief
+    state: RUNNING # branch claude/viewport-fit-cover; owner decision 2026-10-05; awaiting review, not merged
+    depends_on: []
+    brief: docs/engineering/tasks/BG-0151/screen-brief.md
+    changes:
+      - "src/routes/__root.tsx: viewport meta width=device-width, initial-scale=1, viewport-fit=cover"
+      - "src/styles.css body: padding-inline is the larger side inset (symmetric, 0 without side insets), so landscape content keeps clear of the notch"
+      - "toasts 16px below the status bar; the reading-progress bar at its bottom; UiModal's height capped inside the insets"
+      - "bottom bars pad by max(env(safe-area-inset-bottom), their own padding): the Fantasy player actions, and from md the Pronostics, Fantasy team, squad builder and transfer confirmation bars"
+      - "LandingPage sticky button: its ui.safe.bottom was dropped by class merging (a later pb-3 won); now one pb-[max(env(safe-area-inset-bottom),0.75rem)]"
+      - "FantasyFrame inner screens on phones: a sticky strip exactly as tall as the status bar, in ui.surface.bar, so scrolled content does not show under the clock (0px in a browser)"
+      - "capacitor.config.ts: SystemBars.initialViewportFitValueHint cover (Android, next native build)"
+      - "src/components/shell/safe-area.test.ts: pins the viewport meta and the body letterbox; scans every bottom-0 class in src/**/*.tsx for a safe-area treatment, with two checked exceptions (UiSheet, GoalMoment)"
+    remaining:
+      - "device check, in French and Arabic: a notched or Dynamic Island iPhone in portrait and landscape, an iPad, an Android 15+ phone with WebView 140 or later and one older. Chromium applies emulated insets whatever the meta says, so the iOS gate itself is unproven here"
+      - "src/components/pepites/PepitesReveal.tsx pb-6 -> pb-[max(env(safe-area-inset-bottom),1.5rem)], owned by the Pepites restyle"
+      - "status bar text colour follows the phone, not the page: SystemBars.setStyle on theme change (dark-mode follow-up), and dark top bands may need a per-screen style"
+      - "LandingPage final section: below lg its bottom padding is 8px, not py-14's 56px (ui.safe.bottom after py-14); existing, out of scope"
+
   BG-0126:
     title: GameweekSelector renders its value at 1.12:1 in dark and its controls at 36px
     area: design
