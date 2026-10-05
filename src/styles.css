@@ -1519,12 +1519,16 @@ html[dir="rtl"] .lucide-arrow-left {
   }
 }
 
+/* Two and a half turns, ending at rotate(0): the ball lands the way up it is
+   drawn, which is the logo's ball the way up it is in the wordmark. Spinning
+   from 0 to 900deg instead turns the same way at the same speed but lands it
+   upside down. */
 @keyframes splash-ball-spin {
   0% {
-    transform: rotate(0);
+    transform: rotate(calc(-900deg * var(--splash-dir)));
   }
   100% {
-    transform: rotate(calc(900deg * var(--splash-dir)));
+    transform: rotate(0);
   }
 }
 

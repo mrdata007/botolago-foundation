@@ -40,8 +40,20 @@ const BEAM =
 const LAMP_HALO =
   "radial-gradient(closest-side, hsl(205 100% 90% / 0.55), hsl(212 100% 70% / 0.18) 45%, transparent)";
 
+// The ball from the logo: the same path as the one in
+// src/assets/brand/botolago-mark-light.svg, moved and scaled into a 32-unit
+// box and rounded to two decimals (svgo, applyTransforms). Inline rather than
+// an image, so it is painted with the server HTML and needs no request of its
+// own. If the logo's ball changes, derive this again from that file.
+const LOGO_BALL =
+  "M16 0a16 16 0 1 0 0 32 16 16 0 0 0 0-32M5.37 8.64l.3.57c.48.9.98 1.82 1.65 2.62a20 20 0 0 0-1.65 6.31 10 10 0 0 0-2.5 1.82 7 7 0 0 1-1.02-3.33c-.1-1.81.34-5.12 1.38-6.36.23-.28 1.5-1.45 1.84-1.63M4.3 8.58c1.25-2.17 3.27-4 5.78-5.22l-.07.2a21 21 0 0 0-3.73 3.2q-.21.24-.43.55c-.16.22-.33.46-.46.57l-.32.18q-.22.1-.38.2zm3.76 3.5 5.25-1.87c.37.2 2.26 1.85 2.68 2.27.34.34 1.61 1.73 1.75 1.98-.53 1.87-.9 3.88-1.14 6.12q-2.58 1.49-4.66 1.69c-.25.02-1.03.1-1.26-.04L6.4 18.3c.23-2 .57-4.3 1.66-6.2M25.6 8.56c.84 0 1.94.11 2.58.68.24.21.69 1.25.93 1.91.6 1.67 1.36 5.48.46 7.15-.3.57-.36.63-1 .67a11 11 0 0 1-1.6-.05c-.06-.15-.2-.7-.29-1.03l-.18-.69a15 15 0 0 0-1.83-3.63l.23-.55q.2-.45.36-.96c.31-1.1.44-2.4.34-3.5m-.7 1.34a8 8 0 0 1-.87 3.22l-.92.08c-1.26.11-2.46.21-3.7.47l-.54.16c-.2.07-.49.17-.54.17-.13-.05-.58-.62-.77-.86l-.27-.32a27 27 0 0 0-3.55-3.15l1.16-4.55a14 14 0 0 1 5.06-.82q.16 0 .28-.04l.13-.03c.58.06 4.44 3.56 4.54 4.14.05.27.03.97 0 1.53m-4.39-6.7q-.1.16-.17.31c-1.37-.01-2.8.16-4.5.53q-.24.06-.58.18c-.27.1-.65.22-.76.21-.09 0-.44-.14-.67-.23q-.4-.16-.62-.23c-.83-.22-1.67-.39-2.4-.52l.04-.1c.06-.16.13-.36.2-.42.13-.1.97-.36 1.48-.5a14.4 14.4 0 0 1 8.15.35c.05.04-.1.3-.17.42M7.72 27.04a9 9 0 0 0 1.15.32c.13.03.41.05.71.07l.55.05.17.18q.24.26.36.36.62.5 1.44 1.01l1.07.5a14 14 0 0 1-5.45-2.5m2.89-.02a8 8 0 0 1 .13-1.1l.09-.62q.08-1.07.1-2.27c1.94.02 4-.61 5.97-1.83h.08q2.04 1.49 4.64 2.6c.12 1.13-.1 3.37-.99 4.12-.83.71-4.12 1.74-5.2 1.73-.3 0-1.47-.49-2.04-.75-.65-.3-2.66-1.55-2.78-1.88m11.73-3.3a13.4 13.4 0 0 0 4.47-4.07l.47.02c.56.02 1.14.05 1.73-.02v.5q.04.4 0 .72c-.27 1.82-3.1 5.06-4.53 6.12-.98.72-1.8.88-2.85.86.64-1.47.88-2.82.71-4.14";
+
 // The flare along the ground line as the ball lands. Symmetric.
 const FLARE = "linear-gradient(to right, transparent, hsl(205 100% 92%), transparent)";
+// Its glow: each drop-shadow blurs everything before it, so three stack into
+// a bright core and a wide bloom.
+const FLARE_GLOW =
+  "drop-shadow(0 0 4px hsl(205 100% 80%)) drop-shadow(0 0 12px hsl(210 100% 70%)) drop-shadow(0 0 24px hsl(214 100% 65% / 0.8))";
 
 // One dot of the ball's tail: a soft spot of the floodlights' light.
 const TAIL_DOT =
@@ -218,7 +230,10 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
         </div>
 
         {/* The pitch's ground line: a glowing rule the ball lands on, which
-            flares as it takes the ball's weight. */}
+            flares as it takes the ball's weight. The flare's glow is made of
+            drop-shadows, which follow its faded ends; a box-shadow is never
+            drawn under its own box, so it left a dark capsule where the
+            gradient is clear. */}
         <span aria-hidden="true" className="relative flex">
           <span
             className="h-[3px] w-28 origin-center rounded-full shadow-[0_0_18px_hsl(214_100%_65%_/_0.7)] motion-safe:animate-[splash-bar_760ms_cubic-bezier(0.22,1,0.36,1)_300ms_both]"
@@ -231,8 +246,8 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
             }}
           />
           <span
-            className="pointer-events-none absolute inset-0 hidden rounded-full shadow-[0_0_22px_4px_hsl(210_100%_70%_/_0.75)] motion-safe:block motion-safe:animate-[splash-flare_900ms_cubic-bezier(0.22,1,0.36,1)_1000ms_both]"
-            style={{ background: FLARE }}
+            className="pointer-events-none absolute inset-0 hidden rounded-full motion-safe:block motion-safe:animate-[splash-flare_900ms_cubic-bezier(0.22,1,0.36,1)_1000ms_both]"
+            style={{ background: FLARE, filter: FLARE_GLOW }}
           />
         </span>
 
@@ -287,8 +302,10 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           1000ms in from the leading side) and the height (an arc, then a
           small bounce). Splitting them is what makes a straight-line slide
           read as a kick. Once it has settled, the outer layer sinks it into
-          the line. It is `hidden` unless motion is allowed — mid-flight is
-          not a frame worth freezing for reduced motion.
+          the line. It is the logo's own ball, and its spin ends where it
+          started, so the ball that lands sits the same way up as the one in
+          the wordmark above. It is `hidden` unless motion is allowed —
+          mid-flight is not a frame worth freezing for reduced motion.
         */}
         <span
           aria-hidden="true"
@@ -300,34 +317,10 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
                 viewBox="0 0 32 32"
                 className="relative h-full w-full drop-shadow-[0_0_10px_hsl(214_100%_75%_/_0.8)] motion-safe:animate-[splash-ball-spin_1000ms_linear_both]"
               >
-                <defs>
-                  <radialGradient id="splash-ball-shade" cx="35%" cy="30%" r="75%">
-                    <stop offset="0" stopColor="#ffffff" />
-                    <stop offset="0.6" stopColor="#e4ebf7" />
-                    <stop offset="1" stopColor="#97accc" />
-                  </radialGradient>
-                  <clipPath id="splash-ball-clip">
-                    <circle cx="16" cy="16" r="15" />
-                  </clipPath>
-                </defs>
-                <circle cx="16" cy="16" r="15" fill="url(#splash-ball-shade)" />
-                {/* A classic ball: a centre panel, the five panels around
-                    it showing at the rim, and the seams between them. */}
-                <g fill="#0b1630" clipPath="url(#splash-ball-clip)">
-                  <polygon points="16,10.6 21.1,14.3 19.2,20.4 12.8,20.4 10.9,14.3" />
-                  <polygon points="16,4.4 11.2,0.9 13.1,-4.6 18.9,-4.6 20.8,0.9" />
-                  <polygon points="27,12.4 28.8,6.8 34.7,6.8 36.5,12.4 31.8,15.9" />
-                  <polygon points="22.8,25.4 28.7,25.4 30.5,31 25.8,34.4 21,31" />
-                  <polygon points="9.2,25.4 11,31 6.2,34.4 1.5,31 3.3,25.4" />
-                  <polygon points="5,12.4 0.2,15.9 -4.5,12.4 -2.7,6.8 3.2,6.8" />
-                </g>
-                <path
-                  d="M16 10.6V4.4M21.1 14.3l5.9-1.9M19.2 20.4l3.6 5M12.8 20.4l-3.6 5M10.9 14.3L5 12.4"
-                  stroke="#0b1630"
-                  strokeWidth="1.1"
-                  strokeLinecap="round"
-                  fill="none"
-                />
+                {/* The panels are holes in the logo's ball, so a disc behind
+                    fills them: open, they would show the beams through it. */}
+                <circle cx="16" cy="16" r="15" fill="#0b1630" />
+                <path fill="#ffffff" d={LOGO_BALL} />
               </svg>
             </span>
           </span>
