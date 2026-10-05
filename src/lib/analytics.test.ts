@@ -71,6 +71,13 @@ function masked(path: string): string {
   return hit ?? path;
 }
 
+describe("public gameweek recaps", () => {
+  test("a recap page is counted without its public id, in page views and in events", () => {
+    expect(pageviewPath(`${ORIGIN}/journee/Q6ca7Y2qOKt683etPF0qdQ?lang=ar`)).toBe("/journee/*");
+    expect(masked("/journee/Q6ca7Y2qOKt683etPF0qdQ")).toBe("/journee/*");
+  });
+});
+
 describe("the script's masks: what an event may say about the address", () => {
   test("a league page is reported without its id", () => {
     expect(masked("/pronostics/ligues/00000080-0000-4000-8000-000000000001")).toBe(

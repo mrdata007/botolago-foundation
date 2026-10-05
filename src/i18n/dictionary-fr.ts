@@ -716,6 +716,32 @@ export const fr = {
   "fantasy.rules.scoring": "Barème de points",
   "fantasy.rules.scoring_desc":
     "But d'un attaquant : 4 pts, milieu : 5 pts, défenseur ou gardien : 6 pts. Cage inviolée : 4 pts (D/GK).",
+  "fantasy.recap.public.title": "Rendre ma journée publique",
+  "fantasy.recap.public.explain":
+    "La page publique montre votre pseudo, la journée, le total, le capitaine et le coût des transferts. Jamais votre e-mail, votre nom, vos ligues ni votre prochaine équipe.",
+  "fantasy.recap.public.alias": "Pseudo affiché",
+  "fantasy.recap.public.publish": "Créer le lien public",
+  "fantasy.recap.public.live": "Lien public actif",
+  "fantasy.recap.public.copy": "Copier le lien",
+  "fantasy.recap.public.revoke": "Retirer le lien",
+  "fantasy.recap.public.revoke_confirm": "Confirmer : retirer le lien",
+  "fantasy.recap.public.revoke_note":
+    "Retirer le lien coupe l'accès à la page sur BotolaGO. Les images déjà téléchargées ou partagées ailleurs ne peuvent pas être retirées.",
+  "fantasy.recap.public.revoked": "Lien retiré",
+  "fantasy.recap.public.alias_invalid": "Le pseudo doit faire entre 2 et 40 caractères.",
+  "fantasy.recap.public.share_message":
+    "Ma journée {n} sur Fantasy BotolaGO : {points}. Voir mon bilan :",
+  "fantasy.recap.page.meta_title": "Journée {n} · {points} · {alias} | BotolaGO",
+  "fantasy.recap.page.meta_title_generic": "Un bilan Fantasy BotolaGO",
+  "fantasy.recap.page.meta_description":
+    "Le bilan d'une journée de Fantasy Botola Pro sur BotolaGO.",
+  "fantasy.recap.page.by": "Le bilan de {alias}",
+  "fantasy.recap.page.revision": "Version de calcul {v} · mise à jour le {date}",
+  "fantasy.recap.page.unavailable_title": "Ce bilan n'est pas disponible",
+  "fantasy.recap.page.unavailable_body": "Le lien a peut-être été retiré par son auteur.",
+  "fantasy.recap.page.cta_title": "À vous de jouer",
+  "fantasy.recap.page.cta_body":
+    "Composez votre équipe de joueurs de Botola Pro et défiez vos amis, journée après journée.",
   "fantasy.recap.title": "Ma journée BotolaGO",
   "fantasy.recap.gameweek": "Journée {n}",
   "fantasy.recap.final": "Résultat final",

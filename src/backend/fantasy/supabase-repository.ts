@@ -4,6 +4,10 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import { getFantasyApi } from "@/integrations/supabase/v2-client";
 import {
   fantasyHubSchema,
+  fantasyMyRecapPublicationSchema,
+  fantasyPublicRecapSchema,
+  fantasyRecapPublicationSchema,
+  publicRecapIdSchema,
   fantasyGameweekPageSchema,
   fantasyGameweekSummarySchema,
   fantasyHistoryPageSchema,
@@ -352,6 +356,51 @@ export class SupabaseFantasyRepository implements FantasyRepository {
       p_team_id: teamId,
     });
     check(error);
+  }
+
+  async publishGameweekRecap(
+    teamId: string,
+    gameweekId: string,
+    alias: string,
+    _context: RepositoryContext,
+  ) {
+    const { data, error } = await getFantasyApi().rpc("publish_fantasy_gameweek_recap", {
+      p_team_id: teamId,
+      p_gameweek_id: gameweekId,
+      p_alias: alias,
+    });
+    check(error);
+    return parse(fantasyRecapPublicationSchema, data);
+  }
+
+  async revokeGameweekRecap(publicId: string, _context: RepositoryContext) {
+    const { error } = await getFantasyApi().rpc("revoke_fantasy_gameweek_recap", {
+      p_public_id: publicId,
+    });
+    check(error);
+  }
+
+  async getMyGameweekRecapPublication(
+    teamId: string,
+    gameweekId: string,
+    _context: RepositoryContext,
+  ) {
+    const { data, error } = await getFantasyApi().rpc("my_fantasy_gameweek_recap_publication", {
+      p_team_id: teamId,
+      p_gameweek_id: gameweekId,
+    });
+    check(error);
+    return parse(fantasyMyRecapPublicationSchema, data);
+  }
+
+  async getPublicGameweekRecap(publicId: string, _context: RepositoryContext) {
+    // A malformed id is never sent: the answer would be null anyway.
+    if (!publicRecapIdSchema.safeParse(publicId).success) return null;
+    const { data, error } = await getFantasyApi().rpc("public_fantasy_gameweek_recap", {
+      p_public_id: publicId,
+    });
+    check(error);
+    return data === null ? null : parse(fantasyPublicRecapSchema, data);
   }
 
   async getTopPlayers(gameweekId: string, _context: RepositoryContext) {
