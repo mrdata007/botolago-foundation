@@ -395,7 +395,18 @@ export const BASELINES: Baselines = {
   // `common.confirm` and `common.cancel` their first ones. 257 - 2 = 255.
   // Fantasy deadline card: its "Mon équipe" button is the first literal call
   // site of `fantasy.tab.team`, which nothing referenced. 255 - 1 = 254.
-  W3: 254,
+  // Dead-code pass, Fantasy menu lists (BG-0148), 2026-10-05:
+  // `fantasy-navigation.ts` held the item tables of the two navs BG-0145
+  // deleted and outlived them; only its own test imported it. Deleting it
+  // leaves seven `fantasy.tab.*` keys with no reference (`.hub`, `.transfers`,
+  // `.points`, `.leagues`, `.fixtures`, `.rules`, `.top`): measured 261. They
+  // go with it, and so does `fantasy.tab.more`, the follow-up promised above.
+  // Each was re-checked with this file's own indexer first: no literal,
+  // quoted or template-prefix reference. `.team`, `.rankings` and `.players`
+  // have call sites of their own and stay. The `fpl.rank.*` duplicates are
+  // not part of this pass. 254 + 7 - 8 = 253. W4 unchanged: the navs' dynamic
+  // `t(item.labelKey)` calls were already counted out with BG-0145.
+  W3: 253,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
