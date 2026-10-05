@@ -101,6 +101,43 @@ export function PepitesBack({
 }
 
 /**
+ * A row of filter chips (`UiChip`s) as the News hub draws its categories:
+ * one line that scrolls sideways on a phone, bleeding to the edges of the
+ * band or the column it sits in (the negative gutter is symmetric, so it
+ * mirrors in Arabic), and wraps from 768px, where a mouse has no easy way
+ * to scroll a hidden scrollbar. `py-1` keeps the chips' focus ring inside
+ * the scroller. A labelled group of `aria-pressed` toggles, not a tablist.
+ */
+export function PepitesChipRow({
+  label,
+  children,
+  className,
+  testId,
+}: {
+  /** The group's accessible name (what the chips filter). */
+  label: string;
+  children: ReactNode;
+  className?: string;
+  testId?: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      data-testid={testId}
+      className={cn(
+        "-mx-[var(--ui-gutter)] flex gap-2 overflow-x-auto px-[var(--ui-gutter)] py-1",
+        "scroll-px-[var(--ui-gutter)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        "md:flex-wrap md:overflow-visible",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
  * A Pépites title fills its row (`flex-1`), so its box spans the band
  * whatever the title's length, and it WRAPS instead of truncating:
  * `UiPageTitle` truncates because the app's hub titles are one word
