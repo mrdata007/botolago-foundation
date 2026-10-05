@@ -1,3 +1,11 @@
+/**
+ * The static page served when the app itself failed to render (server.ts,
+ * start.ts). It cannot load the app's stylesheet or its theme script, so it
+ * follows the phone's setting on its own, like `mobile/www/offline.html`: the
+ * `color-scheme` meta gives the browser's own controls and scrollbars the
+ * right theme, and the dark block swaps the palette (BG-0149). Dark values:
+ * text 16.12:1 and muted 8.65:1 on the page, the button edge 3.21:1.
+ */
 export function renderErrorPage(): string {
   return `<!doctype html>
 <html lang="en">
@@ -5,15 +13,20 @@ export function renderErrorPage(): string {
     <meta charset="utf-8" />
     <title>This page didn't load</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <style>
-      body { font: 15px/1.5 system-ui, -apple-system, sans-serif; background: #fafafa; color: #111; display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
+      :root { --paper: #fafafa; --ink: #111; --muted: #4b5563; --card: #fff; --edge: #d1d5db; }
+      @media (prefers-color-scheme: dark) {
+        :root { --paper: #0d1526; --ink: #eef1f8; --muted: #aab3c5; --card: #17213a; --edge: #5b6780; }
+      }
+      body { font: 15px/1.5 system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
       .card { max-width: 28rem; width: 100%; text-align: center; padding: 2rem; }
       h1 { font-size: 1.25rem; margin: 0 0 0.5rem; }
-      p { color: #4b5563; margin: 0 0 1.5rem; }
+      p { color: var(--muted); margin: 0 0 1.5rem; }
       .actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
       a, button { padding: 0.5rem 1rem; border-radius: 0.375rem; font: inherit; cursor: pointer; text-decoration: none; border: 1px solid transparent; }
-      .primary { background: #111; color: #fff; }
-      .secondary { background: #fff; color: #111; border-color: #d1d5db; }
+      .primary { background: var(--ink); color: var(--paper); }
+      .secondary { background: var(--card); color: var(--ink); border-color: var(--edge); }
     </style>
   </head>
   <body>
