@@ -262,6 +262,10 @@ describe("Pépites — the shared glyphs on the kit", () => {
     }
     // The number is always printed, so colour is never the only cue.
     expect(inFrench(<RatingChip rating={7.3} />)).toContain("<bdi>7,3</bdi>");
+    // The band is the printed figure's: 6.49 prints "6,5" and takes 6.5's band.
+    const rounded = inFrench(<RatingChip rating={6.49} />);
+    expect(rounded).toContain('data-band="3"');
+    expect(rounded).toContain("<bdi>6,5</bdi>");
     // No rating: a muted dash, no band.
     const none = inFrench(<RatingChip rating={null} />);
     expect(none).not.toContain("data-band");

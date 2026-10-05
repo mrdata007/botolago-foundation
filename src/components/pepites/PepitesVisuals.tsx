@@ -6,7 +6,7 @@ import { useI18n } from "@/i18n/provider";
 import { useRevealOnView } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
-import { ratingBand, type RatingBand, segments, shirtName, teamKit } from "./pepites-design";
+import { printedRatingBand, type RatingBand, segments, shirtName, teamKit } from "./pepites-design";
 import { formatNumber, playerPhotoUrl, teamAsClub } from "./pepites-format";
 
 /**
@@ -85,7 +85,7 @@ const RATING_PAINT: Record<RatingBand, string> = {
 };
 
 /**
- * RatingChip: a match rating on its five-step scale (`ratingBand`), always
+ * RatingChip: a match rating on its five-step scale (`printedRatingBand`), always
  * with the number, so the colour is never the only cue. A tight tag in the
  * micro step, heavy and tabular, at least 36px wide so a column of chips
  * lines up. No rating prints a muted dash in the same box.
@@ -108,7 +108,8 @@ export function RatingChip({
   if (typeof rating !== "number" || !Number.isFinite(rating)) {
     return <span className={cn(frame, ui.tone.muted)}>–</span>;
   }
-  const band = ratingBand(rating);
+  // The band of the printed figure, so two chips reading "6,5" match.
+  const band = printedRatingBand(rating);
   return (
     <span
       data-band={band}

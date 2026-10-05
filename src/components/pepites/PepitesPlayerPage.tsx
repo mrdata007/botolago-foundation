@@ -25,7 +25,7 @@ import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { cn } from "@/lib/utils";
 import type { Language } from "@/types/domain";
 
-import { ratingBand } from "./pepites-design";
+import { printedRatingBand } from "./pepites-design";
 import {
   COMPONENTS,
   componentLabel,
@@ -1013,7 +1013,7 @@ function RatingTrend({
                   <path
                     key={layer.width}
                     d={dot}
-                    stroke={layer.paint ?? `var(--ui-rating-${ratingBand(match.rating)})`}
+                    stroke={layer.paint ?? `var(--ui-rating-${printedRatingBand(match.rating)})`}
                     strokeWidth={layer.width}
                     strokeLinecap="round"
                     {...line}

@@ -61,5 +61,14 @@ export function ratingBand(rating: number): RatingBand {
   return 5;
 }
 
+/**
+ * The band of a rating as the screens print it: to one decimal, so a 6.49
+ * that prints "6,5" takes 6.5's band. Banding the raw value painted two
+ * chips reading "6,5" in two colours side by side.
+ */
+export function printedRatingBand(rating: number): RatingBand {
+  return ratingBand(Number(rating.toFixed(1)));
+}
+
 /** A card's club, position and age in the order the meta lines print them. */
 export type MetaPlayer = Pick<PepitesPlayerCard, "team" | "positionGroup" | "age">;
