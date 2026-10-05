@@ -4,12 +4,11 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
 import type { WeeklyEmailDto } from "@/backend/pepites/contracts";
-import { ui, UiButton, UiLinkButton } from "@/components/ui-kit";
+import { ui, UiButton, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { pepitesService } from "@/services/pepites";
 
-import { PepitesCard } from "./PepitesParts";
 import { pepitesKeys } from "./use-pepites";
 
 /**
@@ -59,7 +58,7 @@ export function WeeklyEmailCard() {
 
   if (!uid) {
     return (
-      <PepitesCard testId="pepites-email-card">
+      <UiCard testId="pepites-email-card">
         <div className="flex flex-col gap-3">
           {header}
           <UiButton
@@ -70,7 +69,7 @@ export function WeeklyEmailCard() {
             {t("pepites.email.sign_in")}
           </UiButton>
         </div>
-      </PepitesCard>
+      </UiCard>
     );
   }
 
@@ -78,7 +77,7 @@ export function WeeklyEmailCard() {
   const enabled = mutation.isPending ? mutation.variables === true : (data?.enabled ?? false);
   const blocker = data?.blockers[0] ?? null;
   return (
-    <PepitesCard testId="pepites-email-card">
+    <UiCard testId="pepites-email-card">
       <div className="flex flex-col gap-3">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">{header}</div>
@@ -136,6 +135,6 @@ export function WeeklyEmailCard() {
           </div>
         ) : null}
       </div>
-    </PepitesCard>
+    </UiCard>
   );
 }
