@@ -223,7 +223,8 @@ fixed on the branch and re-measured:
   box). The score column now takes only what "SCORE" needs, the row photo
   gives its width to the name on phones up to 414px (it shows from 430px),
   and a name wraps, balanced, up to three lines instead of truncating: no
-  name is cut at 360, 390, 414 or 430px in either language.
+  name is cut at 360, 390, 414 or 430px in either language. The Top 10
+  rows let a long name wrap to two lines beside the movement mark too.
 - **Arabic cut the start of Latin names** ("… Bello Ilou"): every name a box
   may cut is a `PepitesName`, which takes the name's own direction, so the
   ellipsis lands at the end of the name and the box still lines up with the
