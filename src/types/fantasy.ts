@@ -47,6 +47,12 @@ export interface FantasyPlayer extends Player {
   jerseyImageUrl?: string;
   /** Optional per-player kit override; otherwise derived from the club. */
   kitPattern?: KitPattern;
+  /**
+   * The player's approved photo, resolved to a public URL, or null/absent:
+   * `PlayerPhoto` then draws the club-shirt silhouette. Only a photo whose
+   * signed release still holds today ever arrives here.
+   */
+  photoUrl?: string | null;
 }
 
 export interface SquadPlayer {

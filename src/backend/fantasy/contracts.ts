@@ -42,6 +42,16 @@ export const fantasyPlayerSchema = z.object({
   teamName: z.string().min(1),
   teamShortName: z.string().min(1),
   photoAssetId: postgresUuidSchema.nullable(),
+  /**
+   * The player's approved photo (20261005090000): the public derivative of a
+   * release whose rights hold today, or null for the silhouette. `optional()`
+   * so the list still parses from a database where that migration has not
+   * been applied yet; the cards then show the silhouette, as they do today.
+   */
+  photo: z
+    .object({ storagePath: z.string().min(1) })
+    .nullable()
+    .optional(),
   crestAssetId: postgresUuidSchema.nullable(),
   /**
    * DEPRECATED (BG-0071). `app.fantasy_players.selected_by_count` is declared,

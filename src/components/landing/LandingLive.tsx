@@ -329,7 +329,7 @@ export function LandingPlayersToWatch({
                       ui.focus,
                     )}
                   >
-                    <PlayerPhoto club={club} size="lg" />
+                    <PlayerPhoto photoUrl={player.photoUrl} club={club} size="lg" />
                     <span
                       className={cn(
                         "mt-3 line-clamp-2 text-balance",

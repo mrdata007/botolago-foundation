@@ -171,6 +171,21 @@ describe("LandingPlayersToWatch", () => {
     expect(html).not.toContain("0 pts");
   });
 
+  it("shows a player's approved photo, and the shirt silhouette without one", async () => {
+    const html = await render(<LandingPlayersToWatch heading="h2" />, (client) => {
+      client.setQueryData(
+        ["fantasy-players"],
+        [
+          { ...player("p1", "With photo", 90, 50), photoUrl: "https://example.test/p1.webp" },
+          player("p2", "Without photo", 80, 40),
+        ],
+      );
+      client.setQueryData(["football", "clubs", "fr"], [wydad]);
+    });
+    expect(html).toContain('src="https://example.test/p1.webp"');
+    expect(html.match(/<img\b/g)?.length ?? 0).toBe(1);
+  });
+
   it("holds its place with skeletons until the visitor scrolls near it", async () => {
     let fetched = false;
     const html = await render(<LandingPlayersToWatch heading="h2" />, (client) => {
