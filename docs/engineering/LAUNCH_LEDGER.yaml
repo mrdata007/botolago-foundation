@@ -1565,8 +1565,8 @@ tasks:
       - "removed the six double flips that set scale/rotate on top of the rule's transform: rtl:-scale-x-100 at PepitesHome:158, PepitesRanking:152 and :224, PepitesPlayerPage:285, DeadlineStrip:60; rtl:rotate-180 at PrizesPage:104; plus the two latent rtl rotations in the unused ui/calendar.tsx. The Pépites chart flip and the photo flips stay"
       - "measured in Chromium on the dev server, 14 routes x fr/ar x 390/1440, every rendered svg.lucide with its own and every ancestor's transform/scale/rotate composed: Arabic before 68 directional icons, 32 correct and 36 wrong (28 never mirrored, 8 double-flipped: Prizes and three Pépites pages at both widths); Arabic after 68 of 68 with transform matrix(-1,0,0,1,0,0) and no scale or rotate, 256 of 256 others untouched; French 324 of 324 untouched before and after; getScreenCTM agrees on all 648"
       - "all 117 icons the app imports, rendered by the repo's lucide-react and injected into a live page under the real stylesheet: Arabic after flips exactly the 15 expected components (incl. LogOut, Undo2, FileText, which no anonymous page shows), French flips none"
-      - "screenshots: the 28 French before/after pairs are pixel-identical; the 28 Arabic pairs differ only in icon-sized regions; icon set and bounding boxes identical on all 56 page/language/width combinations"
-      - "ui-kit.contract.test.ts +19 tests: the :is() list equals MIRRORED and is the only lucide selector; each listed component renders its canonical class; 13 deliberately unmirrored icons render none of them; no lucide JSX tag in src/**/*.tsx (362 found) carries an rtl: scale/rotate, and no rtl: variant rotates descendant svgs. Run against main's six files it names all eight flips"
+      - "screenshots, compared per pixel on raw RGB with no tolerance: 27 of the 28 French before/after pairs are identical; the 1440 /news pair differs by 36 px (at most 6/255 per channel) at the edges of the club-crest chips, which is load-to-load noise: re-shot, two loads of untouched main differ in the same chips by 107 px and a fresh before/after pair by 123 px. 8 Arabic pairs are identical and the other 20 differ only at icon positions; icon set and bounding boxes identical on all 56 page/language/width combinations"
+      - "ui-kit.contract.test.ts +22 tests: the :is() list equals MIRRORED and is the only lucide selector; each listed component renders its canonical class; 13 deliberately unmirrored icons render none of them; no lucide JSX tag in src/**/*.tsx (362 found) carries an rtl: scale/rotate, and no rtl: variant rotates descendant svgs, with rtl found anywhere in the variant chain (md:rtl:) and in the [dir=rtl] / :dir(rtl) spellings; every Arabic-only scale or rotate in src (8, across 706 files) is on an allowlist -- six photos, the Pépites chart, the goal caption's tilt -- so a flip on an icon passed in as a prop fails too. Run against main's six files both scans name all eight flips"
     note: >
       DeadlineStrip and the second PepitesRanking back link did not render on any anonymous page
       during the run, so they are covered by the source test and the injected render rather
@@ -1574,7 +1574,11 @@ tasks:
 
       Not icons and left alone: literal "→" text arrows in Home's results link
       (index.tsx:614), matches.index.tsx:550, PepitesRanking.tsx:247 and
-      PepitesPlayerPage.tsx:823 still point right in Arabic.
+      PepitesPlayerPage.tsx:823 still point right in Arabic (U+2192 is not
+      bidi-mirrored). Outside this brief, and two sit in files the Pépites restyle
+      rewrites, so they are a follow-up: swap each for an aria-hidden ArrowRight,
+      which the rule mirrors, as fantasy.points.tsx:537 already does for the autosub
+      glyph.
 
   BG-0130:
     title: MatchTabs clips "Compositions" below about 370px
