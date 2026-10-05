@@ -186,5 +186,5 @@ and the code.
 7. **Draft pull request, then wait.** Open a draft pull request for review. Do
    not merge it or deploy it without the owner's approval. Deploying covers
    every path in [`docs/operations/DEPLOYMENT.md`](docs/operations/DEPLOYMENT.md):
-   Publish in Lovable for the website, applying migrations, and deploying Edge
-   Functions.
+   Publish in Lovable for the website, applying migrations, deploying Edge
+   Functions, and merging to `main`, which sets GitHub Actions running.

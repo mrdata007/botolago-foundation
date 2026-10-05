@@ -108,8 +108,9 @@ SEO plan (26 Sept) says Search Console was not connected to its project.
   - Pronostics locks each match at its own kick-off.
 - **Morocco time everywhere.** Match and deadline times are shown in Morocco time (`Africa/Casablanca`)
   by an app-owned clock. That clock treats Morocco as UTC+0 all year from 2026-09-20; its legal source
-  is cited only in `src/lib/morocco-time.ts`. **Unknown:** that source has not been checked outside the
-  code.
+  (decree n° 2.26.530) is cited only in code comments (`src/lib/morocco-time.ts` and
+  `supabase/functions/_shared/morocco-time.ts`), never in a document. **Unknown:** whether anyone has
+  checked the decree itself.
 - **Phone first.** Browser tests cover phone to desktop widths in French and Arabic. The main sections
   are Accueil, Actualités, Fantasy, Matches and Pépites, plus Profile. Pronostics lives inside Matches.
 - **Language.**
@@ -217,7 +218,9 @@ production evidence is in the dated snapshot.
   - The database enforces Fantasy squad rules, transfers, chips and league membership.
   - Scoring and finalisation run in a server-side worker (`scripts/backend/fantasy-lifecycle-runner.ts`)
     against a sealed database snapshot, and the database checks and stores the results.
-  - The browser keeps a copy of the squad limits only to guide guest squad building.
+  - The browser keeps a copy of the squad limits (`SQUAD_RULES` in `src/types/fantasy.ts`) to guide
+    squad building and transfers and to state the rules in copy. The database remains the authority
+    and rejects anything the copy lets through.
   - New interface work may present this logic but must not reimplement it, and the browser never
     computes a signed-in manager's points.
 - **Data honesty.**
@@ -236,11 +239,17 @@ production evidence is in the dated snapshot.
     provider's placeholder shield. **Unknown:** whether crests may appear in share images, marketing
     or store listings. Today's share images use club discs and initials instead.
   - There is no Botola Pro competition logo.
-  - The Pépites data provider's licence lets its photos and logos identify players inside the app
-    only: never in promotion or share images (`docs/engineering/PEPITES_PLAN.md`). The same licence
-    forbids presenting its data as official.
+  - Share images show a player's photo only when its release allows social use; any other player
+    gets a club disc and initials (`src/components/pepites/share-image.ts`). Provider player images
+    are internal placeholders only.
+  - BSD, a candidate second data source for Pépites (measured 2026-09-26 in
+    `docs/engineering/PEPITES_PLAN.md` §10; not chosen or connected), licenses its photos and logos
+    only to identify players inside the app, never in promotion or share images, and its data may not
+    be presented as official. These terms apply if it is adopted.
   - Licensed news must keep its credit and link.
-- **Production data** changes only through the reviewed path in `CLAUDE.md`.
+- **Production data:** any manual change goes only through the reviewed path in `CLAUDE.md`
+  (migrations or guarded scripts the owner runs). Scheduled jobs write on their own only after the
+  owner has switched them on.
 
 **Terminology:**
 
