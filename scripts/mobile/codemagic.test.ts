@@ -111,17 +111,16 @@ describe("codemagic.yaml", () => {
     }
   });
 
-  test("Android: Firebase's file is written before the check that needs it, then it builds the signed apk and aab", () => {
+  test("Android: Firebase's file is written before the check that needs it, then it builds the test apk (signing is off for now)", () => {
     const script = commands(android).find((entry) => entry.includes("cap add android")) ?? "";
     expect(script.indexOf("GOOGLE_SERVICES_JSON_BASE64:?")).toBeGreaterThanOrEqual(0);
     expect(script.indexOf("google-services.json")).toBeLessThan(script.indexOf("mobile:check"));
     expect(script.indexOf("mobile:prepare")).toBeLessThan(script.indexOf("mobile:check"));
-    expect(android.environment.android_signing).toEqual(["botolago_keystore"]);
+    expect(android.environment.android_signing).toBeUndefined();
     expect(android.environment.groups).toEqual(["botolago_mobile"]);
     expect(String(android.environment.java)).toBe("21");
-    expect(commands(android).join("\n")).toContain("./gradlew assembleRelease bundleRelease");
+    expect(commands(android).join("\n")).toContain("./gradlew assembleDebug");
     expect(android.artifacts.join(" ")).toContain(".apk");
-    expect(android.artifacts.join(" ")).toContain(".aab");
   });
 
   test("iPhone: signs with the App Store Connect key, then builds the ipa from the project", () => {
