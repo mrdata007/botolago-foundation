@@ -457,7 +457,11 @@ function ComparePortrait({
             player.age
               ? t("pepites.meta.age_short").replace("{n}", formatNumber(player.age, lang))
               : null,
-            data?.score?.rank ? `#${formatNumber(data.score.rank, lang)}` : null,
+            // "#3" / "رقم 3": a word in Arabic, where a lone "#" outside the
+            // number's run would print after it ("3#").
+            data?.score?.rank
+              ? t("pepites.matches.rank_short").replace("{n}", formatNumber(data.score.rank, lang))
+              : null,
           ]
             .filter(Boolean)
             .join(" · ")}
