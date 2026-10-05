@@ -660,15 +660,30 @@ export const fantasyService = {
     forgetSharedFantasyHub();
     return { id: result.leagueId, code: result.inviteCode };
   },
-  async joinLeague(code: string): Promise<void> {
+  /**
+   * Joins by invite code. The server answers which league it was and whether
+   * this team was already in it (`joined: false`), so callers never have to
+   * guess the league from the list. `leagueId` is null only when an older
+   * server answers nothing usable.
+   */
+  async joinLeague(code: string): Promise<{ leagueId: string | null; joined: boolean }> {
     if (mode() === "mock") {
       const { leaguesStore } = await import("./leagues-store");
-      leaguesStore.join(code);
-      return;
+      const league = leaguesStore.join(code);
+      return { leagueId: league.id, joined: true };
     }
     const current = await cloudTeam();
-    await cloud.joinLeague(current.team.id, code, crypto.randomUUID(), context());
+    const result = (await cloud.joinLeague(
+      current.team.id,
+      code,
+      crypto.randomUUID(),
+      context(),
+    )) as { leagueId?: unknown; joined?: unknown } | null;
     forgetSharedFantasyHub();
+    return {
+      leagueId: typeof result?.leagueId === "string" ? result.leagueId : null,
+      joined: result?.joined !== false,
+    };
   },
   async leaveLeague(leagueId: string): Promise<void> {
     if (mode() === "mock") {

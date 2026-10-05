@@ -48,7 +48,7 @@ export function CreateLeagueInvite() {
     }
   };
 
-  const link = created ? leagueInviteLink(created.code) : "";
+  const link = created ? leagueInviteLink(created.code, undefined, "fantasy") : "";
   const message = created ? inviteMessage(t("fantasy.hub.invite_message"), created.name, link) : "";
 
   const share = async () => {
