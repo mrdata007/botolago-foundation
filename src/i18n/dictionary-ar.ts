@@ -1917,6 +1917,11 @@ export const ar = {
   "predictions.leagues.limit": "بلغت الحد الأقصى من الدوريات",
   "predictions.leagues.full": "هذا الدوري مكتمل",
   "predictions.leagues.invite_generic": "أنت مدعو إلى دوري للتوقعات",
+  "predictions.leagues.invite_generic_fantasy": "أنت مدعو إلى دوري فانتازي",
+  "predictions.leagues.invite_explain":
+    "يدعوك صديق إلى دوريه الخاص على BotolaGO. لن تنضم إلى الدوري إلا عندما تضغط على «انضمام».",
+  "predictions.leagues.invite_join_fantasy": "الانضمام إلى الدوري عبر الفانتازي",
+  "predictions.leagues.invite_predictions_hint": "تفضّل التوقعات؟ انضم عبر التوقعات",
   "predictions.leagues.invite_join_predictions": "الانضمام عبر التوقعات (مجانًا)",
   "predictions.leagues.invite_fantasy_hint": "لديك فريق في الفانتازي؟ انضم أيضًا عبر الفانتازي",
   "predictions.leagues.invite_signup": "أنشئ حسابًا للانضمام إلى الدوري",

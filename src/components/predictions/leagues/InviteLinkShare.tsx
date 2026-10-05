@@ -23,7 +23,7 @@ export function InviteLinkShare({
   showCode?: boolean;
 }) {
   const { t } = useI18n();
-  const link = inviteLink(code);
+  const link = inviteLink(code, undefined, "predictions");
   // Direction isolation around the league name, so WhatsApp keeps the order
   // in an Arabic message (plan §10).
   const text = t("predictions.leagues.share_text")

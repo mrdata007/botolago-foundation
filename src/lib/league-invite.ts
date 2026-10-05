@@ -1,4 +1,4 @@
-import { inviteLink } from "@/components/predictions/leagues/invite-link";
+import { inviteLink, type InviteGame } from "@/components/predictions/leagues/invite-link";
 
 /** The message a manager sends with a league's invite link. */
 export function inviteMessage(template: string, name: string, link: string): string {
@@ -10,7 +10,11 @@ export function whatsappUrl(message: string): string {
   return `https://wa.me/?text=${encodeURIComponent(message)}`;
 }
 
-/** A league's invite link: the one Pronostics uses, since one league serves both games. */
-export function leagueInviteLink(code: string, origin?: string): string {
-  return inviteLink(code, origin);
+/**
+ * A league's invite link: the one Pronostics uses, since one league serves
+ * both games, naming the game it was shared from so the recipient lands on
+ * the right join.
+ */
+export function leagueInviteLink(code: string, origin?: string, game?: InviteGame): string {
+  return inviteLink(code, origin, game);
 }

@@ -2034,6 +2034,12 @@ export const fr = {
   "predictions.leagues.limit": "Limite de ligues atteinte",
   "predictions.leagues.full": "Cette ligue est complète",
   "predictions.leagues.invite_generic": "Vous êtes invité dans une ligue de pronostics",
+  "predictions.leagues.invite_generic_fantasy": "Vous êtes invité dans une ligue Fantasy",
+  "predictions.leagues.invite_explain":
+    "Un ami vous invite dans sa ligue privée BotolaGO. Vous ne rejoignez la ligue que lorsque vous touchez « Rejoindre ».",
+  "predictions.leagues.invite_join_fantasy": "Rejoindre la ligue en Fantasy",
+  "predictions.leagues.invite_predictions_hint":
+    "Vous préférez les pronostics ? Rejoindre en Pronostics",
   "predictions.leagues.invite_join_predictions": "Rejoindre en Pronostics (gratuit)",
   "predictions.leagues.invite_fantasy_hint":
     "Vous avez une équipe Fantasy ? Rejoignez aussi en Fantasy",
