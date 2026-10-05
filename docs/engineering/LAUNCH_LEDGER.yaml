@@ -1475,7 +1475,7 @@ tasks:
     state: RUNNING # branch claude/viewport-fit-cover; owner decision 2026-10-05; awaiting review, not merged
     depends_on: []
     brief: docs/engineering/tasks/BG-0151/screen-brief.md
-    changes:
+    evidence:
       - "src/routes/__root.tsx: viewport meta width=device-width, initial-scale=1, viewport-fit=cover"
       - "src/styles.css body: padding-inline is the larger side inset (symmetric, 0 without side insets), so landscape content keeps clear of the notch"
       - "toasts 16px below the status bar; the reading-progress bar at its bottom; UiModal's height capped inside the insets"
@@ -1484,11 +1484,45 @@ tasks:
       - "FantasyFrame inner screens on phones: a sticky strip exactly as tall as the status bar, in ui.surface.bar, so scrolled content does not show under the clock (0px in a browser)"
       - "capacitor.config.ts: SystemBars.initialViewportFitValueHint cover (Android, next native build)"
       - "src/components/shell/safe-area.test.ts: pins the viewport meta and the body letterbox; scans every bottom-0 class in src/**/*.tsx for a safe-area treatment, with two checked exceptions (UiSheet, GoalMoment)"
+      - >
+        the new test run against main's sources fails 3 of its 12 tests and names the six known
+        offenders (the Fantasy player bar, fantasy.team, PredictionsStickyBar, SquadBuilderScreen,
+        TransferConfirmScreen, and LandingPage's class-merge drop); on the branch it passes 12 of 12.
+        Lane tests (src/components/shell, src/components/ui-kit, scripts/mobile/codemagic.test.ts)
+        309 pass, 0 fail; full bun test 5364 pass, 17 skip, 0 fail; typecheck 0; lint 0 errors
+      - >
+        no insets, before (main a6fac90 on :5200) against after (this branch on :5204), measured
+        from layout boxes of the top header and its row, main, the bottom navigation, every pinned
+        bar and the content extent: maxDelta 0px on all 28 phone pairs (fr and ar, 390x844 and
+        844x390, seven routes) and on all 16 desktop pairs (fr and ar, 1440x900, the seven plus
+        /fantasy/team, whose PNGs are byte-identical too). body padding 0, toasts 16px from the top
+        at every size, and the sign-in UiModal opens in the same box at 390 and 1440 (max-height
+        742.72px and 792px, 88dvh, before and after)
+      - >
+        with emulated insets (portrait 47 top and 34 bottom; landscape 21 bottom and 47 each side),
+        after, fr and ar: in portrait the top bar row starts at y=47 on all seven routes and the
+        bottom navigation's content ends at 810 (844-34, already so through ui.safe.bottom); the
+        Fantasy player bar's content ends at 810 where main reached 828 and 832, with 5 and 7 items
+        inside the home indicator; the Landing sticky button ends at 810 (padding 34px) where main
+        ended at 832 (padding 12px); a toast starts at 63 (47+16) where main put it at 16, under the
+        clock; in landscape every route keeps its content within 47..797 (Home and match detail
+        63..781), 0 items in either side zone where main had 7 to 12 on Home, match detail and
+        /jouer; scrolled 480px, the status-bar zone on Fantasy player and rules samples 24 of 24 as
+        pinned chrome where main sampled 15 and 19 of 24 as page content; UiModal's cap drops to
+        731px (844-47-34-32)
+    note: >
+      Chromium applies emulated insets whatever the viewport meta says, so this evidence proves the
+      layout answers the insets and that nothing moves without them. It does not prove the iOS gate
+      itself (WebKit reporting insets only with viewport-fit=cover); that is the device check below.
     remaining:
       - "device check, in French and Arabic: a notched or Dynamic Island iPhone in portrait and landscape, an iPad, an Android 15+ phone with WebView 140 or later and one older. Chromium applies emulated insets whatever the meta says, so the iOS gate itself is unproven here"
       - "src/components/pepites/PepitesReveal.tsx pb-6 -> pb-[max(env(safe-area-inset-bottom),1.5rem)], owned by the Pepites restyle"
       - "status bar text colour follows the phone, not the page: SystemBars.setStyle on theme change (dark-mode follow-up), and dark top bands may need a per-screen style"
       - "LandingPage final section: below lg its bottom padding is 8px, not py-14's 56px (ui.safe.bottom after py-14); existing, out of scope"
+      - >
+        DESIGN.md is not on main yet (PR #352, claude/impeccable-design-document). Its line 515 still
+        calls viewport-fit=cover an open decision; once both branches merge it should say the
+        decision is made (BG-0151) and only the device check is open. No merge conflict will flag it.
 
   BG-0126:
     title: GameweekSelector renders its value at 1.12:1 in dark and its controls at 36px
