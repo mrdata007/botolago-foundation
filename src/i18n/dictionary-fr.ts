@@ -2159,7 +2159,6 @@ export const fr = {
   "predictions.share.title": "Partager mes pronostics",
   /* Pépites (docs/engineering/PEPITES_ARCHITECTURE.md). */
   "nav.pepites": "Pépites",
-  "pepites.title": "Pépites",
   "pepites.brand": "Pépites",
   "pepites.hero.kicker": "U23 · BOTOLA PRO · {season}",
   "pepites.hero.kicker_short": "U23 · BOTOLA PRO",
@@ -2348,7 +2347,6 @@ export const fr = {
   "pepites.stats.not_applicable": "N/A",
   "pepites.compare.title": "Face à face",
   "pepites.compare.action": "⇄ Comparer",
-  "pepites.compare.back": "‹ Retour",
   "pepites.compare.season": "Saison du classement",
   "pepites.compare.scope": "Joueurs U23",
   "pepites.compare.choose_prompt": "Choisissez deux joueurs à comparer.",

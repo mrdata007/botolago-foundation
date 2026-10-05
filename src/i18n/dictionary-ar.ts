@@ -2033,7 +2033,6 @@ export const ar = {
   "predictions.share.title": "مشاركة توقعاتي",
   /* Pépites (docs/engineering/PEPITES_ARCHITECTURE.md). */
   "nav.pepites": "جواهر",
-  "pepites.title": "جواهر",
   "pepites.brand": "جواهر",
   "pepites.hero.kicker": "أقل من 23 سنة · البطولة الاحترافية · موسم {season}",
   "pepites.hero.kicker_short": "أقل من 23 · البطولة الاحترافية",
@@ -2217,7 +2216,6 @@ export const ar = {
   "pepites.stats.not_applicable": "لا ينطبق",
   "pepites.compare.title": "وجها لوجه",
   "pepites.compare.action": "⇄ قارن",
-  "pepites.compare.back": "رجوع ›",
   "pepites.compare.season": "موسم التصنيف",
   "pepites.compare.scope": "لاعبون دون 23 سنة",
   "pepites.compare.choose_prompt": "اختر لاعبين للمقارنة.",
