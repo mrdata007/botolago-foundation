@@ -2693,7 +2693,7 @@ export function UiCheckbox({
         type="checkbox"
         aria-describedby={describedBy(props["aria-describedby"], [hint && `${id}-hint`])}
         className={cn(
-          "mt-0.5 h-4 w-4 shrink-0 accent-[color:var(--ui-ink)]",
+          "mt-0.5 h-4 w-4 shrink-0 accent-[color:var(--ui-ink-fg)]",
           ui.radius.tight,
           ui.hitArea,
           ui.focus,
