@@ -100,10 +100,7 @@ export function PrizesPage() {
           <BookOpen className="h-[18px] w-[18px]" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">{t("prizes.terms_link")}</span>
-        <ChevronRight
-          className={cn("h-5 w-5 shrink-0 rtl:rotate-180", ui.tone.muted)}
-          aria-hidden
-        />
+        <ChevronRight className={cn("h-5 w-5 shrink-0", ui.tone.muted)} aria-hidden />
       </Link>
     </div>
   );

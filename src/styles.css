@@ -754,20 +754,41 @@ html[dir="rtl"] *::after {
   letter-spacing: normal;
 }
 
-/* Directional icons mirror here, once, for every screen. Do not add
-   `rtl:rotate-180` or `rtl:-scale-x-100` on top: those set the separate
-   `rotate`/`scale` properties, which compose with this `transform` and flip
-   the icon back — an Arabic "next" arrow that points backwards. */
-html[dir="rtl"] .lucide-chevron-right {
-  transform: scaleX(-1);
-}
-html[dir="rtl"] .lucide-chevron-left {
-  transform: scaleX(-1);
-}
-html[dir="rtl"] .lucide-arrow-right {
-  transform: scaleX(-1);
-}
-html[dir="rtl"] .lucide-arrow-left {
+/* BG-0150. Directional icons mirror here, once, for every screen: arrows and
+   chevrons, sign in/out, undo, trend, sort, the Arabic question mark (؟) and
+   icons that draw lines of text (Material bidirectionality, Google's icon
+   mirror list, Apple HIG "Right to left").
+
+   The names are lucide's CANONICAL class names, which is not always the name
+   imported: `CircleHelp` renders `.lucide-circle-question-mark` and `Undo2`
+   renders `.lucide-undo-2`. ui-kit.contract.test.ts pins this list and renders
+   each icon to prove the class still exists after a lucide upgrade.
+
+   Never add `rtl:rotate-180` or `rtl:-scale-x-100` on top: they set the
+   separate `rotate`/`scale` properties, which compose with this `transform`
+   and flip the icon back, so an Arabic "next" chevron points backwards. The
+   contract test fails on either.
+
+   Deliberately left as drawn: clocks and timers, refresh/retry and the
+   spinner, play, checkmarks, info and warning marks, search and pencil
+   (right-handed tools), slashed "off" icons, the swap/substitution arrows and
+   share. Unlayered, like the rule above, so no utility can override it. */
+html[dir="rtl"]
+  :is(
+    .lucide-chevron-left,
+    .lucide-chevron-right,
+    .lucide-arrow-left,
+    .lucide-arrow-right,
+    .lucide-log-in,
+    .lucide-log-out,
+    .lucide-undo-2,
+    .lucide-trending-up,
+    .lucide-arrow-down-wide-narrow,
+    .lucide-arrow-up-narrow-wide,
+    .lucide-circle-question-mark,
+    .lucide-file-text,
+    .lucide-newspaper
+  ) {
   transform: scaleX(-1);
 }
 

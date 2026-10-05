@@ -57,7 +57,7 @@ export function DeadlineStrip({
     >
       <Clock className="h-4 w-4 shrink-0" aria-hidden />
       <span className="min-w-0 flex-1 text-balance">{text}</span>
-      <ChevronRight className="h-4 w-4 shrink-0 rtl:-scale-x-100" aria-hidden />
+      <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
     </Link>
   );
 }

@@ -282,7 +282,7 @@ function BackToPepites({ className }: { className?: string }) {
       )}
       data-testid="pepites-back"
     >
-      <ChevronLeft className="size-4 rtl:-scale-x-100" aria-hidden />
+      <ChevronLeft className="size-4" aria-hidden />
       {t("pepites.player.back")}
     </Link>
   );

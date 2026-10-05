@@ -149,7 +149,7 @@ export function PepitesRanking({
             ui.focusOnMesh,
           )}
         >
-          <ChevronLeft className="size-4 rtl:-scale-x-100" aria-hidden />
+          <ChevronLeft className="size-4" aria-hidden />
           {t("pepites.title")}
         </Link>
         <h1 className={cn(pp.display, pp.lean, "text-[30px] leading-[1.1] text-white")}>
@@ -221,7 +221,7 @@ export function PepitesRanking({
               ui.focusOnMesh,
             )}
           >
-            <ChevronLeft className="size-4 rtl:-scale-x-100" aria-hidden />
+            <ChevronLeft className="size-4" aria-hidden />
             {t("pepites.title")}
           </Link>
           <div>

@@ -155,7 +155,7 @@ export function PepitesHome() {
         )}
       >
         {t("pepites.home.full_ranking")}
-        <ChevronRight className="size-4 rtl:-scale-x-100" aria-hidden />
+        <ChevronRight className="size-4" aria-hidden />
       </Link>
       <WeeklyEmailCard />
       <div className="flex flex-col gap-1">
