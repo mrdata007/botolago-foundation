@@ -1372,6 +1372,7 @@ tasks:
       - "i18n: pepites.title and pepites.compare.back orphaned with the night layer, deleted from fr and ar; common.vs gained its first call site; W3 254 -> 253, W1/W2/W4 unchanged"
       - "pepites-compare-cards is the compare card's yellow-and-red cards row (pepites-compare-${row.key}); the brief first read it as missing and a lane copied it onto the portraits' container, which failed the Follow/Stats/Compare journey in strict mode; the copy is removed, the e2e test is unchanged"
       - "tests/e2e/pepites.e2e.ts on a sample-data dev server like CI's (VITE_PEPITES_PREVIEW=1, no .env, port 5212): 26 passed, 0 failed, after the compare fix (the first run had 23 passed: the two compare journeys above, and the suite's first test on the cold server, which passed on its own rerun and in the full rerun). tests/e2e/anonymous.acceptance.e2e.ts on the same server: 16 passed"
+      - "review fixes: phone-ranking names no longer cut (16 of 20 cut at 390px before; 0 at 360, 390, 414 and 430px in fr and ar: the score column narrowed, the row photo hidden under a 384px table, names wrap up to three lines); PepitesName gives a cut name its own direction, so Arabic cuts its end, not its start; filter chips wrap (the Arabic age chip was cut to '20 سنة'); hub, ranking and method bands carry 'PÉPITES' / 'جواهر' above the title; hero meta line and coverage rows fixed; reveal 'next' a link again (UiLinkButton replace); compare rank via the dictionary (Arabic read '1#'); a rating chip banded on its printed figure; copy in sentence case and the Arabic '＋' first. Guard test 282 pass; Pépites e2e 26 passed"
     note: >
       Pépites now has no look of its own, so DESIGN_SYSTEM_V2.md gained a "Pépites is built on
       the kit" section, and the Figma notes and the v1.1 handoff carry superseded banners: their
@@ -1381,6 +1382,7 @@ tasks:
       - ".github/workflows/backend-quality.yml:79 still says Pépites is off in every build (it has been on since 2026-09-27); lanes may not edit workflows"
       - "src/lib/motion.ts tiltAngles has no caller now that TiltFrame is gone (its own tests still pass)"
       - "merging with BG-0150: both branches edit the Pépites chevrons, and BG-0150's allowlist of Arabic-only flips names the Pépites chart flip this branch removes"
+      - "from the review, left as they are: the desktop top bar is the wide one on the ranking and player pages and the compact one on the hub, method and compare pages (it follows the page's canvas, as on Home and match detail); route document titles are French in Arabic too (every route's head uses fr) and the player's title is generic after a client navigation; in .dark a selected chip or primary fill is 1.13:1 against an unselected chip, the same on Matches standings (a dark-token question for the dark-mode lane)"
 
   BG-0123:
     title: src/services/fantasy-cloud-repo.ts is an unreachable repository calling four RPCs that exist in no schema

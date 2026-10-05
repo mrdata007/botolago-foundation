@@ -795,11 +795,20 @@ right in light and dark, French and Arabic. The Pépites-specific pieces in
 
 - **Frame** (`PepitesShell.tsx`): the default `AppShell` with the global
   `TopBar` at every width. `PepitesPageTitle` wraps `UiPageTitle` for a hub
-  (Top 10, ranking, method), with an optional back pill above the title and
-  a title that wraps instead of truncating; `PepitesDetailHeader` wraps
-  `UiHeader` for a detail page; `PepitesBack` is `UiBackButton` with the
-  test id the e2e suite reads; `PepitesChipRow` is the News chip rail for
-  `UiChip` filters (scrolls on a phone, wraps from 768px).
+  (Top 10, ranking, method): the section's name ("PÉPITES" / "جواهر") in
+  `ui.text.label` muted above the title, as `UiHeader`'s kicker names it on
+  the detail pages, an optional back pill above that, and a title that
+  wraps instead of truncating; `PepitesDetailHeader` wraps `UiHeader` for a
+  detail page; `PepitesBack` is `UiBackButton` with the test id the e2e
+  suite reads; `PepitesChipRow` holds the `UiChip` filters and wraps at
+  every width (six fixed filters always show whole; a scrolling rail cut
+  the last chip at the edge, and in Arabic "20 سنة وأقل" read as "20 سنة").
+- **Names** (`PepitesName`): a player's name in a box that cuts it
+  (`truncate`, `line-clamp-*`) takes the name's own direction, so a Latin
+  name in an Arabic row loses its end, never its first name, and still
+  lines up with the row. The phone ranking lets a name wrap (balanced, up
+  to three lines) rather than cut it, and drops the row photo on phones up
+  to 414px so the name has the width.
 - **States and banners** (`PepitesParts.tsx`): `UiEmptyState`,
   `UiErrorState`, `UiSkeleton` (giving up after 12 seconds) and `UiAlert`.
 - **Data glyphs** (`PepitesVisuals.tsx`): `RatingChip` (the rating tokens

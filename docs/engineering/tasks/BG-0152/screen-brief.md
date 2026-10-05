@@ -214,6 +214,37 @@ Functional:
   `ui-kit.contract.test.ts`, `a11y-source.test.ts` and `i18n-gate.test.ts`)
   and `bun scripts/qa/i18n-gate.ts` pass.
 
+## Review fixes (after the visual review, 2026-10-05)
+
+The visual and code reviews of the restyled branch found these; each is
+fixed on the branch and re-measured:
+
+- **Phone ranking names.** 16 of 20 names were cut at 390px (a 84px name
+  box). The score column now takes only what "SCORE" needs, the row photo
+  gives its width to the name on phones up to 414px (it shows from 430px),
+  and a name wraps, balanced, up to three lines instead of truncating: no
+  name is cut at 360, 390, 414 or 430px in either language.
+- **Arabic cut the start of Latin names** ("… Bello Ilou"): every name a box
+  may cut is a `PepitesName`, which takes the name's own direction, so the
+  ellipsis lands at the end of the name and the box still lines up with the
+  row.
+- **Chips.** The filter chips wrap instead of scrolling, so the Arabic age
+  chip is never cut to "20 سنة" at the screen edge.
+- **Section name.** The hub, ranking and method title bands carry
+  "PÉPITES" / "جواهر" above the title, as the detail pages' header does.
+- **Copy.** The trend heading and season average are in sentence case; the
+  reveal's "next" label no longer carries an arrow glyph (the lucide icon
+  draws it); the Arabic "＋" sits before the word on Follow and Fantasy as it
+  does on "＋ متابعة".
+- **Small layout fixes.** The hero meta line breaks only between parts
+  ("Pied : N.R." stays whole); the coverage rows sit on the card's content
+  edge with no rule under the last one; the compare cards print the rank
+  with the dictionary's "#{n}" / "رقم {n}" (Arabic showed "1#").
+- **Rating colour.** A chip takes the band of the figure it prints, so two
+  chips reading "6,5" are one colour.
+- **Reveal "next"** is a link again (`UiLinkButton replace`), as on main: an
+  address, a new tab, read as a link, and Back still leaves the story.
+
 ## Pépites on the kit: what replaces what
 
 The screen agents follow this table. "Shared" means the foundation stage has
@@ -249,7 +280,7 @@ already restyled the piece in `PepitesVisuals.tsx`, `PepitesParts.tsx` or
 
 | Pépites piece today                                             | Kit replacement                                                                                                                                                                                                                                                                     |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FilterChip` (26px)                                             | `UiChip` (`selected`, spreads `data-testid`, sets `aria-pressed`) in the shared `PepitesChipRow` (the News chip rail: scrolls on a phone, wraps from 768px); a chip that changes the address is a `UiChip` whose `onClick` calls `navigate({ search })`, so it keeps `aria-pressed` |
+| `FilterChip` (26px)                                             | `UiChip` (`selected`, spreads `data-testid`, sets `aria-pressed`) in the shared `PepitesChipRow` (wraps at every width: a phone scroller cut the last chip); a chip that changes the address is a `UiChip` whose `onClick` calls `navigate({ search })`, so it keeps `aria-pressed` |
 | `RatingChip` (`--pepites-rating-*`, white text)                 | shared `RatingChip`: `--ui-rating-N` fill with `--ui-on-rating-N` text, `ui.radius.tight`, `ui.text.micro` heavy, tabular                                                                                                                                                           |
 | `Seg10Bar` (skewed, ten energy colours)                         | shared `Seg10Bar`: ten rounded segments, lit `--ui-ink-fg`, unlit `--ui-surface-sunken`                                                                                                                                                                                             |
 | `ScoreRing` (energy gradient arc, white figure)                 | shared `ScoreRing`: sunken track, `--ui-ink-fg` arc, `ui.score.*` figure, `ui.text.label` muted label                                                                                                                                                                               |
