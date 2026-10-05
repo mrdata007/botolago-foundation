@@ -2,6 +2,7 @@ import type { ComponentProps, ReactNode } from "react";
 
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiBackButton, UiHeader, UiPageTitle } from "@/components/ui-kit";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 /**
@@ -87,12 +88,15 @@ export function PepitesBack({
 }
 
 /**
- * A row of filter chips (`UiChip`s) as the News hub draws its categories:
- * one line that scrolls sideways on a phone, bleeding to the edges of the
- * band or the column it sits in (the negative gutter is symmetric, so it
- * mirrors in Arabic), and wraps from 768px, where a mouse has no easy way
- * to scroll a hidden scrollbar. `py-1` keeps the chips' focus ring inside
- * the scroller. A labelled group of `aria-pressed` toggles, not a tablist.
+ * A row of filter chips (`UiChip`s), wrapping at every width. Pépites
+ * filters by a short, fixed set (all, four positions, the age chip), so the
+ * set always shows whole: the News hub's sideways scroller suits a long,
+ * open list, but here it cut the last chip at the screen edge without a sign
+ * that the row scrolls, and in Arabic "20 سنة وأقل" ("20 and under") read as
+ * "20 سنة" ("20 years"). Where the six chips do not fit one line (Arabic at
+ * 390px) the last ones take a second line; the inline gap is a step under
+ * the usual 8px so the French six still share one line at 390px. A
+ * labelled group of `aria-pressed` toggles, not a tablist.
  */
 export function PepitesChipRow({
   label,
@@ -111,12 +115,7 @@ export function PepitesChipRow({
       role="group"
       aria-label={label}
       data-testid={testId}
-      className={cn(
-        "-mx-[var(--ui-gutter)] flex gap-2 overflow-x-auto px-[var(--ui-gutter)] py-1",
-        "scroll-px-[var(--ui-gutter)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-        "md:flex-wrap md:overflow-visible",
-        className,
-      )}
+      className={cn("flex flex-wrap gap-x-1.5 gap-y-2", className)}
     >
       {children}
     </div>
@@ -136,11 +135,15 @@ const TITLE_FILLS_AND_WRAPS =
 
 /**
  * A hub's title band: the kit's `UiPageTitle` (Changa h1, an inline-end
- * control, a chip row as `children`), with three Pépites needs on top:
+ * control, a chip row as `children`), with four Pépites needs on top:
  *
- * - `backTo` puts the back pill on its own row above the title, inside the
- *   same white band (the ranking and the method page are one level down
- *   from `/pepites`). `backTestId` names it for the tests.
+ * - the section's name, "PÉPITES" / "جواهر", in the kit's label step above
+ *   the title, as `UiHeader`'s kicker names the section on the detail pages
+ *   (the compare page) and "FANTASY" sits over Fantasy's boards. The titles
+ *   themselves carry data ("Classement final 2025/2026"), not the name.
+ * - `backTo` puts the back pill on its own row above that, inside the same
+ *   white band (the ranking and the method page are one level down from
+ *   `/pepites`). `backTestId` names it for the tests.
  * - `desktop` lines the band up with a `width="desktop"` page.
  * - the heading fills the title row and wraps (see above).
  */
@@ -155,26 +158,21 @@ export function PepitesPageTitle({
   backTo?: string;
   backTestId?: string;
 }) {
-  const band = (
-    <UiPageTitle
-      {...title}
-      className={cn(
-        TITLE_FILLS_AND_WRAPS,
-        backTo && "pt-1",
-        desktop && DESKTOP_TITLE_COLUMN,
-        className,
-      )}
-    />
-  );
-  if (!backTo) return band;
+  const { t } = useI18n();
   return (
     <>
       <div className={cn(ui.surface.bar, "pt-2", desktop && DESKTOP_TITLE_COLUMN)}>
-        <div className={BAR_ROW}>
-          <PepitesBack to={backTo} testId={backTestId} />
+        <div className={cn(BAR_ROW, "flex flex-col items-start gap-2")}>
+          {backTo ? <PepitesBack to={backTo} testId={backTestId} /> : null}
+          <p className={cn(ui.text.label, ui.tone.muted)} data-testid="pepites-section-label">
+            {t("pepites.brand")}
+          </p>
         </div>
       </div>
-      {band}
+      <UiPageTitle
+        {...title}
+        className={cn(TITLE_FILLS_AND_WRAPS, "pt-0", desktop && DESKTOP_TITLE_COLUMN, className)}
+      />
     </>
   );
 }
