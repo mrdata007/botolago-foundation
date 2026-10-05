@@ -379,7 +379,10 @@ photos; it has no schedule. In production the owner runs it from GitHub
 Actions, **Publish approved player photos**
 (`.github/workflows/pepites-photo-publish.yml`: owner-only, main-only, the
 shared production-writer concurrency group, typed confirmation
-`PUBLISH_APPROVED_PHOTOS`, up to 20 releases per run). It reads `api.service_player_photo_work`, makes
+`PUBLISH_APPROVED_PHOTOS`, up to 20 releases per run). It pauses the
+`pepites-tick` cron job for the run and waits for a tick in flight
+(`scripts/backend/pepites-tick-pause.ts`), then restores it in an always-run
+step; the Pépites mode is not touched, so readers keep seeing Pépites. It reads `api.service_player_photo_work`, makes
 each derivative with `sharp` (turned upright, cropped to a 512 px square
 around the subject, re-encoded as WebP: no EXIF, XMP or IPTC block survives,
 so no camera, date or GPS data), uploads it to its one path, and publishes

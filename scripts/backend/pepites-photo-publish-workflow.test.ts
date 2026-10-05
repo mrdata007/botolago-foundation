@@ -41,16 +41,37 @@ describe("publish approved player photos: the workflow", () => {
 
   it("runs the reviewed photo job, tested first, and nothing else", () => {
     expect(body).toContain("bun install --frozen-lockfile");
-    expect(body).toContain("bun test scripts/backend/pepites-photo-job.test.ts");
-    expect(body).toContain("bun scripts/backend/pepites-photo-job.ts");
-    expect(body.match(/^\s+bun scripts\//gm)).toHaveLength(1);
+    expect(body).toContain(
+      "bun test scripts/backend/pepites-photo-job.test.ts scripts/backend/pepites-tick-pause.test.ts",
+    );
+    expect([...body.matchAll(/^\s+bun scripts\/backend\/([\w.-]+)/gm)].map((m) => m[1])).toEqual([
+      "pepites-tick-pause.ts",
+      "pepites-photo-job.ts",
+      "pepites-tick-pause.ts",
+    ]);
     expect(body).not.toMatch(/supabase (db|functions|secrets)|psql|curl /);
   });
 
-  it("masks the key, reads it only in the step that needs it, and never prints it", () => {
+  it("pauses the Pépites tick before publishing and always restores it afterwards", () => {
+    const pause = body.indexOf("bun scripts/backend/pepites-tick-pause.ts pause");
+    const publish = body.indexOf("bun scripts/backend/pepites-photo-job.ts");
+    const resume = body.indexOf(
+      'bun scripts/backend/pepites-tick-pause.ts resume "$PREVIOUS_ACTIVE"',
+    );
+    expect(pause).toBeGreaterThan(0);
+    expect(publish).toBeGreaterThan(pause);
+    expect(resume).toBeGreaterThan(publish);
+    expect(body).toContain("id: pause");
+    expect(body).toContain("if: always() && steps.pause.outputs.previous_active != ''");
+    expect(body).not.toContain("pepites_configure");
+  });
+
+  it("masks both keys, reads each only in the steps that need it, and never prints them", () => {
     expect(body).toContain("printf '::add-mask::%s\\n' \"$SUPABASE_SECRET_KEY\"");
     expect(body.match(/secrets\.SUPABASE_SECRET_KEY/g)).toHaveLength(1);
-    expect(body).not.toMatch(/echo[^\n]*\$SUPABASE_SECRET_KEY/);
+    expect(body.match(/printf '::add-mask::%s\\n' "\$SUPABASE_ACCESS_TOKEN"/g)).toHaveLength(2);
+    expect(body.match(/secrets\.SUPABASE_ACCESS_TOKEN/g)).toHaveLength(2);
+    expect(body).not.toMatch(/echo[^\n]*\$(SUPABASE_SECRET_KEY|SUPABASE_ACCESS_TOKEN)/);
     expect(body).toContain("persist-credentials: false");
     expect(body).toContain("contents: read");
   });

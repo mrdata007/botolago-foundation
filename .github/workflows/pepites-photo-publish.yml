@@ -11,6 +11,14 @@ name: Publish approved player photos
 # removed. It then deletes the files queued by revocation, expiry or
 # replacement. Run it again when more than 20 photos wait.
 #
+# One writer at a time (AGENTS.md): the `pepites-tick` pg_cron job writes
+# players, Pépites tables and photo-release expiry every 15 minutes, and the
+# concurrency group below cannot hold back a database cron job. So the run
+# pauses that cron job first (scripts/backend/pepites-tick-pause.ts), waits for
+# a tick already in flight, publishes, and restores the job's previous state in
+# an always-run step. It pauses the job rather than switching the Pépites mode
+# off, so readers keep seeing Pépites during the run.
+#
 # Guards follow the other production workflows: dispatch from main by the
 # owner only, the approved environment, one production writer at a time (the
 # shared concurrency group), the fixed project, a typed confirmation and no
@@ -48,6 +56,7 @@ jobs:
     environment: production-admin-activation
     env:
       CONFIRMATION: ${{ inputs.confirmation }}
+      PROJECT_REF: tkewgajrljbwgwedqsxn
       SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
       SUPABASE_PRODUCTION_URL: ${{ vars.SUPABASE_PRODUCTION_URL }}
     steps:
@@ -74,8 +83,19 @@ jobs:
         run: |
           set -euo pipefail
           bun install --frozen-lockfile
-          bun test scripts/backend/pepites-photo-job.test.ts
+          bun test scripts/backend/pepites-photo-job.test.ts scripts/backend/pepites-tick-pause.test.ts
           bun run backend:secrets:check
+
+      - name: Pause the Pépites tick and wait for one in flight
+        id: pause
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SUPABASE_ACCESS_TOKEN" || { echo "SUPABASE_ACCESS_TOKEN is missing from the environment."; exit 2; }
+          printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          bun scripts/backend/pepites-tick-pause.ts pause
 
       - name: Publish approved photos and remove withdrawn ones
         env:
@@ -97,3 +117,16 @@ jobs:
               || echo "- The job did not report a result (exit $status)."
           } >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
+
+      # Runs whatever happened above, as soon as the pause recorded the job's
+      # previous state: a failed or cancelled publish never leaves the tick off.
+      - name: Restore the Pépites tick
+        if: always() && steps.pause.outputs.previous_active != ''
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PREVIOUS_ACTIVE: ${{ steps.pause.outputs.previous_active }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          bun scripts/backend/pepites-tick-pause.ts resume "$PREVIOUS_ACTIVE"
