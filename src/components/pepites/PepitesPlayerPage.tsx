@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
-import { useId, type ReactNode } from "react";
+import { Fragment, useId, type ReactNode } from "react";
 
 import type {
   MinutesSplit,
@@ -252,7 +252,13 @@ export function PepitesPlayerPage({
   );
 }
 
-/** "ITTIHAD TANGER · DÉFENSEUR · 22 ANS · PIED : N.R." */
+/**
+ * "Ittihad Tanger · Défenseur · 22 ans · Pied : N.R.". Each part after the
+ * club keeps to one line (`whitespace-nowrap`), so the line breaks between
+ * parts, never inside "Pied : N.R." or "22 ans" (a long club name may still
+ * wrap); the dot holds to the part before it (a no-break space), so no line
+ * opens on a "·".
+ */
 function HeroMeta({ player }: { player: Player }) {
   const { t, tr, lang } = useI18n();
   const missing = new Set(player.missing);
@@ -272,10 +278,12 @@ function HeroMeta({ player }: { player: Player }) {
   return (
     <p className={cn(ui.text.meta, ui.tone.muted)}>
       {parts.map((part, index) => (
-        <span key={index}>
-          {index > 0 ? " · " : null}
-          {part}
-        </span>
+        <Fragment key={index}>
+          {index > 0 ? "\u00a0· " : null}
+          <span className={index === 0 && player.team ? undefined : "whitespace-nowrap"}>
+            {part}
+          </span>
+        </Fragment>
       ))}
     </p>
   );
@@ -711,7 +719,7 @@ function PlayerOverview({
   );
 }
 
-/** "MOY. SAISON 6,85", or nothing before the first rated match. */
+/** "Moy. saison 6,85", or nothing before the first rated match. */
 function seasonAverageLine(
   average: number | null,
   t: (key: TranslationKey) => string,

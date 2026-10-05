@@ -30,6 +30,13 @@ function numberAt(
 }
 
 /**
+ * A coverage row: the kit's key-value row on the card's own content edge
+ * (the kit row's `px-1` would set it 4px inside the heading above it), and
+ * no rule under the last one, as the match list ends.
+ */
+const COVERAGE_ROW = "px-0 last:border-b-0";
+
+/**
  * `/pepites/methode`: how the score is made, read from the methodology the
  * current version was computed with (its weights and thresholds), and how
  * complete the data is (plan §4: trust).
@@ -134,31 +141,37 @@ export function PepitesMethodPage() {
             {t("pepites.coverage.as_of").replace("{round}", formatNumber(coverage.asOfRound, lang))}
           </p>
           <UiKeyValueRow
+            className={COVERAGE_ROW}
             label={t("pepites.coverage.pool")}
             value={<bdi>{formatNumber(coverage.poolSize, lang)}</bdi>}
           />
           <UiKeyValueRow
+            className={COVERAGE_ROW}
             label={t("pepites.coverage.ranked")}
             value={<bdi>{formatNumber(coverage.ranked, lang)}</bdi>}
           />
           <UiKeyValueRow
+            className={COVERAGE_ROW}
             label={t("pepites.coverage.no_dob")}
             value={<bdi>{formatNumber(coverage.noDateOfBirth, lang)}</bdi>}
           />
           {coverage.ratingCoverage !== null ? (
             <UiKeyValueRow
+              className={COVERAGE_ROW}
               label={t("pepites.coverage.rating")}
               value={<bdi>{percent(coverage.ratingCoverage)}</bdi>}
             />
           ) : null}
           {coverage.footCoverage !== null ? (
             <UiKeyValueRow
+              className={COVERAGE_ROW}
               label={t("pepites.coverage.foot")}
               value={<bdi>{percent(coverage.footCoverage)}</bdi>}
             />
           ) : null}
           {coverage.heightCoverage !== null ? (
             <UiKeyValueRow
+              className={COVERAGE_ROW}
               label={t("pepites.coverage.height")}
               value={<bdi>{percent(coverage.heightCoverage)}</bdi>}
             />
