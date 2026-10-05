@@ -80,9 +80,13 @@ stays, on an element that does the same job. In particular:
 - `/pepites/comparer`: `pepites-compare-pick-a`/`-b`, `pepites-compare-option`
   (25 per page), `pepites-compare-card`, `pepites-compare-empty`, the picker's
   search field found with `getByRole("searchbox")`, and focus returning to the
-  picker when the dialog closes. `tests/e2e/pepites.e2e.ts:339` also expects
-  `pepites-compare-cards`, which no source defines today: add that test id to
-  the container of the compare cards instead of weakening the test.
+  picker when the dialog closes. `tests/e2e/pepites.e2e.ts:340` also expects
+  `pepites-compare-cards`: that is the disciplinary-cards row of the compare
+  card, whose id is built as `pepites-compare-${row.key}` with the row key
+  `cards` (so a grep for the literal finds nothing). Keep the row ids; do not
+  put the same id on any other element. (Corrected in the integration stage:
+  this brief first read the id as missing and asked for it on the portraits'
+  container, which made two elements answer to it.)
 - `/pepites/revelation`: `pepites-reveal-name`, `pepites-reveal-next`,
   `pepites-reveal-done`, the `n=` step in the address.
 - Share images: 1080×1350 and 1080×1920, download named
@@ -271,7 +275,7 @@ already restyled the piece in `PepitesVisuals.tsx`, `PepitesParts.tsx` or
 | breakthrough bars (energy fill)                                 | shared `FillBar` (first half `fill="faint"`, second `fill="ink"`); the "×" figure in `ui.score.md` ink                                                                                                                                                                              |
 | compare bars (energy / `#1b8f55` winners)                       | winner bar `--ui-ink-fg`, other `--ui-surface-sunken`, `ui.radius.track`; winner figure `ui.tone.positive`, figures `ui.stat.sm`                                                                                                                                                    |
 | "VS" in energy text                                             | removed, or a dictionary key in fr and ar, in `ui.text.label` muted                                                                                                                                                                                                                 |
-| compare portraits (`rounded-lg/xl`, "＋")                       | `UiCard` buttons with `PlayerPhoto size="lg"` and a lucide `Plus`; `data-testid="pepites-compare-cards"` on their container                                                                                                                                                         |
+| compare portraits (`rounded-lg/xl`, "＋")                       | `UiCard` buttons with `PlayerPhoto size="lg"` and a lucide `Plus` (no test id on their container: `pepites-compare-cards` is the cards row's)                                                                                                                                       |
 | compare picker input (`h-10`)                                   | `UiInput type="search"`; rows `UiPlayerRow`                                                                                                                                                                                                                                         |
 | share trigger with `onNight` (glass)                            | `onNight` off (the soft variant on light cards)                                                                                                                                                                                                                                     |
 | Follow button (glass) and white retry link                      | `UiButton variant="soft"` / `"ink"` with `aria-pressed`; retry at `ui.space.tap`                                                                                                                                                                                                    |

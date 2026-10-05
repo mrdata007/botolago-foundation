@@ -215,10 +215,14 @@ describe("Pépites — the old layer stays deleted", () => {
     expect(shell).not.toMatch(/\btopBar=/);
   });
 
-  it("the compare page names the container of its two cards, as the e2e suite expects", () => {
-    expect(code("src/components/pepites/PepitesComparePage.tsx")).toContain(
-      'data-testid="pepites-compare-cards"',
-    );
+  it("the compare card keeps one id per row, and the cards row answers alone to its id", () => {
+    // tests/e2e/pepites.e2e.ts reads `pepites-compare-cards`: the yellow and
+    // red cards row, built from the row key. A literal copy of that id on any
+    // other element would make two elements answer to it.
+    const compare = code("src/components/pepites/PepitesComparePage.tsx");
+    expect(compare).toContain("data-testid={`pepites-compare-${row.key}`}");
+    expect(compare).toMatch(/key: "cards",/);
+    expect(compare).not.toContain('"pepites-compare-cards"');
   });
 
   it("the player tabs are the kit's, with the ids the e2e suite reads", () => {

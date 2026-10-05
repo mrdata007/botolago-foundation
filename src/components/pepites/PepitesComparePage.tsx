@@ -211,10 +211,7 @@ export function PepitesComparePage({
       {/* The two players side by side, each a card that opens the picker;
           "vs" between them. The grid follows the page direction, so the
           first player stands at the inline start in both languages. */}
-      <div
-        className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-2"
-        data-testid="pepites-compare-cards"
-      >
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-stretch gap-2">
         <ComparePortrait
           data={first}
           side="a"
