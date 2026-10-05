@@ -53,7 +53,7 @@ const card = (recap: GameweekRecap) =>
   render(
     <GameweekRecapCard
       recap={recap}
-      nameOf={(id) => names[id] ?? id}
+      nameOf={(id) => names[id] ?? null}
       currentGameweek={null}
       onShowDetail={() => {}}
       allowPublish={false}
@@ -71,6 +71,18 @@ describe("GameweekRecapCard", () => {
     expect(html).toContain("Transferts supplémentaires : −4 pts");
     expect(html).toContain("Rahimi a rapporté le plus de points : 16 pts");
     expect(html).toContain(fr["fantasy.recap.detail"]);
+  });
+
+  it("a player missing from the active list is never shown as an id: the line is left out", async () => {
+    const html = await card({
+      ...RECAP,
+      captain: { ...RECAP.captain!, playerId: "gone" },
+      topContributor: { playerId: "gone", counted: 16 },
+    });
+    expect(html).not.toContain("gone");
+    expect(html).not.toContain("Capitaine");
+    expect(html).not.toContain("a rapporté le plus de points");
+    expect(html).toContain("Transferts supplémentaires : −4 pts");
   });
 
   it("a corrected result says so", async () => {

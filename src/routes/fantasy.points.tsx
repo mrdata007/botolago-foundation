@@ -288,7 +288,10 @@ function PointsBody() {
       {recap ? (
         <GameweekRecapCard
           recap={recap}
-          nameOf={nameOf}
+          nameOf={(id) => {
+            const player = playerOf(id);
+            return player ? tr(player.name) : null;
+          }}
           currentGameweek={screen.gameweek}
           onShowDetail={() => {
             setView("list");
