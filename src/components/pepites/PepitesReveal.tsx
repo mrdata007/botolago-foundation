@@ -1,9 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { useMemo } from "react";
 
-import { ui, UiButton, UiCard, UiEmptyState, UiLinkButton, UiStatBlock } from "@/components/ui-kit";
+import { ui, UiCard, UiEmptyState, UiLinkButton, UiStatBlock } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle } from "@/lib/club-palette";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
@@ -47,14 +46,6 @@ function revealStamp(iso: string | null, lang: "fr" | "ar"): string {
 }
 
 /**
- * The arrow glyph that ends the "next" label in the dictionaries (U+2192 in
- * French, U+2190 in Arabic). The button draws the arrow as a lucide icon
- * instead, which styles.css mirrors in Arabic, so the glyph is cut here. A
- * no-op once the copy drops it.
- */
-const TRAILING_ARROW = /\s*[\u2190\u2192]\s*$/;
-
-/**
  * `/pepites/revelation` (Figma 06): the week's Top 10 as a story, from N°10
  * to N°1, one player a screen: the photo or the club shirt, the name, three
  * figures and the editor's line. Full-screen, like a story, on the main
@@ -65,7 +56,6 @@ const TRAILING_ARROW = /\s*[\u2190\u2192]\s*$/;
  */
 export function PepitesReveal({ rank }: { rank: number }) {
   const { t, tr, lang } = useI18n();
-  const navigate = useNavigate();
   const viewer = usePepitesViewer();
   const pointerQuery = useVersionPointer(viewer);
   const pointer = pointerQuery.data;
@@ -263,26 +253,19 @@ export function PepitesReveal({ rank }: { rank: number }) {
             {t("pepites.reveal.open_player")}
           </UiLinkButton>
           {next ? (
-            // A button, not a link: the story replaces its own step in the
-            // history, so Back leaves the story rather than walking it.
-            <UiButton
+            // The next step replaces this one in the history (`replace`), so
+            // Back leaves the story rather than walking it. The arrow is the
+            // lucide icon, which styles.css mirrors in Arabic.
+            <UiLinkButton
+              to="/pepites/revelation"
+              search={{ n: next.rank }}
+              replace
               variant="soft"
               data-testid="pepites-reveal-next"
-              onClick={() =>
-                void navigate({
-                  to: "/pepites/revelation",
-                  search: { n: next.rank },
-                  replace: true,
-                })
-              }
             >
-              <span>
-                {t("pepites.reveal.next")
-                  .replace("{n}", formatNumber(next.rank, lang))
-                  .replace(TRAILING_ARROW, "")}
-              </span>
+              <span>{t("pepites.reveal.next").replace("{n}", formatNumber(next.rank, lang))}</span>
               <ArrowRight aria-hidden className="h-4 w-4" />
-            </UiButton>
+            </UiLinkButton>
           ) : (
             <UiLinkButton to="/pepites" variant="soft" data-testid="pepites-reveal-done">
               {t("pepites.reveal.done")}
