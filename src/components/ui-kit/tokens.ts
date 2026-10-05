@@ -105,10 +105,15 @@ export const UI_TOKENS = [
   "--ui-scrim",
   "--ui-scorebox",
   "--ui-on-scorebox",
+  // the toast: a floating surface with no scrim, and its edge (BG-0149)
+  "--ui-toast",
+  "--ui-toast-rule",
   // ink
   "--ui-ink",
   "--ui-ink-deep",
   "--ui-ink-fg",
+  // the edge an ink-filled control carries: none in light, a ring in dark
+  "--ui-ink-edge",
   "--ui-on-ink",
   "--ui-on-ink-plain",
   "--ui-on-ink-muted",
@@ -205,9 +210,13 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-scrim",
   "--ui-scorebox",
   "--ui-on-scorebox",
+  "--ui-toast",
+  "--ui-toast-rule",
   "--ui-ink",
   "--ui-ink-deep",
   "--ui-ink-fg",
+  // `transparent` in light, a ring that clears 3:1 in dark.
+  "--ui-ink-edge",
   "--ui-on-ink",
   "--ui-on-ink-plain",
   "--ui-selected",
@@ -541,6 +550,18 @@ export const ui = {
     ink: "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink)]",
     /** An ink fill carrying plain (non-cyan) foreground. */
     inkPlain: "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink-plain)]",
+    /**
+     * `inkPlain` on a CONTROL: an ink-filled button or link (BG-0149). Adds
+     * `--ui-ink-edge` as a 1px inset ring — nothing in light, where navy on
+     * white is 12.8:1; a grey that clears 3:1 on every dark surface in dark,
+     * where the ink fill sits on the surface at 1.25:1 and the button
+     * vanished as a shape. An inset
+     * shadow, not `ring-inset`: the focus ring (`ui.focus`) is a `ring` with
+     * an offset, and `ring-inset` would pull it inside the button. A band, a
+     * disc or a status pill on the ink fill is not a control: `inkPlain`.
+     */
+    inkControl:
+      "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink-plain)] shadow-[inset_0_0_0_1px_var(--ui-ink-edge)]",
     /**
      * A SELECTED, active or current control: the chosen chip, the active
      * pill segment, the current nav link (BG-0149). Identical to `inkPlain`

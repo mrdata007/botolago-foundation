@@ -1866,6 +1866,16 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-scorebox: oklch(1 0 0);
   --ui-on-scorebox: var(--ui-ink-deep);
 
+  /* The toast: a surface floating over the page with no scrim behind it
+     (BG-0149). In light it is the card white on a hairline, and the drop
+     shadow does the separating. In dark a shadow cannot be seen on a dark
+     page, and a toast on `--ui-surface` read as part of the top bar it covers
+     at 1440 (both oklch 0.22, edge 1.37:1). There the fill is one step lighter
+     and the edge is the strong rule, which clears 3:1 against the bar and the
+     page. Text on it is `--ui-on-surface` / `--ui-on-surface-muted`. */
+  --ui-toast: var(--ui-surface);
+  --ui-toast-rule: var(--ui-rule);
+
   /* ---- Brand ink -------------------------------------------------
      `--ui-ink` fills and borders. `--ui-ink-fg` is the foreground you
      put ON page/surface; `--ui-on-ink*` are the foregrounds that go
@@ -1873,6 +1883,13 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-ink: var(--brand-primary);
   --ui-ink-deep: oklch(0.24 0.09 258);
   --ui-ink-fg: oklch(0.32 0.1 258);
+  /* The edge an ink-filled CONTROL carries (a `variant="ink"` button, a
+     toast's action button). None in light, where navy on white is 12.8:1. In
+     dark the ink fill sits on the surface at 1.25:1, so the button vanished as
+     a shape and only its label showed; there it gets a 1px inset ring in a
+     lifted strong-rule grey. Bands and status pills on the ink fill are not
+     controls and carry no edge. */
+  --ui-ink-edge: transparent;
   --ui-on-ink: oklch(0.88 0.11 205); /* cyan text on ink */
   --ui-on-ink-plain: oklch(1 0 0);
   /* The quieter line on an ink fill: a kicker, a label over a figure on a
@@ -2235,12 +2252,19 @@ html[dir="rtl"] .lucide-arrow-left {
   --ui-scrim: color-mix(in oklab, oklch(0.08 0.02 260) 68%, transparent);
   --ui-scorebox: oklch(0.93 0.01 250);
   --ui-on-scorebox: var(--ui-ink-deep);
+  --ui-toast: oklch(0.27 0.03 260);
+  --ui-toast-rule: var(--ui-rule-strong);
 
   --ui-ink: oklch(0.3 0.08 260);
   --ui-ink-deep: oklch(0.22 0.07 260);
   /* The BG-0083 fix: on a dark page the brand foreground has to be a
      light tint of the brand, not the brand fill. */
   --ui-ink-fg: oklch(0.86 0.08 232);
+  /* The strong rule's hue, lifted until it clears 3:1 against every dark
+     surface an ink control sits on (page 4.60, surface 4.04, sunken 3.64,
+     toast 3.51) and against the ink fill inside it (3.23). `--ui-rule-strong`
+     itself is 2.75 on the toast and 2.85 on sunken. */
+  --ui-ink-edge: oklch(0.58 0.02 258);
   --ui-on-ink: oklch(0.88 0.11 205);
   --ui-on-ink-plain: oklch(0.97 0.01 250);
   --ui-selected: var(--ui-ink-fg);

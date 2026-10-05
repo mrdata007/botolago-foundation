@@ -29,14 +29,29 @@ type ToasterProps = React.ComponentProps<typeof Sonner>;
  * stripes are the kit's status colours on the inline-start edge, so they
  * mirror in Arabic.
  *
+ * The toast sits on `--ui-toast` with a `--ui-toast-rule` edge, not on the
+ * card surface: identical to the card white and its hairline in light, but in
+ * dark a drop shadow cannot be seen on a dark page and a toast on
+ * `--ui-surface` read as part of the top bar it covers at 1440 (both oklch
+ * 0.22, edge 1.37:1). There the fill is one step lighter and the edge is the
+ * strong rule. The action button wears the ink control's edge
+ * (`ui.surface.inkControl`): `--ui-ink-edge`, a ring that exists only in
+ * dark, where the navy fill measured 1.25:1 against the toast. That class is
+ * not `!`: Sonner sets no box-shadow on a button at rest, so it applies, and
+ * Sonner's own `:focus-visible` ring still replaces it on focus.
+ *
+ * Light toasts are a deliberate change from before BG-0149: they used to be
+ * Sonner's default (8px corners, 13px type, near-black action button)
+ * because none of these classes applied; they now wear the kit.
+ *
  * The landmark around the toasts and a toast's close button are named from
  * the dictionaries: sonner's own names are English ("Notifications",
  * "Close toast"), which is what an Arabic screen reader announced.
  */
 const TOASTER_STYLE = {
-  "--normal-bg": "var(--ui-surface)",
+  "--normal-bg": "var(--ui-toast)",
   "--normal-text": "var(--ui-on-surface)",
-  "--normal-border": "var(--ui-rule)",
+  "--normal-border": "var(--ui-toast-rule)",
 } as CSSProperties;
 
 const Toaster = ({ ...props }: ToasterProps) => {
@@ -57,9 +72,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
         classNames: {
           toast: [
             "group toast pointer-events-auto",
-            "group-[.toaster]:!bg-[color:var(--ui-surface)]",
+            "group-[.toaster]:!bg-[color:var(--ui-toast)]",
             "group-[.toaster]:!text-[color:var(--ui-on-surface)]",
-            "group-[.toaster]:!border group-[.toaster]:!border-[color:var(--ui-rule)]",
+            "group-[.toaster]:!border group-[.toaster]:!border-[color:var(--ui-toast-rule)]",
             "group-[.toaster]:!rounded-[var(--ui-radius-sheet)]",
             // A drop below the toast, not `--ui-shadow-overlay`: that one is
             // cast upwards, for a sheet rising from the bottom edge, and these
@@ -73,7 +88,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           description:
             "group-[.toast]:!text-[color:var(--ui-on-surface-muted)] text-[length:var(--ui-text-meta)] mt-0.5",
           actionButton:
-            "group-[.toast]:!bg-[color:var(--ui-ink)] group-[.toast]:!text-[color:var(--ui-on-ink-plain)] group-[.toast]:!rounded-full group-[.toast]:!px-3 group-[.toast]:!h-auto group-[.toast]:!py-1.5 group-[.toast]:!text-[length:var(--ui-text-meta)] group-[.toast]:![font-weight:var(--ui-weight-heavy)]",
+            "group-[.toast]:!bg-[color:var(--ui-ink)] group-[.toast]:!text-[color:var(--ui-on-ink-plain)] group-[.toast]:shadow-[inset_0_0_0_1px_var(--ui-ink-edge)] group-[.toast]:!rounded-full group-[.toast]:!px-3 group-[.toast]:!h-auto group-[.toast]:!py-1.5 group-[.toast]:!text-[length:var(--ui-text-meta)] group-[.toast]:![font-weight:var(--ui-weight-heavy)]",
           cancelButton:
             "group-[.toast]:!bg-[color:var(--ui-surface-sunken)] group-[.toast]:!text-[color:var(--ui-on-surface)] group-[.toast]:!rounded-full group-[.toast]:!px-3 group-[.toast]:!h-auto group-[.toast]:!py-1.5 group-[.toast]:!text-[length:var(--ui-text-meta)]",
           success:

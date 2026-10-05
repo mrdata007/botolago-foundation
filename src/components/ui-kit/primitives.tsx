@@ -271,7 +271,7 @@ function iconButtonPaint(variant: UiIconButtonVariant) {
         ui.tone.onClub,
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-on-club)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
       ),
-    variant === "ink" && cn(ui.surface.inkPlain, ui.focus),
+    variant === "ink" && cn(ui.surface.inkControl, ui.focus),
     variant === "ghost" &&
       cn(
         "bg-transparent hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
@@ -618,8 +618,14 @@ function buttonClass(
     // disabled one lies flat again, so it does not read as armed.
     variant === "gradient" &&
       "text-[color:var(--ui-ink-deep)] shadow-[var(--ui-shadow-lifted)] disabled:opacity-45 disabled:shadow-none",
+    // `inkControl`: the ink fill plus `--ui-ink-edge`, the ring that keeps
+    // the button a shape on a dark surface. A disabled one drops it and lies
+    // flat with the other disabled controls.
     variant === "ink" &&
-      "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink-plain)] disabled:bg-[color:var(--ui-surface-sunken)] disabled:text-[color:var(--ui-on-surface-muted)]",
+      cn(
+        ui.surface.inkControl,
+        "disabled:bg-[color:var(--ui-surface-sunken)] disabled:text-[color:var(--ui-on-surface-muted)] disabled:shadow-none",
+      ),
     // BG-0083: these three read as text on a surface, so they take the
     // theme-correct foreground, not the ink fill.
     variant === "light" &&

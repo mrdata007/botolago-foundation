@@ -45,10 +45,26 @@ describe("the Toaster follows the theme", () => {
   });
 
   it("maps Sonner's --normal-* variables to kit tokens, on the toaster's own element", () => {
-    expect(code).toContain('"--normal-bg": "var(--ui-surface)"');
+    expect(code).toContain('"--normal-bg": "var(--ui-toast)"');
     expect(code).toContain('"--normal-text": "var(--ui-on-surface)"');
-    expect(code).toContain('"--normal-border": "var(--ui-rule)"');
+    expect(code).toContain('"--normal-border": "var(--ui-toast-rule)"');
     expect(code).toContain("style={TOASTER_STYLE}");
+  });
+
+  it("sits the toast on the toast tokens, which separate it from the bar in dark", () => {
+    // `--ui-surface` and `--ui-rule` in light; one step lighter and the
+    // strong rule in dark, where a toast on the card surface read as part of
+    // the top bar it covers (both oklch 0.22, edge 1.37:1).
+    expect(code).toContain("group-[.toaster]:!bg-[color:var(--ui-toast)]");
+    expect(code).toContain("group-[.toaster]:!border-[color:var(--ui-toast-rule)]");
+    expect(code).not.toContain("!bg-[color:var(--ui-surface)]");
+  });
+
+  it("gives the action button the ink control's edge, so it stays a shape in dark", () => {
+    const action = code.match(/actionButton:\s*"([^"]*)"/)?.[1] ?? "";
+    expect(action).toContain("!bg-[color:var(--ui-ink)]");
+    // Not important: Sonner's own :focus-visible ring has to keep replacing it.
+    expect(action).toContain("group-[.toast]:shadow-[inset_0_0_0_1px_var(--ui-ink-edge)]");
   });
 
   it("reaches for kit tokens only — no V1 glass, text, colour, brand or shadow tokens", () => {

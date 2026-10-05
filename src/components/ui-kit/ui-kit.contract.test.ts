@@ -444,6 +444,24 @@ describe("ui-kit: the primitives keep their promises", () => {
     expect(missing).toEqual([]);
   });
 
+  it("gives an ink-filled control the ink edge, so it stays a shape in dark (BG-0149)", () => {
+    // In dark the ink fill sits on the surface at 1.25:1: a navy button was
+    // only its label. `inkControl` is `inkPlain` plus a 1px inset ring in
+    // `--ui-ink-edge`, which is transparent in light (light stays exactly as
+    // it was) and a visible grey in dark.
+    expect(ui.surface.inkControl.startsWith(ui.surface.inkPlain)).toBe(true);
+    expect(ui.surface.inkControl).toContain("shadow-[inset_0_0_0_1px_var(--ui-ink-edge)]");
+    expect(rootDeclarations.get("--ui-ink-edge")).toBe("transparent");
+    expect(darkDeclarations.get("--ui-ink-edge")).toMatch(/^oklch\(/);
+
+    const painter = primitives.match(/function buttonClass\(([\s\S]*?)\n\}/)?.[1] ?? "";
+    const from = painter.indexOf('variant === "ink"');
+    expect(from).toBeGreaterThan(-1);
+    expect(painter.slice(from, from + 200)).toContain("ui.surface.inkControl");
+    const icon = primitives.match(/function iconButtonPaint\(([\s\S]*?)\n\}/)?.[1] ?? "";
+    expect(icon).toContain('variant === "ink" && cn(ui.surface.inkControl');
+  });
+
   it("never spells a Close control in English", () => {
     // Every sheet in the product used to close with a hardcoded "Close".
     expect(primitives).not.toMatch(/["'>]\s*Close\s*[<"']/);
