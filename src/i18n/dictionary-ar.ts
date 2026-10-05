@@ -687,6 +687,24 @@ export const ar = {
   "fantasy.rules.scoring": "نظام النقاط",
   "fantasy.rules.scoring_desc":
     "هدف مهاجم: 4 نقاط، وسط: 5 نقاط، مدافع أو حارس: 6 نقاط. شباك نظيفة: 4 نقاط (مدافع/حارس).",
+  "fantasy.recap.title": "جولتي",
+  "fantasy.recap.gameweek": "الجولة {n}",
+  "fantasy.recap.final": "النتيجة النهائية",
+  "fantasy.recap.corrected": "نتيجة مصحّحة",
+  "fantasy.recap.corrected_note":
+    "صُحّحت هذه النتيجة بعد اعتمادها الأول. المجموع المعروض هو المجموع المصحّح.",
+  "fantasy.recap.finalized_at": "اعتُمدت في {date}",
+  "fantasy.recap.captain": "القائد {name}: {formula}",
+  "fantasy.recap.captain_vice": "نائب القائد {name}، الذي تسلّم الشارة: {formula}",
+  "fantasy.recap.hit": "انتقالات إضافية: {n}",
+  "fantasy.recap.top": "{name} جلب أكبر عدد من النقاط: {n}",
+  "fantasy.recap.unreconciled": "تفاصيل هذا المجموع متاحة أدناه.",
+  "fantasy.recap.detail": "عرض التفاصيل",
+  "fantasy.recap.share": "مشاركة جولتي",
+  "fantasy.recap.image_alt": "صورة جولتي {n} على BotolaGO",
+  "fantasy.recap.share_message":
+    "جولتي {n} في فانتازي BotolaGO: {points}. أنشئ فريقك على BotolaGO:",
+  "fantasy.recap.footer": "botolago.com · فانتازي البطولة الاحترافية",
   "fantasy.rules.policy_title": "كيف يتم اعتماد النقاط",
   "fantasy.rules.provisional_desc":
     "خلال الجولة، تكون النقاط المعروضة مؤقتة وقد تتغير. تصبح نهائية بعد اعتماد الجولة. وإذا صُحّح خطأ في البيانات لاحقًا، تُحدَّث النقاط والترتيب.",
