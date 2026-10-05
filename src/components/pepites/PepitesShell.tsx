@@ -101,17 +101,25 @@ export function PepitesBack({
 }
 
 /**
+ * A Pépites title fills its row (`flex-1`), so its box spans the band
+ * whatever the title's length, and it WRAPS instead of truncating:
+ * `UiPageTitle` truncates because the app's hub titles are one word
+ * ("Matches"), while Pépites titles carry data ("Top 10 · Semaine 15",
+ * "Classement final 2025-26") that an ellipsis would cut, worst beside the
+ * trailing buttons on a 390px phone. The display leading holds two lines.
+ */
+const TITLE_FILLS_AND_WRAPS =
+  "[&_:is(h1,h2)]:flex-1 [&_:is(h1,h2)]:whitespace-normal [&_:is(h1,h2)]:text-balance";
+
+/**
  * A hub's title band: the kit's `UiPageTitle` (Changa h1, an inline-end
- * control, a chip row as `children`), with two Pépites needs on top:
+ * control, a chip row as `children`), with three Pépites needs on top:
  *
  * - `backTo` puts the back pill on its own row above the title, inside the
  *   same white band (the ranking and the method page are one level down
  *   from `/pepites`). `backTestId` names it for the tests.
  * - `desktop` lines the band up with a `width="desktop"` page.
- *
- * The `<h1>` fills the title row (`flex-1`), so its box spans the band
- * whatever the title's length; it still truncates beside the trailing
- * control.
+ * - the heading fills the title row and wraps (see above).
  */
 export function PepitesPageTitle({
   desktop = false,
@@ -127,7 +135,12 @@ export function PepitesPageTitle({
   const band = (
     <UiPageTitle
       {...title}
-      className={cn("[&_h1]:flex-1", backTo && "pt-1", desktop && DESKTOP_TITLE_COLUMN, className)}
+      className={cn(
+        TITLE_FILLS_AND_WRAPS,
+        backTo && "pt-1",
+        desktop && DESKTOP_TITLE_COLUMN,
+        className,
+      )}
     />
   );
   if (!backTo) return band;
