@@ -760,8 +760,12 @@ tasks:
     resolution: >
       The recorded evidence no longer matches the code. Every --fpl-* token is now an alias
       of exactly one --ui-* token (styles.css, the "Fantasy alias layer"), pinned by
-      ui-kit.contract.test.ts, which also forbids an --fpl-* entry under .dark; no live code
-      in src/ reads --fpl-* or literal bg-white/text-white (only comments mention them);
+      ui-kit.contract.test.ts, which also forbids an --fpl-* entry under .dark; nothing in
+      src/ reads an --fpl-* token any more (no var(--fpl-...) is left); the Fantasy files
+      (src/components/fantasy, src/components/fpl, src/routes/fantasy.*) use no literal
+      bg-white/text-white (only comments mention them) -- outside them the splash's two
+      white dots on its dark mesh and the admin functional route's white-on-rose button are
+      fixed in both themes, and Pépites' 72 lines are BG-0152's;
       FantasyFrame paints ui.surface.bar / ui.surface.page; the --fpl-cyan light labels
       have no call sites left. Closed on a dark measurement, the BG-0126 precedent:
       BG-0149's branch, phone set to dark with nothing stored (the real pre-paint path),
@@ -812,9 +816,43 @@ tasks:
       17.29:1 on the dark bar (the colour file measured 2.95:1 blue and 1.21:1 black there).
       The rewritten tests/e2e/dark-mode-flag.e2e.ts passes 11/11 on the branch and fails
       10/11 against main.
+      One deliberate light change, disclosed in the brief: toasts. Before BG-0149 none of the
+      Toaster's classes applied (Sonner's unlayered CSS beat them), so every toast was
+      Sonner's default (8px corners, 13px type, near-black action button); making toasts
+      follow the theme makes the kit styling apply in light too (16px corners, 14px kit
+      type, a status stripe, the navy action button). No screen shows a toast at load, so
+      the light screenshot comparison cannot catch it: light before/after crops of the same
+      toasts (fr/ar, 390/1440) go with the PR.
+      After an independent verification (2026-10-05): navy-filled controls (UiButton /
+      UiLinkButton / UiIconButton "ink", the 404 and error actions, the language-load
+      Retry, a toast's action) sat on the dark surface at 1.25:1 and read as bare labels;
+      they now carry ui.surface.inkControl, a 1px inset ring in --ui-ink-edge (transparent
+      in light, measured 4.04:1 on the surface and 4.60:1 on the page in dark, fr/ar
+      390/1440). A dark toast was the top bar's own colour behind a 1.37:1 hairline; it now
+      sits on --ui-toast / --ui-toast-rule (card white and hairline in light, one step
+      lighter with the strong rule in dark: edge 3.19-3.66:1, 2.88 beside the sunken search
+      field; action ring 3.51:1). The static error page's light button text is #fff again,
+      as on main (computed in a browser, every light colour equals main's). The contrast
+      probe now measures every visible text node on the whole page (scrolling, Range boxes,
+      nothing that is covered by paint or screen-reader-only). DESIGN_SYSTEM_V2.md documents
+      the selected state, ink controls and the new tokens.
+      Final measurements on the branch head (dev server, production data, read-only): 216
+      screenshots (27 routes, fr/ar, 390/1440, light and phone-dark), every dark one with
+      html.dark; against main's light set, 76 of 84 non-Pépites pairs pixel-identical, the
+      other 8 being the Apparence row on /profile (4), the time-of-day greeting (2) and crest
+      image pixels on /fantasy/fixtures and /pronostics (2, 0.05% and 0.01%, which also
+      differ between two runs of the same code). Dark contrast probe (PROBE_THEME=system,
+      PROBE_ALL=1) on 21 routes, fr/ar, 390/1440: 5,974 pixel measurements, 0 below AA (27
+      too sparse to judge; 436 covered texts skipped, almost all crest initials under their
+      images). tests/e2e/dark-mode-flag.e2e.ts 11/11.
     follow_up: >
       Light-mode defects measured on the way, left unchanged because light must not move in
-      this change: the unsorted sort glyph on /fantasy/fixtures (2.2:1). Not in scope:
+      this change: the unsorted sort glyph on /fantasy/fixtures (2.2:1); the filled selects
+      on /fantasy/players (#players-price, #players-sort) and the top-bar search input have
+      no border, their edge under 3:1 in both themes (the independent verifier's pixel
+      measurement: selects 1.14 light / 1.26 dark, search 1.23 / 1.11) -- give filled
+      inputs a --ui-rule-strong border in both themes. Not in
+      scope:
       Pépites in dark (BG-0152), a theme-color meta, cross-tab theme sync, the Capacitor
       status-bar style, an SVG favicon for dark tab strips, the email header's typed
       wordmark.
@@ -1272,13 +1310,14 @@ tasks:
       - BG-0093 reported FplStatBar, FplPlayerCard, FplPitch and primitives.tsx as still wrong in dark while rendering its own screens
       - DARK_MODE_ENABLED was false in src/lib/feature-flags.ts at the time, so none of this was reachable by a user
     note: >
-      Not a launch blocker and deliberately not treated as one: the dark theme is behind
-      DARK_MODE_ENABLED=false, which stays false until BG-0083 and BG-0084 are resolved, so
-      no user can reach these four components in dark. Recorded now because the lane that
-      found them does not own them and the finding would otherwise be lost. These four are
-      the remaining `--fpl-*` holdouts that BG-0091 converted to an alias layer but did not
-      convert call site by call site -- they draw colours that have no dark counterpart.
-      Clearing them is part of what makes the flag flippable.
+      (History, written while dark mode was off.) Not a launch blocker and deliberately not
+      treated as one at the time: the dark theme was behind DARK_MODE_ENABLED=false, which
+      was to stay false until BG-0083 and BG-0084 were resolved, so no user could reach
+      these four components in dark. Recorded because the lane that found them did not own
+      them and the finding would otherwise have been lost. These four were the remaining
+      `--fpl-*` holdouts that BG-0091 converted to an alias layer but did not convert call
+      site by call site -- they drew colours that had no dark counterpart. Clearing them
+      was part of what made the flag flippable; BG-0149 switched it on on 2026-10-05.
     resolution: >
       By 2026-10-05 the four were on kit tokens (no live `--fpl-*` reference is left in
       src/), except one defect: the vice-captain badge ring in FplPlayerCard.tsx and

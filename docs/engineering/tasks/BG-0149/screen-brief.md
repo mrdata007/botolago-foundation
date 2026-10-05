@@ -23,8 +23,19 @@ of 27 routes (fr/ar × 390/1440) taken from untouched `main` (a6fac90).
   token redeclared under `.dark`) or swaps a light value for a token with the
   same light value (`--ui-ink-fg` = `--ui-ink` in light; `--ui-selected` =
   `--ui-ink` and `--ui-on-selected` = `--ui-on-ink-plain` in light;
-  `--ui-wash-home` = `--brand-accent` in light). The one intended light
-  difference is the Apparence row that now shows on /profile.
+  `--ui-wash-home` = `--brand-accent` in light; `--ui-ink-edge` is
+  transparent and `--ui-toast` / `--ui-toast-rule` are the card surface and
+  hairline in light). Two light differences are intended:
+  - the Apparence row that now shows on /profile;
+  - **toasts.** Before this change none of the Toaster's classes applied:
+    Sonner's own stylesheet is unlayered and beat every one of them, so every
+    toast was Sonner's default (8px corners, 13px type, near-black text and
+    action button, a grey hairline). Making the toasts follow the theme makes
+    the kit styling apply in light too: 16px corners, 14px kit type and
+    colours, a 4px status stripe on the inline-start edge, the navy action
+    button. A toast appears only after an action, so the light screenshot
+    comparison cannot show it; before/after light crops are attached to the
+    pull request (and listed in the ledger entry).
 - **The brand.** The colour logo stays exactly as it is in light. In dark it is
   the existing approved all-white file, never a recoloured or new logo.
   Surfaces that are dark in both themes (AuthShell, landing hero, welcome)
@@ -64,10 +75,16 @@ of 27 routes (fr/ar × 390/1440) taken from untouched `main` (a6fac90).
 7. Theme switcher: 44px tall, one tab stop with arrow keys (mirrored in
    Arabic), like the first-launch language chooser.
 8. The static "page didn't load" fallback follows the phone's theme.
-9. Tests that pin the new behaviour (the dark-mode browser suite rewritten for
-   "on"; source tests that stop fill-as-foreground and `--brand-primary`
-   colours coming back outside the kit; a Toaster theme test), and the
-   contrast probe able to measure the real dark path.
+9. After an independent verification of the dark theme: ink-filled buttons
+   (and a toast's action button) get a 1px edge that only dark draws
+   (`--ui-ink-edge`, `ui.surface.inkControl`), because the navy fill sat on
+   the dark surface at 1.25:1; a toast gets its own fill and edge
+   (`--ui-toast`, `--ui-toast-rule`), one step lighter with the strong rule in
+   dark, because it read as part of the top bar it covers at 1440.
+10. Tests that pin the new behaviour (the dark-mode browser suite rewritten for
+    "on"; source tests that stop fill-as-foreground and `--brand-primary`
+    colours coming back outside the kit; a Toaster theme test), and the
+    contrast probe able to measure the real dark path.
 
 ## Acceptance criteria (visual and functional)
 
@@ -84,14 +101,16 @@ Functional:
   without a reload.
 - The switcher is one tab stop; arrow keys move and select (Left moves forward
   in Arabic); each segment is at least 44px tall.
-- A toast's computed background, text and border colours are the kit surface,
-  on-surface and rule colours, in both themes.
+- A toast's computed background, text and border colours are the kit toast,
+  on-surface and toast-rule colours (the card surface and hairline in light),
+  in both themes.
 - Typecheck, lint (0 errors), unit tests and the rewritten browser suite pass.
 
 Visual:
 
 - Light "after" screenshots (fr/ar × 390/1440) match the light "before" set
-  except for the Apparence row on /profile.
+  except for the Apparence row on /profile. Toasts, which no screen shows at
+  load, are compared separately: light before/after crops of the same toasts.
 - Every dark screenshot reports `dark: true`.
 - Measured from rasterised pixels in dark, fr and ar, 390 and 1440: no text
   pair under 4.5:1 and no UI pair under 3:1 outside Pépites on `/`, `/matches`,
@@ -103,3 +122,6 @@ Visual:
   logo, no layout shift).
 - Selected chips, pills, the active nav link and the chosen theme are clearly
   distinguishable from unselected ones in dark.
+- In dark, an ink-filled button keeps an edge of at least 3:1 against what is
+  around it, and a toast's edge separates it from the bar it covers; in light
+  neither changes (the ink edge is transparent).
