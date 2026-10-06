@@ -205,7 +205,10 @@ export function HomeMatchCarousel({
       <a href={`#${endId}`} onClick={skipToEnd} className={SKIP}>
         {t("home.carousel.skip")}
       </a>
-      <div ref={track} onScroll={onScroll} data-carousel-track className={TRACK}>
+      {/* `data-swipe-row`, as the match page's prediction deck: the cards
+          waiting beside the viewport are reachable by a swipe, not clipped
+          (the e2e off-screen check measures each card against itself). */}
+      <div ref={track} onScroll={onScroll} data-carousel-track data-swipe-row className={TRACK}>
         {cards.map(({ match, home, away }, index) => (
           <div
             key={match.id}
