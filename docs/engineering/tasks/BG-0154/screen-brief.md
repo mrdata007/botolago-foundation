@@ -1,5 +1,18 @@
 # BG-0154 — Phone app polish after BG-0151: screen brief
 
+> **Note, 2026-10-06, after implementation.** Two things differ from the brief
+> as approved, both found by measuring. (1) Clipping with `overflow: clip` was
+> not enough on its own for the player page: a sticky box only travels inside
+> its parent, and the bar's parent was the wrapper under the hero, so at 844x390
+> it could not reach the window's bottom at the top of the page. The bar is now
+> a child of the column itself; the wrapper's `pb-6` became its `mb-6`. (2) At
+> 1440x900 in French the bar's box is where main has it, but its pixels differ
+> by antialiasing (a bar that sticks to the window is composited on its own
+> layer), so "pixel-identical" holds for the rest of the page, not inside the
+> bar. Status-bar changes made in one go are also settled together, so moving
+> between two sign-in screens does not flick the icons. The evidence is in the
+> BG-0154 ledger entry.
+
 Owner request, 2026-10-06 ("fix these then publish"), four of the follow-ups left
 after #353 to #358. Branch `claude/app-polish-followups`, from `main` at `2f13117b`.
 

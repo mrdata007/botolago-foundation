@@ -380,8 +380,10 @@ What pads itself by the insets:
   page's actions, the bars that drop to the bottom edge from 768px wide, the
   Landing page's button), the Pépites reveal, toasts, the reading-progress bar,
   side and top sheets, and centred dialogs;
-- on Fantasy inner screens, a strip exactly as tall as the status bar, so
-  scrolled content does not show under the clock;
+- on Fantasy inner screens, the sign-in screens and the Landing page (`/jouer`),
+  a strip exactly as tall as the status bar (`StatusBarStrip`), so scrolled
+  content does not show under the clock: in the header's surface on Fantasy, in
+  the dark band's ink-deep on the other two (BG-0154);
 - in landscape, the page itself (`body`), padded on both sides by the larger side
   inset, so content keeps clear of the notch. The app stays upright, so this is
   for the website on a notched iPhone turned sideways.
@@ -397,13 +399,20 @@ builds, in French and Arabic: a notched or Dynamic Island iPhone, an Android 15+
 phone with WebView 140 or later and one with an older WebView, and the website in
 Safari on a notched iPhone, upright and sideways.
 
-To fix before any store build: the status bar's clock and icons follow the
-phone's light or dark setting, not the app's. Now that the app has its own light,
-dark and system choice, they must follow the theme the app shows
-(`SystemBars.setStyle` on each theme change). Otherwise they are dark on a dark
-bar, or light on a light one, on every screen whenever the app's choice differs
-from the phone's. The dark top bands of the sign-in, welcome and Landing screens
-may need light icons whatever the theme.
+The status bar's clock and icons follow the theme the app shows, not the
+phone's light or dark setting (BG-0154, `src/lib/system-bars.ts`): at start-up,
+when the reader picks Clair or Sombre, and when the phone changes while Système
+is chosen, the site calls Capacitor 8's built-in `SystemBars.setStyle` (part of
+`@capacitor/core`, no plugin to add and no native change). Dark icons on the
+light theme, light icons on the dark theme; Capacitor names the style after the
+background, so light icons are `SystemBarsStyle.Dark`. The sign-in screens, the
+Landing page and the launch splash have a dark top in both themes and keep light
+icons while they are on screen. On Android the navigation bar follows the theme
+too; on iPhone the home indicator colours itself. iOS needs
+`UIViewControllerBasedStatusBarAppearance` set to YES in `Info.plist`, which
+Capacitor 8's template already does. Nothing is loaded or called in a browser.
+This was checked with unit tests and in Chromium with a stand-in for the phone's
+bridge, not on a phone: it is part of the device check above.
 
 ## Still open before a store submission
 
@@ -412,8 +421,8 @@ web view and sign-in links open in the system browser, so the app needs its own
 sign-in redirect handling; real account deletion with a stated timeline and
 confirmation; the prize terms; removing test clubs and Gameweek state from
 production data; the share-link origin; checking the screen edges on real phones
-(see "Screen edges" above); the status bar's clock and icons following the app's
-chosen theme (`SystemBars.setStyle`, see "Screen edges" above); the privacy policy and store forms (push is not yet in
+(see "Screen edges" above, which includes the status bar following the app's
+theme); the privacy policy and store forms (push is not yet in
 the policy's purposes, and phone tokens have no row in its retention table; App
 Store Connect's App Privacy form and Google Play's Data safety form are filled by
 hand, from the policy); the Arabic permission texts, not yet read by a native
