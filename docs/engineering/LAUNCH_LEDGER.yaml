@@ -1487,11 +1487,42 @@ tasks:
       the kit" section, and the Figma notes and the v1.1 handoff carry superseded banners: their
       visual tokens are retired, their copy, Arabic terminology and digit rules still apply.
     remaining:
-      - "follow-up: redraw the share images (share-image.ts) and the Fantasy recap image (recap-image.ts, which imports its helpers) in the main look; then the IBM Plex Mono @font-face and public/fonts/ibm-plex-mono-* can go"
+      - "follow-up, taken up by BG-0153: redraw the share images (share-image.ts) and the Fantasy recap image (recap-image.ts, which imports its helpers) in the main look; then the IBM Plex Mono @font-face and public/fonts/ibm-plex-mono-* can go"
       - ".github/workflows/backend-quality.yml:79 still says Pépites is off in every build (it has been on since 2026-09-27); lanes may not edit workflows"
       - "src/lib/motion.ts tiltAngles has no caller now that TiltFrame is gone (its own tests still pass)"
       - "merging with BG-0150: both branches edit the Pépites chevrons, and BG-0150's allowlist of Arabic-only flips names the Pépites chart flip this branch removes"
       - "from the review, left as they are: the desktop top bar is the wide one on the ranking and player pages and the compact one on the hub, method and compare pages (it follows the page's canvas, as on Home and match detail); route document titles are French in Arabic too (every route's head uses fr) and the player's title is generic after a client navigation; in .dark a selected chip or primary fill is 1.13:1 against an unselected chip, the same on Matches standings (a dark-token question for the dark-mode lane)"
+
+  BG-0153:
+    title: The share pictures on the main design -- the Pépites Top 10 post, the story card and the Fantasy recap
+    area: design
+    severity: P2
+    user_impact: >
+      The three pictures people post from BotolaGO (the Pépites Top 10, a player's story card
+      and the Fantasy "Ma journée" recap) still drew the retired Pépites night look after
+      BG-0152: #070d24 with violet glows, gradient-coloured titles and scores, a slant, IBM
+      Plex Mono and a hand-drawn GO mark. Owner request 2026-10-06: put them on the main look.
+    owner: Chief
+    state: RUNNING # built on claude/share-images-main-look (brief 00d9129a); not reviewed, merged or published
+    depends_on: [BG-0152]
+    branch: claude/share-images-main-look
+    brief: docs/engineering/tasks/BG-0153/screen-brief.md
+    evidence:
+      - "scope: src/components/pepites/share-image.ts (Top 10 post 1080x1350, story card 1080x1920) and src/components/fantasy/recap-image.ts (recap 1080x1350); models, sizes, content order, strings, digit rules, file names, share flows and every export other modules use kept; shareImageModel/storyModel/splitName/sharePhotoUrl and lineRuns/drawLine are byte-identical to main"
+      - "palette: SHARE_PALETTE, kit tokens as sRGB hex read from Chromium's own pixels -- --ui-ink-deep #001c49 (ground), --ui-ink #0c3164 (panels), --ui-on-ink-plain #ffffff, --ui-on-ink-muted #cad2dd, --ui-accent-spring #60fa97 / --ui-accent-sky #73edfa (the action gradient, once per picture: the week pill, the story wheel's values, the recap total's plate; text on it Tunnel Navy), dark --ui-rule flattened #2c4d79 / #223b62; club colours through clubPalette (light fill and text, dark edge for rings and edge bars)"
+      - "type: Changa (at most 800) for titles and standalone figures, Manrope in French, Noto Sans Arabic for Arabic body text, letter-spacing (the label step's 0.025em) in French only; no slant, no gradient text, no mono; the approved white wordmark replaces the GoMark (and its untranslated DATA tag, already gone from the screens); the decorative ghost 10 on the post is gone, the story's ghost rank stays tone on tone"
+      - "src/components/pepites/share-image.draw.test.ts (27 tests): every picture drawn in fr and ar on a recording 2D context -- every colour painted is in SHARE_PALETTE or a club palette colour, never #070d24 or violet (hue 240-330 at >25% saturation), one action gradient with exactly the two stops and never on text; faces Changa/Manrope/Noto only, Changa <= 800; no letter-spacing in Arabic; every Arabic shape and text the mirror of the French one (box, or anchor with the alignment turned round); the recap's Arabic runs drawn one by one from the right; photo load failure and tainted-canvas fallbacks. A mutation run (kicker and story column not mirrored, one violet fill) failed 4 of them"
+      - "contrast from the rendered PNG pixels (glyph core against the most common colour in the box), 33 text boxes over the six fr/ar pictures: lowest 5.88:1 (white initials on Wydad red, large text), muted meta on the panel 8.40:1, muted on the ground 10.91:1, Tunnel Navy on the gradient 12.18-12.31:1, white on the panel 12.81:1"
+      - "real share sheet on the branch's dev server (port 5410, production data, read-only, release 4c9f4e54): the player story card draws at 1080x1920 in fr and ar, download pepites-baba-bello-ilou.png; production has no published edition, so the Top 10 post was drawn through the same modules by a harness that builds the model as PepitesShareButton does (fr/ar, with and without a photo)"
+      - "IBM Plex Mono retired: no use left in src (only the option-a guard that forbids it); its two @font-face rules and public/fonts/ibm-plex-mono-* (two WOFF2, licence) removed; public/demo/app.html embeds its own copy and is untouched"
+      - "checks on the branch: bun run typecheck pass; bun run lint 0 errors, 31 warnings (as on main); bun test 5828 pass, 17 skip, 0 fail; prettier --check on the changed files pass; i18n gate pass, W1 7, W2 7, W3 252, W4 64, all at baseline"
+    note: >
+      Manrope draws the French narrow no-break space of formatCount ("1 159") at 0.1em, so in
+      the story's 9px stats line it reads almost as "1159"; the character is unchanged and the
+      screens show it the same way in Manrope (IBM Plex Mono, being monospaced, drew it wide).
+    remaining:
+      - "owner's eye on the pictures, in particular the GoMark's DATA tag going with it and the story wheel's single gradient with marker-wheels in the legend instead of five slice colours"
+      - "the Fantasy recap and the Top 10 post were not seen inside the live share sheet: the recap needs a signed-in manager with a finalised gameweek, the post a published edition (the Pépites e2e suite checks the post on sample data)"
 
   BG-0123:
     title: src/services/fantasy-cloud-repo.ts is an unreachable repository calling four RPCs that exist in no schema
