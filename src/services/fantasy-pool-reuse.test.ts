@@ -4,6 +4,7 @@ import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository
 import type { FantasyPlayer } from "@/types/domain";
 import { forgetSharedFantasyHub } from "./fantasy-hub-share";
 import {
+  fantasyPlayerQuery,
   fantasyPlayersQuery,
   topPlayersOfWeekQuery,
   trendingPlayersQuery,
@@ -193,24 +194,96 @@ describe("Home's trending players", () => {
     expect(pool[1].totalPoints).toBe(52);
     client.clear();
   });
+});
 
-  test("a failing pool is asked twice, not four times: one retry in all", async () => {
+/**
+ * The one-retry rule (`@/services/query-client`) holds for the pool whoever
+ * reads it: a failing pool is read twice in all, every screen keeps its one
+ * retry, and a read's own failure is still retried once.
+ */
+describe("a pool read that fails", () => {
+  /** No waiting between attempts, in this test only; the pool keeps its other defaults. */
+  function quickRetries() {
+    const client = createAppQueryClient();
+    const key = fantasyPlayersQuery().queryKey;
+    client.setQueryDefaults(key, { ...client.getQueryDefaults(key), retryDelay: 0 });
+    return client;
+  }
+  const tick = () => new Promise((resolve) => setTimeout(resolve, 1));
+  function held<T>() {
+    let settle!: { resolve: (value: T) => void; reject: (error: unknown) => void };
+    const promise = new Promise<T>((resolve, reject) => {
+      settle = { resolve, reject };
+    });
+    return { promise, ...settle };
+  }
+  function failingPool() {
     const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => {
       throw new Error("statement timeout");
     });
     spies.push(getPlayers);
-    const client = createAppQueryClient();
-    client.setQueryDefaults(fantasyPlayersQuery().queryKey, { retryDelay: 0 });
-    await expect(client.fetchQuery({ ...trendingPlayersQuery(), retryDelay: 0 })).rejects.toThrow(
+    return getPlayers;
+  }
+
+  test("is read twice in all, not four times, by every read that takes it", async () => {
+    for (const reader of [
+      trendingPlayersQuery(),
+      topPlayersOfWeekQuery(3),
+      fantasyPlayerQuery(P1),
+    ] as const) {
+      const getPlayers = failingPool();
+      const client = quickRetries();
+      await expect(client.fetchQuery({ ...reader, retryDelay: 0 })).rejects.toThrow(
+        "statement timeout",
+      );
+      expect([reader.queryKey, getPlayers.mock.calls.length]).toEqual([reader.queryKey, 2]);
+      client.clear();
+      for (const spy of spies.splice(0)) spy.mockRestore();
+    }
+  });
+
+  test("is still read twice in all when the top five failed first and was retried", async () => {
+    // The top five fails at once; the pool fails both its attempts before the
+    // read's own retry comes round. The retry takes the pool's fresh failure
+    // instead of reading it twice more.
+    const getPlayers = failingPool();
+    reads.top.mockImplementationOnce(async () => {
+      throw new Error("connection reset");
+    });
+    const client = quickRetries();
+    await expect(client.fetchQuery({ ...trendingPlayersQuery(), retryDelay: 25 })).rejects.toThrow(
       "statement timeout",
     );
+    expect(reads.top).toHaveBeenCalledTimes(2);
     expect(getPlayers).toHaveBeenCalledTimes(2);
     client.clear();
   });
 
-  test("a screen that joins the pool read Home started keeps its one retry", async () => {
-    // The Fantasy tab opened while Home's trending players load the pool: the
-    // first attempt drops, the retry succeeds, and the screen gets its players.
+  test("keeps its retry for a screen that joins the read Home started", async () => {
+    // The Fantasy tab opens while Home's trending players load the pool: the
+    // screen joins that read before its first attempt drops; the retry
+    // succeeds, and the screen gets its players.
+    const first = held<FantasyPlayer[]>();
+    let calls = 0;
+    const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => {
+      calls += 1;
+      return calls === 1 ? first.promise : pool;
+    });
+    spies.push(getPlayers);
+    const client = quickRetries();
+    const home = client.fetchQuery(trendingPlayersQuery());
+    while (getPlayers.mock.calls.length < 1) await tick();
+    const screen = client.fetchQuery(fantasyPlayersQuery());
+    first.reject(new Error("connection reset"));
+    expect(await screen).toBe(pool);
+    expect(await home).toHaveLength(2);
+    expect(getPlayers).toHaveBeenCalledTimes(2);
+    client.clear();
+  });
+
+  test("is read again by a retrying read when it failed without its own retry", async () => {
+    // A pool read's retry is dropped when its last screen closes: one attempt
+    // only. The read waiting on it retries, and reads the pool again.
     let calls = 0;
     const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => {
       calls += 1;
@@ -218,14 +291,49 @@ describe("Home's trending players", () => {
       return pool;
     });
     spies.push(getPlayers);
-    const client = createAppQueryClient();
-    client.setQueryDefaults(fantasyPlayersQuery().queryKey, { retryDelay: 0 });
-    const home = client.fetchQuery(trendingPlayersQuery());
-    while (getPlayers.mock.calls.length < 1) await new Promise((resolve) => setTimeout(resolve, 1));
-    const screen = client.fetchQuery(fantasyPlayersQuery());
-    expect(await screen).toBe(pool);
-    expect(await home).toHaveLength(2);
+    const client = quickRetries();
+    const key = fantasyPlayersQuery().queryKey;
+    client.setQueryDefaults(key, { ...client.getQueryDefaults(key), retry: false });
+    expect(await client.fetchQuery({ ...trendingPlayersQuery(), retryDelay: 0 })).toHaveLength(2);
     expect(getPlayers).toHaveBeenCalledTimes(2);
+    client.clear();
+  });
+
+  test("cancelled under a waiting read, hands it to the new read", async () => {
+    // A screen refetches a stale pool while Home's read waits on the read in
+    // progress: React Query cancels that read and starts another, which
+    // Home's read takes, with no failure and no retry of its own.
+    const first = held<FantasyPlayer[]>();
+    let calls = 0;
+    const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => {
+      calls += 1;
+      return calls === 1 ? first.promise : pool;
+    });
+    spies.push(getPlayers);
+    const client = quickRetries();
+    const key = fantasyPlayersQuery().queryKey;
+    client.setQueryData(key, pool, { updatedAt: 1 });
+    const poolQuery = client.getQueryCache().find({ queryKey: key })!;
+    void poolQuery.fetch(fantasyPlayersQuery()).catch(() => {});
+    const home = client.fetchQuery({ ...trendingPlayersQuery(), retryDelay: 0 });
+    while (reads.top.mock.calls.length < 1) await tick();
+    void poolQuery.fetch(fantasyPlayersQuery(), { cancelRefetch: true });
+    expect(await home).toHaveLength(2);
+    expect(client.getQueryState(trendingPlayersQuery().queryKey)).toMatchObject({
+      status: "success",
+      fetchFailureCount: 0,
+    });
+    expect(reads.top).toHaveBeenCalledTimes(1);
+    client.clear();
+  });
+
+  test("of the top five itself is still retried once", async () => {
+    reads.top.mockImplementationOnce(async () => {
+      throw new Error("connection reset");
+    });
+    const client = withCachedPool();
+    expect(await client.fetchQuery({ ...trendingPlayersQuery(), retryDelay: 0 })).toHaveLength(2);
+    expect(reads.top).toHaveBeenCalledTimes(2);
     client.clear();
   });
 });
