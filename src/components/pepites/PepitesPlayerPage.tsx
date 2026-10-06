@@ -326,10 +326,19 @@ function PlayerHero({
       className={cn(
         // The screen's gutter and top padding cancelled on a phone, so the
         // block runs edge to edge under the top bar.
-        "-mx-[var(--ui-gutter)] -mt-4 rounded-none px-[var(--ui-gutter)] pb-5 pt-3 shadow-none",
-        "sm:mx-0 sm:mt-0 sm:rounded-[var(--ui-radius-sheet)] sm:p-5 sm:shadow-[var(--ui-shadow-lifted)] md:p-6",
+        "relative -mx-[var(--ui-gutter)] -mt-4 rounded-none px-[var(--ui-gutter)] pb-5 pt-3 shadow-none",
+        "sm:mx-0 sm:mt-0 sm:overflow-hidden sm:rounded-[var(--ui-radius-sheet)] sm:p-5 sm:shadow-[var(--ui-shadow-lifted)] md:p-6",
       )}
     >
+      {/* The club's colour down the start edge, as on the Pépites rows and
+          the featured N°1 (BG-0156). Decorative: the club is in the meta line. */}
+      {player.team ? (
+        <span
+          aria-hidden
+          {...clubStyle(teamAsClub(player.team))}
+          className={cn("absolute inset-y-0 start-0 w-1", ui.club.edgeFill)}
+        />
+      ) : null}
       <div className="flex items-center justify-between gap-2">
         <PepitesBack label={t("pepites.player.back")} />
         <PepitesPlayerShareButton data={data} />
