@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import {
   formatCount,
   formatNumber,
+  META_SEPARATOR,
   POSITION_GROUPS,
   positionLabel,
   positionShort,
@@ -601,7 +602,10 @@ function RankingTable({
                     >
                       {/* The short position is seen; the full one is heard, below. */}
                       {row.positionGroup ? (
-                        <span aria-hidden>{positionShort(row.positionGroup, t)} · </span>
+                        <span aria-hidden>
+                          {positionShort(row.positionGroup, t)}
+                          {META_SEPARATOR}
+                        </span>
                       ) : null}
                       {row.team ? tr(row.team.shortName) : null}
                     </span>

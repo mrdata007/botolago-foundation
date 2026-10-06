@@ -105,6 +105,13 @@ export function positionShort(group: PositionGroup, t: (key: TranslationKey) => 
 }
 
 /**
+ * The dot between the parts of a meta or figures line, with a no-break
+ * space before it: a line that wraps breaks after a dot, so a dot never
+ * starts a line ("Olympique Dcheïra · MIL ·" then "23A", not "· 23A").
+ */
+export const META_SEPARATOR = "\u00a0· ";
+
+/**
  * The mono meta line under a name. Short (a row): "IRT · ATT · 20A · 1 275’ ·
  * 0B 8PD". Long (the hero): "HASSANIA AGADIR · ATT · 21 ANS". Figures are
  * isolated so an Arabic line keeps their order.
@@ -144,7 +151,7 @@ export function playerMetaLine(
         .replace("{a}", iso(formatNumber(stats.assists, lang))),
     );
   }
-  return parts.join(" · ");
+  return parts.join(META_SEPARATOR);
 }
 
 /**
@@ -162,7 +169,7 @@ export function playerFiguresLine(
     t("pepites.meta.goals_assists")
       .replace("{g}", iso(formatNumber(stats.goals, lang)))
       .replace("{a}", iso(formatNumber(stats.assists, lang))),
-  ].join(" · ");
+  ].join(META_SEPARATOR);
 }
 
 /** "↑ 2", "↓ 1", "=", "Nouveau": the arrow a reader saw last week (§4.5). */

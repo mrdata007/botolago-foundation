@@ -166,7 +166,7 @@ describe("the row's figures line", () => {
       },
     );
     // French groups thousands with a narrow no-break space (`formatCount`).
-    expect(line.replace(/[⁨⁩]/g, "")).toBe("2\u202f087’ · 16B 1PD");
+    expect(line.replace(/[⁨⁩]/g, "")).toBe("2\u202f087’\u00a0· 16B 1PD");
     expect(line).toContain("⁨16⁩");
   });
 });

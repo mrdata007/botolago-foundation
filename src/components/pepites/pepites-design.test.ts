@@ -75,7 +75,11 @@ describe("the Figma parts' helpers", () => {
       { minutes: 1275, goals: 0, assists: 8 },
       { t: t as never, tr: (value) => value.fr, lang: "fr" },
     );
-    expect(line.replace(/[⁨⁩]/g, "")).toBe("IRT · ATT · 20A · 1 275’ · 0B 8PD");
+    expect(line.replace(/[⁨⁩]/g, "")).toBe(
+      "IRT\u00a0· ATT\u00a0· 20A\u00a0· 1\u202f275’\u00a0· 0B 8PD",
+    );
+    // A dot never starts a line: the space before it does not break.
+    expect(line).not.toContain(" ·");
   });
 });
 
