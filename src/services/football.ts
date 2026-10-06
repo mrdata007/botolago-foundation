@@ -399,6 +399,21 @@ export function buildStandings(
   };
 }
 
+/**
+ * How many fixtures Home's payload carries (live first, then by kick-off): the
+ * gameweek band's carousel shows the whole round, which is 8 matches, and 10
+ * is the most `api.football_home_matches` returns (BG-0155).
+ */
+export const HOME_MATCHES_LIMIT = 10;
+
+/**
+ * How many of those fixtures the lists that read the same payload show: Home's
+ * "À venir" and the landing page's "En ce moment". It is the 3 the payload
+ * itself carried before the carousel needed the round, so both lists keep
+ * exactly the rows they had.
+ */
+export const HOME_LIST_SIZE = 3;
+
 export const footballService = {
   async getSeasons(language: FootballLanguage, signal?: AbortSignal): Promise<FootballSeason[]> {
     return (await getFootballRepository().getSeasons(language, 12, requestContext(signal))).map(
@@ -417,7 +432,11 @@ export const footballService = {
     signal?: AbortSignal,
   ): Promise<FootballMatchCollection> {
     const repository = getFootballRepository();
-    const matches = await repository.getHomeMatches(language, 3, requestContext(signal));
+    const matches = await repository.getHomeMatches(
+      language,
+      HOME_MATCHES_LIMIT,
+      requestContext(signal),
+    );
     return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
   },
 

@@ -15,7 +15,7 @@ import { useI18n } from "@/i18n/provider";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
-import { defaultSeason, footballService } from "@/services/football";
+import { defaultSeason, footballService, HOME_LIST_SIZE } from "@/services/football";
 import type { FantasyPlayer } from "@/types/fantasy";
 
 /**
@@ -66,14 +66,15 @@ export function LandingBotolaNow({
     void queryClient.invalidateQueries({ queryKey: ["football", "standings"] });
   });
 
-  // Live first, then what is still to come: four rows at most.
+  // Live first, then what is still to come: the rows the payload held before
+  // Home's band needed the whole round (BG-0155), three at most.
   const matches = [...(matchesQ.data?.matches ?? [])]
     .sort(
       (a, b) =>
         Number(b.status === "live") - Number(a.status === "live") ||
         a.kickoff.localeCompare(b.kickoff),
     )
-    .slice(0, 4);
+    .slice(0, HOME_LIST_SIZE);
   const matchClubs = matchesQ.data?.clubs ?? [];
   const table = standingsQ.data?.overall.slice(0, 5) ?? [];
   const tableClubs = standingsQ.data?.clubs ?? [];

@@ -30,7 +30,7 @@ import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCar
 import { MyClubsRow } from "@/components/home/MyClubsRow";
 import { homeClubs } from "@/components/home/my-clubs";
 import { findClub } from "@/components/fantasy/club-identity";
-import { footballService, type FootballSeason } from "@/services/football";
+import { footballService, HOME_LIST_SIZE, type FootballSeason } from "@/services/football";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -398,18 +398,21 @@ function HomeContent() {
 
   const homeMatches = useMemo(() => matchesQ.data?.matches ?? [], [matchesQ.data]);
   const liveMatches = useMemo(() => homeMatches.filter(isInPlay), [homeMatches]);
+  // "À venir" lists the first fixtures of the payload, as many as it carried
+  // before the band's carousel needed the whole round (BG-0155).
+  const listMatches = useMemo(() => homeMatches.slice(0, HOME_LIST_SIZE), [homeMatches]);
   // "Aujourd'hui" and "Demain" rather than the date the band already shows.
   const upcomingDays = useMemo(
     () =>
       groupByMatchDay(
-        homeMatches.filter((match) => !isInPlay(match)),
+        listMatches.filter((match) => !isInPlay(match)),
         {
           locale: lang === "ar" ? "ar-MA" : "fr-FR",
           today: t("matches.date.today"),
           tomorrow: t("matches.date.tomorrow"),
         },
       ),
-    [homeMatches, lang, t],
+    [listMatches, lang, t],
   );
   // With no match to come, "À venir" points at the latest results instead of
   // saying nothing: the season's fixture list, read only in that case.

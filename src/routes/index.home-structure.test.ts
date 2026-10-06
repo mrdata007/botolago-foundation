@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import { ar } from "@/i18n/dictionary-ar";
 import { fr } from "@/i18n/dictionary-fr";
+import { HOME_LIST_SIZE, HOME_MATCHES_LIMIT } from "@/services/football";
 
 /**
  * BG-0012 — Accueil (Home) redesign structural contract.
@@ -85,6 +86,27 @@ describe("Accueil (Home) structural contract", () => {
     expect(title).toBeTruthy();
     expect(fr["home.sr_title"]).toBe(title as string);
     expect(ar["home.sr_title"]).toMatch(/[؀-ۿ]/);
+  });
+
+  /**
+   * BG-0155 — the gameweek band swipes through the whole round, so Home's
+   * payload carries it; "À venir" keeps the rows it had when the payload held
+   * three.
+   */
+  describe("the payload the band and the list share", () => {
+    const service = readFileSync(join(import.meta.dir, "..", "services", "football.ts"), "utf8");
+
+    test("carries a whole round of 8, within the 10 the database function returns", () => {
+      expect(HOME_MATCHES_LIMIT).toBeGreaterThanOrEqual(8);
+      expect(HOME_MATCHES_LIMIT).toBeLessThanOrEqual(10);
+      expect(service).toMatch(/repository\.getHomeMatches\(\s*language,\s*HOME_MATCHES_LIMIT,/);
+    });
+
+    test("lists only the payload's first three under À venir", () => {
+      expect(HOME_LIST_SIZE).toBe(3);
+      expect(source).toContain("homeMatches.slice(0, HOME_LIST_SIZE)");
+      expect(source).toMatch(/groupByMatchDay\(\s*listMatches\.filter\(/);
+    });
   });
 
   /**
