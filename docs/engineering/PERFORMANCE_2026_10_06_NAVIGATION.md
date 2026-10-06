@@ -258,19 +258,18 @@ Plan items 7, 8 and 9. "Before" is batch 1 (`c6e0549`), "after" is
   reader's total used to be in the key, so each letter typed, page turned or
   tab changed read the whole board again (up to 20 reads each).
 - **One player pool** (`src/services/fantasy-player-query.ts`): Home's
-  trending players and the top players page take the cached
-  `["fantasy-players"]` pool through the query function's own client,
-  instead of reading all of it again inside their reads
-  (`getTrendingPlayers` and `getTopPlayersOfWeek` now take where the pool
-  comes from; by default they still read it). Every read keeps the app's
-  one retry, the pool's own read included, so a screen that joins a pool
-  read keeps its retry; a read on its own retry takes the pool's failure of
-  a moment ago instead of reading the pool again, so a failing pool is still
-  read twice in all, as before. Home
-  no longer reads trending players for a visitor (only a signed-in reader's
-  Home shows them). The top players page asks for its
-  gameweek's top five once the current gameweek is known, so a stand-in
-  gameweek's read (now quick) cannot land first and show the wrong week.
+  trending players, the top players page and a player's page take the
+  season's player pool from the cache when it is fresh, else join the pool
+  read a screen already has on its way, else read it themselves and store it
+  for every other screen; they never start the pool's own query, so a
+  screen's pool read keeps its own retry whatever else reads the pool, and a
+  failing pool costs two reads (three when a screen's own read was failing
+  too; four before). `getTrendingPlayers` and `getTopPlayersOfWeek` now take
+  where the pool comes from (by default they still read it). Home no longer
+  reads trending players for a visitor (only a signed-in reader's Home shows
+  them). The top players page asks for its gameweek's top five once the
+  current gameweek is known, so a stand-in gameweek's read (now quick)
+  cannot land first and show the wrong week.
 - **Arabic double read** (`src/routes/news.$articleId.tsx`,
   `src/routes/pronostics.index.tsx`, `use-predictions-round.ts`): the article
   loader reads an edition in the reader's language; in production an
@@ -334,28 +333,30 @@ main and 165.27 KB after batch 1.
 
 The batch was reviewed from five angles (behaviour, React Query semantics,
 freshness, security, tests), each finding checked by three independent
-skeptics. Two were confirmed:
+skeptics, then each fix by three more. Two findings were confirmed:
 
 - The pool read first ran without a retry of its own (to keep a failing
   pool at two reads), and a screen joining that read inherited it, so one
-  dropped connection could show a screen's error state. A first fix (reads
-  that take the pool do not retry its failures) was broken by a second
-  round of skeptics in three edge cases: four reads when the top five failed
-  first, no retry when the pool's own retry had been cancelled, and a read
-  left waiting after a cancelled pool read. The final version (above) keeps
-  the one retry everywhere; tests cover each path and fail on both earlier
-  versions.
+  dropped connection could show a screen's error state. Two further fixes
+  that kept starting the pool's own read from inside another read were each
+  broken by the next skeptic round (four reads when the top five failed
+  first; a retry cancelled during its wait counted as two failures; a read
+  left waiting after a cancelled pool read). The final version (above) never
+  starts the pool's own read from another read; tests cover each path and
+  fail on all three earlier versions.
 - A test claimed two gameweeks shared one pool read when only one reached
   it; it now holds the read open until both join it.
 
 Two findings were judged intended trade-offs: the Pronostics language switch
 (below) and the related stories read alongside an article that turns out to
-be missing.
+be missing. Re-measured on the final code: the same read counts as in the
+table above (top players 15-16 reads, rankings search 0, Arabic articles
+with no skeleton).
 
 ### Checks
 
 `bun run typecheck` clean; `bun run lint` no errors (the 31 warnings already
-on main); `bun test` 5,952 pass, 17 skipped, 1 fail (the same Ramadan 2027
+on main); `bun test` 5,956 pass, 17 skipped, 1 fail (the same Ramadan 2027
 test as on main); `bun run build` passes.
 
 ## Remaining bottlenecks and next batch
