@@ -1,17 +1,27 @@
 import wordmark from "@/assets/brand/botolago-wordmark-light.svg";
 import {
+  actionGradient,
+  bodyFace,
   canvasOf,
+  inkCentredBaseline,
   loadImage,
+  loadShareFonts,
   roundRect,
+  SHARE_FONTS,
   SHARE_IMAGE_SIZE,
+  SHARE_PALETTE,
+  shareFont,
   toPng,
 } from "@/components/pepites/share-image";
 import type { Language } from "@/types/domain";
 
 /**
  * The "Ma journée BotolaGO" picture: one 1080×1350 post, drawn in the
- * manager's browser with the share-image helpers Pépites uses, the approved
- * light wordmark, and the app's night and action-gradient colours.
+ * manager's browser with the share-image helpers Pépites uses, in the main
+ * app's look (BG-0153): the approved white wordmark on Tunnel Navy, white
+ * Changa for the team, the total on the picture's one use of the action
+ * gradient (a plate like a selected Fantasy plate, its figures in Tunnel
+ * Navy), the factual lines on a Floodlight Navy panel.
  *
  * Every string arrives already translated and formatted (`RecapImageModel`):
  * this file only lays them out, mirrored for Arabic.
@@ -27,22 +37,6 @@ export interface RecapImageModel {
   /** Up to three factual lines (captain, transfers, top contributor). */
   lines: string[];
   footer: string;
-}
-
-const NIGHT = "#070d24";
-const PANEL = "#111a3d";
-const MUTED = "#9aa4c7";
-const ACTION = ["#5de39b", "#7fd6f0"] as const;
-const FACE = `"Changa", "Noto Sans Arabic", sans-serif`;
-const BODY = `"Manrope", "Noto Sans Arabic", sans-serif`;
-
-async function loadFonts(sample: string) {
-  if (typeof document === "undefined" || !document.fonts?.load) return;
-  await Promise.all(
-    [`800 160px ${FACE}`, `800 64px ${FACE}`, `700 40px ${BODY}`, `600 30px ${BODY}`].map((spec) =>
-      document.fonts.load(spec, sample).catch(() => []),
-    ),
-  );
 }
 
 /**
@@ -116,39 +110,35 @@ function drawLine(
 function fit(
   ctx: CanvasRenderingContext2D,
   value: string,
-  face: string,
+  face: keyof typeof SHARE_FONTS,
   weight: number,
   size: number,
   min: number,
   maxWidth: number,
 ) {
   let current = size;
-  ctx.font = `${weight} ${current}px ${face}`;
+  ctx.font = shareFont(face, weight, current);
   while (current > min && ctx.measureText(value).width > maxWidth) {
     current -= 2;
-    ctx.font = `${weight} ${current}px ${face}`;
+    ctx.font = shareFont(face, weight, current);
   }
   return current;
 }
 
 export async function renderRecapImage(model: RecapImageModel): Promise<Blob> {
-  await loadFonts(`${model.teamName} ${model.total} ${model.kicker}`);
+  await loadShareFonts(model.lang, `${model.teamName} ${model.total} ${model.kicker}`);
   const logo = await loadImage(wordmark);
   const { width: W, height: H } = SHARE_IMAGE_SIZE;
   const { canvas, ctx } = canvasOf(W, H, model.lang);
   const rtl = model.lang === "ar";
+  const body = bodyFace(model.lang);
   const pad = 88;
   const start = rtl ? W - pad : pad;
   const align: CanvasTextAlign = rtl ? "right" : "left";
   const inner = W - pad * 2;
 
-  ctx.fillStyle = NIGHT;
+  ctx.fillStyle = SHARE_PALETTE.ground;
   ctx.fillRect(0, 0, W, H);
-  const band = ctx.createLinearGradient(0, 0, W, 0);
-  band.addColorStop(0, ACTION[0]);
-  band.addColorStop(1, ACTION[1]);
-  ctx.fillStyle = band;
-  ctx.fillRect(0, 0, W, 16);
 
   // The approved wordmark, at the inline start.
   if (logo) {
@@ -160,65 +150,76 @@ export async function renderRecapImage(model: RecapImageModel): Promise<Blob> {
   ctx.textAlign = align;
   ctx.textBaseline = "alphabetic";
 
-  ctx.fillStyle = ACTION[0];
-  ctx.font = `800 40px ${BODY}`;
+  ctx.fillStyle = SHARE_PALETTE.white;
+  ctx.font = shareFont(body, 800, 40);
   ctx.fillText(model.kicker, start, 290, inner);
 
-  ctx.fillStyle = MUTED;
-  ctx.font = `600 34px ${BODY}`;
+  ctx.fillStyle = SHARE_PALETTE.muted;
+  ctx.font = shareFont(body, 600, 34);
   ctx.fillText(model.heading, start, 350, inner);
 
-  ctx.fillStyle = "#ffffff";
-  fit(ctx, model.teamName, FACE, 800, 72, 40, inner);
+  ctx.fillStyle = SHARE_PALETTE.white;
+  fit(ctx, model.teamName, "display", 800, 72, 40, inner);
   ctx.fillText(model.teamName, start, 450, inner);
 
-  // The score: the big figure and its unit, kept left-to-right as one run.
+  // The total on the action gradient, like a selected Fantasy plate: the big
+  // figure and its unit in Tunnel Navy, kept left-to-right as one run.
+  const plate = { top: 500, height: 300, padding: 56 };
+  ctx.fillStyle = actionGradient(ctx, plate.top, plate.top + plate.height);
+  roundRect(ctx, pad, plate.top, inner, plate.height, 44);
+  ctx.fill();
   ctx.save();
   ctx.direction = "ltr";
-  const scoreSize = fit(ctx, model.total, FACE, 800, 260, 120, inner - 200);
-  const scoreW = ctx.measureText(model.total).width;
-  ctx.font = `700 56px ${BODY}`;
+  ctx.font = shareFont(body, 800, 56);
   const unitW = ctx.measureText(model.unit).width;
+  const scoreSize = fit(
+    ctx,
+    model.total,
+    "display",
+    800,
+    260,
+    120,
+    inner - plate.padding * 2 - 24 - unitW,
+  );
+  const scoreW = ctx.measureText(model.total).width;
   const runW = scoreW + 24 + unitW;
-  const runLeft = rtl ? W - pad - runW : pad;
+  const runLeft = rtl ? W - pad - plate.padding - runW : pad + plate.padding;
   // Arabic reads the figure first, from the right: the unit goes on its left.
   const scoreX = rtl ? runLeft + unitW + 24 : runLeft;
   const unitX = rtl ? runLeft : runLeft + scoreW + 24;
-  const gradient = ctx.createLinearGradient(scoreX, 0, scoreX + scoreW, 0);
-  gradient.addColorStop(0, ACTION[0]);
-  gradient.addColorStop(1, ACTION[1]);
+  // The figure's measured ink centred in the plate; the unit shares its baseline.
+  const baseline = inkCentredBaseline(ctx, model.total, scoreSize, plate.top + plate.height / 2);
   ctx.textAlign = "left";
-  ctx.fillStyle = gradient;
-  ctx.font = `800 ${scoreSize}px ${FACE}`;
-  ctx.fillText(model.total, scoreX, 740);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = `700 56px ${BODY}`;
-  ctx.fillText(model.unit, unitX, 740);
+  ctx.fillStyle = SHARE_PALETTE.ground;
+  ctx.font = shareFont("display", 800, scoreSize);
+  ctx.fillText(model.total, scoreX, baseline);
+  ctx.font = shareFont(body, 800, 56);
+  ctx.fillText(model.unit, unitX, baseline);
   ctx.restore();
 
-  // The factual lines, on one panel.
+  // The factual lines, on one Floodlight Navy panel.
   const lines = model.lines.slice(0, 3);
   if (lines.length) {
-    const top = 820;
+    const top = 840;
     const lineH = 76;
     const panelH = 56 + lines.length * lineH;
-    ctx.fillStyle = PANEL;
-    roundRect(ctx, pad, top, inner, panelH, 32);
+    ctx.fillStyle = SHARE_PALETTE.panel;
+    roundRect(ctx, pad, top, inner, panelH, 44);
     ctx.fill();
     ctx.textAlign = align;
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = SHARE_PALETTE.white;
     lines.forEach((line, index) => {
       const plain = lineRuns(line)
         .map((run) => run.text)
         .join("");
-      fit(ctx, plain, BODY, 600, 34, 22, inner - 80);
+      fit(ctx, plain, body, 600, 34, 22, inner - 80);
       drawLine(ctx, line, rtl ? W - pad - 40 : pad + 40, top + 76 + index * lineH, rtl);
     });
   }
 
   ctx.textAlign = align;
-  ctx.fillStyle = MUTED;
-  ctx.font = `600 30px ${BODY}`;
+  ctx.fillStyle = SHARE_PALETTE.muted;
+  ctx.font = shareFont(body, 600, 30);
   ctx.fillText(model.footer, start, H - 96, inner);
 
   return await toPng(canvas);
