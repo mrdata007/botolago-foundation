@@ -31,6 +31,8 @@ export const SITEMAP_STATIC_PATHS = [
   "/fantasy/help",
   "/privacy",
   "/terms",
+  // How to delete an account (the store listings' deletion URL).
+  "/suppression-compte",
   // Redirected to the hub while prizes are off, so listed only when they are on.
   ...(PRIZES_ENABLED ? (["/prizes", "/prizes/terms"] as const) : ([] as const)),
   // Pronostics (BG-0146): indexed only once promoted.

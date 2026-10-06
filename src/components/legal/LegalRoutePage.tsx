@@ -1,8 +1,12 @@
+import { Link } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { AppShell } from "@/components/shell/AppShell";
+import { ui } from "@/components/ui-kit";
 import { LEGAL_DOCUMENTS } from "@/content/legal/documents";
 import { useI18n } from "@/i18n/provider";
+import { ACCOUNT_DELETION_PATH } from "@/lib/account-deletion";
+import { cn } from "@/lib/utils";
 import { LegalDocumentView } from "./LegalDocumentView";
 
 /**
@@ -45,6 +49,19 @@ export function LegalRoutePage({ document: which }: { document: "terms" | "priva
   return (
     <AppShell>
       <LegalDocumentView doc={doc} tableScrollHint={t("legal.table_scroll_hint")} />
+      {/* Under the policy, not in it: the policy is the owner's generated
+          document. How deletion works in practice is its own page, which is
+          also the address the store listings give. */}
+      {which === "privacy" && (
+        <p className={cn("pb-6", ui.text.prose, ui.tone.muted)}>
+          <Link
+            to={ACCOUNT_DELETION_PATH}
+            className={cn("underline underline-offset-2", ui.tone.default)}
+          >
+            {t("legal.privacy.deletion_link")}
+          </Link>
+        </p>
+      )}
     </AppShell>
   );
 }

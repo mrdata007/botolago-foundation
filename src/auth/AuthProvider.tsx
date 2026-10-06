@@ -13,6 +13,7 @@ import { useRouter } from "@tanstack/react-router";
 import { authService, type AuthSession, type AuthStatus, type AuthUser } from "@/services/auth";
 import { useI18n } from "@/i18n/provider";
 import { fetchAccountStanding, rememberSuspension } from "@/services/account-standing";
+import { ACCOUNT_DELETION_DONE_PATH } from "@/lib/account-deletion";
 import { releaseThisPhone } from "@/services/native-push-runtime";
 import {
   claimGuestPredictionsOnSignIn,
@@ -101,7 +102,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (throttled && now - lastVisibilityCheck.current < 60_000) return;
       lastVisibilityCheck.current = now;
       const standing = await fetchAccountStanding();
-      if (cancelled || !standing?.banned) return;
+      if (cancelled || !standing) return;
+      if (standing.deletionPending) {
+        // Deleted from another device: this one is signed out too, and shown
+        // what happens to the account next.
+        await authService.signOut({ resetLocalData: true });
+        window.location.assign(ACCOUNT_DELETION_DONE_PATH);
+        return;
+      }
+      if (!standing.banned) return;
       rememberSuspension(standing.bannedUntil);
       await authService.signOut();
       // A full navigation rather than a router push: it also drops every

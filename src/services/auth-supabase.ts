@@ -561,35 +561,17 @@ export class SupabaseAuthService implements AuthService {
 
   async requestAccountDeletion(): Promise<AuthResult<{ requestId: string }>> {
     const actorId = this.cachedSession.user?.id ?? null;
+    let id: string;
     try {
-      const id = await this.accountSecurity.requestDeletion(context(actorId));
-      return { ok: true, data: { requestId: id } };
+      id = await this.accountSecurity.requestDeletion(context(actorId));
     } catch (error) {
       return { ok: false, errorCode: mapIdentityCode(error) };
     }
-  }
-
-  async cancelAccountDeletion(): Promise<AuthResult> {
-    const actorId = this.cachedSession.user?.id ?? null;
-    try {
-      await this.accountSecurity.cancelDeletion(context(actorId));
-      return { ok: true };
-    } catch (error) {
-      return { ok: false, errorCode: mapIdentityCode(error) };
-    }
-  }
-
-  async getAccountDeletionStatus(): Promise<AuthResult<{ pending: boolean }>> {
-    const actorId = this.cachedSession.user?.id ?? null;
-    try {
-      const requests = await this.accountSecurity.listDeletionRequests(context(actorId));
-      return {
-        ok: true,
-        data: { pending: requests.some((request) => request.status === "requested") },
-      };
-    } catch (error) {
-      return { ok: false, errorCode: mapIdentityCode(error) };
-    }
+    // The server has already ended every session of the account and banned
+    // it from signing in again; this ends the one on this device, with its
+    // local game data, which no longer belongs to anyone.
+    await this.signOut({ scope: "local", resetLocalData: true });
+    return { ok: true, data: { requestId: id } };
   }
 
   async signOut(options?: SignOutOptions): Promise<void> {

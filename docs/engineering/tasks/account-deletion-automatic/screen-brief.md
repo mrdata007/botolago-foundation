@@ -90,3 +90,25 @@ Functional:
 
 Tests: `bun test` for the touched services, routes and dictionaries,
 `bun run typecheck`, eslint and prettier on touched files.
+
+## Validation (2026-10-06)
+
+Screenshots in `evidence/` (`before-*` from `main` at a6fac90, `after-*` from
+this branch), taken with Playwright against each tree's own dev server on its
+own port (4791 before, 4792 after), mock sign-in, at 320 x 640, 390 x 844 and
+1280 x 900, in French and Arabic.
+
+- Overflow, measured from element boxes rather than `scrollWidth` (the shell
+  clips horizontally): no element outside the viewport on any of the 18
+  after-shots (`evidence/after-report.json`); `dir` is `rtl` on every Arabic
+  shot.
+- The first after-run showed the dialog body scrolling the checkbox out of
+  view at 320 x 640; the dialog text was shortened until the checkbox, the
+  button and "Annuler" all fit (`after-profile-dialog-narrow-*.png`).
+- Flow, clicked through in the browser: the button is disabled until the box
+  is ticked; confirming signs the device out (no session left in storage)
+  and lands on `/suppression-compte?confirmation=1` with the confirmation
+  panel.
+- `bun test` (5371 pass, 0 fail), `bun run typecheck`, `bun run lint` (no
+  errors), the i18n gate (pass, unused-key count at its baseline), prettier
+  on touched files.

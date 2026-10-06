@@ -156,10 +156,12 @@ export interface AuthService {
   signInWithApple(next?: string): Promise<AuthResult<AuthUser>>;
   continueAsGuest(): Promise<AuthResult>;
   completeProfile(input: CompleteProfileInput): Promise<AuthResult<AuthUser>>;
+  /**
+   * Deletes the signed-in account. The server closes it at once (no sign-in,
+   * hidden from public boards) and erases it 7 days later; there is no
+   * cancelling. On success this device is signed out too.
+   */
   requestAccountDeletion(): Promise<AuthResult<{ requestId: string }>>;
-  cancelAccountDeletion(): Promise<AuthResult>;
-  /** Real backend-read state, not local UI state — survives reload/another device. */
-  getAccountDeletionStatus(): Promise<AuthResult<{ pending: boolean }>>;
   signOut(options?: SignOutOptions): Promise<void>;
 }
 

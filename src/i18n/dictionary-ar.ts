@@ -1532,19 +1532,66 @@ export const ar = {
   "profile.mfa_setup": "المصادقة الثنائية",
   "profile.mfa_setup_desc": "أمّن حسابك برمز استخدام واحد.",
   "profile.delete_account": "حذف حسابي",
-  "profile.delete_account_desc": "سيؤدي هذا الإجراء إلى حذف حسابك وبياناتك في BotolaGO نهائياً.",
+  "profile.delete_account_desc": "يُغلق حسابك فوراً ويُحذف نهائياً خلال 7 أيام.",
   "profile.delete_confirm_title": "هل تريد حذف حسابك؟",
   "profile.delete_confirm_body":
-    "سيتم حذف ملفك الشخصي وفريق الفانتازي وتفضيلاتك نهائياً. لا يمكن التراجع عن هذا الإجراء.",
-  "profile.delete_confirm_checkbox": "أدرك أن هذا الإجراء لا رجعة فيه.",
+    "يتم تسجيل خروجك من كل الأجهزة ويختفي اسمك من الترتيبات. خلال 7 أيام، يُحذف الحساب وبياناته دون رجعة.",
+  "profile.delete_confirm_kept":
+    "لا نحتفظ إلا بأثر الجوائز المسلَّمة (5 سنوات) وسجلات الأمان (12 شهراً)، منفصلة عن الحساب.",
+  "profile.delete_learn_more": "كل ما يخص حذف الحساب",
+  "profile.delete_confirm_checkbox": "أدرك أن الحذف نهائي.",
   "profile.delete_confirm_cta": "حذف نهائياً",
   "profile.delete_cancel_cta": "إلغاء",
-  "profile.delete_pending_title": "تم طلب الحذف",
-  "profile.delete_pending_body": "تم تسجيل طلبك. يمكنك إلغاؤه ما دام لم تتم معالجته بعد.",
-  "profile.delete_cancel_request_cta": "إلغاء طلب الحذف",
-  "profile.delete_success_toast": "تم إرسال طلب الحذف.",
-  "profile.delete_cancelled_toast": "تم إلغاء الحذف.",
-  "profile.delete_error_toast": "حدث خطأ ما. أعد المحاولة.",
+  "profile.delete_error_toast": "لم يتم الحذف. أعد المحاولة، أو راسلنا على support@botolago.com.",
+
+  "account_deletion.meta_title": "حذف حساب BotolaGO",
+  "account_deletion.meta_description":
+    "كيف تحذف حسابك على BotolaGO من التطبيق أو عبر البريد الإلكتروني، وما الذي يُحذف، وما الذي نحتفظ به وإلى متى.",
+  "account_deletion.title": "حذف حسابك على BotolaGO",
+  "account_deletion.intro":
+    "يمكنك حذف حسابك في أي وقت ومجاناً. يُغلق الحساب فوراً، ثم يُحذف نهائياً خلال 7 أيام.",
+  "account_deletion.done_title": "تم إغلاق حسابك",
+  "account_deletion.done_body":
+    "تم تسجيل خروجك ولم يعد بالإمكان استعمال هذا الحساب. سيُحذف نهائياً خلال 7 أيام، وستصلك رسالة إلكترونية تؤكد ذلك.",
+  "account_deletion.app_title": "من التطبيق",
+  "account_deletion.app_step_1": "سجّل الدخول، ثم افتح الملف الشخصي.",
+  "account_deletion.app_step_2": "انزل إلى «حذف الحساب» واضغط على «حذف حسابي».",
+  "account_deletion.app_step_3":
+    "اقرأ ما سيُحذف، وضع علامة على خانة التأكيد، ثم اضغط على «حذف نهائياً». إذا كان حسابك محمياً برمز استخدام واحد، فسيُطلب منك أولاً.",
+  "account_deletion.email_title": "عبر البريد الإلكتروني",
+  "account_deletion.email_body":
+    "إذا لم يعد بإمكانك تسجيل الدخول، راسلنا من عنوان البريد الإلكتروني المرتبط بحسابك، مع كتابة «حذف الحساب» في الموضوع. نتحقق من أن الطلب صادر عن صاحب الحساب ونعالجه خلال 30 يوماً على الأكثر؛ عندها يُغلق الحساب ثم يُحذف خلال 7 أيام كما هو مبين أدناه. العنوان:",
+  "account_deletion.email_subject": "حذف الحساب",
+  "account_deletion.timing_title": "الآجال",
+  "account_deletion.timing_now":
+    "فوراً: يتم تسجيل خروجك من جميع أجهزتك، ولا يمكن تسجيل الدخول إلى الحساب، وتتوقف إشعاراتك، ويختفي اسمك من الترتيبات العامة.",
+  "account_deletion.timing_hold":
+    "خلال 7 أيام: يُحذف الحساب والبيانات المذكورة أدناه تلقائياً، وتُرسل رسالة تأكيد إلى عنوان الحساب.",
+  "account_deletion.timing_final":
+    "بعد التأكيد، لا يمكن إلغاء الحذف. بعد الحذف، يمكنك إنشاء حساب جديد بنفس العنوان.",
+  "account_deletion.deleted_title": "ما الذي يُحذف",
+  "account_deletion.deleted_account":
+    "حسابك ووسائل تسجيل الدخول: البريد الإلكتروني، كلمة المرور، الدخول عبر Google أو Apple، رموز الاستخدام الواحد.",
+  "account_deletion.deleted_profile":
+    "ملفك الشخصي: الاسم، اسم المستخدم، الصورة، النادي المفضل، اللغة.",
+  "account_deletion.deleted_game":
+    "بيانات اللعب: فريق الفانتازي، التشكيلات، الانتقالات، الرقائق، النقاط والترتيبات، التوقعات والتصويتات.",
+  "account_deletion.deleted_settings":
+    "تفضيلاتك، والأندية التي تتابعها، وإشعاراتك، والمقالات المحفوظة، والهواتف المسجلة لتلقي الإشعارات.",
+  "account_deletion.deleted_leagues":
+    "تنتقل الدوريات التي أنشأتها إلى أقدم عضو فيها؛ ويُحذف الدوري الذي لا يضم عضواً آخر.",
+  "account_deletion.kept_title": "ما الذي نحتفظ به، وإلى متى",
+  "account_deletion.kept_prizes":
+    "إذا سبق أن سُلّمت لك جائزة: أثر هذه الجائزة والوثائق المُتحقق منها، منفصلة عن حسابك، لمدة 5 سنوات من تاريخ التسليم (الالتزامات المحاسبية والضريبية). أما الجائزة التي لم تُسلَّم بعد فتسقط، كما تنص على ذلك الشروط العامة.",
+  "account_deletion.kept_security":
+    "سجلات الأمان (نوع الإجراء وتاريخه والمعرّف التقني للحساب، دون أي محتوى): 12 شهراً.",
+  "account_deletion.kept_register":
+    "سجل الحذف: تواريخه وعدد العناصر المحذوفة، دون أي معطيات شخصية.",
+  "account_deletion.kept_support": "مراسلاتك مع الدعم، إن راسلتنا: سنتان بعد إغلاق الطلب.",
+  "account_deletion.kept_backups":
+    "النسخ الاحتياطية لقاعدة البيانات، التي تُمحى تلقائياً بعد 7 أيام.",
+  "account_deletion.contact": "لديك سؤال؟ راسلنا:",
+  "legal.privacy.deletion_link": "حذف حسابك: كيف يتم، وما الذي يُحذف، وما الذي نحتفظ به",
 
   "fantasy.cloud.loading": "جارٍ تحميل فريقك…",
   "fantasy.cloud.saving": "جارٍ الحفظ…",
