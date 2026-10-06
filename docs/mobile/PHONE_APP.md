@@ -158,8 +158,8 @@ templates leave out:
     Store one, which is also what the sender's `APNS_ENVIRONMENT` defaults to;
   - **iPhone only**: `TARGETED_DEVICE_FAMILY = 1` in the app's Debug and Release
     settings, so App Store Connect does not ask for iPad screenshots;
-  - **upright only**: the screen does not turn sideways (the site only handles
-    the notch at the top and bottom);
+  - **upright only**: the screen does not turn sideways (when this was set, the
+    site handled the notch only at the top and bottom);
   - `Info.plist`: French as the app's language and Arabic as the second one, and
     the texts iOS shows when the profile photo picker asks for the camera or the
     photos (without the camera text, iOS closes the app when someone picks "Take
@@ -366,9 +366,10 @@ Apple's and Google's servers, real tokens, real delivery, and any real phone. Th
 The shell draws the site under the status bar and the home indicator (iPhone) or
 the system bars (Android 15 and later), and the site pads itself clear of them.
 That works only because the site's viewport meta says `viewport-fit=cover`
-(`src/routes/__root.tsx`, BG-0151). Without it, iOS reports every
-`env(safe-area-inset-*)` as 0, so the site's safe-area padding never switches on,
-and Capacitor's Android `SystemBars` keeps the page boxed in.
+(`src/routes/__root.tsx`, added with the store readiness work; BG-0151). Without
+it, iOS reports every `env(safe-area-inset-*)` as 0, so the site's safe-area
+padding never switches on, and Capacitor's Android `SystemBars` keeps the page
+boxed in.
 
 What pads itself by the insets:
 
@@ -377,11 +378,13 @@ What pads itself by the insets:
   (`--topbar-h`, `--bottomnav-h`);
 - the bottom bars that do not sit above the navigation (the Fantasy player
   page's actions, the bars that drop to the bottom edge from 768px wide, the
-  Landing page's button), toasts, the reading-progress bar and centred dialogs;
+  Landing page's button), the Pépites reveal, toasts, the reading-progress bar,
+  side and top sheets, and centred dialogs;
 - on Fantasy inner screens, a strip exactly as tall as the status bar, so
   scrolled content does not show under the clock;
 - in landscape, the page itself (`body`), padded on both sides by the larger side
-  inset, so content keeps clear of the notch.
+  inset, so content keeps clear of the notch. The app stays upright, so this is
+  for the website on a notched iPhone turned sideways.
 
 Every inset is 0 in an ordinary browser window, so the website does not change
 there. `capacitor.config.ts` also sets `SystemBars.initialViewportFitValueHint:
@@ -390,14 +393,17 @@ to that file it needs a new native build; the site changes reach the app on
 Publish.
 
 This was checked only in Chromium with emulated insets. To check on the first
-builds, in French and Arabic: a notched or Dynamic Island iPhone in portrait and
-landscape, an iPad, and an Android 15+ phone with WebView 140 or later and one
-with an older WebView. Known to need a later change: the status bar's text colour
-follows the phone's light or dark setting, not the page, so it can be dark over
-the dark top bands of the sign-in, welcome and Landing screens; and the Pépites
-reveal's bottom padding, which belongs to the Pépites restyle. The iPhone app
-allows landscape and iPad (Capacitor's template defaults); whether to lock it to
-portrait is an open question.
+builds, in French and Arabic: a notched or Dynamic Island iPhone, an Android 15+
+phone with WebView 140 or later and one with an older WebView, and the website in
+Safari on a notched iPhone, upright and sideways.
+
+To fix before any store build: the status bar's clock and icons follow the
+phone's light or dark setting, not the app's. Now that the app has its own light,
+dark and system choice, they must follow the theme the app shows
+(`SystemBars.setStyle` on each theme change). Otherwise they are dark on a dark
+bar, or light on a light one, on every screen whenever the app's choice differs
+from the phone's. The dark top bands of the sign-in, welcome and Landing screens
+may need light icons whatever the theme.
 
 ## Still open before a store submission
 
