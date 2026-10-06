@@ -681,6 +681,19 @@ describe("the share pictures mirror in Arabic", () => {
   });
 });
 
+describe("the story's figures", () => {
+  it("the French stats line keeps a visible group separator", async () => {
+    // The model keeps formatCount's narrow no-break space; Manrope sets it at
+    // 0.1em, so the canvas draws a no-break space (0.2em) in its place.
+    const model = storyModel(card(1), SCORE, "fr", STORY_COPY);
+    expect(model.statsLine).toBe("1\u202f159 MIN NOTE 6,60");
+    const { ops } = await draw("story", "fr");
+    const stats = ops.find((op) => op.kind === "text" && op.text!.endsWith("MIN NOTE 6,60"));
+    expect(stats?.text).toBe("1\u00a0159 MIN NOTE 6,60");
+    expect(ops.some((op) => op.kind === "text" && op.text!.includes("\u202f"))).toBe(false);
+  });
+});
+
 describe("the share pictures keep their fallbacks", () => {
   it("a photo that fails to load gives way to the club disc and initials", async () => {
     const model = shareImageModel(edition, "fr", COPY)!;

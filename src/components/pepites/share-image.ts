@@ -335,6 +335,14 @@ export function sliceAngles(index: number, rtl: boolean, gap = 0.05): [number, n
   return rtl ? [Math.PI - to, Math.PI - from] : [from, to];
 }
 
+/**
+ * What the canvas draws for a string. `formatCount`'s French group separator
+ * is the narrow no-break space (U+202F), which Manrope sets at 0.1em, so on
+ * the story's 9px stats line "1 159" read as "1159". The canvas draws a
+ * no-break space (0.2em) in its place; the model keeps the character.
+ */
+export const canvasText = (value: string) => value.replace(/\u202f/g, "\u00a0");
+
 /** Text whose box top is at `y`. Letter-spacing applies in French only. */
 function text(
   ctx: CanvasRenderingContext2D,
@@ -361,7 +369,7 @@ function text(
       `${options.tracking}px`;
   }
   ctx.fillStyle = options.fill;
-  ctx.fillText(value, x, y + options.size * ASCENT[options.face], options.maxWidth);
+  ctx.fillText(canvasText(value), x, y + options.size * ASCENT[options.face], options.maxWidth);
   ctx.restore();
 }
 
