@@ -538,7 +538,11 @@ for `rounded-lg` (the legacy `--radius`) for a card.
   as tall as the status bar, so scrolled content does not show under the clock
   where nothing at the top sticks: `FantasyFrame`'s inner screens (whose
   `UiHeader` does not stick) in `ui.surface.bar`, `AuthShell` and the Landing
-  page in the ink-deep of their dark band (BG-0154). Both are 0px in a browser.
+  page in the ink-deep of their dark band (BG-0154). `AuthShell`'s is clear at
+  rest and fades in over the first 24px of scroll (`revealOnScroll`, the
+  `status-bar-reveal` utility), and from `md`, where its column is a raised
+  card, a fixed strip in `ui.surface.page` takes over. Both are 0px in a
+  browser.
 - `ui.rule.block` / `.blockStart` / `.inline` / `.all` — hairline dividers on
   logical edges; `ui.rule.strong` — a ≥ 3:1 control boundary.
 - `ui.shadow.card` / `.raised` / `.lifted` / `.overlay` — the elevation set.

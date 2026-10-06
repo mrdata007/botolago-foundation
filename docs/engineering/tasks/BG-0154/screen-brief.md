@@ -12,6 +12,21 @@
 > bar. Status-bar changes made in one go are also settled together, so moving
 > between two sign-in screens does not flick the icons. The evidence is in the
 > BG-0154 ledger entry.
+>
+> **Note, 2026-10-06, after review.** Three more, found by the reviewers'
+> measurements. (3) The sign-in band is under the clock only below `md`: from
+> `md` the column is a raised card on the flat page, so light icons there were
+> white on near-white (about 1.07:1 on an Android tablet in portrait). The
+> sign-in screens now hold light icons below `md` only, and from `md` a fixed
+> strip in the page's colour keeps the scrolling card from under the clock.
+> (4) At rest, the flat ink strip cut a straight line across the sign-in photo
+> on a notched iPhone. The strip is now clear at rest and fades in over the
+> first 24px of scroll, so at rest the sign-in screens match `main`. (5) The
+> player bar criterion below said "at the end of the page" too; at the end the
+> bar rests in the flow, as in portrait and on `main`. Corrected below. The
+> two links' accessible names lose the typed "→" on purpose (see "What must be
+> preserved"), and the player bar's new desktop behaviour is the one recorded
+> under the acceptance criteria.
 
 Owner request, 2026-10-06 ("fix these then publish"), four of the follow-ups left
 after #353 to #358. Branch `claude/app-polish-followups`, from `main` at `2f13117b`.
@@ -90,10 +105,10 @@ Measured on main with Chromium's safe-area override (read-only page loads):
    light icons on the dark theme (`SystemBarsStyle.Dark`; Capacitor names the
    style after the background, verified in the iOS and Android sources). On
    Android the navigation bar follows the theme as well.
-3. **Light icons over the dark bands.** The sign-in screens (`AuthShell`), the
-   Landing page (`/jouer`, and `/` on a first visit) and the launch splash draw a
-   dark top whatever the theme, so while one is on screen the status bar keeps
-   light icons. Each screen declares it while it is mounted, so no route list has
+3. **Light icons over the dark bands.** The sign-in screens (`AuthShell`, below
+   `md`, where the band is under the clock), the Landing page (`/jouer`, and `/`
+   on a first visit) and the launch splash draw a dark top whatever the theme,
+   so while one is on screen the status bar keeps light icons. Each screen declares it while it is mounted, so no route list has
    to be kept in step. `WelcomeScreen` is not mounted anywhere in `src` (the demo
    has its own), so it needs nothing.
 4. **Player page sideways.** From `md` the Fantasy column clips its rounded
@@ -106,8 +121,11 @@ Measured on main with Chromium's safe-area override (read-only page loads):
 5. **A status-bar strip on the sign-in screens and Jouer.** The sticky strip
    Fantasy inner screens already have becomes a small shared component
    (`StatusBarStrip`). `AuthShell` and `LandingPage` render it in the ink-deep of
-   their dark band, so scrolled content passes under it. 0px tall where the inset
-   is 0, so no browser without a notch changes.
+   their dark band, so scrolled content passes under it. On the sign-in screens
+   it is clear at rest and fades in over the first 24px of scroll, so the photo
+   still runs on under the clock until the page moves; from `md` a fixed strip in
+   the page's colour covers the raised card instead. 0px tall where the inset is
+   0, so no browser without a notch changes.
 
 ## Acceptance criteria (visual and functional)
 
@@ -126,12 +144,15 @@ Measured on main with Chromium's safe-area override (read-only page loads):
 - **Status bar, in a browser with a stand-in bridge.** With a fake iPhone bridge
   on the page, the real `@capacitor/core` sends `setStyle` to the bridge with the
   right style at start-up, on Clair/Sombre, on an emulated system change under
-  Système, and DARK on `/auth/login` and `/jouer` in the light theme. Without the
-  bridge, no call and no `@capacitor/core` request.
-- **Player page.** At 844x390 with landscape insets, fr and ar, light: at the top,
-  half way and at the end of the page the bar's bottom edge is at the window's
-  bottom (390) and its buttons end at or above 369 (390 - 21), its scroll
-  container is the page; portrait 390x844 with insets gives the same numbers as
+  Système, and DARK on `/auth/login` (below `md`) and `/jouer` in the light
+  theme; from `md` `/auth/login` sends the theme's style. Without the bridge, no
+  call and no `@capacitor/core` request.
+- **Player page.** At 844x390 with landscape insets, fr and ar, light: at the top
+  and half way the bar's bottom edge is at the window's bottom (390) and its
+  buttons end at or above 369 (390 - 21), its scroll container is the page; at
+  the end of the page the bar rests in its place in the flow, above the
+  column's bottom padding, as in portrait and on `main` (buttons still above
+  369); portrait 390x844 with insets gives the same numbers as
   main. At 1440x900 in French, the page renders pixel-identical to main at the
   top and at the end of the scroll. Where the page is taller than the window
   (Arabic at 1440x900, a short window) the bar now stays at the bottom of the
@@ -139,9 +160,13 @@ Measured on main with Chromium's safe-area override (read-only page loads):
   described.
 - **Strips.** At 390x844 with a 47px top inset, scrolled: the top 47px on
   `/auth/login`, `/auth/register` and `/jouer` is the ink-deep strip (dark in both
-  themes), where main showed the white sheet or light sections. At rest the strip
-  sits over the band's dark top. With no inset the strip is 0px tall and the pages
-  match main pixel for pixel at 390 and 1440. Fantasy inner screens render the
+  themes), where main showed the white sheet or light sections. At rest the
+  sign-in strip is clear and the sign-in screens match main pixel for pixel; it
+  is fully opaque from 24px of scroll. At rest the Jouer strip sits over the
+  hero's dark top. From `md` with a top inset (an Android tablet in portrait),
+  the top of the sign-in screens is the flat page at rest and scrolled. With no
+  inset the strips are 0px tall and the pages match main pixel for pixel at 390
+  and 1440. Fantasy inner screens render the
   same strip markup as before.
 - French and Arabic (right to left), phone (390) and desktop (1440), light and
   dark. Typecheck, lint (0 errors), the relevant tests and the full `bun test`

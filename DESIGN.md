@@ -529,14 +529,14 @@ The kit's sizes are fixed pixel steps at every width. Two places scale with the 
 
 - **Main frame order.** Flat page, then the top bar (or a screen's own header), the hub title band, the matchday strip (from 1024px), the live strip, the content and the bottom nav.
 - **Fantasy inner screens.** On phones they hide the global top bar and show only their own header, which does not stick; a strip exactly as tall as the status bar, in the bar surface, stays at the top so scrolled content never passes under the clock (0px in a browser). From 768px the Fantasy column becomes a raised column with 28px corners. A sticky bar at the foot of the column (the player page's actions) still sticks there: the column clips its corners without becoming a scroll box.
-- **Sign-in screens and the Landing page.** Their top is a dark band in both themes and nothing at the top sticks, so the same strip stays at the top in the band's ink-deep (0px in a browser).
+- **Sign-in screens and the Landing page.** Their top is a dark band in both themes and nothing at the top sticks, so the same strip stays at the top in the band's ink-deep (0px in a browser). On the sign-in screens it is clear at rest, so the stadium photo runs on under the clock, and fades in over the first 24px of scroll. From 768px, where the sign-in column is a raised card, a strip in the page colour covers the card as it scrolls.
 
 **Bars.**
 
 - The top bar and the bottom nav never hide on scroll.
 - The live strip, a row of live-score pills under the top bar, is the only bar that hides. It hides while scrolling down past the first 80px and returns on any scroll up.
 - The viewport tag carries `viewport-fit=cover`, so in the app the page runs under the status bar and the home indicator and pads itself by the device insets.
-- In the app the status bar's clock and icons follow the theme the app shows: dark on the light theme, light on the dark theme, and light over the dark bands of the sign-in screens, the Landing page and the launch splash.
+- In the app the status bar's clock and icons follow the theme the app shows: dark on the light theme, light on the dark theme, and light over the dark bands of the sign-in screens (below 768px, where the band is under the clock), the Landing page and the launch splash.
 - Safe areas use the device inset with a fallback (12px top, 8px bottom), whichever is larger. The bar heights already include it.
 - Every bar pinned to the bottom edge pads by the bottom inset, including the bars that move to the bottom from 768px. A source test (`src/components/shell/safe-area.test.ts`) scans them.
 - Toasts sit 16px inside the insets, the modal's height is capped inside them, and the reading-progress bar sits below the top inset. (The unused shadcn sheet also pads by them; no screen renders it.)

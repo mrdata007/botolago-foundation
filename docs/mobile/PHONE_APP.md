@@ -383,7 +383,10 @@ What pads itself by the insets:
 - on Fantasy inner screens, the sign-in screens and the Landing page (`/jouer`),
   a strip exactly as tall as the status bar (`StatusBarStrip`), so scrolled
   content does not show under the clock: in the header's surface on Fantasy, in
-  the dark band's ink-deep on the other two (BG-0154);
+  the dark band's ink-deep on the other two (BG-0154). On the sign-in screens it
+  is clear at rest, so the photo runs on under the clock, and fades in over the
+  first 24px of scroll; from 768px wide, where the sign-in column is a raised
+  card, a strip in the page's colour covers the card instead;
 - in landscape, the page itself (`body`), padded on both sides by the larger side
   inset, so content keeps clear of the notch. The app stays upright, so this is
   for the website on a notched iPhone turned sideways.
@@ -405,9 +408,10 @@ when the reader picks Clair or Sombre, and when the phone changes while Système
 is chosen, the site calls Capacitor 8's built-in `SystemBars.setStyle` (part of
 `@capacitor/core`, no plugin to add and no native change). Dark icons on the
 light theme, light icons on the dark theme; Capacitor names the style after the
-background, so light icons are `SystemBarsStyle.Dark`. The sign-in screens, the
-Landing page and the launch splash have a dark top in both themes and keep light
-icons while they are on screen. On Android the navigation bar follows the theme
+background, so light icons are `SystemBarsStyle.Dark`. The sign-in screens (below
+768px wide), the Landing page and the launch splash have a dark top in both
+themes and keep light icons while they are on screen. From 768px the sign-in
+column is a raised card on the flat page, so there the icons follow the theme. On Android the navigation bar follows the theme
 too; on iPhone the home indicator colours itself. iOS needs
 `UIViewControllerBasedStatusBarAppearance` set to YES in `Info.plist`, which
 Capacitor 8's template already does. Nothing is loaded or called in a browser.

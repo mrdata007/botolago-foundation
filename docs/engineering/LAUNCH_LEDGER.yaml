@@ -1619,7 +1619,7 @@ tasks:
       ran into the home indicator. On the sign-in screens and Jouer, scrolled content showed under
       the clock in the app.
     owner: Chief
-    state: RUNNING # implemented on claude/app-polish-followups (brief d427ec17), awaiting the orchestrator's review, merge and publish; not DONE until the device check in remaining passes
+    state: RUNNING # implemented on claude/app-polish-followups (brief d427ec17), review findings fixed on the branch, awaiting the orchestrator's merge and publish; not DONE until the device check in remaining passes
     depends_on: [BG-0151]
     brief: docs/engineering/tasks/BG-0154/screen-brief.md
     evidence:
@@ -1671,14 +1671,52 @@ tasks:
         sections (0.85 on /jouer). Without insets the three pages match main pixel for pixel at 390 and
         1440 (23 of 24 full-page shots; one pixel of the Jouer hero gradient differs by 1/255 at 1440 dark)
       - >
-        checks on the branch: typecheck 0; lint 0 errors, 31 warnings (as main); full bun test 5838 pass,
-        17 skip, 0 fail; i18n gate pass with W1 7, W2 7, W3 252, W4 64 (all at baseline); prettier clean on
-        the changed files. Lane tests: safe-area.test.ts 34 pass, system-bars.test.ts 25 pass,
-        ui-kit.contract.test.ts 188 pass
+        after review, sign-in status bar by width: AuthShell holds the dark band only below md
+        (useDarkStatusBand(BELOW_MD), "not all and (min-width: 48rem)", followed live by
+        holdDarkBandWhile). Before, from md it asked for light icons over the flat page, rgb(245,247,249),
+        about 1.07:1. With a stand-in Android bridge (:5420), /auth/login light: 390 and 767 wide send
+        StatusBar DARK; 768, 800, 820 and 915 wide send LIGHT (DARK in dark); one flush at load (no flick);
+        a live resize across 768 switches both ways; /auth/login to /auth/register sends nothing
+      - >
+        after review, sign-in scrolling from md: a second StatusBarStrip in ui.surface.page, fixed from md
+        (the column clips and the wrapper is a flex row, so a sticky strip cannot work there). At 915x412
+        with a 24px inset, scrolled 200px, the top band was luminance 0.025..0.928 (mean 0.461), the same on
+        main; it is now flat 0.928 light / 0.003 dark, fr and ar, also at 768x1024, 800x1280 and 820x1180
+      - >
+        after review, sign-in strip at rest: the flat ink strip cut a line across the photo band (a step
+        over 20/255 at y=47 in 97.3% of columns on /auth/login light fr, 2.6% on main). It is now clear at
+        rest and fades in over the first 24px of root scroll (StatusBarStrip revealOnScroll, the
+        status-bar-reveal scroll-driven animation in styles.css; own opacity 0 so a screen that cannot
+        scroll keeps it clear; opaque from the start where unsupported, WebKit before Safari 26). Measured
+        at 390x844, 47px inset: opacity 0.25 at 6px, 0.5 at 12px, 1 from 24px, the top band flat strip
+        colour from 24px on, the same under reduced motion. At rest, 36 shots (/auth/login, /auth/register,
+        /auth/forgot-password; fr, ar; light, dark; 390x844 with inset, 390 and 1440 without) against main:
+        34 pixel-identical, 2 (/auth/login fr with the inset) differ only in text antialiasing (LCD against
+        grayscale, which flips between runs in either direction; top 47px identical, blurred luminance
+        within 10/255). The sheet first reaches the clock after 84px of scroll (compact band)
+      - >
+        after review, provider wiring run end to end: dark-mode-flag.e2e.ts loads /profile with a stand-in
+        iPhone shell and the real @capacitor/core: LIGHT at start-up, DARK then LIGHT on phone switches
+        under Système, DARK then LIGHT on Sombre then Clair; no shell, no Capacitor. 14 of 14 pass against
+        :5420; with the provider's setTheme call removed the two shell tests fail
+      - >
+        checks on the branch after review: typecheck 0; lint 0 errors, 31 warnings (as main); full bun test
+        5845 pass, 17 skip, 0 fail; prettier clean on the changed files except this ledger, which Prettier
+        cannot parse on main either (an unrelated BG-0026 key); no dictionary or t() change, so no i18n gate
+        run this round. Lane tests: safe-area.test.ts 36 pass,
+        system-bars.test.ts 30 pass, ui-kit.contract.test.ts 188 pass
     note: >
       The brief promised the player page pixel-identical to main at 1440x900 in French. The geometry is
       identical; the pixels inside the bar are not, by antialiasing only, because a sticky bar that now
       sticks to the window is composited separately. Recorded rather than worked around.
+
+      Two deliberate changes for the PR description, both confirmed in review. The Home results link
+      and the Matches empty-day link lose the typed arrow from their accessible names ("Voir les
+      derniers résultats", not "... →"), because the drawn arrow is aria-hidden. And on desktop, wherever
+      the player page is taller than the window (1440x900 in Arabic), the action bar now sticks to the
+      window's bottom while the page scrolls (816..900 at the top, against 930..1014 below the fold on
+      main), as on phones; at the end it rests where main has it (744..828). At 844x390 sideways the bar
+      likewise rests in the flow at the end of the page (225.5..318.5, as on main).
 
       Out of scope and unchanged: the squad builder and transfer confirmation bars are sticky inside the
       same Fantasy column and do not stick from md either (the same overflow: hidden). FantasyFrame's
