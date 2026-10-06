@@ -785,7 +785,7 @@ tasks:
     area: design
     severity: P1
     owner: Chief
-    state: RUNNING # implemented on claude/dark-mode-on; draft PR for owner review, not merged or published
+    state: DONE # merged in PR #356 (f0a3e43) and published 2026-10-06; botolago.com served release f0a3e43, then be51444
     branch: claude/dark-mode-on
     depends_on: [BG-0083, BG-0084]
     evidence:
@@ -1469,7 +1469,7 @@ tasks:
       owner decided on 2026-10-05 that it must look like the rest of the app, light and dark,
       French and Arabic.
     owner: Chief
-    state: RUNNING # implemented on claude/pepites-main-design (brief, foundation, six screen lanes, integration); draft PR awaits the owner's review
+    state: DONE # merged in PR #357 (dff2e42) and published 2026-10-06; botolago.com served release f0a3e43, then be51444; share images not redrawn yet
     depends_on: []
     brief: docs/engineering/tasks/BG-0152/screen-brief.md
     evidence:
@@ -1615,7 +1615,7 @@ tasks:
       every safe-area inset as 0, so the top bar would sit under the clock and the bottom
       navigation on the home indicator; Capacitor's Android SystemBars keeps the page boxed in.
     owner: Chief
-    state: RUNNING # branch claude/viewport-fit-cover; owner decision 2026-10-05; main (with #358) merged in 2026-10-06; awaiting review, not merged
+    state: DONE # merged in PR #354 (be51444) on top of #358's viewport-fit=cover, and published 2026-10-06; botolago.com serves release be51444; the device check is still open (see remaining)
     depends_on: []
     brief: docs/engineering/tasks/BG-0151/screen-brief.md
     evidence:
@@ -1780,7 +1780,7 @@ tasks:
       trend, sort and the News tab were never mirrored at all. BG-0152 has since removed the
       Pépites double flips as part of its restyle.
     owner: Chief
-    state: RUNNING # implemented on claude/rtl-icon-mirroring (brief, fix, tests); draft PR awaits the owner's review
+    state: DONE # merged in PR #353 (902c2ee) and published 2026-10-06; botolago.com serves release be51444
     depends_on: [BG-0129]
     brief: docs/engineering/tasks/BG-0150/screen-brief.md
     evidence:
