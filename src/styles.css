@@ -804,11 +804,6 @@ html[dir="rtl"]
        before first paint; this is the stylesheet-side default for the case
        where the script could not run. */
     color-scheme: light;
-    /* No double-tap zoom: two quick taps (the score stepper's −/+, a fast
-       scroll that lands as two taps) zoomed the website in on a phone.
-       Scrolling and pinching are unaffected. The viewport meta's
-       `maximum-scale=1` already stops it in the phone app. */
-    touch-action: manipulation;
   }
   html.dark {
     color-scheme: dark;

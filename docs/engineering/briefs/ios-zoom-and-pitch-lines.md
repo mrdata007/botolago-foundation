@@ -12,6 +12,13 @@ Owner report, 2026-10-06, from the iPhone app (two issues):
 
 Branch `claude/ios-zoom-and-pitch-lines`, from `main` at `af8b0a7`.
 
+> **Note, after review.** Item 2 below (`touch-action: manipulation`) was
+> dropped: WebKit's source shows iOS never double-tap zooms a `device-width`
+> page at its starting scale, so the rule added nothing on iPhone and only took
+> Safari's double-tap-to-zoom-back-out away after a pinch. The results and the
+> corrections from review are under "Results" at the end. The brief is
+> otherwise kept as written before the change.
+
 ## What was inspected before writing this
 
 - The root viewport meta (`src/routes/__root.tsx`) and the two tests that pin
@@ -64,9 +71,8 @@ including the warning disc. Rows of four also reach the line on phones up to
    WebKit caps the focus zoom at that value, so tapping a field no longer
    zooms. In the app's web view the same cap also stops double-tap and pinch
    zoom. `user-scalable=no` is not added: it changes nothing more in the app.
-2. **No double-tap zoom on the website.** `touch-action: manipulation` on
-   `html`. Panning, scrolling and pinching are unaffected; only the double-tap
-   zoom goes.
+2. ~~**No double-tap zoom on the website.** `touch-action: manipulation` on
+   `html`.~~ Dropped after review (see the note at the top).
 3. **Plates stay inside the touchlines.** The pitch rows are padded by the
    touchline's inner edge (3.3% of the turf width) plus 6px, instead of 4px.
    Rows that do not fit shrink a little more, and long names are cut with "…"
@@ -79,8 +85,8 @@ including the warning disc. Rows of four also reach the line on phones up to
 5. **Tests and docs.** The viewport pins are updated and say why
    `maximum-scale=1` is there. A new source test models every row size at every
    common width and fails if a plate or its corner disc could cross a
-   touchline. `DESIGN.md`, `DESIGN_SYSTEM_V2.md` and `docs/mobile/PHONE_APP.md`
-   record both changes.
+   touchline. `DESIGN.md`, `DESIGN_SYSTEM_V2.md`, `docs/mobile/PHONE_APP.md`
+   and `PRODUCT.md` record both changes.
 
 Not in this change:
 
@@ -90,16 +96,25 @@ Not in this change:
   narrow plates, which changes the plate design. It is clear from 375px up.
 - Raising every field to 16px text (the alternative zoom fix that keeps pinch
   zoom on Android websites). It would change how every form looks.
-- The demo app's own pages (`demo/index.html`, `public/demo/*`), the server
-  error page and the app's offline page keep their own viewport tags. None has
-  a text field.
+- The demo pages (`demo/index.html`, `public/demo/*`), the server error page
+  and the app's offline page keep their own viewport tags. The error and
+  offline pages have no text field. The demo pages do (corrected after review:
+  the sponsor name field and the team name field, both 15px), so they can
+  still zoom on an iPhone; no screen in the site or the app links to them.
+- The published demo (`public/demo/app.html`) is a committed build and still
+  draws the old pitch until it is rebuilt with `bun run demo:publish`. It was
+  already behind `main`.
 
-Trade-off, stated plainly. With `maximum-scale=1`, visitors using Chrome on an
-Android phone can no longer pinch to zoom the website unless they switch on
-"Force enable zoom" in Chrome's accessibility settings. iPhone Safari visitors
-can still pinch to zoom (Safari ignores the cap for pinching), and the app
-never allowed pinch zoom. Browser text-size settings keep working everywhere.
-External accessibility audits (Lighthouse, axe) will flag the tag.
+Trade-off, stated plainly. With `maximum-scale=1`, visitors on Android
+browsers (Chrome, Edge, Firefox) can no longer pinch to zoom the website
+unless they switch on their browser's "force enable zoom" setting, and the same
+goes for some other apps' built-in browsers. iPhone Safari visitors can still
+pinch to zoom (Safari ignores the cap for pinching), and the app never allowed
+pinch zoom. Browser text-size settings keep working everywhere. External
+accessibility audits (Lighthouse, axe) will flag the tag. If the owner prefers,
+the cap can instead be limited to the app (the site already detects the app
+before the first paint, `src/lib/native-app.ts`); that is more fragile, because
+the head tags are managed by the router.
 
 ## Acceptance criteria
 
@@ -116,7 +131,7 @@ Visual, measured from layout boxes in Chromium, not by eye:
 - Before and after screenshots at phone and desktop sizes, French and Arabic.
 - The served viewport tag reads
   `width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover`,
-  exactly once, and `html` computes `touch-action: manipulation`.
+  exactly once.
 
 Functional:
 
@@ -128,6 +143,63 @@ Known limit of the evidence: no browser available here reproduces iOS zoom
 (there is no WebKit, and Chromium does not zoom on focus). The zoom fix is
 proven from WebKit's and Capacitor's source and by the served tag. Confirm on
 the iPhone after the site is published: tap the sign-in email field, then the
-search on `/fantasy/players`; the page must not zoom. A page already zoomed
-resets when the app is reopened. The fix reaches the app with the website
-Publish; no new app build is needed.
+search on `/fantasy/players`; the page must not zoom. First close the app
+fully (swipe it away in the app switcher) and open it again: an app brought
+back from the background keeps the old page, with its zoom and its old tag.
+The fix reaches the app with the website Publish; no new app build is needed.
+
+## Results
+
+Measured in Chromium 141 with phone emulation, each tree served on its own
+port and confirmed by the server's working directory: `main` at `af8b0a7`
+(before) against this branch (after). Pages: the squad builder on
+`/fantasy/transfers` (2-5-5-3, two rows of five), `/fantasy/team` re-slotted
+to 3-5-2 (with a bench) and the Landing pitch on `/jouer` (4-3-3). Widths 320,
+360, 375, 390, 402, 430 and 1280; French and Arabic; light theme, and dark at 402. Margins are measured to the touchline's inner edge (3.3% of the turf).
+
+- **Touchlines: pass.** Plates crossing a line went from 34 of 48 cases to 0.
+  Worst name or figure band: −9.1px before, +5.97px after. Worst warning disc:
+  −11.1px before, +3.99px after. At 402 wide (the owner's iPhone) the outer
+  plates of a five-row went from 8.2px across the line to 6.0px inside it.
+- **Unchanged rows: pass.** Goalkeeper rows, rows of three, rows of four from
+  390 wide and every row at 1280 keep their plate width exactly (0.00px).
+  Rows sit further in from the edges, as intended: on desktop the outer plates
+  move inward by up to 15px.
+- **Five-rows narrow:** 52.8 → 48.2px at 320, 66.8 → 61.3px at 390,
+  69.2 → 63.5px at 402, 74.8 → 68.8px at 430. Rows of four on the Landing pitch
+  narrow below 390 (375: 74.1px; 320: 61.3px, where "Défenseur" becomes
+  "Défense…").
+- **Bench: pass.** At 320 the last bench plate was 36px past the card and cut
+  off; now all four sit inside it (65px plates). From 375 up nothing moves
+  (0.00px). Labels stay centred over their plates.
+- **Viewport tag: pass.** Exactly one, reading
+  `width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover`.
+- **Right to left:** Arabic mirrors French to within 0.01px.
+- **Outside the pitch:** no other pixel changed apart from the mock deadline
+  clock.
+
+Two known limits:
+
+- **Next-match badges** ("RCA (D)") on `/fantasy/team` and `/fantasy/points`
+  are wider than a narrow plate's figure band, so they are clipped at their
+  end. In the live data each badge also carries the club crest, about 18px
+  more than in the mock data used here, so by the code's own sizes they were
+  already clipped on phone plates before this change; in a five-row they are
+  now clipped a little more. Fitting the badge inside its band is a separate
+  follow-up.
+- **Captain or vice marker** in the last slot of a five-row (measured with the
+  captain moved there): it crosses the line by 2.9px at 320 (4.9px with its
+  ring) and touches it at 360; it is inside from 375 up. Listed under "Not in
+  this change".
+
+Screenshots in [`ios-zoom-and-pitch-lines/`](ios-zoom-and-pitch-lines/),
+before and after: the squad builder at 402 in French, Arabic and dark; the
+team page at 320 (bench); the Landing pitch at 390; the squad builder at 1280.
+
+Checks: `bun test` (5,931 pass; 1 failure, the news scheduling test
+`src/backend/news/editorial-session.test.ts`, which expects "GMT" where this
+machine's date library prints "GMT+0"; the change touches nothing it uses),
+`typecheck` clean, `eslint` 0 errors (1 warning, already on `main`), prettier
+clean. The new pitch test was run against deliberate breakages (padding back
+to 4px, an extra `sm:px-1`, a wider gap, padding on the turf, fixed bench
+slots): each one fails it.

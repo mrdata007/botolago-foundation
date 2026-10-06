@@ -224,9 +224,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // back. The kit's fields are 15px, so signing in left the whole app at
       // 1.067, and in the phone app the owner could not pinch back out:
       // Capacitor switches pinch off. The cap stops that zoom everywhere; in
-      // the app's web view it also stops double-tap and pinch zoom. Safari
-      // still lets a visitor pinch. Not `user-scalable=no`: it adds nothing
-      // in the app. docs/engineering/briefs/ios-zoom-and-pitch-lines.md.
+      // the app's web view it also stops double-tap and pinch zoom. iPhone
+      // Safari still lets a visitor pinch; Android browsers no longer do.
+      // Not `user-scalable=no`: it adds nothing in the app.
+      // docs/engineering/briefs/ios-zoom-and-pitch-lines.md.
       {
         name: "viewport",
         content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",

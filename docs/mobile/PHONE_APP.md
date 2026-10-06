@@ -431,21 +431,23 @@ in left the whole app enlarged by 1.067. Capacitor keeps zoom off by default
 (`zoomEnabled: false`), which blocks the pinch gesture but not that focus zoom,
 so the reader was stuck: zoomed in, unable to pinch back out. iOS caps the
 focus zoom at `maximum-scale`, and the app's web view also caps double-tap and
-pinch zoom by it. The website adds `touch-action: manipulation` on `html` to
-stop double-tap zoom in browsers too.
+pinch zoom by it.
 
 Leave `zoomEnabled` at its default: turning it on would only let a reader pinch
 back out after the zoom, and it needs a new native build. The viewport change
-reaches the app with the website Publish. A page already zoomed resets when the
-app is reopened.
+reaches the app with the website Publish. A page already zoomed stays zoomed
+until a full page load: bringing the app back from the background keeps the old
+page, so close the app fully (swipe it away in the app switcher) and open it
+again.
 
-Trade-off: in Chrome on Android the website can no longer be pinch-zoomed
-unless the reader switches on Chrome's "Force enable zoom". Safari on iPhone
-still lets a visitor pinch. Text-size settings keep working.
+Trade-off: on Android browsers (Chrome, Edge, Firefox), and in some other apps'
+built-in browsers, the website can no longer be pinch-zoomed unless the reader
+switches on the browser's "force enable zoom" setting. Safari on iPhone still
+lets a visitor pinch. Text-size settings keep working.
 
-To check on a phone after Publish: tap the sign-in email field and the search
-on `/fantasy/players`; the page must not zoom, and two quick taps must not zoom
-either.
+To check on a phone after Publish: close the app fully and open it again, then
+tap the sign-in email field and the search on `/fantasy/players`; the page must
+not zoom, and two quick taps must not zoom either.
 
 ## Still open before a store submission
 

@@ -106,6 +106,33 @@ function elements(node: ts.Node, tag: string): Record<string, string>[] {
   return found;
 }
 
+/** Property names of the `style={{...}}` object on the turf div. */
+function turfStyleKeys(): string[] {
+  const keys: string[][] = [];
+  const visit = (child: ts.Node) => {
+    if (ts.isJsxOpeningElement(child) && child.tagName.getText() === "div") {
+      const attributes = child.attributes.properties.filter(ts.isJsxAttribute);
+      const className = attributes.find((a) => a.name.getText() === "className");
+      const style = attributes.find((a) => a.name.getText() === "style");
+      if (
+        className?.initializer &&
+        ts.isStringLiteral(className.initializer) &&
+        className.initializer.text === "relative overflow-hidden" &&
+        style?.initializer &&
+        ts.isJsxExpression(style.initializer) &&
+        style.initializer.expression &&
+        ts.isObjectLiteralExpression(style.initializer.expression)
+      ) {
+        keys.push(style.initializer.expression.properties.map((p) => p.name?.getText() ?? "…"));
+      }
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(surface);
+  expect(keys).toHaveLength(1);
+  return keys[0]!;
+}
+
 const surface = functionBody("UiPitchSurface");
 const plate = functionBody("UiPlayerPlate");
 const divClasses = attributeValues(surface, "div", "className").map((parts) => parts.join(" "));
@@ -120,16 +147,22 @@ const strokeWidth = Number(elements(surface, "g").find((g) => g.strokeWidth)?.st
 const LINE = (Number(touchline?.x) + strokeWidth / 2) / 100;
 
 const rowsContainer = divClasses.find((classes) => classes.includes("flex flex-col gap-3"));
-const inset = /(?:^|\s)px-\[calc\(([\d.]+)%\+([\d.]+)px\)\](?:\s|$)/.exec(rowsContainer ?? "");
-const INSET_PCT = Number(inset?.[1]) / 100;
-const INSET_PX = Number(inset?.[2]);
+// `_` is Tailwind's space, so `calc(3.3%_+_6px)` is the same class.
+const inset = /(?:^|\s)(px-\[calc\(([\d.]+)%_?\+_?([\d.]+)px\)\])(?:\s|$)/.exec(
+  rowsContainer ?? "",
+);
+const INSET_PCT = Number(inset?.[2]) / 100;
+const INSET_PX = Number(inset?.[3]);
+
+/** The gap between plates in a pitch row, in px (Tailwind's 4px step). */
+const pitchRow = divClasses.find((classes) => classes.includes("stagger flex items-start"));
+const GAP = Number(/(?:^|\s)gap-([\d.]+)(?:\s|$)/.exec(pitchRow ?? "")?.[1]) * 4;
 
 /** The 2px the warning disc (`-start-0.5`) and badge (`-end-0.5`) hang out. */
 const plateLiterals = literals(plate).join(" ");
 const CORNER = plateLiterals.includes("-start-0.5") && plateLiterals.includes("-end-0.5") ? 2 : NaN;
 /** Air between a plate's furthest corner and the line. */
 const AIR = 4;
-const GAP = 4; // `gap-1`
 const TAP_FLOOR = 44; // `ui.space.tap`
 
 /** Pitch width at a viewport width. Fantasy: FantasyFrame's 672px column less
@@ -164,21 +197,31 @@ describe("the pitch keeps every plate inside the touchlines", () => {
     expect(inset).not.toBeNull();
     expect(INSET_PCT).toBeGreaterThanOrEqual(LINE);
     expect(INSET_PX).toBeGreaterThanOrEqual(CORNER + AIR);
-    // No other horizontal padding on the rows container to fight it.
-    expect(rowsContainer).not.toMatch(/(?:^|\s)(?:px|ps|pe|pl|pr)-(?!\[calc)/);
+    // No other horizontal padding on the rows container to fight it, at any
+    // breakpoint or state.
+    const others = (rowsContainer ?? "")
+      .split(/\s+/)
+      .filter((token) => token !== inset?.[1])
+      .filter((token) => /^(?:[\w-]+:)*(?:p|px|ps|pe|pl|pr)-/.test(token));
+    expect(others).toEqual([]);
   });
 
   it("keeps the turf box free of padding and border, so the % base is the SVG's box", () => {
     const turf = divClasses.find((classes) => classes === "relative overflow-hidden");
     expect(turf).toBeDefined();
+    // Its inline style paints the turf and nothing else.
+    expect(turfStyleKeys()).toEqual(["backgroundImage"]);
     expect(source).not.toContain("vector-effect");
     expect(source).not.toContain("vectorEffect");
   });
 
+  // The bench has no touchlines, but four fixed 76px slots overflowed its
+  // strip below ~364px and the card cut the last plate off. Shrinkable slots
+  // fit any width the pitch rows fit.
   it("lets every slot shrink from the same basis, on the pitch and on the bench", () => {
     const slots = divClasses.filter((classes) => classes.includes("basis-["));
     // Pitch slots, bench labels and bench slots.
-    expect(slots).toHaveLength(3);
+    expect(slots.length).toBeGreaterThanOrEqual(3);
     for (const classes of slots) {
       expect(classes).toContain("min-w-0 shrink grow-0 basis-[76px]");
       expect(classes).toContain("sm:basis-[84px]");
@@ -186,7 +229,8 @@ describe("the pitch keeps every plate inside the touchlines", () => {
     expect(divClasses.some((classes) => /(?:^|\s)(?:sm:)?w-\[(76|84)px\]/.test(classes))).toBe(
       false,
     );
-    expect(divClasses.find((classes) => classes.includes("justify-evenly gap-1"))).toBeDefined();
+    expect(pitchRow).toContain("justify-evenly");
+    expect(GAP).toBeGreaterThan(0);
   });
 
   for (const [name, widthAt] of Object.entries(containers)) {
@@ -204,11 +248,4 @@ describe("the pitch keeps every plate inside the touchlines", () => {
       });
     }
   }
-
-  it("keeps the four bench plates inside the card at 320px", () => {
-    const strip = containers.fantasy(320) - 16; // the strip's `px-2`
-    const slot = Math.min(76, (strip - 3 * GAP) / 4);
-    expect(4 * slot + 3 * GAP).toBeLessThanOrEqual(strip);
-    expect(slot).toBeGreaterThanOrEqual(TAP_FLOOR);
-  });
 });

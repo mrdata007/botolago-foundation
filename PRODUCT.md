@@ -417,5 +417,6 @@ Known gaps (**Unknown** whether intended):
   app, and the website in Safari upright and sideways) and on Android phones with a recent and an
   older WebView is not yet checked.
 - Decided 2026-10-06 (owner report from the iPhone app): the viewport meta carries
-  `maximum-scale=1`, so the app never zooms. Cost: Chrome on Android can no longer pinch-zoom the
-  website unless the reader switches on "Force enable zoom". iPhone Safari still pinches.
+  `maximum-scale=1`, so the app never zooms. Cost: on Android browsers (Chrome, Edge, Firefox) and
+  some other apps' built-in browsers, the website can no longer be pinch-zoomed unless the reader
+  switches on "force enable zoom". iPhone Safari still pinches. Not yet checked on a real iPhone.
