@@ -172,8 +172,8 @@ export interface MediaQueryLike {
 /**
  * Holds a dark band for as long as `query` matches, following it live, until
  * the returned function is called. For a screen whose top is dark only at some
- * widths: the sign-in screens' band is under the clock on a phone, but from
- * `md` it moves into a raised card and the flat page is under the clock.
+ * widths: the sign-in screens' band spans the screen on a phone, but wider
+ * than its 480px column the flat page is under the clock and the icons.
  */
 export function holdDarkBandWhile(
   bars: Pick<SystemBarsSync, "holdDarkBand">,

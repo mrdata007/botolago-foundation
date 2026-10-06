@@ -292,8 +292,9 @@ function fakeQuery(initial: boolean) {
 }
 
 describe("system bars: a dark band held only while a media query matches", () => {
-  // The sign-in screens' band is under the clock only below md; from md the
-  // flat page is (BG-0154 review: light icons on a near-white tablet page).
+  // The sign-in screens' band is under the clock and icons only where it spans
+  // the screen; wider, the flat page is (BG-0154 review: light icons on a
+  // near-white tablet page).
   test("held at once where the query matches (a phone)", async () => {
     const { bars, sent } = harness("ios");
     bars.setTheme("light");
@@ -303,7 +304,7 @@ describe("system bars: a dark band held only while a media query matches", () =>
     expect(sent).toEqual([{ style: "DARK" }]);
   });
 
-  test("not held where it does not (md and wider): the icons follow the theme", async () => {
+  test("not held where it does not (a tablet): the icons follow the theme", async () => {
     const { bars, sent } = harness("android");
     bars.setTheme("light");
     holdDarkBandWhile(bars, fakeQuery(false).query);
@@ -321,12 +322,12 @@ describe("system bars: a dark band held only while a media query matches", () =>
     const release = holdDarkBandWhile(bars, media.query);
     await settle();
     expect(sent).toEqual([{ style: "LIGHT" }]);
-    media.set(true); // narrowed below md
+    media.set(true); // narrowed to a phone's width
     await settle();
     media.set(true); // a repeat changes nothing
     await settle();
     expect(sent).toEqual([{ style: "LIGHT" }, { style: "DARK" }]);
-    media.set(false); // back to md
+    media.set(false); // widened again
     await settle();
     expect(sent).toEqual([{ style: "LIGHT" }, { style: "DARK" }, { style: "LIGHT" }]);
     media.set(true);
@@ -409,15 +410,21 @@ describe("system bars: wired into the app", () => {
     expect(read(file)).toContain(call);
   });
 
-  test("the sign-in screens hold light icons below md only, where their band is under the clock", () => {
+  test("the sign-in screens hold light icons only where their band spans the screen", () => {
     const shell = read("src/components/auth/AuthShell.tsx");
-    expect(shell).toContain("useDarkStatusBand(BELOW_MD);");
+    expect(shell).toContain("useDarkStatusBand(BAND_SPANS_SCREEN);");
     expect(shell.match(/useDarkStatusBand\(/g)).toHaveLength(1);
-    // The exact complement of Tailwind's `md:` (min-width 48rem), in the
-    // media query syntax every WebView reads, the same breakpoint as the
-    // strip's `md:hidden`.
-    expect(shell).toContain('const BELOW_MD = "not all and (min-width: 48rem)";');
-    expect(shell).toMatch(/<StatusBarStrip[^>]*className="md:hidden"/);
+    // The band is as wide as the column, the 480px phone canvas. Wider, the
+    // flat page is on both sides of it, under the clock and the icons (from
+    // md the column is a raised card), so the icons follow the theme there.
+    expect(shell).toContain('const BAND_SPANS_SCREEN = "(max-width: 480px)";');
+    expect(read("src/styles.css")).toContain("--ui-column-max: 480px;");
+    expect(read("src/components/ui-kit/tokens.ts")).toContain(
+      'column: "mx-auto w-full max-w-[var(--ui-column-max)]"',
+    );
+    expect(shell).toMatch(
+      /className=\{cn\(\s*"relative flex min-h-\[100dvh\] flex-col",\s*ui\.space\.column,/,
+    );
   });
 
   test("the hook reads the media query in the same effect that holds the band", () => {

@@ -68,11 +68,13 @@ const BAND_SCRIM =
 const BAND_CLUB_STYLES = AUTH_BAND_CLUBS.map((club) => clubStyle(club));
 
 /**
- * Below Tailwind's `md` (48rem), the exact complement of `md:`. Only there is
- * the dark band under the status bar: from `md` the band sits inside a raised
- * card and the flat page is under the clock (BG-0154).
+ * Where the photo band spans the whole screen. The column is the 480px phone
+ * canvas (`--ui-column-max`), so at 480px and narrower the band is under the
+ * whole status bar, clock and icons included. Wider, the flat page shows on
+ * both sides of the column (from `md` the column is a raised card), and the
+ * clock and icons sit over the page (BG-0154).
  */
-const BELOW_MD = "not all and (min-width: 48rem)";
+const BAND_SPANS_SCREEN = "(max-width: 480px)";
 
 interface Props {
   title: string;
@@ -103,9 +105,10 @@ export function AuthShell({
   // as they are reached in-app, so home is the fallback rather than a listing.
   const goBack = useBackTo("/");
   // On a phone the band under the clock is dark in both themes: light
-  // status-bar icons in the app whatever the theme. From `md` the flat page is
-  // under the clock, so the icons follow the theme there (BG-0154).
-  useDarkStatusBand(BELOW_MD);
+  // status-bar icons in the app whatever the theme. Wider than the column,
+  // the clock and icons sit over the flat page, so they follow the theme
+  // there (BG-0154).
+  useDarkStatusBand(BAND_SPANS_SCREEN);
 
   return (
     <div className="relative min-h-[100dvh] w-full md:flex md:items-center md:justify-center md:px-6 md:py-10">
