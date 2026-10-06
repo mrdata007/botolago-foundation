@@ -150,6 +150,11 @@ describe("HomeMatchCarousel — as the server renders it", () => {
     );
   });
 
+  it("has an empty polite status, ready to say which match previous or next brought", async () => {
+    const html = await render(round(3));
+    expect(html).toContain('<p aria-live="polite" aria-atomic="true" class="sr-only"></p>');
+  });
+
   it("keeps the indicator for the eye only: each card's label carries the position", async () => {
     const html = await render(round(3));
     expect(html).toMatch(/<div aria-hidden="true" data-testid="home-match-carousel-indicator"/);
@@ -240,6 +245,13 @@ describe("HomeMatchCarousel — house rules", () => {
     expect(code).toContain("onGameClosed={onGameClosed}");
   });
 
+  it("announces the match a step brought, from the buttons only", () => {
+    expect(code.match(/setAnnounced\(/g)).toHaveLength(1);
+    const step = code.slice(code.indexOf("const step = (by"), code.indexOf("return (\n    <div"));
+    expect(step).toContain("setAnnounced(");
+    expect(step).toContain('t("home.carousel.announce")');
+  });
+
   it("keeps previous and next focusable at either end, unavailable but not disabled", () => {
     // A disabled button drops the focus it holds, to the page's body.
     expect(code).not.toMatch(/(?<![-\w])disabled=\{/);
@@ -269,12 +281,16 @@ describe("HomeMatchCarousel — house rules", () => {
         "home.carousel.role",
         "home.carousel.slide_role",
         "home.carousel.skip",
+        "home.carousel.announce",
       ] as const) {
         expect(dictionary[key]).toBeTruthy();
       }
       expect(dictionary["home.carousel.slide"]).toContain("{n}");
       expect(dictionary["home.carousel.slide"]).toContain("{total}");
       expect(dictionary["home.carousel.role"]).not.toMatch(/^carousel$/i);
+      for (const slot of ["{slide}", "{home}", "{away}"]) {
+        expect(dictionary["home.carousel.announce"]).toContain(slot);
+      }
     }
     expect(ar["home.carousel.slide"]).toMatch(/[؀-ۿ]/);
   });

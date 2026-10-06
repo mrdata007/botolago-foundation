@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 
 import { bandGameweek } from "@/lib/band-gameweek";
-import type { Match, MatchStatus } from "@/types/domain";
-import { bandMatches, voteMayOpen } from "./band-matches";
+import type { Club, Match, MatchStatus } from "@/types/domain";
+import { bandClubName, bandMatches, voteMayOpen } from "./band-matches";
 
 const match = (
   id: string,
@@ -130,5 +130,24 @@ describe("voteMayOpen", () => {
 
   it("expects none on a match being played", () => {
     expect(voteMayOpen(match("live", "08T16:00", "live"), at)).toBe(false);
+  });
+});
+
+describe("bandClubName", () => {
+  const club = (name: string, shortName: string): Club => ({
+    id: name,
+    name: { fr: name, ar: name },
+    shortName: { fr: shortName, ar: shortName },
+    city: { fr: "", ar: "" },
+    primaryColor: "var(--ui-ink)",
+    crestPlaceholder: "X",
+  });
+  const tr = (text: { fr: string }) => text.fr;
+
+  it("names a club by its short name, or its full name when the short one is a code", () => {
+    expect(bandClubName(club("Renaissance Club Athletic Zemamra", "RCA Zemamra"), tr)).toBe(
+      "RCA Zemamra",
+    );
+    expect(bandClubName(club("AS FAR", "FAR"), tr)).toBe("AS FAR");
   });
 });

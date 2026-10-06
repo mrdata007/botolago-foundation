@@ -8,7 +8,7 @@ import { prefersReducedMotion } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { whenIdle } from "@/lib/when-idle";
 import type { Club, Match } from "@/types/domain";
-import { voteMayOpen } from "./band-matches";
+import { bandClubName, voteMayOpen } from "./band-matches";
 import { NextMatchPick } from "./NextMatchPick";
 
 /** One card of the band: a match and its two clubs, already found. */
@@ -113,7 +113,7 @@ export function HomeMatchCarousel({
   /** When the page was rendered (the loader's moment), for `voteMayOpen`. */
   renderedAt: number;
 }) {
-  const { t } = useI18n();
+  const { t, tr } = useI18n();
   const track = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const count = cards.length;
@@ -126,6 +126,11 @@ export function HomeMatchCarousel({
   // A read found the game closed: no card waits for a vote row any more.
   const [gameClosed, setGameClosed] = useState(false);
   const onGameClosed = useCallback(() => setGameClosed(true), []);
+
+  // What a screen reader hears after previous or next: the match now shown.
+  // Set by the buttons only; a swipe moves the reader's own cursor, and the
+  // votes arriving say nothing.
+  const [announced, setAnnounced] = useState("");
 
   // Where "Passer les matchs" lands: the end of the carousel, so the next Tab
   // goes on to what follows it.
@@ -169,17 +174,24 @@ export function HomeMatchCarousel({
     });
   };
 
+  const slideLabel = (index: number) =>
+    t("home.carousel.slide")
+      .replace("{n}", String(index + 1))
+      .replace("{total}", String(count));
+
   /** Previous (-1) or next (1); nothing past either end. */
   const step = (by: -1 | 1) => {
     const target = current + by;
     if (target < 0 || target >= count) return;
     bringIntoView(target);
+    const { home, away } = cards[target]!;
+    setAnnounced(
+      t("home.carousel.announce")
+        .replace("{slide}", slideLabel(target))
+        .replace("{home}", bandClubName(home, tr))
+        .replace("{away}", bandClubName(away, tr)),
+    );
   };
-
-  const slideLabel = (index: number) =>
-    t("home.carousel.slide")
-      .replace("{n}", String(index + 1))
-      .replace("{total}", String(count));
 
   return (
     <div
@@ -282,6 +294,9 @@ export function HomeMatchCarousel({
           <ChevronRight aria-hidden />
         </UiIconButton>
       </div>
+      <p aria-live="polite" aria-atomic="true" className="sr-only">
+        {announced}
+      </p>
       <div id={endId} tabIndex={-1} className="outline-none" />
     </div>
   );

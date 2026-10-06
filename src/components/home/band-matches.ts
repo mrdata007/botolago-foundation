@@ -1,4 +1,4 @@
-import type { Match } from "@/types/domain";
+import type { Club, LocalizedString, Match } from "@/types/domain";
 
 /**
  * The matches the gameweek band shows (BG-0155): every match being played,
@@ -42,4 +42,13 @@ export function bandMatches(matches: readonly Match[]): Match[] {
  */
 export function voteMayOpen(match: Match, at: number): boolean {
   return match.status === "scheduled" && match.gameweek > 0 && Date.parse(match.kickoff) > at;
+}
+
+/**
+ * A club's name on a band card: its short name ("RCA Zemamra"), unless that is
+ * only a code ("FAR"), which is not a name to read; then the full name.
+ */
+export function bandClubName(club: Club, tr: (text: LocalizedString) => string): string {
+  const short = tr(club.shortName);
+  return /^[A-Z0-9]{2,6}$/.test(short.trim()) ? tr(club.name) : short;
 }

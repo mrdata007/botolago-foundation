@@ -10,6 +10,7 @@ import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { cn } from "@/lib/utils";
 import type { MatchVoteChoice } from "@/backend/predictions/contracts";
 import type { Club, Match } from "@/types/domain";
+import { bandClubName } from "./band-matches";
 
 const PANEL = "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_10%,transparent)]";
 const PICK_OUTLINE = "border-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_40%,transparent)]";
@@ -88,10 +89,7 @@ export function NextMatchPick({
     hour: "2-digit",
     minute: "2-digit",
   }).format(kickoff);
-  const name = (club: Club) => {
-    const short = tr(club.shortName);
-    return /^[A-Z0-9]{2,6}$/.test(short.trim()) ? tr(club.name) : short;
-  };
+  const name = (club: Club) => bandClubName(club, tr);
 
   return (
     <div

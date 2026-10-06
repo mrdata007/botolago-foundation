@@ -95,6 +95,7 @@ export const ar = {
   "home.carousel.role": "عرض دوّار",
   "home.carousel.slide_role": "شريحة",
   "home.carousel.skip": "تخطي المباريات",
+  "home.carousel.announce": "{slide}: {home} ضد {away}",
   "home.sr_title": "BotolaGO — أخبار ومباريات وفانتازي كرة القدم المغربية",
 
   "news.title": "الأخبار",
