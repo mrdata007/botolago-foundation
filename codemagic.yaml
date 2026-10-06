@@ -16,9 +16,9 @@
 #   ios      uploads the build to App Store Connect, where it appears in TestFlight
 #            for your own team (internal testers). It is NOT submitted for Apple's
 #            review and NOT released.
-#   android  makes a test .apk (to install on a phone) and keeps it as a download.
-#            For now it is signed with Android's automatic test key, so no keystore
-#            is needed; it is not for Google Play. It does NOT publish anything.
+#   android  makes the Google Play bundle (.aab), signed with the BotolaGO upload
+#            key (Codemagic's botolago_keystore), and keeps it as a download. It
+#            does NOT publish anything: you upload the .aab to Google Play yourself.
 
 definitions:
   # The version people see; the build number is Codemagic's, increasing each build.
@@ -38,12 +38,11 @@ workflows:
     # The Mac machine, because it is the one Codemagic's free monthly minutes cover.
     instance_type: mac_mini_m2
     environment:
-      # Signing is off for now: the build makes a test apk. To make the Google Play
-      # build, upload the keystore in Codemagic > Teams > Code signing identities >
-      # Android keystores with the reference name botolago_keystore, add it back here as
-      #   android_signing:
-      #     - botolago_keystore
-      # and build `assembleRelease bundleRelease` instead of `assembleDebug`.
+      # Codemagic > Teams > Code signing identities > Android keystores: the upload key,
+      # reference name botolago_keystore. scripts/mobile/prepare-native.mjs makes the
+      # release build sign with it (Codemagic provides it as the CM_KEYSTORE_* variables).
+      android_signing:
+        - botolago_keystore
       # Codemagic > Teams > Global variables and secrets (or the app's Environment variables),
       # a group with this name holding the secure variable GOOGLE_SERVICES_JSON_BASE64.
       groups:
@@ -67,15 +66,12 @@ workflows:
         script: npx cap sync android
       - name: Set the Android SDK location
         script: echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-     - name: Build the Play Store bundle
+      - name: Build the Google Play bundle
         script: |
           cd android
           ./gradlew bundleRelease
-          jarsigner -keystore "$CM_KEYSTORE_PATH" \
-      - android/app/build/outputs/bundle/release/*.aab            -keypass "$CM_KEY_PASSWORD" \
-            app/build/outputs/bundle/release/app-release.aab "$CM_KEY_ALIAS"
     artifacts:
-      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/bundle/release/*.aab
 
   ios:
     name: BotolaGO iPhone
