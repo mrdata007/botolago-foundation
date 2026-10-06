@@ -9,6 +9,8 @@ export const Route = createFileRoute("/admin/pepites/donnees")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>): { onglet?: "joueurs" | "photos" } =>
     search.onglet === "joueurs" || search.onglet === "photos" ? { onglet: search.onglet } : {},
+  // Not on intent: a staff access check (see `admin.tsx`).
+  preload: false,
   loader: () => loadAdminPepitesDataRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminPepitesDataRoute,

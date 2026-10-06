@@ -24,6 +24,8 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/admin/news/new")({
   ssr: false,
   validateSearch: parseTranslationSearch,
+  // Not on intent: a staff access check (see `admin.tsx`).
+  preload: false,
   loader: () => loadAdminNewsWriteRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminNewsNewRoute,

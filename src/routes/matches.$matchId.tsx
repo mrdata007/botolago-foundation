@@ -14,6 +14,7 @@ import {
   type FootballStandings,
   type MatchSeason,
 } from "@/services/football";
+import { matchDetailQuery } from "@/services/football-queries";
 import { newsService } from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -42,6 +43,7 @@ import {
 } from "@/components/matches/goal-moment";
 import { useScrolledPast } from "@/components/matches/use-scrolled-past";
 import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
+import { activeLanguage } from "@/i18n/active-language";
 import { useI18n } from "@/i18n/provider";
 import { matchDayKey } from "@/lib/match-kickoff";
 import { useBackTo } from "@/lib/back-navigation";
@@ -82,9 +84,15 @@ export const Route = createFileRoute("/matches/$matchId")({
    * state, IS serialized to the client, so the component seeds its query
    * with it (`initialData`) and both first renders are the same tree.
    *
-   * French because the server always renders French (the language is read
+   * French on the server, which always renders French (the language is read
    * from storage after mount); an Arabic reader's query is a different key
-   * and loads after hydration.
+   * and loads after hydration. In the browser, the reader's own language
+   * (`activeLanguage`): this loader runs when a match link is about to be
+   * followed and on the navigation, and it used to fetch the French copy
+   * there too, which an Arabic reader's page never shows -- the navigation
+   * waited for it, then the page showed its skeleton while the Arabic copy
+   * loaded. Now the page finds its own copy in the cache. The loader data
+   * says which language it holds, and only seeds a page in that language.
    *
    * An id that is not a fixture's (malformed, or unknown to the database) is
    * a 404; a failed read is a 503 the crawler retries (see
@@ -93,15 +101,14 @@ export const Route = createFileRoute("/matches/$matchId")({
   loader: async ({ params, context }) => {
     if (!MATCH_ID.test(params.matchId)) throw notFound();
     try {
-      const queryKey = ["football", "match-detail", params.matchId, "fr"];
-      const detail = await context.queryClient.ensureQueryData({
-        queryKey,
-        queryFn: () => footballService.getMatchDetailPage(params.matchId, "fr"),
-      });
+      const lang = activeLanguage();
+      const query = matchDetailQuery(params.matchId, lang);
+      const detail = await context.queryClient.ensureQueryData(query);
       // When this copy was fetched, so the page's query knows how old its
       // seed is: the router can hand back loader data it cached minutes ago.
-      const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
-      return { detail, fetchedAt };
+      const fetchedAt =
+        context.queryClient.getQueryState(query.queryKey)?.dataUpdatedAt || Date.now();
+      return { detail, fetchedAt, lang };
     } catch (error) {
       if (isMissingContent(error)) throw notFound();
       return UNAVAILABLE;
@@ -183,10 +190,11 @@ function MatchDetailPage() {
   const scrolledPast = useScrolledPast(headerEl);
 
   const serverDetail =
-    lang === "fr" && loaderData?.detail.match.id === matchId ? loaderData.detail : undefined;
+    (loaderData?.lang ?? "fr") === lang && loaderData?.detail.match.id === matchId
+      ? loaderData.detail
+      : undefined;
   const detailQ = useQuery({
-    queryKey: ["football", "match-detail", matchId, lang],
-    queryFn: () => footballService.getMatchDetailPage(matchId, lang),
+    ...matchDetailQuery(matchId, lang),
     // Identical on the server and in the browser's first render — see the
     // loader. Without it the two trees disagree. With its real age, so a seed
     // the router kept from an earlier visit is refetched, not trusted as new.

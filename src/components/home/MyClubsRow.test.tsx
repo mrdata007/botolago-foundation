@@ -204,11 +204,15 @@ describe("MyClubsRow", () => {
 describe("MyClubsRow — source", () => {
   const source = readFileSync(join(ROOT, "src/components/home/MyClubsRow.tsx"), "utf8");
   const clubPage = readFileSync(join(ROOT, "src/routes/clubs.$clubId.tsx"), "utf8");
+  const queries = readFileSync(join(ROOT, "src/services/football-queries.ts"), "utf8");
 
   it("asks for a club's matches under the club page's own key, so opening a club finds them cached", () => {
-    const key = '["football", "club-matches", club.id, season?.id ?? "none", lang]';
-    expect(source).toContain(key);
-    expect(clubPage).toContain('["football", "club-matches", clubId, season?.id ?? "none", lang]');
+    // Both build it from the one definition, so the two cannot drift apart.
+    expect(source).toContain("...clubMatchesQuery(club.id, season, lang)");
+    expect(clubPage).toContain("...clubMatchesQuery(clubId, season, lang)");
+    expect(queries).toContain(
+      '["football", "club-matches", clubId, season?.id ?? "none", language]',
+    );
   });
 
   it("uses no physical direction, so Arabic mirrors by itself", () => {

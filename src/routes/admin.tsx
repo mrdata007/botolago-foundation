@@ -26,6 +26,11 @@ export const Route = createFileRoute("/admin")({
   // Every CMS/Admin page, children included: never indexed, never followed.
   // robots.txt disallows /admin as well; this covers a crawler that ignores it.
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  // Never loaded ahead of a click (the app preloads on intent, `src/router.tsx`):
+  // each Admin loader is a staff access check on the server that logs a
+  // refusal, which a pointer passing over a link must not cause. Every
+  // child route says the same.
+  preload: false,
   loader: () => loadAdminRouteAccess(),
   pendingComponent: AdminLoadingShell,
   component: AdminRoute,

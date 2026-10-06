@@ -29,6 +29,8 @@ import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/staff/$principalId")({
   ssr: false,
+  // Not on intent: a staff access check (see `admin.tsx`).
+  preload: false,
   loader: () => loadAdminStaffRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminStaffDetailRoute,

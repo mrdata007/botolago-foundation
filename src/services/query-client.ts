@@ -58,6 +58,37 @@ export function reportRefusedQuery(error: unknown): void {
  */
 export const SEASON_CATALOG_STALE_MS = 10 * 60_000;
 
+/**
+ * What a club is rather than what it is doing: its profile (name, crest,
+ * city, colours), the club lists, its squad and the seasons it played. They
+ * change at a transfer window or a new season, yet were read again on every
+ * visit after fifteen seconds. Ten minutes, as for the season list. Its
+ * matches, the table and everything live keep the fifteen-second default and
+ * their own refresh rules (`@/lib/match-refresh`).
+ */
+export const CLUB_PROFILE_STALE_MS = 10 * 60_000;
+
+/**
+ * The Fantasy player pool (`["fantasy-players"]`, nine reads one after
+ * another) and a player read from it (`@/services/fantasy-player-query`).
+ * Prices and season totals move about once a gameweek; the list, the top
+ * players, the search and a player's page now reuse the pool for five
+ * minutes instead of fifteen seconds. The team and transfer screens keep
+ * their own minute (`useFantasyScreen`), live points their own refresh, and
+ * the database checks every transfer whatever the screen showed.
+ */
+export const FANTASY_POOL_STALE_MS = 5 * 60_000;
+
+/**
+ * How long a screen's data stays in the browser after its last screen is
+ * left: half an hour instead of React Query's five minutes, so a page opened
+ * again later in the visit shows at once, from the copy it had, while a
+ * stale copy refreshes behind it. Browser only: a server render's client
+ * lives for one request, and a timer would keep it in memory for the half
+ * hour (on the server React Query keeps nothing on a timer by default).
+ */
+export const BROWSER_CACHE_TIME_MS = 30 * 60_000;
+
 export function createAppQueryClient() {
   const client = new QueryClient({
     queryCache: new QueryCache({ onError: reportRefusedQuery }),
@@ -67,11 +98,17 @@ export function createAppQueryClient() {
         // changes. Mutations invalidate affected queries; match data still
         // refreshes on focus once this short window has elapsed.
         staleTime: 15_000,
+        ...(typeof window === "undefined" ? {} : { gcTime: BROWSER_CACHE_TIME_MS }),
         retry: shouldRetryQuery,
         retryDelay: (attempt) => queryRetryDelay(attempt),
       },
     },
   });
   client.setQueryDefaults(["football", "seasons"], { staleTime: SEASON_CATALOG_STALE_MS });
+  for (const prefix of ["clubs", "club-directory", "club", "club-squad", "club-seasons-played"]) {
+    client.setQueryDefaults(["football", prefix], { staleTime: CLUB_PROFILE_STALE_MS });
+  }
+  client.setQueryDefaults(["fantasy-players"], { staleTime: FANTASY_POOL_STALE_MS });
+  client.setQueryDefaults(["fantasy-player"], { staleTime: FANTASY_POOL_STALE_MS });
   return client;
 }

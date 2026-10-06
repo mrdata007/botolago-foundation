@@ -44,6 +44,8 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/users/$userId")({
   ssr: false,
+  // Not on intent: a staff access check (see `admin.tsx`).
+  preload: false,
   loader: () => loadAdminUsersRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminUserDetailRoute,
