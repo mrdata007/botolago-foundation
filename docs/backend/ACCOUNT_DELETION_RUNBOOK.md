@@ -85,7 +85,11 @@ The migration ships **off**. Order matters: the web app's new deletion text
 promises "sous 7 jours", so the erasure must be on before that text is
 published.
 
-1. Apply the migration through the reviewed path: run
+1. Apply the migration through the reviewed path. First, if production does
+   not have 20261005130000 (public recaps) yet, run
+   `scripts/backend/apply-20261005130000-fantasy-public-recaps.sql` the same
+   way (rehearsal, then `commit;`): the deletion erases recaps, so its script
+   refuses without that table. Then run
    `scripts/backend/apply-20261006143700-account-deletion-automatic.sql` in
    the SQL editor, as a rehearsal first, then with `commit;` (instructions in
    its header). It refuses if a deletion request is already pending.
