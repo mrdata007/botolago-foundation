@@ -142,6 +142,9 @@ const RPC: Record<string, Handler> = {
       },
       context,
     ),
+  // Home's match carousel reads the "who wins" vote of the card in view and
+  // of its neighbours.
+  match_votes: (args) => predictions.getMatchVotes(String(args.p_fixture_id), context),
   fantasy_hub: () => fantasyHub(),
   // Before the first deadline nothing has scored: no averages, no top
   // players, no season totals. The same state production was in at launch.
