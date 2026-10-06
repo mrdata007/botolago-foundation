@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-06T05:31:39.697Z",
+  "generatedAt": "2026-10-06T09:47:21.617Z",
   "title": "Design System: BotolaGO",
   "extensions": {
     "colorMeta": {
@@ -18,7 +18,39 @@
           "oklch(0.82 0.1 258)",
           "oklch(0.95 0.1 258)"
         ],
-        "token": "--ui-ink / --ui-ink-fg"
+        "token": "--ui-ink / --ui-ink-fg (dark: fill oklch(0.3 0.08 260), foreground oklch(0.86 0.08 232))"
+      },
+      "selected": {
+        "role": "state",
+        "displayName": "Selected",
+        "canonical": "oklch(0.32 0.1 258)",
+        "tonalRamp": [
+          "oklch(0.15 0.1 258)",
+          "oklch(0.26 0.1 258)",
+          "oklch(0.37 0.1 258)",
+          "oklch(0.48 0.1 258)",
+          "oklch(0.59 0.1 258)",
+          "oklch(0.7 0.1 258)",
+          "oklch(0.82 0.1 258)",
+          "oklch(0.95 0.1 258)"
+        ],
+        "token": "--ui-selected (= --ui-ink in light; dark: = --ui-ink-fg oklch(0.86 0.08 232))"
+      },
+      "on-selected": {
+        "role": "state",
+        "displayName": "On Selected",
+        "canonical": "oklch(1 0 0)",
+        "tonalRamp": [
+          "oklch(0.15 0 0)",
+          "oklch(0.26 0 0)",
+          "oklch(0.37 0 0)",
+          "oklch(0.48 0 0)",
+          "oklch(0.59 0 0)",
+          "oklch(0.7 0 0)",
+          "oklch(0.82 0 0)",
+          "oklch(0.95 0 0)"
+        ],
+        "token": "--ui-on-selected (= --ui-on-ink-plain in light; dark: = --ui-ink-deep oklch(0.22 0.07 260))"
       },
       "tunnel-navy": {
         "role": "primary",
@@ -34,7 +66,7 @@
           "oklch(0.82 0.09 258)",
           "oklch(0.95 0.09 258)"
         ],
-        "token": "--ui-ink-deep"
+        "token": "--ui-ink-deep (dark: oklch(0.22 0.07 260))"
       },
       "fresh-turf": {
         "role": "secondary",
@@ -50,7 +82,7 @@
           "oklch(0.82 0.19 152)",
           "oklch(0.95 0.19 152)"
         ],
-        "token": "--ui-accent-spring"
+        "token": "--ui-accent-spring (dark: oklch(0.82 0.18 152))"
       },
       "matchday-sky": {
         "role": "secondary",
@@ -66,7 +98,7 @@
           "oklch(0.82 0.11 205)",
           "oklch(0.95 0.11 205)"
         ],
-        "token": "--ui-accent-sky"
+        "token": "--ui-accent-sky (dark: oklch(0.82 0.11 205))"
       },
       "terrace-mist": {
         "role": "neutral",
@@ -82,7 +114,7 @@
           "oklch(0.82 0.004 250)",
           "oklch(0.95 0.004 250)"
         ],
-        "token": "--ui-page"
+        "token": "--ui-page (dark: oklch(0.15 0.03 260))"
       },
       "home-shirt-white": {
         "role": "neutral",
@@ -98,7 +130,7 @@
           "oklch(0.82 0 0)",
           "oklch(0.95 0 0)"
         ],
-        "token": "--ui-surface / --ui-scorebox"
+        "token": "--ui-surface / --ui-scorebox (dark: surface oklch(0.22 0.03 260), scorebox oklch(0.93 0.01 250))"
       },
       "dugout-grey": {
         "role": "neutral",
@@ -114,7 +146,7 @@
           "oklch(0.82 0.006 250)",
           "oklch(0.95 0.006 250)"
         ],
-        "token": "--ui-surface-sunken"
+        "token": "--ui-surface-sunken (dark: oklch(0.26 0.03 260))"
       },
       "chalk-line": {
         "role": "neutral",
@@ -130,7 +162,7 @@
           "oklch(0.82 0.006 250)",
           "oklch(0.95 0.006 250)"
         ],
-        "token": "--ui-rule"
+        "token": "--ui-rule (dark: color-mix(in oklab, oklch(0.97 0.01 250) 14%, transparent))"
       },
       "goal-line-grey": {
         "role": "neutral",
@@ -146,7 +178,7 @@
           "oklch(0.82 0.02 258)",
           "oklch(0.95 0.02 258)"
         ],
-        "token": "--ui-rule-strong"
+        "token": "--ui-rule-strong (dark: oklch(0.52 0.02 258))"
       },
       "scoreboard-black": {
         "role": "neutral",
@@ -162,7 +194,7 @@
           "oklch(0.82 0.03 260)",
           "oklch(0.95 0.03 260)"
         ],
-        "token": "--ui-on-surface"
+        "token": "--ui-on-surface (dark: oklch(0.97 0.01 250))"
       },
       "programme-grey": {
         "role": "neutral",
@@ -178,7 +210,7 @@
           "oklch(0.82 0.02 258)",
           "oklch(0.95 0.02 258)"
         ],
-        "token": "--ui-on-surface-muted"
+        "token": "--ui-on-surface-muted (dark: oklch(0.76 0.02 258))"
       },
       "bench-grey": {
         "role": "neutral",
@@ -194,7 +226,7 @@
           "oklch(0.82 0.02 258)",
           "oklch(0.95 0.02 258)"
         ],
-        "token": "--ui-on-surface-faint"
+        "token": "--ui-on-surface-faint (dark: oklch(0.64 0.02 258))"
       },
       "tunnel-scrim": {
         "role": "neutral",
@@ -210,7 +242,7 @@
           "oklch(0.82 0.03 260)",
           "oklch(0.95 0.03 260)"
         ],
-        "token": "--ui-scrim"
+        "token": "--ui-scrim (dark: color-mix(in oklab, oklch(0.08 0.02 260) 68%, transparent))"
       },
       "goal-green": {
         "role": "status",
@@ -226,7 +258,7 @@
           "oklch(0.82 0.14 150)",
           "oklch(0.95 0.14 150)"
         ],
-        "token": "--ui-positive"
+        "token": "--ui-positive (dark: oklch(0.78 0.17 150))"
       },
       "relegation-magenta": {
         "role": "status",
@@ -242,7 +274,7 @@
           "oklch(0.82 0.22 355)",
           "oklch(0.95 0.22 355)"
         ],
-        "token": "--ui-negative"
+        "token": "--ui-negative (dark: oklch(0.75 0.19 355))"
       },
       "yellow-card-amber": {
         "role": "status",
@@ -258,7 +290,7 @@
           "oklch(0.82 0.17 80)",
           "oklch(0.95 0.17 80)"
         ],
-        "token": "--ui-caution"
+        "token": "--ui-caution (dark: oklch(0.85 0.16 80))"
       },
       "live-match-red": {
         "role": "status",
@@ -274,7 +306,7 @@
           "oklch(0.82 0.22 27)",
           "oklch(0.95 0.22 27)"
         ],
-        "token": "--ui-live"
+        "token": "--ui-live (dark: oklch(0.68 0.22 27))"
       },
       "mown-grass-light": {
         "role": "status",
@@ -290,7 +322,7 @@
           "oklch(0.82 0.129 153)",
           "oklch(0.95 0.129 153)"
         ],
-        "token": "--ui-lineup-turf-a"
+        "token": "--ui-lineup-turf-a (dark: oklch(0.42 0.1 150))"
       },
       "mown-grass-dark": {
         "role": "status",
@@ -306,7 +338,7 @@
           "oklch(0.82 0.122 152)",
           "oklch(0.95 0.122 152)"
         ],
-        "token": "--ui-lineup-turf-b"
+        "token": "--ui-lineup-turf-b (dark: oklch(0.39 0.095 150))"
       },
       "logo-blue": {
         "role": "brand-asset",
@@ -322,71 +354,7 @@
           "oklch(0.82 0.26 263)",
           "oklch(0.95 0.26 263)"
         ],
-        "token": "logo SVG fill #0151fc (open decision vs Floodlight Navy)"
-      },
-      "pepites-night": {
-        "role": "sub-brand",
-        "displayName": "Pépites Night",
-        "canonical": "#070d24",
-        "tonalRamp": [
-          "oklch(0.15 0.05 270)",
-          "oklch(0.26 0.05 270)",
-          "oklch(0.37 0.05 270)",
-          "oklch(0.48 0.05 270)",
-          "oklch(0.59 0.05 270)",
-          "oklch(0.7 0.05 270)",
-          "oklch(0.82 0.05 270)",
-          "oklch(0.95 0.05 270)"
-        ],
-        "token": "--pepites-night"
-      },
-      "pepites-mint": {
-        "role": "sub-brand",
-        "displayName": "Pépites Mint",
-        "canonical": "#5de39b",
-        "tonalRamp": [
-          "oklch(0.15 0.16 155)",
-          "oklch(0.26 0.16 155)",
-          "oklch(0.37 0.16 155)",
-          "oklch(0.48 0.16 155)",
-          "oklch(0.59 0.16 155)",
-          "oklch(0.7 0.16 155)",
-          "oklch(0.82 0.16 155)",
-          "oklch(0.95 0.16 155)"
-        ],
-        "token": "--pepites-spring"
-      },
-      "pepites-sky": {
-        "role": "sub-brand",
-        "displayName": "Pépites Sky",
-        "canonical": "#7fd6f0",
-        "tonalRamp": [
-          "oklch(0.15 0.1 220)",
-          "oklch(0.26 0.1 220)",
-          "oklch(0.37 0.1 220)",
-          "oklch(0.48 0.1 220)",
-          "oklch(0.59 0.1 220)",
-          "oklch(0.7 0.1 220)",
-          "oklch(0.82 0.1 220)",
-          "oklch(0.95 0.1 220)"
-        ],
-        "token": "--pepites-sky"
-      },
-      "pepites-violet": {
-        "role": "sub-brand",
-        "displayName": "Pépites Violet",
-        "canonical": "#7c6cf0",
-        "tonalRamp": [
-          "oklch(0.15 0.18 285)",
-          "oklch(0.26 0.18 285)",
-          "oklch(0.37 0.18 285)",
-          "oklch(0.48 0.18 285)",
-          "oklch(0.59 0.18 285)",
-          "oklch(0.7 0.18 285)",
-          "oklch(0.82 0.18 285)",
-          "oklch(0.95 0.18 285)"
-        ],
-        "token": "--pepites-violet"
+        "token": "logo SVG fill #0151fc; a brand-asset colour only, never an interface token (owner, 2026-10-05). In dark the logo shows its all-white files."
       }
     },
     "typographyMeta": {
@@ -438,6 +406,10 @@
         "displayName": "Secondary",
         "purpose": "Supporting copy and pills."
       },
+      "secondary-strong": {
+        "displayName": "Secondary strong",
+        "purpose": "Toast text (14px at 700)."
+      },
       "meta": {
         "displayName": "Meta",
         "purpose": "Meta lines and table cells."
@@ -473,37 +445,38 @@
       "stat-sm": {
         "displayName": "Stat small",
         "purpose": "Dense table cells."
-      },
-      "pepites-mono": {
-        "displayName": "Pépites mono",
-        "purpose": "Pépites meta lines only; Latin-only face, Arabic falls back to Noto Sans Arabic."
       }
     },
     "shadows": [
       {
         "name": "card",
         "value": "0 1px 2px 0 color-mix(in oklab, var(--ui-ink) 10%, transparent), 0 4px 14px -8px color-mix(in oklab, var(--ui-ink) 14%, transparent)",
-        "purpose": "Every white card, the light button, the selected chip, the active segment, the pill-style segmented track, the Fantasy pitch."
+        "purpose": "Every white card, the light button, the selected chip, the active segment, the pill-style segmented track, the Fantasy pitch. Dark: 0 1px 2px 0 color-mix(in oklab, oklch(0 0 0) 55%, transparent)."
       },
       {
         "name": "raised",
         "value": "0 -1px 0 0 color-mix(in oklab, var(--ui-ink) 8%, transparent)",
-        "purpose": "The bottom nav's top edge; hover on news row cards."
+        "purpose": "The bottom nav's top edge; hover on news row cards. Dark: 0 -1px 0 0 color-mix(in oklab, oklch(1 0 0) 8%, transparent)."
       },
       {
         "name": "lifted",
         "value": "0 14px 26px -16px color-mix(in oklab, var(--ui-ink-deep) 55%, transparent)",
-        "purpose": "The one raised step: score plate, hero match card, photo story cards, inverse crest, primary gradient button."
+        "purpose": "The one raised step: score plate, hero match card, photo story cards, inverse crest, primary gradient button, toasts. Dark: 0 14px 26px -16px color-mix(in oklab, oklch(0 0 0) 75%, transparent)."
       },
       {
         "name": "overlay",
         "value": "0 -8px 24px -8px color-mix(in oklab, var(--ui-ink) 28%, transparent)",
-        "purpose": "Bottom sheets, modals, menus."
+        "purpose": "Bottom sheets, modals, menus. Dark: 0 -8px 24px -8px color-mix(in oklab, oklch(0 0 0) 70%, transparent)."
       },
       {
         "name": "column",
         "value": "0 18px 40px -18px rgba(20, 30, 60, 0.22), 0 6px 14px -6px rgba(20, 30, 60, 0.1)",
-        "purpose": "The raised phone column on desktop (sign-in, Fantasy). From the legacy layer; no dark value."
+        "purpose": "The raised phone column on desktop (sign-in, Fantasy) and the search results popover. Light value from the legacy layer (--shadow-floating). Dark: 0 0 0 1px var(--ui-rule), 0 18px 40px -18px color-mix(in oklab, oklch(0 0 0) 70%, transparent)."
+      },
+      {
+        "name": "ink-edge",
+        "value": "inset 0 0 0 1px var(--ui-ink-edge, transparent)",
+        "purpose": "The ring on ink-filled controls (ink button, ink icon button, toast action). --ui-ink-edge is transparent in light and oklch(0.58 0.02 258) in dark, where the navy fill nearly vanishes on the surface."
       }
     ],
     "motion": [
@@ -599,9 +572,9 @@
       "name": "Ink Button",
       "kind": "button",
       "refersTo": "button-ink",
-      "description": "Strong secondary action such as Réessayer: Floodlight Navy fill, white label.",
+      "description": "Strong secondary action such as Réessayer: Floodlight Navy fill, white label, and the ink edge (a 1px inset ring drawn only in dark).",
       "html": "<button type='button' class='ds-btn-ink'>Réessayer</button>",
-      "css": ".ds-btn-ink{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:3rem;padding:0 1rem;border:0;border-radius:9999px;font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);font-size:15px;font-weight:800;line-height:1.55;cursor:pointer;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1));width:100%;max-width:22rem;background:var(--ui-ink, oklch(0.32 0.1 258));color:var(--ui-on-ink-plain, oklch(1 0 0))}.ds-btn-ink:active{scale:.97;filter:brightness(.96)}.ds-btn-ink:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-btn-ink:disabled{background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-on-surface-muted, oklch(0.45 0.02 258));cursor:not-allowed}"
+      "css": ".ds-btn-ink{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:3rem;padding:0 1rem;border:0;border-radius:9999px;font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);font-size:15px;font-weight:800;line-height:1.55;cursor:pointer;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1));width:100%;max-width:22rem;background:var(--ui-ink, oklch(0.32 0.1 258));color:var(--ui-on-ink-plain, oklch(1 0 0));box-shadow:inset 0 0 0 1px var(--ui-ink-edge, transparent)}.ds-btn-ink:active{scale:.97;filter:brightness(.96)}.ds-btn-ink:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-btn-ink:disabled{background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-on-surface-muted, oklch(0.45 0.02 258));box-shadow:none;cursor:not-allowed}"
     },
     {
       "name": "Soft Button and Icon Button",
@@ -615,9 +588,9 @@
       "name": "Filter Chips",
       "kind": "chip",
       "refersTo": "chip",
-      "description": "44px capsules: Dugout Grey when off, Floodlight Navy with white text and the card shadow when selected.",
+      "description": "44px capsules: Dugout Grey when off; the selected state (Floodlight Navy with white text in light, light brand blue with deep navy text in dark) and the card shadow when selected.",
       "html": "<div class='ds-chips' role='group' aria-label='Filtre'><button type='button' class='ds-chip' aria-pressed='true'>Tous</button><button type='button' class='ds-chip' aria-pressed='false'>En direct</button><button type='button' class='ds-chip' aria-pressed='false'>Terminés</button></div>",
-      "css": ".ds-chips{display:flex;gap:.5rem;flex-wrap:wrap}.ds-chip{display:inline-flex;align-items:center;justify-content:center;gap:.375rem;min-height:2.75rem;min-width:2.75rem;padding:.375rem .75rem;border:0;border-radius:9999px;background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-on-surface, oklch(0.16 0.03 260));font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);font-size:13px;font-weight:700;line-height:1.55;cursor:pointer;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1))}.ds-chip[aria-pressed='true']{background:var(--ui-ink, oklch(0.32 0.1 258));color:var(--ui-on-ink-plain, oklch(1 0 0));box-shadow:var(--ui-shadow-card, 0 1px 2px 0 color-mix(in oklab, oklch(0.32 0.1 258) 10%, transparent), 0 4px 14px -8px color-mix(in oklab, oklch(0.32 0.1 258) 14%, transparent))}.ds-chip:active{scale:.97;filter:brightness(.96)}.ds-chip:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}"
+      "css": ".ds-chips{display:flex;gap:.5rem;flex-wrap:wrap}.ds-chip{display:inline-flex;align-items:center;justify-content:center;gap:.375rem;min-height:2.75rem;min-width:2.75rem;padding:.375rem .75rem;border:0;border-radius:9999px;background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-on-surface, oklch(0.16 0.03 260));font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif);font-size:13px;font-weight:700;line-height:1.55;cursor:pointer;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1))}.ds-chip[aria-pressed='true']{background:var(--ui-selected, oklch(0.32 0.1 258));color:var(--ui-on-selected, oklch(1 0 0));box-shadow:var(--ui-shadow-card, 0 1px 2px 0 color-mix(in oklab, oklch(0.32 0.1 258) 10%, transparent), 0 4px 14px -8px color-mix(in oklab, oklch(0.32 0.1 258) 14%, transparent))}.ds-chip:active{scale:.97;filter:brightness(.96)}.ds-chip:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}"
     },
     {
       "name": "Card",
@@ -639,9 +612,9 @@
       "name": "Top Bar",
       "kind": "nav",
       "refersTo": "top-bar",
-      "description": "Sticky opaque white bar with a hairline and no shadow; wordmark at the start, round soft buttons at the end, round links from 768px with the active one navy.",
+      "description": "Sticky opaque white bar with a hairline and no shadow; wordmark at the start (Logo Blue in light, all-white file in dark), round soft buttons at the end, round links from 768px with the active one in the selected state.",
       "html": "<header class='ds-topbar'><div class='ds-topbar__row'><a class='ds-topbar__logo' href='#' aria-label='BotolaGO' dir='ltr'>BOTOLA<span>GO</span></a><nav class='ds-topbar__nav' aria-label='Navigation principale'><a class='ds-topbar__link' href='#' aria-current='page'>Accueil</a><a class='ds-topbar__link' href='#'>Actualités</a><a class='ds-topbar__link' href='#'>Fantasy</a><a class='ds-topbar__link' href='#'>Matches</a><a class='ds-topbar__link' href='#'>Pépites</a></nav><div class='ds-topbar__actions'><button type='button' class='ds-topbar__btn' aria-label='Rechercher' aria-expanded='false'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.3-4.3'/></svg></button><a class='ds-topbar__btn' href='#' aria-label='Notifications'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9'/><path d='M10.3 21a1.94 1.94 0 0 0 3.4 0'/></svg></a><button type='button' class='ds-topbar__btn' aria-label='Langue'>FR</button><a class='ds-topbar__btn' href='#' aria-label='Profil'><svg viewBox='0 0 24 24' width='20' height='20' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><circle cx='12' cy='8' r='5'/><path d='M20 21a8 8 0 0 0-16 0'/></svg></a></div></div></header>",
-      "css": ".ds-topbar{position:sticky;top:0;z-index:30;background:var(--ui-surface, oklch(1 0 0));color:var(--ui-on-surface, oklch(0.16 0.03 260));border-bottom:1px solid var(--ui-rule, oklch(0.93 0.006 250));padding-top:.75rem;padding-bottom:.5rem;font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif)}.ds-topbar__row{container-type:inline-size;display:flex;align-items:center;gap:.75rem;margin-inline:auto;max-width:672px;min-height:2.75rem;padding-inline:1rem}.ds-topbar__logo{display:flex;align-items:center;height:1.25rem;color:#0151fc;font-family:var(--ui-font-display, Changa, Manrope, ui-sans-serif, system-ui, sans-serif);font-size:20px;font-weight:800;font-style:italic;letter-spacing:-.01em;text-decoration:none}.ds-topbar__nav{display:none;flex:1;min-width:0;align-items:center;justify-content:center;gap:.25rem}@container (min-width:36rem){.ds-topbar__nav{display:flex}}.ds-topbar__link{display:inline-flex;align-items:center;justify-content:center;min-height:2.75rem;min-width:2.75rem;padding-inline:1rem;border-radius:9999px;color:var(--ui-on-surface-muted, oklch(0.45 0.02 258));font-size:13px;font-weight:800;line-height:1.55;text-decoration:none;transition:color 150ms cubic-bezier(.4,0,.2,1),background-color 150ms cubic-bezier(.4,0,.2,1)}@media (hover:hover){.ds-topbar__link:not([aria-current='page']):hover{background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-on-surface, oklch(0.16 0.03 260))}}.ds-topbar__link[aria-current='page']{background:var(--ui-ink, oklch(0.32 0.1 258));color:var(--ui-on-ink-plain, oklch(1 0 0))}.ds-topbar__link:focus-visible,.ds-topbar__btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-topbar__actions{display:flex;align-items:center;gap:.5rem;margin-inline-start:auto}.ds-topbar__btn{display:inline-grid;place-items:center;flex-shrink:0;width:2.75rem;height:2.75rem;border:0;border-radius:9999px;background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-ink-fg, oklch(0.32 0.1 258));font-size:13px;font-weight:800;text-decoration:none;cursor:pointer;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1))}.ds-topbar__btn:active{scale:.97;filter:brightness(.96)}"
+      "css": ".ds-topbar{position:sticky;top:0;z-index:30;background:var(--ui-surface, oklch(1 0 0));color:var(--ui-on-surface, oklch(0.16 0.03 260));border-bottom:1px solid var(--ui-rule, oklch(0.93 0.006 250));padding-top:.75rem;padding-bottom:.5rem;font-family:var(--ui-font-body, Manrope, Inter, ui-sans-serif, system-ui, sans-serif)}.ds-topbar__row{container-type:inline-size;display:flex;align-items:center;gap:.75rem;margin-inline:auto;max-width:672px;min-height:2.75rem;padding-inline:1rem}.ds-topbar__logo{display:flex;align-items:center;height:1.25rem;color:#0151fc;font-family:var(--ui-font-display, Changa, Manrope, ui-sans-serif, system-ui, sans-serif);font-size:20px;font-weight:800;font-style:italic;letter-spacing:-.01em;text-decoration:none}.ds-topbar__nav{display:none;flex:1;min-width:0;align-items:center;justify-content:center;gap:.25rem}@container (min-width:36rem){.ds-topbar__nav{display:flex}}.ds-topbar__link{display:inline-flex;align-items:center;justify-content:center;min-height:2.75rem;min-width:2.75rem;padding-inline:1rem;border-radius:9999px;color:var(--ui-on-surface-muted, oklch(0.45 0.02 258));font-size:13px;font-weight:800;line-height:1.55;text-decoration:none;transition:color 150ms cubic-bezier(.4,0,.2,1),background-color 150ms cubic-bezier(.4,0,.2,1)}@media (hover:hover){.ds-topbar__link:not([aria-current='page']):hover{background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-on-surface, oklch(0.16 0.03 260))}}.ds-topbar__link[aria-current='page']{background:var(--ui-selected, oklch(0.32 0.1 258));color:var(--ui-on-selected, oklch(1 0 0))}.ds-topbar__link:focus-visible,.ds-topbar__btn:focus-visible{outline:none;box-shadow:0 0 0 2px var(--ui-page, oklch(0.975 0.004 250)),0 0 0 4px var(--ui-ink-fg, oklch(0.32 0.1 258))}.ds-topbar__actions{display:flex;align-items:center;gap:.5rem;margin-inline-start:auto}.ds-topbar__btn{display:inline-grid;place-items:center;flex-shrink:0;width:2.75rem;height:2.75rem;border:0;border-radius:9999px;background:var(--ui-surface-sunken, oklch(0.93 0.006 250));color:var(--ui-ink-fg, oklch(0.32 0.1 258));font-size:13px;font-weight:800;text-decoration:none;cursor:pointer;transition-property:scale,filter,background-color,color;transition-duration:var(--duration-tap,120ms);transition-timing-function:var(--ease-standard,cubic-bezier(.2,.7,.2,1))}.ds-topbar__btn:active{scale:.97;filter:brightness(.96)}"
     },
     {
       "name": "Bottom Nav",
@@ -670,12 +643,12 @@
   ],
   "narrative": {
     "northStar": "Club colours under floodlights",
-    "overview": "BotolaGO looks like a Moroccan match night seen from the phone in your hand. A deep floodlight navy sets the brand. White surfaces read like the scoreboard and the team sheet. Each club's own colours arrive on the screen as data: in the edge of a match row, the disc of a crest, the two halves of a match header. Heavy Changa display type gives titles, team names and scores the voice of a stadium board. The interface around them stays quiet: one light page, white cards, hairlines and a single soft lift. The mood is bold, calm and local: bold in the type and the club colour, calm in the surfaces and the motion, local because French and Arabic are equal first languages and the clubs are Botola Pro clubs.\n\nThis is an operating app first. Supporters check a score, a table, a deadline or a team in a few seconds, on a 390px-wide phone, often outdoors. Density is high where the data is dense (standings, live scores, Fantasy lists), but nothing is smaller than a 44px tap target and nothing relies on colour alone. Arabic is not a translation layer: it has its own body face, taller line boxes, a fully mirrored layout and no letter-spacing. The one stylistic rejection the owner has confirmed is laying out standings as a grid of cards. Standings are real tables.\n\nMotion is short and physical: controls sink 3% under the finger, sheets settle in over 320ms, the active bottom-nav pill slides between tabs, and pages slide in from the reading side. All of it collapses under reduced motion. The detailed timings live in the sidecar and in the components below.\n\nThis file describes the system that ships today: Design System V2, look \"Option A: Club colours\", light theme only. It is a record of the incumbent design for refinement work, not a redesign brief.",
+    "overview": "BotolaGO looks like a Moroccan match night seen from the phone in your hand. A deep floodlight navy sets the brand. White surfaces read like the scoreboard and the team sheet. Each club's own colours arrive on the screen as data: in the edge of a match row, the disc of a crest, the two halves of a match header. Heavy Changa display type gives titles, team names and scores the voice of a stadium board. The interface around them stays quiet: one flat page, white cards, hairlines and a single soft lift. The mood is bold, calm and local: bold in the type and the club colour, calm in the surfaces and the motion, local because French and Arabic are equal first languages and the clubs are Botola Pro clubs.\n\nThis is an operating app first. Supporters check a score, a table, a deadline or a team in a few seconds, on a 390px-wide phone, often outdoors. Density is high where the data is dense (standings, live scores, Fantasy lists), but nothing is smaller than a 44px tap target and nothing relies on colour alone. Arabic is not a translation layer: it has its own body face, taller line boxes, a fully mirrored layout and no letter-spacing. The one stylistic rejection the owner has confirmed is laying out standings as a grid of cards. Standings are real tables.\n\nMotion is short and physical: controls sink 3% under the finger, sheets settle in over 320ms, the active bottom-nav pill slides between tabs, and pages slide in from the reading side. All of it collapses under reduced motion. The detailed timings live in the sidecar and in the components below.\n\nThis file describes the system in the code on `main`: Design System V2, look \"Option A: Club colours\", in a light and a dark theme. Dark follows the phone's setting unless the reader picks Clair or Sombre in Profile > Apparence. The frontmatter carries the light values; every themed base token is redeclared under `.dark` in `src/styles.css` (derived tokens, such as the rating scale and the muted on-fill colours, follow their aliases), and the dark values that change a decision are given under Colors. It is a record of the incumbent design for refinement work, not a redesign brief.",
     "keyCharacteristics": [
-      "Floodlight navy brand, white surfaces on a light grey page, and club colours supplied by data.",
+      "Floodlight navy brand, white surfaces on a light grey page (deep slate surfaces in dark), and club colours supplied by data.",
       "One spring-to-sky action gradient that marks the primary action and \"you are here\".",
       "Changa display type at 800 for titles, team names and scores; Manrope (French) and Noto Sans Arabic (Arabic) for everything else.",
-      "Mostly flat: hairline-weight card shadows and one lifted step for the score plate, hero cards and the primary call to action.",
+      "Mostly flat: hairline-weight card shadows and one lifted step for the score plate, hero cards, the primary call to action and toasts.",
       "Every pressed control is fully round; cards are 14px; sheets and feature cards 16px.",
       "A 44px tap floor, 48px rows, and a 16px gutter at every width.",
       "French and Arabic are equal: logical properties everywhere, Arabic leading instead of Arabic resizing, no Arabic letter-spacing."
@@ -683,7 +656,12 @@
     "rules": [
       {
         "name": "The Ink Is Paint Rule",
-        "body": "Floodlight Navy as a fill or border uses the fill token. Navy text and icons use the brand-foreground token, never the fill token. The two share a value in the light theme. In dark the foreground token is a light blue, so the split matters as soon as dark mode is on. A contract test enforces this inside the kit only.",
+        "body": "Floodlight Navy as a fill or border uses the fill token. Navy text and icons use the brand-foreground token, never the fill token. The two share a value in the light theme. In dark the foreground token is a light blue and the fill stays navy, so text in the fill token vanishes. The kit contract test and a product-wide source test (`src/theme/dark-mode-sources.test.ts`) both enforce this.",
+        "section": "colors"
+      },
+      {
+        "name": "The Selected State Rule",
+        "body": "A chosen control (selected chip, active pill segment, current nav link, chosen theme or language) uses the selected-state tokens, never the ink fill: navy with white text in light, the light brand blue with deep navy text in dark.",
         "section": "colors"
       },
       {
@@ -723,7 +701,7 @@
       },
       {
         "name": "The One Lift Rule",
-        "body": "Only the lifted shadow means \"raised\", and it belongs to the score plate, hero cards and the primary call to action. Everything else sits flat or on the card shadow. Do not invent new shadow values.",
+        "body": "Only the lifted shadow means \"raised\", and it belongs to the score plate, hero cards, the primary call to action and toasts. Everything else sits flat or on the card shadow. Do not invent new shadow values.",
         "section": "elevation"
       },
       {
@@ -742,7 +720,7 @@
       "**Do** use the stat steps for figures read down a column and the score steps for standalone scores, with each score as three pieces.",
       "**Do** set long-form reading in the prose step (15px, 400, line height 1.7, or 2 in Arabic).",
       "**Do** take every duration and easing from the motion tokens, and let reduced motion turn them off.",
-      "**Do** check every screen in French and Arabic, on a 390px phone and on desktop, before calling it done.",
+      "**Do** check every screen in French and Arabic, in light and dark, on a 390px phone and on desktop, before calling it done.",
       "**Do** give every close and icon-only control a translated label (\"Fermer\" / \"إغلاق\")."
     ],
     "donts": [
@@ -753,9 +731,10 @@
       "**Don't** use the Chalk Line hairline as the edge of an input or other control; control edges need Goal-Line Grey.",
       "**Don't** print a score as one string inside a single direction-isolated span.",
       "**Don't** add colour literals, new shadow values or legacy V1 tokens (frosted glass, the V1 electric blue, V1 shadows and radii) to product screens.",
-      "**Don't** build a screen that only works in light. Dark mode is decided ([PR #356](https://github.com/mrdata007/botolago-foundation/pull/356)); use kit tokens that carry dark values.",
+      "**Don't** build a screen that only works in light. Dark mode is on and follows the phone; use kit tokens, which all carry dark values, and the selected-state tokens for chosen controls.",
       "**Don't** change the logo or paint interface elements in Logo Blue (The Two Blues Rule).",
-      "**Don't** add Pépites-only styling (night bands, the energy gradient, mono lines, slant, its own palette). Pépites is moving onto the kit ([PR #357](https://github.com/mrdata007/botolago-foundation/pull/357))."
+      "**Don't** bring back Pépites-only styling (night bands, the energy gradient, mono lines, slant, its own palette). Pépites is built on the kit, and `src/components/pepites/pepites.option-a.test.tsx` keeps the old layer deleted.",
+      "**Don't** add a right-to-left flip to an icon. The global rule already mirrors the directional ones, and a second flip turns them back."
     ]
   }
 }

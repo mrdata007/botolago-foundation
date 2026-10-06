@@ -27,7 +27,7 @@ The owner plans to distribute the app through a Capacitor wrapper. Its groundwor
 - push-alert code for the phone;
 - a Codemagic cloud build.
 
-No build has run and nothing has been tried on a phone. There is still no web manifest and no service
+The shell is iPhone only and held upright on both platforms (`docs/mobile/PHONE_APP.md`). No build has run and nothing has been tried on a phone. There is still no web manifest and no service
 worker. The shell shows the same website, so its design language is the web's, and the platform stays
 `web` until the owner decides otherwise.
 
@@ -188,16 +188,15 @@ the snapshot) was not checked against the live site.
     round 3, and none had been published at the last record.
 - **Other:** the landing page (`/jouer`, also shown at `/` to first-time signed-out visitors); optional
   two-step sign-in; account-deletion requests; cookieless analytics (Seline).
+- **Dark mode** (merged after the site check): on (owner decision 2026-10-05, BG-0149, PR #356). It follows the phone's
+  setting by default, and Profil > Apparence offers Clair, Sombre and Système. Fantasy has its dark
+  version (BG-0084, closed on measurement). In dark the logo is the all-white wordmark.
 
 **Built, but switched off or not delivering.** Do not design as if these work.
 
 - **Email notifications:** mode `off` at the last record (2026-10-04). As a result, the match reminder
   bell, the Fantasy deadline and recap emails, and the Pépites weekly email send nothing. The in-app
   inbox very probably receives nothing either. Some interface copy still promises these reminders.
-- **Dark mode:** switched on in the code by owner decision on 2026-10-05 (BG-0149), not yet live: it
-  reaches botolago.com only once that change is merged and published. It follows the phone's setting
-  by default, and Profil > Apparence offers Clair, Sombre and Système. Fantasy has its dark version
-  (BG-0084, closed on measurement). In dark the logo is the all-white wordmark.
 - **Fantasy Cup and public leagues:** the screens and copy exist, but no backend path works.
   Head-to-head leagues appear only as a disabled option, with copy saying they will come later.
 - **Google and Apple sign-in:** the buttons render, but the providers were last recorded as not enabled
@@ -391,8 +390,8 @@ What the design system and tests already cover:
 - **Tap targets and focus:** a 44px tap floor for kit controls (`--ui-tap-min`), and visible focus
   rings (`ui.focus`). Known exceptions: the carousel dot buttons in News and Pronostics are 24 × 32px.
 - **Reduced motion:** `prefers-reduced-motion` is respected for CSS animations and transitions through
-  one global block in `src/styles.css`, and in components that check it (for example GoalMoment and
-  TiltFrame). Known gap: five JavaScript smooth scrolls do not check it.
+  one global block in `src/styles.css`, and in components that check it (for example GoalMoment).
+  Known gap: five JavaScript smooth scrolls do not check it.
 - **Images and buttons:** alt text on images, and names on icon-only buttons (a source test).
 - **Arabic as a right-to-left language:**
   - logical (start/end) layout only;
