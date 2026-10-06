@@ -475,7 +475,8 @@ select extensions.ok(
 );
 select extensions.is(
   (select array_agg(key order by key) from jsonb_object_keys(api.get_my_account_standing()) key),
-  array['banned', 'bannedUntil'], 'and nothing else: the staff reason stays internal'
+  array['banned', 'bannedUntil', 'deletionPending'],
+  'and nothing else (deletionPending, 20261006143700): the staff reason stays internal'
 );
 select extensions.throws_ok(
   $$select api.admin_list_users()$$, 'PT403', 'staff_access_denied',
@@ -597,8 +598,9 @@ set local role authenticated;
 select set_config('request.jwt.claims',
   '{"sub":"e8a00000-0000-4000-8000-000000000011","role":"authenticated","aal":"aal1"}', true);
 select extensions.is(
-  api.get_my_account_standing(), '{"banned": false, "bannedUntil": null}'::jsonb,
-  'the lifted account is in good standing again'
+  -- It asked for deletion while banned (above), which stands (20261006143700).
+  api.get_my_account_standing(), '{"banned": false, "bannedUntil": null, "deletionPending": true}'::jsonb,
+  'the lifted account is no longer banned (its deletion request stands)'
 );
 reset role;
 select set_config('request.jwt.claims',

@@ -1,0 +1,122 @@
+[
+  {
+    "shot": "profile-danger-mobile-fr",
+    "width": 390,
+    "offenders": [],
+    "dir": "ltr"
+  },
+  {
+    "shot": "profile-dialog-mobile-fr",
+    "width": 390,
+    "offenders": [],
+    "dir": "ltr"
+  },
+  {
+    "shot": "suppression-compte-mobile-fr",
+    "status": 200,
+    "h1": "Supprimer votre compte BotolaGO",
+    "width": 390,
+    "offenders": [],
+    "dir": "ltr"
+  },
+  {
+    "shot": "profile-danger-narrow-fr",
+    "width": 320,
+    "offenders": [],
+    "dir": "ltr"
+  },
+  {
+    "shot": "profile-dialog-narrow-fr",
+    "width": 320,
+    "offenders": [],
+    "dir": "ltr"
+  },
+  {
+    "shot": "suppression-compte-narrow-fr",
+    "status": 200,
+    "h1": "Supprimer votre compte BotolaGO",
+    "width": 320,
+    "offenders": [],
+    "dir": "ltr"
+  },
+  {
+    "shot": "profile-danger-desktop-fr",
+    "width": 1280,
+    "offenders": [],
+    "dir": "ltr"
+  },
+  {
+    "shot": "profile-dialog-desktop-fr",
+    "width": 1280,
+    "offenders": [],
+    "dir": "ltr"
+  },
+  {
+    "shot": "suppression-compte-desktop-fr",
+    "status": 200,
+    "h1": "Supprimer votre compte BotolaGO",
+    "width": 1280,
+    "offenders": [],
+    "dir": "ltr"
+  },
+  {
+    "shot": "profile-danger-mobile-ar",
+    "width": 390,
+    "offenders": [],
+    "dir": "rtl"
+  },
+  {
+    "shot": "profile-dialog-mobile-ar",
+    "width": 390,
+    "offenders": [],
+    "dir": "rtl"
+  },
+  {
+    "shot": "suppression-compte-mobile-ar",
+    "status": 200,
+    "h1": "حذف حسابك على BotolaGO",
+    "width": 390,
+    "offenders": [],
+    "dir": "rtl"
+  },
+  {
+    "shot": "profile-danger-narrow-ar",
+    "width": 320,
+    "offenders": [],
+    "dir": "rtl"
+  },
+  {
+    "shot": "profile-dialog-narrow-ar",
+    "width": 320,
+    "offenders": [],
+    "dir": "rtl"
+  },
+  {
+    "shot": "suppression-compte-narrow-ar",
+    "status": 200,
+    "h1": "حذف حسابك على BotolaGO",
+    "width": 320,
+    "offenders": [],
+    "dir": "rtl"
+  },
+  {
+    "shot": "profile-danger-desktop-ar",
+    "width": 1280,
+    "offenders": [],
+    "dir": "rtl"
+  },
+  {
+    "shot": "profile-dialog-desktop-ar",
+    "width": 1280,
+    "offenders": [],
+    "dir": "rtl"
+  },
+  {
+    "shot": "suppression-compte-desktop-ar",
+    "status": 200,
+    "h1": "حذف حسابك على BotolaGO",
+    "width": 1280,
+    "offenders": [],
+    "dir": "rtl"
+  }
+]

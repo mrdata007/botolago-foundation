@@ -15,6 +15,12 @@ import { IS_MOCK_AUTH } from "@/services/auth";
 export const accountStandingSchema = z.object({
   banned: z.boolean(),
   bannedUntil: z.string().datetime({ offset: true }).nullable(),
+  /**
+   * The account asked to be deleted (20261006143700): it is closed, and a
+   * device still holding a valid token signs out. Absent before that
+   * migration, which reads as false.
+   */
+  deletionPending: z.boolean().optional().default(false),
 });
 
 export type AccountStanding = z.infer<typeof accountStandingSchema>;

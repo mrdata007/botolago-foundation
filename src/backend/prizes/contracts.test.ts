@@ -61,6 +61,13 @@ describe("public prize contracts", () => {
 });
 
 describe("admin prize contracts", () => {
+  it("accepts a winner whose account was erased: no account, no team", () => {
+    const shape = adminPrizeWinnerSchema.shape;
+    expect(shape.userId.safeParse(null).success).toBe(true);
+    expect(shape.fantasyTeamId.safeParse(null).success).toBe(true);
+    expect(shape.userId.safeParse("not-a-uuid").success).toBe(false);
+  });
+
   it("keeps the verification fields the public shape leaves out", () => {
     const keys = Object.keys(adminPrizeWinnerSchema.shape);
     for (const key of ["email", "userId", "verificationNotes", "skipped", "overrideReason"])
