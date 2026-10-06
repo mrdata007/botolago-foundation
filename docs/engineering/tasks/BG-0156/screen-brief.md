@@ -191,3 +191,23 @@ Functional:
 - `bun run typecheck`, `bun run lint` (0 errors), `bun test`, prettier on
   the changed files, and the i18n gate if any dictionary or `t()` call
   changes.
+
+## Changes after measurement (added once built)
+
+Two acceptance points above were changed by what the built screens
+measured; both are recorded here rather than rewritten above.
+
+- **The phone table's disc shows from a 384px table, as before**, not from
+  352px. With the disc at 390px, names and club lines wrapped to two or
+  three lines and the rows grew by half (French 49 → 76px on average,
+  Arabic 53 → 91px). Without it they grow by the new "position · club"
+  line only (French 49 → 59px, Arabic 53 → 69px at 390px), and no name or
+  club line is cut at 360, 390, 414 or 430px in either language. The club's
+  edge and name still say whose row it is; the crest shows from a 430px
+  phone, and in every Top 10 row and on the band at every width.
+- **The band's club edge** is the story card's (the dark edge lifted to
+  3:1 against the band's Tunnel Navy); the palette's dark edge alone fell
+  to 2.89:1 for seven kits on the light theme's navy. Against the photo's
+  brightest pixels right beside the edge it measures 2.05-2.30:1 (median
+  3.15-3.78:1). The edge is a decorative accent (the club is printed beside
+  it and shown by its crest), so this is reported, not hidden.
