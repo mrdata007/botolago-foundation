@@ -2650,4 +2650,59 @@ export const fr = {
   "landing.final_body":
     "Choisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.",
   "landing.cta_pending": "Chargement",
+  // The app download page (/telecharger): a matchday programme whose cover,
+  // inside spreads and back cover send a browser visitor to the phone app.
+  "download.meta_title": "Télécharger l'appli BotolaGO — Botola Pro en direct",
+  "download.meta_description":
+    "L'appli BotolaGO, gratuite sur iPhone et Android : scores en direct de la Botola Pro, actualité, Fantasy, Pronostics et Pépites, en français et en arabe.",
+  "download.season": "Saison 2026/27",
+  "download.title_1": "Le football marocain,",
+  "download.title_2": "réuni.",
+  "download.lede":
+    "Scores en direct, actualité, Fantasy et Pronostics de la Botola Pro, en français et en arabe. Gratuit, dans l'appli BotolaGO.",
+  "download.scan_title": "Scannez pour télécharger",
+  "download.scan_body": "Ouvrez l'appareil photo de votre téléphone et visez le code.",
+  "download.qr_label": "Code QR pour télécharger l'appli BotolaGO : botolago.com/app",
+  "download.contents": "Au programme",
+  "download.stores_label": "Télécharger l'appli",
+  "download.badge_app_store": "Télécharger dans l'App Store",
+  "download.badge_google_play": "Disponible sur Google Play",
+  "download.soon": "Bientôt disponible",
+  "download.badge_soon": "{store}, bientôt disponible",
+  "download.live_nav": "En direct",
+  "download.live_title": "Chaque match, en direct.",
+  "download.live_body":
+    "Le score pendant le match, le calendrier de chaque journée et le classement de la Botola Pro. Sur chaque match : le résumé, les statistiques, les compositions et le face-à-face.",
+  "download.news_nav": "Actualités",
+  "download.news_title": "L'actualité de la Botola, dans votre langue.",
+  "download.news_body":
+    "Mercato, analyses, interviews : l'actualité des clubs de la Botola Pro en français et en arabe. Les articles de nos partenaires sont toujours crédités, avec un lien vers l'original.",
+  "download.fantasy_nav": "Fantasy",
+  "download.fantasy_title": "Votre équipe. Vos choix.",
+  "download.fantasy_body":
+    "{size} joueurs de Botola Pro, un budget de {budget} M et {max} joueurs au maximum par club. Avant la date limite, donnez le brassard : les points du capitaine comptent double. Gratuit, sans mise.",
+  "download.predictions_nav": "Pronostics",
+  "download.predictions_title": "Pronostiquez chaque match.",
+  "download.predictions_body":
+    "Donnez votre score avant le coup d'envoi, puis comparez-vous à vos amis dans des mini-ligues, journée après journée.",
+  "download.pepites_nav": "Pépites",
+  "download.pepites_title": "Les meilleurs jeunes de la Botola.",
+  "download.pepites_body":
+    "Le classement des joueurs de moins de 23 ans, la fiche de chacun et la méthode expliquée, pour suivre ceux qui montent.",
+  "download.time_title": "À l'heure du Maroc, où que vous soyez.",
+  "download.time_body":
+    "Coups d'envoi et dates limites sont affichés à l'heure marocaine, des matchs de l'après-midi à ceux du soir.",
+  "download.time_day": "Après-midi",
+  "download.time_golden": "Fin de journée",
+  "download.time_night": "Soirée",
+  "download.back_title": "Téléchargez BotolaGO.",
+  "download.back_body": "Gratuit sur iPhone et Android, en français et en arabe.",
+  "download.colophon_operator":
+    "BotolaGO est édité par Go Sports Technologies (société en cours de constitution), Agadir, Maroc.",
+  "download.colophon_independent":
+    "Service indépendant, non affilié à la FRMF, à la LNFP ni aux clubs de la Botola Pro.",
+  "download.points_exact": "points pour le score exact",
+  "download.points_outcome": "point pour le bon vainqueur ou le bon match nul",
+  "download.pepites_u23": "Moins de 23 ans",
+  "download.colophon_label": "Informations légales",
 } as const satisfies Record<string, string>;

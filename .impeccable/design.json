@@ -461,7 +461,7 @@
       {
         "name": "lifted",
         "value": "0 14px 26px -16px color-mix(in oklab, var(--ui-ink-deep) 55%, transparent)",
-        "purpose": "The one raised step: score plate, hero match card, photo story cards, inverse crest, primary gradient button, toasts. Dark: 0 14px 26px -16px color-mix(in oklab, oklch(0 0 0) 75%, transparent)."
+        "purpose": "The one raised step: score plate (including the download page's QR plate), hero match card, photo story cards, inverse crest, primary gradient button, toasts. Dark: 0 14px 26px -16px color-mix(in oklab, oklch(0 0 0) 75%, transparent)."
       },
       {
         "name": "overlay",

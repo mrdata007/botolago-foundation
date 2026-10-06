@@ -2501,4 +2501,58 @@ export const ar = {
   "landing.final_title": "فريقك في انتظارك.",
   "landing.final_body": "اختر لاعبيك الخمسة عشر، امنح شارة القيادة وتابع نقاطك جولة بعد جولة.",
   "landing.cta_pending": "جارٍ التحميل",
+  // صفحة تحميل التطبيق (/telecharger).
+  "download.meta_title": "حمّل تطبيق BotolaGO — البطولة الاحترافية مباشرة",
+  "download.meta_description":
+    "تطبيق BotolaGO مجاني على آيفون وأندرويد: نتائج البطولة الاحترافية مباشرة، والأخبار، والفانتازي، والتوقعات، والجواهر، بالعربية والفرنسية.",
+  "download.season": "موسم 2026/27",
+  "download.title_1": "كرة القدم المغربية،",
+  "download.title_2": "في مكان واحد.",
+  "download.lede":
+    "النتائج المباشرة والأخبار والفانتازي والتوقعات في البطولة الاحترافية، بالعربية والفرنسية. مجاناً في تطبيق BotolaGO.",
+  "download.scan_title": "امسح الرمز للتحميل",
+  "download.scan_body": "افتح كاميرا هاتفك ووجّهها نحو الرمز.",
+  "download.qr_label": "رمز QR لتحميل تطبيق BotolaGO: botolago.com/app",
+  "download.contents": "في البرنامج",
+  "download.stores_label": "تحميل التطبيق",
+  "download.badge_app_store": "تنزيل من App Store",
+  "download.badge_google_play": "احصل عليه من Google Play",
+  "download.soon": "قريباً",
+  "download.badge_soon": "{store}، قريباً",
+  "download.live_nav": "مباشر",
+  "download.live_title": "كل مباراة، مباشرة.",
+  "download.live_body":
+    "النتيجة أثناء المباراة، وبرنامج كل جولة، وترتيب البطولة الاحترافية. ولكل مباراة: الملخص والإحصائيات والتشكيلة والمواجهات.",
+  "download.news_nav": "الأخبار",
+  "download.news_title": "أخبار البطولة، بلغتك.",
+  "download.news_body":
+    "الانتقالات والتحليلات والمقابلات: أخبار أندية البطولة الاحترافية بالعربية والفرنسية. نذكر دائماً مصدر مقالات شركائنا، مع رابط إلى المقال الأصلي.",
+  "download.fantasy_nav": "فانتازي",
+  "download.fantasy_title": "فريقك. اختياراتك.",
+  "download.fantasy_body":
+    "{size} لاعباً من البطولة الاحترافية، بميزانية {budget} م، و{max} لاعبين كحد أقصى من النادي نفسه. قبل الموعد النهائي، امنح شارة القيادة: نقاط القائد تُحتسب مضاعفة. مجاناً ودون أي رهان.",
+  "download.predictions_nav": "التوقعات",
+  "download.predictions_title": "توقّع نتيجة كل مباراة.",
+  "download.predictions_body":
+    "أدخل توقعك قبل انطلاق المباراة، ثم قارن نتائجك بأصدقائك في دوريات مصغّرة، جولة بعد جولة.",
+  "download.pepites_nav": "جواهر",
+  "download.pepites_title": "أفضل المواهب الشابة في البطولة.",
+  "download.pepites_body":
+    "ترتيب اللاعبين دون 23 سنة، وبطاقة كل لاعب، والمنهجية مشروحة، لمتابعة المواهب الصاعدة.",
+  "download.time_title": "بتوقيت المغرب، أينما كنت.",
+  "download.time_body":
+    "مواعيد انطلاق المباريات والآجال تظهر بتوقيت المغرب، من مباريات الظهيرة إلى مباريات المساء.",
+  "download.time_day": "الظهيرة",
+  "download.time_golden": "قبيل الغروب",
+  "download.time_night": "المساء",
+  "download.back_title": "حمّل BotolaGO.",
+  "download.back_body": "مجاني على آيفون وأندرويد، بالعربية والفرنسية.",
+  "download.colophon_operator":
+    "تنشر BotolaGO شركة Go Sports Technologies (في طور التأسيس)، أكادير، المغرب.",
+  "download.colophon_independent":
+    "خدمة مستقلة، غير تابعة للجامعة الملكية المغربية لكرة القدم ولا للعصبة الوطنية لكرة القدم الاحترافية ولا لأندية البطولة الاحترافية.",
+  "download.points_exact": "نقاط للنتيجة الدقيقة",
+  "download.points_outcome": "نقطة لإصابة الفائز أو التعادل",
+  "download.pepites_u23": "دون 23 سنة",
+  "download.colophon_label": "معلومات قانونية",
 } as const satisfies Record<string, string>;
