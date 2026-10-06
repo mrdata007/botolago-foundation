@@ -2544,11 +2544,13 @@ export function UiDifficultyCell({
  * A dropdown menu, on the kit.
  *
  * Three surfaces reached for `@/components/ui/dropdown-menu` because the
- * barrel had nothing: the language switcher and both Fantasy navs. That
- * component is the V1 palette (`bg-popover`, `border`, `shadow-md`), an
- * off-scale `rounded-md`, and — the part that matters — `py-1.5 text-sm`
- * items, which is roughly a 32px row against a 44px floor. Rule 5 has no
- * exception for a menu.
+ * barrel had nothing: the language switcher and two Fantasy navs. The navs
+ * were deleted later (BG-0145, no route rendered them), so the language
+ * controls — the top bar's switcher and the Profile row — are what open a
+ * `UiMenu` today. The dropdown component is the V1 palette (`bg-popover`,
+ * `border`, `shadow-md`), an off-scale `rounded-md`, and — the part that
+ * matters — `py-1.5 text-sm` items, which is roughly a 32px row against a
+ * 44px floor. Rule 5 has no exception for a menu.
  *
  * Radix directly rather than through that component, so the item height is a
  * token rather than something a call site has to remember to override.
@@ -2629,9 +2631,10 @@ export function UiMenuItem({
    *
    * A menu of navigation entries has to be a menu of links — a `<button>` that
    * calls `navigate()` is not a link, and loses the href, the middle-click and
-   * the copy-link. Without this the Fantasy "More" menu could not move off the
-   * V1 dropdown, whose items are `py-1.5 text-sm`: a ~32px row against a 44px
-   * floor.
+   * the copy-link. Without this a menu of links would have to stay on the V1
+   * dropdown, whose items are `py-1.5 text-sm`: a ~32px row against a 44px
+   * floor. It was added for the Fantasy "More" menu, which was deleted with
+   * its nav (BG-0145); no `UiMenu` renders a `UiMenuItem` today.
    */
   asChild?: boolean;
   className?: string;

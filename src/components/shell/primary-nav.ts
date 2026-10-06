@@ -45,8 +45,8 @@ export function withPepitesSlot(
 /**
  * The navigable primary destinations. News is filtered out while
  * `NEWS_ENABLED` is false (owner decision — see `@/lib/feature-flags`), which
- * removes it from the bottom nav, the top bar and the Fantasy mobile nav in
- * one place instead of three.
+ * removes it from the bottom nav and the top bar in one place instead of two.
+ * (A third consumer, the Fantasy mobile nav, was deleted with BG-0145.)
  */
 export const primaryNavItems: PrimaryNavItem[] = withPepitesSlot(
   allPrimaryNavItems.filter((item) => NEWS_ENABLED || item.to !== "/news"),
