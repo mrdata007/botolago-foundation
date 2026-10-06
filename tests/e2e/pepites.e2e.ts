@@ -346,7 +346,8 @@ for (const lang of ["fr", "ar"] as const) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await initializeLanguage(page, lang);
     await gotoHydrated(page, "/pepites/classement", lang);
-    await expect(page.getByTestId("pepites-desktop-podium")).toBeVisible();
+    // The featured N°1 above the table (BG-0156; it replaced the podium of three).
+    await expect(page.getByTestId("pepites-feature")).toBeVisible();
     await expect(page.getByTestId("pepites-desktop-table")).toBeVisible();
     await expect(page.getByTestId("pepites-desktop-filters")).toBeVisible();
     await page.getByTestId("pepites-desktop-table").getByRole("link").first().click();
@@ -449,9 +450,10 @@ for (const lang of ["fr", "ar"] as const) {
     await page.setViewportSize({ width: 768, height: 900 });
     await initializeLanguage(page, lang);
     await gotoHydrated(page, "/pepites/classement", lang);
-    const podium = page.getByTestId("pepites-desktop-podium");
-    await expect(podium).toBeVisible();
-    for (const link of await podium.getByRole("link").all()) {
+    // The featured N°1 (BG-0156; it replaced the podium of three) fits the tablet.
+    const feature = page.getByTestId("pepites-feature");
+    await expect(feature).toBeVisible();
+    for (const link of await feature.getByRole("link").all()) {
       const box = await link.boundingBox();
       expect(box).not.toBeNull();
       expect(box!.x).toBeGreaterThanOrEqual(0);
