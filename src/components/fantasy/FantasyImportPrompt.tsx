@@ -178,9 +178,11 @@ export function FantasyImportPrompt() {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          {/* `text-brand` is `--brand-primary`, a fill that does not move with
-              the theme and measured 1.35:1 on a dark card. `ui.tone.ink` is
-              the theme-correct brand foreground (BG-0083). */}
+          {/* `ui.tone.ink` (`--ui-ink-fg`) is the theme-correct brand
+              foreground (BG-0083). This used `text-brand` when that utility
+              still painted `--brand-primary`, a fill with no dark value that
+              measured 1.35:1 on a dark card; `text-brand` is `--ui-ink-fg`
+              now as well. */}
           <h2 id="botolago-import-title" className={cn(ui.text.bodyStrong, ui.tone.ink)}>
             {t("fantasy.import.title")}
           </h2>

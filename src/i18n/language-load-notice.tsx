@@ -117,7 +117,7 @@ export function LanguageLoadNotice({
               ui.text.meta,
               "[font-weight:var(--ui-weight-heavy)]",
               "press",
-              ui.surface.inkPlain,
+              ui.surface.inkControl,
               retrying && "cursor-progress",
             )}
           >
