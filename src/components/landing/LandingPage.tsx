@@ -22,6 +22,7 @@ import { Logo } from "@/components/brand/Logo";
 import { joinDeadlineToShow, joinTarget } from "@/components/fantasy/fantasy-hub-layout";
 import { formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
+import { STATUS_BAR_INK, StatusBarStrip } from "@/components/shell/StatusBarStrip";
 import { ui, UiLinkButton } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
@@ -162,6 +163,11 @@ export function LandingPage({
 
   return (
     <div className={cn("min-h-[100dvh]", ui.surface.page)} data-testid="landing-page">
+      {/* STATUS BAR (BG-0154) — nothing at the top of this page sticks, so in
+          the app its light sections scrolled up under the clock. A strip as
+          tall as the status bar, in the hero's ink-deep, stays there and the
+          page passes under it. 0px tall in a browser. */}
+      <StatusBarStrip surface={STATUS_BAR_INK} />
       {/* ---------------------------------------------------------- */}
       {/* Hero: the promise, the button, and the game on its pitch    */}
       {/* ---------------------------------------------------------- */}

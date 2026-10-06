@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
+
+import { ui } from "@/components/ui-kit";
+
+import { STATUS_BAR_INK, StatusBarStrip } from "./StatusBarStrip";
 
 /**
  * With `viewport-fit=cover` an iPhone draws the page under the status bar and
@@ -372,4 +378,109 @@ describe("BG-0151: every element pinned to the bottom edge clears the home indic
       expect({ found: Boolean(hit), holds }).toEqual({ found: true, holds: true });
     });
   }
+});
+
+/* ------------------------------------------------------------------------ */
+/* BG-0154: a status-bar strip on the screens whose top does not stick.     */
+/* ------------------------------------------------------------------------ */
+
+/** Every `<StatusBarStrip …/>` in a TSX source: its props as source text, and the element it sits in. */
+function stripsIn(file: string, source: string) {
+  const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const found: Array<{
+    props: Record<string, string>;
+    firstChild: boolean;
+    parentProps: Record<string, string>;
+    siblings: string[];
+  }> = [];
+  const propsOf = (attributes: ts.JsxAttributes) =>
+    Object.fromEntries(
+      attributes.properties.filter(ts.isJsxAttribute).map((a) => {
+        const init = a.initializer;
+        const value = !init
+          ? "true"
+          : ts.isStringLiteral(init)
+            ? init.text
+            : (init.expression?.getText() ?? "");
+        return [a.name.getText(), value];
+      }),
+    );
+  const tagOf = (node: ts.JsxChild) =>
+    ts.isJsxElement(node)
+      ? node.openingElement.tagName.getText()
+      : ts.isJsxSelfClosingElement(node)
+        ? node.tagName.getText()
+        : null;
+  const visit = (node: ts.Node) => {
+    if (ts.isJsxSelfClosingElement(node) && node.tagName.getText() === "StatusBarStrip") {
+      const parent = node.parent;
+      if (ts.isJsxElement(parent) || ts.isJsxFragment(parent)) {
+        const elements = parent.children.filter((child) => tagOf(child) !== null);
+        found.push({
+          props: propsOf(node.attributes),
+          firstChild: elements[0] === node,
+          parentProps: ts.isJsxElement(parent) ? propsOf(parent.openingElement.attributes) : {},
+          siblings: elements.map((child) => tagOf(child) ?? ""),
+        });
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(tree);
+  return found;
+}
+
+describe("BG-0154: a status-bar strip where nothing at the top sticks", () => {
+  test("is a zero-height sticky host with a strip exactly as tall as the top inset", () => {
+    const html = renderToStaticMarkup(createElement(StatusBarStrip, { surface: "bg-x" }));
+    expect(html).toBe(
+      '<div aria-hidden="true" class="pointer-events-none sticky top-0 z-30 h-0">' +
+        '<div class="absolute inset-x-0 top-0 h-[env(safe-area-inset-top,0px)] bg-x"></div></div>',
+    );
+  });
+
+  test("renders on Fantasy inner screens exactly the markup BG-0151 wrote inline", () => {
+    // FantasyFrame before the strip was shared, verbatim.
+    const inline =
+      '<div aria-hidden="true" class="pointer-events-none sticky top-0 z-30 h-0 md:hidden">' +
+      `<div class="absolute inset-x-0 top-0 h-[env(safe-area-inset-top,0px)] ${ui.surface.bar}"></div></div>`;
+    expect(
+      renderToStaticMarkup(
+        createElement(StatusBarStrip, { surface: ui.surface.bar, className: "md:hidden" }),
+      ),
+    ).toBe(inline);
+    const [strip, ...more] = stripsIn(
+      "FantasyFrame.tsx",
+      read("src/components/fpl/FantasyFrame.tsx"),
+    );
+    expect(more).toEqual([]);
+    expect(strip.props).toEqual({ surface: "ui.surface.bar", className: "md:hidden" });
+  });
+
+  test("the sign-in screens: the band's ink-deep, first in the column that holds the band and the sheet", () => {
+    const strips = stripsIn("AuthShell.tsx", read("src/components/auth/AuthShell.tsx"));
+    expect(strips).toHaveLength(1);
+    const [strip] = strips;
+    expect(strip.props).toEqual({ surface: "STATUS_BAR_INK", className: "md:hidden" });
+    expect(strip.firstChild).toBe(true);
+    expect(strip.siblings).toEqual(["StatusBarStrip", "header", "main"]);
+  });
+
+  test("Jouer: the hero's ink-deep, first in the page's outer element, at every width", () => {
+    const strips = stripsIn("LandingPage.tsx", read("src/components/landing/LandingPage.tsx"));
+    expect(strips).toHaveLength(1);
+    const [strip] = strips;
+    expect(strip.props).toEqual({ surface: "STATUS_BAR_INK" });
+    expect(strip.firstChild).toBe(true);
+    expect(strip.parentProps["data-testid"]).toBe("landing-page");
+  });
+
+  test("the ink is the dark bands' own token", () => {
+    expect(STATUS_BAR_INK).toBe("bg-[color:var(--ui-ink-deep)]");
+    // The two bands it stands for are drawn in it.
+    expect(read("src/components/landing/LandingPage.tsx")).toContain(
+      '"bg-[color:var(--ui-ink-deep)]"',
+    );
+    expect(read("src/components/auth/AuthShell.tsx")).toContain("var(--ui-ink-deep)");
+  });
 });

@@ -43,6 +43,7 @@ import stadiumPhoto from "@/assets/photos/stadium-night-800.webp";
 import { Logo } from "@/components/brand/Logo";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { PageBackground } from "@/components/shell/PageBackground";
+import { STATUS_BAR_INK, StatusBarStrip } from "@/components/shell/StatusBarStrip";
 import { ui, UiBackButton, UiButton, UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useBackTo } from "@/lib/back-navigation";
@@ -106,6 +107,12 @@ export function AuthShell({
           "md:min-h-0 md:overflow-hidden md:rounded-[var(--ui-radius-column)] md:shadow-[var(--ui-shadow-column)]",
         )}
       >
+        {/* STATUS BAR (BG-0154) — nothing at the top of these screens sticks,
+            so in the app the sheet scrolled up under the clock. A strip as
+            tall as the status bar, in the band's ink-deep, stays there and the
+            page passes under it. 0px tall in a browser; from `md` the column is
+            a raised card in the middle of the page. */}
+        <StatusBarStrip surface={STATUS_BAR_INK} className="md:hidden" />
         <header
           className={cn(
             "relative isolate overflow-hidden",
