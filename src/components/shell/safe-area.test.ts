@@ -1,28 +1,73 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
 
 /**
- * BG-0151 — `viewport-fit=cover` and the safe-area treatments it depends on.
+ * With `viewport-fit=cover` an iPhone draws the page under the status bar and
+ * the home indicator, so everything pinned to those edges has to pad by
+ * `env(safe-area-inset-*)`. Only with `cover` does iOS report the real insets
+ * (without it they are all 0), and only with it does Capacitor's Android
+ * `SystemBars` draw the page edge to edge with the insets passed through.
+ * Every inset is 0 on a screen without one, so the `max(env(...), fallback)`
+ * padding keeps today's spacing there.
  *
- * The phone app (Capacitor) shows the site in a web view that fills the whole
- * screen. Only with `viewport-fit=cover` does iOS report the real
- * `env(safe-area-inset-*)` values (without it they are all 0), and only with
- * it does Capacitor's Android `SystemBars` draw the page edge to edge with the
- * insets passed through. Every inset is 0 on a screen without one, so the
- * `max(env(...), fallback)` padding keeps today's spacing there.
+ * Source-shape, because env() is 0 in every test browser; the measured checks
+ * (Chromium's safe-area override) are in
+ * docs/engineering/briefs/store-readiness-in-app.md and
+ * docs/engineering/tasks/BG-0151/screen-brief.md. Chromium could not prove the
+ * iOS gate anyway: it applies emulated insets whatever the meta says.
  *
- * Nothing pinned the meta before this file, and the Landing page's sticky
- * button showed how quietly a safe-area class can go missing: it had
- * `ui.safe.bottom` followed by `pb-3` in one `cn()`, and class merging kept
- * only the later `pb-3`. These are source-level pins: `bun test` has no
- * browser, and Chromium could not prove the iOS gate anyway (it applies
- * emulated insets whatever the meta says).
+ * The Landing page's sticky button showed how quietly a safe-area class can
+ * go missing: it had `ui.safe.bottom` followed by `pb-3` in one `cn()`, and
+ * class merging kept only the later `pb-3`. The bottom-edge scanner below
+ * (BG-0151) catches that for every bar pinned to the bottom edge.
  */
 
 const ROOT = join(import.meta.dir, "..", "..", "..");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
+
+describe("safe areas", () => {
+  test("the viewport covers the whole screen", () => {
+    expect(read("src/routes/__root.tsx")).toContain(
+      'content: "width=device-width, initial-scale=1, viewport-fit=cover"',
+    );
+  });
+
+  test.each([
+    // The shell's own bars, which already padded before this change.
+    ["src/components/shell/TopBar.tsx", "ui.safe.top"],
+    ["src/components/shell/BottomNav.tsx", "ui.safe.bottom"],
+    ["src/components/ui-kit/primitives.tsx", "ui.safe.top"],
+    // What this change added.
+    ["src/components/ui/sonner.tsx", "calc(env(safe-area-inset-top, 0px) + 16px)"],
+    ["src/components/common/ReadingProgress.tsx", "top-[env(safe-area-inset-top,0px)]"],
+    ["src/routes/fantasy.players.$playerId.tsx", "pb-[max(env(safe-area-inset-bottom),0.75rem)]"],
+    ["src/components/pepites/PepitesReveal.tsx", "pb-[max(env(safe-area-inset-bottom),1.5rem)]"],
+    [
+      "src/components/fpl/SquadBuilderScreen.tsx",
+      "md:pb-[max(env(safe-area-inset-bottom),0.75rem)]",
+    ],
+    [
+      "src/components/fpl/TransferConfirmScreen.tsx",
+      "md:pb-[max(env(safe-area-inset-bottom),0.75rem)]",
+    ],
+    [
+      "src/components/predictions/PredictionsStickyBar.tsx",
+      "md:pb-[max(env(safe-area-inset-bottom),1rem)]",
+    ],
+    ["src/routes/fantasy.team.tsx", "md:pb-[max(env(safe-area-inset-bottom),1rem)]"],
+    ["src/routes/fantasy.fixtures.tsx", "md:bottom-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]"],
+  ])("%s pads by %s", (file, token) => {
+    expect(read(file)).toContain(token);
+  });
+
+  test("sonner gets the inset on phones too, where it reads mobileOffset", () => {
+    const sonner = read("src/components/ui/sonner.tsx");
+    expect(sonner).toContain("offset={TOAST_OFFSET}");
+    expect(sonner).toContain("mobileOffset={TOAST_OFFSET}");
+  });
+});
 
 describe("BG-0151: the root viewport meta", () => {
   const root = read("src/routes/__root.tsx");
@@ -30,18 +75,11 @@ describe("BG-0151: the root viewport meta", () => {
     (m) => m[1],
   );
 
-  it("is declared once, in the root route", () => {
+  test("is declared once, in the root route", () => {
     expect(viewports).toHaveLength(1);
   });
 
-  it("asks for viewport-fit=cover, keeping device width and initial scale 1", () => {
-    const parts = (viewports[0] ?? "").split(",").map((part) => part.trim());
-    expect(parts).toContain("viewport-fit=cover");
-    expect(parts).toContain("width=device-width");
-    expect(parts).toContain("initial-scale=1");
-  });
-
-  it("is not overridden by any other route", () => {
+  test("is not overridden by any other route", () => {
     const glob = new Bun.Glob("**/*.tsx");
     const others = [...glob.scanSync({ cwd: join(ROOT, "src", "routes") })]
       .filter((file) => file !== "__root.tsx" && !file.includes(".test."))
@@ -54,7 +92,7 @@ describe("BG-0151: the landscape side letterbox", () => {
   const css = read("src/styles.css");
   const body = /\n {2}body \{([^}]*)\}/.exec(css)?.[1] ?? "";
 
-  it("pads body on both sides by the larger side inset, so it is symmetric in Arabic too", () => {
+  test("pads body on both sides by the larger side inset, so it is symmetric in Arabic too", () => {
     expect(body).toContain(
       "padding-inline: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));",
     );
@@ -227,7 +265,7 @@ describe("BG-0151: the bottom-edge scanner itself", () => {
   const judge = (jsx: string) =>
     scanBottomEdge("sample.tsx", `const A = () => (${jsx});`).findings.map((f) => f.problem);
 
-  it("flags a pinned bar with no treatment", () => {
+  test("flags a pinned bar with no treatment", () => {
     expect(judge(`<div className="fixed inset-x-0 bottom-0 pb-3" />`)).toEqual([
       "no safe-area-inset-bottom treatment",
     ]);
@@ -236,7 +274,7 @@ describe("BG-0151: the bottom-edge scanner itself", () => {
     ).toHaveLength(1);
   });
 
-  it("accepts ui.safe.bottom and a pb-[max(env(safe-area-inset-bottom),…)] class", () => {
+  test("accepts ui.safe.bottom and a pb-[max(env(safe-area-inset-bottom),…)] class", () => {
     expect(judge(`<div className={cn("fixed inset-x-0 bottom-0", ui.safe.bottom)} />`)).toEqual([]);
     expect(
       judge(`<div className="sticky bottom-0 pb-[max(env(safe-area-inset-bottom),0.75rem)]" />`),
@@ -248,13 +286,13 @@ describe("BG-0151: the bottom-edge scanner itself", () => {
     ).toEqual([]);
   });
 
-  it("flags the merge drop the Landing button had", () => {
+  test("flags the merge drop the Landing button had", () => {
     expect(
       judge(`<div className={cn("fixed inset-x-0 bottom-0", ui.safe.bottom, "pb-3 sm:hidden")} />`),
     ).toEqual(["safe-area padding overridden by a later pb-3 (class merging keeps the last)"]);
   });
 
-  it("skips a bottom-0 inside a positioned box, and never reads comments", () => {
+  test("skips a bottom-0 inside a positioned box, and never reads comments", () => {
     expect(judge(`<span className="absolute inset-x-0 bottom-0 h-1" />`)).toEqual([]);
     expect(judge(`<div>{/* a "fixed bottom-0" note */}</div>`)).toEqual([]);
   });
@@ -272,7 +310,7 @@ describe("BG-0151: every element pinned to the bottom edge clears the home indic
   const exceptionFor = (f: Judged) =>
     EXCEPTIONS.find((e) => e.file === f.file && f.classes.startsWith(e.classes));
 
-  it("judges the bars it is meant to judge", () => {
+  test("judges the bars it is meant to judge", () => {
     // A scanner that finds nothing passes everything, so hold it to the bars
     // known when it was written (BG-0151). Drop a file from this list only
     // when its bar is gone.
@@ -299,7 +337,7 @@ describe("BG-0151: every element pinned to the bottom edge clears the home indic
     ]);
   });
 
-  it("every one carries ui.safe.bottom or a safe-area-inset-bottom padding", () => {
+  test("every one carries ui.safe.bottom or a safe-area-inset-bottom padding", () => {
     const offenders = findings
       .filter((f) => !exceptionFor(f))
       .map((f) => `${f.file}:${f.line} ${f.problem}: "${f.classes}"`);
@@ -307,7 +345,7 @@ describe("BG-0151: every element pinned to the bottom edge clears the home indic
   });
 
   for (const exception of EXCEPTIONS) {
-    it(`exception still holds: ${exception.file} (${exception.reason})`, () => {
+    test(`exception still holds: ${exception.file} (${exception.reason})`, () => {
       const hit = judged.find((j) => exceptionFor(j) === exception);
       const holds = exception.holds(sources.get(exception.file) ?? "");
       expect({ found: Boolean(hit), holds }).toEqual({ found: true, holds: true });

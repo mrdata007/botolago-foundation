@@ -271,7 +271,7 @@ function iconButtonPaint(variant: UiIconButtonVariant) {
         ui.tone.onClub,
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-on-club)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
       ),
-    variant === "ink" && cn(ui.surface.inkPlain, ui.focus),
+    variant === "ink" && cn(ui.surface.inkControl, ui.focus),
     variant === "ghost" &&
       cn(
         "bg-transparent hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
@@ -618,8 +618,14 @@ function buttonClass(
     // disabled one lies flat again, so it does not read as armed.
     variant === "gradient" &&
       "text-[color:var(--ui-ink-deep)] shadow-[var(--ui-shadow-lifted)] disabled:opacity-45 disabled:shadow-none",
+    // `inkControl`: the ink fill plus `--ui-ink-edge`, the ring that keeps
+    // the button a shape on a dark surface. A disabled one drops it and lies
+    // flat with the other disabled controls.
     variant === "ink" &&
-      "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink-plain)] disabled:bg-[color:var(--ui-surface-sunken)] disabled:text-[color:var(--ui-on-surface-muted)]",
+      cn(
+        ui.surface.inkControl,
+        "disabled:bg-[color:var(--ui-surface-sunken)] disabled:text-[color:var(--ui-on-surface-muted)] disabled:shadow-none",
+      ),
     // BG-0083: these three read as text on a surface, so they take the
     // theme-correct foreground, not the ink fill.
     variant === "light" &&
@@ -688,6 +694,7 @@ export function UiLinkButton({
   to,
   params,
   search,
+  replace,
   variant = "gradient",
   size = "md",
   tone = "onSurface",
@@ -698,6 +705,12 @@ export function UiLinkButton({
   to: string;
   params?: Record<string, string>;
   search?: Record<string, unknown>;
+  /**
+   * The router's `replace`: the navigation takes the current history entry
+   * instead of adding one (a story's next step, so Back leaves the story).
+   * Still a link: it has an address, opens in a new tab, reads as a link.
+   */
+  replace?: boolean;
   variant?: UiButtonVariant;
   size?: UiButtonSize;
   tone?: UiButtonTone;
@@ -707,6 +720,7 @@ export function UiLinkButton({
       to={to}
       params={params}
       search={search}
+      replace={replace}
       {...props}
       className={buttonClass(variant, size, tone, className)}
       style={variant === "gradient" ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
@@ -797,7 +811,7 @@ export function UiSegmented<T extends string>({
               ui.focus,
               active
                 ? pill
-                  ? ui.surface.inkPlain
+                  ? ui.surface.selected
                   : "bg-[color:var(--ui-surface)] text-[color:var(--ui-ink-fg)] shadow-[var(--ui-shadow-card)]"
                 : tone === "onGradient" && !pill
                   ? "text-[color:var(--ui-on-grad-header)]"
@@ -971,8 +985,10 @@ export function UiPill({
  * the chip drops `aria-pressed`, so it never announces both.
  *
  * Option A: fully round; unselected is the sunken pill in the default text
- * colour, selected the navy pill with white text (`ui.surface.inkPlain`,
- * 12.81:1) rather than the cyan on-ink.
+ * colour, selected the navy pill with white text (12.81:1) rather than the
+ * cyan on-ink. That is `ui.surface.selected`, which is the ink fill in light
+ * and the light brand foreground as a fill in dark, where navy on the sunken
+ * pill is 1.13:1 and selected chips read as unselected (BG-0149).
  */
 export function UiChip({
   children,
@@ -1009,7 +1025,7 @@ export function UiChip({
         "[font-weight:var(--ui-weight-strong)]",
         ui.focus,
         "press",
-        selected ? cn(ui.surface.inkPlain, "shadow-[var(--ui-shadow-card)]") : ui.surface.sunken,
+        selected ? cn(ui.surface.selected, "shadow-[var(--ui-shadow-card)]") : ui.surface.sunken,
         className,
       )}
     >
@@ -1526,11 +1542,11 @@ export function UiModal({
         <UiScrim />
         <Dialog.Content
           className={cn(
-            // The height cap also keeps a very tall dialog off the status bar
-            // and the home indicator in the phone app (BG-0151): 2rem shorter
-            // than the room between the two insets, centred on the screen.
-            // With no insets it is 88dvh, as before, on any screen over 267px.
-            "fixed inset-0 z-50 m-auto flex h-fit max-h-[min(88dvh,calc(100dvh_-_env(safe-area-inset-top,0px)_-_env(safe-area-inset-bottom,0px)_-_2rem))] w-[min(100%-2rem,26rem)] flex-col overflow-hidden",
+            "fixed inset-0 z-50 m-auto flex h-fit w-[min(100%-2rem,26rem)] flex-col overflow-hidden",
+            // 88% of the screen at most. Centred, so a tall one reaches as far
+            // up as down: also kept clear of the status bar and of the home
+            // indicator on an iPhone (`env()` is 0 without a notch).
+            "max-h-[min(88dvh,calc(100dvh_-_env(safe-area-inset-top,0px)_-_env(safe-area-inset-bottom,0px)_-_2rem))]",
             "rounded-[var(--ui-radius-sheet)]",
             ui.surface.overlay,
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
@@ -2572,6 +2588,9 @@ export function UiMenu({
         <Menu.Content
           align={align}
           sideOffset={6}
+          // Pushed back on screen by a gutter, not flush with the glass edge,
+          // when the trigger sits near a side (a table row's report control).
+          collisionPadding={8}
           aria-label={label}
           className={cn(
             "z-50 min-w-[9rem] overflow-hidden p-1",
@@ -2697,7 +2716,7 @@ export function UiCheckbox({
         type="checkbox"
         aria-describedby={describedBy(props["aria-describedby"], [hint && `${id}-hint`])}
         className={cn(
-          "mt-0.5 h-4 w-4 shrink-0 accent-[color:var(--ui-ink)]",
+          "mt-0.5 h-4 w-4 shrink-0 accent-[color:var(--ui-ink-fg)]",
           ui.radius.tight,
           ui.hitArea,
           ui.focus,

@@ -39,8 +39,7 @@ export function ReadingProgress() {
   }, []);
 
   return (
-    // At the bottom of the status bar in the phone app (BG-0151); the inset
-    // is 0 in a browser, so the bar stays on the top edge there.
+    // Under the status bar on an iPhone (`viewport-fit=cover`), not behind it.
     <div
       aria-hidden
       className="pointer-events-none fixed inset-x-0 top-[env(safe-area-inset-top,0px)] z-[60] h-[3px]"

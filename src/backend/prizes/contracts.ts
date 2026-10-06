@@ -78,6 +78,9 @@ export const publicPrizeWinnerSchema = z.object({
   tieBreak: prizeTieBreakSchema,
   prizeName: localizedSchema,
   awardedAt: z.string(),
+  // The reader's own prize (20261006143700). Defaults to false so a database
+  // still on the older function reads as "not mine".
+  isMe: z.boolean().default(false),
 });
 export type PublicPrizeWinnerDto = z.infer<typeof publicPrizeWinnerSchema>;
 
@@ -168,9 +171,11 @@ export const adminPrizeWinnerSchema = z.object({
   prizeId: uuid,
   prizeNameFr: z.string(),
   prizeValueMad: integer.nullable(),
-  fantasyTeamId: uuid,
+  // Null once the winning account was erased (20261006143700): a paid prize
+  // stays for accounting, detached from any account, under a pseudonym.
+  fantasyTeamId: uuid.nullable(),
   teamName: z.string(),
-  userId: uuid,
+  userId: uuid.nullable(),
   username: z.string().nullable(),
   displayName: z.string().nullable(),
   email: z.string().nullable(),

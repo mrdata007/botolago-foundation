@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The launch screen's background: the icon plate's lightest colour. -->
+    <color name="botolago_splash_background">#F2F5FA</color>
+    <!-- The tint of the notification icon in the notification list. -->
+    <color name="botolago_notification">#0151FC</color>
+</resources>

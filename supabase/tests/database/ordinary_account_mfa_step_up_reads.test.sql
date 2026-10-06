@@ -160,7 +160,11 @@ begin
     'Reads Eleven ' || p_n, current_setting('test.selection')::jsonb, pg_temp.id(500 + p_n));
   perform api.follow_team(pg_temp.id(101));
   perform api.follow_competition(pg_temp.id(2));
-  perform api.request_account_deletion();
+  -- The request row only, as a fixture: since 20261006143700 asking through
+  -- api.request_account_deletion() also closes the account at once, and the
+  -- reads below need a live one. Its step-up is covered in
+  -- ordinary_account_mfa_step_up.test.sql.
+  insert into app.account_deletion_requests (user_id) values (p_user);
   perform api.save_article(pg_temp.id(9));
   perform api.save_predictions(jsonb_build_array(jsonb_build_object(
     'fixtureId', pg_temp.id(401), 'home', 1, 'away', 0)));

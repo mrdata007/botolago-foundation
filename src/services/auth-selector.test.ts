@@ -37,6 +37,7 @@ describe("Supabase error mapping", () => {
     ["Password should be at least 8 characters", 422, "weak_password"],
     ["Provider is not enabled", 400, "provider_unavailable"],
     ["Failed to fetch", undefined, "network"],
+    ["User is banned", 400, "account_closed"],
     ["Some other issue", 500, "generic"],
   ];
   for (const [msg, status, expected] of cases) {

@@ -23,6 +23,7 @@ import { markSplashDone } from "@/lib/launch-sequence";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { NativePushBridge } from "@/components/native/NativePushBridge";
+import { NATIVE_APP_INIT_SCRIPT } from "@/lib/native-app";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
 import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
 import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
@@ -129,7 +130,7 @@ function NotFoundBody() {
           <Link
             to="/"
             aria-label={t("state.go_home")}
-            className={cn(stateActionClass, ui.surface.inkPlain)}
+            className={cn(stateActionClass, ui.surface.inkControl)}
           >
             <Home className="h-4 w-4" aria-hidden />
             <span>{t("state.go_home")}</span>
@@ -184,7 +185,7 @@ function ErrorBody({ reset }: { reset: () => void }) {
               reset();
             }}
             aria-label={t("state.retry")}
-            className={cn(stateActionClass, ui.surface.inkPlain)}
+            className={cn(stateActionClass, ui.surface.inkControl)}
           >
             <RotateCcw className="h-4 w-4" aria-hidden />
             <span>{t("state.retry")}</span>
@@ -212,10 +213,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      // `viewport-fit=cover`: the phone app's web view fills the screen, and only
-      // with `cover` do iOS and Capacitor's Android SystemBars report the real
-      // safe-area insets that `ui.safe.*` and `--topbar-h` pad by. Every inset
-      // is 0 on a screen without one, so nothing moves there (BG-0151).
+      // `viewport-fit=cover`: on an iPhone the page runs under the status bar
+      // and the home indicator, and `env(safe-area-inset-*)` reports how far.
+      // Every bar fixed or stuck to the top or bottom edge pads by it (the
+      // `ui.safe.*` tokens, `--topbar-h`, `--bottomnav-h`); without a notch
+      // the insets are 0 and nothing moves.
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "BotolaGO — Actualités, matchs et Fantasy du football marocain" },
       {
@@ -276,8 +278,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // top of <head>, so either may run first; the stub keeps a loaded script.
     // Page views go out from `AnalyticsPageviews` below, their address cleaned
     // first.
+    //
+    // The native-app script marks <html> when the page runs inside the phone
+    // app, before the first paint, so what only works in a browser (`WebOnly`)
+    // is never painted there (src/lib/native-app.ts).
     scripts: [
       ...(DARK_MODE_ENABLED ? [{ children: THEME_INIT_SCRIPT }] : []),
+      { children: NATIVE_APP_INIT_SCRIPT },
       { children: SPLASH_INIT_SCRIPT },
       ...(ANALYTICS_ACTIVE
         ? [
@@ -302,7 +309,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   // `suppressHydrationWarning` on <html>: the inline theme script (BG-0081)
   // adds the `.dark` class and a `color-scheme` style to this element before
-  // React hydrates, exactly as `I18nProvider` later rewrites `lang`/`dir`.
+  // React hydrates, exactly as `I18nProvider` later rewrites `lang`/`dir`;
+  // the splash and native-app scripts add their `data-*` attributes the same way.
   // Both are deliberate out-of-band writes to the document element, not drift.
   return (
     <html lang="fr" dir="ltr" suppressHydrationWarning>

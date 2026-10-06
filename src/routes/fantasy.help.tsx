@@ -139,7 +139,7 @@ function HelpItem({
           className={cn(
             "grid h-9 w-9 shrink-0 place-items-center",
             ui.radius.full,
-            expanded ? ui.surface.inkPlain : cn(ui.surface.sunken, ui.tone.ink),
+            expanded ? ui.surface.selected : cn(ui.surface.sunken, ui.tone.ink),
           )}
         >
           <ChevronDown

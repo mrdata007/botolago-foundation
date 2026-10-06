@@ -107,7 +107,7 @@ export function SquadListTable({
         : cn(
             "bg-[color:var(--ui-surface)]",
             ui.tone.ink,
-            "ring-2 ring-inset ring-[color:var(--ui-ink)]",
+            "ring-2 ring-inset ring-[color:var(--ui-ink-fg)]",
           ),
     );
 

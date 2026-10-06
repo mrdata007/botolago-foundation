@@ -395,7 +395,15 @@ export const BASELINES: Baselines = {
   // `common.confirm` and `common.cancel` their first ones. 257 - 2 = 255.
   // Fantasy deadline card: its "Mon équipe" button is the first literal call
   // site of `fantasy.tab.team`, which nothing referenced. 255 - 1 = 254.
-  W3: 254,
+  //
+  // 2026-10-05, BG-0152 (Pépites on the main design): the compare page's
+  // "VS" between the two players is `common.vs` now, its first call site
+  // (-1). The night top bar's mark (`pepites.title` as its accessible name)
+  // and the compare page's text back link (`pepites.compare.back`, with its
+  // literal ‹ › arrows) are gone with the night layer: the kit's back pill
+  // says "Retour" itself. Both keys are deleted from fr and ar rather than
+  // left orphaned. 254 - 1 = 253 (measured with `bun scripts/qa/i18n-gate.ts`).
+  W3: 253,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

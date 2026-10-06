@@ -630,7 +630,7 @@ function QueueTabs({
             ui.text.meta,
             "[font-weight:var(--ui-weight-strong)]",
             ui.surface.sunken,
-            "aria-selected:bg-[color:var(--ui-ink)] aria-selected:text-[color:var(--ui-on-ink-plain)]",
+            "aria-selected:bg-[color:var(--ui-selected)] aria-selected:text-[color:var(--ui-on-selected)]",
             ui.focus,
           )}
         >

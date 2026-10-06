@@ -105,13 +105,23 @@ export const UI_TOKENS = [
   "--ui-scrim",
   "--ui-scorebox",
   "--ui-on-scorebox",
+  // the toast: a floating surface with no scrim, and its edge (BG-0149)
+  "--ui-toast",
+  "--ui-toast-rule",
   // ink
   "--ui-ink",
   "--ui-ink-deep",
   "--ui-ink-fg",
+  // the edge an ink-filled control carries: none in light, a ring in dark
+  "--ui-ink-edge",
   "--ui-on-ink",
   "--ui-on-ink-plain",
   "--ui-on-ink-muted",
+  // the selected state (BG-0149): the ink fill in light, the light brand
+  // foreground as a fill in dark
+  "--ui-selected",
+  "--ui-on-selected",
+  "--ui-on-selected-muted",
   "--ui-on-grad-header",
   // the dark-mesh register (welcome, auth, first-launch chooser)
   "--ui-on-mesh",
@@ -180,6 +190,18 @@ export const UI_TOKENS = [
   "--ui-on-fdr-3",
   "--ui-on-fdr-4",
   "--ui-on-fdr-5",
+  // Pépites — a player's match rating, 1 worst → 5 best: the FDR scale read
+  // backwards (rating N = FDR 6−N), with its foregrounds. Derived, below.
+  "--ui-rating-1",
+  "--ui-rating-2",
+  "--ui-rating-3",
+  "--ui-rating-4",
+  "--ui-rating-5",
+  "--ui-on-rating-1",
+  "--ui-on-rating-2",
+  "--ui-on-rating-3",
+  "--ui-on-rating-4",
+  "--ui-on-rating-5",
 ] as const;
 
 export type UiToken = (typeof UI_TOKENS)[number];
@@ -200,11 +222,17 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-scrim",
   "--ui-scorebox",
   "--ui-on-scorebox",
+  "--ui-toast",
+  "--ui-toast-rule",
   "--ui-ink",
   "--ui-ink-deep",
   "--ui-ink-fg",
+  // `transparent` in light, a ring that clears 3:1 in dark.
+  "--ui-ink-edge",
   "--ui-on-ink",
   "--ui-on-ink-plain",
+  "--ui-selected",
+  "--ui-on-selected",
   "--ui-on-grad-header",
   "--ui-accent-spring",
   "--ui-accent-sky",
@@ -238,6 +266,9 @@ export const UI_THEMED_TOKENS: readonly UiToken[] = [
   "--ui-shadow-raised",
   "--ui-shadow-lifted",
   "--ui-shadow-overlay",
+  // Its light value is the legacy navy `--shadow-floating`, which has no dark
+  // counterpart; the dark one is a hairline ring plus a black drop.
+  "--ui-shadow-column",
   "--ui-pitch-bench",
   "--ui-pitch-line",
   "--ui-on-pitch",
@@ -276,10 +307,28 @@ export const UI_DERIVED_TOKENS: readonly UiToken[] = [
   // The quieter foreground on an ink fill: plain on-ink mixed into the ink
   // itself, so it follows both.
   "--ui-on-ink-muted",
+  // The same mix on the selected fill.
+  "--ui-on-selected-muted",
   // Option A's pastel Fantasy turf: the two action-gradient stops over the
   // surface. All three flip, so the dark turf needs no second copy.
   "--ui-pitch-turf-a",
   "--ui-pitch-turf-b",
+  // The Pépites rating scale is the fixture-difficulty scale read backwards:
+  // `--ui-rating-N` is `var(--ui-fdr-(6−N))` and `--ui-on-rating-N` is
+  // `var(--ui-on-fdr-(6−N))`, so rating 5 (best) is FDR 1 (green). Pure
+  // aliases of themed tokens, so the dark values and the measured
+  // foregrounds come with them. A recolour of the FDR scale recolours the
+  // ratings too; that coupling is the point (one data palette, not two).
+  "--ui-rating-1",
+  "--ui-rating-2",
+  "--ui-rating-3",
+  "--ui-rating-4",
+  "--ui-rating-5",
+  "--ui-on-rating-1",
+  "--ui-on-rating-2",
+  "--ui-on-rating-3",
+  "--ui-on-rating-4",
+  "--ui-on-rating-5",
 ];
 
 /**
@@ -481,6 +530,8 @@ export const ui = {
     onInkPlain: "text-[color:var(--ui-on-ink-plain)]",
     /** The quieter line on an ink fill: a kicker or a label over a figure. */
     onInkMuted: "text-[color:var(--ui-on-ink-muted)]",
+    /** The quieter line on a selected fill (`ui.surface.selected`). */
+    onSelectedMuted: "text-[color:var(--ui-on-selected-muted)]",
     /** A gain written ON the action gradient; `positive` fails there. */
     onActionPositive: "text-[color:var(--ui-on-action-positive)]",
     /** Text on a club fill (`--ui-club`), measured per theme by the club palette. */
@@ -527,6 +578,26 @@ export const ui = {
     ink: "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink)]",
     /** An ink fill carrying plain (non-cyan) foreground. */
     inkPlain: "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink-plain)]",
+    /**
+     * `inkPlain` on a CONTROL: an ink-filled button or link (BG-0149). Adds
+     * `--ui-ink-edge` as a 1px inset ring — nothing in light, where navy on
+     * white is 12.8:1; a grey that clears 3:1 on every dark surface in dark,
+     * where the ink fill sits on the surface at 1.25:1 and the button
+     * vanished as a shape. An inset
+     * shadow, not `ring-inset`: the focus ring (`ui.focus`) is a `ring` with
+     * an offset, and `ring-inset` would pull it inside the button. A band, a
+     * disc or a status pill on the ink fill is not a control: `inkPlain`.
+     */
+    inkControl:
+      "bg-[color:var(--ui-ink)] text-[color:var(--ui-on-ink-plain)] shadow-[inset_0_0_0_1px_var(--ui-ink-edge)]",
+    /**
+     * A SELECTED, active or current control: the chosen chip, the active
+     * pill segment, the current nav link (BG-0149). Identical to `inkPlain`
+     * in light; in dark the ink fill disappears into the sunken track
+     * (1.13:1), so this flips to the light brand foreground as the fill.
+     * A band or status pill that is not a choice stays `inkPlain`.
+     */
+    selected: "bg-[color:var(--ui-selected)] text-[color:var(--ui-on-selected)]",
     /** Full-bleed bar: an opaque surface with a hairline rule, no glass. */
     bar: "bg-[color:var(--ui-surface)] text-[color:var(--ui-on-surface)]",
     /**

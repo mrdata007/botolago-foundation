@@ -134,7 +134,8 @@ for (const lang of ["fr", "ar"] as const) {
     await expect(entries).toHaveCount(10);
     await expect(page.getByTestId("pepites-reveal-countdown")).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
-    // The chips under the band scroll sideways, as the Figma draws them.
+    // The filter chips under the title scroll sideways on a phone: the kit's
+    // chip rail, as on News (BG-0152). Only the rail may run past the edge.
     await expectNothingOffScreen(page, "main", { scrollRails: true });
 
     // The full ranking: twenty, then more, then filtered by position.
