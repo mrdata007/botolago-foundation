@@ -464,10 +464,12 @@ function HomeContent() {
       }).format(matchDayFromKey(key)),
     );
 
-  // What the band shows (BG-0155): every live match, then the journée's
-  // matches still to come, by kick-off; the next match alone when the journée
-  // has nothing left. A match whose clubs are not known yet is left out.
-  const bandCards: BandCard[] = bandMatches(homeMatches, bandGameweekNumber).flatMap((match) => {
+  // What the band shows (BG-0155): every live match, then the next match to
+  // be played and the rest of its round, by kick-off. From the payload alone,
+  // which the server has too, so the cards do not change shape when Fantasy's
+  // gameweek loads in the browser. A match whose clubs are not known yet is
+  // left out.
+  const bandCards: BandCard[] = bandMatches(homeMatches).flatMap((match) => {
     const home = clubById(match.homeClubId);
     const away = clubById(match.awayClubId);
     return home && away ? [{ match, home, away }] : [];

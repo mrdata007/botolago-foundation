@@ -104,7 +104,10 @@ describe("Accueil (Home) structural contract", () => {
 
     test("the band shows the round: one card as before, a carousel when there are more", () => {
       const band = source.slice(indexOfOrThrow("<GameweekBand"), indexOfOrThrow("</GameweekBand>"));
-      expect(source).toContain("bandMatches(homeMatches, bandGameweekNumber)");
+      // From the payload alone, never from Fantasy's gameweek (read in the
+      // browser only): the server and the browser show the same cards.
+      expect(source).toContain("bandMatches(homeMatches).flatMap(");
+      expect(source).not.toMatch(/bandMatches\([^)]*bandGameweek/);
       expect(band).toContain("liveAlone || bandCards.length === 0 ? null");
       expect(band).toContain("bandCards.length === 1 ? (\n                <NextMatchPick");
       expect(band).toContain(
