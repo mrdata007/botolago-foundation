@@ -13,6 +13,8 @@ import type { Club, Match } from "@/types/domain";
 const PANEL = "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_10%,transparent)]";
 const PICK_OUTLINE =
   "border border-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_40%,transparent)]";
+/** A blank capsule on the panel while the vote loads: a faint wash, no edge. */
+const HOLD_FILL = "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_8%,transparent)]";
 
 /**
  * The next match, inside Home's navy band: the two clubs, the kickoff, and —
@@ -27,18 +29,32 @@ const PICK_OUTLINE =
  *
  * Home is the first button, so Arabic puts it on the right as the score
  * header does. A button is 44px tall at least and says what it picks.
+ *
+ * Until the votes are known (the server's render never has them) the vote
+ * row's space is held, so the band does not grow when they arrive; it closes
+ * only if there turns out to be no vote to cast.
+ *
+ * In the band's carousel (`fill`) the panel takes its slide's whole height,
+ * the clubs centred in the space above the vote row, so the vote rows of the
+ * cards side by side line up and no card is shorter than its neighbour.
  */
 export function NextMatchPick({
   match,
   home,
   away,
   withVote,
+  fill = false,
+  votesEnabled = true,
 }: {
   match: Match;
   home: Club;
   away: Club;
   /** Offer the vote: the caller's say, as it holds the Pronostics flag. */
   withVote: boolean;
+  /** A slide of the band's carousel: no top margin, and the slide's full height. */
+  fill?: boolean;
+  /** Read the votes now; the carousel waits until the card is near the one in view. */
+  votesEnabled?: boolean;
 }) {
   const { t, tr, lang } = useI18n();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
@@ -54,11 +70,18 @@ export function NextMatchPick({
   };
 
   return (
-    <div className={cn("mt-5 p-3", ui.radius.card, PANEL)} data-testid="home-next-match">
+    <div
+      className={cn("p-3", fill ? "flex flex-1 flex-col" : "mt-5", ui.radius.card, PANEL)}
+      data-testid="home-next-match"
+    >
       <Link
         to="/matches/$matchId"
         params={{ matchId: match.id }}
-        className={cn("grid grid-cols-[1fr_auto_1fr] items-center gap-2", ui.focusOnMesh)}
+        className={cn(
+          "grid grid-cols-[1fr_auto_1fr] items-center gap-2",
+          fill && "flex-1",
+          ui.focusOnMesh,
+        )}
       >
         <span className="flex min-w-0 items-center gap-2">
           <ClubCrest club={home} size="md" tone="inverse" />
@@ -87,25 +110,32 @@ export function NextMatchPick({
         </span>
       </Link>
 
-      {withVote ? <WinnerPick match={match} home={home} away={away} name={name} /> : null}
+      {withVote ? (
+        <WinnerPick match={match} home={home} away={away} name={name} enabled={votesEnabled} />
+      ) : null}
     </div>
   );
 }
 
-/** "Qui va gagner ?" and its three buttons; nothing when there is no vote to cast. */
+/**
+ * "Qui va gagner ?" and its three buttons; its space held while the votes are
+ * read; nothing when there is no vote to cast.
+ */
 function WinnerPick({
   match,
   home,
   away,
   name,
+  enabled,
 }: {
   match: Match;
   home: Club;
   away: Club;
   name: (club: Club) => string;
+  enabled: boolean;
 }) {
   const { t } = useI18n();
-  const votes = useMatchVotes(match.id);
+  const votes = useMatchVotes(match.id, { enabled });
   const dto = votes.votes;
   const winner =
     dto?.allowed && dto.covered && dto.open
@@ -120,7 +150,7 @@ function WinnerPick({
     { choice: "draw", label: t("predictions.votes.draw") },
     { choice: "away", label: name(away) },
   ];
-  if (!view) return null;
+  if (!view) return votes.pending ? <WinnerPickHold /> : null;
   return (
     <div className="mt-3">
       <p className={cn("mb-2 text-center", ui.text.label, ui.tone.onInkMuted)}>
@@ -152,6 +182,30 @@ function WinnerPick({
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The vote row's place while the votes are read: the question's line, kept
+ * invisible so it is exactly as tall, and three blank capsules as tall as the
+ * buttons. Nothing to read or press, so hidden from assistive tech.
+ */
+function WinnerPickHold() {
+  const { t } = useI18n();
+  return (
+    <div className="mt-3" aria-hidden data-testid="home-vote-hold">
+      <p className={cn("invisible mb-2 text-center", ui.text.label)}>
+        {t("predictions.votes.winner")}
+      </p>
+      <div className="grid grid-cols-3 gap-2">
+        {[0, 1, 2].map((slot) => (
+          <span
+            key={slot}
+            className={cn("block min-h-[var(--ui-tap-min)]", ui.radius.full, HOLD_FILL)}
+          />
+        ))}
       </div>
     </div>
   );
