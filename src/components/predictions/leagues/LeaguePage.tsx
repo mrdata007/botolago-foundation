@@ -7,6 +7,7 @@ import type { LeagueStandingsDto, MyLeaguesDto } from "@/backend/predictions/con
 import { mapPredictionsError, type PredictionsError } from "@/backend/predictions/errors";
 import { useAuth } from "@/auth/AuthProvider";
 import { showStepUpNotice } from "@/auth/step-up-notice";
+import { ReportNameMenu } from "@/components/report/ReportNameMenu";
 import { AppShell } from "@/components/shell/AppShell";
 import {
   ui,
@@ -96,6 +97,21 @@ export function LeaguePage({ leagueId }: { leagueId: string }) {
           kicker={t("predictions.tab.leagues")}
           title={name ?? t("predictions.title")}
           onBack={() => void navigate({ to: "/pronostics", search: { tab: "ligues" } })}
+          trailing={
+            // A league's name was chosen by its owner: anyone else may report it.
+            header.data && !header.data.league.isOwner ? (
+              <ReportNameMenu
+                placement="header"
+                targets={[
+                  {
+                    kind: "league",
+                    name: header.data.league.name,
+                    id: `league:${header.data.league.id}`,
+                  },
+                ]}
+              />
+            ) : null
+          }
         />
       }
     >

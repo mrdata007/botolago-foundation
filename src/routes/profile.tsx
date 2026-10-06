@@ -15,6 +15,7 @@ import {
   LockKeyhole,
   LogIn,
   LogOut,
+  Mail,
   Palette,
   Pencil,
   ShieldCheck,
@@ -57,6 +58,7 @@ import { clubStyle } from "@/lib/club-palette";
 import { findClub } from "@/components/fantasy/club-identity";
 import { DARK_MODE_ENABLED, NEWS_ENABLED } from "@/lib/feature-flags";
 import { useSavedArticles } from "@/lib/saved-articles";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/report-content";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -448,6 +450,8 @@ function AuthenticatedProfile({
         <RowLink to="/privacy" ruled icon={<LockKeyhole />} label={t("profile.legal.privacy")} />
       </Group>
 
+      <HelpGroup />
+
       <DeleteAccountSection />
     </>
   );
@@ -671,6 +675,28 @@ function DevicePreferences() {
   );
 }
 
+/**
+ * How to reach a person: support's address, for every visitor, signed in or
+ * not. A `mailto:` link, which the phone app hands to the mail app (see
+ * `src/lib/report-content.ts`); the address is shown too, left-to-right in
+ * Arabic, for a reader with no mail app set up.
+ */
+function HelpGroup() {
+  const { t } = useI18n();
+  return (
+    <Group title={t("profile.section.help")}>
+      <a href={SUPPORT_MAILTO} className={cn(ROW, ROW_INTERACTIVE)}>
+        <RowInner
+          icon={<Mail />}
+          label={t("profile.contact")}
+          chevron={false}
+          value={<bdi dir="ltr">{SUPPORT_EMAIL}</bdi>}
+        />
+      </a>
+    </Group>
+  );
+}
+
 /* ---------------------------- danger zone / delete ------------------------ */
 
 function DeleteAccountSection() {
@@ -861,6 +887,7 @@ function GuestProfile() {
         <SignInLinks />
       </UiCard>
       <DevicePreferences />
+      <HelpGroup />
     </>
   );
 }
@@ -878,6 +905,7 @@ function AnonymousProfile() {
         <SignInLinks />
       </UiCard>
       <DevicePreferences />
+      <HelpGroup />
     </>
   );
 }

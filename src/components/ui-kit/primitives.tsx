@@ -2572,6 +2572,9 @@ export function UiMenu({
         <Menu.Content
           align={align}
           sideOffset={6}
+          // Pushed back on screen by a gutter, not flush with the glass edge,
+          // when the trigger sits near a side (a table row's report control).
+          collisionPadding={8}
           aria-label={label}
           className={cn(
             "z-50 min-w-[9rem] overflow-hidden p-1",
