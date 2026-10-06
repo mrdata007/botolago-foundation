@@ -774,6 +774,42 @@ describe("the share pictures' vertical rhythm", () => {
     }
   }
 
+  for (const lang of ["fr", "ar"] as const) {
+    it(`Top 10 ranks (${lang}): 1 to 3 on a white plate in Tunnel Navy, 4 to 10 muted, all centred on the row`, async () => {
+      const { ops } = await draw("post", lang);
+      const ranks = ops.filter((op) => op.kind === "text" && op.font!.startsWith("800 40px"));
+      expect(ranks.map((op) => op.text)).toEqual(
+        Array.from({ length: 10 }, (_, index) => String(index + 1)),
+      );
+      const scores = ops.filter((op) => op.kind === "text" && op.font!.startsWith("800 48px"));
+      expect(scores).toHaveLength(10);
+      const plates = ops.filter(
+        (op) =>
+          op.kind === "fill" &&
+          op.paint === SHARE_PALETTE.white &&
+          Math.abs(op.right - op.left - 56) < 0.01,
+      );
+      expect(plates).toHaveLength(3);
+      ranks.forEach((rank, index) => {
+        const mid = 464 + index * 76 + 38;
+        expect((rank.top + rank.bottom) / 2).toBeCloseTo(mid, 5);
+        expect((scores[index]!.top + scores[index]!.bottom) / 2).toBeCloseTo(mid, 5);
+        if (index < 3) {
+          expect(rank.paint).toBe(SHARE_PALETTE.ground);
+          const plate = plates[index]!;
+          expect(rank.left).toBeGreaterThan(plate.left);
+          expect(rank.right).toBeLessThan(plate.right);
+          expect(rank.top).toBeGreaterThan(plate.top);
+          expect(rank.bottom).toBeLessThan(plate.bottom);
+        } else {
+          expect(rank.paint).toBe(SHARE_PALETTE.muted);
+        }
+      });
+      // The plate's figures are far from the 1.5:1 a white-versus-muted step gave.
+      expect(contrast(SHARE_PALETTE.ground, SHARE_PALETTE.white)).toBeGreaterThan(15);
+    });
+  }
+
   it("the section's name clears the pill, and the title clears the name, by the same gaps in both languages", async () => {
     const gaps = async (lang: "fr" | "ar") => {
       const model = shareImageModel(edition, lang, { ...COPY, brand: SECTION[lang] })!;

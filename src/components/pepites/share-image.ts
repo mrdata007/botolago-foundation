@@ -599,6 +599,9 @@ export async function renderShareImage(model: ShareImageModel): Promise<Blob> {
 /** The Top 10 post's rows: the panel's box and each row's pitch. */
 const TOP_TEN = { panelX: 40, panelTop: 456, rowsTop: 464, row: 76, edge: 11 } as const;
 
+/** A Top 10 row's rank column (inline start and width) and the plate ranks 1 to 3 sit on. */
+const RANK = { x: 72, w: 56, h: 52, radius: 12 } as const;
+
 /** The Top 10 header's ink gaps: the section's name to the week pill, the title to the name. */
 const HEADER = { pillGap: 30, lineGap: 14 } as const;
 
@@ -717,12 +720,29 @@ async function drawTopTen(
       ctx.fillStyle = SHARE_PALETTE.rulePanel;
       ctx.fillRect(72, top, 936, 2);
     }
-    text(ctx, row.rank, mx(72), mid - 30, {
+    // Ranks 1 to 3 on the white score plate with Tunnel Navy figures, the
+    // app's signature for a standalone figure; 4 to 10 muted. Every rank's
+    // ink is centred in its column and on the row, like the disc and the bar.
+    const podium = row.rankNumber <= 3;
+    if (podium) {
+      ctx.fillStyle = SHARE_PALETTE.white;
+      roundRect(
+        ctx,
+        rtl ? mx(RANK.x) - RANK.w : RANK.x,
+        mid - RANK.h / 2,
+        RANK.w,
+        RANK.h,
+        RANK.radius,
+      );
+      ctx.fill();
+    }
+    text(ctx, row.rank, mx(RANK.x + RANK.w / 2), mid, {
       face: "display",
       weight: 800,
       size: 40,
-      fill: row.rankNumber <= 3 ? SHARE_PALETTE.white : SHARE_PALETTE.muted,
-      align: start,
+      fill: podium ? SHARE_PALETTE.ground : SHARE_PALETTE.muted,
+      align: "center",
+      anchor: "middle",
     });
     headshot(
       ctx,
@@ -759,12 +779,13 @@ async function drawTopTen(
       roundRect(ctx, x, mid - 10, 17, 20, 4);
       ctx.fill();
     }
-    text(ctx, row.score, mx(1008), mid - 34, {
+    text(ctx, row.score, mx(1008), mid, {
       face: "display",
       weight: 800,
       size: 48,
       fill: SHARE_PALETTE.white,
       align: end,
+      anchor: "middle",
     });
   });
 
