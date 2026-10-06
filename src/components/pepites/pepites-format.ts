@@ -3,7 +3,9 @@ import type {
   Movement,
   PepitesPlayerCard,
   PepitesTeam,
+  PlayerResponse,
   PositionGroup,
+  RankingRow,
 } from "@/backend/pepites/contracts";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
@@ -152,6 +154,38 @@ export function playerMetaLine(
     );
   }
   return parts.join(META_SEPARATOR);
+}
+
+/** The four figures the featured N°1 prints, as the ranking carries them. */
+export type BandFigures = Pick<RankingRow, "minutes" | "goals" | "assists" | "ratingAvg" | "ga90">;
+
+/** The score part of a `pepites_player` read. */
+type PlayerScore = NonNullable<Extract<PlayerResponse, { available: true }>["score"]>;
+
+/**
+ * The featured N°1's figures: the ranking's row for the player (the page's
+ * fifty-row read), else, once that read has settled without the player (an
+ * editor's N°1 ranked below fiftieth, or a failed read), the same figures
+ * from the player's own read, which the band makes for its wheel (`score`;
+ * B+PD/90 is the per-90 `goalsAssists` the ranking rounds). While the ranking
+ * is still loading, nothing (the band holds the place with dashes), so a
+ * figure never changes under the reader when the second read lands.
+ * `undefined` when neither read has the player.
+ */
+export function bandFigures(
+  stats: BandFigures | undefined,
+  score: Pick<PlayerScore, "minutes" | "goals" | "assists" | "ratingAvg" | "per90"> | null,
+  statsPending: boolean,
+): BandFigures | undefined {
+  if (stats) return stats;
+  if (statsPending || !score) return undefined;
+  return {
+    minutes: score.minutes,
+    goals: score.goals,
+    assists: score.assists,
+    ratingAvg: score.ratingAvg,
+    ga90: score.per90.goalsAssists ?? null,
+  };
 }
 
 /**

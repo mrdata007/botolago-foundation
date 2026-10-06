@@ -224,6 +224,7 @@ export function PepitesHome() {
                 reason={lang === "ar" ? leader.reasonAr : leader.reasonFr}
                 facts
                 stats={stats.get(leader.player.id)}
+                statsPending={ranking.isPending}
                 version={version}
               />
               <TopTenList items={rest} stats={stats} testId="pepites-top10" />
@@ -244,6 +245,7 @@ export function PepitesHome() {
         firstRound={firstRound}
         pointer={pointer}
         stats={stats}
+        statsPending={ranking.isPending}
         footer={footer}
       />
     );

@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { PepitesPlayerCard } from "@/backend/pepites/contracts";
 import { I18nProvider } from "@/i18n/provider";
 
-import { playerFiguresLine, teamAsClub } from "./pepites-format";
+import { bandFigures, playerFiguresLine, teamAsClub } from "./pepites-format";
 import { PepitesIdentityDisc, RankPlate } from "./PepitesVisuals";
 import { PercentileLegend, PercentileWheel } from "./PepitesWheel";
 
@@ -171,5 +171,43 @@ describe("the row's figures line", () => {
     // French groups thousands with a narrow no-break space (`formatCount`).
     expect(line.replace(/[⁨⁩]/g, "")).toBe("2\u202f087’\u00a0· 16B 1PD");
     expect(line).toContain("⁨16⁩");
+  });
+});
+
+describe("the featured N°1's figures", () => {
+  const ROW = { minutes: 2087, goals: 16, assists: 1, ratingAvg: 6.9, ga90: 0.73 };
+  const SCORE = {
+    minutes: 1990,
+    goals: 15,
+    assists: 2,
+    ratingAvg: 6.84,
+    per90: { goalsAssists: 0.7688, cleanSheets: null },
+  };
+
+  it("prints the ranking's row first", () => {
+    expect(bandFigures(ROW, SCORE, false)).toEqual(ROW);
+    expect(bandFigures(ROW, null, true)).toEqual(ROW);
+  });
+
+  it("waits while the ranking loads, so a figure never changes under the reader", () => {
+    expect(bandFigures(undefined, SCORE, true)).toBeUndefined();
+  });
+
+  it("falls back to the player's own read once the ranking has settled without the player", () => {
+    // An editor's N°1 ranked below the fifty-row read, or a failed ranking read.
+    expect(bandFigures(undefined, SCORE, false)).toEqual({
+      minutes: 1990,
+      goals: 15,
+      assists: 2,
+      ratingAvg: 6.84,
+      ga90: 0.7688,
+    });
+    expect(
+      bandFigures(undefined, { ...SCORE, per90: { cleanSheets: null } }, false)?.ga90,
+    ).toBeNull();
+  });
+
+  it("has nothing when neither read has the player, so the band leaves the row out", () => {
+    expect(bandFigures(undefined, null, false)).toBeUndefined();
   });
 });

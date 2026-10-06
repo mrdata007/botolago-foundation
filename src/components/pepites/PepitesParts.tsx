@@ -129,6 +129,7 @@ export function PepitesBeforeFirstEdition({
   firstRound,
   pointer,
   stats,
+  statsPending = false,
   footer,
 }: {
   previous: PreviousSeason;
@@ -136,6 +137,8 @@ export function PepitesBeforeFirstEdition({
   pointer: Extract<VersionResponse, { available: true }>;
   /** The ranking's rows by player: minutes, goals, assists, rating. */
   stats: ReadonlyMap<string, PlayerStats>;
+  /** Whether the ranking read behind `stats` is still loading. */
+  statsPending?: boolean;
   footer: ReactNode;
 }) {
   const { t, lang } = useI18n();
@@ -186,6 +189,7 @@ export function PepitesBeforeFirstEdition({
             score={leader.score}
             facts
             stats={stats.get(leader.player.id)}
+            statsPending={statsPending}
             version={pointer.version}
           />
           <TopTenList items={rest} stats={stats} testId="pepites-top10" />
