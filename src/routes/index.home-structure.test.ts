@@ -102,6 +102,19 @@ describe("Accueil (Home) structural contract", () => {
       expect(service).toMatch(/repository\.getHomeMatches\(\s*language,\s*HOME_MATCHES_LIMIT,/);
     });
 
+    test("the band shows the round: one card as before, a carousel when there are more", () => {
+      const band = source.slice(indexOfOrThrow("<GameweekBand"), indexOfOrThrow("</GameweekBand>"));
+      expect(source).toContain("bandMatches(homeMatches, bandGameweekNumber)");
+      expect(band).toContain("liveAlone || bandCards.length === 0 ? null");
+      expect(band).toContain("bandCards.length === 1 ? (\n                <NextMatchPick");
+      expect(band).toContain(
+        "<HomeMatchCarousel cards={bandCards} withVote={PRONOSTICS_PROMOTED} />",
+      );
+      // A live match on its own still rises out of the band's lower edge.
+      expect(band).toContain("overlap={liveAlone}");
+      expect(source).toContain("const liveAlone = bandCards.length === 1 && isInPlay(");
+    });
+
     test("lists only the payload's first three under À venir", () => {
       expect(HOME_LIST_SIZE).toBe(3);
       expect(source).toContain("homeMatches.slice(0, HOME_LIST_SIZE)");
