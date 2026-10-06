@@ -43,9 +43,11 @@ import stadiumPhoto from "@/assets/photos/stadium-night-800.webp";
 import { Logo } from "@/components/brand/Logo";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { PageBackground } from "@/components/shell/PageBackground";
+import { STATUS_BAR_INK, StatusBarStrip } from "@/components/shell/StatusBarStrip";
 import { ui, UiBackButton, UiButton, UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useBackTo } from "@/lib/back-navigation";
+import { useDarkStatusBand } from "@/lib/system-bars";
 import { clubStyle } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import { AUTH_BAND_CLUBS } from "./account-model";
@@ -64,6 +66,15 @@ const BAND_SCRIM =
 
 /** Computed once: the palette is pure, and the strip never changes. */
 const BAND_CLUB_STYLES = AUTH_BAND_CLUBS.map((club) => clubStyle(club));
+
+/**
+ * Where the photo band spans the whole screen. The column is the 480px phone
+ * canvas (`--ui-column-max`), so at 480px and narrower the band is under the
+ * whole status bar, clock and icons included. Wider, the flat page shows on
+ * both sides of the column (from `md` the column is a raised card), and the
+ * clock and icons sit over the page (BG-0154).
+ */
+const BAND_SPANS_SCREEN = "(max-width: 480px)";
 
 interface Props {
   title: string;
@@ -93,12 +104,23 @@ export function AuthShell({
   // Auth pages are linked to from email (confirmation, password reset) as often
   // as they are reached in-app, so home is the fallback rather than a listing.
   const goBack = useBackTo("/");
+  // On a phone the band under the clock is dark in both themes: light
+  // status-bar icons in the app whatever the theme. Wider than the column,
+  // the clock and icons sit over the flat page, so they follow the theme
+  // there (BG-0154).
+  useDarkStatusBand(BAND_SPANS_SCREEN);
 
   return (
     <div className="relative min-h-[100dvh] w-full md:flex md:items-center md:justify-center md:px-6 md:py-10">
       {/* The flat page, as behind every product screen. On a phone the band
           and the sheet cover it; on desktop it frames the raised column. */}
       <PageBackground variant="neutral" />
+      {/* STATUS BAR from `md` (BG-0154): the column is a raised card here and
+          the flat page is under the clock, so a strip of the page itself
+          covers the card as it scrolls up. Fixed rather than sticky: the
+          column clips (`md:overflow-hidden`) and this wrapper is a flex row,
+          so neither can carry a sticky strip. 0px tall in a browser. */}
+      <StatusBarStrip surface={ui.surface.page} className="hidden md:fixed md:inset-x-0 md:block" />
       <div
         className={cn(
           "relative flex min-h-[100dvh] flex-col",
@@ -106,6 +128,14 @@ export function AuthShell({
           "md:min-h-0 md:overflow-hidden md:rounded-[var(--ui-radius-column)] md:shadow-[var(--ui-shadow-column)]",
         )}
       >
+        {/* STATUS BAR (BG-0154) — nothing at the top of these screens sticks,
+            so in the app the sheet scrolled up under the clock. A strip as
+            tall as the status bar, in the band's ink-deep, stays there and the
+            page passes under it. Clear at rest, so the photograph runs on
+            under the clock, and opaque after 24px of scroll, long before the
+            sheet gets there. 0px tall in a browser; from `md` the column is a
+            raised card in the middle of the page (the strip above). */}
+        <StatusBarStrip surface={STATUS_BAR_INK} revealOnScroll className="md:hidden" />
         <header
           className={cn(
             "relative isolate overflow-hidden",

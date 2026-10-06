@@ -221,3 +221,78 @@ test.describe("Profil > Apparence", () => {
     expect(await page.evaluate(() => (window as unknown as Probe).__sameDocument)).toBe(true);
   });
 });
+
+// BG-0154 — in the phone app the status bar's clock and icons follow the theme
+// on screen. `system-bars.test.ts` covers the sync on its own; this runs the
+// real ThemeProvider and the real `@capacitor/core` against a stand-in for the
+// iPhone shell: the bridge marker Capacitor reads the platform from, and the
+// two things its injected native bridge provides (`PluginHeaders`, the native
+// plugin list, and `nativePromise`, the call into the shell), recording every
+// SystemBars call. Capacitor names the style after the background: "LIGHT" is
+// dark icons for the light theme, "DARK" light icons for the dark one.
+async function standInIPhoneShell(page: Page) {
+  await page.addInitScript(() => {
+    const probe = window as unknown as Probe & { __barStyles: string[] };
+    probe.__barStyles = [];
+    Object.assign(window, {
+      webkit: { messageHandlers: { bridge: { postMessage() {} } } },
+      Capacitor: {
+        PluginHeaders: [{ name: "SystemBars", methods: [{ name: "setStyle", rtype: "promise" }] }],
+        nativePromise(plugin: string, _method: string, options: { style?: string }) {
+          if (plugin === "SystemBars") probe.__barStyles.push(String(options?.style));
+          return Promise.resolve({});
+        },
+      },
+    });
+  });
+}
+
+const barStyles = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __barStyles: string[] }).__barStyles.slice());
+
+test.describe("in the phone app, the status bar follows the theme on screen", () => {
+  test.use({ colorScheme: "light" });
+
+  test("with Système chosen: start-up, then each phone switch, without a reload", async ({
+    page,
+  }) => {
+    await standInIPhoneShell(page);
+    await initializeLanguage(page, "fr");
+    await gotoHydrated(page, "/profile", "fr");
+    await expect.poll(() => barStyles(page)).toEqual(["LIGHT"]);
+
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect.poll(() => barStyles(page)).toEqual(["LIGHT", "DARK"]);
+    await page.emulateMedia({ colorScheme: "light" });
+    await expect.poll(() => barStyles(page)).toEqual(["LIGHT", "DARK", "LIGHT"]);
+  });
+
+  test("choosing Sombre, then Clair, sends each theme's style", async ({ page }) => {
+    await standInIPhoneShell(page);
+    await initializeLanguage(page, "fr");
+    await gotoHydrated(page, "/profile", "fr");
+    await expect.poll(() => barStyles(page)).toEqual(["LIGHT"]);
+    const group = page.getByRole("radiogroup", { name: COPY.fr.group });
+
+    await group.getByRole("radio", { name: COPY.fr.dark }).click();
+    await expect.poll(() => barStyles(page)).toEqual(["LIGHT", "DARK"]);
+    await group.getByRole("radio", { name: COPY.fr.light }).click();
+    await expect.poll(() => barStyles(page)).toEqual(["LIGHT", "DARK", "LIGHT"]);
+  });
+
+  test("in a browser, Capacitor is never loaded and nothing is called", async ({ page }) => {
+    const capacitorRequests: string[] = [];
+    page.on("request", (request) => {
+      if (/@capacitor|capacitor_core/i.test(request.url())) capacitorRequests.push(request.url());
+    });
+    await initializeLanguage(page, "fr");
+    await gotoHydrated(page, "/profile", "fr");
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect.poll(() => htmlIsDark(page)).toBe(true);
+    await page.emulateMedia({ colorScheme: "light" });
+    await expect.poll(() => htmlIsDark(page)).toBe(false);
+
+    expect(capacitorRequests).toEqual([]);
+    expect(await page.evaluate(() => "Capacitor" in window)).toBe(false);
+  });
+});

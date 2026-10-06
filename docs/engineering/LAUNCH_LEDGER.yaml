@@ -1639,6 +1639,130 @@ tasks:
       before it gave a right one (82 findings, then 62, then 13, now 0), and that history is
       the reason to open an element before believing a count.
 
+  BG-0154:
+    title: Phone app polish after BG-0151 (Arabic link arrows, status bar follows the theme, Fantasy player bar sideways, status-bar strip on sign-in and Jouer)
+    area: design
+    severity: P1
+    user_impact: >
+      Four follow-ups the owner listed on 2026-10-06. In Arabic the Home results link and the
+      Matches empty-day link ended in a typed arrow pointing back at the label. In the phone app
+      the status bar's clock and icons followed the phone's light or dark setting rather than the
+      app's Clair/Sombre/Système choice, so they could be dark on a dark bar or light on a light one.
+      On a notched iPhone turned sideways the Fantasy player page's actions sat below the window and
+      ran into the home indicator. On the sign-in screens and Jouer, scrolled content showed under
+      the clock in the app.
+    owner: Chief
+    state: RUNNING # implemented on claude/app-polish-followups (brief d427ec17), review findings fixed on the branch, awaiting the orchestrator's merge and publish; not DONE until the device check in remaining passes
+    depends_on: [BG-0151]
+    brief: docs/engineering/tasks/BG-0154/screen-brief.md
+    evidence:
+      - "arrows: the literal arrow after the Home results link (src/routes/index.tsx) and in the Matches DayLink (src/routes/matches.index.tsx) is an aria-hidden lucide ArrowRight (16px, 6px gap), mirrored by the BG-0150 rule; the label alone is the name. ui-kit.contract.test.ts scans every JSX text run in src for an arrow glyph (these were the only two) and pins both drawn arrows; run against main's two files it fails 3 tests"
+      - >
+        arrows measured on the branch (:5420), fr and ar at 390 and 1440: French, the arrow is to the right of
+        the label with no transform; Arabic, to its left with matrix(-1, 0, 0, 1, 0, 0); 44px tall, 15px label,
+        16px icon, name = label text. Against main (:5400) the shots differ only in the link row (plus 96 px of
+        the empty-day illustration's rasterisation at 1440 in Arabic)
+      - >
+        status bar: src/lib/system-bars.ts calls Capacitor 8's built-in SystemBars.setStyle (no new
+        dependency, no native change): light theme -> SystemBarsStyle.Light (dark icons), dark -> Dark
+        (light icons), as read in the enum docs and in the iOS (DARK -> .lightContent) and Android
+        (setAppearanceLightStatusBars(!DARK)) sources, which a test pins; one call on iPhone (setStyle
+        ignores bar there), one per bar on Android with the navigation bar on the theme; changes made in
+        one go are settled together; a failure is retried on the next change; nothing in a browser.
+        ThemeProvider sends `resolved` from one effect; AuthShell, LandingPage and the launch splash (on a
+        load that shows it) hold light icons while mounted. WelcomeScreen is not mounted anywhere in src
+      - >
+        status bar in Chromium with a stand-in bridge and the real @capacitor/core (:5420): iPhone, fr and ar
+        -- LIGHT at start-up (phone light, Système), DARK on Sombre, LIGHT on Clair, nothing on Système with
+        the phone light, DARK then LIGHT on emulated phone changes under Système, DARK once on /auth/login,
+        nothing from /auth/login to /auth/register or on phone changes there, LIGHT on leaving, DARK on full
+        loads of /jouer, /auth/register (theme dark) and /fantasy (theme dark); a splash load sent DARK and
+        then LIGHT when the splash left. Android: the same with a StatusBar and a NavigationBar call each,
+        the navigation bar on the theme under the bands. No bridge: 0 calls, 0 Capacitor requests, no
+        window.Capacitor
+      - >
+        Fantasy player sideways: FantasyFrame's md:overflow-hidden made the column the sticky bar's scroll
+        container (measured: scroll container main.fpl-column on main, none on the branch). New prop
+        stickyBottomBar clips with overflow: clip plus flow-root (computed overflow clip, display flow-root
+        on the player page only; /fantasy/create and /fantasy/rules still hidden/block); the bar also moved
+        out of the wrapper under the hero (a sticky box only travels inside its parent), with the wrapper's
+        pb-6 as the bar's mb-6
+      - >
+        player bar measured, 844x390 with insets 47 left/right and 21 bottom, fr and ar: top and half way
+        the bar is at 297..390 with buttons ending at 369 (390 - 21); main had 780..873 (fr) and 930..1023
+        (ar) at the top, below the window. Portrait 390x844 with and without insets: 24 of 24 shots pixel
+        identical to main (top, half way, end; light and dark). 1440x900 French: the bar's box is where
+        main has it (780..864); pixels differ only inside it (text antialiasing, gradient dithering: a bar
+        stuck to the window gets its own compositing layer). Where the page is taller than the window
+        (1440x900 Arabic, 1440x600, 768x1024 Arabic) the bar now sticks at the bottom as on phones
+      - >
+        strips: StatusBarStrip (src/components/shell) shared by FantasyFrame (same markup byte for byte,
+        pinned by a test), AuthShell (phones, ink-deep) and LandingPage (every width, ink-deep). At 390x844
+        with a 47px top inset, fr and ar, light and dark, scrolled: the top 47px on /auth/login,
+        /auth/register, /auth/forgot-password and /jouer is the flat ink-deep strip (luminance 0.013 light,
+        0.010 dark, no variance) where main showed the white sheet (0.93 on /auth/register) or light
+        sections (0.85 on /jouer). Without insets the three pages match main pixel for pixel at 390 and
+        1440 (23 of 24 full-page shots; one pixel of the Jouer hero gradient differs by 1/255 at 1440 dark)
+      - >
+        after review, sign-in status bar by width: AuthShell holds the dark band only where it spans the
+        screen (useDarkStatusBand(BAND_SPANS_SCREEN), "(max-width: 480px)", the column's --ui-column-max,
+        followed live by holdDarkBandWhile). Before, at every width it asked for light icons, and wider
+        than 480px the clock and icons sit over the flat page, rgb(245,247,249), about 1.07:1 (a first fix
+        at md missed 481..767: at 600 and 767 wide the status bar's edges measured 0.928, the band in the
+        middle 0.021). With a stand-in Android bridge (:5420), /auth/login light: 390 and 480 wide send
+        StatusBar DARK; 481, 600, 767, 768, 800, 820 and 915 wide send LIGHT (DARK in dark); one flush at
+        load (no flick); a live resize across 480 switches both ways; /auth/login to /auth/register sends
+        nothing. Between 481 and roughly 550px the icons straddle the band's edge, so no breakpoint suits
+        them all; phones are narrower than that
+      - >
+        after review, sign-in scrolling from md: a second StatusBarStrip in ui.surface.page, fixed from md
+        (the column clips and the wrapper is a flex row, so a sticky strip cannot work there). At 915x412
+        with a 24px inset, scrolled 200px, the top band was luminance 0.025..0.928 (mean 0.461), the same on
+        main; it is now flat 0.928 light / 0.003 dark, fr and ar, also at 768x1024, 800x1280 and 820x1180
+      - >
+        after review, sign-in strip at rest: the flat ink strip cut a line across the photo band (a step
+        over 20/255 at y=47 in 97.3% of columns on /auth/login light fr, 2.6% on main). It is now clear at
+        rest and fades in over the first 24px of root scroll (StatusBarStrip revealOnScroll, the
+        status-bar-reveal scroll-driven animation in styles.css; own opacity 0 so a screen that cannot
+        scroll keeps it clear; opaque from the start where unsupported, WebKit before Safari 26). Measured
+        at 390x844, 47px inset: opacity 0.25 at 6px, 0.5 at 12px, 1 from 24px, the top band flat strip
+        colour from 24px on, the same under reduced motion. At rest, 36 shots (/auth/login, /auth/register,
+        /auth/forgot-password; fr, ar; light, dark; 390x844 with inset, 390 and 1440 without) against main:
+        34 pixel-identical, 2 (/auth/login fr with the inset) differ only in text antialiasing (LCD against
+        grayscale, which flips between runs in either direction; top 47px identical, blurred luminance
+        within 10/255). The sheet first reaches the clock after 84px of scroll (compact band)
+      - >
+        after review, provider wiring run end to end: dark-mode-flag.e2e.ts loads /profile with a stand-in
+        iPhone shell and the real @capacitor/core: LIGHT at start-up, DARK then LIGHT on phone switches
+        under Système, DARK then LIGHT on Sombre then Clair; no shell, no Capacitor. 14 of 14 pass against
+        :5420; with the provider's setTheme call removed the two shell tests fail
+      - >
+        checks on the branch after review: typecheck 0; lint 0 errors, 31 warnings (as main); full bun test
+        5845 pass, 17 skip, 0 fail; prettier clean on the changed files except this ledger, which Prettier
+        cannot parse on main either (an unrelated BG-0026 key); no dictionary or t() change, so no i18n gate
+        run this round. Lane tests: safe-area.test.ts 36 pass,
+        system-bars.test.ts 30 pass, ui-kit.contract.test.ts 188 pass
+    note: >
+      The brief promised the player page pixel-identical to main at 1440x900 in French. The geometry is
+      identical; the pixels inside the bar are not, by antialiasing only, because a sticky bar that now
+      sticks to the window is composited separately. Recorded rather than worked around.
+
+      Two deliberate changes for the PR description, both confirmed in review. The Home results link
+      and the Matches empty-day link lose the typed arrow from their accessible names ("Voir les
+      derniers résultats", not "... →"), because the drawn arrow is aria-hidden. And on desktop, wherever
+      the player page is taller than the window (1440x900 in Arabic), the action bar now sticks to the
+      window's bottom while the page scrolls (816..900 at the top, against 930..1014 below the fold on
+      main), as on phones; at the end it rests where main has it (744..828). At 844x390 sideways the bar
+      likewise rests in the flow at the end of the page (225.5..318.5, as on main).
+
+      Out of scope and unchanged: the squad builder and transfer confirmation bars are sticky inside the
+      same Fantasy column and do not stick from md either (the same overflow: hidden). FantasyFrame's
+      stickyBottomBar is the one-word fix if the owner wants them to; it would change their desktop
+      behaviour, so it was not made here.
+    remaining:
+      - "device check, in French and Arabic, on the first builds: the status bar's icons on a notched iPhone and an Android 15+ phone in Clair, Sombre and Système (including a phone switch while the app is open), on the sign-in screens, Jouer and the launch splash, and Android's navigation bar; the strips under a real notch; and the Fantasy player page in Safari on a notched iPhone turned sideways. Chromium with a stand-in bridge is not a phone"
+      - "the match page's sticky header, when scrolled, puts club colours (a green and white split was measured) under the clock; the icons follow the theme there. Not part of this list"
+
   BG-0151:
     title: viewport-fit=cover, with the safe-area fixes it needs (phone app status bar, home indicator, notch)
     area: design

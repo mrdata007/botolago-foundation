@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import lightWordmark from "@/assets/brand/botolago-wordmark-light.svg";
+import { systemBars } from "@/lib/system-bars";
 import { claimLaunchSplash, releaseLaunchSplash } from "./launch-splash";
 
 interface SplashScreenProps {
@@ -106,6 +107,10 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
       return;
     }
 
+    // The night pitch is dark in both themes: light status-bar icons in the
+    // app while it is up (BG-0154). Only on a load that shows it.
+    const releaseBand = systemBars.holdDarkBand();
+
     const prefersReduced =
       window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
 
@@ -127,6 +132,7 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
+      releaseBand();
     };
   }, []);
 

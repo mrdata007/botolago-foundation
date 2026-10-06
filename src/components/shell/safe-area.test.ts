@@ -1,7 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import ts from "typescript";
+
+import { ui } from "@/components/ui-kit";
+
+import { STATUS_BAR_INK, StatusBarStrip } from "./StatusBarStrip";
 
 /**
  * With `viewport-fit=cover` an iPhone draws the page under the status bar and
@@ -372,4 +378,288 @@ describe("BG-0151: every element pinned to the bottom edge clears the home indic
       expect({ found: Boolean(hit), holds }).toEqual({ found: true, holds: true });
     });
   }
+});
+
+/* ------------------------------------------------------------------------ */
+/* BG-0154: a status-bar strip on the screens whose top does not stick.     */
+/* ------------------------------------------------------------------------ */
+
+/** Every `<StatusBarStrip …/>` in a TSX source: its props as source text, and the element it sits in. */
+function stripsIn(file: string, source: string) {
+  const tree = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const found: Array<{
+    props: Record<string, string>;
+    firstChild: boolean;
+    parentProps: Record<string, string>;
+    siblings: string[];
+  }> = [];
+  const propsOf = (attributes: ts.JsxAttributes) =>
+    Object.fromEntries(
+      attributes.properties.filter(ts.isJsxAttribute).map((a) => {
+        const init = a.initializer;
+        const value = !init
+          ? "true"
+          : ts.isStringLiteral(init)
+            ? init.text
+            : (init.expression?.getText() ?? "");
+        return [a.name.getText(), value];
+      }),
+    );
+  const tagOf = (node: ts.JsxChild) =>
+    ts.isJsxElement(node)
+      ? node.openingElement.tagName.getText()
+      : ts.isJsxSelfClosingElement(node)
+        ? node.tagName.getText()
+        : null;
+  const visit = (node: ts.Node) => {
+    if (ts.isJsxSelfClosingElement(node) && node.tagName.getText() === "StatusBarStrip") {
+      const parent = node.parent;
+      if (ts.isJsxElement(parent) || ts.isJsxFragment(parent)) {
+        const elements = parent.children.filter((child) => tagOf(child) !== null);
+        found.push({
+          props: propsOf(node.attributes),
+          firstChild: elements[0] === node,
+          parentProps: ts.isJsxElement(parent) ? propsOf(parent.openingElement.attributes) : {},
+          siblings: elements.map((child) => tagOf(child) ?? ""),
+        });
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(tree);
+  return found;
+}
+
+describe("BG-0154: a status-bar strip where nothing at the top sticks", () => {
+  test("is a zero-height sticky host with a strip exactly as tall as the top inset", () => {
+    const html = renderToStaticMarkup(createElement(StatusBarStrip, { surface: "bg-x" }));
+    expect(html).toBe(
+      '<div aria-hidden="true" class="pointer-events-none sticky top-0 z-30 h-0">' +
+        '<div class="absolute inset-x-0 top-0 h-[env(safe-area-inset-top,0px)] bg-x"></div></div>',
+    );
+  });
+
+  test("renders on Fantasy inner screens exactly the markup BG-0151 wrote inline", () => {
+    // FantasyFrame before the strip was shared, verbatim.
+    const inline =
+      '<div aria-hidden="true" class="pointer-events-none sticky top-0 z-30 h-0 md:hidden">' +
+      `<div class="absolute inset-x-0 top-0 h-[env(safe-area-inset-top,0px)] ${ui.surface.bar}"></div></div>`;
+    expect(
+      renderToStaticMarkup(
+        createElement(StatusBarStrip, { surface: ui.surface.bar, className: "md:hidden" }),
+      ),
+    ).toBe(inline);
+    const [strip, ...more] = stripsIn(
+      "FantasyFrame.tsx",
+      read("src/components/fpl/FantasyFrame.tsx"),
+    );
+    expect(more).toEqual([]);
+    expect(strip.props).toEqual({ surface: "ui.surface.bar", className: "md:hidden" });
+  });
+
+  test("the sign-in screens on a phone: the band's ink-deep, first in the column that holds the band and the sheet", () => {
+    const strips = stripsIn("AuthShell.tsx", read("src/components/auth/AuthShell.tsx"));
+    expect(strips).toHaveLength(2);
+    const phone = strips.find((strip) => strip.props.surface === "STATUS_BAR_INK");
+    expect(phone?.props).toEqual({
+      surface: "STATUS_BAR_INK",
+      revealOnScroll: "true",
+      className: "md:hidden",
+    });
+    expect(phone?.firstChild).toBe(true);
+    expect(phone?.siblings).toEqual(["StatusBarStrip", "header", "main"]);
+  });
+
+  test("the sign-in screens from md: the flat page's own surface, fixed over the raised card", () => {
+    // From md the column is a raised card that clips (`md:overflow-hidden`,
+    // so a sticky strip inside it never moves) in a flex row (so a sticky
+    // strip beside it is laid out as a flex item): the strip is fixed, in the
+    // surface of the page under the clock, and shown only from md.
+    const strips = stripsIn("AuthShell.tsx", read("src/components/auth/AuthShell.tsx"));
+    const wide = strips.find((strip) => strip.props.surface === "ui.surface.page");
+    expect(wide?.props).toEqual({
+      surface: "ui.surface.page",
+      className: "hidden md:fixed md:inset-x-0 md:block",
+    });
+    expect(wide?.siblings).toEqual(["PageBackground", "StatusBarStrip", "div"]);
+    const html = renderToStaticMarkup(
+      createElement(StatusBarStrip, {
+        surface: ui.surface.page,
+        className: "hidden md:fixed md:inset-x-0 md:block",
+      }),
+    );
+    // Class merging keeps the phone `sticky` and the `md:fixed` side by side.
+    expect(html).toContain(
+      'class="pointer-events-none sticky top-0 z-30 h-0 hidden md:fixed md:inset-x-0 md:block"',
+    );
+    expect(html).toContain(`h-[env(safe-area-inset-top,0px)] ${ui.surface.page}`);
+  });
+
+  test("revealOnScroll: clear at rest, opaque after 24px of scroll, opaque where unsupported", () => {
+    // The sign-in band: at rest the photograph runs on under the clock (a flat
+    // strip there cut a line across it); the strip is there before the
+    // header row, let alone the sheet, reaches the clock.
+    const html = renderToStaticMarkup(
+      createElement(StatusBarStrip, { surface: "bg-x", revealOnScroll: true }),
+    );
+    expect(html).toContain(
+      '<div class="absolute inset-x-0 top-0 h-[env(safe-area-inset-top,0px)] bg-x status-bar-reveal"></div>',
+    );
+    const css = read("src/styles.css");
+    const utility = /@utility status-bar-reveal \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+    // Everything inside @supports: where scroll-driven animations are not
+    // supported the strip keeps its full opacity, as before.
+    expect(utility.trim().startsWith("@supports (animation-timeline: scroll()) {")).toBe(true);
+    // Own opacity 0: a screen that cannot scroll has an inactive timeline, the
+    // animation does not apply, and the strip stays clear.
+    expect(utility).toContain("opacity: 0;");
+    expect(utility).toContain("animation: status-bar-reveal linear both;");
+    // The timeline after the shorthand, which would reset it.
+    expect(utility.indexOf("animation-timeline: scroll(root block);")).toBeGreaterThan(
+      utility.indexOf("animation: status-bar-reveal"),
+    );
+    expect(utility).toContain("animation-range: 0 24px;");
+    // Both ends in the keyframes, since the strip's own opacity is 0.
+    expect(css).toMatch(
+      /@keyframes status-bar-reveal \{\s*from \{\s*opacity: 0;\s*\}\s*to \{\s*opacity: 1;\s*\}\s*\}/,
+    );
+  });
+
+  test("Jouer: the hero's ink-deep, first in the page's outer element, at every width", () => {
+    const strips = stripsIn("LandingPage.tsx", read("src/components/landing/LandingPage.tsx"));
+    expect(strips).toHaveLength(1);
+    const [strip] = strips;
+    expect(strip.props).toEqual({ surface: "STATUS_BAR_INK" });
+    expect(strip.firstChild).toBe(true);
+    expect(strip.parentProps["data-testid"]).toBe("landing-page");
+  });
+
+  test("the ink is the dark bands' own token", () => {
+    expect(STATUS_BAR_INK).toBe("bg-[color:var(--ui-ink-deep)]");
+    // The two bands it stands for are drawn in it.
+    expect(read("src/components/landing/LandingPage.tsx")).toContain(
+      '"bg-[color:var(--ui-ink-deep)]"',
+    );
+    expect(read("src/components/auth/AuthShell.tsx")).toContain("var(--ui-ink-deep)");
+  });
+});
+
+/* ------------------------------------------------------------------------ */
+/* BG-0154: the Fantasy player bar sticks from md too (a phone sideways).   */
+/* ------------------------------------------------------------------------ */
+
+describe("BG-0154: the Fantasy player page's action bar sticks at every width", () => {
+  const frame = read("src/components/fpl/FantasyFrame.tsx");
+  const player = read("src/routes/fantasy.players.$playerId.tsx");
+
+  /** The class list of FantasyFrame's `<main>`: every string and expression in its `cn(…)`. */
+  const columnClasses = () => {
+    const tree = ts.createSourceFile(
+      "FantasyFrame.tsx",
+      frame,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX,
+    );
+    let call: ts.CallExpression | null = null;
+    const visit = (node: ts.Node) => {
+      if (
+        ts.isJsxOpeningElement(node) &&
+        node.tagName.getText() === "main" &&
+        node.attributes.properties.some(
+          (a) => ts.isJsxAttribute(a) && a.name.getText() === "className",
+        )
+      ) {
+        const attr = node.attributes.properties.find(
+          (a): a is ts.JsxAttribute => ts.isJsxAttribute(a) && a.name.getText() === "className",
+        );
+        const init = attr?.initializer;
+        if (
+          init &&
+          ts.isJsxExpression(init) &&
+          init.expression &&
+          ts.isCallExpression(init.expression)
+        )
+          call = init.expression;
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(tree);
+    expect(call).not.toBeNull();
+    return (call as unknown as ts.CallExpression).arguments.map((arg) => arg.getText());
+  };
+
+  test("the column clips with overflow: clip (no scroll container) when a screen asks for it", () => {
+    const args = columnClasses();
+    // `hidden` makes the column the sticky bar's scroll container; `clip`
+    // clips the same rounded corners without one, and `flow-root` keeps the
+    // block formatting context `hidden` gave.
+    expect(args).toContain(
+      'stickyBottomBar ? "md:flow-root md:overflow-clip" : "md:overflow-hidden"',
+    );
+    // No unconditional `overflow-hidden` left to win over it.
+    const unconditional = args.filter((arg) => !arg.includes("?") && /overflow-hidden/.test(arg));
+    expect(unconditional).toEqual([]);
+    expect(frame).toContain("stickyBottomBar = false,");
+  });
+
+  test("the player page asks for it, and is the only screen that does so far", () => {
+    expect(player).toContain("<FantasyFrame stickyBottomBar>");
+    const SRC = join(ROOT, "src");
+    const askers = [...new Bun.Glob("**/*.tsx").scanSync({ cwd: SRC })]
+      .filter((file) => !file.includes(".test."))
+      .filter((file) =>
+        /<FantasyFrame\b[^>]*\bstickyBottomBar\b/.test(readFileSync(join(SRC, file), "utf8")),
+      );
+    expect(askers).toEqual(["routes/fantasy.players.$playerId.tsx"]);
+  });
+
+  test("the bar is a child of the column itself, so it can travel up past the hero", () => {
+    // A sticky box only travels inside its parent. Inside the wrapper under
+    // the hero, at 844x390 the bar could rise only to the wrapper's top and
+    // hung 43px below the window at the top of the page.
+    const tree = ts.createSourceFile(
+      "player.tsx",
+      player,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX,
+    );
+    const bars: ts.JsxElement[] = [];
+    const visit = (node: ts.Node) => {
+      if (
+        ts.isJsxElement(node) &&
+        node.openingElement.attributes.properties.some(
+          (a) =>
+            ts.isJsxAttribute(a) &&
+            a.name.getText() === "className" &&
+            a.initializer !== undefined &&
+            ts.isStringLiteral(a.initializer) &&
+            /(^|\s)sticky\s+bottom-0(\s|$)/.test(a.initializer.text),
+        )
+      ) {
+        bars.push(node);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(tree);
+    expect(bars).toHaveLength(1);
+    const [bar] = bars;
+    // Its parent is the page's top-level fragment, which FantasyFrame puts
+    // straight into the column.
+    expect(ts.isJsxFragment(bar.parent)).toBe(true);
+    const fn = (() => {
+      for (let p: ts.Node | undefined = bar.parent; p; p = p.parent)
+        if (ts.isFunctionDeclaration(p)) return p.name?.getText();
+      return null;
+    })();
+    expect(fn).toBe("PlayerDetailPage");
+    // The wrapper's old bottom padding moved onto the bar, so the spacing holds.
+    const classes = (
+      bar.openingElement.attributes.properties.find(
+        (a): a is ts.JsxAttribute => ts.isJsxAttribute(a) && a.name.getText() === "className",
+      )?.initializer as ts.StringLiteral
+    ).text;
+    expect(classes.split(/\s+/)).toEqual(expect.arrayContaining(["mb-6", "mt-2", "pt-6"]));
+  });
 });

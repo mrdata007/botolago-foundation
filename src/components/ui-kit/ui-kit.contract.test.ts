@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import ts from "typescript";
 
 import { UI_DERIVED_TOKENS, UI_THEMED_TOKENS, UI_TOKENS, ui } from "./tokens";
 
@@ -971,6 +972,77 @@ describe("ui-kit: directional icons mirror once in Arabic (BG-0150)", () => {
     // The scan has to be finding icons for "no offenders" to mean anything.
     expect(tags).toBeGreaterThan(200);
     expect(offenders).toEqual([]);
+  });
+});
+
+describe("ui-kit: no typed arrow in JSX text (BG-0154)", () => {
+  /**
+   * A typed "→" is a character, so the mirror rule above cannot reach it and
+   * the bidi algorithm does not turn it round: in Arabic it lands at the end of
+   * the line, on the left, still pointing right, back at its own label. Home's
+   * results link and the Matches empty-day link both shipped like that. A drawn
+   * `ArrowRight` is mirrored once by styles.css. A string chosen by direction
+   * in code (`rtl ? " ← " : " → "`) is a deliberate choice and not JSX text,
+   * so it is not counted here.
+   */
+  const ARROWS = /[\u2190-\u21ff\u27f5-\u27ff\u2794\u279c\u27a1]/;
+
+  /** Every JSX text run in a TSX source that holds an arrow, with its line. */
+  const typedArrows = (file: string, code: string) => {
+    const tree = ts.createSourceFile(file, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const hits: string[] = [];
+    const visit = (node: ts.Node) => {
+      if (ts.isJsxText(node) && ARROWS.test(node.text)) {
+        const line = tree.getLineAndCharacterOfPosition(node.getStart()).line + 1;
+        hits.push(`${file}:${line} ${JSON.stringify(node.text.trim())}`);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(tree);
+    return hits;
+  };
+
+  it("the scan finds a typed arrow in text, and not one in a comment or a string", () => {
+    const sample = [
+      "const A = () => (",
+      "  <p>",
+      "    {/* Out → in */}",
+      "    <button>{label} →</button>",
+      '    <span>{rtl ? " ← " : " → "}</span>',
+      "    <i>Retour ←</i>",
+      "  </p>",
+      ");",
+    ].join("\n");
+    expect(typedArrows("sample.tsx", sample)).toEqual([
+      'sample.tsx:4 "→"',
+      'sample.tsx:6 "Retour ←"',
+    ]);
+  });
+
+  it("no JSX text in src types an arrow", () => {
+    const srcDir = join(ROOT, "src");
+    const files = (readdirSync(srcDir, { recursive: true }) as string[])
+      .filter((file) => file.endsWith(".tsx") && !file.includes(".test."))
+      .sort();
+    const hits = files.flatMap((file) =>
+      typedArrows(file, readFileSync(join(srcDir, file), "utf8")),
+    );
+    // The scan has to be reading the tree for "none" to mean anything.
+    expect(files.length).toBeGreaterThan(300);
+    expect(hits).toEqual([]);
+  });
+
+  it.each([
+    ["routes/index.tsx", "home.results_link"],
+    ["routes/matches.index.tsx", "function DayLink"],
+  ])("%s draws its arrow as a hidden, mirrored ArrowRight", (file, anchor) => {
+    const code = readFileSync(join(ROOT, "src", file), "utf8");
+    const from = code.indexOf(anchor);
+    expect(from).toBeGreaterThan(-1);
+    // The next arrow after the label is the drawn one, hidden from the name.
+    expect(code.slice(from, from + 1200)).toContain(
+      '<ArrowRight className="h-4 w-4 shrink-0" aria-hidden />',
+    );
   });
 });
 
