@@ -3,6 +3,7 @@ import {
   actionGradient,
   bodyFace,
   canvasOf,
+  inkCentredBaseline,
   loadImage,
   loadShareFonts,
   roundRect,
@@ -186,7 +187,8 @@ export async function renderRecapImage(model: RecapImageModel): Promise<Blob> {
   // Arabic reads the figure first, from the right: the unit goes on its left.
   const scoreX = rtl ? runLeft + unitW + 24 : runLeft;
   const unitX = rtl ? runLeft : runLeft + scoreW + 24;
-  const baseline = plate.top + plate.height / 2 + scoreSize * 0.36;
+  // The figure's measured ink centred in the plate; the unit shares its baseline.
+  const baseline = inkCentredBaseline(ctx, model.total, scoreSize, plate.top + plate.height / 2);
   ctx.textAlign = "left";
   ctx.fillStyle = SHARE_PALETTE.ground;
   ctx.font = shareFont("display", 800, scoreSize);

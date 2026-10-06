@@ -1008,7 +1008,12 @@ async function drawStory(
   ctx.fillStyle = SHARE_PALETTE.ground;
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.fillText(model.score, plateX + plate.w / 2, plate.top + plate.h / 2 + scoreSize * 0.36);
+  // Centred on the figures' measured ink, not on a guessed share of the size.
+  ctx.fillText(
+    model.score,
+    plateX + plate.w / 2,
+    inkCentredBaseline(ctx, model.score, scoreSize, plate.top + plate.h / 2),
+  );
   ctx.restore();
 
   const column = mx(120);

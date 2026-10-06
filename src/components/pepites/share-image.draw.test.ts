@@ -866,6 +866,34 @@ describe("the story's figures", () => {
   });
 });
 
+describe("the figures on plates", () => {
+  for (const lang of ["fr", "ar"] as const) {
+    it(`the recap total's ink is centred in its gradient plate (${lang})`, async () => {
+      const { ops } = await draw("recap", lang);
+      const plate = ops.find((op) => op.kind === "fill" && op.paint instanceof Gradient)!;
+      const total = ops.find((op) => op.kind === "text" && op.text === "67")!;
+      expect((total.top + total.bottom) / 2).toBeCloseTo((plate.top + plate.bottom) / 2, 5);
+      // The unit stands on the same baseline.
+      expect(ops.find((op) => op.kind === "text" && op.text === "pts")!.baseline).toBe(
+        total.baseline,
+      );
+    });
+
+    it(`the story's score is centred in its white plate (${lang})`, async () => {
+      const { ops } = await draw("story", lang);
+      const score = ops.find((op) => op.kind === "text" && op.text === "70")!;
+      const plate = ops.find(
+        (op) =>
+          op.kind === "fill" &&
+          op.paint === SHARE_PALETTE.white &&
+          op.left <= score.left &&
+          op.right >= score.right,
+      )!;
+      expect((score.top + score.bottom) / 2).toBeCloseTo((plate.top + plate.bottom) / 2, 5);
+    });
+  }
+});
+
 describe("the share pictures keep their fallbacks", () => {
   it("a photo that fails to load gives way to the club disc and initials", async () => {
     const model = shareImageModel(edition, "fr", COPY)!;
