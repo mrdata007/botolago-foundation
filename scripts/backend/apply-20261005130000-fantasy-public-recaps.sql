@@ -17,10 +17,19 @@
 --
 -- WHEN
 --   Any quiet moment; not at minute 12 of an hour (the Fantasy season
---   orchestrator). It only creates new objects, so it takes no lock on an
---   existing table.
+--   orchestrator). It creates only new objects, but the new recaps table's
+--   foreign keys briefly lock the tables they point at (app.fantasy_teams,
+--   app.fantasy_gameweeks, app.profiles), which the Fantasy lifecycle tick
+--   writes every 5 minutes. So pause that tick first (step 0) and switch it
+--   back on only after the account deletion script, which locks Fantasy
+--   tables too, has also been applied (step 4). With the tick running, the
+--   worst case is the 5-second lock timeout stopping the script with nothing
+--   saved, but AGENTS.md asks for one writer at a time.
 --
 -- HOW TO RUN
+--   0. Note whether the Fantasy lifecycle tick is on, then pause it:
+--        select lifecycle_tick_enabled from app_private.fantasy_automation_settings;
+--        select app_private.fantasy_automation_configure(false);
 --   1. Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor ->
 --      New query. Make sure no other database work is running right now
 --      (AGENTS.md, "Before writing": no GitHub Actions run in progress, no
@@ -31,6 +40,9 @@
 --      "Rehearsal passed".
 --   3. Change the line `rollback;` near the bottom to `commit;` and press Run
 --      again. The result row should say "Applied".
+--   4. After the account deletion script has been applied too, switch the
+--      Fantasy tick back on if it was on in step 0:
+--        select app_private.fantasy_automation_configure(true);
 --   If any check fails, the script stops with a message saying what, and
 --   nothing is saved. Do not edit a check to make it pass: a check firing means
 --   the database is not in the state this script expects.
