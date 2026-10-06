@@ -79,9 +79,9 @@ everything below applies to the phone app as it is.
 | 4   | Club page: matches and table start with the club, not after it           | **batch 1** |
 | 5   | Freshness by kind of data; keep screens' data 30 min in the browser      | **batch 1** |
 | 6   | Matches tab: the day's fixtures start loading with the tab               | **batch 1** |
-| 7   | Fantasy rankings: one board per owner, page/search/sort done locally     | next        |
-| 8   | News article and Pronostics: same Arabic double read as 3                | next        |
-| 9   | Home and top players reuse the cached player pool                        | next        |
+| 7   | Fantasy rankings: one board per owner, page/search/sort done locally     | **batch 2** |
+| 8   | News article and Pronostics: same Arabic double read as 3                | **batch 2** |
+| 9   | Home and top players reuse the cached player pool                        | **batch 2** |
 | 10  | One key per data set (fixture difficulty, gameweeks, club list)          | next        |
 | 11  | Rows that navigate by `navigate()` (top players, search) become links    | next        |
 | 12  | Standings, Clubs, News lists warm their data in the browser like Matches | later       |
@@ -242,21 +242,108 @@ change, a time-zone data difference on this machine); `bun run build` passes.
   shows the club names in Arabic (it showed them in French). Search engines
   still get the French title from the server.
 
+## Batch 2
+
+Plan items 7, 8 and 9. "Before" is batch 1 (`c6e0549`), "after" is
+`6923441`.
+
+### What changed
+
+- **Fantasy rankings** (`src/routes/fantasy.rankings.tsx`,
+  `src/services/fantasy-rankings.ts`, `fantasy-runtime.ts`): the whole season
+  board is read once per owner (`key("rankings")`, `getGlobalBoard`) and
+  refreshed every minute as before; pages, the Général/Journée sort and the
+  search are cut from it in the browser (`selectGlobalRankingsPage`, the same
+  two selection rules the read used to apply). Page, sort, search and the
+  reader's total used to be in the key, so each letter typed, page turned or
+  tab changed read the whole board again (up to 20 reads each).
+- **One player pool** (`src/services/fantasy-player-query.ts`): Home's
+  trending players and the top players page take the cached
+  `["fantasy-players"]` pool through the query function's own client,
+  instead of reading all of it again inside their reads
+  (`getTrendingPlayers` and `getTopPlayersOfWeek` now take where the pool
+  comes from; by default they still read it). The inner pool read does not
+  retry on its own, so a failing pool is still asked twice in all, not four
+  times. Home no longer reads trending players for a visitor (only a
+  signed-in reader's Home shows them). The top players page asks for its
+  gameweek's top five once the current gameweek is known, so a stand-in
+  gameweek's read (now quick) cannot land first and show the wrong week.
+- **Arabic double read** (`src/routes/news.$articleId.tsx`,
+  `src/routes/pronostics.index.tsx`, `use-predictions-round.ts`): the article
+  loader reads an edition in the reader's language; in production an
+  edition id gives the same edition in either language
+  (`getArticleWithLanguageFallback`), so the page shows the copy it already
+  has whatever the language, on a tap and on a shared link alike, instead of
+  a skeleton and a second read. Slugs and the mock repository keep the
+  French read. The related stories are keyed by the edition alone (the RPC
+  takes no language) and start with the article on the navigation itself
+  (not on a hover or touch). The Pronostics loader reads the journée in the
+  reader's language and seeds only a page in that language (team names come
+  translated).
+
+### Results
+
+Same setup as batch 1 (production builds, live database as an anonymous
+visitor, reads only). Before: 2-3 runs; after: 2 runs; ranges.
+
+| step                                      | before                         | after                          |
+| ----------------------------------------- | ------------------------------ | ------------------------------ |
+| Fantasy rankings: type a 6-letter search  | 7 reads                        | **0 reads**                    |
+| Top players: open the page (cold)         | 35-36 reads (20 exact repeats) | **15-16 reads (1 repeat)**     |
+| Article, phone in Arabic (first visit)    | 538-716 ms, skeleton, 4 reads  | **185-256 ms, no skeleton, 2** |
+| another article, phone in Arabic          | 632-704 ms, skeleton, 5 reads  | **151-195 ms, no skeleton, 3** |
+| Pronostics tab, phone in Arabic           | 2 reads                        | **1 read**                     |
+| Article, desktop in French                | 502-839 ms, 2 reads            | 520-553 ms, 2 reads            |
+| whole flow, reads (desktop FR / phone AR) | 49-50 / 56                     | **23 / 24**                    |
+
+- The rankings board here is small (one page of 100 rows), so a keystroke
+  cost one board read before; on a full board it was up to 20.
+- The Pronostics page shows its title while the journée loads, so this
+  script's time to the title does not see the loading panel; reads are the
+  measure there.
+- Not measured: signed-in screens (Home's trending players, a member's
+  rankings), for want of a test account.
+
+### Trade-offs
+
+- **Rankings refresh.** The board refreshes every minute, on focus and when
+  the page opens, as before; a page turn, a search or a tab change no longer
+  triggers a read of its own, so they show the board as of its last refresh
+  (rows change only when a gameweek is scored). The page shown on a tab or
+  page change is right at once, where it used to show the previous page for
+  one round trip. If the board read fails, the error panel stays until
+  Réessayer, focus or the next minute; a tab change no longer retries.
+- **Top players' price, ownership and form** come from the player pool,
+  which is fresh for five minutes, as on the players list and a player's
+  page since batch 1; a focus refresh of the page no longer re-reads them.
+  Weekly points and minutes still come from the gameweek's own read.
+- **Language switch on Pronostics.** After an Arabic reader opens Pronostics,
+  switching the page to French loads the French journée behind the loading
+  panel (team names differ by language); before, the French copy was already
+  in the cache because the loader always read it.
+
+### Checks
+
+`bun run typecheck` clean; `bun run lint` no errors (the 31 warnings already
+on main); `bun test` 5,947 pass, 17 skipped, 1 fail (the same Ramadan 2027
+test as on main); `bun run build` passes.
+
 ## Remaining bottlenecks and next batch
 
-1. Fantasy rankings re-download the whole board on every keystroke, page and
-   sort (plan 7). Largest remaining waste.
-2. Home (signed in) and top players each load the full player pool under
-   their own keys (plan 9): about 9 reads each, one after another.
-3. News article and Pronostics have the Arabic double read (plan 8); the
-   article's related stories wait for the article though they need only its
-   id.
+1. Matches tabs (Calendrier / Classement / Pronostics) and some rows (top
+   players, header search) navigate with buttons rather than links, so they
+   do not load on intent (plan 11).
+2. The same data under several keys: fixture difficulty (3 keys), available
+   gameweeks (2), the club list (3), the news feed (2 shapes) (plan 10). The
+   top players page still reads the gameweek list 3 times on a cold load.
+3. Home's trending players exist only to name alerts, and in production the
+   alerts are always empty: a signed-in Home still reads the top five for
+   nothing (needs the owner's decision).
 4. A first visit to a match still waits for 7 reads (the match, then six in
    parallel); loading ahead hides it only when the pointer or finger arrives
    early enough.
 5. Every first page load renders on the server and reads the database, with
    no edge caching.
 
-Recommended next batch: plan 7, 8 and 9 together (Fantasy rankings, the
-Arabic double read on the article and Pronostics, and one player pool),
-then 10 and 11.
+Recommended next batch: plan 10 and 11 (one key per data set; Matches tabs
+and button rows load on intent), then plan 12.
