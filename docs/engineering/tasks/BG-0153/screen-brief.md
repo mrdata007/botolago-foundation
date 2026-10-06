@@ -98,16 +98,15 @@ all-white wordmark (`src/assets/brand/botolago-wordmark-light.svg`) as it is.
    converted to sRGB hex for the canvas and cited beside its value. The hex
    values were read from pixels Chromium painted, not computed from `oklch`:
 
-   | Token                                  | Use                                                  | sRGB                  |
-   | -------------------------------------- | ---------------------------------------------------- | --------------------- |
-   | `--ui-ink-deep` (Tunnel Navy)          | ground; text on the gradient and plate               | `#001c49`             |
-   | `--ui-ink` (Floodlight Navy)           | panels, wheel track, ghost figures                   | `#0c3164`             |
-   | `--ui-on-ink-plain` (Home Shirt White) | type, lit segments, score plate                      | `#ffffff`             |
-   | `--ui-on-ink-muted`                    | meta, kicker, legend, unlit ranks                    | `#cad2dd`             |
-   | `--ui-accent-spring` (Fresh Turf)      | top stop of the action gradient                      | `#60fa97`             |
-   | `--ui-accent-sky` (Matchday Sky)       | bottom stop of the action gradient                   | `#73edfa`             |
-   | `--ui-rule`, dark value, on each navy  | hairlines                                            | `#2c4d79` / `#223b62` |
-   | `--ui-ink-edge`, dark value            | the ring that keeps a navy club disc visible on navy | `#737b86`             |
+   | Token                                  | Use                                    | sRGB                  |
+   | -------------------------------------- | -------------------------------------- | --------------------- |
+   | `--ui-ink-deep` (Tunnel Navy)          | ground; text on the gradient and plate | `#001c49`             |
+   | `--ui-ink` (Floodlight Navy)           | panels, wheel track, ghost figures     | `#0c3164`             |
+   | `--ui-on-ink-plain` (Home Shirt White) | type, lit segments, score plate        | `#ffffff`             |
+   | `--ui-on-ink-muted`                    | meta, kicker, legend, unlit ranks      | `#cad2dd`             |
+   | `--ui-accent-spring` (Fresh Turf)      | top stop of the action gradient        | `#60fa97`             |
+   | `--ui-accent-sky` (Matchday Sky)       | bottom stop of the action gradient     | `#73edfa`             |
+   | `--ui-rule`, dark value, on each navy  | hairlines                              | `#2c4d79` / `#223b62` |
 
 2. **The action gradient once per picture, with intent, never as a text
    colour** (The Earned Gradient Rule). It runs from Fresh Turf at the top to
@@ -116,7 +115,9 @@ all-white wordmark (`src/assets/brand/botolago-wordmark-light.svg`) as it is.
    - story card: the percentile values in the wheel, as the app fills
      progress with it;
    - recap: the plate behind the total, like a selected Fantasy plate.
-     Titles, names and scores that were gradient-coloured become white Changa.
+
+   Titles, names and scores that were gradient-coloured become white Changa.
+
 3. **No slant, no mono.** Every skew goes. Meta lines, kickers, the week line,
    the rank line and the footers move from IBM Plex Mono to Manrope (French)
    or Noto Sans Arabic (Arabic) in the kit's label and meta weights,
@@ -129,8 +130,8 @@ all-white wordmark (`src/assets/brand/botolago-wordmark-light.svg`) as it is.
    in BG-0152.
 5. **The screens' own glyphs.** A Top 10 row reads like the Top 10 card on
    `/pepites`: the club's colour on the row's inline-start edge, a flat club
-   disc with initials in the club's own legible ink (white or near-black,
-   `inkOn`), the ten-segment bar lit in white over a recessed Tunnel Navy
+   disc with initials, both from the club palette (`clubPalette`, see "As
+   built" below), the ten-segment bar lit in white over a recessed Tunnel Navy
    track, Changa rank and score; ranks 1 to 3 stay emphasised, by colour
    instead of gradient. The story card's score sits on the white score plate
    with Tunnel Navy digits, the app's signature for a standalone score, and
@@ -173,3 +174,24 @@ Functional:
   drawn positions.
 - `bun run typecheck`, `bun run lint` (0 errors), the relevant tests and the
   full `bun test` pass; `bunx prettier --check` passes on the changed files.
+
+## As built (after the first renders)
+
+Three points moved while drawing; the rest is as briefed.
+
+- **Club colours come through the club palette**, not a raw kit hex or
+  `inkOn`: the disc takes the palette's fill and its text colour (white or
+  Tunnel Navy, as a light screen paints them, so the club keeps its own
+  colour), and the ring and the edge bars take the palette's dark-theme edge,
+  which clears 3:1 on a dark surface. This replaces the `--ui-ink-edge` ring
+  the palette table first listed (`shareClubColours` in `share-image.ts`).
+- **The ghost "10" behind the Top 10 header is gone.** It carried no data,
+  it is one of the ghost numbers BG-0152 retired from the screens, and in
+  Arabic it collided with the wider title. The story card keeps its ghost
+  rank ("05"), which carries the player's rank, tone on tone in Floodlight
+  Navy, smaller and clear of the wheel so it no longer merges with the
+  wheel's track.
+- **The brand lock-up draws its parts in the same order in both languages**
+  (wordmark, hairline, name), only placed from the right in Arabic, so the
+  drawing tests can check every Arabic position as the mirror of the French
+  one.
