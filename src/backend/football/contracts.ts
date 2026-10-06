@@ -364,6 +364,12 @@ export interface FootballRepository {
     limit: number,
     context: RepositoryContext,
   ): Promise<readonly LiveMatchSummaryDto[]>;
+  /** Fixtures still to be played, by kick-off (`api.football_upcoming_matches`, 1 to 50). */
+  getUpcomingMatches(
+    language: FootballLanguage,
+    limit: number,
+    context: RepositoryContext,
+  ): Promise<readonly MatchCardDto[]>;
   getMatchesByDate(input: MatchesByDateInput, context: RepositoryContext): Promise<MatchPageDto>;
   getMatchDetail(
     id: string,

@@ -173,6 +173,22 @@ export class SupabaseFootballRepository implements FootballRepository {
     return parse(z.array(matchCardSchema), data);
   }
 
+  async getUpcomingMatches(
+    language: FootballLanguage,
+    limit: number,
+    context: RepositoryContext,
+  ): Promise<readonly MatchCardDto[]> {
+    const { data, error } = await withSignal(
+      getFootballApi().rpc("football_upcoming_matches", {
+        p_language: language,
+        p_limit: limit,
+      }),
+      context,
+    );
+    throwIfError(error);
+    return parse(z.array(matchCardSchema), data);
+  }
+
   async getMatchesByDate(
     input: MatchesByDateInput,
     context: RepositoryContext,

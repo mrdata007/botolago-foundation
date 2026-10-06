@@ -5,7 +5,10 @@ import { MockFootballRepository } from "@/backend/football/mock-repository";
 import { tableZones } from "@/lib/league-table";
 import {
   buildStandings,
+  completeHomeMatches,
   footballService,
+  HOME_MATCHES_LIMIT,
+  HOME_UPCOMING_LIMIT,
   hasLeagueTable,
   inPlayFixtures,
   presentFootballClub,
@@ -554,5 +557,71 @@ describe("the season table in both languages", () => {
     expect(rest).toHaveLength(14);
     for (const [, position, zone] of rest) expect([position, zone]).toEqual([2, null]);
     expect(fr.computed).toBe(true);
+  });
+});
+
+describe("Home's payload keeps the whole round when live fixtures fill it (BG-0155)", () => {
+  const row = (id: string, status: MatchCardDto["status"]) => ({ id, status });
+  const live = ["l1", "l2", "l3"].map((id) => row(id, "live_second_half"));
+  const round = Array.from({ length: 8 }, (_, index) => row(`r${index + 1}`, "not_started"));
+
+  test("a payload that is not full, or holds no live fixture, is kept as it is", () => {
+    const home = [...live, ...round.slice(0, 3)];
+    expect(completeHomeMatches(home, null)).toEqual(home);
+  });
+
+  test("three live and a round of eight: the upcoming list brings the eighth card back", () => {
+    const home = [...live, ...round.slice(0, 7)];
+    expect(home).toHaveLength(HOME_MATCHES_LIMIT);
+    const upcoming = [...round, row("p1", "postponed"), row("n1", "not_started")];
+    const completed = completeHomeMatches(home, upcoming);
+    expect(completed.map((fixture) => fixture.id)).toEqual([
+      "l1",
+      "l2",
+      "l3",
+      ...round.map((fixture) => fixture.id),
+      "n1",
+    ]);
+    // The lists read the first three rows: the same as before.
+    expect(completed.slice(0, 3)).toEqual(home.slice(0, 3));
+  });
+
+  test("reads the upcoming list only when the payload is full and holds a live fixture", async () => {
+    const repository = MockFootballRepository.prototype;
+    const storedHome = repository.getHomeMatches;
+    const storedUpcoming = repository.getUpcomingMatches;
+    const [template] = await new MockFootballRepository().getHomeMatches("fr", 1, context);
+    const dto = (id: string, status: MatchCardDto["status"]) => ({ ...template!, id, status });
+    let upcomingReads = 0;
+    let homeRows: MatchCardDto[] = [];
+    repository.getHomeMatches = async () => homeRows;
+    repository.getUpcomingMatches = async (_language, limit) => {
+      upcomingReads += 1;
+      expect(limit).toBe(HOME_UPCOMING_LIMIT);
+      return Array.from({ length: 8 }, (_, index) => dto(`round-${index + 1}`, "not_started"));
+    };
+    try {
+      homeRows = Array.from({ length: 3 }, (_, index) => dto(`round-${index + 1}`, "not_started"));
+      await footballService.getHomeMatches("fr");
+      expect(upcomingReads).toBe(0);
+
+      homeRows = [
+        ...["live-1", "live-2", "live-3"].map((id) => dto(id, "live_first_half")),
+        ...Array.from({ length: 7 }, (_, index) => dto(`round-${index + 1}`, "not_started")),
+      ];
+      const { matches } = await footballService.getHomeMatches("fr");
+      expect(upcomingReads).toBe(1);
+      expect(matches).toHaveLength(11);
+      expect(matches.map((match) => match.id).slice(0, 4)).toEqual([
+        "live-1",
+        "live-2",
+        "live-3",
+        "round-1",
+      ]);
+      expect(matches.at(-1)?.id).toBe("round-8");
+    } finally {
+      repository.getHomeMatches = storedHome;
+      repository.getUpcomingMatches = storedUpcoming;
+    }
   });
 });

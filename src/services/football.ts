@@ -414,6 +414,37 @@ export const HOME_MATCHES_LIMIT = 10;
  */
 export const HOME_LIST_SIZE = 3;
 
+/**
+ * How many upcoming fixtures complete Home's payload when live fixtures fill
+ * it: enough for the rest of a round and the next (`api.football_upcoming_matches`
+ * takes 1 to 50).
+ */
+export const HOME_UPCOMING_LIMIT = 20;
+
+/**
+ * Home's payload: live first, then by kick-off. `football_home_matches` puts
+ * the live fixtures in the same ten rows, so with several live while the next
+ * round is already scheduled the round loses its last cards (three live and a
+ * round of eight return seven of the eight). When the payload is full and
+ * holds a live fixture, its upcoming part is read again from the upcoming list,
+ * which leaves the live ones out; postponed fixtures stay out, as in the home
+ * read. The first rows, which the lists show, are the same either way.
+ */
+export function completeHomeMatches<T extends Pick<MatchCardDto, "id" | "status">>(
+  home: readonly T[],
+  upcoming: readonly T[] | null,
+): T[] {
+  if (!upcoming) return [...home];
+  const live = inPlayFixtures(home);
+  const seen = new Set(live.map((fixture) => fixture.id));
+  return [
+    ...live,
+    ...upcoming.filter(
+      (fixture) => !seen.has(fixture.id) && presentationStatus(fixture.status) !== "postponed",
+    ),
+  ];
+}
+
 export const footballService = {
   async getSeasons(language: FootballLanguage, signal?: AbortSignal): Promise<FootballSeason[]> {
     return (await getFootballRepository().getSeasons(language, 12, requestContext(signal))).map(
@@ -432,11 +463,16 @@ export const footballService = {
     signal?: AbortSignal,
   ): Promise<FootballMatchCollection> {
     const repository = getFootballRepository();
-    const matches = await repository.getHomeMatches(
+    const home = await repository.getHomeMatches(
       language,
       HOME_MATCHES_LIMIT,
       requestContext(signal),
     );
+    const full = home.length === HOME_MATCHES_LIMIT && inPlayFixtures(home).length > 0;
+    const upcoming = full
+      ? await repository.getUpcomingMatches(language, HOME_UPCOMING_LIMIT, requestContext(signal))
+      : null;
+    const matches = completeHomeMatches(home, upcoming);
     return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
   },
 
