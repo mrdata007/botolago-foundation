@@ -1479,6 +1479,8 @@ export const ar = {
   "auth.error.email_taken": "يوجد حساب بهذا البريد بالفعل.",
   "auth.error.terms_required": "يجب قبول الشروط.",
   "auth.error.credentials": "البريد أو كلمة المرور غير صحيحة.",
+  "auth.error.account_closed":
+    "هذا الحساب مُغلق. إذا طلبت حذفه، فستُمحى بياناته خلال 7 أيام. لأي سؤال: support@botolago.com.",
   "auth.error.email_unconfirmed":
     "لم يتم تأكيد البريد الإلكتروني. تحقق من صندوق الوارد ثم حاول مجددًا.",
   "auth.error.generic": "حدث خطأ. حاول مجددًا.",

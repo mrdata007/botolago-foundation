@@ -1572,6 +1572,8 @@ export const fr = {
   "auth.error.email_taken": "Un compte existe déjà avec cet e-mail.",
   "auth.error.terms_required": "Vous devez accepter les conditions.",
   "auth.error.credentials": "E-mail ou mot de passe incorrect.",
+  "auth.error.account_closed":
+    "Ce compte est fermé. Si vous avez demandé sa suppression, il sera effacé sous 7 jours. Une question : support@botolago.com.",
   "auth.error.email_unconfirmed":
     "E-mail non confirmé. Vérifiez votre boîte de réception, puis réessayez.",
   "auth.error.generic": "Une erreur est survenue. Réessayez.",

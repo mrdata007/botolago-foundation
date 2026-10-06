@@ -185,10 +185,9 @@ The worker erases it 7 days later like any other.
 
 ## Follow-ups (not in this change)
 
-- **Sign-in page message.** A closed account that tries to sign in gets
-  Supabase's `user_banned`, which `src/routes/auth.login.tsx` shows as wrong
-  credentials. Map it to a "this account is being deleted" message there
-  (that file belongs to the sign-in lane).
+- **Sign-in page message.** Done: Supabase's `user_banned` maps to
+  `account_closed`, and the sign-in page says the account is closed and will
+  be erased within 7 days (`auth.error.account_closed`).
 - **Apple token revocation.** When Sign in with Apple is enabled, Apple
   expects the app's tokens to be revoked at deletion. Supabase's OAuth flow
   does not keep Apple's refresh token server-side, so the worker cannot revoke
@@ -196,5 +195,5 @@ The worker erases it 7 days later like any other.
   capture the provider refresh token at sign-in and revoke it in the worker.
 - **Paid prize records after 5 years.** They are detached at erasure but not
   yet purged when the 5 years end; add that to a reviewed retention job.
-- **AGENTS.md job list.** Add `account-deletion-tick` and
-  `account-deletion-history-prune` to "Check the scheduled jobs too".
+- **AGENTS.md job list.** Done: `account-deletion-tick` and
+  `account-deletion-history-prune` are in "Check the scheduled jobs too".

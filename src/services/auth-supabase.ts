@@ -127,6 +127,9 @@ function mapAuthError(err: AuthError | null | undefined): AuthErrorCode {
   if (status === 429 || msg.includes("rate limit")) return "rate_limited";
   if (status === 401 || msg.includes("session_not_found")) return "session_expired";
   if (msg.includes("invalid login") || msg.includes("invalid credentials")) return "credentials";
+  // Asking to delete the account bans it at once (account deletion migration
+  // 20261006143700); Supabase then answers "User is banned" (code user_banned).
+  if (err.code === "user_banned" || msg.includes("banned")) return "account_closed";
   if (msg.includes("email not confirmed") || msg.includes("email_not_confirmed"))
     return "email_unconfirmed";
   if (msg.includes("already registered") || msg.includes("user already")) return "email_taken";

@@ -188,7 +188,9 @@ function LoginPage() {
               ? "auth.error.network"
               : res.errorCode === "email_unconfirmed"
                 ? "auth.error.email_unconfirmed"
-                : "auth.error.credentials",
+                : res.errorCode === "account_closed"
+                  ? "auth.error.account_closed"
+                  : "auth.error.credentials",
       });
       return;
     }

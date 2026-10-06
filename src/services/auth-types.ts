@@ -80,6 +80,8 @@ export type AuthErrorCode =
   | "network"
   | "provider_unavailable"
   | "weak_password"
+  /** Supabase Auth refuses a banned account: closed for deletion, or by staff. */
+  | "account_closed"
   /** The server wants this session's second factor first (`PT403 mfa_required`). */
   | "mfa_required"
   | "generic";
