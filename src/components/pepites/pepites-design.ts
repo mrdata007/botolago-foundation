@@ -50,6 +50,58 @@ export function segments(value: number | null | undefined): number {
   return Math.max(0, Math.min(10, Math.round(value / 10)));
 }
 
+/**
+ * A wheel slice's arc: five 72° slices from twelve o'clock, clockwise, less a
+ * small gap at each end. Arabic reads them counter-clockwise: each slice is
+ * the French one mirrored across the vertical axis. Angles in radians, with
+ * y pointing down (canvas and SVG alike), so a growing angle turns clockwise.
+ */
+export function sliceAngles(index: number, rtl: boolean, gap = 0.05): [number, number] {
+  const from = -Math.PI / 2 + (index * 2 * Math.PI) / 5 + gap;
+  const to = -Math.PI / 2 + ((index + 1) * 2 * Math.PI) / 5 - gap;
+  return rtl ? [Math.PI - to, Math.PI - from] : [from, to];
+}
+
+/** A coordinate rounded to a hundredth, so an SVG path stays short and stable. */
+const at = (value: number) => Number(value.toFixed(2));
+
+/**
+ * An annular sector as an SVG path: from `inner` to `outer` radius around
+ * (`cx`, `cy`), between two angles from `sliceAngles` (`from` < `to`). The
+ * outer arc runs clockwise, the inner one back. Empty when the ring has no
+ * thickness, so a 0 percentile draws nothing rather than a hairline.
+ */
+export function sectorPath(
+  cx: number,
+  cy: number,
+  inner: number,
+  outer: number,
+  from: number,
+  to: number,
+): string {
+  if (!(outer > inner) || !(to > from)) return "";
+  const large = to - from > Math.PI ? 1 : 0;
+  const point = (radius: number, angle: number) =>
+    `${at(cx + Math.cos(angle) * radius)} ${at(cy + Math.sin(angle) * radius)}`;
+  return [
+    `M${point(outer, from)}`,
+    `A${at(outer)} ${at(outer)} 0 ${large} 1 ${point(outer, to)}`,
+    `L${point(inner, to)}`,
+    `A${at(inner)} ${at(inner)} 0 ${large} 0 ${point(inner, from)}`,
+    "Z",
+  ].join(" ");
+}
+
+/**
+ * How far a slice's value reaches: from the inner radius, `percentile` per
+ * cent of the way to the outer one. Null (no figure) and anything outside
+ * 0–100 are held to the ring.
+ */
+export function sliceReach(percentile: number | null | undefined, inner: number, outer: number) {
+  if (typeof percentile !== "number" || !Number.isFinite(percentile)) return inner;
+  return inner + ((outer - inner) * Math.max(0, Math.min(100, percentile))) / 100;
+}
+
 export type RatingBand = 1 | 2 | 3 | 4 | 5;
 
 /** RatingChip's fixed scale: <6, 6–6.5, 6.5–7, 7–7.5, ≥7.5. */

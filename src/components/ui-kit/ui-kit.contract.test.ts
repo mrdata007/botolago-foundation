@@ -868,6 +868,8 @@ describe("ui-kit: directional icons mirror once in Arabic (BG-0150)", () => {
   const RTL_TRANSFORMS_ALLOWED: Readonly<Record<string, readonly string[]>> = {
     // Stadium and crowd photos face the reading direction.
     "components/common/PhotoPageHeader.tsx": ["rtl:-scale-x-100"],
+    // Home's stadium photo on the Pépites featured N°1's band (BG-0156).
+    "components/common/StadiumBandPhoto.tsx": ["rtl:-scale-x-100"],
     "components/landing/LandingPage.tsx": ["rtl:-scale-x-100"],
     "components/matches/DateStrip.tsx": ["rtl:-scale-x-100"],
     "components/shell/PageBackground.tsx": ["md:rtl:-scale-x-100"],
