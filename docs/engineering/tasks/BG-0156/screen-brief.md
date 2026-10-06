@@ -194,20 +194,42 @@ Functional:
 
 ## Changes after measurement (added once built)
 
-Two acceptance points above were changed by what the built screens
-measured; both are recorded here rather than rewritten above.
+What the built screens measured changed three points above; they are
+recorded here rather than rewritten above. The last round followed the
+independent review of 2026-10-06.
 
-- **The phone table's disc shows from a 384px table, as before**, not from
-  352px. With the disc at 390px, names and club lines wrapped to two or
-  three lines and the rows grew by half (French 49 → 76px on average,
-  Arabic 53 → 91px). Without it they grow by the new "position · club"
-  line only (French 49 → 59px, Arabic 53 → 69px at 390px), and no name or
-  club line is cut at 360, 390, 414 or 430px in either language. The club's
-  edge and name still say whose row it is; the crest shows from a 430px
-  phone, and in every Top 10 row and on the band at every width.
+- **The phone table's disc shows from a 352px table, as planned.** The
+  first build kept the old 384px threshold, which took the disc off every
+  phone up to 414px (the owner's 402px iPhone included): with the disc,
+  names and club lines wrapped to two or three lines and the rows grew by
+  half. After review the rank column was cut to the plate's 28px past the
+  edge's gap (36px instead of 40), and the disc shows from a 352px table.
+  Measured on all 40 rows: a disc in every row at 390, 402, 414 and 430px;
+  no name or club line cut at 360, 375, 390, 402, 414 or 430px in either
+  language; average row height against the first build (no disc), at
+  390px French 59 → 75px and Arabic 69 → 90px, at 402px French 54 → 67px
+  and Arabic 66 → 80px. On the 360 and 375px phones the disc still gives
+  its width to the name: shown there, the club line no longer fit in two
+  lines (three rows cut in French at 375px).
 - **The band's club edge** is the story card's (the dark edge lifted to
   3:1 against the band's Tunnel Navy); the palette's dark edge alone fell
-  to 2.89:1 for seven kits on the light theme's navy. Against the photo's
-  brightest pixels right beside the edge it measures 2.05-2.30:1 (median
-  3.15-3.78:1). The edge is a decorative accent (the club is printed beside
-  it and shown by its crest), so this is reported, not hidden.
+  to 2.89:1 for seven kits on the light theme's navy. After review the
+  band's photo is mirrored in Arabic, as Home's band and the date strip
+  mirror theirs, so the edge sits on the photo's calm side in both
+  languages. Edge against the band 3px inside it, from rasterised pixels
+  (rows outside the rounded corners), share of the edge's height under
+  3:1: 390px, 2-4% in French and 3-7% in Arabic (33-42% before the
+  mirror); /pepites at 1440px, 3-5% French and 0% Arabic (16-21% before);
+  /pepites/classement at 1440px, 0% in dark and 8-12% in light in both
+  languages (lowest 2.87:1, the floodlit stands under the veil). The
+  lowest pixels, 2.07-2.30:1, are floodlights beside the edge. The edge is
+  a decorative accent (the club is printed beside it and shown by its
+  crest), so this is reported, not hidden.
+- **The band's link holds the header and the editor's line**, and its
+  `::after` covers the band for the tap and the focus ring: named by the
+  whole band, the link read 37 words, the legend and the figures
+  included. On a phone the editor's line therefore sits under the header,
+  above the wheel. Its four figures come from the ranking's row, else
+  from the player read the band makes for its wheel, so an editor's N°1
+  ranked below the fifty-row read no longer prints dashes for figures it
+  has.

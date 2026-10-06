@@ -599,7 +599,7 @@ A soft, rounded geometry with a strict, named radius set:
 
 **Edges carry club colour.** 4px bars sit on the inline start and end edges: club colours on match rows, a club or category colour on the start edge of news row cards, and zone colours on the start edge of standings rows.
 
-**Bands.** Stadium photo bands under a navy veil appear on the Home matchday hero, the matches date strip and the sign-in header. The date strip runs full-bleed on phones and becomes a 16px panel from 640px.
+**Bands.** Stadium photo bands under a navy veil appear on the Home matchday hero, the matches date strip, the sign-in header and the Pépites featured N°1 (the top of the Top 10 and of the ranking). The date strip and the Pépites band run full-bleed on phones and become a 16px panel from 640px.
 
 **[Inconsistent]** Some radii fall off the scale: the Pronostics score box (18px) and the search-match highlight (2px). The legacy V1 radius scale is still declared beside the kit scale.
 
