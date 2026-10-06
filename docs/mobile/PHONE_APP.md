@@ -408,10 +408,11 @@ when the reader picks Clair or Sombre, and when the phone changes while Système
 is chosen, the site calls Capacitor 8's built-in `SystemBars.setStyle` (part of
 `@capacitor/core`, no plugin to add and no native change). Dark icons on the
 light theme, light icons on the dark theme; Capacitor names the style after the
-background, so light icons are `SystemBarsStyle.Dark`. The sign-in screens (below
-768px wide), the Landing page and the launch splash have a dark top in both
-themes and keep light icons while they are on screen. From 768px the sign-in
-column is a raised card on the flat page, so there the icons follow the theme. On Android the navigation bar follows the theme
+background, so light icons are `SystemBarsStyle.Dark`. The sign-in screens (up to
+480px wide), the Landing page and the launch splash have a dark top in both
+themes and keep light icons while they are on screen. Wider than 480px the
+sign-in band is a centred column with the flat page on both sides (a raised card
+from 768px), so the clock and icons sit over the page and follow the theme. On Android the navigation bar follows the theme
 too; on iPhone the home indicator colours itself. iOS needs
 `UIViewControllerBasedStatusBarAppearance` set to YES in `Info.plist`, which
 Capacitor 8's template already does. Nothing is loaded or called in a browser.

@@ -14,11 +14,13 @@
 > BG-0154 ledger entry.
 >
 > **Note, 2026-10-06, after review.** Three more, found by the reviewers'
-> measurements. (3) The sign-in band is under the clock only below `md`: from
-> `md` the column is a raised card on the flat page, so light icons there were
-> white on near-white (about 1.07:1 on an Android tablet in portrait). The
-> sign-in screens now hold light icons below `md` only, and from `md` a fixed
-> strip in the page's colour keeps the scrolling card from under the clock.
+> measurements. (3) The sign-in band spans the screen only up to 480px wide,
+> the width of its column: wider, the flat page is on both sides of it, under
+> the clock and the icons (and from `md` the column is a raised card), so light
+> icons there were white on near-white (about 1.07:1 on an Android tablet in
+> portrait). The sign-in screens now hold light icons up to 480px only, and
+> from `md` a fixed strip in the page's colour keeps the scrolling card from
+> under the clock.
 > (4) At rest, the flat ink strip cut a straight line across the sign-in photo
 > on a notched iPhone. The strip is now clear at rest and fades in over the
 > first 24px of scroll, so at rest the sign-in screens match `main`. (5) The
@@ -105,10 +107,10 @@ Measured on main with Chromium's safe-area override (read-only page loads):
    light icons on the dark theme (`SystemBarsStyle.Dark`; Capacitor names the
    style after the background, verified in the iOS and Android sources). On
    Android the navigation bar follows the theme as well.
-3. **Light icons over the dark bands.** The sign-in screens (`AuthShell`, below
-   `md`, where the band is under the clock), the Landing page (`/jouer`, and `/`
-   on a first visit) and the launch splash draw a dark top whatever the theme,
-   so while one is on screen the status bar keeps light icons. Each screen declares it while it is mounted, so no route list has
+3. **Light icons over the dark bands.** The sign-in screens (`AuthShell`, up to
+   480px wide, where the band spans the screen), the Landing page (`/jouer`, and
+   `/` on a first visit) and the launch splash draw a dark top whatever the
+   theme, so while one is on screen the status bar keeps light icons. Each screen declares it while it is mounted, so no route list has
    to be kept in step. `WelcomeScreen` is not mounted anywhere in `src` (the demo
    has its own), so it needs nothing.
 4. **Player page sideways.** From `md` the Fantasy column clips its rounded
@@ -144,8 +146,8 @@ Measured on main with Chromium's safe-area override (read-only page loads):
 - **Status bar, in a browser with a stand-in bridge.** With a fake iPhone bridge
   on the page, the real `@capacitor/core` sends `setStyle` to the bridge with the
   right style at start-up, on Clair/Sombre, on an emulated system change under
-  Système, and DARK on `/auth/login` (below `md`) and `/jouer` in the light
-  theme; from `md` `/auth/login` sends the theme's style. Without the bridge, no
+  Système, and DARK on `/auth/login` (up to 480px wide) and `/jouer` in the
+  light theme; wider, `/auth/login` sends the theme's style. Without the bridge, no
   call and no `@capacitor/core` request.
 - **Player page.** At 844x390 with landscape insets, fr and ar, light: at the top
   and half way the bar's bottom edge is at the window's bottom (390) and its

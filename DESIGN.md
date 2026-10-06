@@ -536,7 +536,7 @@ The kit's sizes are fixed pixel steps at every width. Two places scale with the 
 - The top bar and the bottom nav never hide on scroll.
 - The live strip, a row of live-score pills under the top bar, is the only bar that hides. It hides while scrolling down past the first 80px and returns on any scroll up.
 - The viewport tag carries `viewport-fit=cover`, so in the app the page runs under the status bar and the home indicator and pads itself by the device insets.
-- In the app the status bar's clock and icons follow the theme the app shows: dark on the light theme, light on the dark theme, and light over the dark bands of the sign-in screens (below 768px, where the band is under the clock), the Landing page and the launch splash.
+- In the app the status bar's clock and icons follow the theme the app shows: dark on the light theme, light on the dark theme, and light over the dark bands of the sign-in screens (up to 480px wide, where the band spans the screen), the Landing page and the launch splash.
 - Safe areas use the device inset with a fallback (12px top, 8px bottom), whichever is larger. The bar heights already include it.
 - Every bar pinned to the bottom edge pads by the bottom inset, including the bars that move to the bottom from 768px. A source test (`src/components/shell/safe-area.test.ts`) scans them.
 - Toasts sit 16px inside the insets, the modal's height is capped inside them, and the reading-progress bar sits below the top inset. (The unused shadcn sheet also pads by them; no screen renders it.)

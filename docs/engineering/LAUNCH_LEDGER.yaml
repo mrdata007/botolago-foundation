@@ -1671,12 +1671,16 @@ tasks:
         sections (0.85 on /jouer). Without insets the three pages match main pixel for pixel at 390 and
         1440 (23 of 24 full-page shots; one pixel of the Jouer hero gradient differs by 1/255 at 1440 dark)
       - >
-        after review, sign-in status bar by width: AuthShell holds the dark band only below md
-        (useDarkStatusBand(BELOW_MD), "not all and (min-width: 48rem)", followed live by
-        holdDarkBandWhile). Before, from md it asked for light icons over the flat page, rgb(245,247,249),
-        about 1.07:1. With a stand-in Android bridge (:5420), /auth/login light: 390 and 767 wide send
-        StatusBar DARK; 768, 800, 820 and 915 wide send LIGHT (DARK in dark); one flush at load (no flick);
-        a live resize across 768 switches both ways; /auth/login to /auth/register sends nothing
+        after review, sign-in status bar by width: AuthShell holds the dark band only where it spans the
+        screen (useDarkStatusBand(BAND_SPANS_SCREEN), "(max-width: 480px)", the column's --ui-column-max,
+        followed live by holdDarkBandWhile). Before, at every width it asked for light icons, and wider
+        than 480px the clock and icons sit over the flat page, rgb(245,247,249), about 1.07:1 (a first fix
+        at md missed 481..767: at 600 and 767 wide the status bar's edges measured 0.928, the band in the
+        middle 0.021). With a stand-in Android bridge (:5420), /auth/login light: 390 and 480 wide send
+        StatusBar DARK; 481, 600, 767, 768, 800, 820 and 915 wide send LIGHT (DARK in dark); one flush at
+        load (no flick); a live resize across 480 switches both ways; /auth/login to /auth/register sends
+        nothing. Between 481 and roughly 550px the icons straddle the band's edge, so no breakpoint suits
+        them all; phones are narrower than that
       - >
         after review, sign-in scrolling from md: a second StatusBarStrip in ui.surface.page, fixed from md
         (the column clips and the wrapper is a flex row, so a sticky strip cannot work there). At 915x412
