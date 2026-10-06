@@ -24,6 +24,7 @@ const publicWinner = {
   tieBreak: "outright",
   prizeName: { fr: "Recharge", ar: "رصيد" },
   awardedAt: "2026-11-01T12:00:00Z",
+  isMe: false,
 };
 
 describe("public prize contracts", () => {
@@ -38,6 +39,12 @@ describe("public prize contracts", () => {
     expect(Object.keys(parsed).sort()).toEqual(Object.keys(publicWinner).sort());
     expect(JSON.stringify(parsed)).not.toContain("example.test");
     expect(JSON.stringify(parsed)).not.toContain("Real Name");
+  });
+
+  it("reads a wall without isMe (the older database function) as not the reader's", () => {
+    const { isMe: _isMe, ...older } = publicWinner;
+    expect(publicPrizeWinnerSchema.parse(older).isMe).toBe(false);
+    expect(publicPrizeWinnerSchema.parse({ ...publicWinner, isMe: true }).isMe).toBe(true);
   });
 
   it("never lists a mini-league winner on the public wall", () => {

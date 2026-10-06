@@ -573,6 +573,21 @@ declare
   leagues_archived integer := 0;
   leagues_deleted integer := 0;
 begin
+  -- One writer at a time (AGENTS.md): the erasure deletes and updates rows the
+  -- Fantasy lifecycle tick, Pronostics scoring, the Pépites tick and prize
+  -- evaluation also write. Each of those holds its own transaction-scoped
+  -- advisory lock while it writes, so take the same locks, without waiting:
+  -- if one of them is running, refuse, and the worker releases the request
+  -- for the next hourly run. Taking them all up front, in one fixed order,
+  -- and never waiting, means the erasure cannot deadlock with them.
+  if not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended('fantasy:lifecycle-tick', 0))
+    or not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended('botolago:predictions-score', 0))
+    or not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended('pepites_tick', 0))
+    or not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended('botolago.fantasy_prize_evaluation', 0))
+  then
+    raise exception using errcode = 'PT409', message = 'account_deletion_writer_busy';
+  end if;
+
   select * into request from app.account_deletion_requests where id = p_request_id for update;
   if not found then
     raise exception using errcode = 'PT404', message = 'account_deletion_not_found';
@@ -884,6 +899,80 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
+-- The winners wall says which rows are the reader's own (isMe), so the page's
+-- "report this name" action is offered on other people's prizes only. It used
+-- to compare team names, which are not unique and change between seasons.
+-- Same function as 20260924120000 otherwise; its grants are kept.
+-- ---------------------------------------------------------------------------
+create or replace function api.fantasy_prize_winners(
+  p_limit integer default 20,
+  p_after_created_at timestamptz default null,
+  p_after_id uuid default null
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  items jsonb;
+  last_created timestamptz;
+  last_id uuid;
+  next_cursor jsonb;
+begin
+  if p_limit is null or p_limit not between 1 and 50
+    or ((p_after_created_at is null) <> (p_after_id is null)) then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+
+  with page as materialized (
+    select winner.* from app.fantasy_prize_winners winner
+    where winner.status in ('verified', 'paid')
+      and winner.tier in ('gameweek', 'monthly', 'season')
+      and (p_after_created_at is null
+        or (winner.created_at, winner.id) < (p_after_created_at, p_after_id))
+    order by winner.created_at desc, winner.id desc
+    limit p_limit
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'id', page.id,
+      'tier', page.tier,
+      'seasonName', season.name,
+      'blockNumber', page.block_number,
+      'firstGameweekNumber', page.first_gameweek_number,
+      'lastGameweekNumber', page.last_gameweek_number,
+      'teamName', page.team_name,
+      'maskedUsername', app_private.fantasy_mask_username(profile.username),
+      'points', page.points,
+      'tieBreak', page.tie_break,
+      'prizeName', jsonb_build_object('fr', page.prize_name_fr, 'ar', coalesce(page.prize_name_ar, page.prize_name_fr)),
+      'awardedAt', page.created_at,
+      -- The reader's own prize, so the page offers no report on it. A boolean,
+      -- never the account id; false for visitors and for erased accounts.
+      'isMe', coalesce(page.user_id = (select auth.uid()), false)
+    ) order by page.created_at desc, page.id desc), '[]'::jsonb),
+    (array_agg(page.created_at order by page.created_at asc, page.id asc))[1],
+    (array_agg(page.id order by page.created_at asc, page.id asc))[1]
+  into items, last_created, last_id
+  from page
+  join app.fantasy_seasons season on season.id = page.fantasy_season_id
+  left join app.profiles profile on profile.id = page.user_id and profile.deleted_at is null;
+
+  if last_id is not null and exists (
+    select 1 from app.fantasy_prize_winners winner
+    where winner.status in ('verified', 'paid')
+      and winner.tier in ('gameweek', 'monthly', 'season')
+      and (winner.created_at, winner.id) < (last_created, last_id)
+  ) then
+    next_cursor := jsonb_build_object('createdAt', last_created, 'id', last_id);
+  end if;
+
+  return jsonb_build_object('items', items, 'nextCursor', next_cursor);
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Owner switch and the hourly tick
 -- ---------------------------------------------------------------------------
 create or replace function app_private.account_deletion_configure(
@@ -1129,7 +1218,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20261006143700, 'UTF8')), 'hex')
-    is distinct from '07d56f937bbd1e7c150f793140dca444fecb8f9d8b69052ce89df4dd4d9351e2' then
+    is distinct from '8d468061a52fe337454796c73a3bdcb1a9ceb140de8d2d30e60d14b45033a5ba' then
     raise exception 'stop: 20261006143700 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 

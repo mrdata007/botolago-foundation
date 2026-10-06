@@ -9,7 +9,7 @@
 --   D  banned by staff: may still ask (a ban does not suspend the right), and
 --      is closed like A.
 begin;
-select extensions.plan(58);
+select extensions.plan(62);
 
 create function pg_temp.id(n integer) returns uuid language sql immutable as $$
   select ('ad0e0000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid
@@ -191,6 +191,16 @@ select extensions.ok(not exists (
   cross join unnest(array['anon', 'authenticated', 'service_role']) as r(role)
   where has_function_privilege(r.role, f.signature, 'execute')
 ), 'no API role can run the erasure, the switch or the tick');
+-- One writer at a time: the erasure takes, without waiting, the advisory
+-- locks of every tick that writes the rows it erases (a lock held in this
+-- same session would not block it, so the keys are checked in its code).
+select extensions.ok(
+  (select bool_and(strpos(pg_catalog.pg_get_functiondef(
+      'app_private.account_deletion_erase(uuid,integer)'::regprocedure),
+      format('pg_try_advisory_xact_lock(pg_catalog.hashtextextended(%L, 0))', k)) > 0)
+   from unnest(array['fantasy:lifecycle-tick', 'botolago:predictions-score', 'pepites_tick',
+     'botolago.fantasy_prize_evaluation']) as k),
+  'the erasure takes the locks of the Fantasy, Pronostics, Pépites and prize writers');
 select extensions.ok(
   (select bool_and(has_function_privilege('service_role', f, 'execute')
       and not has_function_privilege('authenticated', f, 'execute')
@@ -214,6 +224,33 @@ select extensions.is(app_private.account_deletion_tick(), '{"outcome": "off"}'::
 select extensions.ok((select last_tick_at is null from app_private.account_deletion_settings),
   'and writes nothing');
 select extensions.is(pg_temp.health() ->> 'status', 'ok', 'health: nothing waiting is ok');
+
+-- The winners wall marks the reader's own prize (only A's paid one is public).
+-- Each reader's page is read under that reader's role and checked afterwards.
+create function pg_temp.wall_is_me(p_page text) returns text language sql as $$
+  select string_agg(item ->> 'isMe', ',' order by item ->> 'id')
+  from jsonb_array_elements(p_page::jsonb -> 'items') item
+  where (item ->> 'id')::uuid in (
+    select id from app.fantasy_prize_winners where fantasy_season_id = pg_temp.id(6))
+$$;
+select pg_temp.act(pg_temp.id(21));
+set local role authenticated;
+select set_config('test.wall_a', api.fantasy_prize_winners(50)::text, true);
+reset role;
+select pg_temp.act(pg_temp.id(22));
+set local role authenticated;
+select set_config('test.wall_b', api.fantasy_prize_winners(50)::text, true);
+reset role;
+select set_config('request.jwt.claims', '', true);
+set local role anon;
+select set_config('test.wall_anon', api.fantasy_prize_winners(50)::text, true);
+reset role;
+select extensions.is(pg_temp.wall_is_me(current_setting('test.wall_a')), 'true',
+  'the winners wall marks the reader''s own prize');
+select extensions.is(pg_temp.wall_is_me(current_setting('test.wall_b')), 'false',
+  'and not someone else''s');
+select extensions.is(pg_temp.wall_is_me(current_setting('test.wall_anon')), 'false',
+  'nor for a visitor');
 
 -- ---------------------------------------------------------------------------
 -- Asking

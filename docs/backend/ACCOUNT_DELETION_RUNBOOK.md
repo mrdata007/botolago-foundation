@@ -160,6 +160,13 @@ back to `true` afterwards:
 select cron.alter_job((select jobid from cron.job where jobname = 'account-deletion-history-prune'), active := false);
 ```
 
+**Other writers.** The erasure takes, without waiting, the advisory locks the
+Fantasy lifecycle tick, Pronostics scoring, the Pépites tick and prize
+evaluation hold while they write. If one of them is running, the erasure
+refuses with `account_deletion_writer_busy`, the worker releases the request,
+and the next hourly run erases it. A run of these refusals shows in the health
+check as a failed last attempt.
+
 **Before a write** (AGENTS.md, "Before writing"): `account-deletion-tick`
 writes only while switched on; while on, it can delete Fantasy, Pronostics,
 notification and identity rows of due accounts. Pause it before a write that

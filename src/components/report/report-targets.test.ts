@@ -55,7 +55,7 @@ describe("the surfaces that show other users' names", () => {
     ["src/components/predictions/leagues/LeaguePredictionsStandings.tsx", "!row.isMe && row.name"],
     ["src/components/predictions/leagues/LeaguePage.tsx", "!header.data.league.isOwner"],
     ["src/components/predictions/PredictionsLeaderboard.tsx", "!row.isMe && row.name"],
-    ["src/components/prizes/PrizesPage.tsx", "winner.teamName !== ownTeamName"],
+    ["src/components/prizes/PrizesPage.tsx", "!winner.isMe"],
   ])("%s gates the report on %s", (file, gate) => {
     const source = read(file);
     expect(source).toContain("<ReportNameMenu");
