@@ -97,15 +97,21 @@ describe("HomeMatchCarousel — as the server renders it", () => {
     ]);
   });
 
-  it("opens on the first card: one dot current, previous disabled, next not", async () => {
+  it("opens on the first card: one dot current, previous unavailable, next not", async () => {
     const html = await render(round(3));
     const dots = indicator(html).match(/<span class="block h-2[^"]*"/g) ?? [];
     expect(dots).toHaveLength(3);
     expect(dots.filter((dot) => dot.includes("w-5"))).toHaveLength(1);
     expect(dots[0]).toContain("w-5");
-    expect(html).toMatch(new RegExp(`aria-label="${fr["home.carousel.previous"]}" disabled=""`));
-    expect(html).toContain(`aria-label="${fr["home.carousel.next"]}"`);
-    expect(html).not.toMatch(new RegExp(`aria-label="${fr["home.carousel.next"]}" disabled`));
+    // aria-disabled rather than disabled: the button keeps the focus it holds
+    // when it reaches either end (review of 2026-10-06).
+    expect(html).toMatch(
+      new RegExp(`aria-label="${fr["home.carousel.previous"]}" aria-disabled="true"`),
+    );
+    expect(html).toMatch(
+      new RegExp(`aria-label="${fr["home.carousel.next"]}" aria-disabled="false"`),
+    );
+    expect(html).not.toMatch(/<button[^>]* disabled=""/);
   });
 
   it("counts many cards as '1 / 8' instead of dots", async () => {
@@ -185,6 +191,16 @@ describe("HomeMatchCarousel — house rules", () => {
 
   it("reads votes for the card in view and its neighbours only", () => {
     expect(code).toContain("votesEnabled={Math.abs(index - current) <= 1}");
+  });
+
+  it("keeps previous and next focusable at either end, unavailable but not disabled", () => {
+    // A disabled button drops the focus it holds, to the page's body.
+    expect(code).not.toMatch(/(?<![-\w])disabled=\{/);
+    expect(code).toContain("aria-disabled={current === 0}");
+    expect(code).toContain("aria-disabled={current === count - 1}");
+    expect(code).toContain('"aria-disabled:cursor-not-allowed aria-disabled:opacity-50"');
+    // Pressed at either end, a step does nothing.
+    expect(code).toMatch(/if \(target < 0 \|\| target >= count\) return;/);
   });
 
   it("shows previous and next from lg, and wherever the pointer is a mouse", () => {

@@ -47,8 +47,16 @@ const SLIDE = cn(
   "[&>*]:min-w-0 [&>*]:flex-1",
 );
 
-/** Previous and next: from `lg`, and at any width where the pointer is a mouse. */
-const STEP = "hidden lg:inline-grid pointer-fine:inline-grid";
+/**
+ * Previous and next: from `lg`, and at any width where the pointer is a mouse.
+ * At either end the button says it is unavailable (`aria-disabled`) and looks
+ * it, but stays focusable: a `disabled` button drops the focus it holds, and
+ * a keyboard reader stepping to the last match would land on the page's body.
+ */
+const STEP = cn(
+  "hidden lg:inline-grid pointer-fine:inline-grid",
+  "aria-disabled:cursor-not-allowed aria-disabled:opacity-50",
+);
 
 /**
  * Home's gameweek band, when it has more than one match to show (BG-0155):
@@ -120,6 +128,13 @@ export function HomeMatchCarousel({
     });
   };
 
+  /** Previous (-1) or next (1); nothing past either end. */
+  const step = (by: -1 | 1) => {
+    const target = current + by;
+    if (target < 0 || target >= count) return;
+    bringIntoView(target);
+  };
+
   const slideLabel = (index: number) =>
     t("home.carousel.slide")
       .replace("{n}", String(index + 1))
@@ -165,8 +180,8 @@ export function HomeMatchCarousel({
         <UiIconButton
           variant="glass"
           aria-label={t("home.carousel.previous")}
-          disabled={current === 0}
-          onClick={() => bringIntoView(current - 1)}
+          aria-disabled={current === 0}
+          onClick={() => step(-1)}
           className={STEP}
         >
           <ChevronLeft aria-hidden />
@@ -213,8 +228,8 @@ export function HomeMatchCarousel({
         <UiIconButton
           variant="glass"
           aria-label={t("home.carousel.next")}
-          disabled={current === count - 1}
-          onClick={() => bringIntoView(current + 1)}
+          aria-disabled={current === count - 1}
+          onClick={() => step(1)}
           className={STEP}
         >
           <ChevronRight aria-hidden />
