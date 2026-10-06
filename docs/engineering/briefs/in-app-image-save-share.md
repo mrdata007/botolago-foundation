@@ -85,3 +85,32 @@ Visual
   plugins) and in a browser, in `docs/engineering/briefs/in-app-image-save-share/`.
 - The new button looks like the browser's download link (same secondary
   style), keeps a 44px target and does not overflow at 390px.
+
+## Added during the work
+
+- A Capacitor plugin is a proxy that turns any property into a call to the
+  phone, `then` included. The first version returned the plugin from an
+  `async` loader; resolving a promise with it calls `plugin.then(…)`, which is
+  never answered, so the tap did nothing. The browser check against the bridge
+  stand-in caught it. The loaders now return plain objects around the plugin,
+  and a unit test loads the real plugins and fails if one hangs.
+- The shell's own `Capacitor.isPluginAvailable` (before Capacitor's library
+  has loaded) answers from `Capacitor.Plugins`, which is empty until something
+  registers a plugin. The check reads `Capacitor.PluginHeaders` instead, the
+  list the shell writes before the page runs, which is also what the library's
+  `isPluginAvailable` reads once it has loaded.
+- `prepare-native.mjs` also checks the Android file provider and its cache
+  path that `@capacitor/share` relies on (both in Capacitor's template).
+
+Screenshots (in `in-app-image-save-share/`) are named
+`<before|after>-share-<mode>-<mobile|desktop>-<fr|ar>.png`, mobile at 390x844,
+desktop at 1280x860, taken at 2x and halved, against the local dev server in
+mock mode on the Pépites page. `browser` has no bridge. `app-android` and
+`app-ios` add a stand-in for what the shell injects before any page code (the
+bridge marker, `Capacitor.PluginHeaders` with the three plugins, and a
+`nativePromise` that records each call); `app-ios` also has the Web Share API,
+as WKWebView does. `-oldbuild` is the same without the new plugins (an app
+built before this change). `after-share-<mode>-<save|share>-<outcome>-*` are
+taken after tapping the new buttons: saved, permission refused, failure,
+cancel. Measured on every screenshot: no element of the sheet outside the
+viewport, every button at least 44px tall, no hydration warning.
