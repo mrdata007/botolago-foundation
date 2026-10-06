@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import { findPlaceholders, placeholdersIn } from "../../../scripts/qa/legal-placeholder-gate";
 import { LEGAL_DOCUMENTS } from "./documents";
-import { PRIZE_TERMS } from "./prize-terms";
+import { PRIZE_ORGANISER, PRIZE_TERMS } from "./prize-terms";
 
 const ARABIC = /[؀-ۿ]/;
 
@@ -43,9 +43,24 @@ describe("the prize terms", () => {
         const next = blocks[at + 1];
         return next?.type === "paragraph" ? next.text : "";
       };
-      expect(after("1")).toContain("Go Sports Technologies");
-      expect(after("2")).toContain("Go Sports Technologies");
+      expect(after("1")).toContain(PRIZE_ORGANISER);
+      expect(after("2")).toContain(PRIZE_ORGANISER);
     }
+  });
+
+  // Apple guideline 5.3.2 and Google Play's contest rules: the rules must
+  // say the store is not a sponsor, and when and where the contest runs.
+  it.each(["fr", "ar"] as const)("%s names Apple and Google as not involved", (lang) => {
+    const text = textOf(lang);
+    expect(text).toContain("Apple Inc.");
+    expect(text).toContain("Google LLC");
+  });
+
+  it("states the season and that only residents of Morocco can win", () => {
+    expect(textOf("fr")).toContain("saison 2026-2027");
+    expect(textOf("fr")).toContain("résidant au Maroc");
+    expect(textOf("ar")).toContain("موسم 2026-2027");
+    expect(textOf("ar")).toContain("المقيمين بالمغرب");
   });
 
   it("writes Arabic only in the Arabic document", () => {

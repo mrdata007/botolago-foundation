@@ -893,9 +893,9 @@ select extensions.is(
 );
 select extensions.is(
   (select array_agg(key order by key) from jsonb_object_keys(api.fantasy_prize_winners() -> 'items' -> 0) key),
-  array['awardedAt', 'blockNumber', 'firstGameweekNumber', 'id', 'lastGameweekNumber',
+  array['awardedAt', 'blockNumber', 'firstGameweekNumber', 'id', 'isMe', 'lastGameweekNumber',
     'maskedUsername', 'points', 'prizeName', 'seasonName', 'teamName', 'tieBreak', 'tier'],
-  'a public winner carries no email, display name, user id or note'
+  'a public winner carries no email, display name, user id or note (isMe is a yes/no, 20261006143700)'
 );
 select extensions.is(
   api.fantasy_prize_winners() -> 'items' -> 0 ->> 'maskedUsername', 'h***7',

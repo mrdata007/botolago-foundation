@@ -194,8 +194,10 @@ the snapshot) was not checked against the live site.
 - **Email notifications:** mode `off` at the last record (2026-10-04). As a result, the match reminder
   bell, the Fantasy deadline and recap emails, and the Pépites weekly email send nothing. The in-app
   inbox very probably receives nothing either. Some interface copy still promises these reminders.
-- **Dark mode:** the theme machinery is built but switched off. Fantasy has no dark version yet
-  (BG-0084, queued).
+- **Dark mode:** switched on in the code by owner decision on 2026-10-05 (BG-0149), not yet live: it
+  reaches botolago.com only once that change is merged and published. It follows the phone's setting
+  by default, and Profil > Apparence offers Clair, Sombre and Système. Fantasy has its dark version
+  (BG-0084, closed on measurement). In dark the logo is the all-white wordmark.
 - **Fantasy Cup and public leagues:** the screens and copy exist, but no backend path works.
   Head-to-head leagues appear only as a disabled option, with copy saying they will come later.
 - **Google and Apple sign-in:** the buttons render, but the providers were last recorded as not enabled
@@ -305,8 +307,10 @@ the snapshot) was not checked against the live site.
 - **Sub-brands:**
   - BotolaGO Fantasy;
   - Pronostics;
-  - Pépites, which keeps its own look inside BotolaGO. The Pépites plan names it the first "BotolaGO
-    Data" product; that label exists only in plan documents, not in the product.
+  - Pépites, which uses the main BotolaGO look like every other screen (owner, 2026-10-05: its own
+    night bands, energy gradient, mono meta lines and slant are retired; BG-0152). The Pépites plan
+    names it the first "BotolaGO Data" product; that label exists only in plan documents, not in
+    the product.
 - **Taglines in use:**
   - "Actualité & Fantasy du football marocain" / "أخبار وفانتازي كرة القدم المغربية";
   - "Le football marocain, réuni." / "كرة القدم المغربية، في مكان واحد.";
@@ -408,5 +412,8 @@ Known gaps (**Unknown** whether intended):
 - No screen-reader testing is recorded.
 - Arabic readers see a French first paint on full page loads.
 - Browser tests run in Chromium only; there is no Safari/WebKit or real-device coverage.
-- The viewport meta lacks `viewport-fit=cover`, which safe-area handling inside the Capacitor shell
-  depends on.
+- Decided 2026-10-05 (BG-0151): the viewport meta now carries `viewport-fit=cover`, which
+  safe-area handling inside the Capacitor shell depends on, with the safe-area fixes it needs.
+  It is checked only in Chromium with emulated insets; how it looks on a real notched iPhone (the
+  app, and the website in Safari upright and sideways) and on Android phones with a recent and an
+  older WebView is not yet checked.

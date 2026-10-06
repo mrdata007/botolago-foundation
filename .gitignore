@@ -58,3 +58,7 @@ ios/App/App/GoogleService-Info.plist
 .impeccable/config.local.json
 .impeccable/hook.cache.json
 .impeccable/hook.pending.json
+
+# Native projects are created by every build (cap add); never commit them.
+/ios/
+/android/

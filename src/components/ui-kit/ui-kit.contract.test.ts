@@ -1,6 +1,39 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import {
+  ArrowDownUp,
+  ArrowDownWideNarrow,
+  ArrowLeft,
+  ArrowLeftRight,
+  ArrowRight,
+  ArrowRightLeft,
+  ArrowUpNarrowWide,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronLeftIcon,
+  ChevronRight,
+  ChevronRightIcon,
+  CircleHelp,
+  Clock,
+  FileText,
+  Loader2,
+  LogIn,
+  LogOut,
+  type LucideIcon,
+  Newspaper,
+  Play,
+  RefreshCw,
+  RotateCcw,
+  ScrollText,
+  Search,
+  Share2,
+  TrendingUp,
+  Undo2,
+} from "lucide-react";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { UI_DERIVED_TOKENS, UI_THEMED_TOKENS, UI_TOKENS, ui } from "./tokens";
 
@@ -176,7 +209,9 @@ describe("ui-kit: theme correctness", () => {
     it(`${file} uses --ui-ink for fills only, never as a foreground (BG-0083)`, () => {
       const offenders = [
         ...read(file).matchAll(
-          /(?:text|placeholder|ring|caret|decoration)-\[color:var\(--ui-ink\)\]/g,
+          // `accent`, `outline`, `stroke` and `fill` too (BG-0149): the
+          // checkbox accent was navy on the dark surface and passed this.
+          /(?:text|placeholder|ring|caret|decoration|accent|outline|stroke|fill)-\[color:var\(--ui-ink\)\]/g,
         ),
       ].map((m) => m[0]);
       expect(offenders).toEqual([]);
@@ -209,8 +244,15 @@ describe("ui-kit: theme correctness", () => {
   });
 
   it("no colour-bearing --ui-* token is left without a dark story", () => {
+    // `var(--shadow-*)` and `rgba(`/`rgb(` count as colour: the legacy shadows
+    // are navy rgba with no dark value, and `--ui-shadow-column` aliased one
+    // for months with no dark counterpart because this check could not see it
+    // (BG-0149). Any legacy alias (`--brand-*`, `--shadow-*`) or literal
+    // colour inside a --ui-* token has to be themed or derived.
     const carriesColour = (value: string) =>
-      /oklch\(|oklab\(|color-mix\(|linear-gradient\(|radial-gradient\(|var\(--brand-/.test(value);
+      /oklch\(|oklab\(|color-mix\(|linear-gradient\(|radial-gradient\(|rgba?\(|hsla?\(|#[0-9a-f]{3,8}\b|var\(--brand-|var\(--shadow-/i.test(
+        value,
+      );
     const accounted = new Set<string>([...UI_THEMED_TOKENS, ...UI_DERIVED_TOKENS]);
     const orphans = [...rootDeclarations]
       .filter(([token, value]) => token.startsWith("--ui-") && carriesColour(value))
@@ -323,6 +365,17 @@ describe("ui-kit: one scale of each kind", () => {
     }
     expect(fills.size).toBe(5);
   });
+
+  it("the rating scale is the fixture-difficulty scale read backwards, fill and foreground", () => {
+    // Rating 5 (best) is FDR 1 (green). An alias, never a colour of its own,
+    // so the chip keeps the FDR scale's dark values and measured foregrounds.
+    for (const step of [1, 2, 3, 4, 5]) {
+      expect(rootDeclarations.get(`--ui-rating-${step}`)).toBe(`var(--ui-fdr-${6 - step})`);
+      expect(rootDeclarations.get(`--ui-on-rating-${step}`)).toBe(`var(--ui-on-fdr-${6 - step})`);
+      expect(darkDeclarations.has(`--ui-rating-${step}`)).toBe(false);
+      expect(darkDeclarations.has(`--ui-on-rating-${step}`)).toBe(false);
+    }
+  });
 });
 
 describe("ui-kit: the primitives keep their promises", () => {
@@ -433,6 +486,24 @@ describe("ui-kit: the primitives keep their promises", () => {
       return !painter.slice(from, from + 400).includes("disabled:");
     });
     expect(missing).toEqual([]);
+  });
+
+  it("gives an ink-filled control the ink edge, so it stays a shape in dark (BG-0149)", () => {
+    // In dark the ink fill sits on the surface at 1.25:1: a navy button was
+    // only its label. `inkControl` is `inkPlain` plus a 1px inset ring in
+    // `--ui-ink-edge`, which is transparent in light (light stays exactly as
+    // it was) and a visible grey in dark.
+    expect(ui.surface.inkControl.startsWith(ui.surface.inkPlain)).toBe(true);
+    expect(ui.surface.inkControl).toContain("shadow-[inset_0_0_0_1px_var(--ui-ink-edge)]");
+    expect(rootDeclarations.get("--ui-ink-edge")).toBe("transparent");
+    expect(darkDeclarations.get("--ui-ink-edge")).toMatch(/^oklch\(/);
+
+    const painter = primitives.match(/function buttonClass\(([\s\S]*?)\n\}/)?.[1] ?? "";
+    const from = painter.indexOf('variant === "ink"');
+    expect(from).toBeGreaterThan(-1);
+    expect(painter.slice(from, from + 200)).toContain("ui.surface.inkControl");
+    const icon = primitives.match(/function iconButtonPaint\(([\s\S]*?)\n\}/)?.[1] ?? "";
+    expect(icon).toContain('variant === "ink" && cn(ui.surface.inkControl');
   });
 
   it("never spells a Close control in English", () => {
@@ -575,6 +646,331 @@ describe("ui-kit: the shared background mesh is direction-neutral", () => {
     for (const token of mirrored) {
       expect(rootDeclarations.has(token) || css.includes(`${token}:`)).toBe(true);
     }
+  });
+});
+
+describe("ui-kit: directional icons mirror once in Arabic (BG-0150)", () => {
+  /**
+   * One unlayered rule in styles.css flips every directional lucide icon under
+   * `html[dir="rtl"]`. Two things broke it before and neither failed a check:
+   *
+   *   - Six icons also carried `rtl:-scale-x-100` or `rtl:rotate-180`. Those
+   *     set the separate `scale`/`rotate` properties, which compose with the
+   *     rule's `transform`, so the icon flipped twice and pointed the French
+   *     way in Arabic.
+   *   - The rule keys on class names, and lucide renders its CANONICAL name,
+   *     not the imported one (`CircleHelp` renders
+   *     `.lucide-circle-question-mark`). A lucide upgrade that renames an icon
+   *     — help-circle became circle-help became circle-question-mark — would
+   *     silently stop it mirroring.
+   *
+   * Keys are the canonical class suffixes; values are every lucide-react
+   * export the app uses that renders that class.
+   */
+  const MIRRORED: Readonly<Record<string, readonly LucideIcon[]>> = {
+    "chevron-left": [ChevronLeft, ChevronLeftIcon],
+    "chevron-right": [ChevronRight, ChevronRightIcon],
+    "arrow-left": [ArrowLeft],
+    "arrow-right": [ArrowRight],
+    "log-in": [LogIn],
+    "log-out": [LogOut],
+    "undo-2": [Undo2],
+    "trending-up": [TrendingUp],
+    "arrow-down-wide-narrow": [ArrowDownWideNarrow],
+    "arrow-up-narrow-wide": [ArrowUpNarrowWide],
+    "circle-question-mark": [CircleHelp],
+    "file-text": [FileText],
+    newspaper: [Newspaper],
+  };
+
+  /** Deliberately drawn the same in both languages (see the styles.css comment). */
+  const NOT_MIRRORED: readonly LucideIcon[] = [
+    ArrowDownUp,
+    ArrowLeftRight,
+    ArrowRightLeft,
+    Check,
+    ChevronDown,
+    Clock,
+    Loader2,
+    Play,
+    RefreshCw,
+    RotateCcw,
+    ScrollText,
+    Search,
+    Share2,
+  ];
+
+  const lucideClasses = (Icon: LucideIcon) => {
+    const markup = renderToStaticMarkup(createElement(Icon));
+    const classAttr = markup.match(/<svg[^>]*\sclass="([^"]*)"/)?.[1] ?? "";
+    return classAttr.split(/\s+/).filter(Boolean);
+  };
+
+  const cssCode = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const rules = [...cssCode.matchAll(/html\[dir="rtl"\]\s*:is\(([^)]*)\)\s*\{([^}]*)\}/g)];
+
+  it("states the mirror list once, as one unlayered :is() rule that only flips", () => {
+    expect(rules.length).toBe(1);
+    const [rule] = rules;
+    expect(rule[2].replace(/\s+/g, " ").trim()).toBe("transform: scaleX(-1);");
+    // Unlayered and outside any at-rule: brace depth 0 where the rule starts.
+    const before = cssCode.slice(0, rule.index);
+    const depth = (before.match(/\{/g)?.length ?? 0) - (before.match(/\}/g)?.length ?? 0);
+    expect(depth).toBe(0);
+  });
+
+  it("mirrors exactly the MIRRORED classes", () => {
+    const selectors = (rules[0]?.[1] ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const malformed = selectors.filter((s) => !/^\.lucide-[a-z0-9-]+$/.test(s));
+    expect(malformed).toEqual([]);
+    expect(selectors.map((s) => s.slice(".lucide-".length)).sort()).toEqual(
+      Object.keys(MIRRORED).sort(),
+    );
+  });
+
+  it("names no lucide class anywhere else in the stylesheet", () => {
+    // A second rule elsewhere is how the list drifts into two lists.
+    const mentions = [...cssCode.matchAll(/\.lucide-[a-z0-9-]+/g)].length;
+    expect(mentions).toBe(Object.keys(MIRRORED).length);
+  });
+
+  for (const [name, icons] of Object.entries(MIRRORED)) {
+    it(`every component listed for .lucide-${name} still renders that class`, () => {
+      for (const Icon of icons) {
+        expect({ icon: Icon.displayName, classes: lucideClasses(Icon) }).toEqual({
+          icon: Icon.displayName,
+          classes: expect.arrayContaining([`lucide-${name}`]),
+        });
+      }
+    });
+  }
+
+  it("leaves the deliberately unmirrored icons out of the rule", () => {
+    const mirrored = new Set(Object.keys(MIRRORED).map((name) => `lucide-${name}`));
+    const offenders = NOT_MIRRORED.flatMap((Icon) =>
+      lucideClasses(Icon)
+        .filter((cls) => mirrored.has(cls))
+        .map((cls) => `${Icon.displayName}: ${cls}`),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  /** Local names bound to lucide-react icons in one file: imports and `const X = Icon;`. */
+  const lucideLocals = (code: string) => {
+    const names = new Set<string>();
+    for (const m of code.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']lucide-react["']/g)) {
+      for (const part of m[1].split(",")) {
+        const spec = part.trim();
+        if (!spec || spec.startsWith("type ")) continue;
+        const parts = spec.split(/\s+as\s+/);
+        names.add(parts[parts.length - 1].trim());
+      }
+    }
+    for (const m of code.matchAll(/\bconst\s+([A-Z]\w*)\s*=\s*([A-Z]\w*)\s*;/g)) {
+      if (names.has(m[2])) names.add(m[1]);
+    }
+    return names;
+  };
+
+  /** The attribute text of every `<Name …>` opening tag, braces and strings respected. */
+  const openingTags = (code: string, names: Set<string>) => {
+    const tags: { name: string; attrs: string }[] = [];
+    for (const m of code.matchAll(/<([A-Z]\w*)(?=[\s/>])/g)) {
+      if (!names.has(m[1])) continue;
+      let index = (m.index ?? 0) + m[0].length;
+      let depth = 0;
+      let quote: string | null = null;
+      const start = index;
+      while (index < code.length) {
+        const char = code[index];
+        if (quote) {
+          if (char === "\\") index += 1;
+          else if (char === quote) quote = null;
+        } else if (char === '"' || char === "'" || char === "`") quote = char;
+        else if (char === "{") depth += 1;
+        else if (char === "}") depth -= 1;
+        else if (char === ">" && depth === 0) break;
+        index += 1;
+      }
+      tags.push({ name: m[1], attrs: code.slice(start, index) });
+    }
+    return tags;
+  };
+
+  /**
+   * Tailwind class tokens in source text. A bracketed segment, with one level
+   * of nesting, may hold quotes, colons and parens, so `[[dir=rtl]_&]:…`,
+   * `[&:dir(rtl)]:…` and `rtl:[transform:scaleX(-1)]` each stay one token.
+   */
+  const CLASS_TOKEN = /(?:\[(?:[^[\]\s]|\[[^[\]\s]*\])*\]|[^\s"'`{}[\]()<>,;=])+/g;
+
+  /** A token's variants and utility, split at the colons outside brackets. */
+  const parseToken = (token: string) => {
+    const variants: string[] = [];
+    let depth = 0;
+    let start = 0;
+    for (let index = 0; index < token.length; index += 1) {
+      const char = token[index];
+      if (char === "[" || char === "(") depth += 1;
+      else if (char === "]" || char === ")") depth -= 1;
+      else if (char === ":" && depth === 0) {
+        variants.push(token.slice(start, index));
+        start = index + 1;
+      }
+    }
+    return { variants, utility: token.slice(start).replace(/^!|!$/g, "") };
+  };
+
+  /** `rtl` itself, or an arbitrary variant that selects on the Arabic direction. */
+  const isRtlVariant = (variant: string) =>
+    variant === "rtl" || /dir=["']?rtl\b|:dir\(rtl\)/.test(variant);
+
+  /** Sets `scale` or `rotate`, or a `transform` that scales or rotates. */
+  const isFlipUtility = (utility: string) =>
+    /^-?(?:scale|rotate)-/.test(utility) ||
+    /^\[(?:scale|rotate):/.test(utility) ||
+    /^(?:\[transform:|transform-\[).*(?:scale|rotate|matrix)/i.test(utility);
+
+  /**
+   * Every class that scales or rotates only in Arabic, wherever `rtl` sits in
+   * the variant chain (`md:rtl:-scale-x-100`) and however the direction is
+   * spelled (`[[dir=rtl]_&]:`, `[&:dir(rtl)]:`).
+   */
+  const rtlFlips = (text: string) =>
+    (text.match(CLASS_TOKEN) ?? []).filter((token) => {
+      const { variants, utility } = parseToken(token);
+      return variants.some(isRtlVariant) && isFlipUtility(utility);
+    });
+
+  /** Flips on a lucide tag itself, and flips whose variants reach into descendant svgs. */
+  const flipsIn = (code: string) => {
+    const tags = openingTags(code, lucideLocals(code));
+    const onIcons = tags.flatMap(({ name, attrs }) =>
+      rtlFlips(attrs).map((hit) => `<${name} ${hit}>`),
+    );
+    const descendant = rtlFlips(code).filter((token) =>
+      parseToken(token).variants.some((variant) => /svg|lucide/.test(variant)),
+    );
+    return { tags: tags.length, offenders: [...onIcons, ...descendant] };
+  };
+
+  /**
+   * Every Arabic-only scale or rotate in src, by file. None is on an icon. The
+   * lucide tag scan cannot see an icon passed in as a prop (`<Icon …>` for
+   * `icon={Newspaper}` on Home's discovery tiles) or one styled through a
+   * shared class string; a flip on either still lands in this list and fails
+   * until someone decides it belongs.
+   */
+  const RTL_TRANSFORMS_ALLOWED: Readonly<Record<string, readonly string[]>> = {
+    // Stadium and crowd photos face the reading direction.
+    "components/common/PhotoPageHeader.tsx": ["rtl:-scale-x-100"],
+    "components/landing/LandingPage.tsx": ["rtl:-scale-x-100"],
+    "components/matches/DateStrip.tsx": ["rtl:-scale-x-100"],
+    "components/shell/PageBackground.tsx": ["md:rtl:-scale-x-100"],
+    "routes/fantasy.profile.tsx": ["rtl:-scale-x-100"],
+    "routes/index.tsx": ["rtl:-scale-x-100"],
+    // (The Pépites rating chart used to flip here too; since BG-0152 it
+    // computes its own direction, so it needs no CSS flip.)
+    // The goal caption's slant leans with the script (its French twin is ltr:-rotate-[4deg]).
+    "components/matches/GoalMoment.tsx": ["rtl:rotate-[4deg]"],
+  };
+
+  it("the flip detector catches the shapes that shipped, and not a photo", () => {
+    const sample = [
+      'import { ChevronLeft, ChevronRight as Next, type LucideIcon } from "lucide-react";',
+      "const Back = ChevronLeft;",
+      '<Next className="size-4 rtl:-scale-x-100" aria-hidden />',
+      "<Back",
+      "  onClick={() => (a > b ? go() : null)}",
+      '  className={cn("h-5 w-5", "rtl:rotate-180")}',
+      "/>",
+      "<DayPicker className={String.raw`rtl:**:[.rdp-button\\_next>svg]:rotate-180`} />",
+      '<img className="object-cover rtl:-scale-x-100" alt="" />',
+      '<ChevronLeft className="size-4" aria-hidden />',
+    ].join("\n");
+    expect(flipsIn(sample)).toEqual({
+      tags: 3,
+      offenders: [
+        "<Next rtl:-scale-x-100>",
+        "<Back rtl:rotate-180>",
+        "rtl:**:[.rdp-button\\_next>svg]:rotate-180",
+      ],
+    });
+  });
+
+  it("the flip detector finds rtl behind other variants and the [dir=rtl] spellings", () => {
+    const sample = [
+      'import { ArrowRight } from "lucide-react";',
+      '<ArrowRight className="size-4 md:rtl:-scale-x-100" />',
+      '<ArrowRight className="[[dir=rtl]_&]:-scale-x-100" />',
+      '<ArrowRight className="[&:dir(rtl)]:rotate-180" />',
+      "<ArrowRight className={`hover:rtl:!rotate-180`} />",
+      '<ArrowRight className="rtl:[transform:scaleX(-1)] rtl:[scale:-1_1]" />',
+      '<span className="[&_svg]:rtl:rotate-180 rtl:[&>svg]:-scale-x-100" />',
+      // Not Arabic-only flips: a skew, a French-only tilt, a flip in both languages.
+      '<ArrowRight className="rtl:[transform:skewX(20deg)] ltr:-rotate-[4deg] -scale-x-100" />',
+    ].join("\n");
+    expect(flipsIn(sample)).toEqual({
+      tags: 6,
+      offenders: [
+        "<ArrowRight md:rtl:-scale-x-100>",
+        "<ArrowRight [[dir=rtl]_&]:-scale-x-100>",
+        "<ArrowRight [&:dir(rtl)]:rotate-180>",
+        "<ArrowRight hover:rtl:!rotate-180>",
+        "<ArrowRight rtl:[transform:scaleX(-1)]>",
+        "<ArrowRight rtl:[scale:-1_1]>",
+        "[&_svg]:rtl:rotate-180",
+        "rtl:[&>svg]:-scale-x-100",
+      ],
+    });
+  });
+
+  it("the source-wide scan sees a flip on an icon passed in as a prop", () => {
+    const code = [
+      "function Tile({ icon: Icon }: { icon: LucideIcon }) {",
+      '  return <Icon className={cn("size-5", "rtl:-scale-x-100")} aria-hidden />;',
+      "}",
+    ].join("\n");
+    // `Icon` is not imported from lucide-react, so the tag scan cannot know it is one…
+    expect(flipsIn(code)).toEqual({ tags: 0, offenders: [] });
+    // …so the source-wide allowlist test is what catches it.
+    expect(rtlFlips(code)).toEqual(["rtl:-scale-x-100"]);
+  });
+
+  it("scales or rotates nothing in Arabic beyond the allowlisted photos and goal caption", () => {
+    const srcDir = join(ROOT, "src");
+    const files = (readdirSync(srcDir, { recursive: true }) as string[])
+      .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
+      .sort();
+    const found = files.flatMap((file) =>
+      rtlFlips(stripComments(readFileSync(join(srcDir, file), "utf8"))).map(
+        (token) => `${file}: ${token}`,
+      ),
+    );
+    const allowed = Object.entries(RTL_TRANSFORMS_ALLOWED).flatMap(([file, tokens]) =>
+      tokens.map((token) => `${file}: ${token}`),
+    );
+    expect(found.sort()).toEqual(allowed.sort());
+  });
+
+  it("no lucide icon in src carries an rtl: flip of its own", () => {
+    const srcDir = join(ROOT, "src");
+    const files = (readdirSync(srcDir, { recursive: true }) as string[])
+      .filter((file) => file.endsWith(".tsx"))
+      .sort();
+    let tags = 0;
+    const offenders: string[] = [];
+    for (const file of files) {
+      const found = flipsIn(stripComments(readFileSync(join(srcDir, file), "utf8")));
+      tags += found.tags;
+      offenders.push(...found.offenders.map((hit) => `${file}: ${hit}`));
+    }
+    // The scan has to be finding icons for "no offenders" to mean anything.
+    expect(tags).toBeGreaterThan(200);
+    expect(offenders).toEqual([]);
   });
 });
 

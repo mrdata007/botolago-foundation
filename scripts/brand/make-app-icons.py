@@ -5,6 +5,9 @@ shading, on a lit white plate, with a soft shadow under the mark.
 
 Source:  src/assets/brand/botolago-mark-color.svg (geometry is used unchanged)
 Output:  store-assets/app-icon/ (see the README there for what each file is for)
+         store-assets/app-icon/native/ (the phone app's icons, launch screens and
+           Android notification icon, laid out as they go into the native projects;
+           scripts/mobile/prepare-native.mjs copies them in on every build)
          public/apple-touch-icon.png (the website's home-screen icon, 180x180)
 
     pip install pillow cairosvg numpy
@@ -150,6 +153,138 @@ def save_png(img, path):
     img.save(path, icc_profile=SRGB, optimize=True)
 
 
+# The phone app's own files. The launch screen is the flat mark on the plate's
+# lightest colour, so the icon, the launch screen and the first page read as one.
+NATIVE = OUT / "native"
+PLATE = "#F2F5FA"  # white_plate()'s top colour
+DENSITIES = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
+# Capacitor's Android launch images: (folder, width, height), as its template has them.
+PORTRAIT = {"mdpi": (320, 480), "hdpi": (480, 800), "xhdpi": (720, 1280), "xxhdpi": (960, 1600), "xxxhdpi": (1280, 1920)}
+ANDROID_SPLASH = (
+    [("drawable", 480, 320)]
+    + [(f"drawable-port-{name}", w, h) for name, (w, h) in PORTRAIT.items()]
+    + [(f"drawable-land-{name}", h, w) for name, (w, h) in PORTRAIT.items()]
+)
+
+
+def resized(img, size):
+    """`img` at `size`, resampled with premultiplied alpha so transparent edges stay clean."""
+    if img.size == tuple(size):
+        return img
+    if img.mode == "RGBA":
+        return img.convert("RGBa").resize(size, Image.LANCZOS).convert("RGBA")
+    return img.resize(size, Image.LANCZOS)
+
+
+def masked_shape(img, size, shape):
+    """`img` cut to a circle or a rounded square, `size` px, antialiased."""
+    img = resized(img.convert("RGBA"), (size, size))
+    mk = Image.new("L", (size * 4, size * 4), 0)
+    box = (0, 0, size * 4 - 1, size * 4 - 1)
+    if shape == "circle":
+        ImageDraw.Draw(mk).ellipse(box, fill=255)
+    else:
+        ImageDraw.Draw(mk).rounded_rectangle(box, radius=int(size * 4 * 0.22), fill=255)
+    img.putalpha(Image.composite(img.getchannel("A"), Image.new("L", img.size, 0), mk.resize(img.size, Image.LANCZOS)))
+    return img
+
+
+def write_text(path, text):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+
+
+def splash(width, height, mark_width):
+    """The launch screen: the flat colour mark centred on the plain plate colour."""
+    canvas = Image.new("RGBA", (width, height), PLATE)
+    mark = render(SRC, mark_width)
+    canvas.alpha_composite(mark, ((width - mark.width) // 2, (height - mark.height) // 2))
+    return canvas.convert("RGB")
+
+
+def native_assets(ios_icon, fg):
+    """Everything the native projects need, laid out as it goes into them."""
+    ios = NATIVE / "ios"
+    # The AppIcon set as Capacitor 8's template has it: one 1024 image, Xcode makes the rest.
+    save_png(ios_icon, ios / "AppIcon.appiconset/AppIcon-512@2x.png")
+    write_text(
+        ios / "AppIcon.appiconset/Contents.json",
+        '{\n  "images": [\n    {\n      "filename": "AppIcon-512@2x.png",\n      "idiom": "universal",\n'
+        '      "platform": "ios",\n      "size": "1024x1024"\n    }\n  ],\n'
+        '  "info": {\n    "author": "xcode",\n    "version": 1\n  }\n}\n',
+    )
+    # The launch screen's image (LaunchScreen.storyboard fills the screen with it,
+    # cropping the sides). One picture under the template's three names; git stores
+    # it once. On an iPhone the square is shown about 850pt tall, so 560px of 2732
+    # makes the mark about 175pt wide.
+    launch = splash(2732, 2732, 560)
+    names = ("splash-2732x2732-2.png", "splash-2732x2732-1.png", "splash-2732x2732.png")
+    for name in names:
+        save_png(launch, ios / "Splash.imageset" / name)
+    entries = ",\n".join(
+        f'    {{\n      "idiom": "universal",\n      "filename": "{name}",\n      "scale": "{scale}"\n    }}'
+        for name, scale in zip(names, ("1x", "2x", "3x"))
+    )
+    write_text(
+        ios / "Splash.imageset/Contents.json",
+        f'{{\n  "images": [\n{entries}\n  ],\n  "info": {{\n    "version": 1,\n    "author": "xcode"\n  }}\n}}\n',
+    )
+
+    res = NATIVE / "android/res"
+    background = white_plate(432, viewport=72 / 108)
+    shown = background.copy()
+    shown.alpha_composite(fg)
+    shown = shown.crop((72, 72, 360, 360))  # the 72dp a launcher shows
+    mono = Image.new("RGBA", (432, 432), (0, 0, 0, 0))
+    m = render(monochrome_mark(), 224)
+    mono.alpha_composite(m, (218 - m.width // 2, 213 - m.height // 2))
+    for name, k in DENSITIES.items():
+        layer = round(108 * k)
+        folder = res / f"mipmap-{name}"
+        save_png(resized(fg, (layer, layer)), folder / "ic_launcher_foreground.png")
+        save_png(white_plate(layer, viewport=72 / 108).convert("RGB"), folder / "ic_launcher_background.png")
+        save_png(resized(mono, (layer, layer)), folder / "ic_launcher_monochrome.png")
+        # Phones older than Android 8 use these flat ones: 48dp, the shape 44dp of it.
+        canvas, inset = round(48 * k), round(2 * k)
+        for file, shape in (("ic_launcher.png", "square"), ("ic_launcher_round.png", "circle")):
+            icon = Image.new("RGBA", (canvas, canvas), (0, 0, 0, 0))
+            icon.alpha_composite(masked_shape(shown, canvas - 2 * inset, shape), (inset, inset))
+            save_png(icon, folder / file)
+        # The notification icon: white on transparent (Android draws it in one colour),
+        # 24dp with the mark across 22dp of it.
+        size = round(24 * k)
+        glyph = render(monochrome_mark(), round(22 * k))
+        white = Image.new("RGBA", glyph.size, (255, 255, 255, 0))
+        white.putalpha(glyph.getchannel("A"))
+        notify = Image.new("RGBA", (size, size), (255, 255, 255, 0))
+        notify.alpha_composite(white, ((size - white.width) // 2, (size - white.height) // 2))
+        save_png(notify, res / f"drawable-{name}" / "ic_stat_notify.png")
+
+    adaptive = (
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
+        '    <background android:drawable="@mipmap/ic_launcher_background" />\n'
+        '    <foreground android:drawable="@mipmap/ic_launcher_foreground" />\n'
+        '    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />\n'
+        "</adaptive-icon>\n"
+    )
+    for name in ("ic_launcher.xml", "ic_launcher_round.xml"):
+        write_text(res / "mipmap-anydpi-v26" / name, adaptive)
+    write_text(
+        res / "values/botolago_colors.xml",
+        '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n'
+        "    <!-- The launch screen's background: the icon plate's lightest colour. -->\n"
+        f'    <color name="botolago_splash_background">{PLATE}</color>\n'
+        "    <!-- The tint of the notification icon in the notification list. -->\n"
+        f'    <color name="botolago_notification">{BLUE}</color>\n'
+        "</resources>\n",
+    )
+    # Capacitor's launch images, same folders and sizes as its template. Android 12
+    # and later draw their own launch screen instead (set up by prepare-native.mjs).
+    for folder, width, height in ANDROID_SPLASH:
+        save_png(splash(width, height, round(min(width, height) * 0.4375)), res / folder / "splash.png")
+
+
 def main():
     mark = shaded_mark()
 
@@ -231,6 +366,8 @@ def main():
             sheet.alpha_composite(masked(ios, size, "ios"), (x, y + 100 - size // 2))
             x += size + 16
     sheet.convert("RGB").save(OUT / "preview.png")
+
+    native_assets(ios, fg)
 
 
 if __name__ == "__main__":

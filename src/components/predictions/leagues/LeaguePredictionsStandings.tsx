@@ -18,6 +18,7 @@ import {
   UiTR,
 } from "@/components/ui-kit";
 import { useAuth } from "@/auth/AuthProvider";
+import { ReportNameMenu } from "@/components/report/ReportNameMenu";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "../predictions-copy";
@@ -82,9 +83,15 @@ export function LeaguePredictionsStandings({
             <UiTHead>
               <tr>
                 <UiTH className="w-14">{t("predictions.board.col_rank")}</UiTH>
-                <UiTH>{t("predictions.board.col_player")}</UiTH>
-                <UiTH numeric>{t("predictions.board.col_points")}</UiTH>
-                <UiTH numeric>{t("predictions.board.col_exact")}</UiTH>
+                {/* The name takes the room the figures leave (they keep their
+                    width): it shares the cell with the report control. */}
+                <UiTH className="w-full">{t("predictions.board.col_player")}</UiTH>
+                <UiTH numeric className="whitespace-nowrap">
+                  {t("predictions.board.col_points")}
+                </UiTH>
+                <UiTH numeric className="whitespace-nowrap">
+                  {t("predictions.board.col_exact")}
+                </UiTH>
               </tr>
             </UiTHead>
             <UiTBody>
@@ -101,8 +108,26 @@ export function LeaguePredictionsStandings({
                       </span>
                     ) : null}
                   </UiTD>
-                  <UiTD className="max-w-0 truncate">
-                    <span dir="auto">{row.isMe ? t("predictions.board.you") : row.name}</span>
+                  <UiTD className="max-w-0">
+                    <div className="flex items-center gap-1">
+                      <span dir="auto" className="min-w-0 flex-1 truncate">
+                        {row.isMe ? t("predictions.board.you") : row.name}
+                      </span>
+                      {/* Another member's name can be reported, never the
+                          reader's own. A row carries no account id, so staff
+                          find it by league, ranking and place. */}
+                      {!row.isMe && row.name ? (
+                        <ReportNameMenu
+                          targets={[
+                            {
+                              kind: "user",
+                              name: row.name,
+                              id: `league:${leagueId} ${scope}${effectiveRound ? `:${effectiveRound}` : ""} rank:${row.rank}`,
+                            },
+                          ]}
+                        />
+                      ) : null}
+                    </div>
                   </UiTD>
                   <UiTD numeric strong>
                     {formatNumber(row.points, lang)}

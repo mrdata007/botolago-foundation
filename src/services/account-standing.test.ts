@@ -33,10 +33,16 @@ afterEach(() => {
 
 describe("account standing", () => {
   test("parses what the database answers", () => {
+    // Before 20261006143700 the answer has no deletionPending: read as false.
     expect(accountStandingSchema.parse({ banned: false, bannedUntil: null })).toEqual({
       banned: false,
       bannedUntil: null,
+      deletionPending: false,
     });
+    expect(
+      accountStandingSchema.parse({ banned: false, bannedUntil: null, deletionPending: true })
+        .deletionPending,
+    ).toBe(true);
     expect(
       accountStandingSchema.parse({ banned: true, bannedUntil: "2026-10-01T12:00:00.5+00:00" })
         .banned,

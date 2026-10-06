@@ -222,7 +222,7 @@ function Inbox() {
                       {isUnread ? (
                         <span
                           aria-hidden
-                          className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[color:var(--ui-ink)]"
+                          className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[color:var(--ui-ink-fg)]"
                         />
                       ) : null}
                     </button>

@@ -16,6 +16,7 @@ import {
 import { useI18n } from "@/i18n/provider";
 import { pointsLabel } from "@/components/matches/standings-copy";
 import { cn } from "@/lib/utils";
+import { ReportNameMenu } from "@/components/report/ReportNameMenu";
 import { prizesService } from "@/services/prizes";
 import { PRIZE_HERO_ART, PRIZE_HERO_PHOTO, PRIZE_TIER_ART } from "./prize-art";
 import { fill, formatMad, howToWin, periodLabel, tierLabel } from "./prize-presentation";
@@ -100,10 +101,7 @@ export function PrizesPage() {
           <BookOpen className="h-[18px] w-[18px]" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">{t("prizes.terms_link")}</span>
-        <ChevronRight
-          className={cn("h-5 w-5 shrink-0 rtl:rotate-180", ui.tone.muted)}
-          aria-hidden
-        />
+        <ChevronRight className={cn("h-5 w-5 shrink-0", ui.tone.muted)} aria-hidden />
       </Link>
     </div>
   );
@@ -329,6 +327,14 @@ function WinnersWall() {
                 >
                   {pointsLabel(winner.points, lang, t, nf.format)}
                 </bdi>
+                {/* The team name is the winner's own choice: anyone else may
+                    report it. The database says which rows are the reader's
+                    own (isMe), without exposing anyone's account. */}
+                {!winner.isMe ? (
+                  <ReportNameMenu
+                    targets={[{ kind: "team", name: winner.teamName, id: `winner:${winner.id}` }]}
+                  />
+                ) : null}
               </li>
             ))}
           </ol>
