@@ -1,5 +1,16 @@
 # BotolaGO Pépites — Figma implementation spec
 
+> **Superseded, 2026-10-05 (owner decision; BG-0152).** Pépites now looks
+> like the rest of BotolaGO and is built on the main kit (Design System V2:
+> `src/components/ui-kit`, the `--ui-*` tokens; see
+> `docs/engineering/DESIGN_SYSTEM_V2.md`, "Pépites is built on the kit").
+> The visual tokens recorded here are retired from the screens: the night
+> palette and night band, the energy gradient, IBM Plex Mono, the slant, the
+> ghost numbers, the segment and rating hex colours, the shadows and the
+> pixel sizes. What still applies: the screens' content and order, the copy,
+> the Arabic terminology and the digit rules (§9). The share images keep
+> this drawing until a follow-up redraws them. Kept as a historical record.
+
 Figma file `DEQTspI8A04pjmLcAYTYw4`. Pages: `0:1` Cover, `2:25` Components, `2:26` Mobile · FR,
 `2:27` Mobile · AR, `2:28` Desktop · FR, `2:29` Share images, `2:30` Admin.
 (`get_metadata` without a node only listed Cover and Components. I found the other pages by probing the ids `2:26`–`2:30`.)
@@ -33,9 +44,11 @@ Noto Sans Arabic ≈ 2.0 em. Tracking is given in px, with the % of font size in
 - Decimals use a comma ("6,60"). Thousands use a space ("1 004", "1 159"). The minute mark is ’ (U+2019). The plus in the buttons is the fullwidth "＋" (U+FF0B).
 
 ---
-## 1. `7:166` 03 · Joueur — Aperçu (FR)  (390×844, bg `#F3F5FA`)  → `figma/7-166.png`
+
+## 1. `7:166` 03 · Joueur — Aperçu (FR) (390×844, bg `#F3F5FA`) → `figma/7-166.png`
 
 Background layers (bottom → top):
+
 - Night band (0,0,390,410), a vector polygon `(0,0)(390,0)(390,386)(0,410)` filled `#070D24`. The bottom edge rises 24px from left to right.
   CSS: `clip-path:polygon(0 0,100% 0,100% 386px,0 410px)`. The SVG also has a 1px black stroke, probably accidental.
   Asset: `assets/7-166-night-band.svg`.
@@ -44,6 +57,7 @@ Background layers (bottom → top):
   Data: rank, zero-padded to 2 digits.
 
 Content:
+
 - StatusBar dark (0,0,390,44): px28, space-between, Manrope ExtraBold white. "20:03" is 15px and "●●● 5G" is 12px (static OS chrome).
 - "‹ Classement" (18,56): Manrope ExtraBold 13 white. Static back link.
 - Follow button, ghost-dark (226,48,120,38): bg rgba(255,255,255,.08), 1px inside border rgba(255,255,255,.2), radius 999,
@@ -80,7 +94,8 @@ Content:
 - BottomNav light at (0,768), Pépites active (§8).
 
 ---
-## 2. `10:505` 04 · Joueur — Matchs (FR)  (390×844, bg `#070D24` everywhere)  → `figma/10-505.png`
+
+## 2. `10:505` 04 · Joueur — Matchs (FR) (390×844, bg `#070D24` everywhere) → `figma/10-505.png`
 
 - StatusBar dark (0,0).
 - Header (18,52): row, gap 10, centred.
@@ -125,7 +140,8 @@ Content:
 - BottomNav **dark** at (0,768).
 
 ---
-## 3. `11:476` 06 · Révélation du lundi (FR)  (390×844, full-screen story: no status bar, no bottom nav)  → `figma/11-476.png`
+
+## 3. `11:476` 06 · Révélation du lundi (FR) (390×844, full-screen story: no status bar, no bottom nav) → `figma/11-476.png`
 
 - Background: `radial-gradient(195px 527.5px at 50% 56.25%, #1E4FA0 0%, #0D1738 55%, #070D24 100%)`.
   Those are the true Figma stops. The design-context data URI shows interpolated extra stops.
@@ -149,9 +165,11 @@ Content:
   - Ghost-dark "Suivant · N°4 →" at x 200. The next rank is data.
 
 ---
-## 4. `11:515` 07 · Carte à partager — story 9:16 (FR)  (390×**694**, bg `#070D24`)  → `figma/11-515.png`
+
+## 4. `11:515` 07 · Carte à partager — story 9:16 (FR) (390×**694**, bg `#070D24`) → `figma/11-515.png`
 
 The 1080×1920 export on the Share images page (`29:284`) is this card scaled by exactly ×2.769 (1080/390).
+
 - Glow: circle 280 at (40,170), `#1E5BB8` @60%, blur 80 (CSS 40px) (`assets/11-515-glow.svg`). Its centre (180,310) is slightly left of the chart centre.
 - Ghost "05": Changa ExtraBold 190, ghost stroke, slanted, origin (160,30).
 - GoMark FR (20,26). "U23 · BOTOLA PRO" at (270,32): IBM Plex Mono Medium 9 `#C9D2EA`, tracking 0.72 (8%).
@@ -186,7 +204,8 @@ The 1080×1920 export on the Share images page (`29:284`) is this card scaled by
   - "botolago.com/pepites" at y 612: IBM Plex Mono SemiBold 10 white (static).
 
 ---
-## 5. `21:404` S1 · État — chargement  → `figma/21-404.png`
+
+## 5. `21:404` S1 · État — chargement → `figma/21-404.png`
 
 - bg `#F3F5FA`. Night band (0,0,390,226) is the polygon `(0,0)(390,0)(390,200)(0,226)` in `#070D24` (`assets/21-404-night-band.svg`).
   Same shape family as §1, but 26px of slant.
@@ -201,7 +220,7 @@ The 1080×1920 export on the Share images page (`29:284`) is this card scaled by
   is a **designer annotation (behaviour spec), not UI copy**. Behaviour: show skeletons for at most 12 s, then the S3 error.
 - BottomNav light.
 
-## 6. `21:476` S2 · État — avant la 1re édition  → `figma/21-476.png`
+## 6. `21:476` S2 · État — avant la 1re édition → `figma/21-476.png`
 
 - Same band (226), status bar and GoMark as S1.
 - "Classement final 2025-26" at (20,96): Changa ExtraBold 26 white, **not slanted**. The season is data.
@@ -219,7 +238,7 @@ The 1080×1920 export on the Share images page (`29:284`) is this card scaled by
   The rule it states: always label the last season's table "2025-26" and never present it as the current week.
 - BottomNav light.
 
-## 7. `21:529` S3 · État — erreur  → `figma/21-529.png`
+## 7. `21:529` S3 · État — erreur → `figma/21-529.png`
 
 - Same band (226), status bar and GoMark. Nothing else is on the band.
 - Card (16,300,358,190): white, **radius 16**, no shadow, content centred on x 179.
@@ -229,7 +248,9 @@ The 1080×1920 export on the Share images page (`29:284`) is this card scaled by
 - BottomNav light.
 
 ---
-## 8. Components (`2:25`)  → screenshots `figma/3-12.png` (RatingChip), `3-264` (FilterChip), `3-271` (Button), `4-17` (ScoreRing), `4-18`
+
+## 8. Components (`2:25`) → screenshots `figma/3-12.png` (RatingChip), `3-264` (FilterChip), `3-271` (Button), `4-17` (ScoreRing), `4-18`
+
 (Headshot), `4-48` (LeaderboardRow), `3-318` (BottomNav), `3-244` (Seg10Bar dark 10), `4-2` (ShirtFallback), `17-*` (AR)
 
 - **RatingChip** `3:12`: 34×20, radius 5, px6, content centred. Text is Manrope ExtraBold 11 white with a comma decimal ("6,5").
@@ -299,11 +320,13 @@ The 1080×1920 export on the Share images page (`29:284`) is this card scaled by
 - **StatusBar** (dark) `3:282`: see §1.
 
 ---
+
 ## 9. Arabic mobile (`2:27`) and share images (`2:29`)
 
 **Brand text.** The Arabic sub-brand is **"جواهر"** (for "Pépites"). GoMark AR `17:295` is 90×25. Visual left→right it is the [DATA chip] then 6px, then
 "جواهر" in Noto Sans Arabic Bold 12 white, then 6px, then the [GO logo]. The logo sits on the right, "DATA" stays Latin, and the mark is placed top-right (x 282).
 Other Arabic terms:
+
 - Rising Score → "مؤشر الصعود"; the ring label is "صعود" (Noto Sans Arabic Medium 7, no tracking)
 - U23 → "أقل من 23"; Botola Pro → "البطولة الاحترافية"
 - Percentiles → "النسب المئوية"; Percée → "الانطلاقة"
@@ -312,6 +335,7 @@ Other Arabic terms:
 - Digits stay Western (0-9) with a comma decimal. The season is wrapped in isolates "⁦2025-26⁩" (U+2066/U+2069).
 
 **What mirrors (03 AR `18:709` → `figma/18-709.png`):**
+
 - Mirrored:
   - The night band polygon becomes `(0,0)(390,0)(390,410)(0,386)`: the slant flips, low on the right (`assets/18-709-night-band-mirrored.svg`).
   - The glow moves to (140,60). The cutout moves to the right (206,84). The ScoreRing moves to the left (20,140).
@@ -332,6 +356,7 @@ Other Arabic terms:
   - The E gradient inside bars stays green→violet left→right.
 
 **06 AR `26:392`** (`figma/26-392.png`):
+
 - Story progress fills from the **right**.
 - GoMark AR is top-right and "أفضل 10 · الاثنين 20:00" is top-left.
 - The ghost "5" moves right and stays slanted.
@@ -341,11 +366,13 @@ Other Arabic terms:
 - Primary "متابعة ＋" moves right and ghost "التالي · رقم 4 ←" moves left.
 
 **04 AR `25:343`** (`figma/25-343.png`):
+
 - The table columns are reversed: date on the right, chip on the left.
   Tokens: D/E → "داخل"/"خارج", 1B → "1 هدف", 1PD → "1 تم", R → "24’ ب".
 - The **trend chart is mirrored**: oldest on the right, newest on the left, and the line gradient flips with it.
 
 **07 AR story `26:436`** (`figma/26-436.png`):
+
 - The layout is mirrored. The name is 2 lines right-aligned to x 368: "محمد" white, then "العروش" in E.
   The **text gradient is still left→right** and the name is **not slanted**.
 - The ghost "05" moves left and **stays slanted**.
@@ -355,8 +382,9 @@ Other Arabic terms:
 - The URL stays Latin.
 
 **Share images page `2:29`:**
-- *Story 1080×1920* FR `29:284` and AR `29:335` are exactly the 390 story cards ×2.769.
-- *Feed "post" 1080×1350 · Top 10 FR `29:386`* (`figma/29-386.png`, glows `assets/29-386-glow-*.svg`):
+
+- _Story 1080×1920_ FR `29:284` and AR `29:335` are exactly the 390 story cards ×2.769.
+- _Feed "post" 1080×1350 · Top 10 FR `29:386`_ (`figma/29-386.png`, glows `assets/29-386-glow-*.svg`):
   - bg `#070D24`.
   - Glows: a 700 circle at (560,−300), `#7C6CF0` @35%, blur 160. A 600 circle at (−260,120), `#1597B8` @28%, blur 160.
   - Ghost "10": Changa ExtraBold 620, slanted, 3px stroke white @7%, origin (560,−120).
@@ -376,7 +404,7 @@ Other Arabic terms:
     - Rule (72,1232,936,1) white @14%.
     - "botolago.com/pepites" at (72,1262): IBM Plex Mono SemiBold 24 white.
     - "Note · forme · contribution · progression · temps de jeu": Manrope Bold 18 `#9AA4C7`, right-aligned to 1008.
-- *Feed AR `29:581`* (`figma/29-581.png`) mirrors the feed FR:
+- _Feed AR `29:581`_ (`figma/29-581.png`) mirrors the feed FR:
   - The glows and the ghost "10" move to the left. GoMark AR is top-right.
   - Title "أفضل 10" is in E and upright. "جواهر" is white.
   - Rank on the right, headshot at x 808, name right-aligned to 788.
@@ -384,6 +412,7 @@ Other Arabic terms:
   - Legend "التنقيط · المستوى · المساهمة · التطور · وقت اللعب".
 
 **Also in the file (not specced here):**
+
 - Mobile FR: 01 Accueil `6:2`, 02 Classement `10:276`, 05 Comparer `11:370`, and S4 "Invité — suivre un joueur (feuille de connexion)" `21:561`.
 - Desktop · FR: D1 Classement `19:2` (1440×1317) and D2 Joueur `27:181` (1440×1898).
 - Admin: A1 Sélection hebdo `20:2` (Top-10 ordering plus a required FR+AR sentence per player) and A2 Data desk `20:193` (photo licence form).

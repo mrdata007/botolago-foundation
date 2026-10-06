@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { Check, Plus } from "lucide-react";
-import { useRef, useState } from "react";
+import { Check } from "lucide-react";
+import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -9,7 +9,7 @@ import { requireAuthStep } from "@/auth/second-factor";
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { PepitesError } from "@/backend/pepites/errors";
-import { UiButton, UiSheet } from "@/components/ui-kit";
+import { ui, UiButton, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { pepitesService } from "@/services/pepites";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,11 @@ import { followStateQueryOptions, pepitesKeys, usePepitesViewer } from "./use-pe
  * account still owing its second factor) sees a sheet built to follow this
  * one player, mirroring S4 — a generic sign-in prompt would not say what
  * following buys them.
+ *
+ * A kit pill (`UiButton size="sm"`) with `aria-pressed`: the navy `ink`
+ * pill while the reader does not follow (the copy carries its own "＋"),
+ * the quiet `soft` pill with a check once they do, so the two states differ
+ * in more than a word.
  */
 export function PepitesFollowButton({
   playerId,
@@ -37,7 +42,8 @@ export function PepitesFollowButton({
   const { status, requireAuth } = useAuth();
   const viewer = usePepitesViewer();
   const queryClient = useQueryClient();
-  const opener = useRef<HTMLButtonElement>(null);
+  // The control the guest sheet hands focus back to when it closes.
+  const openerId = useId();
   const [guestOpen, setGuestOpen] = useState(false);
   const query = useQuery(followStateQueryOptions(viewer, playerId));
   const state = query.data;
@@ -104,9 +110,10 @@ export function PepitesFollowButton({
 
   return (
     <>
-      <button
-        type="button"
-        ref={opener}
+      <UiButton
+        id={openerId}
+        size="sm"
+        variant={following ? "soft" : "ink"}
         aria-pressed={known ? following : undefined}
         aria-busy={status === "loading" || query.isFetching || mutation.isPending}
         disabled={
@@ -116,33 +123,25 @@ export function PepitesFollowButton({
         }
         onClick={onPress}
         data-testid={testId}
-        className={cn(
-          "inline-flex h-[38px] min-h-[var(--ui-tap-min)] items-center justify-center gap-1.5 rounded-full border px-[18px] text-[13px] text-white",
-          "[font-weight:var(--ui-weight-heavy)]",
-          "disabled:opacity-60",
-          following ? "border-white/35 bg-white/[0.2]" : "border-white/20 bg-white/[0.08]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white",
-        )}
       >
-        {following ? (
-          <Check className="h-3.5 w-3.5" aria-hidden />
-        ) : (
-          <Plus className="h-3.5 w-3.5" aria-hidden />
-        )}
+        {following ? <Check className="h-4 w-4" aria-hidden /> : null}
         <bdi>{withCount}</bdi>
-      </button>
+      </UiButton>
       {query.isError ? (
-        <span role="status" className="text-[12px] text-white">
-          {t("pepites.follow.read_failed")}{" "}
-          <button
-            type="button"
+        <span
+          role="status"
+          className={cn("inline-flex flex-wrap items-center gap-2", ui.text.meta, ui.tone.muted)}
+        >
+          {t("pepites.follow.read_failed")}
+          <UiButton
+            size="sm"
+            variant="soft"
             data-testid={`${testId}-retry`}
             disabled={query.isFetching}
             onClick={() => void query.refetch()}
-            className="underline focus-visible:outline focus-visible:outline-2"
           >
             {t("state.retry")}
-          </button>
+          </UiButton>
         </span>
       ) : null}
       <FollowGuestSheet
@@ -151,7 +150,7 @@ export function PepitesFollowButton({
         playerName={playerName}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
-          if (opener.current?.isConnected) opener.current.focus();
+          document.getElementById(openerId)?.focus();
         }}
       />
     </>

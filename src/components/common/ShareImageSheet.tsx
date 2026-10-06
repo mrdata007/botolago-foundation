@@ -37,7 +37,6 @@ export function ShareImageSheet({
   fileName,
   message,
   path,
-  onNight = false,
   testId,
   campaign,
   testIdPrefix = "pepites",
@@ -51,7 +50,6 @@ export function ShareImageSheet({
   fileName: string;
   message: string;
   path: string;
-  onNight?: boolean;
   testId: string;
   /** The `utm_campaign` the shared link carries. */
   campaign: string;
@@ -120,12 +118,7 @@ export function ShareImageSheet({
 
   return (
     <>
-      <UiIconButton
-        variant={onNight ? "glass" : "soft"}
-        aria-label={label}
-        onClick={() => setOpen(true)}
-        data-testid={testId}
-      >
+      <UiIconButton aria-label={label} onClick={() => setOpen(true)} data-testid={testId}>
         <Share2 aria-hidden />
       </UiIconButton>
       <UiSheet open={open} onOpenChange={setOpen} title={label}>

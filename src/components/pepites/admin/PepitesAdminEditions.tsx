@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, X } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, ChevronDown, ExternalLink, X } from "lucide-react";
 import { useEffect, useReducer, useState, type ReactNode } from "react";
 
 import {
@@ -9,6 +9,7 @@ import {
   type AdminOverview,
 } from "@/backend/pepites/admin-repository";
 import {
+  ADMIN_CARD_CLASS,
   ADMIN_LABEL_CLASS,
   ADMIN_PANEL_CLASS,
   AdminDatum,
@@ -24,10 +25,17 @@ import {
   destructiveActionReducer,
   IDLE_DESTRUCTIVE_ACTION,
 } from "@/components/admin/destructive-action";
-import { ui, UiBadge, UiButton, UiIconButton, UiInput } from "@/components/ui-kit";
+import {
+  ui,
+  UiBadge,
+  UiButton,
+  UiCheckbox,
+  UiIconButton,
+  UiInput,
+  UiLinkButton,
+  UiTextarea,
+} from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
-
-import { pp } from "../pepites-design";
 
 import {
   addEntry,
@@ -41,6 +49,7 @@ import {
   TOP_SIZE,
   type DraftEntry,
 } from "./admin-format";
+import { PepitesName } from "../PepitesVisuals";
 
 const KEYS = {
   overview: ["pepites-admin", "overview"] as const,
@@ -115,7 +124,7 @@ export function PepitesAdminEditions({
 
   return (
     <div className="grid gap-6">
-      <p className={cn(pp.monoStrong, pp.muted, "text-[10px] ltr:tracking-[0.1em]")}>
+      <p className={ADMIN_LABEL_CLASS}>
         {rtl ? "جواهر / الاختيار الأسبوعي" : "Pépites / Sélection hebdo"}
       </p>
       {selected ? (
@@ -428,27 +437,12 @@ function EditionEditor({
       {/* Figma A1: title, state and the week's facts; the actions at the end. */}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="grid gap-2">
-          <h3
-            id="admin-pepites-editor-title"
-            className={cn(pp.display, pp.ink, "text-[28px] leading-[1.15]")}
-          >
+          <h3 id="admin-pepites-editor-title" className={cn(ui.display.section, ui.tone.default)}>
             {rtl ? `اختيار الأسبوع ${edition.week}` : `Sélection de la semaine ${edition.week}`}
           </h3>
           <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={cn(
-                "rounded-full px-2.5 py-1 text-[11px]",
-                pp.heavy,
-                edition.status === "draft" && "bg-[#fff3d6] text-[#8a5a00]",
-                edition.status === "scheduled" && "bg-[#e3ecff] text-[color:var(--pepites-ink)]",
-                edition.status === "published" && "bg-[#dcf5e8] text-[#17663f]",
-                (edition.status === "superseded" || edition.status === "withdrawn") &&
-                  "bg-[color:var(--pepites-seg-empty)] text-[color:var(--pepites-muted)]",
-              )}
-            >
-              {statusLabel(edition.status, rtl)}
-            </span>
-            <span className={cn(pp.mono, pp.muted, "text-[10px] ltr:tracking-[0.04em]")}>
+            <UiBadge tone={statusTone(edition.status)}>{statusLabel(edition.status, rtl)}</UiBadge>
+            <span className={cn(ui.text.meta, ui.tone.muted)}>
               {[
                 rtl
                   ? `الأسبوع ${edition.week} · الجولة ${edition.round}`
@@ -464,21 +458,17 @@ function EditionEditor({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <a
-            href="/pepites"
+          {/* Opens the public page in a new tab, so the desk stays open. */}
+          <UiLinkButton
+            to="/pepites"
             target="_blank"
             rel="noopener noreferrer"
-            className={cn(
-              "inline-flex min-h-[40px] items-center rounded-full border px-5 text-[13px]",
-              pp.line,
-              pp.ink,
-              pp.heavy,
-              "bg-[color:var(--pepites-card)]",
-              ui.focus,
-            )}
+            variant="outline"
+            size="sm"
           >
             {rtl ? "معاينة" : "Aperçu"}
-          </a>
+            <ExternalLink aria-hidden className="h-4 w-4" />
+          </UiLinkButton>
         </div>
       </header>
 
@@ -511,17 +501,14 @@ function EditionEditor({
       <div className={cn("grid gap-4", isDraft && "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]")}>
         {isDraft ? (
           <section
-            className={cn("grid content-start gap-3 rounded-[14px] p-4", pp.card)}
+            className={cn("grid content-start gap-3 p-4", ADMIN_CARD_CLASS)}
             aria-labelledby="admin-pepites-shortlist-title"
           >
             <div>
-              <h4
-                id="admin-pepites-shortlist-title"
-                className={cn(pp.monoStrong, pp.muted, "text-[9px] ltr:tracking-[0.1em]")}
-              >
+              <h4 id="admin-pepites-shortlist-title" className={ADMIN_LABEL_CLASS}>
                 {rtl ? "مقترحات الحساب" : "Proposés par le calcul"}
               </h4>
-              <p className={cn(pp.muted, "text-[12px]")}>
+              <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
                 {rtl ? "حدّد للإضافة إلى أفضل 10" : "Cochez pour ajouter au Top 10"}
               </p>
             </div>
@@ -531,45 +518,67 @@ function EditionEditor({
                 const dropped = !checked && player.rank !== null && player.rank <= TOP_SIZE;
                 return (
                   <li key={player.id}>
-                    <label
+                    {/* The kit checkbox: a 44px target behind the box, the
+                        whole row its label. */}
+                    <UiCheckbox
+                      checked={checked}
+                      disabled={busy || (!checked && draft.length >= TOP_SIZE)}
+                      onChange={() => toggle(player)}
                       className={cn(
-                        "grid cursor-pointer grid-cols-[20px_22px_minmax(0,1fr)_auto] items-center gap-2 rounded-[8px] px-1 py-1",
-                        "hover:bg-[color:var(--pepites-page)]",
+                        // The label's box fills the row, so the score sits
+                        // at the inline end.
+                        "items-center px-2 [&>span]:flex-1",
+                        ui.space.row,
+                        ui.radius.control,
+                        "hover:bg-[color:var(--ui-surface-sunken)]",
                       )}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={busy || (!checked && draft.length >= TOP_SIZE)}
-                        onChange={() => toggle(player)}
-                        className="size-4 accent-[color:var(--pepites-ink)]"
-                      />
-                      <span className={cn(pp.mono, pp.muted, "text-[10px]")}>
-                        {player.rank ?? "—"}
-                      </span>
-                      <span className="min-w-0">
-                        <span className={cn(pp.bold, pp.text, "block truncate text-[13px]")}>
-                          {player.name}
-                        </span>
-                        <span className={cn(pp.mono, pp.muted, "block text-[9px]")}>
-                          {[
-                            player.team ? player.team.shortName[rtl ? "ar" : "fr"] : null,
-                            `${player.minutes}′`,
-                            `${player.goals}+${player.assists}`,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
-                          {dropped ? (
-                            <span className="ms-2 text-[#b86e00] normal-case">
-                              {rtl ? "↓ سحبه المحرر" : "↓ retiré par l'éditeur"}
+                      label={
+                        <span className="flex items-center gap-3">
+                          <span
+                            className={cn(
+                              "w-6 shrink-0 text-center",
+                              ui.text.micro,
+                              ui.text.tabular,
+                              ui.tone.muted,
+                            )}
+                          >
+                            {player.rank ?? "—"}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <PepitesName
+                              name={player.name}
+                              className={cn("block truncate", ui.text.bodyStrong)}
+                            />
+                            <span
+                              className={cn(
+                                "flex flex-wrap items-center gap-x-2 gap-y-1",
+                                ui.text.micro,
+                                ui.tone.muted,
+                              )}
+                            >
+                              <span>
+                                {[
+                                  player.team ? player.team.shortName[rtl ? "ar" : "fr"] : null,
+                                  `${player.minutes}′`,
+                                  `${player.goals}+${player.assists}`,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </span>
+                              {dropped ? (
+                                <UiBadge tone="caution" className="gap-1">
+                                  <ArrowDown aria-hidden className="h-3 w-3" />
+                                  {rtl ? "سحبه المحرر" : "retiré par l'éditeur"}
+                                </UiBadge>
+                              ) : null}
                             </span>
-                          ) : null}
+                          </span>
+                          <span className={cn("shrink-0", ui.stat.sm, ui.tone.ink)}>
+                            {player.score === null ? "—" : Math.round(player.score)}
+                          </span>
                         </span>
-                      </span>
-                      <span className={cn(pp.display, pp.ink, "text-[16px]")}>
-                        {player.score === null ? "—" : Math.round(player.score)}
-                      </span>
-                    </label>
+                      }
+                    />
                   </li>
                 );
               })}
@@ -578,19 +587,16 @@ function EditionEditor({
         ) : null}
 
         <section
-          className={cn("grid content-start gap-3 rounded-[14px] p-4", pp.card)}
+          className={cn("grid content-start gap-3 p-4", ADMIN_CARD_CLASS)}
           aria-labelledby="admin-pepites-top-title"
         >
           <div>
-            <h4
-              id="admin-pepites-top-title"
-              className={cn(pp.monoStrong, pp.muted, "text-[9px] ltr:tracking-[0.1em]")}
-            >
+            <h4 id="admin-pepites-top-title" className={ADMIN_LABEL_CLASS}>
               {rtl ? "أفضل 10" : "Top 10"}
               {scheduleTime ? ` · ${scheduleTime}` : ""}
             </h4>
             {isDraft ? (
-              <p className={cn(pp.muted, "text-[12px]")}>
+              <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
                 {rtl
                   ? "رتّب بالسهمين · جملة بالفرنسية وأخرى بالعربية لكل لاعب"
                   : "Réordonnez avec les flèches · une phrase en français et en arabe par joueur"}
@@ -601,16 +607,22 @@ function EditionEditor({
             {draft.map((entry, index) => (
               <li
                 key={entry.playerId}
-                className="grid gap-2 rounded-[12px] border border-[color:var(--pepites-line)] bg-[color:var(--pepites-page)] p-3"
+                className={cn("grid gap-2 p-3", ADMIN_PANEL_CLASS)}
                 data-testid="admin-pepites-entry"
               >
                 <div className="flex items-center gap-3">
-                  <span className={cn(pp.display, pp.ink, "w-6 text-center text-[20px]")}>
+                  <span className={cn("w-6 shrink-0 text-center", ui.score.row, ui.tone.ink)}>
                     {index + 1}
                   </span>
+                  {/* The name stays the entry's first paragraph: the browser
+                      suite reads it as such to check the order. */}
                   <div className="min-w-0 flex-1">
-                    <p className={cn(pp.heavy, pp.text, "truncate text-[14px]")}>{entry.name}</p>
-                    <p className={cn(pp.mono, pp.muted, "text-[9px]")}>
+                    <PepitesName
+                      as="p"
+                      name={entry.name}
+                      className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}
+                    />
+                    <p className={cn(ui.text.micro, ui.tone.muted)}>
                       {[
                         entry.team,
                         entry.computedRank
@@ -655,7 +667,6 @@ function EditionEditor({
                 {isDraft ? (
                   <div className="grid gap-2">
                     <ReasonField
-                      tag="FR"
                       label={rtl ? "السطر بالفرنسية" : "Ligne en français"}
                       placeholder={
                         rtl ? "جملة بالفرنسية (إلزامية)" : "Phrase en français (obligatoire)"
@@ -665,7 +676,6 @@ function EditionEditor({
                       onChange={(value) => setReason(index, "reasonFr", value)}
                     />
                     <ReasonField
-                      tag="AR"
                       label={rtl ? "السطر بالعربية" : "Ligne en arabe"}
                       placeholder="الجملة بالعربية (إلزامية)"
                       value={entry.reasonAr}
@@ -674,7 +684,7 @@ function EditionEditor({
                     />
                   </div>
                 ) : entry.reasonFr || entry.reasonAr ? (
-                  <p className={cn(pp.muted, "text-[12px]")}>
+                  <p className={cn(ui.text.secondary, ui.tone.muted)}>
                     {rtl ? entry.reasonAr : entry.reasonFr}
                   </p>
                 ) : null}
@@ -706,7 +716,7 @@ function EditionEditor({
 
       {isDraft && canPublish ? (
         <div
-          className={cn("flex flex-wrap items-end gap-3 rounded-[14px] p-4", pp.card)}
+          className={cn("flex flex-wrap items-end gap-3 p-4", ADMIN_CARD_CLASS)}
           data-testid="admin-pepites-schedule-panel"
         >
           <UiInput
@@ -717,8 +727,9 @@ function EditionEditor({
             data-testid="admin-pepites-schedule-at"
             className="min-w-[14rem]"
           />
-          <button
-            type="button"
+          <UiButton
+            variant="gradient"
+            size="sm"
             disabled={
               busy ||
               dirty ||
@@ -731,17 +742,11 @@ function EditionEditor({
               if (at) run.mutate(() => pepitesAdmin.schedule(editionId, at));
             }}
             data-testid="admin-pepites-schedule"
-            className={cn(
-              "inline-flex min-h-[40px] items-center rounded-full px-5 text-[13px] text-[#0d1f4a] disabled:opacity-45",
-              "bg-[linear-gradient(to_right,#5de39b,#7fd6f0_45%,#7c6cf0)]",
-              pp.heavy,
-              ui.focus,
-            )}
           >
             {rtl ? "برمجة النشر" : "Programmer la publication"}
-          </button>
+          </UiButton>
           <p
-            className={cn(pp.muted, "basis-full text-[12px]")}
+            className={cn("basis-full", ui.text.meta, ui.tone.muted)}
             data-testid="admin-pepites-schedule-hint"
           >
             {dirty
@@ -841,15 +846,33 @@ function EditionEditor({
       ) : null}
 
       {moves.length > 0 ? (
-        <details>
-          <summary className={cn(ADMIN_LABEL_CLASS, "cursor-pointer")}>
+        <details className="group">
+          <summary
+            className={cn(
+              ADMIN_LABEL_CLASS,
+              "flex min-h-[var(--ui-tap-min)] cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden",
+              ui.radius.control,
+              ui.focus,
+            )}
+          >
             {rtl ? "السجل" : "Historique"}
+            <ChevronDown
+              aria-hidden
+              className="h-4 w-4 transition-transform duration-[var(--duration-quick)] group-open:rotate-180"
+            />
           </summary>
           <ul className={cn("mt-2 grid gap-1", ui.text.meta)}>
             {moves.map((move, index) => (
-              <li key={index}>
-                <AdminDatum>{`${move.from ?? "∅"} → ${move.to}`}</AdminDatum> · {move.actorKind} ·{" "}
-                {adminDateTime(move.at, rtl)}
+              <li key={index} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                {/* Each state is LTR data; the arrow between them follows the
+                    page (styles.css mirrors it in Arabic), so the change
+                    reads in the page's direction. */}
+                <AdminDatum>{move.from ?? "∅"}</AdminDatum>
+                <ArrowRight aria-hidden className={cn("h-3.5 w-3.5", ui.tone.muted)} />
+                <AdminDatum>{move.to}</AdminDatum>
+                <span>
+                  · {move.actorKind} · {adminDateTime(move.at, rtl)}
+                </span>
               </li>
             ))}
           </ul>
@@ -860,18 +883,17 @@ function EditionEditor({
 }
 
 /**
- * One of an entry's two lines (Figma A1): a small FR/AR tag and the field,
- * outlined in orange while it is empty, since both lines are required.
+ * One of an entry's two lines (Figma A1): the kit's text area under its
+ * label, outlined in the caution colour while it is empty, since both lines
+ * are required.
  */
 function ReasonField({
-  tag,
   label,
   placeholder,
   value,
   dir,
   onChange,
 }: {
-  tag: string;
   label: string;
   placeholder: string;
   value: string;
@@ -880,28 +902,17 @@ function ReasonField({
 }) {
   const empty = !value.trim();
   return (
-    <div className="grid grid-cols-[22px_minmax(0,1fr)] items-center gap-2">
-      <span className={cn(pp.monoStrong, pp.muted, "text-[8px]")} aria-hidden>
-        {tag}
-      </span>
-      <textarea
-        aria-label={label}
-        placeholder={placeholder}
-        value={value}
-        maxLength={280}
-        rows={1}
-        dir={dir}
-        onChange={(event) => onChange(event.target.value)}
-        className={cn(
-          "min-h-[38px] w-full resize-y rounded-[10px] border bg-[color:var(--pepites-card)] px-3 py-2 text-[13px]",
-          pp.text,
-          empty
-            ? "border-[#f0a020] placeholder:text-[#b86e00]"
-            : "border-[color:var(--pepites-line)]",
-          ui.focus,
-        )}
-      />
-    </div>
+    <UiTextarea
+      label={label}
+      placeholder={placeholder}
+      value={value}
+      maxLength={280}
+      rows={1}
+      dir={dir}
+      aria-required
+      onChange={(event) => onChange(event.target.value)}
+      fieldClassName={empty ? "border-[color:var(--ui-caution)]" : undefined}
+    />
   );
 }
 

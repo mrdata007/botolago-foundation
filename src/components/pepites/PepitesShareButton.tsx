@@ -11,11 +11,8 @@ import { renderShareImage, shareImageModel } from "./share-image";
  */
 export function PepitesShareButton({
   edition,
-  onNight = false,
 }: {
   edition: Pick<PepitesEdition, "week" | "status" | "entries">;
-  /** On the night band the trigger is the glass button. */
-  onNight?: boolean;
 }) {
   const { t, tr, lang } = useI18n();
   const model = shareImageModel(edition, lang, {
@@ -44,7 +41,6 @@ export function PepitesShareButton({
       fileName={`pepites-semaine-${edition.week}.png`}
       message={t("pepites.share.message").replace("{n}", `⁨${edition.week}⁩`)}
       path={`/pepites/semaine/${edition.week}`}
-      onNight={onNight}
       testId="pepites-share"
     />
   );

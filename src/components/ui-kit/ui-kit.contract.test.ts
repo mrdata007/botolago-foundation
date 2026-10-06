@@ -323,6 +323,17 @@ describe("ui-kit: one scale of each kind", () => {
     }
     expect(fills.size).toBe(5);
   });
+
+  it("the rating scale is the fixture-difficulty scale read backwards, fill and foreground", () => {
+    // Rating 5 (best) is FDR 1 (green). An alias, never a colour of its own,
+    // so the chip keeps the FDR scale's dark values and measured foregrounds.
+    for (const step of [1, 2, 3, 4, 5]) {
+      expect(rootDeclarations.get(`--ui-rating-${step}`)).toBe(`var(--ui-fdr-${6 - step})`);
+      expect(rootDeclarations.get(`--ui-on-rating-${step}`)).toBe(`var(--ui-on-fdr-${6 - step})`);
+      expect(darkDeclarations.has(`--ui-rating-${step}`)).toBe(false);
+      expect(darkDeclarations.has(`--ui-on-rating-${step}`)).toBe(false);
+    }
+  });
 });
 
 describe("ui-kit: the primitives keep their promises", () => {
