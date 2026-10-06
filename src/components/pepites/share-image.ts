@@ -827,6 +827,9 @@ export async function renderStoryImage(model: StoryModel): Promise<Blob> {
 /** The wheel, in the card's 390-wide units: centre, the track's radii, the values' radius. */
 const WHEEL = { cx: 195, cy: 318, inner: 62, outer: 128, label: 142 } as const;
 
+/** A legend marker's outline, in card units (about 1.7px on the 1080 picture). */
+const MARKER_LINE = 0.6;
+
 async function drawStory(
   model: StoryModel,
   logo: HTMLImageElement | null,
@@ -947,7 +950,9 @@ async function drawStory(
   );
 
   // Legend: four on the first row, the fifth on the second, centred. Each
-  // label leads with a small wheel that marks its own slice.
+  // label leads with a small wheel that marks its own slice: that slice solid
+  // white, the other four outlined in the muted foreground (10.9:1 on the
+  // ground), so the reader sees where the marked slice sits in the ring.
   const legendRows = [model.legend.slice(0, 4), model.legend.slice(4)];
   legendRows.forEach((labels, row) => {
     ctx.font = shareFont(body, 700, 10);
@@ -961,16 +966,17 @@ async function drawStory(
       const y = 470 + row * 21 + 10.5;
       for (let other = 0; other < 5; other += 1) {
         const [a, b] = sliceAngles(other, rtl, 0.12);
-        sector(
-          ctx,
-          centre,
-          y,
-          2,
-          6,
-          a,
-          b,
-          other === slice ? SHARE_PALETTE.white : SHARE_PALETTE.panel,
-        );
+        if (other === slice) {
+          sector(ctx, centre, y, 2, 6, a, b, SHARE_PALETTE.white);
+        } else {
+          // Inset by half the line, so the outline stays inside the slice's shape.
+          ctx.save();
+          sectorPath(ctx, centre, y, 2 + MARKER_LINE / 2, 6 - MARKER_LINE / 2, a, b);
+          ctx.lineWidth = MARKER_LINE;
+          ctx.strokeStyle = SHARE_PALETTE.muted;
+          ctx.stroke();
+          ctx.restore();
+        }
       }
       text(ctx, label, rtl ? x - 16 : x + 16, 470 + row * 21 + 1, {
         face: body,
@@ -1033,6 +1039,21 @@ async function drawStory(
   return await toPng(canvas);
 }
 
+function sectorPath(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  inner: number,
+  outer: number,
+  start: number,
+  end: number,
+) {
+  ctx.beginPath();
+  ctx.arc(cx, cy, outer, start, end);
+  ctx.arc(cx, cy, inner, end, start, true);
+  ctx.closePath();
+}
+
 function sector(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -1043,10 +1064,7 @@ function sector(
   end: number,
   fill: string | CanvasGradient,
 ) {
-  ctx.beginPath();
-  ctx.arc(cx, cy, outer, start, end);
-  ctx.arc(cx, cy, inner, end, start, true);
-  ctx.closePath();
+  sectorPath(ctx, cx, cy, inner, outer, start, end);
   ctx.fillStyle = fill;
   ctx.fill();
 }

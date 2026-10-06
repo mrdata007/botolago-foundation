@@ -831,6 +831,28 @@ describe("the share pictures' vertical rhythm", () => {
   });
 });
 
+describe("the story's legend", () => {
+  for (const lang of ["fr", "ar"] as const) {
+    it(`each marker (${lang}): its own slice solid white, the other four outlined at 3:1 or more`, async () => {
+      const { ops } = await draw("story", lang);
+      // The markers: small shapes (12 card units, about 33px) drawn after the
+      // wheel and the disc's ring.
+      const ring = ops.findIndex((op) => op.kind === "stroke");
+      const markers = ops
+        .slice(ring + 1)
+        .filter((op) => (op.kind === "fill" || op.kind === "stroke") && op.right - op.left < 40);
+      const solid = markers.filter((op) => op.kind === "fill");
+      const outlines = markers.filter((op) => op.kind === "stroke");
+      expect(solid).toHaveLength(5);
+      for (const op of solid) expect(op.paint).toBe(SHARE_PALETTE.white);
+      expect(outlines).toHaveLength(20);
+      for (const op of outlines) {
+        expect(contrast(op.paint as string, SHARE_PALETTE.ground)).toBeGreaterThanOrEqual(3);
+      }
+    });
+  }
+});
+
 describe("the story's figures", () => {
   it("the French stats line keeps a visible group separator", async () => {
     // The model keeps formatCount's narrow no-break space; Manrope sets it at
