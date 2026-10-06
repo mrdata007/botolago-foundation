@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { QueryClient } from "@tanstack/react-query";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { sessionAccountId } from "@/auth/second-factor";
 import type {
   MyPredictionDto,
+  MyPredictionsDto,
   PredictionFixtureDto,
   PredictionInput,
   PredictionsRoundDto,
@@ -15,6 +17,8 @@ import { PredictionSaveQueue } from "@/backend/predictions/save-queue";
 import type { AuthSession, AuthUser } from "@/services/auth-types";
 import {
   accountSaveQueue,
+  applySavedPredictions,
+  predictionsKeys,
   awaitingScoring,
   barFor,
   nextSaveBar,
@@ -335,24 +339,68 @@ describe("a queue sends its account's picks to that account only (accountSaveQue
       });
     }
   });
+});
 
-  test("a save's results land in the picks of the account whose queue sent them", () => {
-    // They can land after the page has moved to another account: the queue's
-    // own account travels with them, never the page's.
-    const hook = readFileSync(join(import.meta.dir, "use-predictions-round.ts"), "utf8").replace(
-      /\s+/g,
-      " ",
-    );
-    expect(hook).toContain("const queue = accountSaveQueue(uid, {");
-    expect(hook).toContain("applyResultsRef.current(uid, results);");
-    expect(hook).toContain("(owner: string, results: readonly SaveResultDto[]) => {");
-    expect(hook).toContain("predictionsKeys.mine(owner, resolvedNumber)");
-    expect(hook).toContain("predictionsKeys.fixture(owner, result.fixtureId)");
-    // The page's own `uid` is not in the writer at all.
-    const writer = hook.slice(
-      hook.indexOf("const applyResults = useCallback("),
-      hook.indexOf("const applyResultsRef"),
-    );
-    expect(writer).not.toMatch(/\buid\b/);
+describe("save responses after navigating to another round", () => {
+  function cache() {
+    const client = new QueryClient();
+    for (const number of [1, 2]) {
+      client.setQueryData(predictionsKeys.round(number, "fr"), {
+        allowed: true,
+        round: { number },
+        fixtures: [{ id: `fixture-${number}` }],
+      });
+      for (const owner of ["A", "B"])
+        client.setQueryData(predictionsKeys.mine(owner, number), {
+          items: [],
+          summary: { predicted: 0 },
+        });
+    }
+    return client;
+  }
+  const result = (number: number) => ({
+    fixtureId: `fixture-${number}`,
+    home: 2,
+    away: 1,
+    status: "saved" as const,
+    submittedAt: "2026-10-06T12:00:00Z",
+  });
+  const items = (client: QueryClient, owner: string, number: number) =>
+    client.getQueryData<MyPredictionsDto>(predictionsKeys.mine(owner, number))!.items;
+
+  test("a late round-one save updates round one, leaving round two and another account alone", () => {
+    const client = cache();
+    applySavedPredictions(client, "A", [result(1)]);
+    expect(items(client, "A", 1)).toMatchObject([{ fixtureId: "fixture-1", home: 2 }]);
+    expect(items(client, "A", 2)).toEqual([]);
+    expect(items(client, "B", 1)).toEqual([]);
+    client.clear();
+  });
+
+  test("one queued batch can update multiple rounds", () => {
+    const client = cache();
+    applySavedPredictions(client, "A", [result(1), result(2)]);
+    expect(items(client, "A", 1).map((item) => item.fixtureId)).toEqual(["fixture-1"]);
+    expect(items(client, "A", 2).map((item) => item.fixtureId)).toEqual(["fixture-2"]);
+    client.clear();
+  });
+
+  test("restored drafts for uncached rounds invalidate the owner's reads without guessing", () => {
+    const client = cache();
+    applySavedPredictions(client, "A", [result(3)]);
+    expect(items(client, "A", 1)).toEqual([]);
+    expect(items(client, "A", 2)).toEqual([]);
+    expect(client.getQueryState(predictionsKeys.mine("A", 1))?.isInvalidated).toBe(true);
+    expect(client.getQueryState(predictionsKeys.mine("B", 1))?.isInvalidated).toBe(false);
+    client.clear();
+  });
+
+  test("a response after sign-out does not recreate the outgoing account's cache", () => {
+    const client = cache();
+    client.removeQueries({ queryKey: ["predictions", "mine", "A"] });
+    applySavedPredictions(client, "A", [result(1)]);
+    expect(client.getQueryData(predictionsKeys.mine("A", 1))).toBeUndefined();
+    expect(items(client, "B", 1)).toEqual([]);
+    client.clear();
   });
 });

@@ -286,6 +286,53 @@ describe("the guest store", () => {
     expect(store.get(id(1))).not.toBeNull();
   });
 
+  it("keeps unsaved picks in memory when writes fail but reads still work", () => {
+    const storage = memoryStorage();
+    const store = new GuestPredictionStore(storage);
+    store.upsert(SEASON, pick(1));
+    const write = storage.setItem;
+    storage.setItem = () => {
+      throw new Error("QuotaExceededError");
+    };
+    store.upsert(SEASON, pick(1, { home: 3 }));
+    store.upsert(SEASON, pick(2));
+    expect(store.get(id(1))?.home).toBe(3);
+    expect(store.get(id(2))).toEqual(pick(2));
+    expect(store.persistent).toBe(false);
+    expect(store.forClaim(SEASON)).toHaveLength(2);
+    store.applyClaim([{ fixtureId: id(1), status: "imported" }]);
+    expect(store.get(id(1))).toBeNull();
+    expect(store.get(id(2))).not.toBeNull();
+    storage.setItem = write;
+    store.upsert(SEASON, pick(3));
+    expect(store.persistent).toBe(true);
+    expect(new GuestPredictionStore(storage).read().predictions).toEqual(store.read().predictions);
+  });
+
+  it("keeps the first pick when a full store has no previous value", () => {
+    const storage = memoryStorage();
+    storage.setItem = () => {
+      throw new Error("QuotaExceededError");
+    };
+    const store = new GuestPredictionStore(storage);
+    store.upsert(SEASON, pick(1));
+    expect(store.get(id(1))).toEqual(pick(1));
+    expect(store.persistent).toBe(false);
+  });
+
+  it("does not resurrect stale picks if clearing storage fails", () => {
+    const storage = memoryStorage();
+    const store = new GuestPredictionStore(storage);
+    store.upsert(SEASON, pick(1));
+    storage.removeItem = () => {
+      throw new Error("storage blocked");
+    };
+    store.clear();
+    expect(store.read().predictions).toEqual({});
+    expect(store.forClaim(SEASON)).toEqual([]);
+    expect(store.persistent).toBe(false);
+  });
+
   it("starts over on corrupt data or an unknown version", () => {
     const storage = memoryStorage();
     storage.setItem("botolago.predictions.guest.v1", "{not json");

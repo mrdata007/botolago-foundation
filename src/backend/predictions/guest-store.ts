@@ -90,6 +90,7 @@ function notifyChange(): void {
 
 export class GuestPredictionStore {
   private memory: GuestStoreState = emptyGuestStore();
+  private memoryOnly = false;
 
   constructor(
     private readonly storage: KeyValueStorage | null = browserStorage(),
@@ -98,36 +99,38 @@ export class GuestPredictionStore {
 
   /** False when the browser refuses storage: picks last for this visit only. */
   get persistent(): boolean {
-    return this.storage !== null;
+    return this.storage !== null && !this.memoryOnly;
   }
 
   read(): GuestStoreState {
-    if (!this.storage) return this.memory;
+    if (!this.storage || this.memoryOnly) return this.memory;
     let raw: string | null;
     try {
       raw = this.storage.getItem(this.key);
     } catch {
+      this.memoryOnly = true;
       return this.memory;
     }
-    if (!raw) return emptyGuestStore();
+    if (!raw) return (this.memory = emptyGuestStore());
     try {
       const parsed = guestStoreSchema.safeParse(JSON.parse(raw));
       // Corrupt or from an unknown version: start over rather than guess.
-      return parsed.success ? parsed.data : emptyGuestStore();
+      return (this.memory = parsed.success ? parsed.data : emptyGuestStore());
     } catch {
-      return emptyGuestStore();
+      return (this.memory = emptyGuestStore());
     }
   }
 
   private write(state: GuestStoreState): GuestStoreState {
+    // Reads must prefer this copy after a failed write, even if getItem still works.
+    this.memory = state;
     if (this.storage) {
       try {
         this.storage.setItem(this.key, JSON.stringify(state));
+        this.memoryOnly = false;
       } catch {
-        this.memory = state;
+        this.memoryOnly = true;
       }
-    } else {
-      this.memory = state;
     }
     notifyChange();
     return state;
@@ -226,8 +229,9 @@ export class GuestPredictionStore {
     if (this.storage) {
       try {
         this.storage.removeItem(this.key);
+        this.memoryOnly = false;
       } catch {
-        /* blocked: memory already cleared */
+        this.memoryOnly = true;
       }
     }
     notifyChange();
