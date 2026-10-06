@@ -356,6 +356,17 @@ describe("ui-kit: one scale of each kind", () => {
     }
     expect(fills.size).toBe(5);
   });
+
+  it("the rating scale is the fixture-difficulty scale read backwards, fill and foreground", () => {
+    // Rating 5 (best) is FDR 1 (green). An alias, never a colour of its own,
+    // so the chip keeps the FDR scale's dark values and measured foregrounds.
+    for (const step of [1, 2, 3, 4, 5]) {
+      expect(rootDeclarations.get(`--ui-rating-${step}`)).toBe(`var(--ui-fdr-${6 - step})`);
+      expect(rootDeclarations.get(`--ui-on-rating-${step}`)).toBe(`var(--ui-on-fdr-${6 - step})`);
+      expect(darkDeclarations.has(`--ui-rating-${step}`)).toBe(false);
+      expect(darkDeclarations.has(`--ui-on-rating-${step}`)).toBe(false);
+    }
+  });
 });
 
 describe("ui-kit: the primitives keep their promises", () => {
@@ -834,8 +845,8 @@ describe("ui-kit: directional icons mirror once in Arabic (BG-0150)", () => {
     "components/shell/PageBackground.tsx": ["md:rtl:-scale-x-100"],
     "routes/fantasy.profile.tsx": ["rtl:-scale-x-100"],
     "routes/index.tsx": ["rtl:-scale-x-100"],
-    // The Pépites rating chart, a hand-drawn svg, runs in reading order.
-    "components/pepites/PepitesPlayerPage.tsx": ["rtl:-scale-x-100"],
+    // (The Pépites rating chart used to flip here too; since BG-0152 it
+    // computes its own direction, so it needs no CSS flip.)
     // The goal caption's slant leans with the script (its French twin is ltr:-rotate-[4deg]).
     "components/matches/GoalMoment.tsx": ["rtl:rotate-[4deg]"],
   };
@@ -902,7 +913,7 @@ describe("ui-kit: directional icons mirror once in Arabic (BG-0150)", () => {
     expect(rtlFlips(code)).toEqual(["rtl:-scale-x-100"]);
   });
 
-  it("scales or rotates nothing in Arabic beyond the allowlisted photos, chart and goal caption", () => {
+  it("scales or rotates nothing in Arabic beyond the allowlisted photos and goal caption", () => {
     const srcDir = join(ROOT, "src");
     const files = (readdirSync(srcDir, { recursive: true }) as string[])
       .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))

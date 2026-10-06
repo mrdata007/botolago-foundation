@@ -307,8 +307,10 @@ the snapshot) was not checked against the live site.
 - **Sub-brands:**
   - BotolaGO Fantasy;
   - Pronostics;
-  - Pépites, which keeps its own look inside BotolaGO. The Pépites plan names it the first "BotolaGO
-    Data" product; that label exists only in plan documents, not in the product.
+  - Pépites, which uses the main BotolaGO look like every other screen (owner, 2026-10-05: its own
+    night bands, energy gradient, mono meta lines and slant are retired; BG-0152). The Pépites plan
+    names it the first "BotolaGO Data" product; that label exists only in plan documents, not in
+    the product.
 - **Taglines in use:**
   - "Actualité & Fantasy du football marocain" / "أخبار وفانتازي كرة القدم المغربية";
   - "Le football marocain, réuni." / "كرة القدم المغربية، في مكان واحد.";

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "bun:test";
 
-import { initials, ratingBand, segments, shirtName, teamKit } from "./pepites-design";
+import {
+  initials,
+  printedRatingBand,
+  ratingBand,
+  segments,
+  shirtName,
+  teamKit,
+} from "./pepites-design";
 import { formatCount, nextSeasonLabel, playerMetaLine } from "./pepites-format";
 
 describe("the Figma parts' helpers", () => {
@@ -25,6 +32,13 @@ describe("the Figma parts' helpers", () => {
 
   it("puts each rating on the chip's fixed scale, lower bounds included", () => {
     expect([5.9, 6, 6.49, 6.5, 7, 7.49, 7.5].map(ratingBand)).toEqual([1, 2, 2, 3, 4, 4, 5]);
+  });
+
+  it("bands a rating as it is printed, to one decimal", () => {
+    // 6.49 prints "6,5", so it takes 6.5's band; 6.44 prints "6,4" and keeps its own.
+    expect([5.96, 6.44, 6.45, 6.49, 6.96, 7.44, 7.45].map(printedRatingBand)).toEqual([
+      2, 2, 3, 3, 4, 4, 5,
+    ]);
   });
 
   it("dresses a club the kit table does not know in the default kit", () => {
