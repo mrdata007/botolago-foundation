@@ -124,6 +124,8 @@ const OPEN_WHILE_OWED = [
   "/terms",
   "/prizes/terms",
   "/unsubscribe",
+  // How account deletion works: public, and where a closed account lands.
+  "/suppression-compte",
 ] as const;
 
 function isUnder(pathname: string, base: string): boolean {

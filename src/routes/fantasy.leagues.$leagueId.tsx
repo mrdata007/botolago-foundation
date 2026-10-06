@@ -17,6 +17,12 @@ import {
 } from "@/components/fantasy-lists/standings";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
+import { ReportNameMenu } from "@/components/report/ReportNameMenu";
+import {
+  isOthersLeague,
+  isOwnStanding,
+  standingReportTargets,
+} from "@/components/report/report-targets";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import {
   ui,
@@ -41,6 +47,7 @@ import { fantasyHead } from "@/lib/fantasy-meta";
 import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
@@ -81,6 +88,8 @@ function LeagueDetailBody() {
     enabled: PRONOSTICS_PROMOTED && tab === "predictions",
   });
   const [busy, setBusy] = useState(false);
+  // The reader's own team, which gets no "Signaler" (see `isOwnStanding`).
+  const ownTeamId = useFantasyOwned().snapshot?.teamId ?? null;
 
   const leagueQ = useQuery({
     queryKey: key("league", leagueId),
@@ -142,6 +151,16 @@ function LeagueDetailBody() {
         kicker={t("nav.fantasy")}
         title={leagueQ.data?.name ?? t("fpl.league")}
         backTo="/fantasy/leagues"
+        trailing={
+          leagueQ.data && isOthersLeague(leagueQ.data) ? (
+            <ReportNameMenu
+              placement="header"
+              targets={[
+                { kind: "league", name: leagueQ.data.name, id: `league:${leagueQ.data.id}` },
+              ]}
+            />
+          ) : null
+        }
       />
       <FantasyScreenGate state={screen} next={`/fantasy/leagues/${leagueId}`}>
         <UiTabs
@@ -246,25 +265,32 @@ function LeagueDetailBody() {
                               <bdi>{nf.format(row.rank)}</bdi>
                             </UiTD>
                             <UiTD className={cn("py-2.5", STANDINGS_NAME_CELL)}>
-                              <span
-                                dir="auto"
-                                className={cn(
-                                  "line-clamp-2 break-words",
-                                  ui.text.secondary,
-                                  "[font-weight:var(--ui-weight-strong)]",
-                                  ui.tone.default,
+                              <div className="flex items-center gap-1">
+                                <div className="min-w-0 flex-1">
+                                  <span
+                                    dir="auto"
+                                    className={cn(
+                                      "line-clamp-2 break-words",
+                                      ui.text.secondary,
+                                      "[font-weight:var(--ui-weight-strong)]",
+                                      ui.tone.default,
+                                    )}
+                                  >
+                                    {row.teamName}
+                                  </span>
+                                  {row.managerName && row.managerName !== row.teamName ? (
+                                    <span
+                                      dir="auto"
+                                      className={cn("block truncate", ui.text.meta, ui.tone.muted)}
+                                    >
+                                      {row.managerName}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                {isOwnStanding(row.managerId, ownTeamId) ? null : (
+                                  <ReportNameMenu targets={standingReportTargets(row)} />
                                 )}
-                              >
-                                {row.teamName}
-                              </span>
-                              {row.managerName && row.managerName !== row.teamName ? (
-                                <span
-                                  dir="auto"
-                                  className={cn("block truncate", ui.text.meta, ui.tone.muted)}
-                                >
-                                  {row.managerName}
-                                </span>
-                              ) : null}
+                              </div>
                             </UiTD>
                             <UiTD numeric className={cn(STANDINGS_FIGURE_CELL, ui.tone.muted)}>
                               {nf.format(row.gameweekScore)}

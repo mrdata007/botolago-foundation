@@ -103,7 +103,10 @@ describe("Option A shell — top bar", () => {
 
   it("rounds the desktop nav links and marks the active one white on navy", () => {
     expect(topBar).toContain("ui.radius.full");
-    expect(topBar).toContain("ui.surface.inkPlain");
+    // White on navy in light is `ui.surface.selected` (BG-0149): the same two
+    // colours as `inkPlain` there, and the light brand fill in dark, where the
+    // navy disappeared into the bar and the current page did not show.
+    expect(topBar).toContain("ui.surface.selected");
     expect(topBar).not.toContain("ui.radius.control");
     expect(topBar).toContain('aria-current={active ? "page" : undefined}');
   });

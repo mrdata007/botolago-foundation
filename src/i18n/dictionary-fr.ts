@@ -1572,6 +1572,8 @@ export const fr = {
   "auth.error.email_taken": "Un compte existe déjà avec cet e-mail.",
   "auth.error.terms_required": "Vous devez accepter les conditions.",
   "auth.error.credentials": "E-mail ou mot de passe incorrect.",
+  "auth.error.account_closed":
+    "Ce compte est fermé. Si vous avez demandé sa suppression, il sera effacé sous 7 jours. Une question : support@botolago.com.",
   "auth.error.email_unconfirmed":
     "E-mail non confirmé. Vérifiez votre boîte de réception, puis réessayez.",
   "auth.error.generic": "Une erreur est survenue. Réessayez.",
@@ -1620,6 +1622,25 @@ export const fr = {
   "profile.legal.terms_desc": "Les règles du jeu et de votre compte BotolaGO.",
   "profile.legal.privacy": "Politique de confidentialité",
   "profile.legal.privacy_desc": "Les données que nous collectons et ce que nous en faisons.",
+  "profile.section.help": "Aide et contact",
+  "profile.contact": "Nous contacter",
+
+  /* Reporting a name another user chose (App Store guideline 1.2). The
+     message is written by the reader's mail app (src/lib/report-content.ts). */
+  "report.action": "Signaler",
+  "report.menu_label": "Signaler « {name} »",
+  "report.team": "Signaler le nom de l'équipe",
+  "report.league": "Signaler le nom de la ligue",
+  "report.user": "Signaler le nom d'utilisateur",
+  "report.mail.subject": "Signalement : {kind} « {name} »",
+  "report.mail.kind": "Type :",
+  "report.mail.name": "Nom :",
+  "report.mail.id": "Identifiant :",
+  "report.mail.page": "Page :",
+  "report.mail.reason": "Pourquoi ce nom pose problème (facultatif) :",
+  "report.kind.team": "nom d'équipe",
+  "report.kind.league": "nom de ligue",
+  "report.kind.user": "nom d'utilisateur",
   "profile.section.danger": "Supprimer le compte",
   "profile.change_password": "Changer le mot de passe",
   "profile.change_password_desc": "Recevez un lien pour définir un nouveau mot de passe.",
@@ -1627,20 +1648,70 @@ export const fr = {
   "profile.mfa_setup_desc": "Sécurisez votre compte avec un code à usage unique.",
   "profile.delete_account": "Supprimer mon compte",
   "profile.delete_account_desc":
-    "Cette action supprime définitivement votre compte et vos données BotolaGO.",
+    "Votre compte est fermé immédiatement et supprimé définitivement sous 7 jours.",
   "profile.delete_confirm_title": "Supprimer votre compte ?",
   "profile.delete_confirm_body":
-    "Votre profil, votre équipe Fantasy et vos préférences seront supprimés définitivement. Cette action est irréversible.",
-  "profile.delete_confirm_checkbox": "Je comprends que cette action est irréversible.",
+    "Vous êtes déconnecté partout et votre nom disparaît des classements. Sous 7 jours, le compte et ses données sont effacés, sans retour possible.",
+  "profile.delete_confirm_kept":
+    "Seuls la trace des lots déjà remis (5 ans) et les journaux de sécurité (12 mois) sont gardés, détachés du compte.",
+  "profile.delete_learn_more": "Tout savoir sur la suppression",
+  "profile.delete_confirm_checkbox": "Je comprends que la suppression est définitive.",
   "profile.delete_confirm_cta": "Supprimer définitivement",
   "profile.delete_cancel_cta": "Annuler",
-  "profile.delete_pending_title": "Suppression demandée",
-  "profile.delete_pending_body":
-    "Votre demande a été enregistrée. Vous pouvez l'annuler tant qu'elle n'a pas été traitée.",
-  "profile.delete_cancel_request_cta": "Annuler la suppression",
-  "profile.delete_success_toast": "Demande de suppression envoyée.",
-  "profile.delete_cancelled_toast": "Suppression annulée.",
-  "profile.delete_error_toast": "Une erreur est survenue. Réessayez.",
+  "profile.delete_error_toast":
+    "La suppression n'a pas abouti. Réessayez, ou écrivez à support@botolago.com.",
+
+  "account_deletion.meta_title": "Supprimer son compte BotolaGO",
+  "account_deletion.meta_description":
+    "Comment supprimer votre compte BotolaGO depuis l'application ou par e-mail, ce qui est supprimé, ce qui est conservé et dans quels délais.",
+  "account_deletion.title": "Supprimer votre compte BotolaGO",
+  "account_deletion.intro":
+    "Vous pouvez supprimer votre compte à tout moment, gratuitement. Il est fermé immédiatement, puis effacé définitivement sous 7 jours.",
+  "account_deletion.done_title": "Votre compte est fermé",
+  "account_deletion.done_body":
+    "Vous avez été déconnecté et ce compte ne peut plus être utilisé. Il sera supprimé définitivement sous 7 jours ; un e-mail vous le confirmera.",
+  "account_deletion.app_title": "Depuis l'application",
+  "account_deletion.app_step_1": "Connectez-vous, puis ouvrez Profil.",
+  "account_deletion.app_step_2":
+    "Descendez jusqu'à « Supprimer le compte » et touchez « Supprimer mon compte ».",
+  "account_deletion.app_step_3":
+    "Lisez ce qui sera supprimé, cochez la case de confirmation, puis touchez « Supprimer définitivement ». Si votre compte est protégé par un code à usage unique, il vous sera demandé d'abord.",
+  "account_deletion.email_title": "Par e-mail",
+  "account_deletion.email_body":
+    "Si vous ne pouvez plus vous connecter, écrivez-nous depuis l'adresse e-mail de votre compte, avec pour objet « Suppression de compte ». Nous vérifions que la demande vient bien du titulaire et la traitons sous 30 jours au plus ; le compte est alors fermé, puis effacé sous 7 jours comme indiqué ci-dessous. Adresse :",
+  "account_deletion.email_subject": "Suppression de compte",
+  "account_deletion.timing_title": "Délais",
+  "account_deletion.timing_now":
+    "Immédiatement : vous êtes déconnecté de tous vos appareils, le compte ne peut plus se connecter, vos notifications s'arrêtent et votre nom disparaît des classements publics.",
+  "account_deletion.timing_hold":
+    "Sous 7 jours : le compte et les données ci-dessous sont effacés automatiquement, et un e-mail de confirmation est envoyé à l'adresse du compte.",
+  "account_deletion.timing_final":
+    "Une fois confirmée, la suppression ne peut pas être annulée. Après l'effacement, vous pouvez créer un nouveau compte avec la même adresse.",
+  "account_deletion.deleted_title": "Ce qui est supprimé",
+  "account_deletion.deleted_account":
+    "Votre compte et vos moyens de connexion : adresse e-mail, mot de passe, connexion Google ou Apple, codes à usage unique.",
+  "account_deletion.deleted_profile":
+    "Votre profil : nom, nom d'utilisateur, photo, club favori, langue.",
+  "account_deletion.deleted_game":
+    "Vos données de jeu : équipe Fantasy, compositions, transferts, jetons, points et classements, pronostics et votes.",
+  "account_deletion.deleted_settings":
+    "Vos préférences, clubs suivis, notifications, articles enregistrés et les téléphones enregistrés pour les notifications.",
+  "account_deletion.deleted_leagues":
+    "Les ligues que vous avez créées passent au membre le plus ancien ; une ligue sans autre membre est supprimée.",
+  "account_deletion.kept_title": "Ce qui est conservé, et combien de temps",
+  "account_deletion.kept_prizes":
+    "Si un lot vous a déjà été remis : la trace de ce lot et les justificatifs vérifiés, détachés de votre compte, 5 ans à compter de la remise (obligations comptables et fiscales). Un lot non encore remis est perdu, comme le prévoient les CGU.",
+  "account_deletion.kept_security":
+    "Les journaux de sécurité (type d'action, date et identifiant technique du compte, sans contenu) : 12 mois.",
+  "account_deletion.kept_register":
+    "Un registre de la suppression : ses dates et le nombre d'éléments effacés, sans aucune donnée personnelle.",
+  "account_deletion.kept_support":
+    "Vos échanges avec le support, si vous nous avez écrit : 2 ans après la clôture de la demande.",
+  "account_deletion.kept_backups":
+    "Les copies de sauvegarde de la base de données, qui s'effacent d'elles-mêmes au bout de 7 jours.",
+  "account_deletion.contact": "Une question ? Écrivez-nous :",
+  "legal.privacy.deletion_link":
+    "Supprimer votre compte : comment faire, ce qui est supprimé et ce qui est conservé",
 
   "fantasy.cloud.loading": "Chargement de votre équipe…",
   "fantasy.cloud.saving": "Enregistrement…",
@@ -2480,6 +2551,13 @@ export const fr = {
   "pepites.share.whatsapp": "Envoyer sur WhatsApp",
   "pepites.share.copy": "Copier le lien",
   "pepites.share.copy_failed": "Le lien n'a pas pu être copié.",
+  // Inside the phone app only, when the app has the plugins (ShareImageSheet).
+  "pepites.share.save": "Enregistrer dans la galerie",
+  "pepites.share.saved": "Image enregistrée dans la galerie.",
+  "pepites.share.save_denied":
+    "BotolaGO n'a pas accès à vos photos. Autorisez-le dans les réglages du téléphone.",
+  "pepites.share.save_failed": "L'image n'a pas pu être enregistrée.",
+  "pepites.share.native_failed": "L'image n'a pas pu être partagée.",
   // The pitch demo's welcome screen (demo/, `WelcomeScreen`); the app
   // itself opens on the landing page instead.
   "welcome.title": "Bienvenue sur BotolaGO",

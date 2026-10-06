@@ -372,24 +372,10 @@ export class LocalMockAuthService implements AuthService {
     const existing = safeGet<{ requestId: string }>(K_DELETION);
     const request = existing ?? { requestId: `deletion-${session.user.id}` };
     safeSet(K_DELETION, request);
+    // As the server does: the account is closed at once, so this device is
+    // signed out.
+    await this.signOut({ resetLocalData: true });
     return { ok: true, data: request };
-  }
-
-  async cancelAccountDeletion(): Promise<AuthResult> {
-    this.init();
-    await simulateLatency();
-    if (this.readSession().status !== "authenticated")
-      return { ok: false, errorCode: "unauthorized" };
-    safeRemove(K_DELETION);
-    return { ok: true };
-  }
-
-  async getAccountDeletionStatus(): Promise<AuthResult<{ pending: boolean }>> {
-    this.init();
-    await simulateLatency();
-    if (this.readSession().status !== "authenticated")
-      return { ok: false, errorCode: "unauthorized" };
-    return { ok: true, data: { pending: safeGet<{ requestId: string }>(K_DELETION) !== null } };
   }
 
   async signOut(options?: SignOutOptions): Promise<void> {

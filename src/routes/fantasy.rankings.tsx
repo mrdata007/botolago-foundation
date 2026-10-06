@@ -18,6 +18,8 @@ import {
 import { MyRankCard } from "@/components/fantasy/MyRankCard";
 import { selectTeamPresence } from "@/components/fantasy/my-rank-state";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
+import { ReportNameMenu } from "@/components/report/ReportNameMenu";
+import { isOwnStanding, standingReportTargets } from "@/components/report/report-targets";
 import {
   ui,
   UiCard,
@@ -42,6 +44,7 @@ import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 import { keepSameOwnerData, useFantasyDataSource } from "@/services/fantasy-data-source";
+import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { pageForRank, type RankingsSort } from "@/services/fantasy-rankings";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useOwnedTeam } from "@/services/use-owned-team";
@@ -89,6 +92,7 @@ function RankingsPage() {
   const { user, status } = useAuth();
   const { source, scope, key } = useFantasyDataSource();
   const owned = useOwnedTeam();
+  const ownTeamId = useFantasyOwned().snapshot?.teamId ?? null;
   const nf = useMemo(() => new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR"), [lang]);
   // On the overall board a manager can climb thousands of places in a week;
   // the table writes such a move compactly ("▲ 12 k"), the "your position"
@@ -296,6 +300,7 @@ function RankingsPage() {
                               key={row.managerId}
                               row={row}
                               isMe={row.managerId === data.myRank?.managerId}
+                              ownTeamId={ownTeamId}
                               isLast={index === data.rows.length - 1}
                               nf={nf}
                               rankStep={rankStep}
@@ -330,6 +335,7 @@ function RankingsPage() {
 function RankingRow({
   row,
   isMe,
+  ownTeamId,
   isLast,
   nf,
   rankStep,
@@ -338,6 +344,8 @@ function RankingRow({
 }: {
   row: LeagueStanding;
   isMe: boolean;
+  /** The reader's own Fantasy team, whose row gets no "Signaler". */
+  ownTeamId: string | null;
   isLast: boolean;
   nf: Intl.NumberFormat;
   /** The rank's stat step, chosen for the widest rank on the page (`rankFigure`). */
@@ -362,24 +370,32 @@ function RankingRow({
         <bdi>{nf.format(row.rank)}</bdi>
       </UiTD>
       <UiTD className={cn("py-2.5", STANDINGS_NAME_CELL)}>
-        <span
-          dir="auto"
-          // Two lines, then an ellipsis: on a narrow phone the column is
-          // ~120px, which a one-line `truncate` cut every long name down to.
-          className={cn(
-            "line-clamp-2 break-words",
-            ui.text.secondary,
-            "[font-weight:var(--ui-weight-strong)]",
-            ui.tone.default,
+        <div className="flex items-center gap-1">
+          <div className="min-w-0 flex-1">
+            <span
+              dir="auto"
+              // Two lines, then an ellipsis: on a narrow phone the column is
+              // ~120px, which a one-line `truncate` cut every long name down to.
+              className={cn(
+                "line-clamp-2 break-words",
+                ui.text.secondary,
+                "[font-weight:var(--ui-weight-strong)]",
+                ui.tone.default,
+              )}
+            >
+              {row.teamName}
+            </span>
+            {row.managerName && row.managerName !== row.teamName ? (
+              <span dir="auto" className={cn("block truncate", ui.text.meta, ui.tone.muted)}>
+                {row.managerName}
+              </span>
+            ) : null}
+          </div>
+          {/* Other managers' names can be reported, never the reader's own. */}
+          {isMe || isOwnStanding(row.managerId, ownTeamId) ? null : (
+            <ReportNameMenu targets={standingReportTargets(row)} />
           )}
-        >
-          {row.teamName}
-        </span>
-        {row.managerName && row.managerName !== row.teamName ? (
-          <span dir="auto" className={cn("block truncate", ui.text.meta, ui.tone.muted)}>
-            {row.managerName}
-          </span>
-        ) : null}
+        </div>
       </UiTD>
       <UiTD numeric className={cn(STANDINGS_FIGURE_CELL, ui.tone.muted)}>
         {nf.format(row.gameweekScore)}

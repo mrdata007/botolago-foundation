@@ -5,6 +5,8 @@
  *   node scripts/qa/layout-probe.mjs                 # every route below
  *   PROBE_BASE=http://127.0.0.1:4377 node …          # point at your own server
  *   PROBE_ROUTES=/fantasy,/matches node …            # narrow it
+ *   PROBE_THEME=system node …                        # phone set to dark
+ *   PROBE_CHROMIUM_SPKI_ALLOW=<pin> node …           # behind a TLS proxy
  *
  * START YOUR OWN SERVER, ON YOUR OWN PORT. Port 4173 is shared between
  * worktrees in this sandbox and `reuseExistingServer` will happily attach to
@@ -295,13 +297,25 @@ const PROBE = ({ starved }) => {
   return out;
 };
 
-const browser = await chromium.launch();
+// Behind a CA-terminating proxy, PROBE_CHROMIUM_SPKI_ALLOW trusts exactly
+// that CA's key (as E2E_CHROMIUM_SPKI_ALLOW does in playwright.config.ts), so
+// the page's own data requests succeed. Never --ignore-certificate-errors.
+// PROBE_THEME=system lays the pages out with the phone set to dark (the
+// theme's own pre-paint path), for a layout that only breaks in dark.
+const SPKI = process.env.PROBE_CHROMIUM_SPKI_ALLOW;
+const COLOR_SCHEME = process.env.PROBE_THEME === "system" ? "dark" : "light";
+const browser = await chromium.launch(
+  SPKI ? { args: [`--ignore-certificate-errors-spki-list=${SPKI}`] } : {},
+);
 const rows = [];
 let checks = 0;
 
 for (const lang of LANGS) {
   for (const width of WIDTHS) {
-    const ctx = await browser.newContext({ viewport: { width, height: 900 } });
+    const ctx = await browser.newContext({
+      viewport: { width, height: 900 },
+      colorScheme: COLOR_SCHEME,
+    });
     await ctx.addInitScript((l) => {
       try {
         localStorage.setItem("botolago.language", l);

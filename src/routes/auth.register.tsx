@@ -13,6 +13,7 @@ import {
 } from "@/components/auth/AuthShell";
 import { authFieldClass, authFieldIconClass, authLinkClass } from "@/components/auth/auth-classes";
 import { ConsentLine } from "@/components/legal/ConsentLine";
+import { WebOnly } from "@/components/native/WebOnly";
 import {
   noticeConsentSegments,
   registerConsentSegments,
@@ -334,9 +335,12 @@ function RegisterPage() {
             divider goes with the buttons: an "ou continuer avec" rule with
             nothing under it reads as a broken screen. See
             `OAUTH_PROVIDERS_ENABLED`. Google is the white outline pill, Apple
-            its own navy one (`ink`), as on login. */}
+            its own navy one (`ink`), as on login. Never inside the phone app
+            (`WebOnly`): Google refuses sign-in in an embedded web view, and
+            the provider's page would open in the browser, which cannot hand
+            the session back to the app. E-mail sign-up is the app's way in. */}
         {OAUTH_PROVIDERS_ENABLED && (
-          <>
+          <WebOnly>
             <AuthDivider label={t("auth.or_continue_with")} />
 
             <div className="grid gap-2.5">
@@ -356,7 +360,7 @@ function RegisterPage() {
                 <AppleGlyph /> {t("auth.apple")}
               </UiButton>
             </div>
-          </>
+          </WebOnly>
         )}
       </form>
     </AuthShell>

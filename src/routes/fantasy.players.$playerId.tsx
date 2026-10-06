@@ -420,7 +420,9 @@ function PlayerDetailPage() {
             does on the top players screen — bringing a player in always means
             choosing who goes out first. */}
         <div
-          className="sticky bottom-0 z-20 mt-2 flex gap-2.5 px-4 pb-3 pt-6"
+          // The page has no bottom navigation, so the bar is the bottom edge:
+          // clear of the iPhone's home indicator, 12px where there is none.
+          className="sticky bottom-0 z-20 mt-2 flex gap-2.5 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-6"
           style={
             {
               backgroundImage:

@@ -273,10 +273,20 @@ describe("the privacy policy matches the analytics switch", () => {
     expect(ar()).toContain("تُمحى عند إغلاق علامة التبويب");
   });
 
-  it("carries the version that added it", () => {
+  it("carries a version no older than the one that added it", () => {
     if (!ANALYTICS_ENABLED) return;
-    expect(fr()).toContain("Version 1.2 — en vigueur au 25 septembre 2026.");
-    expect(ar()).toContain("الإصدار 1.2 — ساري المفعول ابتداءً من 25 سبتمبر 2026.");
+    // 1.2 (25 September 2026) added analytics; 1.3 (6 October 2026) put the
+    // automatic account deletion's timeline in the retention table.
+    expect(fr()).toContain("Version 1.3 — en vigueur au 6 octobre 2026.");
+    expect(ar()).toContain("الإصدار 1.3 — ساري المفعول ابتداءً من 6 أكتوبر 2026.");
+  });
+
+  it("states the automatic deletion's timeline, not the old 12 months", () => {
+    expect(fr()).toContain("ses données sont effacées sous 7 jours");
+    expect(ar()).toContain("تُمحى بياناته خلال 7 أيام");
+    expect(fr()).not.toContain("12 mois après suppression");
+    expect(fr()).toContain("Les traces des lots déjà remis sont conservées détachées");
+    expect(ar()).toContain("تُحفظ آثار الجوائز المسلَّمة منفصلة عن الحساب المحذوف");
   });
 
   it("says, in the same update, that a visitor's predictions stay on the device", () => {

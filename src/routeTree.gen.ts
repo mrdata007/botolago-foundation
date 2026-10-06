@@ -23,6 +23,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PronosticsRouteImport } from './routes/pronostics'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SuppressionCompteRouteImport } from './routes/suppression-compte'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -159,6 +160,11 @@ const PronosticsRoute = PronosticsRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuppressionCompteRoute = SuppressionCompteRouteImport.update({
+  id: '/suppression-compte',
+  path: '/suppression-compte',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -519,6 +525,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/suppression-compte': typeof SuppressionCompteRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -599,6 +606,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/suppression-compte': typeof SuppressionCompteRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -682,6 +690,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/suppression-compte': typeof SuppressionCompteRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -767,6 +776,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/pronostics'
     | '/sitemap.xml'
+    | '/suppression-compte'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
@@ -847,6 +857,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/sitemap.xml'
+    | '/suppression-compte'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
@@ -929,6 +940,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/pronostics'
     | '/sitemap.xml'
+    | '/suppression-compte'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
@@ -1013,6 +1025,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRouteWithChildren
   PronosticsRoute: typeof PronosticsRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SuppressionCompteRoute: typeof SuppressionCompteRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
@@ -1128,6 +1141,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/suppression-compte': {
+      id: '/suppression-compte'
+      path: '/suppression-compte'
+      fullPath: '/suppression-compte'
+      preLoaderRoute: typeof SuppressionCompteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -1842,6 +1862,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRouteWithChildren,
   PronosticsRoute: PronosticsRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SuppressionCompteRoute: SuppressionCompteRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,

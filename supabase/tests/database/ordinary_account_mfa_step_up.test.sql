@@ -317,9 +317,12 @@ select extensions.throws_ok(
 reset role;
 select pg_temp.act(pg_temp.id(21), 'aal2');
 set local role authenticated;
-select extensions.lives_ok(
+-- Past the step-up, there is nothing to cancel since 20261006143700: asking
+-- disables the account at once.
+select extensions.throws_ok(
   $$select api.cancel_account_deletion()$$,
-  'enrolled at aal2: cancelling passes'
+  'PT409', 'account_deletion_not_cancellable',
+  'enrolled at aal2: cancelling gets past the step-up and is refused as final'
 );
 reset role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
@@ -331,7 +334,7 @@ select extensions.is(
     (select count(*) from app.predictions where user_id = pg_temp.id(21)),
     (select string_agg(question || '=' || choice, ',') from app.match_votes where user_id = pg_temp.id(21)),
     (select display_name || ':' || preferred_language from app.profiles where id = pg_temp.id(21)))),
-  '1/1/cancelled/1/winner=home/Enrolled E:ar',
+  '1/1/requested/1/winner=home/Enrolled E:ar',
   'the aal2 session''s writes all landed'
 );
 
@@ -370,9 +373,10 @@ reset role;
 select set_config('request.jwt.claims',
   '{"sub":"a3a30000-0000-4000-8000-000000000022","role":"authenticated"}', true);
 set local role authenticated;
-select extensions.lives_ok(
+select extensions.throws_ok(
   $$select api.cancel_account_deletion()$$,
-  'not enrolled with no aal claim: cancelling passes'
+  'PT409', 'account_deletion_not_cancellable',
+  'not enrolled with no aal claim: cancelling gets past the step-up and is refused as final'
 );
 reset role;
 

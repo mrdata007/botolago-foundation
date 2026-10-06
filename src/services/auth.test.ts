@@ -104,13 +104,14 @@ describe("authService (local mock)", () => {
     expect(expired.errorCode).toBe("session_expired");
   });
 
-  it("creates and cancels an idempotent account deletion request", async () => {
+  it("deletes the account and signs this device out at once", async () => {
     await authService.signInWithEmail(__testing.DEMO_EMAIL, __testing.DEMO_PASSWORD);
     const first = await authService.requestAccountDeletion();
-    const second = await authService.requestAccountDeletion();
     expect(first.ok).toBe(true);
-    expect(second.data?.requestId).toBe(first.data?.requestId);
-    expect((await authService.cancelAccountDeletion()).ok).toBe(true);
+    expect(first.data?.requestId).toBeTruthy();
+    expect(authService.getSession().status).toBe("anonymous");
+    // Signed out, there is nobody left to ask again for.
+    expect((await authService.requestAccountDeletion()).errorCode).toBe("unauthorized");
   });
 
   it("rejects a reserved username during onboarding", async () => {

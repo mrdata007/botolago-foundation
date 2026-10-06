@@ -227,46 +227,82 @@ are the class tokens; prefer them over spelling `text-[color:var(…)]`.
 | `--ui-scrim`          | ink 45%                  | near-black 68%         | the dim behind a sheet/modal                               |
 | `--ui-scorebox`       | `oklch(1 0 0)`           | `oklch(0.93 0.01 250)` | the score plate on a split header (`ui.surface.scorebox`)  |
 | `--ui-on-scorebox`    | = `--ui-ink-deep`        | = `--ui-ink-deep`      | its digits: 16.59 / 14.18                                  |
+| `--ui-toast`          | = `--ui-surface`         | `oklch(0.27 0.03 260)` | a toast's fill: a surface floating with no scrim           |
+| `--ui-toast-rule`     | = `--ui-rule`            | = `--ui-rule-strong`   | the toast's edge                                           |
 
 The score box stays light in the dark theme, like the action gradient: it has
 to separate from dark club fills either way.
 
+**The toast** (`src/components/ui/sonner.tsx`) has its own pair because
+nothing behind it sets it apart: no scrim, and at 1440 it hangs over the top
+bar. In light it is exactly the card white and its hairline, and the drop
+shadow lifts it. In dark a shadow cannot be seen on a dark page, and a toast on
+`--ui-surface` was the bar's own oklch 0.22 behind a 1.37:1 hairline, so it read
+as part of the bar. The dark fill is one step lighter and the edge is the
+strong rule (measured 3.19 to 3.66:1 against the bar and the page). Its text is
+`--ui-on-surface` / `--ui-on-surface-muted`.
+
 **Foregrounds**
 
-| Token                     | Light                     | Dark                   | Meaning                                                     |
-| ------------------------- | ------------------------- | ---------------------- | ----------------------------------------------------------- |
-| `--ui-on-surface`         | `oklch(0.16 0.03 260)`    | `oklch(0.97 0.01 250)` | body copy (`ui.tone.default`)                               |
-| `--ui-on-surface-muted`   | `oklch(0.45 0.02 258)`    | `oklch(0.76 0.02 258)` | secondary copy (`ui.tone.muted`)                            |
-| `--ui-on-surface-faint`   | `oklch(0.555 0.02 258)`   | `oklch(0.64 0.02 258)` | placeholders, disabled (`ui.tone.faint`)                    |
-| `--ui-ink-fg`             | `oklch(0.32 0.1 258)`     | `oklch(0.86 0.08 232)` | **brand text/icons** (`ui.tone.ink`)                        |
-| `--ui-on-ink`             | `oklch(0.88 0.11 205)`    | same                   | cyan text on an ink fill (`ui.tone.onInk`)                  |
-| `--ui-on-ink-plain`       | `oklch(1 0 0)`            | `oklch(0.97 0.01 250)` | plain text on an ink fill (`ui.tone.onInkPlain`)            |
-| `--ui-on-ink-muted`       | on-ink-plain 78% into ink | follows it             | the quieter line on ink: 8.37 / 8.25 (`ui.tone.onInkMuted`) |
-| `--ui-on-action-positive` | `oklch(0.4 0.1 155)`      | same                   | a gain ON the action gradient (`ui.tone.onActionPositive`)  |
-| `--ui-on-grad-header`     | `oklch(0.24 0.09 258)`    | `oklch(0.97 0.01 250)` | text on the header/hero band (`ui.tone.onGradHeader`)       |
-| `--ui-on-mesh`            | = `--ui-on-ink-plain`     | follows it             | text on the dark mesh (`ui.tone.onMesh`)                    |
-| `--ui-on-mesh-muted`      | it at 78%                 | follows it             | its quieter step (`ui.tone.onMeshMuted`)                    |
-| `--ui-on-mesh-faint`      | it at 62%                 | follows it             | its quietest step (`ui.tone.onMeshFaint`)                   |
-| `--ui-ink-deep`           | `oklch(0.24 0.09 258)`    | `oklch(0.22 0.07 260)` | text on the **action gradient**; dark scrim fills           |
-| `--ui-on-pitch`           | `oklch(0.18 0.04 260)`    | `oklch(0.97 0.01 250)` | labels on the turf                                          |
+| Token                     | Light                                  | Dark                   | Meaning                                                     |
+| ------------------------- | -------------------------------------- | ---------------------- | ----------------------------------------------------------- |
+| `--ui-on-surface`         | `oklch(0.16 0.03 260)`                 | `oklch(0.97 0.01 250)` | body copy (`ui.tone.default`)                               |
+| `--ui-on-surface-muted`   | `oklch(0.45 0.02 258)`                 | `oklch(0.76 0.02 258)` | secondary copy (`ui.tone.muted`)                            |
+| `--ui-on-surface-faint`   | `oklch(0.555 0.02 258)`                | `oklch(0.64 0.02 258)` | placeholders, disabled (`ui.tone.faint`)                    |
+| `--ui-ink-fg`             | `oklch(0.32 0.1 258)`                  | `oklch(0.86 0.08 232)` | **brand text/icons** (`ui.tone.ink`)                        |
+| `--ui-on-ink`             | `oklch(0.88 0.11 205)`                 | same                   | cyan text on an ink fill (`ui.tone.onInk`)                  |
+| `--ui-on-ink-plain`       | `oklch(1 0 0)`                         | `oklch(0.97 0.01 250)` | plain text on an ink fill (`ui.tone.onInkPlain`)            |
+| `--ui-on-ink-muted`       | on-ink-plain 78% into ink              | follows it             | the quieter line on ink: 8.37 / 8.25 (`ui.tone.onInkMuted`) |
+| `--ui-on-selected`        | = `--ui-on-ink-plain`                  | = `--ui-ink-deep`      | text on the selected fill (in `ui.surface.selected`)        |
+| `--ui-on-selected-muted`  | on-selected 78% into the selected fill | follows it             | the quieter line on it (`ui.tone.onSelectedMuted`)          |
+| `--ui-on-action-positive` | `oklch(0.4 0.1 155)`                   | same                   | a gain ON the action gradient (`ui.tone.onActionPositive`)  |
+| `--ui-on-grad-header`     | `oklch(0.24 0.09 258)`                 | `oklch(0.97 0.01 250)` | text on the header/hero band (`ui.tone.onGradHeader`)       |
+| `--ui-on-mesh`            | = `--ui-on-ink-plain`                  | follows it             | text on the dark mesh (`ui.tone.onMesh`)                    |
+| `--ui-on-mesh-muted`      | it at 78%                              | follows it             | its quieter step (`ui.tone.onMeshMuted`)                    |
+| `--ui-on-mesh-faint`      | it at 62%                              | follows it             | its quietest step (`ui.tone.onMeshFaint`)                   |
+| `--ui-ink-deep`           | `oklch(0.24 0.09 258)`                 | `oklch(0.22 0.07 260)` | text on the **action gradient**; dark scrim fills           |
+| `--ui-on-pitch`           | `oklch(0.18 0.04 260)`                 | `oklch(0.97 0.01 250)` | labels on the turf                                          |
 
 **Fills and accents**
 
-| Token                | Light                                          | Dark                   | Meaning                                         |
-| -------------------- | ---------------------------------------------- | ---------------------- | ----------------------------------------------- |
-| `--ui-ink`           | `var(--brand-primary)` = `oklch(0.32 0.1 258)` | `oklch(0.3 0.08 260)`  | brand FILL / border only                        |
-| `--ui-accent-spring` | `oklch(0.88 0.19 152)`                         | `oklch(0.82 0.18 152)` | action-gradient start stop                      |
-| `--ui-accent-sky`    | `oklch(0.88 0.11 205)`                         | `oklch(0.82 0.11 205)` | action-gradient end stop                        |
-| `--ui-positive`      | `oklch(0.52 0.14 150)`                         | `oklch(0.78 0.17 150)` | gains, up movement — legible as text            |
-| `--ui-negative`      | `oklch(0.55 0.22 355)`                         | `oklch(0.75 0.19 355)` | losses, down movement, errors — legible as text |
-| `--ui-caution`       | `oklch(0.82 0.17 80)`                          | `oklch(0.85 0.16 80)`  | amber FILL; its foreground is `--ui-on-caution` |
-| `--ui-on-positive`   | = `--ui-on-ink-plain`                          | = `--ui-ink-deep`      | text ON a positive fill (`ui.tone.onPositive`)  |
-| `--ui-on-negative`   | = `--ui-on-ink-plain`                          | = `--ui-ink-deep`      | text ON a negative fill (`ui.tone.onNegative`)  |
-| `--ui-on-caution`    | = `--ui-ink-deep`                              | = `--ui-ink-deep`      | text ON an amber fill (`ui.tone.onCaution`)     |
-| `--ui-live`          | `oklch(0.62 0.22 27)`                          | `oklch(0.68 0.22 27)`  | a match in progress: the dot, the minute bar    |
-| `--ui-live-fg`       | `oklch(0.5 0.22 27)`                           | `oklch(0.78 0.18 27)`  | the same state as TEXT (`ui.tone.live`)         |
-| `--ui-mesh-glass`    | `--ui-on-ink-plain` at 10%                     | follows it             | the glass tile on the mesh (`ui.surface.mesh`)  |
-| `--ui-mesh-rule`     | `--ui-on-ink-plain` at 20%                     | follows it             | its hairline                                    |
+| Token                | Light                                          | Dark                   | Meaning                                                                     |
+| -------------------- | ---------------------------------------------- | ---------------------- | --------------------------------------------------------------------------- |
+| `--ui-ink`           | `var(--brand-primary)` = `oklch(0.32 0.1 258)` | `oklch(0.3 0.08 260)`  | brand FILL / border only                                                    |
+| `--ui-ink-edge`      | `transparent`                                  | `oklch(0.58 0.02 258)` | the 1px ring an ink-filled CONTROL carries (`ui.surface.inkControl`)        |
+| `--ui-selected`      | = `--ui-ink`                                   | = `--ui-ink-fg`        | the SELECTED fill: a chosen chip, segment, nav link (`ui.surface.selected`) |
+| `--ui-accent-spring` | `oklch(0.88 0.19 152)`                         | `oklch(0.82 0.18 152)` | action-gradient start stop                                                  |
+| `--ui-accent-sky`    | `oklch(0.88 0.11 205)`                         | `oklch(0.82 0.11 205)` | action-gradient end stop                                                    |
+| `--ui-positive`      | `oklch(0.52 0.14 150)`                         | `oklch(0.78 0.17 150)` | gains, up movement — legible as text                                        |
+| `--ui-negative`      | `oklch(0.55 0.22 355)`                         | `oklch(0.75 0.19 355)` | losses, down movement, errors — legible as text                             |
+| `--ui-caution`       | `oklch(0.82 0.17 80)`                          | `oklch(0.85 0.16 80)`  | amber FILL; its foreground is `--ui-on-caution`                             |
+| `--ui-on-positive`   | = `--ui-on-ink-plain`                          | = `--ui-ink-deep`      | text ON a positive fill (`ui.tone.onPositive`)                              |
+| `--ui-on-negative`   | = `--ui-on-ink-plain`                          | = `--ui-ink-deep`      | text ON a negative fill (`ui.tone.onNegative`)                              |
+| `--ui-on-caution`    | = `--ui-ink-deep`                              | = `--ui-ink-deep`      | text ON an amber fill (`ui.tone.onCaution`)                                 |
+| `--ui-live`          | `oklch(0.62 0.22 27)`                          | `oklch(0.68 0.22 27)`  | a match in progress: the dot, the minute bar                                |
+| `--ui-live-fg`       | `oklch(0.5 0.22 27)`                           | `oklch(0.78 0.18 27)`  | the same state as TEXT (`ui.tone.live`)                                     |
+| `--ui-mesh-glass`    | `--ui-on-ink-plain` at 10%                     | follows it             | the glass tile on the mesh (`ui.surface.mesh`)                              |
+| `--ui-mesh-rule`     | `--ui-on-ink-plain` at 20%                     | follows it             | its hairline                                                                |
+
+**The selected state** (BG-0149). A choice the reader has made — the selected
+`UiChip`, the active `UiSegmented` pill, the current `TopBar` link, the chosen
+theme or language, a sorted column — is `ui.surface.selected`, never
+`ui.surface.inkPlain`. In light the two are identical (navy, white text). In
+dark the ink fill sits on the sunken track at 1.13:1, so a selected control
+read as unselected; there the selection flips to the light brand foreground
+as a fill, with ink-deep text. A band, a disc or a status pill on the ink fill
+(the live strip, a "TERMINÉ" pill, a goal-minute chip) is not a choice and
+stays `inkPlain`.
+
+**Ink controls** (BG-0149). An ink-filled button or link — `UiButton` /
+`UiLinkButton` `variant="ink"`, `UiIconButton` `variant="ink"`, the 404 and
+error screens' actions, a toast's action button — is `ui.surface.inkControl`:
+`inkPlain` plus a 1px inset ring in `--ui-ink-edge`. The ring is transparent in
+light, where navy on white is 12.8:1, so light paints exactly as before. In dark
+the navy fill sits on the surface at 1.25:1 and the button was only its label;
+the ring clears 3:1 against every dark surface (page 4.60, surface 4.04, sunken
+3.64, toast 3.51) and against the fill (3.23). It is an inset shadow, not
+`ring-inset`, so the offset focus ring (`ui.focus`) is untouched, and a
+disabled button drops it.
 
 **The dark mesh.** The welcome screen, the splash and the first-launch
 language chooser sit on a deep mesh rather than on `--ui-page` (Option A moved
@@ -299,7 +335,11 @@ only card shadow), `--ui-shadow-raised` (a bar lifted off content, e.g. the
 bottom nav), `--ui-shadow-lifted` (Option A's one raised step: the score box,
 a hero card, the primary call to action — `UiButton variant="gradient"`
 carries it), `--ui-shadow-overlay` (sheet/modal), `--ui-shadow-column` (the
-desktop phone column). There is no second shadow scale; do not reach for
+desktop phone column and the search popover). Its light value is the legacy
+navy `--shadow-floating`, which has no dark counterpart and vanishes on the
+dark page, so `.dark` redeclares it as a 1px `--ui-rule` ring that draws the
+column's edge plus a black drop that keeps its height (BG-0149). Every
+elevation token is themed. There is no second shadow scale; do not reach for
 `shadow-lg`, and do not copy the boards' eight hand-written drop shadows.
 
 **Fantasy domain** — promoted into the kit because they have no general
@@ -590,14 +630,14 @@ All exported from `@/components/ui-kit`. Props marked \* are required.
 
 | Primitive          | Props                                                                                                                                                                            | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `UiButton`         | all `<button>` props + `variant?: "gradient" \| "ink" \| "light" \| "soft" \| "outline" \| "ghost" \| "destructive"`, `size?: "sm" \| "md"`, `tone?: "onSurface" \| "onMesh"`    | fully round. `md` is full-width at `--ui-row-min`; `sm` is inline at `--ui-tap-min` and never wraps its label (a two-line pill is a circle with the words outside it) — give a growing `sm` button `flex-auto`, not `flex-1`, whose zero basis squeezes it below its label. `gradient` (the primary CTA) carries `--ui-shadow-lifted`; `soft` is the sunken pill for a quiet control                                                                                                                 |
+| `UiButton`         | all `<button>` props + `variant?: "gradient" \| "ink" \| "light" \| "soft" \| "outline" \| "ghost" \| "destructive"`, `size?: "sm" \| "md"`, `tone?: "onSurface" \| "onMesh"`    | fully round. `md` is full-width at `--ui-row-min`; `sm` is inline at `--ui-tap-min` and never wraps its label (a two-line pill is a circle with the words outside it) — give a growing `sm` button `flex-auto`, not `flex-1`, whose zero basis squeezes it below its label. `gradient` (the primary CTA) carries `--ui-shadow-lifted`; `ink` is `ui.surface.inkControl`, the navy fill with a 1px `--ui-ink-edge` ring that only dark draws; `soft` is the sunken pill for a quiet control           |
 | `UiLinkButton`     | same + `to*`, `params?`, `search?`                                                                                                                                               | router `Link` in button clothing                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `UiIconButton`     | all `<button>` props + `aria-label*`, `children*` (the icon), `variant?: "soft" \| "glass" \| "ink" \| "ghost"`, `ref?`                                                          | a round 44px control. `soft` = sunken disc, brand icon (top bar, headers); `glass` = a 16% wash of `--ui-on-club` with on-club icon (club blocks, photos — legible on FUS orange too); `ink` = navy disc; `ghost` = no fill. `aria-label` is required by the type. Works as a Radix `asChild` trigger                                                                                                                                                                                                |
+| `UiIconButton`     | all `<button>` props + `aria-label*`, `children*` (the icon), `variant?: "soft" \| "glass" \| "ink" \| "ghost"`, `ref?`                                                          | a round 44px control. `soft` = sunken disc, brand icon (top bar, headers); `glass` = a 16% wash of `--ui-on-club` with on-club icon (club blocks, photos — legible on FUS orange too); `ink` = navy disc (`ui.surface.inkControl`: ringed in dark); `ghost` = no fill. `aria-label` is required by the type. Works as a Radix `asChild` trigger                                                                                                                                                      |
 | `UiIconLinkButton` | same as `UiIconButton` + `to*`, `params?`, `search?`                                                                                                                             | the link form                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `UiBackButton`     | `to?`, `onClick?`, `label?`, `tone?: "soft" \| "glass"`, `iconOnly?`, `className?`                                                                                               | the soft back pill: arrow + `t("fpl.back")`. A link with `to`, else a button (router history when there is no `onClick`). The arrow is mirrored by `styles.css` — never add `rtl:rotate-180`. `iconOnly` keeps the name for screen readers                                                                                                                                                                                                                                                           |
 | `UiTabs<T>`        | `value*`, `onChange*`, `options*: {value,label,disabled?,panelId?}[]`, `label*`, `accent?`, `idBase?`, `className?`                                                              | underline tabs (match tabs, rankings tabs): equal columns on the bar, Changa labels (600 muted / 800 active), a 4px block-end indicator in `accent` (default `var(--ui-ink-fg)`; the match page passes `var(--ui-club-edge)` under the home club's `clubStyle`). Roving tabindex; ArrowLeft/Right follow the reading direction, Home/End jump; a key with Alt/Ctrl/Meta is left to the browser (Alt+ArrowLeft is Back). At 390px four tabs leave ~81px a label: use short labels ("Stats", "Compos") |
-| `UiSegmented<T>`   | `value*`, `onChange*`, `options*: {value,label,disabled?}[]`, `tone?: "onSurface" \| "onGradient"`, `size?: "md" \| "lg"`, `variant?: "track" \| "pill"`, `label?`, `className?` | `md` (default) = 44px at the meta size and fits four French labels at 390px; `lg` = 48px at body size. `variant="pill"` is the Option A toggle ("Terrain \| Liste"): a white rounded-full track, the chosen side a navy pill                                                                                                                                                                                                                                                                         |
-| `UiChip`           | all `<button>` props + `children*`, `selected?`, `ref?`, `aria-current?`                                                                                                         | interactive filter/day chip, fully round, `px-3` with `gap-1.5` between its children (give an icon or crest inside it no margin of its own); unselected sunken in the default text colour, selected navy with white (`ui.surface.inkPlain`). Give `aria-current` for "this is the current one" and it drops `aria-pressed`                                                                                                                                                                           |
+| `UiSegmented<T>`   | `value*`, `onChange*`, `options*: {value,label,disabled?}[]`, `tone?: "onSurface" \| "onGradient"`, `size?: "md" \| "lg"`, `variant?: "track" \| "pill"`, `label?`, `className?` | `md` (default) = 44px at the meta size and fits four French labels at 390px; `lg` = 48px at body size. `variant="pill"` is the Option A toggle ("Terrain \| Liste"): a white rounded-full track, the chosen side `ui.surface.selected` (a navy pill in light, the light brand tint in dark)                                                                                                                                                                                                          |
+| `UiChip`           | all `<button>` props + `children*`, `selected?`, `ref?`, `aria-current?`                                                                                                         | interactive filter/day chip, fully round, `px-3` with `gap-1.5` between its children (give an icon or crest inside it no margin of its own); unselected sunken in the default text colour, selected `ui.surface.selected` (navy with white in light; the light brand tint with ink-deep text in dark, where navy disappeared into the sunken track). Give `aria-current` for "this is the current one" and it drops `aria-pressed`                                                                   |
 | `UiInput`          | all `<input>` props + `label?`, `hint?`, `error?`, `reserveError?`, `leading?`, `trailing?`, `fieldClassName?`, `ref?`                                                           | renders and wires its own `<label>`; `error` sets `aria-invalid`, announces as `role="alert"`, and is ADDED to any `aria-describedby` you pass rather than replacing it. `leading` / `trailing` are adornment slots inside the box on the inline-start / -end edge                                                                                                                                                                                                                                   |
 | `UiSelect`         | all `<select>` props + `label?`, `hint?`, `error?`, `reserveError?`, `options?: {value,label,disabled?}[]`, `placeholder?`, `ref?`                                               | native `<select>` — already localised, already keyboard-correct, opens the platform picker                                                                                                                                                                                                                                                                                                                                                                                                           |
 
@@ -748,7 +788,8 @@ These live outside `ui-kit` and are built only from it. They are pinned by
 - **`TopBar`**: the opaque bar with a hairline and no shadow, the wordmark
   (`Logo size="sm"`) at the start, round 44px soft buttons at the end (the
   language trigger is `UiIconButton` showing "FR" / "ع"). The desktop links
-  are round and the active one is `ui.surface.inkPlain`. No notifications
+  are round and the active one is `ui.surface.selected` (navy in light, the
+  light brand tint in dark). No notifications
   bell until there is an inbox for it to open.
 - **`BottomNav`**: the action-gradient pill (32×56) behind the active icon,
   with the icon in `--ui-ink-deep`. The pill is about 1.3:1 against the bar,
