@@ -8,13 +8,39 @@
 > more. The peek stays on phones, tablets and from `xl`. (2) In the narrower cards
 > the vote labels wrap ("RSB / Berkane"), so a button is 54px, not 44px; the held
 > row therefore uses the buttons' own shape with their labels kept invisible, and
-> still shows as three blank capsules. (3) The Arabic CLS criterion is not met:
-> over three runs each, Arabic 390 measured 0.761 / 0.841 / 0.864 against main's
-> 0.747 / 0.813 / 0.813, and Arabic 1440 0.671 / 0.657 / 0.653 against 0.626 /
-> 0.627 / 0.631. All of it is inside the swap from the French first paint to
-> Arabic: the cards are 26px taller in Arabic than in French (names and vote labels
-> wrap at Arabic leading), against 7px for main's single card. French improved
-> (390: 0.0105 three times against 0.0158 / 0.0232 / 0.0581). The evidence is in
+> still shows as three blank capsules. (3) The Arabic CLS criterion was not met
+> (superseded by the review note below).
+>
+> **Note, 2026-10-06, after review.** Independent review changed six things.
+> (a) The cards are the next match's round, read from the payload, not the round
+> the band's title names: the title takes Fantasy's open gameweek, which loads in
+> the browser only, so the cards could change shape after load and leave out the
+> next match to be played. The title can still name Fantasy's gameweek over the
+> round being finished, as main's single card did; and during the last match of a
+> round the live card now leads the next round's cards. (b) Home keeps the
+> previous language's matches on screen while an Arabic reader's switch loads
+> them again. (c) Votes are read for the card in view and its neighbours first,
+> then for every card once the page is idle or the focus enters the carousel, so
+> every vote is in the tab order and in a screen reader's reach (this replaces "not
+> for eight cards at once" in improvement 7). (d) A card holds its vote row only
+> while a vote is expected (still to be played, journée known, kick-off ahead when
+> the page was rendered), and no card holds it once any read finds the game
+> closed. Trade-off: whether Pronostics is open is known only from the read, so
+> with Pronostics off or testers-only the held row closes once at load (French CLS
+> 390 0.087 / 0.096 against main's 0.036 / 0.028; not the case while it is public,
+> as today). (e) Previous and next stay focusable at either end (aria-disabled),
+> a "Passer les matchs" link leads past the round, and a polite status says which
+> match a button brought. (f) /matches reads Home's first three fixtures for its
+> empty-day link, as before. Arabic CLS, three runs each against main measured
+> the same hour: 390 is now better (0.934 three times against 1.044 / 1.056 /
+> 1.056); 1440 is not (0.734 / 0.736 / 0.734 against 0.671 / 0.670 / 0.684). At
+> 1440 the band's cards are on screen and move while the page flips to
+> right-to-left (the band's lines above them grow 39px in Arabic); main's card was
+> not, because it vanished during the switch for want of a placeholder, which (b)
+> fixes. Two-line room for club names, tried, did not change it (0.735 / 0.735 /
+> 0.758) and was dropped. That figure needs the owner's acceptance on the pull
+> request. French improved: 390 0.0105 / 0.0106 / 0.0106 against 0.086 / 0.074 /
+> 0.085, 1440 0.030 / 0.022 / 0.030 against 0.040 three times. The evidence is in
 > the BG-0155 ledger entry.
 
 Owner request, 2026-10-06, from a screenshot of Home on a real iPhone in the dark

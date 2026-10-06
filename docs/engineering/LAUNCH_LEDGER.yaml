@@ -1773,14 +1773,14 @@ tasks:
       next match, with "Qui va gagner ?"), and Home's payload carried only 3 fixtures, so the rest of
       the journée could not be reached from the band at all.
     owner: Chief
-    state: RUNNING # implemented on claude/home-match-carousel (brief 0dca8f25), awaiting review, the draft PR and the owner's OK to merge and publish
+    state: RUNNING # implemented on claude/home-match-carousel (brief 0dca8f25), reviewed and fixed 2026-10-06; awaiting the draft PR and the owner's OK to merge and publish
     depends_on: []
     brief: docs/engineering/tasks/BG-0155/screen-brief.md
     evidence:
       - "data: footballService.getHomeMatches asks football_home_matches for HOME_MATCHES_LIMIT = 10 fixtures instead of 3 (a round is 8; the function accepts 1 to 10; no database change). Home's À venir and the landing page's En ce moment keep the payload's first HOME_LIST_SIZE = 3 rows, pinned by index.home-structure.test.ts and LandingLive.test.tsx"
-      - "bandMatches() (band-matches.ts, 8 tests): every live match first, then the band's journée still to come by kick-off; today's next match when the journée has nothing left; another round's upcoming matches left out"
+      - "bandMatches() (band-matches.ts): every live match first, then the next match to be played and the rest of its round by kick-off, the round read from the payload alone (never from Fantasy's gameweek, which loads in the browser only); the next round's matches left out; tests include the review's case of a rescheduled earlier-round match before the next round with Fantasy's gameweek open"
       - "HomeMatchCarousel: native scroll snap, no dependency, no timer; cards 88% wide (lg to xl: whole width, Home's centre column is 264 to 519px there); a live match is MatchCard hero, a match to come NextMatchPick with its own vote; dots up to 6 cards, '2 / 8' beyond, aria-hidden; region and groups described from new home.carousel.* keys in fr and ar; glass previous/next from lg and on a fine pointer; focus brings a card to the gutter; scrolls are instant under reduced motion. One match renders as before, a live match alone still rises out of the band, no match draws no card"
-      - "vote row: while a card's votes are unknown (always on the server) its place is held by the buttons' own shape with the labels invisible, so it wraps where they will; votes are read for the card in view and its neighbours (useMatchVotes `enabled`); every button state carries a 1px edge so choosing does not resize it"
+      - "vote row: while a card's votes are unknown (always on the server) and a vote is expected (voteMayOpen: scheduled, journée known, kick-off ahead at the loader's renderedAt) its place is held by the buttons' own shape with the labels invisible, so it wraps where they will; once any read finds the game closed (allowed false) or fails, no card holds it; votes are read for the card in view and its neighbours first, every card once the page is idle (whenIdle) or the focus enters the carousel; every button state carries a 1px edge so choosing does not resize it"
       - >
         measured on the branch (:5510, release 58035200) against main (:5500, af8b0a74), Chromium 141,
         live production data (Journée 3, 8 matches): 48/48 interaction checks pass. 390 French: card 1 on
@@ -1797,28 +1797,59 @@ tasks:
         match is the single pick card without indicator or buttons, none draws no card
       - "no page overflow at 360, 390, 768, 1024, 1279, 1280 and 1440 (bounding rects outside the track); indicator contrast from rasterised pixels against the worst ground pixel: '1' 11.8:1 or more, '/ 8' 7.7:1 or more, active dot 11.8:1 or more, other dots 3.57:1 or more (dark and light, 390 and 1440)"
       - >
-        CLS, fresh load, PerformanceObserver (buffered, sum of shifts without input), dark, 3 runs each:
-        French 390 branch 0.0105/0.0105/0.0105 vs main 0.0158/0.0232/0.0581 (the band growing when the
+        CLS, first round (before review), fresh load, PerformanceObserver (buffered, sum of shifts
+        without input), dark, 3 runs each: French 390 branch 0.0105/0.0105/0.0105 vs main 0.0158/0.0232/0.0581 (the band growing when the
         vote arrived is gone; the remaining shift is a section near the fold that disappears on main
         too); French 1440 0.0278/0.0308/0.0278 vs 0.0299/0.0237/0.0335 (the news column no longer moves;
         the right column moving when the Fantasy card loads is the same on both); Arabic 390
         0.761/0.841/0.864 vs 0.747/0.813/0.813, Arabic 1440 0.671/0.657/0.653 vs 0.626/0.627/0.631, all
         within the French-first-paint swap to Arabic
       - >
-        checks on the branch: typecheck 0 errors; lint 0 errors, 31 warnings (as main); bun test
-        (full) and the lane tests pass; Prettier clean on the changed files except this ledger; i18n
-        gate pass at its baselines (W1 7, W2 7, W3 252, W4 64). Exact counts in the lane report
+        review round, 2026-10-06, measured on the branch (:5510, release 95494ab3) against main (:5500,
+        af8b0a74), Chromium 141, live production data (Journée 3, 8 matches), Africa/Casablanca, reduced
+        motion: every card has its three vote buttons in the accessibility tree once loaded (fr and ar,
+        390 and 1440); with match_votes answered allowed false in the browser the track keeps one height
+        (75.4px at 390 fr) from card 1 to card 8; previous and next keep the focus at both ends, Enter
+        past the end does nothing (fr and ar, reduce and no-preference); "Passer les matchs" moves the
+        focus past 32 (390) or 34 (1440) tab stops to "Tout voir"; after next the polite status reads
+        "Match 3 sur 8 : FAR Rabat – Widad Témara", after a swipe nothing
+      - >
+        CLS after review, same harness (session-window maximum, fresh context, dark), 3 runs each: French
+        390 0.0105/0.0106/0.0106 vs main 0.0859/0.0739/0.0852; French 1440 0.0297/0.0219/0.0297 vs
+        0.0403 three times; Arabic 390 0.9336/0.9336/0.9337 vs 1.0439/1.0560/1.0560; Arabic 1440
+        0.7337/0.7356/0.7337 vs 0.6714/0.6696/0.6837. With Pronostics closed (match_votes answered
+        allowed false), 2 runs: French 390 0.0870/0.0963 vs main 0.0361/0.0278, French 1440
+        0.0424/0.0424 vs 0.0228/0.0276
+      - >
+        checks on the branch (after review, 95494ab3 plus this note): typecheck 0 errors; lint 0 errors,
+        31 warnings (as main); bun test full 5952 pass, 17 skip, 0 fail; Prettier clean on the changed
+        files except this ledger; i18n gate pass at its baselines (W1 7, W2 7, W3 252, W4 64)
     note: >
       Two changes for the PR description. With two matches or more, a live match is now a card of the
       carousel inside the band, not a separate card overlapping the band's lower edge, and several live
       matches swipe side by side instead of stacking; a live match with nothing else to show still
-      overlaps the band as before. And Arabic CLS rises by about 0.03 on average: the carousel's cards
-      are 26px taller in Arabic than in French (names and vote labels wrap to two lines at Arabic
-      leading), against 7px for main's single card, so the swap from the French first paint moves the
-      page further. French CLS falls because the vote row's place is now held.
+      overlaps the band as before; during the last match of a round, the live card now leads the next
+      round's cards. French CLS falls because the vote row's place is now held.
+
+      For the owner's acceptance on the PR: Arabic CLS at 1440 is 0.734 against main's 0.670 to 0.684
+      (at 390 it is now better than main, 0.934 against 1.044 to 1.056). At 1440 the band's cards are
+      on screen and move while the page flips to right-to-left (the lines above them grow 39px in
+      Arabic); main's card was not, only because it vanished during the language switch for want of a
+      placeholder, which this branch fixes. Two-line room for club names was tried and did not change
+      it. The real remedy is Arabic rendered on the server (LANGUAGE_URLS.md), outside this change.
+      Also a trade-off: whether Pronostics is open is known only from the votes read in the browser, so
+      with Pronostics off or testers-only the held vote row closes once at load (French CLS 390 0.087
+      to 0.096 against main's 0.028 to 0.036); with Pronostics public, as today, there is no such shift.
+
+      /matches reads the same payload for its empty-day "next match day" link; it reads the first
+      HOME_LIST_SIZE fixtures, so that link shows on the same days as on main (with ten it would also
+      show on empty days between two rounds, pointing at the next round; an improvement the owner can
+      ask for separately).
 
       matches-home.option-a.test.ts pinned the live split card to the old block under the band; it now
-      pins the same split card where the carousel and the live-alone block draw it.
+      pins the same split card where the carousel and the live-alone block draw it. After review,
+      HomeMatchCarousel.test.tsx expects aria-disabled instead of disabled on the step buttons, and
+      band-matches tests no longer pass a gameweek.
 
       Seen in passing and left alone: Home's news cards throw a hydration mismatch on every load
       (ArticleCard's date is formatted in the runtime's timezone; server "22 sept.", browser "23 sept."),
