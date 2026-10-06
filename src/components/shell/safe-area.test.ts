@@ -296,7 +296,9 @@ describe("BG-0151: the bottom-edge scanner itself", () => {
 
   test("flags an override later in the same class string", () => {
     expect(
-      judge(`<div className="fixed bottom-0 pb-[max(env(safe-area-inset-bottom),0.75rem)] pb-3" />`),
+      judge(
+        `<div className="fixed bottom-0 pb-[max(env(safe-area-inset-bottom),0.75rem)] pb-3" />`,
+      ),
     ).toEqual(["safe-area padding overridden by a later pb-3 (class merging keeps the last)"]);
     expect(
       judge(
@@ -305,7 +307,9 @@ describe("BG-0151: the bottom-edge scanner itself", () => {
     ).toHaveLength(1);
     // An earlier plain padding is the one that loses, so that is fine.
     expect(
-      judge(`<div className="fixed bottom-0 pb-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]" />`),
+      judge(
+        `<div className="fixed bottom-0 pb-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]" />`,
+      ),
     ).toEqual([]);
   });
 
