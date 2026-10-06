@@ -243,9 +243,11 @@ const PLATE_SIZE = {
  * themes), 4 and below as a muted figure in the same box, so a column of
  * ranks lines up. On a card the plate also takes a hairline ring and the
  * card shadow, because in the light theme the plate and the card are the
- * same white; on the dark photo band (`onBand`) it takes the lifted shadow
- * of the score plate, and the other ranks the band's quieter foreground.
- * The figure is the rank's only cue, so the plate needs no label.
+ * same white; on the dark photo band (`onBand`) it stays flat, the white
+ * plate on the navy being cue enough (the lifted shadow there is the score
+ * plate's alone: DESIGN.md, The One Lift Rule), and the other ranks take
+ * the band's quieter foreground. The figure is the rank's only cue, so the
+ * plate needs no label.
  */
 export function RankPlate({
   rank,
@@ -270,9 +272,7 @@ export function RankPlate({
         podium
           ? cn(
               ui.surface.scorebox,
-              onBand
-                ? ui.shadow.lifted
-                : cn(ui.shadow.card, "ring-1 ring-inset ring-[color:var(--ui-rule)]"),
+              !onBand && cn(ui.shadow.card, "ring-1 ring-inset ring-[color:var(--ui-rule)]"),
             )
           : onBand
             ? ui.tone.onInkMuted

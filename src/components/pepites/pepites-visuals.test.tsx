@@ -39,11 +39,14 @@ describe("the rank plate", () => {
     }
   });
 
-  it("rings the plate on a card, where plate and card are the same white, and lifts it on the band", () => {
+  it("rings the plate on a card, where plate and card are the same white, and keeps it flat on the band", () => {
     expect(render(<RankPlate rank={1} />)).toContain("ring-[color:var(--ui-rule)]");
     expect(render(<RankPlate rank={1} />)).toContain("shadow-[var(--ui-shadow-card)]");
+    // The One Lift Rule (DESIGN.md): the lifted shadow on the band is the
+    // score plate's; the white rank plate beside it sits flat.
     const band = render(<RankPlate rank={1} onBand />);
-    expect(band).toContain("shadow-[var(--ui-shadow-lifted)]");
+    expect(band).toContain("bg-[color:var(--ui-scorebox)]");
+    expect(band).not.toContain("shadow-[");
     expect(band).not.toContain("ring-[color:var(--ui-rule)]");
   });
 
