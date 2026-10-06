@@ -18,7 +18,9 @@ import { cn } from "@/lib/utils";
  * `surface` is the strip's fill, matching what sits under the clock when the
  * page is at rest: `ui.surface.bar` under a Fantasy inner screen's header, the
  * ink-deep of the dark band on the sign-in screens and the Landing page.
- * `className` goes on the host (`md:hidden` where a sticky top bar takes over).
+ * `className` goes on the host (`md:hidden` where a sticky top bar takes over;
+ * `md:fixed md:inset-x-0` where no element spans the page to stick in, as on
+ * the sign-in screens from `md`, whose column is a raised card).
  */
 export function StatusBarStrip({ surface, className }: { surface: string; className?: string }) {
   return (

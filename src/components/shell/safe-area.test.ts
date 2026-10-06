@@ -457,13 +457,38 @@ describe("BG-0154: a status-bar strip where nothing at the top sticks", () => {
     expect(strip.props).toEqual({ surface: "ui.surface.bar", className: "md:hidden" });
   });
 
-  test("the sign-in screens: the band's ink-deep, first in the column that holds the band and the sheet", () => {
+  test("the sign-in screens on a phone: the band's ink-deep, first in the column that holds the band and the sheet", () => {
     const strips = stripsIn("AuthShell.tsx", read("src/components/auth/AuthShell.tsx"));
-    expect(strips).toHaveLength(1);
-    const [strip] = strips;
-    expect(strip.props).toEqual({ surface: "STATUS_BAR_INK", className: "md:hidden" });
-    expect(strip.firstChild).toBe(true);
-    expect(strip.siblings).toEqual(["StatusBarStrip", "header", "main"]);
+    expect(strips).toHaveLength(2);
+    const phone = strips.find((strip) => strip.props.surface === "STATUS_BAR_INK");
+    expect(phone?.props).toEqual({ surface: "STATUS_BAR_INK", className: "md:hidden" });
+    expect(phone?.firstChild).toBe(true);
+    expect(phone?.siblings).toEqual(["StatusBarStrip", "header", "main"]);
+  });
+
+  test("the sign-in screens from md: the flat page's own surface, fixed over the raised card", () => {
+    // From md the column is a raised card that clips (`md:overflow-hidden`,
+    // so a sticky strip inside it never moves) in a flex row (so a sticky
+    // strip beside it is laid out as a flex item): the strip is fixed, in the
+    // surface of the page under the clock, and shown only from md.
+    const strips = stripsIn("AuthShell.tsx", read("src/components/auth/AuthShell.tsx"));
+    const wide = strips.find((strip) => strip.props.surface === "ui.surface.page");
+    expect(wide?.props).toEqual({
+      surface: "ui.surface.page",
+      className: "hidden md:fixed md:inset-x-0 md:block",
+    });
+    expect(wide?.siblings).toEqual(["PageBackground", "StatusBarStrip", "div"]);
+    const html = renderToStaticMarkup(
+      createElement(StatusBarStrip, {
+        surface: ui.surface.page,
+        className: "hidden md:fixed md:inset-x-0 md:block",
+      }),
+    );
+    // Class merging keeps the phone `sticky` and the `md:fixed` side by side.
+    expect(html).toContain(
+      'class="pointer-events-none sticky top-0 z-30 h-0 hidden md:fixed md:inset-x-0 md:block"',
+    );
+    expect(html).toContain(`h-[env(safe-area-inset-top,0px)] ${ui.surface.page}`);
   });
 
   test("Jouer: the hero's ink-deep, first in the page's outer element, at every width", () => {

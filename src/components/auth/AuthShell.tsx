@@ -112,6 +112,12 @@ export function AuthShell({
       {/* The flat page, as behind every product screen. On a phone the band
           and the sheet cover it; on desktop it frames the raised column. */}
       <PageBackground variant="neutral" />
+      {/* STATUS BAR from `md` (BG-0154): the column is a raised card here and
+          the flat page is under the clock, so a strip of the page itself
+          covers the card as it scrolls up. Fixed rather than sticky: the
+          column clips (`md:overflow-hidden`) and this wrapper is a flex row,
+          so neither can carry a sticky strip. 0px tall in a browser. */}
+      <StatusBarStrip surface={ui.surface.page} className="hidden md:fixed md:inset-x-0 md:block" />
       <div
         className={cn(
           "relative flex min-h-[100dvh] flex-col",
