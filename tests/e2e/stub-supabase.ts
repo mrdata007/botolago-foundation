@@ -65,6 +65,8 @@ const RPC: Record<string, Handler> = {
   football_season_catalog: (args) => football.getSeasons(language(args), limit(args, 12), context),
   football_team_catalog: (args) => football.getTeams(language(args), limit(args, 100)),
   football_home_matches: (args) => football.getHomeMatches(language(args), limit(args, 3), context),
+  football_upcoming_matches: (args) =>
+    football.getUpcomingMatches(language(args), limit(args, 20), context),
   football_live_matches: (args) =>
     football.getLiveMatches(language(args), limit(args, 20), context),
   // The day in the zone the page asks for, as the real RPC does. The mock
@@ -140,6 +142,9 @@ const RPC: Record<string, Handler> = {
       },
       context,
     ),
+  // Home's match carousel reads the "who wins" vote of the card in view and
+  // of its neighbours.
+  match_votes: (args) => predictions.getMatchVotes(String(args.p_fixture_id), context),
   fantasy_hub: () => fantasyHub(),
   // Before the first deadline nothing has scored: no averages, no top
   // players, no season totals. The same state production was in at launch.

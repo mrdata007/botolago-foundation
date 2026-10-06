@@ -10,7 +10,7 @@ import {
   type ComponentType,
   type ReactNode,
 } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
   CircleDot,
@@ -30,7 +30,7 @@ import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCar
 import { MyClubsRow } from "@/components/home/MyClubsRow";
 import { homeClubs } from "@/components/home/my-clubs";
 import { findClub } from "@/components/fantasy/club-identity";
-import { footballService, type FootballSeason } from "@/services/football";
+import { footballService, HOME_LIST_SIZE, type FootballSeason } from "@/services/football";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -78,6 +78,8 @@ import { followedTeamIdsQuery } from "@/services/follows";
 import { deadlineStripTime, deadlineWithinHours } from "@/lib/deadline-strip";
 import { FantasyRuleChips } from "@/components/home/FantasyRuleChips";
 import { NextMatchPick } from "@/components/home/NextMatchPick";
+import { HomeMatchCarousel, type BandCard } from "@/components/home/HomeMatchCarousel";
+import { bandMatches, voteMayOpen } from "@/components/home/band-matches";
 import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
 import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { useAuth } from "@/auth/AuthProvider";
@@ -286,11 +288,14 @@ const isInPlay = (match: Match) => match.status === "live";
  * structure is fixed (the order is pinned by `index.home-structure.test.ts`):
  *
  *   1. Gameweek band      — a photo band flush under the bar: the date,
- *                           "JOURNÉE 14" in the display face and the Fantasy
- *                           deadline as a gradient pill
- *   2. Live & upcoming    — each live match as the split club-colour card,
- *                           the first one rising out of the band; then "À
- *                           venir", day by day, as club-colour rows
+ *                           "JOURNÉE 14" in the display face, the Fantasy
+ *                           deadline as a gradient pill, and the round's
+ *                           matches at its foot: one card, or a carousel of
+ *                           the live ones (split club-colour cards) and those
+ *                           to come (pick cards) — BG-0155
+ *   2. Live & upcoming    — a live match alone rising out of the band as the
+ *                           split card; then "À venir", day by day, as
+ *                           club-colour rows
  *   3. Fantasy            — the manager's gradient card, or the way into
  *                           creating a team
  *   4. News preview       — a few curated cards linking into /news (flagged)
@@ -332,6 +337,11 @@ function HomeContent() {
     // one about to kick off is watched so it becomes the live card on time.
     refetchInterval: (query) => matchesRefetchInterval(query.state.data?.matches, Date.now()),
     refetchIntervalInBackground: false,
+    // The matches in the language the page was just showing, while the new
+    // one loads: an Arabic reader's page switches language right after
+    // hydration, and without them the band's cards (a whole round since
+    // BG-0155) would vanish and come back, moving everything under them.
+    placeholderData: keepPreviousData,
   });
   const alertsQ = useQuery({
     queryKey: ["alerts"],
@@ -398,18 +408,21 @@ function HomeContent() {
 
   const homeMatches = useMemo(() => matchesQ.data?.matches ?? [], [matchesQ.data]);
   const liveMatches = useMemo(() => homeMatches.filter(isInPlay), [homeMatches]);
+  // "À venir" lists the first fixtures of the payload, as many as it carried
+  // before the band's carousel needed the whole round (BG-0155).
+  const listMatches = useMemo(() => homeMatches.slice(0, HOME_LIST_SIZE), [homeMatches]);
   // "Aujourd'hui" and "Demain" rather than the date the band already shows.
   const upcomingDays = useMemo(
     () =>
       groupByMatchDay(
-        homeMatches.filter((match) => !isInPlay(match)),
+        listMatches.filter((match) => !isInPlay(match)),
         {
           locale: lang === "ar" ? "ar-MA" : "fr-FR",
           today: t("matches.date.today"),
           tomorrow: t("matches.date.tomorrow"),
         },
       ),
-    [homeMatches, lang, t],
+    [listMatches, lang, t],
   );
   // With no match to come, "À venir" points at the latest results instead of
   // saying nothing: the season's fixture list, read only in that case.
@@ -456,17 +469,20 @@ function HomeContent() {
       }).format(matchDayFromKey(key)),
     );
 
-  // The next match to be played, for the band. While one is live, that live
-  // card is the hero and the band does not carry another.
-  const nextMatch = useMemo(
-    () =>
-      liveMatches.length > 0
-        ? undefined
-        : homeMatches
-            .filter((match) => match.status === "scheduled")
-            .sort((a, b) => a.kickoff.localeCompare(b.kickoff))[0],
-    [homeMatches, liveMatches],
-  );
+  // What the band shows (BG-0155): every live match, then the next match to
+  // be played and the rest of its round, by kick-off. From the payload alone,
+  // which the server has too, so the cards do not change shape when Fantasy's
+  // gameweek loads in the browser. A match whose clubs are not known yet is
+  // left out.
+  const bandCards: BandCard[] = bandMatches(homeMatches).flatMap((match) => {
+    const home = clubById(match.homeClubId);
+    const away = clubById(match.awayClubId);
+    return home && away ? [{ match, home, away }] : [];
+  });
+  // A live match with nothing else to show still rises out of the band's
+  // lower edge; anything else sits at the band's foot: one pick card as
+  // before, or the carousel when there are more.
+  const liveAlone = bandCards.length === 1 && isInPlay(bandCards[0]!.match);
   // The strip under the header in the 72 hours before a Fantasy deadline.
   const deadlineLeft = useDeadlineCountdown(gwQ.data?.deadline);
   // Flag off by default: the Fantasy card leads the phone layout only inside
@@ -521,34 +537,38 @@ function HomeContent() {
               // pill would repeat it.
               deadline={stripTime ? undefined : gwQ.data?.deadline}
               live={liveMatches.length > 0}
-              overlap={liveMatches.length > 0}
+              overlap={liveAlone}
             >
-              {nextMatch && clubById(nextMatch.homeClubId) && clubById(nextMatch.awayClubId) ? (
+              {liveAlone || bandCards.length === 0 ? null : bandCards.length === 1 ? (
                 <NextMatchPick
-                  match={nextMatch}
-                  home={clubById(nextMatch.homeClubId)!}
-                  away={clubById(nextMatch.awayClubId)!}
+                  match={bandCards[0]!.match}
+                  home={bandCards[0]!.home}
+                  away={bandCards[0]!.away}
                   withVote={PRONOSTICS_PROMOTED}
+                  holdVote={voteMayOpen(bandCards[0]!.match, renderedAt)}
                 />
-              ) : null}
+              ) : (
+                <HomeMatchCarousel
+                  cards={bandCards}
+                  withVote={PRONOSTICS_PROMOTED}
+                  renderedAt={renderedAt}
+                />
+              )}
             </GameweekBand>
           </div>
           {/* -------------------------------------------------------- */}
           {/* 2. Live & upcoming                                        */}
           {/* -------------------------------------------------------- */}
           <h2 className="sr-only">{plain(t("home.live_upcoming"))}</h2>
-          {/* Each live match as the split club-colour card; the first rises out
-          of the band, so the gameweek and its live match read as one moment. */}
-          {liveMatches.length > 0 && (
+          {/* A live match on its own: the split club-colour card rising out of
+          the band, so the gameweek and its live match read as one moment.
+          With other matches to show, live matches are cards of the band's
+          carousel (BG-0155). */}
+          {liveAlone && (
             <div className="relative order-2 -mt-16 grid gap-3">
-              {liveMatches.map((match) => {
-                const home = clubById(match.homeClubId);
-                const away = clubById(match.awayClubId);
-                if (!home || !away) return null;
-                return (
-                  <MatchCard key={match.id} match={match} home={home} away={away} variant="hero" />
-                );
-              })}
+              {bandCards.map(({ match, home, away }) => (
+                <MatchCard key={match.id} match={match} home={home} away={away} variant="hero" />
+              ))}
             </div>
           )}
           {/* -------------------------------------------------------- */}
@@ -977,7 +997,7 @@ function GameweekBand({
   afterStrip = false,
   children,
 }: {
-  /** What sits at the foot of the band: the next match. */
+  /** What sits at the foot of the band: the next match, or the round's carousel. */
   children?: ReactNode;
   /** The deadline strip sits above: it has already cancelled the screen's top padding. */
   afterStrip?: boolean;
@@ -988,7 +1008,7 @@ function GameweekBand({
   deadline?: string;
   /** A match is being played: the band shows the crowd celebrating. */
   live: boolean;
-  /** A live card rises out of the band's lower edge. */
+  /** A live card (a live match on its own) rises out of the band's lower edge. */
   overlap: boolean;
 }) {
   const { t } = useI18n();

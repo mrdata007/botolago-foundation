@@ -116,6 +116,26 @@ describe("LandingBotolaNow", () => {
     expect(html).toContain('href="/matches/standings"');
   });
 
+  // BG-0155: Home's payload now carries the whole round for the band's
+  // carousel; this block keeps the three rows it showed when it held three.
+  it("lists three matches at most, live first, however many the payload carries", async () => {
+    const round: Match[] = [5, 1, 4, 2, 3].map((n) => ({
+      ...match,
+      id: `m${n}`,
+      kickoff: `2026-10-0${n}T19:00:00.000Z`,
+      status: n === 4 ? "live" : "scheduled",
+    }));
+    const html = await render(<LandingBotolaNow heading="h2" />, (client) => {
+      client.setQueryData(["football", "home-matches", "fr"], {
+        matches: round,
+        clubs: [wydad, raja],
+        standings: [],
+      });
+    });
+    const rows = [...html.matchAll(/href="\/matches\/(m\d)"/g)].map((found) => found[1]);
+    expect(rows).toEqual(["m4", "m1", "m2"]);
+  });
+
   it("holds the blocks' places with skeletons while they load", async () => {
     const html = await render(<LandingBotolaNow heading="h2" />);
     expect(html).toContain(fr["landing.now_title"]);
