@@ -161,6 +161,7 @@ spacing:
   row-min: "48px"
 components:
   button-primary:
+    backgroundColor: "{colors.fresh-turf}"
     textColor: "{colors.tunnel-navy}"
     typography: "{typography.body-strong}"
     rounded: "{rounded.full}"
@@ -607,7 +608,7 @@ The feel is rounded, confident and quiet: full capsules, heavy labels, flat whit
 ### Buttons
 
 - **Shape:** fully round (9999px). A full-size button spans the width at 48px with 16px side padding. A small button is inline, at least 44px on both axes, with 12px padding and a 13px label at 800.
-- **Primary (gradient):** the spring-to-sky gradient with a Tunnel Navy label and the lifted shadow, for the screen's main action.
+- **Primary (gradient):** the spring-to-sky gradient with a Tunnel Navy label and the lifted shadow, for the screen's main action. The format has no gradient field, so the frontmatter gives the gradient's top stop, Fresh Turf, as a flat fill; the sidecar carries the full gradient.
 - **Ink:** Floodlight Navy fill with a white label, for a strong secondary action such as "Réessayer". It wears the ink edge, a 1px inset ring that only the dark theme draws.
 - **Light:** white with a navy label and the card shadow.
 - **Soft:** a Dugout Grey fill, the quiet everyday button.

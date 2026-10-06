@@ -27,7 +27,7 @@ The owner plans to distribute the app through a Capacitor wrapper. Its groundwor
 - push-alert code for the phone;
 - a Codemagic cloud build.
 
-The shell is iPhone only and held upright on both platforms (`docs/mobile/PHONE_APP.md`). No build has run and nothing has been tried on a phone. There is still no web manifest and no service
+The shell builds for iPhone (iPhone only, no iPad) and for Android, and both builds hold the screen upright (`docs/mobile/PHONE_APP.md`). No build has run and nothing has been tried on a phone. There is still no web manifest and no service
 worker. The shell shows the same website, so its design language is the web's, and the platform stays
 `web` until the owner decides otherwise.
 
