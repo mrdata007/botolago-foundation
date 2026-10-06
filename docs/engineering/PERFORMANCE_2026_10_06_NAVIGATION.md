@@ -160,9 +160,10 @@ reads, and whether a loading skeleton appeared on the new page:
 - **B**: Fantasy players → player → back → same player → back → another
   player.
 
-Three settings: desktop (the pointer rests 200 ms on the link before the
-click, the clock starts at the click), phone (an instant tap: no head start
-at all), and phone in Arabic.
+Four settings: desktop (the pointer rests 200 ms on the link before the
+click, the clock starts at the click), phone with an instant tap (no head
+start at all), the same in Arabic, and phone with a realistic tap (the
+finger rests 0.1 s; the clock starts when it lifts).
 
 Not measured: signed-in screens (Home for a member, the Fantasy team and
 transfer screens), for want of a test account.
@@ -198,8 +199,17 @@ page from about 2,000 ms to 140-150 ms. With an instant tap there is no
 head start to use, so the first visit to a club or a match takes about as
 long as before (378 → 432 ms and 715 → 780 ms, within this setup's run-to-run
 noise): those pages wait on the network either way.
-A realistic tap (the finger resting about 0.1 s) is being measured and
-lands in the next commit.
+
+A realistic tap (the finger lands, rests 0.1 s, lifts; the clock starts at
+the lift; French; 2 runs each, range):
+
+| step (phone, realistic tap)   | before         | after          |
+| ----------------------------- | -------------- | -------------- |
+| Standings → club              | 318-323 ms     | **183-227 ms** |
+| club → match                  | 665-838 ms     | **388-392 ms** |
+| Standings → another club      | 336-679 ms     | **137-148 ms** |
+| Fantasy list → player         | 1,816-1,938 ms | **77-86 ms**   |
+| Fantasy list → another player | 1,844-2,045 ms | **76-82 ms**   |
 
 Exact duplicate reads: 0-1 before, 0 after. Back steps and repeat visits
 were already served from the cache before this change, and still are.
@@ -223,7 +233,10 @@ change, a time-zone data difference on this machine); `bun run build` passes.
   where it was; whatever link the new page puts under it is loaded ahead.
   Seen in testing: one match loaded ahead (7 reads) after opening a club.
 - **Swipes.** On a phone, a swipe that starts on a card is a touch on it,
-  so that card's page loads ahead (cost being measured).
+  so that card's page loads ahead. Measured: six swipes down Standings cost
+  6 reads (3 clubs loaded ahead, 2 reads each), six down the Fantasy players
+  list 8 reads (6 player histories, plus fixtures once); before, none. About
+  one or two reads a swipe, each a read the page would make if opened.
 - **Tab title for Arabic readers.** In the browser the match and club pages
   now read Arabic data for an Arabic reader, so the browser tab's title
   shows the club names in Arabic (it showed them in French). Search engines
