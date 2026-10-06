@@ -1774,6 +1774,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      service_claim_account_deletions: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
       service_claim_email_deliveries: {
         Args: { p_lease_seconds?: number; p_limit?: number }
         Returns: Json
@@ -1840,6 +1844,10 @@ export type Database = {
           p_gameweek_id: string
           p_limit?: number
         }
+        Returns: Json
+      }
+      service_erase_account: {
+        Args: { p_avatar_objects_removed?: number; p_request_id: string }
         Returns: Json
       }
       service_evaluate_fantasy_prizes: {
@@ -2003,6 +2011,10 @@ export type Database = {
         }
         Returns: number
       }
+      service_record_account_deletion_email: {
+        Args: { p_outcome: string; p_request_id: string }
+        Returns: boolean
+      }
       service_record_adaptive_gap: {
         Args: { p_fixture_external_id: string; p_reason: string }
         Returns: Json
@@ -2034,6 +2046,10 @@ export type Database = {
       service_record_reconciled_fantasy_observation: {
         Args: { p_dry_run?: boolean; p_fixture_id: string; p_request: Json }
         Returns: Json
+      }
+      service_release_account_deletion: {
+        Args: { p_error: string; p_request_id: string }
+        Returns: boolean
       }
       service_release_email_deliveries: {
         Args: { p_delivery_ids: string[]; p_retry_at: string }
@@ -2210,7 +2226,11 @@ export type Database = {
     Tables: {
       account_deletion_requests: {
         Row: {
+          attempts: number
+          claimed_at: string | null
+          erase_after: string | null
           id: string
+          last_error: string | null
           processed_at: string | null
           requested_at: string
           status: Database["app"]["Enums"]["account_deletion_status"]
@@ -2218,7 +2238,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          erase_after?: string | null
           id?: string
+          last_error?: string | null
           processed_at?: string | null
           requested_at?: string
           status?: Database["app"]["Enums"]["account_deletion_status"]
@@ -2226,7 +2250,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attempts?: number
+          claimed_at?: string | null
+          erase_after?: string | null
           id?: string
+          last_error?: string | null
           processed_at?: string | null
           requested_at?: string
           status?: Database["app"]["Enums"]["account_deletion_status"]
@@ -3443,7 +3471,7 @@ export type Database = {
           invite_code_hint: string | null
           member_count: number
           name: string
-          owner_user_id: string
+          owner_user_id: string | null
           updated_at: string
           visibility: Database["app"]["Enums"]["fantasy_league_visibility"]
         }
@@ -3456,7 +3484,7 @@ export type Database = {
           invite_code_hint?: string | null
           member_count?: number
           name: string
-          owner_user_id: string
+          owner_user_id?: string | null
           updated_at?: string
           visibility: Database["app"]["Enums"]["fantasy_league_visibility"]
         }
@@ -3469,7 +3497,7 @@ export type Database = {
           invite_code_hint?: string | null
           member_count?: number
           name?: string
-          owner_user_id?: string
+          owner_user_id?: string | null
           updated_at?: string
           visibility?: Database["app"]["Enums"]["fantasy_league_visibility"]
         }
@@ -4117,10 +4145,11 @@ export type Database = {
       }
       fantasy_prize_winners: {
         Row: {
+          account_erased_at: string | null
           block_number: number | null
           created_at: string
           fantasy_season_id: string
-          fantasy_team_id: string
+          fantasy_team_id: string | null
           first_gameweek_number: number
           forfeited_at: string | null
           forfeited_by_principal_id: string | null
@@ -4149,16 +4178,17 @@ export type Database = {
           tier: Database["app"]["Enums"]["fantasy_prize_tier"]
           transfers_in_period: number
           updated_at: string
-          user_id: string
+          user_id: string | null
           verification_notes: string | null
           verified_at: string | null
           verified_by_principal_id: string | null
         }
         Insert: {
+          account_erased_at?: string | null
           block_number?: number | null
           created_at?: string
           fantasy_season_id: string
-          fantasy_team_id: string
+          fantasy_team_id?: string | null
           first_gameweek_number: number
           forfeited_at?: string | null
           forfeited_by_principal_id?: string | null
@@ -4187,16 +4217,17 @@ export type Database = {
           tier: Database["app"]["Enums"]["fantasy_prize_tier"]
           transfers_in_period: number
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           verification_notes?: string | null
           verified_at?: string | null
           verified_by_principal_id?: string | null
         }
         Update: {
+          account_erased_at?: string | null
           block_number?: number | null
           created_at?: string
           fantasy_season_id?: string
-          fantasy_team_id?: string
+          fantasy_team_id?: string | null
           first_gameweek_number?: number
           forfeited_at?: string | null
           forfeited_by_principal_id?: string | null
@@ -4225,7 +4256,7 @@ export type Database = {
           tier?: Database["app"]["Enums"]["fantasy_prize_tier"]
           transfers_in_period?: number
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           verification_notes?: string | null
           verified_at?: string | null
           verified_by_principal_id?: string | null

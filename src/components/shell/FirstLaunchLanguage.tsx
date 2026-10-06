@@ -189,21 +189,23 @@ export function LanguageChoice({
                 ui.radius.card,
                 ui.focus,
                 active
-                  ? cn(ui.surface.inkPlain, ui.shadow.card)
+                  ? cn(ui.surface.selected, ui.shadow.card)
                   : cn(ui.surface.sunken, ui.rule.all),
               )}
             >
               <div className="min-w-0">
                 <div className={ui.text.bodyStrong}>{o.native}</div>
-                {/* The quieter step of a foreground ON an ink fill is a
-                    token now (`--ui-on-ink-muted`, 8.4:1), so the selected
-                    tile names it instead of dimming its own colour. The
-                    unselected tile is on a surface and uses the muted one. */}
+                {/* The quieter step of a foreground ON the selected fill is
+                    a token (`--ui-on-selected-muted`: the ink fill's 8.4:1
+                    step in light, ink-deep on the light fill in dark), so
+                    the selected tile names it instead of dimming its own
+                    colour. The unselected tile is on a surface and uses the
+                    muted one. */}
                 <div
                   className={cn(
                     "truncate",
                     ui.text.meta,
-                    active ? ui.tone.onInkMuted : ui.tone.muted,
+                    active ? ui.tone.onSelectedMuted : ui.tone.muted,
                   )}
                 >
                   {o.sub}

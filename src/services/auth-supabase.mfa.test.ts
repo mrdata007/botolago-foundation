@@ -175,6 +175,9 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
  * tests wait instead. `revocations` is what sign-out recorded, with the
  * account whose token the record went out with.
  */
+/** What the database answers the deletion request with, per test. */
+let deletionAnswer: () => Promise<string> = async () => "request";
+
 async function start(
   profile: (id: string) => Promise<ProfileDto | null> = async (id) => profileOf(id),
   avatars?: AvatarStorage,
@@ -182,9 +185,7 @@ async function start(
   const fake = fakeSupabaseAuth();
   const revocations: Array<{ scope: string; actorId: string | null; token: string | null }> = [];
   const accountSecurity: AccountSecurityRepository = {
-    requestDeletion: async () => "request",
-    cancelDeletion: async () => {},
-    listDeletionRequests: async () => [],
+    requestDeletion: () => deletionAnswer(),
     recordSessionRevocation: async (scope, context) =>
       void revocations.push({ scope, actorId: context.actorId, token: fake.currentUserId() }),
   };
@@ -874,5 +875,32 @@ describe("the account's own data while the code is owed", () => {
       errorCode: "generic",
     });
     expect(fake.calls.refresh).toBe(refreshesBefore);
+  });
+});
+
+describe("deleting the account", () => {
+  it("signs this device out once the server has taken the request", async () => {
+    deletionAnswer = async () => "request-1";
+    const { service, revocations } = await start();
+    await service.signInWithEmail("a@example.test", "correct horse");
+    await settle();
+    const result = await service.requestAccountDeletion();
+    expect(result).toEqual({ ok: true, data: { requestId: "request-1" } });
+    await settle();
+    expect(service.getSession().status).toBe("anonymous");
+    expect(revocations.map((entry) => entry.scope)).toEqual(["local"]);
+  });
+
+  it("stays signed in when the server refuses, and says why", async () => {
+    deletionAnswer = async () => {
+      throw { code: "PT403", message: "mfa_required" };
+    };
+    const { service } = await start();
+    await service.signInWithEmail("a@example.test", "correct horse");
+    await settle();
+    const result = await service.requestAccountDeletion();
+    expect(result).toEqual({ ok: false, errorCode: "mfa_required" });
+    expect(service.getSession().status).toBe("authenticated");
+    deletionAnswer = async () => "request";
   });
 });

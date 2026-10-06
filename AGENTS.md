@@ -134,6 +134,21 @@ null, false);` before a write that touches fixtures or notifications, and
    schedule; it runs only when someone runs it, and it writes to the
    database (published photos, deletions) and to storage. Treat a run as a
    write.
+   Where migration 20261006143700 is applied, pg_cron also runs
+   `account-deletion-tick` every hour at minute 23. It wakes the Edge
+   Function `account-deletion-worker`, which erases accounts whose deletion
+   is due: avatars in storage, then their Fantasy, Pronostics, notification
+   and identity rows and the Auth user. It writes only while switched on in
+   `app_private.account_deletion_settings`
+   ([ACCOUNT_DELETION_RUNBOOK.md](docs/backend/ACCOUNT_DELETION_RUNBOOK.md));
+   pause it with `select app_private.account_deletion_configure(false);`
+   before a write that touches those tables, and switch it back on
+   afterwards. Its companion `account-deletion-history-prune` runs daily
+   whatever the switch says: it deletes the tick's `cron.job_run_details`
+   rows older than 7 days and security-audit rows older than 365 days. Pause
+   it by name for a write that touches those tables, then set it back to
+   `true`:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'account-deletion-history-prune'), active := false);`
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 

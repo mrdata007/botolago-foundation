@@ -198,13 +198,51 @@ describe("OAUTH_PROVIDERS_ENABLED", () => {
 /**
  * BG-0111 — the theme switcher was gated but the row around it was not, so
  * Profile showed an "Apparence" label with nothing under it.
+ *
+ * BG-0149 — dark mode is ON (owner decision, 2026-10-05). Like the blocks
+ * above, nothing here asserts the value: the flag is the one-line rollback
+ * switch, so these must pass with it either way. They pin that every place
+ * the flag gates still reads it, so flipping it back really does restore
+ * light for everyone.
  */
 describe("DARK_MODE_ENABLED", () => {
-  test("is a single boolean constant", () => {
+  test("is a single boolean constant, recorded with the owner decision", () => {
     expect(typeof DARK_MODE_ENABLED).toBe("boolean");
-    expect(read("src/lib/feature-flags.ts").match(/export const DARK_MODE_ENABLED/g)).toHaveLength(
-      1,
+    const source = read("src/lib/feature-flags.ts");
+    expect(source.match(/export const DARK_MODE_ENABLED/g)).toHaveLength(1);
+    expect(source).toContain("Owner decision, 2026-10-05 (BG-0149)");
+  });
+
+  test("its comment keeps the list of gated places, and each of them reads the flag", () => {
+    const source = read("src/lib/feature-flags.ts");
+    const comment = source.slice(
+      source.lastIndexOf("/**", source.indexOf("export const DARK_MODE_ENABLED")),
+      source.indexOf("export const DARK_MODE_ENABLED"),
     );
+    for (const file of [
+      "src/routes/__root.tsx",
+      "src/theme/provider.tsx",
+      "src/routes/profile.tsx",
+    ]) {
+      expect(comment).toContain(`\`${file}\``);
+      expect(stripComments(read(file))).toContain("DARK_MODE_ENABLED");
+    }
+  });
+
+  test("the pre-paint theme script is in the head only behind the flag", () => {
+    const root = stripComments(read("src/routes/__root.tsx"));
+    expect(root).toContain("...(DARK_MODE_ENABLED ? [{ children: THEME_INIT_SCRIPT }] : [])");
+    // …and nowhere else: a second, ungated copy would serve dark mode to
+    // every dark phone with the flag off.
+    expect(root.match(/THEME_INIT_SCRIPT/g)).toHaveLength(2); // the import and the gated use
+  });
+
+  test("the provider's three effects and the cross-fade all check the flag", () => {
+    const provider = stripComments(read("src/theme/provider.tsx"));
+    // Storage adoption, class application and the OS listener each return
+    // early while the flag is off.
+    expect(provider.match(/if \(!DARK_MODE_ENABLED\b/g)).toHaveLength(3);
+    expect(provider).toContain("if (DARK_MODE_ENABLED) withViewTransition(");
   });
 
   test("profile gates the whole Appearance row, label included", () => {

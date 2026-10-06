@@ -100,6 +100,7 @@ const winner = (
     tieBreak,
     prizeName: prize.name,
     awardedAt: new Date(Date.UTC(2026, 10, 30 - index)).toISOString(),
+    isMe: false,
   };
 };
 
