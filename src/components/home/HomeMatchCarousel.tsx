@@ -246,8 +246,9 @@ export function HomeMatchCarousel({
           <ChevronLeft aria-hidden />
         </UiIconButton>
         {/* Where the reader is. Each card's own label says it ("Match 2 sur
-            8"), so this is for the eye only. In Arabic the row runs from the
-            right, as the cards do. */}
+            8"), so this is for the eye only. In Arabic the dots run from the
+            right, as the cards do; the "2 / 8" count stays left to right, as
+            numbers do inside Arabic lines (PRODUCT.md, Numbers). */}
         <div
           aria-hidden
           data-testid="home-match-carousel-indicator"
@@ -271,6 +272,7 @@ export function HomeMatchCarousel({
             </span>
           ) : (
             <span
+              dir="ltr"
               className={cn(
                 "flex items-center gap-1",
                 ui.text.meta,

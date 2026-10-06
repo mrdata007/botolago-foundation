@@ -133,8 +133,9 @@ Measured on main (dark theme, read-only page loads):
    keep its names and vote labels on one line. One card reads better at every width.
 5. **Arabic.** The track follows `dir="rtl"`: the first match on the right, the next
    coming from the left; "previous" on the right with the chevron the BG-0150 rule
-   mirrors; the dots fill from the right; "2 / 8" is three pieces in a row that
-   follows the page direction.
+   mirrors; the dots fill from the right; "2 / 8" stays left to right, as numbers
+   do inside Arabic lines (PRODUCT.md, Numbers; changed after validation, which
+   showed it reading "8 / 2").
 6. **Accessibility.** A region with `aria-roledescription` "carrousel" / "عرض دوّار"
    and the label "Matchs de la journée" / "مباريات الجولة"; each card a group,
    described as "diapositive" / "شريحة" and labelled "Match 2 sur 8" /

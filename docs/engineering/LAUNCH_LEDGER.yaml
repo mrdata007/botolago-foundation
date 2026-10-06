@@ -1791,7 +1791,8 @@ tasks:
         without it; at card 8 next is disabled and the indicator reads 8/8. Tab goes link, three votes,
         then card 2's link, which comes to the gutter (390 and 1440). Arabic: card 1's right edge on the
         gutter, card 2 to its left, previous right of next with both chevrons matrix(-1, 0, 0, 1, 0, 0),
-        '1 / 8' with the 1 on the right, a left-to-right drag brings card 2 in. A vote on card 1 marks
+        a left-to-right drag brings card 2 in; the '1 / 8' count was first measured with the 1 on the
+        right and is now its own left-to-right run, as PRODUCT.md keeps numbers in Arabic lines. A vote on card 1 marks
         card 1 only and changes no height. With the payload rewritten in the browser: live + upcoming is
         a carousel led by the split card (equal heights), one live match alone rises out of the band, one
         match is the single pick card without indicator or buttons, none draws no card

@@ -127,6 +127,9 @@ describe("HomeMatchCarousel — as the server renders it", () => {
     const shown = indicator(html);
     expect(shown).not.toContain("block h-2");
     expect(shown.replace(/<[^>]+>/g, "")).toBe("1/8");
+    // Numbers stay left to right inside Arabic lines (PRODUCT.md, Numbers):
+    // the count is its own left-to-right run, so Arabic shows "1 / 8" too.
+    expect(shown).toMatch(/^<span dir="ltr"/);
     expect(
       groups(html)
         .map((group) => group.label)
