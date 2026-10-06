@@ -41,6 +41,11 @@ interface Op {
   /** The device-pixel horizontal extent of what was drawn. */
   left: number;
   right: number;
+  /** The device-pixel vertical extent: a shape's box, or a text's ink. */
+  top: number;
+  bottom: number;
+  /** For text: the device-pixel baseline. */
+  baseline?: number;
   /** For text: the anchor, the alignment and the width the alignment applies to. */
   anchor?: number;
   align?: string;
@@ -65,6 +70,24 @@ interface State {
 const fontSize = (font: string) => Number(/([\d.]+)px/.exec(font)?.[1] ?? 10);
 /** A deterministic width: the same text in the same font measures the same in both languages. */
 const measure = (value: string, font: string) => [...value].length * fontSize(font) * 0.55;
+/**
+ * Deterministic ink above and below the baseline, in em, after what Chromium
+ * measures for these faces: Arabic reaches well below the baseline (Noto Sans
+ * Arabic 0.95 / 0.41 for the week line), Latin capitals and figures do not.
+ */
+function ink(value: string, font: string) {
+  const size = fontSize(font);
+  const arabic = /[\u0600-\u06ff]/.test(value);
+  const changa = font.includes('"Changa"');
+  const [ascent, descent] = arabic
+    ? changa
+      ? [0.86, 0.3]
+      : [0.95, 0.41]
+    : changa
+      ? [0.65, 0.02]
+      : [0.73, 0];
+  return { ascent: ascent * size, descent: descent * size };
+}
 
 function recordingContext() {
   const ops: Op[] = [];
@@ -83,9 +106,14 @@ function recordingContext() {
   };
   const stack: State[] = [];
   let path: number[] = [];
+  let pathY: number[] = [];
   const x = (px: number, py: number) => {
     const [a, , c, , e] = state.matrix;
     return a * px + c * py + e;
+  };
+  const y = (px: number, py: number) => {
+    const [, b, , d, , f] = state.matrix;
+    return b * px + d * py + f;
   };
   const scale = () => state.matrix[0];
   const ctx = {
@@ -162,15 +190,19 @@ function recordingContext() {
     },
     beginPath() {
       path = [];
+      pathY = [];
     },
     moveTo(px: number, py: number) {
       path.push(x(px, py));
+      pathY.push(y(px, py));
     },
     arcTo(x1: number, y1: number, x2: number, y2: number) {
       path.push(x(x1, y1), x(x2, y2));
+      pathY.push(y(x1, y1), y(x2, y2));
     },
     arc(cx: number, cy: number, r: number) {
       path.push(x(cx - r, cy), x(cx + r, cy));
+      pathY.push(y(cx, cy - r), y(cx, cy + r));
     },
     closePath() {},
     clip() {},
@@ -179,6 +211,8 @@ function recordingContext() {
         kind: "fill",
         left: Math.min(...path),
         right: Math.max(...path),
+        top: Math.min(...pathY),
+        bottom: Math.max(...pathY),
         paint: state.fillStyle,
       });
     },
@@ -187,16 +221,22 @@ function recordingContext() {
         kind: "stroke",
         left: Math.min(...path),
         right: Math.max(...path),
+        top: Math.min(...pathY),
+        bottom: Math.max(...pathY),
         paint: state.strokeStyle,
       });
     },
-    fillRect(px: number, py: number, w: number) {
+    fillRect(px: number, py: number, w: number, h: number) {
       const a = x(px, py);
       const b = x(px + w, py);
+      const c = y(px, py);
+      const d = y(px, py + h);
       ops.push({
         kind: "rect",
         left: Math.min(a, b),
         right: Math.max(a, b),
+        top: Math.min(c, d),
+        bottom: Math.max(c, d),
         paint: state.fillStyle,
       });
     },
@@ -205,11 +245,22 @@ function recordingContext() {
       const w = Math.min(measure(value, state.font), maxWidth ?? Infinity) * scale();
       const align = state.textAlign;
       const left = align === "right" ? anchor - w : align === "center" ? anchor - w / 2 : anchor;
+      // "middle" puts the em box's centre on the anchor; the stand-in treats
+      // it as the ink's centre, which is what the pictures use it for.
+      const metrics = ink(value, state.font);
+      const at = y(px, py);
+      const baseline =
+        state.textBaseline === "middle"
+          ? at + ((metrics.ascent - metrics.descent) / 2) * scale()
+          : at;
       ops.push({
         kind: "text",
         text: value,
         left,
         right: left + w,
+        top: baseline - metrics.ascent * scale(),
+        bottom: baseline + metrics.descent * scale(),
+        baseline,
         anchor,
         align,
         paint: state.fillStyle,
@@ -221,13 +272,26 @@ function recordingContext() {
       throw new Error("no outlined text on the share pictures");
     },
     measureText(value: string) {
-      return { width: measure(value, state.font) };
+      const metrics = ink(value, state.font);
+      return {
+        width: measure(value, state.font),
+        actualBoundingBoxAscent: metrics.ascent,
+        actualBoundingBoxDescent: metrics.descent,
+      };
     },
     drawImage(_image: unknown, ...args: number[]) {
-      const [dx, dy, dw] = args.length >= 8 ? args.slice(4) : args;
+      const [dx, dy, dw, dh] = args.length >= 8 ? args.slice(4) : args;
       const a = x(dx!, dy!);
       const b = x(dx! + dw!, dy!);
-      ops.push({ kind: "image", left: Math.min(a, b), right: Math.max(a, b) });
+      const c = y(dx!, dy!);
+      const d = y(dx!, dy! + dh!);
+      ops.push({
+        kind: "image",
+        left: Math.min(a, b),
+        right: Math.max(a, b),
+        top: Math.min(c, d),
+        bottom: Math.max(c, d),
+      });
     },
     createLinearGradient() {
       const gradient = new Gradient();
@@ -678,6 +742,43 @@ describe("the share pictures mirror in Arabic", () => {
       // The French wheel starts at twelve o'clock and turns clockwise.
       expect(from).toBeCloseTo(-Math.PI / 2 + (index * 2 * Math.PI) / 5 + 0.05, 10);
     }
+  });
+});
+
+describe("the share pictures' vertical rhythm", () => {
+  const SECTION = { fr: "PEPITES", ar: "جواهر" } as const;
+
+  for (const lang of ["fr", "ar"] as const) {
+    it(`the Top 10 week line sits inside its pill, its ink centred (${lang})`, async () => {
+      const model = shareImageModel(edition, lang, { ...COPY, brand: SECTION[lang] })!;
+      await renderShareImage(model);
+      const { ops } = recordings.at(-1)!;
+      const pill = ops.find((op) => op.kind === "fill" && op.paint instanceof Gradient)!;
+      const week = ops.find((op) => op.kind === "text" && op.text === model.subtitle)!;
+      expect(week.top).toBeGreaterThanOrEqual(pill.top);
+      expect(week.bottom).toBeLessThanOrEqual(pill.bottom);
+      expect((week.top + week.bottom) / 2).toBeCloseTo((pill.top + pill.bottom) / 2, 5);
+    });
+  }
+
+  it("the section's name clears the pill, and the title clears the name, by the same gaps in both languages", async () => {
+    const gaps = async (lang: "fr" | "ar") => {
+      const model = shareImageModel(edition, lang, { ...COPY, brand: SECTION[lang] })!;
+      await renderShareImage(model);
+      const { ops } = recordings.at(-1)!;
+      const pill = ops.find((op) => op.kind === "fill" && op.paint instanceof Gradient)!;
+      // The section's name in large type (the lock-up draws it small too).
+      const section = ops.find((op) => op.kind === "text" && op.font!.startsWith("800 64px"))!;
+      expect(section.text).toBe(SECTION[lang]);
+      const title = ops.find((op) => op.kind === "text" && op.text === model.title)!;
+      return { pill: pill.top - section.bottom, line: section.top - title.bottom };
+    };
+    const fr = await gaps("fr");
+    const ar = await gaps("ar");
+    expect(fr.pill).toBeCloseTo(30, 5);
+    expect(ar.pill).toBeCloseTo(fr.pill, 5);
+    expect(ar.line).toBeCloseTo(fr.line, 5);
+    expect(fr.line).toBeGreaterThan(10);
   });
 });
 

@@ -343,7 +343,40 @@ export function sliceAngles(index: number, rtl: boolean, gap = 0.05): [number, n
  */
 export const canvasText = (value: string) => value.replace(/\u202f/g, "\u00a0");
 
-/** Text whose box top is at `y`. Letter-spacing applies in French only. */
+/**
+ * A run's ink above and below its baseline in the context's current font, as
+ * the browser measures the glyphs (Arabic letters such as ج, ر and ل reach
+ * well below the baseline; French capitals and figures do not). A canvas that
+ * reports no ink box gets a generous estimate.
+ */
+export function inkExtent(
+  ctx: CanvasRenderingContext2D,
+  value: string,
+  size: number,
+): { ascent: number; descent: number } {
+  const metrics = ctx.measureText(value);
+  const ascent = metrics.actualBoundingBoxAscent;
+  const descent = metrics.actualBoundingBoxDescent;
+  if (Number.isFinite(ascent) && Number.isFinite(descent)) return { ascent, descent };
+  return { ascent: size * 0.75, descent: size * 0.25 };
+}
+
+/** The baseline that puts a run's measured ink centre on `centre`. */
+export function inkCentredBaseline(
+  ctx: CanvasRenderingContext2D,
+  value: string,
+  size: number,
+  centre: number,
+) {
+  const ink = inkExtent(ctx, value, size);
+  return centre + (ink.ascent - ink.descent) / 2;
+}
+
+/**
+ * Text at `y`: its "line-height: normal" box top by default, its baseline
+ * with `anchor: "baseline"`, or the centre of its measured ink with
+ * `anchor: "middle"`. Letter-spacing applies in French only.
+ */
 function text(
   ctx: CanvasRenderingContext2D,
   value: string,
@@ -357,6 +390,7 @@ function text(
     align?: CanvasTextAlign;
     tracking?: number;
     maxWidth?: number;
+    anchor?: "top" | "baseline" | "middle";
   },
 ) {
   ctx.save();
@@ -369,7 +403,14 @@ function text(
       `${options.tracking}px`;
   }
   ctx.fillStyle = options.fill;
-  ctx.fillText(canvasText(value), x, y + options.size * ASCENT[options.face], options.maxWidth);
+  const drawn = canvasText(value);
+  const baseline =
+    options.anchor === "baseline"
+      ? y
+      : options.anchor === "middle"
+        ? inkCentredBaseline(ctx, drawn, options.size, y)
+        : y + options.size * ASCENT[options.face];
+  ctx.fillText(drawn, x, baseline, options.maxWidth);
   ctx.restore();
 }
 
@@ -550,6 +591,9 @@ export async function renderShareImage(model: ShareImageModel): Promise<Blob> {
 /** The Top 10 post's rows: the panel's box and each row's pitch. */
 const TOP_TEN = { panelX: 40, panelTop: 456, rowsTop: 464, row: 76, edge: 11 } as const;
 
+/** The Top 10 header's ink gaps: the section's name to the week pill, the title to the name. */
+const HEADER = { pillGap: 30, lineGap: 14 } as const;
+
 async function drawTopTen(
   model: ShareImageModel,
   logo: HTMLImageElement | null,
@@ -577,23 +621,42 @@ async function drawTopTen(
     tracking: 22 * LABEL_TRACKING,
   });
 
-  text(ctx, model.title, mx(72), rtl ? 92 : 108, {
+  // The title and the section's name stack up from the week pill on their
+  // measured ink: the name's lowest point PILL_GAP above the pill, the
+  // title's LINE_GAP above the name, so Arabic descenders (ج, ر, ل) keep the
+  // clearance French capitals have.
+  const pillTop = 396;
+  const pillH = 44;
+  const titleSize = rtl ? 140 : 150;
+  const section = rtl ? model.brand : model.brand.toLocaleUpperCase("fr");
+  ctx.save();
+  ctx.font = shareFont("display", 800, 64);
+  const sectionInk = inkExtent(ctx, section, 64);
+  ctx.font = shareFont("display", 800, titleSize);
+  const titleInk = inkExtent(ctx, model.title, titleSize);
+  ctx.restore();
+  const sectionBaseline = pillTop - HEADER.pillGap - sectionInk.descent;
+  const titleBaseline = sectionBaseline - sectionInk.ascent - HEADER.lineGap - titleInk.descent;
+  text(ctx, model.title, mx(72), titleBaseline, {
     face: "display",
     weight: 800,
-    size: rtl ? 140 : 150,
+    size: titleSize,
     fill: SHARE_PALETTE.white,
     align: start,
+    anchor: "baseline",
   });
-  text(ctx, rtl ? model.brand : model.brand.toLocaleUpperCase("fr"), mx(80), rtl ? 290 : 286, {
+  text(ctx, section, mx(80), sectionBaseline, {
     face: "display",
     weight: 800,
     size: 64,
     fill: SHARE_PALETTE.white,
     align: start,
+    anchor: "baseline",
   });
 
   // The week, on the picture's one use of the action gradient: a pill like
-  // the Fantasy deadline pill, its text in Tunnel Navy.
+  // the Fantasy deadline pill, its text in Tunnel Navy, its ink centred in
+  // the pill (Arabic reaches further above and below the baseline).
   ctx.save();
   ctx.font = shareFont(body, 800, 22);
   if ("letterSpacing" in ctx && !rtl) {
@@ -602,19 +665,18 @@ async function drawTopTen(
   }
   const pillW = ctx.measureText(model.subtitle).width + 2 * 22;
   ctx.restore();
-  const pillTop = 396;
-  const pillH = 44;
   const pillX = rtl ? mx(80) - pillW : 80;
   ctx.fillStyle = actionGradient(ctx, pillTop, pillTop + pillH);
   roundRect(ctx, pillX, pillTop, pillW, pillH, pillH / 2);
   ctx.fill();
-  text(ctx, model.subtitle, rtl ? pillX + pillW - 22 : pillX + 22, pillTop + 9, {
+  text(ctx, model.subtitle, rtl ? pillX + pillW - 22 : pillX + 22, pillTop + pillH / 2, {
     face: body,
     weight: 800,
     size: 22,
     fill: SHARE_PALETTE.ground,
     align: start,
     tracking: 22 * LABEL_TRACKING,
+    anchor: "middle",
   });
 
   // The rows on one Floodlight Navy panel, each with its club's colour on the
