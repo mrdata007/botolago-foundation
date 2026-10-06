@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-05T21:17:37.536Z",
+  "generatedAt": "2026-10-06T05:31:39.697Z",
   "title": "Design System: BotolaGO",
   "extensions": {
     "colorMeta": {
@@ -697,6 +697,11 @@
         "section": "colors"
       },
       {
+        "name": "The Two Blues Rule",
+        "body": "Logo Blue belongs to the brand assets: the logo, the app and home-screen icons, the favicon and marketing art. It is never an interface colour for text, fills or controls; the interface brand is Floodlight Navy.",
+        "section": "colors"
+      },
+      {
         "name": "The Leading Not Size Rule",
         "body": "Arabic gets taller line boxes, never a different font size. The derivation and measurements are in [docs/qa/polish/README.md](docs/qa/polish/README.md).",
         "section": "typography"
@@ -749,7 +754,7 @@
       "**Don't** print a score as one string inside a single direction-isolated span.",
       "**Don't** add colour literals, new shadow values or legacy V1 tokens (frosted glass, the V1 electric blue, V1 shadows and radii) to product screens.",
       "**Don't** build a screen that only works in light. Dark mode is decided ([PR #356](https://github.com/mrdata007/botolago-foundation/pull/356)); use kit tokens that carry dark values.",
-      "**Don't** change the logo or paint interface elements in Logo Blue. The brand-blue recommendation awaits the owner's confirmation.",
+      "**Don't** change the logo or paint interface elements in Logo Blue (The Two Blues Rule).",
       "**Don't** add Pépites-only styling (night bands, the energy gradient, mono lines, slant, its own palette). Pépites is moving onto the kit ([PR #357](https://github.com/mrdata007/botolago-foundation/pull/357))."
     ]
   }

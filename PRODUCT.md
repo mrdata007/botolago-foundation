@@ -287,10 +287,6 @@ the snapshot) was not checked against the live site.
 - whether the Fantasy Cup and public leagues will be built or removed;
 - whether language URLs are adopted, and if so which shape (`/ar` beside unprefixed French, or `/fr`
   and `/ar` namespaces);
-- the canonical brand blue: the logo file uses `#0151fc`, while the interface's brand token is a deeper
-  navy. Recommended on 2026-10-05, awaiting the owner's confirmation: two blues with two jobs (Logo
-  Blue for brand assets only, the navy for the interface, the white logo in dark mode); see
-  `DESIGN.md` (Colors);
 - whether an Arabic-script form of the brand name is sanctioned.
 
 ## Brand Commitments
@@ -329,6 +325,10 @@ the snapshot) was not checked against the live site.
   trails the code on a few points; see the snapshot, section 7) and implemented in `src/styles.css`
   and `src/components/ui-kit/`, and summarised for agents in `DESIGN.md`. This record does not restate
   it.
+- **Brand blue: two blues with two jobs** (owner decision, 2026-10-05). The logo's `#0151fc` is for
+  brand assets only (logo, app and home-screen icons, favicon, marketing art) and never an interface
+  colour; the interface brand is the deeper navy; in dark mode the logo uses its all-white files. See
+  `DESIGN.md` (Colors).
 - **Operator:** Go Sports Technologies (a company being formed), Agadir, Morocco; contact
   support@botolago.com.
 
