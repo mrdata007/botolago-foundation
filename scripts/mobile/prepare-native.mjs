@@ -10,12 +10,16 @@
 //            App.entitlements declares push, and the app target points at it
 //            (what Xcode's "+ Capability > Push Notifications" does).
 //            iPhone only (no iPad), held upright. Info.plist: French first,
-//            Arabic second, and the camera and photo permission texts (also
-//            translated, in fr.lproj and ar.lproj InfoPlist.strings).
-//            PrivacyInfo.xcprivacy, Apple's privacy manifest, in the app.
+//            Arabic second, and the camera and photo permission texts, reading
+//            and adding (also translated, in fr.lproj and ar.lproj
+//            InfoPlist.strings). PrivacyInfo.xcprivacy, Apple's privacy
+//            manifest, in the app.
 //   Android  AndroidManifest.xml declares POST_NOTIFICATIONS. Without it Android
 //            13 and later never show the permission prompt. It also names the
 //            push alerts' small icon and colour, and holds the screen upright.
+//            The file provider @capacitor/share hands the share picture
+//            through, with the app's cache in its paths (both in Capacitor's
+//            template; kept). Saving to the gallery needs no permission.
 //            styles.xml: the launch screen's colour and icon.
 //            build.gradle signs the release with the keystore the cloud build
 //            provides (CM_KEYSTORE_* variables); on a developer machine, where
@@ -183,11 +187,18 @@ export function patchBuildGradle(source) {
 const CAMERA_USAGE = "BotolaGO utilise l’appareil photo pour prendre votre photo de profil.";
 const PHOTOS_USAGE =
   "BotolaGO accède à vos photos pour que vous choisissiez votre photo de profil.";
+// Shown when the app asks to add a picture to Photos ("add only": it never sees
+// the library): "Enregistrer dans la galerie" in the share sheet
+// (@capacitor-community/media), and "Save Image" in the phone's own share
+// sheet. Without it iOS closes the app at that moment.
+const PHOTOS_ADD_USAGE =
+  "BotolaGO ajoute à vos photos les images que vous choisissez d’enregistrer.";
 const INFO_PLIST_STRINGS = {
-  fr: { camera: CAMERA_USAGE, photos: PHOTOS_USAGE },
+  fr: { camera: CAMERA_USAGE, photos: PHOTOS_USAGE, photosAdd: PHOTOS_ADD_USAGE },
   ar: {
     camera: "يستخدم BotolaGO الكاميرا لالتقاط صورة ملفك الشخصي.",
     photos: "يصل BotolaGO إلى صورك لتختار منها صورة ملفك الشخصي.",
+    photosAdd: "يضيف BotolaGO إلى صورك الصور التي تختار حفظها.",
   },
 };
 
@@ -232,7 +243,8 @@ function removePlistKey(source, key) {
 
 /**
  * `source` (Info.plist) with French as the app's own language and Arabic as a
- * second one, the two photo permission texts, and the iPhone held upright.
+ * second one, the three photo permission texts (camera, reading the photos,
+ * adding to them), and the iPhone held upright.
  * The site handles only the top and bottom safe areas, so landscape (with the
  * notch on the side) is turned off. The iPad keys go: the app is iPhone only.
  */
@@ -242,6 +254,7 @@ export function patchInfoPlist(source) {
   text = setPlistValue(text, "CFBundleLocalizations", plistArray(["fr", "ar"]));
   text = setPlistValue(text, "NSCameraUsageDescription", CAMERA_USAGE);
   text = setPlistValue(text, "NSPhotoLibraryUsageDescription", PHOTOS_USAGE);
+  text = setPlistValue(text, "NSPhotoLibraryAddUsageDescription", PHOTOS_ADD_USAGE);
   text = setPlistValue(
     text,
     "UISupportedInterfaceOrientations",
@@ -253,11 +266,13 @@ export function patchInfoPlist(source) {
 
 /** The InfoPlist.strings of one language: the same permission texts, translated. */
 export function infoPlistStrings(language) {
-  const { camera, photos } = INFO_PLIST_STRINGS[language];
+  const { camera, photos, photosAdd } = INFO_PLIST_STRINGS[language];
   const quote = (value) => `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
   return `/* The texts iOS shows when the profile photo picker asks for the camera or the photos. */
 "NSCameraUsageDescription" = ${quote(camera)};
 "NSPhotoLibraryUsageDescription" = ${quote(photos)};
+/* The text iOS shows when the app asks to add a share picture to the photos. */
+"NSPhotoLibraryAddUsageDescription" = ${quote(photosAdd)};
 `;
 }
 
@@ -269,9 +284,15 @@ const PRIVACY_PATH = "App/PrivacyInfo.xcprivacy";
 // Apple requires every app to give a reason for the "required reason" APIs it,
 // or a library in it, uses. @capacitor/preferences keeps its values in
 // UserDefaults and ships no manifest of its own; CA92.1 is "read and write
-// information that only the app itself can access". Capacitor's own frameworks
-// ship their manifests (with nothing to declare), and @capacitor/app and
-// @capacitor/push-notifications use none of these APIs.
+// information that only the app itself can access". @capacitor/filesystem (and
+// IONFilesystemLib under it, which ships no manifest either) reads files'
+// creation and modification dates (its stat); the app only writes the share
+// picture to its own cache, so the reason is C617.1, "files inside the app
+// container", the one the plugin's README names. Capacitor's own frameworks
+// ship their manifests (with nothing to declare); @capacitor/app,
+// @capacitor/push-notifications, @capacitor/share and
+// @capacitor-community/media use none of these APIs (SDWebImage, which the
+// last one uses, ships its own manifest).
 // NSPrivacyCollectedDataTypes is left empty: what the app collects is what the
 // website collects, and that is declared in App Store Connect's privacy form,
 // which follows the privacy policy.
@@ -293,6 +314,14 @@ const PRIVACY_MANIFEST = `<?xml version="1.0" encoding="UTF-8"?>
 \t\t\t<key>NSPrivacyAccessedAPITypeReasons</key>
 \t\t\t<array>
 \t\t\t\t<string>CA92.1</string>
+\t\t\t</array>
+\t\t</dict>
+\t\t<dict>
+\t\t\t<key>NSPrivacyAccessedAPIType</key>
+\t\t\t<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+\t\t\t<key>NSPrivacyAccessedAPITypeReasons</key>
+\t\t\t<array>
+\t\t\t\t<string>C617.1</string>
 \t\t\t</array>
 \t\t</dict>
 \t</array>
@@ -498,6 +527,47 @@ export function patchManifestNotificationIcon(source) {
   return { text, changed: text !== source };
 }
 
+const FILE_PROVIDER = `        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="\${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+`;
+
+/**
+ * `source` (AndroidManifest.xml) with the file provider @capacitor/share hands
+ * the share picture through (`<package>.fileprovider`, the name the plugin
+ * asks for). Capacitor's template already has it; this keeps it if a template
+ * ever drops it, since sharing a file fails without it.
+ */
+export function patchManifestFileProvider(source) {
+  if (source.includes('android:authorities="${applicationId}.fileprovider"')) {
+    return { text: source, changed: false };
+  }
+  const close = source.lastIndexOf("</application>");
+  if (close === -1) throw new Error("AndroidManifest.xml is not the shape this expects");
+  const lineStart = source.lastIndexOf("\n", close - 1) + 1;
+  const text = `${source.slice(0, lineStart)}${FILE_PROVIDER}${source.slice(lineStart)}`;
+  return { text, changed: true };
+}
+
+/**
+ * `source` (res/xml/file_paths.xml) letting the file provider hand out files of
+ * the app's cache, where the share picture is written. In Capacitor's template.
+ */
+export function patchFilePaths(source) {
+  if (/<cache-path\b[^>]*\bpath="\.\/?"/.test(source)) return { text: source, changed: false };
+  const close = source.lastIndexOf("</paths>");
+  if (close === -1) throw new Error("file_paths.xml is not the shape this expects");
+  const lineStart = source.lastIndexOf("\n", close - 1) + 1;
+  const text = `${source.slice(0, lineStart)}    <cache-path name="my_cache_images" path="." />\n${source.slice(lineStart)}`;
+  return { text, changed: true };
+}
+
 /** `source` (AndroidManifest.xml) with the app's screen held upright, like the iPhone app. */
 export function patchManifestPortrait(source) {
   const activity = /<activity\b[^>]*android:name="\.MainActivity"[^>]*>/.exec(source);
@@ -591,6 +661,7 @@ export function prepareNative(root, { check = false, assets = NATIVE_ASSETS } = 
   const manifest = join(root, "android/app/src/main/AndroidManifest.xml");
   const gradle = join(root, "android/app/build.gradle");
   const styles = join(res, "values/styles.xml");
+  const filePaths = join(res, "xml/file_paths.xml");
   const services = join(root, "android/app/google-services.json");
 
   const apply = (path, patch, what) => {
@@ -634,7 +705,11 @@ export function prepareNative(root, { check = false, assets = NATIVE_ASSETS } = 
     patchPbxprojResources,
     "privacy manifest and French/Arabic permission texts in the Xcode project",
   );
-  apply(infoPlist, patchInfoPlist, "languages, photo permissions and portrait only in Info.plist");
+  apply(
+    infoPlist,
+    patchInfoPlist,
+    "languages, photo permissions (camera, read, add) and portrait only in Info.plist",
+  );
   apply(manifest, patchManifest, "POST_NOTIFICATIONS in AndroidManifest.xml");
   apply(
     manifest,
@@ -642,6 +717,12 @@ export function prepareNative(root, { check = false, assets = NATIVE_ASSETS } = 
     "push alert icon and colour in AndroidManifest.xml",
   );
   apply(manifest, patchManifestPortrait, "portrait only in AndroidManifest.xml");
+  apply(
+    manifest,
+    patchManifestFileProvider,
+    "file provider for sharing the picture in AndroidManifest.xml",
+  );
+  apply(filePaths, patchFilePaths, "the cache in the file provider's paths (file_paths.xml)");
   apply(styles, patchSplashTheme, "launch screen colour and icon in styles.xml");
   apply(
     gradle,
@@ -654,7 +735,7 @@ export function prepareNative(root, { check = false, assets = NATIVE_ASSETS } = 
     ensureFile(
       join(ios, PRIVACY_PATH),
       PRIVACY_MANIFEST,
-      "PrivacyInfo.xcprivacy (UserDefaults, reason CA92.1)",
+      "PrivacyInfo.xcprivacy (UserDefaults CA92.1, file timestamps C617.1)",
     );
     for (const language of Object.keys(INFO_PLIST_STRINGS)) {
       ensureFile(

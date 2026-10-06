@@ -15,8 +15,10 @@ import {
   NATIVE_ASSETS,
   patchAppDelegate,
   patchBuildGradle,
+  patchFilePaths,
   patchInfoPlist,
   patchManifest,
+  patchManifestFileProvider,
   patchManifestNotificationIcon,
   patchManifestPortrait,
   patchPbxproj,
@@ -79,6 +81,13 @@ const MANIFEST = `<?xml version="1.0" encoding="utf-8"?>
 
     <uses-permission android:name="android.permission.INTERNET" />
 </manifest>
+`;
+
+const FILE_PATHS = `<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-path name="my_images" path="." />
+    <cache-path name="my_cache_images" path="." />
+</paths>
 `;
 
 const BUILD_GRADLE = `apply plugin: 'com.android.application'
@@ -592,7 +601,7 @@ describe("patchBuildGradle", () => {
 });
 
 describe("patchInfoPlist", () => {
-  test("French first and Arabic, the two photo permission texts, iPhone upright only", () => {
+  test("French first and Arabic, the three photo permission texts, iPhone upright only", () => {
     const { text, changed } = patchInfoPlist(INFO_PLIST);
     expect(changed).toBe(true);
     expect(plistValue(text, "CFBundleDevelopmentRegion")).toBe("<string>fr</string>");
@@ -601,6 +610,9 @@ describe("patchInfoPlist", () => {
     );
     expect(plistValue(text, "NSCameraUsageDescription")).toContain("appareil photo");
     expect(plistValue(text, "NSPhotoLibraryUsageDescription")).toContain("vos photos");
+    // Saving a share picture (add only), and "Save Image" in iOS's share sheet:
+    // without it iOS closes the app.
+    expect(plistValue(text, "NSPhotoLibraryAddUsageDescription")).toContain("ajoute à vos photos");
     expect(plistValue(text, "UISupportedInterfaceOrientations")).toBe(
       "<array>\n\t\t<string>UIInterfaceOrientationPortrait</string>\n\t</array>",
     );
@@ -647,11 +659,23 @@ describe("patchInfoPlist", () => {
 });
 
 describe("infoPlistStrings", () => {
-  test("translates both permission texts, in French and Arabic", () => {
+  test("translates the three permission texts, in French and Arabic", () => {
     for (const language of ["fr", "ar"]) {
       const text = infoPlistStrings(language);
       expect(text).toMatch(/^"NSCameraUsageDescription" = "[^"\n]+";$/m);
       expect(text).toMatch(/^"NSPhotoLibraryUsageDescription" = "[^"\n]+";$/m);
+      expect(text).toMatch(/^"NSPhotoLibraryAddUsageDescription" = "[^"\n]+";$/m);
+    }
+    // The French file says what Info.plist says, for each key.
+    const plist = patchInfoPlist(INFO_PLIST).text;
+    for (const key of [
+      "NSCameraUsageDescription",
+      "NSPhotoLibraryUsageDescription",
+      "NSPhotoLibraryAddUsageDescription",
+    ]) {
+      expect(infoPlistStrings("fr")).toContain(
+        `"${key}" = "${plistValue(plist, key)!.slice(8, -9)}";`,
+      );
     }
     expect(infoPlistStrings("ar")).toMatch(/[؀-ۿ]/);
     expect(infoPlistStrings("fr")).toContain(
@@ -787,6 +811,46 @@ describe("patchManifestPortrait", () => {
 
   test("refuses a manifest with no MainActivity", () => {
     expect(() => patchManifestPortrait("<manifest></manifest>")).toThrow();
+  });
+});
+
+describe("patchManifestFileProvider and patchFilePaths", () => {
+  test("Capacitor's template already has the provider @capacitor/share uses, with the cache", () => {
+    expect(patchManifestFileProvider(MANIFEST)).toEqual({ text: MANIFEST, changed: false });
+    expect(patchFilePaths(FILE_PATHS)).toEqual({ text: FILE_PATHS, changed: false });
+  });
+
+  test("puts the provider back inside <application> if a template drops it, once", () => {
+    const start = MANIFEST.indexOf("        <provider");
+    const end = MANIFEST.indexOf("</provider>\n") + "</provider>\n".length;
+    const without = `${MANIFEST.slice(0, start)}${MANIFEST.slice(end)}`;
+    expect(without).not.toContain("fileprovider");
+    const { text, changed } = patchManifestFileProvider(without);
+    expect(changed).toBe(true);
+    const application = text.slice(text.indexOf("<application"), text.indexOf("</application>"));
+    expect(application).toContain('android:authorities="${applicationId}.fileprovider"');
+    expect(application).toContain('android:resource="@xml/file_paths"');
+    expect(application).toContain('android:grantUriPermissions="true"');
+    expect(application).toContain('android:exported="false"');
+    expect(patchManifestFileProvider(text)).toEqual({ text, changed: false });
+  });
+
+  test("adds the cache to the provider's paths if it is missing, once", () => {
+    const without = FILE_PATHS.replace(/ *<cache-path[^>]*\/>\n/, "");
+    const { text, changed } = patchFilePaths(without);
+    expect(changed).toBe(true);
+    expect(text).toContain('<cache-path name="my_cache_images" path="." />\n</paths>');
+    expect(patchFilePaths(text)).toEqual({ text, changed: false });
+    // A cache path that covers only part of the cache is not enough.
+    expect(
+      patchFilePaths(without.replace("</paths>", '<cache-path name="x" path="img/" />\n</paths>'))
+        .changed,
+    ).toBe(true);
+  });
+
+  test("refuses files that are not the shape it expects", () => {
+    expect(() => patchManifestFileProvider("<manifest></manifest>")).toThrow();
+    expect(() => patchFilePaths("<resources></resources>")).toThrow();
   });
 });
 
@@ -945,16 +1009,21 @@ describe("prepareNative", () => {
     "ios/App/App.xcodeproj/project.pbxproj": PBXPROJ_FULL,
     "android/app/src/main/AndroidManifest.xml": MANIFEST,
     "android/app/src/main/res/values/styles.xml": STYLES,
+    "android/app/src/main/res/xml/file_paths.xml": FILE_PATHS,
     "android/app/src/main/res/drawable/splash.png": "Capacitor's logo",
     "android/app/build.gradle": BUILD_GRADLE,
   };
   // 10 patched files, 4 written ones (entitlements, privacy manifest, 2 translations), 3 sets of images
   const STEPS = 17;
+  // Checked, and already right in Capacitor's template: the file provider and its cache path.
+  const TEMPLATE_HAS = 2;
 
   test("finishes both projects, then reports them as already done", () => {
     const root = project(FILES);
     const first = prepareNative(root);
     expect(first.report.filter((line) => line.startsWith("added:"))).toHaveLength(STEPS);
+    // The file provider and its cache path are in Capacitor's template already.
+    expect(first.report.filter((line) => line.startsWith("ok:"))).toHaveLength(TEMPLATE_HAS);
     expect(readFileSync(join(root, "android/app/src/main/AndroidManifest.xml"), "utf8")).toContain(
       "POST_NOTIFICATIONS",
     );
@@ -969,7 +1038,9 @@ describe("prepareNative", () => {
       "NSCameraUsageDescription",
     );
     const second = prepareNative(root);
-    expect(second.report.filter((line) => line.startsWith("ok:"))).toHaveLength(STEPS);
+    expect(second.report.filter((line) => line.startsWith("ok:"))).toHaveLength(
+      STEPS + TEMPLATE_HAS,
+    );
     expect(second.report.filter((line) => line.startsWith("added:"))).toHaveLength(0);
   });
 
@@ -983,6 +1054,12 @@ describe("prepareNative", () => {
     expect(manifest).toMatch(
       /<key>NSPrivacyAccessedAPITypeReasons<\/key>\s*<array>\s*<string>CA92\.1<\/string>/,
     );
+    // @capacitor/filesystem reads file dates: files in the app's own container.
+    expect(manifest).toMatch(
+      /<string>NSPrivacyAccessedAPICategoryFileTimestamp<\/string>\s*<key>NSPrivacyAccessedAPITypeReasons<\/key>\s*<array>\s*<string>C617\.1<\/string>\s*<\/array>/,
+    );
+    expect(manifest.split("<dict>").length).toBe(manifest.split("</dict>").length);
+    expect(manifest.split("<array>").length).toBe(manifest.split("</array>").length);
     expect(readFileSync(join(root, "ios/App/App/ar.lproj/InfoPlist.strings"), "utf8")).toBe(
       infoPlistStrings("ar"),
     );

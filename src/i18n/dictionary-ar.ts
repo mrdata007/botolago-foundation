@@ -2413,6 +2413,13 @@ export const ar = {
   "pepites.share.whatsapp": "إرسال عبر واتساب",
   "pepites.share.copy": "نسخ الرابط",
   "pepites.share.copy_failed": "تعذّر نسخ الرابط.",
+  // Inside the phone app only, when the app has the plugins (ShareImageSheet).
+  "pepites.share.save": "حفظ في معرض الصور",
+  "pepites.share.saved": "تم حفظ الصورة في معرض الصور.",
+  "pepites.share.save_denied":
+    "لا يملك BotolaGO إذنًا بالوصول إلى صورك. اسمح له بذلك من إعدادات الهاتف.",
+  "pepites.share.save_failed": "تعذّر حفظ الصورة.",
+  "pepites.share.native_failed": "تعذّرت مشاركة الصورة.",
   // The pitch demo's welcome screen (demo/, `WelcomeScreen`); the app
   // itself opens on the landing page instead.
   "welcome.title": "مرحبًا بك في BotolaGO",

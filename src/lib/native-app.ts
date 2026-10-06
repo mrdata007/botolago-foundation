@@ -15,6 +15,9 @@ export type NativePlatform = "ios" | "android";
 interface CapacitorGlobal {
   readonly isNativePlatform?: () => boolean;
   readonly getPlatform?: () => string;
+  readonly isPluginAvailable?: (name: string) => boolean;
+  /** One entry per native plugin compiled into this app, put on the page by the shell. */
+  readonly PluginHeaders?: ReadonlyArray<{ readonly name?: unknown }>;
 }
 
 export interface NativeScope {
@@ -40,6 +43,36 @@ export function nativePlatform(
     return null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * Whether the running app contains the native plugin `name` (its `jsName`:
+ * "Share", "Filesystem", "Media" …). Always `false` in a browser and on the
+ * server, even for a plugin that has a web version.
+ *
+ * The app loads the live site, so an app built before a plugin was added runs
+ * today's site without it: a button that needs a plugin must ask first, or it
+ * would do nothing there. The shell lists the plugins it was built with in
+ * `Capacitor.PluginHeaders` before the site's code runs. That list is what
+ * Capacitor's library answers `isPluginAvailable` from for a native plugin,
+ * and it is read here directly: until the library has loaded (the site loads
+ * it only inside the app, on demand), the shell's own `isPluginAvailable`
+ * says `false` for every plugin nothing has registered yet. It is only asked
+ * when there is no list at all.
+ */
+export function nativePluginAvailable(
+  name: string,
+  scope: NativeScope = globalThis as NativeScope,
+): boolean {
+  try {
+    if (!nativePlatform(scope)) return false;
+    const capacitor = scope.Capacitor;
+    const headers = capacitor?.PluginHeaders;
+    if (Array.isArray(headers)) return headers.some((header) => header?.name === name);
+    return capacitor?.isPluginAvailable?.(name) === true;
+  } catch {
+    return false;
   }
 }
 

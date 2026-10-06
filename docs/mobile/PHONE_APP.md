@@ -32,6 +32,7 @@ is deployed at botolago.com**. Deploy the branch before testing an app build.
 | The Push switch in the profile's notification settings (app only)           | `src/routes/auth.profile-setup.tsx` step 3, `src/services/use-native-push.ts`                           |
 | Opening an alert's page, refreshing the inbox, keeping the phone registered | `src/components/native/NativePushBridge.tsx`, `src/lib/push-payload.ts`                                 |
 | Android alert channels (so a goal appears on screen)                        | `src/lib/push-channels.ts`, and the sender's `supabase/functions/_shared/notification-push-types.ts`    |
+| Saving a share picture to the photos, and sharing it as a file (app only)   | `src/lib/native-share-image.ts`, `src/components/common/ShareImageSheet.tsx`                            |
 | Finishing the native projects after `cap add`                               | `scripts/mobile/prepare-native.mjs` (`bun run mobile:prepare`, `bun run mobile:check`)                  |
 | The app's icons, launch screens and Android notification icon               | `store-assets/app-icon/native/`, made by `scripts/brand/make-app-icons.py`                              |
 | Numbering each build for the stores                                         | `scripts/mobile/set-build-number.mjs`                                                                   |
@@ -163,10 +164,16 @@ templates leave out:
     the texts iOS shows when the profile photo picker asks for the camera or the
     photos (without the camera text, iOS closes the app when someone picks "Take
     Photo"). The same texts in Arabic are in `ar.lproj/InfoPlist.strings`;
+  - the text iOS shows when the app asks to **add a picture to Photos**
+    (`NSPhotoLibraryAddUsageDescription`), in French in `Info.plist` and in French
+    and Arabic in `InfoPlist.strings`. It is used by "Enregistrer dans la galerie"
+    and by "Save Image" in the phone's share sheet. Without it iOS closes the app
+    at that moment;
   - `PrivacyInfo.xcprivacy`, Apple's privacy manifest, added to the app's
-    resources. It declares the one "required reason" API the app uses:
+    resources. It declares the two "required reason" APIs the app uses:
     `UserDefaults`, by `@capacitor/preferences`, reason `CA92.1` (data only the app
-    reads). No tracking. Its list of collected data is left empty: what the app
+    reads), and file dates, by `@capacitor/filesystem`, reason `C617.1` (files in
+    the app's own folders). No tracking. Its list of collected data is left empty: what the app
     collects is what the website collects, and you declare that in App Store
     Connect's App Privacy form, following the privacy policy;
   - the **icon** (the AppIcon set) and the **launch screen** image (the GO mark on
@@ -179,6 +186,9 @@ templates leave out:
     Firebase draws every alert with them, whether the app is open or closed;
     without them Android shows a white square;
   - **upright only**, like the iPhone;
+  - the **file provider** that hands the share picture to other apps, with the
+    app's cache in its paths. Capacitor's template already has both; the script
+    only checks them. No new permission: saving to the gallery needs none;
   - the **icon**: the adaptive icon (background, foreground, and the one-colour
     layer phones tint to match the wallpaper) and the flat icons older phones
     use, at every size;
@@ -240,6 +250,31 @@ sender answer `BadDeviceToken` and turn that phone off.)
   change once an app is out.
 - In a browser none of this is visible: the switch only exists inside the app.
 
+## Saving and sharing pictures
+
+The share sheet of the Pépites cards and of the Fantasy recap makes a picture.
+A web page cannot save a file inside the app, and Android's web view cannot
+share one. So the app uses three plugins:
+
+- `@capacitor-community/media` (9.1.0) saves the picture. "Enregistrer dans la
+  galerie" replaces the browser's "Télécharger l'image".
+  - iPhone: it goes into the camera roll. iOS asks once, for "add only" access:
+    the app can add a photo, never see the others.
+  - Android: it goes into a "BotolaGO" album in the app's own media folder. No
+    permission is asked, on any Android version. The gallery shows the album.
+    Android deletes it if the app is uninstalled.
+- `@capacitor/filesystem` (8.1.4) writes the picture to the app's cache.
+- `@capacitor/share` (8.0.3) opens the phone's share sheet with that file, the
+  message and the link. "Partager l'image" uses it on both phones.
+
+The versions are pinned in `package.json`. The plugins are native code, so
+**this needs an app build made after they were added.** An older build loads
+the same site without them. There the site shows what it showed before: no
+save button, and on iPhone the web share button. The site asks the app which
+plugins it has (`nativePluginAvailable` in `src/lib/native-app.ts`) before
+showing a button. A refused photo permission shows a message saying where to
+allow it. A closed share sheet says nothing.
+
 ## Trying it on a real phone
 
 Nothing below has been done. In this order, on a test account:
@@ -269,6 +304,13 @@ Nothing below has been done. In this order, on a test account:
     white GO in the status bar when an alert arrives, the screen staying upright
     when the phone turns, and, in the profile, the photo button: "Take Photo" asks
     for the camera with the French text (Arabic on a phone set to Arabic).
+11. Pictures (an app build made after 2026-10-06): open Pépites, the share
+    button, then "Enregistrer dans la galerie". iPhone: allow "add photos";
+    the picture is in Photos. Android: no prompt; the picture is in the
+    gallery's BotolaGO album. Then "Partager l'image": the phone's share sheet
+    opens with the picture; send it to WhatsApp. On iPhone, also try "Save
+    Image" in that sheet. Refuse the photo permission once and check the
+    message.
 
 **What was checked without a phone or a build:**
 
@@ -296,6 +338,17 @@ Nothing below has been done. In this order, on a test account:
   The Android resources and manifest were also linked with Google's `aapt2`
   (against Android 36 and the splash screen library, without the rest of the app),
   which resolves every name they use: it passed, and failed on a misspelt one.
+- Saving and sharing pictures (2026-10-06): fresh projects from Capacitor
+  8.5.2's templates list the three plugins after `cap add` and `cap sync`
+  (iPhone: `CapApp-SPM/Package.swift` and `packageClassList`; Android:
+  `capacitor.settings.gradle`, `capacitor.build.gradle` and
+  `capacitor.plugins.json`). `mobile:prepare` adds the photo text and the
+  privacy entry; a second run changes no file; `mobile:check` passes. The
+  plugins' own Android manifests are empty, so no permission is added. In a
+  browser, against a stand-in for the bridge with and without the plugins:
+  the buttons, what each plugin is sent, the toasts in French and Arabic, and
+  the older-build case. Not tried: a real phone, a real Photos or gallery
+  write, a real share sheet, and an Xcode or Gradle build.
 - `codemagic.yaml` parses, and a test holds that every command in it exists, that
   the steps run in the order they need, that the app id matches
   `capacitor.config.ts`, that it holds no secret, and that it cannot release anything

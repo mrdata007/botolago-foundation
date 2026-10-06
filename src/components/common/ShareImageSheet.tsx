@@ -1,12 +1,14 @@
-import { Copy, Download, MessageCircle, Share2 } from "lucide-react";
+import { Copy, Download, ImageDown, MessageCircle, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { useNativeImageActions } from "@/components/native/use-native-image-actions";
 import { WebOnly } from "@/components/native/WebOnly";
 import { whatsappUrl } from "@/components/predictions/leagues/invite-link";
 import { ui, UiButton, UiIconButton, UiSheet, UiStatePanel } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
+import { saveImageToGallery, shareImageFile } from "@/lib/native-share-image";
 import { cn } from "@/lib/utils";
 
 export type ShareChannel = "native" | "whatsapp" | "copy" | "download";
@@ -28,6 +30,12 @@ export type ShareSheetEvent = "preview" | ShareChannel;
  * Shared by Pépites and the Fantasy gameweek recap; what each one draws and
  * says stays with it. The button labels are the `pepites.share.*` keys, which
  * say nothing Pépites-specific ("Partager l'image", "Copier le lien" …).
+ *
+ * Inside the phone app, when the app has the plugins for it
+ * (`useNativeImageActions`), "Partager l'image" goes through the phone's own
+ * share sheet with the picture as a file, and "Enregistrer dans la galerie"
+ * takes the place of the browser's download. Saving reports `download`: it is
+ * the app's way of keeping the picture.
  */
 export function ShareImageSheet({
   label,
@@ -65,6 +73,8 @@ export function ShareImageSheet({
   const [open, setOpen] = useState(false);
   const [image, setImage] = useState<{ blob: Blob; url: string } | null>(null);
   const [failed, setFailed] = useState(false);
+  const native = useNativeImageActions();
+  const [busy, setBusy] = useState<"save" | "share" | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -148,7 +158,33 @@ export function ShareImageSheet({
             <UiStatePanel kind="loading" />
           )}
           <p className={cn(ui.text.meta, ui.tone.muted)}>{message}</p>
-          {canShareFile && file ? (
+          {native.share && image ? (
+            <UiButton
+              variant="ink"
+              disabled={busy !== null}
+              data-testid={`${testIdPrefix}-share-native-app`}
+              onClick={async () => {
+                setBusy("share");
+                const result = await shareImageFile({
+                  blob: image.blob,
+                  fileName,
+                  text: `${message} ${link("native")}`,
+                  title: label,
+                });
+                setBusy(null);
+                if (result === "shared") {
+                  onEvent?.("native");
+                  setOpen(false);
+                } else if (result === "failed") {
+                  toast.error(t("pepites.share.native_failed"));
+                }
+                // "cancelled": declined, not failed.
+              }}
+            >
+              <Share2 className="h-4 w-4" aria-hidden />
+              {t("pepites.share.native")}
+            </UiButton>
+          ) : canShareFile && file ? (
             <UiButton
               variant="ink"
               onClick={async () => {
@@ -168,9 +204,10 @@ export function ShareImageSheet({
           {/* Not inside the phone app (`WebOnly`): a `download` link to a
               blob is a file download, and neither Capacitor shell handles one
               (no download delegate on iPhone, no download listener on
-              Android), so the tap did nothing. The system share button above
-              is the app's way to keep the picture where the phone supports it
-              (iPhone); WhatsApp and the link work everywhere. */}
+              Android), so the tap did nothing. An app that has the Media
+              plugin saves to the photos instead (below); an older app keeps
+              the system share button above where the phone supports it
+              (iPhone). WhatsApp and the link work everywhere. */}
           {image ? (
             <WebOnly>
               <a
@@ -184,6 +221,32 @@ export function ShareImageSheet({
                 {t("pepites.share.download")}
               </a>
             </WebOnly>
+          ) : null}
+          {native.save && image ? (
+            <button
+              type="button"
+              disabled={busy !== null}
+              data-testid={`${testIdPrefix}-share-save`}
+              className={cn(secondary, "disabled:opacity-60")}
+              onClick={async () => {
+                setBusy("save");
+                const result = await saveImageToGallery(image.blob, fileName);
+                setBusy(null);
+                if (result === "saved") {
+                  toast.success(t("pepites.share.saved"));
+                  onEvent?.("download");
+                } else {
+                  toast.error(
+                    result === "denied"
+                      ? t("pepites.share.save_denied")
+                      : t("pepites.share.save_failed"),
+                  );
+                }
+              }}
+            >
+              <ImageDown className="h-4 w-4" aria-hidden />
+              {t("pepites.share.save")}
+            </button>
           ) : null}
           <a
             href={whatsappUrl(`${message} ${link("whatsapp")}`)}

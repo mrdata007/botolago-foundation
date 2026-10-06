@@ -92,7 +92,14 @@ describe("what is web-only", () => {
     const close = source.indexOf("</WebOnly>");
     const download = source.indexOf("download={fileName}");
     expect(download > open && download < close).toBe(true);
-    for (const part of ["navigator.share(", "whatsappUrl(", "navigator.clipboard.writeText("]) {
+    for (const part of [
+      "navigator.share(",
+      "whatsappUrl(",
+      "navigator.clipboard.writeText(",
+      // The app's own save and share: shown only inside an app that has the plugins.
+      "saveImageToGallery(",
+      "shareImageFile(",
+    ]) {
       const at = source.indexOf(part);
       expect(`${part} ${at > open && at < close}`).toBe(`${part} false`);
     }
