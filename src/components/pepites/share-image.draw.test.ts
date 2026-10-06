@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 
 import type { PepitesEdition, PepitesPlayerCard } from "@/backend/pepites/contracts";
+import { renderRecapImage, type RecapImageModel } from "@/components/fantasy/recap-image";
 
 import {
   renderShareImage,
@@ -353,7 +354,20 @@ const SCORE = {
   percentiles: { rating: 65, form: 77, contribution: 90, progression: 62, minutes: null },
 };
 
-type Picture = "post" | "story";
+function recapModel(lang: "fr" | "ar"): RecapImageModel {
+  return {
+    lang,
+    kicker: "Ma journee BotolaGO",
+    heading: "Journee 9 Resultat final",
+    teamName: "Les Lions FC",
+    total: "67",
+    unit: "pts",
+    lines: ["Capitaine ⁨Rahimi⁩ : ⁦8 × 2 = 16⁩ pts", "Transferts : ⁦−4⁩ pts"],
+    footer: "botolago.com Fantasy",
+  };
+}
+
+type Picture = "post" | "story" | "recap";
 
 /** Draws one picture in one language and returns everything it painted. */
 async function draw(picture: Picture, lang: "fr" | "ar"): Promise<Recording> {
@@ -367,8 +381,10 @@ async function draw(picture: Picture, lang: "fr" | "ar"): Promise<Recording> {
         index === 0 ? { ...row, photoUrl: "photo.webp" } : row,
       ),
     });
-  } else {
+  } else if (picture === "story") {
     await renderStoryImage(storyModel(card(1), SCORE, lang, STORY_COPY));
+  } else {
+    await renderRecapImage(recapModel(lang));
   }
   return recordings.at(-1)!;
 }
@@ -409,7 +425,7 @@ const isViolet = (hex: string) => {
   return h >= 240 && h <= 330 && s > 0.25;
 };
 
-const PICTURES: Picture[] = ["post", "story"];
+const PICTURES: Picture[] = ["post", "story", "recap"];
 
 /* ------------------------------------------------------------------ tests */
 
@@ -462,6 +478,10 @@ describe("the share pictures' palette", () => {
     expect(post.ops.find((op) => op.text === "SEMAINE 16 RISING SCORE")?.paint).toBe(
       SHARE_PALETTE.ground,
     );
+    const recap = await draw("recap", "fr");
+    for (const value of ["67", "pts"]) {
+      expect(recap.ops.find((op) => op.text === value)?.paint).toBe(SHARE_PALETTE.ground);
+    }
   });
 
   it("a club disc takes the club palette's colours, with a ring that stays visible on the navy", () => {
@@ -507,7 +527,7 @@ describe("the share pictures' faces", () => {
         const { ops } = await draw(picture, lang);
         const spaced = ops.filter((op) => op.kind === "text" && op.letterSpacing !== "0px");
         if (lang === "ar") expect(spaced).toEqual([]);
-        else expect(spaced.length).toBeGreaterThan(0);
+        else if (picture !== "recap") expect(spaced.length).toBeGreaterThan(0);
       });
     }
   }
@@ -555,6 +575,41 @@ describe("the share pictures mirror in Arabic", () => {
     const fr = await draw("story", "fr");
     const ar = await draw("story", "ar");
     expectMirrored(fr.ops, ar.ops);
+  });
+
+  it("the recap, its Arabic factual lines drawn run by run from the right", async () => {
+    const fr = await draw("recap", "fr");
+    const ar = await draw("recap", "ar");
+    // Everything but the factual lines mirrors; French draws each line as one
+    // string and Arabic draws its runs one by one.
+    expectMirrored(
+      fr.ops.filter((op) => op.kind !== "text"),
+      ar.ops.filter((op) => op.kind !== "text"),
+    );
+    for (const value of [
+      "Ma journee BotolaGO",
+      "Journee 9 Resultat final",
+      "Les Lions FC",
+      "67",
+      "pts",
+      "botolago.com Fantasy",
+    ]) {
+      expectMirrored(
+        [fr.ops.find((op) => op.text === value)!],
+        [ar.ops.find((op) => op.text === value)!],
+      );
+    }
+    // The sum and the signed figure are each one left-to-right run, marked
+    // LRM, and each run sits to the left of the run read before it.
+    const runs = ar.ops.filter((op) => op.kind === "text" && /^[‎‏]/.test(op.text!));
+    const sum = runs.find((op) => op.text === "‎8 × 2 = 16")!;
+    const minus = runs.find((op) => op.text === "‎−4")!;
+    expect(sum).toBeDefined();
+    expect(minus).toBeDefined();
+    for (let index = 1; index < runs.length; index += 1) {
+      const sameLine = runs[index]!.anchor! < runs[index - 1]!.anchor!;
+      if (sameLine) expect(runs[index]!.right).toBeLessThanOrEqual(runs[index - 1]!.left + 0.01);
+    }
   });
 
   it("the wheel runs counter-clockwise in Arabic: each slice is the French one reflected", () => {
