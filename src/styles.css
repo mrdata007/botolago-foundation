@@ -814,6 +814,14 @@ html[dir="rtl"]
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
+    /* BG-0151. Side letterbox for `viewport-fit=cover`: in landscape on a
+       notched phone the page keeps clear of the notch on both sides, as
+       Safari boxes it in without `cover`, and the body colour fills the
+       strips. The larger of the two insets, on both sides, so it is
+       symmetric and reads the same in Arabic; 0 on every screen without a
+       side inset. Fixed elements ignore it, and from `md` up they are
+       centred columns that clear the notch on their own. */
+    padding-inline: max(env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
   }
   /* Explicit, high-visibility focus ring on every interactive element */
   :focus-visible {

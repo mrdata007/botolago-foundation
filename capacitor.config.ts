@@ -35,6 +35,17 @@ const config: CapacitorConfig = {
       // banner and in the notification list, with its sound.
       presentationOptions: ["badge", "sound", "banner", "list"],
     },
+    // Android only (Capacitor 8's built-in SystemBars). The site's viewport
+    // meta says `viewport-fit=cover` (BG-0151), so on a WebView 140 or later
+    // the page is drawn edge to edge and pads itself by `env(safe-area-*)`.
+    // This hint tells the shell to expect `cover` from the first frame, so
+    // the page does not jump from padded to edge-to-edge as it loads. The
+    // default `insetsHandling` ("css") is kept: on an older WebView it keeps
+    // the page boxed in, with the insets at 0. Takes effect at the next
+    // native build.
+    SystemBars: {
+      initialViewportFitValueHint: "cover",
+    },
   },
 };
 

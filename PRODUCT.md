@@ -27,7 +27,7 @@ The owner plans to distribute the app through a Capacitor wrapper. Its groundwor
 - push-alert code for the phone;
 - a Codemagic cloud build.
 
-No build has run and nothing has been tried on a phone. There is still no web manifest and no service
+The shell builds for iPhone (iPhone only, no iPad) and for Android, and both builds hold the screen upright (`docs/mobile/PHONE_APP.md`). No build has run and nothing has been tried on a phone. There is still no web manifest and no service
 worker. The shell shows the same website, so its design language is the web's, and the platform stays
 `web` until the owner decides otherwise.
 
@@ -188,16 +188,15 @@ the snapshot) was not checked against the live site.
     round 3, and none had been published at the last record.
 - **Other:** the landing page (`/jouer`, also shown at `/` to first-time signed-out visitors); optional
   two-step sign-in; account-deletion requests; cookieless analytics (Seline).
+- **Dark mode** (merged after the site check): on (owner decision 2026-10-05, BG-0149, PR #356). It follows the phone's
+  setting by default, and Profil > Apparence offers Clair, Sombre and Système. Fantasy has its dark
+  version (BG-0084, closed on measurement). In dark the logo is the all-white wordmark.
 
 **Built, but switched off or not delivering.** Do not design as if these work.
 
 - **Email notifications:** mode `off` at the last record (2026-10-04). As a result, the match reminder
   bell, the Fantasy deadline and recap emails, and the Pépites weekly email send nothing. The in-app
   inbox very probably receives nothing either. Some interface copy still promises these reminders.
-- **Dark mode:** switched on in the code by owner decision on 2026-10-05 (BG-0149), not yet live: it
-  reaches botolago.com only once that change is merged and published. It follows the phone's setting
-  by default, and Profil > Apparence offers Clair, Sombre and Système. Fantasy has its dark version
-  (BG-0084, closed on measurement). In dark the logo is the all-white wordmark.
 - **Fantasy Cup and public leagues:** the screens and copy exist, but no backend path works.
   Head-to-head leagues appear only as a disabled option, with copy saying they will come later.
 - **Google and Apple sign-in:** the buttons render, but the providers were last recorded as not enabled
@@ -289,8 +288,6 @@ the snapshot) was not checked against the live site.
 - whether the Fantasy Cup and public leagues will be built or removed;
 - whether language URLs are adopted, and if so which shape (`/ar` beside unprefixed French, or `/fr`
   and `/ar` namespaces);
-- the canonical brand blue: the logo file uses `#0151fc`, while the interface's brand token is a deeper
-  navy;
 - whether an Arabic-script form of the brand name is sanctioned.
 
 ## Brand Commitments
@@ -329,7 +326,12 @@ the snapshot) was not checked against the live site.
 - **Visual identity is incumbent and authoritative.** It is "Design System V2", currently the look
   called Option A "Club colours". It is documented in `docs/engineering/DESIGN_SYSTEM_V2.md` (which
   trails the code on a few points; see the snapshot, section 7) and implemented in `src/styles.css`
-  and `src/components/ui-kit/`. This record does not restate it, and there is no `DESIGN.md` yet.
+  and `src/components/ui-kit/`, and summarised for agents in `DESIGN.md`. This record does not restate
+  it.
+- **Brand blue: two blues with two jobs** (owner decision, 2026-10-05). The logo's `#0151fc` is for
+  brand assets only (logo, app and home-screen icons, favicon, marketing art) and never an interface
+  colour; the interface brand is the deeper navy; in dark mode the logo uses its all-white files. See
+  `DESIGN.md` (Colors).
 - **Operator:** Go Sports Technologies (a company being formed), Agadir, Morocco; contact
   support@botolago.com.
 
@@ -388,8 +390,8 @@ What the design system and tests already cover:
 - **Tap targets and focus:** a 44px tap floor for kit controls (`--ui-tap-min`), and visible focus
   rings (`ui.focus`). Known exceptions: the carousel dot buttons in News and Pronostics are 24 × 32px.
 - **Reduced motion:** `prefers-reduced-motion` is respected for CSS animations and transitions through
-  one global block in `src/styles.css`, and in components that check it (for example GoalMoment and
-  TiltFrame). Known gap: five JavaScript smooth scrolls do not check it.
+  one global block in `src/styles.css`, and in components that check it (for example GoalMoment).
+  Known gap: five JavaScript smooth scrolls do not check it.
 - **Images and buttons:** alt text on images, and names on icon-only buttons (a source test).
 - **Arabic as a right-to-left language:**
   - logical (start/end) layout only;
@@ -409,5 +411,8 @@ Known gaps (**Unknown** whether intended):
 - No screen-reader testing is recorded.
 - Arabic readers see a French first paint on full page loads.
 - Browser tests run in Chromium only; there is no Safari/WebKit or real-device coverage.
-- The viewport meta lacks `viewport-fit=cover`, which safe-area handling inside the Capacitor shell
-  depends on.
+- Decided 2026-10-05 (BG-0151): the viewport meta now carries `viewport-fit=cover`, which
+  safe-area handling inside the Capacitor shell depends on, with the safe-area fixes it needs.
+  It is checked only in Chromium with emulated insets; how it looks on a real notched iPhone (the
+  app, and the website in Safari upright and sideways) and on Android phones with a recent and an
+  older WebView is not yet checked.

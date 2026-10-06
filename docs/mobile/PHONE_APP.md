@@ -158,8 +158,8 @@ templates leave out:
     Store one, which is also what the sender's `APNS_ENVIRONMENT` defaults to;
   - **iPhone only**: `TARGETED_DEVICE_FAMILY = 1` in the app's Debug and Release
     settings, so App Store Connect does not ask for iPad screenshots;
-  - **upright only**: the screen does not turn sideways (the site only handles
-    the notch at the top and bottom);
+  - **upright only**: the screen does not turn sideways (when this was set, the
+    site handled the notch only at the top and bottom);
   - `Info.plist`: French as the app's language and Arabic as the second one, and
     the texts iOS shows when the profile photo picker asks for the camera or the
     photos (without the camera text, iOS closes the app when someone picks "Take
@@ -361,16 +361,61 @@ real phone; how Codemagic reads the file (its shared-settings syntax,
 `xcode: latest`, the machine type), signing, the upload to App Store Connect,
 Apple's and Google's servers, real tokens, real delivery, and any real phone. The stand-in for Capacitor's bridge is not Apple or Google.
 
+## Screen edges: notch, status bar and home indicator
+
+The shell draws the site under the status bar and the home indicator (iPhone) or
+the system bars (Android 15 and later), and the site pads itself clear of them.
+That works only because the site's viewport meta says `viewport-fit=cover`
+(`src/routes/__root.tsx`, added with the store readiness work; BG-0151). Without
+it, iOS reports every `env(safe-area-inset-*)` as 0, so the site's safe-area
+padding never switches on, and Capacitor's Android `SystemBars` keeps the page
+boxed in.
+
+What pads itself by the insets:
+
+- the top bar and every screen header (`ui.safe.top`), the bottom navigation and
+  sheets (`ui.safe.bottom`), and the bars placed under or above them
+  (`--topbar-h`, `--bottomnav-h`);
+- the bottom bars that do not sit above the navigation (the Fantasy player
+  page's actions, the bars that drop to the bottom edge from 768px wide, the
+  Landing page's button), the Pépites reveal, toasts, the reading-progress bar,
+  side and top sheets, and centred dialogs;
+- on Fantasy inner screens, a strip exactly as tall as the status bar, so
+  scrolled content does not show under the clock;
+- in landscape, the page itself (`body`), padded on both sides by the larger side
+  inset, so content keeps clear of the notch. The app stays upright, so this is
+  for the website on a notched iPhone turned sideways.
+
+Every inset is 0 in an ordinary browser window, so the website does not change
+there. `capacitor.config.ts` also sets `SystemBars.initialViewportFitValueHint:
+"cover"`, an Android-only hint that avoids a jump on first paint. Like any change
+to that file it needs a new native build; the site changes reach the app on
+Publish.
+
+This was checked only in Chromium with emulated insets. To check on the first
+builds, in French and Arabic: a notched or Dynamic Island iPhone, an Android 15+
+phone with WebView 140 or later and one with an older WebView, and the website in
+Safari on a notched iPhone, upright and sideways.
+
+To fix before any store build: the status bar's clock and icons follow the
+phone's light or dark setting, not the app's. Now that the app has its own light,
+dark and system choice, they must follow the theme the app shows
+(`SystemBars.setStyle` on each theme change). Otherwise they are dark on a dark
+bar, or light on a light one, on every screen whenever the app's choice differs
+from the phone's. The dark top bands of the sign-in, welcome and Landing screens
+may need light icons whatever the theme.
+
 ## Still open before a store submission
 
 Not part of the push work, and not done here: Google's sign-in is refused inside a
 web view and sign-in links open in the system browser, so the app needs its own
 sign-in redirect handling; real account deletion with a stated timeline and
 confirmation; the prize terms; removing test clubs and Gameweek state from
-production data; the share-link origin; `viewport-fit=cover` for iPhone notches;
-the privacy policy and store forms (push is not yet in the policy's purposes, and
-phone tokens have no row in its retention table; App Store Connect's App Privacy
-form and Google Play's Data safety form are filled by hand, from the policy); the
-Arabic permission texts, not yet read by a native speaker; and Apple's rule
-against thin web wrappers (the app must offer more than the website: push alerts
-count, and should be demonstrable to the reviewer).
+production data; the share-link origin; checking the screen edges on real phones
+(see "Screen edges" above); the status bar's clock and icons following the app's
+chosen theme (`SystemBars.setStyle`, see "Screen edges" above); the privacy policy and store forms (push is not yet in
+the policy's purposes, and phone tokens have no row in its retention table; App
+Store Connect's App Privacy form and Google Play's Data safety form are filled by
+hand, from the policy); the Arabic permission texts, not yet read by a native
+speaker; and Apple's rule against thin web wrappers (the app must offer more than
+the website: push alerts count, and should be demonstrable to the reviewer).
