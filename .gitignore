@@ -52,12 +52,14 @@ ios/App/App/GoogleService-Info.plist
 
 # Impeccable design skill (.claude/skills/impeccable). The engine binary is
 # per-platform and the launcher downloads it when missing; the design hook and
-# local overrides are machine-local by design.
+# local overrides are machine-local by design. The live server's state (its
+# port, a session token and staged screenshots) belongs to one running server.
 .claude/skills/impeccable/scripts/bin/
 .claude/settings.local.json
 .impeccable/config.local.json
 .impeccable/hook.cache.json
 .impeccable/hook.pending.json
+.impeccable/live/
 
 # Native projects are created by every build (cap add); never commit them.
 /ios/
