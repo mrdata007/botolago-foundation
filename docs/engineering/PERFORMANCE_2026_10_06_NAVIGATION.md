@@ -346,7 +346,11 @@ skeptics, then each fix by three more. Two findings were confirmed:
   fail on all three earlier versions. A third round found one more race (a
   read's own pool read finishing after a screen's newer one overwrote it;
   now it is not stored over a newer copy) and five guards no test pinned;
-  each now has a test that fails when the guard is removed.
+  each now has a test that fails when the guard is removed. A fourth round
+  found that reads reading the pool themselves at the same moment did not
+  share it (a finger scrolling a list left open over five minutes could
+  start a full pool read per row touched); they now share one read, and a
+  read that finds a newer copy already stored shows that one.
 - A test claimed two gameweeks shared one pool read when only one reached
   it; it now holds the read open until both join it.
 
@@ -359,7 +363,7 @@ with no skeleton).
 ### Checks
 
 `bun run typecheck` clean; `bun run lint` no errors (the 31 warnings already
-on main); `bun test` 5,961 pass, 17 skipped, 1 fail (the same Ramadan 2027
+on main); `bun test` 5,963 pass, 17 skipped, 1 fail (the same Ramadan 2027
 test as on main); `bun run build` passes.
 
 ## Remaining bottlenecks and next batch

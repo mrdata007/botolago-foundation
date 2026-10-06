@@ -27,7 +27,8 @@ export function fantasyPlayersQuery() {
  *    that screen's own retry, and a read cancelled under it (a screen
  *    refetching the pool) hands over to the new one;
  * 3. else a read of its own, as part of the read asking (whose one retry
- *    covers it), stored in the cache for every other screen.
+ *    covers it), shared with every other read asking at the same moment
+ *    (`readPoolOnce`) and stored in the cache for every screen.
  *
  * It never starts the pool's query itself. Starting it from inside another
  * read tangled the two reads' retries: a read that started the pool with no
@@ -56,15 +57,42 @@ async function sharedPool(client: QueryClient): Promise<FantasyPlayer[]> {
         throw error;
       }
     }
-    // Stored as of when the read began, and not over a newer copy a screen's
-    // own read brought in while this one was on its way.
-    const startedAt = Date.now();
-    const players = await fantasyService.getPlayers();
-    if ((client.getQueryState(key)?.dataUpdatedAt ?? 0) <= startedAt) {
-      client.setQueryData(key, players, { updatedAt: startedAt });
-    }
-    return players;
+    return readPoolOnce(client);
   }
+}
+
+/** The pool read `sharedPool` started itself, per query client, while it is on its way. */
+const ownReads = new WeakMap<QueryClient, Promise<FantasyPlayer[]>>();
+
+/**
+ * Step 3 of `sharedPool`: one read of the pool, shared by every read asking
+ * while it is on its way -- several player pages loaded ahead at once (a
+ * finger scrolling the list touches a row per swipe) read the pool once, not
+ * once each. Per query client, so a server render's reads stay its own.
+ *
+ * Stored as of when it began, and not over a newer copy a screen's own read
+ * brought in meanwhile; the reads then take that newer copy, so the page and
+ * the list agree.
+ */
+function readPoolOnce(client: QueryClient): Promise<FantasyPlayer[]> {
+  const onItsWay = ownReads.get(client);
+  if (onItsWay) return onItsWay;
+  const key = fantasyPlayersQuery().queryKey;
+  const startedAt = Date.now();
+  const read = fantasyService
+    .getPlayers()
+    .then((players) => {
+      if ((client.getQueryState(key)?.dataUpdatedAt ?? 0) <= startedAt) {
+        client.setQueryData(key, players, { updatedAt: startedAt });
+        return players;
+      }
+      return client.getQueryData<FantasyPlayer[]>(key) ?? players;
+    })
+    .finally(() => {
+      if (ownReads.get(client) === read) ownReads.delete(client);
+    });
+  ownReads.set(client, read);
+  return read;
 }
 
 /**
@@ -75,8 +103,8 @@ async function sharedPool(client: QueryClient): Promise<FantasyPlayer[]> {
  * pool is already in the cache, used to read all of it again -- nine reads in
  * a row, about two seconds -- before the page showed. Through the cache, a
  * pool that is still fresh is reused and the page opens at once; a stale or
- * missing one is read once (and shared with any other screen asking for it at
- * the same moment), which is what `getPlayer` did every time. Same player,
+ * missing one is read once (`sharedPool`: shared with any screen or read
+ * asking for it at the same moment), which is what `getPlayer` did every time. Same player,
  * same fields: the page's data does not change, only how often it is read.
  */
 export function fantasyPlayerQuery(playerId: string) {

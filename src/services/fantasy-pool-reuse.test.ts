@@ -323,6 +323,48 @@ describe("a pool read that fails, or is shared", () => {
     client.clear();
   });
 
+  test("read by several reads at once, missing or stale, is read once for all", async () => {
+    // Player pages loaded ahead as a finger scrolls the list, and a gameweek's
+    // top five, all asking while no screen is reading the pool.
+    for (const updatedAt of [null, Date.now() - 6 * 60_000]) {
+      const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => {
+        await tick();
+        return pool;
+      });
+      spies.push(getPlayers);
+      const client = createAppQueryClient();
+      if (updatedAt !== null) {
+        client.setQueryData(fantasyPlayersQuery().queryKey, pool, { updatedAt });
+      }
+      const [a, b, top] = await Promise.all([
+        client.ensureQueryData(fantasyPlayerQuery(P1)),
+        client.ensureQueryData(fantasyPlayerQuery(P2)),
+        client.fetchQuery(topPlayersOfWeekQuery(3)),
+      ]);
+      expect([a, b]).toEqual([pool[0], pool[1]]);
+      expect(top).toHaveLength(3);
+      expect([updatedAt, getPlayers.mock.calls.length]).toEqual([updatedAt, 1]);
+      client.clear();
+      for (const spy of spies.splice(0)) spy.mockRestore();
+    }
+  });
+
+  test("failing for several reads at once, is read twice in all, not twice each", async () => {
+    const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => {
+      await tick();
+      throw new Error("statement timeout");
+    });
+    spies.push(getPlayers);
+    const client = quickRetries();
+    const results = await Promise.allSettled([
+      client.fetchQuery({ ...fantasyPlayerQuery(P1), retryDelay: 0 }),
+      client.fetchQuery({ ...fantasyPlayerQuery(P2), retryDelay: 0 }),
+    ]);
+    expect(results.map((result) => result.status)).toEqual(["rejected", "rejected"]);
+    expect(getPlayers).toHaveBeenCalledTimes(2);
+    client.clear();
+  });
+
   test("a minute old, is still fresh: not read again", async () => {
     const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => pool);
     spies.push(getPlayers);
@@ -365,7 +407,8 @@ describe("a pool read that fails, or is shared", () => {
     await tick();
     expect(await client.fetchQuery(fantasyPlayersQuery())).toBe(newer);
     own.resolve(pool);
-    expect(await player).toBe(pool[0]);
+    // The page takes the newer copy too, so it agrees with the list.
+    expect(await player).toBe(newer[0]);
     expect(client.getQueryData(key)).toBe(newer);
     client.clear();
   });
