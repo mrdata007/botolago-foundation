@@ -67,10 +67,13 @@ workflows:
         script: npx cap sync android
       - name: Set the Android SDK location
         script: echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
-      - name: Build the test apk
+     - name: Build the Play Store bundle
         script: |
           cd android
-          ./gradlew assembleDebug
+          ./gradlew bundleRelease
+          jarsigner -keystore "$CM_KEYSTORE_PATH" \
+      - android/app/build/outputs/bundle/release/*.aab            -keypass "$CM_KEY_PASSWORD" \
+            app/build/outputs/bundle/release/app-release.aab "$CM_KEY_ALIAS"
     artifacts:
       - android/app/build/outputs/**/*.apk
 
