@@ -168,9 +168,11 @@ export const adminPrizeWinnerSchema = z.object({
   prizeId: uuid,
   prizeNameFr: z.string(),
   prizeValueMad: integer.nullable(),
-  fantasyTeamId: uuid,
+  // Null once the winning account was erased (20261006143700): a paid prize
+  // stays for accounting, detached from any account, under a pseudonym.
+  fantasyTeamId: uuid.nullable(),
   teamName: z.string(),
-  userId: uuid,
+  userId: uuid.nullable(),
   username: z.string().nullable(),
   displayName: z.string().nullable(),
   email: z.string().nullable(),
