@@ -1012,7 +1012,8 @@ html[dir="rtl"]
 @utility qr-sweep {
   --qr-sweep-start: 0%;
   --qr-sweep-end: 100%;
-  animation: qr-sweep 900ms var(--ease-emphasized) 240ms both;
+  animation: qr-sweep calc(var(--duration-hero) * 2) var(--ease-emphasized) var(--duration-route)
+    both;
   [dir="rtl"] & {
     --qr-sweep-start: 100%;
     --qr-sweep-end: 0%;
