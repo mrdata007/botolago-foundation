@@ -42,3 +42,31 @@ export function nativePlatform(
     return null;
   }
 }
+
+/**
+ * On `<html>` from before the first paint when the page runs inside the app,
+ * set to the platform (`ios` or `android`). Absent in a browser and in the
+ * server's HTML.
+ */
+export const NATIVE_APP_ATTRIBUTE = "data-native-app";
+
+/**
+ * The inline head script that puts `NATIVE_APP_ATTRIBUTE` on `<html>`, as
+ * source text: `nativePlatform()` restated as a few lines of ES5, because a
+ * head script runs before any bundle and cannot import it (the tests run both
+ * over the same cases so the two cannot drift).
+ *
+ * Why before the first paint: what is shown only outside the app (Google and
+ * Apple sign-in, "Télécharger l'image") is in the server's HTML, which cannot
+ * know where it will be opened. `src/styles.css` hides it under this
+ * attribute, so the app never shows it, not even for the frame before React
+ * starts, while the server markup and the first client render stay identical.
+ * React reads the decision back after mount (`useInNativeApp`), the way the
+ * theme and the splash scripts are read back.
+ *
+ * Same constraints as those two: small, synchronous, everything inside the
+ * try, and no `</` sequence, so it cannot close its own `<script>`.
+ */
+export const NATIVE_APP_INIT_SCRIPT = `(function(){try{var w=window,p=null,c=w.Capacitor;if(c&&c.isNativePlatform){if(c.isNativePlatform()){var g=c.getPlatform&&c.getPlatform();if(g==="ios"||g==="android")p=g}}else if(w.androidBridge)p="android";else if(w.webkit&&w.webkit.messageHandlers&&w.webkit.messageHandlers.bridge)p="ios";if(p)document.documentElement.setAttribute(${JSON.stringify(
+  NATIVE_APP_ATTRIBUTE,
+)},p)}catch(x){}})();`;

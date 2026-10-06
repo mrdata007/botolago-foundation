@@ -138,7 +138,7 @@ export function PepitesReveal({ rank }: { rank: number }) {
       >
         {formatNumber(item.rank, lang)}
       </span>
-      <div className="relative z-10 mx-auto flex w-full max-w-[430px] flex-1 flex-col px-4 pb-6 pt-[max(env(safe-area-inset-top),16px)]">
+      <div className="relative z-10 mx-auto flex w-full max-w-[430px] flex-1 flex-col px-4 pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-[max(env(safe-area-inset-top),16px)]">
         <ol
           className="mt-8 flex gap-1"
           aria-label={t("pepites.reveal.progress")

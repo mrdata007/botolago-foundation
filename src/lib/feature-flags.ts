@@ -132,6 +132,10 @@ export const DARK_MODE_ENABLED = false;
  * Gated surfaces (keep this list current):
  *   - `src/routes/auth.login.tsx` — divider + provider buttons
  *   - `src/routes/auth.register.tsx` — divider + provider buttons
+ *
+ * Inside the phone app both are hidden whatever this says (`WebOnly`):
+ * Google refuses sign-in in an embedded web view, and the provider's page
+ * would open in the browser, which cannot hand the session back to the app.
  */
 export const OAUTH_PROVIDERS_ENABLED = true;
 

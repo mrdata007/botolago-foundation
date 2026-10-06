@@ -16,6 +16,8 @@ import {
 import { useI18n } from "@/i18n/provider";
 import { pointsLabel } from "@/components/matches/standings-copy";
 import { cn } from "@/lib/utils";
+import { ReportNameMenu } from "@/components/report/ReportNameMenu";
+import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { prizesService } from "@/services/prizes";
 import { PRIZE_HERO_ART, PRIZE_HERO_PHOTO, PRIZE_TIER_ART } from "./prize-art";
 import { fill, formatMad, howToWin, periodLabel, tierLabel } from "./prize-presentation";
@@ -274,6 +276,7 @@ function WinnersWall() {
     staleTime: 5 * 60_000,
   });
   const items = winners.data?.pages.flatMap((page) => page.items) ?? [];
+  const ownTeamName = useFantasyOwned().snapshot?.team.teamName ?? null;
 
   return (
     <section aria-labelledby="prizes-winners-heading" className="flex min-w-0 flex-col gap-3">
@@ -329,6 +332,14 @@ function WinnersWall() {
                 >
                   {pointsLabel(winner.points, lang, t, nf.format)}
                 </bdi>
+                {/* The team name is the winner's own choice: anyone else may
+                    report it. A winner row carries no team id, so the reader's
+                    own team is recognised by its name. */}
+                {winner.teamName !== ownTeamName ? (
+                  <ReportNameMenu
+                    targets={[{ kind: "team", name: winner.teamName, id: `winner:${winner.id}` }]}
+                  />
+                ) : null}
               </li>
             ))}
           </ol>

@@ -360,7 +360,7 @@ function FdrBody() {
       <div
         className={cn(
           "pointer-events-none fixed inset-x-0 z-30 mx-auto flex max-w-[var(--ui-column-max)] justify-center px-4",
-          "bottom-[calc(var(--bottomnav-h)+0.75rem)] md:bottom-6",
+          "bottom-[calc(var(--bottomnav-h)+0.75rem)] md:bottom-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]",
         )}
       >
         <div
@@ -396,7 +396,7 @@ function FdrBody() {
         <div
           className={cn(
             "fixed inset-x-0 z-30 mx-auto max-w-[var(--ui-column-max)] px-6",
-            "bottom-[calc(var(--bottomnav-h)+4.75rem)] md:bottom-24",
+            "bottom-[calc(var(--bottomnav-h)+4.75rem)] md:bottom-[calc(env(safe-area-inset-bottom,0px)+6rem)]",
           )}
         >
           <UiCard padding="sm" className={ui.shadow.overlay}>
