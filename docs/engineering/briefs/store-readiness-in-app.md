@@ -58,8 +58,9 @@ those four and nothing else.
    "Signaler" / "إبلاغ" action next to other people's Fantasy team and
    manager names (a league's standings, the overall ranking) and next to the
    name of a league the reader does not own (the league page header; Fantasy
-   and Pronostics), plus the Pronostics league standings and the prize
-   winners. It opens the reader's mail app on a pre-filled message to
+   and Pronostics), plus the Pronostics league standings, the Pronostics
+   overall board and the prize winners. It opens the reader's mail app on a
+   pre-filled message to
    support@botolago.com naming what is reported (team, league or user), the
    visible name, its id and the page address. Never shown on the reader's own
    team, own row or own league. `ReportIssueSheet` (Pépites) was checked and
@@ -98,5 +99,28 @@ Visual
   the profile contact row: in
   `docs/engineering/briefs/store-readiness-in-app/`.
 - No horizontal overflow at 390px; the report control keeps the name column
-  readable and has a 44px target; the menu opens toward the inline end in
-  both directions.
+  readable and has a 44px target; its menu stays on screen, clear of the
+  edge, in both directions.
+
+## Added during the work
+
+- The two Pronostics tables gave the name column whatever the figures left
+  (`w-full` on its header, figure headers kept on one line): with the report
+  control in the same cell, short names such as "Imane J." were being cut
+  to "Iman…" at 390px.
+- `UiMenu` keeps 8px from the screen edge when it has to shift
+  (`collisionPadding`): a row's report menu opened flush against the glass.
+- `src/components/ui/sheet.tsx` (shadcn) has no importer today; its top and
+  side variants were padded anyway so it is right if it comes back.
+
+Screenshots (in `store-readiness-in-app/`) are named
+`<before|after>-<screen>-<mobile|desktop>-<fr|ar>.png`, mobile at 390x844,
+desktop at 1280x860, against the local dev server in mock mode. `login-app`
+and `share-app` simulate the phone app with a stub of the bridge Capacitor's
+iPhone side injects before any page code (`window.webkit.messageHandlers.bridge`),
+added as a Playwright init script; `-browser` is the same screen without it,
+to show the browser did not change. `after-insets-*` are taken with
+Chromium's safe-area override (CDP `Emulation.setSafeAreaInsetsOverride`) at
+an iPhone's 59px top and 34px bottom. The `after-league-pronostics`,
+`after-pronostics-board` and `after-prizes-winners` shots have no "before":
+those screens only gained the report control.
