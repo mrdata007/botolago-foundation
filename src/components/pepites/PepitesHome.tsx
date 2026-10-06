@@ -20,7 +20,8 @@ import {
 } from "./PepitesParts";
 import { PepitesShareButton } from "./PepitesShareButton";
 import { PepitesChipRow, PepitesPageTitle, PepitesShell } from "./PepitesShell";
-import { TopTenHero, TopTenList } from "./TopTenList";
+import { PepitesFeature } from "./PepitesFeature";
+import { TopTenList } from "./TopTenList";
 import {
   homeQueryOptions,
   methodologyQueryOptions,
@@ -88,9 +89,10 @@ function HomeChips({
 
 /**
  * `/pepites`: the current weekly Top 10 — the week's title band with the
- * reveal and share buttons and the filter chips, the leader as the feature
- * card, the nine others as rows — or last season's final ranking before the
- * first edition. The page reads the version pointer and keeps it fresh during
+ * reveal and share buttons and the filter chips, the leader on the featured
+ * photo band with its percentile wheel (`PepitesFeature`), the nine others
+ * as rows — or last season's final ranking before the first edition, laid
+ * out the same way. The page reads the version pointer and keeps it fresh during
  * a reveal; when a new edition is published, the list changes without a
  * reload (architecture §7).
  */
@@ -212,7 +214,18 @@ export function PepitesHome() {
         <section aria-labelledby="pepites-edition-title" className="flex flex-col gap-2.5">
           {leader ? (
             <>
-              <TopTenHero item={leader} stats={stats.get(leader.player.id)} />
+              <PepitesFeature
+                testId="pepites-hero"
+                scoreTestId="pepites-hero-score"
+                player={leader.player}
+                rank={leader.rank}
+                score={leader.score}
+                movement={leader.movement ?? null}
+                reason={lang === "ar" ? leader.reasonAr : leader.reasonFr}
+                facts
+                stats={stats.get(leader.player.id)}
+                version={version}
+              />
               <TopTenList items={rest} stats={stats} testId="pepites-top10" />
             </>
           ) : (
@@ -230,6 +243,7 @@ export function PepitesHome() {
         previous={previous}
         firstRound={firstRound}
         pointer={pointer}
+        stats={stats}
         footer={footer}
       />
     );

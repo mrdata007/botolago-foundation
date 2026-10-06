@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { Clock, Eye, Hourglass } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -16,10 +15,11 @@ import { useI18n } from "@/i18n/provider";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { cn } from "@/lib/utils";
 
-import { formatNumber, nextSeasonLabel, revealTime, scoreText } from "./pepites-format";
+import { formatNumber, nextSeasonLabel, revealTime } from "./pepites-format";
+import { PepitesFeature } from "./PepitesFeature";
 import { PepitesPageTitle, PepitesShell } from "./PepitesShell";
-import { PepitesName } from "./PepitesVisuals";
 import { secondsUntil } from "./reveal";
+import { TopTenList, type PlayerStats } from "./TopTenList";
 
 /**
  * The states and banners every Pépites page goes through, on the main kit
@@ -119,20 +119,31 @@ export function PepitesErrorState({
 
 /**
  * Before the first edition: last season's final ranking under its own
- * title (never shown as this week's), and when the first Top 10 comes.
+ * title (never shown as this week's), and when the first Top 10 comes. The
+ * ten are shown as an edition is (BG-0156): N°1 as the featured band with
+ * its percentile wheel, the nine others as Top 10 rows with the figures the
+ * page already reads from the ranking (`stats`).
  */
 export function PepitesBeforeFirstEdition({
   previous,
   firstRound,
   pointer,
+  stats,
   footer,
 }: {
   previous: PreviousSeason;
   firstRound: number;
   pointer: Extract<VersionResponse, { available: true }>;
+  /** The ranking's rows by player: minutes, goals, assists, rating. */
+  stats: ReadonlyMap<string, PlayerStats>;
   footer: ReactNode;
 }) {
   const { t, lang } = useI18n();
+  const [leader, ...rest] = previous.entries.slice(0, 10).map((entry) => ({
+    rank: entry.rank,
+    score: entry.score,
+    player: entry.player,
+  }));
   return (
     <PepitesShell
       pageHeader={
@@ -165,41 +176,21 @@ export function PepitesBeforeFirstEdition({
             .replace("{season}", previous.seasonLabel)}
         </p>
       </UiCard>
-      <ol
-        className="flex flex-col gap-2.5"
-        data-testid="pepites-top10"
-        aria-labelledby="pepites-previous-title"
-      >
-        {previous.entries.slice(0, 10).map((entry) => (
-          <li key={entry.player.id}>
-            <Link
-              to="/pepites/joueur/$playerId"
-              params={{ playerId: entry.player.id }}
-              data-testid="pepites-top-entry"
-              className={cn(
-                // An interactive `UiCard` as a link: the card surface, the
-                // 48px row floor, the tile press and the focus ring.
-                ui.surface.card,
-                "press-tile flex min-h-[var(--ui-row-min)] items-center gap-3 px-4 py-2",
-                ui.focus,
-              )}
-            >
-              <span className={cn("w-6 shrink-0 text-center", ui.score.row, ui.tone.ink)}>
-                <bdi>{formatNumber(entry.rank, lang)}</bdi>
-              </span>
-              <PepitesName
-                name={entry.player.name}
-                className={cn("min-w-0 flex-1 truncate", ui.text.bodyStrong, ui.tone.default)}
-              />
-              {/* `ui.stat`: the score may be the "unranked" word, which the
-                  digits-only score ramp must not carry. */}
-              <span className={cn("shrink-0", ui.stat.md, ui.tone.ink)}>
-                <bdi>{scoreText(entry.score, lang, t("pepites.unranked"))}</bdi>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ol>
+      {leader ? (
+        <section aria-labelledby="pepites-previous-title" className="flex flex-col gap-2.5">
+          <PepitesFeature
+            testId="pepites-hero"
+            scoreTestId="pepites-hero-score"
+            player={leader.player}
+            rank={leader.rank}
+            score={leader.score}
+            facts
+            stats={stats.get(leader.player.id)}
+            version={pointer.version}
+          />
+          <TopTenList items={rest} stats={stats} testId="pepites-top10" />
+        </section>
+      ) : null}
       {footer}
     </PepitesShell>
   );
