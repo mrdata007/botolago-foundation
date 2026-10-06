@@ -949,8 +949,12 @@ begin
       'prizeName', jsonb_build_object('fr', page.prize_name_fr, 'ar', coalesce(page.prize_name_ar, page.prize_name_fr)),
       'awardedAt', page.created_at,
       -- The reader's own prize, so the page offers no report on it. A boolean,
-      -- never the account id; false for visitors and for erased accounts.
+      -- never the account id; false for visitors and for erased accounts. The
+      -- one private part of a public read, so past the MFA step-up like the
+      -- News card's saved mark: an account owing its second factor reads the
+      -- wall as a visitor does (20260926003100).
       'isMe', coalesce(page.user_id = (select auth.uid()), false)
+        and app_private.mfa_step_up_satisfied()
     ) order by page.created_at desc, page.id desc), '[]'::jsonb),
     (array_agg(page.created_at order by page.created_at asc, page.id asc))[1],
     (array_agg(page.id order by page.created_at asc, page.id asc))[1]
@@ -1218,7 +1222,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20261006143700, 'UTF8')), 'hex')
-    is distinct from '8d468061a52fe337454796c73a3bdcb1a9ceb140de8d2d30e60d14b45033a5ba' then
+    is distinct from '905d8268504d9b803e934d48f860cf91bb5060de137cb12d0c03f2127dc171b7' then
     raise exception 'stop: 20261006143700 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 

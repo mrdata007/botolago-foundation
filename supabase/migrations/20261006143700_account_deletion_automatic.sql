@@ -800,8 +800,12 @@ begin
       'prizeName', jsonb_build_object('fr', page.prize_name_fr, 'ar', coalesce(page.prize_name_ar, page.prize_name_fr)),
       'awardedAt', page.created_at,
       -- The reader's own prize, so the page offers no report on it. A boolean,
-      -- never the account id; false for visitors and for erased accounts.
+      -- never the account id; false for visitors and for erased accounts. The
+      -- one private part of a public read, so past the MFA step-up like the
+      -- News card's saved mark: an account owing its second factor reads the
+      -- wall as a visitor does (20260926003100).
       'isMe', coalesce(page.user_id = (select auth.uid()), false)
+        and app_private.mfa_step_up_satisfied()
     ) order by page.created_at desc, page.id desc), '[]'::jsonb),
     (array_agg(page.created_at order by page.created_at asc, page.id asc))[1],
     (array_agg(page.id order by page.created_at asc, page.id asc))[1]
