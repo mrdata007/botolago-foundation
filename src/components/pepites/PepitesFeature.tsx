@@ -247,7 +247,8 @@ function BandFact({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-w-0 flex-col items-center gap-0.5 text-center">
       <dt className={cn("max-w-full text-balance", ui.text.label, ui.tone.onInkMuted)}>{label}</dt>
-      <dd className={cn(ui.stat.md, ui.tone.onInkPlain)}>
+      {/* Full width, so the box does not move when a dash becomes a figure. */}
+      <dd className={cn("w-full", ui.stat.md, ui.tone.onInkPlain)}>
         <bdi>{value}</bdi>
       </dd>
     </div>

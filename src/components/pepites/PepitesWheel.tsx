@@ -139,7 +139,8 @@ export function PercentileLegend({
               <span className={cn("min-w-0 flex-1 truncate", ui.text.meta, ui.tone.onInkMuted)}>
                 {componentLabel(key, t)}
               </span>
-              <bdi className={cn("shrink-0 text-end", ui.stat.md, ui.tone.onInkPlain)}>
+              {/* Two digits' width at least, so a dash turning into a figure moves nothing. */}
+              <bdi className={cn("min-w-7 shrink-0 text-end", ui.stat.md, ui.tone.onInkPlain)}>
                 {typeof value === "number" && Number.isFinite(value)
                   ? formatNumber(Math.round(value), lang)
                   : "–"}
