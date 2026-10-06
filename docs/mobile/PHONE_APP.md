@@ -419,6 +419,34 @@ Capacitor 8's template already does. Nothing is loaded or called in a browser.
 This was checked with unit tests and in Chromium with a stand-in for the phone's
 bridge, not on a phone: it is part of the device check above.
 
+## Zoom
+
+The app does not zoom. The viewport meta carries `maximum-scale=1`
+(`src/routes/__root.tsx`; owner report of 2026-10-06,
+`docs/engineering/briefs/ios-zoom-and-pitch-lines.md`).
+
+Why: iOS zooms in when a text field whose letters are under 16px gets focus, by
+16 ÷ that size, and never zooms back out. The kit's fields are 15px, so signing
+in left the whole app enlarged by 1.067. Capacitor keeps zoom off by default
+(`zoomEnabled: false`), which blocks the pinch gesture but not that focus zoom,
+so the reader was stuck: zoomed in, unable to pinch back out. iOS caps the
+focus zoom at `maximum-scale`, and the app's web view also caps double-tap and
+pinch zoom by it. The website adds `touch-action: manipulation` on `html` to
+stop double-tap zoom in browsers too.
+
+Leave `zoomEnabled` at its default: turning it on would only let a reader pinch
+back out after the zoom, and it needs a new native build. The viewport change
+reaches the app with the website Publish. A page already zoomed resets when the
+app is reopened.
+
+Trade-off: in Chrome on Android the website can no longer be pinch-zoomed
+unless the reader switches on Chrome's "Force enable zoom". Safari on iPhone
+still lets a visitor pinch. Text-size settings keep working.
+
+To check on a phone after Publish: tap the sign-in email field and the search
+on `/fantasy/players`; the page must not zoom, and two quick taps must not zoom
+either.
+
 ## Still open before a store submission
 
 Not part of the push work, and not done here: Google's sign-in is refused inside a

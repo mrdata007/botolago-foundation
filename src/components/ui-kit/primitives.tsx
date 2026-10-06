@@ -2408,7 +2408,15 @@ export function UiPitchSurface({
           <rect x="41" y="-1" width="18" height="4" fill="var(--ui-pitch-line)" />
         </svg>
 
-        <div className="relative flex flex-col gap-3 px-1 pb-4 pt-3">
+        {/* Inset to the touchlines. The line is the rect at x=3 with a 0.6
+            stroke, so its inner edge is 3.3% of the turf width; percentage
+            padding resolves against this same turf div, which the SVG fills,
+            so the inset and the line scale together. The 6px is the 2px a
+            plate's warning disc or badge hangs out past it, plus 4px of air.
+            It was `px-1`: a row of five then shrank to the full width and its
+            outer plates sat 4px from the turf edge, across the line (7px on a
+            402px iPhone). Pinned by `pitch-touchline-containment.test.ts`. */}
+        <div className="relative flex flex-col gap-3 px-[calc(3.3%+6px)] pb-4 pt-3">
           {rows.map((row, rowIndex) => (
             // The lines arrive one after another, goalkeeper first. A row is
             // keyed by its place, so a swap never replays it.
@@ -2452,7 +2460,8 @@ export function UiPitchSurface({
                 <div
                   key={index}
                   className={cn(
-                    "w-[76px] shrink-0 text-center sm:w-[84px]",
+                    // Shrinks with its plate below, so labels stay over slots.
+                    "min-w-0 shrink grow-0 basis-[76px] text-center sm:basis-[84px]",
                     ui.text.label,
                     ui.tone.muted,
                   )}
@@ -2469,7 +2478,10 @@ export function UiPitchSurface({
                 <div
                   key={flipKey ?? index}
                   data-flip-key={flipKey ?? undefined}
-                  className="w-[76px] shrink-0 sm:w-[84px]"
+                  // Four fixed 76px slots need 316px, wider than the strip
+                  // under ~364px: the last plate was cut off by the card.
+                  // They shrink like the pitch slots instead.
+                  className="min-w-0 shrink grow-0 basis-[76px] sm:basis-[84px]"
                 >
                   {slot}
                 </div>
