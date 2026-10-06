@@ -101,6 +101,24 @@ describe("NextMatchPick — the vote row", () => {
     expect(html.match(/min-h-\[var\(--ui-tap-min\)\]/g)?.length).toBe(3);
   });
 
+  it("holds the place in the buttons' own shape, labels kept invisible, so it wraps where they will", async () => {
+    const held = await render(pick());
+    const shown = await render(pick(), OPEN);
+    const hold = held.slice(held.indexOf('data-testid="home-vote-hold"'));
+    for (const label of ["UTS Rabat", fr["predictions.votes.draw"], "RSB Berkane"]) {
+      expect(hold).toContain(`<span class="invisible">${label}</span>`);
+    }
+    // The capsule's classes are the button's, up to the edge colour and fill.
+    const shell = (html: string, tag: string) =>
+      [...html.matchAll(new RegExp(`<${tag} [^>]*class="(flex min-h-[^"]+)"`, "g"))].map((m) =>
+        m[1]!.split(" ").filter((c) => !/^(border-|bg-|text-\[color|focus-visible)/.test(c)),
+      );
+    expect(shell(shown, "button")).toHaveLength(3);
+    expect(shell(hold, "span")).toEqual(shell(shown, "button"));
+    // Every state carries the 1px edge, so a chosen button is as tall as the rest.
+    expect(shell(shown, "button").every((classes) => classes.includes("border"))).toBe(true);
+  });
+
   it("shows the question and its three buttons once the votes are in", async () => {
     const html = await render(pick(), OPEN);
     expect(html).not.toContain("home-vote-hold");

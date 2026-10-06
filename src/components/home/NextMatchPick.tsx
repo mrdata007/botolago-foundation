@@ -11,10 +11,20 @@ import type { MatchVoteChoice } from "@/backend/predictions/contracts";
 import type { Club, Match } from "@/types/domain";
 
 const PANEL = "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_10%,transparent)]";
-const PICK_OUTLINE =
-  "border border-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_40%,transparent)]";
+const PICK_OUTLINE = "border-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_40%,transparent)]";
 /** A blank capsule on the panel while the vote loads: a faint wash, no edge. */
 const HOLD_FILL = "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_8%,transparent)]";
+/**
+ * The shape of a vote button, shared by the hold that keeps its place. Every
+ * state carries a 1px edge (transparent when chosen or held), so a button is
+ * as tall chosen as not, and the hold as tall as the button it stands for.
+ */
+const PICK_SHELL = cn(
+  "flex min-h-[var(--ui-tap-min)] items-center justify-center border px-2 py-1.5 text-center leading-tight",
+  ui.radius.full,
+  ui.text.meta,
+  "[font-weight:var(--ui-weight-heavy)]",
+);
 
 /**
  * The next match, inside Home's navy band: the two clubs, the kickoff, and —
@@ -150,7 +160,7 @@ function WinnerPick({
     { choice: "draw", label: t("predictions.votes.draw") },
     { choice: "away", label: name(away) },
   ];
-  if (!view) return votes.pending ? <WinnerPickHold /> : null;
+  if (!view) return votes.pending ? <WinnerPickHold labels={choices.map((c) => c.label)} /> : null;
   return (
     <div className="mt-3">
       <p className={cn("mb-2 text-center", ui.text.label, ui.tone.onInkMuted)}>
@@ -170,12 +180,11 @@ function WinnerPick({
               aria-pressed={mine}
               onClick={() => votes.cast("winner", choice)}
               className={cn(
-                "flex min-h-[var(--ui-tap-min)] items-center justify-center px-2 py-1.5 text-center leading-tight",
-                ui.radius.full,
-                ui.text.meta,
-                "[font-weight:var(--ui-weight-heavy)]",
+                PICK_SHELL,
                 ui.focusOnMesh,
-                mine ? "bg-[color:var(--ui-surface)] text-[color:var(--ui-ink-fg)]" : PICK_OUTLINE,
+                mine
+                  ? "border-transparent bg-[color:var(--ui-surface)] text-[color:var(--ui-ink-fg)]"
+                  : PICK_OUTLINE,
               )}
             >
               {label}
@@ -188,11 +197,12 @@ function WinnerPick({
 }
 
 /**
- * The vote row's place while the votes are read: the question's line, kept
- * invisible so it is exactly as tall, and three blank capsules as tall as the
- * buttons. Nothing to read or press, so hidden from assistive tech.
+ * The vote row's place while the votes are read: the question's line and the
+ * three buttons' labels, kept invisible, in the buttons' own shape, so the
+ * hold wraps where they will and is exactly as tall. What shows is three
+ * blank capsules. Nothing to read or press, so hidden from assistive tech.
  */
-function WinnerPickHold() {
+function WinnerPickHold({ labels }: { labels: readonly string[] }) {
   const { t } = useI18n();
   return (
     <div className="mt-3" aria-hidden data-testid="home-vote-hold">
@@ -200,11 +210,10 @@ function WinnerPickHold() {
         {t("predictions.votes.winner")}
       </p>
       <div className="grid grid-cols-3 gap-2">
-        {[0, 1, 2].map((slot) => (
-          <span
-            key={slot}
-            className={cn("block min-h-[var(--ui-tap-min)]", ui.radius.full, HOLD_FILL)}
-          />
+        {labels.map((label, slot) => (
+          <span key={slot} className={cn(PICK_SHELL, "border-transparent", HOLD_FILL)}>
+            <span className="invisible">{label}</span>
+          </span>
         ))}
       </div>
     </div>
