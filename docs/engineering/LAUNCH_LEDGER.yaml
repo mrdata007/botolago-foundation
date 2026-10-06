@@ -1763,6 +1763,72 @@ tasks:
       - "device check, in French and Arabic, on the first builds: the status bar's icons on a notched iPhone and an Android 15+ phone in Clair, Sombre and Système (including a phone switch while the app is open), on the sign-in screens, Jouer and the launch splash, and Android's navigation bar; the strips under a real notch; and the Fantasy player page in Safari on a notched iPhone turned sideways. Chromium with a stand-in bridge is not a phone"
       - "the match page's sticky header, when scrolled, puts club colours (a green and white split was measured) under the clock; the icons follow the theme there. Not part of this list"
 
+  BG-0155:
+    title: Home's gameweek band swipes through the round's matches (carousel of live and upcoming matches)
+    area: design
+    severity: P1
+    user_impact: >
+      Owner, 2026-10-06, from a real iPhone in the dark theme: "You need to add a carousel to scroll
+      to see the other matches, this one shows only 1 match." Home's band showed one match card (the
+      next match, with "Qui va gagner ?"), and Home's payload carried only 3 fixtures, so the rest of
+      the journée could not be reached from the band at all.
+    owner: Chief
+    state: RUNNING # implemented on claude/home-match-carousel (brief 0dca8f25), awaiting review, the draft PR and the owner's OK to merge and publish
+    depends_on: []
+    brief: docs/engineering/tasks/BG-0155/screen-brief.md
+    evidence:
+      - "data: footballService.getHomeMatches asks football_home_matches for HOME_MATCHES_LIMIT = 10 fixtures instead of 3 (a round is 8; the function accepts 1 to 10; no database change). Home's À venir and the landing page's En ce moment keep the payload's first HOME_LIST_SIZE = 3 rows, pinned by index.home-structure.test.ts and LandingLive.test.tsx"
+      - "bandMatches() (band-matches.ts, 8 tests): every live match first, then the band's journée still to come by kick-off; today's next match when the journée has nothing left; another round's upcoming matches left out"
+      - "HomeMatchCarousel: native scroll snap, no dependency, no timer; cards 88% wide (lg to xl: whole width, Home's centre column is 264 to 519px there); a live match is MatchCard hero, a match to come NextMatchPick with its own vote; dots up to 6 cards, '2 / 8' beyond, aria-hidden; region and groups described from new home.carousel.* keys in fr and ar; glass previous/next from lg and on a fine pointer; focus brings a card to the gutter; scrolls are instant under reduced motion. One match renders as before, a live match alone still rises out of the band, no match draws no card"
+      - "vote row: while a card's votes are unknown (always on the server) its place is held by the buttons' own shape with the labels invisible, so it wraps where they will; votes are read for the card in view and its neighbours (useMatchVotes `enabled`); every button state carries a 1px edge so choosing does not resize it"
+      - >
+        measured on the branch (:5510, release 58035200) against main (:5500, af8b0a74), Chromium 141,
+        live production data (Journée 3, 8 matches): 48/48 interaction checks pass. 390 French: card 1 on
+        the 16px gutter, the next card shows 47px (12.1% of the screen, 14.9% of a card), every card
+        158.5px tall, no buttons on a touch phone; a touch drag snaps to card 2 (scrollLeft 327) and the
+        indicator reads 2/8. 1440: previous disabled on card 1; next moves exactly one card (463px),
+        landing in the same task under reduced motion and still travelling right after the click
+        without it; at card 8 next is disabled and the indicator reads 8/8. Tab goes link, three votes,
+        then card 2's link, which comes to the gutter (390 and 1440). Arabic: card 1's right edge on the
+        gutter, card 2 to its left, previous right of next with both chevrons matrix(-1, 0, 0, 1, 0, 0),
+        '1 / 8' with the 1 on the right, a left-to-right drag brings card 2 in. A vote on card 1 marks
+        card 1 only and changes no height. With the payload rewritten in the browser: live + upcoming is
+        a carousel led by the split card (equal heights), one live match alone rises out of the band, one
+        match is the single pick card without indicator or buttons, none draws no card
+      - "no page overflow at 360, 390, 768, 1024, 1279, 1280 and 1440 (bounding rects outside the track); indicator contrast from rasterised pixels against the worst ground pixel: '1' 11.8:1 or more, '/ 8' 7.7:1 or more, active dot 11.8:1 or more, other dots 3.57:1 or more (dark and light, 390 and 1440)"
+      - >
+        CLS, fresh load, PerformanceObserver (buffered, sum of shifts without input), dark, 3 runs each:
+        French 390 branch 0.0105/0.0105/0.0105 vs main 0.0158/0.0232/0.0581 (the band growing when the
+        vote arrived is gone; the remaining shift is a section near the fold that disappears on main
+        too); French 1440 0.0278/0.0308/0.0278 vs 0.0299/0.0237/0.0335 (the news column no longer moves;
+        the right column moving when the Fantasy card loads is the same on both); Arabic 390
+        0.761/0.841/0.864 vs 0.747/0.813/0.813, Arabic 1440 0.671/0.657/0.653 vs 0.626/0.627/0.631, all
+        within the French-first-paint swap to Arabic
+      - >
+        checks on the branch: typecheck 0 errors; lint 0 errors, 31 warnings (as main); bun test
+        (full) and the lane tests pass; Prettier clean on the changed files except this ledger; i18n
+        gate pass at its baselines (W1 7, W2 7, W3 252, W4 64). Exact counts in the lane report
+    note: >
+      Two changes for the PR description. With two matches or more, a live match is now a card of the
+      carousel inside the band, not a separate card overlapping the band's lower edge, and several live
+      matches swipe side by side instead of stacking; a live match with nothing else to show still
+      overlaps the band as before. And Arabic CLS rises by about 0.03 on average: the carousel's cards
+      are 26px taller in Arabic than in French (names and vote labels wrap to two lines at Arabic
+      leading), against 7px for main's single card, so the swap from the French first paint moves the
+      page further. French CLS falls because the vote row's place is now held.
+
+      matches-home.option-a.test.ts pinned the live split card to the old block under the band; it now
+      pins the same split card where the carousel and the live-alone block draw it.
+
+      Seen in passing and left alone: Home's news cards throw a hydration mismatch on every load
+      (ArticleCard's date is formatted in the runtime's timezone; server "22 sept.", browser "23 sept."),
+      on main as on the branch; and from 1024 to about 1100px the pick card's club names run under the
+      kick-off time in the narrow centre column, on main as on the branch.
+    remaining:
+      - "owner: review the draft PR; merge and publish wait for the owner's OK"
+      - "device check on a real iPhone (Safari and the app shell) and an Android phone: the swipe, the snap and the peek, in French and Arabic; Chromium's touch emulation is not a phone"
+      - "the live state was checked only with a rewritten payload in the browser (no match was live during the work); check it on the next match day"
+
   BG-0151:
     title: viewport-fit=cover, with the safe-area fixes it needs (phone app status bar, home indicator, notch)
     area: design

@@ -1,5 +1,22 @@
 # BG-0155 — Home: the gameweek band's matches as a carousel — screen brief
 
+> **Note, 2026-10-06, after implementation.** Three things differ from the brief
+> as written, all found by measuring. (1) From `lg` to `xl` (1024 to 1279px) the
+> band is Home's centre column, 264 to 519px wide, where an 88% card was 190px at
+> 1024, narrower than main's single card (216px). Between `lg` and `xl` a card now
+> takes the whole width; the previous/next buttons and the indicator say there is
+> more. The peek stays on phones, tablets and from `xl`. (2) In the narrower cards
+> the vote labels wrap ("RSB / Berkane"), so a button is 54px, not 44px; the held
+> row therefore uses the buttons' own shape with their labels kept invisible, and
+> still shows as three blank capsules. (3) The Arabic CLS criterion is not met:
+> over three runs each, Arabic 390 measured 0.761 / 0.841 / 0.864 against main's
+> 0.747 / 0.813 / 0.813, and Arabic 1440 0.671 / 0.657 / 0.653 against 0.626 /
+> 0.627 / 0.631. All of it is inside the swap from the French first paint to
+> Arabic: the cards are 26px taller in Arabic than in French (names and vote labels
+> wrap at Arabic leading), against 7px for main's single card. French improved
+> (390: 0.0105 three times against 0.0158 / 0.0232 / 0.0581). The evidence is in
+> the BG-0155 ledger entry.
+
 Owner request, 2026-10-06, from a screenshot of Home on a real iPhone in the dark
 theme: "You need to add a carousel to scroll to see the other matches, this one
 shows only 1 match." The owner approved the screen work; merge and publish wait
