@@ -1,5 +1,12 @@
 # BG-0151 — `viewport-fit=cover` with safe-area fixes: screen brief
 
+> **Note, 2026-10-06, after merging main.** Main's store readiness work (#358,
+> commit e2458524) landed the same `viewport-fit=cover` change first: items 1, 3,
+> 4, 5, 6 and 9 below and the Pépites reveal are now main's code. This branch now
+> adds items 2, 7, 8 and 10, the BG-0151 tests and the docs. #358 also made the
+> app iPhone only and upright, so the iPad and landscape app checks below no
+> longer apply. The brief is otherwise kept as approved.
+
 Owner decision, 2026-10-05: add `viewport-fit=cover`, with the safe-area fixes it
 needs, in one change. Branch `claude/viewport-fit-cover`, from `main` at `a6fac90`.
 

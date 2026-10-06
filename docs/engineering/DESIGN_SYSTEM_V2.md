@@ -526,7 +526,7 @@ for `rounded-lg` (the legacy `--radius`) for a card.
 - `ui.safe.top` / `ui.safe.bottom` — safe-area padding:
   `max(env(safe-area-inset-*), fallback)`, so a screen without insets keeps the
   fallback. The insets are live because the viewport meta says
-  `viewport-fit=cover` (BG-0151); without it iOS reports them as 0. A bar pinned
+  `viewport-fit=cover` (set with the store readiness work, #358; BG-0151); without it iOS reports them as 0. A bar pinned
   to the bottom edge pads by the inset itself — `ui.safe.bottom`, or
   `pb-[max(env(safe-area-inset-bottom),<its own padding>)]` when its padding is
   not 0.5rem — and never as `ui.safe.bottom` followed by another `pb-*` in the

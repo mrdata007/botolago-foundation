@@ -412,7 +412,8 @@ web view and sign-in links open in the system browser, so the app needs its own
 sign-in redirect handling; real account deletion with a stated timeline and
 confirmation; the prize terms; removing test clubs and Gameweek state from
 production data; the share-link origin; checking the screen edges on real phones
-(see "Screen edges" above); the privacy policy and store forms (push is not yet in
+(see "Screen edges" above); the status bar's clock and icons following the app's
+chosen theme (`SystemBars.setStyle`, see "Screen edges" above); the privacy policy and store forms (push is not yet in
 the policy's purposes, and phone tokens have no row in its retention table; App
 Store Connect's App Privacy form and Google Play's Data safety form are filled by
 hand, from the policy); the Arabic permission texts, not yet read by a native

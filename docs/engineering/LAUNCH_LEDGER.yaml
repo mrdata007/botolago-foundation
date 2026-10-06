@@ -1676,12 +1676,13 @@ tasks:
     remaining:
       - "device check, in French and Arabic: a notched or Dynamic Island iPhone, an Android 15+ phone with WebView 140 or later and one older, and the website in Safari on a notched iPhone upright and sideways (since #358 the app is iPhone only and held upright). Chromium applies emulated insets whatever the meta says, so the iOS gate itself is unproven here"
       - "follow-up before any store build: the status bar's clock and icons follow the phone's light or dark setting, not the app's. With the in-app light, dark and system choice they must follow the theme the app shows (SystemBars.setStyle on each theme change), or they mismatch on every screen whenever the app's choice differs from the phone's. The dark top bands (sign-in, welcome, Landing) may need light icons whatever the theme"
-      - "known follow-up: opening a Radix modal (UiModal, UiSheet, any Radix Dialog) drops the landscape body padding-inline while it is open. Radix's RemoveScroll uses react-remove-scroll-bar (2.3.8), which injects an unlayered body[data-scroll-locked] rule setting padding-left and padding-right to the body's margins (0), and an unlayered rule beats the @layer base body padding (read from the library's source, not measured in a browser). Only on a notched iPhone turned sideways, which is the website in Safari since the app stays upright"
+      - "known follow-up: opening a Radix modal (UiModal, UiSheet, any Radix Dialog, and the Radix Select in SeasonPicker) drops the landscape body padding-inline while it is open. Radix's RemoveScroll uses react-remove-scroll-bar (2.3.8), which injects an unlayered body[data-scroll-locked] rule setting padding-left and padding-right to the body's margins (0), and an unlayered rule beats the @layer base body padding (read from the library's source, not measured in a browser). Only on a notched iPhone turned sideways, which is the website in Safari since the app stays upright"
       - "LandingPage final section: below lg its bottom padding is 8px, not py-14's 56px (ui.safe.bottom after py-14); existing, out of scope"
       - >
-        DESIGN.md is not on main yet (PR #352, claude/impeccable-design-document). Its line 515 still
-        calls viewport-fit=cover an open decision; once both branches merge it should say the
-        decision is made (BG-0151) and only the device check is open. No merge conflict will flag it.
+        DESIGN.md is not on main yet (PR #352, claude/impeccable-design-document). Its sentence "On
+        main today the viewport tag lacks it" has been untrue since #358 (e2458524) added
+        viewport-fit=cover; when #352 merges it should say main has cover (meta from #358, safe-area
+        fixes BG-0151) and only the device check is open. No merge conflict will flag it.
 
   BG-0126:
     title: GameweekSelector renders its value at 1.12:1 in dark and its controls at 36px

@@ -77,6 +77,7 @@ describe("BG-0151: the root viewport meta", () => {
 
   test("is declared once, in the root route", () => {
     expect(viewports).toHaveLength(1);
+    expect(viewports[0]).toBe("width=device-width, initial-scale=1, viewport-fit=cover");
   });
 
   test("is not overridden by any other route", () => {

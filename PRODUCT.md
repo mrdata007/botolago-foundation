@@ -411,5 +411,6 @@ Known gaps (**Unknown** whether intended):
 - Browser tests run in Chromium only; there is no Safari/WebKit or real-device coverage.
 - Decided 2026-10-05 (BG-0151): the viewport meta now carries `viewport-fit=cover`, which
   safe-area handling inside the Capacitor shell depends on, with the safe-area fixes it needs.
-  It is checked only in Chromium with emulated insets; how it looks on a real notched iPhone, an
-  iPad and an Android 15+ phone is not yet checked.
+  It is checked only in Chromium with emulated insets; how it looks on a real notched iPhone (the
+  app, and the website in Safari upright and sideways) and on Android phones with a recent and an
+  older WebView is not yet checked.
