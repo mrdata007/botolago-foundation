@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -59,6 +59,62 @@ export const predictionsKeys = {
   fixture: (uid: string, fixtureId: string) =>
     ["predictions", "mine-fixture", uid, fixtureId] as const,
 };
+
+/**
+ * A queue can contain several journées, including drafts restored on load.
+ * Route each answer by its fixture, never by the page currently on screen.
+ * If its round is no longer cached, invalidate the owner's reads rather than
+ * guessing. A cache removed on sign-out is never recreated by a late answer.
+ */
+export function applySavedPredictions(
+  queryClient: QueryClient,
+  owner: string,
+  results: readonly SaveResultDto[],
+): void {
+  const roundByFixture = new Map<string, number>();
+  for (const [, round] of queryClient.getQueriesData<PredictionsRoundDto>({
+    queryKey: ["predictions", "round"],
+  })) {
+    if (!round?.allowed || !round.round) continue;
+    for (const fixture of round.fixtures) roundByFixture.set(fixture.id, round.round.number);
+  }
+  const byRound = new Map<number, SaveResultDto[]>();
+  let unknownRound = false;
+  for (const result of results) {
+    const number = roundByFixture.get(result.fixtureId);
+    if (number === undefined) unknownRound = true;
+    else byRound.set(number, [...(byRound.get(number) ?? []), result]);
+    void queryClient.invalidateQueries({
+      queryKey: predictionsKeys.fixture(owner, result.fixtureId),
+    });
+  }
+  for (const [number, saved] of byRound) {
+    queryClient.setQueryData<MyPredictionsDto>(predictionsKeys.mine(owner, number), (current) => {
+      if (!current) return current;
+      const items = new Map(current.items.map((item) => [item.fixtureId, item]));
+      for (const result of saved) {
+        if (result.home === null || result.away === null || !result.submittedAt) continue;
+        const previous = items.get(result.fixtureId);
+        items.set(result.fixtureId, {
+          fixtureId: result.fixtureId,
+          home: result.home,
+          away: result.away,
+          submittedAt: result.submittedAt,
+          points: previous?.points ?? null,
+          resultKind: previous?.resultKind ?? null,
+        });
+      }
+      const list = [...items.values()];
+      return {
+        ...current,
+        items: list,
+        summary: current.summary ? { ...current.summary, predicted: list.length } : null,
+      };
+    });
+  }
+  if (unknownRound)
+    void queryClient.invalidateQueries({ queryKey: ["predictions", "mine", owner] });
+}
 
 const LIVE_STATUSES = new Set([
   "live_first_half",
@@ -147,11 +203,14 @@ export function useGuestPredictions() {
   // storage at all), so it is assumed until mounted.
   const [persistent, setPersistent] = useState(true);
   useEffect(() => {
-    setPersistent(store.persistent);
     setState(store.read());
+    setPersistent(store.persistent);
     const onChange = (event: Event) => {
       const key = (event as CustomEvent<{ key?: string }>).detail?.key;
-      if (!key || key === GUEST_STORE_EVENT_KEY) setState(store.read());
+      if (!key || key === GUEST_STORE_EVENT_KEY) {
+        setState(store.read());
+        setPersistent(store.persistent);
+      }
     };
     window.addEventListener("botolago:storage", onChange);
     return () => window.removeEventListener("botolago:storage", onChange);
@@ -419,47 +478,6 @@ export function usePredictionsRound(
   const tRef = useRef(t);
   tRef.current = t;
 
-  // A save's results, into the picks of `owner`: the account whose queue sent
-  // them. By the time an answer lands the page may hold another account, and
-  // the picks are not theirs.
-  const applyResults = useCallback(
-    (owner: string, results: readonly SaveResultDto[]) => {
-      if (resolvedNumber === null) return;
-      queryClient.setQueryData<MyPredictionsDto>(
-        predictionsKeys.mine(owner, resolvedNumber),
-        (current) => {
-          if (!current) return current;
-          const items = new Map(current.items.map((item) => [item.fixtureId, item]));
-          for (const result of results) {
-            if (result.home === null || result.away === null || !result.submittedAt) continue;
-            const previous = items.get(result.fixtureId);
-            items.set(result.fixtureId, {
-              fixtureId: result.fixtureId,
-              home: result.home,
-              away: result.away,
-              submittedAt: result.submittedAt,
-              points: previous?.points ?? null,
-              resultKind: previous?.resultKind ?? null,
-            });
-          }
-          const list = [...items.values()];
-          return {
-            ...current,
-            items: list,
-            summary: current.summary ? { ...current.summary, predicted: list.length } : null,
-          };
-        },
-      );
-      for (const result of results)
-        void queryClient.invalidateQueries({
-          queryKey: predictionsKeys.fixture(owner, result.fixtureId),
-        });
-    },
-    [queryClient, resolvedNumber],
-  );
-  const applyResultsRef = useRef(applyResults);
-  applyResultsRef.current = applyResults;
-
   useEffect(() => {
     if (!uid) return;
     // A new queue is another account, or this one back from its code: its bar
@@ -477,7 +495,7 @@ export function usePredictionsRound(
       },
       onSaved: (results, serverTime) => {
         noteServerTime(serverTime);
-        applyResultsRef.current(uid, results);
+        applySavedPredictions(queryClient, uid, results);
         setPendingVersion((v) => v + 1);
       },
       onLocked: () => {
