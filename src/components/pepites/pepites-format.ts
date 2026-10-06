@@ -35,8 +35,20 @@ export function formatCount(value: number, lang: Language): string {
   return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
 }
 
-/** A team as `PlayerPhoto` and `ClubCrest` want it: the palette keys on the slug. */
-export function teamAsClub(team: PepitesTeam | null | undefined): Club | undefined {
+/** What the app's club catalogue knows about a club that a Pépites team does not carry. */
+export type ListedClub = Pick<Club, "crestUrl" | "crestPlaceholder">;
+
+/**
+ * A team as `PlayerPhoto` and `ClubCrest` want it: the palette keys on the
+ * slug. `listed` is the same club in the app's club catalogue (the same ids
+ * as `app.teams`), which carries the crest and the short code the rest of
+ * the app prints on a crest disc; without it the disc shows the first three
+ * letters of the club's name.
+ */
+export function teamAsClub(
+  team: PepitesTeam | null | undefined,
+  listed?: ListedClub | null,
+): Club | undefined {
   if (!team) return undefined;
   return {
     id: team.id,
@@ -45,7 +57,9 @@ export function teamAsClub(team: PepitesTeam | null | undefined): Club | undefin
     shortName: team.shortName,
     city: { fr: "", ar: "" },
     primaryColor: "",
-    crestPlaceholder: team.shortName.fr.slice(0, 3).toUpperCase(),
+    crestPlaceholder:
+      listed?.crestPlaceholder?.trim() || team.shortName.fr.slice(0, 3).toUpperCase(),
+    ...(listed?.crestUrl ? { crestUrl: listed.crestUrl } : {}),
   };
 }
 
@@ -131,6 +145,24 @@ export function playerMetaLine(
     );
   }
   return parts.join(" · ");
+}
+
+/**
+ * A row's figures line, under its meta line: "2 087’ · 16B 1PD" (minutes,
+ * then goals and assists), the figures isolated so an Arabic line keeps
+ * their order. The same parts `playerMetaLine` appends to a short line.
+ */
+export function playerFiguresLine(
+  stats: { minutes: number; goals: number; assists: number },
+  { t, lang }: { t: (key: TranslationKey) => string; lang: Language },
+): string {
+  const iso = (text: string) => `\u2068${text}\u2069`;
+  return [
+    iso(`${formatCount(stats.minutes, lang)}’`),
+    t("pepites.meta.goals_assists")
+      .replace("{g}", iso(formatNumber(stats.goals, lang)))
+      .replace("{a}", iso(formatNumber(stats.assists, lang))),
+  ].join(" · ");
 }
 
 /** "↑ 2", "↓ 1", "=", "Nouveau": the arrow a reader saw last week (§4.5). */
