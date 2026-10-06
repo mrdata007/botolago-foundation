@@ -182,9 +182,14 @@ Three points moved while drawing; the rest is as briefed.
 - **Club colours come through the club palette**, not a raw kit hex or
   `inkOn`: the disc takes the palette's fill and its text colour (white or
   Tunnel Navy, as a light screen paints them, so the club keeps its own
-  colour), and the ring and the edge bars take the palette's dark-theme edge,
-  which clears 3:1 on a dark surface. This replaces the `--ui-ink-edge` ring
-  the palette table first listed (`shareClubColours` in `share-image.ts`).
+  colour). The ring and the edge bars start from the palette's dark-theme
+  edge, which the palette measures against the app's dark `--ui-surface`;
+  on the pictures' own navies that edge measured 2.2 to 2.8:1 for 13 of the
+  18 kit primaries, so `shareClubColours` measures it again against the navy
+  it is drawn on (Floodlight Navy for the Top 10 rows, Tunnel Navy for the
+  story card) and lifts it toward white until it clears 3:1 there (after
+  review). This replaces the `--ui-ink-edge` ring the palette table first
+  listed.
 - **The ghost "10" behind the Top 10 header is gone.** It carried no data,
   it is one of the ghost numbers BG-0152 retired from the screens, and in
   Arabic it collided with the wider title. The story card keeps its ghost
@@ -195,3 +200,27 @@ Three points moved while drawing; the rest is as briefed.
   (wordmark, hairline, name), only placed from the right in Arabic, so the
   drawing tests can check every Arabic position as the mirror of the French
   one.
+
+## After review
+
+Independent review found eight points; each was measured on the rendered
+PNGs and fixed.
+
+- The club ring and edge bars now clear 3:1 on the navy they sit on (above).
+- The French group separator in the story's stats line ("1 159") is drawn
+  as a no-break space on the canvas, because Manrope sets the narrow
+  no-break space at 0.1em and it read as "1159". The model and `formatCount`
+  keep the character.
+- The Arabic week line sat low in its pill, its descenders past the pill's
+  edge, and "جواهر" sat 9px above the pill. The week line is now centred on
+  its measured ink, and the title and the section's name stack up from the
+  pill on their measured ink with the same gaps as in French.
+- Ranks 1 to 3, white against muted 4 to 10 (1.52:1), barely stood out. They
+  now sit on a small white plate with Tunnel Navy figures, the score plate's
+  signature; ranks and scores are centred on the row.
+- The lock-up's name stands on the wordmark's letters, not on the middle of
+  its box (which includes the swoosh).
+- The legend markers outline the four other slices in the muted foreground
+  (10.9:1 on the ground) instead of Floodlight Navy (1.30:1).
+- The recap total and the story score are centred on their measured ink in
+  their plates (the recap total sat 12px low).
