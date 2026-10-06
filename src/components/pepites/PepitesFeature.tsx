@@ -154,9 +154,14 @@ export function PepitesFeature({
         className="absolute inset-0 -z-10 bg-[color:color-mix(in_oklab,var(--ui-ink-deep)_80%,transparent)]"
       />
       {edge ? (
+        // A 2px navy keyline on its inner side: the edge is lifted to 3:1
+        // against Tunnel Navy, but the veiled stadium photo is lighter in
+        // places (a mid red fell to 1.8:1 against it), so the edge always
+        // meets the navy, never the photo.
         <span
           aria-hidden
-          className="absolute inset-y-0 start-0 w-1"
+          data-testid="pepites-feature-edge"
+          className="absolute inset-y-0 start-0 box-content w-1 border-e-2 border-[color:var(--ui-ink-deep)]"
           style={{ backgroundColor: edge }}
         />
       ) : null}

@@ -211,3 +211,21 @@ describe("the featured N°1's figures", () => {
     expect(bandFigures(undefined, null, false)).toBeUndefined();
   });
 });
+
+describe("the featured band's club edge", () => {
+  it("meets the navy on its inner side, never the veiled photo", async () => {
+    // The edge is lifted to 3:1 against Tunnel Navy (shareClubColours, tested
+    // for every kit in share-image.draw.test.ts), but the veiled stadium photo
+    // is lighter in places: a mid red fell to 1.8:1 against it. A 2px navy
+    // keyline keeps the navy beside the edge whatever the photo does.
+    const { readFileSync } = await import("node:fs");
+    const source = readFileSync(new URL("./PepitesFeature.tsx", import.meta.url), "utf8");
+    const edge = /<span[^>]*data-testid="pepites-feature-edge"[^>]*className="([^"]+)"/.exec(
+      source,
+    );
+    expect(edge?.[1]).toContain("box-content w-1 border-e-2 border-[color:var(--ui-ink-deep)]");
+    expect(source).toContain(
+      "shareClubColours(teamKit(player.team).primary, SHARE_PALETTE.ground).edge",
+    );
+  });
+});
