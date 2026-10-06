@@ -190,6 +190,18 @@ export const UI_TOKENS = [
   "--ui-on-fdr-3",
   "--ui-on-fdr-4",
   "--ui-on-fdr-5",
+  // Pépites — a player's match rating, 1 worst → 5 best: the FDR scale read
+  // backwards (rating N = FDR 6−N), with its foregrounds. Derived, below.
+  "--ui-rating-1",
+  "--ui-rating-2",
+  "--ui-rating-3",
+  "--ui-rating-4",
+  "--ui-rating-5",
+  "--ui-on-rating-1",
+  "--ui-on-rating-2",
+  "--ui-on-rating-3",
+  "--ui-on-rating-4",
+  "--ui-on-rating-5",
 ] as const;
 
 export type UiToken = (typeof UI_TOKENS)[number];
@@ -301,6 +313,22 @@ export const UI_DERIVED_TOKENS: readonly UiToken[] = [
   // surface. All three flip, so the dark turf needs no second copy.
   "--ui-pitch-turf-a",
   "--ui-pitch-turf-b",
+  // The Pépites rating scale is the fixture-difficulty scale read backwards:
+  // `--ui-rating-N` is `var(--ui-fdr-(6−N))` and `--ui-on-rating-N` is
+  // `var(--ui-on-fdr-(6−N))`, so rating 5 (best) is FDR 1 (green). Pure
+  // aliases of themed tokens, so the dark values and the measured
+  // foregrounds come with them. A recolour of the FDR scale recolours the
+  // ratings too; that coupling is the point (one data palette, not two).
+  "--ui-rating-1",
+  "--ui-rating-2",
+  "--ui-rating-3",
+  "--ui-rating-4",
+  "--ui-rating-5",
+  "--ui-on-rating-1",
+  "--ui-on-rating-2",
+  "--ui-on-rating-3",
+  "--ui-on-rating-4",
+  "--ui-on-rating-5",
 ];
 
 /**

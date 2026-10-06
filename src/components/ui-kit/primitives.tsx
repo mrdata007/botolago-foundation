@@ -694,6 +694,7 @@ export function UiLinkButton({
   to,
   params,
   search,
+  replace,
   variant = "gradient",
   size = "md",
   tone = "onSurface",
@@ -704,6 +705,12 @@ export function UiLinkButton({
   to: string;
   params?: Record<string, string>;
   search?: Record<string, unknown>;
+  /**
+   * The router's `replace`: the navigation takes the current history entry
+   * instead of adding one (a story's next step, so Back leaves the story).
+   * Still a link: it has an address, opens in a new tab, reads as a link.
+   */
+  replace?: boolean;
   variant?: UiButtonVariant;
   size?: UiButtonSize;
   tone?: UiButtonTone;
@@ -713,6 +720,7 @@ export function UiLinkButton({
       to={to}
       params={params}
       search={search}
+      replace={replace}
       {...props}
       className={buttonClass(variant, size, tone, className)}
       style={variant === "gradient" ? { backgroundImage: "var(--ui-grad-action)" } : undefined}

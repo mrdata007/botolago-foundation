@@ -10,6 +10,7 @@ import {
   type PhotoRelease,
 } from "@/backend/pepites/admin-repository";
 import {
+  ADMIN_CARD_CLASS,
   ADMIN_LABEL_CLASS,
   ADMIN_PANEL_CLASS,
   AdminDatum,
@@ -31,13 +32,13 @@ import {
   UiInput,
   UiSegmented,
   UiSelect,
+  UiStatBlock,
   UiTextarea,
 } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { pepitesService } from "@/services/pepites";
 
-import { pp } from "../pepites-design";
-
+import { PepitesName } from "../PepitesVisuals";
 import { adminDateTime, describeAdminError, problemLabel } from "./admin-format";
 
 export type DataTab = "desk" | "players" | "photos";
@@ -84,9 +85,7 @@ export function PepitesAdminData({
   const [player, setPlayer] = useState<{ id: string; name: string; field?: string } | null>(null);
   return (
     <div className="grid gap-4">
-      <p className={cn(pp.monoStrong, pp.muted, "text-[10px] ltr:tracking-[0.1em]")}>
-        {rtl ? "جواهر / مكتب البيانات" : "Pépites / Data desk"}
-      </p>
+      <p className={ADMIN_LABEL_CLASS}>{rtl ? "جواهر / مكتب البيانات" : "Pépites / Data desk"}</p>
       <UiSegmented<DataTab>
         value={tab}
         onChange={onTabChange}
@@ -166,28 +165,23 @@ function DeskCoverage({ rtl }: { rtl: boolean }) {
       {tiles.map((tile) => {
         const pct = tile.share === null ? null : Math.round(tile.share * 100);
         return (
-          <li key={tile.label} className={cn("grid gap-2 rounded-[12px] p-3", pp.card)}>
-            <span className={cn(pp.monoStrong, pp.muted, "text-[8px] ltr:tracking-[0.1em]")}>
-              {tile.label}
-            </span>
-            <bdi className={cn(pp.display, pp.ink, "text-[22px]")}>{tile.value}</bdi>
-            <span className="h-1 overflow-hidden rounded-full bg-[color:var(--pepites-seg-empty)]">
+          <li key={tile.label} className={cn("grid content-start gap-2 p-3", ADMIN_CARD_CLASS)}>
+            <UiStatBlock size="md" tone="ink" label={tile.label} value={<bdi>{tile.value}</bdi>} />
+            {/* How complete the field is, in the status colours: 80 % and
+                over positive, 40 % and over caution, under that negative. */}
+            <span
+              aria-hidden
+              className={cn(
+                "h-1 overflow-hidden bg-[color:var(--ui-surface-sunken)]",
+                ui.radius.full,
+              )}
+            >
               <span
-                className="block h-full rounded-full"
-                style={{
-                  width: `${Math.max(2, pct ?? 0)}%`,
-                  backgroundColor:
-                    pct === null
-                      ? "#dfe3ee"
-                      : pct >= 80
-                        ? "#27b36b"
-                        : pct >= 40
-                          ? "#f0a020"
-                          : "#e5484d",
-                }}
+                className={cn("block h-full", ui.radius.full, coverageFill(pct))}
+                style={{ width: `${Math.max(2, pct ?? 0)}%` }}
               />
             </span>
-            <span className={cn(pp.mono, pp.muted, "text-end text-[8px]")}>
+            <span className={cn("text-end", ui.text.micro, ui.text.tabular, ui.tone.muted)}>
               {pct === null ? "—" : `${pct} %`}
             </span>
           </li>
@@ -195,6 +189,14 @@ function DeskCoverage({ rtl }: { rtl: boolean }) {
       })}
     </ul>
   );
+}
+
+/** The coverage bar's status colour; the faint text colour when unknown. */
+function coverageFill(pct: number | null): string {
+  if (pct === null) return "bg-[color:var(--ui-on-surface-faint)]";
+  if (pct >= 80) return "bg-[color:var(--ui-positive)]";
+  if (pct >= 40) return "bg-[color:var(--ui-caution)]";
+  return "bg-[color:var(--ui-negative)]";
 }
 
 function shareText(share: number | null): string {
@@ -222,6 +224,9 @@ function issueMessage(issue: DataDeskIssue): string | null {
 const DESK_COLUMNS =
   "grid grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)_minmax(0,1.6fr)_minmax(0,0.8fr)_auto] items-center gap-3";
 
+/** The action column's width, shared by the heading row and each button, so the columns line up. */
+const DESK_ACTION_WIDTH = "w-24";
+
 function DeskList({
   rtl,
   canCorrect,
@@ -240,7 +245,6 @@ function DeskList({
   });
   const issues = query.data?.issues ?? [];
   const selected = issues.find((issue) => issue.id === selectedId) ?? null;
-  const head = cn(pp.monoStrong, pp.muted, "text-[8px] ltr:tracking-[0.1em]");
   return (
     <section className="grid gap-4" aria-labelledby="admin-pepites-desk">
       <DeskCoverage rtl={rtl} />
@@ -278,30 +282,29 @@ function DeskList({
         </AdminNotice>
       ) : null}
       {query.data ? (
-        <div className={cn("grid gap-4", selected && "lg:grid-cols-[minmax(0,1fr)_320px]")}>
-          <div className={cn("grid content-start gap-2 rounded-[14px] p-4", pp.card)}>
-            <h3
-              id="admin-pepites-desk"
-              className={cn(pp.monoStrong, pp.muted, "text-[9px] ltr:tracking-[0.1em]")}
-            >
+        <div
+          className={cn(
+            "grid gap-4",
+            selected && "lg:grid-cols-[minmax(0,1fr)_minmax(0,var(--container-xs))]",
+          )}
+        >
+          <div className={cn("grid content-start gap-2 p-4", ADMIN_CARD_CLASS)}>
+            <AdminSectionHeading id="admin-pepites-desk">
               {rtl ? "للتصحيح" : "À corriger"} ·{" "}
               {rtl ? `المجموع ${query.data.total}` : `${query.data.total} au total`}
-            </h3>
+            </AdminSectionHeading>
             {issues.length === 0 ? (
               <AdminEmptyState testId="admin-pepites-desk-empty">
                 {rtl ? "لا شيء هنا." : "Rien ici."}
               </AdminEmptyState>
             ) : (
               <>
-                <div
-                  className={cn(DESK_COLUMNS, "border-b pb-2 max-md:hidden", pp.divider)}
-                  aria-hidden
-                >
-                  <span className={head}>{rtl ? "اللاعب" : "Joueur"}</span>
-                  <span className={head}>{rtl ? "الحقل" : "Champ"}</span>
-                  <span className={head}>{rtl ? "المشكلة" : "Problème"}</span>
-                  <span className={head}>{rtl ? "المصدر" : "Source"}</span>
-                  <span className="w-[84px]" />
+                <div className={cn(DESK_COLUMNS, "pb-2 max-md:hidden", ui.rule.block)} aria-hidden>
+                  <span className={ADMIN_LABEL_CLASS}>{rtl ? "اللاعب" : "Joueur"}</span>
+                  <span className={ADMIN_LABEL_CLASS}>{rtl ? "الحقل" : "Champ"}</span>
+                  <span className={ADMIN_LABEL_CLASS}>{rtl ? "المشكلة" : "Problème"}</span>
+                  <span className={ADMIN_LABEL_CLASS}>{rtl ? "المصدر" : "Source"}</span>
+                  <span className={DESK_ACTION_WIDTH} />
                 </div>
                 <ul className="grid" data-testid="admin-pepites-desk-list">
                   {issues.map((issue) => (
@@ -310,37 +313,35 @@ function DeskList({
                       data-testid="admin-pepites-issue"
                       className={cn(
                         DESK_COLUMNS,
-                        "border-b py-2.5 last:border-b-0 max-md:grid-cols-1 max-md:gap-1",
-                        pp.divider,
+                        "py-2.5 last:border-b-0 max-md:grid-cols-1 max-md:gap-1",
+                        ui.rule.block,
                       )}
                     >
-                      <span className={cn(pp.bold, pp.text, "truncate text-[13px]")}>
-                        {issue.playerName ?? issue.entityId}
-                      </span>
-                      <span className={cn(pp.text, "text-[12px]")}>
+                      <PepitesName
+                        name={issue.playerName ?? issue.entityId}
+                        className={cn("truncate", ui.text.bodyStrong, ui.tone.default)}
+                      />
+                      <span className={cn(ui.text.meta, ui.tone.default)}>
                         {attributeLabel(issue.field, rtl)}
                       </span>
-                      <span className="grid text-[12px] text-[#b86e00]">
-                        <span>{kindLabel(issue.kind, rtl)}</span>
+                      <span className="grid justify-items-start gap-1">
+                        <UiBadge tone="caution">{kindLabel(issue.kind, rtl)}</UiBadge>
                         {issueMessage(issue) ? (
-                          <span className={pp.text}>{issueMessage(issue)}</span>
+                          <span className={cn(ui.text.meta, ui.tone.default)}>
+                            {issueMessage(issue)}
+                          </span>
                         ) : null}
                       </span>
-                      <span className={cn(pp.mono, pp.muted, "text-[10px]")}>
-                        {issue.source} · {adminDateTime(issue.createdAt, rtl)}
+                      <span className={cn(ui.text.micro, ui.tone.muted)}>
+                        <AdminDatum>{issue.source}</AdminDatum> ·{" "}
+                        {adminDateTime(issue.createdAt, rtl)}
                       </span>
-                      <button
-                        type="button"
+                      <UiButton
+                        size="sm"
+                        variant={issue.id === selectedId ? "ink" : "outline"}
                         onClick={() => setSelectedId(issue.id === selectedId ? null : issue.id)}
                         aria-pressed={issue.id === selectedId}
-                        className={cn(
-                          "inline-flex min-h-[34px] w-[84px] items-center justify-center rounded-full border text-[12px]",
-                          pp.line,
-                          pp.ink,
-                          pp.heavy,
-                          issue.id === selectedId && "bg-[color:var(--pepites-ink)] text-white",
-                          ui.focus,
-                        )}
+                        className={cn("justify-self-start", DESK_ACTION_WIDTH)}
                         data-testid="admin-pepites-issue-open"
                       >
                         {issue.status === "open"
@@ -350,7 +351,7 @@ function DeskList({
                           : rtl
                             ? "عرض"
                             : "Voir"}
-                      </button>
+                      </UiButton>
                     </li>
                   ))}
                 </ul>
@@ -402,19 +403,19 @@ function DeskIssuePanel({
   const message = issueMessage(issue);
   return (
     <aside
-      className={cn("grid content-start gap-3 rounded-[14px] p-4", pp.card)}
+      className={cn("grid content-start gap-3 p-4", ADMIN_CARD_CLASS)}
       data-testid="admin-pepites-issue-panel"
     >
-      <p className={cn(pp.monoStrong, pp.muted, "text-[9px] ltr:tracking-[0.1em]")}>
-        {rtl ? "تصحيح" : "Corriger"}
-      </p>
-      <h4 className={cn(pp.heavy, pp.text, "text-[16px]")}>
+      <p className={ADMIN_LABEL_CLASS}>{rtl ? "تصحيح" : "Corriger"}</p>
+      <h4 className={cn(ui.text.subtitle, ui.tone.default)}>
         {issue.playerName ?? issue.entityId} · {attributeLabel(issue.field, rtl)}
       </h4>
-      <p className="text-[12px] text-[#b86e00]">{kindLabel(issue.kind, rtl)}</p>
-      {message ? <p className={cn(pp.text, "text-[13px]")}>{message}</p> : null}
+      <UiBadge tone="caution" className="justify-self-start">
+        {kindLabel(issue.kind, rtl)}
+      </UiBadge>
+      {message ? <p className={cn(ui.text.secondary, ui.tone.default)}>{message}</p> : null}
       {issue.resolutionNote ? (
-        <p className={cn(pp.muted, "text-[12px]")}>
+        <p className={cn(ui.text.meta, ui.tone.muted)}>
           {rtl ? "ملاحظة: " : "Note : "}
           {issue.resolutionNote}
         </p>
@@ -526,7 +527,12 @@ function PlayerDesk({
                   type="button"
                   onClick={() => onSelect({ id: player.id, name: player.name })}
                   aria-pressed={selected?.id === player.id}
-                  className={cn("grid w-full gap-1 p-2 text-start", ADMIN_PANEL_CLASS, ui.focus)}
+                  className={cn(
+                    "grid w-full content-center gap-1 px-3 py-2 text-start",
+                    ui.space.row,
+                    ADMIN_PANEL_CLASS,
+                    ui.focus,
+                  )}
                 >
                   <span className={ui.text.bodyStrong}>
                     {player.name}{" "}
@@ -699,6 +705,23 @@ function AttributeForm({
   );
 }
 
+/**
+ * A native file field on the 44px floor. No kit primitive draws one, so the
+ * browser's "choose a file" button (`file:` styles `::file-selector-button`)
+ * takes the kit's light pill — the surface fill, the brand foreground and
+ * the card shadow, which stand out on the sunken form panel — and the chosen
+ * file's name sits beside it in the meta step.
+ */
+const FILE_INPUT = cn(
+  "block min-h-[var(--ui-tap-min)] w-full cursor-pointer",
+  ui.text.meta,
+  ui.tone.muted,
+  ui.radius.full,
+  ui.focus,
+  "file:me-3 file:min-h-[var(--ui-tap-min)] file:cursor-pointer file:rounded-full file:border-0 file:px-4",
+  "file:bg-[color:var(--ui-surface)] file:text-[color:var(--ui-ink-fg)] file:shadow-[var(--ui-shadow-card)] file:[font-weight:var(--ui-weight-heavy)]",
+);
+
 function PhotoUploadForm({ player, rtl }: { player: { id: string; name: string }; rtl: boolean }) {
   const queryClient = useQueryClient();
   const [photo, setPhoto] = useState<File | null>(null);
@@ -769,6 +792,7 @@ function PhotoUploadForm({ player, rtl }: { player: { id: string; name: string }
           type="file"
           accept="image/jpeg,image/png,image/webp"
           onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
+          className={FILE_INPUT}
         />
       </label>
       <label className="grid gap-1">
@@ -779,6 +803,7 @@ function PhotoUploadForm({ player, rtl }: { player: { id: string; name: string }
           type="file"
           accept="application/pdf,image/jpeg,image/png"
           onChange={(event) => setDocument(event.target.files?.[0] ?? null)}
+          className={FILE_INPUT}
         />
       </label>
       <div className="grid gap-2 sm:grid-cols-2">

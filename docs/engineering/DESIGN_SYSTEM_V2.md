@@ -356,6 +356,8 @@ counterparts.
 | `--ui-lineup-turf-a` / `-b`       | `oklch(0.536 0.129 153)` / `oklch(0.502 0.122 152)` | `oklch(0.42 0.1 150)` / `oklch(0.39 0.095 150)` |
 | `--ui-fdr-1` … `--ui-fdr-5`       | green → grey → pink → deep magenta                  | deepened per step                               |
 | `--ui-on-fdr-1` … `--ui-on-fdr-5` | the foreground that clears AA on that step          | ditto                                           |
+| `--ui-rating-1` … `--ui-rating-5` | = `--ui-fdr-5` … `--ui-fdr-1` (derived)             | follows them                                    |
+| `--ui-on-rating-1` … `-5`         | = `--ui-on-fdr-5` … `--ui-on-fdr-1` (derived)       | follows them                                    |
 
 `--ui-plate-figure` is the `UiPlayerPlate` figure band (points, price,
 fixture) under the surface name band, with `--ui-on-ink-plain` on it: 16.59:1
@@ -372,6 +374,15 @@ text-shadow).
 
 Never pick an FDR foreground yourself — use `--ui-on-fdr-N`, or
 `UiDifficultyCell`, which does it for you.
+
+The **rating** tokens are a player's match rating on five steps (1 worst, 5
+best: `ratingBand()` in `src/components/pepites/pepites-design.ts`), and they
+are the FDR scale read backwards: rating 5 is FDR 1 (green), rating 1 is FDR
+5 (deep magenta). They are aliases, not new colours, so they inherit the FDR
+scale's dark values and measured foregrounds; the price is that recolouring
+the FDR scale recolours the ratings too. Pair `--ui-rating-N` with
+`--ui-on-rating-N` (Pépites' `RatingChip` does), and always print the figure,
+so the colour is never the only cue.
 
 **The same rule applies to the status fills.** `--ui-positive` and
 `--ui-negative` invert across the themes — a mid-tone in light, a light tint
@@ -813,6 +824,58 @@ These live outside `ui-kit` and are built only from it. They are pinned by
 - **`States`** (`LoadingState`, `EmptyState`, `ErrorState`, `OfflineBanner`):
   the 14px card radius, filled panels with no dashed outline, and the glyph
   in a round disc.
+
+### Pépites is built on the kit
+
+Since 2026-10-05 (owner decision; BG-0152) Pépites has no look of its own: no
+night band or slanted cut, no energy gradient, no mono meta lines, no slant,
+no ghost numbers, no `--pepites-*` palette. Its screens are built like
+Matches, Fantasy and News, from the kit and the shared blocks above, and are
+right in light and dark, French and Arabic. The Pépites-specific pieces in
+`src/components/pepites/` are thin wrappers over the kit:
+
+- **Frame** (`PepitesShell.tsx`): the default `AppShell` with the global
+  `TopBar` at every width. `PepitesPageTitle` wraps `UiPageTitle` for a hub
+  (Top 10, ranking, method): the section's name ("PÉPITES" / "جواهر") in
+  `ui.text.label` muted above the title, as `UiHeader`'s kicker names it on
+  the detail pages, an optional back pill above that, and a title that
+  wraps instead of truncating; `PepitesDetailHeader` wraps `UiHeader` for a
+  detail page; `PepitesBack` is `UiBackButton` with the test id the e2e
+  suite reads; `PepitesChipRow` holds the `UiChip` filters and wraps at
+  every width (six fixed filters always show whole; a scrolling rail cut
+  the last chip at the edge, and in Arabic "20 سنة وأقل" read as "20 سنة").
+- **Names** (`PepitesName`): a player's name in a box that cuts it
+  (`truncate`, `line-clamp-*`) takes the name's own direction, so a Latin
+  name in an Arabic row loses its end, never its first name, and still
+  lines up with the row. The phone ranking lets a name wrap (balanced, up
+  to three lines) rather than cut it, and drops the row photo on phones up
+  to 414px so the name has the width.
+- **States and banners** (`PepitesParts.tsx`): `UiEmptyState`,
+  `UiErrorState`, `UiSkeleton` (giving up after 12 seconds) and `UiAlert`.
+- **Data glyphs** (`PepitesVisuals.tsx`): `RatingChip` (the rating tokens
+  above, `ui.radius.tight`, micro and tabular); `Seg10Bar` (ten rounded
+  segments, lit `--ui-ink-fg`, unlit `--ui-surface-sunken`); `ScoreRing`
+  (sunken track, `--ui-ink-fg` arc, `ui.score.*` figure); `FillBar`;
+  `PepitesPlayerPhoto` (the kit's `PlayerPhoto` with the club silhouette);
+  `PepitesShirt` (the club kit with the surname and rank, for a player with
+  no licensed photo); `MovementMark` (`UiRankMovement variant="quiet"`, and
+  a positive `UiBadge` for a newcomer).
+- **Charts**: the player's rating trend is one SVG for phone and desktop.
+  Time runs in the reading direction (the oldest match at the inline start,
+  so on the right in Arabic), computed in code from the page's `dir`, with
+  nothing flipped in CSS: guides on `--ui-rule`, labels `ui.text.micro`
+  muted, the line `--ui-ink-fg`, dots in the rating tokens, the season
+  average dashed in `--ui-on-surface-faint`.
+- **Admin** (`/admin/pepites`, `/admin/pepites/donnees`): the admin console's
+  own classes (`ADMIN_LABEL_CLASS`, `AdminSectionHeading`,
+  `ADMIN_PANEL_CLASS`) over the kit.
+
+`src/components/pepites/pepites.option-a.test.tsx` checks every Pépites
+screen file for the kit's source rules and keeps the old layer deleted. The
+one exception is the share images (`share-image.ts`, drawn on a canvas, and
+the Fantasy recap image that reuses its helpers): they still draw the old
+night look with IBM Plex Mono, which is why that `@font-face` stays in
+`src/fonts.css`, until a follow-up redraws both.
 
 ---
 
