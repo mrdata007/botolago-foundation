@@ -199,29 +199,30 @@ function scanBottomEdge(file: string, source: string): { judged: Judged[]; findi
     };
     judged.push(where);
 
-    // Every treatment, with the variant it applies at.
-    const treatments: Array<{ index: number; variant: string }> = [];
+    // Every treatment, with the variant it applies at and where it sits.
+    const treatments: Array<{ index: number; at: number; variant: string }> = [];
     items.forEach((item, index) => {
-      if (item.safeToken) treatments.push({ index, variant: "" });
-      for (const token of item.tokens) {
+      if (item.safeToken) treatments.push({ index, at: -1, variant: "" });
+      item.tokens.forEach((token, at) => {
         if (isSafeBottomClass(token))
-          treatments.push({ index, variant: splitVariant(token).variant });
-      }
+          treatments.push({ index, at, variant: splitVariant(token).variant });
+      });
     });
     if (treatments.length === 0) {
       findings.push({ ...where, problem: "no safe-area-inset-bottom treatment" });
       continue;
     }
-    for (const { index, variant } of treatments) {
-      const later = items
-        .slice(index + 1)
-        .flatMap((item) => item.tokens)
-        .filter(
-          (token) =>
-            isBottomPadding(token) &&
-            !isSafeBottomClass(token) &&
-            splitVariant(token).variant === variant,
-        );
+    for (const { index, at, variant } of treatments) {
+      // Later in the same class string counts too: class merging keeps the last.
+      const later = [
+        ...items[index].tokens.slice(at + 1),
+        ...items.slice(index + 1).flatMap((item) => item.tokens),
+      ].filter(
+        (token) =>
+          isBottomPadding(token) &&
+          !isSafeBottomClass(token) &&
+          splitVariant(token).variant === variant,
+      );
       if (later.length > 0) {
         findings.push({
           ...where,
@@ -291,6 +292,21 @@ describe("BG-0151: the bottom-edge scanner itself", () => {
     expect(
       judge(`<div className={cn("fixed inset-x-0 bottom-0", ui.safe.bottom, "pb-3 sm:hidden")} />`),
     ).toEqual(["safe-area padding overridden by a later pb-3 (class merging keeps the last)"]);
+  });
+
+  test("flags an override later in the same class string", () => {
+    expect(
+      judge(`<div className="fixed bottom-0 pb-[max(env(safe-area-inset-bottom),0.75rem)] pb-3" />`),
+    ).toEqual(["safe-area padding overridden by a later pb-3 (class merging keeps the last)"]);
+    expect(
+      judge(
+        `<div className={cn("fixed bottom-0 pb-[max(env(safe-area-inset-bottom),0.75rem)] pb-3")} />`,
+      ),
+    ).toHaveLength(1);
+    // An earlier plain padding is the one that loses, so that is fine.
+    expect(
+      judge(`<div className="fixed bottom-0 pb-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]" />`),
+    ).toEqual([]);
   });
 
   test("skips a bottom-0 inside a positioned box, and never reads comments", () => {
