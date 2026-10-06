@@ -326,7 +326,7 @@ visitor, reads only). Before: 2-3 runs; after: 2 runs; ranges.
 
 ### JavaScript
 
-Production build, gzip: the shared entry is 164.29 KB, against 164.64 KB on
+Production build, gzip: the shared entry is 164.41 KB, against 164.64 KB on
 main and 165.27 KB after batch 1.
 
 ### Review
@@ -350,7 +350,10 @@ skeptics, then each fix by three more. Two findings were confirmed:
   found that reads reading the pool themselves at the same moment did not
   share it (a finger scrolling a list left open over five minutes could
   start a full pool read per row touched); they now share one read, and a
-  read that finds a newer copy already stored shows that one.
+  read that finds a newer copy already stored shows that one. The fifth
+  round found no defect in the code, only two behaviours no test pinned
+  (the shared read is cleared once done; each query client has its own);
+  both are now tested.
 - A test claimed two gameweeks shared one pool read when only one reached
   it; it now holds the read open until both join it.
 
@@ -363,7 +366,7 @@ with no skeleton).
 ### Checks
 
 `bun run typecheck` clean; `bun run lint` no errors (the 31 warnings already
-on main); `bun test` 5,963 pass, 17 skipped, 1 fail (the same Ramadan 2027
+on main); `bun test` 5,965 pass, 17 skipped, 1 fail (the same Ramadan 2027
 test as on main); `bun run build` passes.
 
 ## Remaining bottlenecks and next batch

@@ -349,6 +349,40 @@ describe("a pool read that fails, or is shared", () => {
     }
   });
 
+  test("read by a read and gone stale again, is read again by the next one", async () => {
+    let calls = 0;
+    const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => {
+      calls += 1;
+      return pool.map((player) => ({ ...player, price: player.price + calls }));
+    });
+    spies.push(getPlayers);
+    const client = createAppQueryClient();
+    const key = fantasyPlayersQuery().queryKey;
+    expect((await client.fetchQuery(fantasyPlayerQuery(P1)))?.price).toBe(8.5);
+    client.setQueryData(key, client.getQueryData(key), { updatedAt: Date.now() - 6 * 60_000 });
+    expect((await client.fetchQuery(topPlayersOfWeekQuery(3)))[2]?.price).toBe(9.5);
+    expect(getPlayers).toHaveBeenCalledTimes(2);
+    client.clear();
+  });
+
+  test("read for two query clients at once (two server renders), is read for each", async () => {
+    const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => {
+      await tick();
+      return pool;
+    });
+    spies.push(getPlayers);
+    const [first, second] = [createAppQueryClient(), createAppQueryClient()];
+    await Promise.all([
+      first.ensureQueryData(fantasyPlayerQuery(P1)),
+      second.ensureQueryData(fantasyPlayerQuery(P1)),
+    ]);
+    expect(getPlayers).toHaveBeenCalledTimes(2);
+    expect(first.getQueryData(fantasyPlayersQuery().queryKey)).toBe(pool);
+    expect(second.getQueryData(fantasyPlayersQuery().queryKey)).toBe(pool);
+    first.clear();
+    second.clear();
+  });
+
   test("failing for several reads at once, is read twice in all, not twice each", async () => {
     const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => {
       await tick();
