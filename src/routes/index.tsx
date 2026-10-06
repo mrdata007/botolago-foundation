@@ -10,7 +10,7 @@ import {
   type ComponentType,
   type ReactNode,
 } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
   CircleDot,
@@ -337,6 +337,11 @@ function HomeContent() {
     // one about to kick off is watched so it becomes the live card on time.
     refetchInterval: (query) => matchesRefetchInterval(query.state.data?.matches, Date.now()),
     refetchIntervalInBackground: false,
+    // The matches in the language the page was just showing, while the new
+    // one loads: an Arabic reader's page switches language right after
+    // hydration, and without them the band's cards (a whole round since
+    // BG-0155) would vanish and come back, moving everything under them.
+    placeholderData: keepPreviousData,
   });
   const alertsQ = useQuery({
     queryKey: ["alerts"],

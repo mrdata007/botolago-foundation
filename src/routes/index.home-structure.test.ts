@@ -118,6 +118,16 @@ describe("Accueil (Home) structural contract", () => {
       expect(source).toContain("const liveAlone = bandCards.length === 1 && isInPlay(");
     });
 
+    test("keeps the page's matches on screen while the reader's language loads", () => {
+      // An Arabic reader's page switches language after hydration; a round of
+      // cards that vanished and came back would shift everything under it.
+      const query = source.slice(
+        indexOfOrThrow('queryKey: ["football", "home-matches", lang]'),
+        indexOfOrThrow("const alertsQ"),
+      );
+      expect(query).toContain("placeholderData: keepPreviousData");
+    });
+
     test("lists only the payload's first three under À venir", () => {
       expect(HOME_LIST_SIZE).toBe(3);
       expect(source).toContain("homeMatches.slice(0, HOME_LIST_SIZE)");
