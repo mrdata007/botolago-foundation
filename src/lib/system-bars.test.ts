@@ -310,7 +310,7 @@ describe("system bars: wired into the app", () => {
     // One effect on `resolved`, which start-up, a choice and a system change
     // under "system" all set.
     expect(provider).toMatch(
-      /useEffect\(\(\) => \{\s*if \(!DARK_MODE_ENABLED\) systemBars\.setTheme\("light"\);\s*else if \(isHydrated\) systemBars\.setTheme\(resolved\);\s*\}, \[resolved, isHydrated\]\);/,
+      /useEffect\(\(\) => \{\s*if \(DARK_MODE_ENABLED && !isHydrated\) return;\s*systemBars\.setTheme\(resolved\);\s*\}, \[resolved, isHydrated\]\);/,
     );
     expect(provider.match(/setResolved\(/g)).toHaveLength(3);
     expect(provider).toContain("setResolved(readAppliedTheme())");

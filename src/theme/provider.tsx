@@ -108,10 +108,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // own setting (BG-0154, `src/lib/system-bars.ts`). Every path above ends in
   // `resolved` (start-up, a choice, the phone changing under "system"), so
   // this one effect follows all three. Nothing happens in a browser. While
-  // dark mode is off the app is always light.
+  // dark mode is off, `resolved` stays "light", which is what the app shows.
   useEffect(() => {
-    if (!DARK_MODE_ENABLED) systemBars.setTheme("light");
-    else if (isHydrated) systemBars.setTheme(resolved);
+    if (DARK_MODE_ENABLED && !isHydrated) return;
+    systemBars.setTheme(resolved);
   }, [resolved, isHydrated]);
 
   const setChoice = useCallback((next: ThemeChoice) => {

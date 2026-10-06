@@ -1007,7 +1007,7 @@ describe("ui-kit: no typed arrow in JSX text (BG-0154)", () => {
       "const A = () => (",
       "  <p>",
       "    {/* Out → in */}",
-      '    <button>{t("next")} →</button>',
+      "    <button>{label} →</button>",
       '    <span>{rtl ? " ← " : " → "}</span>',
       "    <i>Retour ←</i>",
       "  </p>",
