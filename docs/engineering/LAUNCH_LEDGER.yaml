@@ -2053,7 +2053,7 @@ tasks:
       - "grep across the whole tree: the only importer of src/components/fantasy/fantasy-navigation.ts (fantasyPrimaryItems, fantasySecondaryItems, isFantasyRouteActive) was its own test"
       - "history, read through the GitHub API (the clone is shallow): 1b9176a (2026-08-04) created the lists; 5e6035c (2026-09-18) unmounted FantasyMobileNav and FantasySubNav from src/routes/fantasy.tsx, so nothing rendered them from then on; 484a2a2 (2026-09-22, BG-0145) deleted both navs and left the lists behind"
       - "the gate's own indexer, run on the edited tree: no literal, quoted or template-prefix reference to fantasy.tab.hub, .transfers, .points, .leagues, .fixtures, .rules, .more or .top; .team (DeadlineCard), .rankings (fantasy.rankings) and .players (FantasyAccessGate) keep call sites and stay"
-      - "i18n gate: W3 254 -> 253 (module deleted alone measured 261: seven keys newly unreferenced; then the eight keys deleted from fr and ar), W4 64 unchanged, no errors; 2243 keys per language"
+      - "i18n gate, re-measured after merging main (Pépites restyle #357, store readiness #358): W3 253 -> 252 (deleting the module leaves seven keys newly unreferenced, 260; deleting the eight keys from fr and ar brings it to 252, measured), W4 64 unchanged, no errors; 2299 -> 2291 keys per language"
     note: >
       Nothing renders differently: there was no importer, so there is no screen to compare.
       The follow-up BG-0145 promised for `fantasy.tab.more` lands here with the other seven.
