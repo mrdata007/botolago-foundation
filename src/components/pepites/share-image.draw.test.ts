@@ -761,6 +761,19 @@ describe("the share pictures' vertical rhythm", () => {
     });
   }
 
+  for (const picture of ["post", "story"] as const) {
+    for (const lang of ["fr", "ar"] as const) {
+      it(`the ${picture}'s lock-up (${lang}): the name stands on the wordmark's letters`, async () => {
+        const { ops } = await draw(picture, lang);
+        // The wordmark is the first image; the name is the 700-weight text after it.
+        const logo = ops.find((op) => op.kind === "image")!;
+        const name = ops.find((op) => op.kind === "text" && op.font!.startsWith("700 "))!;
+        expect(name.text).toBe(COPY.brand);
+        expect(name.baseline!).toBeCloseTo(logo.top + (logo.bottom - logo.top) * 0.912, 5);
+      });
+    }
+  }
+
   it("the section's name clears the pill, and the title clears the name, by the same gaps in both languages", async () => {
     const gaps = async (lang: "fr" | "ar") => {
       const model = shareImageModel(edition, lang, { ...COPY, brand: SECTION[lang] })!;

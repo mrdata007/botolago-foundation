@@ -482,6 +482,13 @@ function headshot(
 const WORDMARK_RATIO = 1614.8063 / 288.1029;
 
 /**
+ * Where the wordmark's letters stand, as a share of its height: the flat
+ * foot of the B, measured on the SVG rasterised at 2881px tall (the swoosh
+ * over "GO" takes the top of the box, the letters run from 0.286 to 0.912).
+ */
+const WORDMARK_BASELINE = 0.912;
+
+/**
  * The brand lock-up: the approved white BotolaGO wordmark, a hairline and the
  * section's name ("Pépites" / "جواهر"), `h` tall, from the inline start `x`
  * (the left edge in French, the right edge in Arabic, where the wordmark
@@ -515,12 +522,13 @@ function brandLockup(
     ctx.fillStyle = SHARE_PALETTE.muted;
     ctx.fillRect(at(logoW + gap, ruleW), y + h * 0.1, ruleW, h * 0.8);
   }
+  // The name stands on the wordmark's letters, not on the middle of its box.
   ctx.save();
   ctx.fillStyle = SHARE_PALETTE.white;
   ctx.font = shareFont("display", 700, size);
   ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillText(brand, at(logo ? logoW + gap + ruleW + gap : 0, brandW), y + h / 2);
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(brand, at(logo ? logoW + gap + ruleW + gap : 0, brandW), y + h * WORDMARK_BASELINE);
   ctx.restore();
 }
 
