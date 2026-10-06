@@ -2,6 +2,7 @@ import { Copy, Download, MessageCircle, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { WebOnly } from "@/components/native/WebOnly";
 import { whatsappUrl } from "@/components/predictions/leagues/invite-link";
 import { ui, UiButton, UiIconButton, UiSheet, UiStatePanel } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -164,17 +165,25 @@ export function ShareImageSheet({
               {t("pepites.share.native")}
             </UiButton>
           ) : null}
+          {/* Not inside the phone app (`WebOnly`): a `download` link to a
+              blob is a file download, and neither Capacitor shell handles one
+              (no download delegate on iPhone, no download listener on
+              Android), so the tap did nothing. The system share button above
+              is the app's way to keep the picture where the phone supports it
+              (iPhone); WhatsApp and the link work everywhere. */}
           {image ? (
-            <a
-              href={image.url}
-              download={fileName}
-              data-testid={`${testIdPrefix}-share-download`}
-              onClick={() => onEvent?.("download")}
-              className={secondary}
-            >
-              <Download className="h-4 w-4" aria-hidden />
-              {t("pepites.share.download")}
-            </a>
+            <WebOnly>
+              <a
+                href={image.url}
+                download={fileName}
+                data-testid={`${testIdPrefix}-share-download`}
+                onClick={() => onEvent?.("download")}
+                className={secondary}
+              >
+                <Download className="h-4 w-4" aria-hidden />
+                {t("pepites.share.download")}
+              </a>
+            </WebOnly>
           ) : null}
           <a
             href={whatsappUrl(`${message} ${link("whatsapp")}`)}

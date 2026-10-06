@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
-import { nativePlatform } from "./native-app";
+import {
+  NATIVE_APP_ATTRIBUTE,
+  NATIVE_APP_INIT_SCRIPT,
+  nativePlatform,
+  type NativeScope,
+} from "./native-app";
 
 describe("nativePlatform", () => {
   test("is null in a browser or on the server, where there is no bridge", () => {
@@ -41,6 +46,57 @@ describe("nativePlatform", () => {
     ).toBeNull();
     expect(
       nativePlatform({
+        Capacitor: {
+          isNativePlatform: () => {
+            throw new Error("boom");
+          },
+        },
+      }),
+    ).toBeNull();
+  });
+});
+
+/** Run the head script against a fake page whose window is `scope`. */
+function runHeadScript(scope: NativeScope): string | null {
+  const attrs = new Map<string, string>();
+  const document = {
+    documentElement: { setAttribute: (name: string, value: string) => void attrs.set(name, value) },
+  };
+  new Function("window", "document", NATIVE_APP_INIT_SCRIPT)(scope, document);
+  return attrs.get(NATIVE_APP_ATTRIBUTE) ?? null;
+}
+
+describe("the native-app head script", () => {
+  test("cannot terminate its own <script> element", () => {
+    expect(NATIVE_APP_INIT_SCRIPT).not.toContain("</");
+  });
+
+  test("decides exactly what nativePlatform decides, case by case", () => {
+    const scopes: NativeScope[] = [
+      {},
+      { Capacitor: {} },
+      { androidBridge: {} },
+      { webkit: { messageHandlers: { bridge: {} } } },
+      { androidBridge: {}, Capacitor: {} },
+      { webkit: { messageHandlers: {} } },
+      { webkit: {} },
+      { Capacitor: { isNativePlatform: () => true, getPlatform: () => "ios" } },
+      { Capacitor: { isNativePlatform: () => true, getPlatform: () => "android" } },
+      { Capacitor: { isNativePlatform: () => false, getPlatform: () => "web" } },
+      { Capacitor: { isNativePlatform: () => true, getPlatform: () => "electron" } },
+      { Capacitor: { isNativePlatform: () => true } },
+      // Capacitor's object says "not native" although a bridge is there: it decides.
+      { androidBridge: {}, Capacitor: { isNativePlatform: () => false } },
+    ];
+    for (const scope of scopes) {
+      expect(runHeadScript(scope)).toBe(nativePlatform(scope));
+    }
+  });
+
+  test("marks nothing in a browser, and never throws out of the head", () => {
+    expect(runHeadScript({})).toBeNull();
+    expect(
+      runHeadScript({
         Capacitor: {
           isNativePlatform: () => {
             throw new Error("boom");

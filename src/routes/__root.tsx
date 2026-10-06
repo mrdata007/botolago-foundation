@@ -23,6 +23,7 @@ import { markSplashDone } from "@/lib/launch-sequence";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { NativePushBridge } from "@/components/native/NativePushBridge";
+import { NATIVE_APP_INIT_SCRIPT } from "@/lib/native-app";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
 import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
 import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
@@ -272,8 +273,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // top of <head>, so either may run first; the stub keeps a loaded script.
     // Page views go out from `AnalyticsPageviews` below, their address cleaned
     // first.
+    //
+    // The native-app script marks <html> when the page runs inside the phone
+    // app, before the first paint, so what only works in a browser (`WebOnly`)
+    // is never painted there (src/lib/native-app.ts).
     scripts: [
       ...(DARK_MODE_ENABLED ? [{ children: THEME_INIT_SCRIPT }] : []),
+      { children: NATIVE_APP_INIT_SCRIPT },
       { children: SPLASH_INIT_SCRIPT },
       ...(ANALYTICS_ACTIVE
         ? [
@@ -298,7 +304,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   // `suppressHydrationWarning` on <html>: the inline theme script (BG-0081)
   // adds the `.dark` class and a `color-scheme` style to this element before
-  // React hydrates, exactly as `I18nProvider` later rewrites `lang`/`dir`.
+  // React hydrates, exactly as `I18nProvider` later rewrites `lang`/`dir`;
+  // the splash and native-app scripts add their `data-*` attributes the same way.
   // Both are deliberate out-of-band writes to the document element, not drift.
   return (
     <html lang="fr" dir="ltr" suppressHydrationWarning>
