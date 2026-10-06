@@ -891,10 +891,12 @@ right in light and dark, French and Arabic. The Pépites-specific pieces in
 
 `src/components/pepites/pepites.option-a.test.tsx` checks every Pépites
 screen file for the kit's source rules and keeps the old layer deleted. The
-one exception is the share images (`share-image.ts`, drawn on a canvas, and
-the Fantasy recap image that reuses its helpers): they still draw the old
-night look with IBM Plex Mono, which is why that `@font-face` stays in
-`src/fonts.css`, until a follow-up redraws both.
+share images (`share-image.ts`, drawn on a canvas, and the Fantasy recap
+image that reuses its helpers) are not screens and are checked by
+`share-image.draw.test.ts` instead: since BG-0153 they draw in the kit's
+night colours (`SHARE_PALETTE`: Tunnel Navy ground, Floodlight Navy panels,
+white type, the action gradient once per picture) with Changa, Manrope and
+Noto Sans Arabic, and IBM Plex Mono is no longer shipped.
 
 ---
 

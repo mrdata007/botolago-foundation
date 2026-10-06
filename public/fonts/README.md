@@ -1,16 +1,24 @@
-# BotolaGO fonts
+# Fonts Directory
 
-Self-hosted variable WOFF2 assets from Fontsource:
+This directory contains custom fonts for the Blockchain Explorer application.
 
-- manrope 5.3.0
-- changa 5.3.0
-- noto-sans-arabic 5.3.0
-- ibm-plex-mono 5.2.5 (weights 500 and 600, Latin subset only). Since BG-0152
-  no screen uses it; only the Pépites share images draw with it on a canvas
-  (`src/components/pepites/share-image.ts`), until they are redrawn in the main
-  look. Arabic labels use the Arabic faces.
+## Required Font Files
 
-Original SIL Open Font Licenses are included alongside each family.
-Latin, Latin Extended and Arabic subsets preserve French and Arabic coverage.
-Unicode ranges make browsers download only subsets used on the page.
-No typeface or product typography tokens were changed.
+The application expects the following font files:
+
+1. **BlockchainFont-Regular.woff2** and **BlockchainFont-Regular.woff**
+   - Regular weight font for the main UI
+
+2. **BlockchainFont-Bold.woff2** and **BlockchainFont-Bold.woff**
+   - Bold weight font for headings
+
+3. **TechMono-Regular.woff2** and **TechMono-Regular.woff**
+   - Monospace font for code and hash displays
+
+## Note
+
+If you don't have custom fonts, the application will fall back to system fonts:
+- BlockchainFont → system sans-serif fonts
+- TechMono → system monospace fonts (Courier New, etc.)
+
+The fonts are referenced in `public/index.html` and will be loaded automatically when available.

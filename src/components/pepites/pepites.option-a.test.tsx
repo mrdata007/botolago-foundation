@@ -19,10 +19,10 @@ import { MovementMark, PepitesName, RatingChip, Seg10Bar } from "./PepitesVisual
  * layer stays deleted, and a few of the shared glyphs on rendered markup —
  * as the club pages' own test does.
  *
- * The share images (`share-image.ts`) are canvas code, not screens, and are
- * out of this lane's scope: they keep their own drawing until they are
- * redrawn with the Fantasy recap image. They are `.ts`, so the `.tsx` scan
- * below never reads them.
+ * The share images (`share-image.ts`) are canvas code, not screens: they are
+ * `.ts`, so the `.tsx` scan below never reads them. Since BG-0153 they draw
+ * in the main look too, and `share-image.draw.test.ts` checks them (palette,
+ * faces, the Arabic mirror).
  */
 
 const ROOT = join(import.meta.dir, "..", "..", "..");
