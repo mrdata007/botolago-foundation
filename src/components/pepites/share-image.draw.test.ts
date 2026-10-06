@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
 
 import type { PepitesEdition, PepitesPlayerCard } from "@/backend/pepites/contracts";
 import { renderRecapImage, type RecapImageModel } from "@/components/fantasy/recap-image";
+import { contrastRatio, parseHex } from "@/lib/colour";
 
 import {
   renderShareImage,
@@ -389,13 +391,28 @@ async function draw(picture: Picture, lang: "fr" | "ar"): Promise<Recording> {
   return recordings.at(-1)!;
 }
 
-/** Every club colour the fixtures can paint, through the club palette. */
+/** Every club colour the fixtures can paint, through the club palette, on either navy. */
 const CLUB_COLOURS = new Set(
   [
     ...shareImageModel(edition, "fr", COPY)!.rows.map((row) => row.club),
     storyModel(card(1), SCORE, "fr", STORY_COPY).club,
-  ].flatMap((base) => Object.values(shareClubColours(base))),
+  ].flatMap((base) =>
+    [SHARE_PALETTE.panel, SHARE_PALETTE.ground].flatMap((surface) =>
+      Object.values(shareClubColours(base, surface)),
+    ),
+  ),
 );
+
+/** Every kit primary the kit table can hand the pictures. */
+const KIT_PRIMARIES = [
+  ...new Set(
+    [...readFileSync("src/lib/kits.ts", "utf8").matchAll(/primary: "(#[0-9a-f]{6})"/g)].map(
+      (match) => match[1]!,
+    ),
+  ),
+];
+
+const contrast = (a: string, b: string) => contrastRatio(parseHex(a)!, parseHex(b)!);
 const PALETTE = new Set<string>(Object.values(SHARE_PALETTE));
 
 function hueAndSaturation(hex: string): [number, number] {
@@ -484,20 +501,60 @@ describe("the share pictures' palette", () => {
     }
   });
 
-  it("a club disc takes the club palette's colours, with a ring that stays visible on the navy", () => {
-    // Wydad's red keeps white initials; a white kit takes Tunnel Navy ones.
-    expect(shareClubColours("#c8102e")).toEqual({
+  it("a club disc takes the club palette's colours; its ring and edge clear 3:1 on the navy they are drawn on", () => {
+    // Wydad's red keeps its fill and white initials; its edge is lifted until
+    // it clears 3:1 on each navy (the palette's own dark edge, #ca1c32,
+    // measures 2.27:1 on the panel).
+    expect(shareClubColours("#c8102e", SHARE_PALETTE.panel)).toEqual({
       fill: "#c8102e",
       on: "#ffffff",
-      edge: "#ca1c32",
+      edge: "#d64a4f",
     });
-    expect(shareClubColours("#ffffff")).toEqual({
+    expect(shareClubColours("#c8102e", SHARE_PALETTE.ground).edge).toBe("#cc2536");
+    // A white kit takes Tunnel Navy initials and keeps a white edge.
+    expect(shareClubColours("#ffffff", SHARE_PALETTE.panel)).toEqual({
       fill: "#ffffff",
       on: SHARE_PALETTE.ground,
       edge: "#ffffff",
     });
-    // A navy kit's ring is lifted off the navy.
-    expect(shareClubColours("#1a3a7a").edge).toBe("#4b679b");
+    // A navy kit's ring is lifted off each navy.
+    expect(shareClubColours("#1a3a7a", SHARE_PALETTE.panel).edge).toBe("#647daa");
+    expect(shareClubColours("#1a3a7a", SHARE_PALETTE.ground).edge).toBe("#4e6a9d");
+    // Every kit in the table, on both navies (WCAG 1.4.11).
+    expect(KIT_PRIMARIES.length).toBeGreaterThan(10);
+    for (const primary of KIT_PRIMARIES) {
+      for (const surface of [SHARE_PALETTE.panel, SHARE_PALETTE.ground]) {
+        expect(contrast(shareClubColours(primary, surface).edge, surface)).toBeGreaterThanOrEqual(
+          3,
+        );
+      }
+    }
+  });
+
+  it("the post measures its edges against the panel, the story against the ground", async () => {
+    const model = shareImageModel(edition, "fr", COPY)!;
+    const post = await draw("post", "fr");
+    const panelEdges = new Set(
+      model.rows.map((row) => shareClubColours(row.club, SHARE_PALETTE.panel).edge),
+    );
+    // Ten edge bars (11px wide at the panel's inline start) and ten rings,
+    // all in the panel's edge colours.
+    const bars = post.ops.filter((op) => op.kind === "rect" && op.left === 40 && op.right === 51);
+    expect(bars).toHaveLength(10);
+    for (const bar of bars) expect(panelEdges.has(bar.paint as string)).toBe(true);
+    const rings = post.ops.filter((op) => op.kind === "stroke");
+    expect(rings).toHaveLength(10);
+    for (const ring of rings) expect(panelEdges.has(ring.paint as string)).toBe(true);
+
+    const story = await draw("story", "fr");
+    const edge = shareClubColours(
+      storyModel(card(1), SCORE, "fr", STORY_COPY).club,
+      SHARE_PALETTE.ground,
+    ).edge;
+    // The stripe down the inline-start edge (4 card units, about 11px).
+    const stripe = story.ops.filter((op) => op.kind === "rect" && op.left === 0 && op.right < 12);
+    expect(stripe.map((op) => op.paint)).toEqual([edge]);
+    expect(story.ops.filter((op) => op.kind === "stroke" && op.paint === edge)).toHaveLength(1);
   });
 });
 

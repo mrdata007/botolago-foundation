@@ -1,7 +1,7 @@
 import wordmark from "@/assets/brand/botolago-wordmark-light.svg";
 import type { PepitesEdition, PepitesPlayerCard, PositionGroup } from "@/backend/pepites/contracts";
-import { clubPalette, resolvePaletteColour } from "@/lib/club-palette";
-import { toHex } from "@/lib/colour";
+import { CLUB_PALETTE_RULES, clubPalette, resolvePaletteColour } from "@/lib/club-palette";
+import { contrastRatio, mixOklab, parseHex, toHex, type Rgb } from "@/lib/colour";
 import type { Language } from "@/types/domain";
 
 import { initials, segments, teamKit } from "./pepites-design";
@@ -284,22 +284,40 @@ export function actionGradient(ctx: CanvasRenderingContext2D, top: number, botto
   return gradient;
 }
 
+/** What a ring or an edge bar keeps against the navy behind it: WCAG 1.4.11's 3:1, with the club palette's headroom. */
+const EDGE_MIN = CLUB_PALETTE_RULES.edge + CLUB_PALETTE_RULES.headroom;
+
 /**
  * A club's colours on the pictures, from the club palette (never a raw kit
  * hex): its fill and the text on it as a light screen paints them, so the
- * club keeps its own colour, and its dark-theme edge, which clears 3:1 on a
- * dark surface, for the ring and the edge bar on the navy.
+ * club keeps its own colour, and its edge for the ring and the edge bars.
+ *
+ * The edge starts from the palette's dark-theme edge, which the palette
+ * measures against the app's dark `--ui-surface`, not against the navies
+ * these pictures paint. So it is measured again here, against `surface`, the
+ * navy it is actually drawn on (`SHARE_PALETTE.panel` for the Top 10 rows,
+ * `SHARE_PALETTE.ground` for the story card), and lifted toward white in 1%
+ * OKLab steps until it clears 3:1 there.
  */
-export function shareClubColours(base: string): { fill: string; on: string; edge: string } {
+export function shareClubColours(
+  base: string,
+  surface: string,
+): { fill: string; on: string; edge: string } {
   const palette = clubPalette({ primaryColor: base });
-  const hex = (value: string, theme: "light" | "dark") => {
-    const rgb = resolvePaletteColour(value, theme);
-    return rgb ? toHex(rgb) : SHARE_PALETTE.panel;
-  };
+  const rgb = (value: string, theme: "light" | "dark"): Rgb =>
+    resolvePaletteColour(value, theme) ?? parseHex(SHARE_PALETTE.panel)!;
+  const behind = parseHex(surface) ?? parseHex(SHARE_PALETTE.ground)!;
+  const white = parseHex(SHARE_PALETTE.white)!;
+  const from = rgb(palette.dark.edge, "dark");
+  let edge = from;
+  for (let percent = 1; percent <= 100 && contrastRatio(edge, behind) < EDGE_MIN; percent += 1) {
+    // Measured as painted: after the round trip through `#rrggbb`.
+    edge = parseHex(toHex(mixOklab(white, from, percent / 100)))!;
+  }
   return {
-    fill: hex(palette.light.fill, "light"),
+    fill: toHex(rgb(palette.light.fill, "light")),
     on: palette.light.on === "var(--ui-ink-deep)" ? SHARE_PALETTE.ground : SHARE_PALETTE.white,
-    edge: hex(palette.dark.edge, "dark"),
+    edge: toHex(edge),
   };
 }
 
@@ -370,8 +388,9 @@ function drawCover(
 
 /**
  * The player's disc: the photo, or the club's fill with the initials in the
- * club's own text colour, inside a ring in the club's edge colour, so a navy
- * or black kit stays a disc on the navy (the screens' `ui.club.ring`).
+ * club's own text colour, inside a ring in the club's edge colour measured
+ * against `surface`, the navy around the disc, so a navy or black kit stays a
+ * disc on the navy (the screens' `ui.club.ring`).
  */
 function headshot(
   ctx: CanvasRenderingContext2D,
@@ -382,8 +401,9 @@ function headshot(
   label: string,
   photo: HTMLImageElement | null,
   ring: number,
+  surface: string,
 ) {
-  const colours = shareClubColours(club);
+  const colours = shareClubColours(club, surface);
   ctx.save();
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -602,7 +622,7 @@ async function drawTopTen(
     const top = TOP_TEN.rowsTop + index * TOP_TEN.row;
     const band = index === 0 ? top - 8 : top + 2;
     const bandEnd = index === model.rows.length - 1 ? top + TOP_TEN.row + 8 : top + TOP_TEN.row - 2;
-    ctx.fillStyle = shareClubColours(row.club).edge;
+    ctx.fillStyle = shareClubColours(row.club, SHARE_PALETTE.panel).edge;
     ctx.fillRect(
       rtl ? width - TOP_TEN.panelX - TOP_TEN.edge : TOP_TEN.panelX,
       band,
@@ -626,7 +646,17 @@ async function drawTopTen(
       fill: row.rankNumber <= 3 ? SHARE_PALETTE.white : SHARE_PALETTE.muted,
       align: start,
     });
-    headshot(ctx, mx(171), mid, 28, row.club, row.initials, photos[index] ?? null, 3);
+    headshot(
+      ctx,
+      mx(171),
+      mid,
+      28,
+      row.club,
+      row.initials,
+      photos[index] ?? null,
+      3,
+      SHARE_PALETTE.panel,
+    );
     text(ctx, row.name, mx(220), mid - 36, {
       face: body,
       weight: 800,
@@ -717,7 +747,7 @@ async function drawStory(
   const body = bodyFace(model.lang);
   const start: CanvasTextAlign = rtl ? "right" : "left";
   const end: CanvasTextAlign = rtl ? "left" : "right";
-  const club = shareClubColours(model.club);
+  const club = shareClubColours(model.club, SHARE_PALETTE.ground);
 
   ctx.fillStyle = SHARE_PALETTE.ground;
   ctx.fillRect(0, 0, w, height / k);
@@ -804,7 +834,18 @@ async function drawStory(
     );
     ctx.restore();
   });
-  headshot(ctx, WHEEL.cx, WHEEL.cy, 58, model.club, model.initials, photo, 1.5);
+  // The ring's outer neighbour is the ground, in the gap before the track.
+  headshot(
+    ctx,
+    WHEEL.cx,
+    WHEEL.cy,
+    58,
+    model.club,
+    model.initials,
+    photo,
+    1.5,
+    SHARE_PALETTE.ground,
+  );
 
   // Legend: four on the first row, the fifth on the second, centred. Each
   // label leads with a small wheel that marks its own slice.
