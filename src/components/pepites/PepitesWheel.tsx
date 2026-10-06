@@ -116,6 +116,10 @@ function SliceMarker({ index }: { index: number }) {
  * The wheel's legend, on the band: "Percentiles · vs les U23 classés", then
  * one row per part, its marker, its name and its percentile (a column of
  * figures, so the stat ramp). An unknown percentile prints a dash.
+ *
+ * The rows share one grid (each row a subgrid), as wide as its content: the
+ * figures line up in a column right after the longest name, so on a wide
+ * band a figure stays beside its name instead of at the band's far end.
  */
 export function PercentileLegend({
   percentiles,
@@ -130,17 +134,17 @@ export function PercentileLegend({
       <p className={cn(ui.text.label, ui.tone.onInkMuted)}>
         {t("pepites.player.percentiles")} · {t("pepites.player.percentiles_scope")}
       </p>
-      <ul className="flex flex-col gap-1.5">
+      <ul className="grid w-max max-w-full grid-cols-[auto_minmax(0,auto)_auto] items-center gap-x-2 gap-y-1.5">
         {COMPONENTS.map((key, index) => {
           const value = percentiles[index];
           return (
-            <li key={key} className="flex min-w-0 items-center gap-2">
+            <li key={key} className="col-span-3 grid grid-cols-subgrid items-center">
               <SliceMarker index={index} />
-              <span className={cn("min-w-0 flex-1 truncate", ui.text.meta, ui.tone.onInkMuted)}>
+              <span className={cn("min-w-0 truncate", ui.text.meta, ui.tone.onInkMuted)}>
                 {componentLabel(key, t)}
               </span>
-              {/* Two digits' width at least, so a dash turning into a figure moves nothing. */}
-              <bdi className={cn("min-w-7 shrink-0 text-end", ui.stat.md, ui.tone.onInkPlain)}>
+              {/* Two digits' width at least past its gap, so a dash turning into a figure moves nothing. */}
+              <bdi className={cn("min-w-9 ps-2 text-end", ui.stat.md, ui.tone.onInkPlain)}>
                 {typeof value === "number" && Number.isFinite(value)
                   ? formatNumber(Math.round(value), lang)
                   : "–"}
