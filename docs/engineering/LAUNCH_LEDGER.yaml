@@ -1526,6 +1526,35 @@ tasks:
       - "owner's eye on the pictures, in particular the GoMark's DATA tag going with it and the story wheel's single gradient with marker-wheels in the legend instead of five slice colours"
       - "the Fantasy recap and the Top 10 post were not seen inside the live share sheet: the recap needs a signed-in manager with a finalised gameweek, the post a published edition (the Pépites e2e suite checks the post on sample data)"
 
+  BG-0156:
+    title: Pépites visuals from data and real assets -- crests, club edges, rank plates and a featured N°1 with the percentile wheel
+    area: design
+    severity: P2
+    user_impact: >
+      On a real iPhone the owner found Pépites bland: production has no published edition yet,
+      so /pepites showed last season's final ranking as ten bare cards (rank, name, score).
+      Owner request 2026-10-06: more visuals, and no AI slop.
+    owner: Chief
+    state: RUNNING # built on claude/pepites-visuals (brief 54c9874b); not reviewed, merged or published
+    depends_on: [BG-0152, BG-0153]
+    branch: claude/pepites-visuals
+    brief: docs/engineering/tasks/BG-0156/screen-brief.md
+    evidence:
+      - "inspected on production data (read-only, anonymous): pepites_version source previous_season; the 40 ranked 2025/26 players all carry club, position and age, none a photo (player_photo_for(.., 'app') returns one only under a signed release); all 14 of their clubs are in football_team_catalog with a crest path, same ids as app.teams"
+      - "rows (Top 10 in both states, phone and desktop ranking tables): photo, else the club crest from the catalogue (useClubCatalogue, browser-only so a failed read cannot 503 the page), else the club-colour initials disc; club edge on the start side; club and position; ten-segment bar; ranks 1-3 on the white score plate (--ui-scorebox, Tunnel Navy), 4+ muted. The before-first-edition list now uses the edition's rows; its 'first Top 10 after round 3' card and copy unchanged"
+      - "one top-3 treatment, the featured N°1 (PepitesFeature): Home's stadium photo band under a flat navy veil, rank plate, score plate, the story card's five-slice percentile wheel in SVG (pepites_player percentiles, the player page's read and cache key; none on an earlier week) and its legend, the editor's line and four figures; it replaces the edition's N°1 card and the ranking's three-card podium. A podium of three was rejected: about 110px a column on a 390px phone"
+      - "no gradient but the action gradient on the wheel's values (progress); no glow, blur, sparkle, emoji, decorative icon, glass or illustration; the unused trophy photo stays unused. pepites.option-a guard passes on the new files"
+      - "contrast from rasterised pixels (text shown vs made transparent, glyph core vs the worst background pixel), /pepites and /pepites/classement, fr/ar, light/dark, 390px: every text box passes, lowest the band's legend title 5.67:1; plates 14.22-16.64:1. Band club edge (story card's lifted edge) vs the photo's brightest pixel beside it 2.05-2.30:1, median 3.15-3.78:1 (decorative accent, recorded in the brief)"
+      - "no horizontal overflow or element off-screen (bounding rects) at 360, 390 and 1440px in fr and ar; phone table at 360/390/414/430px fr and ar, 40 rows: no name or club line cut; rows 49 -> 59px (fr) and 53 -> 69px (ar) on average at 390px; the disc keeps the 384px table threshold (with it rows grew by half)"
+      - "layout shift observer, 390px, cold load: French 0 before; 0.0006 (/pepites) and 0.0001 (ranking) after, text replaced inside fixed boxes (previousRect = currentRect). Arabic ~0.50-0.53 before and after: the known French-first-paint switch"
+      - "edition state shown locally by answering the page's own Pépites reads in the browser with an edition built from production's ranking rows (sample movements and editor's line, for layout only): 10 entries, fr/ar, light/dark, 390/1440"
+      - "tests: pepites-design.test.ts +4 (slices, Arabic mirror, sector path, clamping; sliceAngles moved there, share-image re-exports it, its draw tests unchanged and passing); pepites-visuals.test.tsx 11 (plate, disc order, catalogue join, wheel, legend, figures line). tests/e2e/pepites.e2e.ts: the two lines reading pepites-desktop-podium now read pepites-feature (the owner's change removed the podium); not run (it needs a sample-data server outside the lane's helper)"
+      - "checks: bun run typecheck pass; bun run lint 0 errors, 31 warnings (as on main); bun test 5934 pass, 17 skip, 0 fail; prettier --check on the changed files pass; i18n gate pass, W1 7, W2 7, W3 252, W4 64, all at baseline (no dictionary change)"
+    remaining:
+      - "owner's eye on the band (photo, wheel, plates) and the phone table's density"
+      - "DESIGN.md's Bands line still lists Home, the matches date strip and the sign-in header; the Pépites featured N°1 is a fourth photo band (DESIGN_SYSTEM_V2.md's Pépites section records it)"
+      - "the player page's percentiles stay bars; the wheel is on the band only"
+
   BG-0123:
     title: src/services/fantasy-cloud-repo.ts is an unreachable repository calling four RPCs that exist in no schema
     area: frontend
