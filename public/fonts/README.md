@@ -5,10 +5,10 @@ Self-hosted variable WOFF2 assets from Fontsource:
 - manrope 5.3.0
 - changa 5.3.0
 - noto-sans-arabic 5.3.0
-- ibm-plex-mono 5.2.5 (weights 500 and 600, Latin subset only). Since BG-0152
-  no screen uses it; only the Pépites share images draw with it on a canvas
-  (`src/components/pepites/share-image.ts`), until they are redrawn in the main
-  look. Arabic labels use the Arabic faces.
+
+IBM Plex Mono was removed in BG-0153: no screen had used it since BG-0152, and
+the share images (`src/components/pepites/share-image.ts`, the Fantasy recap)
+now draw with Changa, Manrope and Noto Sans Arabic like the rest of the app.
 
 Original SIL Open Font Licenses are included alongside each family.
 Latin, Latin Extended and Arabic subsets preserve French and Arabic coverage.
