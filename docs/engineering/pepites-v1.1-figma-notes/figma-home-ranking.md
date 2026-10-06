@@ -1,5 +1,16 @@
 # Home 6:2 and Ranking 10:276 (my notes)
 
+> **Superseded, 2026-10-05 (owner decision; BG-0152).** Pépites now looks
+> like the rest of BotolaGO and is built on the main kit (Design System V2:
+> `src/components/ui-kit`, the `--ui-*` tokens; see
+> `docs/engineering/DESIGN_SYSTEM_V2.md`, "Pépites is built on the kit").
+> The visual tokens recorded here are retired from the screens: the night
+> palette and night band, the energy gradient, IBM Plex Mono, the slant, the
+> ghost numbers, the segment and rating hex colours, the shadows and the
+> pixel sizes. What still applies: the screens' content and order, the copy,
+> the Arabic terminology and the digit rules. The share images keep
+> this drawing until a follow-up redraws them. Kept as a historical record.
+
 Palette: page #f3f5fa; night #070d24; navy ink #1b2a6b; text #0b1330; muted #5d6789; meta-on-night #9aa4c7; sub-on-night #c9d2ea;
 border #e3e7f0; row divider #eef1f6; nav idle text #7b84a3, idle icon #dfe3ee; energy gradient L→R #5de39b → #7fd6f0 (45%) → #7c6cf0.
 Missing-photo dot: 9px circle #ffb020, 1.5px white ring, at bottom-right of headshot (left 26 top 26 for 36px).
@@ -8,6 +19,7 @@ RatingChip: h20 w34 r5, Manrope ExtraBold 11 white; bands <6 red, 6–6.5 #f0a02
 Fonts: Changa ExtraBold (numbers, names, titles, skew -7.97deg on hero), Manrope ExtraBold/Bold, IBM Plex Mono Medium/SemiBold (meta, uppercase, tracking).
 
 ## Home (390x844)
+
 - Night band polygon (0,0)(390,0)(390,352)(0,384) #070d24.
 - club glow: circle d220 at (200,70), club colour opacity .75, blur 30. violet glow d150 at (-50,-40) #7c6cf0 .45 blur 30.
 - ghost rank "01" Changa ExtraBold 230px, transparent fill (outline, stroke faint white) at x~175 y40 skewed.
@@ -26,6 +38,7 @@ Fonts: Changa ExtraBold (numbers, names, titles, skew -7.97deg on hero), Manrope
 - Bottom nav: white, border-top #e3e7f0, h76, pt8 pb22; items Manrope Bold 10 #7b84a3 icon 20; active Pépites icon 26 gradient circle, label #1b2a6b.
 
 ## Ranking (390x844)
+
 - Night band polygon (0,0)(390,0)(390,214)(0,240) #070d24.
 - ghost "27" (player count) Changa XB 150 outline at x~200 y30.
 - GoMark (18,54). Title "Classement complet" Changa XB 30 white skew at (~18,~100).

@@ -1,8 +1,13 @@
 # Pépites — local preview
 
-Pépites is off in every build (`PEPITES_ENABLED`, `src/lib/feature-flags.ts`)
-and its database mode ships `off`. The pages open only on a development
-server started with the preview switch. Two ways to look at it:
+Pépites is on in every build since the owner approved its public release on
+2026-09-27 (`PEPITES_ENABLED`, `src/lib/feature-flags.ts`; set it to `false`
+and republish to roll back). Who sees the pages is decided by the database
+mode (`app_private.pepites_settings`: `off`, `staff` or `public`), which stays
+authoritative. A development server with no `.env` reads the sample data
+instead of a database (`src/services/pepites.ts`); the preview switch below
+also adds the sample players to the Fantasy sample data. Two ways to look at
+it:
 
 ## 1. Sample data (no database)
 
@@ -10,8 +15,9 @@ server started with the preview switch. Two ways to look at it:
 VITE_PEPITES_PREVIEW=1 bun run dev -- --host 127.0.0.1 --port 4173
 ```
 
-Then open `http://127.0.0.1:4173/pepites`. The screens follow the Figma
-file "BotolaGO — Pépites (UI)": the Top 10 (`/pepites`), the full ranking
+Then open `http://127.0.0.1:4173/pepites`. The screens are built on the
+main design system (BG-0152, 2026-10-05; the Figma file "BotolaGO — Pépites
+(UI)" is no longer the visual reference): the Top 10 (`/pepites`), the full ranking
 (`/pepites/classement`), a player (`/pepites/joueur/…`, and `?onglet=matchs`),
 the Monday reveal as a story (`/pepites/revelation`, N°10 to N°1), the method
 (`/pepites/methode`) and a past week (`/pepites/semaine/14`). The data is the sample set in
