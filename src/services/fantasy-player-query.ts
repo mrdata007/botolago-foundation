@@ -33,8 +33,9 @@ export function fantasyPlayersQuery() {
  * read tangled the two reads' retries: a read that started the pool with no
  * retry left a screen joining it without one, and one that started it with
  * its retry read a failing pool four times. This way each read keeps its own
- * one retry: a failing pool costs two reads, or three when a screen's own
- * pool read was failing too.
+ * one retry: a failing pool costs two reads through this read alone; when a
+ * screen reads the pool at the same time, each keeps its own retry, up to
+ * four reads between them, as before these reads shared the pool.
  */
 async function sharedPool(client: QueryClient): Promise<FantasyPlayer[]> {
   const key = fantasyPlayersQuery().queryKey;
@@ -55,8 +56,13 @@ async function sharedPool(client: QueryClient): Promise<FantasyPlayer[]> {
         throw error;
       }
     }
+    // Stored as of when the read began, and not over a newer copy a screen's
+    // own read brought in while this one was on its way.
+    const startedAt = Date.now();
     const players = await fantasyService.getPlayers();
-    client.setQueryData(key, players);
+    if ((client.getQueryState(key)?.dataUpdatedAt ?? 0) <= startedAt) {
+      client.setQueryData(key, players, { updatedAt: startedAt });
+    }
     return players;
   }
 }
