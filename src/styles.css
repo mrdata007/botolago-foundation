@@ -859,6 +859,35 @@ html[dir="rtl"]
   }
 }
 
+/* BG-0154. The status-bar strip on the sign-in screens (`StatusBarStrip
+   revealOnScroll`) fades in over the first 24px of scroll instead of sitting
+   there at rest. At rest their photo band runs on under the clock, as it did
+   before the strip; a flat strip there cut a straight line across the
+   photograph just above the back button and the wordmark. The white sheet
+   needs well over 100px of scroll to reach the clock, and by then the strip
+   is opaque. Tied to the scroll position rather than to time, so it moves
+   only while the reader scrolls. On a screen that cannot scroll the timeline
+   is inactive and the animation does not apply, so the strip's own opacity
+   is 0 and the keyframes carry both ends. Where scroll-driven animations are
+   not supported (WebKit before Safari 26) none of this applies and the strip
+   is opaque from the start, as it was. */
+@keyframes status-bar-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@utility status-bar-reveal {
+  @supports (animation-timeline: scroll()) {
+    opacity: 0;
+    animation: status-bar-reveal linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 24px;
+  }
+}
+
 /* ================================================================== */
 /* Motion                                                             */
 /* ================================================================== */

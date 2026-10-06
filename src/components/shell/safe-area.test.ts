@@ -461,7 +461,11 @@ describe("BG-0154: a status-bar strip where nothing at the top sticks", () => {
     const strips = stripsIn("AuthShell.tsx", read("src/components/auth/AuthShell.tsx"));
     expect(strips).toHaveLength(2);
     const phone = strips.find((strip) => strip.props.surface === "STATUS_BAR_INK");
-    expect(phone?.props).toEqual({ surface: "STATUS_BAR_INK", className: "md:hidden" });
+    expect(phone?.props).toEqual({
+      surface: "STATUS_BAR_INK",
+      revealOnScroll: "true",
+      className: "md:hidden",
+    });
     expect(phone?.firstChild).toBe(true);
     expect(phone?.siblings).toEqual(["StatusBarStrip", "header", "main"]);
   });
@@ -489,6 +493,36 @@ describe("BG-0154: a status-bar strip where nothing at the top sticks", () => {
       'class="pointer-events-none sticky top-0 z-30 h-0 hidden md:fixed md:inset-x-0 md:block"',
     );
     expect(html).toContain(`h-[env(safe-area-inset-top,0px)] ${ui.surface.page}`);
+  });
+
+  test("revealOnScroll: clear at rest, opaque after 24px of scroll, opaque where unsupported", () => {
+    // The sign-in band: at rest the photograph runs on under the clock (a flat
+    // strip there cut a line across it); the strip is there before the
+    // header row, let alone the sheet, reaches the clock.
+    const html = renderToStaticMarkup(
+      createElement(StatusBarStrip, { surface: "bg-x", revealOnScroll: true }),
+    );
+    expect(html).toContain(
+      '<div class="absolute inset-x-0 top-0 h-[env(safe-area-inset-top,0px)] bg-x status-bar-reveal"></div>',
+    );
+    const css = read("src/styles.css");
+    const utility = /@utility status-bar-reveal \{([\s\S]*?)\n\}/.exec(css)?.[1] ?? "";
+    // Everything inside @supports: where scroll-driven animations are not
+    // supported the strip keeps its full opacity, as before.
+    expect(utility.trim().startsWith("@supports (animation-timeline: scroll()) {")).toBe(true);
+    // Own opacity 0: a screen that cannot scroll has an inactive timeline, the
+    // animation does not apply, and the strip stays clear.
+    expect(utility).toContain("opacity: 0;");
+    expect(utility).toContain("animation: status-bar-reveal linear both;");
+    // The timeline after the shorthand, which would reset it.
+    expect(utility.indexOf("animation-timeline: scroll(root block);")).toBeGreaterThan(
+      utility.indexOf("animation: status-bar-reveal"),
+    );
+    expect(utility).toContain("animation-range: 0 24px;");
+    // Both ends in the keyframes, since the strip's own opacity is 0.
+    expect(css).toMatch(
+      /@keyframes status-bar-reveal \{\s*from \{\s*opacity: 0;\s*\}\s*to \{\s*opacity: 1;\s*\}\s*\}/,
+    );
   });
 
   test("Jouer: the hero's ink-deep, first in the page's outer element, at every width", () => {

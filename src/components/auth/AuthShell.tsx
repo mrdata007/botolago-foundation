@@ -128,9 +128,11 @@ export function AuthShell({
         {/* STATUS BAR (BG-0154) — nothing at the top of these screens sticks,
             so in the app the sheet scrolled up under the clock. A strip as
             tall as the status bar, in the band's ink-deep, stays there and the
-            page passes under it. 0px tall in a browser; from `md` the column is
-            a raised card in the middle of the page. */}
-        <StatusBarStrip surface={STATUS_BAR_INK} className="md:hidden" />
+            page passes under it. Clear at rest, so the photograph runs on
+            under the clock, and opaque after 24px of scroll, long before the
+            sheet gets there. 0px tall in a browser; from `md` the column is a
+            raised card in the middle of the page (the strip above). */}
+        <StatusBarStrip surface={STATUS_BAR_INK} revealOnScroll className="md:hidden" />
         <header
           className={cn(
             "relative isolate overflow-hidden",

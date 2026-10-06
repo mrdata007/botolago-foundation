@@ -21,11 +21,30 @@ import { cn } from "@/lib/utils";
  * `className` goes on the host (`md:hidden` where a sticky top bar takes over;
  * `md:fixed md:inset-x-0` where no element spans the page to stick in, as on
  * the sign-in screens from `md`, whose column is a raised card).
+ *
+ * `revealOnScroll` keeps the strip clear at rest and fades it in over the
+ * first 24px of scroll (`status-bar-reveal` in `styles.css`), for a top whose
+ * photograph should run on under the clock until the page moves: the sign-in
+ * screens' band, where a flat strip cut a line across the photo.
  */
-export function StatusBarStrip({ surface, className }: { surface: string; className?: string }) {
+export function StatusBarStrip({
+  surface,
+  className,
+  revealOnScroll = false,
+}: {
+  surface: string;
+  className?: string;
+  revealOnScroll?: boolean;
+}) {
   return (
     <div aria-hidden className={cn("pointer-events-none sticky top-0 z-30 h-0", className)}>
-      <div className={cn("absolute inset-x-0 top-0 h-[env(safe-area-inset-top,0px)]", surface)} />
+      <div
+        className={cn(
+          "absolute inset-x-0 top-0 h-[env(safe-area-inset-top,0px)]",
+          surface,
+          revealOnScroll && "status-bar-reveal",
+        )}
+      />
     </div>
   );
 }
