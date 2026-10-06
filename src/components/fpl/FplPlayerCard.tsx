@@ -47,7 +47,7 @@ function RoleMarker({
         fresh && "pop",
         tone === "c"
           ? cn(ui.surface.inkPlain, "ring-[color:var(--ui-on-ink-plain)]")
-          : cn("bg-[color:var(--ui-surface)]", ui.tone.ink, "ring-[color:var(--ui-ink)]"),
+          : cn("bg-[color:var(--ui-surface)]", ui.tone.ink, "ring-[color:var(--ui-ink-fg)]"),
       )}
     >
       {letter}

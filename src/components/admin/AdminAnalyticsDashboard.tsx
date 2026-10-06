@@ -158,7 +158,7 @@ function SignupChart({ days, lang }: { days: AnalyticsOverviewDto["signupsByDay"
                   // The hit target is the whole column, not the painted bar.
                   className={cn(
                     "relative flex h-full min-w-0 flex-1 items-end justify-center outline-none",
-                    "focus-visible:bg-[color:color-mix(in_oklab,var(--brand-accent)_10%,transparent)]",
+                    "focus-visible:bg-[color:color-mix(in_oklab,var(--ui-wash-home)_10%,transparent)]",
                   )}
                   aria-label={`${formatDay(day.date, lang, true)} : ${label(day.count)}`}
                   onPointerEnter={() => setActive(index)}
@@ -174,9 +174,13 @@ function SignupChart({ days, lang }: { days: AnalyticsOverviewDto["signupsByDay"
                     <span
                       className={cn(
                         "block w-full max-w-6 rounded-t-[4px] transition-colors",
+                        // Kit tokens with a dark value (BG-0149): in light
+                        // they are exactly the old `--brand-primary` and
+                        // `--brand-accent`, which have none, so the hovered
+                        // bar measured 1.35:1 on the dark surface.
                         highlighted
-                          ? "bg-[color:var(--brand-primary)]"
-                          : "bg-[color:var(--brand-accent)]",
+                          ? "bg-[color:var(--ui-ink-fg)]"
+                          : "bg-[color:var(--ui-wash-home)]",
                       )}
                       style={{ height: `${height}%` }}
                       aria-hidden

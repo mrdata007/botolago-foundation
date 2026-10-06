@@ -108,7 +108,9 @@
     U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* ibm-plex-mono-latin-500-normal (Pépites meta lines; Latin only) */
+/* ibm-plex-mono-latin-500-normal (Latin only). No screen uses it since
+   BG-0152: only the Pépites share images draw with it, on a canvas
+   (src/components/pepites/share-image.ts). */
 @font-face {
   font-family: "IBM Plex Mono";
   font-style: normal;

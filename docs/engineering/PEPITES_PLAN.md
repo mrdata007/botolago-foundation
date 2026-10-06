@@ -81,6 +81,21 @@ through the reviewed migration path. No public photo without a licence row in
 
 ## 3. UI
 
+> **Superseded in part, 2026-10-05 (owner decision; BG-0152).** Pépites now
+> looks like the rest of BotolaGO and is built on the main kit
+> (`src/components/ui-kit`, the `--ui-*` tokens in `src/styles.css`; see
+> `docs/engineering/DESIGN_SYSTEM_V2.md`, "Pépites is built on the kit").
+> Retired from the screens: the night navy and night band with its slanted
+> cut, the brand/energy gradient as decoration, the Changa slant, IBM Plex
+> Mono, the ghost rank number, the facts strip and the tilt. The rating
+> scale keeps its five bands as the kit's `--ui-rating-1..5` tokens (the
+> fixture-difficulty scale read backwards). The data glyphs (10-segment bar,
+> score ring, rating chip, trend line, sortable table) stay, drawn in kit
+> colours. The Arabic and contrast rules below still apply. The share
+> images keep the old drawing until a follow-up redraws them with the
+> Fantasy recap image. The list below is the original v1 brief, kept as a
+> record.
+
 - Tokens: night navy, BotolaGO ink, brand gradient as accent only, rating
   scale (<6, 6–6.5, 6.5–7, 7–7.5, ≥7.5).
 - Fonts: Changa slanted for numbers, Manrope, IBM Plex Mono self-hosted.
@@ -223,6 +238,15 @@ Building follows architecture §10; the first migration (player attributes
 with provenance) is built and tested locally. Pépites mode stays `off`.
 
 ## 9. UI status (Gate U)
+
+> **2026-10-05 (owner decision; BG-0152):** the Figma file below is no
+> longer the visual reference. The Pépites screens follow the main design
+> system (Design System V2) instead: same shell, cards, chips, tabs, tables,
+> type ramps and colours as Matches, Fantasy and News, in light and dark,
+> French and Arabic. What the file still settles: the screens' content and
+> order, the copy, the Arabic terminology and the digit rules (the Arabic
+> rule further down stands). The screen brief is
+> `docs/engineering/tasks/BG-0152/screen-brief.md`.
 
 Figma file: <https://www.figma.com/design/DEQTspI8A04pjmLcAYTYw4>. Ready for
 owner sign-off. 26 frames:

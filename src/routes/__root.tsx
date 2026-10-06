@@ -130,7 +130,7 @@ function NotFoundBody() {
           <Link
             to="/"
             aria-label={t("state.go_home")}
-            className={cn(stateActionClass, ui.surface.inkPlain)}
+            className={cn(stateActionClass, ui.surface.inkControl)}
           >
             <Home className="h-4 w-4" aria-hidden />
             <span>{t("state.go_home")}</span>
@@ -185,7 +185,7 @@ function ErrorBody({ reset }: { reset: () => void }) {
               reset();
             }}
             aria-label={t("state.retry")}
-            className={cn(stateActionClass, ui.surface.inkPlain)}
+            className={cn(stateActionClass, ui.surface.inkControl)}
           >
             <RotateCcw className="h-4 w-4" aria-hidden />
             <span>{t("state.retry")}</span>

@@ -75,35 +75,39 @@
 export const NEWS_ENABLED = true;
 
 /**
- * Dark mode — OFF at launch.
+ * Dark mode — ON, following the phone's setting.
  *
- * Owner decision, 2026-09-21 (BG-0081): the theme machinery ships, the control
- * does not. Two contrast defects have to close first, both pre-existing and
- * both bigger than this feature:
+ * Owner decision, 2026-10-05 (BG-0149): dark mode is switched on. The default
+ * choice stays "system" (`DEFAULT_THEME_CHOICE`), so anyone whose phone is set
+ * to dark sees BotolaGO dark from the first paint, and Profil > Apparence lets
+ * them pick Clair, Sombre or Système. In dark the logo renders the existing
+ * all-white files (`Logo` / `BrandedText` `tone="auto"`).
  *
- *   - BG-0083: `--ui-ink` is used as a text colour across the product. It is a
- *     dark navy in BOTH themes, so on a dark surface Profile's h1 measures
- *     1.42:1 and the BottomNav active label and UiButton outline/ghost 1.25:1.
- *   - BG-0084: Fantasy has no `.dark` counterpart at all. It is built on
- *     `--fpl-*`, which styles.css documents as a light-only reconstruction,
- *     plus literal `bg-white`. Themed foregrounds land on un-themed light
- *     surfaces and three labels measure 1.01:1 — invisible.
+ * History. It shipped OFF on 2026-09-21 (BG-0081) because two pre-existing
+ * contrast defects would have greeted every dark-phone visitor:
  *
- * Gating the control alone would NOT have been enough, and this is the part
- * worth remembering: DEFAULT_THEME_CHOICE is "system", so with the inline head
- * script live every visitor whose OS prefers dark would have been served dark
- * mode immediately, toggle or no toggle, straight into those two defects. The
- * flag therefore gates the head script and the provider's effects as well as
- * the control.
+ *   - BG-0083: `--ui-ink`, a dark navy in BOTH themes, used as a text colour
+ *     (Profile's h1 at 1.42:1 on dark). DONE: foregrounds use `--ui-ink-fg`,
+ *     and BG-0149 cleared the last ring, dot and accent uses outside the kit
+ *     (a source test now fails on any that come back).
+ *   - BG-0084: Fantasy built on a light-only `--fpl-*` palette and literal
+ *     `bg-white`. CLOSED on measurement: every `--fpl-*` token is now an alias
+ *     of one `--ui-*` token (styles.css, pinned by `ui-kit.contract.test.ts`),
+ *     no live code reads `--fpl-*` or `bg-white`, and BG-0149 measured the
+ *     Fantasy routes in dark from rasterised pixels.
+ *
+ * The flag still gates the head script and the provider as well as the
+ * control, and that is the part worth remembering: because the default is
+ * "system", gating the control alone would still serve dark mode to every
+ * dark-phone visitor. So this constant stays the one-line rollback switch —
+ * set it to `false` and republish, and every visitor is back on light.
  *
  * Gated surfaces (keep this list current):
  *   - `src/routes/__root.tsx` — the inline pre-paint theme script
  *   - `src/theme/provider.tsx` — storage adoption, class application, OS listener
  *   - `src/routes/profile.tsx` — the whole "Apparence" row, label included
- *
- * Flip to `true` only when BG-0083 and BG-0084 are both closed.
  */
-export const DARK_MODE_ENABLED = false;
+export const DARK_MODE_ENABLED = true;
 
 /**
  * Third-party OAuth sign-in — OFF at launch.

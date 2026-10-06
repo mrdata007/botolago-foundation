@@ -269,7 +269,7 @@ export function CandidateComparison({
                   className={cn(
                     "grid gap-2 p-3 sm:grid-cols-[1fr_auto] sm:items-center",
                     ADMIN_PANEL_CLASS,
-                    isSelected && "ring-2 ring-[color:var(--ui-ink)]",
+                    isSelected && "ring-2 ring-[color:var(--ui-ink-fg)]",
                   )}
                   data-testid="mapping-option"
                   data-app-player-id={option.appPlayerId}

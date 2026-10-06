@@ -58,8 +58,10 @@ export function MatchdayStrip() {
                 ui.radius.full,
                 ui.text.meta,
                 "[font-weight:var(--ui-weight-heavy)]",
+                // The live match is the strip's current one: the selected
+                // fill, which stays visible on the dark bar (BG-0149).
                 match.status === "live"
-                  ? ui.surface.inkPlain
+                  ? ui.surface.selected
                   : "bg-[color:var(--ui-surface-sunken)] text-[color:var(--ui-on-surface)]",
                 ui.focus,
               )}
