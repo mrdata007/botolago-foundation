@@ -9,3 +9,5 @@ routeTree.gen.ts
 # Vendored by `npx impeccable install`; refreshed by `npx impeccable update`.
 .claude/skills/impeccable
 .claude/agents/impeccable-*.md
+# Official Anthropic skill, copied unmodified from anthropics/claude-plugins-official.
+.claude/skills/frontend-design
