@@ -28,6 +28,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { track, type AnalyticsEvent } from "@/lib/analytics";
 import { PRIZES_ENABLED } from "@/lib/feature-flags";
+import { useDarkStatusBand } from "@/lib/system-bars";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -74,6 +75,9 @@ export function LandingPage({
   const { key, source } = useFantasyDataSource();
   const availability = useFantasyAvailability();
   const ready = availability.view.kind === "ready";
+  // The hero under the clock is dark in both themes: light status-bar icons in
+  // the app whatever the theme (BG-0154).
+  useDarkStatusBand();
   const signedIn = status === "authenticated" && !!user;
 
   // Whether a signed-in reader already has a team: the summary is `null`

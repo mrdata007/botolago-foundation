@@ -47,6 +47,7 @@ import { STATUS_BAR_INK, StatusBarStrip } from "@/components/shell/StatusBarStri
 import { ui, UiBackButton, UiButton, UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useBackTo } from "@/lib/back-navigation";
+import { useDarkStatusBand } from "@/lib/system-bars";
 import { clubStyle } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import { AUTH_BAND_CLUBS } from "./account-model";
@@ -94,6 +95,9 @@ export function AuthShell({
   // Auth pages are linked to from email (confirmation, password reset) as often
   // as they are reached in-app, so home is the fallback rather than a listing.
   const goBack = useBackTo("/");
+  // The band under the clock is dark in both themes: light status-bar icons
+  // in the app whatever the theme (BG-0154).
+  useDarkStatusBand();
 
   return (
     <div className="relative min-h-[100dvh] w-full md:flex md:items-center md:justify-center md:px-6 md:py-10">
