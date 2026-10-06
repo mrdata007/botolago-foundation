@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { MatchCard } from "@/components/common/MatchCard";
@@ -6,7 +6,9 @@ import { ui, UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { prefersReducedMotion } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { whenIdle } from "@/lib/when-idle";
 import type { Club, Match } from "@/types/domain";
+import { voteMayOpen } from "./band-matches";
 import { NextMatchPick } from "./NextMatchPick";
 
 /** One card of the band: a match and its two clubs, already found. */
@@ -73,8 +75,14 @@ const STEP = cn(
  *
  * Every scroll it makes is instant under reduced motion. Tab walks a card's
  * controls and then the next card's; the card that takes the focus is brought
- * to the start of the track. Votes are read for the card in view and its two
- * neighbours; each card holds its vote row's place until then.
+ * to the start of the track.
+ *
+ * Votes are read for the card in view and its neighbours at once, and for
+ * every other card as soon as the page is idle (or the focus comes into the
+ * carousel), so each card's vote buttons are in the tab order and in reach of
+ * a screen reader's cursor, which never scrolls the track. A card holds its
+ * vote row's place while a vote is expected; once any read finds the game
+ * closed to this reader (or fails), no card holds it any more.
  *
  * The first render is the server's: the first card current, the track at its
  * start.
@@ -82,10 +90,13 @@ const STEP = cn(
 export function HomeMatchCarousel({
   cards,
   withVote,
+  renderedAt,
 }: {
   cards: readonly BandCard[];
   /** Offer each match's vote: the caller's say, as it holds the Pronostics flag. */
   withVote: boolean;
+  /** When the page was rendered (the loader's moment), for `voteMayOpen`. */
+  renderedAt: number;
 }) {
   const { t } = useI18n();
   const track = useRef<HTMLDivElement>(null);
@@ -93,6 +104,13 @@ export function HomeMatchCarousel({
   const count = cards.length;
   // A card that leaves (its match ended) can take the current one with it.
   const current = Math.min(active, Math.max(count - 1, 0));
+
+  // Every card's votes, once the page has a moment (see above).
+  const [readAll, setReadAll] = useState(false);
+  useEffect(() => whenIdle(() => setReadAll(true)), []);
+  // A read found the game closed: no card waits for a vote row any more.
+  const [gameClosed, setGameClosed] = useState(false);
+  const onGameClosed = useCallback(() => setGameClosed(true), []);
 
   const onScroll = useCallback(() => {
     const list = track.current;
@@ -145,6 +163,7 @@ export function HomeMatchCarousel({
       role="region"
       aria-roledescription={t("home.carousel.role")}
       aria-label={t("home.carousel.label")}
+      onFocus={() => setReadAll(true)}
       className="mt-5"
       data-testid="home-match-carousel"
     >
@@ -167,7 +186,9 @@ export function HomeMatchCarousel({
                 away={away}
                 withVote={withVote}
                 fill
-                votesEnabled={Math.abs(index - current) <= 1}
+                votesEnabled={readAll || Math.abs(index - current) <= 1}
+                holdVote={!gameClosed && voteMayOpen(match, renderedAt)}
+                onGameClosed={onGameClosed}
               />
             )}
           </div>

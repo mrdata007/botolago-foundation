@@ -30,3 +30,16 @@ export function bandMatches(matches: readonly Match[]): Match[] {
   );
   return [...live, ...ofRound];
 }
+
+/**
+ * Whether a card can expect a vote to cast, from what the server knows too:
+ * the match is still to be played, its journée is known (the vote covers only
+ * matches with one), and its kick-off was still ahead at `at`, the moment the
+ * page was rendered. Only then does the card hold the vote row's place while
+ * the votes are read, so it does not close (and shift what is under it) when
+ * a vote turns out not to exist. Whether the game is open at all (Pronostics
+ * off or testers only) is known only from the read itself.
+ */
+export function voteMayOpen(match: Match, at: number): boolean {
+  return match.status === "scheduled" && match.gameweek > 0 && Date.parse(match.kickoff) > at;
+}

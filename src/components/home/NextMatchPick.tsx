@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { questionView } from "@/components/predictions/match-votes";
@@ -41,8 +42,12 @@ const PICK_SHELL = cn(
  * header does. A button is 44px tall at least and says what it picks.
  *
  * Until the votes are known (the server's render never has them) the vote
- * row's space is held, so the band does not grow when they arrive; it closes
- * only if there turns out to be no vote to cast.
+ * row's space is held, so the band does not grow when they arrive, but only
+ * while a vote is expected (`holdVote`): the caller says no when the match
+ * cannot have one (its journée unknown, its kick-off past) or when another
+ * card has already found the game closed. The row then closes only if the
+ * read finds no vote after all, which the server cannot know beforehand
+ * (Pronostics off, or open to testers only).
  *
  * In the band's carousel (`fill`) the panel takes its slide's whole height,
  * the clubs centred in the space above the vote row, so the vote rows of the
@@ -55,6 +60,8 @@ export function NextMatchPick({
   withVote,
   fill = false,
   votesEnabled = true,
+  holdVote = true,
+  onGameClosed,
 }: {
   match: Match;
   home: Club;
@@ -63,8 +70,15 @@ export function NextMatchPick({
   withVote: boolean;
   /** A slide of the band's carousel: no top margin, and the slide's full height. */
   fill?: boolean;
-  /** Read the votes now; the carousel waits until the card is near the one in view. */
+  /** Read the votes now; the carousel reads the card in view and its neighbours first. */
   votesEnabled?: boolean;
+  /** Hold the vote row's place while the votes are read: a vote is expected. */
+  holdVote?: boolean;
+  /**
+   * The read found the game closed to this reader, or failed: true of every
+   * match, so the carousel stops holding the row on its other cards.
+   */
+  onGameClosed?: () => void;
 }) {
   const { t, tr, lang } = useI18n();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
@@ -121,7 +135,15 @@ export function NextMatchPick({
       </Link>
 
       {withVote ? (
-        <WinnerPick match={match} home={home} away={away} name={name} enabled={votesEnabled} />
+        <WinnerPick
+          match={match}
+          home={home}
+          away={away}
+          name={name}
+          enabled={votesEnabled}
+          hold={holdVote}
+          onGameClosed={onGameClosed}
+        />
       ) : null}
     </div>
   );
@@ -129,7 +151,7 @@ export function NextMatchPick({
 
 /**
  * "Qui va gagner ?" and its three buttons; its space held while the votes are
- * read; nothing when there is no vote to cast.
+ * read, if asked; nothing when there is no vote to cast.
  */
 function WinnerPick({
   match,
@@ -137,16 +159,25 @@ function WinnerPick({
   away,
   name,
   enabled,
+  hold,
+  onGameClosed,
 }: {
   match: Match;
   home: Club;
   away: Club;
   name: (club: Club) => string;
   enabled: boolean;
+  hold: boolean;
+  onGameClosed?: () => void;
 }) {
   const { t } = useI18n();
   const votes = useMatchVotes(match.id, { enabled });
   const dto = votes.votes;
+  // Closed to this reader (or unreadable) is not this match's own state.
+  const gameClosed = dto ? !dto.allowed : votes.failed;
+  useEffect(() => {
+    if (gameClosed) onGameClosed?.();
+  }, [gameClosed, onGameClosed]);
   const winner =
     dto?.allowed && dto.covered && dto.open
       ? dto.questions.find((entry) => entry.question === "winner")
@@ -160,7 +191,9 @@ function WinnerPick({
     { choice: "draw", label: t("predictions.votes.draw") },
     { choice: "away", label: name(away) },
   ];
-  if (!view) return votes.pending ? <WinnerPickHold labels={choices.map((c) => c.label)} /> : null;
+  if (!view) {
+    return hold && votes.pending ? <WinnerPickHold labels={choices.map((c) => c.label)} /> : null;
+  }
   return (
     <div className="mt-3">
       <p className={cn("mb-2 text-center", ui.text.label, ui.tone.onInkMuted)}>

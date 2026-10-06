@@ -79,7 +79,7 @@ import { deadlineStripTime, deadlineWithinHours } from "@/lib/deadline-strip";
 import { FantasyRuleChips } from "@/components/home/FantasyRuleChips";
 import { NextMatchPick } from "@/components/home/NextMatchPick";
 import { HomeMatchCarousel, type BandCard } from "@/components/home/HomeMatchCarousel";
-import { bandMatches } from "@/components/home/band-matches";
+import { bandMatches, voteMayOpen } from "@/components/home/band-matches";
 import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
 import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { useAuth } from "@/auth/AuthProvider";
@@ -545,9 +545,14 @@ function HomeContent() {
                   home={bandCards[0]!.home}
                   away={bandCards[0]!.away}
                   withVote={PRONOSTICS_PROMOTED}
+                  holdVote={voteMayOpen(bandCards[0]!.match, renderedAt)}
                 />
               ) : (
-                <HomeMatchCarousel cards={bandCards} withVote={PRONOSTICS_PROMOTED} />
+                <HomeMatchCarousel
+                  cards={bandCards}
+                  withVote={PRONOSTICS_PROMOTED}
+                  renderedAt={renderedAt}
+                />
               )}
             </GameweekBand>
           </div>

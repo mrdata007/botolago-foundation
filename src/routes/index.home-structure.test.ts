@@ -110,9 +110,11 @@ describe("Accueil (Home) structural contract", () => {
       expect(source).not.toMatch(/bandMatches\([^)]*bandGameweek/);
       expect(band).toContain("liveAlone || bandCards.length === 0 ? null");
       expect(band).toContain("bandCards.length === 1 ? (\n                <NextMatchPick");
-      expect(band).toContain(
-        "<HomeMatchCarousel cards={bandCards} withVote={PRONOSTICS_PROMOTED} />",
+      expect(band).toMatch(
+        /<HomeMatchCarousel\s+cards=\{bandCards\}\s+withVote=\{PRONOSTICS_PROMOTED\}\s+renderedAt=\{renderedAt\}\s*\/>/,
       );
+      // The single card holds its vote row only when a vote is expected.
+      expect(band).toContain("holdVote={voteMayOpen(bandCards[0]!.match, renderedAt)}");
       // A live match on its own still rises out of the band's lower edge.
       expect(band).toContain("overlap={liveAlone}");
       expect(source).toContain("const liveAlone = bandCards.length === 1 && isInPlay(");

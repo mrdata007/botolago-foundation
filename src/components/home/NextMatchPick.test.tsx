@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import type { ReactElement } from "react";
 import { renderToString } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -137,6 +139,20 @@ describe("NextMatchPick — the vote row", () => {
     const html = await render(pick({ withVote: false }));
     expect(html).not.toContain("home-vote-hold");
     expect(voteButtons(html)).toBe(0);
+  });
+
+  it("holds nothing when the caller expects no vote, and still shows votes once read", async () => {
+    const html = await render(pick({ holdVote: false }));
+    expect(html).not.toContain("home-vote-hold");
+    expect(voteButtons(html)).toBe(0);
+    expect(voteButtons(await render(pick({ holdVote: false }), OPEN))).toBe(3);
+  });
+
+  it("tells the caller when a read finds the game closed (or fails), as it is true of every match", () => {
+    const source = readFileSync(join(import.meta.dir, "NextMatchPick.tsx"), "utf8");
+    expect(source).toContain("const gameClosed = dto ? !dto.allowed : votes.failed;");
+    expect(source).toMatch(/if \(gameClosed\) onGameClosed\?\.\(\);/);
+    expect(source).toContain("hold && votes.pending ? <WinnerPickHold");
   });
 
   it("waiting to read the votes holds the row, and shows votes it has already read", async () => {

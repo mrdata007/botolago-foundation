@@ -83,10 +83,11 @@ export function matchVoteMutationOptions({
  * The fan votes on one match: the database's totals, the player's own votes
  * (on the account, or on the phone for a visitor), and a way to vote.
  *
- * `enabled: false` holds the read back (Home's carousel reads the votes of the
- * card in view and its neighbours, not of the whole round at once); votes
- * already read stay on screen. `pending` is true until the votes are known,
- * so a caller can hold their space instead of growing when they arrive.
+ * `enabled: false` holds the read back (Home's carousel reads the card in view
+ * and its neighbours first, the rest of the round once the page is idle);
+ * votes already read stay on screen. `pending` is true until the votes are
+ * known, so a caller can hold their space instead of growing when they
+ * arrive; `failed` is true when the read gave up.
  */
 export function useMatchVotes(fixtureId: string, { enabled = true }: { enabled?: boolean } = {}) {
   const { t } = useI18n();
@@ -141,5 +142,12 @@ export function useMatchVotes(fixtureId: string, { enabled = true }: { enabled?:
     [fixtureId, mutate, queryClient, uid],
   );
 
-  return { votes: query.data, pending: query.isPending, uid, phone, cast };
+  return {
+    votes: query.data,
+    pending: query.isPending,
+    failed: query.isError,
+    uid,
+    phone,
+    cast,
+  };
 }

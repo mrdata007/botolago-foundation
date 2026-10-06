@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import { bandGameweek } from "@/lib/band-gameweek";
 import type { Match, MatchStatus } from "@/types/domain";
-import { bandMatches } from "./band-matches";
+import { bandMatches, voteMayOpen } from "./band-matches";
 
 const match = (
   id: string,
@@ -110,5 +110,25 @@ describe("bandMatches", () => {
       const payload = [match("j2-leftover", "21T19:00", "live", 2), ...journee4];
       expect(ids(bandMatches(payload))).toEqual(["j2-leftover", ...ids(journee4)]);
     });
+  });
+});
+
+describe("voteMayOpen", () => {
+  const at = Date.parse("2026-10-08T12:00:00.000Z");
+
+  it("expects a vote on a match of a known journée still to kick off", () => {
+    expect(voteMayOpen(match("next", "08T16:00"), at)).toBe(true);
+  });
+
+  it("expects none once the kick-off has passed, though the status still says scheduled", () => {
+    expect(voteMayOpen(match("late", "08T11:00"), at)).toBe(false);
+  });
+
+  it("expects none on a match with no journée, which the vote does not cover", () => {
+    expect(voteMayOpen(match("no-round", "08T16:00", "scheduled", 0), at)).toBe(false);
+  });
+
+  it("expects none on a match being played", () => {
+    expect(voteMayOpen(match("live", "08T16:00", "live"), at)).toBe(false);
   });
 });

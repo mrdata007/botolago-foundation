@@ -55,9 +55,16 @@ const card = (n: number, status: Match["status"] = "scheduled"): BandCard => ({
 });
 const round = (count: number) => Array.from({ length: count }, (_, i) => card(i + 1));
 
-async function render(cards: readonly BandCard[], withVote = true): Promise<string> {
+/** The page was rendered before every card's kick-off. */
+const RENDERED_AT = Date.parse("2026-10-01T00:00:00.000Z");
+
+async function render(
+  cards: readonly BandCard[],
+  withVote = true,
+  renderedAt = RENDERED_AT,
+): Promise<string> {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const node = <HomeMatchCarousel cards={cards} withVote={withVote} />;
+  const node = <HomeMatchCarousel cards={cards} withVote={withVote} renderedAt={renderedAt} />;
   // The auth provider sits inside the router, as in `__root.tsx`.
   const router = createRouter({
     routeTree: createRootRoute({ component: () => <AuthProvider>{node}</AuthProvider> }),
@@ -148,6 +155,20 @@ describe("HomeMatchCarousel — as the server renders it", () => {
     }
   });
 
+  it("holds no vote row on a card that cannot have a vote: kick-off past, or no journée", async () => {
+    const noRound = card(3);
+    const html = await render(
+      [card(1), card(2), { ...noRound, match: { ...noRound.match, gameweek: 0 } }],
+      true,
+      // Rendered after the first card's kick-off (it has not gone live yet).
+      Date.parse("2026-10-01T17:00:00.000Z"),
+    );
+    const slides = html.split('role="group"').slice(1);
+    expect(slides[0]).not.toContain("home-vote-hold");
+    expect(slides[1]).toContain("home-vote-hold");
+    expect(slides[2]).not.toContain("home-vote-hold");
+  });
+
   it("offers no vote row when the caller offers no vote", async () => {
     const html = await render(round(3), false);
     expect(html).not.toContain("home-vote-hold");
@@ -189,8 +210,18 @@ describe("HomeMatchCarousel — house rules", () => {
     expect(code).toContain("onFocus={() => bringIntoView(index)}");
   });
 
-  it("reads votes for the card in view and its neighbours only", () => {
-    expect(code).toContain("votesEnabled={Math.abs(index - current) <= 1}");
+  it("reads votes for the card in view and its neighbours first, every card once idle or focused", () => {
+    // Review of 2026-10-06: cards further on had no vote buttons in the tab
+    // order or under a screen reader's cursor until swiped near.
+    expect(code).toContain("votesEnabled={readAll || Math.abs(index - current) <= 1}");
+    expect(code).toContain("useEffect(() => whenIdle(() => setReadAll(true)), []);");
+    expect(code).toContain("onFocus={() => setReadAll(true)}");
+  });
+
+  it("holds a card's vote row only while a vote is expected", () => {
+    // Once any read finds the game closed (or fails), no card holds it.
+    expect(code).toContain("holdVote={!gameClosed && voteMayOpen(match, renderedAt)}");
+    expect(code).toContain("onGameClosed={onGameClosed}");
   });
 
   it("keeps previous and next focusable at either end, unavailable but not disabled", () => {
