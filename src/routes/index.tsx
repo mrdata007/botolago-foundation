@@ -32,6 +32,7 @@ import { homeClubs } from "@/components/home/my-clubs";
 import { findClub } from "@/components/fantasy/club-identity";
 import { footballService, type FootballSeason } from "@/services/football";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
+import { trendingPlayersQuery } from "@/services/fantasy-player-query";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { AppShell } from "@/components/shell/AppShell";
@@ -338,10 +339,13 @@ function HomeContent() {
     queryFn: () => fantasyService.getAlerts(),
     enabled: fantasyReady,
   });
+  // The names on the alert rows. The pool part of this read comes from the
+  // cache (`trendingPlayersQuery`), not a second read of the whole pool. Only
+  // a signed-in reader's Home shows the rows (below), so a visitor's does not
+  // read it, as with the summary above.
   const playersQ = useQuery({
-    queryKey: ["all-players-for-alerts"],
-    queryFn: () => fantasyService.getTrendingPlayers(),
-    enabled: fantasyReady,
+    ...trendingPlayersQuery(),
+    enabled: fantasyReady && source !== "guest",
   });
   // News is hidden at launch (owner decision — see `@/lib/feature-flags`), so
   // the edition is not even fetched: no News RPC, no third-party media URLs

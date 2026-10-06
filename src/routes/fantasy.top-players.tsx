@@ -29,6 +29,7 @@ import { fantasyHead } from "@/lib/fantasy-meta";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { cn } from "@/lib/utils";
 import { plateName } from "@/components/fpl/plate-name";
+import { fantasyPlayersQuery, topPlayersOfWeekQuery } from "@/services/fantasy-player-query";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
 import type { Club } from "@/types/domain";
@@ -94,15 +95,18 @@ function TopPlayersPage() {
   // the first gameweek the backend actually knows about.
   const currentGw = gw ?? gwQ.data?.number ?? gwMin;
 
+  // The gameweek's top five, joined with the pool this page already holds
+  // (`topPlayersOfWeekQuery`): the pool is read once, not again inside each
+  // gameweek's read. Asked for once the current gameweek is known (or the
+  // reader picked one, or reading it failed and the first gameweek stands in):
+  // a placeholder gameweek's read, now quick, could otherwise land first and
+  // draw that gameweek's cards before the right one. When the gameweek read
+  // fails, the stand-in starts with its retry, as before.
   const topQ = useQuery({
-    queryKey: ["top-players", currentGw],
-    queryFn: () => fantasyService.getTopPlayersOfWeek(currentGw),
-    enabled: currentGw > 0,
+    ...topPlayersOfWeekQuery(currentGw),
+    enabled: currentGw > 0 && (gw !== null || !gwQ.isPending || gwQ.failureCount > 0),
   });
-  const playersQ = useQuery({
-    queryKey: ["fantasy-players"],
-    queryFn: () => fantasyService.getPlayers(),
-  });
+  const playersQ = useQuery(fantasyPlayersQuery());
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),

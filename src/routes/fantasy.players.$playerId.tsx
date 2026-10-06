@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { Plus, Star } from "lucide-react";
 import { useId, type CSSProperties, type ReactNode } from "react";
 
@@ -95,9 +95,7 @@ export const Route = createFileRoute("/fantasy/players/$playerId")({
       ]),
     );
     try {
-      const player = await queryClient.ensureQueryData(
-        fantasyPlayerQuery(queryClient, params.playerId),
-      );
+      const player = await queryClient.ensureQueryData(fantasyPlayerQuery(params.playerId));
       return player ? { player } : null;
     } catch {
       return null;
@@ -157,9 +155,8 @@ function PlayerDetailPage() {
   });
   const pctNf = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
 
-  const queryClient = useQueryClient();
   const playerQ = useQuery({
-    ...fantasyPlayerQuery(queryClient, playerId),
+    ...fantasyPlayerQuery(playerId),
     // Identical on the server and on the client's first render — see the
     // loader comment. Without this the two trees disagree and React #418.
     initialData: loaderData?.player,

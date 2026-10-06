@@ -45,7 +45,11 @@ import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 import { keepSameOwnerData, useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
-import { pageForRank, type RankingsSort } from "@/services/fantasy-rankings";
+import {
+  pageForRank,
+  selectGlobalRankingsPage,
+  type RankingsSort,
+} from "@/services/fantasy-rankings";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useOwnedTeam } from "@/services/use-owned-team";
 import type { LeagueStanding } from "@/types/fantasy";
@@ -116,17 +120,24 @@ function RankingsPage() {
   });
 
   const summary = source === "guest" ? null : (summaryQ.data ?? null);
-  const me: LeagueStanding | undefined = summary
-    ? {
-        managerId: "me",
-        managerName: user?.displayName?.trim() || summary.managerName,
-        teamName: summary.teamName,
-        rank: summary.overallRank ?? 0,
-        previousRank: summary.overallRank ?? 0,
-        gameweekScore: summary.gameweekPoints,
-        totalScore: summary.totalPoints,
-      }
-    : undefined;
+  // Kept between renders, so the page cut from the board below is worked out
+  // again only when something it depends on changes.
+  const displayName = user?.displayName;
+  const me = useMemo<LeagueStanding | undefined>(
+    () =>
+      summary
+        ? {
+            managerId: "me",
+            managerName: displayName?.trim() || summary.managerName,
+            teamName: summary.teamName,
+            rank: summary.overallRank ?? 0,
+            previousRank: summary.overallRank ?? 0,
+            gameweekScore: summary.gameweekPoints,
+            totalScore: summary.totalPoints,
+          }
+        : undefined,
+    [summary, displayName],
+  );
 
   // Team ownership is read from the owned snapshot, never inferred from the
   // standing: before the first gameweek is scored nobody has a standing, and
@@ -139,19 +150,18 @@ function RankingsPage() {
     errored: !!owned.error,
   });
 
-  // The last page stays up while the next one loads, but only this owner's:
-  // after a switch it was the last account's board, their row marked as "me".
+  // The whole season board, read once per owner and again every minute.
+  // Turning a page, typing in the search or changing tab reads nothing: the
+  // page is cut from the board below. Page, sort, search and the reader's
+  // total used to be part of the key, and every new combination -- each
+  // letter typed -- read the whole board again (up to twenty reads).
+  //
+  // An owner's board never stands in for another's: after a switch it was the
+  // last account's board, their row marked as "me".
   const sameOwnerData = useMemo(() => keepSameOwnerData(scope), [scope]);
   const rankingsQ = useQuery({
-    queryKey: key("rankings", sort, page, search, me?.totalScore ?? null),
-    queryFn: () =>
-      fantasyService.getGlobalRankings({
-        page,
-        pageSize: PAGE_SIZE,
-        sort,
-        query: search,
-        me,
-      }),
+    queryKey: key("rankings"),
+    queryFn: () => fantasyService.getGlobalBoard(),
     // The board's `myRank` is whoever's token the request carries. While the
     // session is still being read, or owes its one-time code, that is an
     // account this page does not count as signed in: its rank would show
@@ -166,7 +176,20 @@ function RankingsPage() {
     setPage(1);
   }, [sort, search]);
 
-  const data = rankingsQ.data;
+  const board = rankingsQ.data;
+  const data = useMemo(
+    () =>
+      board
+        ? selectGlobalRankingsPage(board, {
+            page,
+            pageSize: PAGE_SIZE,
+            sort,
+            query: search,
+            me,
+          })
+        : undefined,
+    [board, page, sort, search, me],
+  );
   const pageCount = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
   const onBoard = tab !== "leagues";
   const rankStep = rankFigure(Math.max(1, ...(data?.rows ?? []).map((row) => row.rank)));

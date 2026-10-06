@@ -59,8 +59,10 @@ export function belongsToFantasyScope(key: unknown, scope: FantasyKeyScope): boo
 
 /**
  * `placeholderData` for an owned query: the previous key's data stays on
- * screen while the next key loads -- the rankings' next page, another sort --
- * but only when that previous key was `scope`'s too.
+ * screen while the next key loads, but only when that previous key was
+ * `scope`'s too. (The rankings board, which used to load a key per page and
+ * sort, is now one key per owner: there it only keeps another owner's board
+ * off screen.)
  *
  * `keepPreviousData` keeps whatever the observer last showed, whoever it
  * belonged to. After a switch from account A to B, the rankings kept A's

@@ -25,7 +25,7 @@ describe("a player's page reads the player from the season's pool", () => {
     await client.fetchQuery(fantasyPlayersQuery());
     expect(spy).toHaveBeenCalledTimes(1);
 
-    const player = await client.ensureQueryData(fantasyPlayerQuery(client, "p2"));
+    const player = await client.ensureQueryData(fantasyPlayerQuery("p2"));
     expect(player).toBe(pool[1]);
     expect(spy).toHaveBeenCalledTimes(1);
     expect(single).not.toHaveBeenCalled();
@@ -36,8 +36,8 @@ describe("a player's page reads the player from the season's pool", () => {
     const { spy } = countPoolReads();
     const client = createAppQueryClient();
     const [a, b] = await Promise.all([
-      client.ensureQueryData(fantasyPlayerQuery(client, "p1")),
-      client.ensureQueryData(fantasyPlayerQuery(client, "p2")),
+      client.ensureQueryData(fantasyPlayerQuery("p1")),
+      client.ensureQueryData(fantasyPlayerQuery("p2")),
     ]);
     expect([a, b]).toEqual([pool[0], pool[1]]);
     expect(spy).toHaveBeenCalledTimes(1);
@@ -49,7 +49,7 @@ describe("a player's page reads the player from the season's pool", () => {
   test("a player the pool does not hold is no player, not a failed read", async () => {
     countPoolReads();
     const client = createAppQueryClient();
-    expect(await client.ensureQueryData(fantasyPlayerQuery(client, "nobody"))).toBeNull();
+    expect(await client.ensureQueryData(fantasyPlayerQuery("nobody"))).toBeNull();
     client.clear();
   });
 });
