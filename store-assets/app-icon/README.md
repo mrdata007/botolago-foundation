@@ -25,9 +25,21 @@ python3 scripts/brand/make-app-icons.py
 | `android/adaptive-monochrome-432.png` | Android themed icon (the one-colour version phones tint to match the wallpaper).                                                            |
 | `icon-composer/*.svg`                 | Flat layers for Apple's Icon Composer, for the iOS 26+ glass look. See below.                                                               |
 | `preview.png`                         | How it looks on each store and phone shape, on light and dark wallpapers.                                                                   |
+| `native/`                             | The phone app's own files, laid out as they go into the native projects. See below.                                                         |
 
-The Android files go in the app's `res/` folder once the app is wrapped
-(for example with Capacitor), wired up like this:
+## The phone app's files (`native/`)
+
+The cloud build copies these into the projects Capacitor creates, as they are
+(`scripts/mobile/prepare-native.mjs`, see `docs/mobile/PHONE_APP.md`). Nobody
+copies them by hand.
+
+| Folder                          | Goes to                                          | What                                                                                                                                                                                                                |
+| ------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `native/ios/AppIcon.appiconset` | `ios/App/App/Assets.xcassets/AppIcon.appiconset` | The iPhone icon: the 1024 image above, as Capacitor's template names it.                                                                                                                                            |
+| `native/ios/Splash.imageset`    | `ios/App/App/Assets.xcassets/Splash.imageset`    | The launch screen: the flat GO mark on `#F2F5FA`, 2732×2732. The screen shows the middle of it.                                                                                                                     |
+| `native/android/res`            | `android/app/src/main/res`                       | The adaptive icon (`mipmap-anydpi-v26`, and its three layers at every density), the flat icons older phones use, the notification icon `ic_stat_notify` (white on transparent), the launch images, and two colours. |
+
+The adaptive icon in `native/android/res` is wired up like this:
 
 ```xml
 <!-- res/mipmap-anydpi-v26/ic_launcher.xml -->

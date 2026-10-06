@@ -21,6 +21,7 @@ import {
   UiTR,
 } from "@/components/ui-kit";
 import { AnimatedNumber } from "@/components/common/AnimatedNumber";
+import { ReportNameMenu } from "@/components/report/ReportNameMenu";
 import { useI18n } from "@/i18n/provider";
 import { useFlip } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -136,11 +137,19 @@ export function PredictionsLeaderboard({
             <UiTHead>
               <tr>
                 <UiTH className="w-14">{t("predictions.board.col_rank")}</UiTH>
-                <UiTH>{t("predictions.board.col_player")}</UiTH>
-                <UiTH numeric>{t("predictions.board.col_points")}</UiTH>
-                <UiTH numeric>{t("predictions.board.col_exact")}</UiTH>
+                {/* The name takes the room the figures leave (they keep their
+                    width): it shares the cell with the report control. */}
+                <UiTH className="w-full">{t("predictions.board.col_player")}</UiTH>
+                <UiTH numeric className="whitespace-nowrap">
+                  {t("predictions.board.col_points")}
+                </UiTH>
+                <UiTH numeric className="whitespace-nowrap">
+                  {t("predictions.board.col_exact")}
+                </UiTH>
                 {scope === "season" ? (
-                  <UiTH numeric>{t("predictions.board.col_rounds")}</UiTH>
+                  <UiTH numeric className="whitespace-nowrap">
+                    {t("predictions.board.col_rounds")}
+                  </UiTH>
                 ) : null}
               </tr>
             </UiTHead>
@@ -158,8 +167,19 @@ export function PredictionsLeaderboard({
                       </span>
                     ) : null}
                   </UiTD>
-                  <UiTD className="max-w-0 truncate">
-                    <span dir="auto">{row.isMe ? t("predictions.board.you") : row.name}</span>
+                  <UiTD className="max-w-0">
+                    <div className="flex items-center gap-1">
+                      <span dir="auto" className="min-w-0 flex-1 truncate">
+                        {row.isMe ? t("predictions.board.you") : row.name}
+                      </span>
+                      {/* Another player's name can be reported, never the
+                          reader's own. `id` is the standing row's id. */}
+                      {!row.isMe && row.name ? (
+                        <ReportNameMenu
+                          targets={[{ kind: "user", name: row.name, id: `standing:${row.id}` }]}
+                        />
+                      ) : null}
+                    </div>
                   </UiTD>
                   <UiTD numeric strong>
                     <AnimatedNumber value={row.points} format={(n) => formatNumber(n, lang)} />

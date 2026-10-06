@@ -284,10 +284,13 @@ function WinnersPanel({ access, repository, onNotice }: PanelProps) {
   };
 
   const excludeAccount = async (winner: AdminPrizeWinnerDto, reason: string) => {
+    // An erased account has nothing left to exclude.
+    if (winner.userId === null) return;
+    const userId = winner.userId;
     onNotice(null);
     try {
       await repository.setFlag(
-        { userId: winner.userId },
+        { userId },
         true,
         reason,
         crypto.randomUUID(),
@@ -543,7 +546,7 @@ function WinnersPanel({ access, repository, onNotice }: PanelProps) {
                       testId="admin-prize-override"
                     />
                   )}
-                  {!winner.flagged && winner.status !== "overridden" && (
+                  {!winner.flagged && winner.userId !== null && winner.status !== "overridden" && (
                     <AdminDestructiveAction
                       actionKey={`flag-winner:${winner.id}`}
                       state={action}

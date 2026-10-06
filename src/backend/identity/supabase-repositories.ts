@@ -3,7 +3,6 @@ import type { CursorPage, CursorPageRequest, RepositoryContext } from "../contra
 import { getIdentityApi } from "@/integrations/supabase/v2-client";
 import type { Database } from "../generated/database.types";
 import {
-  type AccountDeletionRequestDto,
   type AccountSecurityRepository,
   type CompleteOnboardingInput,
   type FollowDto,
@@ -222,28 +221,6 @@ export class SupabaseAccountSecurityRepository implements AccountSecurityReposit
     const { data, error } = await getIdentityApi().rpc("request_account_deletion");
     throwIfError(error);
     return requireValue(data, "account deletion request id");
-  }
-  async cancelDeletion(context: RepositoryContext): Promise<void> {
-    requireActor(context);
-    const { error } = await getIdentityApi().rpc("cancel_account_deletion");
-    throwIfError(error);
-  }
-  async listDeletionRequests(
-    context: RepositoryContext,
-  ): Promise<readonly AccountDeletionRequestDto[]> {
-    requireActor(context);
-    const { data, error } = await getIdentityApi()
-      .from("my_account_deletion_requests")
-      .select("*")
-      .order("requested_at", { ascending: false });
-    throwIfError(error);
-    return (data ?? []).map((row) => ({
-      id: requireValue(row.id, "deletion request id"),
-      status: requireValue(row.status, "deletion request status"),
-      requestedAt: requireValue(row.requested_at, "deletion request timestamp"),
-      updatedAt: requireValue(row.updated_at, "deletion request update timestamp"),
-      processedAt: row.processed_at,
-    }));
   }
   async recordSessionRevocation(
     scope: SessionRevocationScope,

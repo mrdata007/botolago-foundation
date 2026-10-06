@@ -136,6 +136,10 @@ export const DARK_MODE_ENABLED = true;
  * Gated surfaces (keep this list current):
  *   - `src/routes/auth.login.tsx` — divider + provider buttons
  *   - `src/routes/auth.register.tsx` — divider + provider buttons
+ *
+ * Inside the phone app both are hidden whatever this says (`WebOnly`):
+ * Google refuses sign-in in an embedded web view, and the provider's page
+ * would open in the browser, which cannot hand the session back to the app.
  */
 export const OAUTH_PROVIDERS_ENABLED = true;
 
@@ -149,7 +153,7 @@ export const OAUTH_PROVIDERS_ENABLED = true;
  *      final text -- every `[TODO …]` span is replaced. The production build
  *      refuses to run while this flag is on and a span survives
  *      (`scripts/qa/legal-placeholder-gate.ts`);
- *   2. no sponsor is involved -- Go Sports Technologies provides the prizes --
+ *   2. no sponsor is involved -- the organiser named in the T&Cs provides the prizes --
  *      so there is no sponsor sign-off to wait for (the owner dropped that
  *      condition). A sponsor added to a prize later needs naming in the T&Cs;
  *   3. `supabase/migrations/20260924120000_fantasy_prizes.sql` is on

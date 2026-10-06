@@ -111,16 +111,46 @@ describe("codemagic.yaml", () => {
     }
   });
 
-  test("Android: Firebase's file is written before the check that needs it, then it builds the test apk (signing is off for now)", () => {
+  test("Android: Firebase's file is written before the check that needs it", () => {
     const script = commands(android).find((entry) => entry.includes("cap add android")) ?? "";
     expect(script.indexOf("GOOGLE_SERVICES_JSON_BASE64:?")).toBeGreaterThanOrEqual(0);
     expect(script.indexOf("google-services.json")).toBeLessThan(script.indexOf("mobile:check"));
     expect(script.indexOf("mobile:prepare")).toBeLessThan(script.indexOf("mobile:check"));
-    expect(android.environment.android_signing).toBeUndefined();
     expect(android.environment.groups).toEqual(["botolago_mobile"]);
     expect(String(android.environment.java)).toBe("21");
-    expect(commands(android).join("\n")).toContain("./gradlew assembleDebug");
-    expect(android.artifacts.join(" ")).toContain(".apk");
+  });
+
+  test("Android: signs with the botolago_keystore and builds the Google Play bundle and an apk", () => {
+    expect(android.environment.android_signing).toEqual(["botolago_keystore"]);
+    const build = indexOfCommand(android, "./gradlew");
+    expect(build).toBeGreaterThan(indexOfCommand(android, "cap sync android"));
+    const script = commands(android)[build]!;
+    // the release tasks, not the debug ones (a debug build is signed with a throwaway key)
+    expect(script).toMatch(
+      /\.\/gradlew (bundleRelease assembleRelease|assembleRelease bundleRelease)\b/,
+    );
+    expect(script).not.toContain("Debug");
+    // a missing keystore stops the build with a message, before Gradle makes an unsigned one
+    expect(script.indexOf('"${CM_KEYSTORE_PATH:?')).toBeGreaterThanOrEqual(0);
+    expect(script.indexOf("CM_KEYSTORE_PATH:?")).toBeLessThan(script.indexOf("./gradlew"));
+    expect(android.artifacts).toContain("android/app/build/outputs/**/*.aab");
+    expect(android.artifacts).toContain("android/app/build/outputs/**/*.apk");
+    // the signing build.gradle reads is the one Codemagic provides for that keystore
+    const prepare = read("scripts/mobile/prepare-native.mjs");
+    for (const variable of [
+      "CM_KEYSTORE_PATH",
+      "CM_KEYSTORE_PASSWORD",
+      "CM_KEY_ALIAS",
+      "CM_KEY_PASSWORD",
+    ]) {
+      expect(prepare).toContain(`System.getenv("${variable}")`);
+    }
+  });
+
+  test("iPhone: checks the finished project before building it", () => {
+    const script = commands(ios).find((entry) => entry.includes("cap add ios")) ?? "";
+    expect(script.indexOf("mobile:prepare")).toBeGreaterThanOrEqual(0);
+    expect(script.indexOf("mobile:prepare")).toBeLessThan(script.indexOf("mobile:check"));
   });
 
   test("iPhone: signs with the App Store Connect key, then builds the ipa from the project", () => {
@@ -135,6 +165,7 @@ describe("codemagic.yaml", () => {
   });
 
   test("never releases anything: no triggers, no review, no store, no Google Play", () => {
+    // Google Play publishing would be a publishing.google_play block; the .aab is uploaded by hand.
     expect(raw).not.toMatch(/^\s*triggering:/m);
     for (const workflow of [android, ios]) expect(workflow.triggering).toBeUndefined();
     expect(android.publishing).toBeUndefined();

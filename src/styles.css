@@ -1403,6 +1403,16 @@ html[dir="rtl"] .lucide-arrow-left {
   display: flex;
 }
 
+/* What works only in a browser (`WebOnly`: Google and Apple sign-in, the
+   image download) is in the server HTML wherever the page is opened, and is
+   hidden inside the phone app from the first paint: the head script
+   (`NATIVE_APP_INIT_SCRIPT`) puts `data-native-app` on <html> before the page
+   paints, and React removes the element once it has mounted. Unlayered, so it
+   beats the wrapper's own `display: contents` utility. */
+:root[data-native-app] [data-web-only] {
+  display: none;
+}
+
 /* The wordmark pulling into focus as the ball lands. Nothing here names a
    direction, so it plays the same in both scripts. */
 @keyframes splash-reveal {

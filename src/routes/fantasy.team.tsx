@@ -672,7 +672,7 @@ function PickTeamBody() {
           <div aria-hidden className="h-[var(--ui-row-min)]" />
           <div
             className={cn(
-              "fixed inset-x-0 bottom-[var(--bottomnav-h)] z-40 pb-2.5 md:bottom-0 md:pb-4",
+              "fixed inset-x-0 bottom-[var(--bottomnav-h)] z-40 pb-2.5 md:bottom-0 md:pb-[max(env(safe-area-inset-bottom),1rem)]",
               ui.space.content,
               ui.space.gutter,
             )}

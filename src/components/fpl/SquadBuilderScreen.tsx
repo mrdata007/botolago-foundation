@@ -233,7 +233,7 @@ export function SquadBuilderScreen({
           ui.surface.bar,
           ui.rule.blockStart,
           ui.shadow.raised,
-          "pb-2.5 pt-2.5 md:pb-3",
+          "pb-2.5 pt-2.5 md:pb-[max(env(safe-area-inset-bottom),0.75rem)]",
         )}
       >
         {incoming ? (
