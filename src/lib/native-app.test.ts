@@ -4,6 +4,7 @@ import {
   NATIVE_APP_ATTRIBUTE,
   NATIVE_APP_INIT_SCRIPT,
   nativePlatform,
+  nativePluginAvailable,
   type NativeScope,
 } from "./native-app";
 
@@ -53,6 +54,77 @@ describe("nativePlatform", () => {
         },
       }),
     ).toBeNull();
+  });
+});
+
+describe("nativePluginAvailable", () => {
+  const HEADERS = [{ name: "Share" }, { name: "Filesystem" }];
+
+  test("reads the list of plugins the shell was built with", () => {
+    const android = { androidBridge: {}, Capacitor: { PluginHeaders: HEADERS } };
+    expect(nativePluginAvailable("Share", android)).toBe(true);
+    expect(nativePluginAvailable("Filesystem", android)).toBe(true);
+    expect(nativePluginAvailable("Media", android)).toBe(false);
+    const ios = {
+      webkit: { messageHandlers: { bridge: {} } },
+      Capacitor: { PluginHeaders: HEADERS },
+    };
+    expect(nativePluginAvailable("Share", ios)).toBe(true);
+  });
+
+  test("an app built before the plugin was added does not have it", () => {
+    const older = { androidBridge: {}, Capacitor: { PluginHeaders: [{ name: "App" }] } };
+    expect(nativePluginAvailable("Share", older)).toBe(false);
+    expect(nativePluginAvailable("Share", { androidBridge: {} })).toBe(false);
+  });
+
+  test("is false in a browser, even where Capacitor's library says a web version exists", () => {
+    expect(nativePluginAvailable("Share", {})).toBe(false);
+    expect(
+      nativePluginAvailable("Share", {
+        Capacitor: {
+          isNativePlatform: () => false,
+          getPlatform: () => "web",
+          isPluginAvailable: () => true,
+          PluginHeaders: HEADERS,
+        },
+      }),
+    ).toBe(false);
+  });
+
+  test("trusts the list over the shell's isPluginAvailable, which says no until the library loads", () => {
+    // Capacitor's native bridge answers from `Capacitor.Plugins`, which stays
+    // empty until the library registers a plugin.
+    const beforeLibrary = {
+      androidBridge: {},
+      Capacitor: { PluginHeaders: HEADERS, isPluginAvailable: () => false },
+    };
+    expect(nativePluginAvailable("Share", beforeLibrary)).toBe(true);
+    const noList = {
+      androidBridge: {},
+      Capacitor: { isPluginAvailable: (name: string) => name === "Share" },
+    };
+    expect(nativePluginAvailable("Share", noList)).toBe(true);
+    expect(nativePluginAvailable("Media", noList)).toBe(false);
+  });
+
+  test("nothing here throws", () => {
+    expect(
+      nativePluginAvailable("Share", {
+        androidBridge: {},
+        Capacitor: {
+          isPluginAvailable: () => {
+            throw new Error("boom");
+          },
+        },
+      }),
+    ).toBe(false);
+    expect(
+      nativePluginAvailable("Share", {
+        androidBridge: {},
+        Capacitor: { PluginHeaders: [null as never, { name: "Share" }] },
+      }),
+    ).toBe(true);
   });
 });
 

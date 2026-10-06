@@ -2501,6 +2501,13 @@ export const fr = {
   "pepites.share.whatsapp": "Envoyer sur WhatsApp",
   "pepites.share.copy": "Copier le lien",
   "pepites.share.copy_failed": "Le lien n'a pas pu être copié.",
+  // Inside the phone app only, when the app has the plugins (ShareImageSheet).
+  "pepites.share.save": "Enregistrer dans la galerie",
+  "pepites.share.saved": "Image enregistrée dans la galerie.",
+  "pepites.share.save_denied":
+    "BotolaGO n'a pas accès à vos photos. Autorisez-le dans les réglages du téléphone.",
+  "pepites.share.save_failed": "L'image n'a pas pu être enregistrée.",
+  "pepites.share.native_failed": "L'image n'a pas pu être partagée.",
   // The pitch demo's welcome screen (demo/, `WelcomeScreen`); the app
   // itself opens on the landing page instead.
   "welcome.title": "Bienvenue sur BotolaGO",
