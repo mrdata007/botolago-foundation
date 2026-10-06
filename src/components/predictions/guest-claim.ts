@@ -10,6 +10,7 @@ import {
 } from "@/backend/predictions/guest-votes";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { PRONOSTICS_ENABLED } from "@/lib/feature-flags";
+import { authService } from "@/services/auth";
 import { predictionsService } from "@/services/predictions";
 import type { Language } from "@/types/domain";
 import { claimImportedLabel, claimKeptLabel, claimStartedLabel } from "./predictions-copy";
@@ -66,6 +67,23 @@ export function claimGuestPredictionsOnSignIn({
 
 let votesInFlight: Promise<void> | null = null;
 
+export interface GuestVoteImportServices {
+  accountId(): string | null;
+  read: typeof readGuestVotes;
+  forget: typeof forgetGuestVotes;
+  send: typeof predictionsService.castMatchVote;
+}
+
+const guestVoteServices: GuestVoteImportServices = {
+  accountId: () => {
+    const session = authService.getSession();
+    return session.status === "authenticated" ? (session.user?.id ?? null) : null;
+  },
+  read: readGuestVotes,
+  forget: forgetGuestVotes,
+  send: (item) => predictionsService.castMatchVote(item),
+};
+
 /**
  * A visitor's match votes move to the account at sign-in, like their picks:
  * each is cast as the account's own vote. Every one is tried, however old:
@@ -74,15 +92,23 @@ let votesInFlight: Promise<void> | null = null;
  * not one Pronostics covers) leaves the phone too; when the game is off or
  * the network fails, the rest stay for the next sign-in.
  */
-export function sendGuestVotesOnSignIn(queryClient: QueryClient): Promise<void> {
+export function sendGuestVotesOnSignIn(
+  queryClient: QueryClient,
+  services: GuestVoteImportServices = guestVoteServices,
+): Promise<void> {
   if (!PRONOSTICS_ENABLED || votesInFlight) return votesInFlight ?? Promise.resolve();
-  const items = guestVoteItems(readGuestVotes());
+  const owner = services.accountId();
+  if (!owner) return Promise.resolve();
+  const items = guestVoteItems(services.read());
   if (items.length === 0) return Promise.resolve();
   votesInFlight = (async () => {
     const settled: MatchVoteInput[] = [];
     for (const item of items) {
+      // Each request uses the current session. Stop if the account that began
+      // this import left while the previous request was awaiting its answer.
+      if (services.accountId() !== owner) break;
       try {
-        await predictionsService.castMatchVote(item);
+        await services.send(item);
         settled.push(item);
       } catch (error) {
         const { code } = mapPredictionsError(error);
@@ -95,7 +121,7 @@ export function sendGuestVotesOnSignIn(queryClient: QueryClient): Promise<void> 
         settled.push(item);
       }
     }
-    forgetGuestVotes(settled);
+    services.forget(settled);
     void queryClient.invalidateQueries({ queryKey: ["predictions", "match-votes"] });
   })().finally(() => {
     votesInFlight = null;
