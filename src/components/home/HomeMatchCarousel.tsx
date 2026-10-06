@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type MouseEvent } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { MatchCard } from "@/components/common/MatchCard";
@@ -47,6 +47,21 @@ const TRACK = cn(
 const SLIDE = cn(
   "flex min-w-0 shrink-0 basis-[88%] snap-start lg:basis-full xl:basis-[88%]",
   "[&>*]:min-w-0 [&>*]:flex-1",
+);
+
+/**
+ * "Passer les matchs": out of sight until the keyboard reaches it, then a
+ * capsule over the first card's top edge, in the chosen vote button's colours.
+ * A round is up to eight cards of four stops each; this is the way past them.
+ */
+const SKIP = cn(
+  "sr-only focus:not-sr-only focus:absolute focus:-top-3 focus:start-0 focus:z-10",
+  "focus:px-3 focus:py-2",
+  ui.radius.full,
+  ui.text.meta,
+  "[font-weight:var(--ui-weight-heavy)]",
+  "bg-[color:var(--ui-surface)] text-[color:var(--ui-ink-fg)]",
+  ui.focusOnMesh,
 );
 
 /**
@@ -112,6 +127,14 @@ export function HomeMatchCarousel({
   const [gameClosed, setGameClosed] = useState(false);
   const onGameClosed = useCallback(() => setGameClosed(true), []);
 
+  // Where "Passer les matchs" lands: the end of the carousel, so the next Tab
+  // goes on to what follows it.
+  const endId = useId();
+  const skipToEnd = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    document.getElementById(endId)?.focus();
+  };
+
   const onScroll = useCallback(() => {
     const list = track.current;
     const first = list?.firstElementChild as HTMLElement | null;
@@ -164,9 +187,12 @@ export function HomeMatchCarousel({
       aria-roledescription={t("home.carousel.role")}
       aria-label={t("home.carousel.label")}
       onFocus={() => setReadAll(true)}
-      className="mt-5"
+      className="relative mt-5"
       data-testid="home-match-carousel"
     >
+      <a href={`#${endId}`} onClick={skipToEnd} className={SKIP}>
+        {t("home.carousel.skip")}
+      </a>
       <div ref={track} onScroll={onScroll} data-carousel-track className={TRACK}>
         {cards.map(({ match, home, away }, index) => (
           <div
@@ -256,6 +282,7 @@ export function HomeMatchCarousel({
           <ChevronRight aria-hidden />
         </UiIconButton>
       </div>
+      <div id={endId} tabIndex={-1} className="outline-none" />
     </div>
   );
 }

@@ -102,6 +102,7 @@ export const fr = {
   "home.carousel.next": "Match suivant",
   "home.carousel.role": "carrousel",
   "home.carousel.slide_role": "diapositive",
+  "home.carousel.skip": "Passer les matchs",
   // The home page's sr-only <h1>. The French is the page's <title>, which is
   // what the server renders and a crawler reads.
   "home.sr_title": "BotolaGO — Actualité, matchs et Fantasy du football marocain",

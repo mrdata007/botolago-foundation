@@ -134,6 +134,22 @@ describe("HomeMatchCarousel — as the server renders it", () => {
     ).toBe("Match 8 sur 8");
   });
 
+  it("offers a way past the round: a skip link first, landing at the carousel's end", async () => {
+    const html = await render(round(8));
+    const skip = /<a href="#([^"]+)" class="sr-only focus:not-sr-only[^"]*">([^<]+)<\/a>/.exec(
+      html,
+    );
+    expect(skip?.[2]).toBe(fr["home.carousel.skip"]);
+    // Before the first card...
+    expect(html.indexOf(skip![0])).toBeLessThan(html.indexOf('role="group"'));
+    // ...landing after the last control, on a target the focus can take.
+    const target = `<div id="${skip![1]}" tabindex="-1" class="outline-none"></div>`;
+    expect(html).toContain(target);
+    expect(html.indexOf(target)).toBeGreaterThan(
+      html.indexOf(`aria-label="${fr["home.carousel.next"]}"`),
+    );
+  });
+
   it("keeps the indicator for the eye only: each card's label carries the position", async () => {
     const html = await render(round(3));
     expect(html).toMatch(/<div aria-hidden="true" data-testid="home-match-carousel-indicator"/);
@@ -252,6 +268,7 @@ describe("HomeMatchCarousel — house rules", () => {
         "home.carousel.next",
         "home.carousel.role",
         "home.carousel.slide_role",
+        "home.carousel.skip",
       ] as const) {
         expect(dictionary[key]).toBeTruthy();
       }
