@@ -59,17 +59,34 @@ import { cn } from "@/lib/utils";
  * lifted above the nav leaves it off. A bar that sticks to the bottom of a
  * screen that has the nav sits at `bottom-[var(--bottomnav-h)]` (0 from `md`,
  * where the nav is hidden).
+ *
+ * STICKY BOTTOM BAR (BG-0154) — from `md` the column rounds its corners and
+ * clips what overflows them. It used to clip with `overflow: hidden`, and
+ * `hidden` makes the column a scroll container, so a `sticky bottom-0` bar
+ * inside it stuck to the column, which never scrolls, instead of the window:
+ * it did not stick at all. On a notched iPhone turned sideways (844x390, an
+ * `md` width) the player page's actions sat below the window and ran into the
+ * home indicator as the page scrolled. `stickyBottomBar` clips with
+ * `overflow: clip` instead, which clips the same corners without making a
+ * scroll container, and `flow-root` keeps the block formatting context
+ * `hidden` gave (`clip` does not make one). The player page opts in. The squad
+ * builder and transfer confirmation bars are sticky in the column too and do
+ * not stick from `md` either; they keep today's behaviour until that is
+ * decided for them.
  */
 export function FantasyFrame({
   children,
   bottomNav = false,
   topBar = "desktop",
+  stickyBottomBar = false,
   className,
   background = "light",
 }: {
   children: ReactNode;
   /** Render the application bottom navigation (phones; it is `md:hidden`). */
   bottomNav?: boolean;
+  /** The screen has a `sticky bottom-0` bar in the column that must stick from `md` too. */
+  stickyBottomBar?: boolean;
   /** `always` shows the global top bar on phones too — the hub, which has no `UiHeader`. */
   topBar?: "desktop" | "always";
   className?: string;
@@ -104,7 +121,8 @@ export function FantasyFrame({
           // kept: the viewport-containment tooling selects `main.fpl-column`.
           "fpl-column relative",
           ui.space.content,
-          "md:my-4 md:min-h-[calc(100dvh-7rem)] md:overflow-hidden",
+          "md:my-4 md:min-h-[calc(100dvh-7rem)]",
+          stickyBottomBar ? "md:flow-root md:overflow-clip" : "md:overflow-hidden",
           "md:rounded-[var(--ui-radius-column)] md:shadow-[var(--ui-shadow-column)]",
           bottomNav ? "pb-28 md:pb-12" : "pb-8",
           surface,

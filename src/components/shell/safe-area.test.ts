@@ -484,3 +484,123 @@ describe("BG-0154: a status-bar strip where nothing at the top sticks", () => {
     expect(read("src/components/auth/AuthShell.tsx")).toContain("var(--ui-ink-deep)");
   });
 });
+
+/* ------------------------------------------------------------------------ */
+/* BG-0154: the Fantasy player bar sticks from md too (a phone sideways).   */
+/* ------------------------------------------------------------------------ */
+
+describe("BG-0154: the Fantasy player page's action bar sticks at every width", () => {
+  const frame = read("src/components/fpl/FantasyFrame.tsx");
+  const player = read("src/routes/fantasy.players.$playerId.tsx");
+
+  /** The class list of FantasyFrame's `<main>`: every string and expression in its `cn(…)`. */
+  const columnClasses = () => {
+    const tree = ts.createSourceFile(
+      "FantasyFrame.tsx",
+      frame,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX,
+    );
+    let call: ts.CallExpression | null = null;
+    const visit = (node: ts.Node) => {
+      if (
+        ts.isJsxOpeningElement(node) &&
+        node.tagName.getText() === "main" &&
+        node.attributes.properties.some(
+          (a) => ts.isJsxAttribute(a) && a.name.getText() === "className",
+        )
+      ) {
+        const attr = node.attributes.properties.find(
+          (a): a is ts.JsxAttribute => ts.isJsxAttribute(a) && a.name.getText() === "className",
+        );
+        const init = attr?.initializer;
+        if (
+          init &&
+          ts.isJsxExpression(init) &&
+          init.expression &&
+          ts.isCallExpression(init.expression)
+        )
+          call = init.expression;
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(tree);
+    expect(call).not.toBeNull();
+    return (call as unknown as ts.CallExpression).arguments.map((arg) => arg.getText());
+  };
+
+  test("the column clips with overflow: clip (no scroll container) when a screen asks for it", () => {
+    const args = columnClasses();
+    // `hidden` makes the column the sticky bar's scroll container; `clip`
+    // clips the same rounded corners without one, and `flow-root` keeps the
+    // block formatting context `hidden` gave.
+    expect(args).toContain(
+      'stickyBottomBar ? "md:flow-root md:overflow-clip" : "md:overflow-hidden"',
+    );
+    // No unconditional `overflow-hidden` left to win over it.
+    const unconditional = args.filter((arg) => !arg.includes("?") && /overflow-hidden/.test(arg));
+    expect(unconditional).toEqual([]);
+    expect(frame).toContain("stickyBottomBar = false,");
+  });
+
+  test("the player page asks for it, and is the only screen that does so far", () => {
+    expect(player).toContain("<FantasyFrame stickyBottomBar>");
+    const SRC = join(ROOT, "src");
+    const askers = [...new Bun.Glob("**/*.tsx").scanSync({ cwd: SRC })]
+      .filter((file) => !file.includes(".test."))
+      .filter((file) =>
+        /<FantasyFrame\b[^>]*\bstickyBottomBar\b/.test(readFileSync(join(SRC, file), "utf8")),
+      );
+    expect(askers).toEqual(["routes/fantasy.players.$playerId.tsx"]);
+  });
+
+  test("the bar is a child of the column itself, so it can travel up past the hero", () => {
+    // A sticky box only travels inside its parent. Inside the wrapper under
+    // the hero, at 844x390 the bar could rise only to the wrapper's top and
+    // hung 43px below the window at the top of the page.
+    const tree = ts.createSourceFile(
+      "player.tsx",
+      player,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX,
+    );
+    const bars: ts.JsxElement[] = [];
+    const visit = (node: ts.Node) => {
+      if (
+        ts.isJsxElement(node) &&
+        node.openingElement.attributes.properties.some(
+          (a) =>
+            ts.isJsxAttribute(a) &&
+            a.name.getText() === "className" &&
+            a.initializer !== undefined &&
+            ts.isStringLiteral(a.initializer) &&
+            /(^|\s)sticky\s+bottom-0(\s|$)/.test(a.initializer.text),
+        )
+      ) {
+        bars.push(node);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(tree);
+    expect(bars).toHaveLength(1);
+    const [bar] = bars;
+    // Its parent is the page's top-level fragment, which FantasyFrame puts
+    // straight into the column.
+    expect(ts.isJsxFragment(bar.parent)).toBe(true);
+    const fn = (() => {
+      for (let p: ts.Node | undefined = bar.parent; p; p = p.parent)
+        if (ts.isFunctionDeclaration(p)) return p.name?.getText();
+      return null;
+    })();
+    expect(fn).toBe("PlayerDetailPage");
+    // The wrapper's old bottom padding moved onto the bar, so the spacing holds.
+    const classes = (
+      bar.openingElement.attributes.properties.find(
+        (a): a is ts.JsxAttribute => ts.isJsxAttribute(a) && a.name.getText() === "className",
+      )?.initializer as ts.StringLiteral
+    ).text;
+    expect(classes.split(/\s+/)).toEqual(expect.arrayContaining(["mb-6", "mt-2", "pt-6"]));
+  });
+});
