@@ -263,8 +263,8 @@ Plan items 7, 8 and 9. "Before" is batch 1 (`c6e0549`), "after" is
   read a screen already has on its way, else read it themselves and store it
   for every other screen; they never start the pool's own query, so a
   screen's pool read keeps its own retry whatever else reads the pool, and a
-  failing pool costs two reads (three when a screen's own read was failing
-  too; four before). `getTrendingPlayers` and `getTopPlayersOfWeek` now take
+  failing pool costs two reads through such a read alone (up to four when a
+  screen reads the pool at the same time, as before). `getTrendingPlayers` and `getTopPlayersOfWeek` now take
   where the pool comes from (by default they still read it). Home no longer
   reads trending players for a visitor (only a signed-in reader's Home shows
   them). The top players page asks for its gameweek's top five once the
@@ -343,7 +343,10 @@ skeptics, then each fix by three more. Two findings were confirmed:
   first; a retry cancelled during its wait counted as two failures; a read
   left waiting after a cancelled pool read). The final version (above) never
   starts the pool's own read from another read; tests cover each path and
-  fail on all three earlier versions.
+  fail on all three earlier versions. A third round found one more race (a
+  read's own pool read finishing after a screen's newer one overwrote it;
+  now it is not stored over a newer copy) and five guards no test pinned;
+  each now has a test that fails when the guard is removed.
 - A test claimed two gameweeks shared one pool read when only one reached
   it; it now holds the read open until both join it.
 
@@ -356,7 +359,7 @@ with no skeleton).
 ### Checks
 
 `bun run typecheck` clean; `bun run lint` no errors (the 31 warnings already
-on main); `bun test` 5,956 pass, 17 skipped, 1 fail (the same Ramadan 2027
+on main); `bun test` 5,961 pass, 17 skipped, 1 fail (the same Ramadan 2027
 test as on main); `bun run build` passes.
 
 ## Remaining bottlenecks and next batch
