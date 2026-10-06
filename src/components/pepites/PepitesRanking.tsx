@@ -499,13 +499,14 @@ const ROW = cn(
  *
  * Each row carries (BG-0156) the club's colour on its start edge, the rank
  * (1 to 3 on the white plate), the player's photo or the club's crest, the
- * name over "position · club", and the ten-segment bar under the score. On
- * a table under 384px (phones up to 414px) the disc gives its width to the
- * name, as before: with it, names and clubs wrapped to two or three lines
- * and the rows grew by half (measured, BG-0156); the club's edge and name
- * still say whose row it is. A name that does not fit wraps, balanced, onto
- * a second line (the row grows past its 48px floor), and only a fourth line
- * would be cut. The
+ * name over "position · club", and the ten-segment bar under the score. The
+ * rank column is only the plate's 28px past the edge's gap, so the disc
+ * fits from a 352px table (a 390px phone); under it (the 360 and 375px
+ * phones) the disc gives its width to the name, because there the club line
+ * no longer fit in two lines (measured, BG-0156), and the club's edge and
+ * name still say whose row it is. A name that does not fit wraps, balanced,
+ * onto a second line (the row grows past its 48px floor), and only a fourth
+ * line would be cut. The
  * name takes its own direction (`PepitesName`), so a Latin name in an Arabic
  * table keeps its first name and loses its end, never its start. The whole
  * row opens the player; the link around the disc and name is the row's
@@ -533,10 +534,11 @@ function RankingTable({
       <UiTable caption={t("pepites.ranking.title")} tableClassName="table-fixed">
         <UiTHead>
           <UiTR>
-            <UiTH numeric className="w-10 pe-1 ps-2">
+            {/* The edge's 4px, a 4px gap, the 28px plate: nothing more. */}
+            <UiTH numeric className="w-9 pe-0 ps-2">
               #
             </UiTH>
-            <UiTH className="px-1">{t("pepites.table.player")}</UiTH>
+            <UiTH className="pe-1 ps-1.5">{t("pepites.table.player")}</UiTH>
             <SortHeader sort="minutes" active={sort} onSort={onSort} className="w-11">
               {t("pepites.table.minutes")}
             </SortHeader>
@@ -560,11 +562,11 @@ function RankingTable({
                 void navigate({ to: "/pepites/joueur/$playerId", params: { playerId: row.id } })
               }
             >
-              <UiTD numeric className="relative pe-1 ps-2">
+              <UiTD numeric className="relative pe-0 ps-2">
                 <ClubEdge row={row} />
                 <RankPlate rank={row.rank} size="sm" />
               </UiTD>
-              <UiTD className="px-1">
+              <UiTD className="pe-1 ps-1.5">
                 <Link
                   to="/pepites/joueur/$playerId"
                   params={{ playerId: row.id }}
@@ -572,12 +574,12 @@ function RankingTable({
                   data-testid="pepites-ranking-row"
                   className={cn("flex min-w-0 items-center gap-1.5", ui.radius.control, ui.focus)}
                 >
-                  {/* Under a 384px table (phones to 414px) the disc gives its width to the name. */}
+                  {/* Under a 352px table (the 360 and 375px phones) the disc gives its width to the name. */}
                   <PepitesIdentityDisc
                     player={row}
                     listed={row.team ? catalogue.get(row.team.id) : undefined}
                     size="xs"
-                    className="@max-[24rem]:hidden"
+                    className="@max-[22rem]:hidden"
                   />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <PepitesName
