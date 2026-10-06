@@ -1,10 +1,12 @@
 # The BotolaGO phone app
 
-Status: **the web side is built and tested, and the cloud build is written
-(`codemagic.yaml`), but no build has ever been run and nothing has been tried on a
-real phone.** Expect the first builds to need a fix or two: the build file follows
-Codemagic's documentation and was checked here only as far as it can be (see
-"What was checked without a phone or a build").
+Status: **the web side is built and tested, and the cloud build runs.** An iPhone
+build was uploaded to App Store Connect on 2026-10-05, and an Android test `.apk`
+was built. The Android build now makes the signed Google Play bundle instead, which
+needs the `botolago_keystore` at Codemagic first (step 6 below). The app's icon,
+launch screen, Android notification icon, Apple privacy manifest and photo
+permission texts are now added on every build; none of that has been seen on a
+real phone yet (see "What was checked without a phone or a build").
 
 ## What it is
 
@@ -31,6 +33,7 @@ is deployed at botolago.com**. Deploy the branch before testing an app build.
 | Opening an alert's page, refreshing the inbox, keeping the phone registered | `src/components/native/NativePushBridge.tsx`, `src/lib/push-payload.ts`                                 |
 | Android alert channels (so a goal appears on screen)                        | `src/lib/push-channels.ts`, and the sender's `supabase/functions/_shared/notification-push-types.ts`    |
 | Finishing the native projects after `cap add`                               | `scripts/mobile/prepare-native.mjs` (`bun run mobile:prepare`, `bun run mobile:check`)                  |
+| The app's icons, launch screens and Android notification icon               | `store-assets/app-icon/native/`, made by `scripts/brand/make-app-icons.py`                              |
 | Numbering each build for the stores                                         | `scripts/mobile/set-build-number.mjs`                                                                   |
 | The cloud build of the iPhone and Android apps                              | `codemagic.yaml`                                                                                        |
 
@@ -50,9 +53,10 @@ when you press **Start new build**: nothing starts on a push. Nothing is release
 - **iPhone** (`ios` workflow): signs the app with your Apple account and uploads
   it to App Store Connect, where it appears in **TestFlight for your own team**. It
   is not sent to Apple's review and not released.
-- **Android** (`android` workflow): makes a signed `.apk` (to install on a phone)
-  and a signed `.aab` (what Google Play takes) and keeps them as downloads. It does
-  not publish to Google Play.
+- **Android** (`android` workflow): makes a signed `.aab` (what Google Play takes)
+  and a signed `.apk` (to install on a phone) and keeps them as downloads. Both are
+  signed with the `botolago_keystore`. It does not publish to Google Play: you
+  upload the `.aab` in the Play Console yourself.
 
 ### One-time set-up
 
@@ -87,8 +91,12 @@ at Apple. Nothing here uses it; leave it or delete it.)
    `botolago_app_store_connect`, and give it the Issuer ID, the Key ID and the `.p8`
    file from step 3.
 6. Teams, **Code signing identities**, Android keystores: **generate** a keystore (or
-   upload one) with the reference name exactly `botolago_keystore`. **Download a
-   backup of it and keep it safe:** it is what signs every Android update.
+   upload one) with the reference name exactly `botolago_keystore`. Do this before
+   the next Android build: without it the build stops at once with "No keystores
+   with reference 'botolago_keystore'". **Download a backup of it and keep it
+   safe:** it is what signs every Android update, and Google Play refuses an update
+   signed with another key. (In the Play Console, keep "Google Play App Signing" on:
+   this keystore is then your upload key, and Google can reset a lost upload key.)
 
 **Firebase (console.firebase.google.com)**
 
@@ -111,47 +119,81 @@ The names above (`botolago_keystore`, `botolago_mobile`,
 9. Codemagic, your app, **Start new build**: pick the branch and the workflow
    (`android` or `ios`).
 10. **Android**: when it finishes, open the build's **Artifacts** and the `.apk` link
-    on the phone (allow installing from the browser when it asks).
+    on the phone (allow installing from the browser when it asks). The `.aab` is the
+    file for the Play Console.
 11. **iPhone**: when it finishes, wait for App Store Connect to process the build
     (often 10 to 30 minutes), then TestFlight, Internal Testing: add yourself, install
     Apple's **TestFlight** app on the iPhone and open BotolaGO from there. App Store
     Connect may ask an **encryption** question for the build ("Missing Compliance").
     The app only uses standard HTTPS, but that is a declaration for you to make, not
-    something this repository decides.
+    something this repository decides. Once you have answered it, the answer can be
+    written into the app (`ITSAppUsesNonExemptEncryption` in `Info.plist`, added by
+    `prepare-native.mjs`) so App Store Connect stops asking for every build; ask for
+    it then.
 
-A failed build shows its log on the build page; send it to whoever is fixing it
-(the first builds probably will fail once or twice, see the status above).
+A failed build shows its log on the build page; send it to whoever is fixing it.
 
 ### What the build does, so a failure is easy to place
 
 1. Installs the project's packages from the lockfile.
-2. `cap add android` or `cap add ios`, then `bun run mobile:prepare` (and, on
-   Android, writes `google-services.json` first and runs `bun run mobile:check`,
-   which stops the build if anything the app needs is missing).
+2. `cap add android` or `cap add ios`, then `bun run mobile:prepare`, then
+   `bun run mobile:check`, which stops the build if anything the app needs is
+   missing. On Android it writes `google-services.json` first.
 3. Numbers the build (`set-build-number.mjs`): Codemagic's build number, and the
    version people see (`APP_VERSION` at the top of `codemagic.yaml`, `1.0.0`).
 4. `cap sync`, then signs and builds (`xcode-project use-profiles` and `build-ipa`,
-   or `./gradlew assembleRelease bundleRelease`).
+   or `./gradlew bundleRelease assembleRelease`). The Android step first checks that
+   Codemagic gave it the keystore (`CM_KEYSTORE_PATH`), and stops with a message
+   if not.
 
 `bun run mobile:prepare` is safe to run again, and adds only what Capacitor's
 templates leave out:
 
-- **iPhone**: the two methods in `AppDelegate.swift` that pass Apple's token to
-  Capacitor; `App.entitlements` declaring push, and the Xcode project's setting that
-  points at it (what Xcode's "+ Capability, Push Notifications" does). The
-  entitlement says `production`, because every build the cloud makes is a TestFlight
-  or App Store one, which is also what the sender's `APNS_ENVIRONMENT` defaults to.
-- **Android**: `POST_NOTIFICATIONS` in `AndroidManifest.xml` (without it Android 13
-  and later never show the permission prompt), and the release signing from the
-  keystore Codemagic provides (`CM_KEYSTORE_*`; unset on a developer machine, which
-  then builds as before).
+- **iPhone**:
+  - the two methods in `AppDelegate.swift` that pass Apple's token to Capacitor;
+    `App.entitlements` declaring push, and the Xcode project's setting that points
+    at it (what Xcode's "+ Capability, Push Notifications" does). The entitlement
+    says `production`, because every build the cloud makes is a TestFlight or App
+    Store one, which is also what the sender's `APNS_ENVIRONMENT` defaults to;
+  - **iPhone only**: `TARGETED_DEVICE_FAMILY = 1` in the app's Debug and Release
+    settings, so App Store Connect does not ask for iPad screenshots;
+  - **upright only**: the screen does not turn sideways (the site only handles
+    the notch at the top and bottom);
+  - `Info.plist`: French as the app's language and Arabic as the second one, and
+    the texts iOS shows when the profile photo picker asks for the camera or the
+    photos (without the camera text, iOS closes the app when someone picks "Take
+    Photo"). The same texts in Arabic are in `ar.lproj/InfoPlist.strings`;
+  - `PrivacyInfo.xcprivacy`, Apple's privacy manifest, added to the app's
+    resources. It declares the one "required reason" API the app uses:
+    `UserDefaults`, by `@capacitor/preferences`, reason `CA92.1` (data only the app
+    reads). No tracking. Its list of collected data is left empty: what the app
+    collects is what the website collects, and you declare that in App Store
+    Connect's App Privacy form, following the privacy policy;
+  - the **icon** (the AppIcon set) and the **launch screen** image (the GO mark on
+    the icon's light grey-white, `#F2F5FA`).
+- **Android**:
+  - `POST_NOTIFICATIONS` in `AndroidManifest.xml` (without it Android 13 and later
+    never show the permission prompt);
+  - the **notification icon**: a white GO on a transparent background
+    (`ic_stat_notify`) and its colour, BotolaGO blue, named in the manifest.
+    Firebase draws every alert with them, whether the app is open or closed;
+    without them Android shows a white square;
+  - **upright only**, like the iPhone;
+  - the **icon**: the adaptive icon (background, foreground, and the one-colour
+    layer phones tint to match the wallpaper) and the flat icons older phones
+    use, at every size;
+  - the **launch screen**: the GO mark on `#F2F5FA`, on every Android version
+    (`styles.xml`), and Capacitor's launch images replaced;
+  - the release signing from the keystore Codemagic provides (`CM_KEYSTORE_*`;
+    unset on a developer machine, which then builds an unsigned release).
 
 Capacitor 8's Android template already targets API 36.
 
-Not done yet, and needed before a store submission: the app's **icon and launch
-screen** (the build uses Capacitor's default ones), and an Android **notification
-icon** (white shapes on a transparent background; without one Android shows the
-app icon, often as a white square).
+The icons and launch screens are committed, ready-made, in
+`store-assets/app-icon/native/`, laid out as they go into the projects; the build
+copies them as they are. They are made by `scripts/brand/make-app-icons.py`, the
+same script as the store icons: to change them, change it and run it again
+(`store-assets/app-icon/README.md`). The build needs no Python.
 
 ### If you ever have a Mac or Android Studio
 
@@ -222,6 +264,11 @@ Nothing below has been done. In this order, on a test account:
 9. Arabic: switch the language and check the Push row and the alert text read
    correctly right to left. (The Arabic wording of the new alerts has not been read
    by a native speaker.)
+10. The app itself: the BotolaGO icon on the home screen (on Android 13 and later,
+    also with themed icons on), the GO mark on a light background at launch, the
+    white GO in the status bar when an alert arrives, the screen staying upright
+    when the phone turns, and, in the profile, the photo button: "Take Photo" asks
+    for the camera with the French text (Arabic on a phone set to Arabic).
 
 **What was checked without a phone or a build:**
 
@@ -235,16 +282,31 @@ Nothing below has been done. In this order, on a test account:
   Linux): the helper's changes were inspected in the generated Xcode project (the
   push setting in the app target's two configurations only), the Gradle file and the
   manifest, the build number lands in both, and a second run changes nothing.
+- The store-readiness additions (2026-10-06), the same way, on projects from
+  Capacitor 8.5.2's templates, with `cap sync` run afterwards: the icons and launch
+  images in both projects are byte for byte the committed ones and cover every
+  file Capacitor's template had; the Xcode project parses, every object it names
+  exists, the privacy manifest and the `InfoPlist.strings` are in the app's
+  resources, and the app target's Debug and Release say iPhone only; `Info.plist`
+  and `PrivacyInfo.xcprivacy` parse as property lists; the manifest has the
+  notification icon, its colour and portrait; `bun run mobile:check` passes after
+  `cap sync` and the build number; a second `mobile:prepare` changes nothing.
+  Every patch has a unit test, and ten of the changes were broken on purpose to
+  see a test fail.
+  The Android resources and manifest were also linked with Google's `aapt2`
+  (against Android 36 and the splash screen library, without the rest of the app),
+  which resolves every name they use: it passed, and failed on a misspelt one.
 - `codemagic.yaml` parses, and a test holds that every command in it exists, that
   the steps run in the order they need, that the app id matches
   `capacitor.config.ts`, that it holds no secret, and that it cannot release anything
   (no triggers, no review, no store, no Google Play).
 
-**What was not checked:** the Gradle signing block under a real Gradle, the Xcode
-project under a real `xcodebuild`, how Codemagic reads the file (its shared-settings
-syntax, `xcode: latest`, the machine type), signing, the upload to App Store
-Connect, Apple's and Google's servers, real tokens, real delivery, and any
-real phone. The stand-in for Capacitor's bridge is not Apple or Google.
+**What was not checked:** the Gradle signing block and a whole Android build
+under a real Gradle; the Xcode project (privacy manifest, `InfoPlist.strings`,
+iPhone only) under a real `xcodebuild`; how the icons and launch screens look on a
+real phone; how Codemagic reads the file (its shared-settings syntax,
+`xcode: latest`, the machine type), signing, the upload to App Store Connect,
+Apple's and Google's servers, real tokens, real delivery, and any real phone. The stand-in for Capacitor's bridge is not Apple or Google.
 
 ## Still open before a store submission
 
@@ -254,6 +316,8 @@ sign-in redirect handling; real account deletion with a stated timeline and
 confirmation; the prize terms; removing test clubs and Gameweek state from
 production data; the share-link origin; `viewport-fit=cover` for iPhone notches;
 the privacy policy and store forms (push is not yet in the policy's purposes, and
-phone tokens have no row in its retention table); and Apple's rule against thin web
-wrappers (the app must offer more than the website: push alerts count, and should
-be demonstrable to the reviewer).
+phone tokens have no row in its retention table; App Store Connect's App Privacy
+form and Google Play's Data safety form are filled by hand, from the policy); the
+Arabic permission texts, not yet read by a native speaker; and Apple's rule
+against thin web wrappers (the app must offer more than the website: push alerts
+count, and should be demonstrable to the reviewer).
