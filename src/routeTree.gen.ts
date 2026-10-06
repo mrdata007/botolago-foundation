@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as FantasyRouteImport } from './routes/fantasy'
@@ -24,6 +25,7 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PronosticsRouteImport } from './routes/pronostics'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SuppressionCompteRouteImport } from './routes/suppression-compte'
+import { Route as TelechargerRouteImport } from './routes/telecharger'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -102,6 +104,11 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -165,6 +172,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const SuppressionCompteRoute = SuppressionCompteRouteImport.update({
   id: '/suppression-compte',
   path: '/suppression-compte',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TelechargerRoute = TelechargerRouteImport.update({
+  id: '/telecharger',
+  path: '/telecharger',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -513,6 +525,7 @@ const PronosticsLiguesRejoindreRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/app': typeof AppRoute
   '/auth': typeof AuthRouteWithChildren
   '/demo': typeof DemoRoute
   '/fantasy': typeof FantasyRouteWithChildren
@@ -526,6 +539,7 @@ export interface FileRoutesByFullPath {
   '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/suppression-compte': typeof SuppressionCompteRoute
+  '/telecharger': typeof TelechargerRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -597,6 +611,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/app': typeof AppRoute
   '/auth': typeof AuthRouteWithChildren
   '/demo': typeof DemoRoute
   '/jouer': typeof JouerRoute
@@ -607,6 +622,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/suppression-compte': typeof SuppressionCompteRoute
+  '/telecharger': typeof TelechargerRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -678,6 +694,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/app': typeof AppRoute
   '/auth': typeof AuthRouteWithChildren
   '/demo': typeof DemoRoute
   '/fantasy': typeof FantasyRouteWithChildren
@@ -691,6 +708,7 @@ export interface FileRoutesById {
   '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/suppression-compte': typeof SuppressionCompteRoute
+  '/telecharger': typeof TelechargerRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -764,6 +782,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/app'
     | '/auth'
     | '/demo'
     | '/fantasy'
@@ -777,6 +796,7 @@ export interface FileRouteTypes {
     | '/pronostics'
     | '/sitemap.xml'
     | '/suppression-compte'
+    | '/telecharger'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
@@ -848,6 +868,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/app'
     | '/auth'
     | '/demo'
     | '/jouer'
@@ -858,6 +879,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/sitemap.xml'
     | '/suppression-compte'
+    | '/telecharger'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
@@ -928,6 +950,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/app'
     | '/auth'
     | '/demo'
     | '/fantasy'
@@ -941,6 +964,7 @@ export interface FileRouteTypes {
     | '/pronostics'
     | '/sitemap.xml'
     | '/suppression-compte'
+    | '/telecharger'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
@@ -1013,6 +1037,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  AppRoute: typeof AppRoute
   AuthRoute: typeof AuthRouteWithChildren
   DemoRoute: typeof DemoRoute
   FantasyRoute: typeof FantasyRouteWithChildren
@@ -1026,6 +1051,7 @@ export interface RootRouteChildren {
   PronosticsRoute: typeof PronosticsRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SuppressionCompteRoute: typeof SuppressionCompteRoute
+  TelechargerRoute: typeof TelechargerRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
@@ -1057,6 +1083,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -1148,6 +1181,13 @@ declare module '@tanstack/react-router' {
       path: '/suppression-compte'
       fullPath: '/suppression-compte'
       preLoaderRoute: typeof SuppressionCompteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/telecharger': {
+      id: '/telecharger'
+      path: '/telecharger'
+      fullPath: '/telecharger'
+      preLoaderRoute: typeof TelechargerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -1850,6 +1890,7 @@ const PronosticsRouteWithChildren = PronosticsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  AppRoute: AppRoute,
   AuthRoute: AuthRouteWithChildren,
   DemoRoute: DemoRoute,
   FantasyRoute: FantasyRouteWithChildren,
@@ -1863,6 +1904,7 @@ const rootRouteChildren: RootRouteChildren = {
   PronosticsRoute: PronosticsRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SuppressionCompteRoute: SuppressionCompteRoute,
+  TelechargerRoute: TelechargerRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,

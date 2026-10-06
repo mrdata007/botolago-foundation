@@ -995,6 +995,30 @@ html[dir="rtl"]
   animation-delay: calc(min(var(--i, 0), 7) * 40ms);
 }
 
+/* The download page's QR code printing itself: a wipe from the reading side,
+   once, on first paint. It ends fully shown and reduced motion collapses it,
+   so the code is never left hidden. The side comes from two variables rather
+   than two keyframes, so the language switching to Arabic after load does not
+   restart it. */
+@keyframes qr-sweep {
+  from {
+    clip-path: inset(0 var(--qr-sweep-end) 0 var(--qr-sweep-start));
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@utility qr-sweep {
+  --qr-sweep-start: 0%;
+  --qr-sweep-end: 100%;
+  animation: qr-sweep 900ms var(--ease-emphasized) 240ms both;
+  [dir="rtl"] & {
+    --qr-sweep-start: 100%;
+    --qr-sweep-end: 0%;
+  }
+}
+
 /* A badge or tick that lands: a quick overshoot. */
 @keyframes pop {
   0% {
