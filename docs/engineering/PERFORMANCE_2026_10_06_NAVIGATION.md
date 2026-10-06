@@ -140,8 +140,82 @@ data is not refetched. Retries stay at one.
 
 ## Before and after
 
-Pending: the before/after runs are still in progress and land in the next
-commit.
+### How it was measured
+
+Both versions built the way production builds them (`vite build`, production
+mode), run as Node servers on this machine, both reading the live database
+as an anonymous visitor (reads only, the same reads any visitor makes). No
+network throttling; a database round trip from here is about 0.2-0.6 s.
+Runs alternated the two versions; times are medians (3 runs before, 2
+after), reads are per run.
+
+The script (Playwright, Chromium) walks two flows and, for each step,
+records the time from the click (or tap, or Back) until the new page's own
+heading is on screen, every database read made during the step (Supabase
+REST/RPC calls and server functions; crest images excluded), exact duplicate
+reads, and whether a loading skeleton appeared on the new page:
+
+- **A**: Standings → club → match → back → same match → back → back → same
+  club → back → another club.
+- **B**: Fantasy players → player → back → same player → back → another
+  player.
+
+Three settings: desktop (the pointer rests 200 ms on the link before the
+click, the clock starts at the click), phone (an instant tap: no head start
+at all), and phone in Arabic.
+
+Not measured: signed-in screens (Home for a member, the Fantasy team and
+transfer screens), for want of a test account.
+
+### Results
+
+| step (desktop, French)                   | before     | after      | reads before → after |
+| ---------------------------------------- | ---------- | ---------- | -------------------- |
+| Fantasy list → player (first visit)      | 1,995 ms   | **130 ms** | 12 → 3               |
+| Fantasy list → another player            | 1,933 ms   | **111 ms** | 11 → 1               |
+| Standings → club (first visit)           | 501 ms     | **162 ms** | 3 → 3                |
+| club → match (first visit)               | 752 ms     | 694 ms     | 10 → 10              |
+| Standings → same club again (after 15 s) | 176 ms     | 180 ms     | 3 → 2                |
+| every Back step                          | 110-134 ms | 108-150 ms | unchanged or fewer   |
+| **whole flow**                           |            |            | **46 → 34**          |
+
+| step (phone, Arabic)           | before                 | after                   | reads before → after |
+| ------------------------------ | ---------------------- | ----------------------- | -------------------- |
+| Standings → club (first visit) | 501 ms, **skeleton**   | **324 ms**, no skeleton | 4 → 3                |
+| club → match (first visit)     | 1,216 ms, **skeleton** | **724 ms**, no skeleton | 17 → 10              |
+| Standings → another club       | 458 ms, **skeleton**   | **331 ms**, no skeleton | 4 → 3                |
+| Fantasy list → player          | 1,872 ms               | **142 ms**              | 12 → 3               |
+| Fantasy list → another player  | 2,133 ms               | **122 ms**              | 11 → 1               |
+| **whole flow**                 |                        |                         | **55 → 25**          |
+
+Two desktop steps read more: Back to Standings (1 → 3) and Standings →
+another club (3 → 10). In both, the pointer left resting where the click
+was ended up over a club row or a match card on the new page, which loaded
+that page ahead (see Trade-offs). They are included in the 46 → 34.
+
+Phone in French: the whole flow went from 46 to 25 reads, and the player
+page from about 2,000 ms to 140-150 ms. With an instant tap there is no
+head start to use, so the first visit to a club or a match takes about as
+long as before (378 → 432 ms and 715 → 780 ms, within this setup's run-to-run
+noise): those pages wait on the network either way.
+A realistic tap (the finger resting about 0.1 s) is being measured and
+lands in the next commit.
+
+Exact duplicate reads: 0-1 before, 0 after. Back steps and repeat visits
+were already served from the cache before this change, and still are.
+
+### JavaScript
+
+Production build, gzip: the shared entry grows from 164.64 KB to 165.27 KB
+(+0.6 KB); the match, club, player and Matches page files are the same size
+or slightly smaller. No library added (React Query was already there).
+
+### Checks
+
+`bun run typecheck` clean; `bun run lint` no errors (the 31 warnings already
+on main); `bun test` 5,931 pass, 17 skipped, 1 fail, the same failure as on
+main before this change (`editorial-session.test.ts`, Ramadan 2027 clock
+change, a time-zone data difference on this machine); `bun run build` passes.
 
 ## Trade-offs
 
