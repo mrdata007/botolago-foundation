@@ -1,11 +1,7 @@
-import {
-  isCancelledError,
-  queryOptions,
-  type QueryClient,
-  type QueryKey,
-} from "@tanstack/react-query";
+import { isCancelledError, queryOptions, type QueryClient } from "@tanstack/react-query";
 import { fantasyService } from "@/services/fantasy-runtime";
-import { MAX_QUERY_RETRIES } from "@/services/query-client";
+import { FANTASY_POOL_STALE_MS } from "@/services/query-client";
+import type { FantasyPlayer } from "@/types/fantasy";
 
 /**
  * The Fantasy player pool: every player of the season with price and season
@@ -23,56 +19,46 @@ export function fantasyPlayersQuery() {
 }
 
 /**
- * How recent a failed pool read must be for a retrying read to take its
- * answer rather than read the pool again (see `cachedPool`): longer than a
- * retry's wait (one to two seconds), far shorter than anyone waits to try
- * again by hand.
+ * The season's pool for a read that needs it (a player's page, Home's
+ * trending players, the top players' rows):
+ *
+ * 1. the cached pool while it is fresh (five minutes, `@/services/query-client`);
+ * 2. else the pool read already on its way for a screen, joined -- it keeps
+ *    that screen's own retry, and a read cancelled under it (a screen
+ *    refetching the pool) hands over to the new one;
+ * 3. else a read of its own, as part of the read asking (whose one retry
+ *    covers it), stored in the cache for every other screen.
+ *
+ * It never starts the pool's query itself. Starting it from inside another
+ * read tangled the two reads' retries: a read that started the pool with no
+ * retry left a screen joining it without one, and one that started it with
+ * its retry read a failing pool four times. This way each read keeps its own
+ * one retry: a failing pool costs two reads, or three when a screen's own
+ * pool read was failing too.
  */
-const POOL_FAILURE_REUSE_MS = 10_000;
-
-/**
- * The pool as a read that needs it takes it: the cached copy while it is
- * fresh (five minutes, `@/services/query-client`), else one read, shared with
- * any screen asking for it at the same moment.
- *
- * The read is the pool's own query, with the pool's own retry, whoever starts
- * it: a screen that joins a read started here (the Fantasy tab opened while
- * Home's trending players load the pool) keeps its one retry, and so does the
- * read that asked for it here.
- *
- * `reader` is the query asking. When it is on its own retry (it failed once)
- * and the pool's last read failed moments ago after using its retry, the
- * reader takes that failure instead of reading the pool again: two pool
- * reads in all, as the one-retry rule wants, not four. A pool read still on
- * its way is joined; one that failed without its retry (cancelled when its
- * last screen closed) is read again.
- *
- * A pool read cancelled under a waiting reader (a screen refetching the pool)
- * hands the reader to the new read.
- */
-function cachedPool(client: QueryClient, reader: QueryKey) {
-  const retrying = (client.getQueryState(reader)?.fetchFailureCount ?? 0) > 0;
-  const pool = client.getQueryState(fantasyPlayersQuery().queryKey);
-  if (
-    retrying &&
-    pool?.status === "error" &&
-    pool.fetchStatus === "idle" &&
-    pool.fetchFailureCount > MAX_QUERY_RETRIES &&
-    Date.now() - pool.errorUpdatedAt < POOL_FAILURE_REUSE_MS
-  ) {
-    return Promise.reject(pool.error);
+async function sharedPool(client: QueryClient): Promise<FantasyPlayer[]> {
+  const key = fantasyPlayersQuery().queryKey;
+  for (let joined = 0; ; joined += 1) {
+    const pool = client.getQueryState<FantasyPlayer[]>(key);
+    if (
+      pool?.data &&
+      !pool.isInvalidated &&
+      Date.now() - pool.dataUpdatedAt < FANTASY_POOL_STALE_MS
+    ) {
+      return pool.data;
+    }
+    if (pool && pool.fetchStatus !== "idle" && joined < 2) {
+      try {
+        return await client.fetchQuery(fantasyPlayersQuery());
+      } catch (error) {
+        if (isCancelledError(error)) continue;
+        throw error;
+      }
+    }
+    const players = await fantasyService.getPlayers();
+    client.setQueryData(key, players);
+    return players;
   }
-  const read = () => client.fetchQuery(fantasyPlayersQuery());
-  return read().catch((error: unknown) => {
-    if (!isCancelledError(error)) throw error;
-    // A pool read cancelled under this one is a screen refetching the pool:
-    // take the new read instead. Passed on as is, the cancellation would
-    // fail this read for nothing, or leave it waiting for good once its own
-    // retry is spent (React Query records a silent cancellation as no error).
-    return read().catch((again: unknown) => {
-      throw isCancelledError(again) ? new Error("fantasy_pool_read_cancelled") : again;
-    });
-  });
 }
 
 /**
@@ -90,8 +76,8 @@ function cachedPool(client: QueryClient, reader: QueryKey) {
 export function fantasyPlayerQuery(playerId: string) {
   return queryOptions({
     queryKey: ["fantasy-player", playerId],
-    queryFn: async ({ client, queryKey }) =>
-      (await cachedPool(client, queryKey)).find((player) => player.id === playerId) ?? null,
+    queryFn: async ({ client }) =>
+      (await sharedPool(client)).find((player) => player.id === playerId) ?? null,
   });
 }
 
@@ -104,8 +90,7 @@ export function fantasyPlayerQuery(playerId: string) {
 export function trendingPlayersQuery() {
   return queryOptions({
     queryKey: ["all-players-for-alerts"],
-    queryFn: ({ client, queryKey }) =>
-      fantasyService.getTrendingPlayers(() => cachedPool(client, queryKey)),
+    queryFn: ({ client }) => fantasyService.getTrendingPlayers(() => sharedPool(client)),
   });
 }
 
@@ -119,7 +104,6 @@ export function trendingPlayersQuery() {
 export function topPlayersOfWeekQuery(gameweek: number) {
   return queryOptions({
     queryKey: ["top-players", gameweek],
-    queryFn: ({ client, queryKey }) =>
-      fantasyService.getTopPlayersOfWeek(gameweek, () => cachedPool(client, queryKey)),
+    queryFn: ({ client }) => fantasyService.getTopPlayersOfWeek(gameweek, () => sharedPool(client)),
   });
 }

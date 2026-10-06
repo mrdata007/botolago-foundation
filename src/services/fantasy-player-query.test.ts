@@ -2,7 +2,7 @@ import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { createAppQueryClient } from "./query-client";
 import { fantasyPlayerQuery, fantasyPlayersQuery } from "./fantasy-player-query";
 import { fantasyService } from "./fantasy-runtime";
-import type { FantasyPlayer } from "@/types/domain";
+import type { FantasyPlayer } from "@/types/fantasy";
 
 const pool = [{ id: "p1" }, { id: "p2" }] as unknown as FantasyPlayer[];
 
@@ -32,17 +32,25 @@ describe("a player's page reads the player from the season's pool", () => {
     client.clear();
   });
 
-  test("opened from a shared link, the pool is read once, as getPlayer did", async () => {
+  test("opened from a shared link, the pool is read once, as getPlayer did, and kept", async () => {
     const { spy } = countPoolReads();
     const client = createAppQueryClient();
-    const [a, b] = await Promise.all([
-      client.ensureQueryData(fantasyPlayerQuery("p1")),
-      client.ensureQueryData(fantasyPlayerQuery("p2")),
-    ]);
-    expect([a, b]).toEqual([pool[0], pool[1]]);
+    expect(await client.ensureQueryData(fantasyPlayerQuery("p1"))).toBe(pool[0]);
     expect(spy).toHaveBeenCalledTimes(1);
-    // The list opened next finds the pool in the cache.
+    // The list and the next player opened find the pool in the cache.
     expect(client.getQueryData(fantasyPlayersQuery().queryKey)).toBe(pool);
+    expect(await client.ensureQueryData(fantasyPlayerQuery("p2"))).toBe(pool[1]);
+    expect(spy).toHaveBeenCalledTimes(1);
+    client.clear();
+  });
+
+  test("opened while the list is still loading the pool, joins that read", async () => {
+    const { spy } = countPoolReads();
+    const client = createAppQueryClient();
+    const list = client.fetchQuery(fantasyPlayersQuery());
+    expect(await client.ensureQueryData(fantasyPlayerQuery("p2"))).toBe(pool[1]);
+    await list;
+    expect(spy).toHaveBeenCalledTimes(1);
     client.clear();
   });
 
