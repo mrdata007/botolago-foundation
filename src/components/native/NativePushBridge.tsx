@@ -40,14 +40,14 @@ export function NativePushBridge() {
 }
 
 function NativePushBridgeActive() {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const { lang, t } = useI18n();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { preferences } = useMyNotificationPreferences();
   const langRef = useRef(lang);
-  const lastRefresh = useRef(0);
-  const pushOn = status === "authenticated" && preferences?.channels.push === true;
+  const pushAccountId =
+    status === "authenticated" && preferences?.channels.push === true ? (user?.id ?? null) : null;
 
   useEffect(() => {
     langRef.current = lang;
@@ -96,12 +96,15 @@ function NativePushBridgeActive() {
 
   // Registration: renewed while the account has push on.
   useEffect(() => {
-    if (!pushOn) return;
+    if (!pushAccountId) return;
     let cancelled = false;
+    // Sign-out unregisters the phone. Every new enabled account/session must
+    // register immediately; only foreground refreshes within it are throttled.
+    let lastRefresh = Number.NEGATIVE_INFINITY;
     const handles: Array<{ remove(): Promise<void> }> = [];
     const refresh = async () => {
-      if (Date.now() - lastRefresh.current < REFRESH_EVERY_MS) return;
-      lastRefresh.current = Date.now();
+      if (cancelled || Date.now() - lastRefresh < REFRESH_EVERY_MS) return;
+      lastRefresh = Date.now();
       try {
         const deps = await loadNativePushDeps(langRef.current);
         if (deps && !cancelled) await refreshRegistration(deps);
@@ -122,7 +125,7 @@ function NativePushBridgeActive() {
       cancelled = true;
       void Promise.allSettled(handles.map((handle) => handle.remove()));
     };
-  }, [pushOn]);
+  }, [pushAccountId]);
 
   return null;
 }
