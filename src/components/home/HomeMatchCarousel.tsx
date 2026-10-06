@@ -36,9 +36,16 @@ const TRACK = cn(
 
 /**
  * A card: 88% of the band's width, so about an eighth of the next one shows.
- * A flex item, so every card is as tall as the tallest; its child fills it.
+ * From `lg` to `xl` the band is Home's narrow centre column (264 to 519px),
+ * where a peek would squeeze the card below what its names need, so a card
+ * takes the whole width there; the buttons and the indicator say there is
+ * more. A flex item, so every card is as tall as the tallest; its child
+ * fills it.
  */
-const SLIDE = "flex min-w-0 shrink-0 basis-[88%] snap-start [&>*]:min-w-0 [&>*]:flex-1";
+const SLIDE = cn(
+  "flex min-w-0 shrink-0 basis-[88%] snap-start lg:basis-full xl:basis-[88%]",
+  "[&>*]:min-w-0 [&>*]:flex-1",
+);
 
 /** Previous and next: from `lg`, and at any width where the pointer is a mouse. */
 const STEP = "hidden lg:inline-grid pointer-fine:inline-grid";

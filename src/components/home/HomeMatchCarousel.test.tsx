@@ -153,6 +153,8 @@ describe("HomeMatchCarousel — as the server renders it", () => {
     expect(html).toContain("snap-x snap-mandatory");
     expect(groups(html)).toHaveLength(3);
     expect(html.match(/basis-\[88%\] snap-start/g)).toHaveLength(3);
+    // Home's narrow centre column (lg to xl): a whole card, no peek.
+    expect(html.match(/lg:basis-full xl:basis-\[88%\]/g)).toHaveLength(3);
   });
 });
 
