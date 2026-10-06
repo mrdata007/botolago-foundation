@@ -410,6 +410,15 @@ describe("system bars: wired into the app", () => {
     expect(read(file)).toContain(call);
   });
 
+  test("the landing page's loading screen holds light icons too", () => {
+    // While the landing chunk loads, Home shows its dark ground in its place;
+    // without its own hold the light theme's dark icons would sit on it.
+    const home = read("src/routes/index.tsx");
+    const fallback = home.slice(home.indexOf("function LandingFallback()"));
+    expect(fallback.slice(0, fallback.indexOf("\n}\n"))).toContain("useDarkStatusBand();");
+    expect(home).toContain("<Suspense fallback={<LandingFallback />}>");
+  });
+
   test("the sign-in screens hold light icons only where their band spans the screen", () => {
     const shell = read("src/components/auth/AuthShell.tsx");
     expect(shell).toContain("useDarkStatusBand(BAND_SPANS_SCREEN);");

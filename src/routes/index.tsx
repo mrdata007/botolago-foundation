@@ -102,6 +102,7 @@ import liveBand from "@/assets/photos/home-band-live.webp";
 import liveBandSmall from "@/assets/photos/home-band-live-800.webp";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { staggerStyle } from "@/lib/motion";
+import { useDarkStatusBand } from "@/lib/system-bars";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
 const HOME_DESCRIPTION =
@@ -217,9 +218,13 @@ const LandingPage = lazy(() =>
  * While the chunk arrives: the landing hero's own ground, nothing else. Home
  * in its place went on loading and moving under the splash (CLS 0.10 measured
  * with it as the fallback, against 0.006 without); an empty dark screen has
- * nothing to move, and the hero paints over it in the same colour.
+ * nothing to move, and the hero paints over it in the same colour. Being
+ * dark in both themes, it holds light status-bar icons too, so a slow chunk
+ * does not leave dark icons over it until the landing page mounts (the hand
+ * over between the two holds is settled in one go, so nothing flicks).
  */
 function LandingFallback() {
+  useDarkStatusBand();
   return <div aria-busy className="min-h-[100dvh] bg-[color:var(--ui-ink-deep)]" />;
 }
 
