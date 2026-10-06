@@ -6,7 +6,6 @@ import stadiumBand from "@/assets/brand/home-band-stadium.webp";
 import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { clubPalette } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 
 import {
@@ -16,10 +15,11 @@ import {
   playerMetaLine,
   playerPhotoUrl,
   scoreText,
-  teamAsClub,
 } from "./pepites-format";
+import { teamKit } from "./pepites-design";
 import { MovementMark, PepitesIdentityDisc, RankPlate } from "./PepitesVisuals";
 import { PercentileLegend, PercentileWheel } from "./PepitesWheel";
+import { SHARE_PALETTE, shareClubColours } from "./share-image";
 import type { PlayerStats } from "./TopTenList";
 import { useClubCatalogue } from "./use-club-catalogue";
 import { playerQueryOptions, usePepitesViewer } from "./use-pepites";
@@ -38,7 +38,7 @@ const PHOTO_SIZES = {
  * 800w/1600w) on a Tunnel Navy ground under a flat navy veil, full-bleed on
  * a phone and a 16px panel from 640px, as Home and Matches put a photo band
  * right under their header. It is dark in both themes, so everything on it
- * takes the on-ink foregrounds and the club's DARK-theme edge.
+ * takes the on-ink foregrounds, and the club's edge is the story card's.
  *
  * On it, as the redrawn story card sets a player (BG-0153): the club colour
  * down the inline-start edge, the rank on the white plate, the name in
@@ -96,9 +96,13 @@ export function PepitesFeature({
   const loaded = detail.data?.available && detail.data.found ? (detail.data.score ?? null) : null;
   const percentiles = COMPONENTS.map((key) => loaded?.percentiles[key] ?? null);
   const listed = player.team ? catalogue.get(player.team.id) : undefined;
-  // The club's dark-theme edge: measured against the dark surface, which is
-  // what the band is in both themes. No club, no edge.
-  const edge = player.team ? clubPalette(teamAsClub(player.team)).dark.edge : null;
+  // The club's edge as the story card paints it on the same Tunnel Navy
+  // ground: the palette's dark edge, lifted toward white until it clears
+  // 3:1 against the band (the dark-theme edge alone fell to 2.89:1 for seven
+  // kits on the light theme's navy). No club, no edge.
+  const edge = player.team
+    ? shareClubColours(teamKit(player.team).primary, SHARE_PALETTE.ground).edge
+    : null;
   const ranked = typeof score === "number" && Number.isFinite(score);
   const wheel = version !== null;
   const dash = "–";
