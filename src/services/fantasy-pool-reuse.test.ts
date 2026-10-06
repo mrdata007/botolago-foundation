@@ -21,6 +21,7 @@ import { createAppQueryClient } from "./query-client";
 
 const SEASON = "00000000-0000-4000-8000-000000000001";
 const GW3 = "00000000-0000-4000-8000-000000000103";
+const GW4 = "00000000-0000-4000-8000-000000000104";
 const P1 = "00000000-0000-4000-8000-0000000000a1";
 const P2 = "00000000-0000-4000-8000-0000000000a2";
 const MISSING = "00000000-0000-4000-8000-0000000000ff";
@@ -45,18 +46,16 @@ const repository = SupabaseFantasyRepository.prototype;
 const reads = {
   hub: spyOn(repository, "getHub").mockImplementation(async () => hub),
   gameweeks: spyOn(repository, "getGameweeks").mockImplementation(async () => ({
-    items: [
-      {
-        id: GW3,
-        sequence: 3,
-        name: "3",
-        deadlineAt: "2026-10-03T13:30:00Z",
-        startsAt: "2026-10-03T15:00:00Z",
-        endsAt: "2026-10-05T21:00:00Z",
-        status: "live" as const,
-        pointsState: "provisional" as const,
-      },
-    ],
+    items: [3, 4].map((sequence) => ({
+      id: sequence === 3 ? GW3 : GW4,
+      sequence,
+      name: String(sequence),
+      deadlineAt: "2026-10-03T13:30:00Z",
+      startsAt: "2026-10-03T15:00:00Z",
+      endsAt: "2026-10-05T21:00:00Z",
+      status: "live" as const,
+      pointsState: "provisional" as const,
+    })),
     nextCursor: null,
   })),
   top: spyOn(repository, "getTopPlayers").mockImplementation(async () => top),
@@ -152,15 +151,29 @@ describe("the top players of a gameweek", () => {
   });
 
   test("with no pool yet, two gameweeks and the list share one pool read", async () => {
-    const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => pool);
+    // The pool read is held open until both gameweeks' reads have reached it,
+    // so each of them joins the read on its way rather than finding it done.
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => {
+      await held;
+      return pool;
+    });
     spies.push(getPlayers);
     const client = createAppQueryClient();
-    await Promise.all([
+    const reading = Promise.all([
       client.fetchQuery(fantasyPlayersQuery()),
       client.fetchQuery(topPlayersOfWeekQuery(3)),
       client.fetchQuery(topPlayersOfWeekQuery(4)),
     ]);
+    while (reads.top.mock.calls.length < 2) await new Promise((resolve) => setTimeout(resolve, 1));
+    release();
+    const [, week3, week4] = await reading;
     expect(getPlayers).toHaveBeenCalledTimes(1);
+    expect(week3[0]?.price).toBe(9);
+    expect(week4[0]?.price).toBe(9);
     client.clear();
   });
 });
@@ -187,9 +200,31 @@ describe("Home's trending players", () => {
     });
     spies.push(getPlayers);
     const client = createAppQueryClient();
+    client.setQueryDefaults(fantasyPlayersQuery().queryKey, { retryDelay: 0 });
     await expect(client.fetchQuery({ ...trendingPlayersQuery(), retryDelay: 0 })).rejects.toThrow(
       "statement timeout",
     );
+    expect(getPlayers).toHaveBeenCalledTimes(2);
+    client.clear();
+  });
+
+  test("a screen that joins the pool read Home started keeps its one retry", async () => {
+    // The Fantasy tab opened while Home's trending players load the pool: the
+    // first attempt drops, the retry succeeds, and the screen gets its players.
+    let calls = 0;
+    const getPlayers = spyOn(fantasyService, "getPlayers").mockImplementation(async () => {
+      calls += 1;
+      if (calls === 1) throw new Error("connection reset");
+      return pool;
+    });
+    spies.push(getPlayers);
+    const client = createAppQueryClient();
+    client.setQueryDefaults(fantasyPlayersQuery().queryKey, { retryDelay: 0 });
+    const home = client.fetchQuery(trendingPlayersQuery());
+    while (getPlayers.mock.calls.length < 1) await new Promise((resolve) => setTimeout(resolve, 1));
+    const screen = client.fetchQuery(fantasyPlayersQuery());
+    expect(await screen).toBe(pool);
+    expect(await home).toHaveLength(2);
     expect(getPlayers).toHaveBeenCalledTimes(2);
     client.clear();
   });

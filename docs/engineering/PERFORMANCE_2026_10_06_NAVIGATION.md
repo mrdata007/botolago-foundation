@@ -262,10 +262,12 @@ Plan items 7, 8 and 9. "Before" is batch 1 (`c6e0549`), "after" is
   `["fantasy-players"]` pool through the query function's own client,
   instead of reading all of it again inside their reads
   (`getTrendingPlayers` and `getTopPlayersOfWeek` now take where the pool
-  comes from; by default they still read it). The inner pool read does not
-  retry on its own, so a failing pool is still asked twice in all, not four
-  times. Home no longer reads trending players for a visitor (only a
-  signed-in reader's Home shows them). The top players page asks for its
+  comes from; by default they still read it). The pool read keeps the
+  pool's own retry whoever starts it, and the reads that take the pool do
+  not retry a failure that came from it, so a failing pool is still asked
+  twice in all and a screen that joins the read keeps its one retry. Home
+  no longer reads trending players for a visitor (only a signed-in reader's
+  Home shows them). The top players page asks for its
   gameweek's top five once the current gameweek is known, so a stand-in
   gameweek's read (now quick) cannot land first and show the wrong week.
 - **Arabic double read** (`src/routes/news.$articleId.tsx`,
@@ -322,10 +324,27 @@ visitor, reads only). Before: 2-3 runs; after: 2 runs; ranges.
   panel (team names differ by language); before, the French copy was already
   in the cache because the loader always read it.
 
+### JavaScript
+
+Production build, gzip: the shared entry is 164.29 KB, against 164.64 KB on
+main and 165.27 KB after batch 1.
+
+### Review
+
+The batch was reviewed from five angles (behaviour, React Query semantics,
+freshness, security, tests), each finding checked by three independent
+skeptics. Two were confirmed and fixed before this was pushed: the pool
+read first ran without a retry of its own, which a screen joining it
+inherited (now it keeps the pool's retry, as above); and a test claimed two
+gameweeks shared one pool read when only one reached it (now both do, with
+the read held open until they join). Two were judged intended trade-offs
+(the Pronostics language switch below; the related stories read alongside
+an article that turns out to be missing).
+
 ### Checks
 
 `bun run typecheck` clean; `bun run lint` no errors (the 31 warnings already
-on main); `bun test` 5,947 pass, 17 skipped, 1 fail (the same Ramadan 2027
+on main); `bun test` 5,948 pass, 17 skipped, 1 fail (the same Ramadan 2027
 test as on main); `bun run build` passes.
 
 ## Remaining bottlenecks and next batch

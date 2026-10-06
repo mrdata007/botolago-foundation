@@ -1,5 +1,6 @@
 import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { shouldRetryQuery } from "@/services/query-client";
 
 /**
  * The Fantasy player pool: every player of the season with price and season
@@ -16,22 +17,39 @@ export function fantasyPlayersQuery() {
   });
 }
 
+/** The failures `cachedPool` passed on: the pool's own query already retried them. */
+const poolFailures = new WeakSet<object>();
+
 /**
  * The pool as a read that needs it takes it: the cached copy while it is
  * fresh (five minutes, `@/services/query-client`), else one read, shared with
  * any screen asking for it at the same moment.
  *
- * No retry of its own (`retry: false`): the query that asks for the pool
- * retries once, as every read does, and a retry here as well would double the
- * reads of a failing pool -- the load the one-retry rule exists to avoid. A
- * read already on its way for a screen keeps that screen's retry.
+ * The read is the pool's own query, with the pool's own retry rule, whoever
+ * starts it: a screen that joins a read started here (the Fantasy tab opened
+ * while Home's trending players load the pool) keeps its one retry. The
+ * reads that take the pool do not retry a failure that came from it
+ * (`retryUnlessPoolFailed`): the pool already had its retry, and a retry of
+ * the outer read as well would read a failing pool four times instead of
+ * twice -- the load the one-retry rule exists to avoid.
  *
  * Nothing should `refetch()` the pool with `cancelRefetch` while a read waits
  * on it here: the cancelled fetch would fail the waiting read too. The only
  * refetches today are error-state retries, which join the fetch instead.
  */
-function cachedPool(client: QueryClient) {
-  return client.fetchQuery({ ...fantasyPlayersQuery(), retry: false });
+async function cachedPool(client: QueryClient) {
+  try {
+    return await client.fetchQuery(fantasyPlayersQuery());
+  } catch (error) {
+    if (typeof error === "object" && error !== null) poolFailures.add(error);
+    throw error;
+  }
+}
+
+/** The app's retry rule, less a failure of the pool (see `cachedPool`). */
+export function retryUnlessPoolFailed(failureCount: number, error: unknown): boolean {
+  if (typeof error === "object" && error !== null && poolFailures.has(error)) return false;
+  return shouldRetryQuery(failureCount, error);
 }
 
 /**
@@ -51,6 +69,7 @@ export function fantasyPlayerQuery(playerId: string) {
     queryKey: ["fantasy-player", playerId],
     queryFn: async ({ client }) =>
       (await cachedPool(client)).find((player) => player.id === playerId) ?? null,
+    retry: retryUnlessPoolFailed,
   });
 }
 
@@ -64,6 +83,7 @@ export function trendingPlayersQuery() {
   return queryOptions({
     queryKey: ["all-players-for-alerts"],
     queryFn: ({ client }) => fantasyService.getTrendingPlayers(() => cachedPool(client)),
+    retry: retryUnlessPoolFailed,
   });
 }
 
@@ -78,5 +98,6 @@ export function topPlayersOfWeekQuery(gameweek: number) {
   return queryOptions({
     queryKey: ["top-players", gameweek],
     queryFn: ({ client }) => fantasyService.getTopPlayersOfWeek(gameweek, () => cachedPool(client)),
+    retry: retryUnlessPoolFailed,
   });
 }
