@@ -1,5 +1,6 @@
 import noMatchesArt from "@/assets/illustrations/empty-matches.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, type ReactNode } from "react";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
@@ -539,15 +540,26 @@ function MatchesPage() {
   );
 }
 
-/** A way on from an empty day: the day it names, as a text button with an arrow. */
+/**
+ * A way on from an empty day: the day it names, as a text button with an
+ * arrow. The arrow is drawn, not a typed "→": the glyph does not turn round in
+ * Arabic, where it pointed back at the label. `lucide-arrow-right` is mirrored
+ * in styles.css, and it is hidden, so the button's name is the label alone.
+ */
 function DayLink({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn(ui.text.bodyStrong, ui.tone.ink, ui.focus, "min-h-[var(--ui-tap-min)]")}
+      className={cn(
+        ui.text.bodyStrong,
+        ui.tone.ink,
+        ui.focus,
+        "inline-flex min-h-[var(--ui-tap-min)] items-center gap-1.5",
+      )}
     >
-      {children} →
+      {children}
+      <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
     </button>
   );
 }

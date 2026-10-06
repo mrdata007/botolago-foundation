@@ -11,7 +11,17 @@ import {
   type ReactNode,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleDot, Bell, Gem, Newspaper, Shield, Target, Trophy, UserRound } from "lucide-react";
+import {
+  ArrowRight,
+  CircleDot,
+  Bell,
+  Gem,
+  Newspaper,
+  Shield,
+  Target,
+  Trophy,
+  UserRound,
+} from "lucide-react";
 
 import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
@@ -608,10 +618,14 @@ function HomeContent() {
                         ui.text.bodyStrong,
                         ui.tone.ink,
                         ui.focus,
-                        "inline-flex min-h-[var(--ui-tap-min)] items-center",
+                        "inline-flex min-h-[var(--ui-tap-min)] items-center gap-1.5",
                       )}
                     >
-                      {lastResultDay ? t("home.results_link") : t("home.calendar_link")} →
+                      {lastResultDay ? t("home.results_link") : t("home.calendar_link")}
+                      {/* A drawn arrow, not a typed "→": the glyph does not turn
+                          round in Arabic, where it pointed back at the label.
+                          `lucide-arrow-right` is mirrored in styles.css. */}
+                      <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
                     </Link>
                   }
                 >
