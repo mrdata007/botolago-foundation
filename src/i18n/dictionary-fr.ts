@@ -94,6 +94,14 @@ export const fr = {
   "home.view_all": "Tout voir",
   "home.view_fantasy_team": "Voir mon équipe",
   "home.my_clubs.last_result": "Dernier résultat",
+  // The gameweek band's carousel of the round's matches (BG-0155). A role
+  // description is read out as written, in place of the role's own name.
+  "home.carousel.label": "Matchs de la journée",
+  "home.carousel.slide": "Match {n} sur {total}",
+  "home.carousel.previous": "Match précédent",
+  "home.carousel.next": "Match suivant",
+  "home.carousel.role": "carrousel",
+  "home.carousel.slide_role": "diapositive",
   // The home page's sr-only <h1>. The French is the page's <title>, which is
   // what the server renders and a crawler reads.
   "home.sr_title": "BotolaGO — Actualité, matchs et Fantasy du football marocain",

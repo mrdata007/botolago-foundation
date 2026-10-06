@@ -88,6 +88,12 @@ export const ar = {
   "home.view_all": "عرض الكل",
   "home.view_fantasy_team": "عرض فريقي",
   "home.my_clubs.last_result": "آخر نتيجة",
+  "home.carousel.label": "مباريات الجولة",
+  "home.carousel.slide": "المباراة {n} من {total}",
+  "home.carousel.previous": "المباراة السابقة",
+  "home.carousel.next": "المباراة التالية",
+  "home.carousel.role": "عرض دوّار",
+  "home.carousel.slide_role": "شريحة",
   "home.sr_title": "BotolaGO — أخبار ومباريات وفانتازي كرة القدم المغربية",
 
   "news.title": "الأخبار",
