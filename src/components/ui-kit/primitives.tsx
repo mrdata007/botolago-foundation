@@ -1526,7 +1526,11 @@ export function UiModal({
         <UiScrim />
         <Dialog.Content
           className={cn(
-            "fixed inset-0 z-50 m-auto flex h-fit max-h-[88dvh] w-[min(100%-2rem,26rem)] flex-col overflow-hidden",
+            "fixed inset-0 z-50 m-auto flex h-fit w-[min(100%-2rem,26rem)] flex-col overflow-hidden",
+            // 88% of the screen at most. Centred, so a tall one reaches as far
+            // up as down: also kept clear of the status bar and of the home
+            // indicator on an iPhone (`env()` is 0 without a notch).
+            "max-h-[min(88dvh,calc(100dvh_-_env(safe-area-inset-top,0px)_-_env(safe-area-inset-bottom,0px)_-_2rem))]",
             "rounded-[var(--ui-radius-sheet)]",
             ui.surface.overlay,
             "data-[state=open]:animate-in data-[state=closed]:animate-out",

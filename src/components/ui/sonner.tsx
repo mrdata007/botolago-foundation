@@ -5,6 +5,20 @@ import { useI18n } from "@/i18n/provider";
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 /**
+ * 16px from each edge, and from the top that is 16px BELOW the status bar on
+ * an iPhone (`viewport-fit=cover` puts the page under it). Both offsets are
+ * given: under 600px wide sonner reads `mobileOffset`, whose own default is a
+ * flat 16px with no inset. Every edge is named, since one left out falls back
+ * to sonner's default rather than to 16px. `env()` is 0 without a notch.
+ */
+const TOAST_OFFSET = {
+  top: "calc(env(safe-area-inset-top, 0px) + 16px)",
+  right: "calc(env(safe-area-inset-right, 0px) + 16px)",
+  bottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
+  left: "calc(env(safe-area-inset-left, 0px) + 16px)",
+};
+
+/**
  * Design System V2 — Toaster.
  *
  * Glass surface, semantic tokens, and type-specific accent stripes for
@@ -21,7 +35,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       className="toaster group"
       position="top-center"
-      offset={16}
+      offset={TOAST_OFFSET}
+      mobileOffset={TOAST_OFFSET}
       duration={3600}
       gap={8}
       containerAriaLabel={t("toast.region")}

@@ -213,7 +213,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      // `viewport-fit=cover`: on an iPhone the page runs under the status bar
+      // and the home indicator, and `env(safe-area-inset-*)` reports how far.
+      // Every bar fixed or stuck to the top or bottom edge pads by it (the
+      // `ui.safe.*` tokens, `--topbar-h`, `--bottomnav-h`); without a notch
+      // the insets are 0 and nothing moves.
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "BotolaGO — Actualités, matchs et Fantasy du football marocain" },
       {
         name: "description",

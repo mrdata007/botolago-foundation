@@ -185,7 +185,7 @@ export function TransferConfirmScreen({
 
       <div
         className={cn(
-          "sticky bottom-[var(--bottomnav-h)] z-30 mt-6 grid grid-cols-2 gap-2 pb-2.5 pt-2.5 md:bottom-0 md:pb-3",
+          "sticky bottom-[var(--bottomnav-h)] z-30 mt-6 grid grid-cols-2 gap-2 pb-2.5 pt-2.5 md:bottom-0 md:pb-[max(env(safe-area-inset-bottom),0.75rem)]",
           ui.space.gutter,
           ui.surface.bar,
           ui.rule.blockStart,
