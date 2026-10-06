@@ -262,10 +262,11 @@ Plan items 7, 8 and 9. "Before" is batch 1 (`c6e0549`), "after" is
   `["fantasy-players"]` pool through the query function's own client,
   instead of reading all of it again inside their reads
   (`getTrendingPlayers` and `getTopPlayersOfWeek` now take where the pool
-  comes from; by default they still read it). The pool read keeps the
-  pool's own retry whoever starts it, and the reads that take the pool do
-  not retry a failure that came from it, so a failing pool is still asked
-  twice in all and a screen that joins the read keeps its one retry. Home
+  comes from; by default they still read it). Every read keeps the app's
+  one retry, the pool's own read included, so a screen that joins a pool
+  read keeps its retry; a read on its own retry takes the pool's failure of
+  a moment ago instead of reading the pool again, so a failing pool is still
+  read twice in all, as before. Home
   no longer reads trending players for a visitor (only a signed-in reader's
   Home shows them). The top players page asks for its
   gameweek's top five once the current gameweek is known, so a stand-in
@@ -333,18 +334,28 @@ main and 165.27 KB after batch 1.
 
 The batch was reviewed from five angles (behaviour, React Query semantics,
 freshness, security, tests), each finding checked by three independent
-skeptics. Two were confirmed and fixed before this was pushed: the pool
-read first ran without a retry of its own, which a screen joining it
-inherited (now it keeps the pool's retry, as above); and a test claimed two
-gameweeks shared one pool read when only one reached it (now both do, with
-the read held open until they join). Two were judged intended trade-offs
-(the Pronostics language switch below; the related stories read alongside
-an article that turns out to be missing).
+skeptics. Two were confirmed:
+
+- The pool read first ran without a retry of its own (to keep a failing
+  pool at two reads), and a screen joining that read inherited it, so one
+  dropped connection could show a screen's error state. A first fix (reads
+  that take the pool do not retry its failures) was broken by a second
+  round of skeptics in three edge cases: four reads when the top five failed
+  first, no retry when the pool's own retry had been cancelled, and a read
+  left waiting after a cancelled pool read. The final version (above) keeps
+  the one retry everywhere; tests cover each path and fail on both earlier
+  versions.
+- A test claimed two gameweeks shared one pool read when only one reached
+  it; it now holds the read open until both join it.
+
+Two findings were judged intended trade-offs: the Pronostics language switch
+(below) and the related stories read alongside an article that turns out to
+be missing.
 
 ### Checks
 
 `bun run typecheck` clean; `bun run lint` no errors (the 31 warnings already
-on main); `bun test` 5,948 pass, 17 skipped, 1 fail (the same Ramadan 2027
+on main); `bun test` 5,952 pass, 17 skipped, 1 fail (the same Ramadan 2027
 test as on main); `bun run build` passes.
 
 ## Remaining bottlenecks and next batch
