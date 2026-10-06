@@ -12,8 +12,8 @@
  * So the app tells the shell, through Capacitor 8's built-in `SystemBars`
  * plugin (in `@capacitor/core`, nothing to install): dark icons on the light
  * theme, light icons on the dark theme. A screen whose top is a dark band in
- * both themes (the sign-in screens, the Landing page, the launch splash) holds
- * light icons for as long as it is mounted (`useDarkStatusBand`).
+ * both themes (the sign-in screens on a phone, the Landing page, the launch
+ * splash) holds light icons for as long as it is mounted (`useDarkStatusBand`).
  *
  * CAPACITOR'S NAMING IS INVERTED, and it is worth stating once: the style is
  * named after the BACKGROUND it suits, not the icons. `SystemBarsStyle.Dark`
@@ -162,10 +162,51 @@ export const systemBars: SystemBarsSync = createSystemBarsSync({
   load: () => import("@capacitor/core"),
 });
 
+/** What `holdDarkBandWhile` needs from a `MediaQueryList`. */
+export interface MediaQueryLike {
+  readonly matches: boolean;
+  addEventListener(type: "change", listener: () => void): void;
+  removeEventListener(type: "change", listener: () => void): void;
+}
+
 /**
- * For a screen whose top is a dark band in both themes: while it is mounted
- * (and `active`), the status bar keeps light icons. Does nothing in a browser.
+ * Holds a dark band for as long as `query` matches, following it live, until
+ * the returned function is called. For a screen whose top is dark only at some
+ * widths: the sign-in screens' band is under the clock on a phone, but from
+ * `md` it moves into a raised card and the flat page is under the clock.
  */
-export function useDarkStatusBand(active = true): void {
-  useEffect(() => (active ? systemBars.holdDarkBand() : undefined), [active]);
+export function holdDarkBandWhile(
+  bars: Pick<SystemBarsSync, "holdDarkBand">,
+  query: MediaQueryLike,
+): () => void {
+  let release: (() => void) | null = null;
+  const follow = () => {
+    if (query.matches && !release) release = bars.holdDarkBand();
+    else if (!query.matches && release) {
+      release();
+      release = null;
+    }
+  };
+  follow();
+  query.addEventListener("change", follow);
+  return () => {
+    query.removeEventListener("change", follow);
+    release?.();
+    release = null;
+  };
+}
+
+/**
+ * For a screen whose top is a dark band in both themes: while it is mounted,
+ * the status bar keeps light icons. With `media`, only while that media query
+ * matches (read in the same effect, so a phone never sees the theme's icons
+ * first). Does nothing in a browser.
+ */
+export function useDarkStatusBand(media?: string): void {
+  useEffect(() => {
+    if (!media || typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return systemBars.holdDarkBand();
+    }
+    return holdDarkBandWhile(systemBars, window.matchMedia(media));
+  }, [media]);
 }

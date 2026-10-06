@@ -5,7 +5,9 @@ import { join } from "node:path";
 import { nativePlatform, type NativeScope } from "./native-app";
 import {
   createSystemBarsSync,
+  holdDarkBandWhile,
   iconsForTheme,
+  type MediaQueryLike,
   type SystemBarsModule,
   type SystemBarsSync,
 } from "./system-bars";
@@ -271,6 +273,89 @@ describe("system bars: on Android", () => {
   });
 });
 
+/** A media query whose answer the test sets, like a phone or a tablet turning. */
+function fakeQuery(initial: boolean) {
+  const listeners = new Set<() => void>();
+  const query = {
+    matches: initial,
+    addEventListener: (_type: "change", listener: () => void) => void listeners.add(listener),
+    removeEventListener: (_type: "change", listener: () => void) => void listeners.delete(listener),
+  } satisfies MediaQueryLike;
+  return {
+    query,
+    listeners,
+    set(next: boolean) {
+      query.matches = next;
+      for (const listener of [...listeners]) listener();
+    },
+  };
+}
+
+describe("system bars: a dark band held only while a media query matches", () => {
+  // The sign-in screens' band is under the clock only below md; from md the
+  // flat page is (BG-0154 review: light icons on a near-white tablet page).
+  test("held at once where the query matches (a phone)", async () => {
+    const { bars, sent } = harness("ios");
+    bars.setTheme("light");
+    holdDarkBandWhile(bars, fakeQuery(true).query);
+    await settle();
+    // One flush: the theme's dark icons are never sent first.
+    expect(sent).toEqual([{ style: "DARK" }]);
+  });
+
+  test("not held where it does not (md and wider): the icons follow the theme", async () => {
+    const { bars, sent } = harness("android");
+    bars.setTheme("light");
+    holdDarkBandWhile(bars, fakeQuery(false).query);
+    await settle();
+    expect(sent).toEqual([
+      { style: "LIGHT", bar: "StatusBar" },
+      { style: "LIGHT", bar: "NavigationBar" },
+    ]);
+  });
+
+  test("follows the query live, both ways, and lets go when released", async () => {
+    const { bars, sent } = harness("ios");
+    bars.setTheme("light");
+    const media = fakeQuery(false);
+    const release = holdDarkBandWhile(bars, media.query);
+    await settle();
+    expect(sent).toEqual([{ style: "LIGHT" }]);
+    media.set(true); // narrowed below md
+    await settle();
+    media.set(true); // a repeat changes nothing
+    await settle();
+    expect(sent).toEqual([{ style: "LIGHT" }, { style: "DARK" }]);
+    media.set(false); // back to md
+    await settle();
+    expect(sent).toEqual([{ style: "LIGHT" }, { style: "DARK" }, { style: "LIGHT" }]);
+    media.set(true);
+    await settle();
+    expect(sent.at(-1)).toEqual({ style: "DARK" });
+    release(); // the screen leaves: band released, listener removed
+    await settle();
+    expect(sent.at(-1)).toEqual({ style: "LIGHT" });
+    expect(media.listeners.size).toBe(0);
+    release();
+    media.set(false);
+    media.set(true);
+    await settle();
+    expect(sent).toHaveLength(5);
+  });
+
+  test("released while not matching, it holds nothing and sends nothing more", async () => {
+    const { bars, sent } = harness("ios");
+    bars.setTheme("dark");
+    const media = fakeQuery(false);
+    const release = holdDarkBandWhile(bars, media.query);
+    await settle();
+    release();
+    await settle();
+    expect(sent).toEqual([{ style: "DARK" }]);
+    expect(media.listeners.size).toBe(0);
+  });
+});
+
 describe("system bars: Capacitor's naming, read from the installed sources", () => {
   // The whole mapping rests on `Dark` meaning light icons. Pinned against the
   // library and both native implementations, so an upgrade that changed any
@@ -318,11 +403,29 @@ describe("system bars: wired into the app", () => {
   });
 
   test.each([
-    ["src/components/auth/AuthShell.tsx", "useDarkStatusBand();"],
     ["src/components/landing/LandingPage.tsx", "useDarkStatusBand();"],
     ["src/components/splash/SplashScreen.tsx", "const releaseBand = systemBars.holdDarkBand();"],
   ])("%s holds light icons over its dark top", (file, call) => {
     expect(read(file)).toContain(call);
+  });
+
+  test("the sign-in screens hold light icons below md only, where their band is under the clock", () => {
+    const shell = read("src/components/auth/AuthShell.tsx");
+    expect(shell).toContain("useDarkStatusBand(BELOW_MD);");
+    expect(shell.match(/useDarkStatusBand\(/g)).toHaveLength(1);
+    // The exact complement of Tailwind's `md:` (min-width 48rem), in the
+    // media query syntax every WebView reads, the same breakpoint as the
+    // strip's `md:hidden`.
+    expect(shell).toContain('const BELOW_MD = "not all and (min-width: 48rem)";');
+    expect(shell).toMatch(/<StatusBarStrip[^>]*className="md:hidden"/);
+  });
+
+  test("the hook reads the media query in the same effect that holds the band", () => {
+    const source = read("src/lib/system-bars.ts");
+    const hook = source.slice(source.indexOf("export function useDarkStatusBand"));
+    expect(hook).toMatch(
+      /useEffect\(\(\) => \{[\s\S]*?return systemBars\.holdDarkBand\(\);[\s\S]*?return holdDarkBandWhile\(systemBars, window\.matchMedia\(media\)\);\s*\}, \[media\]\);/,
+    );
   });
 
   test("the splash lets go when it leaves, and holds nothing on a load without it", () => {

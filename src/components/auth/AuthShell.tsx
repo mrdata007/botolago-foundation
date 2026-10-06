@@ -67,6 +67,13 @@ const BAND_SCRIM =
 /** Computed once: the palette is pure, and the strip never changes. */
 const BAND_CLUB_STYLES = AUTH_BAND_CLUBS.map((club) => clubStyle(club));
 
+/**
+ * Below Tailwind's `md` (48rem), the exact complement of `md:`. Only there is
+ * the dark band under the status bar: from `md` the band sits inside a raised
+ * card and the flat page is under the clock (BG-0154).
+ */
+const BELOW_MD = "not all and (min-width: 48rem)";
+
 interface Props {
   title: string;
   subtitle?: string;
@@ -95,9 +102,10 @@ export function AuthShell({
   // Auth pages are linked to from email (confirmation, password reset) as often
   // as they are reached in-app, so home is the fallback rather than a listing.
   const goBack = useBackTo("/");
-  // The band under the clock is dark in both themes: light status-bar icons
-  // in the app whatever the theme (BG-0154).
-  useDarkStatusBand();
+  // On a phone the band under the clock is dark in both themes: light
+  // status-bar icons in the app whatever the theme. From `md` the flat page is
+  // under the clock, so the icons follow the theme there (BG-0154).
+  useDarkStatusBand(BELOW_MD);
 
   return (
     <div className="relative min-h-[100dvh] w-full md:flex md:items-center md:justify-center md:px-6 md:py-10">
