@@ -251,3 +251,11 @@ dialog[open] { animation: d-in 0.26s var(--g-ease); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* Silhouette test: every pixel of the card or token painted one colour. */
+.ctx-sil { display: flex; align-items: flex-end; gap: 22px; }
+.ctx-sil figure { margin: 0; display: grid; justify-items: center; gap: 6px; }
+.ctx-sil figcaption { font: 700 11px/1 "Manrope", sans-serif; opacity: 0.7; }
+.ctx-sil-card { container-type: inline-size; }
+.ctx-sil .ctx-ladder-slot, .ctx-sil .ctx-sil-card { filter: brightness(0); }
+.app-dark .ctx-sil .ctx-ladder-slot, .app-dark .ctx-sil .ctx-sil-card { filter: brightness(0) invert(1); }

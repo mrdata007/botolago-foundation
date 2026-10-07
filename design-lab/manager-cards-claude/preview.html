@@ -56,6 +56,10 @@
             `<div class="app-light pv-ground">${MC.ctxLadder(c, lat)}</div><div class="app-dark pv-ground">${MC.ctxLadder(c, lat)}</div>`,
           );
           h += section(
+            "Silhouette test",
+            `<div class="pv-grounds"><div class="app-light pv-ground">${MC.ctxSilhouette(c, lat)}</div><div class="app-dark pv-ground">${MC.ctxSilhouette(c, lat)}</div></div>`,
+          );
+          h += section(
             "Leaderboard in the app",
             `<div class="pv-grounds">` +
               `<div class="app-light pv-ground pv-phone">${MC.ctxRankCard(c, { ...lat, tokenH: 44 })}</div>` +

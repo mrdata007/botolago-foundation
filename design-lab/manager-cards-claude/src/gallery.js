@@ -192,7 +192,7 @@
       `<div class="lb-matrix">${originals()
         .map((c) => {
           const cc = refinedOf(c.id) || c;
-          return `<div class="lb-line"><h3>${num(c)} ${esc(nameOf(c))}<small>${esc(catLabel(c.category))}${cc !== c ? (ar ? " · محسّنة" : " · refined") : ""}</small></h3>${MC.ctxLadder(cc, o)}<div>${cc.row(MC.ALI, { ...o, rank: 3, pts: 1196, me: true })}</div></div>`;
+          return `<div class="lb-line"><h3>${num(c)} ${esc(nameOf(c))}<small>${esc(catLabel(c.category))}${cc !== c ? (ar ? " · محسّنة" : " · refined") : ""}</small></h3><div style="display:grid;gap:14px">${MC.ctxLadder(cc, o)}<div class="${state.ground === "day" ? "app-light" : "app-dark"}" style="background:none">${MC.ctxSilhouette(cc, o)}</div></div><div>${cc.row(MC.ALI, { ...o, rank: 3, pts: 1196, me: true })}</div></div>`;
         })
         .join("")}</div>` +
       `<div class="sec"><h2>${ar ? "داخل التطبيق" : "Inside the app"}</h2><p>${

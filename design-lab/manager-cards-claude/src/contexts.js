@@ -49,6 +49,13 @@
     );
   };
 
+  /** The token and the full card as solid silhouettes: is it recognisable before anything is read? */
+  MC.ctxSilhouette = (c, o = {}) =>
+    `<div class="ctx-sil">` +
+    `<figure><div class="ctx-sil-card" style="width:120px">${c.full(MC.ALI, { ...o, thumb: true })}</div><figcaption>card</figcaption></figure>` +
+    [56, 44, 28].map((h) => `<figure><div class="ctx-ladder-slot" style="height:${h}px;min-width:${h}px">${c.token(MC.ALI, { ...o, size: h, mini: h <= 32 })}</div><figcaption>${h}px</figcaption></figure>`).join("") +
+    `</div>`;
+
   /** The token at every size from leaderboard to favicon, for the scalability test. */
   MC.TOKEN_SIZES = [80, 64, 56, 44, 32, 24];
   MC.ctxLadder = (c, o = {}) =>
