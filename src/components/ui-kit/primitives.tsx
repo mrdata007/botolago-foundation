@@ -1527,6 +1527,7 @@ export function UiModal({
   footer,
   children,
   className,
+  onCloseAutoFocus,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -1535,12 +1536,20 @@ export function UiModal({
   footer?: ReactNode;
   children?: ReactNode;
   className?: string;
+  /**
+   * Where focus goes when the modal closes. A modal opened from state has no
+   * `Dialog.Trigger` to return to, so without this focus falls to the page
+   * root; prevent the default and focus the control that opened it (as
+   * `UiSheet`'s prop of the same name).
+   */
+  onCloseAutoFocus?: (event: Event) => void;
 }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <UiScrim />
         <Dialog.Content
+          onCloseAutoFocus={onCloseAutoFocus}
           className={cn(
             "fixed inset-0 z-50 m-auto flex h-fit w-[min(100%-2rem,26rem)] flex-col overflow-hidden",
             // 88% of the screen at most. Centred, so a tall one reaches as far

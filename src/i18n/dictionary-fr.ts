@@ -711,14 +711,11 @@ export const fr = {
   "fantasy.rules.captaincy_desc":
     "Le capitaine marque le double de ses points. Le vice-capitaine prend le relais si besoin.",
   "fantasy.rules.transfers_r": "Transferts",
-  "fantasy.rules.transfers_desc":
-    "1 transfert gratuit par journée. Chaque transfert supplémentaire coûte 4 points.",
   "fantasy.rules.deadlines": "Dates limites",
   "fantasy.rules.deadlines_desc":
     "Chaque journée a une date limite. Les modifications après la date limite sont refusées.",
   "fantasy.rules.scoring": "Barème de points",
-  "fantasy.rules.scoring_desc":
-    "But d'un attaquant : 4 pts, milieu : 5 pts, défenseur ou gardien : 6 pts. Cage inviolée : 4 pts (D/GK).",
+  "fantasy.rules.scoring_desc": "Points par poste, selon le barème du jeu.",
   "fantasy.recap.public.title": "Rendre ma journée publique",
   "fantasy.recap.public.explain":
     "La page publique montre votre pseudo, la journée, le total, le capitaine et le coût des transferts. Jamais votre e-mail, votre nom, vos ligues ni votre prochaine équipe.",
@@ -769,6 +766,36 @@ export const fr = {
   "fantasy.rules.tiebreak": "Départages",
   "fantasy.rules.tiebreak_desc":
     "En cas d'égalité de points, la meilleure place revient au manager qui a perdu le moins de points en transferts, puis qui a fait le moins de transferts, puis qui a le meilleur score à la dernière journée, puis dont l'équipe a été créée le plus tôt.",
+  "fantasy.rules.transfers_rule":
+    "{free} transfert gratuit par journée, cumulable jusqu'à {max}. Chaque transfert supplémentaire coûte {hit} points.",
+  "fantasy.rules.table_event": "Action",
+  "fantasy.rules.table_na": "Ne s'applique pas",
+  "fantasy.rules.row.appearance": "Participation",
+  "fantasy.rules.row.appearance_short": "Moins de {n} min jouées",
+  "fantasy.rules.row.appearance_full": "{n} min ou plus",
+  "fantasy.rules.row.goal": "But",
+  "fantasy.rules.row.official_assist": "Passe décisive",
+  "fantasy.rules.row.clean_sheet": "Cage inviolée",
+  "fantasy.rules.row.saves": "Arrêts (tous les {n})",
+  "fantasy.rules.row.penalty_save": "Penalty arrêté",
+  "fantasy.rules.row.goals_conceded": "Buts encaissés (tous les {n})",
+  "fantasy.rules.row.penalty_miss": "Penalty manqué",
+  "fantasy.rules.row.yellow_card": "Carton jaune",
+  "fantasy.rules.row.direct_red_card": "Carton rouge direct",
+  "fantasy.rules.row.second_yellow_dismissal": "Expulsion sur second jaune (total)",
+  "fantasy.rules.row.own_goal": "But contre son camp",
+  "fantasy.rules.scoring_unavailable": "Le barème détaillé n'est pas disponible pour le moment.",
+  "fantasy.rules.chips": "Jetons",
+  "fantasy.rules.chip_window_season": "Une fois, à la journée de votre choix",
+  "fantasy.rules.chip_window_range": "Une fois entre la J{from} et la J{to}",
+  "fantasy.rules.chip_window_single": "Une fois, à la J{n}",
+  "fantasy.rules.chip_window_from": "Une fois, à partir de la J{from}",
+  "fantasy.rules.chip_uses_once": "Une fois dans la saison",
+  "fantasy.rules.chip_uses_twice": "Deux fois dans la saison",
+  "fantasy.rules.chip_uses_n": "{n} fois dans la saison",
+  "fantasy.rules.full_minutes_note":
+    "Cage inviolée et buts encaissés : comptent seulement à partir de {n} min jouées.",
+  "fantasy.rules.value_unavailable": "Indisponible pour le moment.",
   "fantasy.onboarding.title": "Bienvenue sur Fantasy BotolaGO",
   "fantasy.onboarding.step1_title": "Composez votre équipe",
   "fantasy.onboarding.step1_body":
@@ -965,6 +992,12 @@ export const fr = {
   "fantasy.hub.invite_copied": "Lien copié",
   "fantasy.hub.invite_message": "Rejoins ma ligue « {name} » sur BotolaGO : {link}",
   "fantasy.hub.invite_ready": "Ligue « {name} » créée. Invitez vos amis :",
+  // BG-0157 (2): the team card's figure names the round it belongs to, and
+  // its block opens Points at that round. With no result yet: no round, no 0.
+  "fantasy.hub.points_round": "Points · J{n}",
+  "fantasy.hub.points_none": "Aucun point pour l'instant",
+  "fantasy.hub.points_open": "Voir mes points de la journée {n}",
+  "fantasy.hub.points_open_any": "Voir mes points",
   "fantasy.bench_short": "Banc",
   "fantasy.xpts": "xPts",
   "fantasy.chip.bench_boost": "Bench Boost",
@@ -1016,6 +1049,9 @@ export const fr = {
   "fantasy.leagues.left": "Vous avez quitté la ligue",
   "fantasy.fixtures.subtitle":
     "Indice de difficulté de 1 (facile) à 5 (difficile) calculé à partir de la force des équipes.",
+  "fantasy.fixtures.cell_name": "{club} ({venue}), difficulté {n} sur 5",
+  "fantasy.fixtures.venue_key": "{home} = à domicile · {away} = à l'extérieur",
+  "fantasy.fixtures.key_explain": "Explication de la difficulté",
   "fpl.group.GK": "Gardiens",
   "fpl.group.DEF": "Défenseurs",
   "fpl.group.MID": "Milieux",
@@ -1113,7 +1149,7 @@ export const fr = {
   "fpl.private": "Privée",
   "fpl.public": "Publique",
   "fpl.private_code_help": "Saisissez le code de la ligue privée fourni par son administrateur.",
-  "fpl.create_own_league": "Vous pouvez créer votre propre ligue depuis « Gérer les ligues ».",
+  "fpl.create_own_league": "Vous pouvez créer votre propre ligue depuis « Créer une ligue ».",
   "fpl.private_league_code": "Code de ligue privée",
   "fpl.invalid_code":
     "Code invalide. Vérifiez le code et confirmez avec l’administrateur de la ligue si le problème persiste.",
@@ -1164,7 +1200,7 @@ export const fr = {
   "fpl.save_team": "Enregistrer l’équipe",
   "fpl.squad_selection": "Sélection de l’effectif",
   "fpl.players_selected": "{n}/15 joueurs",
-  "fpl.fdr_key": "Légende FDR",
+  "fpl.fdr_key": "Difficulté",
   "fpl.easy": "Facile",
   "fpl.hard": "Difficile",
   "fpl.captain": "Capitaine",
@@ -1334,6 +1370,16 @@ export const fr = {
   "fantasy.leagues.gameweek": "Journée",
   "fantasy.leagues.rules_summary":
     "Points cumulés depuis le début de la saison. Le classement se met à jour après chaque journée.",
+  "fantasy.leagues.create_submit": "Créer",
+  "fantasy.leagues.invite_friends": "Inviter des amis",
+  "fantasy.leagues.invite_confirm":
+    "Un nouveau code est créé pour inviter vos amis. L'ancien code ne fonctionnera plus.",
+  "fantasy.leagues.invite_failed": "Impossible de créer un lien d'invitation pour le moment.",
+  "fantasy.leagues.invite_owner_only":
+    "Seul le créateur de la ligue peut inviter de nouveaux membres.",
+  "fantasy.leagues.leave_title": "Quitter « {league} » ?",
+  "fantasy.leagues.leave_body":
+    "Vous disparaîtrez de son classement. Pour revenir, il vous faudra un code d'invitation.",
   "common.confirm": "Confirmer",
   "common.cancel": "Annuler",
 
@@ -1775,6 +1821,11 @@ export const fr = {
   "fantasy.team.hint.swap": "Touchez deux joueurs du même poste pour les échanger.",
   "fantasy.team.hint.position_incompatible":
     "Ces joueurs occupent des postes différents et ne peuvent pas être échangés.",
+  /* BG-0157 (1) — Pick Team's confirmation bar and its leave guard. */
+  "fantasy.team.unsaved.status": "Modifications non enregistrées",
+  "fantasy.team.unsaved.chip": "{chip} : à confirmer",
+  "fantasy.team.unsaved.leave_confirm":
+    "Vos changements ne sont pas confirmés et ne compteront pas pour cette journée. Quitter quand même ?",
   "fantasy.empty.subtitle": "Composez votre équipe de 15 joueurs pour commencer.",
   "fantasy.empty.builder_open": "Ouvrir le composeur d'équipe",
   "fantasy.error.import_validation":
