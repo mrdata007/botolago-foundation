@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import {
   formatCount,
   formatNumber,
+  META_SEPARATOR,
   POSITION_GROUPS,
   positionLabel,
   positionShort,
@@ -55,13 +56,15 @@ import {
   usePepitesViewer,
   useVersionPointer,
 } from "./use-pepites";
+import { PepitesFeature } from "./PepitesFeature";
 import {
+  PepitesIdentityDisc,
   PepitesName,
-  PepitesPlayerPhoto,
-  PepitesShirt,
+  RankPlate,
   RatingChip,
   Seg10Bar,
 } from "./PepitesVisuals";
+import { useClubCatalogue } from "./use-club-catalogue";
 
 export const RANKING_PAGE_SIZE = 20;
 /** The age chip: 20 and under (Figma 01, "≤ 20 ans"). */
@@ -112,10 +115,11 @@ const keepToLink = (event: MouseEvent) => event.stopPropagation();
 
 /**
  * `/pepites/classement` (Figma 02), on the main kit (BG-0152): the kit's
- * title band with the back pill, the count and the position chips; the top
- * three as club-banded cards from 768px; then every ranked player of the
- * current version in a table, by position and age, sorted by score or by a
- * column. Twenty at a time.
+ * title band with the back pill, the count and the position chips; the
+ * featured N°1 on the stadium band while the list is in ranking order
+ * (`PepitesFeature`, BG-0156; it replaced a podium of three); then every
+ * ranked player of the current version in a table, by position and age,
+ * sorted by score or by a column. Twenty at a time.
  *
  * One `<h1>` serves both widths (its words change from 768px), so each
  * breakpoint shows exactly one. The phone table and the desktop table are
@@ -298,7 +302,19 @@ export function PepitesRanking({
     }
     return (
       <>
-        <RankingPodium rows={rows.slice(0, 3)} />
+        {/* The featured N°1 (BG-0156) while the list is in ranking order:
+            sorted by another column, the first row is not the leader. */}
+        {filters.sort === "score" && rows[0] ? (
+          <PepitesFeature
+            testId="pepites-feature"
+            player={rows[0]}
+            rank={rows[0].rank}
+            score={rows[0].score}
+            movement={rows[0].movement}
+            version={version}
+            width="desktop"
+          />
+        ) : null}
         <RankingTable rows={rows} sort={filters.sort} onSort={setSort} />
         <DesktopRankingTable rows={rows} sort={filters.sort} onSort={setSort} />
         {pages.hasNextPage ? (
@@ -394,67 +410,6 @@ export function PepitesRanking({
 }
 
 /**
- * The top three of the current list, from 768px: a card each, under a band
- * in the club's colour (`clubStyle` + `ui.club.fill`, with the club stripes)
- * carrying the rank, then the shirt with the rank on its back, the name, the
- * club and position, and the score as a standalone figure. In Arabic the
- * grid runs from the right, so N°1 stays at the inline start.
- */
-function RankingPodium({ rows }: { rows: readonly RankingRow[] }) {
-  const { t, tr, lang } = useI18n();
-  if (rows.length === 0) return null;
-  return (
-    <ol data-testid="pepites-desktop-podium" className="hidden grid-cols-3 gap-3 md:grid lg:gap-4">
-      {rows.map((row) => (
-        <li key={row.id} className="min-w-0">
-          <Link
-            to="/pepites/joueur/$playerId"
-            params={{ playerId: row.id }}
-            className={cn(
-              // An interactive `UiCard` as a link: the card surface, the tile
-              // press and the focus ring; the band is clipped to the radius.
-              ui.surface.card,
-              "press-tile flex h-full flex-col overflow-hidden",
-              ui.focus,
-            )}
-          >
-            <span
-              {...clubStyle(teamAsClub(row.team))}
-              className={cn("flex items-center px-4 py-2", ui.club.fill, ui.club.stripes)}
-            >
-              <bdi className={ui.score.sm}>
-                {row.rank === null ? "–" : formatNumber(row.rank, lang)}
-              </bdi>
-            </span>
-            <span className="flex flex-1 flex-col items-center gap-1 px-4 pb-4 pt-3 text-center">
-              <PepitesShirt player={row} number={row.rank} className="h-24 w-26" />
-              <PepitesName
-                name={row.name}
-                className={cn("w-full truncate text-center", ui.text.bodyStrong, ui.tone.default)}
-              />
-              <span className={cn("w-full truncate", ui.text.meta, ui.tone.muted)}>
-                {[
-                  row.team ? tr(row.team.shortName) : null,
-                  row.positionGroup ? positionShort(row.positionGroup, t) : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
-              <span className="mt-auto flex items-baseline gap-1.5 pt-2">
-                <bdi className={cn(ui.score.md, ui.tone.ink)}>
-                  {scoreText(row.score, lang, "–")}
-                </bdi>
-                <span className={cn(ui.text.label, ui.tone.muted)}>{t("pepites.table.score")}</span>
-              </span>
-            </span>
-          </Link>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-/**
  * A column heading that sorts: a button on the 44px tap floor, the active
  * one in the brand foreground and underlined (with a down arrow from 768px,
  * where the columns have the room), `aria-pressed` on the button and
@@ -512,6 +467,25 @@ function ScoreFigure({ score, unranked }: { score: number | null; unranked: stri
   );
 }
 
+/**
+ * A row's club colour, as the standings draw a zone: a 4px bar on the start
+ * edge of the row's first cell (which is `relative`), in the club's edge
+ * colour (`clubStyle`, ≥ 3:1 against the card). Decorative: the club is
+ * printed in the row.
+ */
+function ClubEdge({ row }: { row: RankingRow }) {
+  if (!row.team) return null;
+  const colours = clubStyle(teamAsClub(row.team));
+  return (
+    <span
+      aria-hidden
+      data-club={colours["data-club"]}
+      style={colours.style}
+      className={cn("absolute inset-y-0 start-0 w-1", ui.club.edgeFill)}
+    />
+  );
+}
+
 /** A tappable table row's hover, on top of `UiTR`'s rule. */
 const ROW = cn(
   "h-[var(--ui-row-min)] last:border-b-0",
@@ -522,16 +496,23 @@ const ROW = cn(
  * The phone table (Figma 02's columns: # · player · MIN · B/PD · NOTE ·
  * SCORE), `table-fixed` so a long name cannot push the score off a 390px
  * screen. The four figure columns are the 44px their sort buttons need and
- * the score column only what "SCORE" needs, so the name keeps the rest; on
- * a table under 384px (phones up to 414px) the photo gives its width to the
- * name too, and shows from a 430px phone. A name that still does not fit
- * wraps, balanced, onto a second line (the row grows past its 48px floor),
- * and only a fourth line would be cut. The name takes its own direction
- * (`PepitesName`), so a Latin name in an Arabic table keeps its first name
- * and loses its end, never its start. The whole row opens the player; the
- * link around the photo and name is the row's keyboard and screen-reader
- * target, and carries `pepites-ranking-row` (the position is read inside
- * it).
+ * the score column only what "SCORE" needs, so the name keeps the rest.
+ *
+ * Each row carries (BG-0156) the club's colour on its start edge, the rank
+ * (1 to 3 on the white plate), the player's photo or the club's crest, the
+ * name over "position · club", and the ten-segment bar under the score. The
+ * rank column is only the plate's 28px past the edge's gap, so the disc
+ * fits from a 352px table (a 390px phone); under it (the 360 and 375px
+ * phones) the disc gives its width to the name, because there the club line
+ * no longer fit in two lines (measured, BG-0156), and the club's edge and
+ * name still say whose row it is. A name that does not fit wraps, balanced,
+ * onto a second line (the row grows past its 48px floor), and only a fourth
+ * line would be cut. The
+ * name takes its own direction (`PepitesName`), so a Latin name in an Arabic
+ * table keeps its first name and loses its end, never its start. The whole
+ * row opens the player; the link around the disc and name is the row's
+ * keyboard and screen-reader target, and carries `pepites-ranking-row` (the
+ * position is read inside it).
  */
 function RankingTable({
   rows,
@@ -542,8 +523,9 @@ function RankingTable({
   sort: RankingSort;
   onSort: (sort: RankingSort) => void;
 }) {
-  const { t, lang } = useI18n();
+  const { t, tr, lang } = useI18n();
   const navigate = useNavigate();
+  const catalogue = useClubCatalogue();
   return (
     <UiCard
       padding="none"
@@ -553,10 +535,11 @@ function RankingTable({
       <UiTable caption={t("pepites.ranking.title")} tableClassName="table-fixed">
         <UiTHead>
           <UiTR>
-            <UiTH numeric className="w-9 pe-1 ps-3">
+            {/* The edge's 4px, a 4px gap, the 28px plate: nothing more. */}
+            <UiTH numeric className="w-9 pe-0 ps-2">
               #
             </UiTH>
-            <UiTH className="px-1">{t("pepites.table.player")}</UiTH>
+            <UiTH className="pe-1 ps-1.5">{t("pepites.table.player")}</UiTH>
             <SortHeader sort="minutes" active={sort} onSort={onSort} className="w-11">
               {t("pepites.table.minutes")}
             </SortHeader>
@@ -580,10 +563,11 @@ function RankingTable({
                 void navigate({ to: "/pepites/joueur/$playerId", params: { playerId: row.id } })
               }
             >
-              <UiTD numeric className={cn("pe-1 ps-3", ui.tone.muted)}>
-                <bdi>{row.rank === null ? "–" : formatNumber(row.rank, lang)}</bdi>
+              <UiTD numeric className="relative pe-0 ps-2">
+                <ClubEdge row={row} />
+                <RankPlate rank={row.rank} size="sm" />
               </UiTD>
-              <UiTD className="px-1">
+              <UiTD className="pe-1 ps-1.5">
                 <Link
                   to="/pepites/joueur/$playerId"
                   params={{ playerId: row.id }}
@@ -591,17 +575,41 @@ function RankingTable({
                   data-testid="pepites-ranking-row"
                   className={cn("flex min-w-0 items-center gap-1.5", ui.radius.control, ui.focus)}
                 >
-                  {/* Under a 384px table (phones to 414px) the photo gives its width to the name. */}
-                  <PepitesPlayerPhoto player={row} size="xs" className="@max-[24rem]:hidden" />
-                  <PepitesName
-                    name={row.name}
-                    className={cn(
-                      "line-clamp-3 min-w-0 text-balance break-words",
-                      ui.text.meta,
-                      HEAVY,
-                      ui.tone.default,
-                    )}
+                  {/* Under a 352px table (the 360 and 375px phones) the disc gives its width to the name. */}
+                  <PepitesIdentityDisc
+                    player={row}
+                    listed={row.team ? catalogue.get(row.team.id) : undefined}
+                    size="xs"
+                    className="@max-[22rem]:hidden"
                   />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <PepitesName
+                      name={row.name}
+                      className={cn(
+                        "line-clamp-3 min-w-0 text-balance break-words",
+                        ui.text.meta,
+                        HEAVY,
+                        ui.tone.default,
+                      )}
+                    />
+                    {/* Wraps (two lines at most) rather than cutting the club's name. */}
+                    <span
+                      className={cn(
+                        "line-clamp-2 text-balance break-words",
+                        ui.text.micro,
+                        ui.tone.muted,
+                      )}
+                    >
+                      {/* The short position is seen; the full one is heard, below. */}
+                      {row.positionGroup ? (
+                        <span aria-hidden>
+                          {positionShort(row.positionGroup, t)}
+                          {META_SEPARATOR}
+                        </span>
+                      ) : null}
+                      {row.team ? tr(row.team.shortName) : null}
+                    </span>
+                  </span>
                   {row.positionGroup ? (
                     <span className="sr-only">{positionLabel(row.positionGroup, t)}</span>
                   ) : null}
@@ -626,7 +634,10 @@ function RankingTable({
                 <RatingChip rating={row.ratingAvg} />
               </UiTD>
               <UiTD numeric className="pe-3 ps-1">
-                <ScoreFigure score={row.score} unranked={t("pepites.unranked")} />
+                <span className="inline-flex flex-col items-end gap-1">
+                  <ScoreFigure score={row.score} unranked={t("pepites.unranked")} />
+                  <Seg10Bar value={row.score} className="w-10 gap-px" />
+                </span>
               </UiTD>
             </UiTR>
           ))}
@@ -652,6 +663,7 @@ function DesktopRankingTable({
 }) {
   const { t, tr, lang } = useI18n();
   const navigate = useNavigate();
+  const catalogue = useClubCatalogue();
   const dash = <span className={ui.tone.faint}>–</span>;
   return (
     <UiCard
@@ -703,8 +715,9 @@ function DesktopRankingTable({
                 void navigate({ to: "/pepites/joueur/$playerId", params: { playerId: row.id } })
               }
             >
-              <UiTD numeric className={cn("ps-4", ui.stat.md, ui.tone.ink)}>
-                <bdi>{row.rank === null ? "–" : formatNumber(row.rank, lang)}</bdi>
+              <UiTD numeric className="relative ps-4">
+                <ClubEdge row={row} />
+                <RankPlate rank={row.rank} size="sm" />
               </UiTD>
               <UiTD>
                 <Link
@@ -713,7 +726,11 @@ function DesktopRankingTable({
                   onClick={keepToLink}
                   className={cn("flex min-w-0 items-center gap-2", ui.radius.control, ui.focus)}
                 >
-                  <PepitesPlayerPhoto player={row} size="xs" />
+                  <PepitesIdentityDisc
+                    player={row}
+                    listed={row.team ? catalogue.get(row.team.id) : undefined}
+                    size="xs"
+                  />
                   <span className="min-w-0 max-w-56">
                     <PepitesName
                       name={row.name}

@@ -867,8 +867,10 @@ right in light and dark, French and Arabic. The Pépites-specific pieces in
   (`truncate`, `line-clamp-*`) takes the name's own direction, so a Latin
   name in an Arabic row loses its end, never its first name, and still
   lines up with the row. The phone ranking lets a name wrap (balanced, up
-  to three lines) rather than cut it, and drops the row photo on phones up
-  to 414px so the name has the width.
+  to three lines) rather than cut it; its rank column is only the plate's
+  28px past the edge's gap, so the row photo or crest shows from a 352px
+  table (a 390px phone) and gives its width to the name below that (the
+  360 and 375px phones).
 - **States and banners** (`PepitesParts.tsx`): `UiEmptyState`,
   `UiErrorState`, `UiSkeleton` (giving up after 12 seconds) and `UiAlert`.
 - **Data glyphs** (`PepitesVisuals.tsx`): `RatingChip` (the rating tokens
@@ -878,7 +880,32 @@ right in light and dark, French and Arabic. The Pépites-specific pieces in
   `PepitesPlayerPhoto` (the kit's `PlayerPhoto` with the club silhouette);
   `PepitesShirt` (the club kit with the surname and rank, for a player with
   no licensed photo); `MovementMark` (`UiRankMovement variant="quiet"`, and
-  a positive `UiBadge` for a newcomer).
+  a positive `UiBadge` for a newcomer). Since BG-0156: `RankPlate` (ranks 1
+  to 3 on the white score plate, `--ui-scorebox`, Tunnel Navy figures; 4
+  and below muted in the same box); `PepitesIdentityDisc` (the licensed
+  photo, else the club's crest from the club catalogue, else the
+  club-colour disc with its initials); `PercentileWheel` and
+  `PercentileLegend` (the story card's five-slice wheel, in SVG, for the
+  featured N°1 only).
+- **Featured N°1** (`PepitesFeature.tsx`, BG-0156): the one top-3 treatment,
+  on `/pepites` (both states), an earlier week and the ranking (in ranking
+  order). Home's stadium photo band (the same photograph through
+  `StadiumBandPhoto`, mirrored in Arabic as Home's and the date strip's
+  are, a Tunnel Navy ground under a flat navy veil, full-bleed on a phone
+  and a 16px panel from 640px) right under the white title band, carrying
+  the rank plate (flat: the lifted shadow there is the score plate's), the
+  name, the score on the white score plate, the wheel (Floodlight Navy
+  track, values in the action gradient: progress) with its legend (the
+  figures in a column right after the longest name), and on `/pepites` the
+  editor's line and four figures (the ranking's, else the player read's,
+  `bandFigures`). From a 768px band the name and score sit at the start,
+  centred, and the wheel and legend at the end. The link holds the header
+  and the editor's line, which name it, and its `::after` covers the band
+  for the tap and the focus ring; the legend and the figures are content
+  after it. Everything on it takes the on-ink foregrounds; its club edge
+  is the story card's (`shareClubColours` on `SHARE_PALETTE.ground`). Rows
+  and the ranking tables carry the club's edge on the start side, the rank
+  plate and the disc.
 - **Charts**: the player's rating trend is one SVG for phone and desktop.
   Time runs in the reading direction (the oldest match at the inline start,
   so on the right in Arabic), computed in code from the page's `dir`, with

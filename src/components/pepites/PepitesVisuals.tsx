@@ -1,4 +1,5 @@
 import type { Movement, PepitesPlayerCard } from "@/backend/pepites/contracts";
+import { ClubCrest } from "@/components/common/ClubCrest";
 import { PlayerPhoto, type PlayerPhotoSize } from "@/components/common/PlayerPhoto";
 import { ui, UiBadge, UiRankMovement } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -7,7 +8,7 @@ import { useRevealOnView } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { printedRatingBand, type RatingBand, segments, shirtName, teamKit } from "./pepites-design";
-import { formatNumber, playerPhotoUrl, teamAsClub } from "./pepites-format";
+import { formatNumber, type ListedClub, playerPhotoUrl, teamAsClub } from "./pepites-format";
 
 /**
  * The data glyphs the Pépites screens share, on the main kit (BG-0152): the
@@ -181,6 +182,106 @@ export function PepitesPlayerPhoto({
       className={className}
       loading={loading}
     />
+  );
+}
+
+/**
+ * Who a row is about, as one disc: the player's photo when the read returned
+ * one (only under a release that allows in-app use; the RPC answers null for
+ * everyone else), otherwise the club's crest from the app's club catalogue
+ * (`listed`), otherwise the club-colour disc with the club's initials, which
+ * is also what `ClubCrest` shows while a crest loads or when it fails. A
+ * player without a club gets the silhouette. Decorative, like every disc:
+ * the name and the club are printed beside it. Sizes are the kit's discs (xs
+ * 28, sm 32, md 40, lg 56); every option fills the same box, so nothing moves
+ * when a photo or a crest arrives.
+ */
+export function PepitesIdentityDisc({
+  player,
+  listed,
+  size = "md",
+  className,
+  loading,
+}: {
+  player: Pick<PepitesPlayerCard, "team" | "photo">;
+  /** The player's club in the app's club catalogue (`useClubCatalogue`). */
+  listed?: ListedClub | null;
+  size?: Exclude<PlayerPhotoSize, "xl">;
+  className?: string;
+  /** `"eager"` for a disc in the first screen. */
+  loading?: "eager" | "lazy";
+}) {
+  const photoUrl = playerPhotoUrl(player);
+  const club = teamAsClub(player.team, listed);
+  if (photoUrl || !club) {
+    return (
+      <PlayerPhoto
+        photoUrl={photoUrl}
+        club={club}
+        size={size}
+        className={className}
+        loading={loading}
+      />
+    );
+  }
+  return <ClubCrest club={club} size={size} className={className} loading={loading} />;
+}
+
+/** A rank plate's box and figure, per size. */
+const PLATE_SIZE = {
+  /** 28px: a table's rank column. */
+  sm: cn("h-7 min-w-7 px-1", ui.radius.segment, ui.stat.sm),
+  /** 36px: a Top 10 row. */
+  md: cn("h-9 min-w-9 px-1", ui.radius.segment, ui.score.row),
+  /** 44px: the featured N°1. */
+  lg: cn("h-11 min-w-11 px-1.5", ui.radius.track, ui.score.sm),
+} as const;
+
+/**
+ * A rank as the share pictures set it (BG-0153): 1 to 3 on the white score
+ * plate with Tunnel Navy figures (`ui.surface.scorebox`, light in both
+ * themes), 4 and below as a muted figure in the same box, so a column of
+ * ranks lines up. On a card the plate also takes a hairline ring and the
+ * card shadow, because in the light theme the plate and the card are the
+ * same white; on the dark photo band (`onBand`) it stays flat, the white
+ * plate on the navy being cue enough (the lifted shadow there is the score
+ * plate's alone: DESIGN.md, The One Lift Rule), and the other ranks take
+ * the band's quieter foreground. The figure is the rank's only cue, so the
+ * plate needs no label.
+ */
+export function RankPlate({
+  rank,
+  size = "md",
+  onBand = false,
+  className,
+}: {
+  rank: number | null;
+  size?: keyof typeof PLATE_SIZE;
+  onBand?: boolean;
+  className?: string;
+}) {
+  const { lang } = useI18n();
+  const podium = typeof rank === "number" && rank >= 1 && rank <= 3;
+  return (
+    <span
+      data-testid="pepites-rank"
+      data-podium={podium ? "" : undefined}
+      className={cn(
+        "inline-flex shrink-0 items-center justify-center",
+        PLATE_SIZE[size],
+        podium
+          ? cn(
+              ui.surface.scorebox,
+              !onBand && cn(ui.shadow.card, "ring-1 ring-inset ring-[color:var(--ui-rule)]"),
+            )
+          : onBand
+            ? ui.tone.onInkMuted
+            : ui.tone.muted,
+        className,
+      )}
+    >
+      <bdi>{typeof rank === "number" ? formatNumber(rank, lang) : "–"}</bdi>
+    </span>
   );
 }
 
@@ -379,7 +480,21 @@ function movementLabel(movement: NonNullable<Movement>, t: (key: TranslationKey)
  * and a positive badge for a newcomer. Each carries its name for screen
  * readers, so colour is never the only cue. Nothing for no movement data.
  */
-export function MovementMark({ movement, className }: { movement: Movement; className?: string }) {
+export function MovementMark({
+  movement,
+  onBand = false,
+  className,
+}: {
+  movement: Movement;
+  /**
+   * On the dark photo band (`PepitesFeature`): the green and magenta text
+   * steps are made for the page's surface, so the mark takes the band's
+   * plain foreground (the arrow and the hidden label still say which way),
+   * and a newcomer the outline badge.
+   */
+  onBand?: boolean;
+  className?: string;
+}) {
   const { t, lang } = useI18n();
   if (!movement) return null;
   const label = movementLabel(movement, t);
@@ -390,7 +505,7 @@ export function MovementMark({ movement, className }: { movement: Movement; clas
         data-testid="pepites-movement"
         className={cn("inline-flex shrink-0", className)}
       >
-        <UiBadge tone="positive">
+        <UiBadge tone={onBand ? "outline" : "positive"}>
           <span aria-hidden>{t("pepites.movement.new_short")}</span>
           <span className="sr-only">{label}</span>
         </UiBadge>
@@ -410,6 +525,7 @@ export function MovementMark({ movement, className }: { movement: Movement; clas
         variant="quiet"
         rank={0}
         previousRank={previousRank}
+        className={onBand ? ui.tone.onInkPlain : undefined}
         labels={{
           up: t("pepites.movement.up"),
           down: t("pepites.movement.down"),
