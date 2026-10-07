@@ -199,8 +199,8 @@ the snapshot) was not checked against the live site.
   inbox very probably receives nothing either. Since 2026-10-07 the interface hides the reminder bell,
   the Pépites weekly email card and the email and alert switches, and says reminders are not sent yet,
   until `NOTIFICATION_EMAIL_LIVE` (`src/lib/feature-flags.ts`) is switched on with the email mode.
-- **Fantasy Cup and public leagues:** no backend path works. The Cup tabs and copy were removed on
-  2026-10-07 and the leagues page is titled "Ligues"; the join screen's public-league copy remains.
+- **Fantasy Cup and public leagues:** the screens and copy exist, but no backend path works. The
+  owner decided on 2026-10-07 to keep the Cup screens.
   Head-to-head leagues appear only as a disabled option, with copy saying they will come later.
 - **Google and Apple sign-in:** the buttons render, and both providers are enabled in production
   Supabase Auth (its public settings, checked 2026-10-07). No sign-in through either is recorded.

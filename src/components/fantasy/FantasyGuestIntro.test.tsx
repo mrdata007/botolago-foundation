@@ -243,8 +243,7 @@ describe("FantasyGuestIntro — what the game is, before anything personal", () 
       const html = await render(intro({ audience, prizes: true }));
       const plain = text(html);
       expect(plain).not.toContain(escapeHtml(fr["fantasy.hub.my_leagues"]));
-      // No Cup anywhere (owner, 2026-10-07: no backend runs one).
-      expect(plain).not.toMatch(/coupe/i);
+      expect(plain).not.toContain(escapeHtml(fr["fpl.cup_not_qualified"]));
       expect(plain).not.toContain(escapeHtml(fr["fpl.notifications"]));
       expect(html).not.toContain('role="switch"');
       expect(html).not.toContain('role="dialog"');

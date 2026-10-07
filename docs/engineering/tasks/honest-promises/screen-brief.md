@@ -1,5 +1,13 @@
 # Screen brief: honest promises (reminders, e-mails, the Fantasy Cup, the store line)
 
+> **Note, 2026-10-07, after review.** The owner decided to keep the Fantasy
+> Cup. Item 3 below ("The Cup goes") is reverted: "Ligues & Coupes", the
+> Coupes tab, a league's Coupe tab, the hub's Cup card, the cup explainer
+> and its keys are back exactly as on `main`, and the documents say so. The
+> rest of this brief (reminders and e-mails) stands. The
+> `fantasy-leagues__m-ar-light` before/after pair no longer shows a change
+> and was removed from `shots/`.
+
 Owner request, 2026-10-07: "go" on the critique plan
 (`.impeccable/critique/2026-10-06T20-00-17Z__src-routes.md`, item P1 "Copy
 promises features that are switched off", command `/impeccable harden`, with

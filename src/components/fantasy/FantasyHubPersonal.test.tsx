@@ -28,13 +28,12 @@ import { fantasyHubLayout } from "./fantasy-hub-layout";
  * Audit 2026-09-25 (A16) — what the Fantasy hub's personal parts render for
  * each visitor, from the session and screen state through the real
  * `fantasyHubLayout` to rendered markup: the team card's place, "Mes
- * ligues", and the reminder switches, in the hub's order.
+ * ligues" with the cup, and the reminder switches, in the hub's order.
  *
  * Every case runs twice, with notification e-mail live and not
  * (`NOTIFICATION_EMAIL_LIVE`, passed through its context): the reminder
  * block and its placeholder appear only while e-mail is really sent, and
- * everything else is the same either way. There is no Cup in either state
- * (owner, 2026-10-07: no backend runs one).
+ * everything else is the same either way.
  *
  * Rendered with `react-dom/server` inside the app's providers (a memory
  * router for the links, React Query, the French dictionary, the auth
@@ -164,6 +163,7 @@ function hub({
 function expectNoDashboard(html: string) {
   const plain = text(html);
   expect(headings(html)).not.toContain(escapeHtml(fr["fantasy.hub.my_leagues"]));
+  expect(plain).not.toContain(escapeHtml(fr["fpl.cup_not_qualified"]));
   expect(plain).not.toContain(escapeHtml(fr["fpl.no_leagues"]));
   expect(plain).not.toContain(escapeHtml(fr["fpl.notifications"]));
   expect(html).not.toContain('role="switch"');
@@ -185,7 +185,7 @@ describe.each([
     ...(live ? ["fantasy-hub-reminders-placeholder"] : []),
   ];
 
-  it("an owner gets the dashboard: team card, pick team, transfers, leagues, and the switches while e-mail is live", async () => {
+  it("an owner gets the dashboard: team card, pick team, transfers, leagues, cup, and the switches while e-mail is live", async () => {
     const html = await hub({
       authStatus: "authenticated",
       source: "cloud",
@@ -204,11 +204,12 @@ describe.each([
       escapeHtml(fr["fantasy.hub.my_leagues"]),
       escapeHtml(fr["fpl.general_leagues"]),
       escapeHtml(fr["fpl.private_leagues"]),
+      escapeHtml(fr["fpl.cups"]),
+      escapeHtml(fr["fpl.cup_how_title"]),
       ...(live ? [escapeHtml(fr["fpl.notifications"])] : []),
     ]);
     expect(links).toContain("/fantasy/leagues/l1");
-    // No Cup: no backend runs one, so nothing says the manager may qualify.
-    expect(text(html)).not.toMatch(/coupe/i);
+    expect(text(html)).toContain(escapeHtml(fr["fpl.cup_not_qualified"]));
     // Today's reminder block exactly while e-mail is live; nothing of it otherwise.
     expect(html.match(/role="switch"/g) ?? []).toHaveLength(live ? 2 : 0);
     if (live) expect(text(html)).toContain(escapeHtml(fr["fpl.notifications_body"]));
@@ -254,7 +255,7 @@ describe.each([
   );
 
   it("signed in while the screen loads — team or not — the place is held and nothing in it is said", async () => {
-    // The first A16 fix showed "Mes ligues" and the switches here,
+    // The first A16 fix showed "Mes ligues", the cup and the switches here,
     // to a visitor without a team as much as to an owner.
     for (const team of [null, TEAM]) {
       const html = await hub({
@@ -304,7 +305,7 @@ describe.each([
     ["awaiting_gameweek", "fantasy.availability.awaiting_gameweek.title"],
     ["error", "fpl.error.title"],
   ] as const)(
-    "signed in, %s: that panel alone — no leagues, no switches, no create button",
+    "signed in, %s: that panel alone — no leagues, no cup, no switches, no create button",
     async (phase, title) => {
       for (const team of [null, TEAM]) {
         const html = await hub({ authStatus: "authenticated", source: "cloud", phase, team, live });

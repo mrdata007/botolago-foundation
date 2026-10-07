@@ -851,9 +851,9 @@ export const ar = {
   "fantasy.meta.help_title": "المساعدة والأسئلة الشائعة — BotolaGO Fantasy",
   "fantasy.meta.help_description":
     "أجوبة الأسئلة حول BotolaGO Fantasy: تسجيل الدخول، اختيار التشكيلة، الميزانية، الخطط، القائد، اسم الفريق والجوكرات.",
-  "fantasy.meta.leagues_title": "الدوريات — BotolaGO Fantasy",
+  "fantasy.meta.leagues_title": "الدوريات والكؤوس — BotolaGO Fantasy",
   "fantasy.meta.leagues_description":
-    "دورياتك الخاصة والعامة على BotolaGO Fantasy: الترتيب ودعوة أصدقائك.",
+    "دورياتك الخاصة والعامة على BotolaGO Fantasy: الترتيب والكؤوس ودعوة أصدقائك.",
   "fantasy.meta.league_title": "ترتيب الدوري — BotolaGO Fantasy",
   "fantasy.meta.league_description":
     "ترتيب دوري على BotolaGO Fantasy: نقاط كل مدرب في الجولة وعلى مدار الموسم.",
@@ -982,7 +982,9 @@ export const ar = {
   "fpl.top_players": "أفضل اللاعبين",
   "fpl.news_video": "الأخبار",
   "fpl.view_all": "عرض الكل",
+  "fpl.leagues_cups": "الدوريات والكؤوس",
   "fpl.leagues": "الدوريات",
+  "fpl.cups": "الكؤوس",
   "fpl.join_leagues": "الانضمام إلى دوريات",
   "fpl.configure_leagues": "إدارة الدوريات",
   "fpl.general_leagues": "الدوريات العامة",
@@ -1062,6 +1064,15 @@ export const ar = {
   "fpl.head_to_head": "مواجهات مباشرة",
   "fpl.players_to_be_added": "اللاعبون الذين ستتم إضافتهم بعد التحديث القادم للنقاط",
   "fpl.manager": "المدرب",
+  "fpl.cup_not_started": "تبدأ الكأس في الجولة {n}.",
+  "fpl.cup_not_qualified": "لم تتأهل للكأس بعد.",
+  "fpl.cup_how_title": "كيف تعمل الكأس؟",
+  "fpl.cup_how_body":
+    "تُسحب قرعة كل فريق ضد فريق آخر ما لم يحصل على إعفاء. يتأهل الفائز (الفريق صاحب أعلى نقاط في الجولة بعد خصم عقوبات الانتقالات) إلى الدور التالي وقرعة جديدة، ويُقصى الخاسرون. يستمر ذلك حتى النهائي بين آخر فريقين.",
+  "fpl.cup_tiebreak": "في حالة التعادل تُطبَّق المعايير التالية حتى تحديد الفائز:",
+  "fpl.cup_tb1": "1. الأكثر تسجيلًا للأهداف في الجولة",
+  "fpl.cup_tb2": "2. الأقل استقبالًا للأهداف في الجولة",
+  "fpl.cup_tb3": "3. قرعة افتراضية",
   "fpl.help_title": "المساعدة والقواعد",
   "fpl.how_can_we_help": "كيف يمكننا مساعدتك؟",
   "fpl.current_season": "الموسم الحالي",
