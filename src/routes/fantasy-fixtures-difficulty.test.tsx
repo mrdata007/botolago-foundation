@@ -8,7 +8,7 @@ import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import { FdrFixtureCell } from "./fantasy.fixtures";
 
 /**
- * BG-0155 (6): the fixture difficulty grid is readable without colour.
+ * BG-0157 (6): the fixture difficulty grid is readable without colour.
  *
  * Before, a cell printed "FUS (D)" on a coloured fill and told a screen
  * reader only "FUS Rabat (Domicile)", so the rating lived in the colour

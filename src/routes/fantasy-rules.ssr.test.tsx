@@ -15,7 +15,7 @@ import { fantasyService } from "@/services/fantasy-runtime";
 import { Route as RulesRoute } from "./fantasy.rules";
 
 /**
- * BG-0155 (5) — the rules page as it renders with a ruleset in hand: the
+ * BG-0157 (5) — the rules page as it renders with a ruleset in hand: the
  * scoring table, the transfers sentence and the chips card, all from the
  * server's lists (here mock mode's v1 ruleset, which
  * `fantasy-runtime.rules.test.ts` holds to the migration). Rendered with

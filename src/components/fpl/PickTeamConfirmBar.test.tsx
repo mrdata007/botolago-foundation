@@ -9,7 +9,7 @@ import type { ChipKey } from "@/lib/fantasy-engine";
 import { PickTeamConfirmBar } from "./PickTeamConfirmBar";
 
 /**
- * BG-0155 (1) — Pick Team keeps unsaved work in view and asks before dropping
+ * BG-0157 (1) — Pick Team keeps unsaved work in view and asks before dropping
  * it.
  *
  * The bar renders with `react-dom/server` inside the language provider (its
@@ -20,7 +20,7 @@ import { PickTeamConfirmBar } from "./PickTeamConfirmBar";
  * because the route needs a router, a data layer and a DOM to run. The
  * measured checks — the Confirmer's box above the bottom menu after scrolling
  * to the bench, the prompt on Accueil — are Playwright runs recorded in the
- * BG-0155 pull request.
+ * BG-0157 pull request.
  */
 
 const ROOT = join(import.meta.dir, "..", "..", "..");

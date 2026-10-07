@@ -7,7 +7,7 @@ import { buildChipList, buildScoringTable } from "@/lib/fantasy-rules-table";
 import { fantasyService } from "./fantasy-runtime";
 
 /**
- * BG-0155 (5) — mock mode's ruleset is the published v1 ruleset, row for
+ * BG-0157 (5) — mock mode's ruleset is the published v1 ruleset, row for
  * row, in the shape `api.fantasy_rules` returns it. Before this the mock
  * sent `positions`, `scoring` and `chips` as empty lists, so a local run
  * could never show the scoring table production shows.

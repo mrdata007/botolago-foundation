@@ -7,7 +7,7 @@ import { fantasyService } from "./fantasy-runtime";
 import { gameweekResults } from "@/mocks/fantasy-data";
 
 /**
- * BG-0155 (2) — the summary says which round its points belong to.
+ * BG-0157 (2) — the summary says which round its points belong to.
  *
  * `gameweekPoints` is the current gameweek's result, or else the latest one
  * the team has, and the hub used to print it under "Points de la journée"

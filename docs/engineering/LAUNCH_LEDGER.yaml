@@ -1639,7 +1639,7 @@ tasks:
       before it gave a right one (82 findings, then 62, then 13, now 0), and that history is
       the reason to open an element before believing a count.
 
-  BG-0155:
+  BG-0157:
     title: Fantasy weekly routine (Pick Team unsaved bar, hub score round, Arabic countdown digits, league invite and leave, rules scoring table, fixture difficulty numbers)
     area: design
     severity: P1
@@ -1654,7 +1654,7 @@ tasks:
     owner: Chief
     state: RUNNING # implemented on claude/brave-gates-to1i3m (brief e369a4f), reviewed and re-checked; awaiting the owner's review of the draft pull request
     depends_on: []
-    brief: docs/engineering/tasks/BG-0155/screen-brief.md
+    brief: docs/engineering/tasks/BG-0157/screen-brief.md
     evidence:
       - >
         Pick Team: PickTeamConfirmBar sticks above the bottom menu (from md at the column foot, FantasyFrame
@@ -1697,6 +1697,10 @@ tasks:
         P3 were fixed, and three re-checkers confirmed all 23 on the running app, with no regression on the
         same screens. The P3 left open are listed under remaining
     note: >
+      First numbered BG-0155; renumbered BG-0157 on 2026-10-07 because main had meanwhile given BG-0155
+      to the Home match carousel and BG-0156 to the Pépites visuals. Its commits up to 13e8522 say
+      "BG-0155".
+
       The Joker's rounds are not printed. api.activate_fantasy_chip plays it in the season's own halves
       (coalesce(season.wildcard_split_gameweek, ruleset)), which api.fantasy_rules does not report, and a
       production mirror in scripts/backend/rehearsals/production-gw1-mirror-2026-09-24.sql records

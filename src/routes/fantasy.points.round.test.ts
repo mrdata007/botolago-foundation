@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { Route } from "./fantasy.points";
 
 /**
- * BG-0155 (2) — Points opens on the round the hub's figure belongs to.
+ * BG-0157 (2) — Points opens on the round the hub's figure belongs to.
  *
  * The hub's points block links `/fantasy/points?gw={n}`; the screen used to
  * ignore its address and always open on the current round, which has no

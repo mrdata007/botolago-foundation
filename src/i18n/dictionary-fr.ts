@@ -982,7 +982,7 @@ export const fr = {
   "fantasy.hub.invite_copied": "Lien copié",
   "fantasy.hub.invite_message": "Rejoins ma ligue « {name} » sur BotolaGO : {link}",
   "fantasy.hub.invite_ready": "Ligue « {name} » créée. Invitez vos amis :",
-  // BG-0155 (2): the team card's figure names the round it belongs to, and
+  // BG-0157 (2): the team card's figure names the round it belongs to, and
   // its block opens Points at that round. With no result yet: no round, no 0.
   "fantasy.hub.points_round": "Points · J{n}",
   "fantasy.hub.points_none": "Aucun point pour l'instant",
@@ -1811,7 +1811,7 @@ export const fr = {
   "fantasy.team.hint.swap": "Touchez deux joueurs du même poste pour les échanger.",
   "fantasy.team.hint.position_incompatible":
     "Ces joueurs occupent des postes différents et ne peuvent pas être échangés.",
-  /* BG-0155 (1) — Pick Team's confirmation bar and its leave guard. */
+  /* BG-0157 (1) — Pick Team's confirmation bar and its leave guard. */
   "fantasy.team.unsaved.status": "Modifications non enregistrées",
   "fantasy.team.unsaved.chip": "{chip} : à confirmer",
   "fantasy.team.unsaved.leave_confirm":

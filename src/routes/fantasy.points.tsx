@@ -66,7 +66,7 @@ export const Route = createFileRoute("/fantasy/points")({
 });
 
 /**
- * BG-0155 (2) — the round Points opens on: the one the address asks for, if
+ * BG-0157 (2) — the round Points opens on: the one the address asks for, if
  * the stepper offers it; else the current round while it is being played
  * ("Suivre mes points" at kick-off, before its first scoring pass has written
  * a result); else the round of the hub's figure (the summary's

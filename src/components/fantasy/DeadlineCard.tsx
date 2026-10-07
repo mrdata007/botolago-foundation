@@ -34,7 +34,7 @@ export function DeadlineCard({
   freeTransfers?: number;
 }) {
   const { t, lang } = useI18n();
-  // Latin digits in both languages (BG-0155), the padding zero included. The
+  // Latin digits in both languages (BG-0157), the padding zero included. The
   // Arabic-Indic zero (U+0660) used here before read as a dot next to a Latin
   // digit, so 4 minutes did not read as "04".
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR");

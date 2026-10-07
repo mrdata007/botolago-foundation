@@ -428,7 +428,7 @@ function FdrBody() {
  * token says who, and the fill already says how hard to anyone who sees it.
  *
  * Everything visible is hidden from screen readers and said once, in words:
- * "FUS Rabat (Domicile), difficulté 2 sur 5". Before BG-0155 the difficulty
+ * "FUS Rabat (Domicile), difficulté 2 sur 5". Before BG-0157 the difficulty
  * lived only in the fill, so a screen reader heard none of it. The same words
  * are the hover title. The three-letter token is a convenience; the club's
  * real name is always in those words, because `code` is null for 13 of the

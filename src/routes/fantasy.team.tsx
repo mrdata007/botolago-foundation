@@ -85,7 +85,7 @@ function formationOf(
  * FPL-008/009/010 "Pick Team" reconstructed: Back header, the chips, the
  * pitch with fixture plates and the labelled bench. Pending changes (lineup
  * edits or a chip activation) bring up a bar above the bottom navigation with
- * what is waiting, "Annuler" and "Confirmer" (`PickTeamConfirmBar`, BG-0155);
+ * what is waiting, "Annuler" and "Confirmer" (`PickTeamConfirmBar`, BG-0157);
  * the header keeps its Back pill, and leaving asks first.
  *
  * Option A (A-Team): the sub-page header carries the gameweek as its kicker;
@@ -171,7 +171,7 @@ function PickTeamBody() {
     draftInit.current = true;
   }, [draftKey, team]);
 
-  // ---- Leave guard (BG-0155) ----
+  // ---- Leave guard (BG-0157) ----
   // A line-up, captain or chip change not yet confirmed asks before any way
   // out drops it: Back, a bottom-menu tab, the browser's Back, a reload. Not
   // while it is being saved, and not once it is saved or cancelled (both clear
@@ -558,7 +558,7 @@ function PickTeamBody() {
         kicker={`${t("fpl.gameweek")} ${gameweek.number}`}
         title={t("fpl.pick_team")}
         // The Back pill stays while changes are pending: Annuler and the one
-        // Confirmer are in the bar at the foot (BG-0155), not swapped in here,
+        // Confirmer are in the bar at the foot (BG-0157), not swapped in here,
         // where they scrolled away with the header.
         backTo="/fantasy"
       />

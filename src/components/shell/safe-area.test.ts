@@ -605,7 +605,7 @@ describe("BG-0154: the Fantasy player page's action bar sticks at every width", 
 
   test("the player page and Pick Team ask for it, and are the only screens that do so far", () => {
     expect(player).toContain("<FantasyFrame stickyBottomBar>");
-    // BG-0155 (1): Pick Team's confirmation bar (`PickTeamConfirmBar`)
+    // BG-0157 (1): Pick Team's confirmation bar (`PickTeamConfirmBar`)
     // sticks at the column's foot from md too.
     expect(read("src/routes/fantasy.team.tsx")).toContain(
       "<FantasyFrame bottomNav stickyBottomBar>",

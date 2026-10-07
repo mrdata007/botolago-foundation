@@ -73,7 +73,7 @@ export function FantasyHubRound({
   const firstAway = first ? club(first.awayClubId) : undefined;
   const matchLabel =
     firstHome && firstAway ? `${clubLabel(firstHome, tr)} – ${clubLabel(firstAway, tr)}` : null;
-  // BG-0155 (2): the card sits under this round's title, so it shows the
+  // BG-0157 (2): the card sits under this round's title, so it shows the
   // summary's figure only when the figure is this round's. Last round's score
   // (the summary falls back to the latest result) is not this round's: dash.
   const roundPoints =

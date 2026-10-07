@@ -120,7 +120,7 @@ export function FantasyHubTeamArea({
         teamName={team.teamName}
         manager={manager && manager !== team.teamName ? manager : null}
         gameweek={gameweek}
-        // BG-0155 (2): a figure only with the round it belongs to; with no
+        // BG-0157 (2): a figure only with the round it belongs to; with no
         // round there is no result yet, and its 0 is not a score.
         points={summary && summary.pointsGameweek !== null ? summary.gameweekPoints : null}
         pointsGameweek={summary?.pointsGameweek ?? null}
@@ -249,7 +249,7 @@ function DashboardPlaceholder({ section }: { section: "leagues" | "reminders" })
  * Every figure is real or an en dash — no invented movement, no zero for
  * "not known yet".
  *
- * BG-0155 (2): the card holds two links instead of being one. The team block
+ * BG-0157 (2): the card holds two links instead of being one. The team block
  * (name, manager, rank) opens the team profile, as the whole card used to;
  * the points block opens Points at the round its figure belongs to
  * (`pointsGameweek`, the history row the figure comes from), and the label

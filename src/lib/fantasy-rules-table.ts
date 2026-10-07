@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * BG-0155 (5) — the rules page's scoring table and chips list, read from
+ * BG-0157 (5) — the rules page's scoring table and chips list, read from
  * `api.fantasy_rules` and nothing else.
  *
  * The server returns three lists the page used to ignore:

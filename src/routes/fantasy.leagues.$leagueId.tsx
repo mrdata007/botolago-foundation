@@ -76,7 +76,7 @@ export const Route = createFileRoute("/fantasy/leagues/$leagueId")({
  * order mirrors with the document rather than by hand. The gameweek column
  * says "J.14" in both languages; it used to be an English "GW14".
  *
- * Under the standings of a private league (BG-0155): its owner can invite
+ * Under the standings of a private league (BG-0157): its owner can invite
  * ("Inviter des amis": a confirmation, then a new code and the share buttons),
  * a member reads who can, and "Quitter la ligue" asks first, naming the league.
  */

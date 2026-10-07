@@ -70,7 +70,7 @@ import { cn } from "@/lib/utils";
  * `overflow: clip` instead, which clips the same corners without making a
  * scroll container, and `flow-root` keeps the block formatting context
  * `hidden` gave (`clip` does not make one). The player page opts in, and so
- * does Pick Team for its confirmation bar (BG-0155). The squad
+ * does Pick Team for its confirmation bar (BG-0157). The squad
  * builder and transfer confirmation bars are sticky in the column too and do
  * not stick from `md` either; they keep today's behaviour until that is
  * decided for them.

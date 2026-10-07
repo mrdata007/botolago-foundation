@@ -11,7 +11,7 @@ import { inviteLink, whatsappUrl } from "./invite-link";
 import { InviteLinkShare } from "./InviteLinkShare";
 
 /**
- * BG-0155 — the share buttons, from the game they go out from. One league
+ * BG-0157 — the share buttons, from the game they go out from. One league
  * serves both games: Pronostics shares it by default, exactly as before, and
  * the Fantasy league pages pass `game="fantasy"` so the link lands on the
  * Fantasy join, the message is the Fantasy hub's and no Pronostics share is

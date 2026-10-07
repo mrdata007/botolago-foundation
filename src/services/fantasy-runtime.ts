@@ -379,7 +379,7 @@ export const fantasyService = {
       teamName: current.team.name,
       totalPoints: history.items.reduce((sum, item) => sum + item.score, 0),
       gameweekPoints: currentResult?.score ?? 0,
-      // BG-0155 (2): the round that figure is for, from the same row, so the
+      // BG-0157 (2): the round that figure is for, from the same row, so the
       // hub can name it and never print last round's score under this one's.
       pointsGameweek: currentResult?.sequence ?? null,
       overallRank: latest?.overallRank ?? null,
@@ -611,7 +611,7 @@ export const fantasyService = {
   },
   async getRules() {
     if (mode() === "mock") {
-      // BG-0155 (5): the v1 ruleset's positions, scoring and chips rows
+      // BG-0157 (5): the v1 ruleset's positions, scoring and chips rows
       // (`supabase/migrations/20260720163222_fantasy_ruleset_v1.sql`), in the
       // shape and order `api.fantasy_rules` returns them — positions by
       // display order, scoring by category, position code then threshold,

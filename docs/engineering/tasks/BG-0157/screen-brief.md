@@ -1,4 +1,9 @@
-# BG-0155 — Fantasy weekly routine: screen brief
+# BG-0157 — Fantasy weekly routine: screen brief
+
+> **Renumbered, 2026-10-07.** This task was first numbered BG-0155. While it was
+> in review, `main` gave BG-0155 to the Home match carousel and BG-0156 to the
+> Pépites visuals, so it became BG-0157. Its commits up to `13e8522` say
+> "BG-0155"; they are this task, not the carousel.
 
 Owner request, 2026-10-07 ("start with 1-6 then stop"), after the Impeccable
 critique of every screen (`.impeccable/critique/2026-10-06T22-19-34Z__src-routes.md`,

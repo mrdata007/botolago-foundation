@@ -15,7 +15,7 @@ import type { FantasyTeam } from "@/types/fantasy";
 import { FantasyHubRound } from "./FantasyHubRound";
 
 /**
- * BG-0155 (2) — "Mes points J{n}" on the hub sits under the CURRENT round's
+ * BG-0157 (2) — "Mes points J{n}" on the hub sits under the CURRENT round's
  * title. The summary's figure is the current round's result or else the
  * latest one (`pointsGameweek` says which), so the card prints it only when
  * it is this round's; otherwise an en dash — not someone else's round, and

@@ -57,7 +57,7 @@ function LeaguesRoute() {
  * A-Fantasy hub draws for "Mes ligues". Behaviour is unchanged: the same
  * queries, the same create flow and the same links.
  *
- * BG-0155: creating a league is said as such ("Créer une ligue", with a plus,
+ * BG-0157: creating a league is said as such ("Créer une ligue", with a plus,
  * where a cog read "Gérer les ligues"), the form's button says "Créer", and
  * once the league exists its invite link can be shared from under its code.
  */

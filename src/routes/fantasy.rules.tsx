@@ -63,7 +63,7 @@ export const Route = createFileRoute("/fantasy/rules")({
  * cost isolated left-to-right so its minus stays in front of the number in
  * Arabic — and each rule is a card with a round gradient icon disc.
  *
- * BG-0155 (5): the transfers line, the chips card and the scoring table are
+ * BG-0157 (5): the transfers line, the chips card and the scoring table are
  * read from `api.fantasy_rules` (`positions`, `scoring`, `chips`) through
  * `src/lib/fantasy-rules-table.ts`, so the page states the scale the server
  * scores with — a goalkeeper's goal is 10, not the 6 the old copy said. When

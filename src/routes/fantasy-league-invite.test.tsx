@@ -11,7 +11,7 @@ import { predictionsService } from "@/services/predictions";
 import { isLeagueOwner, leagueInviteMutation } from "./fantasy.leagues.$leagueId";
 
 /**
- * BG-0155 (4) — a private Fantasy league can invite, and leaving asks first.
+ * BG-0157 (4) — a private Fantasy league can invite, and leaving asks first.
  *
  * - The invite, from the owner's confirmation to the code on screen, runs
  *   here through React Query's own mutation observer over the Pronostics
@@ -238,7 +238,7 @@ describe("the leagues page (/fantasy/leagues)", () => {
   });
 });
 
-describe("the wording (brief BG-0155, improvement 4)", () => {
+describe("the wording (brief BG-0157, improvement 4)", () => {
   const cases: Array<[TranslationKey, string, string]> = [
     ["fantasy.leagues.invite_friends", "Inviter des amis", "ادعُ أصدقاءك"],
     [

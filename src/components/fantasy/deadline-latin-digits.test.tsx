@@ -15,7 +15,7 @@ import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import type { Gameweek, Language } from "@/types/domain";
 
 /**
- * BG-0155 (3): the Fantasy deadline countdown writes Latin digits in both
+ * BG-0157 (3): the Fantasy deadline countdown writes Latin digits in both
  * languages, the padding zero included. Both components used to pad with an
  * Arabic-Indic zero (U+0660) in Arabic while `Intl.NumberFormat("ar-MA")`
  * already gives Latin digits, so 4 minutes rendered as a dot beside a 4.
@@ -143,7 +143,7 @@ describe("DeadlineStrip writes Latin digits in both languages", () => {
       ),
     );
     // Logical order: hours, then the hour mark, then the minutes. RTL layout
-    // puts the hours on the right; the browser check is in the BG-0155 report.
+    // puts the hours on the right; the browser check is in the BG-0157 report.
     expect(ar).toStartWith("فانتازي ج14: بقي 37 س 04 · ");
   });
 });

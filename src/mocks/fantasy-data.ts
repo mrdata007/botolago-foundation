@@ -628,7 +628,7 @@ export const currentGameweekBreakdown: PlayerPointsBreakdown[] = fantasyTeam.squ
 /**
  * Round 13, the sample's last finished round: a final breakdown of its own, so
  * the hub's "Points · J13" (the summary in src/mocks/data.ts carries this
- * total) opens on a Points screen that shows the same figure (BG-0155).
+ * total) opens on a Points screen that shows the same figure (BG-0157).
  */
 export const previousGameweekBreakdown: PlayerPointsBreakdown[] = fantasyTeam.squad.map((s, i) => {
   const bench = s.slot >= 12;

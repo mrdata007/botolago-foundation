@@ -298,7 +298,7 @@ describe("the hub's personal parts, for each visitor", () => {
 });
 
 /**
- * BG-0155 (2) — the team card's score names its round and leads to Points.
+ * BG-0157 (2) — the team card's score names its round and leads to Points.
  * The card was one link to the team profile, its figure was the summary's
  * `gameweekPoints` under the generic "Points de la journée" (last round's 58
  * under this round's deadline), with 0 for "no result", and with the deadline

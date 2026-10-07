@@ -11,7 +11,7 @@ import {
 } from "./fantasy-rules-table";
 
 /**
- * BG-0155 (5) — the rules page's scoring table and chips list, built from
+ * BG-0157 (5) — the rules page's scoring table and chips list, built from
  * what `api.fantasy_rules` returns. The v1 rows below are the published
  * ruleset (`supabase/migrations/20260720163222_fantasy_ruleset_v1.sql`) in
  * the RPC's own shape and order; the table they make is held to every row

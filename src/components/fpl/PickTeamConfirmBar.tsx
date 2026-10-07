@@ -39,7 +39,7 @@ function pendingStatus(
 }
 
 /**
- * BG-0155 (1) — Pick Team's confirmation bar.
+ * BG-0157 (1) — Pick Team's confirmation bar.
  *
  * While a line-up, captain or chip change is pending, the screen's one
  * "Confirmer" lives here, in thumb reach, instead of in the header, which
