@@ -1662,6 +1662,11 @@ export const ar = {
   "fantasy.default.team_name": "فريقي",
   "fantasy.team.hint.swap": "المس لاعبين من نفس المركز لتبديلهما.",
   "fantasy.team.hint.position_incompatible": "لا يمكن تبديل لاعبين من مركزين مختلفين.",
+  /* BG-0155 (1) — Pick Team's confirmation bar and its leave guard. */
+  "fantasy.team.unsaved.status": "تعديلات غير محفوظة",
+  "fantasy.team.unsaved.chip": "{chip}: بانتظار التأكيد",
+  "fantasy.team.unsaved.leave_confirm":
+    "لم تُؤكَّد تغييراتك ولن تُحتسب في هذه الجولة. هل تريد المغادرة رغم ذلك؟",
   "fantasy.empty.subtitle": "قم ببناء فريقك المكوّن من 15 لاعبًا للبدء.",
   "fantasy.empty.builder_open": "فتح منشئ الفريق",
   "fantasy.error.import_validation":

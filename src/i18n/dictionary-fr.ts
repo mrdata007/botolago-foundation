@@ -1765,6 +1765,11 @@ export const fr = {
   "fantasy.team.hint.swap": "Touchez deux joueurs du même poste pour les échanger.",
   "fantasy.team.hint.position_incompatible":
     "Ces joueurs occupent des postes différents et ne peuvent pas être échangés.",
+  /* BG-0155 (1) — Pick Team's confirmation bar and its leave guard. */
+  "fantasy.team.unsaved.status": "Modifications non enregistrées",
+  "fantasy.team.unsaved.chip": "{chip} : à confirmer",
+  "fantasy.team.unsaved.leave_confirm":
+    "Vos changements ne sont pas confirmés et ne compteront pas pour cette journée. Quitter quand même ?",
   "fantasy.empty.subtitle": "Composez votre équipe de 15 joueurs pour commencer.",
   "fantasy.empty.builder_open": "Ouvrir le composeur d'équipe",
   "fantasy.error.import_validation":
