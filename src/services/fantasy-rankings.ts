@@ -121,10 +121,22 @@ export function buildGlobalRankings(size = GLOBAL_RANKINGS_SIZE): LeagueStanding
   return rows;
 }
 
+/**
+ * Higher journée score first, and a score the server did not send (`null`)
+ * after every known one; 0 for nobody. Equal (or all unknown) leaves the
+ * order to the caller's next key.
+ */
+export function compareGameweekScore(a: LeagueStanding, b: LeagueStanding): number {
+  if (a.gameweekScore === null || b.gameweekScore === null) {
+    return Number(a.gameweekScore === null) - Number(b.gameweekScore === null);
+  }
+  return b.gameweekScore - a.gameweekScore;
+}
+
 function sortRows(rows: LeagueStanding[], sort: RankingsSort): LeagueStanding[] {
   if (sort === "overall") return rows;
   return [...rows]
-    .sort((a, b) => b.gameweekScore - a.gameweekScore || a.totalScore - b.totalScore)
+    .sort((a, b) => compareGameweekScore(a, b) || a.totalScore - b.totalScore)
     .map((row, index) => ({ ...row, rank: index + 1, previousRank: row.rank }));
 }
 

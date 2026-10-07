@@ -206,16 +206,17 @@ async function gameweekSummary(gameweekId: string): Promise<FantasyGameweekSumma
  * The rankings board keys rows by `managerId`, which for the authoritative
  * board is the fantasy team id — the only stable public identifier a standing
  * carries. `managerName` is already resolved server-side (profile display name
- * for signed-in callers, team name otherwise).
+ * for signed-in callers, team name otherwise). A journée score the server did
+ * not send stays `null` (a dash on the board), never 0.
  */
-function overallStandingDto(dto: FantasyOverallStandingDto): LeagueStanding {
+export function overallStandingDto(dto: FantasyOverallStandingDto): LeagueStanding {
   return {
     managerId: dto.teamId,
     managerName: dto.managerName,
     teamName: dto.teamName,
     rank: dto.rank,
     previousRank: dto.previousRank ?? dto.rank,
-    gameweekScore: dto.gameweekPoints ?? 0,
+    gameweekScore: dto.gameweekPoints,
     totalScore: dto.totalPoints,
   };
 }
@@ -477,7 +478,8 @@ export const fantasyService = {
       teamName: standing.teamName,
       rank: standing.rank,
       previousRank: standing.previousRank ?? standing.rank,
-      gameweekScore: standing.gameweekPoints ?? 0,
+      // Unknown stays unknown: a dash in the table, never 0.
+      gameweekScore: standing.gameweekPoints,
       totalScore: standing.totalPoints,
     }));
   },

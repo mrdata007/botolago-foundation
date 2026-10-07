@@ -2,6 +2,7 @@
 // Public/cup leagues remain read-only via fantasyService.
 
 import { readJSON, writeJSON } from "@/lib/storage";
+import { compareGameweekScore } from "@/services/fantasy-rankings";
 import type { League, LeagueStanding } from "@/types/fantasy";
 
 const KEY = "fantasy.leagues";
@@ -87,7 +88,7 @@ function seedRows(count: number): LeagueStanding[] {
 
 function ranked(rows: LeagueStanding[]): LeagueStanding[] {
   return [...rows]
-    .sort((a, b) => b.totalScore - a.totalScore || b.gameweekScore - a.gameweekScore)
+    .sort((a, b) => b.totalScore - a.totalScore || compareGameweekScore(a, b))
     .map((r, i) => ({ ...r, previousRank: r.rank, rank: i + 1 }));
 }
 
