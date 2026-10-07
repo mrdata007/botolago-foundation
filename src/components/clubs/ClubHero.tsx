@@ -110,7 +110,11 @@ export function ClubHero({
   );
 }
 
-/** One figure on the key-numbers card: the label under it, as the player page sets them. */
+/**
+ * One figure on the key-numbers card: the label under it, as the player page
+ * sets them. Left to right in Arabic too ("+3", never "3+"): a `<bdi>` alone
+ * leaves a run with no letters in it to the engine (PRODUCT.md, Numbers).
+ */
 function KeyNumber({
   label,
   value,
@@ -129,7 +133,7 @@ function KeyNumber({
     >
       <dt className={cn("max-w-full text-balance", ui.text.label, ui.tone.muted)}>{label}</dt>
       <dd className={cn("max-w-full truncate", ui.stat.lg, ui.tone.default)}>
-        <bdi>{value}</bdi>
+        <bdi dir="ltr">{value}</bdi>
       </dd>
     </div>
   );

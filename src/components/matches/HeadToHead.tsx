@@ -163,7 +163,7 @@ export function HeadToHead({
                         {row.points}
                       </UiTD>
                       <UiTD numeric className={cn(CELL, ui.tone.muted)}>
-                        <bdi>{formatGoalDifference(row.goalDifference)}</bdi>
+                        <bdi dir="ltr">{formatGoalDifference(row.goalDifference)}</bdi>
                       </UiTD>
                       <UiTD numeric className={LAST_CELL}>
                         <FormChips form={row.form} />

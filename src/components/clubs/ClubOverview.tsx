@@ -298,6 +298,7 @@ function MiniTableRow({
         {row.played}
       </span>
       <bdi
+        dir="ltr"
         className={cn("w-9 shrink-0 text-center", ui.stat.sm, ui.tone.muted)}
         aria-label={t("matches.table.goal_difference")}
       >
