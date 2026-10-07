@@ -36,7 +36,7 @@ const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 describe("safe areas", () => {
   test("the viewport covers the whole screen", () => {
     expect(read("src/routes/__root.tsx")).toContain(
-      'content: "width=device-width, initial-scale=1, viewport-fit=cover"',
+      'content: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"',
     );
   });
 
@@ -83,7 +83,18 @@ describe("BG-0151: the root viewport meta", () => {
 
   test("is declared once, in the root route", () => {
     expect(viewports).toHaveLength(1);
-    expect(viewports[0]).toBe("width=device-width, initial-scale=1, viewport-fit=cover");
+    expect(viewports[0]).toBe(
+      "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover",
+    );
+  });
+
+  // iOS zooms in when a field under 16px gets focus and never zooms back; the
+  // kit's fields are 15px, and the phone app cannot pinch back out. The cap is
+  // what stops it (docs/engineering/briefs/ios-zoom-and-pitch-lines.md).
+  // `user-scalable=no` would add nothing in the app and fail more audits.
+  test("caps the zoom at 1, without user-scalable=no", () => {
+    expect(viewports[0]).toContain("maximum-scale=1");
+    expect(viewports[0]).not.toContain("user-scalable");
   });
 
   test("is not overridden by any other route", () => {

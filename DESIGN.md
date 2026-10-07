@@ -536,6 +536,7 @@ The kit's sizes are fixed pixel steps at every width. Two places scale with the 
 - The top bar and the bottom nav never hide on scroll.
 - The live strip, a row of live-score pills under the top bar, is the only bar that hides. It hides while scrolling down past the first 80px and returns on any scroll up.
 - The viewport tag carries `viewport-fit=cover`, so in the app the page runs under the status bar and the home indicator and pads itself by the device insets.
+- The viewport tag also carries `maximum-scale=1`, so the app never zooms (a 15px field used to zoom iOS in on focus, with no way back out). Android browsers lose pinch zoom on the website; iPhone Safari keeps it.
 - In the app the status bar's clock and icons follow the theme the app shows: dark on the light theme, light on the dark theme, and light over the dark bands of the sign-in screens (up to 480px wide, where the band spans the screen), the Landing page and the launch splash.
 - Safe areas use the device inset with a fallback (12px top, 8px bottom), whichever is larger. The bar heights already include it.
 - Every bar pinned to the bottom edge pads by the bottom inset, including the bars that move to the bottom from 768px. A source test (`src/components/shell/safe-area.test.ts`) scans them.
@@ -599,7 +600,7 @@ A soft, rounded geometry with a strict, named radius set:
 
 **Edges carry club colour.** 4px bars sit on the inline start and end edges: club colours on match rows, a club or category colour on the start edge of news row cards, and zone colours on the start edge of standings rows.
 
-**Bands.** Stadium photo bands under a navy veil appear on the Home matchday hero, the matches date strip and the sign-in header. The date strip runs full-bleed on phones and becomes a 16px panel from 640px.
+**Bands.** Stadium photo bands under a navy veil appear on the Home matchday hero, the matches date strip, the sign-in header and the Pépites featured N°1 (the top of the Top 10 and of the ranking). The date strip and the Pépites band run full-bleed on phones and become a 16px panel from 640px.
 
 **[Inconsistent]** Some radii fall off the scale: the Pronostics score box (18px) and the search-match highlight (2px). The legacy V1 radius scale is still declared beside the kit scale.
 
@@ -728,6 +729,7 @@ A 44px circle. **Soft** (Dugout Grey with a navy icon) is the default in bars: s
 ### Fantasy pitch and player plate (signature)
 
 - **Pitch:** a pastel turf from Fresh Turf to Matchday Sky with white mowing bands and markings. It sits in a 16px card with the card shadow, over a white bench strip.
+- **Rows stay inside the touchlines:** they are inset by the line (3.3% of the turf width) plus 6px, so a row of five narrows its plates (about 63px each on a 402px phone) rather than crossing the line. Long names are cut with "…".
 - **Player plate:** a shirt over a white name band and a Tunnel Navy figure band (points, price, fixture). Selected plates switch the band to the gradient. Doubtful players get an amber band, and players who are out drop to 45% opacity.
 - **Motion:** rows rise in with a 40ms stagger.
 - **[Unverified]** These signed-in screens were not rendered for this pass.

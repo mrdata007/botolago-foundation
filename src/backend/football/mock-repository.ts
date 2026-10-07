@@ -229,6 +229,12 @@ export class MockFootballRepository implements FootballRepository {
       .slice(0, limit)
       .map((match) => fixture(match, language));
   }
+  async getUpcomingMatches(language: FootballLanguage, limit: number, _context: RepositoryContext) {
+    return mock.matches
+      .filter((match) => match.status === "scheduled")
+      .slice(0, limit)
+      .map((match) => fixture(match, language));
+  }
   async getMatchesByDate(
     input: MatchesByDateInput,
     _context: RepositoryContext,

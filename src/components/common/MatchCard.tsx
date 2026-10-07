@@ -84,9 +84,11 @@ const LIST_FRAME = cn(
 /** The same row as a card of its own: the card surface, clipping its edges. */
 const CARD_FRAME = cn(ui.surface.card, "overflow-hidden", "press-tile", ui.focus);
 
-/** The split live card: a feature surface, lifted off the page. */
+/** The split live card: a feature surface, lifted off the page. It takes its
+ *  container's height (a slide of Home's band carousel, as tall as the
+ *  tallest card beside it), the club colours running to its foot. */
 const HERO_FRAME = cn(
-  "relative overflow-hidden",
+  "relative h-full overflow-hidden",
   ui.radius.sheet,
   ui.shadow.lifted,
   "press-tile",
@@ -332,7 +334,7 @@ export function MatchCard({
   const content: ReactNode = isHero ? (
     <>
       {/* The two halves, home first: flex order mirrors in Arabic. */}
-      <div className="flex">
+      <div className="flex h-full">
         <Half club={home} palette={pair.home} name={homeName} side="home" />
         <Half club={away} palette={pair.away} name={awayName} side="away" />
       </div>
@@ -402,7 +404,7 @@ export function MatchCard({
       )}
     >
       {/* The label above states all of this. */}
-      <div aria-hidden className={isLive ? "relative" : undefined}>
+      <div aria-hidden className={cn(isLive && "relative", isHero && "h-full") || undefined}>
         {content}
         {isLive ? (
           <LiveProgress

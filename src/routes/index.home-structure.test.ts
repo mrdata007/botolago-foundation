@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import { ar } from "@/i18n/dictionary-ar";
 import { fr } from "@/i18n/dictionary-fr";
+import { HOME_LIST_SIZE, HOME_MATCHES_LIMIT } from "@/services/football";
 
 /**
  * BG-0012 — Accueil (Home) redesign structural contract.
@@ -85,6 +86,55 @@ describe("Accueil (Home) structural contract", () => {
     expect(title).toBeTruthy();
     expect(fr["home.sr_title"]).toBe(title as string);
     expect(ar["home.sr_title"]).toMatch(/[؀-ۿ]/);
+  });
+
+  /**
+   * BG-0155 — the gameweek band swipes through the whole round, so Home's
+   * payload carries it; "À venir" keeps the rows it had when the payload held
+   * three.
+   */
+  describe("the payload the band and the list share", () => {
+    const service = readFileSync(join(import.meta.dir, "..", "services", "football.ts"), "utf8");
+
+    test("carries a whole round of 8, within the 10 the database function returns", () => {
+      expect(HOME_MATCHES_LIMIT).toBeGreaterThanOrEqual(8);
+      expect(HOME_MATCHES_LIMIT).toBeLessThanOrEqual(10);
+      expect(service).toMatch(/repository\.getHomeMatches\(\s*language,\s*HOME_MATCHES_LIMIT,/);
+    });
+
+    test("the band shows the round: one card as before, a carousel when there are more", () => {
+      const band = source.slice(indexOfOrThrow("<GameweekBand"), indexOfOrThrow("</GameweekBand>"));
+      // From the payload alone, never from Fantasy's gameweek (read in the
+      // browser only): the server and the browser show the same cards.
+      expect(source).toContain("bandMatches(homeMatches).flatMap(");
+      expect(source).not.toMatch(/bandMatches\([^)]*bandGameweek/);
+      expect(band).toContain("liveAlone || bandCards.length === 0 ? null");
+      expect(band).toContain("bandCards.length === 1 ? (\n                <NextMatchPick");
+      expect(band).toMatch(
+        /<HomeMatchCarousel\s+cards=\{bandCards\}\s+withVote=\{PRONOSTICS_PROMOTED\}\s+renderedAt=\{renderedAt\}\s*\/>/,
+      );
+      // The single card holds its vote row only when a vote is expected.
+      expect(band).toContain("holdVote={voteMayOpen(bandCards[0]!.match, renderedAt)}");
+      // A live match on its own still rises out of the band's lower edge.
+      expect(band).toContain("overlap={liveAlone}");
+      expect(source).toContain("const liveAlone = bandCards.length === 1 && isInPlay(");
+    });
+
+    test("keeps the page's matches on screen while the reader's language loads", () => {
+      // An Arabic reader's page switches language after hydration; a round of
+      // cards that vanished and came back would shift everything under it.
+      const query = source.slice(
+        indexOfOrThrow('queryKey: ["football", "home-matches", lang]'),
+        indexOfOrThrow("const alertsQ"),
+      );
+      expect(query).toContain("placeholderData: keepPreviousData");
+    });
+
+    test("lists only the payload's first three under À venir", () => {
+      expect(HOME_LIST_SIZE).toBe(3);
+      expect(source).toContain("homeMatches.slice(0, HOME_LIST_SIZE)");
+      expect(source).toMatch(/groupByMatchDay\(\s*listMatches\.filter\(/);
+    });
   });
 
   /**

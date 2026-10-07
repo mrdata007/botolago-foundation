@@ -4,8 +4,11 @@ import {
   initials,
   printedRatingBand,
   ratingBand,
+  sectorPath,
   segments,
   shirtName,
+  sliceAngles,
+  sliceReach,
   teamKit,
 } from "./pepites-design";
 import { formatCount, nextSeasonLabel, playerMetaLine } from "./pepites-format";
@@ -72,6 +75,55 @@ describe("the Figma parts' helpers", () => {
       { minutes: 1275, goals: 0, assists: 8 },
       { t: t as never, tr: (value) => value.fr, lang: "fr" },
     );
-    expect(line.replace(/[⁨⁩]/g, "")).toBe("IRT · ATT · 20A · 1 275’ · 0B 8PD");
+    expect(line.replace(/[⁨⁩]/g, "")).toBe(
+      "IRT\u00a0· ATT\u00a0· 20A\u00a0· 1\u202f275’\u00a0· 0B 8PD",
+    );
+    // A dot never starts a line: the space before it does not break.
+    expect(line).not.toContain(" ·");
+  });
+});
+
+describe("the percentile wheel's geometry", () => {
+  it("cuts five slices from twelve o'clock, clockwise, each a 72° step less its gaps", () => {
+    const [from, to] = sliceAngles(0, false);
+    expect(from).toBeCloseTo(-Math.PI / 2 + 0.05, 10);
+    expect(to).toBeCloseTo(-Math.PI / 2 + (2 * Math.PI) / 5 - 0.05, 10);
+    for (let index = 1; index < 5; index += 1) {
+      expect(sliceAngles(index, false)[0] - sliceAngles(index - 1, false)[0]).toBeCloseTo(
+        (2 * Math.PI) / 5,
+        10,
+      );
+    }
+  });
+
+  it("runs counter-clockwise in Arabic: each slice is the French one reflected", () => {
+    for (let index = 0; index < 5; index += 1) {
+      const [from, to] = sliceAngles(index, false);
+      const [arFrom, arTo] = sliceAngles(index, true);
+      expect(arFrom).toBeCloseTo(Math.PI - to, 10);
+      expect(arTo).toBeCloseTo(Math.PI - from, 10);
+      // Mirrored across the vertical axis: x flips, y holds.
+      expect(Math.cos(arTo)).toBeCloseTo(-Math.cos(from), 10);
+      expect(Math.sin(arTo)).toBeCloseTo(Math.sin(from), 10);
+    }
+  });
+
+  it("draws an annular sector: out along the outer arc clockwise, back along the inner one", () => {
+    // The top-right quarter of a ring of radii 10 and 20 around (50, 50).
+    const path = sectorPath(50, 50, 10, 20, -Math.PI / 2, 0);
+    expect(path).toBe("M50 30 A20 20 0 0 1 70 50 L60 50 A10 10 0 0 0 50 40 Z");
+    // A ring with no thickness, or no angle, draws nothing.
+    expect(sectorPath(50, 50, 10, 10, 0, 1)).toBe("");
+    expect(sectorPath(50, 50, 10, 20, 1, 1)).toBe("");
+  });
+
+  it("reaches out from the ring by the percentile, held to 0–100, and not at all for none", () => {
+    expect(sliceReach(50, 30, 70)).toBe(50);
+    expect(sliceReach(100, 30, 70)).toBe(70);
+    expect(sliceReach(0, 30, 70)).toBe(30);
+    expect(sliceReach(140, 30, 70)).toBe(70);
+    expect(sliceReach(-5, 30, 70)).toBe(30);
+    expect(sliceReach(null, 30, 70)).toBe(30);
+    expect(sliceReach(Number.NaN, 30, 70)).toBe(30);
   });
 });

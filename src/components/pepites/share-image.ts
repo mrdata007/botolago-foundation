@@ -4,7 +4,7 @@ import { CLUB_PALETTE_RULES, clubPalette, resolvePaletteColour } from "@/lib/clu
 import { contrastRatio, mixOklab, parseHex, toHex, type Rgb } from "@/lib/colour";
 import type { Language } from "@/types/domain";
 
-import { initials, segments, teamKit } from "./pepites-design";
+import { initials, segments, sliceAngles, teamKit } from "./pepites-design";
 import { formatCount, formatNumber, playerPhotoUrl } from "./pepites-format";
 
 /**
@@ -325,15 +325,10 @@ export function shareClubColours(
 export const inlineX = (x: number, width: number, rtl: boolean) => (rtl ? width - x : x);
 
 /**
- * A wheel slice's arc: five 72° slices from twelve o'clock, clockwise, less a
- * small gap at each end. Arabic reads them counter-clockwise: each slice is
- * the French one mirrored across the vertical axis.
+ * A wheel slice's arc (`pepites-design.ts`): the story card and the
+ * in-app wheel (`PercentileWheel`) share one geometry.
  */
-export function sliceAngles(index: number, rtl: boolean, gap = 0.05): [number, number] {
-  const from = -Math.PI / 2 + (index * 2 * Math.PI) / 5 + gap;
-  const to = -Math.PI / 2 + ((index + 1) * 2 * Math.PI) / 5 - gap;
-  return rtl ? [Math.PI - to, Math.PI - from] : [from, to];
-}
+export { sliceAngles };
 
 /**
  * What the canvas draws for a string. `formatCount`'s French group separator
