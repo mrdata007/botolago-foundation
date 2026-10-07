@@ -250,7 +250,7 @@
   fill: #ffffff;
 }
 .c02 .c02-arc-homa {
-  fill: #e6e9ed;
+  fill: #eef1f4;
 }
 .c02 .c02-arc-stade {
   fill: var(--c02-air-ink);
@@ -270,10 +270,16 @@
   fill: #eef1f4;
 }
 .c02 .c02-nz-homa .c02-tier {
-  fill: #d5dae0;
+  fill: #f2f4f6;
 }
 .c02 .c02-nz-homa .c02-meta {
-  fill: #bfc6cf;
+  fill: #e1e5ea;
+}
+.c02 .c02-nz-homa text {
+  paint-order: stroke;
+  stroke: #353b44;
+  stroke-width: 1.4px;
+  stroke-linejoin: round;
 }
 .c02 .c02-nz-champion .c02-name {
   fill: #001c49;
@@ -565,11 +571,11 @@
 }
 .c02 .c02-sh-who {
   position: absolute;
-  inset-inline-end: 22px;
+  right: 22px;
   top: 392px;
   display: grid;
-  justify-items: end;
-  text-align: end;
+  justify-items: right;
+  text-align: right;
 }
 .c02 .c02-sh-name {
   display: block;
@@ -609,7 +615,11 @@
 }
 .c02 .c02-sh-foot b {
   font: 800 15px/1 "Manrope", sans-serif;
-  margin-inline-end: auto;
+  margin-right: auto;
+}
+.c02.c02-share[dir="rtl"] .c02-sh-foot b {
+  margin-right: 0;
+  margin-left: auto;
 }
 .c02 .c02-sh-foot span {
   font: 600 12px/1 "Manrope", sans-serif;

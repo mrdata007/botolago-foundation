@@ -7,10 +7,11 @@
   MC.ctxRows = (c, o = {}) =>
     MC.SAMPLES.map((s) => `<div class="ctx-row-slot">${c.row(MC.sample(s), { ...o, rank: s.rank, pts: s.pts, me: !!s.me })}</div>`).join("");
 
-  /** The concept's token inside the standard BotolaGO ranking card (the app keeps its row). */
+  /** The concept's mini inside the standard BotolaGO ranking card. The app keeps its row:
+      rank, a ≤28px mark inside the name cell (the real row leaves ~91px for the name), points. */
   MC.ctxRankCard = (c, o = {}) => {
     const S = MC.s(o);
-    const h = o.tokenH || 44;
+    const h = o.tokenH || 28;
     return (
       `<div class="app-rank-card" style="--token-h:${h}px">` +
       `<div class="app-rank-head"><span>#</span><span>${o.lang === "ar" ? "المدرب" : "Manager"}</span><span>${S.pts}</span></div>` +
@@ -19,7 +20,7 @@
         return (
           `<div class="app-rank-row${s.me ? " is-me" : ""}">` +
           `<span class="app-rank-pos">${s.rank}</span>` +
-          `<span class="app-rank-token">${c.token(p, { ...o, size: h })}</span>` +
+          `<span class="app-rank-token">${c.token(p, { ...o, size: h, mini: h <= 32 })}</span>` +
           `<span class="app-rank-name">${MC.esc(MC.nameOf(p, o))}<small>${MC.esc(S.tiers[p.tier])} · ${MC.ltr(p.ovr + " OVR")}</small></span>` +
           `<span class="app-rank-pts">${s.pts}</span>` +
           `</div>`

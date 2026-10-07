@@ -73,7 +73,7 @@
       season: "الموسم",
       club: "النادي",
       country: "المغرب",
-      stats: { CAP: "القائد", SEL: "الاختيار", TRF: "الانتقالات", CON: "الثبات" },
+      stats: { CAP: "القائد", SEL: "التشكيلة", TRF: "الانتقالات", CON: "الثبات" },
       statsLong: { CAP: "قرارات القائد", SEL: "اختيار التشكيلة", TRF: "قرارات الانتقالات", CON: "الثبات" },
       tiers: { HOMA: "حومة", STADE: "ملعب", PRO: "محترف", CHAMPION: "بطل", LEGEND: "أسطورة" },
       rank: "الترتيب",
@@ -117,16 +117,23 @@
     head: "M64 98C64 62 82 46 100 46C118 46 136 62 136 98C136 126 122 146 100 146C78 146 64 126 64 98Z",
     ears: "M65 94C57 92 55 114 65 118ZM135 94C143 92 145 114 135 118Z",
     hair: "M61 100C57 58 79 38 100 38C121 38 143 58 139 100C138 114 134 124 128 131C120 126 110 131 100 138C90 131 80 126 72 131C66 124 62 114 61 100Z",
+    // Hood up (the default): covers head, hair and ears; its peak and centre seam make the
+    // figure read as a person in a bench jacket, not the generic "no photo" bust.
+    hood: "M44 184C38 150 40 112 52 84C64 58 82 46 100 44C118 46 136 58 148 84C160 112 162 150 156 184C130 174 70 174 44 184Z",
+    hoodSeam: "M100 46C100 92 100 140 100 176",
+    hoodRim: "M50 182C78 172 122 172 150 182",
   };
   /**
    * Draws the shared avatar as an <svg>. Colours are per part. A part set to false is not drawn;
    * a part set to "none" is drawn without fill (so it shows only when a stroke is set).
-   * opts: { x, y, w, h, torso, seam, collar, neck, skin, hair, rim, stroke, strokeWidth, cls, preserve }
+   * opts: { x, y, w, h, hood (true = hood up, the default; false = bare head), torso, seam, collar, neck, skin, hair, rim, stroke, strokeWidth, cls, preserve }
+   * With the hood up, the hood takes the "torso" colour (or opts.hoodFill) and the seam colour for its centre seam.
    * rim: a colour for a thin lit edge around the whole figure (useful on dark grounds).
    */
   MC.avatar = (opts = {}) => {
     const A = MC.AVATAR;
     const o = {
+      hood: true,
       torso: "#1d2f4a",
       seam: "#34507a",
       collar: "#26405f",
@@ -143,18 +150,17 @@
     const pos = o.x != null ? ` x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}"` : ` width="100%" height="100%"`;
     const rim =
       o.rim !== "none"
-        ? `<g fill="none" stroke="${o.rim}" stroke-width="3" opacity=".9"><path d="${A.torso}"/><path d="${A.hair}"/><path d="${A.ears}"/></g>`
+        ? `<g fill="none" stroke="${o.rim}" stroke-width="3" opacity=".9"><path d="${A.torso}"/>${o.hood ? `<path d="${A.hood}"/>` : `<path d="${A.hair}"/><path d="${A.ears}"/>`}</g>`
         : "";
     return (
       `<svg${pos} viewBox="${A.viewBox}" preserveAspectRatio="${o.preserve || "xMidYMax meet"}" class="${o.cls || ""}" aria-hidden="true" focusable="false">` +
       rim +
       part(A.torso, o.torso) +
       (o.seam !== "none" && o.seam !== false ? `<path d="${A.seam}" stroke="${o.seam}" stroke-width="2.5" fill="none"/>` : "") +
-      part(A.neck, o.neck) +
-      part(A.collar, o.collar) +
-      part(A.ears, o.skin) +
-      part(A.head, o.skin) +
-      part(A.hair, o.hair) +
+      (o.hood
+        ? part(A.hood, o.hoodFill || o.torso) +
+          (o.seam !== "none" && o.seam !== false ? `<path d="${A.hoodSeam}" stroke="${o.seam}" stroke-width="2.5" fill="none"/><path d="${A.hoodRim}" stroke="${o.seam}" stroke-width="2.5" fill="none"/>` : "")
+        : part(A.neck, o.neck) + part(A.collar, o.collar) + part(A.ears, o.skin) + part(A.head, o.skin) + part(A.hair, o.hair)) +
       `</svg>`
     );
   };

@@ -1,46 +1,42 @@
 /* 05 PAVÉ — every selector scoped under .c05. Dark app ground is the default;
    the light ground (.app-light, or the gallery's day ground) overrides the lift shadow
-   and the compact row's slab. */
+   and the leaderboard's sand bed. */
 
 .c05 {
   --c05-shadow: #000;
   --c05-shadow-a: 0.72;
   --c05-lx: 0;
-  /* compact row slab (dark ground) */
-  --c05-slab: oklch(0.22 0.03 260);
-  --c05-slab-band: oklch(0.15 0.03 260);
-  --c05-slab-edge: color-mix(in oklab, oklch(0.97 0.01 250) 9%, transparent);
-  --c05-ink: oklch(0.97 0.01 250);
-  --c05-muted: oklch(0.76 0.02 258);
-  --c05-brass: #d8bd78;
-  --c05-pool: rgb(115 237 250 / 0.16);
-  --c05-me-edge: rgb(115 237 250 / 0.5);
+  /* leaderboard: the sand the slabs are bedded in, and the anonymous neighbouring pavers */
+  --c05-sand: #2a2824;
+  --c05-sand-hi: #3a3731;
+  --c05-nb: #444a51;
+  --c05-nb-band: #25282c;
+  --c05-me: rgb(115 237 250 / 0.18);
+  --c05-me-edge: rgb(115 237 250 / 0.6);
+  --c05-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='72'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 1.05'/%3E%3C/filter%3E%3Crect width='180' height='72' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E");
+  --c05-mottle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='72'%3E%3Cfilter id='m' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.07 .11' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.1 -.42'/%3E%3C/filter%3E%3Crect width='360' height='72' filter='url(%23m)' opacity='.22'/%3E%3C/svg%3E");
 }
 .app-light .c05,
 :root[data-ground="day"] .c05 {
   --c05-shadow: #0c3164;
   --c05-shadow-a: 0.34;
-  --c05-slab: #ffffff;
-  --c05-slab-band: #d6dbe2;
-  --c05-slab-edge: oklch(0.88 0.008 250);
-  --c05-ink: oklch(0.16 0.03 260);
-  --c05-muted: oklch(0.45 0.02 258);
-  --c05-brass: #7d5f22;
-  --c05-pool: rgb(0 163 238 / 0.13);
-  --c05-me-edge: rgb(12 49 100 / 0.32);
+  --c05-sand: #d3cbbb;
+  --c05-sand-hi: #e0d9cb;
+  --c05-nb: #a9aeb4;
+  --c05-nb-band: #80858b;
+  --c05-me: rgb(0 163 238 / 0.2);
+  --c05-me-edge: rgb(0 163 238 / 0.7);
 }
 .app-dark .c05,
 :root[data-ground="day"] .app-dark .c05 {
   --c05-shadow: #000;
   --c05-shadow-a: 0.72;
-  --c05-slab: oklch(0.22 0.03 260);
-  --c05-slab-band: oklch(0.15 0.03 260);
-  --c05-slab-edge: color-mix(in oklab, oklch(0.97 0.01 250) 9%, transparent);
-  --c05-ink: oklch(0.97 0.01 250);
-  --c05-muted: oklch(0.76 0.02 258);
-  --c05-brass: #d8bd78;
-  --c05-pool: rgb(115 237 250 / 0.16);
-  --c05-me-edge: rgb(115 237 250 / 0.5);
+  --c05-sand: #2a2824;
+  --c05-sand-hi: #3a3731;
+  --c05-nb: #444a51;
+  --c05-nb-band: #25282c;
+  --c05-me: rgb(115 237 250 / 0.18);
+  --c05-me-edge: rgb(115 237 250 / 0.6);
 }
 
 /* ---------- full card ---------- */
@@ -62,13 +58,18 @@
   transform: translateX(calc(var(--c05-lx, 0) * 90px));
   transition: transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
+/* LEGEND: the hard reflection band follows the raking light */
+.c05 .c05-mirror {
+  transform: translateX(calc(var(--c05-lx, 0) * -70px));
+  transition: transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
 
 /* LEGEND: the grind (only rendered when o.motion is on) */
 .c05 .c05-grind {
   animation: c05-grind 900ms cubic-bezier(0.45, 0.05, 0.25, 1) 260ms both;
 }
-.c05 .c05-edge {
-  animation-name: c05-grind-edge;
+.c05 .c05-head {
+  animation-name: c05-grind-head;
 }
 .c05 .c05-flow {
   animation: none;
@@ -80,11 +81,11 @@
   from { transform: translateX(0); }
   to { transform: translateX(calc(var(--c05-dir, 1) * 392px)); }
 }
-@keyframes c05-grind-edge {
+@keyframes c05-grind-head {
   0% { transform: translateX(0); opacity: 0; }
-  8% { opacity: 1; }
-  92% { opacity: 1; }
-  100% { transform: translateX(calc(var(--c05-dir, 1) * 384px)); opacity: 0; }
+  6% { opacity: 1; }
+  94% { opacity: 1; }
+  100% { transform: translateX(calc(var(--c05-dir, 1) * 392px)); opacity: 0; }
 }
 @keyframes c05-flow {
   from { opacity: 0; }
@@ -92,11 +93,12 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .c05 .c05-cover,
-  .c05 .c05-edge { display: none; }
+  .c05 .c05-head { display: none; }
   .c05 .c05-grind,
   .c05 .c05-flow,
   .c05 svg:has(.c05-cover) .c05-flow { animation: none; }
-  .c05 .c05-rake rect { transition: none; }
+  .c05 .c05-rake rect,
+  .c05 .c05-mirror { transition: none; }
 }
 
 /* ---------- token ---------- */
@@ -110,39 +112,126 @@
   display: block;
 }
 
-/* ---------- compact row: a slab in the league's pavement ---------- */
+/* ---------- compact row: a slab of the member's own material, bedded in sand ----------
+   Rows are stacked 8px apart in the app list; each row reaches 2px into that gap with sand,
+   so five rows read as one pavement with 4px joints. Alternate rows are laid half a step
+   along (stretcher bond): an 8px sliver of the neighbouring paver shows at one end. */
 .c05.c05-row {
+  /* the slab's material, by tier */
+  --c05-stone: #e9e6df;
+  --c05-band: #b9b4a8;
+  --c05-ink: #0c3164;
+  --c05-ink-2: #3d4a5c;
+  --c05-accent: #0c3164;
+  --c05-lit: rgb(255 255 255 / 0.7);
+  --c05-rim: #858d99;
   position: relative;
-  display: grid;
-  grid-template-columns: 26px 72px minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: 12px;
+  display: block;
   width: 100%;
   max-width: 358px;
   height: 64px;
-  padding: 0 14px 3px;
+  margin-block: -2px;
   box-sizing: border-box;
-  color: var(--c05-ink);
-  background: var(--c05-slab);
-  /* the slab's own side: a 3px band at the bottom, the cut corners of a cast block */
-  box-shadow: inset 0 -3px 0 var(--c05-slab-band), inset 0 0 0 1px var(--c05-slab-edge);
-  clip-path: polygon(3px 0, calc(100% - 3px) 0, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 0 calc(100% - 3px), 0 3px);
+  background: var(--c05-grain), var(--c05-sand);
+  box-shadow: 0 -2px 0 var(--c05-sand), 0 2px 0 var(--c05-sand);
   font-family: "Manrope", sans-serif;
+  color: var(--c05-ink);
 }
-.c05.c05-row.is-me {
-  background:
-    radial-gradient(90px 46px at 76px 48%, var(--c05-pool), transparent 72%),
-    var(--c05-slab);
-  box-shadow: inset 0 -3px 0 var(--c05-slab-band), inset 0 0 0 1px var(--c05-me-edge);
+.c05.c05-row[data-tier="HOMA"] {
+  --c05-stone: #8a8f95;
+  --c05-band: #5f646a;
+  --c05-ink: #1a1d21;
+  --c05-ink-2: #1f2226;
+  --c05-accent: #1a1d21;
+  --c05-lit: rgb(255 255 255 / 0.32);
+  --c05-rim: rgb(20 22 26 / 0.45);
 }
-.c05.c05-row[dir="rtl"].is-me {
-  background:
-    radial-gradient(90px 46px at calc(100% - 76px) 48%, var(--c05-pool), transparent 72%),
-    var(--c05-slab);
+.c05.c05-row[data-tier="STADE"] {
+  --c05-stone: #565d65;
+  --c05-band: #383d43;
+  --c05-ink: #f0f2f4;
+  --c05-ink-2: #d5dade;
+  --c05-accent: #f0f2f4;
+  --c05-lit: rgb(255 255 255 / 0.22);
+  --c05-rim: #7d848c;
+}
+.c05.c05-row[data-tier="CHAMPION"] {
+  --c05-stone: #eeebe4;
+  --c05-accent: #7a5a1c;
+}
+.c05.c05-row[data-tier="LEGEND"] {
+  --c05-stone: #1b1f26;
+  --c05-band: #2a2f36;
+  --c05-ink: #ece8df;
+  --c05-ink-2: #b9bec6;
+  --c05-accent: #d4b266;
+  --c05-lit: rgb(255 255 255 / 0.14);
+  --c05-rim: #737b86;
+}
+/* the neighbouring paver's sliver */
+.c05.c05-row::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  width: 8px;
+  background: var(--c05-mottle), var(--c05-nb);
+  box-shadow: inset 0 -4px 0 var(--c05-nb-band), inset 0 1px 0 rgb(255 255 255 / 0.12);
+}
+.c05.c05-row[data-bond="a"]::before { inset-inline-end: 0; }
+.c05.c05-row[data-bond="b"]::before { inset-inline-start: 0; }
+.c05 .c05-row-slab {
+  position: absolute;
+  inset-block: 0;
+  inset-inline: 0 12px;
+  display: grid;
+  grid-template-columns: 22px 72px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 0 14px 4px 10px;
+  box-sizing: border-box;
+  background-color: var(--c05-stone);
+  background-image: var(--c05-chips, none), var(--c05-grain), var(--c05-mottle);
+  /* the slab's side (a 4px band in its own darker tone), a lit top arris, a 1px edge */
+  box-shadow:
+    inset 0 -4px 0 var(--c05-band),
+    inset 0 1px 0 var(--c05-lit),
+    inset 0 0 0 1px var(--c05-rim);
+  clip-path: polygon(3px 0, calc(100% - 3px) 0, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 0 calc(100% - 3px), 0 3px);
+}
+.c05.c05-row[dir="rtl"] .c05-row-slab {
+  padding: 0 10px 4px 14px;
+}
+.c05.c05-row[data-bond="b"] .c05-row-slab { inset-inline: 12px 0; }
+/* CHAMPION: a brass line runs along the top of the side band; LEGEND: brass on black */
+.c05.c05-row[data-tier="CHAMPION"] .c05-row-slab,
+.c05.c05-row[data-tier="LEGEND"] .c05-row-slab {
+  box-shadow:
+    inset 0 -4px 0 var(--c05-band),
+    inset 0 -5.5px 0 #c29a45,
+    inset 0 1px 0 var(--c05-lit),
+    inset 0 0 0 1px var(--c05-rim);
+}
+.c05.c05-row[data-tier="LEGEND"] .c05-row-slab {
+  box-shadow:
+    inset 0 -4px 0 var(--c05-band),
+    inset 0 -5.5px 0 #d4b266,
+    inset 0 1px 0 var(--c05-lit),
+    inset 0 0 0 1px var(--c05-rim);
+}
+/* your own row: the slab sits in the floodlight */
+.c05.c05-row.is-me .c05-row-slab {
+  background-image: radial-gradient(84px 46px at 68px 46%, var(--c05-me), transparent 72%), var(--c05-chips, none), var(--c05-grain), var(--c05-mottle);
+  box-shadow:
+    inset 0 -4px 0 var(--c05-band),
+    inset 0 1px 0 var(--c05-lit),
+    inset 0 0 0 1px var(--c05-me-edge);
+}
+.c05.c05-row.is-me[dir="rtl"] .c05-row-slab {
+  background-image: radial-gradient(84px 46px at calc(100% - 68px) 46%, var(--c05-me), transparent 72%), var(--c05-chips, none), var(--c05-grain), var(--c05-mottle);
 }
 .c05 .c05-row-rank {
   font: 800 22px/1 "Big Shoulders Display", sans-serif;
-  color: var(--c05-muted);
+  color: var(--c05-ink);
   text-align: center;
 }
 .c05 .c05-row-tok {
@@ -153,12 +242,12 @@
 }
 .c05 .c05-row-id {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 .c05 .c05-row-id b {
-  font: 800 20px/1.05 "Big Shoulders Display", sans-serif;
-  letter-spacing: 0.07em;
+  font: 800 21px/1.05 "Big Shoulders Display", sans-serif;
+  letter-spacing: 0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -166,15 +255,15 @@
 .c05 .c05-row-id b.ar {
   font: 700 16px/1.7 "Alexandria", "Noto Sans Arabic", sans-serif;
   letter-spacing: 0;
-  margin-block: -6px -4px;
+  margin-block: -6px -5px;
 }
 .c05 .c05-row-id small {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  font: 700 10.5px/1.2 "Manrope", sans-serif;
-  letter-spacing: 0.12em;
-  color: var(--c05-muted);
+  gap: 7px;
+  font: 800 11px/1.2 "Big Shoulders Display", sans-serif;
+  letter-spacing: 0.1em;
+  color: var(--c05-ink-2);
 }
 .c05.c05-row[dir="rtl"] .c05-row-id small {
   font: 600 11px/1.5 "Alexandria", "Noto Sans Arabic", sans-serif;
@@ -182,15 +271,16 @@
 }
 .c05 .c05-row-id small i {
   font-style: normal;
-}
-.c05.c05-row[data-tier="CHAMPION"] .c05-row-id small i,
-.c05.c05-row[data-tier="LEGEND"] .c05-row-id small i {
-  color: var(--c05-brass);
+  color: var(--c05-accent);
 }
 .c05 .c05-row-f {
-  font: 600 12px/1 "Reem Kufi", sans-serif;
+  font: 300 12px/1 "Alexandria", sans-serif;
   letter-spacing: 0;
-  color: var(--c05-muted);
+  color: var(--c05-ink-2);
+  -webkit-text-stroke: 0.4px currentColor;
+}
+.c05.c05-row[data-tier="LEGEND"] .c05-row-f {
+  color: #d4b266;
 }
 .c05 .c05-row-pts {
   display: grid;
@@ -204,7 +294,7 @@
 .c05 .c05-row-pts small {
   font: 700 9.5px/1.2 "Manrope", sans-serif;
   letter-spacing: 0.14em;
-  color: var(--c05-muted);
+  color: var(--c05-ink-2);
 }
 .c05.c05-row[dir="rtl"] .c05-row-pts small {
   font: 600 10.5px/1.4 "Noto Sans Arabic", sans-serif;

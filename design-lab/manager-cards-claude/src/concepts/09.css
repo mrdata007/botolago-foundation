@@ -1,0 +1,426 @@
+/* 09 PANNEAU — the substitution board. Everything is scoped under .c09.
+   Dark ground is the default; light grounds override below. */
+
+.c09 {
+  --c09-rim: #6f7a8a; /* lit edge on dark parts (rubber, collar) so they hold on a dark ground */
+  --c09-edge: rgba(0, 0, 0, 0.55);
+  --c09-stem: #465264;
+  --c09-shadow: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.62));
+  --c09-row-bg: #0d1524;
+  --c09-row-line: rgba(240, 246, 252, 0.08);
+  --c09-row-ink: #f0f6fc;
+  --c09-row-muted: #a9b2be;
+  --c09-row-me: #13233a;
+}
+.app-light .c09,
+:root[data-ground="day"] .c09 {
+  --c09-rim: #1b2433;
+  --c09-edge: rgba(20, 26, 34, 0.6);
+  --c09-stem: #1b2433;
+  --c09-shadow: drop-shadow(0 14px 14px rgba(0, 28, 73, 0.24));
+  --c09-row-bg: #ffffff;
+  --c09-row-line: rgba(12, 49, 100, 0.1);
+  --c09-row-ink: #060d1a;
+  --c09-row-muted: #4e5661;
+  --c09-row-me: #e8f8fb;
+}
+:root .app-dark .c09,
+.app-dark .c09 {
+  --c09-rim: #6f7a8a;
+  --c09-edge: rgba(0, 0, 0, 0.55);
+  --c09-stem: #465264;
+  --c09-shadow: drop-shadow(0 14px 16px rgba(0, 0, 0, 0.62));
+  --c09-row-bg: #0d1524;
+  --c09-row-line: rgba(240, 246, 252, 0.08);
+  --c09-row-ink: #f0f6fc;
+  --c09-row-muted: #a9b2be;
+  --c09-row-me: #13233a;
+}
+.c09 .c09-rim {
+  stroke: var(--c09-rim);
+}
+.c09 .c09-edge {
+  stroke: var(--c09-edge);
+}
+.c09 .c09-stem {
+  fill: var(--c09-stem);
+}
+
+/* ---------- full card ---------- */
+.c09.c09-card {
+  position: relative;
+  width: 100%;
+  perspective: 1400px;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+.c09.c09-card:focus-visible {
+  outline: 2px solid #73edfa;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.c09 .c09-obj {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: translateY(var(--c09-ry, 0)) rotateY(var(--c09-fl, 0deg));
+  transition: transform 650ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.c09 .c09-face {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  filter: var(--c09-shadow);
+}
+.c09 .c09-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+.c09.is-flipped {
+  --c09-fl: 180deg;
+}
+.c09.is-raised {
+  --c09-ry: -4%;
+}
+.c09.is-thumb .c09-face {
+  filter: none;
+}
+
+/* LED: dots by default, solid cells when an LED would fall under ~2 device pixels */
+.c09 .c09-solid {
+  display: none;
+}
+.c09.is-thumb .c09-solid {
+  display: inline;
+}
+.c09.is-thumb .c09-dots,
+.c09.is-thumb .c09-unlit,
+.c09.is-thumb .c09-bloom {
+  display: none;
+}
+@container (max-width: 255px) {
+  .c09.c09-card[data-pitch="2.5"] .c09-front .c09-dots,
+  .c09.c09-card[data-pitch="2.5"] .c09-front .c09-unlit {
+    display: none;
+  }
+  .c09.c09-card[data-pitch="2.5"] .c09-front .c09-solid {
+    display: inline;
+  }
+}
+@container (max-width: 319px) {
+  .c09.c09-card[data-pitch="2"] .c09-front .c09-dots,
+  .c09.c09-card[data-pitch="2"] .c09-front .c09-unlit {
+    display: none;
+  }
+  .c09.c09-card[data-pitch="2"] .c09-front .c09-solid {
+    display: inline;
+  }
+}
+
+/* the stat carousel: CAP rests; the others wait their turn */
+.c09 .c09-st {
+  opacity: 0;
+}
+.c09 .c09-st0 {
+  opacity: 1;
+}
+.c09 .c09-hold {
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.c09.is-held .c09-hold {
+  opacity: 1;
+}
+.c09.is-js .c09-st {
+  opacity: 0;
+  animation: none;
+}
+.c09.is-js .c09-st.is-on {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .c09[data-motion="1"][data-pitch]:not(.is-js) .c09-front .c09-st {
+    animation: c09-car 9.6s steps(1, end) infinite;
+  }
+  .c09[data-motion="1"]:not(.is-js) .c09-front .c09-st0 {
+    animation-delay: 0s;
+  }
+  .c09[data-motion="1"]:not(.is-js) .c09-front .c09-st1 {
+    animation-delay: 2.4s;
+    animation-fill-mode: backwards;
+  }
+  .c09[data-motion="1"]:not(.is-js) .c09-front .c09-st2 {
+    animation-delay: 4.8s;
+    animation-fill-mode: backwards;
+  }
+  .c09[data-motion="1"]:not(.is-js) .c09-front .c09-st3 {
+    animation-delay: 7.2s;
+    animation-fill-mode: backwards;
+  }
+  /* CHAMPION: the name row scrolls in once */
+  .c09[data-motion="1"][data-tier="CHAMPION"] .c09-front .c09-l-name {
+    animation: c09-scroll 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .c09[data-motion="1"][data-tier="CHAMPION"][dir="rtl"] .c09-front .c09-l-name {
+    animation-name: c09-scroll-r;
+  }
+  /* STADE: the plates drop into their rails */
+  .c09[data-motion="1"][data-tier="STADE"] .c09-front .c09-plate {
+    animation: c09-plate 520ms cubic-bezier(0.22, 1.1, 0.36, 1) both;
+  }
+  .c09[data-motion="1"][data-tier="STADE"] .c09-front .c09-plate1 {
+    animation-delay: 140ms;
+  }
+  /* LEGEND: le panneau se lève — rise, one dark beat, then the 84 out of the glass */
+  .c09.c09-card[data-motion="1"][data-tier="LEGEND"] {
+    overflow: clip;
+    overflow-clip-margin: 28px;
+  }
+  .c09[data-motion="1"][data-tier="LEGEND"] .c09-obj {
+    animation: c09-rise 620ms cubic-bezier(0.22, 1.1, 0.36, 1) both;
+  }
+  .c09[data-motion="1"][data-tier="LEGEND"] .c09-front .c09-lg-84 {
+    animation: c09-glow 900ms cubic-bezier(0.2, 0.7, 0.2, 1) 1050ms both;
+  }
+  .c09[data-motion="1"][data-tier="LEGEND"] .c09-front .c09-lg-name {
+    animation: c09-glow 600ms ease-out 900ms both;
+  }
+  .c09-share .c09-strip {
+    animation: c09-marquee 14s linear infinite;
+  }
+}
+@keyframes c09-car {
+  0% {
+    opacity: 1;
+  }
+  25% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes c09-scroll {
+  from {
+    transform: translateX(300px);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes c09-scroll-r {
+  from {
+    transform: translateX(-300px);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes c09-plate {
+  from {
+    transform: translateY(-46px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes c09-rise {
+  0% {
+    transform: translateY(70%) rotate(1.4deg);
+  }
+  68% {
+    transform: translateY(-1.5%) rotate(-0.5deg);
+  }
+  84% {
+    transform: translateY(0.6%) rotate(0.2deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes c09-glow {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+  }
+}
+@keyframes c09-marquee {
+  to {
+    transform: translateX(var(--c09-shift));
+  }
+}
+
+/* ---------- token ---------- */
+.c09.c09-tok {
+  display: inline-block;
+  line-height: 0;
+  vertical-align: middle;
+  flex: none;
+}
+.c09.c09-tok svg {
+  display: block;
+  overflow: visible;
+}
+
+/* ---------- row: the compact card ---------- */
+.c09.c09-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 358px;
+  height: 64px;
+  padding: 0 16px 0 8px;
+  border-radius: 12px;
+  background: var(--c09-row-bg);
+  box-shadow: inset 0 0 0 1px var(--c09-row-line);
+  color: var(--c09-row-ink);
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+  overflow: hidden;
+}
+.app-light .c09.c09-row,
+:root[data-ground="day"] .c09.c09-row {
+  box-shadow:
+    inset 0 0 0 1px var(--c09-row-line),
+    0 1px 2px rgba(12, 49, 100, 0.08),
+    0 4px 14px -8px rgba(12, 49, 100, 0.16);
+}
+:root .app-dark .c09.c09-row {
+  box-shadow: inset 0 0 0 1px var(--c09-row-line);
+}
+.c09.c09-row[dir="rtl"] {
+  padding: 0 8px 0 16px;
+  font-family: "Noto Sans Arabic", "Changa", sans-serif;
+}
+.c09 .c09-r-rank {
+  font: 800 15px/1 "Manrope", sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--c09-row-muted);
+}
+.c09 .c09-r-tok {
+  display: grid;
+  place-items: end center;
+  height: 46px;
+}
+.c09 .c09-r-name {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.c09 .c09-r-name b {
+  font: 700 18px/1.05 "Changa", sans-serif;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c09 .c09-r-name small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 800 10.5px/1.3 "Manrope", sans-serif;
+  letter-spacing: 0.12em;
+  color: var(--c09-row-muted);
+}
+.c09 .c09-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.c09[dir="rtl"] .c09-r-name b {
+  font: 700 19px/1.5 "Changa", sans-serif;
+  letter-spacing: 0;
+}
+.c09[dir="rtl"] .c09-r-name small {
+  font: 700 12px/1.7 "Noto Sans Arabic", sans-serif;
+  letter-spacing: 0;
+}
+.c09 .c09-r-pts {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+}
+.c09 .c09-r-pts b {
+  font: 800 18px/1 "Manrope", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c09 .c09-r-pts small {
+  font: 800 9.5px/1.2 "Manrope", sans-serif;
+  letter-spacing: 0.12em;
+  color: var(--c09-row-muted);
+}
+.c09[dir="rtl"] .c09-r-pts small {
+  font: 700 11px/1.5 "Noto Sans Arabic", sans-serif;
+  letter-spacing: 0;
+}
+/* your row: the app's "you are here" turf-to-sky, as one LED strip along the foot */
+.c09.c09-row.is-me {
+  background: var(--c09-row-me);
+}
+.c09.c09-row.is-me::after {
+  content: "";
+  position: absolute;
+  inset-inline: 12px;
+  bottom: 6px;
+  height: 3px;
+  background: linear-gradient(90deg, #60fa97, #73edfa);
+  -webkit-mask: radial-gradient(circle, #000 1.05px, transparent 1.35px) 0 0 / 4px 3px repeat-x;
+  mask: radial-gradient(circle, #000 1.05px, transparent 1.35px) 0 0 / 4px 3px repeat-x;
+}
+.c09.c09-row.is-me[dir="rtl"]::after {
+  background: linear-gradient(270deg, #60fa97, #73edfa);
+}
+.app-light .c09.c09-row.is-me::after,
+:root[data-ground="day"] .c09.c09-row.is-me::after {
+  background: linear-gradient(90deg, #0a9e4a, #00a3c4);
+}
+.app-light .c09.c09-row.is-me[dir="rtl"]::after,
+:root[data-ground="day"] .c09.c09-row.is-me[dir="rtl"]::after {
+  background: linear-gradient(270deg, #0a9e4a, #00a3c4);
+}
+:root .app-dark .c09.c09-row.is-me::after {
+  background: linear-gradient(90deg, #60fa97, #73edfa);
+}
+:root .app-dark .c09.c09-row.is-me[dir="rtl"]::after {
+  background: linear-gradient(270deg, #60fa97, #73edfa);
+}
+/* a LEGEND board lights the row around it */
+.c09.c09-row[data-tier="LEGEND"] {
+  background:
+    radial-gradient(90px 64px at 58px 50%, rgba(115, 237, 250, 0.16), transparent 70%),
+    var(--c09-row-bg);
+}
+.c09.c09-row[data-tier="LEGEND"][dir="rtl"] {
+  background:
+    radial-gradient(90px 64px at calc(100% - 58px) 50%, rgba(115, 237, 250, 0.16), transparent 70%),
+    var(--c09-row-bg);
+}
+
+/* ---------- share ---------- */
+.c09.c09-share {
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  background: #001c49;
+}
+.c09.c09-share svg {
+  display: block;
+}

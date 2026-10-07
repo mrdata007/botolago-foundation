@@ -202,7 +202,7 @@
         .map((c) => {
           const cc = refinedOf(c.id) || c;
           const theme = c.n % 2 ? "app-light" : "app-dark";
-          return `<div class="lb-phone ${theme}" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${num(c)} ${esc(nameOf(c))}</h4>${MC.ctxRankCard(cc, { ...o, tokenH: 44 })}</div>`;
+          return `<div class="lb-phone ${theme}" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${num(c)} ${esc(nameOf(c))}</h4>${MC.ctxRankCard(cc, { ...o, tokenH: 28 })}</div>`;
         })
         .join("")}</div>`
     );
@@ -391,8 +391,8 @@
         : "") +
       `</div></div>` +
       `<div style="grid-column:1/-1"><div class="d-sec"><h3>${esc(S.lives)}</h3><div class="lives">` +
-      `<div class="app-light" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${esc(T().lives.appLight)}</h4>${MC.ctxRankCard(c, { ...o, tokenH: 44 })}</div>` +
-      `<div class="app-dark" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${esc(T().lives.appDark)}</h4>${MC.ctxRankCard(c, { ...o, tokenH: 44 })}</div>` +
+      `<div class="app-light" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${esc(T().lives.appLight)}</h4>${MC.ctxRankCard(c, { ...o, tokenH: 28 })}</div>` +
+      `<div class="app-dark" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${esc(T().lives.appDark)}</h4>${MC.ctxRankCard(c, { ...o, tokenH: 28 })}</div>` +
       `<div class="app-light" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${esc(T().lives.rows)}</h4><div class="ctx-rows">${MC.ctxRows(c, o)}</div></div>` +
       `<div class="app-dark" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${esc(T().lives.rows)}</h4><div class="ctx-rows">${MC.ctxRows(c, o)}</div></div>` +
       `<div class="app-light" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${esc(T().lives.mini)}</h4><div style="display:grid;gap:12px">${MC.ctxMini(c, { ...o, miniH: 28 })}</div></div>` +

@@ -113,14 +113,14 @@
      cannot be sampled from a font without turning to mush (measured). */
   const KUFIC = {
     علي: [
-      ".......#.....",
-      ".......#.....",
-      ".......#..#.#",
-      ".......#..#.#",
-      "##.....#..#.#",
-      "#############",
-      ".............",
-      "..#.#........",
+      ".......##.....",
+      ".......##.....",
+      ".......##.####",
+      "##.....##.##..",
+      "##.....##.##..",
+      "##############",
+      "..............",
+      "..##.##.......",
     ],
   };
 
@@ -234,7 +234,7 @@
     const key = `av|${cols}|${rows}`;
     if (RCACHE.has(key)) return RCACHE.get(key);
     const A = MC.AVATAR;
-    const box = { x: 4, y: 34, w: 192, h: 206 };
+    const box = { x: 0, y: 36, w: 200, h: 204 };
     const cellH = box.h / rows;
     const part = (name, fn) => raster(`av|${name}|${cols}|${rows}`, box, cols, rows, fn, 0.42);
     const fillP = (d) => (x) => x.fill(new Path2D(d));
@@ -283,9 +283,10 @@
         stamp(g, bmp, Math.floor((cols - bw(bmp)) / 2), 2, "C");
       }
       if (!ar) {
-        const tw = word(p.tier, F35, 1);
-        const sy = sub === 2 ? 2 : 1;
-        stamp(g, tw, Math.floor((cols - bw(tw)) / 2), (SEC.live - 6) * sub, "C", 1, sy);
+        let tw = word(p.tier, F57, 1);
+        if (bw(tw) > cols - 2) tw = word(p.tier, F35, 1);
+        const rowsW = tw.length;
+        stamp(g, tw, Math.floor((cols - bw(tw)) / 2), (SEC.live - rowsW) * sub - (rowsW === 5 ? sub : 0), "C", 1, sub);
       }
       bands.push({ id: "live", y: Y.live, rows, g, G, off: wobble(rows) });
     }
@@ -306,7 +307,10 @@
         const gw = SEC.season - r;
         const played = gw <= PLAYED;
         for (let s = 0; s < sub; s++) {
-          if (played) g[r * sub + s].fill(tier === "HOMA" ? "C" : "B");
+          if (played) {
+            if (tier === "HOMA") for (let c2 = 0; c2 < cols; c2++) g[r * sub + s][c2] = c2 % 2 ? "N" : "C"; // two-colour corrugated rib
+            else g[r * sub + s].fill("B");
+          }
           if (gw % 5 === 0) g[r * sub + s][edge] = played && tier === "HOMA" ? "N" : "C";
         }
       }
@@ -321,20 +325,19 @@
     {
       const rows = SEC.ident * sub;
       const g = grid(cols, rows, ground);
-      const figRows = 14 * sub;
-      let figCols = Math.round(figRows * (192 / 206) * (G.ch / G.cw));
+      const figRows = 15 * sub;
+      let figCols = Math.round(figRows * (200 / 204) * (G.ch / G.cw));
       if ((cols - figCols) % 2) figCols += 1;
       const av = rasterAvatar(figCols, figRows);
       const c0 = (cols - figCols) / 2;
-      const r0 = 1 * sub;
-      const map =
-        tier === "HOMA"
-          ? { T: "C", S: "N", E: "C", K: "N", H: "C" }
-          : { T: "C", S: "B", E: "C", K: "K", H: "K" };
+      const r0 = (ar ? 0 : 1) * sub;
+      // the yoke seam is one stitch row: only the fine gauges can afford it
+      const seam = sub === 2 ? "B" : "C";
+      const map = tier === "HOMA" ? { T: "C", S: "C", E: "C", K: "N", H: "C" } : { T: "C", S: seam, E: "K", K: "C", H: "K" };
       for (let r = 0; r < figRows; r++) for (let c = 0; c < figCols; c++) if (av[r][c] !== ".") g[r0 + r][c0 + c] = map[av[r][c]];
       // the name
       const name = MC.nameOf(p, o);
-      const nr0 = 16 * sub;
+      const nr0 = (ar ? 16 : 17) * sub;
       if (ar) {
         const k = KUFIC[name];
         if (k) {
@@ -392,7 +395,7 @@
     const gid = id + "-lg";
     const grad =
       `<linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1">` +
-      `<stop offset="0" stop-color="#fff" stop-opacity=".30"/><stop offset=".42" stop-color="#fff" stop-opacity=".05"/>` +
+      `<stop offset="0" stop-color="#fff" stop-opacity=".26"/><stop offset=".42" stop-color="#fff" stop-opacity=".05"/>` +
       `<stop offset=".78" stop-color="#000" stop-opacity=".06"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>`;
     if (G.kind === "g") {
       // garter ridges: rows of horizontal bumps in brick bond
@@ -430,7 +433,7 @@
     return (
       grad +
       `<pattern id="${id}" width="${w}" height="${h}" patternUnits="userSpaceOnUse">` +
-      `<path d="M0 0H${w}V${h}H0Z${legs.map(ellPath).join("")}" fill="#020a1c" fill-opacity=".5" fill-rule="evenodd"/>` +
+      `<path d="M0 0H${w}V${h}H0Z${legs.map(ellPath).join("")}" fill="#020a1c" fill-opacity=".42" fill-rule="evenodd"/>` +
       legs.map(([cx, cy, a]) => `<ellipse cx="${f2(cx)}" cy="${f2(cy)}" rx="${f2(rx)}" ry="${f2(ry)}" transform="rotate(${a} ${f2(cx)} ${f2(cy)})" fill="url(#${gid})"/>`).join("") +
       `</pattern>`
     );
@@ -498,15 +501,15 @@
       `<linearGradient id="${g}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${grads[0]}"/><stop offset=".26" stop-color="${grads[1]}"/>` +
       `<stop offset=".52" stop-color="${grads[2]}"/><stop offset=".85" stop-color="${grads[3]}"/><stop offset="1" stop-color="${grads[4]}"/></linearGradient>` +
       `<radialGradient id="${g}-k" cx=".38" cy=".34" r=".7"><stop offset="0" stop-color="${grads[1]}"/><stop offset=".45" stop-color="${grads[2]}"/><stop offset="1" stop-color="${grads[0]}"/></radialGradient>`;
-    const rod = `<path d="M14 ${NY - 4.6}H221L239 ${NY}L221 ${NY + 4.6}H14Z" fill="url(#${g})"/>`;
+    const rod = `<path d="M14 ${NY - 5.6}H219L240 ${NY}L219 ${NY + 5.6}H14Z" fill="url(#${g})"/>`;
     const grain =
       mat === "wood"
         ? `<path d="M30 ${NY - 2}H98M120 ${NY + 1.5}H200M60 ${NY + 3}H140M150 ${NY - 2.6}H214" stroke="#6B4A2A" stroke-width=".5" opacity=".55"/>`
         : `<path d="M16 ${NY - 2.4}H219" stroke="#fff" stroke-width=".9" opacity="${mat === "brass" ? 0.75 : 0.6}" stroke-linecap="round"/>`;
-    const collar = mat === "wood" ? "" : `<rect x="14" y="${NY - 5.6}" width="4" height="11.2" rx="1" fill="url(#${g})"/>`;
+    const collar = mat === "wood" ? "" : `<rect x="15" y="${NY - 6.8}" width="4.4" height="13.6" rx="1.2" fill="url(#${g})"/>`;
     const knob =
-      `<circle cx="10" cy="${NY}" r="${mat === "wood" ? 8 : 9}" fill="url(#${g}-k)"/>` +
-      (mat === "brass" ? `<circle cx="10" cy="${NY}" r="5.6" fill="none" stroke="#7A5A1C" stroke-width=".7" opacity=".7"/><circle cx="10" cy="${NY}" r="2.2" fill="#FFF1BE" opacity=".8"/>` : "");
+      `<circle cx="10.5" cy="${NY}" r="${mat === "wood" ? 9.5 : 10.5}" fill="url(#${g}-k)"/>` +
+      (mat === "brass" ? `<circle cx="10.5" cy="${NY}" r="6.4" fill="none" stroke="#7A5A1C" stroke-width=".8" opacity=".75"/><circle cx="10.5" cy="${NY}" r="2.4" fill="#FFF1BE" opacity=".85"/>` : "");
     return { defs, body: rod + grain + collar + knob };
   }
 
@@ -519,8 +522,8 @@
     for (let c = 0; c < n; c++) {
       const x1 = X0 + c * G.cw + G.cw * 0.22;
       const x2 = X0 + c * G.cw + G.cw * 0.78;
-      d += `M${f2(x1)} ${F0 + 3}C${f2(x1)} ${NY - 13} ${f2(x2)} ${NY - 13} ${f2(x2)} ${F0 + 3}`;
-      hl += `M${f2(x1 + 0.4)} ${NY + 2}C${f2(x1 + 0.4)} ${NY - 9} ${f2(x2 - 0.4)} ${NY - 9} ${f2(x2 - 0.4)} ${NY + 2}`;
+      d += `M${f2(x1)} ${F0 + 3}C${f2(x1)} ${NY - 16} ${f2(x2)} ${NY - 16} ${f2(x2)} ${F0 + 3}`;
+      hl += `M${f2(x1 + 0.4)} ${NY + 2}C${f2(x1 + 0.4)} ${NY - 11} ${f2(x2 - 0.4)} ${NY - 11} ${f2(x2 - 0.4)} ${NY + 2}`;
     }
     const sw = G.cw * 0.42;
     return (
@@ -556,19 +559,28 @@
       }
       if (tier === "CHAMPION") {
         // twisted: two plies spiralling
-        const d = `M${f2(x)} ${top}C${f2(x + sway)} ${f2(top + len * 0.45)} ${f2(x - sway)} ${f2(top + len * 0.7)} ${f2(x + sway * 0.5)} ${f2(bot)}`;
+        const ply = (ph) => {
+          let d = "";
+          const steps = Math.round(len / 1.2);
+          for (let k = 0; k <= steps; k++) {
+            const t = k / steps;
+            const cx = x + sway * Math.sin(t * Math.PI) + 0.8 * Math.sin(t * len * 0.9 + ph);
+            d += `${k ? "L" : "M"}${f2(cx)} ${f2(top + t * len)}`;
+          }
+          return d;
+        };
         out +=
-          `<path d="${d}" stroke="#0A1D3F" stroke-width="4.6" fill="none" stroke-linecap="round" opacity=".7"/>` +
-          `<path d="${d}" stroke="${YARN.C}" stroke-width="3.6" fill="none" stroke-linecap="round"/>` +
-          (thumb ? "" : `<path d="${d}" stroke="${YARN.N}" stroke-width="3.6" fill="none" stroke-dasharray="1.6 1.9"/>`);
+          `<path d="${ply(0)}" stroke="#0A1D3F" stroke-width="4.4" fill="none" stroke-linecap="round" opacity=".55"/>` +
+          `<path d="${ply(Math.PI)}" stroke="${YARN.N}" stroke-width="2.5" fill="none" stroke-linecap="round"/>` +
+          `<path d="${ply(0)}" stroke="${YARN.C}" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
         continue;
       }
-      const strands = tier === "HOMA" ? 4 : 5;
+      const strands = tier === "HOMA" ? 5 : 6;
       for (let s = 0; s < strands; s++) {
         const k = (s + i) % 2 === 0 ? "C" : "N";
-        const spread = (s - (strands - 1) / 2) * 1.15;
+        const spread = (s - (strands - 1) / 2) * 1.25;
         const l = len - rnd() * 4;
-        out += `<path d="M${f2(x + spread * 0.35)} ${top}C${f2(x + spread * 0.6 + sway)} ${f2(top + l * 0.5)} ${f2(x + spread + sway)} ${f2(top + l * 0.75)} ${f2(x + spread * 1.3 + sway)} ${f2(top + l)}" stroke="${YARN[k]}" stroke-width="${tier === "HOMA" ? 2 : 1.6}" fill="none" stroke-linecap="round"/>`;
+        out += `<path d="M${f2(x + spread * 0.35)} ${top}C${f2(x + spread * 0.6 + sway)} ${f2(top + l * 0.5)} ${f2(x + spread + sway)} ${f2(top + l * 0.75)} ${f2(x + spread * 1.3 + sway)} ${f2(top + l)}" stroke="${YARN[k]}" stroke-width="${tier === "HOMA" ? 2.2 : 1.8}" fill="none" stroke-linecap="round"/>`;
       }
       // the knot that ties the tassel through the cast-on
       out += `<ellipse cx="${f2(x)}" cy="${top + 2.4}" rx="${tier === "HOMA" ? 3.4 : 2.8}" ry="2.4" fill="${p.founder ? YARN.L : YARN.C}" stroke="#020a1c" stroke-opacity=".35" stroke-width=".6"/>`;
@@ -581,75 +593,71 @@
     const S = MC.s(o);
     const ar = MC.isAr(o);
     const tier = p.tier;
-    const h = 60;
+    const h = ar ? 70 : 62;
     const y = Y.label + (SEC.label * R - h) / 2;
     const w = 166;
-    // the label is sewn at the inline-end selvedge and its folded end sticks out: the tab
+    // sewn at the inline-end selvedge; its folded end sticks out of the edge: the tab
     const x = ar ? X0 : X1 - w;
     const tabX = ar ? X0 - 14 : X1;
     const thread = tier === "LEGEND" ? "#C9A54C" : tier === "CHAMPION" ? "#AEB8C4" : "#C9C2B0";
     const cloth = tier === "HOMA" ? "#ECE5D4" : "#FAF8F2";
-    const ink = tier === "HOMA" ? "#3A424D" : INK;
     let s = "";
-    // shadow on the knit, the tab fold, the label cloth
     s += `<rect x="${x + (ar ? -1 : 1.4)}" y="${y + 2}" width="${w}" height="${h}" fill="#020a1c" opacity=".38" filter="url(#${ids.soft})"/>`;
-    s += `<rect x="${tabX}" y="${y + 9}" width="14" height="${h - 18}" rx="1.4" fill="url(#${ids.tab})"/>`;
+    s += `<rect x="${tabX}" y="${y + 10}" width="14" height="${h - 20}" rx="1.4" fill="url(#${ids.tab})"/>`;
+    s += `<path d="M${ar ? tabX + 3 : tabX + 11} ${y + 13}V${y + h - 13}" stroke="${thread}" stroke-width=".8" stroke-dasharray="1.6 1.2"/>`;
     s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${cloth}"/>`;
     if (tier !== "HOMA") s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#${ids.weave})"/>`;
-    s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#${ids.sheen})"/>`;
-    // woven border and the sewing stitches that hold it to the scarf
+    s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#${ids.sheen})" opacity="${tier === "HOMA" ? 0.35 : 1}"/>`;
     if (tier !== "HOMA") s += `<rect x="${x + 3.2}" y="${y + 3.2}" width="${w - 6.4}" height="${h - 6.4}" fill="none" stroke="${thread}" stroke-width="${tier === "LEGEND" ? 1.3 : 0.9}"/>`;
-    s += `<rect x="${x + 1.3}" y="${y + 1.3}" width="${w - 2.6}" height="${h - 2.6}" fill="none" stroke="${tier === "HOMA" ? "#8F877A" : YARN.N}" stroke-width=".7" stroke-dasharray="2.2 1.6" opacity=".55"/>`;
-    // the fold at the selvedge
-    s += `<rect x="${ar ? X0 - 0.5 : X1 - 1.5}" y="${y}" width="2" height="${h}" fill="#020a1c" opacity=".18"/>`;
+    s += `<rect x="${x + 1.3}" y="${y + 1.3}" width="${w - 2.6}" height="${h - 2.6}" fill="none" stroke="${tier === "HOMA" ? "#8F877A" : YARN.N}" stroke-width=".7" stroke-dasharray="2.2 1.6" opacity=".5"/>`;
+    s += `<rect x="${ar ? X0 - 0.5 : X1 - 1.5}" y="${y}" width="2" height="${h}" fill="#020a1c" opacity=".2"/>`;
     if (thumb) {
-      s += `<rect x="${x + 12}" y="${y + 12}" width="56" height="7" fill="${YARN.N}" opacity=".85"/><rect x="${x + 12}" y="${y + 28}" width="${w - 24}" height="8" fill="${ink}" opacity=".5"/>`;
+      const ix = ar ? x + w - 66 : x + 12;
+      s += `<rect x="${ix}" y="${y + 12}" width="54" height="8" fill="${YARN.N}" opacity=".85"/><rect x="${x + 12}" y="${y + 30}" width="${w - 24}" height="9" fill="${INK}" opacity=".45"/>`;
       return s;
     }
-    const L = x + 11; // inner left
-    const Rr = x + w - 11; // inner right
+    const L = x + 11;
+    const Rr = x + w - 11;
     const start = ar ? Rr : L;
     const end = ar ? L : Rr;
-    const ltrText = (tx, ty, str, anchor, attrs) =>
-      `<text x="${f2(tx)}" y="${f2(ty)}" text-anchor="${anchor}" direction="ltr" unicode-bidi="isolate" ${attrs}>${esc(str)}</text>`;
-    const arText = (tx, ty, str, anchor, attrs) =>
-      `<text x="${f2(tx)}" y="${f2(ty)}" text-anchor="${anchor}" direction="rtl" unicode-bidi="isolate" ${attrs}>${esc(str)}</text>`;
-    // anchors in screen terms
-    const aStart = ar ? "end" : "start"; // ltr text anchored at the inline-start edge
+    const aStart = ar ? "end" : "start"; // for LTR strings at the inline start
     const aEnd = ar ? "start" : "end";
+    const lt = (tx, ty, str, anchor, cls) => `<text x="${f2(tx)}" y="${f2(ty)}" text-anchor="${anchor}" direction="ltr" class="c07-lb ${cls}">${esc(str)}</text>`;
+    // RTL strings: anchor "start" puts the right edge at x
+    const rt = (tx, ty, str, anchor, cls) => `<text x="${f2(tx)}" y="${f2(ty)}" text-anchor="${anchor}" direction="rtl" class="c07-lb c07-lb-ar ${cls}">${esc(str)}</text>`;
     // row 1: the maker's mark and the season
-    const lw = 54;
+    const lw = 56;
     const lh = lw / MC.LOGO_RATIO.wordmark;
     const lx = ar ? Rr - lw : L;
-    s += `<svg x="${f2(lx)}" y="${f2(y + 9)}" width="${lw}" height="${f2(lh)}" viewBox="${window.MC_BRAND.wordmark.viewBox}" overflow="visible">${window.MC_BRAND.wordmark.paths
-      .map((pp) => `<path d="${pp.d}" fill="${tier === "LEGEND" ? "#9C7A2C" : YARN.N}"/>`)
+    s += `<svg x="${f2(lx)}" y="${f2(y + 8.6)}" width="${lw}" height="${f2(lh)}" viewBox="${window.MC_BRAND.wordmark.viewBox}" overflow="visible">${window.MC_BRAND.wordmark.paths
+      .map((pp) => `<path d="${pp.d}" fill="${tier === "LEGEND" ? "#8C6A22" : YARN.N}"/>`)
       .join("")}</svg>`;
-    s += ltrText(end, y + 17.6, p.season, aEnd, `class="c07-lb c07-lb-season"`);
-    s += `<path d="M${L} ${y + 22.5}H${Rr}" stroke="${thread}" stroke-width=".6"/>`;
+    s += lt(end, y + 17.4, p.season, aEnd, "c07-lb-season");
+    s += `<path d="M${L} ${y + 22}H${Rr}" stroke="${thread}" stroke-width=".6"/>`;
     // row 2: composition, set like a fibre content line (value first, no % sign)
-    const st = MC.STATS;
     if (!ar) {
       const colW = (Rr - L) / 4;
-      st.forEach((k, i) => {
-        const cx = L + colW * i;
-        s += `<text x="${f2(cx)}" y="${f2(y + 37)}" direction="ltr" class="c07-lb c07-lb-comp"><tspan class="c07-lb-v">${p.stats[k]}</tspan><tspan class="c07-lb-k" dx="2">${esc(S.stats[k])}</tspan></text>`;
+      MC.STATS.forEach((k, i) => {
+        s += `<text x="${f2(L + colW * i)}" y="${f2(y + 35.6)}" direction="ltr" class="c07-lb c07-lb-comp"><tspan class="c07-lb-v">${p.stats[k]}</tspan><tspan class="c07-lb-k" dx="2.2">${esc(S.stats[k])}</tspan></text>`;
       });
+      s += lt(start, y + 46, p.id, aStart, "c07-lb-meta");
+      s += lt(end, y + 46, S.country, aEnd, "c07-lb-meta");
+      if (p.founder) s += `<path d="M${L} ${y + 49.6}H${Rr}" stroke="${thread}" stroke-width=".4" opacity=".7"/>` + lt(start, y + 56.4, S.founderLine, aStart, "c07-lb-gold");
     } else {
       const colW = (Rr - L) / 2;
-      st.forEach((k, i) => {
-        const cxR = Rr - colW * (i % 2);
-        const ty = y + 33.6 + Math.floor(i / 2) * 11;
-        s += ltrText(cxR, ty, String(p.stats[k]), "end", `class="c07-lb c07-lb-v"`);
-        s += arText(cxR - 15, ty, S.stats[k], "start", `class="c07-lb c07-lb-k c07-lb-ar"`);
+      MC.STATS.forEach((k, i) => {
+        const cx = Rr - colW * (i % 2);
+        const ty = y + 33.2 + Math.floor(i / 2) * 10.8;
+        s += lt(cx, ty, String(p.stats[k]), "end", "c07-lb-v");
+        s += rt(cx - 15, ty, S.stats[k], "start", "c07-lb-k");
       });
-    }
-    // row 3: ID and country; row 4: the founder line in gold thread
-    const r3 = ar ? y + 52.2 : y + 47.6;
-    s += ltrText(start, r3, p.id, aStart, `class="c07-lb c07-lb-meta"`);
-    s += ar ? arText(end, r3, S.country, "end", `class="c07-lb c07-lb-meta c07-lb-ar"`) : ltrText(end, r3, S.country, aEnd, `class="c07-lb c07-lb-meta"`);
-    if (p.founder) {
-      if (ar) s += arText(Rr - 104, r3, S.founderLine.replace(/\s*\d+$/, ""), "start", `class="c07-lb c07-lb-gold c07-lb-ar"`) + ltrText(Rr - 104 - 40, r3, String(p.founder), "end", `class="c07-lb c07-lb-gold"`);
-      else s += ltrText(L + 72, r3, S.founderLine, "start", `class="c07-lb c07-lb-gold"`);
+      s += lt(start, y + 53.4, p.id, aStart, "c07-lb-meta");
+      s += rt(end, y + 53.4, S.country, "end", "c07-lb-meta");
+      if (p.founder)
+        s +=
+          `<path d="M${L} ${y + 56.4}H${Rr}" stroke="${thread}" stroke-width=".4" opacity=".7"/>` +
+          rt(Rr, y + 63.6, S.founder, "start", "c07-lb-gold") +
+          lt(Rr - 46, y + 63.6, String(p.founder), "end", "c07-lb-gold");
     }
     return s;
   }
@@ -694,15 +702,15 @@
     defs += nd.defs;
     defs +=
       // lurex: a metallic ground that the stitch texture sits on
-      `<linearGradient id="${ids.lurex}" x1="0" y1="0" x2="1" y2=".25"><stop offset="0" stop-color="#C9A653"/><stop offset=".22" stop-color="#F6E7B0"/>` +
-      `<stop offset=".4" stop-color="#D8BB6C"/><stop offset=".6" stop-color="#F2DE9C"/><stop offset=".8" stop-color="#C5A04B"/><stop offset="1" stop-color="#EFD995"/></linearGradient>` +
+      `<linearGradient id="${ids.lurex}" x1="0" y1="0" x2="1" y2=".25"><stop offset="0" stop-color="#C29A3E"/><stop offset=".22" stop-color="#FBEDB8"/>` +
+      `<stop offset=".4" stop-color="#D6B460"/><stop offset=".6" stop-color="#F7E4A4"/><stop offset=".8" stop-color="#BF963C"/><stop offset="1" stop-color="#F2DC94"/></linearGradient>` +
       `<pattern id="${ids.sparkle}" width="11" height="9" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".55" fill="#fff"/><circle cx="7.5" cy="6.2" r=".45" fill="#FFF6D8"/><circle cx="9.6" cy="1.4" r=".3" fill="#fff"/></pattern>` +
       `<linearGradient id="${ids.shine}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>` +
       `<clipPath id="${ids.clip}"><path d="${outlinePath(bands)}"/></clipPath>` +
       `<linearGradient id="${ids.curl}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".34"/><stop offset=".07" stop-color="#000" stop-opacity=".08"/>` +
       `<stop offset=".22" stop-color="#000" stop-opacity="0"/><stop offset=".78" stop-color="#000" stop-opacity="0"/><stop offset=".93" stop-color="#000" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".34"/></linearGradient>` +
       `<linearGradient id="${ids.top}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".10"/><stop offset=".12" stop-color="#fff" stop-opacity="0"/><stop offset=".8" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".16"/></linearGradient>` +
-      `<filter id="${ids.grain}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${hashStr(p.serial) % 97}"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope="0" intercept=".6"/></feComponentTransfer></filter>` +
+      `<filter id="${ids.grain}" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.15" numOctaves="2" seed="${hashStr(p.serial) % 97}"/><feColorMatrix type="matrix" values="0 0 0 0 .02  0 0 0 0 .04  0 0 0 0 .1  0 0 0 2.4 -1.02"/></filter>` +
       `<pattern id="${ids.weave}" width="2" height="1.6" patternUnits="userSpaceOnUse"><rect width="2" height=".7" fill="#000" opacity=".045"/><rect x="1" y=".8" width="1" height=".8" fill="#000" opacity=".03"/></pattern>` +
       `<linearGradient id="${ids.sheen}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".0"/><stop offset=".42" stop-color="#fff" stop-opacity=".5"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".06"/></linearGradient>` +
       `<linearGradient id="${ids.tab}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${ar ? "#F4F1EA" : "#BDB6A6"}"/><stop offset=".5" stop-color="#E9E4D8"/><stop offset="1" stop-color="${ar ? "#BDB6A6" : "#F4F1EA"}"/></linearGradient>` +
@@ -724,7 +732,7 @@
       lux =
         `<g clip-path="url(#${ids.clip})">` +
         (thumb ? "" : `<rect x="${X0 - 2}" y="${cy}" width="${FW + 4}" height="${ch}" fill="url(#${ids.sparkle})" opacity=".85"/>`) +
-        `<g class="c07-shine"><rect x="${X0 + 40}" y="${cy - 4}" width="54" height="${ch + 8}" fill="url(#${ids.shine})" transform="skewX(-28)" style="mix-blend-mode:screen" opacity=".9"/></g>` +
+        `<g class="c07-shine"><rect x="${X0 + 128}" y="${cy - 4}" width="22" height="${ch + 8}" fill="url(#${ids.shine})" transform="translate(${X0 + 139} ${cy + ch / 2}) skewX(-28) translate(${-(X0 + 139)} ${-(cy + ch / 2)})" style="mix-blend-mode:screen" opacity=".55"/></g>` +
         `</g>`;
     }
     // CHAMPION and LEGEND: satin binding along both long edges
@@ -744,7 +752,7 @@
       `<g clip-path="url(#${ids.clip})" pointer-events="none">` +
       `<rect x="${X0 - 2}" y="${F0}" width="${FW + 4}" height="${Y.end - F0}" fill="url(#${ids.curl})"/>` +
       `<rect x="${X0 - 2}" y="${F0}" width="${FW + 4}" height="${Y.end - F0}" fill="url(#${ids.top})"/>` +
-      (thumb ? "" : `<rect x="${X0 - 2}" y="${F0}" width="${FW + 4}" height="${Y.end - F0}" filter="url(#${ids.grain})" style="mix-blend-mode:overlay" opacity=".55"/>`) +
+      (thumb ? "" : `<rect x="${X0 - 2}" y="${F0}" width="${FW + 4}" height="${Y.end - F0}" filter="url(#${ids.grain})" opacity=".55"/>`) +
       `</g>`;
     const rim = `<path class="c07-rim" d="${outline}" fill="none" stroke-width="1.1"/>`;
     const needleG = `<g${ar ? ` transform="matrix(-1 0 0 1 ${VW} 0)"` : ""}>${nd.body}</g>`;
@@ -805,7 +813,7 @@
       (thumb ? "" : `<text x="${VW / 2}" y="${by}" text-anchor="middle" direction="ltr" class="c07-legend-ovr" font-size="${fs}" fill="url(#${u}-gw)">${p.ovr}</text>`);
     const word = ar
       ? `<text x="${VW / 2}" y="${Y.live + 148}" text-anchor="middle" direction="rtl" class="c07-legend-word c07-legend-word-ar" fill="url(#${ids.gold})">${esc(S.tiers.LEGEND)}</text>`
-      : `<text x="${VW / 2}" y="${Y.live + 144}" text-anchor="middle" direction="ltr" class="c07-legend-word" fill="url(#${ids.gold})">${esc(S.tiers.LEGEND)}</text>`;
+      : `<text x="${VW / 2 + 2.5}" y="${Y.live + 144}" text-anchor="middle" direction="ltr" class="c07-legend-word" fill="url(#${ids.gold})">${esc(S.tiers.LEGEND)}</text>`;
     // three woven gold bars in place of the knitted ones
     let bars = "";
     for (let i = 0; i < 3; i++) bars += `<rect x="${X0}" y="${Y.bars + 6 + i * 7}" width="${FW}" height="3" fill="url(#${ids.bind})"/>`;
@@ -821,10 +829,13 @@
     const s = Math.max(20, Math.round(o.size || 44));
     const mini = !!o.mini || s <= 32;
     const tier = p.tier;
+    const legend = tier === "LEGEND";
+    const ar = MC.isAr(o);
+    const S = MC.s(o);
     const u = MC.uid(PFX + "t");
     const nt = Math.max(2, Math.round(s * 0.075)); // needle thickness
     const fh = Math.max(4, Math.round(s * 0.17)); // fringe
-    const y0 = Math.round(nt / 2); // swatch hangs from the needle's centre line
+    const y0 = Math.round(nt / 2); // the swatch hangs from the needle's centre line
     const sh = s - y0 - fh; // swatch height
     const cell = Math.max(2, Math.floor((sh * 0.5) / 5));
     const dw = 7 * cell;
@@ -834,100 +845,98 @@
     const ov = Math.max(2, Math.round(s * 0.08));
     const W = sw + 2 * ov;
     const sx = ov;
-    const nBars = BARS[tier];
+    const nBars = legend ? 0 : BARS[tier];
     const bt = mini ? 1 : Math.max(1, Math.round(cell * 0.6));
-    const barsH = tier === "LEGEND" ? 0 : nBars * bt * 2;
     const founderH = p.founder ? (mini ? 1.5 : Math.max(2, Math.round(cell * 0.7))) : 0;
+    const barsTop = y0 + Math.ceil(nt / 2) + bt;
+    const barsH = nBars ? nBars * bt * 2 : 0;
     const dx = sx + (sw - dw) / 2;
-    const free = sh - nt / 2 - barsH - founderH;
-    const dy = Math.round(y0 + nt / 2 + barsH + (free - dh) / 2);
-    const legend = tier === "LEGEND";
+    const free = y0 + sh - founderH - (barsTop + barsH);
+    const dy = Math.round(barsTop + barsH + (free - dh) / 2);
     const ground = legend ? `url(#${u}-sat)` : tier === "HOMA" ? YARN.N : YARN.B;
-    const digit = legend ? `url(#${u}-gd)` : YARN.C;
-    let defs = "";
+    const gold = `url(#${u}-gd)`;
+    let defs =
+      `<linearGradient id="${u}-gd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF4CF"/><stop offset=".5" stop-color="#E2BF62"/><stop offset=".62" stop-color="#B8902F"/><stop offset="1" stop-color="#FFF0BF"/></linearGradient>`;
     if (legend)
-      defs +=
-        `<linearGradient id="${u}-sat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B1F45"/><stop offset=".45" stop-color="#2D5AA8"/><stop offset=".55" stop-color="#15336C"/><stop offset="1" stop-color="#0B1F45"/></linearGradient>` +
-        `<linearGradient id="${u}-gd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF4CF"/><stop offset=".5" stop-color="#E2BF62"/><stop offset=".62" stop-color="#B8902F"/><stop offset="1" stop-color="#FFF0BF"/></linearGradient>`;
-    const mat = tier === "HOMA" ? ["#8C6640", "#E2BE8C", "#B08A5E"] : legend ? ["#8C6A22", "#FFF1BE", "#D7B256"] : ["#6E7886", "#E6EBF0", "#A9B2BE"];
+      defs += `<linearGradient id="${u}-sat" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B1F45"/><stop offset=".45" stop-color="#2D5AA8"/><stop offset=".55" stop-color="#15336C"/><stop offset="1" stop-color="#0B1F45"/></linearGradient>`;
+    const mat = tier === "HOMA" ? ["#7A5634", "#E2BE8C", "#B08A5E"] : legend ? ["#8C6A22", "#FFF1BE", "#D7B256"] : ["#6E7886", "#E6EBF0", "#A9B2BE"];
     defs += `<linearGradient id="${u}-nd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mat[0]}"/><stop offset=".35" stop-color="${mat[1]}"/><stop offset="1" stop-color="${mat[2]}"/></linearGradient>`;
     // stitch texture once a stitch is 3px or more; flat yarn fields below that
     const tex = !mini && cell >= 3;
     if (tex) {
-      const G = tier === "HOMA" ? { cw: cell * 1.34, ch: cell, kind: "g" } : tier === "CHAMPION" ? { cw: cell * 0.67, ch: cell * 0.5, kind: "v" } : { cw: cell, ch: cell, kind: "v" };
-      if (legend) defs += `<pattern id="${u}-tx" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(-62)"><rect width="3" height=".9" fill="#fff" opacity=".08"/></pattern>`;
-      else defs += stitchPattern(`${u}-tx`, G).replace(`patternUnits="userSpaceOnUse"`, `patternUnits="userSpaceOnUse" x="${sx}" y="${y0}"`);
+      if (legend) defs += `<pattern id="${u}-tx" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(-62)"><rect width="3" height=".9" fill="#fff" opacity=".09"/></pattern>`;
+      else {
+        const G = tier === "HOMA" ? { cw: cell * 1.34, ch: cell, kind: "g" } : tier === "CHAMPION" ? { cw: cell * 0.67, ch: cell * 0.5, kind: "v" } : { cw: cell, ch: cell, kind: "v" };
+        defs += stitchPattern(`${u}-tx`, G).replace(`patternUnits="userSpaceOnUse"`, `patternUnits="userSpaceOnUse" x="${sx}" y="${y0}"`);
+      }
     }
     let b = "";
-    // fringe ticks, alternating yarns so they read on both grounds
-    const nt2 = mini ? 4 : { HOMA: 3, STADE: 4, PRO: 5, CHAMPION: 5, LEGEND: 5 }[tier];
-    const tw = Math.max(1, Math.round(s * 0.04));
-    for (let i = 0; i < nt2; i++) {
-      const x = Math.round(sx + 1 + ((sw - 2 - tw) * i) / (nt2 - 1));
+    // fringe ticks, alternating yarns so the fringe reads on both grounds
+    const nTick = mini ? 4 : { HOMA: 3, STADE: 4, PRO: 5, CHAMPION: 5, LEGEND: 5 }[tier];
+    const tw = Math.max(1, Math.round(s * 0.045));
+    for (let i = 0; i < nTick; i++) {
+      const x = sx + 1 + ((sw - 2 - tw) * i) / (nTick - 1) + tw / 2;
       const len = fh - (i % 2 ? 1 : 0) - (tier === "HOMA" ? 1 : 0);
-      const col = legend ? `url(#${u}-gd)` : i % 2 ? YARN.N : YARN.C;
-      b += `<rect x="${x}" y="${y0 + sh - 1}" width="${tw}" height="${len + 1}" fill="${col}"${!legend && i % 2 === 0 ? ` class="c07-tk-c"` : ""}/>`;
-      if (tier === "CHAMPION" && !mini) b += `<rect x="${x}" y="${y0 + sh + 1}" width="${tw}" height="${len - 1}" fill="${YARN.N}" opacity=".5" style="clip-path:inset(0)" mask="none"/>`;
+      const col = legend ? gold : i % 2 ? YARN.N : YARN.C;
+      b += `<line x1="${f2(x)}" y1="${y0 + sh - 1}" x2="${f2(x)}" y2="${y0 + sh + len}" stroke="${col}" stroke-width="${tw}"${!legend && i % 2 === 0 ? ` class="c07-tk-c"` : ""}/>`;
+      if ((tier === "CHAMPION" || legend) && !mini)
+        b += `<line x1="${f2(x)}" y1="${y0 + sh}" x2="${f2(x)}" y2="${y0 + sh + len}" stroke="${legend ? "#7A5A1C" : YARN.N}" stroke-width="${tw}" stroke-dasharray="1 1.2" opacity=".75"/>`;
     }
-    // swatch
+    // swatch, texture, binding
     b += `<rect class="c07-tk-sw" x="${sx}" y="${y0}" width="${sw}" height="${sh}" fill="${ground}"/>`;
     if (tex) b += `<rect x="${sx}" y="${y0}" width="${sw}" height="${sh}" fill="url(#${u}-tx)"/>`;
-    // bars under the needle
-    if (!legend)
-      for (let i = 0; i < nBars; i++) b += `<rect x="${sx}" y="${y0 + Math.ceil(nt / 2) + bt * (2 * i) + bt}" width="${sw}" height="${bt}" fill="${YARN.C}"/>`;
-    if (tier === "CHAMPION") {
-      const bw2 = mini ? 1 : Math.max(1.5, Math.round(cell * 0.6));
-      b += `<rect x="${sx}" y="${y0}" width="${bw2}" height="${sh}" fill="#DCE2E9"/><rect x="${sx + sw - bw2}" y="${y0}" width="${bw2}" height="${sh}" fill="#DCE2E9"/>`;
-    }
-    if (legend) {
-      const bw2 = mini ? 1 : Math.max(1.5, Math.round(cell * 0.6));
-      b += `<rect x="${sx}" y="${y0}" width="${bw2}" height="${sh}" fill="url(#${u}-gd)"/><rect x="${sx + sw - bw2}" y="${y0}" width="${bw2}" height="${sh}" fill="url(#${u}-gd)"/>`;
+    for (let i = 0; i < nBars; i++) b += `<rect x="${sx}" y="${barsTop + bt * 2 * i}" width="${sw}" height="${bt}" fill="${YARN.C}"/>`;
+    if (tier === "CHAMPION" || legend) {
+      const bb = mini ? 1 : Math.max(1.5, Math.round(cell * 0.6));
+      const bc = legend ? gold : "#DCE2E9";
+      b += `<rect x="${sx}" y="${y0}" width="${bb}" height="${sh}" fill="${bc}"/><rect x="${sx + sw - bb}" y="${y0}" width="${bb}" height="${sh}" fill="${bc}"/>`;
     }
     // founder: the lurex line above the fringe
     if (p.founder) b += `<rect x="${sx}" y="${y0 + sh - founderH}" width="${sw}" height="${founderH}" fill="#E8D08A"/>`;
-    // the 84 in whole-pixel figures
-    const bmp = word(String(p.ovr), F35, 1);
-    let dg = "";
-    for (let r = 0; r < 5; r++) {
-      let c = 0;
-      const row = bmp[r];
-      while (c < row.length) {
-        if (row[c] !== "#") {
-          c++;
-          continue;
-        }
-        let e = c;
-        while (e < row.length && row[e] === "#") e++;
-        dg += `<rect x="${dx + c * cell}" y="${dy + r * cell}" width="${(e - c) * cell}" height="${cell}"/>`;
-        c = e;
-      }
-    }
-    b += `<g fill="${digit}" shape-rendering="crispEdges">${dg}</g>`;
-    // needle on top, with loops at 44px and up
+    // needle on top (knob at the inline start), with loops from 44px
     const knobR = Math.max(1.5, nt * 0.95);
-    b += `<rect x="${knobR}" y="0" width="${W - knobR - 0.5}" height="${nt}" rx="${nt / 2}" fill="url(#${u}-nd)"/>`;
+    b += `<rect x="${f2(knobR)}" y="0" width="${f2(W - knobR - 0.5)}" height="${nt}" rx="${nt / 2}" fill="url(#${u}-nd)"/>`;
     b += `<circle cx="${f2(knobR)}" cy="${nt / 2}" r="${f2(knobR)}" fill="url(#${u}-nd)"/>`;
-    if (!mini && s >= 44 && !legend) {
+    if (!mini && !legend) {
       let d = "";
       const step = Math.max(3, cell);
       for (let x = sx + step / 2; x < sx + sw - 1; x += step) d += `M${f2(x - step * 0.22)} ${y0 + 2}V${f2(nt * 0.15)}M${f2(x + step * 0.22)} ${y0 + 2}V${f2(nt * 0.15)}`;
       b += `<path d="${d}" stroke="${tier === "HOMA" ? YARN.N : YARN.B}" stroke-width="${f2(Math.max(1, step * 0.3))}"/>`;
     }
-    const ar = MC.isAr(o);
-    const S = MC.s(o);
+    // the 84 in whole-pixel figures (never mirrored)
+    const bmp = word(String(p.ovr), F35, 1);
+    let dg = "";
+    for (let r = 0; r < 5; r++) {
+      const line = bmp[r];
+      let c = 0;
+      while (c < line.length) {
+        if (line[c] !== "#") {
+          c++;
+          continue;
+        }
+        let e = c;
+        while (e < line.length && line[e] === "#") e++;
+        dg += `<rect x="${dx + c * cell}" y="${dy + r * cell}" width="${(e - c) * cell}" height="${cell}"/>`;
+        c = e;
+      }
+    }
+    const digits = `<g fill="${legend ? gold : YARN.C}" shape-rendering="crispEdges"${ar ? ` transform="matrix(-1 0 0 1 ${2 * dx + dw} 0)"` : ""}>${dg}</g>`;
+    const body = ar ? `<g transform="matrix(-1 0 0 1 ${W} 0)">${b}${digits}</g>` : b + digits;
     return (
-      `<span class="c07-tk${mini ? " c07-tk--mini" : ""}" role="img" aria-label="${esc(`${MC.nameOf(p, o)}, ${p.ovr} OVR, ${S.tiers[tier]}`)}" style="width:${W}px;height:${s}px">` +
-      `<svg width="${W}" height="${s}" viewBox="0 0 ${W} ${s}" aria-hidden="true" focusable="false"${ar ? ` style="transform:scaleX(-1)"` : ""}><defs>${defs}</defs>${ar ? `<g transform="matrix(-1 0 0 1 ${W} 0)">${""}</g>` : ""}${
-        ar ? mirrorDigits(b, dx, dw) : b
-      }</svg></span>`
+      `<span class="c07-tk c07-tk--${tier.toLowerCase()}${mini ? " c07-tk--mini" : ""}" role="img" aria-label="${esc(`${MC.nameOf(p, o)}, ${p.ovr} ${S.ovr}, ${S.tiers[tier]}`)}" style="width:${W}px;height:${s}px">` +
+      `<svg width="${W}" height="${s}" viewBox="0 0 ${W} ${s}" aria-hidden="true" focusable="false"><defs>${defs}</defs>${body}</svg></span>`
     );
   }
-  /** In Arabic the token mirrors (knob on the right) but the figures must not: flip them back. */
-  function mirrorDigits(markup, dx, dw) {
-    return markup.replace(
-      /<g fill="([^"]+)" shape-rendering="crispEdges">/,
-      (m, f) => `<g fill="${f}" shape-rendering="crispEdges" transform="matrix(-1 0 0 1 ${2 * dx + dw} 0)">`,
-    );
+
+  /** A stitch tile as a CSS background layer (rows and HTML surfaces). */
+  const KNIT = {};
+  function knitLayer(tier) {
+    if (tier === "LEGEND") return "none";
+    if (KNIT[tier]) return KNIT[tier];
+    const G = tier === "HOMA" ? { cw: 4, ch: 3, kind: "g" } : tier === "CHAMPION" ? { cw: 2, ch: 2, kind: "v" } : { cw: 3, ch: 3, kind: "v" };
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${G.cw}" height="${G.ch}"><defs>${stitchPattern("k", G)}</defs><rect width="${G.cw}" height="${G.ch}" fill="url(#k)"/></svg>`;
+    KNIT[tier] = `url("data:image/svg+xml,${encodeURIComponent(svg)}") 0 0 / ${G.cw}px ${G.ch}px`;
+    return KNIT[tier];
   }
 
   /* ---------- row: the scarf turned sideways ---------- */
@@ -937,21 +946,27 @@
     const tier = p.tier;
     const u = MC.uid(PFX + "r");
     const legend = tier === "LEGEND";
-    // the knitted figure block beside the needle (3px stitches, rows doubled)
-    const cell = 3;
+    // the knitted figure block beside the needle: 3px stitches with rows doubled, or a
+    // 2px fine gauge sampled from Changa at CHAMPION, or woven lurex at LEGEND
     let bmp;
+    let cell = 3;
+    let sy = 2;
     if (tier === "PRO") bmp = word(String(p.ovr), D67, 2);
-    else if (tier === "CHAMPION") bmp = null;
-    else bmp = word(String(p.ovr), F57, 2);
+    else if (tier === "CHAMPION") {
+      bmp = rasterText(String(p.ovr), '700 {s} "Changa"', 21, 2, 2);
+      cell = 2;
+      sy = 1;
+    } else if (!legend) bmp = word(String(p.ovr), F57, 2);
     let digits = "";
-    let blockW = 52;
+    let blockW = 56;
     if (bmp) {
       const w = bw(bmp) * cell;
-      blockW = Math.max(52, w + 14);
-      const ox = (blockW - w) / 2;
-      const oy = (52 - 7 * cell * 2) / 2;
+      blockW = Math.max(56, w + 16);
+      const ox = Math.round((blockW - w) / 2);
+      const h = bmp.length * cell * sy;
+      const oy = Math.round((52 - h) / 2);
       let rs = "";
-      for (let r = 0; r < 7; r++) {
+      for (let r = 0; r < bmp.length; r++) {
         let c = 0;
         while (c < bmp[r].length) {
           if (bmp[r][c] !== "#") {
@@ -960,24 +975,28 @@
           }
           let e = c;
           while (e < bmp[r].length && bmp[r][e] === "#") e++;
-          rs += `<rect x="${ox + c * cell}" y="${oy + r * cell * 2}" width="${(e - c) * cell}" height="${cell * 2}"/>`;
+          rs += `<rect x="${ox + c * cell}" y="${oy + r * cell * sy}" width="${(e - c) * cell}" height="${cell * sy}"/>`;
           c = e;
         }
       }
       digits = `<svg class="c07-row-ovr" width="${blockW}" height="52" viewBox="0 0 ${blockW} 52" aria-hidden="true"><g fill="${YARN.C}" shape-rendering="crispEdges">${rs}</g></svg>`;
     } else {
-      digits = `<span class="c07-row-ovr c07-row-ovr--type">${p.ovr}</span>`;
+      blockW = 64;
+      digits =
+        `<svg class="c07-row-ovr" width="${blockW}" height="52" viewBox="0 0 ${blockW} 52" aria-hidden="true">` +
+        `<defs><linearGradient id="${u}-og" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFF4CF"/><stop offset=".45" stop-color="#E2BF62"/><stop offset=".6" stop-color="#B8902F"/><stop offset="1" stop-color="#FFF0BF"/></linearGradient></defs>` +
+        `<text x="${blockW / 2}" y="44" text-anchor="middle" direction="ltr" class="c07-row-gold" fill="url(#${u}-og)" stroke="#5E4614" stroke-width=".6" paint-order="stroke">${p.ovr}</text></svg>`;
     }
     const bars = legend ? 3 : BARS[tier];
     const fringeSvg = rowFringe(tier, u, p);
     return (
       `<div class="c07-row c07-row--${tier.toLowerCase()}${o.me ? " is-me" : ""}" dir="${S.dir}">` +
       `<span class="c07-row-rank">${MC.ltr(o.rank)}</span>` +
-      `<div class="c07-row-scarf">` +
+      `<div class="c07-row-scarf" style="--c07-knit:${knitLayer(tier).replace(/"/g, "&quot;")}">` +
       `<span class="c07-row-needle" aria-hidden="true"></span>` +
       `<span class="c07-row-live" style="width:${blockW}px">${digits}</span>` +
       `<span class="c07-row-bars" aria-hidden="true">${"<i></i>".repeat(bars)}</span>` +
-      `<span class="c07-row-name"><b>${esc(MC.nameOf(p, o))}</b><small>${esc(S.tiers[tier])} · ${MC.ltr(p.ovr + " " + S.ovr)}</small></span>` +
+      `<span class="c07-row-name"><b>${esc(MC.nameOf(p, o))}</b><small>${esc(S.tiers[tier])}</small></span>` +
       `<span class="c07-row-pts">${MC.ltr(o.pts)}<small>${esc(S.pts)}</small></span>` +
       (p.founder ? `<span class="c07-row-cast" aria-label="${esc(S.founderLine)}"></span>` : `<span class="c07-row-cast c07-row-cast--plain" aria-hidden="true"></span>`) +
       `<span class="c07-row-fringe" aria-hidden="true">${fringeSvg}</span>` +
@@ -996,7 +1015,7 @@
         continue;
       }
       if (tier === "CHAMPION") {
-        out += `<path d="M0 ${f2(y)}H${f2(len)}" stroke="${YARN.C}" stroke-width="3" stroke-linecap="round"/><path d="M0 ${f2(y)}H${f2(len)}" stroke="${YARN.N}" stroke-width="3" stroke-dasharray="1.4 1.6"/>`;
+        out += `<path d="M0 ${f2(y)}H${f2(len)}" stroke="#0A1D3F" stroke-width="4.4" stroke-linecap="round"/><path d="M0 ${f2(y)}H${f2(len)}" stroke="${YARN.C}" stroke-width="3.4" stroke-linecap="round"/><path d="M1 ${f2(y)}H${f2(len)}" stroke="${YARN.N}" stroke-width="3.4" stroke-dasharray="1.2 1.8" opacity=".85"/>`;
         continue;
       }
       out += `<path d="M0 ${f2(y - 0.8)}C${f2(len * 0.5)} ${f2(y - 1.2)} ${f2(len * 0.8)} ${f2(y - 1.6)} ${f2(len)} ${f2(y - 2)}" stroke="${YARN.C}" stroke-width="1.5" fill="none" stroke-linecap="round" class="c07-rf-c"/>`;
@@ -1013,15 +1032,15 @@
     const cap = ar ? ["موسمي", "صفًّا", "بعد صف"] : ["MY", "SEASON,", "ROW BY", "ROW."];
     const bg =
       `<svg class="c07-sh-bg" viewBox="0 0 360 640" preserveAspectRatio="none" aria-hidden="true"${ar ? ` style="transform:scaleX(-1)"` : ""}>` +
-      `<defs><radialGradient id="${u}-h" cx=".86" cy=".04" r=".9"><stop offset="0" stop-color="#CFE6FF" stop-opacity=".38"/><stop offset=".25" stop-color="#7FA8E8" stop-opacity=".16"/><stop offset=".6" stop-color="#2A4F9A" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>` +
-      `<linearGradient id="${u}-c" x1="1" y1="0" x2=".2" y2="1"><stop offset="0" stop-color="#E6F1FF" stop-opacity=".22"/><stop offset=".55" stop-color="#9CC0F5" stop-opacity=".05"/><stop offset="1" stop-color="#9CC0F5" stop-opacity="0"/></linearGradient>` +
+      `<defs><radialGradient id="${u}-h" cx=".16" cy=".02" r=".9"><stop offset="0" stop-color="#CFE6FF" stop-opacity=".38"/><stop offset=".25" stop-color="#7FA8E8" stop-opacity=".16"/><stop offset=".6" stop-color="#2A4F9A" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>` +
+      `<linearGradient id="${u}-c" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#E6F1FF" stop-opacity=".22"/><stop offset=".55" stop-color="#9CC0F5" stop-opacity=".05"/><stop offset="1" stop-color="#9CC0F5" stop-opacity="0"/></linearGradient>` +
       `<filter id="${u}-b"><feGaussianBlur stdDeviation="6"/></filter>` +
       `<filter id="${u}-n" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="11"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope="0" intercept=".5"/></feComponentTransfer></filter></defs>` +
       `<rect width="360" height="640" fill="#001C49"/>` +
       `<rect width="360" height="640" fill="url(#${u}-h)"/>` +
       // the floodlight bank, top inline-end, and its beam across the scarf
-      `<path d="M330 18L-40 520L120 640L352 30Z" fill="url(#${u}-c)" filter="url(#${u}-b)"/>` +
-      `<g transform="translate(300 18)"><rect x="-2" y="-2" width="50" height="22" rx="2" fill="#0A1D3F"/>` +
+      `<path d="M30 14L400 470L250 640L6 26Z" fill="url(#${u}-c)" filter="url(#${u}-b)"/>` +
+      `<g transform="translate(18 12)"><rect x="-2" y="-2" width="50" height="22" rx="2" fill="#0A1D3F"/>` +
       [0, 1, 2, 3].map((i) => [0, 1].map((j) => `<circle cx="${6 + i * 12}" cy="${5 + j * 10}" r="3.6" fill="#F4F9FF"/><circle cx="${6 + i * 12}" cy="${5 + j * 10}" r="7" fill="#CFE6FF" opacity=".25"/>`).join("")).join("") +
       `</g>` +
       // terrace steps below, in the dark
@@ -1135,7 +1154,8 @@
       "At 24px the knit becomes a pixel badge: what survives is the silhouette and the gold line, not the textile.",
       "Rows count participation only. If the owner later wants rows to show points, that needs a rule they approve, and it would make bad weeks visible forever.",
       "Three cream bars can recall a sportswear brand's stripes; they stay horizontal and full-width to avoid it.",
-      "The label's composition line is a joke that must survive translation; the Arabic wording (التركيب is not shown, only the values and labels) needs MSA review.",
+      "The composition line (ratings set like fibre content, value first) is a joke that has to survive translation; the Arabic stat labels and عضو مؤسس need MSA review before anything ships.",
+      "The figure is honest but crude at the coarse gauges: at HOMA to PRO the manager is a dark head on cream shoulders, and only the fine gauges can afford the jacket's yoke seam.",
     ],
     gridWidth: 150,
     detailWidth: 250,
