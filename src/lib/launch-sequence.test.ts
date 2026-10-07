@@ -17,6 +17,10 @@ import { join } from "node:path";
  * without an account gets the landing page in Home's place — a page, not an
  * arrival dialog — so it waits for the splash and for hydration but not for
  * the language chooser, which opens over it (z-50) as it opens over any page.
+ *
+ * 2026-10-07 (owner decision): `/` is Home for everyone. Nothing replaces it
+ * after the splash any more, so Home opens nothing on arrival and does not
+ * wait for the launch sequence; the chooser opens over Home itself.
  */
 const repoRoot = join(import.meta.dir, "..", "..");
 const code = (relative: string) =>
@@ -34,21 +38,14 @@ describe("arrival dialogs wait for the launch sequence", () => {
     },
   );
 
-  test("the home landing page waits for the splash, and is a page rather than a dialog", () => {
+  test("Home opens nothing on arrival: no dialog, and no page swapped in after the splash", () => {
     const source = code("src/routes/index.tsx");
-    expect(source).toContain('from "@/lib/launch-sequence"');
-    expect(source).toContain("const splashDone = useSplashDone();");
-    expect(source).toMatch(
-      /const showLanding =\s*mounted &&\s*splashDone &&\s*isHydrated &&\s*status === "anonymous" &&\s*!left &&\s*!hasWelcomed\(\);/,
-    );
-    expect(source).toMatch(
-      /showLanding \? \(\s*<Suspense fallback=\{<LandingFallback \/>\}>\s*<LandingPage onLeave=\{leave\} \/>\s*<\/Suspense>\s*\) : \(\s*<HomeContent \/>\s*\)/,
-    );
-    // Its own chunk: a signed-in or returning reader does not download it.
-    expect(source).not.toContain('import { LandingPage } from "@/components/landing/LandingPage"');
-    expect(source).toContain(
-      'const loadLanding = () => import("@/components/landing/LandingPage");',
-    );
+    // Nothing on Home waits for the splash or the chooser, because nothing
+    // arrives over it or in its place.
+    expect(source).not.toContain('from "@/lib/launch-sequence"');
+    expect(source).not.toContain("useSplashDone");
+    expect(source).not.toContain("showLanding");
+    expect(source).not.toContain("components/landing/LandingPage");
     expect(source).not.toContain('role="dialog"');
   });
 });

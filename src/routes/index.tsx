@@ -1,15 +1,7 @@
 import { unavailableHeaders } from "@/lib/page-availability";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
-import {
-  lazy,
-  Suspense,
-  useEffect,
-  useMemo,
-  useState,
-  type ComponentType,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRight,
@@ -83,8 +75,6 @@ import { bandMatches, voteMayOpen } from "@/components/home/band-matches";
 import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
 import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { useAuth } from "@/auth/AuthProvider";
-import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
-import { useSplashDone } from "@/lib/launch-sequence";
 import { cn } from "@/lib/utils";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
@@ -104,7 +94,6 @@ import liveBand from "@/assets/photos/home-band-live.webp";
 import liveBandSmall from "@/assets/photos/home-band-live-800.webp";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { staggerStyle } from "@/lib/motion";
-import { useDarkStatusBand } from "@/lib/system-bars";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
 const HOME_DESCRIPTION =
@@ -199,85 +188,6 @@ function useGreeting(now: Date) {
   return t("home.greeting_evening");
 }
 
-/**
- * The landing page, as its own chunk: most readers of `/` are signed in or
- * returning and never see it, so they no longer download it (about 33 KB of
- * script before compression: the page, the demonstration pitch's shirts, the
- * prize catalog's client). One loader, so the preload below and `lazy` share
- * the same request.
- */
-const loadLanding = () => import("@/components/landing/LandingPage");
-const LandingPage = lazy(() =>
-  loadLanding().then(
-    (module) => ({ default: module.LandingPage }),
-    // A chunk that fails to load (a deploy mid-visit, a dropped connection)
-    // leaves the newcomer on Home rather than on an error page.
-    () => ({ default: (_: { onLeave?: () => void }) => <HomeContent /> }),
-  ),
-);
-
-/**
- * While the chunk arrives: the landing hero's own ground, nothing else. Home
- * in its place went on loading and moving under the splash (CLS 0.10 measured
- * with it as the fallback, against 0.006 without); an empty dark screen has
- * nothing to move, and the hero paints over it in the same colour. Being
- * dark in both themes, it holds light status-bar icons too, so a slow chunk
- * does not leave dark icons over it until the landing page mounts (the hand
- * over between the two holds is settled in one go, so nothing flicks).
- */
-function LandingFallback() {
-  useDarkStatusBand();
-  return <div aria-busy className="min-h-[100dvh] bg-[color:var(--ui-ink-deep)]" />;
-}
-
-function HomePage() {
-  const { status } = useAuth();
-  const { isHydrated } = useI18n();
-  const splashDone = useSplashDone();
-
-  // Read localStorage only after mount so SSR and first client render match.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  // Leaving the landing page by any of its links is the welcome: from then on
-  // `/` opens on Home, also when that link was the logo, back to `/`.
-  const [left, setLeft] = useState(false);
-  const leave = () => {
-    markWelcomeDone();
-    setLeft(true);
-  };
-
-  // A first visit without an account gets the landing page in Home's place:
-  // what the game is, why play, and one way in. It used to be a welcome
-  // dialog of three buttons, two of which did the same thing, over a Home
-  // that a newcomer could not yet read.
-  //
-  // It waits for the splash (src/lib/launch-sequence.ts), under which nothing
-  // is seen, and not for the language chooser: the chooser opens over the
-  // landing page rather than over a Home that is about to be replaced.
-  // The server always renders Home — it knows no session — so a crawler, and
-  // every returning reader, gets Home's content and links (audit 2026-09-24,
-  // P1-2). A signed-in reader, a guest and anyone who has been welcomed
-  // before never see the landing page here; `/jouer` is its own address.
-  const showLanding =
-    mounted && splashDone && isHydrated && status === "anonymous" && !left && !hasWelcomed();
-
-  // Fetched as soon as the session says this is a first visit without an
-  // account — while the splash still plays — so the page is ready when the
-  // splash leaves.
-  const firstVisit = mounted && status === "anonymous" && !left && !hasWelcomed();
-  useEffect(() => {
-    if (firstVisit) void loadLanding();
-  }, [firstVisit]);
-
-  return showLanding ? (
-    <Suspense fallback={<LandingFallback />}>
-      <LandingPage onLeave={leave} />
-    </Suspense>
-  ) : (
-    <HomeContent />
-  );
-}
-
 /** A match being played right now, for the split live card. */
 const isInPlay = (match: Match) => match.status === "live";
 
@@ -306,8 +216,14 @@ const isInPlay = (match: Match) => match.status === "live";
  * card needs goal events the home payload does not carry, and the Fantasy
  * card's rank movement needs a previous rank the summary does not hold, so
  * neither is drawn.
+ *
+ * `/` is always this page, for every reader (owner decision 2026-10-07). A
+ * first visit without an account used to get the landing page in its place,
+ * with no navigation and the matches thousands of pixels down; the landing
+ * page now lives only at `/jouer`, and the Fantasy card here does the selling
+ * to a newcomer (docs/engineering/tasks/first-visit-home/screen-brief.md).
  */
-function HomeContent() {
+function HomePage() {
   const { t, tr, lang } = useI18n();
   const { status, user } = useAuth();
   const { source, key } = useFantasyDataSource();

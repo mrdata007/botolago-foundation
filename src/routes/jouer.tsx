@@ -10,10 +10,10 @@ import { markWelcomeDone } from "@/lib/welcome";
 const CANONICAL = `${PUBLIC_SITE_ORIGIN}/jouer`;
 
 /**
- * `/jouer`: the landing page as an address of its own — the link a post, a
- * bio or a friend shares. The same page `/` shows a first-time visitor; here
- * it is shown to everyone, and its button adapts to whoever is reading (a
- * manager is offered their team, not a second one).
+ * `/jouer`: the landing page's one address — the link a post, a bio or a
+ * friend shares (`/` is Home for everyone, owner decision 2026-10-07). It is
+ * shown to everyone, and its button adapts to whoever is reading (a manager
+ * is offered their team, not a second one).
  */
 export const Route = createFileRoute("/jouer")({
   head: () => ({
@@ -41,6 +41,6 @@ function JouerRoute() {
   useEffect(() => {
     window.document.title = title;
   }, [title]);
-  // Leaving by any link counts as the welcome: `/` then opens on Home.
+  // Leaving by any link counts as the welcome (`@/lib/welcome`).
   return <LandingPage onLeave={markWelcomeDone} />;
 }

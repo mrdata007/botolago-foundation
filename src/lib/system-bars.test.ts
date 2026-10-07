@@ -410,13 +410,20 @@ describe("system bars: wired into the app", () => {
     expect(read(file)).toContain(call);
   });
 
-  test("the landing page's loading screen holds light icons too", () => {
-    // While the landing chunk loads, Home shows its dark ground in its place;
-    // without its own hold the light theme's dark icons would sit on it.
+  test("Home holds no dark band: its status bar follows the theme", () => {
+    // Until 2026-10-07 a first visit got the landing page at `/`, behind a
+    // dark loading screen that held light icons of its own. `/` is Home for
+    // everyone now (owner decision), and Home's top is the theme's top bar,
+    // so nothing there may leave a band held. The landing page holds its own
+    // on `/jouer` (above), the one place it is shown.
     const home = read("src/routes/index.tsx");
-    const fallback = home.slice(home.indexOf("function LandingFallback()"));
-    expect(fallback.slice(0, fallback.indexOf("\n}\n"))).toContain("useDarkStatusBand();");
-    expect(home).toContain("<Suspense fallback={<LandingFallback />}>");
+    expect(home).not.toContain("useDarkStatusBand");
+    expect(home).not.toContain("holdDarkBand");
+    expect(home).not.toContain("LandingFallback");
+    expect(home).not.toContain("components/landing/LandingPage");
+    expect(read("src/routes/jouer.tsx")).toContain(
+      'import { LandingPage } from "@/components/landing/LandingPage";',
+    );
   });
 
   test("the sign-in screens hold light icons only where their band spans the screen", () => {

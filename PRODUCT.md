@@ -186,7 +186,7 @@ the snapshot) was not checked against the live site.
   - On 2026-10-05 it shows the 2025/26 final ranking.
   - The weekly Top 10, chosen by the editors, is built. The first 2026/27 edition comes only after
     round 3, and none had been published at the last record.
-- **Other:** the landing page (`/jouer`, also shown at `/` to first-time signed-out visitors); optional
+- **Other:** the landing page, at `/jouer` only (`/` is Home for everyone, owner decision 2026-10-07); optional
   two-step sign-in; account-deletion requests; cookieless analytics (Seline).
 - **Dark mode** (merged after the site check): on (owner decision 2026-10-05, BG-0149, PR #356). It follows the phone's
   setting by default, and Profil > Apparence offers Clair, Sombre and Système. Fantasy has its dark
