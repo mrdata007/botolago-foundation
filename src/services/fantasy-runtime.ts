@@ -379,6 +379,9 @@ export const fantasyService = {
       teamName: current.team.name,
       totalPoints: history.items.reduce((sum, item) => sum + item.score, 0),
       gameweekPoints: currentResult?.score ?? 0,
+      // BG-0155 (2): the round that figure is for, from the same row, so the
+      // hub can name it and never print last round's score under this one's.
+      pointsGameweek: currentResult?.sequence ?? null,
       overallRank: latest?.overallRank ?? null,
       gameweekRank: currentResult?.rank ?? null,
       transfersLeft: current.team.freeTransfers,

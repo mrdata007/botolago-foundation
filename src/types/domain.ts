@@ -161,6 +161,15 @@ export interface FantasySummary {
   teamName: string;
   totalPoints: number;
   gameweekPoints: number;
+  /**
+   * BG-0155 (2) — the gameweek `gameweekPoints` belongs to: the `sequence`
+   * of the history row the figure is read from (the current gameweek's, or
+   * else the latest with a result). `null` while no gameweek has a result
+   * for this team, when `gameweekPoints` is a 0 that means "nothing yet" and
+   * must not be shown as a score. A screen that names a round beside the
+   * figure checks it against this before it prints the figure.
+   */
+  pointsGameweek: number | null;
   overallRank: number | null;
   gameweekRank: number | null;
   transfersLeft: number;

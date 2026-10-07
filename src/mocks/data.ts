@@ -380,6 +380,8 @@ export const fantasySummary: FantasySummary = {
   teamName: "Atlas XI",
   totalPoints: 612,
   gameweekPoints: 58,
+  // The sample's current round (14) has not started; its 58 points are J13's.
+  pointsGameweek: 13,
   overallRank: 12_483,
   gameweekRank: 4_129,
   transfersLeft: 1,
