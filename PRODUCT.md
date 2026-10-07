@@ -120,7 +120,8 @@ SEO plan (26 Sept) says Search Console was not connected to its project.
 - **Phone first.** Browser tests cover phone to desktop widths in French and Arabic. The main sections
   are Accueil, Actualités, Fantasy, Matches and Pépites, plus Profile. Pronostics lives inside Matches.
 - **Language.**
-  - A first visit asks the reader to choose French or Arabic.
+  - A first visit asks the reader to choose French or Arabic. The choice starts on Arabic when the
+    browser's preferred languages put Arabic before French, and on French otherwise.
   - The interface language is stored on that device only (browser storage). An account also records
     the language in use at sign-up or profile setup, and notifications use that one.
   - The server renders French first, and Arabic switches in after the page loads.

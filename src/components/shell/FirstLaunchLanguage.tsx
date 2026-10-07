@@ -1,6 +1,7 @@
-import { useId, useRef, useState, type KeyboardEvent } from "react";
+import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useI18n } from "@/i18n/provider";
 import { fr } from "@/i18n/dictionary-fr";
+import { browserLanguages, chooserStartLanguage } from "@/i18n/browser-language";
 import { CHOOSER_ARABIC } from "@/i18n/language-chooser-copy";
 import { RetryLabel } from "@/i18n/language-load-notice";
 import type { Language } from "@/types/domain";
@@ -16,6 +17,9 @@ const OPTIONS: readonly { code: Language; native: string; sub: string; dir: "ltr
   { code: "ar", native: "العربية", sub: CHOOSER_ARABIC["app.tagline"], dir: "rtl" },
 ];
 const CODES = OPTIONS.map((option) => option.code);
+
+/** The step both lines of the title share. */
+const TITLE_STEP = ui.display.section;
 
 /**
  * The very first screen a new visitor sees, and until now the loudest
@@ -55,13 +59,32 @@ const CODES = OPTIONS.map((option) => option.code);
  * languages and the button becomes a retry, named in both too. Every line of
  * that is in `CHOOSER_ARABIC` or the French dictionary, so none of it needs
  * the download that failed.
+ *
+ * Neither language comes second (critique 2026-10-06, P1-4). The gate starts
+ * on the browser's language, Arabic on a phone set to Arabic, where it used to
+ * preselect French for everyone; and its title is one heading in both
+ * languages on one display step, where the Arabic was a 14px muted line under
+ * a 34px French title.
  */
 
 export function FirstLaunchLanguage() {
   const { isHydrated, hasChosen, dir, loadingLanguage, failedLanguage, setLanguage } = useI18n();
-  const [selected, setSelected] = useState<Language>("fr");
+  // The tile the reader tapped. Until they tap one, the browser's preferred
+  // language is chosen (`chooserStartLanguage`): Arabic on a phone set to
+  // Arabic, French otherwise.
+  const [picked, setPicked] = useState<Language | null>(null);
+  // Read once the page has hydrated, never in the first render: the server
+  // has no `navigator`, and a first render that differs from the server's
+  // markup is thrown away (the rule at the top of `src/theme/theme.ts`). The
+  // gate itself only renders after hydration, so its first frame already
+  // shows the browser's language and nothing flicks from French.
+  const preferred = useMemo<Language>(
+    () => (isHydrated ? chooserStartLanguage(browserLanguages()) : "fr"),
+    [isHydrated],
+  );
 
   if (!isHydrated || hasChosen) return null;
+  const selected = picked ?? preferred;
 
   return (
     <DialogPrimitive.Root open modal>
@@ -83,13 +106,16 @@ export function FirstLaunchLanguage() {
             ui.surface.overlay,
             ui.radius.sheet,
           )}
+          // The bilingual title is the whole of what the gate says before
+          // its choice; there is no separate description to point at.
+          aria-describedby={undefined}
           onEscapeKeyDown={(event) => event.preventDefault()}
           onPointerDownOutside={(event) => event.preventDefault()}
           onInteractOutside={(event) => event.preventDefault()}
         >
           <LanguageChoice
             selected={selected}
-            onSelect={setSelected}
+            onSelect={setPicked}
             // Only Arabic is ever downloaded, so only the Arabic tile can be
             // waiting or have failed.
             waiting={loadingLanguage === selected}
@@ -106,7 +132,7 @@ export function FirstLaunchLanguage() {
 /**
  * What the gate shows, apart from the dialog around it, so the tests can draw
  * it (`react-dom/server` does not render a portal). It needs a Radix dialog
- * above it for its title and description.
+ * above it for its title.
  */
 export function LanguageChoice({
   selected,
@@ -125,8 +151,8 @@ export function LanguageChoice({
   rtl: boolean;
   onConfirm: () => void;
 }) {
-  const titleId = useId();
-  const subtitleId = useId();
+  const frenchTitleId = useId();
+  const arabicTitleId = useId();
   const tiles = useRef<Partial<Record<Language, HTMLButtonElement | null>>>({});
   // The button speaks the language of the chosen tile.
   const copy = selected === "ar" ? CHOOSER_ARABIC : fr;
@@ -144,23 +170,26 @@ export function LanguageChoice({
       <div className="flex items-center justify-center pb-4">
         <Logo />
       </div>
-      {/* The inner spans carry ids of their own for the radio group's
-          name: Radix gives the title and description theirs, for the
-          dialog, and an id passed to them would break that link. */}
-      <DialogPrimitive.Title className={cn("text-center", ui.display.title, ui.tone.default)}>
-        <span id={titleId}>{fr["language.choose_title"]}</span>
+      {/* One title in both languages, on the same display step: neither is
+          the other's subtitle. Each line is written in its own language and
+          says so, so the Arabic takes its own display face and leading from
+          `[lang="ar"]` (styles.css) and a screen reader reads it with an
+          Arabic voice; the display ramp carries no letter-spacing, which
+          Arabic must never have. The inner spans carry ids of their own for
+          the radio group's name: Radix gives the title its own, for the
+          dialog, and an id passed to it would break that link. */}
+      <DialogPrimitive.Title className={cn("text-center text-balance", ui.tone.default)}>
+        <span id={frenchTitleId} lang="fr" dir="ltr" className={cn("block", TITLE_STEP)}>
+          {fr["language.choose_title"]}
+        </span>
+        <span id={arabicTitleId} lang="ar" dir="rtl" className={cn("block", TITLE_STEP)}>
+          {CHOOSER_ARABIC["language.choose_title"]}
+        </span>
       </DialogPrimitive.Title>
-      <DialogPrimitive.Description
-        className={cn("mt-1 text-center", ui.text.secondary, ui.tone.muted)}
-        dir="rtl"
-        lang="ar"
-      >
-        <span id={subtitleId}>{CHOOSER_ARABIC["language.choose_title"]}</span>
-      </DialogPrimitive.Description>
 
       <div
         role="radiogroup"
-        aria-labelledby={`${titleId} ${subtitleId}`}
+        aria-labelledby={`${frenchTitleId} ${arabicTitleId}`}
         className="mt-6 grid gap-3"
       >
         {OPTIONS.map((o) => {
