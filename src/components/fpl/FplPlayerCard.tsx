@@ -16,9 +16,9 @@ import { plateName } from "./plate-name";
  * A-Team board draws it (not on the plate's far corner, 20px away from the
  * shirt it belongs to).
  *
- * The two read apart by more than their letter — which matters, because the
- * armband is auto-assigned to the first two squad entries and a manager has
- * to notice that before the deadline: the captain is a navy disc with a light
+ * The two read apart by more than their letter — which matters, because a
+ * manager has to see at a glance who holds which armband before the deadline
+ * (a first squad no longer gets one automatically): the captain is a navy disc with a light
  * letter in a light ring, the vice its inverse — a surface disc with the brand
  * letter in a navy ring. Every colour is a token that flips with the theme.
  */
@@ -264,13 +264,20 @@ export function FplPlayerCard({
 export function FplEmptySlot({
   position,
   onClick,
+  onBench = false,
   className,
 }: {
   position: Position;
   onClick?: () => void;
+  /**
+   * On the white bench strip the turf's white line would vanish, so the
+   * ghost shirt takes the control edge (`--ui-rule-strong`) instead.
+   */
+  onBench?: boolean;
   className?: string;
 }) {
   const { t } = useI18n();
+  const ghostLine = onBench ? "var(--ui-rule-strong)" : "var(--ui-pitch-line)";
   return (
     <UiPlayerPlate
       name={t(`player.pos.${position}` as never)}
@@ -283,8 +290,8 @@ export function FplEmptySlot({
           <svg viewBox="0 0 24 24" className="absolute inset-0 h-full w-full" aria-hidden>
             <path
               d="M8 3 4 5.5 2.5 10l3 1.2V21h13v-9.8l3-1.2L20 5.5 16 3c-.8 1.4-2.3 2.3-4 2.3S8.8 4.4 8 3z"
-              fill="color-mix(in oklab, var(--ui-pitch-line) 45%, transparent)"
-              stroke="var(--ui-pitch-line)"
+              fill={`color-mix(in oklab, ${ghostLine} ${onBench ? 18 : 45}%, transparent)`}
+              stroke={ghostLine}
               strokeWidth="1.1"
               strokeLinejoin="round"
             />

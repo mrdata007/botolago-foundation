@@ -50,20 +50,56 @@ export function AuthPromptDialog() {
       title={t("auth.prompt.title")}
       description={prompt.reason ?? t("auth.prompt.body")}
       footer={
-        <>
-          <UiButton variant="gradient" onClick={() => go("/auth/login")}>
-            <LogIn className="h-4 w-4" aria-hidden />
-            {t("auth.prompt.login")}
-          </UiButton>
-          <UiButton variant="outline" onClick={() => go("/auth/register")}>
-            <UserPlus className="h-4 w-4" aria-hidden />
-            {t("auth.prompt.register")}
-          </UiButton>
-          <UiButton variant="ghost" size="sm" onClick={cancel}>
-            {t("auth.prompt.cancel")}
-          </UiButton>
-        </>
+        <AuthPromptActions
+          primary={prompt.primary ?? "login"}
+          onLogin={() => go("/auth/login")}
+          onRegister={() => go("/auth/register")}
+          onCancel={cancel}
+        />
       }
     />
+  );
+}
+
+/**
+ * The prompt's three ways out. By default signing in leads ("Se connecter",
+ * the gradient) and creating an account follows. `primary="register"` swaps
+ * them for a moment that is about someone new — a visitor saving a first
+ * Fantasy squad — and says what the account costs: "Créer un compte gratuit".
+ * "Continuer à explorer" stays last either way.
+ */
+export function AuthPromptActions({
+  primary,
+  onLogin,
+  onRegister,
+  onCancel,
+}: {
+  primary: "login" | "register";
+  onLogin: () => void;
+  onRegister: () => void;
+  onCancel: () => void;
+}) {
+  const { t } = useI18n();
+  const login = (variant: "gradient" | "outline") => (
+    <UiButton key="login" variant={variant} onClick={onLogin}>
+      <LogIn className="h-4 w-4" aria-hidden />
+      {t("auth.prompt.login")}
+    </UiButton>
+  );
+  const register = (variant: "gradient" | "outline") => (
+    <UiButton key="register" variant={variant} onClick={onRegister}>
+      <UserPlus className="h-4 w-4" aria-hidden />
+      {variant === "gradient" ? t("auth.prompt.register_free") : t("auth.prompt.register")}
+    </UiButton>
+  );
+  return (
+    <>
+      {primary === "register"
+        ? [register("gradient"), login("outline")]
+        : [login("gradient"), register("outline")]}
+      <UiButton variant="ghost" size="sm" onClick={onCancel}>
+        {t("auth.prompt.cancel")}
+      </UiButton>
+    </>
   );
 }

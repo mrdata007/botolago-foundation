@@ -416,7 +416,16 @@ export const BASELINES: Baselines = {
   // this pass. On top of BG-0152's 253: 253 + 7 - 8 = 252 (measured). W4 is
   // unchanged: the navs' dynamic `t(item.labelKey)` calls were already counted
   // out with BG-0145.
-  W3: 252,
+  //
+  // Fantasy rules and captain (2026-10-07): eight written-but-uncalled keys
+  // get their first call site — the rules page's scoring table labels its
+  // rows with `fantasy.events.goal`, `.assist`, `.clean_sheet`,
+  // `.penalty_save`, `.penalty_miss`, `.yellow` and `.own_goal`, and the
+  // squad builder's save button is `fantasy.create.cta_primary` ("Enregistrer
+  // mon équipe"). `fpl.enter_squad` ("Entrer l'effectif"), which it replaces,
+  // is deleted rather than orphaned. Every new key is referenced.
+  // 252 - 8 = 244 (measured, against main's tree as well).
+  W3: 244,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
@@ -440,7 +449,12 @@ export const BASELINES: Baselines = {
   // Option A, Lane 4 (Fantasy core): FplChipsRow names each chip with a literal
   // `t("fantasy.chip.…")` branch instead of a `fantasy.chip.` template. 70 -> 69.
   // With Lanes 1, 2 and 5: 65 - 1 = 64.
-  W4: 64,
+  //
+  // Fantasy rules and captain (2026-10-07): the rules page mapped its cards
+  // over a table with `t(s.titleKey)` / `t(s.descKey)`; each card is now
+  // written out with literal keys, and the new scoring table and chip list
+  // name their rows through literal-key switches. 64 -> 62.
+  W4: 62,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
