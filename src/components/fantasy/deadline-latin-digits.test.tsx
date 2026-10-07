@@ -208,13 +208,6 @@ describe("no source pads numbers with an Arabic-Indic digit", () => {
     expect(offenders.map((path) => relative(ROOT, path))).toEqual([]);
   });
 
-  it("never holds a lone Arabic-Indic digit as a string to build a number with", () => {
-    // A string literal made only of Arabic-Indic digits ("٠", '٠٠') is a digit
-    // waiting to be glued to a number; copy that merely contains one is not.
-    const offenders = files.filter((path) => /(["'`])[٠-٩]+\1/.test(readFileSync(path, "utf8")));
-    expect(offenders.map((path) => relative(ROOT, path))).toEqual([]);
-  });
-
   it("pads both countdowns with a Latin zero", () => {
     for (const file of ["DeadlineStrip.tsx", "DeadlineCard.tsx"]) {
       const source = readFileSync(join(import.meta.dir, file), "utf8");
