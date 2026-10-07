@@ -168,3 +168,93 @@ French dark):
 
 Not checked here: signed-in screens ("Mon équipe" also uses the action sheet, so
 its bench players get the same unavailable captain rows), real devices, WebKit.
+
+## Validation (2026-10-07)
+
+Run on `claude/fantasy-rules-and-captain` in its own worktree, dev server on
+port 5301 only (`vite dev --mode production`, production read through the
+public key, signed out). A Playwright guard aborted every non-GET request to
+Supabase that was not a known read RPC; nothing was saved, nobody signed in or
+up. The guest squad lived in the browser only.
+
+**Checks**
+
+- `bun run typecheck`: pass.
+- `bun run lint`: 0 errors, 31 warnings, all in files this change does not touch
+  (the two in `src/auth/AuthProvider.tsx` are the existing `useAuth` /
+  `useOptionalAuth` exports).
+- Directly relevant tests (`src/lib/fantasy-rules-table.test.ts`,
+  `src/components/fantasy/FantasyRulesTables.test.tsx`,
+  `src/components/fpl/first-squad.test.tsx`,
+  `src/services/fantasy-create-service.test.ts`, `src/components/fantasy/`,
+  `src/i18n/`, `src/components/ui-kit/`, `src/theme/dark-mode-sources.test.ts`,
+  `src/components/shell/safe-area.test.ts`): 490 pass, 0 fail.
+- Full `bun run test`: 6025 pass, 17 skip, 1 fail. The failure is
+  `src/backend/news/editorial-session.test.ts` › "Morocco's Ramadan clock change
+  is followed", which expects "(GMT)" and gets "(GMT+0)" from this machine's
+  ICU. It fails the same way on untouched `main` (run from an export of
+  `origin/main`), and this branch does not touch `src/backend/news/`.
+- i18n gate (`bun scripts/qa/i18n-gate.ts`): pass. W1 7, W2 7, W3 244, W4 62.
+  W3 252 → 244 (eight existing keys gain their first call site; the replaced
+  `fpl.enter_squad` is deleted) and W4 64 → 62 (the rules page's two dynamic
+  `t()` calls are now literal); both measured against main's tree too and
+  recorded in `BASELINES`.
+- `impeccable detect --json` on the eleven changed `.tsx` files: `[]`, exit 0.
+- The Playwright journey (`tests/e2e/fantasy.journey.e2e.ts`) was updated for the
+  captain step and the new button name but not run: it needs the E2E account's
+  credentials and saves a team.
+- A trial merge with open pull request #369 (`git merge-tree`) is clean. The
+  only file both branches change is `src/components/fpl/FplPlayerCard.tsx`
+  (#369: the plate-name comment; here: the armband comment and the empty
+  slot's bench outline). `UiPitchSurface` is not edited here.
+
+**Measured in the browser** (390×844 and 1440×900; French and Arabic light,
+French dark on phones):
+
+- The rules page renders the 13 rows × 4 positions of the server payload; the
+  unit test parses the table of `FANTASY_RULES_V1.md` and matches all 52 cells.
+- No element wider than the window on `/fantasy/rules`, `/fantasy/help`,
+  `/fantasy/fixtures`, `/fantasy/create` (empty, 15/15, last step, sign-up box)
+  and `/fantasy`, in any variant (element boxes, descendants of deliberate
+  horizontal scrollers excluded; `scrollWidth` equals the window too). Arabic
+  pages measured with `dir="rtl"` and `lang="ar"` applied.
+- The picker opens on "Points" (main: "Prix").
+- After 15 picks no plate carries C or V; the last step's save button is
+  disabled until both rows are chosen, then enabled. The captain sheet lists
+  11 rows. A substitute's sheet reads "Nommer capitaine / Titulaires
+  uniquement", "Nommer vice-capitaine / Titulaires uniquement", Remplacer,
+  Retirer, Informations joueur (Arabic: للأساسيين فقط).
+- The sign-up box reads "Créer un compte gratuit" (gradient), "Se connecter",
+  "Continuer à explorer" (Arabic: إنشاء حساب مجاني, تسجيل الدخول, المتابعة في
+  التصفح).
+- Contrast read from the screenshots' pixels: "Titulaires uniquement" 7.43:1 on
+  white, 8.07:1 in dark; "À choisir" 12.81:1 / 11.48:1; negative figures in the
+  table 5.49:1 / 6.89:1; the table's dash 7.38:1 / 9.42:1. The dash first used
+  the muted tone and measured 3.82:1 (an en dash is a thin stroke), so it now
+  takes the default ink.
+
+**Evidence** (`shots/`, before = untouched `main` at `1c12b5b0`):
+`fantasy-rules__m-fr-light` (full page), `fantasy-create-full-scrolled__m-fr-light`
+(captain given to the goalkeeper and no bench → no armband, bench strip),
+`fantasy-create-sheet-bench__m-ar-light` (captain actions missing → shown
+unavailable with the reason), `fantasy-create-name-step__m-fr-light` (armbands
+displayed → chosen), `fantasy-create-signup-gate__m-ar-light` (button order),
+`fantasy-hub-with-draft__m-fr-dark` (no mention of the draft → "Reprendre mon
+équipe (15/15)").
+
+**Not verified**
+
+- Signed-in screens: "Mon équipe" (its substitutes now get the unavailable
+  captain rows too), the hub card for a signed-in manager without a team (it
+  reads that account's draft key first), and saving a team to the server.
+- The hub card with a partial draft (fewer than 15) and the Arabic rendering of
+  the new components are covered by unit tests (French) and the browser
+  captures above, not by an Arabic server-render test.
+- Rules with adaptive scoring (v2): production's season has none, so only the
+  existing policy lines cover it.
+- Real phones, WebKit/Safari, live matches.
+- A guest draft saved before this change keeps the armbands stored with it; the
+  last step shows them, and the manager can change them.
+- Not changed, for the owner: the client's formation list omits 5-2-3, which
+  the server's position limits allow (MID 2–5, FWD 1–3). The Help answer
+  matches the client.
