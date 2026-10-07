@@ -109,6 +109,10 @@ main { max-width: 1440px; margin: 0 auto; padding: 32px 24px 96px; outline: none
 .tile-foot .badge-v2 { font: 800 11px/1 var(--g-body); padding: 5px 9px; border-radius: 999px; background: var(--g-turf); color: oklch(0.24 0.09 258); }
 .tile-tok { display: flex; align-items: center; gap: 10px; margin-inline-start: auto; }
 
+.tile-cut { cursor: default; opacity: 0.86; }
+.tile-cut:hover { background: none; }
+.cut-sec { margin-block-start: 88px; padding-block-start: 28px; border-block-start: 1px solid var(--g-line); }
+
 /* ---------- section headings ---------- */
 .sec { margin-block: 56px 18px; }
 .sec h2 { margin: 0 0 6px; font: 800 28px/1.15 var(--g-display); }

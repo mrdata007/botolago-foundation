@@ -156,7 +156,7 @@
       `<filter id="${u}-ch" x="-8%" y="-12%" width="116%" height="124%" color-interpolation-filters="sRGB">` +
       `<feTurbulence type="fractalNoise" baseFrequency="${pine ? 0.75 : 0.95}" numOctaves="2" seed="${pine ? 8 : 4}" result="n"/>` +
       `<feDisplacementMap in="SourceGraphic" in2="n" scale="${pine ? 2.6 : 1.6}" xChannelSelector="R" yChannelSelector="G" result="d"/>` +
-      `<feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  ${pine ? "-3.4 0 0 0 2.3" : "-2.8 0 0 0 2.3"}" result="m"/>` +
+      `<feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  ${pine ? "-3.0 0 0 0 2.3" : "-2.8 0 0 0 2.3"}" result="m"/>` +
       `<feComposite in="d" in2="m" operator="in"/></filter>` +
       /* liquid chalk marker: opaque, a slight wobble at the edge */
       `<filter id="${u}-mk" x="-6%" y="-10%" width="112%" height="120%">` +
@@ -270,7 +270,9 @@
           `<path d="${torsoOpen}" fill="none" ${s}/>` +
           `<path d="${A.seam}" fill="none" stroke="${st.seam || st.line}" stroke-width="${st.sw * 0.8}" stroke-linecap="round"/>` +
           `<path d="${A.hood}" fill="${st.fill}"/>` +
-          `<path d="${A.hood}" fill="${st.line}" fill-opacity="${st.hair || 0.6}" ${s}/>` +
+          (st.hatch
+            ? `<path d="${A.hood}" fill="${st.line}" fill-opacity=".22"/><path d="${A.hood}" fill="url(#${st.u}-hc)" ${s}/>`
+            : `<path d="${A.hood}" fill="${st.line}" fill-opacity="${st.hair || 0.6}" ${s}/>`) +
           `<g stroke="${st.fill}" stroke-width="${st.sw * 0.9}" fill="none" stroke-linecap="round">${hs}</g>`;
       }
       return `<svg x="${r2(x)}" y="${r2(y)}" width="${r2(w)}" height="${r2(h)}" viewBox="0 0 200 240" overflow="visible">${g}</svg>`;
@@ -326,7 +328,7 @@
   function avatarStyle(med, ground, u) {
     if (med === "enamel") return { mode: "two" };
     if (med === "gold") return { mode: "gold", sw: 3.4, u };
-    if (med === "marker") return { line: C.chalk, fill: ground, sw: 3.6, seam: C.sky, hair: 0.62 };
+    if (med === "marker") return { line: C.chalk, fill: ground, sw: 3.6, seam: C.sky, hair: 0.62, hatch: true, u };
     return { line: C.chalk, fill: ground, sw: med === "rough" ? 4.6 : 4, hair: med === "rough" ? 0.55 : 0.6 };
   }
 
@@ -923,7 +925,7 @@
       s += `<rect x="0" y="0" width="300" height="440" fill="${C.ply}" filter="url(#${u}-pw)"/>`;
       s += `<clipPath id="${u}-pa"><polygon points="${pts(M(paint))}"/></clipPath>`;
       s += `<polygon points="${pts(M(paint))}" fill="${C.paint}"/>`;
-      s += `<g clip-path="url(#${u}-pa)"><rect x="20" y="40" width="260" height="330" fill="#fff" filter="url(#${u}-bm)" opacity=".55" transform="rotate(-2.5 150 200)"/></g>`;
+      s += `<g clip-path="url(#${u}-pa)"><rect x="20" y="40" width="260" height="330" fill="#fff" filter="url(#${u}-bm)" opacity=".32" transform="rotate(-2.5 150 200)"/></g>`;
     } else {
       s += `<rect x="0" y="0" width="300" height="440" fill="${C.slate}"/>`;
     }
@@ -965,7 +967,7 @@
     ];
     return (
       `<defs>${g}</defs>` +
-      `<g style="mix-blend-mode:soft-light" opacity=".35" fill="url(#${u}-lt)"><polygon points="${pts(OUT)}"/><polygon points="${pts(M(legL))}"/><rect x="0" y="-12" width="300" height="34"/></g>` +
+      `<g style="mix-blend-mode:soft-light" opacity=".35" fill="url(#${u}-lt)"><polygon points="${pts(OUT)}"/><polygon points="${pts(M(legL))}"/></g>` +
       `<g fill="none" stroke="#FFD08A" stroke-linecap="round" opacity=".9"><path d="M${pts(M([OUT[0], OUT[3]])).replace(" ", " L")}" stroke-width="2.2"/><path d="M${pts(M([[30, 377], [10, 436]])).replace(" ", " L")}" stroke-width="1.6"/></g>`
     );
   }
@@ -1416,7 +1418,7 @@
         `<rect x="-10" y="180" width="62" height="${floor - 180}" fill="url(#${u}-in)"/>` +
         `<rect x="-10" y="180" width="62" height="70" fill="#C98A48" opacity=".35"/>` +
         `<ellipse cx="18" cy="226" rx="30" ry="20" fill="url(#${u}-tv)"/>` +
-        `<rect x="2" y="214" width="30" height="20" rx="1.5" fill="#BFF2FA" opacity=".55"/>` +
+        `<rect x="1" y="212" width="34" height="23" rx="2" fill="#15110d"/><rect x="3.5" y="214.5" width="29" height="18" rx="1" fill="#BFF2FA" opacity=".85"/><path d="M14 235 L18 241 L22 235" stroke="#15110d" stroke-width="2" fill="none"/>` +
         `<rect x="-10" y="${floor - 70}" width="62" height="70" fill="#7a4e26" opacity=".18"/>` +
         `<rect x="52" y="170" width="11" height="${floor - 170}" fill="url(#${u}-jamb)"/>` +
         `<rect x="-10" y="168" width="73" height="12" fill="#22170e"/>` +

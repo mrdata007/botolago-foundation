@@ -81,7 +81,8 @@
 
   /* ---------- concept access ---------- */
   const all = () => MC.concepts.filter((c) => !c.hidden);
-  const originals = () => all().filter((c) => !c.refinedFrom);
+  const originals = () => all().filter((c) => !c.refinedFrom && !c.cut);
+  const cutOnes = () => all().filter((c) => c.cut);
   const refinedOf = (id) => all().find((c) => c.refinedFrom === id);
   const byId = (id) => all().find((c) => c.id === id);
   const nameOf = (c) => (state.lang === "ar" && c.nameAr ? c.nameAr : c.name);
@@ -176,7 +177,21 @@
             `</span></div></a>`
           );
         })
-        .join("")}</div>`
+        .join("")}</div>` +
+      (cutOnes().length && state.filter === "all"
+        ? `<section class="sec cut-sec"><h2>${state.lang === "ar" ? "ملحق: اتجاهات حُذفت" : "Appendix: directions that were cut"}</h2><p>${
+            state.lang === "ar"
+              ? "بُنيت هذه الاتجاهات قبل أن يرفضها المقيّمون. تبقى هنا كدليل على ما جُرّب ولماذا لم يُعتمد."
+              : "These were built before the adversarial critics rejected them. They stay here as evidence of what was tried and why it was not kept."
+          }</p></section><div class="grid cut-grid">${cutOnes()
+            .map(
+              (c) =>
+                `<div class="tile tile-cut"><div class="tile-head"><span class="tile-name">${esc(nameOf(c))}</span>${catChip(c.category)}</div>` +
+                `<div class="stage" style="--card-w:${Math.round((c.gridWidth || 236) * 0.8)}px;min-height:300px">${cardHTML(c)}</div>` +
+                `<p class="tile-phil">${esc(philOf(c))}</p><p class="tile-phil" lang="en" dir="ltr"><b>Why it was cut:</b> ${esc(c.cutReason || "")}</p></div>`,
+            )
+            .join("")}</div>`
+        : "")
     );
   }
 

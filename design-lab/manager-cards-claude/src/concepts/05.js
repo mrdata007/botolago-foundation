@@ -269,7 +269,7 @@
       // HOMA: a groove cut in raw concrete; the wall nearer the light is in shadow, the far wall lit,
       // and the hair is pressed in as a rough darker patch
       if (mini) return open + `<g fill="#62676d">${P(A.torso)}${P(A.head)}</g><path d="${A.hair}" fill="#4c5056"/></g>`;
-      const lines = [A.torso, A.collar, A.ears, A.hair].map(P).join("") + P(A.seam);
+      const lines = [A.torso, A.collar, A.hair].map(P).join("") + P(A.seam);
       return (
         `<defs><mask id="${u}-gv" maskUnits="userSpaceOnUse" ${box}><g fill="none" stroke="#fff" stroke-width="${sw(3.2)}" stroke-linejoin="round" stroke-linecap="round">${lines}</g></mask>` +
         `<filter id="${u}-press" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="${r2(0.16 * s)}" numOctaves="3" seed="${seed}" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="${sw(3)}" xChannelSelector="R" yChannelSelector="G" result="d"/><feTurbulence type="fractalNoise" baseFrequency="${r2(1.3 * s)}" numOctaves="1" seed="${seed + 3}" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.6 -.7" result="gm"/><feComposite in="d" in2="gm" operator="in"/></filter></defs>` +
@@ -308,7 +308,7 @@
     const legend = T.fig === "legend";
     const brass = T.fig !== "marq";
     const cut = brass ? `url(#${u}-brass${legend ? "Hi" : ""})` : "#5F6368";
-    const cw = sw(mini ? (brass ? 7 : 5) : brass ? 1.4 : 1);
+    const cw = sw(mini ? (brass ? 4.5 : 5) : brass ? 1.4 : 1);
     const jacket = "#0C3164"; // navy granite at PRO, lapis at LEGEND (denser sky flecks)
     const skin = legend ? "#8a6a55" : "#B9906E";
     const hair = legend ? "#2e333c" : "#1B1F26";
@@ -471,9 +471,9 @@
       kb(173, 59, 187, 76);
       const tw = S.tiers[p.tier];
       if (ar) {
-        const fs = Math.max(10, Math.min(15, 38 / arW(tw)));
-        ink += inlay(T, 180, 99, fs, esc(tw), "middle", u, `${AX(700)} direction="rtl"`, wordAs(T));
-        kb(180 - (arW(tw) * fs) / 2, 99 - fs * 0.95, 180 + (arW(tw) * fs) / 2, 99 + fs * 0.32);
+        const fs = Math.max(10, Math.min(14, 38 / arW(tw)));
+        ink += inlay(T, 180, 98, fs, esc(tw), "middle", u, `${AX(700)} direction="rtl"`, wordAs(T));
+        kb(180 - (arW(tw) * fs) / 2, 98 - fs * 0.95, 180 + (arW(tw) * fs) / 2, 98 + fs * 0.32);
       } else {
         const est = bsW(tw);
         const fs = Math.min(16, (38 * 1.15) / est);
@@ -482,7 +482,7 @@
         kb(180 - Math.min(38, est * fs) / 2, 98 - fs * 0.8, 180 + Math.min(38, est * fs) / 2, 98);
       }
       if (ar) {
-        ink += tooled(180, 112, esc(S.country), `${AX(600)} font-size="9" text-anchor="middle" direction="rtl"`, tool, true);
+        ink += tooled(180, 111.5, esc(S.country), `${AX(600)} font-size="8.4" text-anchor="middle" direction="rtl"`, tool, true);
         kb(162, 104, 198, 115);
       } else {
         ink += tooled(180, 110.5, esc(S.country), `${MR} font-size="6.8" letter-spacing=".3" text-anchor="middle"`, tool);
