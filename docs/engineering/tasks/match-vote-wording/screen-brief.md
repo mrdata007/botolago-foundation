@@ -117,5 +117,95 @@ dark:
 - Dark mode: heading, answers and shares use the same tokens as on main.
 - Home's band pick card renders as on main.
 - No file under `src/backend`, `supabase/` or `use-match-votes.ts` /
-  `match-votes.ts` changes. Unit tests, typecheck, lint and the full `bun run
-  test` pass; the e2e journey is updated where it asserted "Votez !".
+  `match-votes.ts` changes. Unit tests, typecheck, lint and the full
+  `bun run test` pass; the e2e journey is updated where it asserted "Votez !".
+
+## Validation (2026-10-07)
+
+Dev server from this worktree on :5303 only (`vite dev --mode production`,
+reading production through the public key). No answer was tapped and no
+form submitted: cards were reached with the deck's dots, and the capture
+scripts aborted any `cast_match_vote` or save request (none was attempted).
+No database write of any kind.
+
+**Commands**
+
+- `bun test src/components/predictions/MatchVoteCard.test.tsx` (new, 10
+  tests): pass. With the rest of `src/components/predictions/`,
+  `src/components/home/` and `src/i18n/`: 268 pass, 0 fail.
+- `bun run typecheck`: pass. `bun run lint`: exit 0, 0 errors (31 warnings,
+  none in a changed file). `prettier --check` on every changed file: clean.
+- `bun scripts/qa/i18n-gate.ts`: `RESULT: pass` (W1 to W4 at their
+  baselines: `predictions.votes.cta` removed, `predictions.votes.heading`
+  added and used).
+- `bun run test` (full): 6,002 pass, 17 skip, **1 fail**:
+  `src/backend/news/editorial-session.test.ts` "Morocco's Ramadan clock
+  change" expects "(GMT)" and this machine's ICU prints "(GMT+0)"
+  (`Intl.DateTimeFormat(..., { timeZoneName: "short" })` gives "UTC+0" here).
+  Not touched by this branch (no file under `src/backend` changed, and the
+  test imports none of the changed files).
+- `impeccable detect --json` on `MatchVoteCard.tsx` and
+  `MatchPredictionCard.tsx`: exit 0, `[]`.
+
+**Measured** (Playwright, Chromium, upcoming match `ac95346b…`; 360x800,
+390x844 and 1440x900; French and Arabic; light and dark)
+
+- Text of every card, before then after: winner "UTS · X · RSB" (the crests'
+  initials) → "UTS Rabat · Match nul · RSB Berkane", Arabic "اتحاد تواركة ·
+  تعادل · نهضة بركان"; first goal crest, icon, crest → "UTS Rabat · Aucun but ·
+  RSB Berkane" / "اتحاد تواركة · بدون أهداف · نهضة بركان"; both score "OUI ·
+  NON" → "Oui · Non". "X" as an answer: present on main in all 7 variants,
+  absent after in all 7. "Votez !" / "صوّت!": absent after.
+- Headings in the deck after: `h2` "Votre pronostic", `h2` "L'avis des
+  supporters" (Arabic "توقعك", "رأي المشجعين"), then the three `h3` questions;
+  the heading over cards 3 and 4 is `aria-hidden`.
+- Answer buttons: never under 44px tall. 105x44 at 390px (one-line names),
+  95x52 at 360px and 88x52 in the desktop column, where "RSB Berkane" takes
+  two lines and the row's three buttons keep one height. No element spills
+  out of its pill, and no element outside the swipe row crosses the
+  viewport's edge (bounding boxes, since `scrollWidth` alone misses overflow
+  under `overflow-x: clip`), in any variant.
+- Revealed answers, with the `match_votes` read answered in the browser
+  (897 made-up votes; open with the reader's own answer, and closed): every
+  pill shows the name over its share, nothing spills, the reader's answer is
+  washed. Pills 56px tall at 390px, 76px where a name takes two lines (360px
+  and the desktop column), 65px in Arabic. On main the same read showed
+  "UTS 46 % · X 22 % · RSB 32 %".
+- Contrast of the answer labels, from rasterised sRGB pixels at 2x (fill =
+  most common colour, ink = the pixel farthest from it): light 19.44:1 open,
+  18.1:1 revealed, 9.28:1 on the reader's own answer; dark 15.89:1, 18.07:1
+  and 8.32:1.
+- Home's band (`NextMatchPick`): same text before and after ("Qui va gagner ?
+  UTS Rabat · Match nul · RSB Berkane"). Home logs a hydration-text mismatch
+  in every variant, before and after: the news-dates item another lane owns.
+- Finished match `14e01965…`: unchanged (the one-line card on a phone, the
+  score card alone on a desktop; its polls have under 20 votes).
+
+**Evidence** (`shots/`, each `__before` and `__after`)
+
+- `deck-winner__m-fr-light`: the phone page on card 2, heading and answers.
+- `deck-winner__m-ar-light`: card 2 in Arabic, home on the right.
+- `deck-first-goal__s-fr-light`: card 4 at 360px, a name on two lines.
+- `deck-results-winner__s-fr-light`: card 2 revealed with the reader's own
+  answer, 360px (replaced read).
+- `deck-results-first-goal__m-ar-dark`: card 4 closed, Arabic, dark (replaced
+  read).
+- `match-page__d-ar-light`: the desktop page in Arabic, the deck's column on
+  the left.
+
+**Decided while measuring**
+
+- Revealed answers always stack the name over the share. Left to wrap as on
+  main, Arabic set "تعادل 22%" on one line beside two stacked neighbours.
+- The deck is about 24px shorter at rest (no "Votez !" line). When results
+  appear (a vote, or the pencil closed) the card grows by the total line and
+  the taller pills, so what is under the deck moves down then, on the tap.
+
+**Not verified**
+
+- The e2e journey (`tests/e2e/pronostics.e2e.ts`, "match votes, Sofascore
+  style") was updated but not run: it casts votes and signs in. CI is the
+  authority.
+- Signed-in voting, a real closed poll with 20 votes or more (none exists
+  today: shown only with the replaced read), live matches, WebKit and real
+  phones.

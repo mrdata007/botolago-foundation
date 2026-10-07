@@ -423,7 +423,7 @@ test.describe("match votes, Sofascore style", () => {
       await expect(
         page
           .getByTestId("match-prediction-deck")
-          .getByRole("heading", { name: copy(lang, "predictions.votes.heading"), exact: true }),
+          .locator("h2", { hasText: copy(lang, "predictions.votes.heading") }),
       ).toHaveCount(1);
       await expect(winner).not.toContainText(/[%٪]/);
 
