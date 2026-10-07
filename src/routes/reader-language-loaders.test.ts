@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { seasonsQuery, standingsQuery } from "@/services/football-queries";
 
 /**
  * The article and Pronostics loaders read in the reader's language in the
@@ -54,5 +55,63 @@ describe("the top players page", () => {
     expect(route).toContain(
       "enabled: currentGw > 0 && (gw !== null || !gwQ.isPending || gwQ.failureCount > 0),",
     );
+  });
+});
+
+describe("the Classement tab", () => {
+  it("warms the table in the browser, in the reader's language, for the season the page opens on", () => {
+    const route = code("routes/matches.standings.tsx");
+    expect(route).toContain("prefetchInBrowser(async () => {");
+    expect(route).toContain("const lang = activeLanguage();");
+    expect(route).toContain("await queryClient.ensureQueryData(seasonsQuery(lang));");
+    // The same choice the page makes: the season asked for, else the current one, else the first.
+    expect(route).toMatch(
+      /seasons\.find\(\(candidate\) => candidate\.id === deps\.season\) \?\?\s*seasons\.find\(\(candidate\) => candidate\.isCurrent\) \?\?\s*seasons\[0\];\s*if \(season\) await queryClient\.ensureQueryData\(standingsQuery\(season, lang\)\);/,
+    );
+    // Under the keys the page reads: the builders' keys are the page's own.
+    expect(route).toContain('queryKey: ["football", "seasons", lang]');
+    expect(route).toContain('queryKey: ["football", "standings", season?.id, lang]');
+    expect(seasonsQuery("ar").queryKey).toEqual(["football", "seasons", "ar"]);
+    expect(standingsQuery({ id: "s1", competitionId: "c1" }, "ar").queryKey).toEqual([
+      "football",
+      "standings",
+      "s1",
+      "ar",
+    ]);
+  });
+});
+
+describe("Fantasy reads that are the same for everyone", () => {
+  const read = (file: string) => readFileSync(join(import.meta.dir, "..", file), "utf8");
+  const sources = (dir: string): string[] =>
+    readdirSync(join(import.meta.dir, "..", dir), { withFileTypes: true }).flatMap((entry) => {
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) return sources(path);
+      return /\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name) ? [path] : [];
+    });
+
+  it("are asked for under one key each, from one place", () => {
+    const callers = (method: string) =>
+      sources("routes")
+        .concat(sources("components"), sources("services"), sources("lib"))
+        .filter((file) => code(file).includes(`fantasyService.${method}(`));
+    expect(callers("getFixtureDifficulty")).toEqual(["services/fantasy-queries.ts"]);
+    expect(callers("getAvailableTopGameweeks")).toEqual(["services/fantasy-queries.ts"]);
+    const queries = read("services/fantasy-queries.ts");
+    expect(queries).toContain('queryKey: ["fantasy-fixture-difficulty"]');
+    expect(queries).toContain('queryKey: ["fantasy-gameweeks-available"]');
+  });
+
+  it("are no longer kept under the old per-screen keys", () => {
+    for (const file of sources("routes").concat(sources("components"))) {
+      const source = code(file);
+      expect({
+        file,
+        old: /"fixture-difficulty"|"top-gws"|key\("fixture-difficulty"\)/.test(source),
+      }).toEqual({
+        file,
+        old: false,
+      });
+    }
   });
 });

@@ -38,19 +38,15 @@ import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { upcomingFixtures } from "@/lib/upcoming-fixtures";
 import { cn } from "@/lib/utils";
 import { fantasyPlayerQuery } from "@/services/fantasy-player-query";
+import { fixtureDifficultyQuery } from "@/services/fantasy-queries";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { clubsQuery } from "@/services/football-queries";
 
-/** The page's reads beside the player, for the loader and the page alike. */
+/** The page's own read beside the player, for the loader and the page alike. */
 const playerHistoryQuery = (playerId: string) =>
   queryOptions({
     queryKey: ["fantasy-player-history", playerId],
     queryFn: () => fantasyService.getPlayerGameweekHistory(playerId),
-  });
-const fixtureDifficultyQuery = () =>
-  queryOptions({
-    queryKey: ["fixture-difficulty"],
-    queryFn: () => fantasyService.getFixtureDifficulty(),
   });
 
 export const Route = createFileRoute("/fantasy/players/$playerId")({

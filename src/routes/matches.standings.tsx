@@ -24,12 +24,15 @@ import { YourClubCard } from "@/components/matches/YourClubCard";
 import { useOnLiveMatchEnd } from "@/components/matches/use-live-matches";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiButton, UiChip, UiPageTitle } from "@/components/ui-kit";
+import { activeLanguage } from "@/i18n/active-language";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { clubStanding } from "@/lib/league-table";
 import { cn } from "@/lib/utils";
+import { prefetchInBrowser } from "@/lib/browser-prefetch";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { footballService, type FootballSeason } from "@/services/football";
+import { seasonsQuery, standingsQuery } from "@/services/football-queries";
 
 const STANDINGS_TITLE = "Classement Botola Pro — points, forme et buts | BotolaGO";
 const STANDINGS_DESCRIPTION =
@@ -43,6 +46,22 @@ export const Route = createFileRoute("/matches/standings")({
   loaderDeps: ({ search }) => ({ season: search.season }),
   loader: async ({ context, deps }) => {
     const { queryClient } = context;
+    // In the browser, the same two reads in the reader's language, started
+    // and not waited for (`prefetchInBrowser`), as the calendar does: the
+    // table is on its way while the page's code loads, or before the tap when
+    // the tab was only touched (the Matches tabs load ahead). The page asks
+    // for the same keys, so it opens on the table rather than its skeleton.
+    // Only what is missing: a table already in the cache is the page's to
+    // refresh when it shows.
+    prefetchInBrowser(async () => {
+      const lang = activeLanguage();
+      const seasons = await queryClient.ensureQueryData(seasonsQuery(lang));
+      const season =
+        seasons.find((candidate) => candidate.id === deps.season) ??
+        seasons.find((candidate) => candidate.isCurrent) ??
+        seasons[0];
+      if (season) await queryClient.ensureQueryData(standingsQuery(season, lang));
+    });
     await prefetchForSsr(queryClient, [
       {
         queryKey: ["football", "seasons", "fr"],

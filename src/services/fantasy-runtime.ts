@@ -297,8 +297,18 @@ async function overallBoard(seasonId: string): Promise<Omit<GlobalRankingsBoard,
   return { rows, myRank };
 }
 
-async function gameweekIdOf(seasonId: string, sequence: number): Promise<string | null> {
-  const gameweeks = await cloud.getGameweeks(seasonId, null, context());
+/**
+ * A gameweek's id from its number. The hub already names its current
+ * gameweek, and that is the one these reads ask about most -- the top players
+ * and the points open on it, and the points read it again every thirty
+ * seconds until it is final -- so only another gameweek reads the season's
+ * list (`api.fantasy_gameweeks`). The answer is the same either way: a
+ * season's gameweeks are unique by number, the hub's is one of them, and the
+ * list has no status filter and fits in one page (a season has 30).
+ */
+async function gameweekIdOf(current: FantasyHubDto, sequence: number): Promise<string | null> {
+  if (current.gameweek?.sequence === sequence) return current.gameweek.id;
+  const gameweeks = await cloud.getGameweeks(current.season.id, null, context());
   return gameweeks.items.find((item) => item.sequence === sequence)?.id ?? null;
 }
 
@@ -514,12 +524,11 @@ export const fantasyService = {
   async getGameweekResult(sequence: number): Promise<GameweekResult | undefined> {
     if (mode() === "mock") return mockFantasyService.getGameweekResult(sequence);
     const current = await cloudTeam();
-    const gameweeks = await cloud.getGameweeks(current.hub.season.id, null, context());
-    const gameweek = gameweeks.items.find((item) => item.sequence === sequence);
-    if (!gameweek) return undefined;
+    const gameweekId = await gameweekIdOf(current.hub, sequence);
+    if (!gameweekId) return undefined;
     const [points, summary] = await Promise.all([
-      cloud.getPoints(current.team.id, gameweek.id, context()),
-      gameweekSummary(gameweek.id),
+      cloud.getPoints(current.team.id, gameweekId, context()),
+      gameweekSummary(gameweekId),
     ]);
     return pointsDto(sequence, points, summary);
   },
@@ -530,13 +539,13 @@ export const fantasyService = {
   async getMyRecapPublication(sequence: number): Promise<FantasyMyRecapPublicationDto> {
     if (mode() === "mock") return { publishEnabled: false, publication: null };
     const current = await cloudTeam();
-    const gameweekId = await gameweekIdOf(current.hub.season.id, sequence);
+    const gameweekId = await gameweekIdOf(current.hub, sequence);
     if (!gameweekId) return { publishEnabled: false, publication: null };
     return cloud.getMyGameweekRecapPublication(current.team.id, gameweekId, context());
   },
   async publishRecap(sequence: number, alias: string): Promise<FantasyRecapPublicationDto> {
     const current = await cloudTeam();
-    const gameweekId = await gameweekIdOf(current.hub.season.id, sequence);
+    const gameweekId = await gameweekIdOf(current.hub, sequence);
     if (!gameweekId) throw new Error("fantasy_gameweek_not_found");
     return cloud.publishGameweekRecap(current.team.id, gameweekId, alias.trim(), context());
   },
@@ -639,15 +648,14 @@ export const fantasyService = {
   ): Promise<TopPlayerOfWeek[]> {
     if (mode() === "mock") return mockFantasyService.getTopPlayersOfWeek(gameweek);
     const current = await hub();
-    const gameweeks = await cloud.getGameweeks(current.season.id, null, context());
-    const target = gameweeks.items.find((item) => item.sequence === gameweek);
-    if (!target) return [];
+    const targetId = await gameweekIdOf(current, gameweek);
+    if (!targetId) return [];
     // BG-0071: price, ownership and form used to be literal zeros here. They
     // come from the same season aggregate and pool that every other screen
     // reads, merged by fantasy player id. A player missing from the pool keeps
     // price/ownership 0 and form `null` ("unknown"), never a fabricated 0.0.
     const [top, players] = await Promise.all([
-      cloud.getTopPlayers(target.id, context()),
+      cloud.getTopPlayers(targetId, context()),
       loadPool(),
     ]);
     const byId = new Map(players.map((player) => [player.id, player]));

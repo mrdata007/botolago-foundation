@@ -71,20 +71,20 @@ everything below applies to the phone app as it is.
 
 ## Plan, ranked by impact
 
-| #   | change                                                                   | status      |
-| --- | ------------------------------------------------------------------------ | ----------- |
-| 1   | Links load their page on intent (pointer rests, focus, finger touches)   | **batch 1** |
-| 2   | Fantasy player page reads the player from the cached pool                | **batch 1** |
-| 3   | Match and club loaders fetch in the reader's language in the browser     | **batch 1** |
-| 4   | Club page: matches and table start with the club, not after it           | **batch 1** |
-| 5   | Freshness by kind of data; keep screens' data 30 min in the browser      | **batch 1** |
-| 6   | Matches tab: the day's fixtures start loading with the tab               | **batch 1** |
-| 7   | Fantasy rankings: one board per owner, page/search/sort done locally     | **batch 2** |
-| 8   | News article and Pronostics: same Arabic double read as 3                | **batch 2** |
-| 9   | Home and top players reuse the cached player pool                        | **batch 2** |
-| 10  | One key per data set (fixture difficulty, gameweeks, club list)          | next        |
-| 11  | Rows that navigate by `navigate()` (top players, search) become links    | next        |
-| 12  | Standings, Clubs, News lists warm their data in the browser like Matches | later       |
+| #   | change                                                                   | status                             |
+| --- | ------------------------------------------------------------------------ | ---------------------------------- |
+| 1   | Links load their page on intent (pointer rests, focus, finger touches)   | **batch 1**                        |
+| 2   | Fantasy player page reads the player from the cached pool                | **batch 1**                        |
+| 3   | Match and club loaders fetch in the reader's language in the browser     | **batch 1**                        |
+| 4   | Club page: matches and table start with the club, not after it           | **batch 1**                        |
+| 5   | Freshness by kind of data; keep screens' data 30 min in the browser      | **batch 1**                        |
+| 6   | Matches tab: the day's fixtures start loading with the tab               | **batch 1**                        |
+| 7   | Fantasy rankings: one board per owner, page/search/sort done locally     | **batch 2**                        |
+| 8   | News article and Pronostics: same Arabic double read as 3                | **batch 2**                        |
+| 9   | Home and top players reuse the cached player pool                        | **batch 2**                        |
+| 10  | One key per data set (fixture difficulty, gameweeks)                     | **batch 3**                        |
+| 11  | Matches tabs, header search and top players rows load on intent          | **batch 3**                        |
+| 12  | Standings, Clubs, News lists warm their data in the browser like Matches | Standings: **batch 3**; rest later |
 
 ## What changed (batch 1)
 
@@ -136,6 +136,9 @@ data is not refetched. Retries stay at one.
 | club row or crest                        | the club, the seasons, the club's matches and the season's table   |
 | Fantasy player row                       | the player (from the cached pool), history, fixtures, clubs        |
 | Matches tab                              | the seasons and the opening day's fixtures                         |
+| Matches tabs (Classement, Pronostics)    | the season's table; the journée (batch 3)                          |
+| header search result                     | the club or the player, as their links do (batch 3)                |
+| top players: a row, "Voir le joueur"     | the player, as a player row does (batch 3)                         |
 | Admin links                              | nothing (opted out)                                                |
 
 ## Before and after
@@ -369,22 +372,141 @@ with no skeleton).
 on main); `bun test` 5,965 pass, 17 skipped, 1 fail (the same Ramadan 2027
 test as on main); `bun run build` passes.
 
+## Batch 3
+
+Plan items 10 and 11, and the Standings part of 12. "Before" is batch 2 as
+merged with main (`2fbed47`), "after" is this batch.
+
+### What changed
+
+- **One key per data set** (`src/services/fantasy-queries.ts`): the fixture
+  difficulty was read under three keys (the hub's per-owner key, the fixtures
+  grid's, a player page's), so opening a player after the grid read it
+  again; it is now one key, `["fantasy-fixture-difficulty"]`. The gameweeks
+  the Points and Top players steppers offer were read under two keys; now
+  one. Every screen keeps its own freshness and conditions. These rows are
+  the same for every visitor (the hub picks the season and gameweek without
+  looking at who asks), so a shared key hands nothing of one account to
+  another.
+- **The current gameweek's id from the hub** (`gameweekIdOf`,
+  `fantasy-runtime.ts`): the top players, the points and a recap looked up a
+  gameweek's id in the season's list of gameweeks every time, the points every
+  30 seconds while live. The hub already names the current gameweek, so asking
+  about it no longer reads the list; another gameweek reads it as before and
+  gets the same id.
+- **Buttons that load their page ahead** (`src/lib/intent-preload.ts`): the
+  Matches tabs, the header search's results and the top players' rows and
+  "Voir le joueur" button are buttons that navigate on click, so they had none
+  of a link's loading ahead. They now start their page the way a link does:
+  the pointer resting on one for the router's delay (50 ms), a finger touching
+  one at once, a pointer leaving it before the delay calls it off. The same
+  router loader runs, through the same cache, so data already fresh costs
+  nothing; routes that opt out (Admin) stay opted out. They stay buttons: the
+  tabs must stay tabs, and nothing on screen changes. `UiTabs` takes an
+  optional `tabIntent` for this; the chosen tab and a disabled one get none.
+- **Classement warms its table in the browser**
+  (`src/routes/matches.standings.tsx`), as the Calendrier does since batch 1:
+  the loader starts the seasons and the table in the reader's language without
+  waiting for them, for the season the page opens on, under the page's own
+  keys. A touched or hovered Classement tab therefore starts the table before
+  the click.
+
+### Results
+
+Same setup as before (production builds, live database as an anonymous
+visitor, reads only). Tabs and rows: 7 fresh visits each, median; Fantasy
+moves: 2 runs each.
+
+| step                                                | before                        | after                                  |
+| --------------------------------------------------- | ----------------------------- | -------------------------------------- |
+| Matches -> Classement tab, phone: table on screen   | 534 ms, skeleton 7/7          | **290 ms**, skeleton 6/7 (shorter)     |
+| Matches -> Classement tab, desktop: table on screen | 422 ms, skeleton 7/7          | **203 ms**, skeleton 3/7               |
+| Matches -> Pronostics tab, phone                    | 409 ms                        | **275 ms**                             |
+| Matches -> Pronostics tab, desktop                  | 463 ms                        | **230 ms**                             |
+| Top players -> a player (row), phone / desktop      | 114 / 190 ms                  | 104 / 151 ms                           |
+| Fantasy: fixtures grid -> players -> a player       | 3 reads                       | **1 read** (no second difficulty read) |
+| Fantasy: -> top players                             | 4 reads (gameweek list twice) | **3 reads, no repeat**                 |
+| whole flow, reads (phone / desktop)                 | 28 / 28-29, 1 repeat          | **25-26 / 25-26, no repeat**           |
+
+- On a phone the finger rests on the glass about 100 ms in a tap, less than
+  the table's reads take, so the skeleton still shows briefly; the table
+  arrives about a quarter of a second sooner. On desktop the pointer usually
+  rests long enough for the table to be in before the click.
+- The top players' rows gain less: since batch 2 the player's page already
+  comes from the cached pool, so only the page's code and the player's
+  history are left to load ahead.
+- One phone run showed a second hub read on the cold fixtures load (14
+  reads): the hub is shared for two seconds (`fantasy-hub-share.ts`) and that
+  load's reads were spread over more; the other three runs, and every run
+  before, read it once. Not a change of this batch.
+- Not measured: the header search (its results list needs typing; it uses the
+  same loaders as the club and player links measured in batch 1) and
+  signed-in screens (the points' gameweek shortcut), for want of a test
+  account; tests cover the shortcut (`fantasy-gameweek-id.test.ts`).
+
+### Trade-offs
+
+- **A preload that fails** is kept by the router like any preload, so a tap
+  within the next few minutes opens that page on its loading state, as a
+  link's failed preload already does since batch 1.
+- **A preloaded page can be up to five minutes old when opened** (the router
+  keeps preloads that long); its loader and its queries refresh it in the
+  background as they do for links.
+- **Each touch of a tab or row costs its page's reads** when they are not in
+  the cache, as a link's touch does (batch 1): a finger scrolling over the
+  top players' rows starts each player it touches, all from the one cached
+  pool.
+- **Pronostics while the game is open to testers only.** The router keeps a
+  page's loader data for five minutes and does not forget it when the account
+  changes (the query cache does: `forgetAccountPredictions`). A tester's
+  journée, loaded by visiting or preloading Pronostics, can therefore seed the
+  page for the next account on the same device within those minutes, until
+  the page's own read replaces it. The journée holds the matches and whether
+  the game is open, never anyone's picks. This was already so for a visit or a
+  link's preload; the tab's preload adds one more way in. Clearing the
+  router's cache on an account change is left to a separate change.
+- **Deliberately not merged:** the club directory and the club list (different
+  data), the news feed's two shapes (one is behind a flag), and the per-screen
+  freshness of the shared keys.
+
+### JavaScript
+
+Production build, gzip: the shared entry is 161,810 bytes, against 161,789
+before this batch (+21 bytes).
+
+### Review
+
+The batch was reviewed from four angles (the loading-ahead timing against
+the router's own link code, cache keys and account safety, unchanged
+behaviour and markup, tests), each finding then checked by a skeptic. No
+defect was found in the code. Two gaps in the tests were reported and judged
+hardening rather than defects; both are now covered: the warm-up's keys are
+checked against the page's own, and a recap read or publish for another
+gameweek is checked to name that gameweek (the test fails if publishing
+takes the current gameweek instead).
+
+### Checks
+
+`bun run typecheck` clean; `bun run lint` no errors (the 31 warnings already
+on main); `bun test` 6,135 pass, 17 skipped, 1 fail (the same Ramadan 2027
+test as on main: this machine's time-zone data prints "GMT+0" where it
+expects "GMT"); `bun run build` passes. The new tests were each checked to
+fail when the behaviour they pin is broken.
+
 ## Remaining bottlenecks and next batch
 
-1. Matches tabs (Calendrier / Classement / Pronostics) and some rows (top
-   players, header search) navigate with buttons rather than links, so they
-   do not load on intent (plan 11).
-2. The same data under several keys: fixture difficulty (3 keys), available
-   gameweeks (2), the club list (3), the news feed (2 shapes) (plan 10). The
-   top players page still reads the gameweek list 3 times on a cold load.
+1. On a phone a tap gives about 100 ms of head start, less than most first
+   reads take (the Classement table, a match's seven reads), so a first visit
+   still shows a short skeleton; only data already in the cache removes it.
+2. Clubs and the News lists still wait for the page to render before asking
+   for their data in the browser (the rest of plan 12).
 3. Home's trending players exist only to name alerts, and in production the
    alerts are always empty: a signed-in Home still reads the top five for
-   nothing (needs the owner's decision).
-4. A first visit to a match still waits for 7 reads (the match, then six in
-   parallel); loading ahead hides it only when the pointer or finger arrives
-   early enough.
+   nothing (kept, as the owner decided).
+4. The router's loader cache is not cleared when the account changes (see the
+   Pronostics trade-off above).
 5. Every first page load renders on the server and reads the database, with
    no edge caching.
 
-Recommended next batch: plan 10 and 11 (one key per data set; Matches tabs
-and button rows load on intent), then plan 12.
+Recommended next batch: the rest of plan 12 (Clubs and News lists warm their
+data in the browser), and clearing the router's cache on an account change.
