@@ -98,6 +98,7 @@ const SUMMARY: FantasySummary = {
   teamName: "Raja des Sables",
   totalPoints: 61,
   gameweekPoints: 61,
+  pointsGameweek: 1,
   overallRank: 1204,
   gameweekRank: null,
   transfersLeft: 1,
@@ -294,6 +295,150 @@ describe("the hub's personal parts, for each visitor", () => {
       }
     },
   );
+});
+
+/**
+ * BG-0155 (2) — the team card's score names its round and leads to Points.
+ * The card was one link to the team profile, its figure was the summary's
+ * `gameweekPoints` under the generic "Points de la journée" (last round's 58
+ * under this round's deadline), with 0 for "no result", and with the deadline
+ * ahead the hub had no way to Points. Now the team block and the points block
+ * are two links, and the label names the round the figure belongs to.
+ */
+describe("the team card: its score names its round and leads to Points", () => {
+  const ROUND_14: Gameweek = { ...GAMEWEEK, number: 14, status: "open" };
+  /** The sample's state: round 14 is current, the 58 points are round 13's. */
+  const SAMPLE: FantasySummary = { ...SUMMARY, gameweekPoints: 58, pointsGameweek: 13 };
+
+  function card(summary: FantasySummary | null, gameweek: Gameweek = ROUND_14) {
+    const layout = fantasyHubLayout({
+      authStatus: "authenticated",
+      source: "cloud",
+      phase: "ready",
+      hasTeam: true,
+    });
+    return render(
+      <FantasyHubTeamArea
+        layout={layout}
+        phase="ready"
+        retry={() => {}}
+        gameweek={gameweek}
+        team={TEAM}
+        displayName={null}
+        summary={summary}
+        summaryPending={false}
+        prizes={false}
+      />,
+    );
+  }
+
+  /** The whole `<a …>…</a>` element carrying `testId`. */
+  const link = (html: string, testId: string) =>
+    new RegExp(`<a [^>]*data-testid="${testId}"[^>]*>[\\s\\S]*?</a>`).exec(html)?.[0] ?? "";
+  const attr = (element: string, name: string) =>
+    new RegExp(`^<a [^>]*\\b${name}="([^"]*)"`).exec(element)?.[1]?.replace(/&amp;/g, "&");
+
+  it("labels the figure with its round and links the points block to that round", async () => {
+    const html = await card(SAMPLE);
+    const points = link(html, "fantasy-team-card-points");
+    expect(attr(points, "href")).toBe("/fantasy/points?gw=13");
+    expect(text(points)).toContain("58");
+    expect(text(points)).toContain("Points · J13");
+    expect(fr["fantasy.hub.points_round"].replace("{n}", "13")).toBe("Points · J13");
+    // The generic label that never said which round is gone from the card.
+    expect(text(html)).not.toContain(escapeHtml(fr["fantasy.gw_points"]));
+    // Its name says where it goes; the figure is its description.
+    expect(attr(points, "aria-label")).toBe("Voir mes points de la journée 13");
+    const described = attr(points, "aria-describedby") ?? "";
+    expect(described).not.toBe("");
+    expect(points).toContain(`id="${described}"`);
+  });
+
+  it("keeps the team block a link to the team profile, named by its own text", async () => {
+    const html = await card(SAMPLE);
+    const team = link(html, "fantasy-team-card-team");
+    expect(attr(team, "href")).toBe("/fantasy/profile");
+    expect(attr(team, "aria-label")).toBeUndefined();
+    expect(text(team)).toContain(TEAM.teamName);
+    expect(text(team)).toContain(`${fr["fpl.rank"]} 1`);
+    // Two links, each in the gradient card; the card itself is not one.
+    const cardTag = /<[a-z]+ [^>]*data-testid="fantasy-team-card"[^>]*>/.exec(html)?.[0] ?? "";
+    expect(cardTag.startsWith("<div ")).toBe(true);
+    const links = anchors(html).map(hrefOf);
+    expect(links.filter((href) => href === "/fantasy/profile")).toHaveLength(1);
+    expect(links.filter((href) => href.startsWith("/fantasy/points"))).toHaveLength(1);
+  });
+
+  it("draws a focus ring and a 44px floor on both links", async () => {
+    const html = await card(SAMPLE);
+    for (const id of ["fantasy-team-card-team", "fantasy-team-card-points"]) {
+      const tag = /^<a [^>]*>/.exec(link(html, id))?.[0] ?? "";
+      expect(tag).toContain("focus-visible:ring-2");
+      expect(tag).toContain("min-h-[var(--ui-tap-min)]");
+    }
+  });
+
+  it("keeps Moyenne / Meilleur / Total a plain row, outside both links", async () => {
+    const html = await card(SAMPLE);
+    const strip = html.indexOf("<dl");
+    expect(strip).toBeGreaterThan(-1);
+    const before = html.slice(0, strip);
+    expect((before.match(/<a /g) ?? []).length).toBe((before.match(/<\/a>/g) ?? []).length);
+    const dl = html.slice(strip, html.indexOf("</dl>", strip));
+    expect(dl).not.toContain("<a ");
+    expect(dl).not.toContain("<button");
+    for (const key of ["fpl.average", "fpl.highest", "fpl.total"] as const) {
+      expect(text(dl)).toContain(fr[key]);
+    }
+  });
+
+  it("with no result yet: an en dash, never 0, and no round to name or link", async () => {
+    const html = await card({ ...SUMMARY, gameweekPoints: 0, pointsGameweek: null });
+    const points = link(html, "fantasy-team-card-points");
+    expect(attr(points, "href")).toBe("/fantasy/points");
+    expect(attr(points, "aria-label")).toBe("Voir mes points");
+    expect(text(points)).toContain(fr["fantasy.stat.none"]);
+    expect(text(points)).toContain(escapeHtml("Aucun point pour l'instant"));
+    expect(text(points)).not.toMatch(/\b0\b/);
+    expect(text(points)).not.toContain("J1");
+  });
+
+  it("an unknown summary reads the same as no result: a dash, never 0", async () => {
+    const html = await card(null);
+    const points = link(html, "fantasy-team-card-points");
+    expect(attr(points, "href")).toBe("/fantasy/points");
+    expect(text(points)).toContain(fr["fantasy.stat.none"]);
+    expect(text(points)).not.toMatch(/\b0\b/);
+  });
+
+  it("while the round is live, the live pill stands in for the label only when the figure is that round's", async () => {
+    const live: Gameweek = { ...ROUND_14, status: "live" };
+    const pill = `${fr["fantasy.leagues.gw"]}14 · ${fr["matches.status.live"]}`;
+
+    const own = link(
+      await card({ ...SAMPLE, pointsGameweek: 14 }, live),
+      "fantasy-team-card-points",
+    );
+    expect(text(own)).toContain(pill);
+    expect(text(own)).not.toContain("Points · J14");
+    expect(attr(own, "href")).toBe("/fantasy/points?gw=14");
+
+    // Round 14 is live but the figure is still round 13's: it says so.
+    const last = link(await card(SAMPLE, live), "fantasy-team-card-points");
+    expect(text(last)).not.toContain(pill);
+    expect(text(last)).toContain("Points · J13");
+    expect(attr(last, "href")).toBe("/fantasy/points?gw=13");
+  });
+
+  it("says the same in Arabic, in the brief's words", () => {
+    const ar = dictionaries.ar;
+    expect(ar["fantasy.hub.points_round"].replace("{n}", "13")).toBe("نقاط الجولة 13");
+    expect(ar["fantasy.hub.points_none"]).toBe("لا نقاط بعد");
+    expect(ar["fantasy.hub.points_open"].replace("{n}", "13")).toBe("عرض نقاطي في الجولة 13");
+    expect(ar["fantasy.hub.points_open_any"]).toBe("عرض نقاطي");
+    expect(fr["fantasy.hub.points_none"]).toBe("Aucun point pour l'instant");
+    expect(fr["fantasy.hub.points_open_any"]).toBe("Voir mes points");
+  });
 });
 
 describe("the hub's personal parts — design-system rules in source", () => {

@@ -73,6 +73,11 @@ export function FantasyHubRound({
   const firstAway = first ? club(first.awayClubId) : undefined;
   const matchLabel =
     firstHome && firstAway ? `${clubLabel(firstHome, tr)} – ${clubLabel(firstAway, tr)}` : null;
+  // BG-0155 (2): the card sits under this round's title, so it shows the
+  // summary's figure only when the figure is this round's. Last round's score
+  // (the summary falls back to the latest result) is not this round's: dash.
+  const roundPoints =
+    summary && summary.pointsGameweek === gameweek.number ? summary.gameweekPoints : null;
 
   const tile = (label: string, value: string) => (
     <div className={cn("flex flex-col items-center px-1 py-3 text-center", ui.surface.card)}>
@@ -124,10 +129,10 @@ export function FantasyHubRound({
             <div className="flex items-center justify-between gap-3">
               <p className="flex items-baseline gap-1.5">
                 <bdi className={cn(ui.score.md, ui.tone.default)}>
-                  {summary ? nf.format(summary.gameweekPoints) : none}
+                  {roundPoints === null ? none : nf.format(roundPoints)}
                 </bdi>
                 <span className={cn(ui.text.secondary, ui.tone.muted)}>
-                  {pointsUnit(summary?.gameweekPoints, t)}
+                  {pointsUnit(roundPoints, t)}
                 </span>
               </p>
               {live ? <UiLivePill /> : null}

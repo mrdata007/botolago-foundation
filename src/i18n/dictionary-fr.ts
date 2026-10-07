@@ -955,6 +955,12 @@ export const fr = {
   "fantasy.hub.invite_copied": "Lien copié",
   "fantasy.hub.invite_message": "Rejoins ma ligue « {name} » sur BotolaGO : {link}",
   "fantasy.hub.invite_ready": "Ligue « {name} » créée. Invitez vos amis :",
+  // BG-0155 (2): the team card's figure names the round it belongs to, and
+  // its block opens Points at that round. With no result yet: no round, no 0.
+  "fantasy.hub.points_round": "Points · J{n}",
+  "fantasy.hub.points_none": "Aucun point pour l'instant",
+  "fantasy.hub.points_open": "Voir mes points de la journée {n}",
+  "fantasy.hub.points_open_any": "Voir mes points",
   "fantasy.bench_short": "Banc",
   "fantasy.xpts": "xPts",
   "fantasy.chip.bench_boost": "Bench Boost",
