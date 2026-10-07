@@ -136,9 +136,15 @@ describe("the league page (/fantasy/leagues/$leagueId)", () => {
     expect(owner).toContain('variant="ink"');
     expect(owner).toContain('{t("fantasy.leagues.invite_friends")}');
     expect(owner).toContain("onClick={() => setConfirmInvite(true)}");
+    // The new code grouped in fours (as on the leagues page), then the share
+    // buttons without a second copy of the code; focused when it arrives.
+    expect(owner).toContain("<LeagueInviteCode code={inviteCode} />");
     expect(owner).toContain(
-      '<InviteLinkShare game="fantasy" league={leagueQ.data.name} code={inviteCode} showCode />',
+      '<InviteLinkShare game="fantasy" league={leagueQ.data.name} code={inviteCode} />',
     );
+    expect(owner).not.toContain("showCode");
+    expect(owner).toContain("ref={shared} tabIndex={-1}");
+    expect(source).toContain("if (inviteCode) shared.current?.focus();");
     expect(owner).not.toContain("fantasy.leagues.invite_owner_only");
     const member = from(") : ( <p", "</p>");
     expect(member).toContain('{t("fantasy.leagues.invite_owner_only")}');
@@ -170,6 +176,23 @@ describe("the league page (/fantasy/leagues/$leagueId)", () => {
     );
     expect(modal).toContain('description={t("fantasy.leagues.leave_body")}');
     expect(modal).toContain('variant="destructive"');
+  });
+
+  it("never offers 'Quitter la ligue' to the owner, whom the server refuses", () => {
+    // api.leave_fantasy_league only removes a member whose role is not owner.
+    const leave = from("{isLeagueOwner(leagueQ.data) ? null : (", "</UiButton>");
+    expect(leave).toContain('{t("fpl.leave_league")}');
+    expect(source.match(/t\("fpl\.leave_league"\)/g)).toHaveLength(2);
+  });
+
+  it("returns focus to the control that opened each confirmation", () => {
+    expect(source).toContain("onCloseAutoFocus={refocus(inviteOpener)}");
+    expect(source).toContain("onCloseAutoFocus={refocus(leaveOpener)}");
+  });
+
+  it("after leaving goes to the leagues list, not back in history", () => {
+    expect(source).toContain('void navigate({ to: "/fantasy/leagues", replace: true });');
+    expect(source).not.toContain("history.back()");
   });
 
   it("only the confirmation's destructive button calls leave(); 'Annuler' only closes", () => {
@@ -210,7 +233,7 @@ describe("the leagues page (/fantasy/leagues)", () => {
     expect(source).toContain(share);
     // Under the form's card, not inside it, and not a second copy of the code.
     expect(source.indexOf(share)).toBeGreaterThan(source.indexOf("</form> </UiCard>"));
-    expect(source).toContain("<InviteCode code={created.code} />");
+    expect(source).toContain("<LeagueInviteCode code={created.code} />");
     expect(source).not.toMatch(/<InviteLinkShare[^>]*showCode/);
   });
 });
@@ -236,8 +259,8 @@ describe("the wording (brief BG-0155, improvement 4)", () => {
     ["fantasy.leagues.leave_title", "Quitter « {league} » ?", "مغادرة «{league}»؟"],
     [
       "fantasy.leagues.leave_body",
-      "Vous disparaîtrez de son classement. Pour revenir, il vous faudra un nouveau code d'invitation.",
-      "ستختفي من ترتيبه، ولن تعود إليه إلا برمز دعوة جديد.",
+      "Vous disparaîtrez de son classement. Pour revenir, il vous faudra un code d'invitation.",
+      "ستختفي من ترتيبه، ولن تعود إليه إلا برمز دعوة.",
     ],
     ["fantasy.leagues.create_submit", "Créer", "إنشاء"],
     ["fpl.create_league", "Créer une ligue", "إنشاء دوري"],

@@ -1,13 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { isMfaStepUpError } from "@/backend/auth/step-up";
 import type { ResetInviteCodeDto } from "@/backend/predictions/contracts";
 import { mapPredictionsError } from "@/backend/predictions/errors";
+import { LeagueInviteCode } from "@/components/fantasy/LeagueInviteCode";
 import { CupInfo } from "@/components/fantasy-lists/CupInfo";
 import { InviteLinkShare } from "@/components/predictions/leagues/InviteLinkShare";
 import { LeaguePredictionsStandings } from "@/components/predictions/leagues/LeaguePredictionsStandings";
@@ -104,6 +105,20 @@ function LeagueDetailBody() {
   const [confirmInvite, setConfirmInvite] = useState(false);
   // The new code, shown once with the share buttons: only its digest is kept.
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const navigate = useNavigate();
+  // Focus after a confirmation closes: back to the control that opened it
+  // (`UiModal` has no trigger to return to), and to the new code once it
+  // arrives, so a screen-reader user hears it rather than the page's top.
+  const inviteOpener = useRef<HTMLDivElement>(null);
+  const leaveOpener = useRef<HTMLDivElement>(null);
+  const shared = useRef<HTMLDivElement>(null);
+  const refocus = (box: { current: HTMLElement | null }) => (event: Event) => {
+    event.preventDefault();
+    box.current?.querySelector<HTMLElement>("button:not(:disabled)")?.focus();
+  };
+  useEffect(() => {
+    if (inviteCode) shared.current?.focus();
+  }, [inviteCode]);
   // The reader's own team, which gets no "Signaler" (see `isOwnStanding`).
   const ownTeamId = useFantasyOwned().snapshot?.teamId ?? null;
 
@@ -132,7 +147,9 @@ function LeagueDetailBody() {
       await fantasyService.leaveLeague(leagueQ.data.id);
       await qc.invalidateQueries({ queryKey: key("leagues", "private") });
       toast.success(t("fantasy.leagues.left"));
-      window.history.back();
+      // To the leagues list, not `history.back()`: after joining, Back is the
+      // join form, and from a shared link it is outside the app.
+      void navigate({ to: "/fantasy/leagues", replace: true });
     } catch (error) {
       // Refused until the one-time code is in: said as such, once (the auth
       // layer says it too, under the same toast id), not "Une erreur est
@@ -343,21 +360,33 @@ function LeagueDetailBody() {
                 <>
                   {isLeagueOwner(leagueQ.data) ? (
                     <div className="mt-6 flex flex-col gap-3" data-testid="fantasy-league-invite">
-                      <UiButton
-                        variant="ink"
-                        onClick={() => setConfirmInvite(true)}
-                        disabled={invite.isPending}
-                      >
-                        <UserPlus className="h-4 w-4" aria-hidden />
-                        {t("fantasy.leagues.invite_friends")}
-                      </UiButton>
+                      <div ref={inviteOpener} className="contents">
+                        <UiButton
+                          variant="ink"
+                          onClick={() => setConfirmInvite(true)}
+                          disabled={invite.isPending}
+                        >
+                          <UserPlus className="h-4 w-4" aria-hidden />
+                          {t("fantasy.leagues.invite_friends")}
+                        </UiButton>
+                      </div>
                       {inviteCode ? (
-                        <InviteLinkShare
-                          game="fantasy"
-                          league={leagueQ.data.name}
-                          code={inviteCode}
-                          showCode
-                        />
+                        // The code grouped in fours, as on the leagues page,
+                        // then the share buttons; focused when it arrives.
+                        <div
+                          ref={shared}
+                          tabIndex={-1}
+                          role="group"
+                          aria-label={t("fpl.invite_code")}
+                          className={cn("flex flex-col gap-3", ui.radius.card, ui.focus)}
+                        >
+                          <LeagueInviteCode code={inviteCode} />
+                          <InviteLinkShare
+                            game="fantasy"
+                            league={leagueQ.data.name}
+                            code={inviteCode}
+                          />
+                        </div>
                       ) : null}
                     </div>
                   ) : (
@@ -368,17 +397,26 @@ function LeagueDetailBody() {
                       {t("fantasy.leagues.invite_owner_only")}
                     </p>
                   )}
-                  <UiButton
-                    variant="outline"
-                    className={cn("mt-6 border-[color:var(--ui-rule-strong)]", ui.tone.default)}
-                    onClick={() => setConfirmLeave(true)}
-                    disabled={busy}
-                  >
-                    {t("fpl.leave_league")}
-                  </UiButton>
+                  {/* The owner cannot leave (api.leave_fantasy_league refuses
+                      the owner), so only members are offered it, as on the
+                      Pronostics league page. */}
+                  {isLeagueOwner(leagueQ.data) ? null : (
+                    <div ref={leaveOpener} className="contents">
+                      <UiButton
+                        variant="outline"
+                        className={cn("mt-6 border-[color:var(--ui-rule-strong)]", ui.tone.default)}
+                        onClick={() => setConfirmLeave(true)}
+                        disabled={busy}
+                        data-testid="fantasy-league-leave"
+                      >
+                        {t("fpl.leave_league")}
+                      </UiButton>
+                    </div>
+                  )}
                   <UiModal
                     open={confirmInvite}
                     onOpenChange={setConfirmInvite}
+                    onCloseAutoFocus={refocus(inviteOpener)}
                     title={t("fantasy.leagues.invite_friends")}
                     description={t("fantasy.leagues.invite_confirm")}
                     footer={
@@ -401,6 +439,7 @@ function LeagueDetailBody() {
                   <UiModal
                     open={confirmLeave}
                     onOpenChange={setConfirmLeave}
+                    onCloseAutoFocus={refocus(leaveOpener)}
                     title={withLeagueName(t("fantasy.leagues.leave_title"), leagueQ.data.name)}
                     description={t("fantasy.leagues.leave_body")}
                     footer={
