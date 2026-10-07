@@ -34,11 +34,14 @@ export function DeadlineCard({
   freeTransfers?: number;
 }) {
   const { t, lang } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
+  // Latin digits in both languages (BG-0155), the padding zero included. The
+  // Arabic-Indic zero (U+0660) used here before read as a dot next to a Latin
+  // digit, so 4 minutes did not read as "04".
+  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR");
   const parts = useSecondCountdown(gameweek.deadline);
   const passed = parts?.passed === true;
   const next = passed ? nextDeadlineAfter(gameweek, Date.now()) : null;
-  const pad = (value: number) => nf.format(value).padStart(2, lang === "ar" ? "٠" : "0");
+  const pad = (value: number) => nf.format(value).padStart(2, "0");
   const dash = "–";
 
   return (
