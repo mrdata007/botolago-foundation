@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { dictionaries } from "../../src/i18n/dictionaries";
+import { NOTIFICATION_EMAIL_LIVE } from "../../src/lib/feature-flags";
 import {
   expectNoHorizontalOverflow,
   expectNothingOffScreen,
@@ -298,6 +299,13 @@ for (const lang of ["fr", "ar"] as const) {
     await initializeLanguage(page, lang);
     await gotoHydrated(page, "/pepites", lang);
     const card = page.getByTestId("pepites-email-card");
+    if (!NOTIFICATION_EMAIL_LIVE) {
+      // Nothing would be sent (owner, 2026-10-07): no card, no switch, no promise.
+      await expect(page.getByTestId("pepites-full-ranking")).toBeVisible();
+      await expect(card).toHaveCount(0);
+      await diagnostics.verify(testInfo);
+      return;
+    }
     await expect(card).toContainText(copy(lang, "pepites.email.sign_in"));
     await expect(card.getByRole("switch")).toHaveCount(0);
 

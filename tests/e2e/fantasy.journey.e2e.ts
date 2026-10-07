@@ -230,7 +230,8 @@ test.describe("Fantasy — reconstructed FPL journeys", () => {
     await expect(page.getByRole("heading", { name: leagueName })).toBeVisible();
     await expect(page.getByText(/Dernière mise à jour/)).toBeVisible();
     await page.getByRole("link", { name: /Retour/ }).click();
-    await expect(page.getByRole("heading", { name: /Ligues & Coupes/ })).toBeVisible();
+    // "Ligues" alone since the Cup went (owner, 2026-10-07: no backend runs one).
+    await expect(page.getByRole("heading", { name: "Ligues", exact: true })).toBeVisible();
   });
 
   test("repeated navigation between Fantasy screens never sticks on loading", async ({ page }) => {

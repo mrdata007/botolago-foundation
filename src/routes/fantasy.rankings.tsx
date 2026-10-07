@@ -501,7 +501,7 @@ function MyLeagues() {
         <LeagueList rows={rows} label={t("fantasy.rankings.tab_leagues")} />
       )}
       <UiLinkButton to="/fantasy/leagues" variant="soft">
-        {t("fpl.leagues_cups")}
+        {t("fpl.leagues")}
       </UiLinkButton>
     </div>
   );

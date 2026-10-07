@@ -56,6 +56,8 @@ export const fr = {
   "notifications.unread": "Non lue",
   "notifications.signin_title": "Connectez-vous pour voir vos notifications",
   "notifications.signin_body": "Vos rappels de match et alertes Fantasy arrivent ici.",
+  "notifications.not_sent_yet":
+    "Les rappels de match et les alertes Fantasy ne sont pas encore envoyés.",
   "reminders.bell.off": "Me rappeler ce match",
   "reminders.bell.on": "Rappel activé pour ce match",
   "reminders.sign_in_reason": "Connectez-vous pour être rappelé avant le match.",
@@ -893,9 +895,9 @@ export const fr = {
   "fantasy.meta.help_title": "Aide et questions fréquentes — BotolaGO Fantasy",
   "fantasy.meta.help_description":
     "Les réponses aux questions sur BotolaGO Fantasy : connexion, choix de l'effectif, budget, formations, capitaine, nom d'équipe et jetons.",
-  "fantasy.meta.leagues_title": "Ligues et coupes — BotolaGO Fantasy",
+  "fantasy.meta.leagues_title": "Ligues — BotolaGO Fantasy",
   "fantasy.meta.leagues_description":
-    "Vos ligues privées et générales sur BotolaGO Fantasy : classements, coupes et invitations pour vos amis.",
+    "Vos ligues privées et générales sur BotolaGO Fantasy : classements et invitations pour vos amis.",
   "fantasy.meta.league_title": "Classement de la ligue — BotolaGO Fantasy",
   "fantasy.meta.league_description":
     "Le classement d'une ligue BotolaGO Fantasy : les points de chaque manager à la journée et sur la saison.",
@@ -1037,9 +1039,7 @@ export const fr = {
   "fpl.top_players": "Meilleurs joueurs",
   "fpl.news_video": "Actualités",
   "fpl.view_all": "Tout voir",
-  "fpl.leagues_cups": "Ligues & Coupes",
   "fpl.leagues": "Ligues",
-  "fpl.cups": "Coupes",
   "fpl.join_leagues": "Rejoindre des ligues",
   "fpl.configure_leagues": "Gérer les ligues",
   "fpl.general_leagues": "Ligues générales",
@@ -1126,16 +1126,6 @@ export const fr = {
   "fpl.head_to_head": "Face à face",
   "fpl.players_to_be_added": "Joueurs ajoutés après la prochaine mise à jour des points",
   "fpl.manager": "Manager",
-  "fpl.cup_not_started": "La coupe démarre à la Journée {n}.",
-  "fpl.cup_not_qualified": "Vous n’êtes pas encore qualifié pour la coupe.",
-  "fpl.cup_how_title": "Comment fonctionne la coupe ?",
-  "fpl.cup_how_body":
-    "Chaque équipe est tirée au sort contre une autre, sauf exemption. Le vainqueur (l’équipe avec le meilleur score de la journée moins les malus de transferts) passe au tour suivant et à un nouveau tirage ; les perdants sont éliminés. Le processus continue jusqu’à la finale entre les deux dernières équipes.",
-  "fpl.cup_tiebreak":
-    "En cas d’égalité, les critères suivants s’appliquent jusqu’à désigner un vainqueur :",
-  "fpl.cup_tb1": "1. Plus de buts marqués dans la journée",
-  "fpl.cup_tb2": "2. Moins de buts encaissés dans la journée",
-  "fpl.cup_tb3": "3. Tirage au sort virtuel",
   "fpl.help_title": "Aide et règles",
   "fpl.how_can_we_help": "Comment pouvons-nous vous aider ?",
   "fpl.current_season": "Saison en cours",
@@ -1604,6 +1594,7 @@ export const fr = {
   "profile.clubs.favorite": "Favori",
   "profile.saved_articles": "Articles enregistrés",
   "profile.notifications": "Notifications",
+  "profile.notifications_not_active": "Pas encore actives",
   "profile.edit": "Modifier le profil",
   "profile.sign_out": "Se déconnecter",
   "profile.sign_out_title": "Se déconnecter ?",
@@ -2395,6 +2386,8 @@ export const fr = {
   "pepites.follow.sheet_title": "Suivez {name}",
   "pepites.follow.sheet_body":
     "Créez un compte gratuit pour suivre ses matchs, recevoir le Top 10 du lundi et l'ajouter à votre équipe Fantasy.",
+  "pepites.follow.sheet_body_no_email":
+    "Créez un compte gratuit pour suivre ses matchs et l'ajouter à votre équipe Fantasy.",
   "pepites.follow.create_account": "Créer un compte",
   "pepites.follow.have_account": "J'ai déjà un compte",
   "pepites.follow.followed": "Vous suivez {name}.",

@@ -5,7 +5,6 @@ import { toast } from "sonner";
 
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { isMfaStepUpError } from "@/backend/auth/step-up";
-import { CupInfo } from "@/components/fantasy-lists/CupInfo";
 import { LeaguePredictionsStandings } from "@/components/predictions/leagues/LeaguePredictionsStandings";
 import { roundQueryOptions } from "@/components/predictions/use-predictions-round";
 import {
@@ -31,7 +30,6 @@ import {
   UiEmptyState,
   UiErrorState,
   UiHeader,
-  UiPill,
   UiRankMovement,
   UiSkeleton,
   UiTable,
@@ -58,7 +56,9 @@ export const Route = createFileRoute("/fantasy/leagues/$leagueId")({
 
 /**
  * League detail: the league's name in the header, underline tabs (Ligue |
- * Coupe), the "last updated" line and the standings.
+ * Pronostics), the "last updated" line and the standings. There is no Coupe
+ * tab: no backend runs a cup (owner, 2026-10-07), and the tab announced one
+ * with a start date it made up.
  *
  * The standings are the A-Rankings table: one card, a transparent head of
  * kicker labels, rank / team over manager / gameweek / total, and the quiet
@@ -81,7 +81,7 @@ function LeagueDetailBody() {
   const qc = useQueryClient();
   const screen = useFantasyScreen();
   const { key } = useFantasyDataSource();
-  const [tab, setTab] = useState<"league" | "predictions" | "cup">("league");
+  const [tab, setTab] = useState<"league" | "predictions">("league");
   // The journée the Pronostics tab ranks by default (BG-0146).
   const predictionsRound = useQuery({
     ...roundQueryOptions(null, lang),
@@ -181,7 +181,6 @@ function LeagueDetailBody() {
                   },
                 ]
               : []),
-            { value: "cup", label: t("fpl.cups"), panelId: "league-panel-cup" },
           ]}
         />
         <section
@@ -199,7 +198,7 @@ function LeagueDetailBody() {
                   : null
               }
             />
-          ) : tab === "league" ? (
+          ) : (
             <>
               <p className={cn("text-center", ui.text.meta, ui.tone.muted)}>
                 {t("fpl.last_updated")}:{" "}
@@ -330,12 +329,6 @@ function LeagueDetailBody() {
                 </UiButton>
               ) : null}
             </>
-          ) : (
-            <CupInfo
-              lead={
-                <UiPill>{t("fpl.cup_not_started").replace("{n}", String((gw ?? 1) + 1))}</UiPill>
-              }
-            />
           )}
         </section>
       </FantasyScreenGate>

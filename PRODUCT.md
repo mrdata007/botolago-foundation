@@ -196,11 +196,14 @@ the snapshot) was not checked against the live site.
 
 - **Email notifications:** mode `off` at the last record (2026-10-04). As a result, the match reminder
   bell, the Fantasy deadline and recap emails, and the Pépites weekly email send nothing. The in-app
-  inbox very probably receives nothing either. Some interface copy still promises these reminders.
-- **Fantasy Cup and public leagues:** the screens and copy exist, but no backend path works.
+  inbox very probably receives nothing either. Since 2026-10-07 the interface hides the reminder bell,
+  the Pépites weekly email card and the email and alert switches, and says reminders are not sent yet,
+  until `NOTIFICATION_EMAIL_LIVE` (`src/lib/feature-flags.ts`) is switched on with the email mode.
+- **Fantasy Cup and public leagues:** no backend path works. The Cup tabs and copy were removed on
+  2026-10-07 and the leagues page is titled "Ligues"; the join screen's public-league copy remains.
   Head-to-head leagues appear only as a disabled option, with copy saying they will come later.
-- **Google and Apple sign-in:** the buttons render, but the providers were last recorded as not enabled
-  in Supabase. **Unknown:** whether they work now.
+- **Google and Apple sign-in:** the buttons render, and both providers are enabled in production
+  Supabase Auth (its public settings, checked 2026-10-07). No sign-in through either is recorded.
 - **AI-written articles and GNews ingestion:** both are switched off or dormant.
 - **Phone app and push alerts** (merged after the site check): the shell, the phone's push code and the
   cloud build are in the repository, but no build has run. The push sending side ships with its switch

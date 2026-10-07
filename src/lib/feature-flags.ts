@@ -110,11 +110,56 @@ export const NEWS_ENABLED = true;
 export const DARK_MODE_ENABLED = true;
 
 /**
- * Third-party OAuth sign-in — OFF at launch.
+ * Notification e-mail is really being sent — OFF.
  *
- * BG-0111. Signup and login rendered "Continuer avec Google" and "Continuer
- * avec Apple" against a project that has no OAuth provider enabled at all.
- * Probed directly against production auth:
+ * Owner decision, 2026-10-07 (critique plan "go", item P1): the interface
+ * must not promise reminders or e-mails that nobody receives. Production
+ * `app_private.notification_email_settings.mode` has been `off` since
+ * 2026-10-04, so no match reminder, Fantasy deadline or recap e-mail and no
+ * Pépites weekly e-mail goes out, and the in-app inbox, which the same tick
+ * fills, very probably stays empty. The browser cannot read that setting
+ * (`app_private`), so this constant mirrors it.
+ *
+ * Owner: turn this to `true` and republish when the notification e-mail mode
+ * goes `live` (step 7 of "Switching it on" in
+ * docs/backend/EMAIL_NOTIFICATIONS.md); leave it `false` in `test` mode,
+ * where only the test accounts are e-mailed. Turn it back to `false` if the
+ * mode goes back to `off` for more than a moment. If the phone app's push
+ * alerts go live before e-mail, revisit it: the reminder bell feeds push too.
+ *
+ * This is a HIDE, not a deletion. With it on, every surface below renders
+ * exactly as before; with it off they say plainly that reminders are not sent
+ * yet, or are not drawn. Nothing reads or writes the stored preferences
+ * differently either way. Components read it through
+ * `useNotificationEmailLive()` (`src/lib/notification-email-live.ts`), so a
+ * test can render both states; the app mounts no override, so this constant
+ * decides.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/components/common/MatchCard.tsx` — the reminder bell on match rows
+ *   - `src/components/pepites/PepitesHome.tsx` — the weekly e-mail card
+ *   - `src/components/pepites/PepitesFollowButton.tsx` — the follow sheet's line
+ *   - `src/routes/notifications.tsx` — the inbox's empty and sign-in copy
+ *   - `src/routes/auth.profile-setup.tsx` — step 3's alert and e-mail boxes
+ *   - `src/routes/profile.tsx` — the "Notifications n/3" row
+ *   - `src/components/fantasy/FantasyHubPersonal.tsx` — the hub's e-mail
+ *     reminder block and its placeholder
+ *   - `src/components/pepites/admin/PepitesAdminEditions.tsx` — the "Publier
+ *     maintenant" prompt
+ */
+export const NOTIFICATION_EMAIL_LIVE: boolean = false;
+
+/**
+ * Third-party OAuth sign-in — ON: Google and Apple are enabled.
+ *
+ * Checked 2026-10-07: production Supabase Auth's public settings
+ * (`GET /auth/v1/settings`) report `google: true` and `apple: true`, so both
+ * buttons lead to a working provider. The history below is why the flag
+ * exists and is kept for that reason; it no longer describes production.
+ *
+ * BG-0111 (shipped OFF at launch). Signup and login rendered "Continuer avec
+ * Google" and "Continuer avec Apple" against a project that had no OAuth
+ * provider enabled at all. Probed directly against production auth then:
  *
  *   GET /auth/v1/authorize?provider=<p>
  *   -> {"error_code":"validation_failed",
@@ -130,8 +175,9 @@ export const DARK_MODE_ENABLED = true;
  * `signInWithApple`, the `GoogleGlyph` / `AppleGlyph` marks and the
  * `auth.google` / `auth.apple` / `auth.or_continue_with` strings all stay.
  *
- * Flip to `true` only once a provider is actually enabled in Supabase Auth,
- * and prune the button list here to the providers that are.
+ * Keep it `true` only while a provider is enabled in Supabase Auth: set it
+ * back to `false` if both are switched off, and prune the button list to the
+ * providers that are on.
  *
  * Gated surfaces (keep this list current):
  *   - `src/routes/auth.login.tsx` — divider + provider buttons

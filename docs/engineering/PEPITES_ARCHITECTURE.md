@@ -793,7 +793,9 @@ false`, plus `pepites_weekly_email_changed_at timestamptz null`.
   so the page can say why nothing arrives.
 - The unsubscribe link (below).
 - In the app: an unticked switch on the Pépites home and in the notification
-  settings. Nothing is pre-ticked. A guest is asked to sign in first.
+  settings. Nothing is pre-ticked. A guest is asked to sign in first. The site
+  shows the switch only while `NOTIFICATION_EMAIL_LIVE` is on (since
+  2026-10-07; notification email mode is `off`).
 
 **Sending.** Through the existing pipeline, unchanged in its mechanics:
 

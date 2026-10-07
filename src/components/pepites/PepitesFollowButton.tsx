@@ -11,6 +11,7 @@ import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { PepitesError } from "@/backend/pepites/errors";
 import { ui, UiButton, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useNotificationEmailLive } from "@/lib/notification-email-live";
 import { pepitesService } from "@/services/pepites";
 import { cn } from "@/lib/utils";
 
@@ -173,6 +174,12 @@ function FollowGuestSheet({
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const navigating = useRef(false);
+  // "…recevoir le Top 10 du lundi…" only while notification e-mail is really
+  // sent (`NOTIFICATION_EMAIL_LIVE`). Two literal keys: the i18n gate cannot
+  // read a key chosen inside the call.
+  const emailLive = useNotificationEmailLive();
+  let body = t("pepites.follow.sheet_body_no_email");
+  if (emailLive) body = t("pepites.follow.sheet_body");
   const go = (to: "/auth/login" | "/auth/register") => {
     navigating.current = true;
     onOpenChange(false);
@@ -189,7 +196,7 @@ function FollowGuestSheet({
         } else onCloseAutoFocus(event);
       }}
       title={t("pepites.follow.sheet_title").replace("{name}", playerName)}
-      description={t("pepites.follow.sheet_body")}
+      description={body}
     >
       <div className="flex flex-col gap-3 p-4">
         <UiButton variant="gradient" onClick={() => go("/auth/register")}>

@@ -28,6 +28,7 @@ import { authService } from "@/services/auth";
 import { footballService } from "@/services/football";
 import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
 import { useNativePushSwitch } from "@/services/use-native-push";
+import { useNotificationEmailLive } from "@/lib/notification-email-live";
 import type { Language } from "@/types/domain";
 import type { NotificationPreferences } from "@/services/auth";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -75,6 +76,12 @@ function ProfileSetupPage() {
   // turning the switch on is when the phone asks permission, so the choice is
   // not held back until "Terminer".
   const push = useNativePushSwitch();
+  // The three alert boxes and the e-mail box only while notification e-mail
+  // is really sent (`NOTIFICATION_EMAIL_LIVE`); until then the step says so
+  // instead. Nothing is written for them either way: "Terminer" saves the
+  // categories exactly as they were loaded, and an untouched e-mail box is
+  // never saved.
+  const emailLive = useNotificationEmailLive();
   const [chosenLang, setChosenLang] = useState<Language>(lang);
   const [submitting, setSubmitting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -399,40 +406,51 @@ function ProfileSetupPage() {
             <Bell className={cn("h-4 w-4", ui.tone.muted)} aria-hidden />{" "}
             {t("auth.setup.notifications")}
           </div>
-          {(
-            [
-              ["matchAlerts", "auth.setup.notif_match", "auth.setup.notif_match_desc"],
-              ["breakingNews", "auth.setup.notif_news", "auth.setup.notif_news_desc"],
-              ["fantasyDeadlines", "auth.setup.notif_deadline", "auth.setup.notif_deadline_desc"],
-            ] as const
-          ).map(([key, label, desc]) => (
-            // Three 16px boxes with a 16px target. The wrapping label already
-            // rescued the click, but the box is what a reader aims at, so
-            // `UiCheckbox` keeps the ink at 16px and grows a transparent 44px
-            // target behind it, and paints the checked plate in `--ui-ink`
-            // rather than the browser's own accent, which is not a colour this
-            // product chose. The bordered row stays — it is what separates
-            // three stacked toggles from each other.
-            <UiCheckbox
-              key={key}
-              checked={prefs[key]}
-              onChange={(e) => setPrefs((p) => ({ ...p, [key]: e.target.checked }))}
-              label={t(label)}
-              hint={t(desc)}
-              className={cn("px-3 py-3", ui.space.row, ui.radius.card, ui.rule.all)}
-            />
-          ))}
+          {!emailLive ? (
+            <p
+              data-testid="setup-notifications-not-sent"
+              className={cn("-mt-2", ui.text.secondary, ui.tone.muted)}
+            >
+              {t("notifications.not_sent_yet")}
+            </p>
+          ) : null}
+          {emailLive &&
+            (
+              [
+                ["matchAlerts", "auth.setup.notif_match", "auth.setup.notif_match_desc"],
+                ["breakingNews", "auth.setup.notif_news", "auth.setup.notif_news_desc"],
+                ["fantasyDeadlines", "auth.setup.notif_deadline", "auth.setup.notif_deadline_desc"],
+              ] as const
+            ).map(([key, label, desc]) => (
+              // Three 16px boxes with a 16px target. The wrapping label already
+              // rescued the click, but the box is what a reader aims at, so
+              // `UiCheckbox` keeps the ink at 16px and grows a transparent 44px
+              // target behind it, and paints the checked plate in `--ui-ink`
+              // rather than the browser's own accent, which is not a colour this
+              // product chose. The bordered row stays — it is what separates
+              // three stacked toggles from each other.
+              <UiCheckbox
+                key={key}
+                checked={prefs[key]}
+                onChange={(e) => setPrefs((p) => ({ ...p, [key]: e.target.checked }))}
+                label={t(label)}
+                hint={t(desc)}
+                className={cn("px-3 py-3", ui.space.row, ui.radius.card, ui.rule.all)}
+              />
+            ))}
 
           {/* The channel, after the three categories it carries. Disabled
               until the stored value has loaded, so it never shows a guess. */}
-          <UiCheckbox
-            checked={emailChoice ?? savedEmail ?? false}
-            disabled={savedEmail === undefined || submitting}
-            onChange={(e) => setEmailChoice(e.target.checked)}
-            label={t("auth.setup.notif_email")}
-            hint={t("auth.setup.notif_email_desc")}
-            className={cn("px-3 py-3", ui.space.row, ui.radius.card, ui.rule.all)}
-          />
+          {emailLive && (
+            <UiCheckbox
+              checked={emailChoice ?? savedEmail ?? false}
+              disabled={savedEmail === undefined || submitting}
+              onChange={(e) => setEmailChoice(e.target.checked)}
+              label={t("auth.setup.notif_email")}
+              hint={t("auth.setup.notif_email_desc")}
+              className={cn("px-3 py-3", ui.space.row, ui.radius.card, ui.rule.all)}
+            />
+          )}
 
           {/* Only in the phone app, where alerts can be delivered. Disabled
               until the account's choice and the phone's permission are known. */}

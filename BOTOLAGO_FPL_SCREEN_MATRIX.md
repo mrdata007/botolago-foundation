@@ -68,6 +68,11 @@ no results).
 | FPL-026 | Team profile — Current Season (1:206)                         | `/fantasy/profile` — Team Overview rows, chip badges, Gameweek History                                                                                         | no               | PASS   | PASS       | M       | `auth_profile_season.png`, `anon_fantasy_profile.png`                           |
 | FPL-027 | Manager profile (1:207)                                       | `/fantasy/profile` → Manager Profile: flag, Manage Account, Season History                                                                                     | no               | PASS   | PASS       | M       | `auth_profile_manager.png`, `ar_profile.png`                                    |
 
+Since 2026-10-07 the Cup is gone from the app: the Leagues/Cups tabs of FPL-015, the Cup tab of
+FPL-016 and the FPL-017 screen were removed because no backend runs a cup
+([brief](docs/engineering/tasks/honest-promises/screen-brief.md)). The verdicts above are those of
+the 2026-09-18 pass.
+
 ## Derived states (no dedicated Figma board, required by the journey)
 
 | ID      | State                                                   | BotolaGO route / state                                                                                   | Visual basis                   | Functional | Tested                                                             |

@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 
 import { ui, UiChip, UiEmptyState, UiIconLinkButton, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useNotificationEmailLive } from "@/lib/notification-email-live";
 import { cn } from "@/lib/utils";
 
 import { editionItems, formatNumber, POSITION_GROUPS, positionShort } from "./pepites-format";
@@ -119,6 +120,9 @@ export function PepitesHome() {
   const beforeFirst = home.data?.available === true && home.data.source === "previous_season";
   const methodology = useQuery({ ...methodologyQueryOptions(viewer), enabled: beforeFirst });
   const firstRound = firstEditionRound(methodology.data);
+  // The weekly e-mail card only while notification e-mail is really sent
+  // (`NOTIFICATION_EMAIL_LIVE`): until then nobody would receive it.
+  const emailLive = useNotificationEmailLive();
 
   if (pointerQuery.isPending) {
     return <PepitesLoadingState onRetry={() => void pointerQuery.refetch()} />;
@@ -150,7 +154,7 @@ export function PepitesHome() {
         {t("pepites.home.full_ranking")}
         <ChevronRight className="h-4 w-4" aria-hidden />
       </UiLinkButton>
-      <WeeklyEmailCard />
+      {emailLive ? <WeeklyEmailCard /> : null}
       <div className="flex flex-col gap-1">
         {edition ? <UpdatedLine iso={edition.publishedAt} /> : null}
         <p className={cn(ui.text.secondary, ui.tone.muted)}>{t("pepites.home.about")}</p>

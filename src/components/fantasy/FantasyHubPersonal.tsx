@@ -22,6 +22,7 @@ import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
 import type { FantasyScreenPhase } from "@/components/fpl/useFantasyScreen";
 import { ui, UiCard, UiLinkButton, UiLivePill, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useNotificationEmailLive } from "@/lib/notification-email-live";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
 import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
@@ -35,7 +36,7 @@ import { fantasyNextAction, nextActionLabel } from "@/services/fantasy-next-acti
 
 /**
  * The Fantasy hub's personal parts — the team card's place, "Mes ligues"
- * (with the cup) and the reminder switches — each rendered from
+ * and the reminder switches — each rendered from
  * `fantasyHubLayout` (audit 2026-09-25, A16). The hub (`fantasy.index.tsx`)
  * places them between its public parts: the gameweek band, the shortcuts,
  * the News rail and the "more about" links.
@@ -153,7 +154,7 @@ function OwnerNextAction({ gameweek }: { gameweek: Gameweek | null }) {
   );
 }
 
-/** "Mes ligues" and the cup: an owner's, held while that is still unknown. */
+/** "Mes ligues": an owner's, held while that is still unknown. */
 export function FantasyHubLeagues({
   layout,
   gameweek,
@@ -182,9 +183,13 @@ export function FantasyHubLeagues({
 /**
  * The Fantasy reminder and e-mail switches. Signed out, both used to be
  * drawn disabled with no reason given; without a team there is no deadline
- * of theirs to be reminded of.
+ * of theirs to be reminded of. While notification e-mail is not sent
+ * (`NOTIFICATION_EMAIL_LIVE` off) the block promises e-mails nobody gets, so
+ * neither it nor its placeholder is drawn; the stored choices stay as they are.
  */
 export function FantasyHubReminders({ layout }: { layout: FantasyHubLayout }) {
+  const emailLive = useNotificationEmailLive();
+  if (!emailLive) return null;
   if (layout.dashboard === "reserve") return <DashboardPlaceholder section="reminders" />;
   if (layout.dashboard !== "show") return null;
   return <NotificationsSection />;
@@ -193,8 +198,8 @@ export function FantasyHubReminders({ layout }: { layout: FantasyHubLayout }) {
 /**
  * A dashboard section's place while it is not yet known whether it applies
  * (`dashboard: "reserve"`), at its proportions: for "Mes ligues" the heading,
- * the two general leagues, the private ones, the two buttons and the cup
- * card; for the reminders the heading, its line and the two switches. No
+ * the two general leagues, the private ones and the two buttons; for the
+ * reminders the heading, its line and the two switches. No
  * heading and no copy — nothing in it can be untrue for a visitor who turns
  * out to have no team — and nothing announced: the team card's skeleton
  * already says the screen is loading.
@@ -212,7 +217,6 @@ function DashboardPlaceholder({ section }: { section: "leagues" | "reminders" })
           <UiSkeleton className={cn("h-36", ui.radius.card)} />
           <UiSkeleton className={cn("mt-4 h-24", ui.radius.card)} />
           <UiSkeleton className={cn("mt-3 h-11", ui.radius.full)} />
-          <UiSkeleton className={cn("mt-5 h-48", ui.radius.card)} />
         </>
       ) : (
         <>
@@ -410,7 +414,7 @@ function LeaguesSection({
     <section className={cn("mt-6", ui.space.gutter)}>
       <SectionHeader title={t("fantasy.hub.my_leagues")} />
 
-      {/* The same rows as Leagues & Cups (`LeagueList`): one look for a
+      {/* The same rows as the Leagues page (`LeagueList`): one look for a
           league wherever it is listed, and its focus ring drawn inside the
           clipped card. */}
       <SectionGroupHeader title={t("fpl.general_leagues")} />
@@ -459,13 +463,6 @@ function LeaguesSection({
           {t("fpl.configure_leagues")}
         </UiLinkButton>
       </div>
-
-      <SectionGroupHeader title={t("fpl.cups")} className="mt-5" />
-      <UiCard padding="md">
-        <p className={cn(ui.text.bodyStrong, ui.tone.default)}>{t("fpl.cup_not_qualified")}</p>
-        <h3 className={cn("mt-3", ui.text.label, ui.tone.muted)}>{t("fpl.cup_how_title")}</h3>
-        <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{t("fpl.cup_how_body")}</p>
-      </UiCard>
     </section>
   );
 }

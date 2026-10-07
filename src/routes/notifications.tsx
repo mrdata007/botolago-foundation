@@ -23,6 +23,7 @@ import { useI18n } from "@/i18n/provider";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { formatRelativeTime } from "@/lib/format-time";
 import { notificationDestination } from "@/lib/notification-link";
+import { useNotificationEmailLive } from "@/lib/notification-email-live";
 import { staggerStyle, useArrivals } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import {
@@ -61,15 +62,18 @@ function NotificationsPage() {
 
 function SignInPrompt() {
   const { t } = useI18n();
+  // While notification e-mail is off nothing reaches the inbox, so it says
+  // so rather than promising reminders (`NOTIFICATION_EMAIL_LIVE`).
+  const emailLive = useNotificationEmailLive();
+  let body = t("notifications.not_sent_yet");
+  if (emailLive) body = t("notifications.signin_body");
   return (
     <UiCard padding="lg" className="text-center">
       <Bell className={cn("mx-auto h-8 w-8", ui.tone.ink)} aria-hidden />
       <h2 className={cn("mt-3", ui.display.section, ui.tone.default)}>
         {t("notifications.signin_title")}
       </h2>
-      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
-        {t("notifications.signin_body")}
-      </p>
+      <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>{body}</p>
       <div className="mt-5 grid gap-2.5">
         <UiLinkButton to="/auth/register">
           <UserPlus className="h-4 w-4" aria-hidden /> {t("auth.prompt.register")}
@@ -91,6 +95,11 @@ function Inbox() {
   const unread = useUnreadNotificationCount();
   // A dismissed card leaves at once, before the refreshed list arrives.
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
+  // The empty inbox promises only what arrives: nothing does while
+  // notification e-mail is off (`NOTIFICATION_EMAIL_LIVE`).
+  const emailLive = useNotificationEmailLive();
+  let emptyBody = t("notifications.not_sent_yet");
+  if (emailLive) emptyBody = t("notifications.empty_body");
 
   const cards = useMemo(
     () => (inboxQ.data?.pages ?? []).flatMap((page) => page.items).filter((c) => !hidden.has(c.id)),
@@ -153,7 +162,7 @@ function Inbox() {
           <p className={cn(ui.display.section, ui.tone.default)}>
             {t("notifications.empty_title")}
           </p>
-          <p>{t("notifications.empty_body")}</p>
+          <p>{emptyBody}</p>
         </EmptyState>
       ) : (
         <>

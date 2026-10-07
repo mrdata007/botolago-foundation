@@ -57,6 +57,7 @@ import { clubStyle } from "@/lib/club-palette";
 import { findClub } from "@/components/fantasy/club-identity";
 import { ACCOUNT_DELETION_DONE_PATH, ACCOUNT_DELETION_PATH } from "@/lib/account-deletion";
 import { DARK_MODE_ENABLED, NEWS_ENABLED } from "@/lib/feature-flags";
+import { useNotificationEmailLive } from "@/lib/notification-email-live";
 import { useSavedArticles } from "@/lib/saved-articles";
 import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/report-content";
 import { cn } from "@/lib/utils";
@@ -327,6 +328,10 @@ function AuthenticatedProfile({
     user.notifications.breakingNews,
     user.notifications.fantasyDeadlines,
   ].filter(Boolean).length;
+  // "n/3" and the way to the switches only while notification e-mail is
+  // really sent (`NOTIFICATION_EMAIL_LIVE`). Until then the row says the
+  // notifications are not active yet and opens nothing; what is stored stays.
+  const notificationsLive = useNotificationEmailLive();
 
   return (
     <>
@@ -391,18 +396,29 @@ function AuthenticatedProfile({
         {/* One row for the three switches, with how many are on. They are
             edited on the wizard's notifications step — there is no other
             settings screen — and the wizard comes back here when done. */}
-        <RowLink
-          to="/auth/profile-setup"
-          search={{ next: "/profile", step: 3 }}
-          ruled
-          icon={<Bell />}
-          label={t("profile.notifications")}
-          value={
-            <bdi dir="ltr" className={ui.stat.sm}>
-              {notificationsOn}/3
-            </bdi>
-          }
-        />
+        {notificationsLive ? (
+          <RowLink
+            to="/auth/profile-setup"
+            search={{ next: "/profile", step: 3 }}
+            ruled
+            icon={<Bell />}
+            label={t("profile.notifications")}
+            value={
+              <bdi dir="ltr" className={ui.stat.sm}>
+                {notificationsOn}/3
+              </bdi>
+            }
+          />
+        ) : (
+          <div className={cn(ROW, ROW_RULE)} data-testid="profile-notifications-not-active">
+            <RowInner
+              icon={<Bell />}
+              label={t("profile.notifications")}
+              value={t("profile.notifications_not_active")}
+              chevron={false}
+            />
+          </div>
+        )}
         <ThemeRow ruled />
       </Group>
 

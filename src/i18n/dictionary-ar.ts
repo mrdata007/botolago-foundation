@@ -52,6 +52,7 @@ export const ar = {
   "notifications.unread": "غير مقروء",
   "notifications.signin_title": "سجّل الدخول لعرض إشعاراتك",
   "notifications.signin_body": "تصلك هنا تذكيرات المباريات وتنبيهات فانتازي.",
+  "notifications.not_sent_yet": "لم يبدأ بعد إرسال تذكيرات المباريات وتنبيهات فانتازي.",
   "reminders.bell.off": "ذكّرني بهذه المباراة",
   "reminders.bell.on": "التذكير مفعّل لهذه المباراة",
   "reminders.sign_in_reason": "سجّل الدخول ليتم تذكيرك قبل المباراة.",
@@ -850,9 +851,9 @@ export const ar = {
   "fantasy.meta.help_title": "المساعدة والأسئلة الشائعة — BotolaGO Fantasy",
   "fantasy.meta.help_description":
     "أجوبة الأسئلة حول BotolaGO Fantasy: تسجيل الدخول، اختيار التشكيلة، الميزانية، الخطط، القائد، اسم الفريق والجوكرات.",
-  "fantasy.meta.leagues_title": "الدوريات والكؤوس — BotolaGO Fantasy",
+  "fantasy.meta.leagues_title": "الدوريات — BotolaGO Fantasy",
   "fantasy.meta.leagues_description":
-    "دورياتك الخاصة والعامة على BotolaGO Fantasy: الترتيب والكؤوس ودعوة أصدقائك.",
+    "دورياتك الخاصة والعامة على BotolaGO Fantasy: الترتيب ودعوة أصدقائك.",
   "fantasy.meta.league_title": "ترتيب الدوري — BotolaGO Fantasy",
   "fantasy.meta.league_description":
     "ترتيب دوري على BotolaGO Fantasy: نقاط كل مدرب في الجولة وعلى مدار الموسم.",
@@ -981,9 +982,7 @@ export const ar = {
   "fpl.top_players": "أفضل اللاعبين",
   "fpl.news_video": "الأخبار",
   "fpl.view_all": "عرض الكل",
-  "fpl.leagues_cups": "الدوريات والكؤوس",
   "fpl.leagues": "الدوريات",
-  "fpl.cups": "الكؤوس",
   "fpl.join_leagues": "الانضمام إلى دوريات",
   "fpl.configure_leagues": "إدارة الدوريات",
   "fpl.general_leagues": "الدوريات العامة",
@@ -1063,15 +1062,6 @@ export const ar = {
   "fpl.head_to_head": "مواجهات مباشرة",
   "fpl.players_to_be_added": "اللاعبون الذين ستتم إضافتهم بعد التحديث القادم للنقاط",
   "fpl.manager": "المدرب",
-  "fpl.cup_not_started": "تبدأ الكأس في الجولة {n}.",
-  "fpl.cup_not_qualified": "لم تتأهل للكأس بعد.",
-  "fpl.cup_how_title": "كيف تعمل الكأس؟",
-  "fpl.cup_how_body":
-    "تُسحب قرعة كل فريق ضد فريق آخر ما لم يحصل على إعفاء. يتأهل الفائز (الفريق صاحب أعلى نقاط في الجولة بعد خصم عقوبات الانتقالات) إلى الدور التالي وقرعة جديدة، ويُقصى الخاسرون. يستمر ذلك حتى النهائي بين آخر فريقين.",
-  "fpl.cup_tiebreak": "في حالة التعادل تُطبَّق المعايير التالية حتى تحديد الفائز:",
-  "fpl.cup_tb1": "1. الأكثر تسجيلًا للأهداف في الجولة",
-  "fpl.cup_tb2": "2. الأقل استقبالًا للأهداف في الجولة",
-  "fpl.cup_tb3": "3. قرعة افتراضية",
   "fpl.help_title": "المساعدة والقواعد",
   "fpl.how_can_we_help": "كيف يمكننا مساعدتك؟",
   "fpl.current_season": "الموسم الحالي",
@@ -1508,6 +1498,7 @@ export const ar = {
   "profile.clubs.favorite": "المفضّل",
   "profile.saved_articles": "المقالات المحفوظة",
   "profile.notifications": "الإشعارات",
+  "profile.notifications_not_active": "غير مفعّلة بعد",
   "profile.edit": "تعديل الملف",
   "profile.sign_out": "تسجيل الخروج",
   "profile.sign_out_title": "تسجيل الخروج؟",
@@ -2257,6 +2248,8 @@ export const ar = {
   "pepites.follow.sheet_title": "تابع {name}",
   "pepites.follow.sheet_body":
     "أنشئ حسابًا مجانيًا لتتابع مبارياته وتتلقى أفضل 10 يوم الاثنين وتضيفه إلى فريقك في فانتازي.",
+  "pepites.follow.sheet_body_no_email":
+    "أنشئ حسابًا مجانيًا لتتابع مبارياته وتضيفه إلى فريقك في فانتازي.",
   "pepites.follow.create_account": "إنشاء حساب",
   "pepites.follow.have_account": "لديّ حساب بالفعل",
   "pepites.follow.followed": "أصبحت تتابع {name}.",

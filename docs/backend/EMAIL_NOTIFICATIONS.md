@@ -27,7 +27,8 @@ and a correction goes only to readers who had no email for that week.
 `app_private.pepites_email_report(edition_id)` counts an edition's emails.
 
 On top of the topic switches, every email needs: email notifications on (the
-**E-mails** switch on the Fantasy page, or Profile → Notifications), a
+**E-mails** switch on the Fantasy page, or Profile → Notifications; the site
+shows both only while `NOTIFICATION_EMAIL_LIVE` is on, step 7 below), a
 confirmed email address, and a non-deleted account. Email is **on by default**
 (owner decision, 2026-09-24); the migration switched existing users on except
 anyone who had ever changed their notification preferences. Every email has an
@@ -234,6 +235,13 @@ and `AGENTS.md` (nothing else writing at the same time).
    Watch one match day: the owner should receive the preview, the results and
    (if their favourite club plays) the kick-off alert.
 6. **Live:** `select app_private.notification_email_configure('live');`
+7. **(you) The website's switch.** In `src/lib/feature-flags.ts` set
+   `NOTIFICATION_EMAIL_LIVE` to `true`, merge, and publish from Lovable. The
+   browser cannot read `mode`, so until then the site hides the match reminder
+   bell, the Pépites weekly e-mail card, the e-mail and alert switches (sign-up
+   step 3, Profile, the Fantasy hub) and says reminders are not sent yet
+   (owner decision, 2026-10-07). Leave it `false` in `test` mode, and set it
+   back to `false` if `mode` goes back to `off` for more than a moment.
 
 **(you) Recommended, same Resend account:** Supabase → Authentication → Emails
 → SMTP settings → host `smtp.resend.com`, port `465`, user `resend`, password =
