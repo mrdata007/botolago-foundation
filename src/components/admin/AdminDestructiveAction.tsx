@@ -1,4 +1,6 @@
-import { useId, type Dispatch, type ReactNode } from "react";
+import { useEffect, useId, useState, type Dispatch, type ReactNode } from "react";
+import { AdminRecentAuthPrompt } from "@/components/admin/AdminReconnect";
+import { isRecentAuthRefusal, type AdminActionOutcome } from "@/components/admin/admin-refusal";
 import {
   canConfirm,
   isArmed,
@@ -8,6 +10,13 @@ import {
   type DestructiveActionEvent,
   type DestructiveActionState,
 } from "@/components/admin/destructive-action";
+import {
+  clearMotiveDraft,
+  currentDraftPath,
+  readMotiveDraft,
+  saveMotiveDraft,
+  takeResumableMotiveDraft,
+} from "@/components/admin/motive-draft";
 import { ui, UiButton, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
@@ -97,8 +106,13 @@ interface AdminDestructiveActionProps {
   confirmPrompt: ReactNode;
   /** Names the act being confirmed: "Confirmer la révocation". */
   confirmLabel: ReactNode;
-  /** Runs the mutation. Arming, motive and reset are handled here. */
-  onConfirm: (reason: string) => void | Promise<void>;
+  /**
+   * Runs the mutation. Arming, motive and reset are handled here. Resolving
+   * with `refusedWith(code)` reports a refusal: the motive draft is kept, and
+   * a stale sign-in shows "Se reconnecter" under the action. Resolving with
+   * nothing means it went through, and the draft is cleared.
+   */
+  onConfirm: (reason: string) => AdminActionOutcome | Promise<AdminActionOutcome>;
   /** `primary` for a consequential-but-not-destructive action (restore). */
   tone?: "danger" | "primary";
   /** Blocks arming for a reason of the caller's own (never a substitute for authz). */
@@ -143,8 +157,33 @@ export function AdminDestructiveAction({
   const commitVariant = danger ? "destructive" : "gradient";
   const commitClass = cn("w-full sm:w-auto", danger && DANGER_FILL);
 
+  // The code of this action's last refusal, if it was refused. Only the
+  // 15-minute rule's gets a prompt of its own here; every refusal keeps the
+  // motive draft.
+  const [refusal, setRefusal] = useState<string | null>(null);
+
+  // Back from "Se reconnecter": this action opens its confirm step again with
+  // the motive that was typed for it -- this page, this key, nothing else.
+  // Waits while the caller holds the trigger disabled (a row not chosen yet),
+  // so a resume can never arm what a press could not.
+  useEffect(() => {
+    if (disabled) return;
+    const resumed = takeResumableMotiveDraft(currentDraftPath(), actionKey);
+    if (resumed === null) return;
+    dispatch({ type: "arm", key: actionKey });
+    dispatch({ type: "reason", key: actionKey, value: resumed });
+  }, [actionKey, disabled, dispatch]);
+
   if (!armed) {
-    return (
+    const arm = () => {
+      setRefusal(null);
+      dispatch({ type: "arm", key: actionKey });
+      // A motive kept from a refused attempt on this same action comes back
+      // into the field; arming starts empty otherwise, as it always did.
+      const kept = readMotiveDraft(currentDraftPath(), actionKey);
+      if (kept !== null) dispatch({ type: "reason", key: actionKey, value: kept });
+    };
+    const trigger = (
       <UiButton
         size="sm"
         variant={commitVariant}
@@ -152,12 +191,19 @@ export function AdminDestructiveAction({
         // Disabled while any action on this surface is mid-flight, so a second
         // destructive operation cannot be started on top of the first.
         disabled={disabled || isBusy(state)}
-        onClick={() => dispatch({ type: "arm", key: actionKey })}
+        onClick={arm}
         data-testid={triggerTestId}
         data-admin-action="idle"
       >
         {triggerLabel}
       </UiButton>
+    );
+    if (!isRecentAuthRefusal(refusal)) return trigger;
+    return (
+      <>
+        {trigger}
+        <AdminRecentAuthPrompt rtl={rtl} testId={testId ? `${testId}-reauth` : undefined} />
+      </>
     );
   }
 
@@ -166,7 +212,19 @@ export function AdminDestructiveAction({
     // truth for "may this run" is the state machine, not the DOM.
     if (!confirmable) return;
     dispatch({ type: "start" });
-    void Promise.resolve(onConfirm(reason)).finally(() => dispatch({ type: "settle" }));
+    const path = currentDraftPath();
+    void Promise.resolve(onConfirm(reason))
+      .then((outcome) => {
+        if (outcome && "refused" in outcome) {
+          // Refused: the confirm step still resets (settle), but the motive
+          // stays in the draft for the next attempt on this action.
+          setRefusal(outcome.refused);
+          return;
+        }
+        setRefusal(null);
+        clearMotiveDraft(path, actionKey);
+      })
+      .finally(() => dispatch({ type: "settle" }));
   };
 
   return (
@@ -196,9 +254,12 @@ export function AdminDestructiveAction({
             : "8 caractères minimum. Ce motif ne vaut que pour cette action et est consigné dans l’audit."
         }
         value={reason}
-        onChange={(event) =>
-          dispatch({ type: "reason", key: actionKey, value: event.target.value })
-        }
+        onChange={(event) => {
+          dispatch({ type: "reason", key: actionKey, value: event.target.value });
+          // Kept as a draft under this page and this action's own key, so a
+          // sign-in that has to happen first does not cost the owner it.
+          saveMotiveDraft(currentDraftPath(), actionKey, event.target.value);
+        }}
         minLength={minimumReasonLength}
         maxLength={500}
         disabled={running}
@@ -227,7 +288,12 @@ export function AdminDestructiveAction({
           // the same 2.75rem/44px the literal below states, and `cn()`
           className="w-full sm:w-auto"
           disabled={running}
-          onClick={() => dispatch({ type: "cancel" })}
+          onClick={() => {
+            dispatch({ type: "cancel" });
+            // Backing out is a decision: the draft goes with it.
+            clearMotiveDraft(currentDraftPath(), actionKey);
+            setRefusal(null);
+          }}
           data-testid={testId ? `${testId}-abandon` : undefined}
         >
           {/* Not "Annuler"/"إلغاء": on the approvals queue that is the name of a

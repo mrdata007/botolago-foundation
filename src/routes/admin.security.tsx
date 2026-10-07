@@ -19,6 +19,13 @@ import {
   AdminNotice,
   AdminSectionHeading,
 } from "@/components/admin/AdminSurfaces";
+import {
+  NO_REVOCATION_REQUESTED,
+  pendingCountLabel,
+  REVOCATION_QUEUE_LABELS,
+  revocationRequestStatusLabel,
+} from "@/components/admin/admin-labels";
+import { describeAdminRefusal } from "@/components/admin/admin-refusal";
 import { ui, UiBadge, UiButton, UiInput } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 
@@ -41,11 +48,9 @@ function QueueStat({
 }) {
   return (
     <div className={`${ADMIN_PANEL_CLASS} p-3`}>
-      {/* The counter name is an English queue term: LTR data, while the cell
-          itself keeps the ambient direction. */}
-      <dt className={ADMIN_LABEL_CLASS}>
-        <AdminDatum mono={false}>{label}</AdminDatum>
-      </dt>
+      {/* The counter's name in the reader's language: it used to be the
+          English queue term ("Queued", "Dead-letter"). */}
+      <dt className={ADMIN_LABEL_CLASS}>{label}</dt>
       {/* A queue depth is a figure a reader scans down a row of four cells, so
           it belongs on the stat ramp: `ui.stat.lg` carries the size, the
           weight AND the tabular figures, which were hand-rolled here as a bare
@@ -79,10 +84,10 @@ function AdminSecurityRoute() {
       .then(setHealth)
       .catch((error) =>
         setMessage(
-          `${rtl ? "تعذّر تحميل حالة العامل" : "État du worker indisponible"}: ${mapAdminError(error).code}`,
+          `${rtl ? "تعذّر تحميل حالة طابور الإبطال" : "État de la file d’invalidation indisponible"} : ${describeAdminRefusal(mapAdminError(error).code, lang)}`,
         ),
       );
-  }, [access, repository, rtl]);
+  }, [access, repository, rtl, lang]);
 
   const loadRevocation = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -95,7 +100,7 @@ function AdminSecurityRoute() {
     } catch (error) {
       setRevocation(null);
       setMessage(
-        `${rtl ? "تعذّر تحميل حالة الإلغاء" : "État de révocation indisponible"}: ${mapAdminError(error).code}`,
+        `${rtl ? "تعذّر تحميل حالة الإلغاء" : "État de révocation indisponible"} : ${describeAdminRefusal(mapAdminError(error).code, lang)}`,
       );
     }
   };
@@ -122,10 +127,23 @@ function AdminSecurityRoute() {
                 className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"
                 data-testid="admin-worker-health"
               >
-                <QueueStat label="Queued" value={health.queue.pending} />
-                <QueueStat label="Processing" value={health.queue.processing} />
-                <QueueStat label="Retry" value={health.queue.retrying} />
-                <QueueStat label="Dead-letter" value={health.queue.deadLetter} alarming />
+                <QueueStat
+                  label={REVOCATION_QUEUE_LABELS.pending[lang]}
+                  value={health.queue.pending}
+                />
+                <QueueStat
+                  label={REVOCATION_QUEUE_LABELS.processing[lang]}
+                  value={health.queue.processing}
+                />
+                <QueueStat
+                  label={REVOCATION_QUEUE_LABELS.retrying[lang]}
+                  value={health.queue.retrying}
+                />
+                <QueueStat
+                  label={REVOCATION_QUEUE_LABELS.deadLetter[lang]}
+                  value={health.queue.deadLetter}
+                  alarming
+                />
               </dl>
             ) : (
               <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-hidden>
@@ -181,16 +199,28 @@ function AdminSecurityRoute() {
                     // and a pending count is a state token rather than a
                     // sentence, which is what the badge is for.
                     <UiBadge tone="caution">
-                      <AdminDatum mono={false}>{`${revocation.pendingCount} pending`}</AdminDatum>
+                      {pendingCountLabel(revocation.pendingCount, lang)}
                     </UiBadge>
                   )}
                 </AdminField>
                 <AdminField label={rtl ? "إجراء المزوّد" : "Action fournisseur"}>
-                  <AdminDatum mono={false}>
-                    {revocation.latest
-                      ? `${revocation.latest.status} · ${revocation.latest.resultCode ?? revocation.latest.lastErrorCode ?? "bounded"}`
-                      : "not_requested"}
-                  </AdminDatum>
+                  {/* The state in words; the provider's own result or error
+                      code, when there is one, stays beside it as data. */}
+                  {revocation.latest ? (
+                    <span data-revocation-status={revocation.latest.status}>
+                      {revocationRequestStatusLabel(revocation.latest.status, lang)}
+                      {(revocation.latest.resultCode ?? revocation.latest.lastErrorCode) && (
+                        <>
+                          {" · "}
+                          <AdminDatum className={`${ui.text.meta} ${ui.tone.muted}`}>
+                            {revocation.latest.resultCode ?? revocation.latest.lastErrorCode}
+                          </AdminDatum>
+                        </>
+                      )}
+                    </span>
+                  ) : (
+                    NO_REVOCATION_REQUESTED[lang]
+                  )}
                 </AdminField>
               </dl>
             )}
@@ -200,8 +230,8 @@ function AdminSecurityRoute() {
             <AdminIconTile icon={ShieldAlert} />
             <p className={`min-w-0 flex-1 ${ui.text.secondary} ${ui.tone.muted}`}>
               {rtl
-                ? "لا يوجد زر متصفح لتشغيل عامل service-role. الاستدعاء اليدوي محمي وخارج واجهة المستخدم."
-                : "Aucun bouton navigateur ne peut lancer le worker service-role. L’invocation manuelle reste protégée et hors UI."}
+                ? "لا يمكن تشغيل معالجة هذا الطابور من المتصفح: تجري على الخادم، وتشغيلها يدوياً محمي ويتم خارج هذه الواجهة."
+                : "Le traitement de cette file ne se lance pas depuis le navigateur : il tourne sur le serveur, et son lancement manuel reste protégé, hors de cette interface."}
             </p>
           </section>
 

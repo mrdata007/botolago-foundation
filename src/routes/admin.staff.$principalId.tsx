@@ -21,6 +21,11 @@ import {
 } from "@/components/admin/AdminSurfaces";
 import { AdminDestructiveAction } from "@/components/admin/AdminDestructiveAction";
 import {
+  describeAdminRefusal,
+  refusedWith,
+  screenNoticeFor,
+} from "@/components/admin/admin-refusal";
+import {
   destructiveActionReducer,
   IDLE_DESTRUCTIVE_ACTION,
 } from "@/components/admin/destructive-action";
@@ -97,6 +102,15 @@ function AdminStaffDetailRoute() {
     void reload();
   }, [reload]);
 
+  /** A refused operation: the reason in words, and the refusal handed back to
+   *  the confirm step, which keeps the motive (and offers "Se reconnecter"
+   *  when the sign-in is older than 15 minutes). */
+  const refuse = (what: string, error: unknown) => {
+    const code = mapAdminError(error).code;
+    setMessage(screenNoticeFor(code, `${what} : ${describeAdminRefusal(code, lang)}`));
+    return refusedWith(code);
+  };
+
   const mutate = async (operation: "suspend" | "restore" | "emergency", reason: string) => {
     if (access.state !== "authorized") return;
     setMessage(null);
@@ -116,7 +130,7 @@ function AdminStaffDetailRoute() {
       );
       await reload();
     } catch (error) {
-      setMessage(`${rtl ? "رُفضت العملية" : "Opération refusée"}: ${mapAdminError(error).code}`);
+      return refuse(rtl ? "رُفضت العملية" : "Opération refusée", error);
     }
   };
 
@@ -137,7 +151,7 @@ function AdminStaffDetailRoute() {
       );
       await reload();
     } catch (error) {
-      setMessage(`${rtl ? "رُفض الإلغاء" : "Révocation refusée"}: ${mapAdminError(error).code}`);
+      return refuse(rtl ? "رُفض الإلغاء" : "Révocation refusée", error);
     }
   };
 

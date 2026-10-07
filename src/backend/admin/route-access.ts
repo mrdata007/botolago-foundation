@@ -165,7 +165,22 @@ export function selectAdminPanel(
 ): {
   content: { title: string; description: string };
   showSignIn: boolean;
+  /**
+   * What the sign-in button says, after what the reader has to do: sign in
+   * for the first time (no session was sent), sign in again (the session
+   * expired), or re-authenticate (signed in, but the second factor or a
+   * recent sign-in is owed). "Se réauthentifier" used to greet a visitor who
+   * had never signed in.
+   */
+  signInAction: AdminSignInAction;
   reference: string;
+  /**
+   * Whether the support reference is printed. A visitor who simply is not
+   * signed in has nothing to report: `unauthenticated/missing_token` was a
+   * raw code on the one panel a stranger sees. Every other refusal keeps it,
+   * since that is where it serves diagnosis.
+   */
+  showReference: boolean;
 } {
   const reference = [state, reason, detail].filter(Boolean).join("/");
 
@@ -191,8 +206,23 @@ export function selectAdminPanel(
     state === "recent_auth_required" ||
     state === "mfa_required";
 
-  return { content, showSignIn, reference };
+  const signInAction: AdminSignInAction =
+    state === "recent_auth_required" || state === "mfa_required"
+      ? "reauthenticate"
+      : reason === "invalid_token"
+        ? "reconnect"
+        : "signIn";
+
+  const showReference =
+    state !== "loading" &&
+    state !== "authorized" &&
+    !(state === "unauthenticated" && reason === "missing_token");
+
+  return { content, showSignIn, signInAction, reference, showReference };
 }
+
+/** See `selectAdminPanel`: which of the three sign-in labels a panel shows. */
+export type AdminSignInAction = "signIn" | "reconnect" | "reauthenticate";
 
 export function requireAdminRoutePermission(
   state: AdminRouteState,
@@ -223,8 +253,12 @@ export type AdminCopy = {
    * is bad, so telling them to sign in again would be a wrong instruction.
    */
   readonly verificationUnavailable: { title: string; description: string };
-  /** Label for the support reference printed on every non-authorized panel. */
+  /** Label for the support reference printed on a non-authorized panel. */
   readonly referenceLabel: string;
+  /** The panel's sign-in button, by `selectAdminPanel`'s `signInAction`. */
+  readonly signIn: Record<AdminSignInAction, string>;
+  /** The loading panel's name for a screen reader. */
+  readonly loadingLabel: string;
   readonly labels: {
     identity: string;
     roles: string;
@@ -294,6 +328,12 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
         "Votre session n’a pas pu être vérifiée pour le moment. Réessayez dans quelques instants — il n’est pas nécessaire de vous reconnecter.",
     },
     referenceLabel: "Réf.",
+    signIn: {
+      signIn: "Se connecter",
+      reconnect: "Se reconnecter",
+      reauthenticate: "Se réauthentifier",
+    },
+    loadingLabel: "Chargement de la page",
     labels: {
       identity: "Identité authentifiée",
       roles: "Rôles actifs",
@@ -363,6 +403,12 @@ const COPY: Record<"fr" | "ar", AdminCopy> = {
         "تعذّر التحقق من جلستك حاليًا. أعد المحاولة بعد قليل — لا حاجة إلى تسجيل الدخول من جديد.",
     },
     referenceLabel: "المرجع",
+    signIn: {
+      signIn: "تسجيل الدخول",
+      reconnect: "إعادة تسجيل الدخول",
+      reauthenticate: "إعادة المصادقة",
+    },
+    loadingLabel: "جارٍ تحميل الصفحة",
     labels: {
       identity: "الهوية الموثّقة",
       roles: "الأدوار النشطة",

@@ -31,6 +31,7 @@ import {
   AdminSkeletonList,
 } from "@/components/admin/AdminSurfaces";
 import { AdminDestructiveAction } from "@/components/admin/AdminDestructiveAction";
+import { refusedWith, screenNoticeFor } from "@/components/admin/admin-refusal";
 import {
   destructiveActionReducer,
   IDLE_DESTRUCTIVE_ACTION,
@@ -174,6 +175,18 @@ function refusal(t: Translate, error: unknown): string {
   return prizeAdminErrorMessage(t, mapPrizeAdminError(error).code);
 }
 
+/**
+ * A refused confirmed write: the notice as a sentence, and the refusal handed
+ * back to the confirm step, which keeps the motive as a draft (and offers "Se
+ * reconnecter" when the sign-in is older than 15 minutes).
+ */
+function refuse(t: Translate, onNotice: (notice: Notice) => void, error: unknown) {
+  const code = mapPrizeAdminError(error).code;
+  const text = screenNoticeFor(code, prizeAdminErrorMessage(t, code));
+  onNotice(text ? { tone: "alert", text } : null);
+  return refusedWith(code);
+}
+
 function formatDate(iso: string | null, lang: "fr" | "ar"): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString(lang === "ar" ? "ar-MA" : "fr-FR", {
@@ -257,7 +270,7 @@ function WinnersPanel({ access, repository, onNotice }: PanelProps) {
       );
       onNotice({ tone: "info", text: t("prizes.admin.saved") });
     } catch (error) {
-      onNotice({ tone: "alert", text: refusal(t, error) });
+      return refuse(t, onNotice, error);
     }
   };
 
@@ -266,7 +279,8 @@ function WinnersPanel({ access, repository, onNotice }: PanelProps) {
     const username = (replacements[winner.id] ?? "").trim();
     if (!username) {
       onNotice({ tone: "alert", text: t("prizes.admin.override_username_missing") });
-      return;
+      // Not sent: the motive stays as a draft for the next attempt.
+      return refusedWith("override_username_missing");
     }
     try {
       await repository.overrideWinner(
@@ -279,7 +293,7 @@ function WinnersPanel({ access, repository, onNotice }: PanelProps) {
       onNotice({ tone: "info", text: t("prizes.admin.saved") });
       await load(null);
     } catch (error) {
-      onNotice({ tone: "alert", text: refusal(t, error) });
+      return refuse(t, onNotice, error);
     }
   };
 
@@ -299,7 +313,7 @@ function WinnersPanel({ access, repository, onNotice }: PanelProps) {
       onNotice({ tone: "info", text: t("prizes.admin.saved") });
       await load(null);
     } catch (error) {
-      onNotice({ tone: "alert", text: refusal(t, error) });
+      return refuse(t, onNotice, error);
     }
   };
 
@@ -683,7 +697,7 @@ function CatalogPanel({ access, repository, onNotice }: PanelProps) {
       setForms((current) => formsAfterSave(current, key, saved));
       onNotice({ tone: "info", text: t("prizes.admin.saved") });
     } catch (error) {
-      onNotice({ tone: "alert", text: refusal(t, error) });
+      return refuse(t, onNotice, error);
     }
   };
 
@@ -704,7 +718,7 @@ function CatalogPanel({ access, repository, onNotice }: PanelProps) {
       setSettings(saved);
       onNotice({ tone: "info", text: t("prizes.admin.saved") });
     } catch (error) {
-      onNotice({ tone: "alert", text: refusal(t, error) });
+      return refuse(t, onNotice, error);
     }
   };
 
@@ -1018,7 +1032,7 @@ function FlagsPanel({ access, repository, onNotice }: PanelProps) {
       onNotice({ tone: "info", text: t("prizes.admin.saved") });
       await load();
     } catch (error) {
-      onNotice({ tone: "alert", text: refusal(t, error) });
+      return refuse(t, onNotice, error);
     }
   };
 

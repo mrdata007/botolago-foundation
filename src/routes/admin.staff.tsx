@@ -18,6 +18,11 @@ import {
 } from "@/components/admin/AdminSurfaces";
 import { AdminDestructiveAction } from "@/components/admin/AdminDestructiveAction";
 import {
+  describeAdminRefusal,
+  refusedWith,
+  screenNoticeFor,
+} from "@/components/admin/admin-refusal";
+import {
   destructiveActionReducer,
   isBusy,
   IDLE_DESTRUCTIVE_ACTION,
@@ -102,6 +107,15 @@ function AdminStaffRoute() {
     }
   };
 
+  /** A refused grant: the reason in words, and the refusal handed back to the
+   *  confirm step, which keeps the motive (and offers "Se reconnecter" when
+   *  the sign-in is older than 15 minutes). */
+  const refuse = (what: string, error: unknown) => {
+    const code = mapAdminError(error).code;
+    setMessage(screenNoticeFor(code, `${what} : ${describeAdminRefusal(code, lang)}`));
+    return refusedWith(code);
+  };
+
   /** The motive comes from the confirm step that armed this call, and nowhere
    *  else. The repository call, its arguments and its idempotency key are
    *  exactly what they were. */
@@ -133,7 +147,7 @@ function AdminStaffRoute() {
         },
       });
     } catch (error) {
-      setMessage(`${rtl ? "فشل الإنشاء" : "Création refusée"}: ${mapAdminError(error).code}`);
+      return refuse(rtl ? "فشل الإنشاء" : "Création refusée", error);
     }
   };
 
@@ -160,7 +174,7 @@ function AdminStaffRoute() {
         }`,
       );
     } catch (error) {
-      setMessage(`${rtl ? "رُفض منح الدور" : "Affectation refusée"}: ${mapAdminError(error).code}`);
+      return refuse(rtl ? "رُفض منح الدور" : "Affectation refusée", error);
     }
   };
 
@@ -182,7 +196,7 @@ function AdminStaffRoute() {
         `${rtl ? "تم إنشاء طلب التحكم المزدوج" : "Demande à double contrôle créée"}: ${approval.approvalId}`,
       );
     } catch (error) {
-      setMessage(`${rtl ? "رُفض الطلب" : "Demande refusée"}: ${mapAdminError(error).code}`);
+      return refuse(rtl ? "رُفض الطلب" : "Demande refusée", error);
     }
   };
 

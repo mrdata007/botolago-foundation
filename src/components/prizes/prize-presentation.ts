@@ -135,6 +135,9 @@ export function formatMad(t: Translate, value: number, lang: Language): string {
 /** A readable sentence for a refusal the prize functions raise by name. */
 export function prizeAdminErrorMessage(t: Translate, code: PrizeAdminErrorCode | string): string {
   switch (code) {
+    // The 15-minute rule: the action shows "Se reconnecter" under it.
+    case "recent_auth_required":
+      return t("prizes.admin.error.recent_auth");
     case "prize_settings_conflict":
       return t("prizes.admin.error.settings_conflict");
     case "prize_tier_already_active":

@@ -1,8 +1,8 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { ClipboardCheck, KeyRound, ScrollText, UserCog, type LucideIcon } from "lucide-react";
 import {
-  ADMIN_CONSOLE_NAV_ITEMS,
   ADMIN_STATE_TEST_IDS,
+  visibleAdminNavItems,
 } from "@/backend/admin/admin-console-contracts";
 import { loadAdminRouteAccess } from "@/backend/admin/route-access.functions";
 import {
@@ -74,7 +74,16 @@ function AdminStatePanel({
   // A support reference, so a refused sign-in can be reported and diagnosed
   // from what is on screen. It names only the outcome and the caller's own
   // credential -- never an account, a role, or whether either exists.
-  const { content, showSignIn, reference } = selectAdminPanel(state, copy, reason, detail);
+  const { content, showSignIn, signInAction, reference, showReference } = selectAdminPanel(
+    state,
+    copy,
+    reason,
+    detail,
+  );
+  // Signing in comes back to the page that was asked for: a link to one
+  // article used to land on the dashboard. The sign-in route sanitises
+  // `next` itself (`authNextSearch`), so only a path on this site survives.
+  const here = useRouterState({ select: (router) => router.location.href });
   return (
     <main
       dir={copy.dir}
@@ -94,15 +103,16 @@ function AdminStatePanel({
           // `w-full sm:w-auto` keeps it thumb-width on a phone.
           <UiLinkButton
             to="/auth/login"
-            search={{ next: "/admin" }}
+            search={{ next: here.startsWith("/admin") ? here : "/admin" }}
             size="sm"
             className="mt-6 w-full sm:w-auto"
             data-testid="admin-reauthenticate"
+            data-sign-in-action={signInAction}
           >
-            {copy.dir === "rtl" ? "إعادة المصادقة" : "Se réauthentifier"}
+            {copy.signIn[signInAction]}
           </UiLinkButton>
         )}
-        {state !== "loading" && state !== "authorized" && (
+        {showReference && (
           <p
             className={cn(
               "mt-7 flex flex-wrap items-center gap-x-2 gap-y-1 pt-4",
@@ -191,13 +201,14 @@ function AdminRoute() {
       >
         <div className={cn(ADMIN_COLUMN, "flex gap-2 overflow-x-auto py-2 [scrollbar-width:none]")}>
           {/* Filtered on the caller's own permissions, and driven entirely by
-              the contract list -- a new nav entry appears here on its own. */}
-          {ADMIN_CONSOLE_NAV_ITEMS.filter((item) =>
-            result.context.permissions.includes(item.permission),
-          ).map((item) => (
+              the contract list -- a new nav entry appears here on its own.
+              The dashboard entry is `exact`: without it, "Tableau de bord"
+              would read as current on every page under /admin. */}
+          {visibleAdminNavItems(result.context.permissions).map((item) => (
             <Link
               key={item.route}
               to={item.route}
+              activeOptions={{ exact: "exact" in item && item.exact === true }}
               // The current section is painted through `data-[status=active]:`
               // rather than `activeProps`: `activeProps.className` is APPENDED
               // to `className`, so both sets would land on the element and

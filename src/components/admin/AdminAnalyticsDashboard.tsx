@@ -1,4 +1,5 @@
-import { RefreshCw } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ChevronRight, RefreshCw } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -24,6 +25,7 @@ import {
   frCount,
   signupsLabel,
 } from "./analytics-format";
+import { DASHBOARD_TILE_LINKS, statTileLink, type StatTileLink } from "./dashboard-links";
 import { cn } from "@/lib/utils";
 
 type Authorized = Extract<AdminRouteState, { state: "authorized" }>;
@@ -34,17 +36,51 @@ function StatTile({
   value,
   detail,
   testId,
+  link,
+  linkHint,
 }: {
   label: string;
   value: string;
   detail?: string;
   testId: string;
+  link?: StatTileLink | null;
+  /** What the link opens, for a screen reader: "Voir la liste". */
+  linkHint?: string;
 }) {
-  return (
-    <UiCard as="article" padding="md" className="min-w-0" testId={testId}>
-      <h3 className={cn(ui.text.meta, ui.tone.muted)}>{label}</h3>
+  const body = (
+    <>
+      <div className="flex items-start justify-between gap-2">
+        <h3 className={cn(ui.text.meta, ui.tone.muted)}>{label}</h3>
+        {link && (
+          // The row's chevron: the tile opens something. Mirrored in Arabic
+          // by the global rule, so it is not flipped here.
+          <ChevronRight className={cn("mt-0.5 h-4 w-4 shrink-0", ui.tone.faint)} aria-hidden />
+        )}
+      </div>
       <p className={cn("mt-1", ui.stat.lg, ui.tone.default)}>{value}</p>
       {detail && <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>{detail}</p>}
+      {link && linkHint && <span className="sr-only">{linkHint}</span>}
+    </>
+  );
+  if (link) {
+    // The whole tile is the link, drawn as the app draws a tappable card: the
+    // card surface, the tile press and the focus ring (as the Pépites Top 10
+    // rows are). The count stays the largest thing on it.
+    return (
+      <Link
+        to={link.to}
+        search={link.search}
+        className={cn("block min-w-0 p-4", ui.surface.card, "press-tile", ui.focus)}
+        data-testid={testId}
+        data-tile-link={link.to}
+      >
+        {body}
+      </Link>
+    );
+  }
+  return (
+    <UiCard as="article" padding="md" className="min-w-0" testId={testId}>
+      {body}
     </UiCard>
   );
 }
@@ -311,6 +347,8 @@ export function AdminAnalyticsDashboard({ access }: { access: Authorized }) {
   }, [load]);
 
   const count = (value: number) => formatCount(value, lang);
+  const permissions = access.context.permissions;
+  const linkHint = rtl ? "عرض القائمة" : "Voir la liste";
 
   return (
     <section
@@ -379,6 +417,8 @@ export function AdminAnalyticsDashboard({ access }: { access: Authorized }) {
             <StatTile
               testId="admin-dashboard-users-total"
               label={rtl ? "الحسابات" : "Comptes"}
+              link={statTileLink(DASHBOARD_TILE_LINKS.users, permissions)}
+              linkHint={linkHint}
               value={count(data.users.total)}
               detail={
                 rtl
@@ -409,6 +449,8 @@ export function AdminAnalyticsDashboard({ access }: { access: Authorized }) {
             <StatTile
               testId="admin-dashboard-users-banned"
               label={rtl ? "حسابات محظورة" : "Comptes bannis"}
+              link={statTileLink(DASHBOARD_TILE_LINKS.banned, permissions)}
+              linkHint={linkHint}
               value={count(data.users.banned)}
               detail={
                 rtl
@@ -445,6 +487,8 @@ export function AdminAnalyticsDashboard({ access }: { access: Authorized }) {
             <StatTile
               testId="admin-dashboard-news-published"
               label={rtl ? "مقالات منشورة" : "Articles publiés"}
+              link={statTileLink(DASHBOARD_TILE_LINKS.published, permissions)}
+              linkHint={linkHint}
               value={count(data.news.published)}
               detail={
                 rtl

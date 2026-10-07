@@ -26,6 +26,7 @@ import {
   AdminSkeletonList,
 } from "@/components/admin/AdminSurfaces";
 import { AdminDestructiveAction } from "@/components/admin/AdminDestructiveAction";
+import { refusedWith, screenNoticeFor } from "@/components/admin/admin-refusal";
 import {
   destructiveActionReducer,
   IDLE_DESTRUCTIVE_ACTION,
@@ -184,11 +185,18 @@ function UserDetail({ access, userId }: { access: Authorized; userId: string }) 
       });
       await load();
     } catch (error) {
-      setNotice({
-        tone: "alert",
-        text: userAdminErrorMessage(mapUserAdminError(error).code, lang),
-      });
+      return refuse(error);
     }
+  };
+
+  /** A refused decision: said in words, and handed back to the confirm step,
+   *  which keeps the motive (and offers "Se reconnecter" when the sign-in is
+   *  older than 15 minutes). */
+  const refuse = (error: unknown) => {
+    const code = mapUserAdminError(error).code;
+    const text = screenNoticeFor(code, userAdminErrorMessage(code, lang));
+    setNotice(text ? { tone: "alert", text } : null);
+    return refusedWith(code);
   };
 
   const unban = async (reason: string) => {
@@ -208,10 +216,7 @@ function UserDetail({ access, userId }: { access: Authorized; userId: string }) 
       });
       await load();
     } catch (error) {
-      setNotice({
-        tone: "alert",
-        text: userAdminErrorMessage(mapUserAdminError(error).code, lang),
-      });
+      return refuse(error);
     }
   };
 

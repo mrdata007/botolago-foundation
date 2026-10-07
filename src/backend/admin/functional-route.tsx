@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { ui, UiAlert, UiSkeleton } from "@/components/ui-kit";
+import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import type { AdminRouteState } from "./route-access";
+import { getAdminCopy, type AdminRouteState } from "./route-access";
 
 /**
  * How an Admin screen sits on the page, in BotolaGO's own look (Option A):
@@ -101,10 +102,14 @@ export function AdminFunctionalRoute({
 }
 
 export function AdminFunctionalLoading() {
+  // Named in the reader's language: a screen reader announced "Loading", in
+  // English, on every section of a French and Arabic console.
+  const { lang } = useI18n();
   return (
     <section
       className={cn("mt-6 grid gap-3 p-5", ui.surface.card)}
-      aria-label="Loading"
+      aria-label={getAdminCopy(lang).loadingLabel}
+      aria-busy
       data-testid="admin-route-loading"
     >
       <UiSkeleton className="h-7 w-1/2" />

@@ -1978,6 +1978,8 @@ export const fr = {
   "prizes.admin.flags.remove_confirm": "Confirmer la réintégration",
   "prizes.admin.flags.since": "Exclu le {date}",
   "prizes.admin.error.generic": "Action refusée : {code}",
+  "prizes.admin.error.recent_auth":
+    "Par sécurité, cette action demande une connexion de moins de 15 minutes. Reconnectez-vous, puis réessayez.",
   "prizes.admin.error.settings_conflict":
     "Ce changement modifierait un bloc ou une fin de saison déjà attribués.",
   "prizes.admin.error.tier_active":

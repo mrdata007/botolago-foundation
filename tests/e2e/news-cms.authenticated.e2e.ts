@@ -335,13 +335,18 @@ test("editor sends to review but cannot publish; publisher publishes", async ({ 
   await page.getByTestId("admin-news-transition-in_review").click();
   await expect(page.locator('[data-status="in_review"]')).toBeVisible();
   await page.getByTestId("admin-news-transition-published").click();
-  await expect(page.getByText(/news_editorial_forbidden|editorial_forbidden/)).toBeVisible();
+  // Publier asks first: the dialog names the article and what happens.
+  await expect(page.getByTestId("admin-news-move-dialog")).toBeVisible();
+  await page.getByTestId("admin-news-move-commit").click();
+  // Said in words; the code is no longer appended to the message.
+  await expect(page.getByText(/votre rôle ne permet pas cette action/)).toBeVisible();
   note("editor: in_review ok; publish refused by the server");
   await page.context().close();
 
   const pub = await signIn(browser, publisher!);
   await pub.goto(`/admin/news/${frId}`);
   await pub.getByTestId("admin-news-transition-published").click();
+  await pub.getByTestId("admin-news-move-commit").click();
   await expect(pub.locator('[data-status="published"]')).toBeVisible();
   note(`publisher published ${frId}`);
   await pub.context().close();
@@ -398,6 +403,7 @@ test("publisher publishes the Arabic edition; public pages, SEO and layout", asy
   const pub = await signIn(browser, publisher!);
   await pub.goto(`/admin/news/${arId}`);
   await pub.getByTestId("admin-news-transition-published").click();
+  await pub.getByTestId("admin-news-move-commit").click();
   await expect(pub.locator('[data-status="published"]')).toBeVisible();
   await pub.context().close();
   test.skip(!publicBase, "E2E_NEWS_PUBLIC_BASE_URL not set");
@@ -559,6 +565,8 @@ test("unpublishing removes the article from the public page and the sitemap", as
   for (const id of [frId, arId, scheduledId]) {
     await pub.goto(`/admin/news/${id}`);
     await pub.getByTestId("admin-news-transition-unpublished").click();
+    // Dépublier asks first: the dialog says the article leaves the site.
+    await pub.getByTestId("admin-news-move-commit").click();
     await expect(pub.locator('[data-status="unpublished"]')).toBeVisible();
   }
   await pub.context().close();

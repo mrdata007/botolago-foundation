@@ -346,6 +346,26 @@ describe("CMS error messages in plain language", () => {
       "la date programmée doit être dans le futur",
     );
     expect(describeEditorialError("editorial_forbidden", "ar")).toContain("الناشر");
-    expect(describeEditorialError("data_unavailable", "fr")).toBe("data_unavailable");
+    // An ingestion code the editor never meets is still not hidden.
+    expect(describeEditorialError("mapping_collision", "fr")).toBe("mapping_collision");
+  });
+
+  test("the editor's usual failures are said in words, not as codes", () => {
+    // The editor no longer appends "(code)" to its messages, so the codes it
+    // actually meets must each have a sentence of their own.
+    for (const code of [
+      "editorial_conflict",
+      "stale_update",
+      "article_not_found",
+      "placement_requires_published_article",
+      "invalid_media_payload",
+      "data_unavailable",
+    ] as const) {
+      for (const lang of ["fr", "ar"] as const) {
+        const text = describeEditorialError(code, lang);
+        expect({ code, lang, raw: text === code }).toEqual({ code, lang, raw: false });
+        expect(text).not.toContain("_");
+      }
+    }
   });
 });

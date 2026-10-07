@@ -9,11 +9,14 @@ import { mapAdminError } from "@/backend/admin/errors";
 import {
   ADMIN_LABEL_CLASS,
   ADMIN_PANEL_CLASS,
+  AdminDate,
   AdminDatum,
   AdminEmptyState,
   AdminNotice,
   AdminSkeletonList,
 } from "@/components/admin/AdminSurfaces";
+import { auditOutcomeLabel, formatAuditTimestamp } from "@/components/admin/admin-labels";
+import { describeAdminRefusal } from "@/components/admin/admin-refusal";
 import { ui, UiBadge } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 
@@ -55,10 +58,10 @@ function AdminAuditRoute() {
       .then(setPage)
       .catch((error) =>
         setMessage(
-          `${rtl ? "تعذّر تحميل السجل" : "Audit indisponible"}: ${mapAdminError(error).code}`,
+          `${rtl ? "تعذّر تحميل السجل" : "Audit indisponible"} : ${describeAdminRefusal(mapAdminError(error).code, lang)}`,
         ),
       );
-  }, [access, repository, rtl]);
+  }, [access, repository, rtl, lang]);
 
   return (
     <AdminFunctionalRoute
@@ -107,23 +110,33 @@ function AdminAuditRoute() {
                   className={`${ADMIN_PANEL_CLASS} p-4`}
                   data-testid="admin-audit-event"
                 >
-                  {/* The action slug and the outcome are machine values: the
-                      label around them keeps the ambient direction, only the
-                      data is forced LTR. */}
+                  {/* The action slug is a machine value: only it is forced
+                      LTR. The outcome is said in the reader's language, with
+                      the raw value kept on the element as data. */}
                   <div className="flex flex-wrap items-center gap-2">
                     <AdminDatum className={`${ui.text.bodyStrong} ${ui.tone.default}`}>
                       {event.action}
                     </AdminDatum>
                     <UiBadge tone={outcomeTone(event.outcome)}>
-                      <AdminDatum mono={false}>{event.outcome}</AdminDatum>
+                      <span data-outcome={event.outcome}>
+                        {auditOutcomeLabel(event.outcome, lang)}
+                      </span>
                     </UiBadge>
                   </div>
 
                   <dl className="mt-3 grid gap-3 sm:grid-cols-2">
                     <div className="min-w-0">
-                      <dt className={ADMIN_LABEL_CLASS}>{rtl ? "التاريخ" : "Horodatage"}</dt>
+                      <dt className={ADMIN_LABEL_CLASS}>
+                        {rtl ? "التاريخ (بتوقيت المغرب)" : "Date (heure du Maroc)"}
+                      </dt>
+                      {/* Morocco time through the app's own clock, in the
+                          reader's language; the exact instant stays on the
+                          <time> element. A formatted date is text, so
+                          <AdminDate>, not the LTR <AdminDatum>. */}
                       <dd className={`mt-1 ${ui.text.meta} ${ui.tone.muted}`}>
-                        <AdminDatum>{event.occurredAt}</AdminDatum>
+                        <time dateTime={event.occurredAt}>
+                          <AdminDate>{formatAuditTimestamp(event.occurredAt, lang)}</AdminDate>
+                        </time>
                       </dd>
                     </div>
                     <div className="min-w-0">
