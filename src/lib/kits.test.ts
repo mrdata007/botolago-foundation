@@ -4,7 +4,14 @@ import { clubs as mockClubs } from "@/mocks/data";
 import type { Club } from "@/types/domain";
 
 import { contrastRatio, parseHex } from "./colour";
-import { findClubKit, getKitForClub, inkOn, kitTableEntries } from "./kits";
+import {
+  clubIdentityEntries,
+  findClubIdentity,
+  findClubKit,
+  getKitForClub,
+  inkOn,
+  kitTableEntries,
+} from "./kits";
 
 /**
  * The kit table colours the Fantasy shirts in production (every production
@@ -108,6 +115,184 @@ describe("findClubKit", () => {
       "#c8102e",
     );
     expect(findClubKit(asServed("maghreb-f-s-0257feb34c16", "فاس"))?.kit.primary).toBe("#ffd400");
+  });
+});
+
+describe("club identity: one short name and one code per current club", () => {
+  // The sixteen 2026/27 clubs exactly as production's team catalog served
+  // them on 2026-10-07 (slug; French name, short name and code; Arabic name
+  // and short name), and what the app shows for each.
+  const CURRENT: ReadonlyArray<{
+    slug: string;
+    fr: [name: string, short: string, code: string];
+    ar: [name: string, short: string];
+    shows: [code: string, fr: string, ar: string];
+  }> = [
+    {
+      slug: "amal-tiznit-1ebd788b9f71",
+      fr: ["Amal Tiznit", "Amal Tiznit", ""],
+      ar: ["أمل تيزنيت", "أمل تيزنيت"],
+      shows: ["AMT", "Amal Tiznit", "أمل تيزنيت"],
+    },
+    {
+      slug: "codm-mekn-s-8059c0cf8b7b",
+      fr: ["CODM Meknès", "CODM Meknès", ""],
+      ar: ["النادي المكناسي", "المكناسي"],
+      shows: ["CODM", "CODM Meknès", "النادي المكناسي"],
+    },
+    {
+      slug: "cr-khemis-zemamra-dc6fb8196f3e",
+      fr: ["Renaissance Club Athletic Zemamra", "RCA Zemamra", ""],
+      ar: ["نادي النهضة أتلتيك الزمامرة", "نهضة الزمامرة"],
+      shows: ["RCAZ", "Zemamra", "نهضة الزمامرة"],
+    },
+    {
+      slug: "difa-el-jadida-d5d8c59bf7ab",
+      fr: ["Difaâ El Jadida", "Difaâ El Jadida", ""],
+      ar: ["الدفاع الحسني الجديدي", "الدفاع الجديدي"],
+      shows: ["DHJ", "Difaâ El Jadida", "الدفاع الجديدي"],
+    },
+    {
+      slug: "far-rabat-fd6ff8ea898c",
+      fr: ["FAR Rabat", "FAR Rabat", "ASFAR"],
+      ar: ["الجيش الملكي", "الجيش"],
+      shows: ["FAR", "FAR Rabat", "الجيش الملكي"],
+    },
+    {
+      slug: "fus-rabat-c499006b2af3",
+      fr: ["FUS Rabat", "FUS Rabat", "FUS"],
+      ar: ["الفتح الرياضي", "الفتح"],
+      shows: ["FUS", "FUS Rabat", "الفتح الرباطي"],
+    },
+    {
+      slug: "hassania-agadir-9f8c170d24ed",
+      fr: ["Hassania Agadir", "Hassania Agadir", ""],
+      ar: ["حسنية أكادير", "حسنية أكادير"],
+      shows: ["HUSA", "Hassania Agadir", "حسنية أكادير"],
+    },
+    {
+      slug: "ittihad-tanger-353e19d70a4b",
+      fr: ["Ittihad Tanger", "Ittihad Tanger", ""],
+      ar: ["اتحاد طنجة", "اتحاد طنجة"],
+      shows: ["IRT", "Ittihad Tanger", "اتحاد طنجة"],
+    },
+    {
+      slug: "kawkab-marrakech-d60d9d72cb7a",
+      fr: ["Kawkab Marrakech", "Kawkab Marrakech", ""],
+      ar: ["الكوكب المراكشي", "الكوكب المراكشي"],
+      shows: ["KACM", "Kawkab Marrakech", "الكوكب المراكشي"],
+    },
+    {
+      slug: "maghreb-f-s-0257feb34c16",
+      fr: ["Maghreb Fès", "Maghreb Fès", ""],
+      ar: ["نادي المغرب الرياضي الفاسي", "المغرب الفاسي"],
+      shows: ["MAS", "Maghreb Fès", "المغرب الفاسي"],
+    },
+    {
+      slug: "moghreb-t-touan-e3beb52dfbfb",
+      fr: ["Moghreb Tétouan", "Moghreb Tétouan", ""],
+      ar: ["نادي المغرب أتلتيك تطوان", "المغرب التطواني"],
+      shows: ["MAT", "Moghreb Tétouan", "المغرب التطواني"],
+    },
+    {
+      slug: "raja-casablanca-3b0f1fc95b29",
+      fr: ["Raja Casablanca", "Raja Casablanca", "RCA"],
+      ar: ["الرجاء الرياضي", "الرجاء"],
+      shows: ["RCA", "Raja", "الرجاء"],
+    },
+    {
+      slug: "rsb-berkane-7b2e23bc450f",
+      fr: ["RSB Berkane", "RSB Berkane", ""],
+      ar: ["نهضة بركان", "نهضة بركان"],
+      shows: ["RSB", "RS Berkane", "نهضة بركان"],
+    },
+    {
+      slug: "uts-rabat-b78eaee893af",
+      fr: ["UTS Rabat", "UTS Rabat", "UTS"],
+      ar: ["اتحاد تواركة", "اتحاد تواركة"],
+      shows: ["UTS", "UTS Rabat", "اتحاد تواركة"],
+    },
+    {
+      slug: "widad-t-mara-7d508334d7a9",
+      fr: ["Widad Témara", "Widad Témara", ""],
+      ar: ["نادي الوداد الرياضي لتمارة", "وداد تمارة"],
+      shows: ["WAT", "Widad Témara", "وداد تمارة"],
+    },
+    {
+      slug: "wydad-casablanca-80a3fb8202ae",
+      fr: ["Wydad Casablanca", "WCA", "WCA"],
+      ar: ["الوداد الرياضي", "الوداد"],
+      shows: ["WAC", "Wydad", "الوداد"],
+    },
+  ];
+  const served = (slug: string, name: string, short: string, code = "") => ({
+    id: "4a1d9c7e-0000-4000-8000-000000000002",
+    slug,
+    name,
+    shortName: short,
+    crestPlaceholder: code,
+  });
+
+  it("writes sixteen identities, each code three or four Latin capitals", () => {
+    const entries = clubIdentityEntries();
+    expect(entries).toHaveLength(16);
+    for (const { identity } of entries) expect(identity.code).toMatch(/^[A-Z]{3,4}$/);
+  });
+
+  it("never gives two clubs the same code or the same short name, in either language", () => {
+    const identities = clubIdentityEntries().map(({ identity }) => identity);
+    for (const values of [
+      identities.map((identity) => identity.code),
+      identities.map((identity) => identity.short.fr),
+      identities.map((identity) => identity.short.ar),
+    ]) {
+      expect(new Set(values).size).toBe(values.length);
+    }
+  });
+
+  it("writes the Arabic short names in Arabic and the French ones in Latin", () => {
+    for (const { identity } of clubIdentityEntries()) {
+      expect(identity.short.ar).toMatch(/^[ء-ي ]+$/);
+      expect(identity.short.fr).toMatch(/^[\p{Script=Latin} ]+$/u);
+    }
+  });
+
+  it("finds every current club as production serves it, in French and in Arabic", () => {
+    for (const { slug, fr, ar, shows } of CURRENT) {
+      const expected = { code: shows[0], short: { fr: shows[1], ar: shows[2] } };
+      expect({ slug, identity: findClubIdentity(served(slug, ...fr)) }).toEqual({
+        slug,
+        identity: expected,
+      });
+      // In Arabic the names carry no Latin: the slug finds the club.
+      expect({ slug, identity: findClubIdentity(served(slug, ...ar)) }).toEqual({
+        slug,
+        identity: expected,
+      });
+    }
+  });
+
+  it("tells Raja and Zemamra apart, whose letters in the data are both RCA", () => {
+    const raja = findClubIdentity(served("raja-casablanca-3b0f1fc95b29", "Raja Casablanca", "RCA"));
+    const zemamra = findClubIdentity(
+      served("cr-khemis-zemamra-dc6fb8196f3e", "Renaissance Club Athletic Zemamra", "RCA Zemamra"),
+    );
+    expect([raja?.code, zemamra?.code]).toEqual(["RCA", "RCAZ"]);
+  });
+
+  it("leaves a club outside the current season to the data", () => {
+    for (const [slug, name] of [
+      ["olympic-safi-32fb7b619af4", "Olympic Safi"],
+      ["olympique-dche-ra-f2715f0238ed", "Olympique Dcheïra"],
+      ["yacoub-el-mansour-e595b91e4d8f", "Yacoub El Mansour"],
+      ["chabab-mohamm-dia-7ff333801236", "Chabab Mohammédia"],
+      ["js-soualem-318655a9db9f", "JS Soualem"],
+    ] as const) {
+      expect({ slug, identity: findClubIdentity(served(slug, name, name)) }).toEqual({
+        slug,
+        identity: undefined,
+      });
+    }
   });
 });
 

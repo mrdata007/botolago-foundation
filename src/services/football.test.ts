@@ -85,6 +85,40 @@ describe("Football frontend repository cutover", () => {
     expect(club.crestPlaceholder).toBe(team.code);
   });
 
+  test("names a current club from the club table: one short name, both languages, its own code", async () => {
+    const repository = new MockFootballRepository();
+    const [match] = await repository.getHomeMatches("fr", 1, context);
+    // Zemamra and Wydad as production serves them, in French then in Arabic.
+    const zemamraFr = presentFootballClub({
+      ...match!.homeTeam,
+      slug: "cr-khemis-zemamra-dc6fb8196f3e",
+      name: "Renaissance Club Athletic Zemamra",
+      shortName: "RCA Zemamra",
+      code: "",
+    });
+    const zemamraAr = presentFootballClub({
+      ...match!.homeTeam,
+      slug: "cr-khemis-zemamra-dc6fb8196f3e",
+      name: "نادي النهضة أتلتيك الزمامرة",
+      shortName: "نهضة الزمامرة",
+      code: "",
+    });
+    for (const club of [zemamraFr, zemamraAr]) {
+      expect(club.shortName).toEqual({ fr: "Zemamra", ar: "نهضة الزمامرة" });
+      // Not Raja's "RCA", which its initials gave before.
+      expect(club.crestPlaceholder).toBe("RCAZ");
+    }
+    expect(zemamraFr.name.fr).toBe("Renaissance Club Athletic Zemamra");
+    const wydad = presentFootballClub({
+      ...match!.homeTeam,
+      slug: "wydad-casablanca-80a3fb8202ae",
+      name: "Wydad Casablanca",
+      shortName: "WCA",
+      code: "WCA",
+    });
+    expect([wydad.shortName.fr, wydad.crestPlaceholder]).toEqual(["Wydad", "WAC"]);
+  });
+
   test("match detail page exposes lineups without fabricating data when the provider has none", async () => {
     const repository = new MockFootballRepository();
     const matches = await repository.getHomeMatches("fr", 1, context);

@@ -1,6 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
-import { clubInitials, clubShortCode, compactClubName, rowClubName } from "@/lib/club-identity";
+import {
+  clubInitials,
+  clubShortCode,
+  clubShortName,
+  compactClubName,
+  rowClubName,
+  withClubIdentity,
+} from "@/lib/club-identity";
+import type { Club, LocalizedString } from "@/types/domain";
 
 /**
  * BG-0111 — the pitch fixture plate rendered "(D)" with no opponent because
@@ -111,5 +119,52 @@ describe("compactClubName", () => {
 
   test("tidies stray spaces", () => {
     expect(compactClubName("  Raja   Club  Athletic ", "fr")).toBe("Raja");
+  });
+});
+
+describe("withClubIdentity and clubShortName: one name per club on every screen", () => {
+  const club = (name: string, shortName: string, code: string, slug: string): Club => ({
+    id: "7b2e23bc-0000-4000-8000-000000000001",
+    slug,
+    name: { fr: name, ar: name },
+    shortName: { fr: shortName, ar: shortName },
+    city: { fr: "", ar: "" },
+    primaryColor: "var(--ui-ink)",
+    crestPlaceholder: code,
+  });
+  const fr = (text: LocalizedString) => text.fr;
+  const ar = (text: LocalizedString) => text.ar;
+
+  test("gives a current club the table's short name, in both languages, and its code", () => {
+    // Zemamra as production serves it: its derived letters were Raja's "RCA".
+    const zemamra = withClubIdentity(
+      club(
+        "Renaissance Club Athletic Zemamra",
+        "RCA Zemamra",
+        "RCA",
+        "cr-khemis-zemamra-dc6fb8196f3e",
+      ),
+    );
+    expect(zemamra.crestPlaceholder).toBe("RCAZ");
+    expect(clubShortName(zemamra, fr)).toBe("Zemamra");
+    expect(clubShortName(zemamra, ar)).toBe("نهضة الزمامرة");
+    // The full name stays for headings and assistive names.
+    expect(zemamra.name.fr).toBe("Renaissance Club Athletic Zemamra");
+  });
+
+  test("prints Wydad, never the WCA its short name holds in the data", () => {
+    const wydad = withClubIdentity(
+      club("Wydad Casablanca", "WCA", "WCA", "wydad-casablanca-80a3fb8202ae"),
+    );
+    expect([clubShortName(wydad, fr), wydad.crestPlaceholder]).toEqual(["Wydad", "WAC"]);
+  });
+
+  test("returns a club outside the table as it is", () => {
+    const safi = club("Olympic Safi", "Olympic Safi", "OLY", "olympic-safi-32fb7b619af4");
+    expect(withClubIdentity(safi)).toBe(safi);
+    expect(clubShortName(safi, fr)).toBe("Olympic Safi");
+    // A short name that is only a code, or none at all, gives way to the name.
+    expect(clubShortName(club("Club X", "CX", "CX", "club-x"), fr)).toBe("Club X");
+    expect(clubShortName(club("Club X", " ", "CX", "club-x"), fr)).toBe("Club X");
   });
 });

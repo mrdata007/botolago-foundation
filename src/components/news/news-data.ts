@@ -1,5 +1,6 @@
 import type { ArticleCardDto, NewsTeamFilterDto } from "@/backend/news/contracts";
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { withClubIdentity } from "@/lib/club-identity";
 import { resolveMediaUrl } from "@/lib/media";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { presentArticle } from "@/services/news";
@@ -160,10 +161,11 @@ export function dirFor(language: "fr" | "ar"): "ltr" | "rtl" {
  * string, which is not a hex), and the palette falls through to the kit
  * table, as it already does for the football clubs, whose presenter leaves
  * `var(--ui-ink)` there. A real colour in the data is kept and wins, as the
- * palette's source order says it should.
+ * palette's source order says it should. A current club's short name and code
+ * come from the club table, as on every other screen (`withClubIdentity`).
  */
 export function presentNewsTeam(team: NewsTeamFilterDto): Club {
-  return {
+  return withClubIdentity({
     id: team.id,
     slug: team.slug,
     name: { fr: team.name, ar: team.name },
@@ -173,7 +175,7 @@ export function presentNewsTeam(team: NewsTeamFilterDto): Club {
     secondaryColor: team.secondaryColor ?? undefined,
     crestPlaceholder: team.code ?? team.shortName.slice(0, 3).toUpperCase(),
     crestUrl: resolveMediaUrl({ sourceUrl: team.crestUrl, storagePath: team.crestPath }),
-  };
+  });
 }
 
 /**

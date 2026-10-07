@@ -6,6 +6,7 @@ import { SkeletonList, StandingsRowSkeleton } from "@/components/common/Skeleton
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { ui, UiCard, UiTable, UiTBody, UiTD, UiTH, UiTHead, UiTR } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { clubShortName } from "@/lib/club-identity";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { sharedPositions } from "@/lib/league-table";
 import { cn } from "@/lib/utils";
@@ -155,7 +156,7 @@ export function HeadToHead({
                               ui.tone.default,
                             )}
                           >
-                            {tr(club.name)}
+                            {clubShortName(club, tr)}
                           </span>
                         </span>
                       </UiTD>
@@ -351,7 +352,7 @@ function MeetingRow({
         <span {...clubStyle(homePalette)} className={cn("self-stretch", ui.club.edgeFill)} />
         <span className="flex min-w-0 items-center gap-2 py-2">
           <ClubCrest club={home} palette={homePalette} size="xs" />
-          <span className={name(home)}>{tr(home.name)}</span>
+          <span className={name(home)}>{clubShortName(home, tr)}</span>
         </span>
         <span className="flex flex-col items-center py-2">
           <span className={cn("whitespace-nowrap", ui.text.micro, ui.tone.muted)}>{date}</span>
@@ -364,7 +365,7 @@ function MeetingRow({
           </span>
         </span>
         <span className="flex min-w-0 items-center justify-end gap-2 py-2 text-end">
-          <span className={name(away)}>{tr(away.name)}</span>
+          <span className={name(away)}>{clubShortName(away, tr)}</span>
           <ClubCrest club={away} palette={awayPalette} size="xs" />
         </span>
         <span {...clubStyle(awayPalette)} className={cn("self-stretch", ui.club.edgeFill)} />

@@ -72,43 +72,139 @@ export function inkOn(primary: string): string {
 }
 
 /**
+ * What the app calls a club of the current season, written once here so every
+ * screen agrees: one short name, one code.
+ *
+ * The data does not give that. Its `short_name` is the full name for most
+ * clubs, a code for Wydad ("WCA"), and "RCA Zemamra" for Zemamra, while its
+ * `code` is blank for eleven of the sixteen. Letters derived from those names
+ * gave Raja and Zemamra the same "RCA", and in Arabic gave CODM and Maghreb
+ * Fès the same "الم". The names here identify the clubs; they claim no
+ * official status (PRODUCT.md, Independence).
+ */
+export interface ClubIdentity {
+  /**
+   * Three or four Latin capitals, unique in the league: the letters on a crest
+   * disc and in any cell too small for a name. The same in French and Arabic,
+   * where codes stay left to right (PRODUCT.md, Numbers).
+   */
+  code: string;
+  /** The name rows, cards, match headers and Pronostics print. The full name stays for headings. */
+  short: LocalizedString;
+}
+
+interface BotolaClub {
+  /** Lower-case fragments of the club's name, short name, slug words or code. */
+  match: readonly string[];
+  kit: KitColours;
+  /** The sixteen clubs of the 2026/27 Botola Pro only. */
+  identity?: ClubIdentity;
+}
+
+/**
  * Botola Pro club colours keyed by a lowercase fragment of the club name.
  * Used when the football catalog carries no colour for a club so every
  * squad renders in recognisable kits instead of one generic shirt.
  *
- * ORDER MATTERS: the first fragment found in the name wins. `tétouan` sits
- * above `maghreb` because the mock "Maghreb Tétouan" contains both, and the
- * old order painted it in Maghreb de Fès's yellow. Anything specific goes
- * above anything it contains.
+ * ORDER MATTERS: the first fragment found in the name wins, entry by entry
+ * and then within an entry. Tétouan sits above Maghreb de Fès because the
+ * mock "Maghreb Tétouan" contains both, and the old order painted it in
+ * Maghreb de Fès's yellow. Anything specific goes above anything it contains.
+ *
+ * Each of the sixteen 2026/27 clubs also carries its `identity`: the one
+ * short name and the one code the app shows for it (see `ClubIdentity`).
  */
-const BOTOLA_KITS: Array<[string, KitColours]> = [
-  ["wydad", { pattern: "solid", primary: "#c8102e", secondary: "#ffffff" }],
-  ["wca", { pattern: "solid", primary: "#c8102e", secondary: "#ffffff" }],
-  ["raja", { pattern: "solid", primary: "#0a8f3a", secondary: "#ffffff" }],
-  ["far rabat", { pattern: "central-stripe", primary: "#111111", secondary: "#c8102e" }],
-  ["fus", { pattern: "stripes-vertical", primary: "#f28e00", secondary: "#111111" }],
-  ["berkane", { pattern: "two-tone-sleeves", primary: "#f26522", secondary: "#111111" }],
-  ["tétouan", { pattern: "bands-horizontal", primary: "#c00000", secondary: "#ffffff" }],
-  ["tetouan", { pattern: "bands-horizontal", primary: "#c00000", secondary: "#ffffff" }],
-  // The production slug spells Tétouan's club "moghreb" ("moghreb-t-touan-…"),
-  // and its accent becomes a hyphen, so neither fragment above reaches it.
-  ["moghreb", { pattern: "bands-horizontal", primary: "#c00000", secondary: "#ffffff" }],
-  ["maghreb", { pattern: "stripes-vertical", primary: "#ffd400", secondary: "#111111" }],
-  ["hassania", { pattern: "stripes-vertical", primary: "#e63900", secondary: "#ffffff" }],
-  ["tanger", { pattern: "solid", primary: "#1e5bb8", secondary: "#ffffff" }],
-  ["difa", { pattern: "central-stripe", primary: "#0a7a3c", secondary: "#c8102e" }],
-  ["kawkab", { pattern: "bands-horizontal", primary: "#c8102e", secondary: "#ffffff" }],
-  ["codm", { pattern: "stripes-vertical", primary: "#0a7a3c", secondary: "#ffffff" }],
-  ["uts", { pattern: "solid", primary: "#1e3a7a", secondary: "#ffd400" }],
-  ["zemamra", { pattern: "solid", primary: "#ffffff", secondary: "#0a7a3c" }],
-  ["tiznit", { pattern: "two-tone-sleeves", primary: "#1e5bb8", secondary: "#ffffff" }],
-  ["témara", { pattern: "central-stripe", primary: "#c8102e", secondary: "#1e3a7a" }],
-  ["temara", { pattern: "central-stripe", primary: "#c8102e", secondary: "#1e3a7a" }],
-  // Témara's slug is "widad-t-mara-…": the accent became a hyphen here too.
-  ["widad", { pattern: "central-stripe", primary: "#c8102e", secondary: "#1e3a7a" }],
-  ["safi", { pattern: "solid", primary: "#7a1f1f", secondary: "#ffffff" }],
-  ["dche", { pattern: "solid", primary: "#f2a900", secondary: "#111111" }],
-  ["mansour", { pattern: "solid", primary: "#00703c", secondary: "#ffffff" }],
+const BOTOLA_CLUBS: readonly BotolaClub[] = [
+  {
+    match: ["wydad", "wca"],
+    kit: { pattern: "solid", primary: "#c8102e", secondary: "#ffffff" },
+    identity: { code: "WAC", short: { fr: "Wydad", ar: "الوداد" } },
+  },
+  {
+    match: ["raja"],
+    kit: { pattern: "solid", primary: "#0a8f3a", secondary: "#ffffff" },
+    identity: { code: "RCA", short: { fr: "Raja", ar: "الرجاء" } },
+  },
+  {
+    match: ["far rabat"],
+    kit: { pattern: "central-stripe", primary: "#111111", secondary: "#c8102e" },
+    identity: { code: "FAR", short: { fr: "FAR Rabat", ar: "الجيش الملكي" } },
+  },
+  {
+    match: ["fus"],
+    kit: { pattern: "stripes-vertical", primary: "#f28e00", secondary: "#111111" },
+    identity: { code: "FUS", short: { fr: "FUS Rabat", ar: "الفتح الرباطي" } },
+  },
+  {
+    match: ["berkane"],
+    kit: { pattern: "two-tone-sleeves", primary: "#f26522", secondary: "#111111" },
+    identity: { code: "RSB", short: { fr: "RS Berkane", ar: "نهضة بركان" } },
+  },
+  {
+    // The production slug spells Tétouan's club "moghreb" ("moghreb-t-touan-…"),
+    // and its accent becomes a hyphen, so neither "tétouan" nor "tetouan" reaches it.
+    match: ["tétouan", "tetouan", "moghreb"],
+    kit: { pattern: "bands-horizontal", primary: "#c00000", secondary: "#ffffff" },
+    identity: { code: "MAT", short: { fr: "Moghreb Tétouan", ar: "المغرب التطواني" } },
+  },
+  {
+    match: ["maghreb"],
+    kit: { pattern: "stripes-vertical", primary: "#ffd400", secondary: "#111111" },
+    identity: { code: "MAS", short: { fr: "Maghreb Fès", ar: "المغرب الفاسي" } },
+  },
+  {
+    match: ["hassania"],
+    kit: { pattern: "stripes-vertical", primary: "#e63900", secondary: "#ffffff" },
+    identity: { code: "HUSA", short: { fr: "Hassania Agadir", ar: "حسنية أكادير" } },
+  },
+  {
+    match: ["tanger"],
+    kit: { pattern: "solid", primary: "#1e5bb8", secondary: "#ffffff" },
+    identity: { code: "IRT", short: { fr: "Ittihad Tanger", ar: "اتحاد طنجة" } },
+  },
+  {
+    match: ["difa"],
+    kit: { pattern: "central-stripe", primary: "#0a7a3c", secondary: "#c8102e" },
+    identity: { code: "DHJ", short: { fr: "Difaâ El Jadida", ar: "الدفاع الجديدي" } },
+  },
+  {
+    match: ["kawkab"],
+    kit: { pattern: "bands-horizontal", primary: "#c8102e", secondary: "#ffffff" },
+    identity: { code: "KACM", short: { fr: "Kawkab Marrakech", ar: "الكوكب المراكشي" } },
+  },
+  {
+    match: ["codm"],
+    kit: { pattern: "stripes-vertical", primary: "#0a7a3c", secondary: "#ffffff" },
+    identity: { code: "CODM", short: { fr: "CODM Meknès", ar: "النادي المكناسي" } },
+  },
+  {
+    match: ["uts"],
+    kit: { pattern: "solid", primary: "#1e3a7a", secondary: "#ffd400" },
+    identity: { code: "UTS", short: { fr: "UTS Rabat", ar: "اتحاد تواركة" } },
+  },
+  {
+    // "Renaissance Club Athletic Zemamra", "RCA Zemamra" in the data: its
+    // initials are Raja's, so its code is the one the club writes, RCAZ.
+    match: ["zemamra"],
+    kit: { pattern: "solid", primary: "#ffffff", secondary: "#0a7a3c" },
+    identity: { code: "RCAZ", short: { fr: "Zemamra", ar: "نهضة الزمامرة" } },
+  },
+  {
+    match: ["tiznit"],
+    kit: { pattern: "two-tone-sleeves", primary: "#1e5bb8", secondary: "#ffffff" },
+    identity: { code: "AMT", short: { fr: "Amal Tiznit", ar: "أمل تيزنيت" } },
+  },
+  {
+    // Témara's slug is "widad-t-mara-…": the accent became a hyphen here too.
+    match: ["témara", "temara", "widad"],
+    kit: { pattern: "central-stripe", primary: "#c8102e", secondary: "#1e3a7a" },
+    identity: { code: "WAT", short: { fr: "Widad Témara", ar: "وداد تمارة" } },
+  },
+  // Former Botola Pro clubs: still in the history and in Pépites 2025/26, with
+  // the names and letters the data gives them.
+  { match: ["safi"], kit: { pattern: "solid", primary: "#7a1f1f", secondary: "#ffffff" } },
+  { match: ["dche"], kit: { pattern: "solid", primary: "#f2a900", secondary: "#111111" } },
+  { match: ["mansour"], kit: { pattern: "solid", primary: "#00703c", secondary: "#ffffff" } },
 ];
 
 /**
@@ -149,17 +245,43 @@ export function findClubKit(club: KitLookup): { key: string; kit: KitColours } |
     const key = (candidate ?? "").trim().toLowerCase();
     if (key && OVERRIDES[key]) return { key, kit: OVERRIDES[key] };
   }
+  const hit = findBotolaClub(club);
+  return hit ? { key: hit.fragment, kit: hit.club.kit } : undefined;
+}
+
+/** The fragment table's entry for a club, and the fragment that matched. */
+function findBotolaClub(club: KitLookup): { fragment: string; club: BotolaClub } | undefined {
   const haystack =
     `${text(club.name)} ${text(club.shortName)} ${slugWords(club.slug)} ${club.crestPlaceholder ?? ""}`.toLowerCase();
-  const hit = BOTOLA_KITS.find(([fragment]) => haystack.includes(fragment));
-  return hit ? { key: hit[0], kit: hit[1] } : undefined;
+  for (const entry of BOTOLA_CLUBS) {
+    const fragment = entry.match.find((candidate) => haystack.includes(candidate));
+    if (fragment) return { fragment, club: entry };
+  }
+  return undefined;
+}
+
+/**
+ * The short name and code the app shows for a club of the current season,
+ * found the way its colours are (name, short name, slug words, code: Latin in
+ * an Arabic response too, through the slug). `undefined` for any other club,
+ * which keeps what the data says.
+ */
+export function findClubIdentity(club: KitLookup): ClubIdentity | undefined {
+  return findBotolaClub(club)?.club.identity;
+}
+
+/** Every identity in the table, for tests that hold the codes and names unique. */
+export function clubIdentityEntries(): ReadonlyArray<{ match: string; identity: ClubIdentity }> {
+  return BOTOLA_CLUBS.flatMap((entry) =>
+    entry.identity ? [{ match: entry.match[0]!, identity: entry.identity }] : [],
+  );
 }
 
 /** Every entry of both tables, keyed tables first — for tests that sweep the whole palette. */
 export function kitTableEntries(): ReadonlyArray<{ key: string; kit: KitColours }> {
   return [
     ...Object.entries(OVERRIDES).map(([key, kit]) => ({ key, kit })),
-    ...BOTOLA_KITS.map(([key, kit]) => ({ key, kit })),
+    ...BOTOLA_CLUBS.flatMap((entry) => entry.match.map((key) => ({ key, kit: entry.kit }))),
   ];
 }
 
