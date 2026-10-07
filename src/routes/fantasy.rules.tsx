@@ -19,10 +19,26 @@ import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { ui, UiCard, UiErrorState, UiHeader, UiStatePanel } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
+import { unavailableHeaders } from "@/lib/page-availability";
+import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 
+/** The season's ruleset, as the server applies it. Shared by the loader and the page. */
+const RULES_QUERY = {
+  queryKey: ["fantasy-rules"],
+  queryFn: () => fantasyService.getRules(),
+} as const;
+
 export const Route = createFileRoute("/fantasy/rules")({
+  // The rules in the server's HTML (see `@/lib/ssr-prefetch`): a crawler, and
+  // a reader before the app has started, get the scoring, the chips and the
+  // transfer rule, not the loading state.
+  loader: async ({ context }) => {
+    await prefetchForSsr(context.queryClient, [RULES_QUERY]);
+    return ssrAvailability(context.queryClient);
+  },
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => fantasyHead("rules"),
   component: RulesFramed,
 });
@@ -44,8 +60,10 @@ export const Route = createFileRoute("/fantasy/rules")({
  * (`RulesChipList`). The scoring used to be one sentence of copy that gave a
  * goalkeeper's goal 6 points instead of 10 and left most of the scale out;
  * `src/lib/fantasy-rules-table.test.ts` now checks the table against
- * `docs/backend/FANTASY_RULES_V1.md` cell by cell. So the rules render with
- * the request: a skeleton while it runs, "Réessayer" if it fails.
+ * `docs/backend/FANTASY_RULES_V1.md` cell by cell. The server reads the
+ * ruleset before it renders (the route's loader), so the page arrives with
+ * the rules in it; in the browser, a skeleton while the read runs and
+ * "Réessayer" if it fails.
  */
 function RulesFramed() {
   const { t } = useI18n();
@@ -62,10 +80,7 @@ function RulesFramed() {
 function RulesPage() {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
-  const rulesQ = useQuery({
-    queryKey: ["fantasy-rules"],
-    queryFn: () => fantasyService.getRules(),
-  });
+  const rulesQ = useQuery(RULES_QUERY);
   const rules = rulesQ.data;
 
   return (
