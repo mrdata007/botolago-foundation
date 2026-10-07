@@ -106,20 +106,30 @@ describe("the rules page with the v1 ruleset", () => {
     );
   });
 
-  test("lists the four chips, what each does and the rounds it can be played in", async () => {
+  test("lists the four chips, what each does and how often it can be played", async () => {
     const html = await render(await fantasyService.getRules());
     const page = text(html);
+    // The Joker says how many uses, never the ruleset's rounds: the server
+    // plays it in the season's own halves (wildcard_split_gameweek), which
+    // api.fantasy_rules does not report.
     expect(page).toContain(
-      `${fr["fantasy.chip.wildcard"]}${fr["fantasy.chip.wildcard_desc"]}J1–J15 · À partir de J16`,
+      `${fr["fantasy.chip.wildcard"]}${fr["fantasy.chip.wildcard_desc"]}${fr["fantasy.rules.chip_uses_twice"]}`,
     );
+    expect(page).not.toContain("J15");
+    expect(page).not.toContain("J16");
+    // Every other chip: one use, in a round of the manager's choosing.
+    for (const chip of ["triple_captain", "free_hit", "bench_boost"] as const) {
+      expect(page).toContain(
+        `${fr[`fantasy.chip.${chip}`]}${fr[`fantasy.chip.${chip}_desc`]}${fr["fantasy.rules.chip_window_season"]}`,
+      );
+    }
+    expect(fr["fantasy.rules.chip_window_season"]).toBe("Une fois, à la journée de votre choix");
+  });
+
+  test("says under the table that a clean sheet and goals conceded count only from 60 minutes", async () => {
+    const page = text(await render(await fantasyService.getRules()));
     expect(page).toContain(
-      `${fr["fantasy.chip.triple_captain"]}${fr["fantasy.chip.triple_captain_desc"]}Toute la saison`,
-    );
-    expect(page).toContain(
-      `${fr["fantasy.chip.free_hit"]}${fr["fantasy.chip.free_hit_desc"]}Toute la saison`,
-    );
-    expect(page).toContain(
-      `${fr["fantasy.chip.bench_boost"]}${fr["fantasy.chip.bench_boost_desc"]}Toute la saison`,
+      "Cage inviolée et buts encaissés : comptent seulement à partir de 60 min jouées.",
     );
   });
 

@@ -69,6 +69,12 @@ export interface ScoringTableRow {
 export interface ScoringTable {
   readonly columns: readonly RulesTablePosition[];
   readonly rows: readonly ScoringTableRow[];
+  /**
+   * The full-appearance threshold in minutes, `null` when the ruleset has
+   * none. The scorer counts a clean sheet and goals conceded only from it
+   * (`src/backend/fantasy/scoring.ts`), which the page says under the table.
+   */
+  readonly fullAppearanceMinutes: number | null;
 }
 
 const points = z.number().int().min(-50).max(50);
@@ -190,7 +196,7 @@ export function buildScoringTable(input: {
       });
     }
   }
-  return { columns, rows };
+  return { columns, rows, fullAppearanceMinutes };
 }
 
 /* ------------------------------------------------------------------ */

@@ -22,6 +22,7 @@ import {
   UiCard,
   UiErrorState,
   UiHeader,
+  UiSkeleton,
   UiStatePanel,
   UiTable,
   UiTBody,
@@ -123,7 +124,9 @@ function RulesPage() {
             }}
           />
         </RuleText>
-      ) : null,
+      ) : (
+        <RulesPending failed={rulesQ.isError} />
+      ),
     },
     ...(chips.length > 0
       ? [
@@ -146,7 +149,11 @@ function RulesPage() {
           // Never a partial or invented scale: one plain line instead.
           <RuleText>{t("fantasy.rules.scoring_unavailable")}</RuleText>
         )
-      ) : null,
+      ) : rulesQ.isError ? (
+        <RuleText>{t("fantasy.rules.scoring_unavailable")}</RuleText>
+      ) : (
+        <RulesPending failed={false} />
+      ),
     },
     { icon: Medal, titleKey: "fantasy.rules.tiebreak", descKey: "fantasy.rules.tiebreak_desc" },
   ];
@@ -292,51 +299,68 @@ function ScoringTable({ table, nf }: { table: ScoringTableModel; nf: Intl.Number
   return (
     // Full-bleed inside the card: the head band and the hairlines run to the
     // card's edges, and the figures get the width they need at 390px.
-    <UiTable caption={t("fantasy.rules.scoring")} className="-mx-4 -mb-4 mt-3 w-auto">
-      <UiTHead>
-        <tr>
-          <UiTH className="ps-4">{t("fantasy.rules.table_event")}</UiTH>
-          {table.columns.map((code, index) => (
-            <UiTH
-              key={code}
-              numeric
-              // From 640px the figures keep a column each and the events take
-              // the rest, instead of spreading across the whole card.
-              className={cn("text-center sm:w-16", index === table.columns.length - 1 && "pe-4")}
-            >
-              <span aria-hidden>{positionShort(code, t)}</span>
-              <span className="sr-only">{positionFull(code, t)}</span>
-            </UiTH>
-          ))}
-        </tr>
-      </UiTHead>
-      <UiTBody>
-        {table.rows.map((row) => (
-          <UiTR key={`${row.kind}:${row.n ?? ""}`} className="last:border-b-0">
-            <th
-              scope="row"
-              className={cn(
-                "py-2 pe-2 ps-4 text-start align-middle",
-                ui.text.meta,
-                "[font-weight:var(--ui-weight-strong)]",
-                ui.tone.default,
-              )}
-            >
-              {rowLabel(row, t, nf)}
-            </th>
-            {row.cells.map((cell, index) => (
-              <UiTD
-                key={table.columns[index]}
+    <>
+      <UiTable
+        caption={t("fantasy.rules.scoring")}
+        className={cn("-mx-4 mt-3 w-auto", table.fullAppearanceMinutes === null && "-mb-4")}
+      >
+        <UiTHead>
+          <tr>
+            <UiTH className="ps-4">{t("fantasy.rules.table_event")}</UiTH>
+            {table.columns.map((code, index) => (
+              <UiTH
+                key={code}
                 numeric
-                className={cn("text-center", index === row.cells.length - 1 && "pe-4")}
+                // From 640px the figures keep a column each and the events take
+                // the rest, instead of spreading across the whole card.
+                className={cn("text-center sm:w-16", index === table.columns.length - 1 && "pe-4")}
               >
-                <PointsFigure value={cell} nf={nf} />
-              </UiTD>
+                <span aria-hidden>{positionShort(code, t)}</span>
+                <span className="sr-only">{positionFull(code, t)}</span>
+              </UiTH>
             ))}
-          </UiTR>
-        ))}
-      </UiTBody>
-    </UiTable>
+          </tr>
+        </UiTHead>
+        <UiTBody>
+          {table.rows.map((row) => (
+            <UiTR key={`${row.kind}:${row.n ?? ""}`} className="last:border-b-0">
+              <th
+                scope="row"
+                className={cn(
+                  "py-2 pe-2 ps-4 text-start align-middle",
+                  ui.text.meta,
+                  "[font-weight:var(--ui-weight-strong)]",
+                  ui.tone.default,
+                )}
+              >
+                {rowLabel(row, t, nf)}
+              </th>
+              {row.cells.map((cell, index) => (
+                <UiTD
+                  key={table.columns[index]}
+                  numeric
+                  className={cn("text-center", index === row.cells.length - 1 && "pe-4")}
+                >
+                  <PointsFigure value={cell} nf={nf} />
+                </UiTD>
+              ))}
+            </UiTR>
+          ))}
+        </UiTBody>
+      </UiTable>
+      {/* The scorer counts these two only from the full-appearance minutes
+        (src/backend/fantasy/scoring.ts); without it the table would promise
+        a defender subbed off at 45' his clean sheet. */}
+      {table.fullAppearanceMinutes !== null &&
+      table.rows.some((row) => row.kind === "clean_sheet" || row.kind === "goals_conceded") ? (
+        <RuleText>
+          <Filled
+            template={t("fantasy.rules.full_minutes_note")}
+            values={{ n: nf.format(table.fullAppearanceMinutes) }}
+          />
+        </RuleText>
+      ) : null}
+    </>
   );
 }
 
@@ -377,20 +401,53 @@ function ChipsList({ chips, nf }: { chips: readonly RulesChip[]; nf: Intl.Number
         <li key={chip} className={cn("pt-3", index > 0 && cn("mt-3", ui.rule.blockStart))}>
           <p className={cn(ui.text.bodyStrong, ui.tone.default)}>{chipName(chip, t)}</p>
           <p className={cn(ui.text.secondary, ui.tone.muted)}>{chipDescription(chip, t)}</p>
-          <p className={cn("mt-1 flex items-center gap-1.5", ui.text.meta, ui.tone.default)}>
-            <CalendarDays className={cn("h-4 w-4 shrink-0", ui.tone.ink)} aria-hidden />
-            <span>
-              {windows.map((window, at) => (
-                <Fragment key={`${window.from}:${window.to ?? ""}`}>
-                  {at > 0 ? " · " : null}
-                  {chipWindow(window, t, nf)}
-                </Fragment>
-              ))}
-            </span>
-          </p>
+          {/* Each allocation is one use, so each gets its own line. The Joker
+              says only how many: the server plays it in the season's own
+              halves (`wildcard_split_gameweek` in api.activate_fantasy_chip),
+              which api.fantasy_rules does not report, so the ruleset's rounds
+              could be wrong here. */}
+          {chip === "wildcard" ? (
+            <ChipUse>
+              {windows.length === 1
+                ? t("fantasy.rules.chip_uses_once")
+                : windows.length === 2
+                  ? t("fantasy.rules.chip_uses_twice")
+                  : null}
+            </ChipUse>
+          ) : (
+            windows.map((window) => (
+              <ChipUse key={`${window.from}:${window.to ?? ""}`}>
+                {chipWindow(window, t, nf)}
+              </ChipUse>
+            ))
+          )}
         </li>
       ))}
     </ul>
+  );
+}
+
+/** One use of a chip, on its own line. */
+function ChipUse({ children }: { children: ReactNode }) {
+  if (children === null) return null;
+  return (
+    <p className={cn("mt-1 flex items-center gap-1.5", ui.text.meta, ui.tone.default)}>
+      <CalendarDays className={cn("h-4 w-4 shrink-0", ui.tone.ink)} aria-hidden />
+      <span>{children}</span>
+    </p>
+  );
+}
+
+/**
+ * A card's ruleset figures while they are on their way (a placeholder line),
+ * or when they could not be read (one plain line, never a guess).
+ */
+function RulesPending({ failed }: { failed: boolean }) {
+  const { t } = useI18n();
+  return failed ? (
+    <RuleText>{t("fantasy.rules.value_unavailable")}</RuleText>
+  ) : (
+    <UiSkeleton className="mt-2 h-4 w-4/5" />
   );
 }
 
