@@ -45,10 +45,24 @@ import {
   type ScoringTable as ScoringTableModel,
   type ScoringTableRow,
 } from "@/lib/fantasy-rules-table";
+import { prefetchForSsr } from "@/lib/ssr-prefetch";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
 
+/** The ruleset, read once: the scoring table, the transfers line and the chips come from it. */
+const RULES_QUERY_KEY = ["fantasy-rules"] as const;
+
 export const Route = createFileRoute("/fantasy/rules")({
+  // The ruleset in the server's HTML (see `@/lib/ssr-prefetch`), so the rules
+  // a crawler or a slow phone sees before the app runs include the scoring
+  // table, the transfers line and the chips, not their loading placeholders.
+  // The page does not depend on it: a failed or slow read leaves those cards
+  // to load in the browser, and the page still answers 200.
+  loader: async ({ context }) => {
+    await prefetchForSsr(context.queryClient, [
+      { queryKey: RULES_QUERY_KEY, queryFn: () => fantasyService.getRules() },
+    ]);
+  },
   head: () => fantasyHead("rules"),
   component: RulesFramed,
 });
@@ -85,7 +99,7 @@ function RulesPage() {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const rulesQ = useQuery({
-    queryKey: ["fantasy-rules"],
+    queryKey: RULES_QUERY_KEY,
     queryFn: () => fantasyService.getRules(),
   });
   const rules = rulesQ.data;
@@ -113,16 +127,15 @@ function RulesPage() {
       titleKey: "fantasy.rules.transfers_r",
       // The ruleset's own numbers: free transfers, how many can be carried,
       // and the cost of each extra one.
+      // Plain text, not `Filled`: whole Latin numbers sit in an Arabic line
+      // without isolation, and the sentence stays one run of text in the
+      // server's HTML, which is what a crawler reads.
       body: rules ? (
         <RuleText>
-          <Filled
-            template={t("fantasy.rules.transfers_rule")}
-            values={{
-              free: nf.format(rules.initialFreeTransfers),
-              max: nf.format(rules.maxFreeTransferRollover),
-              hit: nf.format(rules.transferHitCost),
-            }}
-          />
+          {t("fantasy.rules.transfers_rule")
+            .replace("{free}", nf.format(rules.initialFreeTransfers))
+            .replace("{max}", nf.format(rules.maxFreeTransferRollover))
+            .replace("{hit}", nf.format(rules.transferHitCost))}
         </RuleText>
       ) : (
         <RulesPending failed={rulesQ.isError} />
