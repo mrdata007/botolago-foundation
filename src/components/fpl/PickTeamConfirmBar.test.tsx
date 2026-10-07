@@ -31,10 +31,20 @@ const code = (path: string) =>
     .replace(/(^|[^:])\/\/.*$/gm, "$1")
     .replace(/\s+/g, " ");
 
-function render(props: { pendingChip: ChipKey | null; saving: boolean }): string {
+function render(props: {
+  pendingChip: ChipKey | null;
+  saving: boolean;
+  lineupDirty?: boolean;
+}): string {
+  const { lineupDirty = props.pendingChip === null, ...rest } = props;
   return renderToString(
     <I18nProvider>
-      <PickTeamConfirmBar {...props} onCancel={() => {}} onConfirm={() => {}} />
+      <PickTeamConfirmBar
+        {...rest}
+        lineupDirty={lineupDirty}
+        onCancel={() => {}}
+        onConfirm={() => {}}
+      />
     </I18nProvider>,
   ).replace(/<!-- -->/g, "");
 }
@@ -72,6 +82,12 @@ describe("the status line", () => {
         `${dictionaries.fr[`fantasy.chip.${chip}`]} : à confirmer`,
       );
     }
+  });
+
+  it("names both when a chip and a line-up change are pending (Annuler drops both)", () => {
+    expect(statusOf(render({ pendingChip: "bench_boost", lineupDirty: true, saving: false }))).toBe(
+      "Bench Boost : à confirmer · Modifications non enregistrées",
+    );
   });
 
   it("the Arabic line fills the same {chip} slot with the chip's Arabic name", () => {
@@ -165,7 +181,7 @@ describe("Pick Team wires the bar and the leave guard (src/routes/fantasy.team.t
 
   it("shows the bar while something is pending, except while a substitute is chosen", () => {
     expect(body).toContain(
-      "{confirmPending && !selectedId ? ( <PickTeamConfirmBar pendingChip={pendingChip} saving={saving} onCancel={cancelChanges} onConfirm={onConfirm} /> ) : null}",
+      "{confirmPending && !selectedId ? ( <PickTeamConfirmBar pendingChip={pendingChip} lineupDirty={dirty} saving={saving} onCancel={cancelChanges} onConfirm={onConfirm} /> ) : null}",
     );
     expect(body).toContain("const confirmPending = dirty || pendingChip !== null;");
     expect(body).toContain(
@@ -179,7 +195,7 @@ describe("Pick Team wires the bar and the leave guard (src/routes/fantasy.team.t
     expect(guard).toBeGreaterThan(-1);
     expect(earlyReturn).toBeGreaterThan(guard);
     expect(body.slice(guard, earlyReturn)).toContain(
-      'useUnsavedChangesGuard( (localSquad !== null || pendingChip !== null) && !saving, t("fantasy.team.unsaved.leave_confirm"), );',
+      'useUnsavedChangesGuard( (localSquad !== null || pendingChip !== null) && !saving, t("fantasy.team.unsaved.leave_confirm"), { letThrough: (pathname) => pathname === MFA_CHALLENGE_PATH }, );',
     );
     // Once, at the body's top level (straight after the draft effect), not
     // behind a condition or inside a callback.

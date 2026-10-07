@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { MFA_CHALLENGE_PATH } from "@/auth/second-factor";
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { findClub } from "@/components/fpl/club-lookup";
 import {
@@ -178,9 +179,15 @@ function PickTeamBody() {
   // the hook order never changes; `confirmPending` further down is the same
   // condition. The cloud draft is untouched: a signed-in reader who leaves
   // anyway still finds the line-up waiting on return.
+  //
+  // The second-factor challenge is let through: a cloud save refused until the
+  // one-time code is in sends the reader there (SecondFactorGate), and a
+  // prompt in its way would strand them on a screen whose every save is
+  // refused. Nothing is lost: a signed-in line-up waits in its draft.
   useUnsavedChangesGuard(
     (localSquad !== null || pendingChip !== null) && !saving,
     t("fantasy.team.unsaved.leave_confirm"),
+    { letThrough: (pathname) => pathname === MFA_CHALLENGE_PATH },
   );
 
   if (screen.phase !== "ready" || !team || !gameweek) {
@@ -669,6 +676,7 @@ function PickTeamBody() {
       {confirmPending && !selectedId ? (
         <PickTeamConfirmBar
           pendingChip={pendingChip}
+          lineupDirty={dirty}
           saving={saving}
           onCancel={cancelChanges}
           onConfirm={onConfirm}

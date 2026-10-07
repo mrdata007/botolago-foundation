@@ -22,15 +22,20 @@ function chipName(chip: ChipKey, t: (key: TranslationKey) => string): string {
 }
 
 /**
- * What the bar says is waiting. A chip played but not confirmed is named,
- * because that is what "Confirmer" will send first (`onConfirm` confirms a
- * pending chip before a line-up); otherwise the line-up, captaincy or bench
- * order has changed and is not saved.
+ * What the bar says is waiting. A chip played but not confirmed is named
+ * first, because that is what "Confirmer" sends first (`onConfirm` confirms a
+ * pending chip before a line-up). When the line-up, captaincy or bench order
+ * has changed too, the bar says so as well: "Annuler" drops both, and the
+ * line-up still waits after the chip is confirmed.
  */
-function pendingStatus(pendingChip: ChipKey | null, t: (key: TranslationKey) => string): string {
-  return pendingChip
-    ? t("fantasy.team.unsaved.chip").replace("{chip}", chipName(pendingChip, t))
-    : t("fantasy.team.unsaved.status");
+function pendingStatus(
+  pendingChip: ChipKey | null,
+  lineupDirty: boolean,
+  t: (key: TranslationKey) => string,
+): string {
+  if (!pendingChip) return t("fantasy.team.unsaved.status");
+  const chip = t("fantasy.team.unsaved.chip").replace("{chip}", chipName(pendingChip, t));
+  return lineupDirty ? `${chip} · ${t("fantasy.team.unsaved.status")}` : chip;
 }
 
 /**
@@ -51,11 +56,14 @@ function pendingStatus(pendingChip: ChipKey | null, t: (key: TranslationKey) => 
  */
 export function PickTeamConfirmBar({
   pendingChip,
+  lineupDirty,
   saving,
   onCancel,
   onConfirm,
 }: {
   pendingChip: ChipKey | null;
+  /** The line-up, captaincy or bench order has changed and is not saved. */
+  lineupDirty: boolean;
   saving: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -82,7 +90,7 @@ export function PickTeamConfirmBar({
           ui.tone.default,
         )}
       >
-        {pendingStatus(pendingChip, t)}
+        {pendingStatus(pendingChip, lineupDirty, t)}
       </p>
       <div className="grid grid-cols-2 gap-2">
         <UiButton variant="soft" onClick={onCancel} disabled={saving}>
