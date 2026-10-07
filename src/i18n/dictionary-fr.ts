@@ -1033,6 +1033,9 @@ export const fr = {
   "fantasy.leagues.left": "Vous avez quitté la ligue",
   "fantasy.fixtures.subtitle":
     "Indice de difficulté de 1 (facile) à 5 (difficile) calculé à partir de la force des équipes.",
+  "fantasy.fixtures.cell_name": "{club} ({venue}), difficulté {n} sur 5",
+  "fantasy.fixtures.venue_key": "{home} = à domicile · {away} = à l'extérieur",
+  "fantasy.fixtures.key_explain": "Explication de la difficulté",
   "fpl.group.GK": "Gardiens",
   "fpl.group.DEF": "Défenseurs",
   "fpl.group.MID": "Milieux",
@@ -1181,7 +1184,7 @@ export const fr = {
   "fpl.save_team": "Enregistrer l’équipe",
   "fpl.squad_selection": "Sélection de l’effectif",
   "fpl.players_selected": "{n}/15 joueurs",
-  "fpl.fdr_key": "Légende FDR",
+  "fpl.fdr_key": "Difficulté",
   "fpl.easy": "Facile",
   "fpl.hard": "Difficile",
   "fpl.captain": "Capitaine",
