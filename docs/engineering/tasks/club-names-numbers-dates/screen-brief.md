@@ -1,5 +1,17 @@
 # Club names, signed numbers and news dates: screen brief
 
+> **Note, 2026-10-07, after implementation.** One thing differs from the brief as written, found by
+> measuring. FAR's red in dark (item 4) clashes with every red club in dark only. The clash rule
+> repainted the whole away palette when either theme clashed, so Wydad playing at FAR would have
+> lost its red in light as well. The clash rule now changes only the theme that clashes. It keeps
+> the same ladder and the same order, and a pair that clashes in both themes still switches the
+> whole away palette. On `main`, 16 pairs of current clubs clash: 15 in both themes, and one, FUS v
+> RS Berkane, in light only. That pair now keeps its own colours in dark. Two more
+> results of the same rule: Tétouan's white second kit against Wydad is the ink in light, where it
+> would be white on the white card, and stays white in dark. Against Raja, Zemamra's green clashes
+> in light, so Zemamra is navy there and keeps its white kit in dark. Item 3 also reaches the
+> lineups band and the goal moment, which printed the full name in the same narrow slot.
+
 Owner request, 2026-10-07: "go" on the critique plan
 (`.impeccable/critique/2026-10-06T20-00-17Z__src-routes.md`, priority issue 5, "Club identity,
 numbers and dates inconsistent"; command `harden`, with `colorize` for the white club). Branch
@@ -37,10 +49,10 @@ Related open pull requests, read before writing this (not merged into `main`):
 ## What was inspected and measured on untouched `main`
 
 The app ran from this worktree on `127.0.0.1:5305` (`vite dev --mode production`, reading
-production through the public key). The server runs in UTC (Node 22.22.0, tz 2025b). Chromium 149
-ran with `timezoneId: "Africa/Casablanca"`. Its time-zone data still puts Morocco at UTC+1 after
-2026-09-20 (see `src/lib/morocco-time.ts`). Pages were only loaded: nothing was signed in,
-submitted or written.
+production through the public key). The server runs in UTC (Node 22.22.0, tz 2025b). Chromium
+141.0.7390.37 (`/opt/pw-browsers/chromium`) ran with `timezoneId: "Africa/Casablanca"`. Its
+time-zone data still puts Morocco at UTC+1 after 2026-09-20 (the timezone-parity run prints 17:00
+for 16:00Z on 2026-10-02). Pages were only loaded: nothing was signed in, submitted or written.
 
 - **Dates.** `formatRelativeTime` and `formatFullDate` (`src/lib/format-time.ts`) and
   `formatArticleDate` (`src/components/news/news-data.ts`) call `Intl.DateTimeFormat` with no
@@ -54,7 +66,7 @@ submitted or written.
 - **Signed numbers.** `formatGoalDifference` returns "+2" / "-6" and is rendered in a `<bdi>` with
   no direction in `StandingsTable`, `HeadToHead` (the "Face à face" table), `ClubOverview` (the
   mini table on the club page) and `ClubHero` (the club page's key numbers). Measured from the
-  pixels in Chromium 149, phone and desktop: every cell reads "+2", "-1", "-6" in Arabic. Chromium
+  pixels in Chromium 141, phone and desktop: every cell reads "+2", "-1", "-6" in Arabic. Chromium
   treats a `dir=auto` run with no letters in it as left-to-right. Nothing in the markup says so,
   so the order depends on the engine (WebKit could not be run here). The Fantasy points page already
   sets `dir="ltr"` on its signed figures (`fantasy.points.tsx`).
@@ -189,3 +201,94 @@ Before screenshots: `shots/*__before.png` (see Validation).
 - Phone 390×844 and desktop 1440×900, French and Arabic, light, and dark where colour changed: no
   horizontal page scroll, nothing truncated that was not before, Arabic right to left.
 - `bun run typecheck`, `bun run lint`, the touched test files and the full `bun run test` pass.
+
+## Validation (2026-10-07)
+
+Everything below ran in this worktree. The app ran on `127.0.0.1:5305` only and was restarted on
+the branch's code before the after captures. Every page load was read-only: one guest load of each
+page, nothing signed in or submitted, no database write.
+
+**Commands**
+
+- `bun run typecheck`: passes (`tsc --noEmit`, no output).
+- `bun run lint`: 0 errors, 31 warnings, all `react-refresh/only-export-components`. Two of them
+  are in files this branch touches (`LineupsView.tsx:18`, `StandingsTable.tsx:29`), on exports
+  that are unchanged from `main`.
+- The 16 touched test files (format-time, head-to-head, club page, StandingsTable, match page, kits,
+  club-identity, football service, news-data, Pépites visuals, club-palette, ClubCrest, share-image
+  draw, FixturePredictionCard, fantasy-runtime, fantasy-rankings): **537 pass, 0 fail**.
+- Full `bun run test`: **6028 pass, 17 skip, 1 fail**. The failure is
+  `src/backend/news/editorial-session.test.ts`, "Morocco's Ramadan clock change is followed": it
+  expects "(GMT)" and this machine's `Intl` prints "(GMT+0)". That test and everything it imports
+  are unchanged by this branch. It was not run against `main`.
+- `bun run test:timezone-parity`: passes. Node 22.23.2 (tz 2026a), Node 22.23.3 (tz 2026c) and
+  Chromium 141.0.7390.37 print identical output for the 22 instants, now including the article
+  date and full date in both languages (`expected.json` regenerated with `--update`, diff
+  reviewed: additions only).
+- `impeccable detect --json` on the 13 changed `.tsx` files: one finding, `side-tab` at
+  `FixturePredictionCard.tsx:101` (`border-s-4`). That is the Pronostics outcome stripe the critique
+  already listed. The line is untouched here and outside this scope.
+
+**Measured (Chromium 141, Morocco zone)**
+
+- Hydration: `/`, `/news` and the article page, French and Arabic, after: 0 hydration errors in 6
+  loads. Before: `/news` threw "Hydration failed…" and the article logged the attribute mismatch.
+  The one console error left on the Arabic article is a 404 from the `news_article_detail` RPC.
+  It was there before too, and it is not a date.
+- Signed figures, DOM ranges in Arabic: the sign's box sits left of the digits, `direction: ltr`,
+  in all 10 cells of the standings (390 and 1440 wide), both of the "Face à face" table and all 4 on
+  Zemamra's club page. From pixels: "+2", "+3", "-2".
+- Sideways overflow: no element past the viewport outside a scrolling or clipping container on 10
+  loads (standings in Arabic at 390 and 1440, "Face à face" and the club page in Arabic, the stats
+  tab in French and Arabic, the match page at 1440, Pronostics in French and Arabic, and the
+  rankings in Arabic).
+- Colour, from rasterised sRGB in the captures (ΔEok / WCAG contrast):
+  - Zemamra's match-header half on the card, light: before `#ffffff` on `#ffffff`, 0.000 / 1.00:1.
+    After `#0c3164` (navy: its green clashes with Raja's in light), 0.687 / 12.81:1.
+  - Its possession bar: the same pair.
+  - Its club page header against the page, light: before `#ffffff`, 0.025 / 1.07:1. After its green
+    `#0a7a3c`, 0.485 / 5.06:1.
+  - FAR's club header, dark: before `#0e1014` on `#121b29`, 0.053 / 1.10:1. After its red
+    `#9c1a2e`, 0.293 / 2.14:1.
+  - Zemamra's white kit in dark (`#d3d5d8` on `#121b29`) is unchanged: 0.652.
+- Names: on the Raja v Zemamra page, the header, stats header, pressure legend and "Face à face"
+  read "Raja" / "Zemamra" in French and "الرجاء" / "نهضة الزمامرة" in Arabic. Pronostics reads
+  "Wydad", "Zemamra" and "RS Berkane". With crests blocked, `/clubs` shows AMT, CODM, DHJ, FAR, FUS,
+  HUSA, IRT, KACM, MAS, MAT, RCA, RCAZ, RSB, UTS, WAT, WAC. The Arabic table shows the same Latin
+  codes.
+- Rankings: the J. column reads "–" for all seven rows, against "0" before. Totals 48, 27, 15, 15,
+  13, 12 and 9 and the movements are unchanged.
+
+**Evidence** (`shots/`, before and after for each):
+
+- `match-stats__m-fr-light`: the names, Zemamra's half and stat bars.
+- `club-zemamra__m-fr-light`: the white header turned green. The before was captured while the
+  sections below were still loading; the header is final.
+- `club-far__m-fr-dark`: the black header turned red in dark.
+- `standings-nocrest__m-ar-light`: crests blocked; the codes and the Arabic short names.
+- `pronostics__m-fr-light`: "WCA" turned "Wydad", "RCA Zemam…" turned "Zemamra".
+- `rankings__m-fr-light`: 0 turned "–".
+
+**Test teams in the public rankings (not changed here).** `api.fantasy_overall_standings` and
+`api.fantasy_league_standings` read `app.fantasy_rankings`. On `main` they exclude no account. Only
+prize eligibility skips staff (`app_private.fantasy_prize_is_staff`). Open PR #348
+(`claude/beautiful-clarke-ro1m6l`, migration `20261005100000_rankings_hide_owner_accounts.sql`) is
+the backend change. It adds `app_private.ranking_hidden_accounts` and a
+`ranking_account_hidden(user_id)` test (listed id, active or suspended staff principal, or an
+`@botolago.com` e-mail). It seeds the list from the owner's and QA e-mail patterns, and makes the
+overall Fantasy board and the Pronostics leaderboard skip those accounts and close the rank gaps.
+Whether its patterns cover the owners of "BG0090 Verif FC", "BotolaGO E2E XI", "E2E Botola XI" and
+"QA Launch 0925" could not be checked here: `auth.users` is not readable with the public key. If one
+of them is not covered, the owner adds its user id to `app_private.ranking_hidden_accounts`, a
+production write by the reviewed path. The league standings function (`api.fantasy_league_standings`)
+is not in #348. Test accounts inside a private league would still show there.
+
+**Not verified**
+
+- WebKit and Safari: no WebKit here, so the "2+" order the critique reported could not be
+  reproduced. Chromium already printed "+2", and the fix makes the order explicit.
+- Real phones; signed-in screens (a private league's table, the reader's own rankings row); a live
+  match (the goal moment's name); the Pépites pages' names (covered by unit tests, not captured).
+- A late-evening article on `/`. None was on the page at capture time; the unit test covers it.
+- The match vote buttons. They are another lane's component and still print `fixture.home.shortName`,
+  so Wydad is "WCA" there until that lane uses `clubShortName(presentFootballClub(fixture.home), tr)`.
