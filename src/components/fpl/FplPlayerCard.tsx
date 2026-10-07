@@ -131,7 +131,8 @@ export function FplPlayerCard({
   return (
     <UiPlayerPlate
       name={
-        // A 76px plate at 390px fits about eleven characters; Moroccan
+        // A 76px plate fits about eleven characters, and a row of five on a
+        // 390px phone narrows to 61px to stay inside the touchlines; Moroccan
         // surnames routinely run longer ("Attiat-Allah", "Salah-Eddine").
         // `ltr:tracking-tight` buys those the few pixels they need and is
         // Latin-only, because letter-spacing — in either direction — pulls
