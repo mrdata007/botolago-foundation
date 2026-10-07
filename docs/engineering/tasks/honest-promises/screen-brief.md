@@ -142,3 +142,113 @@ Functional:
   counts) and the full `bun run test` pass. The two Pépites e2e checks of the
   e-mail switch and the Fantasy journey's "Ligues & Coupes" heading are made
   switch-aware / updated rather than deleted.
+
+## Validation (2026-10-07)
+
+Measured on this branch's dev server (`vite dev --mode production`, port 5302,
+production data read with the public key, signed out, nothing submitted),
+Chromium, reduced motion. Variants: 390×844 and 1440×900, French and Arabic,
+light, plus 390 French dark.
+
+### Checks run
+
+- `bun run typecheck`: passes (no output from `tsc --noEmit`).
+- `bun run lint`: 0 errors, 31 warnings, none in a file this branch changes.
+- `bun scripts/qa/i18n-gate.ts`: pass; W1 7, W2 7, W3 252, W4 64, each at its
+  baseline (the ten Cup keys are deleted from both dictionaries, every new key
+  is called literally).
+- `bun test src/components/fantasy src/components/common src/components/pepites
+src/i18n src/routes src/lib/feature-flags.test.ts
+src/lib/notification-email-live.test.tsx`: 1041 pass, 0 fail.
+- `bun run test` (whole suite): 6021 pass, 17 skip, 1 fail. The failure is
+  `src/backend/news/editorial-session.test.ts`, "Morocco's Ramadan clock
+  change is followed": it expects `(GMT)` and this runtime's `Intl` prints
+  `(GMT+0)`. It fails the same way run alone; nothing under `src/backend` or
+  `src/lib/morocco-time.ts` differs from `origin/main`, and the machine runs
+  Bun 1.4.2 where the repository pins 1.3.14. Not caused by this change.
+- New `src/lib/notification-email-live.test.tsx` (19 tests): the switch is one
+  constant whose comment lists the eight gated files and each reads it through
+  `useNotificationEmailLive()`; no shipped file renders the context provider;
+  `MatchCard` rendered (React server render) with the switch on shows the bell
+  and keeps `pe-14`, with it off shows no bell on any variant and no `pe-14`;
+  each other gated file still holds today's branch for the "on" state.
+  Mutation check: with the `remindersLive &&` guard removed the "not live"
+  test fails (18 pass, 1 fail); restored.
+- `FantasyHubPersonal.test.tsx` now runs every visitor case twice, live and
+  not live: the owner sees "Notifications" and its two switches only when
+  live, the reserved placeholder for the block likewise, and no "coupe" in
+  either state.
+- `impeccable detect --json` over the eleven changed `.tsx` files: 0 findings.
+- Playwright e2e: not run (they need the mock dev server and sign in with a
+  test account). The three affected checks were updated to read the switch
+  (`pepites.e2e.ts`, `pepites.local-stack.e2e.ts`) or the new title
+  (`fantasy.journey.e2e.ts`).
+
+### What was measured
+
+- Reminder bells (buttons with the bell's accessible name), per page and
+  variant: before Home 3, `/jouer` 3, a club's Matchs tab 2 (in the four
+  variants whose list had loaded); after 0 everywhere.
+- Match rows on Home and `/jouer`, 390 and 1440, French and Arabic, from
+  element rects: after, the team column's `padding-inline-end` is 4px (56px
+  with the bell), no row lies outside the viewport, and no team name is
+  clipped (`scrollWidth` against `clientWidth`).
+- The switch was set to `true` on the local server only for one run, then put
+  back to `false` (never committed): the bells came back (3 per page, 56px
+  padding), the Pépites card came back with its text, and `/notifications`
+  showed today's sentences. The restoration works in a browser as well as in
+  the tests.
+- `/pepites`: the e-mail card is present before and absent after in all five
+  variants; the page goes from "Voir le classement complet" to the method
+  note. The follow sheet reads "Créez un compte gratuit pour suivre ses matchs
+  et l'ajouter à votre équipe Fantasy." / "أنشئ حسابًا مجانيًا لتتابع مبارياته
+  وتضيفه إلى فريقك في فانتازي."
+- `/notifications` (signed out): "Les rappels de match et les alertes Fantasy
+  ne sont pas encore envoyés." / "لم يبدأ بعد إرسال تذكيرات المباريات وتنبيهات
+  فانتازي." in all five variants, right to left in Arabic.
+- `/fantasy/leagues`: header "Ligues" / "الدوريات" (signed out the page shows
+  its sign-in gate, as before).
+- Horizontal overflow (element rects; `html, body` clip overflow): the only
+  elements outside the viewport are Home's carousel slides, `/jouer`'s
+  horizontal rail and `/matches`' date strip, the same sets before and after.
+- Home logs a hydration-mismatch warning before and after; it is not from
+  this change. Dark mode: no new colour or surface; the inbox card reads as
+  before with the new sentence.
+
+Evidence in `shots/` (before and after, same frame): `home__m-fr-light`,
+`jouer__m-ar-light`, `club-matchs__m-ar-light` (bells gone, rows take the
+space back, Arabic mirrored), `pepites__m-fr-light` (no e-mail card),
+`notifications__m-fr-dark` (the new sentence, dark), and
+`fantasy-leagues__m-ar-light` (the title).
+
+### Not verified, and why
+
+- Signed-in screens could not be rendered (no sign-in in this lane): sign-up
+  step 3, Profile's notifications row, the Fantasy hub's e-mail block and Cup
+  card, the signed-in inbox, a league page's tabs and the admin prompt. The
+  hub is covered by server-render tests in both states; the others by source
+  tests and typecheck.
+- Real phones, WebKit/Safari and the phone app. Step 3's push box only
+  renders inside the app and is unchanged.
+
+### Prize terms: not edited
+
+`src/content/legal/prize-terms.ts` section 1 says the organiser is
+"éditeur de l'application sur l'App Store et sur Google Play" (Arabic: "ناشر
+التطبيق على App Store وGoogle Play"). No phone build has run, so the app is
+on neither store. The document is versioned by hand ("Version 1.2 — en
+vigueur au 6 octobre 2026"), was written the day before for the store
+submission (Apple guideline 5.3.2: the developer must be the contest's
+sponsor), and binds every Fantasy prize entrant through section 7 of the
+General Terms. Rewording how the organiser is identified changes the legal
+meaning of a rule in force, needs a version 1.3 with a new date, and is the
+owner's call, so it is left as it is and reported.
+
+### Account deletion: checked, unchanged
+
+The confirmation e-mail on `/suppression-compte` is sent by the
+`account-deletion-worker` straight through Resend, not through the
+notification e-mail pipeline, so `mode = off` does not stop it. It does need
+the `RESEND_API_KEY` secret; without it accounts are still erased and the
+e-mail is recorded as `not_configured`. Whether that secret is set in
+production is not recorded anywhere this lane could read.
