@@ -48,8 +48,8 @@ Read from source (signed in, not rendered):
   Publié), but neither list can be opened already filtered.
 - **Article editor** (`admin.news.$articleEditionId.tsx`): Publier,
   Dépublier, Archiver and Refuser run on one press. With unsaved edits every
-  status button asks a native `window.confirm("Modifications non
-  enregistrées. Continuer ?")`, and "OK" publishes the last **saved** text,
+  status button asks a native `window.confirm` ("Modifications non
+  enregistrées. Continuer ?"), and "OK" publishes the last **saved** text,
   not what is on screen. The sticky toolbar holds Enregistrer and Aperçu
   only; the status buttons sit at the foot of a long form. Errors append raw
   codes: "Changement de statut impossible : … (editorial_forbidden)",
