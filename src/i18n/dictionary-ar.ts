@@ -753,6 +753,7 @@ export const ar = {
   "fantasy.rules.chip_window_from": "مرة واحدة، ابتداءً من الجولة {from}",
   "fantasy.rules.chip_uses_once": "مرة واحدة في الموسم",
   "fantasy.rules.chip_uses_twice": "مرتان في الموسم",
+  "fantasy.rules.chip_uses_n": "{n} مرات في الموسم",
   "fantasy.rules.full_minutes_note":
     "الشباك النظيفة والأهداف المستقبَلة: لا تُحتسب إلا ابتداءً من {n} دقيقة لعب.",
   "fantasy.rules.value_unavailable": "غير متاح حاليًا.",

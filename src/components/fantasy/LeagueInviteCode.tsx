@@ -19,19 +19,28 @@ import { cn } from "@/lib/utils";
  *
  * `dir="ltr"` is deliberate even in Arabic: the code is a hex literal, not
  * prose, and must be read and transcribed left to right in both languages.
- * The grouping is visual only — `aria-label` and the clipboard both carry the
- * original unbroken string, so a screen reader and a paste get the real code.
+ * The grouping is visual only — a screen-reader-only copy and the clipboard
+ * both carry the original unbroken string, so a screen reader and a paste get
+ * the real code. `once` adds the warning that it will not be shown again (only
+ * a digest is stored), for the league page's newly issued code.
  */
-export function LeagueInviteCode({ code }: { code: string }) {
+export function LeagueInviteCode({
+  code,
+  once = false,
+  className,
+}: {
+  code: string;
+  once?: boolean;
+  className?: string;
+}) {
   const { t } = useI18n();
   const groups = code.match(/.{1,4}/g) ?? [code];
   return (
-    <div className={cn("mt-3 p-3", ui.radius.card, ui.surface.page)}>
+    <div className={cn("mt-3 p-3", ui.radius.card, ui.surface.page, className)}>
       <p className={cn(ui.text.label, ui.tone.muted)}>{t("fpl.invite_code")}</p>
       <div className="mt-1 flex items-start gap-2">
         <code
           dir="ltr"
-          aria-label={code}
           className={cn(
             "min-w-0 flex-1 select-all break-words font-mono",
             ui.text.meta,
@@ -47,6 +56,9 @@ export function LeagueInviteCode({ code }: { code: string }) {
               {group}
             </span>
           ))}
+          {/* The real code, unbroken, for a screen reader: the groups are
+              visual only. */}
+          <span className="sr-only">{code}</span>
         </code>
         <UiButton
           size="sm"
@@ -62,6 +74,18 @@ export function LeagueInviteCode({ code }: { code: string }) {
           {t("fpl.copy")}
         </UiButton>
       </div>
+      {once ? (
+        <p
+          className={cn(
+            "mt-2",
+            ui.text.meta,
+            "[font-weight:var(--ui-weight-strong)]",
+            ui.tone.default,
+          )}
+        >
+          {t("predictions.leagues.code_once")}
+        </p>
+      ) : null}
       <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>{t("fantasy.leagues.invite_help")}</p>
     </div>
   );

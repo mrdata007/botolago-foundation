@@ -380,7 +380,11 @@ function LeagueDetailBody() {
                           aria-label={t("fpl.invite_code")}
                           className={cn("flex flex-col gap-3", ui.radius.card, ui.focus)}
                         >
-                          <LeagueInviteCode code={inviteCode} />
+                          {/* In a card like the share buttons under it; the
+                              code is shown this once, and says so. */}
+                          <UiCard padding="md">
+                            <LeagueInviteCode code={inviteCode} once className="mt-0" />
+                          </UiCard>
                           <InviteLinkShare
                             game="fantasy"
                             league={leagueQ.data.name}

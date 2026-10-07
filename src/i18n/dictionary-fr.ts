@@ -782,6 +782,7 @@ export const fr = {
   "fantasy.rules.chip_window_from": "Une fois, à partir de la J{from}",
   "fantasy.rules.chip_uses_once": "Une fois dans la saison",
   "fantasy.rules.chip_uses_twice": "Deux fois dans la saison",
+  "fantasy.rules.chip_uses_n": "{n} fois dans la saison",
   "fantasy.rules.full_minutes_note":
     "Cage inviolée et buts encaissés : comptent seulement à partir de {n} min jouées.",
   "fantasy.rules.value_unavailable": "Indisponible pour le moment.",

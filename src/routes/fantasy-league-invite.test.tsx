@@ -138,7 +138,7 @@ describe("the league page (/fantasy/leagues/$leagueId)", () => {
     expect(owner).toContain("onClick={() => setConfirmInvite(true)}");
     // The new code grouped in fours (as on the leagues page), then the share
     // buttons without a second copy of the code; focused when it arrives.
-    expect(owner).toContain("<LeagueInviteCode code={inviteCode} />");
+    expect(owner).toContain('<LeagueInviteCode code={inviteCode} once className="mt-0" />');
     expect(owner).toContain(
       '<InviteLinkShare game="fantasy" league={leagueQ.data.name} code={inviteCode} />',
     );

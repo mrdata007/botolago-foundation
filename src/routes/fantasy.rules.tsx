@@ -408,11 +408,16 @@ function ChipsList({ chips, nf }: { chips: readonly RulesChip[]; nf: Intl.Number
               could be wrong here. */}
           {chip === "wildcard" ? (
             <ChipUse>
-              {windows.length === 1
-                ? t("fantasy.rules.chip_uses_once")
-                : windows.length === 2
-                  ? t("fantasy.rules.chip_uses_twice")
-                  : null}
+              {windows.length === 1 ? (
+                t("fantasy.rules.chip_uses_once")
+              ) : windows.length === 2 ? (
+                t("fantasy.rules.chip_uses_twice")
+              ) : (
+                <Filled
+                  template={t("fantasy.rules.chip_uses_n")}
+                  values={{ n: nf.format(windows.length) }}
+                />
+              )}
             </ChipUse>
           ) : (
             windows.map((window) => (

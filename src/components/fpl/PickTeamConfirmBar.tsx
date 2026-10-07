@@ -84,7 +84,9 @@ export function PickTeamConfirmBar({
         role="status"
         aria-live="polite"
         className={cn(
-          "pb-2.5 text-center",
+          // Balanced, so a chip and a line-up change both waiting break at
+          // their " · " rather than inside "Modifications non enregistrées".
+          "text-balance pb-2.5 text-center",
           ui.text.meta,
           "[font-weight:var(--ui-weight-heavy)]",
           ui.tone.default,

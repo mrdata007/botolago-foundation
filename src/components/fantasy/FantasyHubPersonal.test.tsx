@@ -427,11 +427,12 @@ describe("the team card: its score names its round and leads to Points", () => {
     expect(text(points)).not.toContain(escapeHtml("Aucun point pour l'instant"));
   });
 
-  it("an unknown summary reads the same as no result: a dash, never 0", async () => {
+  it("an unknown summary shows a dash and the neutral label, never 0", async () => {
     const html = await card(null);
     const points = link(html, "fantasy-team-card-points");
     expect(attr(points, "href")).toBe("/fantasy/points");
     expect(text(points)).toContain(fr["fantasy.stat.none"]);
+    expect(text(points)).toContain(escapeHtml(fr["fantasy.gw_points"]));
     expect(text(points)).not.toMatch(/\b0\b/);
   });
 
