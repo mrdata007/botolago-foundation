@@ -164,3 +164,92 @@ Functional:
   the draft. A motive is never restored into another action or another row.
 - Every new string exists in French and Arabic; tests updated deliberately,
   none removed.
+
+## Validation (2026-10-07)
+
+**Signed-in screens were not rendered.** The console needs a staff session
+with a second factor, and this lane did not create one, sign in, or send
+anything to the server. The dashboard tiles, the nav row, the article
+editor's toolbar and dialog in place, the approvals, security and audit
+pages were checked from source and by the tests below, not in a browser.
+
+What was rendered (Playwright, Chromium, this branch's dev server on port
+5306 only, production data read-only, reduced motion):
+
+- `/admin` and `/admin/news/<id>` signed out, 390×844 and 1440×900, French
+  and Arabic, light, plus dark on the phone. Now "Se connecter" /
+  "تسجيل الدخول" (44px tall), no reference chip, and the button's `next` is
+  the page asked for (`/auth/login?next=%2Fadmin%2Fnews%2F<id>`; it was
+  `next=/admin` from both). 0 elements outside the viewport on all 10
+  captures (element boxes, not `scrollWidth`), `dir="rtl"` in Arabic.
+- The in-memory player-mapping sample (`/dev/player-mappings-sample`,
+  invented data, no network), which renders the real confirm component, with
+  its own hook set to "sign-in older than 15 minutes", on 4 variants (phone
+  FR, AR, dark; desktop FR). Proposing with a typed motive now shows the
+  prompt and "Se reconnecter" (44px; 270px wide on a phone) linking to
+  `/auth/login?next=<this page>`; the draft is in `sessionStorage`; the
+  screen's own notice no longer repeats the message. Pressing the link (the
+  sign-in page was opened, nothing was submitted) and loading the page again
+  re-armed the same action with the motive in the field on all 4 variants.
+  Before: the step closed and the motive was gone.
+- A temporary component harness (a dev-only route deleted before commit, not
+  on this branch) rendered `EditorialMoveDialog` and `AdminRecentAuthPrompt`
+  with invented text: phone FR (clean and with unsaved edits), phone AR with
+  an Arabic headline (dialog and headline `rtl`), phone FR dark, desktop FR.
+  Commit and "Abandonner" 48px tall, focus starts on the translated close
+  control, 0 elements outside the viewport.
+- Contrast read from the rasterised sRGB pixels: prompt text 6.88:1 (light)
+  and 6.16:1 (dark) on the caution tint; "Se reconnecter" label 12.81:1 and
+  12.68:1; dialog description 7.43:1.
+
+Commands, all on this branch:
+
+- `bun run test`: 6036 pass, 17 skip, 1 fail. The failure is
+  `editorial-session.test.ts` "Morocco's Ramadan clock change is followed":
+  the runtime's ICU prints "(GMT+0)" where the test expects "(GMT)". It
+  exercises `describeScheduledAt`, which this branch does not change (the
+  file's diff only adds error sentences), so it is this container's time-zone
+  data, not this change; CI is the authority.
+- Directly relevant files (`src/backend/admin`, `src/components/admin`,
+  `src/routes/admin*`, `src/components/prizes`, `src/i18n`): 474 pass, 0 fail.
+  New: `admin-safety.ssr.test.tsx` (the real `/admin` component in a test
+  router: "Se connecter", `next` = the page, no reference; "Se
+  réauthentifier" and the reference for `recent_auth_required`; the
+  reconnect prompt's link; the confirm step at rest and armed; the loading
+  label; the editor's status flow), `motive-draft.test.ts`,
+  `admin-wording.test.ts`, and new cases in `admin-console-contracts.test.ts`,
+  `route-access.test.ts`, `editorial-session.test.ts`,
+  `prize-presentation.test.ts`.
+- Tests changed deliberately: the nav filter test now runs the shell's own
+  `visibleAdminNavItems` and expects nav order (Actualités before Audit); the
+  shell test looks for that function instead of the bare list; the CMS
+  error test's "unknown code falls back" example moved from
+  `data_unavailable` (now described) to `mapping_collision`. The
+  authenticated e2e journey (`tests/e2e/news-cms.authenticated.e2e.ts`) now
+  presses the dialog's commit after Publier and Dépublier, and reads the
+  refusal as words instead of the code; it needs the live staff accounts and
+  was **not run** here.
+- `bun run typecheck`: pass. `bun run lint`: 0 errors (31 warnings, none in
+  a changed file). Prettier: changed files clean. i18n gate: pass.
+- `impeccable detect --json` on the changed `.tsx` files: `[]`.
+
+Not verified: the signed-in console in a browser (nav order and the
+current chip, dashboard tile links and the filtered lists on arrival, the
+editor's toolbar and dialog in place, approvals, security, audit), a real
+sign-in round trip through the second-factor challenge back to the page,
+WebKit, real devices.
+
+Needs a backend change, not made here: the approvals queue carries the
+account concerned as an id only (`targetEntityId`), so the prompts name the
+role and the account id, not the person; naming them needs
+`admin_list_approval_queue` to return a display name.
+
+Screens (`shots/`): `admin__{m-fr-light,m-ar-light}__{before,after}`,
+`admin__m-fr-dark__after` (signed-out panel);
+`mapping-stale-signin__m-fr-light__{before,after}`,
+`mapping-stale-signin__m-ar-light__after` (stale sign-in on the sample);
+`mapping-restored__m-fr-light__after` (back from "Se reconnecter", re-armed
+with the motive); `harness-publish-dialog-unsaved__m-fr-light__after`,
+`harness-publish-dialog__m-ar-light__after`,
+`harness-reconnect-prompt__m-fr-dark__after` (the real components in the
+temporary harness, invented text).
