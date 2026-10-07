@@ -1049,7 +1049,7 @@ export const ar = {
   "fpl.private": "خاصة",
   "fpl.public": "عامة",
   "fpl.private_code_help": "أدخل رمز الدوري الخاص الذي زوّدك به مسؤول الدوري.",
-  "fpl.create_own_league": "يمكنك إنشاء دوريك الخاص من «إدارة الدوريات».",
+  "fpl.create_own_league": "يمكنك إنشاء دوريك الخاص من «إنشاء دوري».",
   "fpl.private_league_code": "رمز الدوري الخاص",
   "fpl.invalid_code": "رمز غير صالح. تحقق من الرمز وتأكد مع مسؤول الدوري إذا استمرت المشكلة.",
   "fpl.public_help": "يمكنك الانضمام إلى 15 دوريًا خاصًا و3 دوريات عامة كحد أقصى.",
@@ -1255,6 +1255,14 @@ export const ar = {
   "fantasy.leagues.gameweek": "الجولة",
   "fantasy.leagues.rules_summary":
     "النقاط التراكمية منذ بداية الموسم. يُحدَّث الترتيب بعد كل جولة.",
+  "fantasy.leagues.create_submit": "إنشاء",
+  "fantasy.leagues.invite_friends": "ادعُ أصدقاءك",
+  "fantasy.leagues.invite_confirm":
+    "سيُنشأ رمز جديد لدعوة أصدقائك، ولن يعمل الرمز القديم بعد الآن.",
+  "fantasy.leagues.invite_failed": "تعذّر إنشاء رابط دعوة الآن.",
+  "fantasy.leagues.invite_owner_only": "وحده منشئ الدوري يمكنه دعوة أعضاء جدد.",
+  "fantasy.leagues.leave_title": "مغادرة «{league}»؟",
+  "fantasy.leagues.leave_body": "ستختفي من ترتيبه، ولن تعود إليه إلا برمز دعوة جديد.",
   "common.confirm": "تأكيد",
   "common.cancel": "إلغاء",
 

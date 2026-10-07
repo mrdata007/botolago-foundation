@@ -1109,7 +1109,7 @@ export const fr = {
   "fpl.private": "Privée",
   "fpl.public": "Publique",
   "fpl.private_code_help": "Saisissez le code de la ligue privée fourni par son administrateur.",
-  "fpl.create_own_league": "Vous pouvez créer votre propre ligue depuis « Gérer les ligues ».",
+  "fpl.create_own_league": "Vous pouvez créer votre propre ligue depuis « Créer une ligue ».",
   "fpl.private_league_code": "Code de ligue privée",
   "fpl.invalid_code":
     "Code invalide. Vérifiez le code et confirmez avec l’administrateur de la ligue si le problème persiste.",
@@ -1330,6 +1330,16 @@ export const fr = {
   "fantasy.leagues.gameweek": "Journée",
   "fantasy.leagues.rules_summary":
     "Points cumulés depuis le début de la saison. Le classement se met à jour après chaque journée.",
+  "fantasy.leagues.create_submit": "Créer",
+  "fantasy.leagues.invite_friends": "Inviter des amis",
+  "fantasy.leagues.invite_confirm":
+    "Un nouveau code est créé pour inviter vos amis. L'ancien code ne fonctionnera plus.",
+  "fantasy.leagues.invite_failed": "Impossible de créer un lien d'invitation pour le moment.",
+  "fantasy.leagues.invite_owner_only":
+    "Seul le créateur de la ligue peut inviter de nouveaux membres.",
+  "fantasy.leagues.leave_title": "Quitter « {league} » ?",
+  "fantasy.leagues.leave_body":
+    "Vous disparaîtrez de son classement. Pour revenir, il vous faudra un nouveau code d'invitation.",
   "common.confirm": "Confirmer",
   "common.cancel": "Annuler",
 

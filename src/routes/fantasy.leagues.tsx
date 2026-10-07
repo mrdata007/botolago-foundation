@@ -1,7 +1,7 @@
 import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Plus, Settings } from "lucide-react";
+import { Copy, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -13,6 +13,7 @@ import { LeagueList } from "@/components/fantasy-lists/LeagueList";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import { InviteLinkShare } from "@/components/predictions/leagues/InviteLinkShare";
 import {
   ui,
   UiButton,
@@ -49,11 +50,15 @@ function LeaguesRoute() {
 
 /**
  * "Leagues & Cups", in the Option A language: underline tabs (Ligues |
- * Coupes) under the header, the Join and Manage actions as round pills, the
+ * Coupes) under the header, the Join and Create actions as round pills, the
  * create form on a card, display section headings in place of the ink pills,
  * and the leagues as card rows with their rank ("3e sur 24") — the rows the
  * A-Fantasy hub draws for "Mes ligues". Behaviour is unchanged: the same
  * queries, the same create flow and the same links.
+ *
+ * BG-0155: creating a league is said as such ("Créer une ligue", with a plus,
+ * where a cog read "Gérer les ligues"), the form's button says "Créer", and
+ * once the league exists its invite link can be shared from under its code.
  */
 function LeaguesPage() {
   return (
@@ -202,9 +207,9 @@ function LeaguesBody() {
                   aria-expanded={createOpen}
                   onClick={() => setCreateOpen((v) => !v)}
                 >
-                  <Settings className="h-4 w-4 shrink-0" aria-hidden />
+                  <Plus className="h-4 w-4 shrink-0" aria-hidden />
                   <span className="line-clamp-2 whitespace-normal text-balance">
-                    {t("fpl.configure_leagues")}
+                    {t("fpl.create_league")}
                   </span>
                 </UiButton>
               </div>
@@ -232,7 +237,7 @@ function LeaguesBody() {
                       className="mt-3"
                       disabled={createName.trim().length < 3 || busy}
                     >
-                      {busy ? t("fpl.saving") : t("fpl.create_league")}
+                      {busy ? t("fpl.saving") : t("fantasy.leagues.create_submit")}
                     </UiButton>
                     {created ? (
                       <>
@@ -253,6 +258,13 @@ function LeaguesBody() {
                     ) : null}
                   </form>
                 </UiCard>
+              ) : null}
+              {/* The share buttons under the code: their own card beside the
+                  form's, never a card inside it. The code is shown once, above. */}
+              {createOpen && created?.code ? (
+                <div className="mt-3">
+                  <InviteLinkShare game="fantasy" league={created.name} code={created.code} />
+                </div>
               ) : null}
 
               <section className="mt-6">
