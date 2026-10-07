@@ -50,13 +50,19 @@ describe("the round Points opens on", () => {
     expect(source).toMatch(query);
   });
 
-  test("asks for the address's round, then the figure's round, then the current one", () => {
+  test("asks for the address's round, then the round in play, then the figure's round, then the current one", () => {
     expect(source).toContain("requested: search.gw ?? null");
     expect(source).toContain("resultRound: summaryQ.isPending ? undefined");
     expect(source).toContain("summaryQ.data?.pointsGameweek ?? null");
     expect(source).toContain("current: currentGw");
+    // "Suivre mes points" at kick-off: the round being played, even before
+    // its first scoring pass has written the result the summary would read.
+    expect(source.replace(/\s+/g, " ")).toContain(
+      'inPlay: screen.gameweek?.status === "live" || screen.gameweek?.status === "provisional" || screen.gameweek?.status === "finalizing",',
+    );
     const order = [
       "if (inRange(requested)) return requested;",
+      "if (inPlay) return current;",
       "if (resultRound === undefined) return undefined;",
       "return inRange(resultRound) ? resultRound : current;",
     ];

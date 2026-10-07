@@ -4,6 +4,7 @@ import type { FantasyHistoryPageDto, FantasyHubDto } from "@/backend/fantasy/con
 import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository";
 import { forgetSharedFantasyHub } from "./fantasy-hub-share";
 import { fantasyService } from "./fantasy-runtime";
+import { gameweekResults } from "@/mocks/fantasy-data";
 
 /**
  * BG-0155 (2) — the summary says which round its points belong to.
@@ -125,14 +126,17 @@ describe("getSummary names the round its points belong to", () => {
 });
 
 describe("the sample (mock mode)", () => {
-  it("carries round 13 for its 58 points, while its current round is 14", async () => {
+  it("carries round 13 for round 13's own total, while its current round is 14", async () => {
     process.env[MODE] = "mock";
     try {
       const [summary, gameweek] = await Promise.all([
         fantasyService.getSummary(),
         fantasyService.getCurrentGameweek(),
       ]);
-      expect(summary?.gameweekPoints).toBe(58);
+      // The hub's figure and the Points screen it opens agree in the sample.
+      const round13 = gameweekResults.find((result) => result.gameweek === 13);
+      expect(round13?.breakdown.length).toBeGreaterThan(0);
+      expect(summary?.gameweekPoints).toBe(round13?.totalPoints);
       expect(summary?.pointsGameweek).toBe(13);
       expect(gameweek.number).toBe(14);
     } finally {

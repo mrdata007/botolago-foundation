@@ -310,7 +310,11 @@ describe("the team card: its score names its round and leads to Points", () => {
   /** The sample's state: round 14 is current, the 58 points are round 13's. */
   const SAMPLE: FantasySummary = { ...SUMMARY, gameweekPoints: 58, pointsGameweek: 13 };
 
-  function card(summary: FantasySummary | null, gameweek: Gameweek = ROUND_14) {
+  function card(
+    summary: FantasySummary | null,
+    gameweek: Gameweek = ROUND_14,
+    summaryFailed = false,
+  ) {
     const layout = fantasyHubLayout({
       authStatus: "authenticated",
       source: "cloud",
@@ -327,6 +331,7 @@ describe("the team card: its score names its round and leads to Points", () => {
         displayName={null}
         summary={summary}
         summaryPending={false}
+        summaryFailed={summaryFailed}
         prizes={false}
       />,
     );
@@ -347,11 +352,12 @@ describe("the team card: its score names its round and leads to Points", () => {
     expect(fr["fantasy.hub.points_round"].replace("{n}", "13")).toBe("Points · J13");
     // The generic label that never said which round is gone from the card.
     expect(text(html)).not.toContain(escapeHtml(fr["fantasy.gw_points"]));
-    // Its name says where it goes; the figure is its description.
-    expect(attr(points, "aria-label")).toBe("Voir mes points de la journée 13");
-    const described = attr(points, "aria-describedby") ?? "";
-    expect(described).not.toBe("");
-    expect(points).toContain(`id="${described}"`);
+    // Its name is its visible text first (what a speech-control user says,
+    // WCAG 2.5.3), then where it leads, read by screen readers only.
+    expect(attr(points, "aria-label")).toBeUndefined();
+    expect(text(points).startsWith("58")).toBe(true);
+    expect(text(points)).toContain("Voir mes points de la journée 13");
+    expect(points).toMatch(/<span class="sr-only">Voir mes points de la journée 13<\/span>/);
   });
 
   it("keeps the team block a link to the team profile, named by its own text", async () => {
@@ -393,14 +399,32 @@ describe("the team card: its score names its round and leads to Points", () => {
   });
 
   it("with no result yet: an en dash, never 0, and no round to name or link", async () => {
-    const html = await card({ ...SUMMARY, gameweekPoints: 0, pointsGameweek: null });
+    // What production sends with an empty history: 0 for the round, and a
+    // season total that is the sum of nothing.
+    const html = await card({
+      ...SUMMARY,
+      gameweekPoints: 0,
+      totalPoints: 0,
+      pointsGameweek: null,
+    });
     const points = link(html, "fantasy-team-card-points");
     expect(attr(points, "href")).toBe("/fantasy/points");
-    expect(attr(points, "aria-label")).toBe("Voir mes points");
+    expect(text(points)).toContain("Voir mes points");
     expect(text(points)).toContain(fr["fantasy.stat.none"]);
     expect(text(points)).toContain(escapeHtml("Aucun point pour l'instant"));
-    expect(text(points)).not.toMatch(/\b0\b/);
     expect(text(points)).not.toContain("J1");
+    // Nowhere on the card, the Total included.
+    const whole = /<div [^>]*data-testid="fantasy-team-card"[\s\S]*?<\/dl>/.exec(html)?.[0] ?? "";
+    expect(whole).not.toBe("");
+    expect(text(whole)).not.toMatch(/(^|\D)0(\D|$)/);
+  });
+
+  it("a failed summary says nothing it does not know: a dash and the neutral label", async () => {
+    const html = await card(null, ROUND_14, true);
+    const points = link(html, "fantasy-team-card-points");
+    expect(text(points)).toContain(fr["fantasy.stat.none"]);
+    expect(text(points)).toContain(escapeHtml(fr["fantasy.gw_points"]));
+    expect(text(points)).not.toContain(escapeHtml("Aucun point pour l'instant"));
   });
 
   it("an unknown summary reads the same as no result: a dash, never 0", async () => {

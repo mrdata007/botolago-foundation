@@ -67,7 +67,9 @@ export const Route = createFileRoute("/fantasy/points")({
 
 /**
  * BG-0155 (2) — the round Points opens on: the one the address asks for, if
- * the stepper offers it; else the round of the hub's figure (the summary's
+ * the stepper offers it; else the current round while it is being played
+ * ("Suivre mes points" at kick-off, before its first scoring pass has written
+ * a result); else the round of the hub's figure (the summary's
  * `pointsGameweek`: the current round's result, else the latest round with
  * one for this team); else the current round. `undefined` while a fact it
  * needs is still on its way, so the screen does not open on one round and
@@ -76,12 +78,15 @@ export const Route = createFileRoute("/fantasy/points")({
 function openingRound({
   requested,
   offered,
+  inPlay,
   resultRound,
   current,
 }: {
   requested: number | null;
   /** The rounds the stepper offers; `undefined` until they are known. */
   offered: readonly number[] | undefined;
+  /** The current round is live, provisional or finalizing. */
+  inPlay: boolean;
   /** The summary's `pointsGameweek`; `undefined` until the summary is known. */
   resultRound: number | null | undefined;
   current: number;
@@ -92,6 +97,7 @@ function openingRound({
   const inRange = (n: number | null | undefined): n is number =>
     typeof n === "number" && n >= min && n <= max;
   if (inRange(requested)) return requested;
+  if (inPlay) return current;
   if (resultRound === undefined) return undefined;
   return inRange(resultRound) ? resultRound : current;
 }
@@ -162,6 +168,10 @@ function PointsBody() {
       ? undefined
       : openingRound({
           requested: search.gw ?? null,
+          inPlay:
+            screen.gameweek?.status === "live" ||
+            screen.gameweek?.status === "provisional" ||
+            screen.gameweek?.status === "finalizing",
           // The same fallback as the stepper's range below.
           offered: gameweeksQ.isPending
             ? undefined

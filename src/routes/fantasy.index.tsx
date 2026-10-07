@@ -166,6 +166,7 @@ function FantasyHub() {
           displayName={user?.displayName ?? null}
           summary={summary.data ?? null}
           summaryPending={summary.isPending}
+          summaryFailed={summary.isError}
           prizes={(introPrizes.data?.length ?? 0) > 0}
         />
       </div>

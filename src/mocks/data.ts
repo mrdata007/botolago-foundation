@@ -379,8 +379,9 @@ export const fantasySummary: FantasySummary = {
   managerName: "BotolaGO Manager",
   teamName: "Atlas XI",
   totalPoints: 612,
-  gameweekPoints: 58,
-  // The sample's current round (14) has not started; its 58 points are J13's.
+  // Round 13's total in src/mocks/fantasy-data.ts (`gameweekResults`), so the
+  // hub's "Points · J13" and the Points screen it opens show the same figure.
+  gameweekPoints: 55,
   pointsGameweek: 13,
   overallRank: 12_483,
   gameweekRank: 4_129,

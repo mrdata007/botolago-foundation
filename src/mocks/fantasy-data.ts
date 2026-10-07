@@ -625,6 +625,38 @@ export const currentGameweekBreakdown: PlayerPointsBreakdown[] = fantasyTeam.squ
   };
 });
 
+/**
+ * Round 13, the sample's last finished round: a final breakdown of its own, so
+ * the hub's "Points · J13" (the summary in src/mocks/data.ts carries this
+ * total) opens on a Points screen that shows the same figure (BG-0155).
+ */
+export const previousGameweekBreakdown: PlayerPointsBreakdown[] = fantasyTeam.squad.map((s, i) => {
+  const bench = s.slot >= 12;
+  const goals = i % 5 === 1 && !bench ? 1 : 0;
+  const assists = i % 4 === 2 && !bench ? 1 : 0;
+  const cs =
+    fantasyPlayers.find((p) => p.id === s.playerId)?.position !== "FWD" && i % 3 === 1 && !bench
+      ? 1
+      : 0;
+  const events = [
+    { category: "appearance", points: bench ? 0 : 2 },
+    ...(goals ? [{ category: "goal", points: 5 * goals }] : []),
+    ...(assists ? [{ category: "assist", points: 3 * assists }] : []),
+    ...(cs ? [{ category: "clean_sheet", points: 4 }] : []),
+  ];
+  const tp = events.reduce((sum, e) => sum + e.points, 0);
+  return {
+    playerId: s.playerId,
+    totalPoints: s.isCaptain ? tp * 2 : tp,
+    minutesPlayed: bench ? 0 : 90,
+    isCaptain: s.isCaptain,
+    isViceCaptain: s.isViceCaptain,
+    isBench: bench,
+    status: "final",
+    events,
+  };
+});
+
 export const gameweekResults: GameweekResult[] = [
   {
     gameweek: 14,
@@ -642,13 +674,17 @@ export const gameweekResults: GameweekResult[] = [
   },
   {
     gameweek: 13,
-    totalPoints: 62,
-    benchPoints: 3,
+    totalPoints: previousGameweekBreakdown
+      .filter((b) => !b.isBench)
+      .reduce((s, b) => s + b.totalPoints, 0),
+    benchPoints: previousGameweekBreakdown
+      .filter((b) => b.isBench)
+      .reduce((s, b) => s + b.totalPoints, 0),
     captainId,
     averagePoints: 44,
     highestPoints: 88,
     autoSubs: [],
-    breakdown: [],
+    breakdown: previousGameweekBreakdown,
   },
   {
     gameweek: 12,

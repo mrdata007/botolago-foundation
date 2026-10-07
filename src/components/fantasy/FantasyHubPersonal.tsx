@@ -10,7 +10,7 @@ import {
   Shirt,
   Trophy,
 } from "lucide-react";
-import { useId, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -67,6 +67,7 @@ export function FantasyHubTeamArea({
   displayName,
   summary,
   summaryPending,
+  summaryFailed = false,
   prizes,
 }: {
   layout: FantasyHubLayout;
@@ -78,6 +79,8 @@ export function FantasyHubTeamArea({
   displayName: string | null;
   summary: FantasySummary | null;
   summaryPending: boolean;
+  /** The summary request failed: its figures are unknown, not "none yet". */
+  summaryFailed?: boolean;
   /** The prize catalog lists at least one prize, so the proposition may say so. */
   prizes: boolean;
 }) {
@@ -121,7 +124,9 @@ export function FantasyHubTeamArea({
         // round there is no result yet, and its 0 is not a score.
         points={summary && summary.pointsGameweek !== null ? summary.gameweekPoints : null}
         pointsGameweek={summary?.pointsGameweek ?? null}
-        total={summary?.totalPoints ?? null}
+        // With no round scored the season total is a sum of nothing, not 0.
+        total={summary && summary.pointsGameweek !== null ? summary.totalPoints : null}
+        known={!!summary && !summaryFailed}
         overallRank={summary?.overallRank ?? null}
         pending={summaryPending}
       />
@@ -265,6 +270,7 @@ function TeamCard({
   total,
   overallRank,
   pending,
+  known,
 }: {
   teamName: string;
   manager: string | null;
@@ -276,11 +282,16 @@ function TeamCard({
   total: number | null;
   overallRank: number | null;
   pending: boolean;
+  /**
+   * The summary arrived. When its request failed nothing is known, so the
+   * label stays the neutral "Points de la journée" rather than saying there
+   * are no points yet.
+   */
+  known: boolean;
 }) {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const none = t("fantasy.stat.none");
-  const pointsId = useId();
   // The live pill names the round being played, so it stands in for the
   // label only when the figure is that round's.
   const live =
@@ -328,19 +339,13 @@ function TeamCard({
           to="/fantasy/points"
           search={pointsGameweek === null ? {} : { gw: pointsGameweek }}
           data-testid="fantasy-team-card-points"
-          aria-label={
-            round === null
-              ? t("fantasy.hub.points_open_any")
-              : t("fantasy.hub.points_open").replace("{n}", round)
-          }
-          aria-describedby={pointsId}
           className={cn(
             "flex min-h-[var(--ui-tap-min)] shrink-0 flex-col items-end pb-3.5 pe-4 ps-1.5 pt-4",
             "rounded-se-[var(--ui-radius-sheet)]",
             ui.focus,
           )}
         >
-          <div id={pointsId} className="flex flex-col items-end gap-1.5">
+          <div className="flex flex-col items-end gap-1.5">
             <div className="flex items-baseline gap-1">
               {pending ? (
                 <UiSkeleton className="h-12 w-16" />
@@ -359,11 +364,20 @@ function TeamCard({
               />
             ) : (
               <span className={cn("max-w-[9.5rem] text-balance text-end", ui.text.label)}>
-                {round === null
-                  ? t("fantasy.hub.points_none")
-                  : t("fantasy.hub.points_round").replace("{n}", round)}
+                {round !== null
+                  ? t("fantasy.hub.points_round").replace("{n}", round)
+                  : known
+                    ? t("fantasy.hub.points_none")
+                    : t("fantasy.gw_points")}
               </span>
             )}
+            {/* The visible figure and label start the link's name (what a
+                speech-control user says); this says where it leads. */}
+            <span className="sr-only">
+              {round === null
+                ? t("fantasy.hub.points_open_any")
+                : t("fantasy.hub.points_open").replace("{n}", round)}
+            </span>
           </div>
         </Link>
       </div>
