@@ -2212,7 +2212,10 @@ export function UiPlayerPlate({
 }) {
   const Tag: ElementType = onClick ? "button" : "div";
   return (
-    <div className={cn("relative flex w-full flex-col items-center", className)}>
+    // `@container`: what sits on the plate (the captain marker, a fixture
+    // badge) asks how wide the plate is, because a row of five on a phone
+    // narrows it well below the 76px it was drawn for.
+    <div className={cn("@container relative flex w-full flex-col items-center", className)}>
       {flag ? <span className="absolute -start-0.5 top-0 z-10">{flag}</span> : null}
       {badge ? <span className="absolute -end-0.5 top-0 z-10">{badge}</span> : null}
       <Tag

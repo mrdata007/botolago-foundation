@@ -58,3 +58,34 @@ about 55px, with one about 73px.
   crest drops only where the badge with it was already cut off (a 76px
   plate's band holds 68px; the badge with a crest needs about 73px).
 - `bun test`, `typecheck`, `lint`, prettier.
+
+## Results
+
+Measured in Chromium on `/fantasy/team` in 3-5-2 with the captain moved to the
+last slot of the five-row, 320, 360, 375, 390, 402, 430 and 1280 wide, French
+and Arabic, before (`main` at `3f6293d`) and after. The mock data has no
+crests, so each run was repeated with a 14px crest put into every badge, as
+the live data has.
+
+- **Marker: pass.** Its edge, ring included, against the touchline's inner
+  edge: before −4.9px at 320 and −1.2px at 360 (across the line); after at
+  least +3.97px at every width, French and Arabic. Unchanged from 430 up and on
+  desktop (+5.4px at 430, +38px at 1280).
+- **Badges: pass.** Badges overflowing their band, with crests: before 11 of
+  11 on every phone width (9 of 11 in Arabic), 0 on desktop; after 0 everywhere.
+  Without crests: before 3 to 5 per phone width up to 390, after 0.
+- **Crest:** shown on desktop plates (84px), as before; dropped on phone
+  plates (76px and narrower), where it never fitted.
+- **Cut codes:** at 320 five badges and at 360 three (one in Arabic) now show
+  the code cut with "…" inside a whole badge, instead of a badge cut off at the
+  band's edge. None from 375 up.
+
+Screenshots (left before, right after, with crests):
+[`390`](pitch-badges-and-marker/before-after-team-fr-390-crests.png),
+[`320`](pitch-badges-and-marker/before-after-team-fr-320-crests.png).
+
+Checks: `bun test` 6,026 pass, 1 fail (the same news scheduling test that
+expects "GMT" where this machine prints "GMT+0", untouched here);
+`typecheck`, `eslint` and prettier clean. New assertions in
+`pitch-touchline-containment.test.ts` pin the container, the marker clamp and
+the badge fitting.

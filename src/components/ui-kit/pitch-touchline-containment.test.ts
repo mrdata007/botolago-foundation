@@ -249,3 +249,28 @@ describe("the pitch keeps every plate inside the touchlines", () => {
     }
   }
 });
+
+// The captain / vice marker hangs 12px past the shirt's shoulder. On a narrow
+// plate (a row of five on a 320–360px phone) that put it across the touchline
+// (measured: 4.9px at 320). It is clamped to the plate's edge with a container
+// query, and the next-match badge never grows past its band; both need the
+// plate to be the size container.
+describe("what sits on a plate stays inside the plate", () => {
+  const card = readFileSync(new URL("../fpl/FplPlayerCard.tsx", import.meta.url), "utf8");
+  const fixtures = readFileSync(new URL("../fpl/useNextFixtures.tsx", import.meta.url), "utf8");
+
+  it("makes the plate a size container", () => {
+    expect(plateLiterals).toContain("@container relative flex w-full flex-col items-center");
+  });
+
+  it("clamps the marker to the plate's inline-end edge", () => {
+    expect(card).toContain("end-[max(-0.75rem,calc(50%-50cqw))]");
+    expect(card).not.toContain('"absolute -end-3');
+  });
+
+  it("keeps the next-match badge inside its band", () => {
+    expect(fixtures).toContain("inline-flex max-w-full min-w-0 items-center");
+    expect(fixtures).toContain("@max-[80px]:hidden");
+    expect(fixtures).toContain('<span className="min-w-0 truncate">{text}</span>');
+  });
+});

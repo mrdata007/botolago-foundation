@@ -39,7 +39,13 @@ function RoleMarker({
       aria-hidden
       title={title}
       className={cn(
-        "absolute -end-3 -top-1.5 z-10 grid h-5 w-5 place-items-center",
+        // 12px past the shoulder while the plate has room. On a narrow plate
+        // (a row of five on a small phone) it slides in, so its edge never
+        // passes the plate's: `50%` is half the shirt, `50cqw` half the plate
+        // (`UiPlayerPlate` is the container). Plates sit inside the
+        // touchlines, so the marker does too; its ring hangs 2px, like the
+        // warning disc's.
+        "absolute end-[max(-0.75rem,calc(50%-50cqw))] -top-1.5 z-10 grid h-5 w-5 place-items-center",
         ui.radius.full,
         ui.text.micro,
         "[font-weight:var(--ui-weight-heavy)]",
