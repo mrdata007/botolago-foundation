@@ -149,3 +149,91 @@ Visual:
   both title lines at 22 px in Changa, the Arabic at its 1.95 leading, no
   letter-spacing on either, centred; the gate no taller than before at 390x844
   and fully on screen at 320x568. No horizontal overflow at 320, 390 or 1440.
+
+## Validation (2026-10-07)
+
+Everything below was run on this branch's own dev server (port 5304, `vite dev
+--mode production`, production data read only), with Chromium through
+Playwright, reduced motion, `locale` `fr-MA` or `ar-MA` and a matching
+`Accept-Language`; "first visit" means nothing stored. Before = `main` at
+`1c12b5b0`, after = this branch. Nothing was signed into, submitted or saved to
+the server; the only writes were the browser's own `botolago.language` when
+"Continuer" was pressed.
+
+Commands:
+
+- `bun test` on the ten directly relevant files (`index.home-structure`,
+  `browser-language`, `first-launch-language`, `launch-sequence`, `system-bars`,
+  `safe-area`, `shell.option-a`, `language-state`, `language-chooser-copy`,
+  `analytics-funnel`): 236 pass, 0 fail.
+- `bun run typecheck`: exit 0.
+- `bun run lint`: exit 0, 0 errors, 31 warnings, none in a file this branch
+  changes.
+- `bun run test` (full): 6,012 pass, 17 skip, 1 fail. The failure is
+  `src/backend/news/editorial-session.test.ts`, "Morocco's Ramadan clock change
+  is followed": this runtime's ICU writes "GMT+0" where the test expects "GMT".
+  The branch does not touch that file or anything it imports.
+- `impeccable detect --json` on `FirstLaunchLanguage.tsx`, `routes/index.tsx` and
+  `routes/jouer.tsx`, and again with `--scope layout`: no findings.
+
+Measured (before → after):
+
+- **`/` on a first visit**, 390x844, after the chooser: the landing page (no
+  bottom nav, page 5,926 px tall in French, 6,535 px in Arabic) → Home with its
+  bottom nav (2,190 px and 2,408 px), the same page a returning visitor gets.
+  Opening `/` again in the same browser: the landing page again → Home. Same at
+  1440x900. `/jouer` still renders the landing page.
+- **Fantasy card on a first visit**, 390x844: "Votre Fantasy · Créer mon
+  équipe" at y = 901 (French) and "فريقك في فانتازي · إنشاء فريقي" at y = 1,018
+  (Arabic), 124 and 118 px tall, linking to `/fantasy/create`; tapping it opens
+  the builder ("Sélection de l'effectif" / "اختيار التشكيلة"). It is one short
+  scroll below the first screen, as for a returning visitor; the bottom nav's
+  Fantasy tab is on screen from the start.
+- **Chooser preselection**: `ar-MA` (`navigator.languages` = `["ar-MA"]`) French
+  checked → Arabic checked, with the group's one tab stop and the focus, and the
+  button "متابعة"; `fr-MA` French checked before and after. Keyboard with
+  `ar-MA`: Escape leaves the gate open, ArrowUp moves the choice to French (button
+  "Continuer"), Tab reaches the button and Shift+Tab returns to the checked tile,
+  ArrowDown back to Arabic; Enter on the button stores `ar`, shows "جارٍ تحميل
+  العربية…" while the dictionary loads, then the gate closes on an Arabic page.
+  Nothing is stored before the button.
+- **Chooser title**: "Choisissez votre langue" Changa 34/800, 85 px, and
+  "اختر لغتك" 14 px in the body face, muted, the dialog's description → both
+  lines in the dialog's title, Changa 22/800, `lang` fr/ar, `dir` ltr/rtl, line
+  heights 27.5 px and 42.9 px (the Arabic 1.95), computed `letter-spacing`
+  `normal` on both; accessible name "Choisissez votre langue اختر لغتك", no
+  `aria-describedby`. Peak ink contrast of the Arabic line read from the
+  screenshots' pixels: 7.5:1 → 19.6:1 in light, 8.1:1 → 15.9:1 in dark. The gate
+  at 390x844: 466 → 421 px tall; at 320x568 it spans y = 60 to 508.
+- **Overflow**: no element outside the viewport at 320 (French and Arabic,
+  Home after the chooser), 390 and 1440, measured on each element's box with
+  the ancestor walk stopped below `body` (whose `overflow-x: clip` would
+  otherwise hide it).
+- **Status bar, stand-in iPhone bridge** (a fake `webkit.messageHandlers.bridge`
+  and `Capacitor.nativePromise` recording `SystemBars.setStyle`): first visit,
+  light theme: `DARK` only, held through the landing page → `DARK` (splash),
+  then `LIGHT` once Home is under the chooser. Dark theme: `DARK` → `DARK`.
+  Returning visitor: `DARK` → `LIGHT`, unchanged. `/jouer`: `DARK`, unchanged.
+- One React hydration mismatch per page load (a news card's text on Home) before
+  and after, in the same numbers; it is not this branch's.
+
+Evidence in `shots/`: `chooser__m-ar-light__{before,after}` (Arabic phone:
+French preselected and the 34/14 px titles → Arabic preselected, equal
+titles), `chooser__m-fr-dark__{before,after}` (French phone, dark),
+`chooser__d-ar-light__{before,after}` (desktop), `first-visit-root__m-fr-light__{before,after}`
+and `first-visit-root__m-ar-light__{before,after}` (what `/` shows after the
+chooser: the landing page → Home), `first-visit-fantasy-card__m-{fr,ar}-light__after`
+(Home's Fantasy card on a first visit).
+
+Not verified:
+
+- **A real phone, WebKit and the native status bar.** Chromium only; the status
+  bar was checked with a stand-in bridge, not on an iPhone or Android device.
+- **Signed-in readers**: no sign-in is allowed in this lane. Their `/` was
+  already Home and the code path that decides it is gone, so nothing can differ,
+  but it was not looked at.
+- **A browser whose list puts another language first** (`en-US, ar-MA`): covered
+  by the unit test, not captured.
+- **Production analytics**: `landing_view` will count `/jouer` only from the
+  deploy on; the landing page doc says so.
+- **Live match**: none was on during the captures.
