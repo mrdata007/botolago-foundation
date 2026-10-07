@@ -1,8 +1,8 @@
-import { Ban, Check, Pencil, Trophy } from "lucide-react";
-import { useId, useState, type ReactNode } from "react";
+import { Check, Pencil, Trophy } from "lucide-react";
+import { useId, useState } from "react";
 
 import type { MatchVoteChoice, PredictionFixtureDto } from "@/backend/predictions/contracts";
-import { ClubCrest } from "@/components/common/ClubCrest";
+import { bandClubName } from "@/components/home/band-matches";
 import { ui, UiCard } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -18,36 +18,40 @@ const MINE = cn(
 /**
  * One fan vote on a match page (owner decision 2026-09-25): Sofascore's card
  * drawn with BotolaGO's kit. The question, a trophy, and two or three answer
- * pills: the clubs' crests, X for a draw, yes and no.
+ * pills, each one written out: the clubs' names, "Match nul", "Aucun but",
+ * "Oui", "Non". Never a crest for a club or an "X" for a draw: three pills
+ * reading crest, X, crest are a betting slip's 1 / X / 2, and BotolaGO looks
+ * nothing like betting (PRODUCT.md, critique of 2026-10-06). The names are the
+ * ones Home's band uses for the same vote (`bandClubName`).
  *
- * Before the player votes, every pill is outlined in ink and the card asks for
- * a vote. Once they have voted, or the match has kicked off, each pill shows
- * its answer at the start and its share of the votes at the end; the player's
- * own answer is washed and outlined in ink, the others stay plain, and the
- * card gives the total. While the match is still open, the pencil beside the
- * trophy brings the choice back, to change the vote. The home answer comes
- * first in the markup, so in Arabic it sits on the right, as in the score
- * header above.
+ * Before the player votes, every pill is outlined in ink and the question
+ * stands alone. Once they have voted, or the match has kicked off, each pill
+ * shows its answer and its share of the votes; the player's own answer is
+ * washed and outlined in ink, the others stay plain, and the card gives the
+ * total. While the match is still open, the pencil beside the trophy brings
+ * the choice back, to change the vote. The home answer comes first in the
+ * markup, so in Arabic it sits on the right, as in the score header above.
  */
 export function MatchVoteCard({
   fixture,
   view,
   open,
   onVote,
+  className,
 }: {
   fixture: PredictionFixtureDto;
   view: VoteQuestionView;
   /** Votes can still change: the match has not kicked off. */
   open: boolean;
   onVote: (choice: MatchVoteChoice) => void;
+  /** Extra layout from the host, e.g. filling what its slide leaves under the heading. */
+  className?: string;
 }) {
-  const { t, lang } = useI18n();
+  const { t, tr, lang } = useI18n();
   const titleId = useId();
   const [editing, setEditing] = useState(false);
-  const home = presentFootballClub(fixture.home);
-  const away = presentFootballClub(fixture.away);
-  const homeName = fixture.home.shortName || fixture.home.name;
-  const awayName = fixture.away.shortName || fixture.away.name;
+  const homeName = bandClubName(presentFootballClub(fixture.home), tr);
+  const awayName = bandClubName(presentFootballClub(fixture.away), tr);
   const voted = view.mine !== null;
   const revealed = !open || (voted && !editing);
   const showShares = sharesVisible(view.total);
@@ -70,23 +74,23 @@ export function MatchVoteCard({
     return choice === "yes" ? t("predictions.votes.yes") : t("predictions.votes.no");
   };
 
-  const face = (choice: MatchVoteChoice): ReactNode => {
-    // 24px once the share sits beside it: crest and "42 %" then fit side by
-    // side in each of three pills on a 360px phone.
-    const crest = revealed ? "h-6 w-6" : undefined;
-    if (choice === "home") return <ClubCrest club={home} size="sm" className={crest} />;
-    if (choice === "away") return <ClubCrest club={away} size="sm" className={crest} />;
-    if (choice === "none") return <Ban className="h-5 w-5 shrink-0" aria-hidden />;
-    return (
-      <span className={cn(ui.text.bodyStrong, "uppercase")}>
-        {choice === "draw"
-          ? "X"
-          : choice === "yes"
-            ? t("predictions.votes.yes")
-            : t("predictions.votes.no")}
-      </span>
-    );
+  // What a pill shows: the answer in words, as short as it reads. A club is
+  // its name; the other answers are their own words.
+  const face = (choice: MatchVoteChoice): string => {
+    if (choice === "home") return homeName;
+    if (choice === "away") return awayName;
+    if (choice === "draw") return t("predictions.votes.draw");
+    if (choice === "none") return t("predictions.votes.no_goal");
+    return choice === "yes" ? t("predictions.votes.yes") : t("predictions.votes.no");
   };
+  // The kit's small-button label (13px at 800), centred, wrapping onto a
+  // second line rather than cut when a name is long ("Kawkab Marrakech" in a
+  // third of a 360px phone).
+  const faceText = cn(
+    "min-w-0 text-center [overflow-wrap:anywhere]",
+    ui.text.meta,
+    "[font-weight:var(--ui-weight-heavy)]",
+  );
 
   const pill = "flex min-h-[var(--ui-tap-min)] min-w-0 items-center gap-1 rounded-full border-2";
 
@@ -94,7 +98,7 @@ export function MatchVoteCard({
     <UiCard
       padding="md"
       testId={`match-vote-${view.question}`}
-      className="flex h-full w-full flex-col justify-between gap-4"
+      className={cn("flex w-full flex-col justify-between gap-4", className ?? "h-full")}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
@@ -105,13 +109,13 @@ export function MatchVoteCard({
                 ? t("predictions.votes.both_score")
                 : t("predictions.votes.first_goal")}
           </h3>
-          <p className={cn(ui.text.meta, ui.tone.muted)}>
-            {!open
-              ? `${t("predictions.votes.closed")} · ${total}`
-              : revealed
-                ? total
-                : t("predictions.votes.cta")}
-          </p>
+          {/* Nothing under an open question: it asks on its own. Once
+              answered, or closed, the line gives the count. */}
+          {revealed ? (
+            <p className={cn(ui.text.meta, ui.tone.muted)}>
+              {open ? total : `${t("predictions.votes.closed")} · ${total}`}
+            </p>
+          ) : null}
         </div>
         <div className={cn("flex shrink-0 items-center gap-1", ui.tone.ink)}>
           {open && voted ? (
@@ -144,24 +148,23 @@ export function MatchVoteCard({
           {view.options.map((option) => {
             const share = formatShare(option.percent, lang);
             return (
-              // The answer at the start, the share at the end. The two share
-              // the free space as margins, so when they cannot sit side by
-              // side (three answers, "100 %", a 360px phone) the share wraps
-              // under the answer, both centred, instead of being cut.
+              // The answer, and its share under it, both centred: in a third
+              // of a phone a club's name and "42 %" do not fit side by side,
+              // and every pill of every card reads the same way.
               <li
                 key={option.choice}
                 data-choice={option.choice}
                 data-mine={option.mine}
                 className={cn(
                   pill,
-                  "relative flex-wrap content-center gap-y-0.5 px-1.5 py-1",
+                  "relative flex-col justify-center gap-0.5 px-1.5 py-1",
                   option.mine
                     ? MINE
                     : "border-[color:var(--ui-rule)] bg-[color:var(--ui-page)] text-[color:var(--ui-on-surface)]",
                 )}
               >
-                {/* Pinned inside the pill: left to find its own place in a
-                    wrapping row, the browser puts it past the card's edge. */}
+                {/* Pinned inside the pill: left to find its own place, the
+                    browser can put it past the card's edge. */}
                 <span className="sr-only start-0 top-0">
                   {showShares
                     ? (option.mine
@@ -172,23 +175,21 @@ export function MatchVoteCard({
                         .replace("{share}", share)
                     : label(option.choice)}
                 </span>
-                <span aria-hidden className="mx-auto flex shrink-0 items-center">
+                <span aria-hidden className={cn("mx-auto", faceText)}>
                   {face(option.choice)}
                 </span>
-                <span
-                  aria-hidden
-                  className={cn(
-                    ui.text.secondary,
-                    ui.text.tabular,
-                    "mx-auto shrink-0 whitespace-nowrap [font-weight:var(--ui-weight-heavy)]",
-                  )}
-                >
-                  {showShares ? (
-                    <bdi>{share}</bdi>
-                  ) : option.mine ? (
-                    <Check className="h-4 w-4" />
-                  ) : null}
-                </span>
+                {showShares || option.mine ? (
+                  <span
+                    aria-hidden
+                    className={cn(
+                      ui.text.secondary,
+                      ui.text.tabular,
+                      "mx-auto shrink-0 whitespace-nowrap [font-weight:var(--ui-weight-heavy)]",
+                    )}
+                  >
+                    {showShares ? <bdi>{share}</bdi> : <Check className="h-4 w-4" />}
+                  </span>
+                ) : null}
               </li>
             );
           })}
@@ -213,12 +214,12 @@ export function MatchVoteCard({
               }}
               className={cn(
                 pill,
-                "justify-center px-1.5",
+                "justify-center px-1.5 py-1",
                 option.mine ? MINE : "border-[color:var(--ui-ink-fg)]",
                 ui.focus,
               )}
             >
-              {face(option.choice)}
+              <span className={faceText}>{face(option.choice)}</span>
             </button>
           ))}
         </div>
