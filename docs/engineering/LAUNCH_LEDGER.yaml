@@ -1526,6 +1526,36 @@ tasks:
       - "owner's eye on the pictures, in particular the GoMark's DATA tag going with it and the story wheel's single gradient with marker-wheels in the legend instead of five slice colours"
       - "the Fantasy recap and the Top 10 post were not seen inside the live share sheet: the recap needs a signed-in manager with a finalised gameweek, the post a published edition (the Pépites e2e suite checks the post on sample data)"
 
+  BG-0156:
+    title: Pépites visuals from data and real assets -- crests, club edges, rank plates and a featured N°1 with the percentile wheel
+    area: design
+    severity: P2
+    user_impact: >
+      On a real iPhone the owner found Pépites bland: production has no published edition yet,
+      so /pepites showed last season's final ranking as ten bare cards (rank, name, score).
+      Owner request 2026-10-06: more visuals, and no AI slop.
+    owner: Chief
+    state: RUNNING # built on claude/pepites-visuals (brief 54c9874b); review findings of 2026-10-06 addressed on the branch; not merged or published
+    depends_on: [BG-0152, BG-0153]
+    branch: claude/pepites-visuals
+    brief: docs/engineering/tasks/BG-0156/screen-brief.md
+    evidence:
+      - "inspected on production data (read-only, anonymous): pepites_version source previous_season; the 40 ranked 2025/26 players all carry club, position and age, none a photo (player_photo_for(.., 'app') returns one only under a signed release); all 14 of their clubs are in football_team_catalog with a crest path, same ids as app.teams"
+      - "rows (Top 10 in both states, phone and desktop ranking tables): photo, else the club crest from the catalogue (useClubCatalogue, browser-only so a failed read cannot 503 the page), else the club-colour initials disc; club edge on the start side; club and position; ten-segment bar; ranks 1-3 on the white score plate (--ui-scorebox, Tunnel Navy), 4+ muted. The before-first-edition list now uses the edition's rows; its 'first Top 10 after round 3' card and copy unchanged"
+      - "one top-3 treatment, the featured N°1 (PepitesFeature): Home's stadium photo band under a flat navy veil, rank plate, score plate, the story card's five-slice percentile wheel in SVG (pepites_player percentiles, the player page's read and cache key; none on an earlier week) and its legend, the editor's line and four figures; it replaces the edition's N°1 card and the ranking's three-card podium. A podium of three was rejected: about 110px a column on a 390px phone"
+      - "no gradient but the action gradient on the wheel's values (progress); no glow, blur, sparkle, emoji, decorative icon, glass or illustration; the unused trophy photo stays unused. pepites.option-a guard passes on the new files"
+      - "contrast from rasterised pixels (text shown vs made transparent, glyph core vs the worst background pixel), /pepites and /pepites/classement, fr/ar, light/dark, 390px: every text box passes, lowest the band's legend title 5.67:1; plates 14.22-16.64:1. Band club edge (story card's lifted edge) vs the band 3px inside it, share of its height under 3:1 after the Arabic photo mirror: 390px 2-4% fr, 3-7% ar (33-42% before the mirror); /pepites 1440px 3-5% fr, 0% ar; /pepites/classement 1440px 0% dark, 8-12% light (lowest 2.87:1); lowest pixels 2.07-2.30:1 at floodlights (decorative accent, recorded in the brief); text on the band re-measured after the mirror, 0 fails"
+      - "after validation (a mid red such as Wydad fell to 1.82:1 against the veiled photo in the edition state): the band's club edge gets a 2px Tunnel Navy keyline on its inner side, so it always meets the navy it is lifted against. Measured from pixels on /pepites with Hassania's edge rgb(218,59,22), fr/ar, 390/1440, light/dark, corners excluded: edge vs keyline 3.12-3.83:1 everywhere (vs 2.12-3.25:1 against the photo side)"
+      - "no horizontal overflow or element off-screen (bounding rects) at 360, 390 and 1440px in fr and ar; phone table at 360/375/390/402/414/430px fr and ar, 40 rows: no name or club line cut; after review the rank column is 36px and the disc shows from a 352px table (a disc in every row from 390px; the 360 and 375px phones drop it), rows 59 -> 75px (fr) and 69 -> 90px (ar) on average at 390px against the first build without the disc"
+      - "layout shift observer, 390px, cold load: French 0 before; 0.0006 (/pepites) and 0.0001 (ranking) after, text replaced inside fixed boxes (previousRect = currentRect). Arabic ~0.50-0.53 before and after: the known French-first-paint switch"
+      - "edition state shown locally by answering the page's own Pépites reads in the browser with an edition built from production's ranking rows (sample movements and editor's line, for layout only): 10 entries, fr/ar, light/dark, 390/1440"
+      - "tests: pepites-design.test.ts +4 (slices, Arabic mirror, sector path, clamping; sliceAngles moved there, share-image re-exports it, its draw tests unchanged and passing); pepites-visuals.test.tsx 15 (plate, flat on the band, disc order, catalogue join, wheel, legend, figures line, the band's figures fallback); ui-kit.contract.test.ts lists StadiumBandPhoto among the photos mirrored in Arabic. tests/e2e/pepites.e2e.ts: the two lines reading pepites-desktop-podium now read pepites-feature (the owner's change removed the podium); not run (it needs a sample-data server outside the lane's helper)"
+      - "review round (2026-10-06): band photo mirrored in Arabic through StadiumBandPhoto; its sizes give the cover-drawn width, so phones pick the 1600w file; band rank plate flat (One Lift Rule); legend figures beside their names (one subgrid); from a 768px band name and score at the start, wheel (176px) and legend at the end; band link holds header and editor's line (11 words, was 37) with a stretched ::after for the tap and the focus ring; figures fall back to the player read, dashes only while loading; meta lines break after a dot, never before; DESIGN.md's Bands line names the Pépites band"
+      - "checks: bun run typecheck pass; bun run lint 0 errors, 31 warnings (as on main); bun test 5938 pass, 17 skip, 0 fail; prettier --check on the changed files pass; i18n gate pass, W1 7, W2 7, W3 252, W4 64, all at baseline (no dictionary change)"
+    remaining:
+      - "owner's eye on the band (photo, wheel, plates) and the phone table's density"
+      - "the player page's percentiles stay bars; the wheel is on the band only"
+
   BG-0123:
     title: src/services/fantasy-cloud-repo.ts is an unreachable repository calling four RPCs that exist in no schema
     area: frontend
@@ -1762,6 +1792,104 @@ tasks:
     remaining:
       - "device check, in French and Arabic, on the first builds: the status bar's icons on a notched iPhone and an Android 15+ phone in Clair, Sombre and Système (including a phone switch while the app is open), on the sign-in screens, Jouer and the launch splash, and Android's navigation bar; the strips under a real notch; and the Fantasy player page in Safari on a notched iPhone turned sideways. Chromium with a stand-in bridge is not a phone"
       - "the match page's sticky header, when scrolled, puts club colours (a green and white split was measured) under the clock; the icons follow the theme there. Not part of this list"
+
+  BG-0155:
+    title: Home's gameweek band swipes through the round's matches (carousel of live and upcoming matches)
+    area: design
+    severity: P1
+    user_impact: >
+      Owner, 2026-10-06, from a real iPhone in the dark theme: "You need to add a carousel to scroll
+      to see the other matches, this one shows only 1 match." Home's band showed one match card (the
+      next match, with "Qui va gagner ?"), and Home's payload carried only 3 fixtures, so the rest of
+      the journée could not be reached from the band at all.
+    owner: Chief
+    state: RUNNING # implemented on claude/home-match-carousel (brief 0dca8f25), reviewed and fixed 2026-10-06; awaiting the draft PR and the owner's OK to merge and publish
+    depends_on: []
+    brief: docs/engineering/tasks/BG-0155/screen-brief.md
+    evidence:
+      - "data: footballService.getHomeMatches asks football_home_matches for HOME_MATCHES_LIMIT = 10 fixtures instead of 3 (a round is 8; the function accepts 1 to 10; no database change). Home's À venir and the landing page's En ce moment keep the payload's first HOME_LIST_SIZE = 3 rows, pinned by index.home-structure.test.ts and LandingLive.test.tsx"
+      - "bandMatches() (band-matches.ts): every live match first, then the next match to be played and the rest of its round by kick-off, the round read from the payload alone (never from Fantasy's gameweek, which loads in the browser only); the next round's matches left out; tests include the review's case of a rescheduled earlier-round match before the next round with Fantasy's gameweek open"
+      - "HomeMatchCarousel: native scroll snap, no dependency, no timer; cards 88% wide (lg to xl: whole width, Home's centre column is 264 to 519px there); a live match is MatchCard hero, a match to come NextMatchPick with its own vote; dots up to 6 cards, '2 / 8' beyond, aria-hidden; region and groups described from new home.carousel.* keys in fr and ar; glass previous/next from lg and on a fine pointer; focus brings a card to the gutter; scrolls are instant under reduced motion. One match renders as before, a live match alone still rises out of the band, no match draws no card"
+      - "vote row: while a card's votes are unknown (always on the server) and a vote is expected (voteMayOpen: scheduled, journée known, kick-off ahead at the loader's renderedAt) its place is held by the buttons' own shape with the labels invisible, so it wraps where they will; once any read finds the game closed (allowed false) or fails, no card holds it; votes are read for the card in view and its neighbours first, every card once the page is idle (whenIdle) or the focus enters the carousel; every button state carries a 1px edge so choosing does not resize it"
+      - >
+        measured on the branch (:5510, release 58035200) against main (:5500, af8b0a74), Chromium 141,
+        live production data (Journée 3, 8 matches): 48/48 interaction checks pass. 390 French: card 1 on
+        the 16px gutter, the next card shows 47px (12.1% of the screen, 14.9% of a card), every card
+        158.5px tall, no buttons on a touch phone; a touch drag snaps to card 2 (scrollLeft 327) and the
+        indicator reads 2/8. 1440: previous disabled on card 1; next moves exactly one card (463px),
+        landing in the same task under reduced motion and still travelling right after the click
+        without it; at card 8 next is disabled and the indicator reads 8/8. Tab goes link, three votes,
+        then card 2's link, which comes to the gutter (390 and 1440). Arabic: card 1's right edge on the
+        gutter, card 2 to its left, previous right of next with both chevrons matrix(-1, 0, 0, 1, 0, 0),
+        a left-to-right drag brings card 2 in; the '1 / 8' count was first measured with the 1 on the
+        right and is now its own left-to-right run, as PRODUCT.md keeps numbers in Arabic lines. A vote on card 1 marks
+        card 1 only and changes no height. With the payload rewritten in the browser: live + upcoming is
+        a carousel led by the split card (equal heights), one live match alone rises out of the band, one
+        match is the single pick card without indicator or buttons, none draws no card
+      - "no page overflow at 360, 390, 768, 1024, 1279, 1280 and 1440 (bounding rects outside the track); indicator contrast from rasterised pixels against the worst ground pixel: '1' 11.8:1 or more, '/ 8' 7.7:1 or more, active dot 11.8:1 or more, other dots 3.57:1 or more (dark and light, 390 and 1440)"
+      - >
+        CLS, first round (before review), fresh load, PerformanceObserver (buffered, sum of shifts
+        without input), dark, 3 runs each: French 390 branch 0.0105/0.0105/0.0105 vs main 0.0158/0.0232/0.0581 (the band growing when the
+        vote arrived is gone; the remaining shift is a section near the fold that disappears on main
+        too); French 1440 0.0278/0.0308/0.0278 vs 0.0299/0.0237/0.0335 (the news column no longer moves;
+        the right column moving when the Fantasy card loads is the same on both); Arabic 390
+        0.761/0.841/0.864 vs 0.747/0.813/0.813, Arabic 1440 0.671/0.657/0.653 vs 0.626/0.627/0.631, all
+        within the French-first-paint swap to Arabic
+      - >
+        review round, 2026-10-06, measured on the branch (:5510, release 95494ab3) against main (:5500,
+        af8b0a74), Chromium 141, live production data (Journée 3, 8 matches), Africa/Casablanca, reduced
+        motion: every card has its three vote buttons in the accessibility tree once loaded (fr and ar,
+        390 and 1440); with match_votes answered allowed false in the browser the track keeps one height
+        (75.4px at 390 fr) from card 1 to card 8; previous and next keep the focus at both ends, Enter
+        past the end does nothing (fr and ar, reduce and no-preference); "Passer les matchs" moves the
+        focus past 32 (390) or 34 (1440) tab stops to "Tout voir"; after next the polite status reads
+        "Match 3 sur 8 : FAR Rabat – Widad Témara", after a swipe nothing
+      - >
+        CLS after review, same harness (session-window maximum, fresh context, dark), 3 runs each: French
+        390 0.0105/0.0106/0.0106 vs main 0.0859/0.0739/0.0852; French 1440 0.0297/0.0219/0.0297 vs
+        0.0403 three times; Arabic 390 0.9336/0.9336/0.9337 vs 1.0439/1.0560/1.0560; Arabic 1440
+        0.7337/0.7356/0.7337 vs 0.6714/0.6696/0.6837. With Pronostics closed (match_votes answered
+        allowed false), 2 runs: French 390 0.0870/0.0963 vs main 0.0361/0.0278, French 1440
+        0.0424/0.0424 vs 0.0228/0.0276
+      - >
+        checks on the branch (after review, 95494ab3 plus this note): typecheck 0 errors; lint 0 errors,
+        31 warnings (as main); bun test full 5952 pass, 17 skip, 0 fail; Prettier clean on the changed
+        files except this ledger; i18n gate pass at its baselines (W1 7, W2 7, W3 252, W4 64)
+    note: >
+      Two changes for the PR description. With two matches or more, a live match is now a card of the
+      carousel inside the band, not a separate card overlapping the band's lower edge, and several live
+      matches swipe side by side instead of stacking; a live match with nothing else to show still
+      overlaps the band as before; during the last match of a round, the live card now leads the next
+      round's cards. French CLS falls because the vote row's place is now held.
+
+      For the owner's acceptance on the PR: Arabic CLS at 1440 is 0.734 against main's 0.670 to 0.684
+      (at 390 it is now better than main, 0.934 against 1.044 to 1.056). At 1440 the band's cards are
+      on screen and move while the page flips to right-to-left (the lines above them grow 39px in
+      Arabic); main's card was not, only because it vanished during the language switch for want of a
+      placeholder, which this branch fixes. Two-line room for club names was tried and did not change
+      it. The real remedy is Arabic rendered on the server (LANGUAGE_URLS.md), outside this change.
+      Also a trade-off: whether Pronostics is open is known only from the votes read in the browser, so
+      with Pronostics off or testers-only the held vote row closes once at load (French CLS 390 0.087
+      to 0.096 against main's 0.028 to 0.036); with Pronostics public, as today, there is no such shift.
+
+      /matches reads the same payload for its empty-day "next match day" link; it reads the first
+      HOME_LIST_SIZE fixtures, so that link shows on the same days as on main (with ten it would also
+      show on empty days between two rounds, pointing at the next round; an improvement the owner can
+      ask for separately).
+
+      matches-home.option-a.test.ts pinned the live split card to the old block under the band; it now
+      pins the same split card where the carousel and the live-alone block draw it. After review,
+      HomeMatchCarousel.test.tsx expects aria-disabled instead of disabled on the step buttons, and
+      band-matches tests no longer pass a gameweek.
+
+      Seen in passing and left alone: Home's news cards throw a hydration mismatch on every load
+      (ArticleCard's date is formatted in the runtime's timezone; server "22 sept.", browser "23 sept."),
+      on main as on the branch; and from 1024 to about 1100px the pick card's club names run under the
+      kick-off time in the narrow centre column, on main as on the branch.
+    remaining:
+      - "owner: review the draft PR; merge and publish wait for the owner's OK"
+      - "device check on a real iPhone (Safari and the app shell) and an Android phone: the swipe, the snap and the peek, in French and Arabic; Chromium's touch emulation is not a phone"
+      - "the live state was checked only with a rewritten payload in the browser (no match was live during the work); check it on the next match day"
 
   BG-0151:
     title: viewport-fit=cover, with the safe-area fixes it needs (phone app status bar, home indicator, notch)

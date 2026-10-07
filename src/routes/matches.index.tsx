@@ -3,7 +3,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, type ReactNode } from "react";
-import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
+import {
+  defaultSeason,
+  footballService,
+  HOME_LIST_SIZE,
+  type FootballSeason,
+} from "@/services/football";
 import { seasonsQuery } from "@/services/football-queries";
 import { AppShell } from "@/components/shell/AppShell";
 import { MatchCard } from "@/components/common/MatchCard";
@@ -234,7 +239,13 @@ function MatchesPage() {
     queryFn: () => footballService.getHomeMatches(lang),
     enabled: seasonsQ.isSuccess,
   });
-  const nextDay = nextMatchDayAfter(upcomingQ.data?.matches ?? [], matchDay);
+  // Home's payload carries a whole round since BG-0155. An empty day points
+  // at the next match day among its first fixtures only, as many as it held
+  // before, so this page offers that link exactly where it did.
+  const nextDay = nextMatchDayAfter(
+    (upcomingQ.data?.matches ?? []).slice(0, HOME_LIST_SIZE),
+    matchDay,
+  );
 
   const dayQuery = matchDayQuery(matchDay, lang, selectedSeason?.id);
   const matchesQ = useQuery({

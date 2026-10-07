@@ -14,7 +14,8 @@ import {
 } from "./PepitesParts";
 import { PepitesShareButton } from "./PepitesShareButton";
 import { PepitesPageTitle, PepitesShell } from "./PepitesShell";
-import { TopTenHero, TopTenList, type PlayerStats } from "./TopTenList";
+import { PepitesFeature } from "./PepitesFeature";
+import { TopTenList, type PlayerStats } from "./TopTenList";
 import { editionQueryOptions, usePepitesViewer, useVersionPointer } from "./use-pepites";
 
 /**
@@ -123,8 +124,17 @@ export function PepitesEditionPage({ week }: { week: number }) {
       ) : null}
       {leader ? (
         <section aria-labelledby="pepites-edition-title" className="flex flex-col gap-2.5">
-          <TopTenHero item={leader} stats={undefined} />
-          <TopTenList items={rest} stats={NO_STATS} testId="pepites-top10" />
+          {/* No wheel (`version={null}`): today's percentiles are not that week's. */}
+          <PepitesFeature
+            testId="pepites-hero"
+            player={leader.player}
+            rank={leader.rank}
+            score={leader.score}
+            movement={leader.movement ?? null}
+            reason={lang === "ar" ? leader.reasonAr : leader.reasonFr}
+            version={null}
+          />
+          <TopTenList items={rest} stats={NO_STATS} figures={false} testId="pepites-top10" />
         </section>
       ) : null}
     </PepitesShell>
