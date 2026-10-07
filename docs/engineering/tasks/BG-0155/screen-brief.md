@@ -133,8 +133,8 @@ Measured on main:
      inviter de nouveaux membres." / "وحده منشئ الدوري يمكنه دعوة أعضاء جدد."
    - "Quitter la ligue" stays at the foot and opens a confirmation that names the
      league: "Quitter « {league} » ?" with "Vous disparaîtrez de son classement.
-     Pour revenir, il vous faudra un nouveau code d'invitation." / "مغادرة
-     «{league}»؟" with "ستختفي من ترتيبه، ولن تعود إليه إلا برمز دعوة جديد.";
+     Pour revenir, il vous faudra un code d'invitation." / "مغادرة
+     «{league}»؟" with "ستختفي من ترتيبه، ولن تعود إليه إلا برمز دعوة.";
      buttons "Quitter la ligue" (destructive) and "Annuler".
    - Leagues page: the cog "Gérer les ligues" toggle becomes "Créer une ligue" /
      "إنشاء دوري" with a plus; its submit button reads "Créer" / "إنشاء"; after

@@ -747,10 +747,15 @@ export const ar = {
   "fantasy.rules.row.own_goal": "هدف في مرماه",
   "fantasy.rules.scoring_unavailable": "سلّم النقاط المفصّل غير متاح حاليًا.",
   "fantasy.rules.chips": "الرقاقات",
-  "fantasy.rules.chip_window_season": "طوال الموسم",
-  "fantasy.rules.chip_window_range": "الجولات {from}–{to}",
-  "fantasy.rules.chip_window_single": "الجولة {n}",
-  "fantasy.rules.chip_window_from": "ابتداءً من الجولة {from}",
+  "fantasy.rules.chip_window_season": "مرة واحدة، في الجولة التي تختارها",
+  "fantasy.rules.chip_window_range": "مرة واحدة بين الجولتين {from} و{to}",
+  "fantasy.rules.chip_window_single": "مرة واحدة، في الجولة {n}",
+  "fantasy.rules.chip_window_from": "مرة واحدة، ابتداءً من الجولة {from}",
+  "fantasy.rules.chip_uses_once": "مرة واحدة في الموسم",
+  "fantasy.rules.chip_uses_twice": "مرتان في الموسم",
+  "fantasy.rules.full_minutes_note":
+    "الشباك النظيفة والأهداف المستقبَلة: لا تُحتسب إلا ابتداءً من {n} دقيقة لعب.",
+  "fantasy.rules.value_unavailable": "غير متاح حاليًا.",
   "fantasy.onboarding.title": "أهلاً بك في فانتازي BotolaGO",
   "fantasy.onboarding.step1_title": "شكّل فريقك",
   "fantasy.onboarding.step1_body":
@@ -1287,7 +1292,7 @@ export const ar = {
   "fantasy.leagues.invite_failed": "تعذّر إنشاء رابط دعوة الآن.",
   "fantasy.leagues.invite_owner_only": "وحده منشئ الدوري يمكنه دعوة أعضاء جدد.",
   "fantasy.leagues.leave_title": "مغادرة «{league}»؟",
-  "fantasy.leagues.leave_body": "ستختفي من ترتيبه، ولن تعود إليه إلا برمز دعوة جديد.",
+  "fantasy.leagues.leave_body": "ستختفي من ترتيبه، ولن تعود إليه إلا برمز دعوة.",
   "common.confirm": "تأكيد",
   "common.cancel": "إلغاء",
 

@@ -776,10 +776,15 @@ export const fr = {
   "fantasy.rules.row.own_goal": "But contre son camp",
   "fantasy.rules.scoring_unavailable": "Le barème détaillé n'est pas disponible pour le moment.",
   "fantasy.rules.chips": "Jetons",
-  "fantasy.rules.chip_window_season": "Toute la saison",
-  "fantasy.rules.chip_window_range": "J{from}–J{to}",
-  "fantasy.rules.chip_window_single": "J{n}",
-  "fantasy.rules.chip_window_from": "À partir de J{from}",
+  "fantasy.rules.chip_window_season": "Une fois, à la journée de votre choix",
+  "fantasy.rules.chip_window_range": "Une fois entre la J{from} et la J{to}",
+  "fantasy.rules.chip_window_single": "Une fois, à la J{n}",
+  "fantasy.rules.chip_window_from": "Une fois, à partir de la J{from}",
+  "fantasy.rules.chip_uses_once": "Une fois dans la saison",
+  "fantasy.rules.chip_uses_twice": "Deux fois dans la saison",
+  "fantasy.rules.full_minutes_note":
+    "Cage inviolée et buts encaissés : comptent seulement à partir de {n} min jouées.",
+  "fantasy.rules.value_unavailable": "Indisponible pour le moment.",
   "fantasy.onboarding.title": "Bienvenue sur Fantasy BotolaGO",
   "fantasy.onboarding.step1_title": "Composez votre équipe",
   "fantasy.onboarding.step1_body":
@@ -1363,7 +1368,7 @@ export const fr = {
     "Seul le créateur de la ligue peut inviter de nouveaux membres.",
   "fantasy.leagues.leave_title": "Quitter « {league} » ?",
   "fantasy.leagues.leave_body":
-    "Vous disparaîtrez de son classement. Pour revenir, il vous faudra un nouveau code d'invitation.",
+    "Vous disparaîtrez de son classement. Pour revenir, il vous faudra un code d'invitation.",
   "common.confirm": "Confirmer",
   "common.cancel": "Annuler",
 
