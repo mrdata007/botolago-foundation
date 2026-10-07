@@ -701,14 +701,11 @@ export const fr = {
   "fantasy.rules.captaincy_desc":
     "Le capitaine marque le double de ses points. Le vice-capitaine prend le relais si besoin.",
   "fantasy.rules.transfers_r": "Transferts",
-  "fantasy.rules.transfers_desc":
-    "1 transfert gratuit par journée. Chaque transfert supplémentaire coûte 4 points.",
   "fantasy.rules.deadlines": "Dates limites",
   "fantasy.rules.deadlines_desc":
     "Chaque journée a une date limite. Les modifications après la date limite sont refusées.",
   "fantasy.rules.scoring": "Barème de points",
-  "fantasy.rules.scoring_desc":
-    "But d'un attaquant : 4 pts, milieu : 5 pts, défenseur ou gardien : 6 pts. Cage inviolée : 4 pts (D/GK).",
+  "fantasy.rules.scoring_desc": "Points par poste, selon le barème du jeu.",
   "fantasy.recap.public.title": "Rendre ma journée publique",
   "fantasy.recap.public.explain":
     "La page publique montre votre pseudo, la journée, le total, le capitaine et le coût des transferts. Jamais votre e-mail, votre nom, vos ligues ni votre prochaine équipe.",
@@ -759,6 +756,30 @@ export const fr = {
   "fantasy.rules.tiebreak": "Départages",
   "fantasy.rules.tiebreak_desc":
     "En cas d'égalité de points, la meilleure place revient au manager qui a perdu le moins de points en transferts, puis qui a fait le moins de transferts, puis qui a le meilleur score à la dernière journée, puis dont l'équipe a été créée le plus tôt.",
+  "fantasy.rules.transfers_rule":
+    "{free} transfert gratuit par journée, cumulable jusqu'à {max}. Chaque transfert supplémentaire coûte {hit} points.",
+  "fantasy.rules.table_event": "Action",
+  "fantasy.rules.table_na": "Ne s'applique pas",
+  "fantasy.rules.row.appearance": "Participation",
+  "fantasy.rules.row.appearance_short": "Moins de {n} min jouées",
+  "fantasy.rules.row.appearance_full": "{n} min ou plus",
+  "fantasy.rules.row.goal": "But",
+  "fantasy.rules.row.official_assist": "Passe décisive",
+  "fantasy.rules.row.clean_sheet": "Cage inviolée",
+  "fantasy.rules.row.saves": "Arrêts (tous les {n})",
+  "fantasy.rules.row.penalty_save": "Penalty arrêté",
+  "fantasy.rules.row.goals_conceded": "Buts encaissés (tous les {n})",
+  "fantasy.rules.row.penalty_miss": "Penalty manqué",
+  "fantasy.rules.row.yellow_card": "Carton jaune",
+  "fantasy.rules.row.direct_red_card": "Carton rouge direct",
+  "fantasy.rules.row.second_yellow_dismissal": "Expulsion sur second jaune (total)",
+  "fantasy.rules.row.own_goal": "But contre son camp",
+  "fantasy.rules.scoring_unavailable": "Le barème détaillé n'est pas disponible pour le moment.",
+  "fantasy.rules.chips": "Jetons",
+  "fantasy.rules.chip_window_season": "Toute la saison",
+  "fantasy.rules.chip_window_range": "J{from}–J{to}",
+  "fantasy.rules.chip_window_single": "J{n}",
+  "fantasy.rules.chip_window_from": "À partir de J{from}",
   "fantasy.onboarding.title": "Bienvenue sur Fantasy BotolaGO",
   "fantasy.onboarding.step1_title": "Composez votre équipe",
   "fantasy.onboarding.step1_body":
