@@ -1,6 +1,7 @@
 import type { ArticleCardDto, NewsTeamFilterDto } from "@/backend/news/contracts";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import { resolveMediaUrl } from "@/lib/media";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { presentArticle } from "@/services/news";
 import type { Article, ArticleCategory, Club } from "@/types/domain";
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -235,11 +236,14 @@ export function bylineInitials(name: string): string {
  * The article's date without the time, in the reader's language —
  * "23 sept. 2026" / "23 شتنبر 2026" (ar-MA: Moroccan month names, Latin
  * digits, like every other date in the product). Empty for an invalid date.
+ * The day is Morocco's (`morocco-time.ts`): the server and the reader's
+ * browser print the same one, which a zone-less formatter did not for an
+ * article published late in the evening.
  */
 export function formatArticleDate(iso: string, lang: "fr" | "ar"): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+  return moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     day: "numeric",
     month: "short",
     year: "numeric",
