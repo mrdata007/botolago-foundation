@@ -127,24 +127,24 @@ Before screenshots: `shots/*__before.png` (see Validation).
    stats header print the short name instead of a cut-down full name, and Pronostics prints it
    instead of the raw data short name. A test pins the 16 codes and names as unique.
 
-   | Club (data name)                  | Code | Français         | العربية          |
-   | --------------------------------- | ---- | ---------------- | ---------------- |
-   | Amal Tiznit                       | AMT  | Amal Tiznit      | أمل تيزنيت       |
-   | CODM Meknès                       | CODM | CODM Meknès      | النادي المكناسي  |
-   | Difaâ El Jadida                   | DHJ  | Difaâ El Jadida  | الدفاع الجديدي   |
-   | FAR Rabat                         | FAR  | FAR Rabat        | الجيش الملكي     |
-   | FUS Rabat                         | FUS  | FUS Rabat        | الفتح الرباطي    |
-   | Hassania Agadir                   | HUSA | Hassania Agadir  | حسنية أكادير     |
-   | Ittihad Tanger                    | IRT  | Ittihad Tanger   | اتحاد طنجة       |
-   | Kawkab Marrakech                  | KACM | Kawkab Marrakech | الكوكب المراكشي  |
-   | Maghreb Fès                       | MAS  | Maghreb Fès      | المغرب الفاسي    |
-   | Moghreb Tétouan                   | MAT  | Moghreb Tétouan  | المغرب التطواني  |
-   | Raja Casablanca                   | RCA  | Raja             | الرجاء           |
-   | RSB Berkane                       | RSB  | RS Berkane       | نهضة بركان       |
-   | Renaissance Club Athletic Zemamra | RCAZ | Zemamra          | نهضة الزمامرة    |
-   | UTS Rabat                         | UTS  | UTS Rabat        | اتحاد تواركة     |
-   | Widad Témara                      | WAT  | Widad Témara     | وداد تمارة       |
-   | Wydad Casablanca                  | WAC  | Wydad            | الوداد           |
+   | Club (data name)                  | Code | Français         | العربية         |
+   | --------------------------------- | ---- | ---------------- | --------------- |
+   | Amal Tiznit                       | AMT  | Amal Tiznit      | أمل تيزنيت      |
+   | CODM Meknès                       | CODM | CODM Meknès      | النادي المكناسي |
+   | Difaâ El Jadida                   | DHJ  | Difaâ El Jadida  | الدفاع الجديدي  |
+   | FAR Rabat                         | FAR  | FAR Rabat        | الجيش الملكي    |
+   | FUS Rabat                         | FUS  | FUS Rabat        | الفتح الرباطي   |
+   | Hassania Agadir                   | HUSA | Hassania Agadir  | حسنية أكادير    |
+   | Ittihad Tanger                    | IRT  | Ittihad Tanger   | اتحاد طنجة      |
+   | Kawkab Marrakech                  | KACM | Kawkab Marrakech | الكوكب المراكشي |
+   | Maghreb Fès                       | MAS  | Maghreb Fès      | المغرب الفاسي   |
+   | Moghreb Tétouan                   | MAT  | Moghreb Tétouan  | المغرب التطواني |
+   | Raja Casablanca                   | RCA  | Raja             | الرجاء          |
+   | RSB Berkane                       | RSB  | RS Berkane       | نهضة بركان      |
+   | Renaissance Club Athletic Zemamra | RCAZ | Zemamra          | نهضة الزمامرة   |
+   | UTS Rabat                         | UTS  | UTS Rabat        | اتحاد تواركة    |
+   | Widad Témara                      | WAT  | Widad Témara     | وداد تمارة      |
+   | Wydad Casablanca                  | WAC  | Wydad            | الوداد          |
 
    The names are the ones the clubs go by, and they identify clubs; they claim no official status
    (PRODUCT.md, Independence). Two codes differ from the data's `code` column: Wydad's is "WCA" in
@@ -152,6 +152,7 @@ Before screenshots: `shots/*__before.png` (see Validation).
    cites), and FAR's is "ASFAR" (five letters, too wide for a 28px disc) and "FAR" here. AMT and WAT
    are built from the names because no settled abbreviation was found to check them against. **The
    owner should confirm AMT and WAT**, and whether to align `app.teams.code` with this table.
+
 4. **No club colour vanishes into its surface.** The palette treats a fill closer than the clash
    distance (0.10) to the page or the card of its own theme like a clash. For that theme only, it
    takes the first step of the same ladder that shows there: the club's second colour, then the
